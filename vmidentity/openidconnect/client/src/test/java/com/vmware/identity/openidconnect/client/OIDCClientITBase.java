@@ -111,7 +111,7 @@ public class OIDCClientITBase {
         passwordGrant = new PasswordGrant(
                 username,
                 password);
-        TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
+        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, tokenSpec);
         accessToken = oidcTokens.getAccessToken();
 
@@ -204,16 +204,16 @@ public class OIDCClientITBase {
         clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
         regClientWithHA = new OIDCClient(clientConfig);
 
-        withRefreshSpec = new TokenSpec.Builder(TokenType.BEARER).
+        withRefreshSpec = new TokenSpec.Builder().
                 refreshToken(true).
                 idTokenGroups(GroupMembershipType.FULL).
                 accessTokenGroups(GroupMembershipType.FULL).
                 resourceServers(Arrays.asList("rs_admin_server")).build();
-        withoutRefreshSpec = new TokenSpec.Builder(TokenType.BEARER).
+        withoutRefreshSpec = new TokenSpec.Builder().
                 idTokenGroups(GroupMembershipType.FULL).
                 accessTokenGroups(GroupMembershipType.FULL).
                 resourceServers(Arrays.asList("rs_admin_server")).build();
-        groupFilteringSpec = new TokenSpec.Builder(TokenType.BEARER).
+        groupFilteringSpec = new TokenSpec.Builder().
                 idTokenGroups(GroupMembershipType.NONE).
                 accessTokenGroups(GroupMembershipType.FILTERED).
                 resourceServers(Arrays.asList(RESOURCE_SERVER_NAME)).build();

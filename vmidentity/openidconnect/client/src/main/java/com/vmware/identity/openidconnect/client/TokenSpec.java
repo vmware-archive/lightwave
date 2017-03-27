@@ -27,29 +27,18 @@ import com.vmware.identity.openidconnect.common.TokenType;
  */
 public final class TokenSpec {
 
-    public static final TokenSpec EMPTY = new TokenSpec(new Builder(TokenType.BEARER));
+    public static final TokenSpec EMPTY = new TokenSpec(new Builder());
 
-    private final TokenType tokenType;
     private final boolean refreshTokenRequested;
     private final GroupMembershipType idTokenGroupsRequested;
     private final GroupMembershipType accessTokenGroupsRequested;
     private final List<String> resourceServers;
 
     private TokenSpec(Builder builder) {
-        this.tokenType = builder.tokenType;
         this.refreshTokenRequested = builder.refreshTokenRequested;
         this.idTokenGroupsRequested = builder.idTokenGroupsRequested;
         this.accessTokenGroupsRequested = builder.accessTokenGroupsRequested;
         this.resourceServers = builder.resourceServers;
-    }
-
-    /**
-     * Get token type
-     *
-     * @return                          Token type
-     */
-    public TokenType getTokenType() {
-        return this.tokenType;
     }
 
     /**
@@ -92,7 +81,6 @@ public final class TokenSpec {
      * Builder for TokenSpec class
      */
     public static class Builder {
-        private final TokenType tokenType;
         private boolean refreshTokenRequested;
         private GroupMembershipType idTokenGroupsRequested;
         private GroupMembershipType accessTokenGroupsRequested;
@@ -101,9 +89,7 @@ public final class TokenSpec {
         /**
          * Constructor
          */
-        public Builder(TokenType tokenType) {
-            Validate.notNull(tokenType, "tokenType");
-            this.tokenType = tokenType;
+        public Builder() {
         }
 
         /**

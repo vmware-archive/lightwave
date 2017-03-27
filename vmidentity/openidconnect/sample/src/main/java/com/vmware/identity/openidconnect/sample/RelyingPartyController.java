@@ -154,20 +154,19 @@ public class RelyingPartyController {
     public void loginAuthzCodeFlowFormResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, TokenType.HOK, ResponseType.authorizationCode(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlAuthzCodeFlowFormResponse));
+        login(request, response, ResponseType.authorizationCode(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlAuthzCodeFlowFormResponse));
     }
 
     @RequestMapping(value = "/login_authz_code_flow_query_response", method = RequestMethod.POST)
     public void loginAuthzCodeFlowQueryResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, TokenType.HOK, ResponseType.authorizationCode(), ResponseMode.QUERY, URI.create(redirectEndpointUrlAuthzCodeFlowQueryResponse));
+        login(request, response, ResponseType.authorizationCode(), ResponseMode.QUERY, URI.create(redirectEndpointUrlAuthzCodeFlowQueryResponse));
     }
 
     private void login(
             HttpServletRequest request,
             HttpServletResponse response,
-            TokenType tokenType,
             ResponseType responseType,
             ResponseMode responseMode,
             URI redirectUri) throws OIDCClientException {
@@ -179,7 +178,7 @@ public class RelyingPartyController {
 
         boolean requestRefreshToken = responseType.contains(ResponseTypeValue.AUTHORIZATION_CODE);
 
-        TokenSpec tokenSpec = new TokenSpec.Builder(tokenType).
+        TokenSpec tokenSpec = new TokenSpec.Builder().
                 refreshToken(requestRefreshToken).
                 idTokenGroups(GroupMembershipType.FULL).
                 accessTokenGroups(GroupMembershipType.FILTERED).
@@ -198,14 +197,14 @@ public class RelyingPartyController {
     public void loginImplicitFlowFormResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, TokenType.BEARER, ResponseType.idTokenAccessToken(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlImplicitFlowFormResponse));
+        login(request, response, ResponseType.idTokenAccessToken(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlImplicitFlowFormResponse));
     }
 
     @RequestMapping(value = "/login_implicit_flow_fragment_response", method = RequestMethod.POST)
     public void loginImplicitFlowFragmentResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, TokenType.BEARER, ResponseType.idTokenAccessToken(), ResponseMode.FRAGMENT, URI.create(redirectEndpointUrlImplicitFlowFragmentResponse));
+        login(request, response, ResponseType.idTokenAccessToken(), ResponseMode.FRAGMENT, URI.create(redirectEndpointUrlImplicitFlowFragmentResponse));
     }
 
     @RequestMapping(value = "/redirect_authz_code_flow_form_response", method = RequestMethod.POST)

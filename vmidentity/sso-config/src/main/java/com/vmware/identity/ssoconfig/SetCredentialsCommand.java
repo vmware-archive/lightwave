@@ -18,7 +18,6 @@ import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
 import com.vmware.identity.openidconnect.client.TokenSpec;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
-import com.vmware.identity.openidconnect.common.TokenType;
 
 /**
  * Provide command line options for setting admin and keystore credentials.
@@ -72,7 +71,7 @@ public class SetCredentialsCommand extends SSOConfigCommand {
         ConnectionConfig connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, keyStore);
         ClientConfig clientConfig = new ClientConfig(connectionConfig, null, null, 10 * 60L /* clockToleranceInSeconds */);
         OIDCClient nonRegisteredClient = new OIDCClient(clientConfig);
-        TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
+        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegisteredClient.acquireTokensByPassword(
                 adminUsername,
                 adminPwd,

@@ -109,7 +109,7 @@ class RelyingPartyInstaller {
         ConnectionConfig connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, this.keyStore);
         ClientConfig clientConfig = new ClientConfig(connectionConfig, null, null, 10 * 60L /* clockToleranceInSeconds */);
         OIDCClient nonRegisteredClient = new OIDCClient(clientConfig);
-        TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
+        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegisteredClient.acquireTokensByPassword(
                 this.relyingPartyConfig.getAdminUsername(),
                 this.relyingPartyConfig.getAdminPassword(),
@@ -128,7 +128,7 @@ class RelyingPartyInstaller {
                 oidcTokens.getAccessToken(),
                 domainControllerFQDN,
                 domainControllerPort);
-        
+
         VmdirClient vmdirClient = createVMdirClient(
                 oidcTokens.getAccessToken(),
                 domainControllerFQDN,
