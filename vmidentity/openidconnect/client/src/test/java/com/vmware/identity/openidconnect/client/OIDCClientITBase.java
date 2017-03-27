@@ -72,6 +72,10 @@ public class OIDCClientITBase {
     static String tenant;
     static String username;
     static String solutionUserName;
+    static String domainControllerFQDN;
+    static int domainControllerPort;
+    static KeyStore ks;
+    static RSAPrivateKey clientPrivateKey;
 
     public static void setUp(String config) throws Exception {
         Properties properties = new Properties();
@@ -79,14 +83,14 @@ public class OIDCClientITBase {
         username = properties.getProperty("admin.user");
         String password = properties.getProperty("admin.password");
         tenant = properties.getProperty("tenant");
-        int domainControllerPort = Integer.parseInt(properties.getProperty("oidc.op.port"));
-        String domainControllerFQDN = System.getProperty("host");
+        domainControllerPort = Integer.parseInt(properties.getProperty("oidc.op.port"));
+        domainControllerFQDN = System.getProperty("host");
         if (domainControllerFQDN == null || domainControllerFQDN.length() == 0) {
             throw new IllegalStateException("missing host argument, invoke with mvn verify -P integration-test -Dhost=<host>");
         }
 
         // create admin client with STS token
-        KeyStore ks = KeyStore.getInstance("JKS");
+        ks = KeyStore.getInstance("JKS");
         ks.load(null, null);
 
         // create REST afd client to populate SSL certificates
@@ -120,7 +124,8 @@ public class OIDCClientITBase {
                 accessToken,
                 domainControllerFQDN,
                 domainControllerPort,
-                ks);
+                ks,
+                null);
 
         // Create REST Vmdir client
         vmdirClient = TestUtils.createVMdirClient(
@@ -133,7 +138,7 @@ public class OIDCClientITBase {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(1024, new SecureRandom());
         KeyPair clientKeyPair = keyGen.generateKeyPair();
-        RSAPrivateKey clientPrivateKey = (RSAPrivateKey) clientKeyPair.getPrivate();
+        clientPrivateKey = (RSAPrivateKey) clientKeyPair.getPrivate();
         solutionUserName = properties.getProperty("oidc.rp.prefix") + UUID.randomUUID().toString();
         X509Certificate clientCertificate = TestUtils.generateCertificate(clientKeyPair, solutionUserName, null);
 
@@ -148,9 +153,10 @@ public class OIDCClientITBase {
         .build();
         vmdirClient.solutionUser().create(tenant, solutionUserDTO);
 
-        // add the solution user to ActAs group
+        // add the solution user to ActAs group and Users group
         List<String> members = Arrays.asList(solutionUserName + "@" + tenant);
         vmdirClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
+        vmdirClient.group().addMembers(tenant, "Users", tenant, members, MemberType.USER);
 
         // register a OIDC client
         List<String> redirectURIs = Arrays.asList("https://test.com:7444/openidconnect/redirect");

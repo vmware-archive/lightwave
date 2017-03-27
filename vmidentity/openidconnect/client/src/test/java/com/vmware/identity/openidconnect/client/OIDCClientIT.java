@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.client;
 
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +22,9 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.rest.idm.client.IdmClient;
 
 /**
  * OIDC Client Integration Test
@@ -293,5 +297,19 @@ public class OIDCClientIT extends OIDCClientITBase {
         Collection<String> actualGroups = accessToken.getGroups();
         List<String> expectedGroups = Arrays.asList(tenant + "\\administrators");
         Assert.assertEquals("groups", expectedGroups, actualGroups);
+    }
+
+    @Test
+    public void testAdminServerResourceRequestUsingHOKToken() throws Exception {
+        OIDCTokens tokens = nonRegHOKConfigClient.acquireTokensBySolutionUserCredentials(withoutRefreshSpec);
+        Assert.assertEquals("token type", TokenType.HOK, tokens.getIDToken().getTokenType());
+        IdmClient idmClient = TestUtils.createIdmClient(
+                tokens.getAccessToken(),
+                domainControllerFQDN,
+                domainControllerPort,
+                ks,
+                clientPrivateKey);
+        String[] parts = username.split("@");
+        idmClient.user().get(tenant, parts[0], parts[1]);
     }
 }

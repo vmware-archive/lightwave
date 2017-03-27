@@ -263,7 +263,8 @@ class TestUtils {
             AccessToken accessToken,
             String domainControllerFQDN,
             int domainControllerPort,
-            KeyStore keyStore) throws Exception {
+            KeyStore keyStore,
+            RSAPrivateKey privateKey) throws Exception {
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
         SSLContext sslContext = SSLContext.getInstance("SSL");
@@ -274,8 +275,12 @@ class TestUtils {
                 new DefaultHostnameVerifier(),
                 sslContext);
         com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
-                        com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+                new com.vmware.identity.rest.core.client.AccessToken(
+                        accessToken.getValue(),
+                        privateKey == null ?
+                                com.vmware.identity.rest.core.client.AccessToken.Type.JWT :
+                                com.vmware.identity.rest.core.client.AccessToken.Type.JWT_HOK,
+                        privateKey);
         idmClient.setToken(restAccessToken);
         return idmClient;
     }

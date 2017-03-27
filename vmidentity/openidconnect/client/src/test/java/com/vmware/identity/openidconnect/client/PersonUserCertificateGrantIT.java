@@ -102,7 +102,7 @@ public class PersonUserCertificateGrantIT extends OIDCClientITBase {
         Assert.assertNotNull(oidcTokens.getAccessToken());
         Assert.assertNotNull(oidcTokens.getRefreshToken());
 
-        Assert.assertEquals("id_token subject", username, oidcTokens.getIDToken().getSubject().getValue());
+        Assert.assertTrue("id_token subject", username.equalsIgnoreCase(oidcTokens.getIDToken().getSubject().getValue()));
     }
 
     @Test
