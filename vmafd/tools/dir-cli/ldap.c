@@ -1154,13 +1154,11 @@ DirCliLdapFindUser(
 
     dwError = VmAfdAllocateStringPrintf(
                     &pszFilter,
-                    "(&(%s=%s)(%s=%s)(!(%s=%s)))",
+                    "(&(%s=%s)(%s=%s))",
                     ATTR_NAME_ACCOUNT,
                     pszAccount,
                     ATTR_NAME_OBJECTCLASS,
-                    OBJECT_CLASS_USER,
-                    ATTR_NAME_OBJECTCLASS,
-                    OBJECT_CLASS_COMPUTER);
+                    OBJECT_CLASS_USER);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = ldap_search_ext_s(
