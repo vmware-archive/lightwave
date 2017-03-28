@@ -174,6 +174,8 @@ VmDnsZoneListFindZone(
                 VmDnsZoneObjectAddRef(pZoneObject);
                 break;
             }
+
+            VMDNS_SAFE_FREE_STRINGA(szName);
         }
     }
 
@@ -186,6 +188,7 @@ VmDnsZoneListFindZone(
     *ppZoneObject = pZoneObject;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(szName);
     return dwError;
 
 error:
@@ -235,7 +238,6 @@ VmDnsZoneListFindZoneByQName(
             }
 
             VMDNS_SAFE_FREE_STRINGA(szZoneName);
-            szZoneName = NULL;
         }
     }
 

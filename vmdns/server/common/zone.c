@@ -538,7 +538,6 @@ VmDnsZoneGetSoaRecord(
     }
 
     pSoaObject = VmDnsRecordListGetRecord(pRecordList, 0);
-    VmDnsRecordObjectAddRef(pSoaObject);
 
     *ppSoaObject = pSoaObject;
 

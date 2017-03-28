@@ -456,28 +456,35 @@ error:
 DWORD
 VmDnsSrvAddRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
-    PVMDNS_RECORD_LIST pRecords
+    PVMDNS_RECORD_LIST  pRecords
     )
 {
     DWORD dwError = 0;
     DWORD dwIndex = 0;
+    PVMDNS_RECORD_OBJECT pRecordObject = NULL;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pZoneObject, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pRecords, dwError);
 
     for (; dwIndex < pRecords->dwCurrentSize; ++dwIndex)
     {
+        pRecordObject = VmDnsRecordListGetRecord(pRecords, dwIndex);
+
         dwError = VmDnsSrvAddRecord(
                         pZoneObject,
-                        VmDnsRecordListGetRecord(pRecords, dwIndex)->pRecord
+                        pRecordObject->pRecord
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsRecordObjectRelease(pRecordObject);
+        pRecordObject = NULL;
     }
 
 
 cleanup:
-
+    VmDnsRecordObjectRelease(pRecordObject);
     return dwError;
+
 error:
 
     goto cleanup;
@@ -1288,13 +1295,12 @@ VmDnsSrvGetInverseRRTypeRecordList(
     }
 
     *ppParsedRecordList = pParsedRecordList;
+
 cleanup:
-
     VmDnsRecordObjectRelease(pRecordObj);
-
     return dwError;
-error:
 
+error:
     VmDnsRecordListRelease(pParsedRecordList);
     if (ppParsedRecordList)
     {

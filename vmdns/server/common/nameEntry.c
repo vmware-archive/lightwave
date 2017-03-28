@@ -152,13 +152,17 @@ VmDnsNameEntryGetRecords(
             dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
             BAIL_ON_VMDNS_ERROR(dwError);
         }
+
+        VmDnsRecordObjectRelease(pRecordObj);
+        pRecordObj = NULL;
     }
 
     *ppRecordList = pRecordList;
 
 cleanup:
-
+    VmDnsRecordObjectRelease(pRecordObj);
     return dwError;
+
 error:
     VmDnsRecordListRelease(pRecordList);
     goto cleanup;

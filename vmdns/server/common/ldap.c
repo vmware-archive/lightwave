@@ -1328,6 +1328,7 @@ VmDnsDirBuildRecordDN(
     *ppszRecordDN = pszRecordDN;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordCN);
     return dwError;
 error:
     goto cleanup;
@@ -1876,6 +1877,8 @@ VmDnsDirGetAllRecords(
 
                 dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
                 BAIL_ON_VMDNS_ERROR(dwError);
+
+                VmDnsRecordObjectRelease(pRecordObj);
                 pRecordObj = NULL;
             }
 
@@ -1964,6 +1967,7 @@ VmDnsDirProcessRecord(
                     mod_op, pRecord->pszName, pRecord->pszName, pRecord->dwType);
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
     return dwError;
 error:
     VMDNS_LOG_DEBUG("Failed op %u on %s dir record %s %u.",
