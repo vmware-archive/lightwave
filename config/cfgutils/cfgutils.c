@@ -667,6 +667,9 @@ VmwDeploySetupClient(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
     VMW_DEPLOY_LOG_INFO(
             "Validating Domain credentials for user [%s@%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
@@ -707,9 +710,6 @@ VmwDeploySetupClient(
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Performing domain join operation");
-
-    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
-                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
 
     dwError = VmAfdJoinVmDir2A(
                     pParams->pszDomainName,
