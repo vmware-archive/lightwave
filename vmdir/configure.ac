@@ -116,6 +116,17 @@ AC_ARG_WITH([datastore],
         VMDIRD_DATASTORE="$withval"
     ])
 
+ENABLE_LIGHTWAVE_BUILD=no
+AC_ARG_ENABLE([lightwave-build],
+    [AC_HELP_STRING([--enable-lightwave-build], [enable lightwave build(default: no)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AC_DEFINE_UNQUOTED(LIGHTWAVE_BUILD, 1, [ enable lightwave specific build ])
+        fi
+    ])
+
+
 # client only build
 
 ENABLE_SERVER=false
@@ -610,14 +621,14 @@ AC_SUBST(vmdirlogdir)
 AS_AC_EXPAND(VMDIR_LOG_DIR, $vmdirlogdir)
 AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
 
-vmdir_psc_version=1.0
-AC_ARG_WITH([psc-version],
-    [AC_HELP_STRING([--with-psc-version], [set the version (default: 1.0)])],
+vmdir_version=1.0
+AC_ARG_WITH([version],
+    [AC_HELP_STRING([--with-version], [set the version (default: 1.0)])],
     [
-        vmdir_psc_version="$withval"
+        vmdir_version="$withval"
     ])
-AC_SUBST(vmdir_psc_version)
-AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_psc_version)
+AC_SUBST(vmdir_version)
+AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_version)
 AC_DEFINE_UNQUOTED(VDIR_PSC_VERSION, "$VDIR_PSC_VERSION", [PSC version])
 
 vmdirconfdir="$datadir/config"

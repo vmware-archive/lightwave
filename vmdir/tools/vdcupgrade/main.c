@@ -85,14 +85,6 @@ UpdateDCAccountSRPSecret(
 
 static
 DWORD
-UpdateEntriesACL(
-    LDAP*   pLd,
-    PCSTR pszServerName,
-    PCSTR pszAdminUPN
-    );
-
-static
-DWORD
 _UpdateMaxDfl(
     LDAP* pLd
     );
@@ -125,6 +117,16 @@ getPSCVersion(
     PSTR* ppszPSCVer
     );
 
+#ifndef LIGHTWAVE_BUILD
+
+static
+DWORD
+UpdateEntriesACL(
+    LDAP*   pLd,
+    PCSTR pszServerName,
+    PCSTR pszAdminUPN
+    );
+
 static
 DWORD
 UpdatePartnerCertFiles(
@@ -133,6 +135,8 @@ UpdatePartnerCertFiles(
     PSTR pszAdminUPN,
     PSTR pszPassword
     );
+
+#endif
 
 #ifdef _WIN32
 
@@ -247,17 +251,19 @@ VmDirMain(
 		&pszVersion);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+#ifndef LIGHTWAVE_BUILD
     // Only patch ACL from 5.5
     if (VmDirStringNCompareA(pszVersion, "5.5", 3, FALSE) == 0)
     {
         // For upgrade from 5.5, create partner cert files
         dwError = UpdatePartnerCertFiles(pLd, pszServerName, pszAdminUPN, pszPasswordBuf);
-	BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-	// do ACL patch first, so newly added entry will have correct ACL.
-	dwError = UpdateEntriesACL( pLd, pszServerName, pszAdminUPN);
-	BAIL_ON_VMDIR_ERROR(dwError);
+        // do ACL patch first, so newly added entry will have correct ACL.
+        dwError = UpdateEntriesACL( pLd, pszServerName, pszAdminUPN);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
+#endif
 
     if (!bAclOnly)
     {
@@ -1027,6 +1033,50 @@ error:
     goto cleanup;
 }
 
+
+static
+DWORD
+ReplaceSamAccountOnDn(
+    LDAP* pLd,
+    PCSTR pszAccountDn,
+    PCSTR pszNewSamAccount
+    )
+{
+    DWORD dwError = 0;
+    PSTR  ppszVals [] = { (PSTR) pszNewSamAccount, NULL };
+
+    if (!pLd || !pszAccountDn || !pszNewSamAccount)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VdcLdapReplaceAttributeValues(
+                pLd,
+                pszAccountDn,
+                ATTR_SAM_ACCOUNT_NAME,
+                (PCSTR*) ppszVals);
+
+    if (dwError)
+    {
+        printf("Failed to update samaccount to %s for %s, error (%d)\n", pszNewSamAccount, pszAccountDn, dwError);
+    }
+    else
+    {
+        printf("Updated samaccount to %s for %s.\n", pszNewSamAccount, pszAccountDn);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+#ifndef LIGHTWAVE_BUILD
+
 /* Replace ATTR_ACL_STRING on entries which have attribute nTSecurityDescriptor */
 static
 DWORD
@@ -1113,47 +1163,6 @@ cleanup:
 error:
     printf("UpdateEntriesACL got error %d - vdcupgrade proceeds, and please upgrade ACL manually.\n", dwError);
     dwError = 0;
-    goto cleanup;
-}
-
-static
-DWORD
-ReplaceSamAccountOnDn(
-    LDAP* pLd,
-    PCSTR pszAccountDn,
-    PCSTR pszNewSamAccount
-    )
-{
-    DWORD dwError = 0;
-    PSTR  ppszVals [] = { (PSTR) pszNewSamAccount, NULL };
-
-    if (!pLd || !pszAccountDn || !pszNewSamAccount)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VdcLdapReplaceAttributeValues(
-                pLd,
-                pszAccountDn,
-                ATTR_SAM_ACCOUNT_NAME,
-                (PCSTR*) ppszVals);
-
-    if (dwError)
-    {
-        printf("Failed to update samaccount to %s for %s, error (%d)\n", pszNewSamAccount, pszAccountDn, dwError);
-    }
-    else
-    {
-        printf("Updated samaccount to %s for %s.\n", pszNewSamAccount, pszAccountDn);
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    return dwError;
-
-error:
     goto cleanup;
 }
 
@@ -1305,6 +1314,8 @@ error:
     goto cleanup;
 
 }
+
+#endif
 
 static
 DWORD

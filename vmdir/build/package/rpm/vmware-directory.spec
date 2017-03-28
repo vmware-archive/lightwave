@@ -90,8 +90,8 @@ autoreconf -mif ..
     --with-ssocommon=%{_ssocommon_prefix} \
     --enable-server=yes \
     --with-logdir=%{_logdir} \
-    --with-psc-version=%{_psc_version} \
-    --with-version=%{_version}
+    --with-version=%{_version} \
+    --enable-lightwave-build=yes
 
 make
 
