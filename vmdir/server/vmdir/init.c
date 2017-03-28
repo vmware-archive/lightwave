@@ -1539,9 +1539,6 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirGlobals.replAgrsMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirAllocateCondition(&gVmdirGlobals.replAgrsCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1558,30 +1555,6 @@ InitializeGlobalVars(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateCondition(&gVmdirKrbGlobals.pcond);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplResponseRecvCondition);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplThreadCondition);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplThreadMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplDoneMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplDoneCondition);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplStartMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplStartCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // LDAP operation threads shutdown synchronization, shutdown continue

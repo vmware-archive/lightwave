@@ -176,10 +176,6 @@
 				RelativePath="..\thread.c"
 				>
 			</File>
-			<File
-				RelativePath="..\urgentreplthread.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

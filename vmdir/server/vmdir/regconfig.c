@@ -239,13 +239,6 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,
-                    TRUE))
-        {
-            gVmdirUrgentRepl.dwUrgentReplTimeout = pEntry->dwValue;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
                     VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,
                     TRUE))
         {

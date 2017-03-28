@@ -1615,6 +1615,7 @@ _VmDirPluginReplAgrPostDeleteCommit(
     }
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
     for (pReplAgr = gVmdirReplAgrs; pReplAgr != NULL; pReplAgr = pReplAgr->next )
     {
         if (VmDirStringCompareA(pReplAgr->dn.bvnorm_val, pEntry->dn.bvnorm_val, TRUE)  == 0)
@@ -1623,10 +1624,7 @@ _VmDirPluginReplAgrPostDeleteCommit(
             break;
         }
     }
-    if (pReplAgr && pReplAgr->isDeleted)
-    {
-        VmDirReplUpdateUrgentReplCoordinatorTableForDelete(pReplAgr);
-    }
+
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
 
 cleanup:

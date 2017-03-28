@@ -34,11 +34,9 @@ vmdird_SOURCES = \
     srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
     vmevent.c \
-    urgentrepl.c \
     tenantmgmt.c \
     tombstone.c \
-    tracklastlogin.c \
-    vmdirurgentrepl_sstub.c
+    tracklastlogin.c
 
 VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
@@ -113,12 +111,9 @@ CLEANFILES = \
     srp_verifier_sstub.c \
     vmdirsuperlog_h.h \
     vmdirsuperlog_cstub.c \
-    vmdirsuperlog_sstrub.c \
-    vmdirurgentrepl_h.h \
-    vmdirurgentrepl_cstub.c \
-    vmdirurgentrepl_sstub.c
+    vmdirsuperlog_sstrub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h vmdirurgentrepl_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h
 
 vmdir_h.h vmdir_sstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -134,6 +129,3 @@ srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
 
 vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
-
-vmdirurgentrepl_h.h vmdirurgentrepl_sstub.c: $(idl_srcdir)/vmdirurgentrepl.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirurgentrepl_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<

@@ -123,7 +123,6 @@
     <ClCompile Include="..\util.c" />
     <ClCompile Include="..\vmdirentry.c" />
     <ClCompile Include="..\vmdirtoldaperror.c" />
-    <ClCompile Include="..\urgentrepl.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\includes.h" />

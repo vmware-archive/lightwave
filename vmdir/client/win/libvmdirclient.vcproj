@@ -258,10 +258,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\vmdirurgentrepl_stub.c"
-				>
-			</File>
-			<File
 				RelativePath=".\vmdirftp_stub.c"
 				>
 			</File>

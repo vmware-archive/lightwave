@@ -117,12 +117,6 @@ WriteSyncStateControl(
    PSTR*              ppszErrorMsg
    );
 
-int
-WriteConsistencyWriteDoneControl(
-    VDIR_OPERATION *       pOp,
-    BerElement *           pBer
-    );
-
 // delete.c
 int
 VmDirPerformDelete(

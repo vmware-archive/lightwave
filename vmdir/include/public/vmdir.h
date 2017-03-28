@@ -452,9 +452,6 @@ extern "C" {
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 
-// vmw OID for Strong Consistency Write Control
-#define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
-
 #ifndef _WIN32
 #define VMDIR_NCALRPC_END_POINT "vmdirsvc"
 #else

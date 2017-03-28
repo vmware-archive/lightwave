@@ -5945,60 +5945,9 @@ VmDirUrgentReplicationRequest(
     PCSTR pszRemoteServerName
     )
 {
-    DWORD       dwError = 0;
-    PCSTR       pszRemoteServerEndpoint = NULL;
-    handle_t    hBinding = NULL;
-    PWSTR       pwszSrcHostName = NULL;
-    char        pszSrcHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
-
-    if (IsNullOrEmptyString(pszRemoteServerName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirGetHostName(pszSrcHostName, sizeof(pszSrcHostName)-1);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(pszSrcHostName, &pwszSrcHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszRemoteServerName,
-                    pszRemoteServerEndpoint,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirUrgentReplicationRequest(hBinding, pwszSrcHostName);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pwszSrcHostName);
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle(&hBinding);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirUrgentReplicationRequest failed. Error[%d]\n", dwError);
-    goto cleanup;
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
-/*
- * VmDirUrgentReplicationResponse will be invoked at the end of replication cycle
- * (if initiated by urgent replication request). This function updates the orginator
- *  with the UTD vector.
- */
 DWORD
 VmDirUrgentReplicationResponse(
     PCSTR    pszRemoteServerName,
@@ -6007,59 +5956,5 @@ VmDirUrgentReplicationResponse(
     PCSTR    pszHostName
     )
 {
-    PWSTR       pwszUtdVector = NULL;
-    PCSTR       pszRemoteServerEndpoint = NULL;
-    handle_t    hBinding = NULL;
-    DWORD       dwError = 0;
-    PWSTR       pwszInvocationId = NULL;
-    PWSTR       pwszHostName = NULL;
-
-    if (IsNullOrEmptyString(pszRemoteServerName) ||
-        IsNullOrEmptyString(pszUtdVector) ||
-        IsNullOrEmptyString(pszInvocationId))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringWFromA(pszUtdVector, &pwszUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(pszInvocationId, &pwszInvocationId);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(pszHostName, &pwszHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszRemoteServerName,
-                    pszRemoteServerEndpoint,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirUrgentReplicationResponse(hBinding, pwszInvocationId, pwszUtdVector, pwszHostName);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-   VMDIR_SAFE_FREE_MEMORY(pwszUtdVector);
-   VMDIR_SAFE_FREE_MEMORY(pwszInvocationId);
-   VMDIR_SAFE_FREE_MEMORY(pwszHostName);
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle(&hBinding);
-    }
-   return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirUrgentReplicationResponse failed status: %d", dwError);
-    goto cleanup;
+   return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }

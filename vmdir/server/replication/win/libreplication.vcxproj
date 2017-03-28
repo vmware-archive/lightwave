@@ -117,7 +117,6 @@
     <ClCompile Include="..\libmain.c" />
     <ClCompile Include="..\replentry.c" />
     <ClCompile Include="..\thread.c" />
-    <ClCompile Include="..\urgentreplthread.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\includes.h" />

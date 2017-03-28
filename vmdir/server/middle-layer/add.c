@@ -65,8 +65,6 @@ VmDirMLAdd(
                                                      pOperation->pBECtx->wTxnUSN);
     }
 
-    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
-
 cleanup:
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
     return pOperation->ldapResult.errCode;

@@ -146,30 +146,6 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
 
-VMDIR_URGENT_REPL gVmdirUrgentRepl =
-    {
-        // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.pUrgentReplMutex, NULL),
-        VMDIR_SF_INIT(.bUrgentReplicationPending, FALSE),
-        VMDIR_SF_INIT(.dwUrgentReplResponseCount, 0),
-        VMDIR_SF_INIT(.dwUrgentReplTimeout, 0),
-        VMDIR_SF_INIT(.consensusUSN, 0),
-        VMDIR_SF_INIT(.pUTDVector, NULL),
-        VMDIR_SF_INIT(.pUrgentReplResponseRecvMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplResponseRecvCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplResponseRecv, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplThreadMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplThreadCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplThreadPredicate, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplDoneMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplDoneCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplDone, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplStartMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplStartCondition, NULL),
-        VMDIR_SF_INIT(.pUrgentReplPartnerTable, NULL),
-        VMDIR_SF_INIT(.pUrgentReplServerList, NULL)
-    };
-
 VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...

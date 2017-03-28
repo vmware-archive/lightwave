@@ -428,20 +428,6 @@ vdirReplicationThrFun(
             "vdirReplicationThrFun: Sleeping for the replication interval: %d seconds.",
             gVmdirServerGlobals.replInterval );
 
-        if (VmDirdGetUrgentReplicationServerList() != NULL)
-        {
-            /*
-             * TODO: Move RPC call out of the repl thread.
-             * Update memory copy of utdVector for urgentReplication (thread safe)
-             */
-            DWORD   iLocalRetVal = 0;
-            iLocalRetVal = VmDirdUrgentReplSetUtdVector(gVmdirServerGlobals.utdVector.lberbv.bv_val);
-            if (iLocalRetVal == 0)
-            {
-                VmDirSendAllUrgentReplicationResponse();
-            }
-        }
-
         for (i=0; i<gVmdirServerGlobals.replInterval; i++)
         {
             if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
@@ -449,19 +435,13 @@ vdirReplicationThrFun(
                 goto cleanup;
             }
 
-            /*
-             * RPC call request to start replication cycle immediately
-             * Can happen in two cases 1) Triggered by vdcadmintool 2) strong consistency write
-             * case 2: control write which ensures that corresponding write is updated to all its
-             *         replication partners by triggering UrgentReplicationRequest on them
-             * Timed wait for 1000 milliseconds, will be signald by RPC thread
-             * if urgent replication request was received
-             */
-            if (VmDirUrgentReplCondTimedWait() == FALSE)
+            // An RPC call requested a replication cycle to start immediately
+            if (VmDirdGetReplNow() == TRUE)
             {
-		VmDirdSetReplNow(FALSE);
+                VmDirdSetReplNow(FALSE);
                 break;
             }
+            VmDirSleep( 1000 );
         }
     } // Endless replication loop
 

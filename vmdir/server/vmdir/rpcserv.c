@@ -796,9 +796,6 @@ Srv_RpcVmDirReplNow(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirdSetReplNow(TRUE);
-    VmDirUrgentReplSignal();
-
 cleanup:
     if (pAccessToken)
     {
@@ -1839,48 +1836,7 @@ Srv_RpcVmDirUrgentReplicationRequest(
     PWSTR       pwszServerName
     )
 {
-    DWORD  dwError = 0;
-    PSTR   pszServerName = NULL;
-    DWORD  dwRpcFlags =   VMDIR_RPC_FLAG_ALLOW_TCPIP
-                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    if (IsNullOrEmptyString(pwszServerName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // pszServerName will be freed later as part of VmDirdFreeUrgentReplicationServerList
-    dwError = VmDirAllocateStringAFromW(pwszServerName, &pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    VMDIR_LOG_INFO(LDAP_DEBUG_RPC, "RpcVmDirUrgentReplicationRequest: starting Urgent Replication request. Initiator: %s ", pszServerName);
-
-    /*
-     * VmDirdInitiateUrgentRepl
-     * Acquire Lock, Set the bUrgentReplRequest to True
-     * Add the corresponding host to the pUrgentReplServerList
-     * gVmdirUrgentRepl.pUrgentReplServerList owns pszServerName
-     */
-    dwError = VmDirdInitiateUrgentRepl(pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    pszServerName = NULL;
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirUrgentReplicationRequest failed (%u)", dwError );
-    VMDIR_SAFE_FREE_MEMORY(pszServerName);
-    goto cleanup;
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
 UINT32
@@ -1891,57 +1847,5 @@ Srv_RpcVmDirUrgentReplicationResponse(
     PWSTR     pwszHostName
     )
 {
-    DWORD  dwError = 0;
-    PSTR   pszInvocationId = NULL;
-    PSTR   pszUtdVector = NULL;
-    PSTR   pszHostName = NULL;
-    DWORD  dwRpcFlags =  VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-    PVMDIR_REPL_UTDVECTOR   pUtdVector = NULL;
-
-    if (IsNullOrEmptyString(pwszInvocationId) ||
-        IsNullOrEmptyString(pwszUtdVector) ||
-        IsNullOrEmptyString(pwszHostName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszInvocationId, &pszInvocationId);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszUtdVector, &pszUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszHostName, &pszHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirUTDVectorToStruct(pszUtdVector, &pUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //Update urgent replication coordinator threads data structure
-    VmDirReplUpdateUrgentReplCoordinatorTableForResponse(pUtdVector, pszInvocationId, pszHostName);
-    VmDirReplUpdateUrgentReplResponseCount();
-    VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv();
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszInvocationId);
-    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
-    VMDIR_SAFE_FREE_MEMORY(pszHostName);
-    VmDirFreeReplVector(pUtdVector);
-
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirUrgentReplicationResponse failed status (%u)", dwError );
-    goto cleanup;
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }

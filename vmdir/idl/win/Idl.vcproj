@@ -78,10 +78,6 @@
 				RelativePath="..\vmdir.idl"
 				>
 			</File>
-			<File
-				RelativePath="..\vmdirurgentrepl.idl"
-				>
-			</File>
                         <File
                                 RelativePath="..\vmdirdbcp.idl"
                                 >

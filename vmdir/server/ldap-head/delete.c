@@ -48,9 +48,6 @@ VmDirPerformDelete(
     dr->dn.lberbv.bv_val = pOperation->reqDn.lberbv.bv_val;
     dr->dn.lberbv.bv_len = pOperation->reqDn.lberbv.bv_len;
 
-    retVal = ParseRequestControls(pOperation, &pOperation->ldapResult);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
     retVal = VmDirMLDelete( pOperation );
     BAIL_ON_VMDIR_ERROR(retVal);
 

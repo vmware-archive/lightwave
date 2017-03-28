@@ -304,13 +304,6 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
-//SCW - strong consistency write
-typedef enum _VDIR_ENTRY_SCW_STATUS
-{
-    VDIR_SCW_SUCCEEDED,
-    VDIR_SCW_FAILED
-} VDIR_ENTRY_SCW_STATUS;
-
 typedef struct _VDIR_ENTRY
 {
 
@@ -558,18 +551,11 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
-//SCW - Strong Consistency Write
-typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
-{
-    DWORD    status;
-} VMDIR_SCW_DONE_CONTROL_VALUE;
-
 typedef union LdapControlValue
 {
     SyncRequestControlValue            syncReqCtrlVal;
     SyncDoneControlValue               syncDoneCtrlVal;
     VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
-    VMDIR_SCW_DONE_CONTROL_VALUE       scwDoneCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -604,7 +590,6 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
-    VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
@@ -683,23 +668,6 @@ typedef struct _VMDIR_OPERATION_STATISTIC
 } VMDIR_OPERATION_STATISTIC, *PVMDIR_OPERATION_STATISTIC;
 
 extern VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
-
-typedef struct _VMDIR_URGENT_REPL_SERVER_LIST
-{
-    PSTR    pInitiatorServerName;
-    struct _VMDIR_URGENT_REPL_SERVER_LIST *next;
-} VMDIR_URGENT_REPL_SERVER_LIST, *PVMDIR_URGENT_REPL_SERVER_LIST;
-
-typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
-{
-    PSTR     pInvocationId;
-    PSTR     pServerName;
-    BOOLEAN  isDeleted;
-    USN      lastConfirmedUSN;
-    char     lastNotifiedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    char     lastConfirmedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT   *next;
-} VMDIR_STRONG_WRITE_PARTNER_CONTENT, *PVMDIR_STRONG_WRITE_PARTNER_CONTENT;
 
 //
 // Wrapper for a relative security descriptor and some of its related info.
@@ -1488,24 +1456,6 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pUPN,
     PVDIR_BERVALUE   pClearTextPasswd,
     PVDIR_BERVALUE   pSecretResult
-    );
-
-//server/common/urgentrepl.c
-BOOLEAN
-VmDirPerformUrgentReplication(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
-    );
-
-VOID
-VmDirRetryUrgentReplication(
-    VOID
-    );
-
-VOID
-VmDirPerformUrgentReplIfRequired(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
     );
 
 //vmafdlib.c

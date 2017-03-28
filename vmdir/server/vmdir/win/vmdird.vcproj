@@ -287,10 +287,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\urgentrepl.c"
-				>
-			</File>
-			<File
 				RelativePath="..\tenantmgmt.c"
 				>
 			</File>
@@ -316,10 +312,6 @@
                         </File>
 			<File
 				RelativePath=".\vmdirsuperlog_stub.c"
-				>
-			</File>
-			<File
-				RelativePath=".\vmdirurgentrepl_stub.c"
 				>
 			</File>
 		</Filter>

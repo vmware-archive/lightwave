@@ -19,7 +19,6 @@ libsrvcommon_la_SOURCES = \
     util.c                \
     vmafdlib.c            \
     vmdirentry.c          \
-    urgentrepl.c          \
     vmdirtoldaperror.c
 
 libsrvcommon_la_CPPFLAGS = \

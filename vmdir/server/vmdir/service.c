@@ -124,7 +124,6 @@ VmDirRegisterRpcServer(
     VMDIR_IF_HANDLE_T pSrpVerifierInterfaceSpec = rpc_srp_verifier_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
     BOOLEAN bEndpointsRegistered = TRUE;
 
@@ -141,9 +140,6 @@ VmDirRegisterRpcServer(
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerRegisterIf(pVmDirDbcpInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerRegisterIf(pVmDirUrgentReplInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service registered successfully.");
@@ -167,12 +163,6 @@ VmDirRegisterRpcServer(
     }
 
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "VMware Directory Service dbcp");
-    if (ulError)
-    {
-        bEndpointsRegistered = FALSE;
-    }
-
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirUrgentReplInterfaceSpec, "VMware Directory Service Urgent Repl");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
@@ -212,7 +202,6 @@ VmDirUnRegisterRpcServer(
     VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
@@ -224,9 +213,6 @@ VmDirUnRegisterRpcServer(
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirDbcpInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerUnRegisterIf(pVmDirUrgentReplInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service unregistered successfully.");

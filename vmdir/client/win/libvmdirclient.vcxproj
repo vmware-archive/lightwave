@@ -149,7 +149,6 @@
     <ClCompile Include="..\users.c" />
     <ClCompile Include="..\util.c" />
     <ClCompile Include="vmdir_stub.c" />
-    <ClCompile Include="vmdirurgentrepl_stub.c" />
     <ClCompile Include="vmdirftp_stub.c" />
     <ClCompile Include="vmdirdbcp_stub.c" />
     <ClCompile Include="vmdirsuperlog_stub.c" />

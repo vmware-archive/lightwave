@@ -311,17 +311,6 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 60000,                            \
-        /*.dwDefault      = */ 10000,                            \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
         /*.RegDataType    = */ REG_DWORD,                        \

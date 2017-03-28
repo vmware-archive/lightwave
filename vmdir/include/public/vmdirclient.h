@@ -757,11 +757,17 @@ VmDirCloseDatabaseFile(
     FILE **                 ppFileHandle
 );
 
+/*
+ * Deprecated function in LW 1.2
+ */
 DWORD
 VmDirUrgentReplicationRequest(
     PCSTR pszRemoteServerName
     );
 
+/*
+ * Deprecated function in LW 1.2
+ */
 DWORD
 VmDirUrgentReplicationResponse(
     PCSTR    pszRemoteServerName,

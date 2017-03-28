@@ -200,10 +200,6 @@
 				RelativePath="..\vmdirtoldaperror.c"
 				>
 			</File>
-			<File
-				RelativePath="..\urgentrepl.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
