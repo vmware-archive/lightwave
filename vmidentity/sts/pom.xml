@@ -6,222 +6,125 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>sts</artifactId>
-  <version>1.2.0</version>
   <packaging>jar</packaging>
-  <name>sts</name>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <configuration>
-            <outputDirectory>${outputDirectory}</outputDirectory>
-          </configuration>
-          <executions>
-            <execution>
-              <id>attach-sources</id>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
-       </plugin>
-       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <version>1.0.0</version>
-        <executions>
-          <execution>
-            <phase>initialize</phase>
-            <goals>
-              <goal>read-project-properties</goal>
-            </goals>
-            <configuration>
-              <files>
-                <file>${basedir}/build.properties</file>
-              </files>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-       <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
-          <executions>
-            <execution>
-              <id>copy-resources</id>
-              <phase>package</phase>
-              <goals>
-                 <goal>copy-resources</goal>
-              </goals>
-              <configuration>
-                <outputDirectory>${classesOutputDirectory}</outputDirectory>
-                <resources>
-                  <resource>
-                    <directory>${basedir}/target/classes/</directory>
-                    <filtering>true</filtering>
-                  </resource>
-                </resources>
-              </configuration>
-            </execution>
-           </executions>
-       </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>${maven.surefire.plugin.version}</version>
-          <configuration>
-            <skipTests>${skip.unit.tests}</skipTests>
-            <additionalClasspathElements>
-                <additionalClasspathElement>${basedir}/src/main/webapp/</additionalClasspathElement>
-            </additionalClasspathElements>
-          </configuration>
-        </plugin>
-    </plugins>
-  </build>
+  <name>Secure Token Service</name>
 
   <dependencies>
-
-      <dependency>
-        <groupId>com.vmware.identity</groupId>
-        <artifactId>vmware-identity-diagnostics</artifactId>
-        <version>${vmware.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.vmware.identity.idm</groupId>
-        <artifactId>vmware-identity-idm-client</artifactId>
-        <version>${vmware.version}</version>
-        <exclusions>
-         <exclusion>
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-client</artifactId>
+      <version>${vmware.version}</version>
+      <exclusions>
+        <exclusion>
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcprov-jdk15</artifactId>
-         </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.vmware.identity.idm</groupId>
-        <artifactId>vmware-identity-idm-interface</artifactId>
-        <version>${vmware.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.vmware.identity</groupId>
-        <artifactId>afd-heartbeat-service</artifactId>
-        <version>${vmware.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.vmware.identity.commons</groupId>
-        <artifactId>samltoken</artifactId>
-        <version>${vmware.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.vmware.identity</groupId>
-        <artifactId>samlauthority</artifactId>
-        <version>${vmware.version}</version>
-      </dependency>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-interface</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>afd-heartbeat-service</artifactId>
+      <version>${vmware.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.commons</groupId>
+      <artifactId>samltoken</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>samlauthority</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-      <!-- Spring dependencies -->
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-aop</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-beans</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-context</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-core</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-expression</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-test</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-web</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-webmvc</artifactId>
-        <version>${spring.release.version}</version>
-      </dependency>
+    <!-- Spring dependencies -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
 
-      <!-- Logger dependencies -->
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
-        <version>${apache.log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${apache.log4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-1.2-api</artifactId>
-        <version>${log4j.12.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j-impl</artifactId>
-        <version>${apache.log4j.version}</version>
-      </dependency>
+    <!-- Logger dependencies -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${apache.log4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${apache.log4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-1.2-api</artifactId>
+      <version>${log4j.12.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${apache.log4j.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
@@ -232,72 +135,72 @@
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
     </dependency>
-      <!-- common and opensaml dependencies -->
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>${commons.codec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-collections</groupId>
-        <artifactId>commons-collections</artifactId>
-        <version>${commons.collection.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-httpclient</groupId>
-        <artifactId>commons-httpclient</artifactId>
-        <version>${commons.httpclient.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-lang</groupId>
-        <artifactId>commons-lang</artifactId>
-        <version>${commons.lang.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.owasp.esapi</groupId>
-        <artifactId>esapi</artifactId>
-        <version>${esapi.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.jcip</groupId>
-        <artifactId>jcip-annotations</artifactId>
-        <version>${jcip.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>joda-time</groupId>
-        <artifactId>joda-time</artifactId>
-        <version>${joda.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ca.juliusdavies</groupId>
-        <artifactId>not-yet-commons-ssl</artifactId>
-        <version>${commons-ssl.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opensaml</groupId>
-        <artifactId>opensaml</artifactId>
-        <version>${opensaml.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opensaml</groupId>
-        <artifactId>openws</artifactId>
-        <version>${openws.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.velocity</groupId>
-        <artifactId>velocity</artifactId>
-        <version>${velocity.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.santuario</groupId>
-        <artifactId>xmlsec</artifactId>
-        <version>${xml.sec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opensaml</groupId>
-        <artifactId>xmltooling</artifactId>
-        <version>${xml.tooling.version}</version>
-      </dependency>
+    <!-- common and opensaml dependencies -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${commons.codec.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>${commons.collection.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>${commons.httpclient.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.owasp.esapi</groupId>
+      <artifactId>esapi</artifactId>
+      <version>${esapi.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.jcip</groupId>
+      <artifactId>jcip-annotations</artifactId>
+      <version>${jcip.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>${joda.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ca.juliusdavies</groupId>
+      <artifactId>not-yet-commons-ssl</artifactId>
+      <version>${commons-ssl.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opensaml</groupId>
+      <artifactId>opensaml</artifactId>
+      <version>${opensaml.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opensaml</groupId>
+      <artifactId>openws</artifactId>
+      <version>${openws.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.velocity</groupId>
+      <artifactId>velocity</artifactId>
+      <version>${velocity.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.santuario</groupId>
+      <artifactId>xmlsec</artifactId>
+      <version>${xml.sec.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opensaml</groupId>
+      <artifactId>xmltooling</artifactId>
+      <version>${xml.tooling.version}</version>
+    </dependency>
 
       <!-- Jna Dependencies -->
       <dependency>
@@ -334,11 +237,11 @@
       <artifactId>gmbal-api-only</artifactId>
       <version>${gmbal-api-only.version}</version>
       <exclusions>
-          <exclusion>
-            <groupId>javax.management.j2ee</groupId>
-            <artifactId>management-api</artifactId>
-         </exclusion>
-       </exclusions>
+        <exclusion>
+          <groupId>javax.management.j2ee</groupId>
+          <artifactId>management-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.glassfish.ha</groupId>
@@ -369,12 +272,12 @@
       <groupId>com.sun.xml.ws</groupId>
       <artifactId>jaxws-rt</artifactId>
       <version>${jaxws-rt.version}</version>
-         <exclusions>
-          <exclusion>
-            <groupId>org.jvnet</groupId>
-            <artifactId>mimepull</artifactId>
-         </exclusion>
-        </exclusions>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jvnet</groupId>
+          <artifactId>mimepull</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.sun.xml.ws</groupId>
@@ -438,49 +341,33 @@
     </dependency>
 
 
-   <!-- Test Dependencies -->
-
-     <dependency>
-       <groupId>net.sourceforge.cobertura</groupId>
-       <artifactId>cobertura</artifactId>
-       <version>${cobertura.version}</version>
-       <scope>test</scope>
-     </dependency>
+    <!-- Test Dependencies -->
     <dependency>
-       <groupId>junit</groupId>
-       <artifactId>junit</artifactId>
-       <version>${junit.version}</version>
-       <scope>test</scope>
-     </dependency>
-     <dependency>
-       <groupId>org.easymock</groupId>
-       <artifactId>easymock</artifactId>
-       <version>${easymock.version}</version>
-       <scope>test</scope>
-     </dependency>
-     <dependency>
-        <groupId>org.objenesis</groupId>
-        <artifactId>objenesis</artifactId>
-        <version>${objenesis.version}</version>
-     </dependency>
-     <dependency>
-        <groupId>cglib</groupId>
-        <artifactId>cglib</artifactId>
-        <version>${cglib.version}</version>
-     </dependency>
-     <dependency>
-        <groupId>asm</groupId>
-        <artifactId>asm</artifactId>
-        <version>${asm.version}</version>
-        <scope>provided</scope>
-     </dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <version>${easymock.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.objenesis</groupId>
+      <artifactId>objenesis</artifactId>
+      <version>${objenesis.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>cglib</groupId>
+      <artifactId>cglib</artifactId>
+      <version>${cglib.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
- </dependencies>
-
- <properties>
-    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
-    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/sts/classes</classesOutputDirectory>
-    <skip.unit.tests>false</skip.unit.tests>
- </properties>
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+  </properties>
 
 </project>

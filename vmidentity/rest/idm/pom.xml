@@ -5,14 +5,13 @@
   <parent>
     <groupId>com.vmware.identity.rest</groupId>
     <artifactId>vmware-identity-rest</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>com.vmware.identity.rest.idm</groupId>
   <artifactId>vmware-identity-rest-idm</artifactId>
   <packaging>pom</packaging>
-
-  <name>vmware-identity-rest-idm</name>
+  <name>REST Services - Identity Manager</name>
 
   <modules>
     <module>common</module>
@@ -20,5 +19,9 @@
     <module>client</module>
     <module>samples</module>
   </modules>
+
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 
 </project>

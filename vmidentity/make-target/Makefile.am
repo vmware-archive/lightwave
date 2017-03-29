@@ -27,7 +27,7 @@ vmstsjars_DATA= \
     @top_builddir@/vmware-sts/packages/openidconnect-client-lib.jar \
     @top_builddir@/vmware-sts/packages/openidconnect-common.jar \
     @top_builddir@/vmware-sts/packages/openidconnect-protocol.jar \
-    @top_builddir@/vmware-sts/packages/openidconnect.jar \
+    @top_builddir@/vmware-sts/packages/openidconnect-server.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-sso-config.jar \
     @top_builddir@/vmware-sts/packages/websso.jar \
     @top_builddir@/vmware-sts/packages/sts.jar
@@ -38,7 +38,7 @@ vmstswebapps_DATA= \
     @top_builddir@/vmware-sts/packages/lightwaveui.war
 
 sbin_SCRIPTS = \
-    @top_builddir@/vmware-sts/websso/classes/sso-config.sh \
+    @top_srcdir@/websso/src/main/resources/sso-config.sh \
     @top_builddir@/config/vmware-idmd.sh \
     @top_builddir@/config/vmware-stsd.sh \
     @top_builddir@/config/configure-build.sh

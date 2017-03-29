@@ -6,109 +6,12 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-sso-config</artifactId>
-  <version>1.2.0</version>
   <packaging>jar</packaging>
-  <name>vmware-identity-sso-config</name>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-          <archive>
-            <manifestFile>${bundle.manifestTemplatePath}</manifestFile>
-          </archive>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <configuration>
-            <outputDirectory>${outputDirectory}/dependencies</outputDirectory>
-          </configuration>
-          <executions>
-            <execution>
-              <id>attach-sources</id>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-dependency-plugin</artifactId>
-         <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>prepare-package</phase>
-            <goals>
-             <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-             <outputDirectory>${outputDirectory}</outputDirectory>
-             <overWriteReleases>false</overWriteReleases>
-             <overWriteSnapshots>false</overWriteSnapshots>
-             <overWriteIfNewer>true</overWriteIfNewer>
-            </configuration>
-           </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>${maven.surefire.plugin.version}</version>
-          <configuration>
-            <skipTests>${skip.unit.tests}</skipTests>
-          </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
-          <executions>
-            <execution>
-              <id>copy-resources</id>
-              <phase>install</phase>
-              <goals>
-                 <goal>copy-resources</goal>
-              </goals>
-              <configuration>
-                <outputDirectory>${classesOutputDirectory}</outputDirectory>
-                <resources>
-                  <resource>
-                    <directory>${basedir}/target/classes/</directory>
-                    <filtering>true</filtering>
-                  </resource>
-                </resources>
-              </configuration>
-            </execution>
-           </executions>
-       </plugin>
-    </plugins>
-  </build>
+  <name>SSO Configuration Utility</name>
 
   <dependencies>
     <dependency>
@@ -147,12 +50,12 @@
       <version>${vmware.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.oidc</groupId>
       <artifactId>openidconnect-client-lib</artifactId>
       <version>${vmware.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.oidc</groupId>
       <artifactId>openidconnect-common</artifactId>
       <version>${vmware.version}</version>
     </dependency>
@@ -223,11 +126,9 @@
       <artifactId>jackson-annotations</artifactId>
       <version>${jackson.version}</version>
     </dependency>
- </dependencies>
+  </dependencies>
 
- <properties>
-    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
-    <skip.unit.tests>false</skip.unit.tests>
-    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/vmware-identity-sso-config/classes</classesOutputDirectory>
- </properties>
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+  </properties>
 </project>

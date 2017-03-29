@@ -5,20 +5,22 @@
   <parent>
     <groupId>com.vmware.identity.rest</groupId>
     <artifactId>vmware-identity-rest</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>com.vmware.identity.rest.afd</groupId>
   <artifactId>vmware-identity-rest-afd</artifactId>
   <packaging>pom</packaging>
-
-  <name>vmware-identity-rest-afd</name>
+  <name>REST Services - Authentication Framework</name>
 
   <modules>
     <module>common</module>
-
     <module>server</module>
     <module>client</module>
   </modules>
+
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 
 </project>

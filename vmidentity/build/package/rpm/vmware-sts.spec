@@ -207,7 +207,7 @@ fi
 %{_jarsdir}/vmware-identity-sso-config.jar
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
-%{_jarsdir}/openidconnect.jar
+%{_jarsdir}/openidconnect-server.jar
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 %{_datadir}/config/idm/*

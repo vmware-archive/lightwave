@@ -6,152 +6,12 @@
   <parent>
     <groupId>com.vmware.identity.rest.afd</groupId>
     <artifactId>vmware-identity-rest-afd</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-rest-afd-server</artifactId>
   <packaging>jar</packaging>
-  <name>vmware-identity-rest-afd-server</name>
-
-  <profiles>
-    <profile>
-      <id>dev</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <build.profile.id>dev</build.profile.id>
-        <skip.integration.tests>true</skip.integration.tests>
-        <skip.unit.tests>false</skip.unit.tests>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>integration-test</id>
-      <properties>
-        <build.profile.id>integration-test</build.profile.id>
-        <skip.integration.tests>false</skip.integration.tests>
-        <skip.unit.tests>false</skip.unit.tests>
-      </properties>
-    </profile>
-  </profiles>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <filters>
-      <filter>${basedir}/profiles/${build.profile.id}/config.properties</filter>
-    </filters>
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>${basedir}/src/main/resources</directory>
-      </resource>
-    </resources>
-
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-      </plugin>
-
-      <!-- Test Plugins -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.18</version>
-        <configuration>
-          <argLine>${surefireArgLine}</argLine>
-          <skipTests>${skip.unit.tests}</skipTests>
-          <systemProperties>
-            <property>
-              <name>log4j.configuration</name>
-              <value>${basedir}/src/test/resources/log4j2-test.xml</value>
-            </property>
-          </systemProperties>
-          <excludedGroups>com.vmware.identity.rest.afd.server.test.annotation.IntegrationTest</excludedGroups>
-          <threadCount>100</threadCount>
-          <parallel>all</parallel>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.18</version>
-        <configuration>
-          <groups>com.vmware.identity.rest.afd.server.test.annotation.IntegrationTest</groups>
-          <skipTests>${skip.integration.tests}</skipTests>
-          <systemProperties>
-            <property>
-              <name>log4j.configuration</name>
-              <value>${basedir}/src/test/resources/log4j2-test.xml</value>
-            </property>
-          </systemProperties>
-          <systemPropertyVariables>
-            <host>${host}</host>
-          </systemPropertyVariables>
-        </configuration>
-
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <includes>
-                <include>**/*IT.java</include>
-              </includes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.7.2.201409121644</version>
-        <executions>
-          <execution>
-            <id>pre-unit-test</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-            <configuration>
-              <destFile>${project.build.directory}/coverage-reports/jacoco-ut.exec</destFile>
-              <propertyName>surefireArgLine</propertyName>
-            </configuration>
-          </execution>
-          <execution>
-            <id>post-unit-test</id>
-            <phase>test</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <configuration>
-              <dataFile>${project.build.directory}/coverage-reports/jacoco-ut.exec</dataFile>
-              <outputDirectory>${project.reporting.outputDirectory}/jacoco-ut</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+  <name>REST Services - Authentication Framework - Server</name>
 
   <dependencies>
     <dependency>
@@ -255,7 +115,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.vmafd</groupId>
       <artifactId>vmware-endpoint-certificate-store</artifactId>
       <version>${vmware.version}</version>
       <scope>provided</scope>
@@ -282,13 +142,6 @@
 
     <!-- Test Dependencies -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
       <version>${easymock.version}</version>
@@ -302,9 +155,9 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <properties>
-    <war.warName>afd</war.warName>
-    <outputDirectory>${basedir}/../../../${packageDir}</outputDirectory>
+    <rootDirectory>${basedir}/../../..</rootDirectory>
   </properties>
 
 </project>

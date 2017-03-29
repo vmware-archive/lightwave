@@ -5,37 +5,12 @@
   <parent>
     <groupId>com.vmware.identity.rest.core</groupId>
     <artifactId>vmware-identity-rest-core</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-rest-core-server</artifactId>
   <packaging>jar</packaging>
-  <name>vmware-identity-rest-core-server</name>
-
-  <build>
-    <finalName>vmware-identity-rest-core-server</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
-        <inherited>true</inherited>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <name>REST Services - Core - Server</name>
 
   <dependencies>
     <dependency>
@@ -88,7 +63,7 @@
       <version>${slf4j.version}</version>
     </dependency>
 
-        <!-- Required for native Jersey HTTP request/response logging-->
+    <!-- Required for native Jersey HTTP request/response logging-->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
@@ -112,11 +87,11 @@
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
-         <exclusions>
-          <exclusion>
-            <groupId>org.opensaml</groupId>
-           <artifactId>xmltooling</artifactId>
-         </exclusion>
+      <exclusions>
+        <exclusion>
+          <groupId>org.opensaml</groupId>
+          <artifactId>xmltooling</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -135,13 +110,6 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
       <version>${easymock.version}</version>
@@ -158,6 +126,7 @@
   </dependencies>
 
   <properties>
-    <outputDirectory>${basedir}/../../../${packageDir}</outputDirectory>
+    <rootDirectory>${basedir}/../../..</rootDirectory>
   </properties>
+
 </project>
