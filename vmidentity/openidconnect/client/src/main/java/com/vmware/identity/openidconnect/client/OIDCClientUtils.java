@@ -79,7 +79,6 @@ import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
  */
 class OIDCClientUtils {
     static final int DEFAULT_OP_PORT = 443;
-    static final String DEFAULT_TENANT = "vsphere.local";
     static final int HTTP_CLIENT_TIMEOUT_MILLISECS = 60 * 1000; // set HTTP Client timeout to be 60 seconds.
 
     static HttpResponse sendSecureRequest(HttpRequest httpRequest, KeyStore keyStore) throws OIDCClientException, SSLConnectionException {

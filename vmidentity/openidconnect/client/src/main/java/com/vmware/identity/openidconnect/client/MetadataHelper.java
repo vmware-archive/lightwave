@@ -53,7 +53,7 @@ public final class MetadataHelper {
         private KeyStore keyStore;
         private final String domainControllerFQDN;
         private int domainControllerPort = OIDCClientUtils.DEFAULT_OP_PORT;
-        private String tenant = OIDCClientUtils.DEFAULT_TENANT;
+        private String tenant;
 
         /**
          * Constructor
@@ -121,8 +121,11 @@ public final class MetadataHelper {
             sb.append(":");
             sb.append(String.valueOf(this.domainControllerPort));
             sb.append("/openidconnect/");
-            sb.append(this.tenant);
-            sb.append("/.well-known/openid-configuration");
+            if (this.tenant != null) {
+                sb.append(this.tenant);
+                sb.append("/");
+            }
+            sb.append(".well-known/openid-configuration");
 
             try {
                 this.metadataURI = URIUtils.parseURI(sb.toString());
