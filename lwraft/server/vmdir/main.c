@@ -44,7 +44,6 @@ main(
     BOOLEAN      bPatchSchema = FALSE;
     int          iLocalLogMask = 0;
     BOOLEAN      bVmDirInit = FALSE;
-    BOOLEAN      bShutdownKDCService = FALSE;
     BOOLEAN      bWaitTimeOut = FALSE;
 
     dwError = VmDirSrvUpdateConfig();
@@ -90,17 +89,9 @@ main(
     BAIL_ON_VMDIR_ERROR(dwError);
     bVmDirInit = TRUE;
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Ligthtwave lwraftd Vmkdc: starting...");
-
 
     if ( ! bPatchSchema && VmDirdGetRunMode() != VMDIR_RUNMODE_RESTORE )
     {   // Normal server startup route
-
-        dwError = VmKdcServiceStartup();
-        BAIL_ON_VMDIR_ERROR(dwError);
-        bShutdownKDCService = TRUE;
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Ligthtwave lwraftd Vmkdc: running...");
 
         dwError = VmDirNotifyLikewiseServiceManager();
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -119,11 +110,6 @@ main(
 
 cleanup:
 
-    if ( bShutdownKDCService )
-    {
-        VmKdcServiceShutdown();
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmkdcd: stop" );
-    }
 
     if ( bVmDirInit )
     {

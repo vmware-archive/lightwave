@@ -43,22 +43,6 @@
     doc = "Set to '1' to allow clear-text password authentication."
 }
 
-"KerberosPort" = {
-    default = dword:00000058
-    doc     = "Kerberos Protocol Port"
-}
-"KdcClockSkew" = {
-    default = dword:0000012c
-    doc     = "Clock Skew"
-}
-"KdcMaxLife" = {
-    default = dword:00007080
-    doc     = "Maximum Ticket Lifetime"
-}
-"KdcMaxRenewableLife" = {
-    default = dword:00093a80
-    doc     = "Maximum Ticket Renewable Lifetime"
-}
 "SslDisabledProtocols" = {
     default = "TLSv1"
     doc     = "List of protocols to disable"
