@@ -178,7 +178,7 @@ public class RequestSigner {
      * @return the MD5 hash of the entity.
      */
     public static String computeMD5(String entity) {
-        if (entity == null) {
+        if (entity == null || entity.isEmpty()) {
             return "";
         }
 
