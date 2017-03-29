@@ -92,7 +92,7 @@ VmDirMLBind(
                 }
                 else if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
                 {   // if SASL negotiation completes successfully, it sets pOpeartion->reqDn.
-#if 1 /* Send SASL response token */
+#if 0 /* TBD:ADAM-This breaks promote; Send SASL response token */
                     VmDirSendSASLBindResponse(pOperation);
 #endif
                     dwError = VmDirInternalBindEntry(pOperation);
@@ -426,7 +426,7 @@ _VmDirSASLBind(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "(%u)(%s)", retVal, "SASL start failed.");
 
         pLocalInfo->pSockbuf = pOperation->conn->sb;
-#if 1
+#if 0
         pLocalInfo->saslStatus = SASL_STATUS_DONE;
 #else
         pLocalInfo->saslStatus = SASL_STATUS_IN_PROGRESS;
