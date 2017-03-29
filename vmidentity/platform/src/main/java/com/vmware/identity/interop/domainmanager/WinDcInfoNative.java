@@ -36,10 +36,7 @@ public class WinDcInfoNative extends Structure
 
     public WinDcInfoNative()
     {
-        if (SystemUtils.IS_OS_WINDOWS)
-        {
-            this.setTypeMapper(W32APITypeMapper.UNICODE);
-        }
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
     }
 
     public WinDcInfoNative(Pointer p)

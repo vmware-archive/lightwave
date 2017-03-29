@@ -31,10 +31,7 @@ public class WinGuidNative extends Structure
 
     public WinGuidNative()
     {
-        if (SystemUtils.IS_OS_WINDOWS)
-        {
-            this.setTypeMapper(W32APITypeMapper.UNICODE);
-        }
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
         data4 = new byte[WinDomainAdapter.WIN_GUID_DATA4_SIZE];
     }
 

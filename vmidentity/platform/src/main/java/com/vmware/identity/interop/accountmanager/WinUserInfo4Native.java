@@ -56,10 +56,7 @@ public class WinUserInfo4Native extends Structure
 
     public WinUserInfo4Native()
     {
-        if (SystemUtils.IS_OS_WINDOWS)
-        {
-            this.setTypeMapper(W32APITypeMapper.UNICODE);
-        }
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
     }
 
     public WinUserInfo4Native(Pointer p)

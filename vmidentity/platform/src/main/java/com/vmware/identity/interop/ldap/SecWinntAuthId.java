@@ -56,10 +56,7 @@ public final class SecWinntAuthId extends Structure
 
     public SecWinntAuthId(String pszUserName, String pszDomain, String password)
     {
-        if (SystemUtils.IS_OS_WINDOWS)
-        {
-            this.setTypeMapper( W32APITypeMapper.UNICODE );
-        }
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
 
         this._pszUserName = pszUserName;
         this._userNameLength = pszUserName == null ? 0 : pszUserName.length();

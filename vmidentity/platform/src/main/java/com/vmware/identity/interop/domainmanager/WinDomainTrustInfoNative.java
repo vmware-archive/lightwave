@@ -45,10 +45,7 @@ public class WinDomainTrustInfoNative extends Structure
 
     public WinDomainTrustInfoNative()
     {
-        if (SystemUtils.IS_OS_WINDOWS)
-        {
-            this.setTypeMapper(W32APITypeMapper.UNICODE);
-        }
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
     }
 
     public WinDomainTrustInfoNative(Pointer p)

@@ -553,7 +553,7 @@
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
-        <artifactId>platform</artifactId>
+        <artifactId>jna-platform</artifactId>
         <version>${net.dev.jna}</version>
       </dependency>
       <dependency>
