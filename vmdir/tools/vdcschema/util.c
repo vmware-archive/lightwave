@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -158,4 +158,283 @@ VmDirSchemaPrintDiff(
         }
         pNode = pNode->pPrev;
     }
+}
+
+DWORD
+VdcSchemaRefreshSchemaReplStatusEntries(
+    PVDC_SCHEMA_CONN    pConn
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszAttrs[] = { "refresh", NULL };
+    LDAPMessage*    pResult = NULL;
+
+    if (!pConn)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    printf("Request server to refresh schema repl status entries\n");
+
+    dwError = ldap_search_ext_s(
+            pConn->pLd,
+            SCHEMA_REPL_STATUS_DN,
+            LDAP_SCOPE_SUBTREE,
+            "(objectclass=*)",
+            pszAttrs,
+            FALSE,
+            NULL,
+            NULL,
+            NULL,
+            0,
+            &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    printf("Request succeeded\n");
+
+cleanup:
+    ldap_msgfree(pResult);
+    return dwError;
+
+error:
+    printf("Failed to request server to refresh schema repl status entries\n");
+    goto cleanup;
+}
+
+DWORD
+VdcSchemaWaitForSchemaReplStatusEntries(
+    PVDC_SCHEMA_CONN        pConn,
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwTimeRemaining = 0;
+    DWORD   dwEachWait = 10;
+    DWORD   i = 0;
+    PSTR    pszAttrs[] = { "+", NULL };
+    BOOLEAN bReady = FALSE;
+    LDAPMessage*    pResult = NULL;
+    LDAPMessage*    pEntry = NULL;
+    struct berval** ppValues = NULL;
+
+    if (!pConn || !pOpParam)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwTimeRemaining = (DWORD)pOpParam->iTimeout;
+
+    printf("Wait for schema repl status entries for %d seconds\n",
+            dwTimeRemaining);
+
+    while (!bReady && dwTimeRemaining)
+    {
+        VmDirSleep(dwEachWait * 1000);
+
+        ldap_msgfree(pResult);
+        dwError = ldap_search_ext_s(
+                pConn->pLd,
+                SCHEMA_REPL_STATUS_DN,
+                LDAP_SCOPE_BASE,
+                "(objectclass=*)",
+                pszAttrs,
+                FALSE,
+                NULL,
+                NULL,
+                NULL,
+                0,
+                &pResult);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = ldap_count_entries(pConn->pLd, pResult) == 0 ?
+                VMDIR_ERROR_ENTRY_NOT_FOUND : 0;
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pEntry = ldap_first_entry(pConn->pLd, pResult);
+
+        ldap_value_free_len(ppValues);
+        ppValues = ldap_get_values_len(
+                pConn->pLd, pEntry, ATTR_SERVER_RUNTIME_STATUS);
+
+        for (i = 0; i < ldap_count_values_len(ppValues); i++)
+        {
+            PSTR pszPrefix = SCHEMA_REPL_STATUS_REFRESH_IN_PROGRESS;
+            PSTR pszSuffix = "FALSE";
+            PSTR pszVal = ppValues[i]->bv_val;
+
+            if (VmDirStringStartsWith(pszVal, pszPrefix, FALSE) &&
+                VmDirStringEndsWith(pszVal, pszSuffix, FALSE))
+            {
+                bReady = TRUE;
+                break;
+            }
+        }
+
+        dwTimeRemaining = dwTimeRemaining > dwEachWait ?
+                dwTimeRemaining - dwEachWait : 0;
+    }
+
+    if (bReady)
+    {
+        printf("Schema repl status entries are ready\n");
+    }
+    else
+    {
+        printf("Timed out waiting for schema repl status entries\n");
+        dwError = VMDIR_ERROR_TIMELIMIT_EXCEEDED;
+    }
+
+cleanup:
+    ldap_value_free_len(ppValues);
+    ldap_msgfree(pResult);
+    return dwError;
+
+error:
+    printf("Failed during waiting for schema repl status entries\n");
+    goto cleanup;
+}
+
+DWORD
+VdcSchemaGetSchemaReplStatusEntries(
+    PVDC_SCHEMA_CONN            pConn,
+    PVDIR_SCHEMA_REPL_STATE**   pppReplStates
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwNumEntries = 0;
+    DWORD   i = 0;
+    PSTR    pszAttrs[] = { "+", NULL };
+    LDAPMessage*    pResult = NULL;
+    LDAPMessage*    pEntry = NULL;
+    PVDIR_SCHEMA_REPL_STATE*    ppReplStates = NULL;
+
+    if (!pConn || !pppReplStates)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    printf("Retrieve schema repl status entries\n");
+
+    dwError = ldap_search_ext_s(
+            pConn->pLd,
+            SCHEMA_REPL_STATUS_DN,
+            LDAP_SCOPE_ONELEVEL,
+            "(objectclass=*)",
+            pszAttrs,
+            FALSE,
+            NULL,
+            NULL,
+            NULL,
+            0,
+            &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwNumEntries = ldap_count_entries(pConn->pLd, pResult);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(PVDIR_SCHEMA_REPL_STATE) * (dwNumEntries + 1),
+            (PVOID*)&ppReplStates);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pEntry = ldap_first_entry(pConn->pLd, pResult); pEntry;
+         pEntry = ldap_next_entry(pConn->pLd, pEntry))
+    {
+        dwError = VmDirSchemaReplStateParseLDAPEntry(
+                pConn->pLd, pEntry, &ppReplStates[i++]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pppReplStates = ppReplStates;
+
+    printf("Retrieval succeeded\n");
+
+cleanup:
+    ldap_msgfree(pResult);
+    return dwError;
+
+error:
+    printf("Failed to retrieve schema repl status entries\n");
+
+    for (i = 0; ppReplStates && ppReplStates[i]; i++)
+    {
+        VmDirFreeSchemaReplState(ppReplStates[i]);
+    }
+    VMDIR_SAFE_FREE_MEMORY(ppReplStates);
+    goto cleanup;
+}
+
+DWORD
+VdcSchemaPrintSchemaReplStatusEntry(
+    PVDIR_SCHEMA_REPL_STATE pReplState
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+
+    if (!pReplState)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    {
+        PSTR pszStrKeys[] = {
+                SCHEMA_REPL_STATUS_HOST_NAME,
+                SCHEMA_REPL_STATUS_DOMAIN_NAME,
+                NULL
+        };
+        PSTR pszStrVals[] = {
+                pReplState->pszHostName,
+                pReplState->pszDomainName
+        };
+        PSTR pszBoolKeys[] = {
+                SCHEMA_REPL_STATUS_CHECK_INITIATED,
+                SCHEMA_REPL_STATUS_CHECK_SUCCEEDED,
+                SCHEMA_REPL_STATUS_TREE_IN_SYNC,
+                NULL
+        };
+        PSTR pszBoolVals[] = {
+                pReplState->bCheckInitiated ? "TRUE" : "FALSE",
+                pReplState->bCheckSucceeded ? "TRUE" : "FALSE",
+                pReplState->bTreeInSync ? "TRUE" : "FALSE"
+        };
+        PSTR pszDwordKeys[] = {
+                SCHEMA_REPL_STATUS_ATTR_MISSING_IN_TREE,
+                SCHEMA_REPL_STATUS_ATTR_MISMATCH_IN_TREE,
+                SCHEMA_REPL_STATUS_CLASS_MISSING_IN_TREE,
+                SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_TREE,
+                NULL
+        };
+        DWORD dwDwordVals[] = {
+                pReplState->dwAttrMissingInTree,
+                pReplState->dwAttrMismatchInTree,
+                pReplState->dwClassMissingInTree,
+                pReplState->dwClassMismatchInTree
+        };
+
+        for (i = 0; pszStrKeys[i]; i++)
+        {
+            printf("%s: %s\n", pszStrKeys[i], pszStrVals[i]);
+        }
+
+        for (i = 0; pszBoolKeys[i]; i++)
+        {
+            printf("%s: %s\n", pszBoolKeys[i], pszBoolVals[i]);
+        }
+
+        for (i = 0; pszDwordKeys[i]; i++)
+        {
+            printf("%s: %d\n", pszDwordKeys[i], dwDwordVals[i]);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    printf("Failed to print schema repl status entry\n");
+    goto cleanup;
 }

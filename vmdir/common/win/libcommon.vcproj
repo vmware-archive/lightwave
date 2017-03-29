@@ -258,6 +258,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\replstate\schemareplstate.c"
+				>
+			</File>
+			<File
 				RelativePath="..\schema\compat.c"
 				>
 			</File>

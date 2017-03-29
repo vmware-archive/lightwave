@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -960,20 +960,21 @@ VmDirFreeBervalContent(
     return;
 }
 
-static
 DWORD
-_VmDirCreateTransientSecurityDescriptor(
-    PCSTR pszDomainDN,
+VmDirCreateTransientSecurityDescriptor(
     BOOL bAllowAnonymousRead,
     PVMDIR_SECURITY_DESCRIPTOR pvsd
     )
 {
     DWORD dwError = 0;
+    PSTR pszDomainDN = NULL;
     PSTR pszAdminsGroupSid = NULL;
     PSTR pszDomainAdminsGroupSid = NULL;
     PSTR pszDomainClientsGroupSid = NULL;
     PSTR pszUsersGroupSid = NULL;
     VMDIR_SECURITY_DESCRIPTOR SecDesc = {0};
+
+    pszDomainDN = BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN);
 
     dwError = VmDirGenerateWellknownSid(pszDomainDN,
                                         VMDIR_DOMAIN_ALIAS_RID_ADMINS,
@@ -1054,8 +1055,7 @@ VmDirAttrListToNewEntry(
         pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirCreateTransientSecurityDescriptor(
-                BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN),
+    dwError = VmDirCreateTransientSecurityDescriptor(
                 bAllowAnonymousRead,
                 &vsd);
     BAIL_ON_VMDIR_ERROR(dwError);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -39,6 +39,11 @@ int VmDirMain(int argc, char* argv[])
     else if (pOpParam->opCode == OP_PATCH_SCHEMA_DEFS)
     {
         dwError = VdcSchemaOpPatchSchemaDefs(pConn, pOpParam);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (pOpParam->opCode == OP_GET_SCHEMA_REPL_STATUS)
+    {
+        dwError = VdcSchemaOpGetSchemaReplStatus(pConn, pOpParam);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 

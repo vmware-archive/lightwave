@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -233,6 +233,7 @@ typedef enum _VDIR_SPECIAL_SEARCH_ENTRY_TYPE
     SPECIAL_SEARCH_ENTRY_TYPE_SCHEMA_ENTRY,
     SPECIAL_SEARCH_ENTRY_TYPE_SERVER_STATUS,
     SPECIAL_SEARCH_ENTRY_TYPE_REPL_STATUS,
+    SPECIAL_SEARCH_ENTRY_TYPE_SCHEMA_REPL_STATUS,
     REGULAR_SEARCH_ENTRY_TYPE
 } VDIR_SPECIAL_SEARCH_ENTRY_TYPE;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -72,6 +72,24 @@ VdcSchemaParseArgs(
         dwError = VmDirParseArguments(options, NULL, argc - 1, argv + 1);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+    else if (VmDirStringCompareA("get-schema-repl-status", argv[1], TRUE) == 0)
+    {
+        VMDIR_COMMAND_LINE_OPTION options[] =
+        {
+                {0, "domain",   CL_STRING_PARAMETER,    &pConn->pszDomain},
+                {0, "host",     CL_STRING_PARAMETER,    &pConn->pszHostName},
+                {0, "login",    CL_STRING_PARAMETER,    &pConn->pszUserName},
+                {0, "passwd",   CL_STRING_PARAMETER,    &pConn->pszPassword},
+                {0, "verbose",  CL_NO_PARAMETER,        &pOpParam->bVerbose},
+                {0, "timeout",  CL_INTEGER_PARAMETER,   &pOpParam->iTimeout},
+                {0, 0, 0, 0}
+        };
+
+        pOpParam->opCode = OP_GET_SCHEMA_REPL_STATUS;
+
+        dwError = VmDirParseArguments(options, NULL, argc - 1, argv + 1);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
     else
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
@@ -118,5 +136,13 @@ VdcSchemaShowUsage(
             "\t                 [ --host   <host-name> ]\n"
             "\t                 [ --login  <user-name> ]\n"
             "\t                 [ --passwd <password> ]\n"
-            "\t                 [ --dryrun ]\n");
+            "\t                 [ --dryrun ]\n"
+            "\n"
+            "\tget-schema-repl-status\n"
+            "\t                   --domain <domain-name>\n"
+            "\t                 [ --host   <host-name> ]\n"
+            "\t                 [ --login  <user-name> ]\n"
+            "\t                 [ --passwd <password> ]\n"
+            "\t                 [ --verbose ]\n"
+            "\t                 [ --timeout <seconds> ]\n");
 }

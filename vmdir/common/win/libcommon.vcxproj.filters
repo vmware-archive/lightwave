@@ -84,6 +84,9 @@
     <ClCompile Include="..\util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\replstate\schemareplstate.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\schema\compat.c">
       <Filter>Source Files</Filter>
     </ClCompile>

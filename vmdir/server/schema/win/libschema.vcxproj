@@ -124,6 +124,7 @@
     <ClCompile Include="..\matchingrule.c" />
     <ClCompile Include="..\parse.c" />
     <ClCompile Include="..\patch.c" />
+    <ClCompile Include="..\replstatus.c" />
     <ClCompile Include="..\syntax.c" />
     <ClCompile Include="..\util.c" />
     <ClCompile Include="..\legacy\legacylibmain.c" />

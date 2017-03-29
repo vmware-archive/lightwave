@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -89,6 +89,10 @@ VmDirSchemaLibInit(
 
     // legacy support
     dwError = VmDirSchemaLibInitLegacy();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // repl status globals
+    dwError = VmDirSchemaReplStatusGlobalsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppModMutex = gVdirSchemaGlobals.cacheModMutex;
@@ -572,6 +576,8 @@ VmDirSchemaLibShutdown(
     )
 {
     BOOLEAN bInLock = FALSE;
+
+    VmDirSchemaReplStatusGlobalsShutdown();
 
     VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 

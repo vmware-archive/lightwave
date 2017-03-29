@@ -48,6 +48,9 @@
     <ClCompile Include="..\patch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\replstatus.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\syntax.c">
       <Filter>Source Files</Filter>
     </ClCompile>
