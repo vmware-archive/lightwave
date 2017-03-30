@@ -803,6 +803,10 @@ VmDnsGetLockKey(
         dwError = VmDnsAllocateMemory(sizeof(int), (void**)&(pCounter));
         BAIL_ON_VMDNS_ERROR(dwError);
 
+        dwError = pthread_key_create(pLockKey, VmDnsFreeMemory);
+        dwError = POSIX_TO_WIN32_ERROR(dwError);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
         dwError = pthread_setspecific(*pLockKey, pCounter);
         dwError = POSIX_TO_WIN32_ERROR(dwError);
         BAIL_ON_VMDNS_ERROR(dwError);

@@ -1014,7 +1014,6 @@ VmDnsReadDomainNameFromBuffer(
 {
     DWORD dwError = 0;
     DWORD dwTotalStringLength = 0;
-    DWORD dwLabelLength = 0;
     BOOL bEndOfString = FALSE;
     PSTR pszTempString = NULL;
     PSTR pszTempStringCursor = NULL;
@@ -1037,6 +1036,7 @@ VmDnsReadDomainNameFromBuffer(
 
     do
     {
+        DWORD dwLabelLength = 0;
         dwError = VmDnsReadStringFromBuffer(
                             pVmDnsBuffer,
                             &pszLabels,
@@ -1094,7 +1094,7 @@ VmDnsReadDomainNameFromBuffer(
         if (pszTempString[dwTotalStringLength - 1] != '.')
         {
             pszTempString[dwTotalStringLength]='.';
-            dwLabelLength++;
+            dwTotalStringLength++;
         }
     }
 

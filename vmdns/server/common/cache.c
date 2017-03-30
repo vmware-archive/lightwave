@@ -971,6 +971,10 @@ cleanup:
     VmDnsUnlockWrite(pContext->pLock);
     VmDnsRecordListRelease(pList);
     VmDnsZoneObjectRelease(pZoneObject);
+    if (ppszForwarders)
+    {
+        VmDnsFreeStringCountedArrayA(ppszForwarders, dwCount);
+    }
     return dwError;
 
 error:
