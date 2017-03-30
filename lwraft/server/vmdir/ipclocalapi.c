@@ -63,9 +63,12 @@ VmDirIpcInitializeHost(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcInitializeHost");
 
-    if (!pSecurityContext)
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
@@ -83,15 +86,6 @@ VmDirIpcInitializeHost(
                     dwRequestSize,
                     input_spec);
     BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "%s: Access Denied",
-                         __FUNCTION__);
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR (dwError);
-    }
 
     pwszDomainName = input_spec[0].data.pWString;
     pwszUserName = input_spec[1].data.pWString;
@@ -169,9 +163,12 @@ VmDirIpcInitializeTenant(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcInitializeTenant");
 
-    if (!pSecurityContext)
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
@@ -189,15 +186,6 @@ VmDirIpcInitializeTenant(
                     dwRequestSize,
                     input_spec);
     BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "%s: Access Denied",
-                         __FUNCTION__);
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR (dwError);
-    }
 
     pwszDomainName = input_spec[0].data.pWString;
     pwszUserName = input_spec[1].data.pWString;
@@ -270,9 +258,12 @@ VmDirIpcForceResetPassword(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcForceResetPassword");
 
-    if (!pSecurityContext)
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
@@ -290,15 +281,6 @@ VmDirIpcForceResetPassword(
                     dwRequestSize,
                     input_spec);
     BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "%s: Access Denied",
-                         __FUNCTION__);
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR (dwError);
-    }
 
     pwszTargetUPN = input_spec[0].data.pWString;
 
@@ -388,9 +370,12 @@ VmDirIpcGeneratePassword(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcGeneratePassword");
 
-    if (!pSecurityContext)
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
@@ -403,15 +388,6 @@ VmDirIpcGeneratePassword(
                         dwRequestSize,
                         NULL );
     BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "%s: Access Denied",
-                         __FUNCTION__);
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR (dwError);
-    }
 
     dwError = VmDirGenerateRandomPasswordByDefaultPolicy((PSTR*)&dataContainer.data );
     if ( dwError == ERROR_NOT_JOINED )
@@ -505,9 +481,12 @@ VmDirIpcSetSRPSecret(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcSetSRPSecret");
 
-    if (!pSecurityContext)
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
@@ -525,15 +504,6 @@ VmDirIpcSetSRPSecret(
                     dwRequestSize,
                     input_spec);
     BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "%s: Access Denied",
-                         __FUNCTION__);
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR (dwError);
-    }
 
     pwszUPN = input_spec[0].data.pWString;
     pwszSecret = input_spec[1].data.pWString;
@@ -601,9 +571,12 @@ VmDirIpcGetServerState(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcGetServerState ");
 
-    if (!pSecurityContext)
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
@@ -621,15 +594,6 @@ VmDirIpcGetServerState(
                     dwRequestSize,
                     NULL);
     BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "%s: Access Denied",
-                         __FUNCTION__);
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR (dwError);
-    }
 
     uResult = VmDirSrvGetServerState(&uServerState);
 
