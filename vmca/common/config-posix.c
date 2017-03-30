@@ -183,6 +183,10 @@ VmwPosixCfgReadStringValue(
                     NULL,
                     szValue,
                     &dwszValueSize);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+    {
+        dwError = ERROR_FILE_NOT_FOUND;
+    }
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAAllocateStringA(szValue, &pszValue);
@@ -227,6 +231,10 @@ VmwPosixCfgReadDWORDValue(
                     NULL,
                     (PVOID)&dwValue,
                     &dwValueSize);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+    {
+        dwError = ERROR_FILE_NOT_FOUND;
+    }
     BAIL_ON_VMCA_ERROR(dwError);
 
     *pdwValue = dwValue;

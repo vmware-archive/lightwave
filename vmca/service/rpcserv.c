@@ -141,7 +141,7 @@ RpcVMCASetServerOption(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
-    dwError = dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE ? 0: dwError;
+    dwError = dwError == ERROR_FILE_NOT_FOUND ? 0: dwError;
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwNewOption = dwCurrentOption | dwOption;
@@ -171,7 +171,7 @@ RpcVMCAUnsetServerOption(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
-    dwError = dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE ? 0: dwError;
+    dwError = dwError == ERROR_FILE_NOT_FOUND ? 0: dwError;
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwNewOption = dwCurrentOption & ~dwOption;
@@ -206,7 +206,7 @@ RpcVMCAGetServerOption(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwOption);
-    dwError = dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE ? 0: dwError;
+    dwError = dwError == ERROR_FILE_NOT_FOUND ? 0: dwError;
     BAIL_ON_VMCA_ERROR(dwError);
 
     *pdwOption = dwOption;
