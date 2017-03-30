@@ -24,6 +24,7 @@ VM_SOCK_PACKAGE gVmSockPosixPackage =
     .pfnWaitForEvent = &VmSockPosixWaitForEvent,
     .pfnCloseEventQueue = &VmSockPosixCloseEventQueue,
     .pfnSetNonBlocking = &VmSockPosixSetNonBlocking,
+    .pfnSetTimeOut = &VmSockPosixSetTimeOut,
     .pfnGetProtocol = &VmSockPosixGetProtocol,
     .pfnSetData = &VmSockPosixSetData,
     .pfnGetData = &VmSockPosixGetData,

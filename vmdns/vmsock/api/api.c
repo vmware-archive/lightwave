@@ -172,6 +172,31 @@ error:
 }
 
 DWORD
+VmwSockSetTimeOut(
+    PVM_SOCKET pSocket,
+    DWORD      dwTimeOut
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pSocket)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMSOCK_ERROR(dwError);
+    }
+
+    if (dwTimeOut)
+    {
+        dwError = gpVmSockPackage->pfnSetTimeOut(pSocket, dwTimeOut);
+    }
+
+error:
+
+    return dwError;
+}
+
+
+DWORD
 VmwSockGetProtocol(
     PVM_SOCKET           pSocket,
     PDWORD               pdwProtocol

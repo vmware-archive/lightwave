@@ -166,6 +166,21 @@ VmSockWinSetNonBlocking(
     );
 
 /**
+ * @brief sets socket to be non-blocking
+ *
+ * @param[in] pSocket Pointer to socket
+ * @param[in] TimeOut Timeout in seconds
+ *
+ * @return 0 on success
+ */
+
+DWORD
+VmSockWinSetTimeOut(
+    PVM_SOCKET           pSocket,
+    DWORD                dwTimeOut
+    );
+
+/**
  * @brief Retrieves the protocol the socket has been configured with
  *
  * @param[in]     pSocket     Pointer to socket

@@ -74,6 +74,11 @@ typedef DWORD (*PFN_SET_NON_BLOCKING)(
                     PVM_SOCKET pSocket
                     );
 
+typedef DWORD (*PFN_SET_TIMEOUT)(
+                    PVM_SOCKET pSocket,
+                    DWORD      dwTimeOut
+                    );
+
 typedef DWORD (*PFN_GET_PROTOCOL)(
                     PVM_SOCKET           pSocket,
                     PDWORD               pdwProtocol
@@ -140,6 +145,7 @@ typedef struct _VM_SOCK_PACKAGE
     PFN_WAIT_FOR_EVENT     pfnWaitForEvent;
     PFN_CLOSE_EVENT_QUEUE  pfnCloseEventQueue;
     PFN_SET_NON_BLOCKING   pfnSetNonBlocking;
+    PFN_SET_TIMEOUT        pfnSetTimeOut;
     PFN_GET_PROTOCOL       pfnGetProtocol;
     PFN_SET_DATA           pfnSetData;
     PFN_GET_DATA           pfnGetData;
