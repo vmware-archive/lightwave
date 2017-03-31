@@ -32,20 +32,21 @@ public class AlternativeOCSPConnectionsMapper {
                 .build();
     }
 
-    public static HashMap<String, AlternativeOCSPList> getAlternativeOCSPConnections(AlternativeOCSPConnectionsDTO alternativeOCSPConnectionsDTO) {
+   public static HashMap<String, AlternativeOCSPList> getAlternativeOCSPConnections(AlternativeOCSPConnectionsDTO alternativeOCSPConnectionsDTO) {
 
         HashMap<String, AlternativeOCSPList> altOCSPConnections = new HashMap<String, AlternativeOCSPList>();
 
         Map<String, AlternativeOCSPListDTO> altOCSPConnectionDTOList = alternativeOCSPConnectionsDTO.getAlternativeOCSPConnections();
 
-        Set<String> siteSet = altOCSPConnectionDTOList.keySet();
-        for (String siteId : siteSet) {
-            AlternativeOCSPListDTO altOCSPListDTO = altOCSPConnectionDTOList.get(siteId);
-            AlternativeOCSPList alternativeOCSPList = AlternativeOCSPListMapper.getAlternativeOCSPList(altOCSPListDTO);
+        if(altOCSPConnectionDTOList != null) {
+            Set<String> siteSet = altOCSPConnectionDTOList.keySet();
+            for (String siteId : siteSet) {
+                AlternativeOCSPListDTO altOCSPListDTO = altOCSPConnectionDTOList.get(siteId);
+                AlternativeOCSPList alternativeOCSPList = AlternativeOCSPListMapper.getAlternativeOCSPList(altOCSPListDTO);
 
-            altOCSPConnections.put(siteId, alternativeOCSPList);
+                altOCSPConnections.put(siteId, alternativeOCSPList);
+            }
         }
-
         return altOCSPConnections;
     }
 
