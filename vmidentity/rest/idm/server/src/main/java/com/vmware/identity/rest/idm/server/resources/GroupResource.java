@@ -56,6 +56,7 @@ import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Web service resource to manage all group operations.
@@ -68,7 +69,7 @@ public class GroupResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(GroupResource.class);
 
     public GroupResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

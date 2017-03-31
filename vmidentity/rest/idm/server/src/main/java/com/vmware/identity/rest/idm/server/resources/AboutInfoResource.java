@@ -30,6 +30,7 @@ import com.vmware.identity.interop.registry.RegistryAdapterFactory;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.idm.data.AboutInfoDTO;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 @Path("/")
 public class AboutInfoResource extends BaseResource {
@@ -41,7 +42,7 @@ public class AboutInfoResource extends BaseResource {
     private static final String VERSION_KEY = "Version";
 
     public AboutInfoResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(AboutInfoResource.class);

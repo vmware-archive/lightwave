@@ -29,10 +29,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.ResourceServerResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 import com.vmware.identity.rest.idm.server.test.integration.util.data.ResourceServerDataGenerator;

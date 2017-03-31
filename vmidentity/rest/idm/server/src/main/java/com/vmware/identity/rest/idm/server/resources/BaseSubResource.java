@@ -42,13 +42,13 @@ public abstract class BaseSubResource extends BaseResource {
 
     protected String tenant;
 
-    public BaseSubResource(String tenant, Locale locale, String correlationId, SecurityContext securityContext) {
-        super(locale, correlationId, securityContext);
+    public BaseSubResource(String tenant, Locale locale, String correlationId, String localizationPackage, SecurityContext securityContext) {
+        super(locale, correlationId, localizationPackage, securityContext);
         this.tenant = tenant;
     }
 
-    public BaseSubResource(String tenant, ContainerRequestContext request, SecurityContext securityContext) {
-        super(request, securityContext);
+    public BaseSubResource(String tenant, ContainerRequestContext request, String localizationPackage, SecurityContext securityContext) {
+        super(request, localizationPackage, securityContext);
         this.tenant = tenant;
     }
 

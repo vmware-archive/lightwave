@@ -32,12 +32,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.idm.data.AssertionConsumerServiceDTO;
 import com.vmware.identity.rest.idm.data.AttributeConsumerServiceDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
 import com.vmware.identity.rest.idm.data.ServiceEndpointDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.RelyingPartyResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 import com.vmware.identity.rest.idm.server.test.integration.util.data.RelyingPartyDataGenerator;

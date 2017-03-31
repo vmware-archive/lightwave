@@ -63,6 +63,7 @@ import com.vmware.identity.rest.idm.server.PathParameters;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.PrincipalMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Web service resource to manage all person user operations.
@@ -78,7 +79,7 @@ public class UserResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResource.class);
 
     public UserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

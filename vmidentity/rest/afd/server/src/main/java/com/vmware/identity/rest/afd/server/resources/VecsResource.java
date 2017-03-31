@@ -35,6 +35,7 @@ import javax.ws.rs.core.SecurityContext;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.rest.afd.server.util.Config;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
@@ -49,7 +50,7 @@ public class VecsResource extends BaseResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(VecsResource.class);
 
     public VecsResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @GET

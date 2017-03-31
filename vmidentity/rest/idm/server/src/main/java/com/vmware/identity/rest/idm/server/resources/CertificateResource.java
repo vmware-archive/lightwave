@@ -57,6 +57,7 @@ import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
 import com.vmware.identity.rest.idm.data.attributes.CertificateGranularity;
 import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Operations related to Single Sign On certificates
@@ -69,11 +70,11 @@ public class CertificateResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(CertificateResource.class);
 
     public CertificateResource(String tenant, Locale locale, String correlationId, SecurityContext securityContext) {
-        super(tenant, locale, correlationId, securityContext);
+        super(tenant, locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     public CertificateResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

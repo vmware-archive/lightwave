@@ -40,6 +40,7 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.core.server.exception.server.NotImplementedError;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Operations related to solution users. Solution users are nothing but services(virtual entities).
@@ -52,7 +53,7 @@ public class SolutionUserResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SolutionUserResource.class);
 
     public SolutionUserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

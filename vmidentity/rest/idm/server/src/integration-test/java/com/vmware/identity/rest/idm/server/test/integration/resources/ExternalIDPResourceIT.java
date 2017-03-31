@@ -33,9 +33,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.mapper.ExternalIDPMapper;
 import com.vmware.identity.rest.idm.server.resources.ExternalIDPResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;

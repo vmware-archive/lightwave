@@ -52,6 +52,7 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.server.mapper.ExternalIDPMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * All operations related to external identity providers are implemented in this
@@ -68,7 +69,7 @@ public class ExternalIDPResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ExternalIDPResource.class);
 
     public ExternalIDPResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @GET

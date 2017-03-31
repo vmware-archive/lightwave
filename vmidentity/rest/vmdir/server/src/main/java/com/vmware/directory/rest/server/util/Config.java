@@ -12,7 +12,7 @@
  *  under the License.
  */
 
-package com.vmware.identity.rest.afd.server.util;
+package com.vmware.directory.rest.server.util;
 
 /**
  * Generic configuration class - mostly just contains a great deal of static values
@@ -22,6 +22,6 @@ package com.vmware.identity.rest.afd.server.util;
  */
 public class Config {
 
-    public static final String LOCALIZATION_PACKAGE_NAME = "i18n.afd";
+    public static final String LOCALIZATION_PACKAGE_NAME = "i18n.vmdir";
 
 }

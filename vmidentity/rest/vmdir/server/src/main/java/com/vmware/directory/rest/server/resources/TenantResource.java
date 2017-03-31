@@ -20,6 +20,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
 import com.vmware.directory.rest.server.PathParameters;
+import com.vmware.directory.rest.server.util.Config;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
@@ -36,9 +37,9 @@ public class TenantResource extends BaseResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(TenantResource.class);
 
     public TenantResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
-    
+
     @Path(PathParameters.TENANT_NAME_VAR + "/groups")
     public GroupResource getGroupSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new GroupResource(tenantName, getRequest(), getSecurityContext());

@@ -40,10 +40,10 @@ import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.OIDCClientResource;
 
 /**
@@ -152,7 +152,6 @@ public class OIDCClientResourceTest {
                     }
                 }
         );
-	System.out.println("Set up an expectation!");
         this.mControl.replay();
         OIDCClientDTO resultOIDCClientDTO = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
         assertOIDCClient(resultOIDCClientDTO, resultOIDCClientDTO.getClientId());

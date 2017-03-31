@@ -44,6 +44,7 @@ import com.vmware.directory.rest.server.mapper.GroupDetailsMapper;
 import com.vmware.directory.rest.server.mapper.GroupMapper;
 import com.vmware.directory.rest.server.mapper.SolutionUserMapper;
 import com.vmware.directory.rest.server.mapper.UserMapper;
+import com.vmware.directory.rest.server.util.Config;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.Group;
@@ -77,7 +78,7 @@ public class GroupResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(GroupResource.class);
 
     public GroupResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

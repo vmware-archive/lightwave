@@ -25,10 +25,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.NotImplementedError;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.SolutionUserResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 
