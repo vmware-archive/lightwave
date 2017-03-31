@@ -458,6 +458,8 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex)
     VDIR_ENTRY_ARRAY entryArray = {0};
     char filterStr[RAFT_CONTEXT_DN_MAX_LEN] = {0};
     int i = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    UINT64 logIndex = 0;
 
     dwError = VmDirStringPrintFA(filterStr, sizeof(filterStr), "(%s>=%llu)",
                                  ATTR_RAFT_LOGINDEX, startLogIndex);
@@ -468,6 +470,24 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex)
 
     for (i = 0; i < entryArray.iSize; i++)
     {
+        pAttr = VmDirFindAttrByName(&(entryArray.pEntry[i]), ATTR_RAFT_LOGINDEX);
+        if (!pAttr)
+        {
+            //This indicate the corruption of the log entry data.
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs invalid log entry, logIdx %llu", logIndex);
+            assert(0);
+        }
+
+        logIndex = VmDirStringToLA(pAttr->vals[0].lberbv.bv_val, NULL, 10);
+        if (logIndex <= gRaftState.lastApplied)
+        {
+             /* This shouldn't occur. If it does, then there would be a bug, and the consistency might be 
+              * compromised. We should investigate the sequence of events on how to get here.
+              */
+             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs attempt to delete log already applied, logIdx %llu", logIndex);
+             assert(0);
+        }
+
         dwError = _VmdirDeleteLog(entryArray.pEntry[i].dn.lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
