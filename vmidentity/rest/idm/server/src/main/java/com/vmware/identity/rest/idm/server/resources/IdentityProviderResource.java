@@ -14,7 +14,6 @@
 package com.vmware.identity.rest.idm.server.resources;
 
 import java.net.MalformedURLException;
-import java.rmi.NotBoundException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -136,7 +135,7 @@ public class IdentityProviderResource extends BaseSubResource {
         } catch (NoSuchTenantException e) {
             log.warn("Failed to {} identity provider '{}' for tenant '{}'", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (MalformedURLException | NotBoundException | InvalidProviderException | ADIDSAlreadyExistException | IDMLoginException e) {
+        } catch (MalformedURLException | InvalidProviderException | ADIDSAlreadyExistException | IDMLoginException e) {
             log.warn("Failed to {} identity provider '{}' for tenant '{}' due to a client side error", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
             throw new BadRequestException(sm.getString("res.provider.add.failed", identityProvider.getName(), tenant), e);
         } catch (Exception e) {

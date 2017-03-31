@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<Context>
+    <Realm className="com.vmware.identity.tomcat.SmartcardRealm" realmName="SmartcardRealm"/>
+</Context>

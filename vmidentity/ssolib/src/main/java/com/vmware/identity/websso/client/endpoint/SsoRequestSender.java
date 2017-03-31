@@ -1,6 +1,16 @@
-/* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client.endpoint;
 
 import java.io.IOException;
@@ -134,22 +144,25 @@ public class SsoRequestSender {
         String redirectUrl = getRequestUrl(requestSettings);
 
         if (redirectUrl != null) {
+            SharedUtils.SetNoCacheHeader(response);
             response.sendRedirect(redirectUrl);
         } else {
             logger.error("Fail to generate the SSO request!");
         }
     }
 
+
     /**
-     * SSO request processing. Return a request url.to be send via HTTP
+     * SSO request processing. Return redirect url to be sent via HTTP
      * redirect.
      *
      * @param requestSettings
-     *            SSO requestion parameters
-     * @param response
-     *            response to be created.
+     *            SSO request parameters
+     * @param reqID
+     *            optional request ID. Will be generated if not provided.
+     * return  String  request url.
      */
-    public String getRequestUrl(SsoRequestSettings requestSettings) {
+    public String getRequestUrl(SsoRequestSettings requestSettings, String reqID) {
 
         String redirectUrl = null;
         Validate.notNull(requestSettings, "requestSettings");
@@ -178,7 +191,11 @@ public class SsoRequestSender {
             DateTime issueInstant = new DateTime();
             AuthnRequestBuilder authRequestBuilder = new AuthnRequestBuilder();
             AuthnRequest authRequest = authRequestBuilder.buildObject(SamlNames.PROTOCOL, "AuthnRequest", "samlp");
-
+            if (reqID != null) {
+                authRequest.setID(reqID);
+            } else {
+                authRequest.setID(this.generator.generateIdentifier());
+            }
             authRequest.setForceAuthn(requestSettings.isForceAuthn());
             authRequest.setIsPassive(requestSettings.isPassive());
             authRequest.setIssueInstant(issueInstant);
@@ -206,7 +223,6 @@ public class SsoRequestSender {
                 RequestedAuthnContext requestedAuthnContext = createRequestedAuthnContext(requestSettings);
                 authRequest.setRequestedAuthnContext(requestedAuthnContext);
             }
-            authRequest.setID(this.generator.generateIdentifier());
             authRequest.setVersion(SAMLVersion.VERSION_20);
             authRequest.setProviderName(requestSettings.getSPAlias());
 
@@ -264,13 +280,28 @@ public class SsoRequestSender {
                     null, // tag
                     false); //isIdpInitiated
             getMessageStore().add(authnMessage);
+
         } catch (Exception e) {
             logonProcessor.internalError(e, null, null);
             SharedUtils.logMessage(e);
-            return null;
+            redirectUrl = null;
         }
 
         return redirectUrl;
+    }
+
+    /**
+     * SSO request processing. Return a request url.to be send via HTTP
+     * redirect.
+     *
+     * @param requestSettings
+     *            SSO requestion parameters
+     * @return String request url
+     *
+     */
+    public String getRequestUrl(SsoRequestSettings requestSettings) {
+
+        return this.getRequestUrl(requestSettings, null);
     }
 
     // Creates Scoping object if proxyCount is set

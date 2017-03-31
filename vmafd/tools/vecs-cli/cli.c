@@ -489,7 +489,7 @@ VecsCliGetCertificateA(
 
     if (!(IsNullOrEmptyString(pszOutputFilePath)))
     {
-        dwError = VmAfdOpenFilePath(pszOutputFilePath, "w+", &stream);
+        dwError = VmAfdOpenFilePath(pszOutputFilePath, "w+", &stream, 0);
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
@@ -503,7 +503,7 @@ VecsCliGetCertificateA(
     {
         fprintf(
             stream,
-            "%s",
+            "%s\n",
             pCertEntry->pszCertificate?pCertEntry->pszCertificate:""
             );
 
@@ -517,7 +517,7 @@ VecsCliGetCertificateA(
     {
         fprintf (
               stdout,
-              "%s",
+              "%s\n",
               pCertEntry->pszCertificate?pCertEntry->pszCertificate:""
               );
     }
@@ -608,7 +608,7 @@ DWORD VecsCliGetKeyA(
 
     if (!(IsNullOrEmptyString(pszOutputFilePath)))
     {
-        dwError = VmAfdOpenFilePath(pszOutputFilePath, "w+", &stream);
+        dwError = VmAfdOpenFilePath(pszOutputFilePath, "w+", &stream, 0);
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
@@ -622,7 +622,7 @@ DWORD VecsCliGetKeyA(
     {
         fprintf(
             stream,
-            "%s",
+            "%s\n",
             pszKey?pszKey:""
             );
 
@@ -636,7 +636,7 @@ DWORD VecsCliGetKeyA(
     {
         fprintf (
               stdout,
-              "%s",
+              "%s\n",
               pszKey?pszKey:""
               );
     }
@@ -885,7 +885,7 @@ VecsCliReadFromFile(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    dwError = VmAfdOpenFilePath(pszFilePath, "r", &stream);
+    dwError = VmAfdOpenFilePath(pszFilePath, "r", &stream, 0);
     if (!stream)
     {
         fprintf (

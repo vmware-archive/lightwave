@@ -20,10 +20,7 @@ import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.fail;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashSet;
+import java.security.cert.X509Certificate;
 
 import junit.framework.Assert;
 
@@ -31,18 +28,18 @@ import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vmware.identity.idm.DomainType;
-import com.vmware.identity.idm.IIdentityStoreData;
-import com.vmware.identity.idm.IIdentityStoreDataEx;
-import com.vmware.identity.idm.IdentityStoreData;
+import com.vmware.identity.idm.CertificateRevocationCheckException;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.sts.idm.Authenticator;
+import com.vmware.identity.sts.idm.IdmSecureIDNewPinException;
 import com.vmware.identity.sts.idm.LockedUserAccountException;
 import com.vmware.identity.sts.idm.PasswordExpiredException;
 import com.vmware.identity.sts.idm.STSConfigExtractor;
 import com.vmware.identity.sts.idm.STSConfiguration;
+import com.vmware.identity.sts.idm.UserCertificateValidateException;
 
 /**
  * Insert your comment for AuthenticatorImpl here
@@ -52,9 +49,11 @@ public final class AuthenticatorImplTest {
    private static final String TENANT_NAME = "tenant1";
    private static final String ISSUER = "issuer";
    private static final long DEFAULT_CLOCK_TOLERANCE = 1000;
-   private static final String SYSTEM_DOMAIN_NAME = "sysDomain";
    private static final String USER_UPN = "user@domain.com";
    private static final String PASSWORD = "password";
+   private static final X509Certificate[] X509CERTIFICATE_CHAIN = new X509Certificate[]{};
+   private static final String PASSCODE = "passcode";
+   private static final String CONTEXT_ID = "context";
 
    private Tenant tenant;
 
@@ -84,7 +83,6 @@ public final class AuthenticatorImplTest {
    public void testFailAuthentication_PasswordExpired() throws Exception {
       final CasIdmClient client = createMock(CasIdmClient.class);
 
-      Collection<IIdentityStoreData> sysDomainCol = createSysDomain();
       expect(client.authenticate(eq(TENANT_NAME), eq(USER_UPN), eq(PASSWORD)))
          .andThrow(
             new com.vmware.identity.idm.PasswordExpiredException(
@@ -107,7 +105,6 @@ public final class AuthenticatorImplTest {
    public void testFailAuthentication_LockedUser() throws Exception {
       final CasIdmClient client = createMock(CasIdmClient.class);
 
-      Collection<IIdentityStoreData> sysDomainCol = createSysDomain();
       expect(client.authenticate(eq(TENANT_NAME), eq(USER_UPN), eq(PASSWORD)))
          .andThrow(new UserAccountLockedException("account locked"));
 
@@ -118,6 +115,46 @@ public final class AuthenticatorImplTest {
          authenticator.authenticate(USER_UPN, PASSWORD);
          fail("User account locked exception should be thrown from authentication.");
       } catch (LockedUserAccountException e) {
+         // expected
+      }
+
+      verify(client);
+   }
+
+   @Test
+   public void testFailAuthentication_CertificateRevocation() throws Exception {
+      final CasIdmClient client = createMock(CasIdmClient.class);
+
+      expect(client.authenticate(eq(TENANT_NAME), eq(X509CERTIFICATE_CHAIN),null))
+         .andThrow(new CertificateRevocationCheckException("Certificate revoked."));
+
+      replay(client);
+
+      Authenticator authenticator = new AuthenticatorImpl(client, TENANT_NAME);
+      try {
+         authenticator.authenticate(X509CERTIFICATE_CHAIN);
+         fail("User certificate validate exception should be thrown from authentication.");
+      } catch (UserCertificateValidateException e) {
+         // expected
+      }
+
+      verify(client);
+   }
+
+   @Test
+   public void testFailAuthentication_IDMSecureIDNewPin() throws Exception {
+      final CasIdmClient client = createMock(CasIdmClient.class);
+
+      expect(client.authenticateRsaSecurId(eq(TENANT_NAME), eq(CONTEXT_ID), eq(USER_UPN), eq(PASSCODE)))
+         .andThrow(new IDMSecureIDNewPinException("New Pin required for SecurID."));
+
+      replay(client);
+
+      Authenticator authenticator = new AuthenticatorImpl(client, TENANT_NAME);
+      try {
+         authenticator.authenticate(USER_UPN, CONTEXT_ID, PASSCODE);
+         fail("Idm SecureID new pin exception should be thrown from authentication.");
+      } catch (IdmSecureIDNewPinException e) {
          // expected
       }
 
@@ -152,13 +189,5 @@ public final class AuthenticatorImplTest {
 
       EasyMock.replay(identityManagerClient);
       return identityManagerClient;
-   }
-
-   private Collection<IIdentityStoreData> createSysDomain() {
-      Collection<IIdentityStoreData> sysDomainCol = new HashSet<IIdentityStoreData>();
-      IIdentityStoreData sysDomain = IdentityStoreData
-         .CreateSystemIdentityStoreData(SYSTEM_DOMAIN_NAME);
-      sysDomainCol.add(sysDomain);
-      return sysDomainCol;
    }
 }

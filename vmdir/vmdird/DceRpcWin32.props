@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(SolutionDir)..\thirdparty\openldap\include;$(SolutionDir)..\common\win;$(SolutionDir)..\include;$(SolutionDir)..\include\public;$(SolutionDir)..\include\win;$(LIGHTWAVE_LIKEWISE_ROOT)\include\win32;$(LIGHTWAVE_LIKEWISE_ROOT)\include;$(SolutionDir)..\thirdparty\openldap\libraries\libldap;$(SolutionDir)..\thirdparty\openldap\libraries\mdb;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_DCERPC_WIN32;HAVE_PTHREADS_WIN32;HAVE_NCACN_IP_TCP;UUID_DEFINED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>dcelib.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>

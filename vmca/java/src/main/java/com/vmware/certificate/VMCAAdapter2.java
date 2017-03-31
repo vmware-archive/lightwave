@@ -54,6 +54,7 @@ public final class VMCAAdapter2 {
 
    static {
       final String VMCA_LIB64_PATH = "/opt/vmware/lib64";
+      final String VMCA_VC_LIB64_PATH = "/usr/lib/vmware-vmca/lib64";
       final String LIKEWISE_LIB64_PATH = "/opt/likewise/lib64";
       final String LIB_PATH = "/usr/lib";
       final String LIB_PATH_64 = "/usr/lib64";
@@ -66,7 +67,7 @@ public final class VMCAAdapter2 {
             new StringBuilder(propValue == null ? "" : propValue);
 
       String paths[] =
-            { LIB_PATH_64, LIB_PATH, LIKEWISE_LIB64_PATH, VMCA_LIB64_PATH };
+            { VMCA_VC_LIB64_PATH, LIB_PATH_64, LIB_PATH, LIKEWISE_LIB64_PATH, VMCA_LIB64_PATH};
 
       for (String path : paths) {
          File libDir = new File(path);

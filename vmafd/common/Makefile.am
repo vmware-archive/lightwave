@@ -10,6 +10,8 @@
 noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES = \
+    acl.c \
+    buffer.c \
     certutil.c \
     fsapi.c \
     globals.c \
@@ -19,6 +21,7 @@ libcommon_la_SOURCES = \
     misc.c    \
     networkutiluniximpl.c \
     networkutil.c    \
+    security-sd.c \
     securityutil.c   \
     securityutiluniximpl.c  \
     string.c  \

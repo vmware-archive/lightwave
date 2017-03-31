@@ -27,7 +27,7 @@ VecsDbGetSecurityDescriptor (
             );
 
 DWORD
-  VecsDbEnumFilteredStores (
+VecsDbEnumFilteredStores (
             PBYTE pSecurityContextBlob,
             DWORD dwSizeOfContext,
             PWSTR **ppwszStoreNames,

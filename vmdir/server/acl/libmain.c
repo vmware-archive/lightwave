@@ -39,6 +39,12 @@ VmDirFreeSidGenState(
     PVDIR_SID_GEN_STATE pGsidGenState
     );
 
+static
+BOOLEAN
+_VmDirIsLegacyACLMode(
+    VOID
+    );
+
 DWORD
 VmDirVmAclInit(
     VOID
@@ -59,6 +65,8 @@ VmDirVmAclInit(
 
     dwError = VmDirInitRidSynchThr( &(gSidGenState.pRIDSyncThr) );
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    bLegacySecurityDescriptorsNeeded = _VmDirIsLegacyACLMode();
 
 cleanup:
     return dwError;
@@ -99,6 +107,26 @@ VmDirVmAclShutdown(
     VmDirFreeSidGenState(&gSidGenState);
 
     return;
+}
+
+
+DWORD
+VmDirRegisterACLMode(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = VmDirBackendUniqKeySetValue(
+                VMDIR_KEY_BE_GENERIC_ACL_MODE,
+                VMDIR_ACL_MODE_ENABLED,
+                TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
 }
 
 static
@@ -236,4 +264,43 @@ VmDirFreeSidGenState(
 
 cleanup:
     return;
+}
+
+VOID
+VmDirSetACLMode(
+    VOID
+    )
+{
+    bLegacySecurityDescriptorsNeeded = _VmDirIsLegacyACLMode();
+}
+
+static
+BOOLEAN
+_VmDirIsLegacyACLMode(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bIsLegacy = TRUE;
+    PSTR pValue = NULL;
+
+    dwError = VmDirBackendUniqKeyGetValue(
+                VMDIR_KEY_BE_GENERIC_ACL_MODE,
+                &pValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // We should have value "enabled" found for ACL enabled case.
+    bIsLegacy = VmDirStringCompareA(pValue, VMDIR_ACL_MODE_ENABLED, FALSE) != 0;
+
+cleanup:
+    if (bIsLegacy)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "ACL MODE: Legacy");
+    }
+    VMDIR_SAFE_FREE_MEMORY(pValue);
+
+    return bIsLegacy;
+
+error:
+    goto cleanup;
 }

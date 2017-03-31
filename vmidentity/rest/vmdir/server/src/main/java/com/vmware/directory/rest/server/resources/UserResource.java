@@ -89,9 +89,8 @@ public class UserResource extends BaseSubResource {
     public UserDTO create(UserDTO user) {
         Validate.isTrue(getSystemDomain().equalsIgnoreCase(user.getDomain()), sm.getString("valid.not.systemdomain", user.getDomain(), tenant));
         try {
-
-            boolean disabled = user.isDisabled();
-            boolean locked = user.isLocked();
+            boolean disabled = user.isDisabled() != null ? user.isDisabled() : false;
+            boolean locked = user.isLocked() != null ? user.isLocked() : false;
             if (disabled && locked) {
                 throw new BadRequestException("A disabled user cannot be locked");
             }

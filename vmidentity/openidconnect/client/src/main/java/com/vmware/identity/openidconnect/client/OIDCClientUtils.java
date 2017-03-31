@@ -79,7 +79,6 @@ import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
  */
 class OIDCClientUtils {
     static final int DEFAULT_OP_PORT = 443;
-    static final String DEFAULT_TENANT = "vsphere.local";
     static final int HTTP_CLIENT_TIMEOUT_MILLISECS = 60 * 1000; // set HTTP Client timeout to be 60 seconds.
 
     static HttpResponse sendSecureRequest(HttpRequest httpRequest, KeyStore keyStore) throws OIDCClientException, SSLConnectionException {
@@ -218,6 +217,7 @@ class OIDCClientUtils {
             TokenSpec tokenSpec,
             URI tokenEndpointURI,
             ClientID clientId,
+            ClientAuthenticationMethod clientAuthenticationMethod,
             HolderOfKeyConfig holderOfKeyConfig) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         Validate.notNull(grant, "grant");
         Validate.notNull(tokenSpec, "tokenSpec");
@@ -228,12 +228,10 @@ class OIDCClientUtils {
         SolutionUserAssertion solutionUserAssertion = null;
         ClientAssertion clientAssertion = null;
 
-        if (holderOfKeyConfig != null) {
-            if (clientId == null) {
-                solutionUserAssertion = createSolutionUserAssertion(holderOfKeyConfig, tokenEndpointURI);
-            } else {
-                clientAssertion = createClientAssertion(clientId, holderOfKeyConfig, tokenEndpointURI);
-            }
+        if (clientAuthenticationMethod == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
+            clientAssertion = createClientAssertion(clientId, holderOfKeyConfig, tokenEndpointURI);
+        } else if (holderOfKeyConfig != null) {
+            solutionUserAssertion = createSolutionUserAssertion(holderOfKeyConfig, tokenEndpointURI);
         }
 
         if (grant instanceof SolutionUserCredentialsGrant && solutionUserAssertion == null) {
@@ -250,6 +248,7 @@ class OIDCClientUtils {
                 tokenSpec == TokenSpec.EMPTY ? null : scope,
                 solutionUserAssertion,
                 clientAssertion,
+                clientId,
                 new CorrelationID());
     }
 
@@ -258,6 +257,7 @@ class OIDCClientUtils {
             TokenSpec tokenSpec,
             URI tokenEndpointURI,
             ClientID clientId,
+            ClientAuthenticationMethod clientAuthenticationMethod,
             HolderOfKeyConfig holderOfKeyConfig,
             KeyStore keyStore) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         Validate.notNull(grant, "grant");
@@ -270,6 +270,7 @@ class OIDCClientUtils {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig);
 
         return OIDCClientUtils.sendSecureRequest(tokenRequest.toHttpRequest(), keyStore);
@@ -367,6 +368,7 @@ class OIDCClientUtils {
             TokenSpec tokenSpec,
             URI tokenEndpointURI,
             ClientID clientId,
+            ClientAuthenticationMethod clientAuthenticationMethod,
             HolderOfKeyConfig holderOfKeyConfig,
             KeyStore keyStore,
             String contextId) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
@@ -379,6 +381,7 @@ class OIDCClientUtils {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore);
 
@@ -398,6 +401,7 @@ class OIDCClientUtils {
                                 tokenSpec,
                                 tokenEndpointURI,
                                 clientId,
+                                clientAuthenticationMethod,
                                 holderOfKeyConfig,
                                 keyStore);
                     } else {
@@ -421,6 +425,7 @@ class OIDCClientUtils {
             TokenSpec tokenSpec,
             URI tokenEndpointURI,
             ClientID clientId,
+            ClientAuthenticationMethod clientAuthenticationMethod,
             HolderOfKeyConfig holderOfKeyConfig,
             KeyStore keyStore) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
 
@@ -429,6 +434,7 @@ class OIDCClientUtils {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore);
 
@@ -448,6 +454,7 @@ class OIDCClientUtils {
                         tokenSpec,
                         tokenEndpointURI,
                         clientId,
+                        clientAuthenticationMethod,
                         holderOfKeyConfig,
                         keyStore);
             } else {

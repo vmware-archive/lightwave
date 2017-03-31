@@ -74,6 +74,19 @@ public class ResourceServerAccessTokenTest {
     }
 
     @Test
+    public void testBuildAccessTokenNoResourceServer() throws Exception {
+
+        ResourceServerAccessToken accessToken = ResourceServerAccessToken.build(
+                TestUtils.buildBaseToken(issuer, resourceServer, TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, tokenLifeTime),
+                providerPublicKey,
+                issuer,
+                null, // resourceServer
+                0L);
+        Assert.assertTrue(accessToken.getAudience().contains(resourceServer));
+        Assert.assertEquals(issuer, accessToken.getIssuer());
+    }
+
+    @Test
     public void testBuildAccessTokenByBuilder() throws Exception {
 
         Date now = new Date();
@@ -121,6 +134,7 @@ public class ResourceServerAccessTokenTest {
                     issuer,
                     resourceServer,
                     0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.INVALID_SIGNATURE, e.getTokenValidationError());
         }
@@ -138,23 +152,49 @@ public class ResourceServerAccessTokenTest {
                     issuer,
                     anotherResourceServer,
                     0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.INVALID_AUDIENCE, e.getTokenValidationError());
         }
     }
 
     @Test
-    public void testBuildAccessTokenExpiredToken() throws Exception {
+    public void testBuildAccessTokenExpiredTokenNotBefore() throws Exception {
+
+        Date now = new Date();
+        Date issueTime = new Date(now.getTime() + 1*60*1000L); // issued in the future
+        Date expirationTime = new Date(now.getTime() + 2*60*1000L);
 
         try {
             ResourceServerAccessToken.build(
-                    TestUtils.buildBaseToken(issuer, resourceServer, TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, -tokenLifeTime),
+                    TestUtils.buildBaseToken(issuer, resourceServer, TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, issueTime, expirationTime),
                     providerPublicKey,
                     issuer,
                     resourceServer,
                     0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
-            Assert.assertEquals(TokenValidationError.PARSE_ERROR, e.getTokenValidationError());
+            Assert.assertEquals(TokenValidationError.EXPIRED_TOKEN, e.getTokenValidationError());
+        }
+    }
+
+    @Test
+    public void testBuildAccessTokenExpiredTokenNotAfter() throws Exception {
+
+        Date now = new Date();
+        Date issueTime = new Date(now.getTime() - 2*60*1000L);
+        Date expirationTime = new Date(now.getTime() - 1*60*1000L); // expired
+
+        try {
+            ResourceServerAccessToken.build(
+                    TestUtils.buildBaseToken(issuer, resourceServer, TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, issueTime, expirationTime),
+                    providerPublicKey,
+                    issuer,
+                    resourceServer,
+                    0L);
+            Assert.fail("expecting TokenValidationException");
+        } catch (TokenValidationException e) {
+            Assert.assertEquals(TokenValidationError.EXPIRED_TOKEN, e.getTokenValidationError());
         }
     }
 
@@ -168,6 +208,7 @@ public class ResourceServerAccessTokenTest {
                     issuer,
                     resourceServer,
                     0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.PARSE_ERROR, e.getTokenValidationError());
         }
@@ -181,7 +222,7 @@ public class ResourceServerAccessTokenTest {
                 providerPublicKey,
                 issuer,
                 resourceServer,
-                tokenLifeTime);
+                5 * 60L /* clockToleranceInSeconds */);
         Assert.assertTrue(accessToken.getAudience().contains(resourceServer));
         Assert.assertEquals(issuer, accessToken.getIssuer());
     }

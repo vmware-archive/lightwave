@@ -245,7 +245,8 @@ ProcessJoin(
     {
         PARSE_MODE_OPEN = 0,
         PARSE_MODE_ACCOUNT,
-        PARSE_MODE_PASSWORD
+        PARSE_MODE_PASSWORD,
+        PARSE_MODE_ORGUNIT
     } PARSE_MODE;
 
     DWORD dwError = 0;
@@ -254,6 +255,7 @@ ProcessJoin(
     PSTR pszPassword = NULL;
     PSTR pszPasswordNew = NULL;
     PSTR pszDomain = NULL;
+    PSTR pszOrgUnit = NULL;
     PARSE_MODE mode = PARSE_MODE_OPEN;
 
     if (!argc)
@@ -278,6 +280,10 @@ ProcessJoin(
                 {
                     mode = PARSE_MODE_PASSWORD;
                 }
+                else if (!VmAfdStringCompareA(pszArg, "--orgunit", TRUE))
+                {
+                    mode = PARSE_MODE_ORGUNIT;
+                }
                 else
                 {
                     if (pszDomain)
@@ -301,6 +307,14 @@ ProcessJoin(
             case PARSE_MODE_PASSWORD:
 
                 pszPassword = pszArg;
+
+                mode = PARSE_MODE_OPEN;
+
+                break;
+
+            case PARSE_MODE_ORGUNIT:
+
+                pszOrgUnit = pszArg;
 
                 mode = PARSE_MODE_OPEN;
 
@@ -340,7 +354,7 @@ ProcessJoin(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdJoinDomain(pszDomain, pszLogin, pszPassword);
+    dwError = VmAfdJoinDomain(pszDomain, pszLogin, pszPassword, pszOrgUnit);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -569,6 +583,7 @@ ShowUsage(
         "Usage: domain-join { arguments }\n\n"
         "Arguments:\n\n"
         "\tjoin <domain-name>\n"
+        "\t     [ --orgunit <organizational unit> ]\n"
         "\t     [ --username <account name> ]\n"
         "\t     [ --password <password> ]\n"
         "\tleave\n"

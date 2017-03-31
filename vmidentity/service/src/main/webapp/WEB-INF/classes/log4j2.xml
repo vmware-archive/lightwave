@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="5">
+    <Appenders>
+        <!-- CONSOLE appender might be used for development purposes only! -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n"/>
+        </Console>
+
+    <!-- VMEVENTLOG is the vmevent log appender -->
+    <VMEventAppender name="VMEVENTLOG" category="VMEVENT_CATEGORY_STS">
+</VMEventAppender>
+    <RollingFile name="STSPERFLOG" fileName="${sys:catalina.base}/logs/vmware-identity-sts-perf.log" filePattern="${sys:catalina.base}/logs/vmware-identity-sts-perf-%i.log.gz" append="true">
+        <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <PatternLayout pattern="[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %x] %m%n"/>
+        <Policies>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
+    <RollingFile name="Rolling-rest-idm" fileName="${sys:catalina.base}/logs/vmware-rest-idm.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-idm-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+           <DefaultRolloverStrategy max="10" />
+    </RollingFile>
+
+    <RollingFile name="Rolling-rest-afd" fileName="${sys:catalina.base}/logs/vmware-rest-afd.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-afd-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            <DefaultRolloverStrategy max="10" />
+    </RollingFile>
+
+    <RollingFile name="Rolling-rest-vmdir" fileName="${sys:catalina.base}/logs/vmware-rest-vmdir.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-vmdir-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+           <DefaultRolloverStrategy max="10" />
+    </RollingFile>
+
+        <RollingFile name="Rolling-rest-lookup" fileName="${sys:catalina.base}/logs/vmware-rest-lookup.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-lookup-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+           <DefaultRolloverStrategy max="10" />
+    </RollingFile>
+
+    <RollingFile name="Rolling-openidconnect" fileName="${sys:catalina.base}/logs/openidconnect.log"
+                       filePattern="${sys:catalina.base}/logs/openidconnect-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            <DefaultRolloverStrategy max="10" />
+    </RollingFile>
+
+    <RollingFile name="Rolling-websso" fileName="${sys:catalina.base}/logs/websso.log"
+                       filePattern="${sys:catalina.base}/logs/websso-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            <DefaultRolloverStrategy max="10" />
+     </RollingFile>
+
+     <RollingFile name="Rolling-sts" fileName="${sys:catalina.base}/logs/vmware-identity-sts.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-identity-sts-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            <DefaultRolloverStrategy max="10" />
+     </RollingFile>
+
+     <RollingFile name="Rolling-ssoAdminServer" fileName="${sys:catalina.base}/logs/ssoAdminServer.log"
+                       filePattern="${sys:catalina.base}/logs/ssoAdminServer-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}][%X{id}] %c{1} - %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            <DefaultRolloverStrategy max="10" />
+      </RollingFile>
+
+      <RollingFile name="Rolling-lookupService" fileName="${sys:catalina.base}/logs/lookupServer.log"
+                       filePattern="${sys:catalina.base}/logs/lookupServer-%i.log.gz">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+            <PatternLayout>
+              <pattern>[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}][%X{id}] %c{1} - %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+            <DefaultRolloverStrategy max="10" />
+      </RollingFile>
+
+    <Routing name="Routing">
+      <Routes pattern="$${ctx:service}">
+
+      <!-- All the routing keys are matched against constants defined under com.vmware.identity.diagnostics.StsLogDiagnosticsFilter-->
+
+      <!-- Route : REST IDM Application LOG4J2 Configuration -->
+      <Route key="idm" ref="Rolling-rest-idm"/>
+
+      <!-- Route : REST AFD Application LOG4J2 Configuration -->
+      <Route key="afd" ref="Rolling-rest-afd" />
+
+      <!-- Route : REST VMDIR Application LOG4J2 Configuration -->
+      <Route key="vmdir" ref="Rolling-rest-vmdir" />
+
+      <!-- Route : REST lookup Application LOG4J2 Configuration -->
+      <Route key="lookup" ref="Rolling-rest-lookup" />
+
+      <!-- Route : OPENIDCONNECT Application LOG4J2 Configuration -->
+      <Route key="openidconnect" ref="Rolling-openidconnect" />
+
+      <!-- Route : WEBSSO Application LOG4J2 Configuration -->
+      <Route key="websso" ref="Rolling-websso" />
+
+      <!-- Route : STS Application LOG4J2 Configuration -->
+      <Route key="sts" ref="Rolling-sts" />
+
+      <!-- Route : SSO-ADMINSERVER Application LOG4J2 Configuration -->
+      <Route key="ssoAdminServer" ref="Rolling-ssoAdminServer" />
+
+      <!-- Route : LEGACY-LOOKUPSERVER Application LOG4J2 Configuration -->
+      <Route key="lookupServer" ref="Rolling-lookupService" />
+
+      <!-- Route : DEFAULT STS Application LOG4J2 Configuration -->
+        <Route>
+          <RollingFile name="Rolling-sts-default" fileName="${sys:catalina.base}/logs/vmware-identity-sts-default.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-identity-sts-default-%i.log.gz">
+            <PatternLayout>
+              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
+            </PatternLayout>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+           <DefaultRolloverStrategy max="10" />
+          </RollingFile>
+        </Route>
+      </Routes>
+    </Routing>
+  </Appenders>
+
+ <!-- Set appropriate log levels for third party packages -->
+   <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Routing"/>
+        </Root>
+    <!-- STS Performance Logs -->
+    <Logger name="com.vmware.identity.perf" level="info">
+        <AppenderRef ref="STSPERFLOG"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.performanceSupport.PerfDataSink" level="info">
+         <AppenderRef ref="STSPERFLOG"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.performanceSupport.PerformanceDecorator" level="info">
+        <AppenderRef ref="STSPERFLOG"/>
+    </Logger>
+    <Logger additivity="true" name="com.vmware.identity.sts.ws.handlers.SoapMsgMetricsCollector" level="info">
+        <AppenderRef ref="STSPERFLOG"/>
+    </Logger>
+    <logger additivity="FALSE" name="vmevent.com.vmware.identity" level="info">
+                  <AppenderRef ref="VMEVENTLOG"/>
+    </logger>
+  </Loggers>
+
+</Configuration>
+

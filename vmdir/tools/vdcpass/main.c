@@ -35,9 +35,26 @@ VmDirMain(int argc, char* argv[])
     CHAR    pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = {0};
     COMMAND_LINE_STATE State = { 0 };
 
+    VMDIR_COMMAND_LINE_OPTION Options[] =
+    {
+            {'h', "host", CL_STRING_PARAMETER, &State.pszHostName},
+            {'u', "username", CL_STRING_PARAMETER, &State.pszLoginUserUPN},
+            {'U', "newuser", CL_STRING_PARAMETER, &State.pszUserUPN},
+            {'w', "password", CL_STRING_PARAMETER, &State.pszLoginPassword},
+            {'W', "newpass", CL_STRING_PARAMETER, &State.pszNewPassword},
+            {0, 0, 0, 0}
+    };
+
+    VMDIR_PARSE_ARG_CALLBACKS Callbacks =
+    {
+            PostValidationRoutine,
+            ShowUsage,
+            &State
+    };
+
     dwError = VmDirParseArguments(
-                &CommandLineOptions,
-                &State,
+                Options,
+                &Callbacks,
                 argc,
                 argv);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -80,7 +97,7 @@ VmDirMain(int argc, char* argv[])
 cleanup:
 
     memset(pszPasswordBuf, 0, sizeof(pszPasswordBuf));
-
+    FreeCLStateContent(&State);
     return dwError;
 
 error:

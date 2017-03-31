@@ -421,8 +421,26 @@ DWORD
 VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN     OPTIONAL */
     PCWSTR pwszUserName,    /* IN              */
-    PCWSTR pszPassword,      /* IN              */
+    PCWSTR pszPassword,     /* IN              */
     DWORD dwLeaveFlags      /* IN              */
+    );
+
+DWORD
+VmAfdCreateComputerAccountA(
+    PCSTR pszUserName,        /* IN              */
+    PCSTR pszPassword,        /* IN              */
+    PCSTR pszMachineName,     /* IN              */
+    PCSTR pszOrgUnit,         /* IN     OPTIONAL */
+    PSTR* ppszOutPassword     /* OUT             */
+    );
+
+DWORD
+VmAfdCreateComputerAccountW(
+    PCWSTR pwszUserName,      /* IN              */
+    PCWSTR pwszPassword,      /* IN              */
+    PCWSTR pwszMachineName,   /* IN              */
+    PCWSTR pwszOrgUnit,       /* IN     OPTIONAL */
+    PWSTR* ppwszOutPassword   /* OUT             */
     );
 
 DWORD
@@ -476,6 +494,14 @@ VmAfdQueryADW(
     );
 
 DWORD
+VmAfdGetDCList (
+    PCSTR  pszServerName,
+    PCSTR  pszDomain,
+    PDWORD pdwServerCount,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+    );
+
+DWORD
 VmAfdForceReplicationA(
     PCSTR pszServerName       /* IN              */
     );
@@ -493,7 +519,12 @@ VmAfdFreeCertArray(
 VOID
 VmAfdFreeString(
     PSTR pszString
-);
+    );
+
+VOID
+VmAfdFreeWString(
+    PWSTR pwszString
+    );
 
 DWORD
 VmAfdGetSSLCertificate(
@@ -681,6 +712,20 @@ VmAfdSuperLogDisable(
     PVMAFD_SERVER    pServer
     );
 
+DWORD
+VmAfdChangePNIDA(
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszPNID
+    );
+
+DWORD
+VmAfdChangePNIDW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszPNID
+    );
+
 #ifdef UNICODE
 
 #define VmAfdOpenServer                 VmAfdOpenServerW
@@ -704,6 +749,7 @@ VmAfdSuperLogDisable(
 #define VmAfdDemoteVmDir                VmAfdDemoteVmDirW
 #define VmAfdJoinVmDir                  VmAfdJoinVmDirW
 #define VmAfdLeaveVmDir                 VmAfdLeaveVmDirW
+#define VmAfdCreateComputerAccount      VmAfdCreateComputerAccountW
 #define VmAfdJoinAD                     VmAfdJoinADW
 #define VmAfdLeaveAD                    VmAfdLeaveADW
 #define VmAfdQueryAD                    VmAfdQueryADW
@@ -738,6 +784,7 @@ VmAfdSuperLogDisable(
 #define VmAfdDemoteVmDir                VmAfdDemoteVmDirA
 #define VmAfdJoinVmDir                  VmAfdJoinVmDirA
 #define VmAfdLeaveVmDir                 VmAfdLeaveVmDirA
+#define VmAfdCreateComputerAccount      VmAfdCreateComputerAccountA
 #define VmAfdJoinAD                     VmAfdJoinADA
 #define VmAfdLeaveAD                    VmAfdLeaveADA
 #define VmAfdQueryAD                    VmAfdQueryADA

@@ -13,6 +13,7 @@ import com.sun.jna.Structure;
 public class DeployUtilsParamsNative extends Structure {
     public String pszHostname;
     public String pszMachineAccount;
+    public String pszOrgUnit;
     public String pszDomainName;
     public String pszPassword;
     public int    dir_svc_mode;
@@ -34,6 +35,7 @@ public class DeployUtilsParamsNative extends Structure {
 
         this.pszHostname = hostname;
         this.pszMachineAccount = "";
+        this.pszOrgUnit = "";
         this.pszDomainName = domainName;
         this.pszPassword = password;
         this.dir_svc_mode = mode;
@@ -50,6 +52,7 @@ public class DeployUtilsParamsNative extends Structure {
         return Arrays.asList(new String[] {
                 "pszHostname",
                 "pszMachineAccount",
+                "pszOrgUnit",
                 "pszDomainName",
                 "pszPassword",
                 "dir_svc_mode",

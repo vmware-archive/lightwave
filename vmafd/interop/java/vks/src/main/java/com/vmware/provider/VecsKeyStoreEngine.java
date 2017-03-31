@@ -32,6 +32,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.Vector;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -41,6 +42,7 @@ import com.vmware.identity.vecs.VecsEntryInfoLevel;
 import com.vmware.identity.vecs.VecsEntryType;
 import com.vmware.identity.vecs.VecsGenericException;
 import com.vmware.identity.vecs.VecsStoreFactory;
+import com.vmware.identity.vecs.VecsEntryEnumeration;
 
 /**
  * VECS implementation of the KeyStoreSpi.
@@ -61,8 +63,8 @@ final public class VecsKeyStoreEngine extends KeyStoreSpi {
     */
    public Enumeration<String> engineAliases() {
       Enumeration<String> aliasEnum = Collections.emptyEnumeration();
+      VecsEntryEnumeration entryEnum = null;
       try {
-         Enumeration<VecsEntry> entryEnum = null;
          synchronized(_monitor) {
             try {
                _vecs.openStore();
@@ -72,9 +74,14 @@ final public class VecsKeyStoreEngine extends KeyStoreSpi {
                _vecs.closeStore();
             }
          }
-        aliasEnum = new AliasEnumeration(entryEnum);
+        aliasEnum = getAliases(entryEnum);
       } catch(VecsGenericException vge) {
          throw new VecsException(vge);
+      } finally {
+         if (entryEnum != null)
+         {
+            entryEnum.close();
+         }
       }
       return aliasEnum;
    }
@@ -443,41 +450,14 @@ final public class VecsKeyStoreEngine extends KeyStoreSpi {
       }
    }
 
-   private static class AliasEnumeration implements Enumeration<String> {
-      private final Enumeration<VecsEntry> _entryEnum;
-      private VecsEntry _nextEntry = null;
-
-      public AliasEnumeration(Enumeration<VecsEntry> entryEnum) {
-         _entryEnum = entryEnum;
-         updateNextEntry2NonCRLEntry();
-      }
-
-      @Override
-      synchronized public boolean hasMoreElements() {
-         return (_nextEntry != null);
-      }
-
-      @Override
-      synchronized public String nextElement() {
-         try {
-            String nextAlias = _nextEntry.alias;
-            updateNextEntry2NonCRLEntry();
-            return nextAlias;
-         } catch(VecsGenericException vge) {
-            throw new VecsException(vge);
-         }
-      }
-
-      synchronized private void updateNextEntry2NonCRLEntry() {
-         VecsEntry nextEntry = null;
-         while (_entryEnum.hasMoreElements()) {
-            VecsEntry currEntry= _entryEnum.nextElement();
-            if (currEntry.entryType != VecsEntryType.CERT_ENTRY_TYPE_CRL) {
-               nextEntry = currEntry;
-               break;
-            }
-         }
-         _nextEntry = nextEntry;
-      }
-   }
+   private Enumeration<String> getAliases(Enumeration<VecsEntry> entryEnum) {
+		Vector<String> aliases = new Vector<String>();
+		while (entryEnum.hasMoreElements()) {
+			VecsEntry currEntry = entryEnum.nextElement();
+			if (currEntry.entryType != VecsEntryType.CERT_ENTRY_TYPE_CRL) {
+				aliases.add(currEntry.alias);
+			}
+		}
+		return aliases.elements();
+	}
 }

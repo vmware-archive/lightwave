@@ -58,9 +58,17 @@ srp_gen_keyblock(
     char *salt,
     krb5_keyblock *key);
 
+#ifdef SRP_FIPS_ENABLED
+krb5_error_code
+srp_make_enc_keyblock_FIPS(
+    srp_gss_ctx_id_t srp_context_handle);
+
+#else 
+
 krb5_error_code
 srp_make_enc_keyblock(
     srp_gss_ctx_id_t srp_context_handle);
+#endif
 
 int
 srp_encrypt_aes256_hmac_sha1(

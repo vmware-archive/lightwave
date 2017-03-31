@@ -77,6 +77,9 @@ int main( int argc, char * argv[] )
     SRP_HashAlgorithm alg     = TEST_HASH;
     SRP_NGType        ng_type = SRP_NG_8192; //TEST_NG;
     
+    /* Force FIPS compliant HASH (SHA1) */
+    FIPS_mode_set(1);
+
     if (ng_type == SRP_NG_CUSTOM)
     {
         n_hex = test_n_hex;

@@ -277,7 +277,7 @@ AC_SUBST(ANT_CLASSPATH)
 
 # Likewise components
 
-KRB5_DEFAULT_ENABLED="yes"
+KRB5_DEFAULT_ENABLED="no"
 AC_ARG_ENABLE([krb5-default],
     [AC_HELP_STRING([--enable-krb5-default], [enable default krb5.conf/krb5.keytab (default: disabled)])],
     [

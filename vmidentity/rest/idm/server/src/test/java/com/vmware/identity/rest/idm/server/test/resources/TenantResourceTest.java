@@ -156,6 +156,7 @@ public class TenantResourceTest {
     private static final String OCSP_URL = "http://www.ocsp1.com";
     private static final String CRL_URL = "http://www.crl1.com";
     private static final String[] OBJECT_IDS = new String[] {"a", "b", "c"};
+    private static final Boolean HINT_ENABLED = true;
 
     private TenantResource tenantResource;
     private IMocksControl mControl;
@@ -429,6 +430,11 @@ public class TenantResourceTest {
         assertEquals(3, clientCertificatePolicy.getCertPolicyOIDs().size());
         assertNotNull(clientCertificatePolicy.getTrustedCACertificates());
         assertEquals(1, clientCertificatePolicy.getTrustedCACertificates().size());
+        if (HINT_ENABLED) {
+            assertTrue(clientCertificatePolicy.isUserNameHintEnabled());
+        } else {
+            assertTrue(!clientCertificatePolicy.isUserNameHintEnabled());
+        }
     }
 
     @Test
@@ -706,6 +712,7 @@ public class TenantResourceTest {
         cert.setCRLUrl(new URL(CRL_URL));
         cert.setOIDs(OBJECT_IDS);
         cert.setTrustedCAs(new Certificate[] {CertificateUtil.getTestCertificate()});
+        cert.setEnableHint(HINT_ENABLED);
 
         return new AuthnPolicy(true, true, true, cert);
     }

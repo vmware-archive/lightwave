@@ -284,33 +284,6 @@ VmDirdGetReplNow(
     return bReplNow;
 }
 
-VOID
-VmDirdSetLimitLocalUsnToBeSupplied(
-    USN usn
-    )
-{
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    gVmdirGlobals.limitLocalUsnToBeSupplied = usn;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-}
-
-USN
-VmDirdGetLimitLocalUsnToBeSupplied(
-    VOID
-    )
-{
-    USN usn = 0;
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    usn = gVmdirGlobals.limitLocalUsnToBeSupplied;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    return usn;
-}
-
 BOOLEAN
 VmDirdGetAllowInsecureAuth(
     VOID
@@ -422,6 +395,7 @@ VmDirServerStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        SERVER_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -497,17 +471,17 @@ VmDirReplicationStatusEntry(
 
     maxOriginatingUSN = backendCtx.pBE->pfnBEGetMaxOriginatingUSN( &backendCtx );
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszPartnerVisibleUSN,
+    dwError = VmDirAllocateStringPrintf( &pszPartnerVisibleUSN,
                                              "%u",
                                              maxPartnerVisibleUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszCycleCount,
+    dwError = VmDirAllocateStringPrintf( &pszCycleCount,
                                              "%u",
                                              VmDirGetReplCycleCounter());
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszMaxOriginatingUSN,
+    dwError = VmDirAllocateStringPrintf( &pszMaxOriginatingUSN,
                                              "%u",
                                              maxOriginatingUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -542,7 +516,7 @@ VmDirReplicationStatusEntry(
             dwError = VmDirAllocateStringA( ppszArray[dwCnt*3], &ppszAttrList[dwIndex++]);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirAllocateStringAVsnprintf( &(ppszAttrList[dwIndex++]),
+            dwError = VmDirAllocateStringPrintf( &(ppszAttrList[dwIndex++]),
                                                      "%s%s",
                                                      ppszArray[dwCnt*3+1] ? ppszArray[dwCnt*3+1] : "" ,
                                                      ppszArray[dwCnt*3+2] ? ppszArray[dwCnt*3+2] : "Unknown" );
@@ -556,6 +530,7 @@ VmDirReplicationStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        REPLICATION_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 

@@ -17,8 +17,8 @@ libsrvcommon_la_SOURCES = \
     security-sd.c         \
     srp.c                 \
     util.c                \
+    vmafdlib.c            \
     vmdirentry.c          \
-    urgentrepl.c          \
     vmdirtoldaperror.c
 
 libsrvcommon_la_CPPFLAGS = \

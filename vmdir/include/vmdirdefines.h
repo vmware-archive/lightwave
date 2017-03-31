@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+#define VMDIR_PCSTR_UNKNOWN "unknown"
+
 #ifdef _WIN32
     #define HAVE_LMDB_H
     #define PCVOID const PVOID
@@ -253,6 +255,14 @@ extern "C" {
         }                                 \
     } while(0)
 
+#define VMDIR_SAFE_FREE_RWLOCK(lock)      \
+    do {                                  \
+        if ((lock)) {                     \
+            VmDirFreeRWLock(lock);        \
+            (lock) = NULL;                \
+        }                                 \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_CONDITION(cond)   \
     do {                                  \
         if ((cond)) {                     \
@@ -291,6 +301,39 @@ extern "C" {
         }                                       \
     } while (0)
 
+#define VMDIR_RWLOCK_READLOCK(bInLock, lock, dwMilliSec)        \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmDirRWLockReadLock(lock, dwMilliSec) == 0)     \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_WRITELOCK(bInLock, lock, dwMilliSec)       \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmDirRWLockWriteLock(lock, dwMilliSec) == 0)    \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_UNLOCK(bInLock, lock)          \
+    do {                                            \
+        if ((bInLock))                              \
+        {                                           \
+            if (VmDirRWLockUnlock(lock) == 0)       \
+            {                                       \
+                (bInLock) = FALSE;                  \
+            }                                       \
+        }                                           \
+    } while (0)
+
 #define BAIL_WITH_VMDIR_ERROR(dwError, ERROR_CODE)                          \
     do {                                                                    \
         dwError = ERROR_CODE;                                               \
@@ -311,7 +354,7 @@ extern "C" {
     {                                                                       \
         if (pszErrMsg == NULL)                                              \
         {                                                                   \
-            VmDirAllocateStringAVsnprintf(                                  \
+            VmDirAllocateStringPrintf(                                      \
                             &(pszErrMsg),                                   \
                             Format,                                         \
                             ##__VA_ARGS__);                                 \
@@ -363,7 +406,7 @@ extern "C" {
         {                                                           \
             if (ldapErrMsg == NULL)                                 \
             {                                                       \
-                VmDirAllocateStringAVsnprintf(                      \
+                VmDirAllocateStringPrintf(                          \
                                 &(ldapErrMsg),                      \
                                 Format,                             \
                                 ##__VA_ARGS__);                     \
@@ -420,7 +463,7 @@ extern "C" {
             else                                                \
             {                                                   \
                 PSTR    pszTmp = pszOrgErrMsg;                  \
-                VmDirAllocateStringAVsnprintf(                  \
+                VmDirAllocateStringPrintf(                      \
                                 &(pszOrgErrMsg),                \
                                 "%s %s",                        \
                                 pszTmp, pszNewErrMsg);          \
@@ -649,6 +692,8 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define SECONDS_IN_HOUR   (SECONDS_IN_MINUTE * MINUTES_IN_HOUR)
 #define SECONDS_IN_DAY    (SECONDS_IN_HOUR * HOURS_IN_DAY)
 
+#define WIN_EPOCH 116444736000000000LL
+
 #ifdef _WIN32
 
 #define VMDIR_PATH_SEPARATOR_STR "\\"
@@ -671,6 +716,16 @@ if ( VMDIR_ASCII_UPPER(c) )             \
      (pAttr->vals[0].lberbv.bv_len > 0) &&          \
      (pAttr->vals[0].lberbv.bv_val != NULL))
 
+/*
+ * Set pointer P at the next Nth field from the current position in attr-value-meta-data
+ * attr-value-meta-data is delimited by ':'
+ */
+#define VALUE_META_TO_NEXT_FIELD(P, N)                                              \
+    {                                                                               \
+        int iii;                                                                    \
+        char *ppp;                                                                  \
+        for(iii=0,ppp=P;iii<N && ppp;P=VmDirStringChrA(ppp, ':')+1,ppp=P,iii++);    \
+    }
 
 //IPC API
 
@@ -681,6 +736,9 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
 #define VMDIR_IPC_GET_SERVER_STATE     6
+#define VMDIR_IPC_CREATE_TENANT        7
+#define VMDIR_IPC_DELETE_TENANT        8
+#define VMDIR_IPC_ENUMERATE_TENANTS    9
 
 //VERSIONS
 #define VER1_INPUT 0

@@ -100,11 +100,49 @@ public interface IIdentityProvider
 
     void checkUserAccountFlags(PrincipalId principalId) throws IDMException;
 
+    /**
+     * Search by attribute to return one user.
+     * 
+     * @param attributeName
+     * @param attributeValue
+     * @return
+     * @throws Exception
+     *             no principal found or can not uniquely map to a principal.
+     */
     PrincipalId findActiveUser(String attributeName, String attributeValue) throws Exception;
+
+    /**
+     * new version of findActiveUser that can return more than one user account.
+     * This allows using attribute that does not guarantee uniquely identify
+     * user.
+     *
+     * @param attributeName
+     * @param attributeValue
+     * @param userDomain
+     *            The actual domain to search.
+     * @param additionalAttribute
+     *            Additional attribute to retrieve
+     * @return
+     * @throws Exception
+     */
+    UserSet findActiveUsersInDomain(String attributeName, String attributeValue
+            , String userDomain, String additionalAttribute)
+            throws Exception;
 
     /**
      * @return attribute name mapped to UserAttributePrincipalName
      */
     String getStoreUPNAttributeName();
+
+    /**
+     * LDAP attribute name that to be mapped to user name hint provided in client certificate authentication
+     * @return
+     * @throws IDMException
+     */
+    String getStoreUserHintAttributeName() throws IDMException;
+    /**
+     * @return mapping user certificate using principal name field in SAN to account's UPN attribute.
+     */
+    boolean getCertificateMappingUseUPN();
 }
 

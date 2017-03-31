@@ -72,6 +72,9 @@ public final class Scope {
         Set<ScopeValue> valueSet = new HashSet<ScopeValue>();
         String[] parts = scopeString.split(" ");
         for (String part : parts) {
+            if (part.isEmpty()) {
+                throw new ParseException(ErrorObject.invalidScope("scope must be a sequence of single-space-delimited values"));
+            }
             ScopeValue value = ScopeValue.parse(part);
             valueSet.add(value);
         }
@@ -103,11 +106,11 @@ public final class Scope {
         }
 
         if (valueSet.contains(ScopeValue.ID_TOKEN_GROUPS_FILTERED) && !resourceServerRequested) {
-            throw new ParseException(ErrorObject.invalidScope("id_token filtered groups requested but no resource server requested"));
+            throw new ParseException(ErrorObject.invalidScope("id_groups_filtered requested but no resource server requested"));
         }
 
-        if ((valueSet.contains(ScopeValue.ACCESS_TOKEN_GROUPS) || valueSet.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED)) && !resourceServerRequested) {
-            throw new ParseException(ErrorObject.invalidScope("access_token groups requested but no resource server requested"));
+        if (valueSet.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED) && !resourceServerRequested) {
+            throw new ParseException(ErrorObject.invalidScope("at_groups_filtered requested but no resource server requested"));
         }
     }
 }

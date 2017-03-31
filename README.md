@@ -68,45 +68,45 @@ distribution.
 4.  As part of a successful build, the following RPMs should be created in the
     [workspace root]/stage folder
 
-    1.  vmware-event-devel-6.6.3-0.x86\_64.rpm
+    1.  vmware-event-devel-1.2.0-0.x86\_64.rpm
 
-    2.  vmware-directory-client-6.6.3-0.x86\_64.rpm
+    2.  vmware-directory-client-1.2.0-0.x86\_64.rpm
 
-    3.  vmware-directory-6.6.3-0.x86\_64.rpm
+    3.  vmware-directory-1.2.0-0.x86\_64.rpm
 
-    4.  vmware-directory-client-devel-6.6.3-0.x86\_64.rpm
+    4.  vmware-directory-client-devel-1.2.0-0.x86\_64.rpm
 
-    5.  vmware-dns-client-6.6.3-0.x86\_64.rpm
+    5.  vmware-dns-client-1.2.0-0.x86\_64.rpm
 
-    6.  vmware-dns-6.6.3-0.x86\_64.rpm
+    6.  vmware-dns-1.2.0-0.x86\_64.rpm
 
-    7.  vmware-dns-client-devel-6.6.3-0.x86\_64.rpm
+    7.  vmware-dns-client-devel-1.2.0-0.x86\_64.rpm
 
-    8.  vmware-afd-client-6.6.3-0.x86\_64.rpm
+    8.  vmware-afd-client-1.2.0-0.x86\_64.rpm
 
-    9.  vmware-afd-6.6.3-0.x86\_64.rpm
+    9.  vmware-afd-1.2.0-0.x86\_64.rpm
 
-    10. vmware-afd-client-devel-6.6.3-0.x86\_64.rpm
+    10. vmware-afd-client-devel-1.2.0-0.x86\_64.rpm
 
-    11. vmware-ca-6.6.3-0.x86\_64.rpm
+    11. vmware-ca-1.2.0-0.x86\_64.rpm
 
-    12. vmware-ca-client-6.6.3-0.x86\_64.rpm
+    12. vmware-ca-client-1.2.0-0.x86\_64.rpm
 
-    13. vmware-ca-client-devel-6.6.3-0.x86\_64.rpm
+    13. vmware-ca-client-devel-1.2.0-0.x86\_64.rpm
 
-    14. vmware-sts-6.6.3-0.x86\_64.rpm
+    14. vmware-sts-1.2.0-0.x86\_64.rpm
 
-    15. vmware-sts-client-6.6.3-0.x86\_64.rpm
+    15. vmware-sts-client-1.2.0-0.x86\_64.rpm
 
-    16. vmware-ic-config-6.6.3-0.x86\_64.rpm
+    16. vmware-ic-config-1.2.0-0.x86\_64.rpm
 
-    17. vmware-lightwave-clients-6.6.3-0.x86\_64.rpm
+    17. vmware-lightwave-clients-1.2.0-0.x86\_64.rpm
 
-    18. vmware-lightwave-server-6.6.3-0.x86\_64.rpm
+    18. vmware-lightwave-server-1.2.0-0.x86\_64.rpm
 
-    19. vmware-sts-6.6.3-0.x86\_64.rpm
+    19. vmware-sts-1.2.0-0.x86\_64.rpm
 
-    20. vmware-sts-client-6.6.3-0.x86\_64.rpm
+    20. vmware-sts-client-1.2.0-0.x86\_64.rpm
 
 Deployment
 ----------
@@ -162,29 +162,29 @@ skip_if_unavailable=True
 
 You must first install the following packages on your Photon instance
 
-1.  vmware-directory-client-6.6.3-0.x86\_64.rpm
+1.  vmware-directory-client-1.2.0-0.x86\_64.rpm
 
-2.  vmware-directory-6.6.3-0.x86\_64.rpm
+2.  vmware-directory-1.2.0-0.x86\_64.rpm
 
-3.  vmware-dns-client-6.6.3-0.x86\_64.rpm
+3.  vmware-dns-client-1.2.0-0.x86\_64.rpm
 
-4.  vmware-dns-6.6.3-0.x86\_64.rpm
+4.  vmware-dns-1.2.0-0.x86\_64.rpm
 
 5.  vmware-afd-client-6.6.2-0.x86\_64.rpm
 
-6.  vmware-afd-6.6.3-0.x86\_64.rpm
+6.  vmware-afd-1.2.0-0.x86\_64.rpm
 
-7.  vmware-ca-client-6.6.3-0.x86\_64.rpm
+7.  vmware-ca-client-1.2.0-0.x86\_64.rpm
 
-8.  vmware-ca-6.6.3-0.x86\_64.rpm
+8.  vmware-ca-1.2.0-0.x86\_64.rpm
 
-9.  vmware-ic-config-6.6.3-0.x86\_64.rpm
+9.  vmware-ic-config-1.2.0-0.x86\_64.rpm
 
-10. vmware-sts-client-6.6.3-0.x86\_64.rpm
+10. vmware-sts-client-1.2.0-0.x86\_64.rpm
 
-11. vmware-sts-6.6.3-0.x86\_64.rpm
+11. vmware-sts-1.2.0-0.x86\_64.rpm
 
-Alternately, you can install the vmware-lightwave-server-6.6.3-0.x86\_64.rpm
+Alternately, you can install the vmware-lightwave-server-1.2.0-0.x86\_64.rpm
 which is a meta RPM with dependencies on all the above RPMs.
 
 If using the YUM repositories for the pre-built binaries, install the Lightwave
@@ -219,21 +219,21 @@ Notes:
 The following packages are required to join the Photon system to the Lightwave
 Domain.
 
-1.  vmware-directory-client-6.6.3-0.x86\_64.rpm
+1.  vmware-directory-client-1.2.0-0.x86\_64.rpm
 
-2.  vmware-dns-client-6.6.3-0.x86\_64.rpm
+2.  vmware-dns-client-1.2.0-0.x86\_64.rpm
 
-3.  vmware-afd-client-6.6.3-0.x86\_64.rpm
+3.  vmware-afd-client-1.2.0-0.x86\_64.rpm
 
-4.  vmware-afd-6.6.3-0.x86\_64.rpm
+4.  vmware-afd-1.2.0-0.x86\_64.rpm
 
-5.  vmware-ca-client-6.6.3-0.x86\_64.rpm
+5.  vmware-ca-client-1.2.0-0.x86\_64.rpm
 
-6.  vmware-sts-client-6.6.3-0.x86\_64.rpm
+6.  vmware-sts-client-1.2.0-0.x86\_64.rpm
 
-7.  vmware-ic-config-6.6.3-0.x86\_64.rpm
+7.  vmware-ic-config-1.2.0-0.x86\_64.rpm
 
-Alternately, you can install the vmware-lightwave-clients-6.6.3-0.x86\_64.rpm
+Alternately, you can install the vmware-lightwave-clients-1.2.0-0.x86\_64.rpm
 which is a meta RPM with dependencies on all the above RPMs.
 
 If using the YUM repositories for the pre-built binaries, install the Lightwave

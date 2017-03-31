@@ -17,6 +17,7 @@ libvmdirclient_la_SOURCES = \
     krb5login.c \
     ldaputil.c \
     libmain.c \
+    pnid.c \
     registry.c \
     repadmin.c \
     replication.c \
@@ -31,8 +32,7 @@ libvmdirclient_la_SOURCES = \
     vmdirdbcp_cstub.c \
     vmdirlocalclient.c \
     srp_verifier_cstub.c \
-    vmdirsuperlog_cstub.c \
-    vmdirurgentrepl_cstub.c
+    vmdirsuperlog_cstub.c
 
 libvmdirclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
@@ -71,12 +71,9 @@ CLEANFILES = \
     srp_verifier_sstub.c \
     vmdirsuperlog_h.h \
     vmdirsuperlog_cstub.c \
-    vmdirsuperlog_sstub.c \
-    vmdirurgentrepl_h.h \
-    vmdirurgentrepl_cstub.c \
-    vmdirurgentrepl_sstub.c
+    vmdirsuperlog_sstub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h vmdirurgentrepl_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h
 
 vmdir_h.h vmdir_cstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -92,6 +89,3 @@ srp_verifier_h.h srp_verifier_cstub.c: $(idl_srcdir)/srp_verifier.idl
 
 vmdirsuperlog_h.h vmdirsuperlog_cstub.c: $(idl_srcdir)/vmdirsuperlog.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
-
-vmdirurgentrepl_h.h vmdirurgentrepl_cstub.c: $(idl_srcdir)/vmdirurgentrepl.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirurgentrepl_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<

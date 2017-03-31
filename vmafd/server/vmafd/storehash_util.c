@@ -8,6 +8,18 @@
  */
 #include "includes.h"
 
+/* This declaration is needed to complete the incomplete type.
+ * It must be kept in sync with the type in common/structs.h
+ */
+typedef struct _VM_AFD_SECURITY_CONTEXT_
+{
+#if defined _WIN32
+    PSID pSid;
+#else
+    uid_t uid;
+#endif
+} VM_AFD_SECURITY_CONTEXT;
+
 static
 DWORD
 VmAfdComputeStoreMapHash (
@@ -25,7 +37,7 @@ DWORD
 VmAfdCloseStoreInstance (
                           DWORD dwHashedIndx,
                           PVM_AFD_SECURITY_CONTEXT pSecurityContext,
-                          DWORD dwClientInstance
+                          uintptr_t dwClientInstance
                         );
 static
 DWORD
@@ -40,21 +52,8 @@ DWORD
 VmAfdCreateNewClientInstance (
                               PVM_AFD_SECURITY_CONTEXT pSecurityContext,
                               DWORD dwHashedIndx,
-                              PDWORD pdwClientInstance
+                              uintptr_t* pdwClientInstance
                              );
-
-static
-BOOL
-VmAfdIsValidClientInstance(
-                            DWORD dwClientInstance
-                          );
-
-static
-DWORD
-VmAfdGetOpenClientInstance(
-                           PVECS_STORE_CONTEXT_LIST pContextListEntry,
-                           PDWORD pdwClientInstance
-                          );
 
 static
 VOID
@@ -85,11 +84,10 @@ VmAfdGetStoreHandle (
     DWORD dwError = 0;
     PVECS_SRV_STORE_HANDLE pStore = NULL;
     BOOL bIsHoldingLock = FALSE;
-
     DWORD dwStoreId = 0;
-
     DWORD dwHashedIndx = -1;
-    DWORD dwClientInstance = 0;
+    uintptr_t dwClientInstance = 0;
+    PSTR pszStoreNameA = NULL;
 
     if (IsNullOrEmptyString (pszStoreName) ||
         !pSecurityContext ||
@@ -100,20 +98,17 @@ VmAfdGetStoreHandle (
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-
     dwError = VecsDbGetCertStore(
                                   pszStoreName,
                                   pszPassword,
                                   &dwStoreId
                                 );
-
     BAIL_ON_VMAFD_ERROR (dwError);
 
     dwError = VmAfdComputeStoreMapHash(
                                         dwStoreId,
                                         &dwHashedIndx
                                       );
-
     BAIL_ON_VMAFD_ERROR (dwError);
 
     VMAFD_LOCK_MUTEX_EXCLUSIVE (&gVmafdGlobals.rwlockStoreMap, bIsHoldingLock);
@@ -126,11 +121,9 @@ VmAfdGetStoreHandle (
                                               pSecurityContext,
                                               dwHashedIndx
                                             );
-
         BAIL_ON_VMAFD_ERROR (dwError);
-        dwClientInstance = 1;
+        dwClientInstance = (uintptr_t)gVecsGlobalStoreMap[dwHashedIndx].pStoreContextList;
     }
-
     else
     {
         dwError = VmAfdCreateNewClientInstance (
@@ -138,15 +131,11 @@ VmAfdGetStoreHandle (
                                                  dwHashedIndx,
                                                  &dwClientInstance
                                                );
-
         BAIL_ON_VMAFD_ERROR (dwError);
-
 
         gVecsGlobalStoreMap[dwHashedIndx].pStore =
            VecsSrvAcquireCertStore (gVecsGlobalStoreMap[dwHashedIndx].pStore);
-
     }
-
 
     gVecsGlobalStoreMap[dwHashedIndx].status =
                                        STORE_MAP_ENTRY_STATUS_OPEN;
@@ -158,7 +147,6 @@ VmAfdGetStoreHandle (
                                    (PVOID *) &pStore
                                   );
     BAIL_ON_VMAFD_ERROR (dwError);
-
 
     pStore->dwStoreHandle = dwHashedIndx;
     pStore->dwClientInstance = dwClientInstance;
@@ -175,6 +163,28 @@ cleanup:
     return dwError;
 
 error:
+    if (dwError == ERROR_NO_MORE_USER_HANDLES &&
+        pszStoreName && pSecurityContext)
+    {
+        DWORD dwError2 = 0;
+
+        dwError2 = VmAfdAllocateStringAFromW(
+                         pszStoreName,
+                         &pszStoreNameA);
+        if (dwError2 == 0)
+        {
+#ifndef _WIN32
+            VmAfdLog(VMAFD_DEBUG_ANY,
+                     "No VECS user handles available.  Store %s, client uid %d",
+                     pszStoreNameA, pSecurityContext->uid);
+#else
+            VmAfdLog(VMAFD_DEBUG_ANY,
+                     "No VECS user handles available.  Store %s",
+                     pszStoreNameA);
+#endif
+            VMAFD_SAFE_FREE_STRINGA(pszStoreNameA);
+        }
+    }
     if (ppStore)
     {
         *ppStore = NULL;
@@ -298,27 +308,19 @@ VmAfdIsValidStoreHandle (
         goto error;
     }
 
-    if (!VmAfdIsValidClientInstance(pStore->dwClientInstance))
-    {
-        goto error; //Client Instance should have only 1 bit set.
-    }
-
     pContextListCursor = storeMapEntry.pStoreContextList;
 
     while (pContextListCursor)
     {
-        if (VmAfdEqualsSecurityContext(
+        if ((pContextListCursor == (PVECS_STORE_CONTEXT_LIST)pStore->dwClientInstance) &&
+            VmAfdEqualsSecurityContext(
                                           pContextListCursor->pSecurityContext,
                                           pSecurityContext
                                        )
            )
         {
-            if (pStore->dwClientInstance &
-                pContextListCursor->dwClientInstances)
-            {
-                bResult = 1;
-                break;
-            }
+            bResult = 1;
+            break;
         }
 
         pContextListCursor = pContextListCursor->pNext;
@@ -719,7 +721,7 @@ DWORD
 VmAfdCloseStoreInstance (
                           DWORD dwHashedIndx,
                           PVM_AFD_SECURITY_CONTEXT pSecurityContext,
-                          DWORD dwClientInstance
+                          uintptr_t dwClientInstance
                         )
 {
     DWORD dwError = 0;
@@ -742,38 +744,28 @@ VmAfdCloseStoreInstance (
 
     while (pContextCursor)
     {
-        if (
+        if ((pContextCursor == (PVECS_STORE_CONTEXT_LIST)dwClientInstance) &&
             VmAfdEqualsSecurityContext(
                                     pContextCursor->pSecurityContext,
                                     pSecurityContext
                                     )
-            &&
-            VmAfdIsValidClientInstance (dwClientInstance)
            )
         {
-            if (
-                 !(pContextCursor->dwClientInstances =
-                      pContextCursor->dwClientInstances &
-                      ~dwClientInstance)
-               )
+            pContextListEntryToClean = pContextCursor;
+
+            if (pContextCursor->pPrev)
             {
-                  pContextListEntryToClean = pContextCursor;
+                pContextCursor->pPrev->pNext = pContextCursor->pNext;
+            }
+            else
+            {
+                gVecsGlobalStoreMap[dwHashedIndx].pStoreContextList =
+                                pContextCursor->pNext;
+            }
 
-                  if (pContextCursor->pPrev)
-                  {
-                      pContextCursor->pPrev->pNext = pContextCursor->pNext;
-                  }
-
-                  else
-                  {
-                      gVecsGlobalStoreMap[dwHashedIndx].pStoreContextList =
-                                      pContextCursor->pNext;
-                  }
-
-                  if (pContextCursor->pNext)
-                  {
-                      pContextCursor->pNext->pPrev = pContextCursor->pPrev;
-                  }
+            if (pContextCursor->pNext)
+            {
+                pContextCursor->pNext->pPrev = pContextCursor->pPrev;
             }
             break;
         }
@@ -836,26 +828,6 @@ VmAfdFreeContextList (
 }
 
 static
-BOOL
-VmAfdIsValidClientInstance(
-                            DWORD dwClientInstance
-                          )
-{
-    BOOL bResult = 0;
-
-    if (
-        dwClientInstance &&
-        !(dwClientInstance & (dwClientInstance-1))
-       )
-
-    {
-        bResult = 1;
-    }
-
-    return bResult;
-}
-
-static
 DWORD
 VmAfdInitializeStoreEntry (
                             DWORD dwStoreId,
@@ -899,9 +871,6 @@ VmAfdInitializeStoreEntry (
                                     (PVOID *)&pStoreContextList
                                   );
     BAIL_ON_VMAFD_ERROR (dwError);
-
-    pStoreContextList->dwClientInstances = 1;
-
 
     dwError = VmAfdCopySecurityContext(
                                         pSecurityContext,
@@ -947,14 +916,13 @@ DWORD
 VmAfdCreateNewClientInstance (
                               PVM_AFD_SECURITY_CONTEXT pSecurityContext,
                               DWORD dwHashedIndx,
-                              PDWORD pdwClientInstance
+                              uintptr_t* pdwClientInstance
                              )
 {
     DWORD dwError = 0;
-    PVECS_STORE_CONTEXT_LIST pContextListCursor = NULL;
     PVECS_STORE_CONTEXT_LIST pContextListEntryNew = NULL;
     PVM_AFD_SECURITY_CONTEXT pSecurityContextTmp = NULL;
-    DWORD dwClientInstance = 0;
+    uintptr_t dwClientInstance = 0;
     VECS_SRV_STORE_MAP storeMapEntry = gVecsGlobalStoreMap[dwHashedIndx];
 
     if (!pSecurityContext ||
@@ -965,61 +933,30 @@ VmAfdCreateNewClientInstance (
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    pContextListCursor = storeMapEntry.pStoreContextList;
+    dwError = VmAfdCopySecurityContext (
+                                        pSecurityContext,
+                                        &pSecurityContextTmp
+                                       );
+    BAIL_ON_VMAFD_ERROR (dwError);
 
-    while (pContextListCursor)
+    dwError = VmAfdAllocateMemory (
+                                   sizeof (VECS_STORE_CONTEXT_LIST),
+                                   (PVOID *)&pContextListEntryNew
+                                  );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    pContextListEntryNew->pSecurityContext = pSecurityContextTmp;
+    pContextListEntryNew->pNext = storeMapEntry.pStoreContextList;
+
+    if (storeMapEntry.pStoreContextList)
     {
-        if (VmAfdEqualsSecurityContext(
-                                        pContextListCursor->pSecurityContext,
-                                        pSecurityContext
-                                       )
-           )
-        {
-            dwError = VmAfdGetOpenClientInstance(
-                                                 pContextListCursor,
-                                                 &dwClientInstance
-                                                );
-            BAIL_ON_VMAFD_ERROR (dwError);
-
-            pContextListCursor->dwClientInstances =
-                                      pContextListCursor->dwClientInstances |
-                                      dwClientInstance;
-            break;
-        }
-
-        pContextListCursor = pContextListCursor->pNext;
+      storeMapEntry.pStoreContextList->pPrev =
+                                         pContextListEntryNew;
     }
 
-    if (pContextListCursor == NULL)
-    {
+    gVecsGlobalStoreMap[dwHashedIndx].pStoreContextList = pContextListEntryNew;
 
-        dwError = VmAfdCopySecurityContext (
-                                            pSecurityContext,
-                                            &pSecurityContextTmp
-                                           );
-        BAIL_ON_VMAFD_ERROR (dwError);
-
-        dwError = VmAfdAllocateMemory (
-                                       sizeof (VECS_STORE_CONTEXT_LIST),
-                                       (PVOID *)&pContextListEntryNew
-                                      );
-        BAIL_ON_VMAFD_ERROR (dwError);
-
-        pContextListEntryNew->pSecurityContext = pSecurityContextTmp;
-        pContextListEntryNew->dwClientInstances = 1;
-
-        pContextListEntryNew->pNext = storeMapEntry.pStoreContextList;
-
-        if (storeMapEntry.pStoreContextList)
-        {
-          storeMapEntry.pStoreContextList->pPrev =
-                                             pContextListEntryNew;
-        }
-
-        gVecsGlobalStoreMap[dwHashedIndx].pStoreContextList = pContextListEntryNew;
-
-        dwClientInstance = 1;
-    }
+    dwClientInstance = (uintptr_t)pContextListEntryNew;
 
     *pdwClientInstance = dwClientInstance;
 
@@ -1053,7 +990,7 @@ DWORD
 VmAfdComputeStoreMapHash (
                           DWORD dwStoreId,
                           PDWORD pdwHashedIndex
-                         )
+                        )
 {
     DWORD dwError = 0;
     DWORD dwHashedIndx = 0;
@@ -1065,7 +1002,7 @@ VmAfdComputeStoreMapHash (
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    dwHashedIndx = (dwStoreId*67) % VECS_STOREHASH_MAP_SIZE;
+    dwHashedIndx = (dwStoreId*131) % VECS_STOREHASH_MAP_SIZE;
 
     dwHashedIndxInitial = dwHashedIndx;
 
@@ -1135,56 +1072,6 @@ error:
       *pdwHashedIndex = 0;
    }
    goto cleanup;
-}
-
-
-static
-DWORD
-VmAfdGetOpenClientInstance(
-                           PVECS_STORE_CONTEXT_LIST pContextListEntry,
-                           PDWORD pdwClientInstance
-                          )
-{
-    DWORD dwError = 0;
-    DWORD dwClientInstance = 1;
-
-    if (!pContextListEntry ||
-        !pdwClientInstance
-       )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR (dwError);
-    }
-
-    if (
-        pContextListEntry->dwClientInstances ==
-        (DWORD)-1
-       )
-    {
-        dwError = ERROR_NO_MORE_USER_HANDLES;
-        BAIL_ON_VMAFD_ERROR (dwError);
-    }
-
-    while (
-            dwClientInstance &
-            pContextListEntry->dwClientInstances
-          )
-    {
-        dwClientInstance = dwClientInstance << 1;
-    }
-
-    *pdwClientInstance = dwClientInstance;
-
-cleanup:
-    return dwError;
-
-error:
-
-    if (pdwClientInstance)
-    {
-        *pdwClientInstance = 0;
-    }
-    goto cleanup;
 }
 
 static

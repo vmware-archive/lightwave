@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.client;
 
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +22,9 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.rest.idm.client.IdmClient;
 
 /**
  * OIDC Client Integration Test
@@ -256,6 +260,31 @@ public class OIDCClientIT extends OIDCClientITBase {
                 withRefreshSpec);
     }
 
+    // RegClientWithoutAuthn
+    @Test
+    public void testRegClientWithoutAuthnGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
+        TestUtils.verifyTokensWithRefresh(
+                regClientWithoutAuthn,
+                passwordGrant,
+                withRefreshSpec);
+    }
+
+    @Test
+    public void testRegClientWithoutAuthnGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
+        TestUtils.verifyTokens(
+                regClientWithoutAuthn,
+                passwordGrant,
+                withoutRefreshSpec);
+    }
+
+    @Test
+    public void testRegClientWithoutAuthnGetHOKWithoutRefreshBySolutionUserCredentialsGrant() throws Exception {
+        TestUtils.verifyTokens(
+                regClientWithoutAuthn,
+                solutionUserCredentialsGrant,
+                withoutRefreshSpec);
+    }
+
     @Test
     public void testGroupFiltering() throws Exception {
         OIDCTokens tokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, groupFilteringSpec);
@@ -264,9 +293,23 @@ public class OIDCClientIT extends OIDCClientITBase {
                 connectionConfig.getProviderPublicKey(),
                 connectionConfig.getIssuer(),
                 RESOURCE_SERVER_NAME,
-                0L /* clockTolerance */);
+                5 * 60L /* clockToleranceInSeconds */);
         Collection<String> actualGroups = accessToken.getGroups();
         List<String> expectedGroups = Arrays.asList(tenant + "\\administrators");
         Assert.assertEquals("groups", expectedGroups, actualGroups);
+    }
+
+    @Test
+    public void testAdminServerResourceRequestUsingHOKToken() throws Exception {
+        OIDCTokens tokens = nonRegHOKConfigClient.acquireTokensBySolutionUserCredentials(withoutRefreshSpec);
+        Assert.assertEquals("token type", TokenType.HOK, tokens.getIDToken().getTokenType());
+        IdmClient idmClient = TestUtils.createIdmClient(
+                tokens.getAccessToken(),
+                domainControllerFQDN,
+                domainControllerPort,
+                ks,
+                clientPrivateKey);
+        String[] parts = username.split("@");
+        idmClient.user().get(tenant, parts[0], parts[1]);
     }
 }

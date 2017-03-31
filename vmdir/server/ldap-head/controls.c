@@ -32,6 +32,14 @@ _ParsePagedResultControlVal(
     VDIR_LDAP_RESULT *                  lr                  // Output
     );
 
+static
+int
+_ParseSyncStateControlVal(
+    BerValue *  controlValue,   // Input: control value encoded as ber,
+    int *       entryState,     // Output
+    USN*        pPartnerUSN     // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -146,22 +154,6 @@ ParseRequestControls(
             // request
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_SYNC, TRUE ) == 0)
             {
-                if (VmDirdState() != VMDIRD_STATE_NORMAL &&
-                    VmDirdState() != VMDIRD_STATE_READ_ONLY)
-                {
-                    // Why block out-bound replication when catching up during restore mode?
-                    //
-                    // Reason: Partners have high-water-mark (lastLocalUsn) corresponding to this replica that is being
-                    // restored. If out-bound replication is not blocked while restore/catching-up is going on, originating
-                    // or replicated updates (if this replica is the only partner) made between the current-local-usn and
-                    // high-water-marks, that partners remember, will not get replicated out (even if the invocationId
-                    // has been fixed/changed).
-
-                    retVal = lr->errCode = LDAP_UNWILLING_TO_PERFORM;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                 "ParseRequestControls: Server not in normal mode, not allowing outward replication.");
-                }
-
                 if ((retVal = ParseSyncRequestControlVal( op, &lberBervCtlValue, &((*control)->value.syncReqCtrlVal),
                                                           lr)) != LDAP_SUCCESS)
                 {
@@ -178,11 +170,6 @@ ParseRequestControls(
             if (VmDirStringCompareA( (*control)->type, VDIR_LDAP_CONTROL_SHOW_MASTER_KEY, TRUE ) == 0)
             {
                 op->showMasterKeyCtrl = *control;
-            }
-
-            if (VmDirStringCompareA((*control)->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE ) == 0)
-            {
-                op->strongConsistencyWriteCtrl = *control;
             }
 
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_PAGEDRESULTS, TRUE ) == 0)
@@ -283,10 +270,11 @@ WriteSyncDoneControl(
             char *  writer = NULL;
             size_t  tmpLen = 0;
             size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
-                                (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1);
+                                (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) +
+                                (VMDIR_REPL_CONT_INDICATOR_LEN + 1);
 
             // Sync Done control value looks like: <lastLocalUsnChanged>,<serverId1>:<server 1 last originating USN>,
-            // <serverId2>,<server 2 originating USN>,...
+            // <serverId2>,<server 2 originating USN>,...,[continue:1,]
 
             if (VmDirAllocateMemory( bufferSize, (PVOID *)&bvCtrlVal.lberbv.bv_val) != 0)
             {
@@ -307,6 +295,15 @@ WriteSyncDoneControl(
                 pUtdVectorEntry = LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
                 VmDirStringPrintFA( writer, bufferSize, "%s:%ld,", pUtdVectorEntry->invocationId.lberbv.bv_val,
                                     pUtdVectorEntry->currMaxOrigUsnProcessed );
+                tmpLen = VmDirStringLenA( writer );
+                writer += tmpLen;
+                bufferSize -= tmpLen;
+                bvCtrlVal.lberbv.bv_len += tmpLen;
+            }
+
+            if (op->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
+            {
+                VmDirStringPrintFA( writer, bufferSize, VMDIR_REPL_CONT_INDICATOR );
                 tmpLen = VmDirStringLenA( writer );
                 writer += tmpLen;
                 bufferSize -= tmpLen;
@@ -410,7 +407,9 @@ WriteSyncStateControl(
     BerElementBuffer    ctrlValBerbuf;
     BerElement *        ctrlValBer = (BerElement *) &ctrlValBerbuf;
     VDIR_BERVALUE       bvCtrlVal = VDIR_BERVALUE_INIT;
+    PVDIR_BERVALUE      pbvUSN = NULL;
     PSTR                pszLocalErrorMsg = NULL;
+    BOOLEAN             bHasFinalSyncState = FALSE;
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: Begin" );
 
@@ -428,9 +427,15 @@ WriteSyncStateControl(
 
     for ( ; pAttr != NULL; pAttr = pAttr->next)
     {
-        if (pAttr->metaData[0] != '\0') // We are sending back this attribute's meta data. => Attribute is in
-                                        // replication scope. SJ-TBD: we are overloading pAttr->metaData
-                                        // field. Should we have another field (e.g. inReplScope) in Attribute
+        if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
+        {
+            pbvUSN = pAttr->vals;
+        }
+
+        // We are sending back this attribute's meta data. => Attribute is in
+        // replication scope. SJ-TBD: we are overloading pAttr->metaData
+        // field. Should we have another field (e.g. inReplScope) in Attribute
+        if (pAttr->metaData[0] != '\0' && !bHasFinalSyncState)
         {
             if ( VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_IS_DELETED, FALSE ) == 0 &&
                  VmDirStringCompareA( pAttr->vals[0].lberbv.bv_val, VMDIR_IS_DELETED_TRUE_STR, FALSE ) == 0)
@@ -442,10 +447,13 @@ WriteSyncStateControl(
             if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CREATED, FALSE ) == 0)
             {
                 entryState = LDAP_SYNC_ADD;
-                break;
+                bHasFinalSyncState = TRUE;
             }
         }
     }
+
+    // we always send uSNChanged attribute
+    assert(pbvUSN);
 
     if (ber_printf( ber, "t{{O", LDAP_TAG_CONTROLS, &(syncStateCtrlType.lberbv) ) == -1 )
     {
@@ -460,7 +468,11 @@ WriteSyncStateControl(
     (void) memset( (char *)&ctrlValBerbuf, '\0', sizeof( BerElementBuffer ));
     ber_init2( ctrlValBer, NULL, LBER_USE_DER );
 
-    if (ber_printf( ctrlValBer, "{i}", entryState ) == -1 )
+    if ( (VDIR_WRITE_OP_AUDIT_ENABLED &&
+          (ber_printf( ctrlValBer, "{iO}", entryState, pbvUSN ) == -1 ))
+        ||
+         (ber_printf( ctrlValBer, "{i}", entryState) == -1)
+       )
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: ber_printf (to print Sync Done Control ...) failed" );
         retVal = LDAP_OPERATIONS_ERROR;
@@ -510,42 +522,61 @@ error:
     goto cleanup;
 }
 
+static
 int
-ParseSyncStateControlVal(
+_ParseSyncStateControlVal(
     BerValue *  controlValue,   // Input: control value encoded as ber,
-    int *       entryState)     // Output
+    int *       entryState,     // Output
+    USN*        pPartnerUSN     // Output
+    )
 {
     int                 retVal = LDAP_SUCCESS;
     BerElementBuffer    berbuf;
     BerElement *        ber = (BerElement *)&berbuf;
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncStateControlVal: Begin." );
+    BerValue            bvPartnerUSN = {0};
 
     ber_init2( ber, controlValue, LBER_USE_DER );
 
-    if (ber_scanf( ber, "{i}", entryState ) == -1 )
+    if  (VDIR_WRITE_OP_AUDIT_ENABLED)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ParseSyncStateControlVal: ber_scanf to read entryState failed" );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        if (ber_scanf( ber, "{im}", entryState, &bvPartnerUSN ) == -1 )
+        {
+            BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+        }
+
+        if (pPartnerUSN && bvPartnerUSN.bv_len > 0)
+        {
+            *pPartnerUSN = atol(bvPartnerUSN.bv_val);
+        }
+    }
+    else
+    {
+        if (ber_scanf( ber, "{i}", entryState ) == -1 )
+        {
+            BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+        }
     }
 
+
 cleanup:
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncStateControlVal: Begin." );
+
     return retVal;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_scanf to read entryState failed", __FUNCTION__ );
     goto cleanup;
 }
 
 int
 ParseAndFreeSyncStateControl(
     LDAPControl ***pCtrls,
-    int *piEntryState
+    int*        piEntryState,
+    USN*        pulPartnerUSN
     )
 {
     int retVal = LDAP_SUCCESS;
     int entryState = -1;
+    USN ulPartnerUSN = 0;
 
     if (pCtrls == NULL)
     {
@@ -568,13 +599,14 @@ ParseAndFreeSyncStateControl(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
-    retVal = ParseSyncStateControlVal(&(*pCtrls)[0]->ldctl_value, &entryState);
+    retVal = _ParseSyncStateControlVal(&(*pCtrls)[0]->ldctl_value, &entryState, &ulPartnerUSN);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     ldap_controls_free(*pCtrls);
     *pCtrls = NULL;
 
     *piEntryState = entryState;
+    *pulPartnerUSN = ulPartnerUSN;
 
 cleanup:
     return retVal;
@@ -699,6 +731,15 @@ ParseSyncRequestControlVal(
             while( nextServerIdStr != NULL && nextServerIdStr[0] != '\0')
             {
                 PLW_HASHTABLE_NODE pNode = NULL;
+
+                // Ignore continue indicator in sync request control
+                if (VmDirStringNCompareA(nextServerIdStr,
+                        VMDIR_REPL_CONT_INDICATOR,
+                        VMDIR_REPL_CONT_INDICATOR_LEN, FALSE) == 0)
+                {
+                    nextServerIdStr = VmDirStringChrA( nextServerIdStr, ',') + 1;
+                    continue;
+                }
 
                 if (VmDirAllocateMemory( sizeof(UptoDateVectorEntry), (PVOID *)&utdVectorEntry ) != 0)
                 {
@@ -858,58 +899,5 @@ cleanup:
 
 error:
     VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
-    goto cleanup;
-}
-
-/* Generates the LdapControl to be communicated to the client
-   in the case of Strong Consistency Write task */
-int
-WriteConsistencyWriteDoneControl(
-    VDIR_OPERATION *       pOp,
-    BerElement *           pBer
-    )
-{
-    int                 retVal = LDAP_OPERATIONS_ERROR;
-    BerElementBuffer    ctrlValBerbuf;
-    BerElement *        pCtrlValBer = (BerElement *) &ctrlValBerbuf;
-    VDIR_BERVALUE       bvCtrlVal = VDIR_BERVALUE_INIT;
-    DWORD               dwStatus = 0;
-    PSTR                pControlsString = NULL;
-
-    if (pOp == NULL || pBer == NULL)
-    {
-       VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: VDIR_OPERATION or BerElement is NULL failed");
-       BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    (void) memset((char *)&ctrlValBerbuf, '\0', sizeof(BerElementBuffer));
-    ber_init2(pCtrlValBer, NULL, LBER_USE_DER);
-
-    dwStatus = pOp->strongConsistencyWriteCtrl->value.scwDoneCtrlVal.status;
-    pControlsString = pOp->strongConsistencyWriteCtrl->type;
-
-    if (ber_printf(pCtrlValBer, "{i}", dwStatus) == -1)
-    {
-       VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: ber_printf (to print status...) failed");
-       BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    bvCtrlVal.lberbv.bv_val = pCtrlValBer->ber_buf;
-    bvCtrlVal.lberbv.bv_len = pCtrlValBer->ber_ptr - pCtrlValBer->ber_buf;
-
-    if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, pControlsString, &bvCtrlVal.lberbv) == -1)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: ber_printf (to print ldapControl...) failed");
-	BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    retVal = LDAP_SUCCESS;
-
-cleanup:
-    ber_free_buf(pCtrlValBer);
-    return retVal;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: failed");
     goto cleanup;
 }

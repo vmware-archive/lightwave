@@ -27,6 +27,7 @@
 #define VMDIR_REG_KEY_DC_ACCOUNT_DN "dcAccountDN"
 #define VMDIR_REG_KEY_DC_PASSWORD   "dcAccountPassword"
 
+
 DWORD
 VmwConfigOpenConnection(
     PVMW_CFG_CONNECTION* ppConnection
@@ -153,6 +154,34 @@ VmwConfigReadDWORDValue(
                     pszSubkey,
                     pszName,
                     pdwValue);
+#endif
+
+    return dwError;
+}
+
+DWORD
+VmwConfigWriteDWORDValue(
+    PVMW_CFG_KEY        pKey,
+    PCSTR               pszName,
+    DWORD               dwValue
+    )
+{
+    DWORD dwError = 0;
+
+#ifndef _WIN32
+    dwError = VmwPosixCfgSetValue(
+                    pKey,
+                    pszName,
+                    REG_DWORD,
+                    (PBYTE)&dwValue,
+                    sizeof(DWORD));
+#else
+    dwError = VmwWinCfgSetValue(
+                    pKey,
+                    pszName,
+                    REG_DWORD,
+                    (PBYTE)&dwValue,
+                    sizeof(DWORD));
 #endif
 
     return dwError;
@@ -329,4 +358,82 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+DWORD
+VMCAConfigSetDword(
+    PCSTR  pcszValueName,
+    DWORD  dwInput
+    )
+{
+    DWORD dwError = 0;
+    PVMW_CFG_CONNECTION pConnection = NULL;
+    PVMW_CFG_KEY pRootKey = NULL;
+    PVMW_CFG_KEY pParamsKey = NULL;
+    CHAR  szParamsKeyPath[] = VMCA_CONFIG_PARAMETER_KEY_PATH;
+
+    dwError = VmwConfigOpenConnection(&pConnection);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmwConfigOpenRootKey(
+                    pConnection,
+                    "HKEY_LOCAL_MACHINE",
+                    0,
+                    KEY_READ,
+                    &pRootKey);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmwConfigOpenKey(
+                    pConnection,
+                    pRootKey,
+                    &szParamsKeyPath[0],
+                    0,
+                    KEY_SET_VALUE,
+                    &pParamsKey);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmwConfigWriteDWORDValue(
+                    pParamsKey,
+                    pcszValueName,
+                    dwInput);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+
+    if (pParamsKey)
+    {
+        VmwConfigCloseKey(pParamsKey);
+    }
+    if (pRootKey)
+    {
+        VmwConfigCloseKey(pRootKey);
+    }
+    if (pConnection)
+    {
+        VmwConfigCloseConnection(pConnection);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+BOOLEAN
+VMCAConfigIsServerOptionEnabled(
+    VMCA_SERVER_OPTION  option
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCurrentOption = 0;
+    BOOLEAN bEnabled = FALSE;
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    bEnabled = option & dwCurrentOption;
+
+error:
+    return bEnabled;
 }

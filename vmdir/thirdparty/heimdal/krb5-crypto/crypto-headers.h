@@ -54,4 +54,8 @@
 
 #endif /* HAVE_OPENSSL */
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 #endif /* __crypto_header__ */

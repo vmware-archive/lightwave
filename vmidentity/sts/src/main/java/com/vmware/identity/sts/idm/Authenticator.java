@@ -13,8 +13,11 @@
  */
 package com.vmware.identity.sts.idm;
 
+import java.security.cert.X509Certificate;
+
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.sts.NoSuchIdPException;
 
 /**
@@ -61,4 +64,43 @@ public interface Authenticator {
    GSSResult authenticate(String contextId, byte[] gssTicket) throws InvalidCredentialsException,
       NoSuchIdPException, SystemException;
 
+   /**
+    * Performs user certificate authentication.
+    *
+    * @param x509CertificateChain
+    *           user certificate chain
+    * @return not null identifier of the authenticated principal
+    * @throws UserCertificateValidateException
+    *           if user certificate validation fails
+    * @throws InvalidCredentialsException
+    *           if credential is invalid
+    * @throws NoSuchIdPException
+    *           if the IdP is missing
+    * @throws SystemException
+    */
+   PrincipalId authenticate(X509Certificate[] x509CertificateChain)
+      throws UserCertificateValidateException, InvalidCredentialsException,
+      NoSuchIdPException, SystemException;
+
+   /**
+    * Performs RSA securID authentication.
+    *
+    * @param username
+    *           username
+    * @param sessionID
+    *           session ID
+    * @param passcode
+    *           passcode
+    * @return not null identifier of the authenticated principal
+    * @throws IdmSecureIDNewPinException
+    *           if SecurID asks for a new PIN
+    * @throws InvalidCredentialsException
+    *           if credential is invalid
+    * @throws NoSuchIdPException
+    *           if the IdP is missing
+    * @throws SystemException
+    */
+   RSAAMResult authenticate(String username, String sessionID, String passcode)
+      throws IdmSecureIDNewPinException, InvalidCredentialsException,
+      NoSuchIdPException, SystemException;
 }

@@ -348,7 +348,7 @@ public class WinAccountAdapter implements IAccountAdapter {
                 logger.error(errMsg);
                 throw new AccountManagerException(errMsg);
             }
-            String pszSid = pSid.getWideString(0);
+            String pszSid = pSid.getString(0, true);
 
             boolean bIsLocked = (userInfo.userFlags & USER_ACCOUNT_LOCKOUT_FLAG) != 0;
             boolean bIsDisabled = (userInfo.userFlags & USER_ACCOUNT_DISABLED_FLAG) != 0;

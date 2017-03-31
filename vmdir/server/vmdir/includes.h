@@ -68,6 +68,7 @@
 #include <vmkdcserver.h>
 #include <vmdirserver.h>
 #include <ldaphead.h>
+#include <resthead.h>
 #include <vmevent.h>
 
 #include "defines.h"
@@ -78,9 +79,8 @@
 #include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
-#include "prototypes.h"
 
+#include "prototypes.h"
 #include "externs.h"
 
 #else
@@ -88,7 +88,6 @@
 #pragma once
 
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 
 #include <windows.h>
 #include <stdio.h>
@@ -98,12 +97,7 @@
 #include <tchar.h>
 #include <errno.h>
 #include <sys/stat.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <winsvc.h>
-#include <rpc.h>
-#else
 #include <dce/rpc.h>
-#endif
 #include <assert.h>
 #include <Ws2tcpip.h>
 #include <Sddl.h>
@@ -152,7 +146,7 @@
 #include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
+
 #include "prototypes.h"
 
 #include "externs.h"

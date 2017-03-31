@@ -49,6 +49,7 @@ VM_AFD_VTABLE gIPCVtable = {
     VmAfd_SF_INIT(.pfnCopySecurityContext, &VmAfdCopySecurityContextImpl),
     VmAfd_SF_INIT(.pfnCreateAnonymousConnectionContext, &VmAfdCreateAnonymousConnectionContextImpl),
     VmAfd_SF_INIT(.pfnCreateWellKnownContext, &VmAfdCreateWellKnownContextImpl),
-    VmAfd_SF_INIT(.pfnContextBelongsToGroup, &VmAfdContextBelongsToGroupImpl)
+    VmAfd_SF_INIT(.pfnContextBelongsToGroup, &VmAfdContextBelongsToGroupImpl),
+    VmAfd_SF_INIT(.pfnCheckAclContext, &VmAfdCheckAclContextImpl)
 };
 

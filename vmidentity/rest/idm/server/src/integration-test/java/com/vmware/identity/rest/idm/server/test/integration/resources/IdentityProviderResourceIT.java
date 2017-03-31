@@ -42,6 +42,7 @@ import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
  * @author Travis Hall
  */
 @Category(IntegrationTest.class)
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class IdentityProviderResourceIT extends TestBase {
 
     private IdentityProviderResource providerResource;

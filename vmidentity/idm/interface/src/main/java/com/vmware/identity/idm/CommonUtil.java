@@ -34,9 +34,17 @@ import java.util.Enumeration;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 
+import com.vmware.identity.interop.registry.IRegistryAdapter;
+import com.vmware.identity.interop.registry.IRegistryKey;
+import com.vmware.identity.interop.registry.RegKeyAccess;
+import com.vmware.identity.interop.registry.RegValueType;
+import com.vmware.identity.interop.registry.RegistryAdapterFactory;
+import com.vmware.identity.interop.registry.RegistryValueType;
+import org.apache.commons.lang.SystemUtils;
+
 /**
  * Provides common util functions for idm
- * 
+ *
  */
 public final class CommonUtil {
 
@@ -52,51 +60,57 @@ public final class CommonUtil {
     public static synchronized String getHostIPAddress(String configDirPath)
             throws SocketException, IOException
     {
-        ValidateUtil.validateNotEmpty(configDirPath, "configDirPath");
 
-        String ipAddress = null;
-        FileInputStream reader = null;
-        BufferedReader br = null;
+        ValidateUtil.validateNotEmpty(configDirPath,"configDirPath");
         String configFileName = configDirPath;
-        if (configFileName.endsWith(File.separator) == false)
-        {
-            configFileName += File.separator;
+        if (configDirPath.endsWith(File.separator) == false){
+          configFileName += File.separator;
         }
         configFileName += HOSTNAME_FILE_NAME;
-        _logger.debug(String.format(
-                "Reading host name from hostname file [%s]", configFileName));
+        String ipAddress = null;
+        String CONFIG_IDENTITY_ROOT_KEY ="";
+        if (SystemUtils.IS_OS_LINUX) {
+            CONFIG_IDENTITY_ROOT_KEY = "Software\\VMware\\Identity\\Configuration";
+        } else if (SystemUtils.IS_OS_WINDOWS) {
+            CONFIG_IDENTITY_ROOT_KEY = "Software\\VMware\\Identity\\Configuration";
+        }
+        IRegistryKey registryRootKey = null;
+
         try
         {
-            reader = new FileInputStream(configFileName);
-            br = new BufferedReader(new InputStreamReader(reader));
-            String strLine;
-
-            // get hostname ip
-            while ((strLine = br.readLine()) != null) {
-                ipAddress = strLine.trim();
+            IRegistryAdapter registryAdpater = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+            registryRootKey = registryAdpater.openRootKey((int) RegKeyAccess.KEY_READ);
+            if (registryRootKey == null) {
+                throw new NullPointerException("Unable to open Root Key");
+            }
+            ipAddress = registryAdpater.getStringValue(registryRootKey, CONFIG_IDENTITY_ROOT_KEY, "Hostname", true);
+            if (ipAddress == null) {
+              ipAddress = ReadHostNameFile(configFileName);
             }
         }
         catch (Exception ex)
         {
-            _logger.warn(
-                String.format(
-                    "Failed to read host name from hostname file [%s]. Will fallback to ip address.",
-                    configFileName
-                )
-            );
+
             // failed to retrieve ipaddress from hostname.txt, fall back to
             // original solution
             ipAddress = null;
-            ipAddress = findInetAddress(
-                new Predicate<InetAddress>() {
-                    @Override
-                    public boolean matches(InetAddress addr)
-                    {
-                        return ( (addr != null) && (addr.getClass() == Inet4Address.class) );
-                    }
-                }
-            );
+            try {
+              ipAddress = ReadHostNameFile(configFileName);
+            } catch (Exception exp){
+              _logger.info("Failed to read hostname file");
+            }
 
+            if (ipAddress == null ){
+              ipAddress = findInetAddress(
+                  new Predicate<InetAddress>() {
+                      @Override
+                      public boolean matches(InetAddress addr)
+                      {
+                          return ( (addr != null) && (addr.getClass() == Inet4Address.class) );
+                      }
+                  }
+              );
+            }
             if (ipAddress == null)
             {
                 _logger.info("Failed to find local IPV4 Address.");
@@ -121,17 +135,9 @@ public final class CommonUtil {
             {
                 logAndThrow("Error : Failed to find local either IPV4 or IPV6 Inet Address.");
             }
-        }
-        finally
-        {
-            if (reader != null)
-            {
-                reader.close();
-            }
-            if (br != null)
-            {
-                br.close();
-            }
+        } finally {
+            if (registryRootKey != null)
+                registryRootKey.close();
         }
 
         return ipAddress;
@@ -164,7 +170,30 @@ public final class CommonUtil {
         }
     }
 
+    private static String ReadHostNameFile(String hostnameFile) throws Exception{
+        String hostname = null;
+        BufferedReader br = null;
+        FileInputStream fr = null;
+        try {
+            fr = new FileInputStream(hostnameFile);
+            br = new BufferedReader(new InputStreamReader(fr));
+            String str = br.readLine().trim();
+            if (str != null)
+                hostname  = str;
+        } catch (Exception ex){
+           _logger.info("Failed to read hostname.txt file");
+        } finally {
 
+            if (br != null){
+                br.close();
+            }
+            if (fr != null) {
+                fr.close();
+            }
+        }
+        return hostname;
+
+    }
    private static interface Predicate<T>
    {
        public boolean matches(T object);

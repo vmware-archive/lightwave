@@ -34,7 +34,6 @@ VDIR_PAGED_SEARCH_CACHE     gPagedSearchCache =
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pHashTbl, NULL),
-        VMDIR_SF_INIT(.dwTimeoutPeriod, 5 * 60 * 1000)
     };
 
 VDIR_LOCKOUT_CACHE          gVdirLockoutCache =

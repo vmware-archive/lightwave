@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -154,6 +154,10 @@ VmwDeployFreeSetupParams(
     if (pParams->pszMachineAccount)
     {
         VmwDeployFreeMemory(pParams->pszMachineAccount);
+    }
+    if (pParams->pszOrgUnit)
+    {
+        VmwDeployFreeMemory(pParams->pszOrgUnit);
     }
     if (pParams->pszDomainName)
     {
@@ -506,6 +510,12 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (pParams->pszOrgUnit)
+    {
+        dwError = VmwDeployValidateOrgUnit(pParams->pszOrgUnit);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
                     pParams->pszPassword,
@@ -547,6 +557,9 @@ VmwDeploySetupClientWithDC(
             "Joining system to directory service at [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszServer));
 
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
     dwError = VmAfdJoinVmDirA(
                     pParams->pszServer,
                     pszUsername,
@@ -554,7 +567,7 @@ VmwDeploySetupClientWithDC(
                     pParams->pszMachineAccount ?
                             pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszDomainName,
-                    NULL /* Org Unit */);
+                    pParams->pszOrgUnit);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(
@@ -648,6 +661,15 @@ VmwDeploySetupClient(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (pParams->pszOrgUnit)
+    {
+        dwError = VmwDeployValidateOrgUnit(pParams->pszOrgUnit);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
     VMW_DEPLOY_LOG_INFO(
             "Validating Domain credentials for user [%s@%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
@@ -695,8 +717,9 @@ VmwDeploySetupClient(
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
-                    NULL, /* Org Unit */
-                    0     /* Flags    */);
+                    pParams->pszOrgUnit,
+                    pParams->bMachinePreJoined ?
+                        VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmAfdGetDCNameA(pszHostname, &pszDC);

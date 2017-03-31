@@ -79,7 +79,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling />
@@ -93,7 +93,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>dcelib.lib;gssapi64.lib;ws2_32.lib;pthreadVC2.lib;libldap_r.lib;liblber.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -106,7 +106,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling />
@@ -117,7 +117,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

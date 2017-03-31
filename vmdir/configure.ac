@@ -116,6 +116,17 @@ AC_ARG_WITH([datastore],
         VMDIRD_DATASTORE="$withval"
     ])
 
+ENABLE_LIGHTWAVE_BUILD=no
+AC_ARG_ENABLE([lightwave-build],
+    [AC_HELP_STRING([--enable-lightwave-build], [enable lightwave build(default: no)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AC_DEFINE_UNQUOTED(LIGHTWAVE_BUILD, 1, [ enable lightwave specific build ])
+        fi
+    ])
+
+
 # client only build
 
 ENABLE_SERVER=false
@@ -129,17 +140,6 @@ AC_ARG_ENABLE([server],
     ])
 
 AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
-AM_CONDITIONAL([HAVE_MDB_STORE], [test x"$VMDIRD_DATASTORE" = x"mdb"])
-
-# mdb component
-
-saved_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I../thirdparty/openldap/libraries/mdb"
-if test x"$VMDIRD_DATASTORE" = x"mdb"
-then
-AC_CHECK_HEADERS(lmdb.h)
-fi
-CPPFLAGS="$saved_CPPFLAGS"
 
 # openssl component
 
@@ -254,6 +254,7 @@ AC_ARG_WITH([sasl],
         SASL_INCLUDES="-I$withval/include"
         SASL_LIBPATH="$withval/lib64"
         SASL_LDFLAGS="-L$withval/lib64"
+        SASL_PLUGINSPATH="$withval/lib64/sasl2"
     ])
 
 AC_ARG_WITH([sasl-includes],
@@ -269,11 +270,96 @@ AC_ARG_WITH([sasl-libs],
         SASL_LDFLAGS="-L$withval"
     ])
 
+AC_ARG_WITH([sasl-plugins],
+    [AC_HELP_STRING([--with-sasl-plugins=<dir>], [assume SASL plugins at runtime are located in <dir> ])],
+    [
+        SASL_PLUGINSPATH="$withval"
+    ])
+
 AC_SUBST(SASL_BASE_PATH)
 AC_SUBST(SASL_INCLUDES)
 AC_SUBST(SASL_LDFLAGS)
 
-AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_LIBPATH/sasl2", [SASL2 Library path])
+AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_PLUGINSPATH", [SASL2 Library path])
+
+# Trident
+
+AC_ARG_WITH([trident],
+    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
+    [
+        TRIDENT_BASE_PATH="$withval"
+        TRIDENT_INCLUDES="-I$withval/include"
+        TRIDENT_LDFLAGS="-L$withval/lib64"
+    ])
+
+TRIDENT_LIBS="-lrestengine"
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(TRIDENT_BASE_PATH)
+AC_SUBST(TRIDENT_INCLUDES)
+AC_SUBST(TRIDENT_LDFLAGS)
+
+# Jansson
+
+AC_ARG_WITH([jansson],
+    [AC_HELP_STRING([--with-jansson=<dir>], [use jansson binaries rooted at prefix <dir> ])],
+    [
+        JANSSON_BASE_PATH="$withval"
+        JANSSON_INCLUDES="-I$withval/include"
+        JANSSON_LDFLAGS="-L$withval/lib"
+    ])
+
+JANSSON_LIBS="-ljansson"
+AC_CHECK_HEADERS(jansson.h)
+AC_SUBST(JANSSON_BASE_PATH)
+AC_SUBST(JANSSON_INCLUDES)
+AC_SUBST(JANSSON_LDFLAGS)
+
+# Copenapi
+
+AC_ARG_WITH([copenapi],
+    [AC_HELP_STRING([--with-copenapi=<dir>], [use copenapi binaries rooted at prefix <dir> ])],
+    [
+        COPENAPI_BASE_PATH="$withval"
+        COPENAPI_INCLUDES="-I$withval/include"
+        COPENAPI_LDFLAGS="-L$withval/lib"
+    ])
+
+COPENAPI_LIBS="-lcopenapi"
+AC_CHECK_HEADERS(copenapi/copenapi.h)
+AC_SUBST(COPENAPI_BASE_PATH)
+AC_SUBST(COPENAPI_INCLUDES)
+AC_SUBST(COPENAPI_LDFLAGS)
+
+# OIDC
+
+AC_ARG_WITH([ssocommon],
+    [AC_HELP_STRING([--with-ssocommon=<dir>], [use ssocommon binaries rooted at prefix <dir> ])],
+    [
+        SSOCOMMON_BASE_PATH="$withval"
+        SSOCOMMON_INCLUDES="-I$withval/include"
+        SSOCOMMON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+SSOCOMMON_LIBS="-lssocommon"
+AC_SUBST(SSOCOMMON_BASE_PATH)
+AC_SUBST(SSOCOMMON_INCLUDES)
+AC_SUBST(SSOCOMMON_LDFLAGS)
+
+AC_ARG_WITH([oidc],
+    [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
+    [
+        OIDC_BASE_PATH="$withval"
+        OIDC_INCLUDES="-I$withval/include"
+        OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+OIDC_LIBS="-lssooidc"
+AC_CHECK_HEADERS(oidc.h)
+AC_CHECK_HEADERS(oidc_types.h)
+AC_CHECK_HEADERS(common_types.h)
+AC_SUBST(OIDC_BASE_PATH)
+AC_SUBST(OIDC_INCLUDES)
+AC_SUBST(OIDC_LDFLAGS)
 
 # Likewise components
 
@@ -361,6 +447,15 @@ done
 
 AC_SUBST(IDLFLAGS)
 
+AC_ARG_ENABLE([pac],
+     AS_HELP_STRING([--disable-pac], [Disable Kerberos PAC]))
+AM_CONDITIONAL([VMDIR_ENABLE_PAC], [test "x$enable_pac" != "xno"]])
+if test x"$enable_pac" != x"no"
+then
+AC_DEFINE_UNQUOTED(VMDIR_ENABLE_PAC, 1, [ Enable PAC ])
+fi
+
+
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $LW_INCLUDES"
 AC_CHECK_HEADERS(lw/base.h lw/types.h uuid/uuid.h limits.h)
@@ -383,7 +478,6 @@ AC_CHECK_FUNCS(strerror)
 
 AC_CHECK_LIB([dl], [dlopen], [DL_LIBS="-ldl"])
 AC_CHECK_LIB([pthread], [pthread_self], [PTHREAD_LIBS="-lpthread"])
-AC_CHECK_LIB([mdb],[mdb_strerror],[MDB_LIBS="-lmdb"],[],[])
 AC_CHECK_LIB([z],[inflate],[ZLIB_LIBS="-lz"],[],[$ZLIB_LDFLAGS])
 AC_CHECK_LIB([bz2],[BZ2_bzdopen],[BZIP_LIBS="-lbz2"],[],[$BZIP_LDFLAGS])
 AC_CHECK_LIB([uuid],[uuid_copy], [UUID_LIBS="-luuid"], [], [$LW_LDFLAGS -luuid])
@@ -484,6 +578,11 @@ AC_SUBST(LBER_LIBS)
 AC_SUBST(SHADOW_LIBS)
 AC_SUBST(CRYPT_LIBS)
 AC_SUBST(SASL_LIBS)
+AC_SUBST(TRIDENT_LIBS)
+AC_SUBST(JANSSON_LIBS)
+AC_SUBST(COPENAPI_LIBS)
+AC_SUBST(SSOCOMMON_LIBS)
+AC_SUBST(OIDC_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
@@ -511,11 +610,16 @@ AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
 
 vmdirsasldir=$vmdirlibdir/sasl2
 AC_SUBST(vmdirsasldir)
+
+vmdirlogdir=/var/log/vmware/vmdir/
+AC_ARG_WITH([logdir],
+   [AC_HELP_STRING([--with-logdir], [set the logging directory for vmdir])],
+   [
+        vmdirlogdir="$withval"
+   ])
+AC_SUBST(vmdirlogdir)
 AS_AC_EXPAND(VMDIR_LOG_DIR, $vmdirlogdir)
 AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
-
-vmdirlogdir=/var/log/vmware/vmdir
-AC_SUBST(vmdirlogdir)
 
 vmdir_version=1.0
 AC_ARG_WITH([version],
@@ -526,7 +630,6 @@ AC_ARG_WITH([version],
 AC_SUBST(vmdir_version)
 AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_version)
 AC_DEFINE_UNQUOTED(VDIR_PSC_VERSION, "$VDIR_PSC_VERSION", [PSC version])
-
 
 vmdirconfdir="$datadir/config"
 AC_SUBST(vmdirconfdir)
@@ -565,6 +668,16 @@ AC_CONFIG_FILES([Makefile
                  testing/Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile
+                 testing/test_lib/Makefile
+                 testing/test_runner/Makefile
+                 testing/integration_tests/Makefile
+                 testing/integration_tests/acls/Makefile
+                 testing/integration_tests/misc/Makefile
+                 testing/integration_tests/multitenancy/Makefile
+                 testing/integration_tests/passwordapis/Makefile
+                 testing/integration_tests/search/Makefile
+                 testing/unittests/Makefile
+                 testing/unittests/libcommon/Makefile
                  tools/Makefile
                  tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile

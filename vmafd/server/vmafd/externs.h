@@ -27,5 +27,5 @@
 
 extern VMAFD_GLOBALS gVmafdGlobals;
 
-extern VECS_SRV_STORE_MAP gVecsGlobalStoreMap[64];
+extern VECS_SRV_STORE_MAP gVecsGlobalStoreMap[VECS_STOREHASH_MAP_SIZE];
 

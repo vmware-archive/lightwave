@@ -16,14 +16,11 @@
 
 package com.vmware.identity.idm.server;
 
-import java.security.KeyStore;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +47,9 @@ import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchResult;
 import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
+import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.ldap.LdapProvider;
 
@@ -73,6 +72,7 @@ public class LdapProviderTest
    private final static String CFG_KEY_STS_KEYSTORE = "sts-store.jks";
    private final static String CFG_KEY_STS_KEYSTORE_PASSWORD = "ca$hc0w";
    private static final String CFG_KEY_LDAPS_KEY_ALIAS = "/slapd.cer";
+   private static final String TENANT_NAME = "TestTenant";
 
    static
    {
@@ -84,6 +84,8 @@ public class LdapProviderTest
       storeData.setUserBaseDn( "dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com");
       storeData.setGroupBaseDn("dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com");
       storeData.setAlias("ssolabs-openldap");
+      storeData.setAccountLinkingUseUPN(false);
+      storeData.setHintAttributeName(attrNameUserPrincipalName);
 
       Map<String, String> attrMap = new HashMap<String, String>();
       attrMap.put(attrNameGivenName, attrNameGivenName);
@@ -117,10 +119,13 @@ public class LdapProviderTest
       storeDataWithSsl.setAlias("ssolabs-openldap");
       storeDataWithSsl.setAttributeMap(attrMap);
       storeDataWithSsl.setCertificates(getLdapsCertificate());
+
+      PerformanceMonitorFactory.setPerformanceMonitor(new TestPerfMonitor());
+      LdapConnectionPool.getInstance().createPool(TENANT_NAME);
    }
-   private static final IIdentityProvider unMappedprovider = new LdapProvider(storeData, null);
-   private static final IIdentityProvider schemaMappedprovider = new LdapProvider(storeDataSchemaMapped, null);
-   private static final IIdentityProvider ldapsProvider = new LdapProvider(storeDataWithSsl, null);
+   private static final IIdentityProvider unMappedprovider = new LdapProvider(TENANT_NAME, storeData, null);
+   private static final IIdentityProvider schemaMappedprovider = new LdapProvider(TENANT_NAME, storeDataSchemaMapped, null);
+   private static final IIdentityProvider ldapsProvider = new LdapProvider(TENANT_NAME, storeDataWithSsl, null);
 
    @BeforeClass
    public static void testSetup()

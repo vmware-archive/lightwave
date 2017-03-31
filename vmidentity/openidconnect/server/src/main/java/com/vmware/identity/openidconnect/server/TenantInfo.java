@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
@@ -28,6 +29,7 @@ public class TenantInfo {
     private final String name;
     private final RSAPrivateKey privateKey;
     private final RSAPublicKey publicKey;
+    private final X509Certificate certificate;
     private final AuthnPolicy authnPolicy;
     private final Issuer issuer;
     private final String brandName;
@@ -47,12 +49,14 @@ public class TenantInfo {
         Validate.notEmpty(builder.name, "builder.name");
         Validate.notNull(builder.privateKey, "builder.privateKey");
         Validate.notNull(builder.publicKey, "builder.publicKey");
+        Validate.notNull(builder.certificate, "builder.certificate");
         Validate.notNull(builder.authnPolicy, "builder.authnPolicy");
         Validate.notNull(builder.issuer, "builder.issuer");
 
         this.name                           = builder.name;
         this.privateKey                     = builder.privateKey;
         this.publicKey                      = builder.publicKey;
+        this.certificate                    = builder.certificate;
         this.authnPolicy                    = builder.authnPolicy;
         this.issuer                         = builder.issuer;
         this.brandName                      = builder.brandName;
@@ -78,6 +82,10 @@ public class TenantInfo {
 
     public RSAPublicKey getPublicKey() {
         return this.publicKey;
+    }
+
+    public X509Certificate getCertificate() {
+        return this.certificate;
     }
 
     public AuthnPolicy getAuthnPolicy() {
@@ -177,6 +185,7 @@ public class TenantInfo {
         private String name;
         private RSAPrivateKey privateKey;
         private RSAPublicKey publicKey;
+        private X509Certificate certificate;
         private AuthnPolicy authnPolicy;
         private Issuer issuer;
         private String brandName;
@@ -205,6 +214,12 @@ public class TenantInfo {
         public Builder publicKey(RSAPublicKey publicKey) {
             Validate.notNull(publicKey, "publicKey");
             this.publicKey = publicKey;
+            return this;
+        }
+
+        public Builder certificate(X509Certificate certificate) {
+            Validate.notNull(certificate, "certificate");
+            this.certificate = certificate;
             return this;
         }
 

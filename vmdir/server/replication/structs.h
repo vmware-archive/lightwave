@@ -28,10 +28,11 @@
 typedef struct _VMDIR_REPLICATION_PAGE_ENTRY
 {
     LDAPMessage *entry;
-    int entryState;
-    PSTR pszDn;
-    DWORD dwDnLength;
-    int errVal;
+    int         entryState;
+    USN         ulPartnerUSN;
+    PSTR        pszDn;
+    DWORD       dwDnLength;
+    int         errVal;
 } VMDIR_REPLICATION_PAGE_ENTRY, *PVMDIR_REPLICATION_PAGE_ENTRY;
 
 typedef struct _VMDIR_REPLICATION_PAGE

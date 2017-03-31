@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+    ProjectType="Visual C++"
+    Version="9.00"
+    Name="version"
+    ProjectGUID="{B95A9F25-FBD9-431E-B517-9394DF869C99}"
+    RootNamespace="version"
+    Keyword="Win32Proj"
+    TargetFrameworkVersion="196613"
+    >
+    <Platforms>
+        <Platform
+            Name="x64"
+        />
+    </Platforms>
+    <ToolFiles>
+    </ToolFiles>
+    <Configurations>
+        <Configuration
+            Name="Debug|x64"
+            OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="10"
+            CharacterSet="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+                CommandLine="set MAKEFLAGS= &amp;&amp; nmake /e /f makefile.x64"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+                WarningLevel="4"
+                WarnAsError="true"
+                TargetEnvironment="3"
+                OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Release|x64"
+            OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="10"
+            CharacterSet="1"
+            WholeProgramOptimization="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+                CommandLine="set MAKEFLAGS= &amp;&amp; nmake /e /f makefile.x64"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+                WarningLevel="4"
+                WarnAsError="true"
+                TargetEnvironment="3"
+                OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+    </Configurations>
+    <References>
+    </References>
+    <Files>
+        <Filter
+            Name="Source Files"
+            Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+            UniqueIdentifier="{6695555e-a681-4536-bcf5-49d0e3b094da}"
+            >
+        </Filter>
+        <Filter
+            Name="Header Files"
+            Filter="h;hpp;hxx;hm;inl;inc;xsd"
+            UniqueIdentifier="{0d2d45c5-1f2a-44b0-84de-b6904511dd5b}"
+            >
+        </Filter>
+        <Filter
+            Name="Resource Files"
+            Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+            UniqueIdentifier="{3b43a81c-6404-417d-bc65-17865d0b7b99}"
+            >
+        </Filter>
+        <File
+            RelativePath=".\ReadMe.txt"
+            >
+        </File>
+    </Files>
+    <Globals>
+    </Globals>
+</VisualStudioProject>

@@ -1,0 +1,114 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.vmware.identity</groupId>
+    <artifactId>vmware-identity</artifactId>
+    <version>1.2.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>ROOT</artifactId>
+  <packaging>war</packaging>
+  <name>ROOT Web Application</name>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>${maven.war.plugin.version}</version>
+        <configuration>
+          <outputDirectory>${outputDirectory}</outputDirectory>
+          <warName>${project.artifactId}</warName>
+          <packagingExcludes>WEB-INF/classes,${lib.excludes.pattern}</packagingExcludes>
+          <archiveClasses>true</archiveClasses>
+          <archive>
+            <manifestEntries>
+              <Specification-Title>${service.title}</Specification-Title>
+              <Specification-Version>${service.version}</Specification-Version>
+              <Specification-Vendor>${service.vendor}</Specification-Vendor>
+              <Implementation-Title>${service.title}</Implementation-Title>
+              <Implementation-Version>${service.version}</Implementation-Version>
+              <Implementation-Vendor>${service.vendor}</Implementation-Vendor>
+            </manifestEntries>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>war</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${basedir}/build.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <!-- Services being consolidated into this single WAR -->
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>sts</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>samlauthority</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>websso</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.oidc</groupId>
+      <artifactId>openidconnect-server</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.idm</groupId>
+      <artifactId>vmware-identity-rest-idm-server</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.afd</groupId>
+      <artifactId>vmware-identity-rest-afd-server</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmdir.rest</groupId>
+      <artifactId>vmware-directory-rest-server</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+    <service.title>SSO</service.title>
+    <service.version>0.0.1.dev</service.version>
+    <service.vendor>VMWare, Inc.</service.vendor>
+  </properties>
+
+</project>

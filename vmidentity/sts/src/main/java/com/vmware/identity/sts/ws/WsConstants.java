@@ -39,6 +39,7 @@ public class WsConstants {
    public static final String WSSE_SECURITY_ELEMENT_NAME = "Security";
    public static final String WSSE_USERNAME_TOKEN_ELEMENT_NAME = "UsernameToken";
    public static final String WSSE_PASSWORD_ELEMENT_NAME = "Password";
+   public static final String WSSE_PASSCODE_ELEMENT_NAME = "Passcode";
    public static final String WSSE_BINARY_SECURITY_TOKEN_ELEMENT_NAME = "BinarySecurityToken";
    public static final String ASSERTION_ELEMENT_NAME = "Assertion";
    public static final String WSU_TIMESTAMP_ELEMENT_NAME = "Timestamp";

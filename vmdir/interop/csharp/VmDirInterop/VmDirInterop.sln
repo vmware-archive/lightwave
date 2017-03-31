@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmDirInterop", "VmDirInterop\VmDirInterop.csproj", "{CA2F370A-7C11-4173-8BDF-9FD143896E01}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperLoggingTest", "SuperLoggingTest\SuperLoggingTest.csproj", "{D5419FB0-172B-4E7B-B109-27A5927A43C6}"
@@ -11,6 +13,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LdapTest", "LdapTest\LdapTest.csproj", "{A64B0D23-BFB7-41A6-AC0B-24A350C43A3E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples", "Samples\Samples.csproj", "{C9B48BF4-9D6D-4EBF-B2B3-3F2ABA2CF53D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchemaConnectionTest", "SchemaConnectionTest\SchemaConnectionTest.csproj", "{2094E445-86BF-42FD-8DFA-27918C02369F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,6 +54,12 @@ Global
 		{C9B48BF4-9D6D-4EBF-B2B3-3F2ABA2CF53D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9B48BF4-9D6D-4EBF-B2B3-3F2ABA2CF53D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C9B48BF4-9D6D-4EBF-B2B3-3F2ABA2CF53D}.Release|x64.ActiveCfg = Release|Any CPU
+		{2094E445-86BF-42FD-8DFA-27918C02369F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2094E445-86BF-42FD-8DFA-27918C02369F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2094E445-86BF-42FD-8DFA-27918C02369F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2094E445-86BF-42FD-8DFA-27918C02369F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2094E445-86BF-42FD-8DFA-27918C02369F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2094E445-86BF-42FD-8DFA-27918C02369F}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

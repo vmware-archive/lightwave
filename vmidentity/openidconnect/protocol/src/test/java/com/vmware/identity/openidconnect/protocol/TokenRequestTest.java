@@ -38,6 +38,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.GrantType;
 import com.vmware.identity.openidconnect.common.ParseException;
@@ -61,6 +62,7 @@ public class TokenRequestTest {
                 Scope.OPENID,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -92,6 +94,7 @@ public class TokenRequestTest {
                 (Scope) null,
                 (SolutionUserAssertion) null,
                 CLIENT_ASSERTION,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -124,6 +127,7 @@ public class TokenRequestTest {
                 (Scope) null,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -154,6 +158,7 @@ public class TokenRequestTest {
                 SCOPE,
                 (SolutionUserAssertion) null,
                 CLIENT_ASSERTION,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -183,6 +188,7 @@ public class TokenRequestTest {
                 SCOPE,
                 SOLUTION_USER_ASSERTION,
                 (ClientAssertion) null,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -212,6 +218,7 @@ public class TokenRequestTest {
                 SCOPE,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -243,6 +250,7 @@ public class TokenRequestTest {
                 SCOPE,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }
@@ -273,6 +281,7 @@ public class TokenRequestTest {
                 SCOPE,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
+                (ClientID) null,
                 (CorrelationID) null);
         Assert.assertEquals("parameters", parameters, tokenRequest.toHttpRequest().getParameters());
     }

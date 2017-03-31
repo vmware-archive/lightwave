@@ -18,14 +18,16 @@ import java.security.cert.X509Certificate;
 import org.apache.commons.lang.Validate;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.UseKeyType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
+import org.w3._2000._09.xmldsig_.SignatureType;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.SamlTokenSpec.ConfirmationType;
+import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.sts.ContradictoryHoKConditionsException;
 import com.vmware.identity.sts.InvalidSecurityHeaderException;
 import com.vmware.identity.sts.Request;
+import com.vmware.identity.sts.util.JAXBExtractor;
 
 /**
  * This class has the purpose to provider functionality that is capable of
@@ -84,8 +86,9 @@ public final class HoKConditionsAnalyzer {
          // If UseKey is not null then it should have not null signature
          // (enforced by schema)
          signatureId = useKey.getSig();
-         if (header.getSignature() == null
-            || !signatureId.equalsIgnoreCase(header.getSignature().getId())) {
+         SignatureType signature = JAXBExtractor.extractFromSecurityHeader(header, SignatureType.class);
+         if (signature == null
+            || !signatureId.equalsIgnoreCase(signature.getId())) {
             throw new InvalidSecurityHeaderException(
                "SignatureId from UseKey doesn't match signature from the SecurityHeader");
          }

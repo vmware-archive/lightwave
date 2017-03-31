@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.impl.AuthnRequestMarshaller;
@@ -46,6 +47,7 @@ import com.vmware.identity.session.impl.SessionManagerImpl;
  * @author root
  *
  */
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class AuthnRequestStateTest {
 	private static final int MAX_RETRIES = 5; // number of times we're allowed to submit request before it fails
 

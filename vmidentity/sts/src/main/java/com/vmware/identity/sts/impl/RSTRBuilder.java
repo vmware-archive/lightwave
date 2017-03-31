@@ -29,6 +29,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.saml.SamlToken;
 import com.vmware.identity.sts.Request;
 import com.vmware.identity.sts.auth.Result;
+import com.vmware.identity.sts.auth.Result.AuthnMethod;
 import com.vmware.identity.sts.ws.WsConstants;
 
 /**
@@ -150,6 +151,26 @@ final class RSTRBuilder {
       betResponse.setEncodingType(WST_ENCODING_TYPE);
 
       return betResponse;
+   }
+
+   static RequestSecurityTokenResponseType createSecurIDNegotiationResponse(Result authResult) {
+      assert authResult != null && !authResult.completed();
+
+      log.debug("Started creating SecurID negotiation response.");
+
+      if (authResult == null || authResult.getAuthnMethod() != AuthnMethod.TIMESYNCTOKEN || authResult.getSessionID() == null) {
+         throw new IllegalArgumentException("SecurID negotiation response can not be created due to invalid authentication result.");
+      }
+
+      ObjectFactory wstFactory = new ObjectFactory();
+      RequestSecurityTokenResponseType response = wstFactory
+         .createRequestSecurityTokenResponseType();
+
+      response.setContext(authResult.getSessionID());
+
+      log.debug("SecurID negotiation response created.");
+
+      return response;
    }
 
    static RequestSecurityTokenResponseCollectionType wrapInCollection(

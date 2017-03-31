@@ -231,43 +231,53 @@ public class ExternalIDPResourceTest {
     @Test
     public void testDeleteExternalIDP() throws Exception {
         IDPConfig config = IDPConfigUtil.createIDPConfig();
-        client.removeExternalIdpConfig(TENANT, config.getEntityID());
+        client.removeExternalIdpConfig(TENANT, config.getEntityID(), false);
         replay(client);
 
-        resource.delete(config.getEntityID());
+        resource.delete(config.getEntityID(), false);
+        verify(client);
+    }
+
+    @Test
+    public void testDeleteExternalIDPAndUsers() throws Exception {
+        IDPConfig config = IDPConfigUtil.createIDPConfig();
+        client.removeExternalIdpConfig(TENANT, config.getEntityID(), true);
+        replay(client);
+
+        resource.delete(config.getEntityID(), true);
         verify(client);
     }
 
     @Test(expected = NotFoundException.class)
     public void testDeleteExternalIDP_NoSuchTenant() throws Exception {
         IDPConfig config = IDPConfigUtil.createIDPConfig();
-        client.removeExternalIdpConfig(TENANT, config.getEntityID());
+        client.removeExternalIdpConfig(TENANT, config.getEntityID(), false);
         expectLastCall().andThrow(new NoSuchTenantException("No such tenant"));
         replay(client);
 
-        resource.delete(config.getEntityID());
+        resource.delete(config.getEntityID(), false);
         verify(client);
     }
 
     @Test(expected = NotFoundException.class)
     public void testDeleteExternalIDP_NoSuchEntity() throws Exception {
         IDPConfig config = IDPConfigUtil.createIDPConfig();
-        client.removeExternalIdpConfig(TENANT, config.getEntityID());
+        client.removeExternalIdpConfig(TENANT, config.getEntityID(), false);
         expectLastCall().andThrow(new NoSuchExternalIdpConfigException("No such entity"));
         replay(client);
 
-        resource.delete(config.getEntityID());
+        resource.delete(config.getEntityID(), false);
         verify(client);
     }
 
     @Test(expected = InternalServerErrorException.class)
     public void testDeleteExternalIDP_ThrowsInternalServerError() throws Exception {
         IDPConfig config = IDPConfigUtil.createIDPConfig();
-        client.removeExternalIdpConfig(TENANT, config.getEntityID());
+        client.removeExternalIdpConfig(TENANT, config.getEntityID(), false);
         expectLastCall().andThrow(new IDMException("IDM error"));
         replay(client);
 
-        resource.delete(config.getEntityID());
+        resource.delete(config.getEntityID(), false);
         verify(client);
     }
 

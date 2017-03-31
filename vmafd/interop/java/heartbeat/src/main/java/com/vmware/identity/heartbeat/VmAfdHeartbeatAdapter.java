@@ -15,7 +15,12 @@ class VmAfdHeartbeatAdapter {
         if (isWindows) {
           System.loadLibrary("libheartbeatjni");
         } else {
-        System.load("/opt/vmware/lib64/libheartbeatjni.so");
+            try {
+              System.load("/opt/vmware/lib64/libheartbeatjni.so");
+            }
+            catch (UnsatisfiedLinkError e) {
+              System.load("/usr/lib/vmware-vmafd/lib64/libheartbeatjni.so");
+            }
         }
       }
 

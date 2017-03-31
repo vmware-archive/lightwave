@@ -43,7 +43,7 @@ import javax.crypto.spec.SecretKeySpec;
  * however the authentication mechanism done by validating Domain user credentials in Directory Service.
  * NOTE: This class is *not* Thread-safe.
  */
-public class VMwareEndpointCertificateStore {
+public class VMwareEndpointCertificateStore implements AutoCloseable {
    private final String _storeName;
    private final ServerHandle _serverHandle;
    private PointerRef _storeHandle;
@@ -365,7 +365,7 @@ public class VMwareEndpointCertificateStore {
     * Note: This Enumeration instance is *not* thread-safe. Also, make sure to keep the store open when enumerating entries.
     * @return Number of entries
     */
-   public Enumeration<VecsEntry> enumerateEntries(VecsEntryInfoLevel infoLevel) {
+   public VecsEntryEnumeration enumerateEntries(VecsEntryInfoLevel infoLevel) {
       return new VecsEntryEnumeration(this, _storeHandle, _serverName, _userName, _storeName, infoLevel);
    }
 
@@ -482,110 +482,9 @@ public class VMwareEndpointCertificateStore {
       }
    }
 
-   private static class VecsEntryEnumeration implements Enumeration<VecsEntry> {
-      private final VMwareEndpointCertificateStore _certStore;
-      private final String _storeName;
-      private final String _serverName;
-      private final String _userName;
-      private final PointerRef _storeHandle;
-      private final VecsEntryInfoLevel _infoLevel;
-      private PointerRef _pEnumContext;
-      private static final int ENUM_SIZE = 256;
-      private final List<VecsEntryNative> _enumBuffer = new ArrayList<VecsEntryNative>();
-
-      public VecsEntryEnumeration(VMwareEndpointCertificateStore certStore,
-                                  PointerRef storeHandle,
-                                  String serverName,
-                                  String userName, String storeName,
-                                  VecsEntryInfoLevel infoLevel) {
-         _certStore = certStore;
-         _storeHandle = storeHandle;
-         _storeName = storeName;
-         _serverName = serverName;
-         _userName = userName;
-         _infoLevel = infoLevel;
-
-         _pEnumContext = beginEnumEntries();
-         fetchMoreEntries();
-      }
-
-      @Override
-      public boolean hasMoreElements() {
-         checkStatusAndUpdateIfNecessary();
-         return !_enumBuffer.isEmpty();
-      }
-
-      @Override
-      public VecsEntry nextElement() {
-         checkStatusAndUpdateIfNecessary();
-         VecsEntry resultEntry = null;
-         if (!_enumBuffer.isEmpty()) {
-            try {
-               resultEntry = convertVecsEntryNativeToVecsEntry(_enumBuffer
-                     .remove(0));
-            } catch (CertificateException ce) {
-               IllegalStateException ise = new IllegalStateException(
-                     String.format("Certificate generation from PEM string failed."
-                           + "[Store: %s, Server: %s, User: %s]",
-                           _storeName, _serverName, _userName),
-                    ce);
-               throw ise;
-            } catch (CRLException crle) {
-                IllegalStateException ise = new IllegalStateException(
-                        String.format("CRL generation from PEM string failed."
-                              + "[Store: %s, Server: %s, User: %s]",
-                              _storeName, _serverName, _userName),
-                       crle);
-                  throw ise;
-               }
-         }
-         return resultEntry;
-      }
-
-      @Override
-      protected void finalize() {
-         endEnumEntries();
-      }
-
-      private void checkStatusAndUpdateIfNecessary() {
-         if (_enumBuffer.isEmpty()) {
-            fetchMoreEntries();
-            if (_enumBuffer.isEmpty()) {
-               endEnumEntries();
-            }
-         }
-      }
-
-      private void fetchMoreEntries() {
-         List<VecsEntryNative> entries = enumEntries();
-         _enumBuffer.addAll(entries);
-      }
-
-      private PointerRef beginEnumEntries() {
-         PointerRef pEnumContext = new PointerRef();
-         int error = VecsAdapter.VecsBeginEnumEntries(_storeHandle, ENUM_SIZE,
-               _infoLevel.getValue(), pEnumContext);
-         BAIL_ON_ERROR(error, "Begin enum on store '%s' failed. [Server: %s, User: %s]",
-               _storeName, _serverName, _userName);
-
-         return pEnumContext;
-      }
-
-      private List<VecsEntryNative> enumEntries() {
-         List<VecsEntryNative> pEntries = new ArrayList<VecsEntryNative>();
-         int error = VecsAdapter.VecsEnumEntriesW(_pEnumContext, pEntries);
-         BAIL_ON_ERROR(error, "Enum of entries on store '%s' failed. [Server: %s, User: %s]", _storeName, _serverName, _userName);
-
-         return pEntries;
-      }
-
-      private void endEnumEntries() {
-         if (_pEnumContext != null && !PointerRef.isNull(_pEnumContext)) {
-            int error = VecsAdapter.VecsEndEnumEntries(_pEnumContext);
-            BAIL_ON_ERROR(error, "End Enum on store '%s' failed. [Server: %s, User: %s]", _storeName, _serverName, _userName);
-            _pEnumContext = null;
-         }
-      }
+   @Override
+   public void close(){
+      closeStore();
    }
 
    protected void finalize() throws Throwable {

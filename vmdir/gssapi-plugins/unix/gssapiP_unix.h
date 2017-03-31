@@ -55,6 +55,9 @@ extern "C" {
 #define UNIX_MECH_PROTOCOL_MAJ_VERSION 1
 #define UNIX_MECH_PROTOCOL_MIN_VERSION 0
 
+/* Build the SRP plugin with FIPS-compatibility mode on by default */
+#define SRP_FIPS_ENABLED 1
+
 /*
  * constants for der encoding/decoding routines.
  */
@@ -151,10 +154,15 @@ typedef struct {
         struct SRPVerifier *srp_ver;     /* Server SRP context handle */
         krb5_context      krb5_ctx;
         krb5_keyblock     *keyblock;
+#ifdef SRP_FIPS_ENABLED
+        EVP_CIPHER_CTX    *evp_encrypt_ctx;   /* Used by FIPS EVP_CIPHER_CTX_new */
+        EVP_CIPHER_CTX    *evp_decrypt_ctx;   /* Used by FIPS EVP_CIPHER_CTX_new */
+#else
         AES_KEY           aes_encrypt_key;
         AES_KEY           aes_decrypt_key;
         unsigned char     aes_encrypt_iv[AES_BLOCK_SIZE];
         unsigned char     aes_decrypt_iv[AES_BLOCK_SIZE];
+#endif
         HMAC_CTX          hmac_ctx;
         char              *unix_username; /* UNIX username */
         char              *username_hash; /* user shadow pwd file hash */

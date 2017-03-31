@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 
 import oasis.names.tc.saml._2_0.assertion.AssertionType;
+import oasis.names.tc.saml._2_0.assertion.ObjectFactory;
 
 import org.easymock.EasyMock;
 import org.junit.Assert;
@@ -35,11 +36,11 @@ import com.rsa.names._2009._12.std_ext.ws_trust1_4.advice.AttributeType;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.saml.Advice;
 import com.vmware.identity.saml.Advice.Attribute;
-import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.SamlTokenSpec;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData;
 import com.vmware.identity.saml.SamlTokenSpec.Builder;
 import com.vmware.identity.saml.SamlTokenSpec.Confirmation;
+import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.SignatureAlgorithm;
 import com.vmware.identity.saml.TokenValidator;
 import com.vmware.identity.sts.CertificateUtil;
@@ -179,6 +180,30 @@ public final class SamlTokenSpecBuilderTest {
          AuthenticationData.AuthnMethod.XMLDSIG, SignatureAlgorithm.RSA_SHA256);
       testRenewOKInt(DELEGATE, DELEGATE_CERT, DELEGATE, AuthnMethod.DIG_SIG,
          AuthenticationData.AuthnMethod.XMLDSIG, SignatureAlgorithm.RSA_SHA256);
+   }
+
+   @Test
+   public void testRenewNotDelegatedTokenUserCertOK() {
+      testRenewOKInt(SUBJECT, SUBJECT_CERT, SUBJECT, AuthnMethod.SMARTCARD,
+         AuthenticationData.AuthnMethod.SMARTCARD);
+      testRenewOKInt(DELEGATE, DELEGATE_CERT, DELEGATE, AuthnMethod.SMARTCARD,
+         AuthenticationData.AuthnMethod.SMARTCARD);
+      testRenewOKInt(SUBJECT, SUBJECT_CERT, SUBJECT, AuthnMethod.SMARTCARD,
+         AuthenticationData.AuthnMethod.SMARTCARD, SignatureAlgorithm.RSA_SHA256);
+      testRenewOKInt(DELEGATE, DELEGATE_CERT, DELEGATE, AuthnMethod.SMARTCARD,
+         AuthenticationData.AuthnMethod.SMARTCARD, SignatureAlgorithm.RSA_SHA256);
+   }
+
+   @Test
+   public void testRenewNotDelegatedTokenSecurIDOK() {
+      testRenewOKInt(SUBJECT, SUBJECT_CERT, SUBJECT, AuthnMethod.TIMESYNCTOKEN,
+         AuthenticationData.AuthnMethod.TIMESYNCTOKEN);
+      testRenewOKInt(DELEGATE, DELEGATE_CERT, DELEGATE, AuthnMethod.TIMESYNCTOKEN,
+         AuthenticationData.AuthnMethod.TIMESYNCTOKEN);
+      testRenewOKInt(SUBJECT, SUBJECT_CERT, SUBJECT, AuthnMethod.TIMESYNCTOKEN,
+         AuthenticationData.AuthnMethod.TIMESYNCTOKEN, SignatureAlgorithm.RSA_SHA256);
+      testRenewOKInt(DELEGATE, DELEGATE_CERT, DELEGATE, AuthnMethod.TIMESYNCTOKEN,
+         AuthenticationData.AuthnMethod.TIMESYNCTOKEN, SignatureAlgorithm.RSA_SHA256);
    }
 
    @Test
@@ -435,7 +460,8 @@ public final class SamlTokenSpecBuilderTest {
       TestSetup.setLifetime(rst, reqStartTime, reqEndTime);
       rst.setAdviceSet(rstAdvice);
       final SecurityHeaderType header = new SecurityHeaderType();
-      header.setAssertion(TestSetup.createAssertion(REMAINING_DELEGATIONS));
+      ObjectFactory ObjectFactory = new ObjectFactory();
+      header.getAny().add(ObjectFactory.createAssertion(TestSetup.createAssertion(REMAINING_DELEGATIONS)));
       final ServerValidatableSamlToken token = newTokenMock(authTokenSubject,
          confCert, delegate, tokenExpiresOn, previosDelegationAt, audience,
          tokenAdvice);

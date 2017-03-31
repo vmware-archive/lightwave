@@ -49,6 +49,7 @@ CLEAN_OBJECTS = \
     websso \
     lightwaveui \
     ssolib \
+    ssoclients \
     ROOT \
     sts \
     wsTrustClient \
@@ -123,6 +124,9 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
+              --define "_janssondir /usr" \
+              --define "_curldir /usr" \
+              --define "_ssldir /usr" \
               --define "_commons_daemondir ${COMMONS_DAEMON}" \
               --define "_javahome ${JAVA_HOME}" \
               --define "_antdir ${ANT_HOME}" \

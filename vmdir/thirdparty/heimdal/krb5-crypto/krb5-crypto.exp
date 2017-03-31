@@ -10,3 +10,11 @@ krb5_heim_init_context
 krb5_heim_string_to_key
 krb5_heim_data_free
 krb5_heim_decrypt
+krb5_heim_pac_parse
+krb5_heim_pac_init
+krb5_heim_pac_add_buffer
+krb5_heim_pac_get_buffer
+krb5_heim_pac_get_types
+krb5_heim_pac_free
+krb5_heim_pac_verify
+_krb5_heim_pac_sign

@@ -7,226 +7,82 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-install</artifactId>
-  <version>6.6.1</version>
   <packaging>jar</packaging>
-  <name>vmware-identity-install</name>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <configuration>
-          <archive>
-            <manifestFile>${manifestPath}</manifestFile>
-          </archive>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-      </plugin>
-      <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <configuration>
-            <outputDirectory>${outputDirectory}</outputDirectory>
-          </configuration>
-          <executions>
-            <execution>
-              <id>attach-sources</id>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.10</version>
-          <executions>
-            <execution>
-              <id>copy</id>
-              <phase>install</phase>
-              <goals>
-                <goal>copy</goal>
-              </goals>
-              <configuration>
-                <artifactItems>
-                  <artifactItem>
-                    <groupId>com.vmware.identity</groupId>
-                    <artifactId>vmware-identity-install</artifactId>
-                    <version>${vmware.version}</version>
-                    <type>jar</type>
-                    <overWrite>true</overWrite>
-                    <outputDirectory>${publishDirectory}</outputDirectory>
-                    <destFileName>vmware-identity-install.jar</destFileName>
-                  </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
-          <executions>
-            <execution>
-              <id>copy-resources</id>
-              <phase>package</phase>
-              <goals>
-                 <goal>copy-resources</goal>
-              </goals>
-              <configuration>
-                <outputDirectory>${classesOutputDirectory}</outputDirectory>
-                <resources>
-                  <resource>
-                    <directory>${basedir}/target/classes/</directory>
-                    <filtering>true</filtering>
-                  </resource>
-                </resources>
-              </configuration>
-            </execution>
-           </executions>
-       </plugin>
-    </plugins>
-  </build>
+  <name>Installer</name>
 
   <dependencies>
-
-      <dependency>
-        <groupId>com.vmware.identity</groupId>
-        <artifactId>vmware-identity-diagnostics</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vmware.identity</groupId>
-        <artifactId>vmware-identity-platform</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vmware.identity.idm</groupId>
-        <artifactId>vmware-identity-idm-client</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vmware.identity.idm</groupId>
-        <artifactId>vmware-identity-idm-interface</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vmware.identity.idm</groupId>
-        <artifactId>vmware-identity-idm-server</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vmware.identity.commons</groupId>
-        <artifactId>samltoken</artifactId>
-      </dependency>
-
-     <dependency>
-       <groupId>com.vmware.identity</groupId>
-       <artifactId>vmware-endpoint-certificate-store</artifactId>
-     </dependency>
-
-     <dependency>
-       <groupId>com.vmware.identity</groupId>
-       <artifactId>vmware-vmca-client</artifactId>
-     </dependency>
-
-     <dependency>
-       <groupId>com.vmware.identity</groupId>
-       <artifactId>authentication-framework</artifactId>
-     </dependency>
-
-     <!-- Commons Dependencies -->
-     <dependency>
-       <groupId>commons-logging</groupId>
-       <artifactId>commons-logging</artifactId>
-     </dependency>
-
-     <dependency>
-       <groupId>commons-codec</groupId>
-       <artifactId>commons-codec</artifactId>
-     </dependency>
-
-      <dependency>
-        <groupId>commons-lang</groupId>
-        <artifactId>commons-lang</artifactId>
-      </dependency>
-
-    <!-- Logger Dependencies -->
-
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-platform</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-interface</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-server</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.commons</groupId>
+      <artifactId>samltoken</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>vmware-endpoint-certificate-store</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmca</groupId>
+      <artifactId>vmware-vmca-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>authentication-framework</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+
+    <!-- Commons Dependencies -->
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>${commons.logging.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${commons.codec.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
     </dependency>
+  </dependencies>
 
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-1.2-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-    </dependency>
-
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-      </dependency>
-
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-     </dependency>
-
-     <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-log4j12</artifactId>
-     </dependency>
-
-     <dependency>
-       <groupId>log4j</groupId>
-       <artifactId>log4j</artifactId>
-    </dependency>
-
- </dependencies>
-
- <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <publishDirectory>${basedir}/../build/${PRODUCT_NAME}/publish</publishDirectory>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
-    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/vmware-identity-install/classes</classesOutputDirectory>
-    <manifestPath>MANIFEST.MF</manifestPath>
- </properties>
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+  </properties>
 
 </project>

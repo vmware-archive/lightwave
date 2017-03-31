@@ -33,69 +33,69 @@ import com.vmware.identity.rest.idm.samples.CertificateSample;
 
 /**
  * Class for handling calling samples for CertificateHandler from command line.
- *
+ * 
  * @author abapat
  *
  */
 public class CertificateSampleHandler extends SampleHandler {
-    private CertificateSample sample;
+	private CertificateSample sample;
 
-    /**
-     * Initializes CertificateSample and logger.
-     */
-    public CertificateSampleHandler() {
-        log = Logger.getLogger(getClass().getName());
-        try {
-            sample = new CertificateSample();
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-            log.fatal("Error occured when initializing CertificateSample", e);
-        }
-    }
+	/**
+	 * Initializes CertificateSample and logger.
+	 */
+	public CertificateSampleHandler() {
+		log = Logger.getLogger(getClass().getName());
+		try {
+			sample = new CertificateSample();
+		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
+			log.fatal("Error occured when initializing CertificateSample", e);
+		}
+	}
 
-    @Override
-    public String getType() {
-        return "certificate";
-    }
+	@Override
+	public String getType() {
+		return "certificate";
+	}
 
-    @Override
-    public void callSample(String operation, String json) {
-        String payload = parsePayload(json);
-        try {
-            if (operation.equalsIgnoreCase("gettenantcertificates") || operation.equalsIgnoreCase("getidpcertificates")) {
-                List<CertificateChainDTO> list;
-                if (operation.equalsIgnoreCase("gettenantcertificates")) {
-                    log.info("Getting Tenant Certificates" + tenant);
-                    list = sample.getCertificateChain(tenant, CertificateScope.TENANT);
-                } else {
-                    log.info("Getting IDP Certificates: " + tenant);
-                    list = sample.getCertificateChain(tenant, CertificateScope.EXTERNAL_IDP);
-                }
-                StringBuilder sb = new StringBuilder();
-                int count = 1;
-                for (CertificateChainDTO chain : list) {
-                    sb.append("-----BEGIN CHAIN " + count + "-----\n");
-                    for (CertificateDTO c : chain.getCertificates()) {
-                        sb.append(c.toPrettyString() + "\n");
-                    }
-                    sb.append("-----END CHAIN " + count++ + "-----\n");
-                }
-                log.info(sb.toString());
-            } else if (operation.equalsIgnoreCase("getprivatekey")) {
-                log.info("Getting Private Key: " + tenant);
-                PrivateKeyDTO key = sample.getPrivateKey(tenant);
-                log.info(key.toPrettyString());
-            } else if (operation.equalsIgnoreCase("delete")) {
-                JSONObject JSON = new JSONObject(payload);
-                log.info("Deleting Certificate: " + payload);
-                sample.delete(tenant, JSON.getString("fingerprint"));
-            } else {
-                log.fatal("Invalid command: " + operation);
-            }
-        } catch (JSONException e) {
-            log.fatal("Error when parsing payload", e);
-        } catch (Exception e) {
-            log.fatal("Error when calling sample", e);
-        }
+	@Override
+	public void callSample(String operation, String json) {
+		String payload = parsePayload(json);
+		try {
+			if (operation.equalsIgnoreCase("gettenantcertificates") || operation.equalsIgnoreCase("getidpcertificates")) {
+				List<CertificateChainDTO> list;
+				if (operation.equalsIgnoreCase("gettenantcertificates")) {
+					log.info("Getting Tenant Certificates" + tenant);
+					list = sample.getCertificateChain(tenant, CertificateScope.TENANT);
+				} else {
+					log.info("Getting IDP Certificates: " + tenant);
+					list = sample.getCertificateChain(tenant, CertificateScope.EXTERNAL_IDP);
+				}
+				StringBuilder sb = new StringBuilder();
+				int count = 1;
+				for (CertificateChainDTO chain : list) {
+					sb.append("-----BEGIN CHAIN " + count + "-----\n");
+					for (CertificateDTO c : chain.getCertificates()) {
+						sb.append(c.toPrettyString() + "\n");
+					}
+					sb.append("-----END CHAIN " + count++ + "-----\n");
+				}
+				log.info(sb.toString());
+			} else if (operation.equalsIgnoreCase("getprivatekey")) {
+				log.info("Getting Private Key: " + tenant);
+				PrivateKeyDTO key = sample.getPrivateKey(tenant);
+				log.info(key.toPrettyString());
+			} else if (operation.equalsIgnoreCase("delete")) {
+				JSONObject JSON = new JSONObject(payload);
+				log.info("Deleting Certificate: " + payload);
+				sample.delete(tenant, JSON.getString("fingerprint"));
+			} else {
+				log.fatal("Invalid command: " + operation);
+			}
+		} catch (JSONException e) {
+			log.fatal("Error when parsing payload", e);
+		} catch (Exception e) {
+			log.fatal("Error when calling sample", e);
+		}
 
-    }
+	}
 }

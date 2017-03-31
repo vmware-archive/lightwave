@@ -251,10 +251,19 @@ VmDnsCacheSyncZones(
     PVMDNS_CACHE_CONTEXT pCacheContext
     );
 
+DWORD
+VmDnsCacheEvictEntryProc(
+    PVMDNS_NAME_ENTRY  pNameEntry,
+    PVMDNS_ZONE_OBJECT pZoneObject
+    );
+
 /* lru.c */
+
 
 DWORD
 VmDnsLruInitialize(
+    PVMDNS_ZONE_OBJECT pZoneObject,
+    LPVMDNS_PURGE_ENTRY_PROC pPurgeEntryProc,
     PVMDNS_LRU_LIST* ppLruList
     );
 
@@ -284,9 +293,7 @@ VmDnsLruRefreshNameEntry(
 DWORD
 VmDnsLruTrimEntries(
     PVMDNS_LRU_LIST pLruList,
-    DWORD dwCount,
-    LPVMDNS_PURGE_ENTRY_PROC pPurgeEntryProc,
-    PVMDNS_ZONE_OBJECT pZoneObject
+    DWORD dwCount
     );
 
 DWORD
@@ -426,8 +433,7 @@ VmDnsZonePurgeRecords(
 DWORD
 VmDnsZoneRemoveNameEntry(
     PVMDNS_ZONE_OBJECT      pZoneObject,
-    PCSTR                   pszName,
-    PVMDNS_NAME_ENTRY       *ppNameEntry
+    PVMDNS_NAME_ENTRY       pNameEntry
     );
 
 DWORD
@@ -442,6 +448,16 @@ DWORD
 VmDnsNameEntryCreate(
     PCSTR               pszName,
     PVMDNS_NAME_ENTRY   *ppNameEntry
+    );
+
+ULONG
+VmDnsNameEntryAddRef(
+    PVMDNS_NAME_ENTRY  pNameEntry
+    );
+
+VOID
+VmDnsNameEntryRelease(
+    PVMDNS_NAME_ENTRY   pNameEntry
     );
 
 VOID

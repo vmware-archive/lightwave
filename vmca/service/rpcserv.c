@@ -66,7 +66,7 @@ VMCAGetClientName(handle_t IDL_handle)
 
 DWORD
 VMCACheckAccess(
-    handle_t IDL_handle, 
+    handle_t IDL_handle,
     BOOL bNeedAdminPrivilage
     )
 {
@@ -77,13 +77,13 @@ VMCACheckAccess(
     unsigned char *authPrinc = NULL;
 
     rpc_binding_inq_auth_caller(
-                IDL_handle,
-                &hPriv,
-                &authPrinc,
-                &dwProtectLevel,
-                NULL, /* unsigned32 *authn_svc, */
-                NULL, /* unsigned32 *authz_svc, */
-                &rpc_status);
+                            IDL_handle,
+                            &hPriv,
+                            &authPrinc,
+                            &dwProtectLevel,
+                            NULL, /* unsigned32 *authn_svc, */
+                            NULL, /* unsigned32 *authz_svc, */
+                            &rpc_status);
 
     /* Deny if connection is not encrypted */
     if (dwProtectLevel < rpc_c_protect_level_pkt_privacy)
@@ -128,12 +128,105 @@ Note: *KRB and shared secret are mutually exclusive; Impossible state.
 */
 
 unsigned int
+RpcVMCASetServerOption(
+    handle_t IDL_handle,
+    unsigned int dwOption
+    )
+{
+    DWORD   dwError = 0;
+    unsigned int    dwCurrentOption = 0;
+    unsigned int    dwNewOption = 0;
+
+    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
+    dwError = dwError == ERROR_FILE_NOT_FOUND ? 0: dwError;
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwNewOption = dwCurrentOption | dwOption;
+
+    dwError = VMCAConfigSetDword(VMCA_REG_KEY_SERVER_OPTION, dwNewOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+unsigned int
+RpcVMCAUnsetServerOption(
+    handle_t IDL_handle,
+    unsigned int dwOption
+    )
+{
+    DWORD   dwError = 0;
+    unsigned int    dwCurrentOption = 0;
+    unsigned int    dwNewOption = 0;
+
+    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
+    dwError = dwError == ERROR_FILE_NOT_FOUND ? 0: dwError;
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwNewOption = dwCurrentOption & ~dwOption;
+
+    dwError = VMCAConfigSetDword(VMCA_REG_KEY_SERVER_OPTION, dwNewOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+unsigned int
+RpcVMCAGetServerOption(
+    handle_t IDL_handle,
+    unsigned int *pdwOption
+    )
+{
+    DWORD   dwError = 0;
+    unsigned int    dwOption = 0;
+
+    if (!pdwOption)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwOption);
+    dwError = dwError == ERROR_FILE_NOT_FOUND ? 0: dwError;
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *pdwOption = dwOption;
+
+cleanup:
+    VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+unsigned int
 RpcVMCAGetServerVersion(
     handle_t IDL_handle,
     unsigned int *pdwCertLength,
     VMCA_CERTIFICATE_CONTAINER **pServerVersion)
 {
     DWORD dwError = 0;
+    PSTR pTempServerVersion = NULL; 
     VMCA_CERTIFICATE_CONTAINER *pTempVersion = NULL;
     /*
      * TBD: Probably don't care if this is accessable remotely
@@ -149,13 +242,18 @@ RpcVMCAGetServerVersion(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCAGetServerVersion(pdwCertLength, &pTempVersion);
+    dwError = VMCAGetServerVersion(&pTempServerVersion);
     BAIL_ON_VMCA_ERROR(dwError);
 
+    dwError = VMCARpcAllocateCertificateContainer
+            (pTempServerVersion, &pTempVersion);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    strcpy(pTempVersion->pCert,pTempServerVersion);
     *pServerVersion = pTempVersion;
-    pTempVersion = NULL;
 
 cleanup:
+    VMCA_SAFE_FREE_STRINGA(pTempServerVersion);
     VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
     return dwError;
 error:
@@ -195,6 +293,57 @@ error:
     return dwError;
 }
 
+DWORD
+RpcVMCACopyCertificateToRPC(
+    VMCA_CERTIFICATE_ARRAY* pInputCertArray,
+    VMCA_CERTIFICATE_ARRAY** pOutputCertArray
+    )
+{
+    DWORD dwError                               = 0;
+    VMCA_CERTIFICATE_ARRAY* pCertArray          = NULL;
+
+    dwError = VMCARpcAllocateMemory(
+                    sizeof(VMCA_CERTIFICATE_ARRAY),
+                    (PVOID*)&pCertArray);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    pCertArray->dwCount = pInputCertArray->dwCount;
+
+    if (pCertArray->dwCount > 0)
+    {
+        DWORD iEntry = 0;
+        dwError = VMCARpcAllocateMemory(
+                    pCertArray->dwCount * sizeof(pCertArray->certificates[0]),
+                    (PVOID*)&pCertArray->certificates);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        for (; iEntry < pCertArray->dwCount; iEntry++)
+        {
+
+            pCertArray->certificates[iEntry].dwCount
+                    = pInputCertArray->certificates[iEntry].dwCount;
+
+            dwError = VMCARpcAllocateString(
+                    (RP_PSTR)pInputCertArray->certificates[iEntry].pCert,
+                    (RP_PSTR*)&pCertArray->certificates[iEntry].pCert);
+
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+    }
+
+    *pOutputCertArray = pCertArray;
+
+cleanup:
+
+    return dwError;
+error:
+    if (pCertArray)
+    {
+        VMCARpcFreeCertificateArray(pCertArray);
+    }
+
+    goto cleanup;
+}
 
 unsigned int
 RpcVMCAEnumCertificates(
@@ -206,6 +355,7 @@ RpcVMCAEnumCertificates(
 {
     DWORD dwError = 0;
     VMCA_CERTIFICATE_ARRAY* pTempCertArray = NULL;
+    VMCA_CERTIFICATE_ARRAY* pCertArray = NULL;
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
     if (ppCertArray == NULL)
@@ -218,16 +368,24 @@ RpcVMCAEnumCertificates(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAEnumCertificates(
-                   dwStartIndex,
-                   dwNumCertificates,
-                   dwStatus,
-                   &pTempCertArray);
+                        dwStartIndex,
+                        dwNumCertificates,
+                        dwStatus,
+                        &pTempCertArray);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *ppCertArray = pTempCertArray;
-    pTempCertArray = NULL;
+    dwError = RpcVMCACopyCertificateToRPC(
+                        pTempCertArray,
+                        &pCertArray);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppCertArray = pCertArray;
 
 cleanup:
+    if (pTempCertArray)
+    {
+        VMCAFreeCertificateArray(pTempCertArray);
+    }
     VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
     return dwError;
 
@@ -237,9 +395,9 @@ error:
         *ppCertArray = NULL;
     }
 
-    if (pTempCertArray)
+    if (pCertArray)
     {
-        VMCARpcFreeCertificateArray(pTempCertArray);
+        VMCARpcFreeCertificateArray(pCertArray);
     }
 
     goto cleanup;
@@ -295,6 +453,7 @@ RpcVMCAGetSignedCertificate(
         VMCA_CERTIFICATE_CONTAINER **ppCertContainer)
 {
     DWORD dwError = 0;
+    VMCA_CERTIFICATE_CONTAINER* pCertContainer = NULL;
     VMCA_CERTIFICATE_CONTAINER* pTempCertContainer = NULL;
 
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
@@ -305,20 +464,27 @@ RpcVMCAGetSignedCertificate(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAGetSignedCertificate(
-                pszPEMEncodedCSRRequest,
-                dwValidFrom,
-                dwDurationInSeconds,
-                &pTempCertContainer);
+                        pszPEMEncodedCSRRequest,
+                        dwValidFrom,
+                        dwDurationInSeconds,
+                        &pTempCertContainer);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *ppCertContainer = pTempCertContainer;
-    pTempCertContainer = NULL;
+    dwError = VMCARpcAllocateCertificateContainer(
+                        pTempCertContainer->pCert,
+                        &pCertContainer);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    strcpy((char*)pCertContainer->pCert, (char*)pTempCertContainer->pCert);
+
+    *ppCertContainer = pCertContainer;
 
 cleanup:
+    VMCAFreeCertificateContainer (pTempCertContainer);
     VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
     return dwError;
 error:
@@ -332,10 +498,7 @@ error:
         *ppCertContainer = NULL;
     }
 
-    if (pTempCertContainer)
-    {
-        VMCARpcFreeCertificateContainer(pTempCertContainer);
-    }
+    VMCARpcFreeCertificateContainer(pCertContainer);
     goto cleanup;
 }
 
@@ -349,6 +512,7 @@ RpcVMCAGetRootCACertificate(
     DWORD dwError = 0;
     DWORD dwCertLength = 0;
     VMCA_CERTIFICATE_CONTAINER* pTempCertContainer = NULL;
+    PVMCA_CERTIFICATE pTempCertificate = NULL;
 
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
@@ -368,14 +532,20 @@ RpcVMCAGetRootCACertificate(
 
     dwError = VMCAGetRootCACertificate(
                 &dwCertLength,
-                &pTempCertContainer);
+                &pTempCertificate);
     BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCARpcAllocateCertificateContainer(pTempCertificate, &pTempCertContainer);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    strcpy((char*) (pTempCertContainer)->pCert, pTempCertificate);
 
     *ppCertContainer = pTempCertContainer;
     *pdwCertLength = dwCertLength;
     pTempCertContainer = NULL;
 
 cleanup:
+    VMCA_SAFE_FREE_STRINGA(pTempCertificate);
     VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
     return dwError;
 error:
@@ -538,6 +708,7 @@ RpcVMCAGetCRL(
 {
     DWORD dwError = 0;
     VMCA_FILE_BUFFER* pTempCRLData = NULL;
+    VMCA_FILE_BUFFER* pCRLData = NULL;
 
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
@@ -550,16 +721,40 @@ RpcVMCAGetCRL(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError =  VMCAGetCRL(
-        pszClientCachedCRLID,
         dwFileOffset,
         dwSize,
         &pTempCRLData);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *ppCRLData = pTempCRLData;
+
+   dwError = VMCARpcAllocateMemory
+            (
+            sizeof(pCRLData),
+            (PVOID*) &pCRLData
+            );
+    BAIL_ON_VMCA_ERROR(dwError);
+    pCRLData->dwCount = pTempCRLData->dwCount;
+    if(pCRLData->dwCount > 0)
+    {
+        dwError = VMCARpcAllocateMemory(
+                pCRLData->dwCount * sizeof(unsigned char),
+                (PVOID*) &pCRLData->buffer);
+        BAIL_ON_VMCA_ERROR(dwError);
+        memcpy(
+            (PVOID*) pCRLData->buffer,
+            pTempCRLData->buffer,
+            (size_t) pCRLData->dwCount);
+    }
+
+    *ppCRLData = pCRLData;
     pTempCRLData = NULL;
 
 cleanup:
+    if ( pTempCRLData )
+    {
+        VMCA_SAFE_FREE_MEMORY(pTempCRLData->buffer);
+        VMCA_SAFE_FREE_MEMORY(pTempCRLData);
+    }
     VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
     return dwError;
 error:
@@ -568,13 +763,13 @@ error:
         *ppCRLData = NULL;
     }
 
-    if(pTempCRLData)
+    if(pCRLData)
     {
-        if(pTempCRLData->buffer)
+        if(pCRLData->buffer)
         {
-            VMCARpcFreeMemory((PVOID) pTempCRLData->buffer);
+            VMCARpcFreeMemory((PVOID) pCRLData->buffer);
         }
-        VMCARpcFreeMemory((PVOID)pTempCRLData);
+        VMCARpcFreeMemory((PVOID)pCRLData);
     }
 
     goto cleanup;

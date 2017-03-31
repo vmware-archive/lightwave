@@ -196,6 +196,12 @@ VmAfdCliRefreshSiteName(
     VOID
     );
 
+static
+DWORD
+VmAfdCliChangePNID(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
 DWORD
 VmAfdCliExecute(
     PVM_AFD_CLI_CONTEXT pContext
@@ -377,6 +383,12 @@ VmAfdCliExecute(
 
             dwError = VmAfdCliRefreshSiteName();
             break;
+
+        case VM_AFD_ACTION_CHANGE_PNID:
+
+            dwError = VmAfdCliChangePNID(pContext);
+            break;
+
         case VM_AFD_ACTION_GET_DC_LIST:
 
             dwError = VmAfdCliGetDCList(pContext);
@@ -1415,5 +1427,32 @@ error:
     printf ("Refreshing Site name failed with error: %d\n", dwError);
 
     goto cleanup;
+}
+
+static
+DWORD
+VmAfdCliChangePNID(
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pContext ||
+        IsNullOrEmptyString(pContext->pszUserName) ||
+        IsNullOrEmptyString(pContext->pszPassword) ||
+        IsNullOrEmptyString(pContext->pszPNID))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdChangePNIDA(
+            pContext->pszUserName,
+            pContext->pszPassword,
+            pContext->pszPNID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+error:
+    return dwError;
 }
 

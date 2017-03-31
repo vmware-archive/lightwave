@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+      http://java.sun.com/xml/ns/javaee
+      http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+
+    <description>sso</description>
+    <display-name>SSO</display-name>
+
+    <!-- The definition of the Root Spring Container shared by all Servlets and Filters -->
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>
+             <!-- websso -->
+             /WEB-INF/spring/root-context.xml,
+
+        </param-value>
+    </context-param>
+
+    <!-- Creates the Spring Container shared by all Servlets and Filters -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    <session-config>
+        <!-- taken from sts, admin and lookup use 30 -->
+        <session-timeout>60</session-timeout>
+    </session-config>
+
+    <!-- sts -->
+    <listener>
+        <listener-class>com.sun.xml.ws.transport.http.servlet.WSServletContextListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>com.vmware.identity.sts.ws.StsApplicationListener</listener-class>
+    </listener>
+
+    <servlet>
+        <servlet-name>sts</servlet-name>
+        <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>sts</servlet-name>
+        <url-pattern>/sts/STSService/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- websso, oidc -->
+    <!-- Processes application requests -->
+    <filter>
+        <filter-name>SecurityRequestFilter</filter-name>
+        <filter-class>com.vmware.identity.SecurityRequestWrapperFilter</filter-class>
+   </filter>
+
+    <filter-mapping>
+        <filter-name>SecurityRequestFilter</filter-name>
+        <servlet-name>appServlet</servlet-name>
+    </filter-mapping>
+
+    <servlet>
+        <servlet-name>appServlet</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+	<servlet-mapping>
+		<servlet-name>appServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <!-- rest -->
+    <listener>
+        <listener-class>com.vmware.identity.rest.core.server.util.SLF4JListener</listener-class>
+    </listener>
+
+   <!-- rest afd -->
+    <servlet>
+        <servlet-name>restafd</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+        <load-on-startup>1</load-on-startup>
+      <init-param>
+         <param-name>javax.ws.rs.Application</param-name>
+         <param-value>com.vmware.identity.rest.afd.server.AfdRestApplication</param-value>
+      </init-param>
+
+      <init-param>
+         <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+         <param-value>true</param-value>
+      </init-param>
+
+      <init-param>
+         <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
+         <param-value>/afd/.*json</param-value>
+      </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>restafd</servlet-name>
+        <url-pattern>/afd/*</url-pattern>
+    </servlet-mapping>
+
+   <!--Register STS Log4j Filter for all sts webapps resply -->
+    <filter>
+        <filter-name>STSDiagnosticsLogFilter</filter-name>
+        <filter-class>com.vmware.identity.diagnostics.STSLogDiagnosticsFilter</filter-class>
+    </filter>
+
+    <!-- rest idm -->
+    <servlet>
+        <servlet-name>restidm</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+        <load-on-startup>10</load-on-startup>
+      <init-param>
+         <param-name>javax.ws.rs.Application</param-name>
+         <param-value>com.vmware.identity.rest.idm.server.IdmRestApplication</param-value>
+      </init-param>
+
+      <init-param>
+         <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+         <param-value>true</param-value>
+      </init-param>
+
+      <init-param>
+         <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
+         <param-value>/idm/.*json</param-value>
+      </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>restidm</servlet-name>
+        <url-pattern>/idm/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- rest vmdir -->
+    <servlet>
+        <servlet-name>restvmdir</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+        <load-on-startup>10</load-on-startup>
+      <init-param>
+         <param-name>javax.ws.rs.Application</param-name>
+         <param-value>com.vmware.directory.rest.server.VmdirRestApplication</param-value>
+      </init-param>
+      <init-param>
+         <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+         <param-value>true</param-value>
+      </init-param>
+      <init-param>
+         <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
+         <param-value>/vmdir/.*json</param-value>
+      </init-param>
+    </servlet>
+
+        <servlet-mapping>
+        <servlet-name>restvmdir</servlet-name>
+        <url-pattern>/vmdir/*</url-pattern>
+    </servlet-mapping>
+
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>SmartcardAuthn</web-resource-name>
+            <url-pattern>/websso/SAML2/SmartcardRealm/*</url-pattern>
+        </web-resource-collection>
+
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+
+        <auth-constraint>
+            <role-name>X509</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+   <login-config>
+       <auth-method>CLIENT-CERT</auth-method>
+       <realm-name>SmartcardRealm</realm-name>
+   </login-config>
+
+</web-app>
+

@@ -1,0 +1,8 @@
+[HKEY_THIS_MACHINE\Services]
+
+[HKEY_THIS_MACHINE\Services\lwraft]
+@security = O:SYG:BAD:(A;;KA;;;BA)
+"Description" = {
+    default = "Lightwave Raft Service"
+    doc = ""
+}

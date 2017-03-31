@@ -5,20 +5,22 @@
   <parent>
     <groupId>com.vmware.identity.rest</groupId>
     <artifactId>vmware-identity-rest</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>com.vmware.identity.rest.core</groupId>
   <artifactId>vmware-identity-rest-core</artifactId>
   <packaging>pom</packaging>
-
-  <name>vmware-identity-rest-core</name>
+  <name>REST Services - Core</name>
 
   <modules>
     <module>common</module>
-
     <module>server</module>
     <module>client</module>
   </modules>
+
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 
 </project>

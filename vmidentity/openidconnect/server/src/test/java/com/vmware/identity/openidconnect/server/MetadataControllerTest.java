@@ -16,12 +16,13 @@ package com.vmware.identity.openidconnect.server;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
-import net.minidev.json.parser.ParseException;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -29,7 +30,9 @@ import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
+import com.vmware.identity.openidconnect.protocol.ProviderMetadataMapper;
 
 /**
  * @author Jun Sun
@@ -51,7 +54,8 @@ public class MetadataControllerTest {
     }
 
     @Test
-    public void testMetadataSuccess() throws IOException, ParseException {
+    public void testMetadataSuccess()
+            throws IOException, net.minidev.json.parser.ParseException, com.vmware.identity.openidconnect.common.ParseException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
 
@@ -62,7 +66,8 @@ public class MetadataControllerTest {
     }
 
     @Test
-    public void testMetadataSuccessDefaultTenant() throws IOException, ParseException {
+    public void testMetadataSuccessDefaultTenant()
+            throws IOException, net.minidev.json.parser.ParseException, com.vmware.identity.openidconnect.common.ParseException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
 
@@ -73,7 +78,8 @@ public class MetadataControllerTest {
     }
 
     @Test
-    public void testMetadataNonExistentTenant() throws IOException, ParseException, com.vmware.identity.openidconnect.common.ParseException {
+    public void testMetadataNonExistentTenant()
+            throws IOException, net.minidev.json.parser.ParseException, com.vmware.identity.openidconnect.common.ParseException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
         request.setServerName("abc.com");
@@ -86,26 +92,38 @@ public class MetadataControllerTest {
         Assert.assertEquals("non-existent tenant", JSONUtils.parseJSONObject(response.getContentAsString()).get("error_description"));
     }
 
-    private static void validateSuccessResponse(MockHttpServletResponse response) throws UnsupportedEncodingException, ParseException {
+    private static void validateSuccessResponse(MockHttpServletResponse response)
+            throws UnsupportedEncodingException, net.minidev.json.parser.ParseException, com.vmware.identity.openidconnect.common.ParseException {
         JSONParser jsonParser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
         JSONObject jsonObject = (JSONObject) jsonParser.parse(response.getContentAsString());
 
-        String actualIssuer = (String) jsonObject.get("issuer");
-        String actualJwksURI = (String) jsonObject.get("jwks_uri");
-        String actualAuthzEndpoint = (String) jsonObject.get("authorization_endpoint");
-        String actualTokenEndpoint = (String) jsonObject.get("token_endpoint");
-        String actualEndSessionEndpoint = (String) jsonObject.get("end_session_endpoint");
+        ProviderMetadata providerMetadata = ProviderMetadataMapper.parse(jsonObject);
+
+        String actualIssuer = providerMetadata.getIssuer().getValue();
+        String actualJwksURI = providerMetadata.getJWKSetURI().toString();
+        String actualAuthzEndpoint = providerMetadata.getAuthorizationEndpointURI().toString();
+        String actualTokenEndpoint = providerMetadata.getTokenEndpointURI().toString();
+        String actualEndSessionEndpoint = providerMetadata.getEndSessionEndpointURI().toString();
+        List<String> actualSubjectTypesSupported = providerMetadata.getSubjectTypesSupported();
+        List<String> actualResponseTypesSupported = providerMetadata.getResponseTypesSupported();
+        List<String> actualIDTokenSigningAlgorithmValuesSupported = providerMetadata.getIDTokenSigningAlgorithmValuesSupported();
 
         String expectedIssuer = issuer;
         String expectedJwksURI = TestContext.JWKS_ENDPOINT_URI.toString();
         String expectedAuthzEndpoint = TestContext.AUTHZ_ENDPOINT_URI.toString();
         String expectedTokenEndpoint = TestContext.TOKEN_ENDPOINT_URI.toString();
         String expectedEndSessionEndpoint = TestContext.LOGOUT_ENDPOINT_URI.toString();
+        List<String> expectedSubjectTypesSupported = Arrays.asList("public");
+        List<String> expectedResponseTypesSupported = Arrays.asList("code", "id_token", "token id_token");
+        List<String> expectedDTokenSigningAlgorithmValuesSupported = Arrays.asList("RS256");
 
         Assert.assertEquals(expectedIssuer, actualIssuer);
         Assert.assertEquals(expectedJwksURI, actualJwksURI);
         Assert.assertEquals(expectedAuthzEndpoint, actualAuthzEndpoint);
         Assert.assertEquals(expectedTokenEndpoint, actualTokenEndpoint);
         Assert.assertEquals(expectedEndSessionEndpoint, actualEndSessionEndpoint);
+        Assert.assertEquals(expectedSubjectTypesSupported, actualSubjectTypesSupported);
+        Assert.assertEquals(expectedResponseTypesSupported, actualResponseTypesSupported);
+        Assert.assertEquals(expectedDTokenSigningAlgorithmValuesSupported, actualIDTokenSigningAlgorithmValuesSupported);
     }
 }

@@ -433,6 +433,7 @@ cleanup:
     VMCA_SAFE_FREE_STRINGA(pszCertificate);
     VMCA_SAFE_FREE_STRINGA(pszAccount);
     VMCA_SAFE_FREE_STRINGA(pszPassword);
+    VMCA_SAFE_FREE_STRINGA(pszCRL);
 
     if (pContext)
     {

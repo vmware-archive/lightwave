@@ -388,6 +388,9 @@ public final class TenantManagementTest
     private final String CFG_KEY_EXTERNAL_IDP_2_SLO_BINDING_2 =
             "idm.external-idp.2.slo.binding.2";
 
+    private final String CFG_IDENTITY_STORE_HINT_ATTR_NAME = "givenName";
+    private final boolean CFG_IDENTITY_STORE_LINK_USE_UPN = false;
+
     private static final String TENANT_PSC_SITE_1 = "psc-site-1";
     private static final String TENANT_PSC_SITE_2 = "psc-site-2";
 
@@ -1558,7 +1561,8 @@ public final class TenantManagementTest
                     IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
                     AuthenticationType.PASSWORD, null, 0, adLdapsUserName, false, null,
                     adLdapsPwd, userSearchBaseDn, groupSearchBaseDn, ldapskdcList,
-                    attrMap, null, null, certs, null);
+                    attrMap, null, null, 0, certs, null,
+                    CFG_IDENTITY_STORE_HINT_ATTR_NAME, CFG_IDENTITY_STORE_LINK_USE_UPN);
 
         IIdentityStoreData ldapsStore =
                 idmClient.getProvider(tenantName, adLdapsProviderName);
@@ -1583,8 +1587,13 @@ public final class TenantManagementTest
                 .getPassword());
         Assert.assertNotNull(ldapsStore.getExtendedIdentityStoreData()
                 .getConnectionStrings());
+        Assert.assertEquals(ldapsStore.getExtendedIdentityStoreData()
+                .getCertUserHintAttributeName(), CFG_IDENTITY_STORE_HINT_ATTR_NAME);
+        Assert.assertTrue(ldapsStore.getExtendedIdentityStoreData()
+                .getCertLinkingUseUPN() == CFG_IDENTITY_STORE_LINK_USE_UPN);
         Assert.assertEquals(ldapskdcList.size(), ldapsStore
                 .getExtendedIdentityStoreData().getConnectionStrings().size());
+
         int i = 0;
         for (String str : ldapsStore.getExtendedIdentityStoreData()
                 .getConnectionStrings())
@@ -1657,6 +1666,16 @@ public final class TenantManagementTest
                 .getConnectionStrings());
         Assert.assertEquals(kdcList.size(), store
                 .getExtendedIdentityStoreData().getConnectionStrings().size());
+        Assert.assertTrue(ldapsStore.getExtendedIdentityStoreData()
+                .getCertLinkingUseUPN());
+        Assert.assertEquals(ldapskdcList.size(), ldapsStore
+                .getExtendedIdentityStoreData().getConnectionStrings().size());
+
+        //check the default cert mapping options
+        Assert.assertNull(ldapsStore.getExtendedIdentityStoreData()
+                .getCertUserHintAttributeName());
+        Assert.assertTrue(ldapsStore.getExtendedIdentityStoreData()
+                .getCertLinkingUseUPN());
         i = 0;
         for (String str : store.getExtendedIdentityStoreData()
                 .getConnectionStrings())
@@ -5433,10 +5452,12 @@ public final class TenantManagementTest
             cert.setCacheSize(10);
             cert.setOIDs(new String[] { "a", "b", "c" });
             cert.setTrustedCAs(trustedCAs.toArray(new Certificate[trustedCAs.size()]));
+            cert.setEnableHint(true);
             AuthnPolicy policyIn = new AuthnPolicy(true, true, true, cert);
             idmClient.setAuthnPolicy(tenantName, policyIn);
             AuthnPolicy policyOut = idmClient.getAuthnPolicy(tenantName);
             AssertAuthnPolicy(policyIn, policyOut);
+
 
             // Set again
             ClientCertPolicy cert2 = new ClientCertPolicy();
@@ -5451,6 +5472,7 @@ public final class TenantManagementTest
             cert2.setCRLUrl(new URL("http://www.crl2.com"));
             cert2.setCacheSize(20);
             cert2.setOIDs(new String[] { "a", "b", "c" });
+            cert2.setEnableHint(false);
             trustedCAs.remove(1);
             cert.setTrustedCAs(trustedCAs.toArray(new Certificate[trustedCAs.size()]));
             AuthnPolicy policyIn2 = new AuthnPolicy(true, true, false, cert2);
@@ -5620,6 +5642,7 @@ public final class TenantManagementTest
         Assert.assertEquals(certIn.useCertCRL(), certOut.useCertCRL());
         Assert.assertEquals(certIn.getCRLUrl(), certOut.getCRLUrl());
         Assert.assertEquals(certIn.getCacheSize(), certOut.getCacheSize());
+        Assert.assertEquals(certIn.getEnableHint(), certOut.getEnableHint());
         if ( certIn.get_siteOCSPList() != null ) {
             Assert.assertTrue(certIn.get_siteOCSPList().equals(certOut.get_siteOCSPList()));
         }

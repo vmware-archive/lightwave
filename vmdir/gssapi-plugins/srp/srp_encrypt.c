@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -153,9 +153,19 @@ srp_compute_hmac(
     return sts;
 }
 
+#ifdef SRP_FIPS_ENABLED /* FIPS Complient implementation */
+
+krb5_error_code
+srp_make_enc_keyblock_FIPS(
+    srp_gss_ctx_id_t srp_context_handle)
+
+#else
+
 krb5_error_code
 srp_make_enc_keyblock(
     srp_gss_ctx_id_t srp_context_handle)
+
+#endif
 {
     char *srp_session_key_str = NULL;
     unsigned char *hmac_key = NULL;
@@ -180,6 +190,22 @@ srp_make_enc_keyblock(
         goto error;
     }
 
+#ifdef SRP_FIPS_ENABLED /* FIPS Complient implementation */
+    srp_context_handle->evp_encrypt_ctx = EVP_CIPHER_CTX_new();
+    if (!srp_context_handle->evp_encrypt_ctx)
+    {
+        krb5_err = EINVAL;
+        goto error;
+    }
+
+    srp_context_handle->evp_decrypt_ctx = EVP_CIPHER_CTX_new();
+    if (!srp_context_handle->evp_decrypt_ctx)
+    {
+        krb5_err = EINVAL;
+        goto error;
+    }
+#endif /* FIPS Complient implementation */
+
     srp_print_hex(srp_context_handle->srp_session_key,
                   srp_context_handle->srp_session_key_len,
                   "srp_make_enc_keyblock: SRP-negotiated session key ");
@@ -198,10 +224,22 @@ srp_make_enc_keyblock(
         goto error;
     }
 
-    /* Carve up parts of the expanded key for various purposes */
+    /*
+     * Carve up parts of the expanded key for various purposes
+     *
+     * expanded_session_key use:
+     * |-- 16 bytes IV --|-- 32 bytes AES-256 session key --|-- 16 bytes HMAC key --|
+     *
+     * https://security.stackexchange.com/questions/90848/encrypting-using-aes-256-can-i-use-256-bits-iv
+     *
+     * "The IV depends on the mode of operation. For most modes (e.g. CBC), the
+     * IV must have the same length as the block. AES uses 128-bit blocks, so a
+     * 128-bit IV. Note that AES-256 uses a 256-bit key (hence the name), but
+     * still with 128-bit blocks."
+     */
     ptr_expanded_key = expanded_session_key;
 
-    /* Initialization vector */
+    /* Initialization vector: 16 bytes IV */
     memcpy(iv_data, ptr_expanded_key, iv_data_len);
     ptr_expanded_key += iv_data_len;
 
@@ -209,11 +247,11 @@ srp_make_enc_keyblock(
                   iv_data_len,
                   "srp_make_enc_keyblock: got initialization vector ");
 
-    /* SRP "derived session" key */
+    /* SRP "derived session" key: 32 bytes AES-256 Session key */
     memcpy(srp_session_key, ptr_expanded_key, srp_session_key_len);
-    ptr_expanded_key += sizeof(srp_session_key);
+    ptr_expanded_key += srp_session_key_len;
 
-    /* HMAC key, remaining 16 bytes */
+    /* HMAC key: 16 bytes HMAC key */
     hmac_key = ptr_expanded_key;
 
     srp_print_hex(srp_session_key,
@@ -265,6 +303,8 @@ srp_make_enc_keyblock(
                   srp_context_handle->keyblock->length,
                   "srp_make_enc_keyblock: keyblock value");
 
+#ifndef SRP_FIPS_ENABLED
+
      memset(srp_context_handle->aes_encrypt_iv, 0, iv_data_len);
      memcpy(srp_context_handle->aes_encrypt_iv, iv_data, iv_data_len);
 
@@ -279,6 +319,35 @@ srp_make_enc_keyblock(
         srp_context_handle->keyblock->contents,
         srp_context_handle->keyblock->length * 8,
         &srp_context_handle->aes_decrypt_key);
+
+#else
+
+    if (!EVP_EncryptInit_ex(srp_context_handle->evp_encrypt_ctx,
+                            EVP_aes_256_cbc(),
+                            NULL,
+                            srp_context_handle->keyblock->contents,
+                            iv_data))
+    {
+        krb5_err = EINVAL;
+    }
+
+    if (!EVP_DecryptInit_ex(srp_context_handle->evp_decrypt_ctx,
+                            EVP_aes_256_cbc(),
+                            NULL,
+                            srp_context_handle->keyblock->contents,
+                            iv_data))
+    {
+        krb5_err = EINVAL;
+    }
+
+    /*
+     * Disable all padding for encrypt/decrypt; clobbers PKCS#7 padding algorithm.
+     * All encrypt/decrypt data MUST be padded to AES block boundries (16 bytes)
+     * otherwise encrypt/decrypt will fail.
+     */
+    EVP_CIPHER_CTX_set_padding(srp_context_handle->evp_encrypt_ctx, 0);
+    EVP_CIPHER_CTX_set_padding(srp_context_handle->evp_decrypt_ctx, 0);
+#endif /* FIPS Complient implementation */
 
     if (srp_init_hmac(&srp_context_handle->hmac_ctx,
                       hmac_key,
@@ -336,8 +405,8 @@ srp_encrypt_aes256_hmac_sha1(
      *     iov[0] data: |-- AES256 (verifier-len) --|
      *     iov[1] data: |-- AES256 (plaintext-len) --|
      */
-
     ciphertext_pad_len = AES256PAD(plaintext_len);
+
     /*
      * Note: The below padding may cause buffer expansion which cannot fit into
      * the original iov[1] payload buffer. The "residual data" from this
@@ -362,7 +431,30 @@ srp_encrypt_aes256_hmac_sha1(
         goto error;
     }
 
-    /* AES256 encrypt the plaintext payload data */
+#ifdef SRP_FIPS_ENABLED /* AES256 encrypt the plaintext payload data */
+{
+    int final_len = 0;
+
+    if (!EVP_EncryptUpdate(srp_context_handle->evp_encrypt_ctx,
+                           ciphertext,
+                           &ciphertext_len,
+                           plaintext,
+                           plaintext_len))
+    {
+        sts = EINVAL;
+        goto error;
+    }
+
+    /* This will fail if ciphertext is not padded to AES block boundry */
+    if (!EVP_EncryptFinal_ex(srp_context_handle->evp_encrypt_ctx,
+                             &ciphertext[ciphertext_len], 
+                             &final_len))
+    {
+        sts = EINVAL;
+        goto error;
+    }
+}
+#else /* Not FIPS compliant APIs */
     AES_cbc_encrypt(
         plaintext,
         ciphertext,
@@ -370,6 +462,8 @@ srp_encrypt_aes256_hmac_sha1(
         &srp_context_handle->aes_encrypt_key,
         srp_context_handle->aes_encrypt_iv,
         AES_ENCRYPT);
+#endif
+
 
     /* Perform hmac-sha validation over ciphertext payload */
     if (!srp_compute_hmac(
@@ -410,7 +504,14 @@ srp_encrypt_aes256_hmac_sha1(
     /* Split cipher text into two iov values: iov[0] = HMAC code */
     memcpy(ret_hmacbuf, hmacbuf, verifier_len);
 
-    /* iov[1] = cipher text */
+    /*
+     * NOTE: PKCS padding is not implemented. The plaintext size is the
+     * same as the ciphertext. Everything is already padded to the AES block
+     * size, and the RPC protocol knows the payload size, so this all works
+     * without calling EVP_DecryptFinal_ex().
+     *
+     * iov[1] = cipher text
+     */
     memcpy(out_ciphertext,
            hmacbuf + verifier_len,
            plaintext_len);
@@ -454,6 +555,7 @@ srp_decrypt_aes256_hmac_sha1(
     unsigned char *ciphertext_start = NULL;
     int cipherhmac_buf_len = 0;
     int ciphertext_len = 0;
+    int plaintext_len = 0;
     int hmac_computed_len = 0;
     unsigned char hmac[SRP_SHA1_HMAC_BUFSIZ] = {0};
     unsigned char hmac_computed[SRP_SHA1_HMAC_BUFSIZ] = {0};
@@ -514,14 +616,44 @@ srp_decrypt_aes256_hmac_sha1(
         goto error;
     }
 
-    /* This is the full ciphertext, which can then be decrypted. */
+#ifdef SRP_FIPS_ENABLED /* This is the full ciphertext, which can then be decrypted. */
+{
+    int final_len = 0;
+
+    if (!EVP_DecryptUpdate(srp_context_handle->evp_decrypt_ctx,
+                           plaintext,
+                           &plaintext_len,
+                           ciphertext_start,
+                           ciphertext_len))
+    {
+        sts = EINVAL;
+        goto error;
+    }
+
+    /* This will fail if ciphertext is not padded to AES block boundry */
+    if (!EVP_DecryptFinal_ex(srp_context_handle->evp_decrypt_ctx,
+                             &plaintext[plaintext_len], 
+                             &final_len))
+    {
+        sts = EINVAL;
+        goto error;
+    }
+}
+#else /* Not FIPS compliant APIs */
     AES_cbc_encrypt(ciphertext_start,
                     plaintext,
                     ciphertext_len,
                     &srp_context_handle->aes_decrypt_key,
                     srp_context_handle->aes_decrypt_iv,
                     AES_DECRYPT);
+#endif
 
+    /*
+     * NOTE: PKCS padding is not implemented. The plaintext size is the
+     * same as the ciphertext. Everything is already padded to the AES block
+     * size, and the RPC protocol knows the payload size, so this all works
+     * without calling EVP_DecryptFinal_ex().
+     */
     memcpy(ret_plaintext, plaintext, ciphertext_len);
 
 error:

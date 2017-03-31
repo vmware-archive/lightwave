@@ -15,6 +15,7 @@
 package com.vmware.identity.openidconnect.protocol;
 
 import java.net.URI;
+import java.util.Arrays;
 
 import net.minidev.json.JSONObject;
 
@@ -33,11 +34,14 @@ public final class ProviderMetadataMapper {
 
         JSONObject json = new JSONObject();
 
-        json.put("issuer",                  providerMetadata.getIssuer().getValue());
-        json.put("authorization_endpoint",  providerMetadata.getAuthorizationEndpointURI().toString());
-        json.put("token_endpoint",          providerMetadata.getTokenEndpointURI().toString());
-        json.put("end_session_endpoint",    providerMetadata.getEndSessionEndpointURI().toString());
-        json.put("jwks_uri",                providerMetadata.getJWKSetURI().toString());
+        json.put("issuer",                      providerMetadata.getIssuer().getValue());
+        json.put("authorization_endpoint",      providerMetadata.getAuthorizationEndpointURI().toString());
+        json.put("token_endpoint",              providerMetadata.getTokenEndpointURI().toString());
+        json.put("end_session_endpoint",        providerMetadata.getEndSessionEndpointURI().toString());
+        json.put("jwks_uri",                    providerMetadata.getJWKSetURI().toString());
+        json.put("response_types_supported",    providerMetadata.getResponseTypesSupported());
+        json.put("subject_types_supported",     providerMetadata.getSubjectTypesSupported());
+        json.put("id_token_signing_alg_values_supported", providerMetadata.getIDTokenSigningAlgorithmValuesSupported());
 
         return json;
     }
@@ -50,12 +54,17 @@ public final class ProviderMetadataMapper {
         URI tokenEndpointURI            = JSONUtils.getURI(json, "token_endpoint");
         URI endSessionEndpointURI       = JSONUtils.getURI(json, "end_session_endpoint");
         URI jwkSetURI                   = JSONUtils.getURI(json, "jwks_uri");
+        String[] responseTypesSupported = JSONUtils.getStringArray(json, "response_types_supported");
+        String[] subjectTypesSupported  = JSONUtils.getStringArray(json, "subject_types_supported");
+        String[] idTokenSigningAlgorithmValuesSupported = JSONUtils.getStringArray(json, "id_token_signing_alg_values_supported");
 
-        return new ProviderMetadata(
-                new Issuer(issuerURI.toString()),
-                authorizationEndpointURI,
-                tokenEndpointURI,
-                endSessionEndpointURI,
-                jwkSetURI);
+        return new ProviderMetadata.Builder(new Issuer(issuerURI.toString())).
+                authorizationEndpointURI(authorizationEndpointURI).
+                tokenEndpointURI(tokenEndpointURI).
+                endSessionEndpointURI(endSessionEndpointURI).
+                jwkSetURI(jwkSetURI).
+                responseTypesSupported(Arrays.asList(responseTypesSupported)).
+                subjectTypesSupported(Arrays.asList(subjectTypesSupported)).
+                idTokenSigningAlgorithmValuesSupported(Arrays.asList(idTokenSigningAlgorithmValuesSupported)).build();
     }
 }

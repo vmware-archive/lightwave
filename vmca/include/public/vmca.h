@@ -507,7 +507,6 @@ VMCAGetRootCACertificateHW(
     PVMCA_CERTIFICATE* ppCertificate
 );
 
-
 // VMCAGetRootCACertificate gets the Root CA certificate
 // that is being used by the VMware Certificate Authority.
 //
@@ -515,6 +514,109 @@ VMCAGetRootCACertificateHW(
 //      pszServerName : VMCA Server Name
 //      dwCertLength  : Number of Certificates returned in the Container, it will 1 for this call.
 //      ppCertContainer : Pointer to a array of CertContainers
+// Returns:
+//  Error Code
+
+DWORD
+VMCASetServerOptionA(
+    PCSTR pszServerName,
+    unsigned int dwOption
+    );
+
+DWORD
+VMCASetServerOptionW(
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    );
+
+DWORD
+VMCASetServerOptionHA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszServerName,
+    unsigned int dwOption
+    );
+
+DWORD
+VMCASetServerOptionHW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    );
+
+// VMCASetServerOption sets server option to enable certain behaviors
+//
+// Arguments :
+//      pszServerName : VMCA Server Name
+//      dwOption : Bit flag of options which you want to enable
+// Returns:
+//  Error Code
+
+DWORD
+VMCAUnsetServerOptionA(
+    PCSTR pszServerName,
+    unsigned int dwOption
+    );
+
+DWORD
+VMCAUnsetServerOptionW(
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    );
+
+DWORD
+VMCAUnsetServerOptionHA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszServerName,
+    unsigned int dwOption
+    );
+
+DWORD
+VMCAUnsetServerOptionHW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    );
+
+// VMCAUnsetServerOption unsets server option to disable certain behaviors
+//
+// Arguments :
+//      pszServerName : VMCA Server Name
+//      dwOption : Bit flag of options which you want to disable
+// Returns:
+//  Error Code
+
+DWORD
+VMCAGetServerOptionA(
+    PCSTR pszServerName,
+    unsigned int *pdwOption
+    );
+
+DWORD
+VMCAGetServerOptionW(
+    PCWSTR pwszServerName,
+    unsigned int *pdwOption
+    );
+
+DWORD
+VMCAGetServerOptionHA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszServerName,
+    unsigned int *pdwOption
+    );
+
+DWORD
+VMCAGetServerOptionHW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszServerName,
+    unsigned int *pdwOption
+    );
+
+// VMCAGetServerOption gets the current server option settings (enabled/disabled)
+// that is being used by the VMware Certificate Authority.
+//
+// Arguments :
+//      pszServerName : VMCA Server Name
+//      pdwOption : Bit flag of options which are currently enabled/disabled
 // Returns:
 //  Error Code
 
@@ -1332,6 +1434,12 @@ VMCAGetSignedCertificateForHostW(
 #define VMCAGetCertificateAsString          VMCAGetCertificateAsStringW
 #define VMCAGetRootCACertificate            VMCAGetRootCACertificateW
 #define VMCAGetRootCACertificateH           VMCAGetRootCACertificateHW
+#define VMCASetServerOption                 VMCASetServerOptionW
+#define VMCASetServerOptionH                VMCASetServerOptionHW
+#define VMCAUnsetServerOption               VMCAUnsetServerOptionW
+#define VMCAUnsetServerOptionH              VMCAUnsetServerOptionHW
+#define VMCAGetServerOption                 VMCAGetServerOptionW
+#define VMCAGetServerOptionH                VMCAGetServerOptionHW
 #define VMCAGetServerVersion                VMCAGetServerVersionW
 #define VMCAGetServerVersionH               VMCAGetServerVersionHW
 #define VMCAGetSignedCertificate            VMCAGetSignedCertificateW
@@ -1368,6 +1476,12 @@ VMCAGetSignedCertificateForHostW(
 #define VMCAGetCertificateAsString          VMCAGetCertificateAsStringA
 #define VMCAGetRootCACertificate            VMCAGetRootCACertificateA
 #define VMCAGetRootCACertificateH           VMCAGetRootCACertificateHA
+#define VMCASetServerOption                 VMCASetServerOptionA
+#define VMCASetServerOptionH                VMCASetServerOptionHA
+#define VMCAUnsetServerOption               VMCAUnsetServerOptionA
+#define VMCAUnsetServerOptionH              VMCAUnsetServerOptionHA
+#define VMCAGetServerOption                 VMCAGetServerOptionA
+#define VMCAGetServerOptionH                VMCAGetServerOptionHA
 #define VMCAGetServerVersion                VMCAGetServerVersionA
 #define VMCAGetServerVersionH               VMCAGetServerVersionHA
 #define VMCAGetSignedCertificate            VMCAGetSignedCertificateA

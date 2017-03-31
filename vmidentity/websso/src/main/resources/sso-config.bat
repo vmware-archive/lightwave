@@ -11,4 +11,4 @@ echo ***** Loaded JARs successfully *****
 "%VMWARE_JAVA_HOME%\bin\java" -cp %CLASSPATH% ^
     -Dlog4j.configurationFile=file://"%VMWARE_IDENTITY_SERVICES_HOME%"\ssoconfig.log4j2.xml ^
     -Dvmware.log.dir=%VMWARE_LOG_HOME%\sso\ ^
-    com.vmware.identity.ssoconfig.SsoConfig %*
+    com.vmware.identity.ssoconfig.SSOConfigCommand %*

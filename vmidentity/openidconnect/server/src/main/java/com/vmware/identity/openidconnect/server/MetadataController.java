@@ -13,8 +13,11 @@
  */
 
 package com.vmware.identity.openidconnect.server;
+
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -45,6 +48,10 @@ import com.vmware.identity.openidconnect.protocol.URIUtils;
 public class MetadataController {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(MetadataController.class);
 
+    private static final List<String> RESPONSE_TYPES_SUPPORTED = Arrays.asList("code", "id_token", "token id_token");
+    private static final List<String> SUBJECT_TYPES_SUPPORTED = Arrays.asList("public");
+    private static final List<String> ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED = Arrays.asList("RS256");
+
     @Autowired
     private CasIdmClient idmClient;
 
@@ -57,15 +64,15 @@ public class MetadataController {
         this.idmClient = idmClient;
     }
 
-    @RequestMapping(value = "/.well-known/openid-configuration", method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.BASE + Endpoints.METADATA, method = RequestMethod.GET)
     public void metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws IOException {
         metadata(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = "/{tenant:.*}/.well-known/openid-configuration", method = RequestMethod.GET)
-    public void  metadata(
+    @RequestMapping(value = Endpoints.BASE + "/{tenant:.*}" + Endpoints.METADATA, method = RequestMethod.GET)
+    public void metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,
             @PathVariable("tenant") String tenant) throws IOException {
@@ -77,19 +84,16 @@ public class MetadataController {
                 tenant = tenantInfoRetriever.getDefaultTenantName();
             }
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
+            tenant = tenantInfo.getName(); // use tenant name as it appears in directory
             Issuer issuer = tenantInfo.getIssuer();
-
-            URI jwkSetURI = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "jwks/" + tenant));
-            URI authzEndpoint = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "oidc/authorize/" + tenant));
-            URI tokenEndpoint = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "token/" + tenant));
-            URI endSessionEndpoint = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "logout/" + tenant));
-
-            ProviderMetadata providerMetadata = new ProviderMetadata(
-                    issuer,
-                    authzEndpoint,
-                    tokenEndpoint,
-                    endSessionEndpoint,
-                    jwkSetURI);
+            ProviderMetadata providerMetadata = new ProviderMetadata.Builder(issuer).
+                        authorizationEndpointURI(endpointURI(issuer, tenant, Endpoints.AUTHENTICATION)).
+                        tokenEndpointURI(endpointURI(issuer, tenant, Endpoints.TOKEN)).
+                        endSessionEndpointURI(endpointURI(issuer, tenant, Endpoints.LOGOUT)).
+                        jwkSetURI(endpointURI(issuer, tenant, Endpoints.JWKS)).
+                        responseTypesSupported(RESPONSE_TYPES_SUPPORTED).
+                        subjectTypesSupported(SUBJECT_TYPES_SUPPORTED).
+                        idTokenSigningAlgorithmValuesSupported(ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED).build();
 
             httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, ProviderMetadataMapper.toJSONObject(providerMetadata));
         } catch (ParseException e) {
@@ -107,6 +111,10 @@ public class MetadataController {
         }
 
         httpResponse.applyTo(httpServletResponse);
+    }
+
+    private static URI endpointURI(Issuer issuer, String tenant, String endpoint) throws ParseException {
+        return URIUtils.parseURI(replaceLast(issuer.getValue(), "/" + tenant, endpoint + "/" + tenant));
     }
 
     private static String replaceLast(String string, String from, String to) {

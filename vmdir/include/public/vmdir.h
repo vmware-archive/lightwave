@@ -45,6 +45,9 @@ extern "C" {
 #define DEFAULT_LDAPS_PORT_NUM          636
 #define DEFAULT_LDAPS_PORT_STR          "636"
 
+#define DEFAULT_REST_PORT_NUM           7477
+#define DEFAULT_REST_PORT_STR           "7477"
+
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
 #define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
@@ -228,6 +231,10 @@ extern "C" {
 
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR       "nTSecurityDescriptor"
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR_LEN   sizeof(ATTR_OBJECT_SECURITY_DESCRIPTOR)-1
+
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR      "defaultSecurityDescriptor"
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR_LEN  sizeof(ATTR_DEFAULT_SECURITY_DESCRIPTOR)-1
+
 #define ATTR_ORG_LIST_DESC                    "vmwAttrOrganizationList"
 #define VDIR_ATTRIBUTE_SEQUENCE_RID           "vmwRidSequenceNumber"
 
@@ -249,6 +256,9 @@ extern "C" {
 #define ATTR_PASS_SPECIAL_CHARS             "vmwPasswordSpecialChars"
 // Attributes related to support for "functional levels" in vmdir
 #define ATTR_DOMAIN_FUNCTIONAL_LEVEL        "vmwDomainFunctionalLevel"
+#define ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL    "vmwMaximumDomainFunctionalLevel"
+#define ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL_LEN sizeof(ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL)-1
+
 #define ATTR_FOREST_FUNCTIONAL_LEVEL        "vmwForestFunctionalLevel"
 #define ATTR_SERVER_VERSION                 "vmwServerVersion"
 #define ATTR_PSC_VERSION                    "vmwPlatformServicesControllerVersion"
@@ -441,9 +451,6 @@ extern "C" {
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
-
-// vmw OID for Strong Consistency Write Control
-#define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
 
 #ifndef _WIN32
 #define VMDIR_NCALRPC_END_POINT "vmdirsvc"

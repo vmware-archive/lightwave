@@ -43,6 +43,7 @@ import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityTokenReferenceType;
 import org.w3._2000._09.xmldsig_.KeyInfoType;
+import org.w3._2000._09.xmldsig_.SignatureType;
 import org.w3._2000._09.xmldsig_.X509DataType;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -52,6 +53,7 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.sts.Request.CertificateLocation;
 import com.vmware.identity.sts.Request.Signature;
+import com.vmware.identity.sts.util.JAXBExtractor;
 import com.vmware.identity.sts.ws.SOAPFaultHandler.FaultKey;
 
 /**
@@ -374,7 +376,7 @@ public final class SignatureValidator {
       assert header != null;
 
       Signature result = null;
-      KeyInfoType keyInfo = header.getSignature().getKeyInfo();
+      KeyInfoType keyInfo = ((SignatureType) JAXBExtractor.extractFromSecurityHeader(header, SignatureType.class)).getKeyInfo();
       if (keyInfo == null) {
          throwInvalidSecurity("KeyInfo not found");
       }
@@ -423,7 +425,7 @@ public final class SignatureValidator {
          throw new WSFaultException(FaultKey.WSSE_INVALID_SECURITY,
             "assertionId = " + assertionId + " valueType = " + valueType);
       }
-      AssertionType assertion = header.getAssertion();
+      AssertionType assertion = JAXBExtractor.extractFromSecurityHeader(header, AssertionType.class);
       if (assertion == null) {
          throwTokenUnavailable("Assertion missing");
       }
@@ -528,7 +530,7 @@ public final class SignatureValidator {
       logger.debug("Found reference with URI: {}", reference.getURI());
 
       // Reference element should point to BST
-      BinarySecurityTokenType bst = header.getBinarySecurityToken();
+      BinarySecurityTokenType bst = JAXBExtractor.extractFromSecurityHeader(header, BinarySecurityTokenType.class);
       validateBSTAttributes(bst, reference);
       X509Certificate resultCert = decodeCertificate(Base64.decodeBase64(bst
          .getValue()));
@@ -613,3 +615,4 @@ public final class SignatureValidator {
          cause);
    }
 }
+

@@ -40,6 +40,11 @@ VdcSchemaOpParamInit(
     );
 
 DWORD
+VdcSchemaOpParamValidate(
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    );
+
+DWORD
 VdcSchemaOpGetSupportedSyntaxes(
     PVDC_SCHEMA_CONN        pConn,
     PVDC_SCHEMA_OP_PARAM    pOpParam

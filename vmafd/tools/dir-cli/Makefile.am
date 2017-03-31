@@ -5,7 +5,7 @@ dir_cli_SOURCES = \
     cli.c  \
     ldap.c \
     main.c
-    
+
 dir_cli_CPPFLAGS = \
     -DLDAP_DEPRECATED \
     -I$(top_srcdir)/include \
@@ -13,10 +13,11 @@ dir_cli_CPPFLAGS = \
     @VMDIR_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
-    
+
 dir_cli_LDADD = \
     $(top_builddir)/client/libvmafdclient.la \
     $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmafcfg/api/libvmafcfgapi.la \
     @VMDIR_LIBS@ \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

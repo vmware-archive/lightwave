@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 
     if (pszPassword == NULL && pszPwdFile != NULL)
     {
-        dwError = VmAfdOpenFilePath(pszPwdFile, "rb", &fpPwdFile);
+        dwError = VmAfdOpenFilePath(pszPwdFile, "rb", &fpPwdFile, 0);
         if (dwError != ERROR_SUCCESS)
         {
            printf("vdcpromo: cannot open password file %s (%u)\n", pszPwdFile, dwError);
@@ -276,6 +276,10 @@ error:
         case VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE:
             retCode = 26;
             pszErrorMsg = "Could not join to the remote service VMWare Directory Service.\nThe remote schema is incompatible with the local schema.";
+            break;
+        case VMDIR_ERROR_INVALID_FUNC_LVL:
+            retCode = 27;
+            pszErrorMsg = "Could not join to the remote service VMWare Directory Service.\nThe local service cannot support the domain functional level";
             break;
         default:
             retCode = 1;

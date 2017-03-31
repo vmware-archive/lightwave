@@ -385,7 +385,7 @@ VmDnsSockWorkerThreadProc(
 
         if (dwError == ERROR_SHUTDOWN_IN_PROGRESS)
         {
-            VMDNS_LOG_INFO(
+            VMDNS_LOG_DEBUG(
                 "%s shutdown in progress, exit sock worker loop.",
                 __FUNCTION__);
             break;
@@ -451,7 +451,7 @@ VmDnsHandleSocketEvent(
         PVMDNS_SOCK_EVENT_HANDLER pEventHandler = eventHandlerMap[sockEvent];
         if (pEventHandler)
         {
-            VMDNS_LOG_INFO(
+            VMDNS_LOG_DEBUG(
                     "New Event - %s, Buffer Size: %d, Buffer Ptr: %p",
                     ppszEventTypeMap[sockEvent],
                     pIoBuffer ? pIoBuffer->dwTotalBytesTransferred : 0,

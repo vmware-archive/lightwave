@@ -183,7 +183,7 @@ public class WinDomainAdapter implements IDomainAdapter {
                     catch(DomainManagerException e)
                     {
                         logger.info(String.format("Failed to enumerate trust for %s ",
-                                extra_trust_to_enum.dnsDomainName) + e.getMessage());
+                                extra_trust_to_enum.dnsDomainName) , e);
                     }
 
                     if (extra_trusts.size() > 0)

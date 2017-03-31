@@ -20,6 +20,7 @@ libvmdnsclient_la_SOURCES = \
 
 libvmdnsclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
+    @top_builddir@/vmsock/api/libvmsock.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \

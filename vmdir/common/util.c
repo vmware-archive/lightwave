@@ -166,7 +166,7 @@ error:
     goto cleanup;
 }
 
-#if defined(HAVE_DCERPC_WIN32)
+#if defined(_WIN32)
 static void uuid_unparse_lower(uuid_t uuid, char *str)
 {
     /*
@@ -215,6 +215,7 @@ int uuid_parse(char *str, uuid_t ret_uuid)
 void
 uuid_generate(uuid_t pGuid)
 {
+    DWORD dwError = 0;
     dce_uuid_t dce_uuid;
     unsigned32 sts = 0;
     unsigned char *uuidstr = NULL;
@@ -237,7 +238,10 @@ uuid_generate(uuid_t pGuid)
     }
 
 error:
-    VMDIR_SAFE_FREE_MEMORY( uuidstr );
+    if (uuidstr != NULL)
+    {
+        rpc_string_free((PBYTE*)&uuidstr, &dwError);
+    }
     return;
 }
 #endif
@@ -255,12 +259,7 @@ VmDirUuidGenerate(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-#if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
     uuid_generate(*pGuid);
-#else
-    dwError = UuidCreate( pGuid );
-    BAIL_ON_VMDIR_ERROR(dwError);
-#endif
 
 error:
     return dwError;
@@ -274,17 +273,12 @@ VmDirUuidToStringLower(
 )
 {
     DWORD dwError = ERROR_SUCCESS;
-#ifdef _WIN32
-    PSTR pGuidStr = NULL;
-#endif
 
     if ((pGuid == NULL) || (pStr == NULL) )
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-#if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
 
     /*
     The uuid_unparse function converts the supplied UUID uu from the binary
@@ -298,36 +292,8 @@ VmDirUuidToStringLower(
     }
 
     uuid_unparse_lower( *pGuid, pStr );
-#else
-    dwError = UuidToStringA( pGuid, (RPC_CSTR*)(&pGuidStr) );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if( sizeOfBuffer < VmDirStringLenA( pGuidStr ) + 1 )
-    {
-        dwError = ERROR_INSUFFICIENT_BUFFER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirStringCpyA( pStr, sizeOfBuffer, pGuidStr );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // ensure lower case string
-    if ( _strlwr_s(pStr, sizeOfBuffer) != 0 )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-#endif
 
 error:
-
-#if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
-    if( pGuidStr != NULL )
-    {
-        RpcStringFreeA((RPC_CSTR*)(&pGuidStr));
-    }
-#endif
 
     return dwError;
 }
@@ -656,6 +622,8 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s. Error(%u) iRetVal(%d)", __FUNCTION__, dwError, iRetVal);
+
     goto cleanup;
 }
 
@@ -2010,9 +1978,9 @@ VmDirCertificateFileNameFromHostName(
     }
     else
     {
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
+        dwError = VmDirAllocateStringPrintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalRsaServerCertFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalRsaServerCertFileName) failed" );
 
         pszSlash = VmDirStringRChrA(pszLocalRsaServerCertFileName, VMDIR_PATH_SEPARATOR_STR[0]);
 
@@ -2026,9 +1994,9 @@ VmDirCertificateFileNameFromHostName(
 
         *(pszSlash + 1) = '\0';
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
+        dwError = VmDirAllocateStringPrintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalFileName) failed" );
     }
 
     *ppszFileName = pszLocalFileName;
@@ -3268,10 +3236,10 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pszCN);
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, 
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                      "%s, (%s) failed with error code (%u)",
                      __FUNCTION__,
-                     VDIR_SAFE_STRING(pszDN), 
+                     VDIR_SAFE_STRING(pszDN),
                      dwError );
     goto cleanup;
 }
@@ -3302,7 +3270,7 @@ VmDirGetDCDNList(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszDCDN,
+    dwError = VmDirAllocateStringPrintf(&pszDCDN,
                                             "%s=%s,%s",
                                             ATTR_OU,
                                             VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
@@ -3488,6 +3456,16 @@ VmDirGetTimeInMilliSec(
     currentTime.LowPart  = currentFileTime.dwLowDateTime;
     currentTime.HighPart = currentFileTime.dwHighDateTime;
 
+    /*
+     * FILETIME.QuadPart represents the number of 100-nanosecond intervals
+     * since January 1, 1601 (UTC).
+     *
+     * First, convert it to the number of 100-nanosecond intervals since
+     * January 1, 1970 (UTC).
+     *
+     * Then, convert it to milliseconds since January 1, 1970 (UTC).
+     */
+    currentTime.QuadPart -= WIN_EPOCH;
     iTimeInMSec = (currentTime.QuadPart * 100) / NSECS_PER_MSEC;
 
 #elif !defined(__APPLE__)
@@ -3571,3 +3549,398 @@ VmDirCompareVersion(
     return 0;
 }
 
+/**
+ * Get maximum domain functional level for given version.
+ * If not known for version, return the default (lowest) dfl.
+ *
+ * The mapping is succesful when the given version begins with a version
+ * in the table. Versions in the table are typically in the form of "major.minor"
+ * as DFL should avoid being changed except for major and minor releases.
+ *
+ * Example 1: pszVersion of "7.0.1-a" will match "7.0" and return a DFL of '3'
+ * Example 2: pszVersion of "7" will not match any DFL version and return '1'
+ * Example 3: pszVersion of "6.5" will match "6.5" and return a DFL of '2'
+ */
+DWORD
+VmDirMapVersionToMaxDFL(
+    PCSTR	pszVersion,
+    PDWORD	pdwDFL
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    BOOLEAN matched = FALSE;
+    VMDIR_DFL_VERSION_MAP dflVersionTable[] = VMDIR_DFL_VERSION_INITIALIZER;
+    DWORD dwTableSize = sizeof(dflVersionTable)/sizeof(dflVersionTable[0]);
+
+    if ( !pdwDFL)
+    {
+	dwError = ERROR_INVALID_PARAMETER;
+	BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Search table
+    for(i = 0; i < dwTableSize; i++)
+    {
+	if (VmDirStringNCompareA(
+                        pszVersion,
+                        dflVersionTable[i].version,
+                        VmDirStringLenA(dflVersionTable[i].version),
+                        FALSE) == 0)
+        {
+            *pdwDFL = dflVersionTable[i].dfl;
+            matched = TRUE;
+            break;
+        }
+    }
+
+    if (!matched)
+    {
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                          "DFL not found for version %s, default to %d",
+                          pszVersion, VMDIR_DFL_DEFAULT);
+	*pdwDFL = VMDIR_DFL_DEFAULT;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
+DWORD
+VmDirGetDomainFuncLvlInternal(
+    LDAP* pLd,
+    PCSTR pszDomain,
+    PDWORD pdwFuncLvl
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwFuncLvl = 0;
+    LDAPMessage *pResult = NULL;
+    PCSTR  pszAttrFuncLvl = ATTR_DOMAIN_FUNCTIONAL_LEVEL;
+    PCSTR  ppszAttrs[] = { pszAttrFuncLvl, NULL };
+    PCSTR  pszFilter = "objectclass=*";
+    PSTR pszDomainDN = NULL;
+    struct berval** ppValues = NULL;
+
+    if (!pLd || !pszDomain || !pdwFuncLvl)
+    {
+	dwError = ERROR_INVALID_PARAMETER;
+	BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Get the domain DN from the domain name.
+    dwError = VmDirSrvCreateDomainDN(
+                  pszDomain,
+                  &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+		pLd,
+		pszDomainDN,
+		LDAP_SCOPE_BASE,
+		pszFilter,
+		(PSTR*)ppszAttrs,
+		FALSE, /* get values also */
+		NULL,  /* server controls */
+		NULL,  /* client controls */
+		NULL,  /* timeout         */
+		0,     /* size limit      */
+		&pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldap_count_entries(pLd, pResult) > 0)
+    {
+	LDAPMessage *pEntry = ldap_first_entry(pLd, pResult);
+
+	if (pEntry)
+	{
+	    ppValues = ldap_get_values_len(pLd,
+					   pEntry,
+					   pszAttrFuncLvl);
+
+	    if (ppValues && ldap_count_values_len(ppValues) > 0)
+	    {
+
+		dwFuncLvl = atoi(ppValues[0]->bv_val);
+
+	    }
+	}
+    }
+
+    *pdwFuncLvl = dwFuncLvl;
+
+cleanup:
+
+    if (ppValues)
+    {
+	ldap_value_free_len(ppValues);
+    }
+
+    if (pResult)
+    {
+	ldap_msgfree(pResult);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetServerAccountDN(
+    PCSTR pszDomain,
+    PCSTR pszMachineName,
+    PSTR* ppszServerDN
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszDomainDN = NULL;
+    PSTR  pszServerDN = NULL;
+
+    if (IsNullOrEmptyString(pszDomain) ||
+        IsNullOrEmptyString(pszMachineName) ||
+        !ppszServerDN)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                    &pszServerDN,
+                    "CN=%s,OU=%s,%s",
+                    pszMachineName,
+                    VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
+                    pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszServerDN = pszServerDN;
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+
+    return dwError;
+
+error:
+
+    if (ppszServerDN)
+    {
+        *ppszServerDN = NULL;
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pszServerDN);
+
+    goto cleanup;
+}
+
+/*
+ * query single attribute value of a DN via ldap
+ * "*ppByte" is NULL terminated.
+ */
+DWORD
+VmDirLdapGetSingleAttribute(
+    LDAP*   pLD,
+    PCSTR   pszDN,
+    PCSTR   pszAttr,
+    PBYTE*  ppByte,
+    DWORD*  pdwLen
+    )
+{
+    DWORD           dwError=0;
+    PBYTE           pLocalByte = NULL;
+    BerValue**      ppBerValues = NULL;
+
+    if ( !pLD || !pszDN || !pszAttr || !ppByte || !pdwLen )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirLdapGetAttributeValues(
+                                        pLD,
+                                        pszDN,
+                                        pszAttr,
+                                        NULL,
+                                        &ppBerValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if ( ppBerValues[0] == NULL || ppBerValues[0]->bv_val == NULL )
+    {
+        dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if ( ppBerValues[1] != NULL )   // more than one attribute value
+    {
+        dwError = VMDIR_ERROR_INVALID_RESULT;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateAndCopyMemory(
+                            ppBerValues[0]->bv_val,
+                            ppBerValues[0]->bv_len + 1,
+                            (PVOID*)&pLocalByte);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppByte = pLocalByte;
+    *pdwLen = (DWORD)ppBerValues[0]->bv_len;
+    pLocalByte = NULL;
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
+    if(ppBerValues)
+    {
+        ldap_value_free_len(ppBerValues);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapGetAttributeValues(
+    LDAP* pLd,
+    PCSTR pszDN,
+    PCSTR pszAttribute,
+    LDAPControl** ppSrvCtrls,
+    BerValue*** pppBerValues
+    )
+{
+    DWORD           dwError = 0;
+    PCSTR           ppszAttrs[] = {pszAttribute, NULL};
+    LDAPMessage*    pSearchRes = NULL;
+    LDAPMessage*    pEntry = NULL;
+    BerValue**      ppBerValues = NULL;
+
+    dwError = ldap_search_ext_s(
+                            pLd,
+                            pszDN,
+                            LDAP_SCOPE_BASE,
+                            NULL,       /* filter */
+                            (PSTR*)ppszAttrs,
+                            FALSE,      /* attrsonly */
+                            ppSrvCtrls, /* serverctrls */
+                            NULL,       /* clientctrls */
+                            NULL,       /* timeout */
+                            0,         /* sizelimit */
+                            &pSearchRes);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pEntry = ldap_first_entry(pLd, pSearchRes);
+    if (!pEntry)
+    {
+        dwError = LDAP_NO_SUCH_ATTRIBUTE;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ppBerValues = ldap_get_values_len(pLd, pEntry, pszAttribute);
+    if (!ppBerValues)
+    {
+        dwError = LDAP_NO_SUCH_ATTRIBUTE;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pppBerValues = ppBerValues;
+cleanup:
+    if (pSearchRes)
+    {
+        ldap_msgfree(pSearchRes);
+    }
+    return dwError;
+error:
+    *pppBerValues = NULL;
+    if(ppBerValues)
+    {
+        ldap_value_free_len(ppBerValues);
+    }
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLdapGetAttributeValues failed. Error(%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirGetServerName(
+    PCSTR pszHostName,
+    PSTR* ppszServerName
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszHostURI = NULL;
+    LDAP*       pLd = NULL;
+    PSTR        pszServerName = NULL;
+    BerValue**  ppBerValues = NULL;
+
+    if (IsNullOrEmptyString(pszHostName) || ppszServerName == NULL)
+    {
+        dwError =  LDAP_INVALID_SYNTAX;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if ( VmDirIsIPV6AddrFormat( pszHostName ) )
+    {
+        dwError = VmDirAllocateStringPrintf( &pszHostURI, "%s://[%s]:%d",
+                                                 VMDIR_LDAP_PROTOCOL,
+                                                 pszHostName,
+                                                 DEFAULT_LDAP_PORT_NUM);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf( &pszHostURI, "%s://%s:%d",
+                                                 VMDIR_LDAP_PROTOCOL,
+                                                 pszHostName,
+                                                 DEFAULT_LDAP_PORT_NUM);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAnonymousLDAPBind( &pLd, pszHostURI );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapGetAttributeValues(
+                                pLd,
+                                "",
+                                ATTR_SERVER_NAME,
+                                NULL,
+                                &ppBerValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirDnLastRDNToCn(ppBerValues[0]->bv_val, &pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszServerName = pszServerName;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszHostURI);
+
+    if (pLd)
+    {
+        ldap_unbind_ext_s(pLd, NULL, NULL);
+    }
+
+    if(ppBerValues)
+    {
+        ldap_value_free_len(ppBerValues);
+    }
+
+    return dwError;
+error:
+    *ppszServerName = NULL;
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirGetServerName failed with error (%u)", dwError);
+    goto cleanup;
+}

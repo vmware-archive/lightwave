@@ -56,6 +56,10 @@ Java_com_vmware_identity_heartbeat_VmAfdHeartbeatAdapter_VmAfdOpenServerW(
     PCWSTR pwszUserName = NULL;
     PCWSTR pwszPassword = NULL;
 
+#ifndef _WIN32
+    setlocale (LC_ALL, "");
+#endif
+
     if (jpServer == NULL)
     {
         dwError = ERROR_INVALID_PARAMETER;

@@ -826,6 +826,9 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       case TIMESYNCTOKEN:
           authnMethodValue = AuthnContext.TIME_SYNC_TOKEN_AUTHN_CTX;
           break;
+      case SMARTCARD:
+          authnMethodValue = AuthnContext.SMARTCARD_PKI_AUTHN_CTX;
+          break;
       default:
          throw new IllegalStateException("Unknown authentication method");
       }

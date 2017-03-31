@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -200,70 +200,81 @@ VmAfdReadDataImpl(
 	DWORD dwError = 0;
 	ssize_t dwBytesRead = 0;
 	PBYTE pResponse = NULL;
-        PBYTE pResponseCursor = NULL;
-        DWORD dwBytesSent = 0;
-        DWORD dwTotalBytesRead = 0;
+    PBYTE   pResponseCursor  = NULL;
+    DWORD   dwBytesSent      = 0;
+    DWORD   dwTotalBytesRead = 0;
 
+    do
+    {
+        dwBytesRead = read(pConnection->fd, (PVOID)&dwBytesSent, sizeof(DWORD));
+    } while (dwBytesSent == -1 && errno == EINTR);
+
+    if (dwBytesRead < sizeof(DWORD))
+    {
+        dwError = LwErrnoToWin32Error(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwBytesRead = 0;
+
+    if (dwBytesSent == 0)
+    {
+#ifndef __MACH__
+        dwError = ERROR_COMMUNICATION;
+#else
+        dwError = 70;
+#endif
+        goto error;
+    }
+
+    dwError = VmAfdAllocateMemory(dwBytesSent, (PVOID *)&pResponse);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pResponseCursor = pResponse;
+
+    while (dwTotalBytesRead < dwBytesSent)
+    {
+        DWORD dwBytesToRead =
+                    VMAFD_IPC_PACKET_SIZE < (dwBytesSent -
+                                                dwTotalBytesRead)
+                                        ? VMAFD_IPC_PACKET_SIZE
+                                        : dwBytesSent - dwTotalBytesRead;
         do
         {
-                dwBytesRead = read(pConnection->fd, (PVOID)&dwBytesSent, sizeof (DWORD));
-        }while (dwBytesSent == -1 && errno == EINTR);
+            dwBytesRead = read(pConnection->fd, pResponseCursor, dwBytesToRead);
+        } while (dwBytesRead == -1 && errno == EINTR);
 
-        if (dwBytesRead < sizeof (DWORD))
+        if (dwBytesRead == -1)
         {
-                dwError = LwErrnoToWin32Error(dwError);
-                BAIL_ON_VMAFD_ERROR (dwError);
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMAFD_ERROR(dwError);
         }
 
-        dwBytesRead = 0;
+        dwTotalBytesRead += dwBytesRead;
+        pResponseCursor += dwBytesRead;
+    }
 
-        dwError = VmAfdAllocateMemory(
-                                      dwBytesSent,
-                                      (PVOID *) &pResponse
-                                     );
-        BAIL_ON_VMAFD_ERROR (dwError);
-
-        pResponseCursor = pResponse;
-
-        while (dwTotalBytesRead < dwBytesSent)
-        {
-                DWORD dwBytesToRead = VMAFD_IPC_PACKET_SIZE<(dwBytesSent-dwTotalBytesRead)?
-                                      VMAFD_IPC_PACKET_SIZE:
-                                      dwBytesSent-dwTotalBytesRead;
-                do {
-                        dwBytesRead = read(pConnection->fd,pResponseCursor,dwBytesToRead);
-                }while (dwBytesRead == -1 && errno == EINTR);
-
-                if (dwBytesRead == -1)
-                {
-                        dwError = LwErrnoToWin32Error(errno);
-                        BAIL_ON_VMAFD_ERROR (dwError);
-                }
-
-                dwTotalBytesRead += dwBytesRead;
-                pResponseCursor += dwBytesRead;
-
-        }
-
-	if (dwTotalBytesRead < dwBytesSent){
-		dwError = ERROR_IO_INCOMPLETE;
-		BAIL_ON_VMAFD_ERROR(dwError);
-	}
-	*pdwResponseSize = dwBytesRead;
-	*ppResponse = pResponse;
+    if (dwTotalBytesRead < dwBytesSent)
+    {
+        dwError = ERROR_IO_INCOMPLETE;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    *pdwResponseSize = dwBytesRead;
+    *ppResponse      = pResponse;
 
 cleanup:
-	return dwError;
+    return dwError;
 error:
-	if (ppResponse != NULL){
-	*ppResponse = NULL;
-	}
-	if (pdwResponseSize != NULL){
-		*pdwResponseSize = 0;
-	}
-	VMAFD_SAFE_FREE_MEMORY(pResponse);
-	goto cleanup;
-
+    if (ppResponse != NULL)
+    {
+        *ppResponse = NULL;
+    }
+    if (pdwResponseSize != NULL)
+    {
+        *pdwResponseSize = 0;
+    }
+    VMAFD_SAFE_FREE_MEMORY(pResponse);
+    goto cleanup;
 }
 
 DWORD
@@ -442,6 +453,10 @@ cleanup:
     if (sockfd != -1)
     {
         close(sockfd);
+    }
+    if (pHostInfo)
+    {
+        freeaddrinfo(pHostInfo);
     }
 
     VMAFD_SAFE_FREE_MEMORY(pszNetworkAddress);

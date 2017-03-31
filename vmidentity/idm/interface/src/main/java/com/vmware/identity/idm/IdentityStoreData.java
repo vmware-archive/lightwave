@@ -65,7 +65,10 @@ public class IdentityStoreData implements IIdentityStoreData
                 null,
                 flags,
                 null,
-                null);
+                null,
+                null, //hintAttributeName
+                true // linkingWithUPN
+                );
     }
 
     public
@@ -125,6 +128,49 @@ public class IdentityStoreData implements IIdentityStoreData
         );
     }
 
+    public
+    static
+    IdentityStoreData
+    createActiveDirectoryIdentityStoreDataWithPIVControls(
+        String name,
+        String userName,
+        boolean useMachineAccount,
+        String servicePrincipalName,
+        String password,
+        Map<String, String> attributesMap,
+        IdentityStoreSchemaMapping schemaMapping,
+        int flags,
+        int[] authnTypes,
+        String hintAttrName,
+        boolean linkAccountWithUPN
+    )
+    {
+        return IdentityStoreData.CreateExternalIdentityStoreData(
+                name,
+                null, // alias - provider alias name
+                IdentityStoreType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY,
+                AuthenticationType.USE_KERBEROS,
+                null, // friendlyName
+                300,  // searchTimeoutSeconds is set to 300
+                userName,
+                useMachineAccount,
+                servicePrincipalName,
+                password,
+                null,
+                null,
+                Collections.<String> emptyList(),
+                attributesMap,
+                schemaMapping,
+                null,
+                flags,
+                null, //certs
+                authnTypes,
+                hintAttrName,
+                linkAccountWithUPN
+        );
+    }
+
+
 
     public static IdentityStoreData CreateSystemIdentityStoreDataWithUpnSuffixes( String Name, Set<String> upnSuffixes)
     {
@@ -158,7 +204,10 @@ public class IdentityStoreData implements IIdentityStoreData
                 upnSuffixes,
                 flags,
                 null,
-                null);
+                null,
+                null, //hintAttributeName
+                true // linkingWithUPN
+                );
     }
 
     public static
@@ -197,7 +246,9 @@ public class IdentityStoreData implements IIdentityStoreData
                 null,
                 flags,
                 null,
-                null);
+                null,
+                null,
+                true);
     }
 
     public
@@ -351,7 +402,10 @@ public class IdentityStoreData implements IIdentityStoreData
                     upnSuffixes,
                     flags,
                     null,
-                    null);
+                    null,
+                    null, //hintAttributeName
+                    true // linkingWithUPN
+                    );
     }
 
     public
@@ -480,7 +534,7 @@ public class IdentityStoreData implements IIdentityStoreData
                     null,
                     flags,
                     null,
-                    authnTypes);
+      authnTypes, null, true);
     }
 
     public
@@ -570,7 +624,7 @@ public class IdentityStoreData implements IIdentityStoreData
                  upnSuffixes,
                  0,
                  certificates,
-                 authnTypes);
+      authnTypes, null, true);
     }
     public
     static
@@ -616,7 +670,7 @@ public class IdentityStoreData implements IIdentityStoreData
                     upnSuffixes,
                     flags,
                     null,
-                    authnTypes);
+      authnTypes, null, true);
     }
 
     public
@@ -664,7 +718,61 @@ public class IdentityStoreData implements IIdentityStoreData
                     upnSuffixes,
                     flags,
                     certificates,
-                    authnTypes);
+        authnTypes,
+        null, true);
+    }
+
+    public
+    static
+    IdentityStoreData
+    CreateExternalIdentityStoreData(
+        String Name,
+        String alias,
+        IdentityStoreType  type,
+        AuthenticationType authenticationType,
+        String friendlyName,
+        int searchTimeoutSeconds,
+        String userName,
+        boolean useMachineAccount,
+        String servicePrincipalName,
+        String password,
+        String userBaseDN,
+        String groupBaseDN,
+        Collection<String>  connectionStrings,
+        Map<String, String> attributesMap,
+        IdentityStoreSchemaMapping schemaMapping,
+        Set<String> upnSuffixes,
+        int flags,
+        Collection<X509Certificate> certificates,
+        int[] authnTypes,
+        String hintAttributeName,
+        boolean accountLinkUseUPN
+
+    )
+    {
+        return new IdentityStoreData(
+                    DomainType.EXTERNAL_DOMAIN,
+                    Name,
+                    alias,
+                    type,
+                    authenticationType,
+                    friendlyName,
+                    searchTimeoutSeconds,
+                    useMachineAccount,
+                    userName,
+                    servicePrincipalName,
+                    password,
+                    userBaseDN,
+                    groupBaseDN,
+                    connectionStrings,
+                    attributesMap,
+                    schemaMapping,
+                    upnSuffixes,
+                    flags,
+                    certificates,
+                    authnTypes,
+                    hintAttributeName,
+                    accountLinkUseUPN);
     }
 
     @Override
@@ -734,7 +842,9 @@ public class IdentityStoreData implements IIdentityStoreData
         Set<String> upnSuffixes,
         int flags,
         Collection<X509Certificate> certificates,
-        int[] authnTypes
+        int[] authnTypes,
+        String hintAttributeName,
+        boolean linkingWithUPN
     )
     {
         this(domainType,
@@ -756,7 +866,9 @@ public class IdentityStoreData implements IIdentityStoreData
              upnSuffixes,
              flags,
              certificates,
-             authnTypes
+             authnTypes,
+             hintAttributeName,
+             linkingWithUPN
              );
     }
 
@@ -780,7 +892,9 @@ public class IdentityStoreData implements IIdentityStoreData
         IdentityStoreSchemaMapping schemaMapping,
         Set<String> upnSuffixes,
         int flags,
-        Collection<X509Certificate> certificates, int[] authnTypes
+        Collection<X509Certificate> certificates, int[] authnTypes,
+        String certMappingHintAttributeName,
+        boolean certMappingUseUPN
     )
     {
         ValidateUtil.validateIdsDomainName(name, domainType);
@@ -832,7 +946,8 @@ public class IdentityStoreData implements IIdentityStoreData
 
             this._extendedData = new IdentityStoreDataEx(
                 alias, type, authenticationType, friendlyName, searchTimeoutSeconds, normUserPrincipal, useMachineAccount, servicePrincipalName,
-                password, userBaseDN, groupBaseDN, connectionStrings, attributesMap, schemaMapping, upnSuffixes, flags, certificates, authnTypes);
+                    password, userBaseDN, groupBaseDN, connectionStrings, attributesMap, schemaMapping, upnSuffixes, flags, certificates, authnTypes,
+                    certMappingHintAttributeName, certMappingUseUPN);
         }
         else if (this._domainType == DomainType.SYSTEM_DOMAIN)
         {//only return the upnSuffixes for system domain
@@ -855,7 +970,8 @@ public class IdentityStoreData implements IIdentityStoreData
                        upnSuffixes,
                        flags,
                        certificates,
-                       authnTypes);
+                            authnTypes,
+                            certMappingHintAttributeName, certMappingUseUPN);
         }
         else // local os
         {
@@ -880,7 +996,9 @@ public class IdentityStoreData implements IIdentityStoreData
                         null,
                         flags,
                         null,
-                        authnTypes);
+                        authnTypes,
+                        certMappingHintAttributeName,
+                        certMappingUseUPN);
             }
             else
             {
@@ -911,9 +1029,11 @@ public class IdentityStoreData implements IIdentityStoreData
         private Map<String, String> _attributesMap;
         private final IdentityStoreSchemaMapping _schemaMapping;
         private Set<String> _upnSuffixes;
-        private int _flags;
-        private Collection<X509Certificate> _certificates;
-        private int[] _authnTypes;
+        private final int _flags;
+        private final Collection<X509Certificate> _certificates;
+        private final int[] _authnTypes;
+        private final String _hintAttributeName;
+        private final boolean _accountLinkingUseUPN;
 
         public
         IdentityStoreDataEx(
@@ -934,7 +1054,9 @@ public class IdentityStoreData implements IIdentityStoreData
             Set<String> upnSuffixes,
             int flags,
             Collection<X509Certificate> certificates,
-            int[] authnTypes
+            int[] authnTypes,
+                String hintAttributeName,
+                boolean linkingUseUPN
             )
         {
 
@@ -974,6 +1096,8 @@ public class IdentityStoreData implements IIdentityStoreData
             this._flags = flags;
             this._certificates = certificates;
             this._authnTypes = authnTypes;
+            this._hintAttributeName = hintAttributeName;
+            this._accountLinkingUseUPN = linkingUseUPN;
         }
 
         @Override
@@ -1142,6 +1266,16 @@ public class IdentityStoreData implements IIdentityStoreData
         public int[] getAuthnTypes()
         {
             return this._authnTypes;
+        }
+
+        @Override
+        public boolean getCertLinkingUseUPN() {
+          return this._accountLinkingUseUPN;
+        }
+
+        @Override
+        public String getCertUserHintAttributeName() {
+          return this._hintAttributeName;
         }
     }
 }

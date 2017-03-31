@@ -99,7 +99,7 @@ public class AuthnRequestState {
     private String identityFormat;
     private String issuerValue;
     private String sessionId;
-    private String correlationId;
+    private final String correlationId;
     private AuthnMethod authnMethod;
     private Date startTime;
     private boolean isRenewable;
@@ -390,6 +390,7 @@ public class AuthnRequestState {
             log.error("Unable to validate the authentication request ",e);
             throw new IllegalStateException(e);
         }
+
         // if signature was specified along with signing algorithm, verify
         // signature
         Issuer issuer = this.authnRequest.getIssuer();
@@ -618,6 +619,7 @@ public class AuthnRequestState {
     }
 
     public void addResponseHeaders(HttpServletResponse response) {
+        Shared.addNoCacheHeader(response);
         if (this.wwwAuthenticate != null) {
             // add WWW-Authenticate header
             if (this.kerbAuthnType == KerbAuthnType.CIP) {

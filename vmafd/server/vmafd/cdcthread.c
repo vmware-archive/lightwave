@@ -74,8 +74,16 @@ CdcShutdownThread(
             dwError = 0;
         }
 
-        pthread_cond_destroy(&pThrContext->thr_cond);
+        dwError = pthread_join(*pThrContext->pThread, NULL);
+        if (dwError != 0)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "CdcShutdownThread Thread join Failed. Error [%d]",
+                dwError);
+        }
 
+        pthread_cond_destroy(&pThrContext->thr_cond);
         pthread_mutex_destroy(&pThrContext->thr_mutex);
      }
 

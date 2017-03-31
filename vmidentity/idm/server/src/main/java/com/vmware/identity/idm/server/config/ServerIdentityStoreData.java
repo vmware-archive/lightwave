@@ -64,6 +64,8 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
     private int _flags;
     private Collection<X509Certificate> _certificates;
     private int[] _authnTypes;
+    private String _hintAttributeName;
+    private boolean _accountLinkingUseUPN = true;
 
     public ServerIdentityStoreData( DomainType domainType, String name )
     {
@@ -88,6 +90,8 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
         this._flags = 0;
         this._certificates = null;
         this._authnTypes = null;
+        this._hintAttributeName = null;
+        this._accountLinkingUseUPN = true;
     }
 
     /*
@@ -215,6 +219,16 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
     public Collection<X509Certificate> getCertificates()
     {
         return this._certificates;
+    }
+
+    @Override
+    public boolean getCertLinkingUseUPN() {
+      return _accountLinkingUseUPN;
+    }
+
+    @Override
+    public String getCertUserHintAttributeName() {
+      return _hintAttributeName;
     }
 
     /*
@@ -365,7 +379,8 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
                     this.getUserBaseDn(), this.getGroupBaseDn(), this.getConnectionStrings(),
                     this.getAttributeMap(), this.getIdentityStoreSchemaMapping(),
                     (this.getUpnSuffixes() != null? Collections.unmodifiableSet((this.getUpnSuffixes())):null),
-                    this.getFlags(), this.getCertificates(), this.getAuthnTypes()
+                    this.getFlags(), this.getCertificates(), this.getAuthnTypes(),
+                    this.getCertUserHintAttributeName(),this.getCertLinkingUseUPN()
             );
         }
         else
@@ -380,4 +395,13 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
 
         return storeData;
     }
+
+    public void setHintAttributeName(String _hintAttributeName) {
+      this._hintAttributeName = _hintAttributeName;
+    }
+
+    public void setAccountLinkingUseUPN(boolean _accountLinkingUseUPN) {
+      this._accountLinkingUseUPN = _accountLinkingUseUPN;
+    }
+
 }

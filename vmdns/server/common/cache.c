@@ -60,13 +60,6 @@ VmDnsCachePurgeLRU(
     PVMDNS_CACHE_CONTEXT    pContext
     );
 
-static
-DWORD
-VmDnsCacheEvictEntryProc(
-    PVMDNS_NAME_ENTRY  pNameEntry,
-    PVMDNS_ZONE_OBJECT pZoneObject
-    );
-
 DWORD
 VmDnsCacheInitialize(
     PVMDNS_CACHE_CONTEXT    *ppContext
@@ -646,12 +639,12 @@ VmDnsCacheRefreshThread(
                             );
             BAIL_ON_VMDNS_ERROR(dwError)
         }
-        else 
+        else
         {
             VMDNS_LOG_ERROR("Failed to get replication status %u.", dwError);
         }
         if (newUSN != 0)
-        { 
+        {
             pCacheContext->dwLastUSN = newUSN;
 
             dwError = VmDnsCachePurgeLRU(pCacheContext);
@@ -759,12 +752,7 @@ VmDnsCachePurgeLRU(
             DWORD dwCount = (pLruList->dwMaxCount *
                             VmDnsLruGetPurgeRate(pLruList)) / 100;
 
-            dwError = VmDnsLruTrimEntries(
-                            pLruList,
-                            dwCount,
-                            VmDnsCacheEvictEntryProc,
-                            pZoneObject
-                            );
+            dwError = VmDnsLruTrimEntries(pLruList, dwCount);
             BAIL_ON_VMDNS_ERROR(dwError);
 
             VmDnsUnlockWrite(pZoneObject->pLock);
@@ -789,7 +777,6 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
 VmDnsCacheEvictEntryProc(
     PVMDNS_NAME_ENTRY  pNameEntry,
@@ -808,8 +795,7 @@ VmDnsCacheEvictEntryProc(
     {
         dwError = VmDnsZoneRemoveNameEntry(
                             pZoneObject,
-                            pNameEntry->pszName,
-                            &pNameEntry
+                            pNameEntry
                             );
         BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -981,9 +967,14 @@ VmDnsCacheLoadInitialData(
 
 cleanup:
 
+    VmDnsFreeStringArrayA(ppszZones);
     VmDnsUnlockWrite(pContext->pLock);
     VmDnsRecordListRelease(pList);
     VmDnsZoneObjectRelease(pZoneObject);
+    if (ppszForwarders)
+    {
+        VmDnsFreeStringCountedArrayA(ppszForwarders, dwCount);
+    }
     return dwError;
 
 error:

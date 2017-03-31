@@ -8,6 +8,8 @@
  */
 #include "includes.h"
 
+int __forceCRTManifestCUR = 0;
+
 DWORD clientTest();
 DWORD dbLocalTest();
 DWORD localAdd();

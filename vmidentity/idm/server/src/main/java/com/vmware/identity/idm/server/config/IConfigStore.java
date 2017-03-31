@@ -59,17 +59,17 @@ public interface IConfigStore
      */
     public static long DEFAULT_CLOCK_TOLERANCE     = 10l * 60 * 1000; // 10min
     /**
-     * Default maximum lifetime for bearer tokens (5 minutes)
+     * Default maximum lifetime for bearer tokens (1 hour)
      */
-    public static long DEFAULT_MAX_BEARER_LIFETIME = 5l * 60 * 1000; // 5min
+    public static long DEFAULT_MAX_BEARER_LIFETIME = 1l * 60 * 60 * 1000; // 1h
     /**
      * Default maximum lifetime for HoK tokens (30 days)
      */
     public static long DEFAULT_MAX_HOK_LIFETIME    = 30l * 24 * 60 * 60 * 1000; // 30d
     /**
-     * Default maximum lifetime for bearer refresh tokens (6 hours)
+     * Default maximum lifetime for bearer refresh tokens (8 hours)
      */
-    public static long DEFAULT_MAX_BEARER_REFRESH_TOKEN_LIFETIME = 6l *60 * 60 * 1000; // 6h
+    public static long DEFAULT_MAX_BEARER_REFRESH_TOKEN_LIFETIME = 8l * 60 * 60 * 1000; // 8h
     /**
      * Default maximum lifetime for HoK refresh tokens (30 days)
      */
@@ -95,8 +95,6 @@ public interface IConfigStore
     public void setDefaultTenant(String name) throws Exception;
 
     public void setSystemTenant(String name) throws Exception;
-
-    public void ensureSPContainerExist(String tenantName) throws Exception;
 
     public
     Collection<List<Certificate>>

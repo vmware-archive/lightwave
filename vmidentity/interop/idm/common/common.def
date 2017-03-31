@@ -1,0 +1,11 @@
+LIBRARY	"idmcommon"
+EXPORTS
+IDMAllocateMemory
+IDMFreeMemory
+IDMAllocateString
+IDMAllocateStringA
+IDMFreeString
+IDMCloneSid
+IDMFreeSid
+IDMAllocateStringWFromA
+IDMAllocateStringAFromW

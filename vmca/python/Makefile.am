@@ -37,6 +37,7 @@ vmca_la_LIBADD = \
     
  
 vmca_la_LDFLAGS = \
+    @VMAFD_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@  \
     @PYTHON_LDFLAGS@ \

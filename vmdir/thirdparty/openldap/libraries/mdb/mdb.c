@@ -8560,18 +8560,21 @@ mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_
                         //Will try to put the backend onto read-only state.
     LOCK_MUTEX_W(env);
 
-    if (((env->me_flags & MDB_RDONLY) && fileTransferState == 1) || //Already in read-only state while trying to set to read-only
-        ((env->me_flags & MDB_RDONLY) && fileTransferState == 2) || //Already in read-only state while trying to set to keep XLOGS
-        (!(env->me_flags & MDB_RDONLY) && fileTransferState == 0)) // Not in read-only state while trying to clear read-only or keep XLOGS state
-        ret = 2;
-    else if ( fileTransferState == 1 || fileTransferState == 2 )
-         env->me_flags |= MDB_RDONLY;
-    else if ( fileTransferState == 0)
-         env->me_flags &= ~MDB_RDONLY;
-    else
-        ret = 1; // invalid parameter
+    if (fileTransferState != 3)
+    {
+        if (((env->me_flags & MDB_RDONLY) && fileTransferState == 1) || //Already in read-only state while trying to set to read-only
+            ((env->me_flags & MDB_RDONLY) && fileTransferState == 2) || //Already in read-only state while trying to set to keep XLOGS
+            (!(env->me_flags & MDB_RDONLY) && fileTransferState == 0)) // Not in read-only state while trying to clear read-only or keep XLOGS state
+            ret = 2;
+        else if ( fileTransferState == 1 || fileTransferState == 2 )
+             env->me_flags |= MDB_RDONLY;
+        else if ( fileTransferState == 0)
+             env->me_flags &= ~MDB_RDONLY;
+        else
+            ret = 1; // invalid parameter
 
-    mdb_env_sync(env, 1);
+        mdb_env_sync(env, 1);
+    }
     mdb_env_info(env, &env_stats);
 
     //dbSizeMb is used as a hint so that there is no need to transfer the bytes beyond this value.
@@ -8584,4 +8587,15 @@ mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_
     UNLOCK_MUTEX_W(env);
     return ret;
 }
+
+unsigned long long
+mdb_env_get_lasttid(MDB_env *env)
+{
+    if (env->me_metas[1]->mm_txnid > env->me_metas[0]->mm_txnid)
+    {
+        return env->me_metas[1]->mm_txnid;
+    }
+    return env->me_metas[0]->mm_txnid;
+}
+
 /** @} */

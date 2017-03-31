@@ -1630,8 +1630,8 @@ next_pos:
             break;
         }
 
-        remainVal = p_cur;
         remainLen -= (ber_len_t)(p_cur - remainVal);
+        remainVal = p_cur;
 
         if ( normFiltValLen > remainLen )
         {

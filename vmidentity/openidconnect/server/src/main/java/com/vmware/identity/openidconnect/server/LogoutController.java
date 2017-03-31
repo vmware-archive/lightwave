@@ -61,14 +61,7 @@ public class LogoutController {
         this.sessionManager = sessionManager;
     }
 
-    @RequestMapping(value = "/logout", method = { RequestMethod.GET, RequestMethod.POST })
-    public void logout(
-            HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        logout(request, response, null);
-    }
-
-    @RequestMapping(value = "/logout/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
+    @RequestMapping(value = Endpoints.BASE + Endpoints.LOGOUT + "/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
     public void logout(
             HttpServletRequest request,
             HttpServletResponse response,

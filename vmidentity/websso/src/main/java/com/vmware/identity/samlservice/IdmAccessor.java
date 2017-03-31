@@ -208,10 +208,11 @@ public interface IdmAccessor {
 
 	/**
 	 * Issue Authentication call for the current tenant with the TLS Client certificate chain
-	 * @param X509Certificate[]
+	 * @param tLSCertChain
+	 * @param hint   optional user hint (userNameHint@userdomain)
 	 * @return
 	 */
-	PrincipalId authenticate(X509Certificate[] tLSCertChain);
+	PrincipalId authenticate(X509Certificate[] tLSCertChain, String hint);
 
 	    /**
      * Issue Authentication call for the current tenant with the specified
@@ -311,15 +312,21 @@ public interface IdmAccessor {
       * if the user is not found during delegated logon via SAML IDP federation.
       * JIT users are instances of vmwExternalIdpUser auxiliary objectclass in LDAP.
       *
+      * If the subject nameId format is UPN or UPN is sent as a token attribute,
+      * we use the UPN in the external token as JIT user's UPN in local vmdir.
+      *
+      * If UPN cannot be found from the external token, we generate UPN in the following format:
+      * sanitizedExternalNameID.GUID@UPNSuffix
+      * UPNSuffix is an attribute of IDPConfig, which is configured by admin.
+      *
       *@param subject the user subject
       *@param tenant name of the tenant
-      *@param upnSuffix UPN Suffix the system provider will be created to
-      *                 associate the external domain name with tenant's system provider.
-      *@param extIdp the external IDP where the user is from.
-      *@param id of the created jit user.
+      *@param extIdp the configuration of external IDP where the user is from.
+      *@param claimAttributes claim attributes from external saml token
+      *@return id of the created jit user.
       */
      PrincipalId createUserAccountJustInTime(Subject subject, String tenant,
-             IDPConfig extIdp) throws Exception;
+             IDPConfig extIdp, Collection<Attribute> claimAttributes) throws Exception;
 
      /**
       * Update Jit user's groups given the token attributes.

@@ -36,7 +36,6 @@ import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.saml.Advice;
 import com.vmware.identity.saml.Advice.Attribute;
-import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.InvalidTokenException;
 import com.vmware.identity.saml.SamlTokenSpec;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData;
@@ -45,6 +44,7 @@ import com.vmware.identity.saml.SamlTokenSpec.Builder;
 import com.vmware.identity.saml.SamlTokenSpec.Confirmation;
 import com.vmware.identity.saml.SamlTokenSpec.DelegationSpec;
 import com.vmware.identity.saml.SamlTokenSpec.RenewSpec;
+import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.SignatureAlgorithm;
 import com.vmware.identity.saml.TokenValidator;
 import com.vmware.identity.sts.InvalidRequestException;
@@ -54,6 +54,7 @@ import com.vmware.identity.sts.NoSuchIdPException;
 import com.vmware.identity.sts.Request;
 import com.vmware.identity.sts.RequestFailedException;
 import com.vmware.identity.sts.auth.Result;
+import com.vmware.identity.sts.util.JAXBExtractor;
 import com.vmware.identity.util.TimePeriod;
 
 /**
@@ -365,6 +366,12 @@ final class SamlTokenSpecBuilder {
       case NTLM:
          method = AuthnMethod.NTLM;
          break;
+      case SMARTCARD:
+          method = AuthnMethod.SMARTCARD;
+          break;
+      case TIMESYNCTOKEN:
+          method = AuthnMethod.TIMESYNCTOKEN;
+          break;
       default:
          throw new IllegalStateException("Unknown authentication method");
       }
@@ -389,7 +396,7 @@ final class SamlTokenSpecBuilder {
 
       AssertionType result = null;
       if (req.getSamlToken() != null) {
-         result = req.getHeader().getAssertion();
+         result = JAXBExtractor.extractFromSecurityHeader(req.getHeader(), AssertionType.class);
          assert result != null : "Missing Assertion element in request header although there is a token already found there!";
       }
       return result;

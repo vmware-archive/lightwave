@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2012 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VMOMI Server Beans                                                   -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="vmodlContext"
+         class="com.vmware.vim.vmomi.core.types.VmodlContext"
+         factory-method="initContext">
+      <constructor-arg>
+         <list>
+            <value>com.vmware.vim.binding.sso</value>
+            <value>com.vmware.vim.binding.idp</value>
+         </list>
+      </constructor-arg>
+   </bean>
+
+   <bean id="casIdmClient"
+         class="com.vmware.identity.idm.client.CasIdmClient">
+         <constructor-arg value="localhost" />
+   </bean>
+
+   <!-- TODO: Move VersionFinder class out of 'admin' package -->
+   <bean id="versionFinder"
+         class="com.vmware.identity.admin.vlsi.util.VersionFinder"
+         depends-on="vmodlContext" />
+
+   <bean id="requestSignatureValidator"
+         class="com.vmware.vim.vmomi.server.security.impl.RequestSignatureValidatorImpl">
+
+      <!-- Temporary fix: 10 minutes as defaults at STS server -->
+      <property name="clockToleranceSeconds" value="600" />
+   </bean>
+
+   <bean id="executor" class="java.util.concurrent.ThreadPoolExecutor">
+      <constructor-arg value="5" /> <!-- corePoolSize - the number of threads to keep in the pool, even if they are idle -->
+      <constructor-arg value="100" /> <!-- maximumPoolSize - the maximum number of threads to allow in the pool -->
+      <constructor-arg value="60" /> <!-- keepAliveTime - when the number of threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating. -->
+      <constructor-arg>
+        <value type="java.util.concurrent.TimeUnit">SECONDS</value> <!-- unit - the time unit for the keepAliveTime argument -->
+      </constructor-arg>
+      <constructor-arg ref="executorQueue" /> <!-- workQueue - the queue to use for holding tasks before they are executed. This queue will hold only the Runnable tasks submitted by the execute method. -->
+   </bean>
+
+   <bean id="executorQueue" class="java.util.concurrent.SynchronousQueue" />
+
+   <bean id = "eventListenerBean" class="com.vmware.identity.admin.server.impl.AdminApplicationListener" />
+
+</beans>

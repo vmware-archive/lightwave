@@ -368,7 +368,7 @@ VMCABackupFiles(
                               dwCounter - 1);
         BAIL_ON_ERROR(dwError);
 
-        RENAME(pszSourceFile, pszDestFile);
+        VMCACopyFile(pszSourceFile, pszDestFile);
 
         VMCA_SAFE_FREE_STRINGA(pszDestFile);
         VMCA_SAFE_FREE_STRINGA(pszSourceFile);
@@ -386,7 +386,7 @@ VMCABackupFiles(
                           0);
     BAIL_ON_ERROR(dwError);
 
-    RENAME(pszBaseFilePath, pszDestFile);
+    VMCACopyFile(pszBaseFilePath, pszDestFile);
 
 error:
     VMCA_SAFE_FREE_STRINGA(pszDestFile);

@@ -36,7 +36,6 @@ import com.vmware.identity.openidconnect.common.Subject;
 import com.vmware.identity.openidconnect.common.TokenClass;
 import com.vmware.identity.openidconnect.common.TokenType;
 
-
 /**
  * @author Yehia Zayour
  */

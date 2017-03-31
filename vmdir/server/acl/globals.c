@@ -43,4 +43,4 @@ GENERIC_MAPPING gVmDirEntryGenericMapping = {
     VMDIR_SF_INIT(.GenericAll, VMDIR_ENTRY_ALL_ACCESS)
 };
 
-
+BOOLEAN bLegacySecurityDescriptorsNeeded = FALSE;

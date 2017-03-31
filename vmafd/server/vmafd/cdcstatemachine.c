@@ -29,6 +29,24 @@ CdcDCIsOffsite(
     );
 
 static
+VOID
+CdcLogDCFailure(
+    PWSTR pwszDCName
+    );
+
+static
+VOID
+CdcLogAffinitizedDCFailure(
+    PCDC_DC_INFO_W pCdcDCName
+    );
+
+static
+VOID
+CdcLogAllDCStates(
+    VOID
+    );
+
+static
 DWORD
 CdcHandleNoDCList(
     PCDC_STATE_MACHINE_CONTEXT pStateMachine,
@@ -133,6 +151,10 @@ CdcInitStateMachine(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     pStateMachine->state_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    pStateMachine->update_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    pStateMachine->update_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+    pStateMachine->cdcThrState = CDC_STATE_THREAD_STATE_UNDEFINED;
+    pStateMachine->bFirstRun = 1;
 
     dwError = pthread_create(
                         &pStateMachine->pStateThrContext->thread,
@@ -281,9 +303,11 @@ CdcRunStateMachine(
               break;
         }
 
+        InterlockedExchange(&pStateMachine->bFirstRun,0);
+
         iEnd = VmAfdGetTimeInMilliSec();
 
-        dwError = CdcSrvGetDCName(NULL, &pCdcInfo);
+        dwError = CdcSrvGetDCName(NULL, 0, &pCdcInfo);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         (DWORD)VmAfdAddCDCSuperLogEntry(
@@ -337,15 +361,28 @@ CdcShutdownStateMachine(
 
 DWORD
 CdcWakeupStateMachine(
-    PCDC_STATE_MACHINE_CONTEXT pStateMachine
+    PCDC_STATE_MACHINE_CONTEXT pStateMachine,
+    BOOLEAN                    bWaitForCompletion
     )
 {
     DWORD dwError = 0;
+    CDC_STATE_THREAD_STATE cdcCurrentState = CDC_STATE_THREAD_STATE_UNDEFINED;
 
     if (!pStateMachine)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (bWaitForCompletion)
+    {
+        pthread_mutex_lock(&pStateMachine->update_mutex);
+        cdcCurrentState = pStateMachine->cdcThrState;
+        if (cdcCurrentState == CDC_STATE_THREAD_STATE_UPDATED)
+        {
+            pStateMachine->cdcThrState = CDC_STATE_THREAD_STATE_SIGNALLED;
+        }
+        pthread_mutex_unlock(&pStateMachine->update_mutex);
     }
 
     dwError = CdcWakeupThread(pStateMachine->pStateThrContext);
@@ -358,6 +395,21 @@ CdcWakeupStateMachine(
               );
     }
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (bWaitForCompletion)
+    {
+        pthread_mutex_lock(&pStateMachine->update_mutex);
+        cdcCurrentState = pStateMachine->cdcThrState;
+        if (cdcCurrentState != CDC_STATE_THREAD_STATE_UPDATED)
+        {
+            pthread_cond_wait(
+                  &pStateMachine->update_cond,
+                  &pStateMachine->update_mutex
+                  );
+        }
+        pthread_mutex_unlock(&pStateMachine->update_mutex);
+    }
+
 
 cleanup:
 
@@ -391,6 +443,10 @@ CdcStateMachineWorker(
         {
             break;
         }
+
+        pthread_mutex_lock(&pStateMachine->update_mutex);
+        pStateMachine->cdcThrState = CDC_STATE_THREAD_STATE_RUNNING;
+        pthread_mutex_unlock(&pStateMachine->update_mutex);
 
         dwError = CdcRegDbGetHeartBeatInterval(&dwStateMachineInterval);
         if (dwError)
@@ -428,6 +484,11 @@ CdcStateMachineWorker(
             }
         }
 
+        pthread_mutex_lock(&pStateMachine->update_mutex);
+        pStateMachine->cdcThrState = CDC_STATE_THREAD_STATE_UPDATED;
+        pthread_cond_broadcast(&pStateMachine->update_cond);
+        pthread_mutex_unlock(&pStateMachine->update_mutex);
+
         dwError = CdcStateMachineThreadSleep(
                                 pStateMachine->pStateThrContext,
                                 dwStateMachineInterval
@@ -441,6 +502,11 @@ CdcStateMachineWorker(
 
 cleanup:
 
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "Exiting CdcStateMachine thread due to error: [%d]",
+        dwError
+        );
     return NULL;
 error:
 
@@ -510,6 +576,126 @@ error:
 }
 
 static
+VOID
+CdcLogDCFailure(
+    PWSTR pwszDCName
+    )
+{
+    DWORD dwIndex = 0;
+    DWORD dwError = 0;
+    PSTR  pszDCName = NULL;
+    PSTR  pszServiceName = 0;
+    PCDC_DC_STATUS_INFO_W pCdcStatus = NULL;
+    PVMAFD_HB_STATUS_W pHeartbeatStatus = NULL;
+
+    dwError = VmAfdAllocateStringAFromW(
+                                pwszDCName,
+                                &pszDCName
+                                );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "PSC: [%s] is down", pszDCName);
+
+    dwError = CdcSrvGetDCStatusInfo(
+                            pwszDCName,
+                            NULL,
+                            &pCdcStatus,
+                            &pHeartbeatStatus
+                            );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(
+         VMAFD_DEBUG_ANY,
+         "Last error: [%d]",
+         pCdcStatus->dwLastError
+         );
+
+    if (pHeartbeatStatus)
+    {
+        for (; dwIndex < pHeartbeatStatus->dwCount; ++dwIndex)
+        {
+            PVMAFD_HB_INFO_W pCursor = &pHeartbeatStatus->pHeartbeatInfoArr[dwIndex];
+            dwError = VmAfdAllocateStringAFromW(
+                                        pCursor->pszServiceName,
+                                        &pszServiceName
+                                        );
+            BAIL_ON_VMAFD_ERROR(dwError);
+            VmAfdLog(
+              VMAFD_DEBUG_ANY,
+              "Service Name: [%s] \t IsAlive: [%s] \t Last Response: [%d]",
+               pszServiceName,
+               pCursor->bIsAlive?"YES":"NO",
+               pCursor->dwLastHeartbeat
+               );
+            VMAFD_SAFE_FREE_MEMORY(pszServiceName);
+        }
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszServiceName);
+    if (pCdcStatus)
+    {
+        VmAfdFreeCdcStatusInfoW(pCdcStatus);
+    }
+
+    if (pHeartbeatStatus)
+    {
+        VmAfdFreeHbStatusW(pHeartbeatStatus);
+    }
+    return;
+error:
+
+    goto cleanup;
+}
+
+static
+VOID
+CdcLogAffinitizedDCFailure(
+    PCDC_DC_INFO_W pCdcDCName
+    )
+{
+    VmAfdLog(
+         VMAFD_DEBUG_ANY,
+         "Current affinitized DC is down"
+         );
+
+    CdcLogDCFailure(pCdcDCName->pszDCName);
+    return;
+
+}
+
+static
+VOID
+CdcLogAllDCStates(
+    VOID
+    )
+{
+    PWSTR *ppszDCNames = NULL;
+    DWORD dwCount = 0;
+
+    (DWORD)CdcSrvEnumDCEntries(
+                        &ppszDCNames,
+                        &dwCount
+                        );
+    if (ppszDCNames && dwCount)
+    {
+        DWORD dwIndex = 0;
+        for (; dwIndex<dwCount; ++dwIndex)
+        {
+            CdcLogDCFailure(ppszDCNames[dwIndex]);
+        }
+
+    }
+
+    if (ppszDCNames)
+    {
+        VmAfdFreeStringArrayW(ppszDCNames, dwCount);
+    }
+}
+
+static
 DWORD
 CdcHandleNoDCList(
     PCDC_STATE_MACHINE_CONTEXT pStateMachine,
@@ -526,7 +712,7 @@ CdcHandleNoDCList(
     CDC_DC_STATE cdcEndingState = CDC_DC_STATE_UNDEFINED;
 
     iStart = VmAfdGetTimeInMilliSec();
-    dwError = CdcSrvGetDCName(NULL, &pCdcInfo);
+    dwError = CdcSrvGetDCName(NULL, 0, &pCdcInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = CdcDbIsDCAlive(pCdcInfo, &bIsAlive);
@@ -623,14 +809,18 @@ CdcHandleSiteAffinitized(
     UINT64 iEnd = 0;
 
     iStart = VmAfdGetTimeInMilliSec();
-    dwError = CdcSrvGetDCName(NULL,&pCdcDCName);
+    dwError = CdcSrvGetDCName(NULL, 0, &pCdcDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = CdcDbIsDCAlive(pCdcDCName, &bIsAlive);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (!bIsAlive)
+    if (!bIsAlive || InterlockedExchange(&pStateMachine->bFirstRun,0))
     {
+        if (!bIsAlive)
+        {
+              CdcLogAffinitizedDCFailure(pCdcDCName);
+        }
         dwError = CdcGetNewDC(&pszNewDCName, &cdcNextState);
         BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -656,6 +846,10 @@ CdcHandleSiteAffinitized(
                     pszLogOldDCName
                     );
             }
+        }
+        else if (cdcNextState == CDC_DC_STATE_NO_DCS_ALIVE)
+        {
+            CdcLogAllDCStates();
         }
 
         dwError = CdcStateTransition(pStateMachine,cdcNextState);
@@ -716,7 +910,7 @@ CdcHandleOffSite(
 
     iStart = VmAfdGetTimeInMilliSec();
 
-    dwError = CdcSrvGetDCName(NULL,&pCdcDCName);
+    dwError = CdcSrvGetDCName(NULL,0, &pCdcDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = CdcDbIsDCAlive(pCdcDCName, &bIsAlive);
@@ -837,7 +1031,7 @@ CdcHandleNoDCsAlive(
 
     iEnd = VmAfdGetTimeInMilliSec();
 
-    dwError = CdcSrvGetDCName(NULL, &pCdcInfo);
+    dwError = CdcSrvGetDCName(NULL,0, &pCdcInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     (DWORD)VmAfdAddCDCSuperLogEntry(

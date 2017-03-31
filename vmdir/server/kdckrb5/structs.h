@@ -36,6 +36,7 @@
 #include "key_s.h"
 #include "encdata_s.h"
 #include "keyset_s.h"
+#include "authzdata_s.h"
 #include "ticket_s.h"
 #include "krberror_s.h"
 #include "kdcreq_s.h"

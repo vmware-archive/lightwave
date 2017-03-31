@@ -26,6 +26,7 @@ import com.vmware.identity.openidconnect.common.ClientID;
 public final class ClientConfig {
     private final ConnectionConfig connectionConfig;
     private final ClientID clientId;
+    private final ClientAuthenticationMethod clientAuthenticationMethod;
     private final HolderOfKeyConfig holderOfKeyConfig;
     private final HighAvailabilityConfig highAvailabilityConfig;
     private final long clockToleranceInSeconds;
@@ -41,7 +42,7 @@ public final class ClientConfig {
             ConnectionConfig connectionConfig,
             ClientID clientId,
             HolderOfKeyConfig holderOfKeyConfig) {
-        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null, 0L);
+        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null, 0L, (ClientAuthenticationMethod) null);
     }
 
     /**
@@ -57,7 +58,7 @@ public final class ClientConfig {
             ClientID clientId,
             HolderOfKeyConfig holderOfKeyConfig,
             HighAvailabilityConfig highAvailabilityConfig) {
-        this(connectionConfig, clientId, holderOfKeyConfig, highAvailabilityConfig, 0L);
+        this(connectionConfig, clientId, holderOfKeyConfig, highAvailabilityConfig, 0L, (ClientAuthenticationMethod) null);
     }
 
     /**
@@ -73,7 +74,7 @@ public final class ClientConfig {
             ClientID clientId,
             HolderOfKeyConfig holderOfKeyConfig,
             long clockToleranceInSeconds) {
-        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null, clockToleranceInSeconds);
+        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null, clockToleranceInSeconds, (ClientAuthenticationMethod) null);
     }
 
     /**
@@ -91,14 +92,38 @@ public final class ClientConfig {
             HolderOfKeyConfig holderOfKeyConfig,
             HighAvailabilityConfig highAvailabilityConfig,
             long clockToleranceInSeconds) {
+        this(connectionConfig, clientId, holderOfKeyConfig, highAvailabilityConfig, clockToleranceInSeconds, (ClientAuthenticationMethod) null);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param connectionConfig                  Server connection configuration.
+     * @param clientId                          OIDC registered client Id.
+     * @param holderOfKeyConfig                 Client key configuration.
+     * @param highAvailabilityConfig            High Availability / Site Affinity config.
+     * @param clockToleranceInSeconds           Clock tolerance in seconds.
+     */
+    public ClientConfig(
+            ConnectionConfig connectionConfig,
+            ClientID clientId,
+            HolderOfKeyConfig holderOfKeyConfig,
+            HighAvailabilityConfig highAvailabilityConfig,
+            long clockToleranceInSeconds,
+            ClientAuthenticationMethod clientAuthenticationMethod) {
         Validate.notNull(connectionConfig, "connectionConfig");
-        Validate.isTrue(clockToleranceInSeconds >= 0L, "clock toleance must be no less than zero");
+        Validate.isTrue(0 <= clockToleranceInSeconds && clockToleranceInSeconds <= 10 * 60L, "0 <= clockToleranceInSeconds && clockToleranceInSeconds <= 10 * 60L");
+
+        if (clientAuthenticationMethod == ClientAuthenticationMethod.PRIVATE_KEY_JWT && (clientId == null || holderOfKeyConfig == null)) {
+            throw new IllegalArgumentException("ClientAuthenticationMethod.PRIVATE_KEY_JWT requires non-null clientId and holderOfKeyConfig");
+        }
 
         this.connectionConfig = connectionConfig;
         this.clientId = clientId;
         this.holderOfKeyConfig = holderOfKeyConfig;
         this.highAvailabilityConfig = highAvailabilityConfig;
         this.clockToleranceInSeconds = clockToleranceInSeconds;
+        this.clientAuthenticationMethod = (clientAuthenticationMethod != null) ? clientAuthenticationMethod : ClientAuthenticationMethod.NONE;
     }
 
     /**
@@ -144,5 +169,9 @@ public final class ClientConfig {
      */
     public long getClockToleranceInSeconds() {
         return this.clockToleranceInSeconds;
+    }
+
+    public ClientAuthenticationMethod getClientAuthenticationMethod() {
+        return this.clientAuthenticationMethod;
     }
 }

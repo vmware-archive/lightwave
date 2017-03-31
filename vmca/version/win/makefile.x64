@@ -1,0 +1,19 @@
+#
+# Windows...
+# This Makefile is used by gobuild harness to create
+# build version file consumed by ver.h
+
+# These values are the defaults. The environment value is used when set
+
+# "Lie" about target being created. Side effect is always build this target.
+all: version-file
+
+BUILD_VERSION_H = ..\build-version.h
+BUILD_VERSION_FILE_H = $(BUILD_VERSION_H:/=\)
+
+version-file:
+	echo #define VERSION_MAJOR $(LIGHTWAVE_MAJOR_VERSION) > $(BUILD_VERSION_FILE_H)
+	echo #define VERSION_MINOR $(LIGHTWAVE_MINOR_VERSION) >> $(BUILD_VERSION_FILE_H)
+	echo #define VERSION_MAINT $(LIGHTWAVE_MAINT_VERSION) >> $(BUILD_VERSION_FILE_H)
+	echo #define BUILD_NUMBER $(LIGHTWAVE_BUILD) >> $(BUILD_VERSION_FILE_H)
+	echo #define PRODUCT_BUILD_NUMBER $(LIGHTWAVE_WIN_BUILD) >> $(BUILD_VERSION_FILE_H)

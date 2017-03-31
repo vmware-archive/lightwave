@@ -54,22 +54,6 @@ typedef struct _VDIR_SCHEMA_AT_COLLECION
 
 } VDIR_SCHEMA_AT_COLLECTION, *PVDIR_SCHEMA_AT_COLLECTION;
 
-typedef struct _VDIR_SCHEMA_OC_DESC
-{
-    PVDIR_LDAP_OBJECT_CLASS pLdapOc;
-
-    PSTR        pszName;
-    PSTR        pszOid;
-    PSTR        pszSup;
-    PSTR*       ppszMustATs;    // ends with NULL PSTR
-    PSTR*       ppszMayATs;     // ends with NULL PSTR
-
-    BOOLEAN     bObsolete;
-
-    VDIR_LDAP_OBJECT_CLASS_TYPE type;
-
-} VDIR_SCHEMA_OC_DESC;
-
 typedef struct _VDIR_SCHEMA_OC_COLLECTION
 {
     PLW_HASHMAP byName;

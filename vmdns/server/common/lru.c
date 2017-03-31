@@ -14,17 +14,23 @@
 
 #include "includes.h"
 
+
 static
 DWORD
 VmDnsLruClearList(PVMDNS_LRU_LIST pLruList);
 
 DWORD
 VmDnsLruInitialize(
+    PVMDNS_ZONE_OBJECT pZoneObject,
+    LPVMDNS_PURGE_ENTRY_PROC pPurgeEntryProc,
     PVMDNS_LRU_LIST* ppLruList
     )
 {
     DWORD dwError = 0;
     PVMDNS_LRU_LIST pLruListTemp = NULL;
+
+    assert(pZoneObject);
+    assert(pPurgeEntryProc);
 
     if (!ppLruList)
     {
@@ -44,6 +50,9 @@ VmDnsLruInitialize(
 
     pLruListTemp->dwLowerThreshold = (pLruListTemp->dwMaxCount *
                                         VMDNS_LRU_LOWERTHRES) / 100;
+
+    pLruListTemp->pZoneObject = pZoneObject;
+    pLruListTemp->pPurgeEntryProc = pPurgeEntryProc;
 
     dwError = VmDnsAllocateMutex(&pLruListTemp->pLock);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -84,6 +93,7 @@ VmDnsLruFree(
     }
 }
 
+
 DWORD
 VmDnsLruAddNameEntry(
     PVMDNS_LRU_LIST pLruList,
@@ -108,11 +118,15 @@ VmDnsLruAddNameEntry(
             "LRU Cache Full, Evicting"
             );
 
-        RemoveEntryList((&pLruList->LruListHead)->Blink)
-        --pLruList->dwCurrentCount;
+        dwError = VmDnsLruTrimEntries(
+                            pLruList,
+                            10);
+        BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     InsertHeadList(&pLruList->LruListHead, &pNameEntry->LruList);
+    VmDnsNameEntryAddRef(pNameEntry);
+
     ++pLruList->dwCurrentCount;
 
 cleanup:
@@ -148,6 +162,7 @@ VmDnsLruRemoveNameEntry(
 
     RemoveEntryList(&pNameEntry->LruList);
     --pLruList->dwCurrentCount;
+    VmDnsNameEntryRelease(pNameEntry);
 
 cleanup:
 
@@ -200,9 +215,7 @@ error:
 DWORD
 VmDnsLruTrimEntries(
     PVMDNS_LRU_LIST pLruList,
-    DWORD dwCount,
-    LPVMDNS_PURGE_ENTRY_PROC pPurgeEntryProc,
-    PVMDNS_ZONE_OBJECT pZoneObject
+    DWORD dwCount
     )
 {
     DWORD dwError = 0;
@@ -227,8 +240,10 @@ VmDnsLruTrimEntries(
         RemoveEntryList(&pNameEntry->LruList);
         --pLruList->dwCurrentCount;
 
-        dwError = pPurgeEntryProc(pNameEntry, pZoneObject);
+        dwError = pLruList->pPurgeEntryProc(pNameEntry, pLruList->pZoneObject);
         BAIL_ON_VMDNS_ERROR(dwError && dwError != ERROR_INVALID_PARAMETER);
+
+        VmDnsNameEntryRelease(pNameEntry);
 
         if (dwError == ERROR_INVALID_PARAMETER)
         {

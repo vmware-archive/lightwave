@@ -61,14 +61,14 @@ public class TokenController {
         this.authzCodeManager = authzCodeManager;
     }
 
-    @RequestMapping(value = "/token", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
+    @RequestMapping(value = Endpoints.BASE + Endpoints.TOKEN, method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
     public void acquireTokens(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         acquireTokens(request, response, null);
     }
 
-    @RequestMapping(value = "/token/{tenant:.*}", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
+    @RequestMapping(value = Endpoints.BASE + Endpoints.TOKEN + "/{tenant:.*}", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
     public void acquireTokens(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -77,15 +77,21 @@ public class TokenController {
         IDiagnosticsContextScope context = null;
 
         try {
-            HttpRequest httpRequest = HttpRequest.from(request);
-            context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
+            if (request.getQueryString() != null && !request.getQueryString().isEmpty()) {
+                ErrorObject errorObject = ErrorObject.invalidRequest("query parameters are not allowed at token endpoint");
+                LoggerUtils.logFailedRequest(logger, errorObject);
+                httpResponse = HttpResponse.createJsonResponse(errorObject);
+            } else {
+                HttpRequest httpRequest = HttpRequest.from(request);
+                context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
 
-            TokenRequestProcessor p = new TokenRequestProcessor(
-                    this.idmClient,
-                    this.authzCodeManager,
-                    httpRequest,
-                    tenant);
-            httpResponse = p.process();
+                TokenRequestProcessor p = new TokenRequestProcessor(
+                        this.idmClient,
+                        this.authzCodeManager,
+                        httpRequest,
+                        tenant);
+                httpResponse = p.process();
+            }
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);

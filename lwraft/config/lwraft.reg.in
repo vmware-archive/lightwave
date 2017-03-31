@@ -1,0 +1,53 @@
+[HKEY_THIS_MACHINE\Services]
+
+[HKEY_THIS_MACHINE\Services\lwraft]
+@security = O:SYG:BAD:(A;;KA;;;BA)
+"Description" = {
+    default = "Lightwave Raft Service"
+    doc = ""
+}
+"Path" = {
+    default = "@LWRAFT_SBIN_DIR@/lwraftd"
+    doc = ""
+}
+"Arguments" = {
+    default = "@LWRAFT_SBIN_DIR@/lwraftd -s -l 0 -f @LWRAFT_CONFIG_DIR@/lwraftschema.ldif"
+    doc = ""
+}
+"Environment" = {
+    default = ""
+    doc = ""
+}
+"Dependencies" = {
+    default = "lwreg dcerpc"
+    doc = ""
+}
+"Type" = {
+    default = dword:00000001
+    doc = ""
+}
+"Autostart" = {
+    default = dword:00000001
+    doc = ""
+}
+
+[HKEY_THIS_MACHINE\Services\lwraft\Parameters]
+"DefaultSchema" = {
+    default = "@LWRAFT_CONFIG_DIR@/lwraftschema.ldif"
+    doc = ""
+}
+
+"AllowInsecureAuthentication" = {
+    default = dword:00000001
+    value   = dword:00000001
+    doc = "Set to '1' to allow clear-text password authentication."
+}
+
+"SslDisabledProtocols" = {
+    default = "TLSv1"
+    doc     = "List of protocols to disable"
+}
+
+[HKEY_THIS_MACHINE\Services\lwraft\Parameters\Credentials]
+@security = O:SYG:S-1-22-2-0D:(A;;RCFAFRFWFXKAKRKWKXNW;;;WD)(A;;RCFAFRFWFXKAKRKWKXNW;;;S-1-22-2-0)(A;;RCSDWDWOFAFRFWFXKAKRKWKXNRNWNX;;;SY)
+

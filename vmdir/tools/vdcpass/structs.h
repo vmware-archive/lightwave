@@ -14,9 +14,9 @@
 
 typedef struct
 {
-    PCSTR pszHostName;
-    PCSTR pszLoginUserUPN;
-    PCSTR pszUserUPN;
-    PCSTR pszLoginPassword;
-    PCSTR pszNewPassword;
+    PSTR pszHostName;
+    PSTR pszLoginUserUPN;
+    PSTR pszUserUPN;
+    PSTR pszLoginPassword;
+    PSTR pszNewPassword;
 } COMMAND_LINE_STATE, *PCOMMAND_LINE_STATE;

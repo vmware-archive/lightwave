@@ -34,6 +34,9 @@
 #include "key_p.h"
 #include "encdata_p.h"
 #include "keyset_p.h"
+#ifdef VMDIR_ENABLE_PAC
+#include "authzdata_p.h"
+#endif
 #include "ticket_p.h"
 #include "krberror_p.h"
 #include "kdcreq_p.h"

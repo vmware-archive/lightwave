@@ -174,6 +174,7 @@ VmDnsCliCreateZone(
     VMDNS_ZONE_INFO zoneInfo = { 0 };
     VMDNS_RECORD nsRecord = {0};
     VMDNS_RECORD addrRecord = {0};
+    PSTR pszTargetFQDN = NULL;
     int ret = 0;
     int af = AF_INET;
     unsigned char buf[sizeof(struct in6_addr)];
@@ -185,9 +186,11 @@ VmDnsCliCreateZone(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-    if (IsNullOrEmptyString(pContext->pszNSHost))
+    if (IsNullOrEmptyString(pContext->pszNSHost)
+       || VmDnsCheckIfIPV4AddressA(pContext->pszNSHost)
+       || VmDnsCheckIfIPV6AddressA(pContext->pszNSHost))
     {
-        fprintf(stderr, "Error: Primary Nameserver host is not specified\n");
+        fprintf(stderr, "Error: Primary Nameserver host is not specified or the format is invalid\n");
 
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -206,8 +209,13 @@ VmDnsCliCreateZone(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    dwError = VmDnsMakeFQDN(pContext->pszNSHost,
+                           pContext->pszZone,
+                           &pszTargetFQDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     zoneInfo.pszName                = pContext->pszZone;
-    zoneInfo.pszPrimaryDnsSrvName   = pContext->pszNSHost;
+    zoneInfo.pszPrimaryDnsSrvName   = pszTargetFQDN;
     zoneInfo.pszRName               = pszMboxDomain ? pszMboxDomain : pContext->pszMboxDomain;
     zoneInfo.serial                 = 1;
     zoneInfo.refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL;
@@ -224,7 +232,7 @@ VmDnsCliCreateZone(
     if (!IsNullOrEmptyString(pContext->pszNSHost))
     {
         nsRecord.pszName = pContext->pszZone;
-        nsRecord.Data.NS.pNameHost = pContext->pszNSHost;
+        nsRecord.Data.NS.pNameHost = pszTargetFQDN;
         nsRecord.iClass   = VMDNS_CLASS_IN;
         nsRecord.pszName = pContext->pszZone;
         nsRecord.dwType    = VMDNS_RR_TYPE_NS;
@@ -240,9 +248,10 @@ VmDnsCliCreateZone(
     if (!IsNullOrEmptyString(pContext->pszNSHost) &&
         !IsNullOrEmptyString(pContext->pszNSIp) &&
         pContext->dwZoneType == VMDNS_ZONE_TYPE_FORWARD)
+
     {
         addrRecord.iClass   = VMDNS_CLASS_IN;
-        addrRecord.pszName  = pContext->pszNSHost;
+        addrRecord.pszName  = pszTargetFQDN;
         addrRecord.dwType   = VMDNS_RR_TYPE_A;
         addrRecord.dwTtl    = pContext->record.dwTtl;
 
@@ -537,22 +546,46 @@ VmDnsCliDelRecord(
             pszTargetFQDN = NULL;
         }
     }
+    if (pContext->record.dwType == VMDNS_RR_TYPE_NS)
+    {
+        dwError = VmDnsMakeFQDN(pContext->record.Data.NS.pNameHost,
+                                pContext->pszZone,
+                                &pszTargetFQDN);
+        BAIL_ON_VMDNS_ERROR(dwError);
+        if (pszTargetFQDN)
+        {
+            VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.NS.pNameHost);
+            pContext->record.Data.NS.pNameHost = pszTargetFQDN;
+            pszTargetFQDN = NULL;
+        }
+        DWORD dwNameLen = strlen(pContext->record.pszName);
+        if (pContext->record.pszName[dwNameLen -1] != '.')
+        {
+            VmDnsAllocateStringPrintfA(&pszTargetFQDN,
+                                       "%s.",
+                                       pContext->record.pszName);
+            VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+            pContext->record.pszName = pszTargetFQDN;
+            pszTargetFQDN = NULL;
+        }
+    }
+    else
+    {
+        VmDnsTrimDomainNameSuffix(pContext->record.pszName, pContext->pszZone);
 
-    VmDnsTrimDomainNameSuffix(pContext->record.pszName, pContext->pszZone);
-
-    dwError = VmDnsMakeFQDN(
+        dwError = VmDnsMakeFQDN(
                     pContext->record.pszName,
                     pContext->pszZone,
                     &pszTargetFQDN);
-    BAIL_ON_VMDNS_ERROR(dwError);
+        BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (pszTargetFQDN)
-    {
-        VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
-        pContext->record.pszName = pszTargetFQDN;
-        pszTargetFQDN = NULL;
+        if (pszTargetFQDN)
+        {
+            VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+            pContext->record.pszName = pszTargetFQDN;
+            pszTargetFQDN = NULL;
+        }
     }
-
     dwError = VmDnsQueryRecordsA(
                     pContext->pServerContext,
                     pContext->pszZone,
@@ -561,7 +594,6 @@ VmDnsCliDelRecord(
                     0,
                     &pRecordArray);
     BAIL_ON_VMDNS_ERROR(dwError);
-
     for (; idx < pRecordArray->dwCount; ++idx)
     {
 
@@ -624,14 +656,51 @@ VmDnsCliValidateAndCompleteRecord(
 
         case VMDNS_RR_TYPE_SRV:
             dwError = VmDnsAllocateStringPrintfA(&pContext->record.pszName,
-                                                "%s.%s",
+                                                "%s.%s.%s",
                                                 pContext->pszService,
-                                                pContext->pszProtocol);
+                                                pContext->pszProtocol,
+                                                pContext->pszZone);
             BAIL_ON_VMDNS_ERROR(dwError);
 
+            dwError = VmDnsMakeFQDN(pContext->record.Data.SRV.pNameTarget,
+                        pContext->pszZone,
+                        &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.SRV.pNameTarget);
+                pContext->record.Data.SRV.pNameTarget = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
             break;
 
         case VMDNS_RR_TYPE_NS:
+            dwError = VmDnsMakeFQDN(pContext->record.Data.NS.pNameHost,
+                                    pContext->pszZone,
+                                    &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.NS.pNameHost);
+                pContext->record.Data.NS.pNameHost = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
+            DWORD dwNameLen = strlen(pContext->record.pszName);
+            if (pContext->record.pszName[dwNameLen -1] != '.')
+            {
+                dwError = VmDnsAllocateStringPrintfA(&pszTargetFQDN,
+                                                    "%s.",
+                                                    pContext->record.pszName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                if (pszTargetFQDN)
+                {
+                     VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+                     pContext->record.pszName = pszTargetFQDN;
+                     pszTargetFQDN = NULL;
+                }
+            }
             break;
 
         case VMDNS_RR_TYPE_PTR:
@@ -658,6 +727,30 @@ VmDnsCliValidateAndCompleteRecord(
             break;
 
         case VMDNS_RR_TYPE_CNAME:
+            dwError = VmDnsMakeFQDN(pContext->record.Data.CNAME.pNameHost,
+                                    pContext->pszZone,
+                                    &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.CNAME.pNameHost);
+                pContext->record.Data.NS.pNameHost = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
+
+            dwError = VmDnsMakeFQDN(
+                        pContext->record.pszName,
+                        pContext->pszZone,
+                        &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+                pContext->record.pszName = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
+
             break;
 
         default:

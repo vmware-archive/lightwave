@@ -38,7 +38,6 @@ typedef void *VMCISLIB_BIND_T;
 #pragma once
 
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 
 #include <assert.h>
 #include <windows.h>
@@ -81,6 +80,5 @@ typedef void *VMCISLIB_BIND_T;
 #include "vmdirftp_h.h"
 #include "vmdirdbcp_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
 #include "prototypes.h"
 #include "externs.h"

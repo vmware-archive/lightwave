@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="VmcaVS2008CommonProp"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_OPENSSL_ROOT)\include&quot;"
+		PreprocessorDefinitions="WIN32_LEAN_AND_MEAN "
+	/>
+	<Tool
+		Name="VCLibrarianTool"
+		AdditionalDependencies="libeay32.lib ssleay32.lib dcelib.lib libdcethread.lib pthreadVC2.lib"
+		AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\lib&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="libeay32.lib ssleay32.lib dcelib.lib libdcethread.lib pthreadVC2.lib"
+		AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_OPENSSL_ROOT)\lib&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+	/>
+</VisualStudioPropertySheet>

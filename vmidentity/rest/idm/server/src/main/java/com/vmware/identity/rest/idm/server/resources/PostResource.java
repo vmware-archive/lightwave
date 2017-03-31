@@ -147,8 +147,8 @@ public class PostResource extends BaseResource {
 
     @POST @Path("/tenant/{tenantName}/certificates")
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    public Collection<CertificateChainDTO> getAllCertificates(@PathParam("tenantName") String tenantName, @QueryParam("scope") String certificateLocation) {
-        return new CertificateResource(tenantName, getRequest(), getSecurityContext()).getCertificates(certificateLocation);
+    public Collection<CertificateChainDTO> getAllCertificates(@PathParam("tenantName") String tenantName, @QueryParam("scope") String certificateLocation,@QueryParam("granularity") String granularity) {
+        return new CertificateResource(tenantName, getRequest(), getSecurityContext()).getCertificates(certificateLocation, granularity);
     }
 
     @POST @Path("/tenant/{tenantName}/certificates/privatekey")

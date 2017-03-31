@@ -72,6 +72,7 @@ extern "C" {
 #define VMDNS_LRU_LOWERTHRES            (60) //out of 100
 #define VMDNS_SEC_ALG_NAME "gss-tsig"
 #define VMDNS_SEC_DEFAULT_FUDGE_TIME 300
+#define VMDNS_FORWARDER_TIMEOUT 5
 
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir"

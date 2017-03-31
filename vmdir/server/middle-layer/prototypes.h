@@ -28,6 +28,12 @@ VmDirEntryCheckStructureRule(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry);
 
+int
+VmDirEntryAttrValueNormalize(
+    PVDIR_ENTRY     pEntry,
+    BOOLEAN         bIndexAttributeOnly
+    );
+
 // computedattribute.c
 DWORD
 VmDirBuildComputedAttribute(
@@ -286,6 +292,12 @@ VmDirPluginGroupTypePreModify(
     DWORD            dwPriorResult
     );
 
+DWORD
+VmDirPluginGroupMemberPreModApplyDelete(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
 
 // pscache.c
 DWORD
@@ -301,14 +313,12 @@ VmDirPagedSearchCacheFree(
 DWORD
 VmDirPagedSearchCacheInsert(
     PVDIR_OPERATION pOperation,
-    ENTRYID eId,
     DWORD dwCandidatesProcessed
     );
 
 DWORD
 VmDirPagedSearchCacheRead(
-    PVDIR_OPERATION pOperation,
-    ENTRYID *peStartingId,
+    PCSTR pszCookie,
     ENTRYID **ppValidatedEntries,
     DWORD *pdwEntryCount
     );

@@ -187,10 +187,6 @@ VmDirReplicationLibInit(
     dwError = InitializeReplicationThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // start urgent replication coordinator thread
-    dwError = InitializeUrgentReplCoordinatorThread();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
     VmDirLog( LDAP_DEBUG_TRACE, "VmDirReplicationLibInit: End" );
     return dwError;

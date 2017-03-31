@@ -75,100 +75,162 @@ VmAfdIpcListen(
     PVOID pData
     )
 {
-  DWORD dwError = 0;
-  int status = 0;
-  PVM_AFD_CONNECTION pConnection = NULL;
-  PVM_AFD_CONNECTION pClientConnection = NULL;
-  pthread_t unixInstanceThreadHandler;
-  pthread_attr_t unixInstanceThreadHandlerAttr;
-  pthread_mutex_lock (&gVmafdGlobals.mutexConnection);
-  pConnection = gVmafdGlobals.pConnection;
-  pthread_mutex_unlock(&gVmafdGlobals.mutexConnection);
-  if (pConnection == NULL){
-    dwError = ERROR_INVALID_PARAMETER;
+    DWORD dwError = 0;
+    int status = 0;
+    PVM_AFD_CONNECTION pConnection = NULL;
+    PVM_AFD_CONNECTION pClientConnection = NULL;
+    pthread_t unixInstanceThreadHandler;
+    pthread_attr_t unixInstanceThreadHandlerAttr;
+
+    pthread_mutex_lock (&gVmafdGlobals.mutexConnection);
+    pConnection = gVmafdGlobals.pConnection;
+    pthread_mutex_unlock(&gVmafdGlobals.mutexConnection);
+
+    if (pConnection == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    status = pthread_attr_init(&unixInstanceThreadHandlerAttr);
+    dwError = LwErrnoToWin32Error (status);
     BAIL_ON_VMAFD_ERROR (dwError);
-  }
-  while(!(dwError = VmAfdAcceptConnection(pConnection, &pClientConnection)))
-  {
-      status = pthread_attr_init(&unixInstanceThreadHandlerAttr);
-      dwError = LwErrnoToWin32Error (status);
-      BAIL_ON_VMAFD_ERROR (dwError);
-      status = pthread_attr_setdetachstate(
-                                &unixInstanceThreadHandlerAttr,
-                                PTHREAD_CREATE_DETACHED
-                                );
-      dwError = LwErrnoToWin32Error (status);
-      BAIL_ON_VMAFD_ERROR (dwError);
-      status = pthread_create(
-      &unixInstanceThreadHandler,
-      &unixInstanceThreadHandlerAttr,
-      unixInstanceThread,
-      pClientConnection
-      );
-      dwError = LwErrnoToWin32Error (status);
-      BAIL_ON_VMAFD_ERROR (dwError);
-      pClientConnection = NULL;
-  }
-  BAIL_ON_VMAFD_ERROR (dwError);
+
+    status = pthread_attr_setdetachstate(
+                            &unixInstanceThreadHandlerAttr,
+                            PTHREAD_CREATE_DETACHED
+                            );
+    dwError = LwErrnoToWin32Error (status);
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    while(!(dwError = VmAfdAcceptConnection(pConnection, &pClientConnection)))
+    {
+        status = pthread_create(
+                              &unixInstanceThreadHandler,
+                              &unixInstanceThreadHandlerAttr,
+                              unixInstanceThread,
+                              pClientConnection
+                              );
+        if (status)
+        {
+            /*
+             * Do not bail here so we can continue accepting
+             * connections when resources become available.
+             */
+            VmAfdLog (VMAFD_DEBUG_ERROR,
+                     "%s: pthread_create() failed with code (%d)",
+                     __FUNCTION__,
+                     status);
+            VmAfdFreeServerConnection (pClientConnection);
+            VmAfdSleep(10000);
+        }
+
+        pClientConnection = NULL;
+    }
+    BAIL_ON_VMAFD_ERROR (dwError);
+
 cleanup:
-  VmAfdFreeServerConnection (pClientConnection);
-  VmAfdLog (VMAFD_DEBUG_DEBUG, "Exiting VmAfdIpcListen with code (%d)", dwError);
-  return NULL;
+    if (pClientConnection)
+    {
+        VmAfdFreeServerConnection (pClientConnection);
+    }
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Exiting VmAfdIpcListen with code (%d)", dwError);
+    return NULL;
+
 error:
-  VmAfdLog (VMAFD_DEBUG_DEBUG, "Error in VmAfdIpcListen : (%d)", dwError);
-  goto cleanup;
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Error in VmAfdIpcListen : (%d)", dwError);
+    goto cleanup;
 }
 
+VOID
+VmAfdCloseConnectionContext(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext
+    )
+{
+    if (pConnectionContext)
+    {
+        if (pConnectionContext->pStoreHandle)
+        {
+            VmAfdLog (VMAFD_DEBUG_ANY, "A client process end the session with orphaned store handle");
+
+            if (pConnectionContext->pszProcessName)
+            {
+                VmAfdLog (VMAFD_DEBUG_ANY, "Process Name: %s(%d)",
+                                    pConnectionContext->pszProcessName,
+                                    pConnectionContext->pid);
+            }
+
+
+            (DWORD)VecsSrvCloseCertStoreHandle (
+                                    pConnectionContext->pStoreHandle,
+                                    pConnectionContext
+                                    );
+        }
+
+        VmAfdFreeServerConnection (pConnectionContext->pConnection);
+        VMAFD_SAFE_FREE_STRINGA(pConnectionContext->pszProcessName);
+        VmAfdFreeConnectionContext(pConnectionContext);
+    }
+}
 
 static
-VOID *unixInstanceThread (void *handle)
+VOID*
+unixInstanceThread (void *handle)
 {
-  DWORD dwError = 0;
-  DWORD dwRequestSize = 0;
-  DWORD pdwResponseSize = 0;
-  PBYTE pRequest = NULL;
-  PBYTE ppResponse = NULL;
-  PVM_AFD_CONNECTION_CONTEXT pConnectionContext = NULL;
-  PVM_AFD_CONNECTION pConnection = NULL;
+    DWORD dwError = 0;
+    DWORD dwRequestSize = 0;
+    DWORD pdwResponseSize = 0;
+    PBYTE pRequest = NULL;
+    PBYTE ppResponse = NULL;
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext = NULL;
+    PVM_AFD_CONNECTION pConnection = NULL;
 
-  if (handle == NULL){
-      dwError = ERROR_INVALID_PARAMETER;
-      VmAfdLog(VMAFD_DEBUG_DEBUG, "Null handle passed to the connection thread");
-      BAIL_ON_VMAFD_ERROR (dwError);
-  }
+    if (handle == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        VmAfdLog(VMAFD_DEBUG_DEBUG, "Null handle passed to the connection thread");
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
-  pConnection = (PVM_AFD_CONNECTION)handle;
+    pConnection = (PVM_AFD_CONNECTION)handle;
 
-  dwError = VmAfdInitializeConnectionContext(pConnection, &pConnectionContext);
-  BAIL_ON_VMAFD_ERROR (dwError);
-  VmAfdLog (VMAFD_DEBUG_DEBUG, "unixInstanceThread: Security Context is initialized" );
+    dwError = VmAfdInitializeConnectionContext(pConnection, &pConnectionContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+    VmAfdLog(VMAFD_DEBUG_DEBUG, "unixInstanceThread: Security Context is initialized");
 
-  dwError = VmAfdReadData(pConnection, &pRequest, &dwRequestSize);
-  BAIL_ON_VMAFD_ERROR(dwError);
+    while (1)
+    {
+        VMAFD_SAFE_FREE_MEMORY(pRequest);
+        VMAFD_SAFE_FREE_MEMORY(ppResponse);
 
-  dwError = VmAfdLocalAPIHandler(
-              pConnectionContext,
-              pRequest,
-              dwRequestSize,
-              &ppResponse,
-              &pdwResponseSize
-              );
-  BAIL_ON_VMAFD_ERROR (dwError);
+        dwError = VmAfdReadData(pConnection, &pRequest, &dwRequestSize);
+        if (dwError == ERROR_COMMUNICATION)
+        {
+            dwError = 0;
+            break;
+        }
 
-  dwError = VmAfdWriteData(pConnection, ppResponse, pdwResponseSize);
-  BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdLocalAPIHandler(pConnectionContext, pRequest, dwRequestSize,
+                                        &ppResponse, &pdwResponseSize);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdWriteData(pConnection, ppResponse, pdwResponseSize);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
 cleanup:
-  if (pConnection){
-    VmAfdFreeServerConnection (pConnection);
-  }
-  VMAFD_SAFE_FREE_MEMORY (pRequest);
-  VMAFD_SAFE_FREE_MEMORY (ppResponse);
-  if (pConnectionContext){
-    VmAfdFreeConnectionContext(pConnectionContext);
-  }
-  VmAfdLog (VMAFD_DEBUG_DEBUG, "Exiting connection thread");
-  return NULL;
+    VMAFD_SAFE_FREE_MEMORY(pRequest);
+    VMAFD_SAFE_FREE_MEMORY(ppResponse);
+
+    if (pConnectionContext)
+    {
+        VmAfdCloseConnectionContext(pConnectionContext);
+    }
+
+    VmAfdLog(VMAFD_DEBUG_DEBUG, "Exiting connection thread");
+    return NULL;
+
 error:
-  VmAfdLog(VMAFD_DEBUG_DEBUG, "Exiting with error code (%d)", dwError);
-  goto cleanup;
+    VmAfdLog(VMAFD_DEBUG_DEBUG, "Exiting with error code (%d)", dwError);
+    goto cleanup;
 }

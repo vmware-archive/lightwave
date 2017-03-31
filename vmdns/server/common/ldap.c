@@ -1328,6 +1328,7 @@ VmDnsDirBuildRecordDN(
     *ppszRecordDN = pszRecordDN;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordCN);
     return dwError;
 error:
     goto cleanup;
@@ -1641,6 +1642,16 @@ VmDnsDirGetRecordsByName(
     *ppRecordList = pRecordList;
 
 cleanup:
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    if (pSearchRes != NULL)
+    {
+        ldap_msgfree(pSearchRes);
+    }
+
     VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
     return dwError;
 
@@ -1866,6 +1877,8 @@ VmDnsDirGetAllRecords(
 
                 dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
                 BAIL_ON_VMDNS_ERROR(dwError);
+
+                VmDnsRecordObjectRelease(pRecordObj);
                 pRecordObj = NULL;
             }
 
@@ -1954,6 +1967,7 @@ VmDnsDirProcessRecord(
                     mod_op, pRecord->pszName, pRecord->pszName, pRecord->dwType);
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
     return dwError;
 error:
     VMDNS_LOG_DEBUG("Failed op %u on %s dir record %s %u.",
@@ -2064,9 +2078,9 @@ VmDnsDirLoadForwarders(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsDirGetForwarders(
-        pDirContext,
-        pppszForwarders,
-        pdwCount);
+                        pDirContext,
+                        pppszForwarders,
+                        pdwCount);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -2207,7 +2221,7 @@ VmDnsDirSyncDeleted(
     PCSTR pBaseDN = VMDNS_LDAP_DELETE_BASEDN;
     PCSTR ppszAttrs[] = {NULL};
     PVMDNS_DIR_CONTEXT pDirContext = NULL;
-    LDAPControl* ppServerControl[2] = {NULL, NULL};
+    LDAPControl* pServerControl = NULL;
 
     dwError = VmDnsDirConnect("localhost", &pDirContext);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -2229,7 +2243,7 @@ VmDnsDirSyncDeleted(
                         0,
                         NULL,
                         0,
-                        ppServerControl
+                        &pServerControl
                         );
     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != LDAP_SUCCESS);
 
@@ -2241,7 +2255,7 @@ VmDnsDirSyncDeleted(
                         pszFilter,
                         (PSTR*)ppszAttrs,
                         FALSE,
-                        ppServerControl,
+                        &pServerControl,
                         NULL,
                         NULL,
                         0,
@@ -2298,6 +2312,10 @@ cleanup:
     if (pszNodeDN)
     {
         ldap_memfree(pszNodeDN);
+    }
+    if (pServerControl)
+    {
+        ldap_control_free(pServerControl);
     }
 
     if (pResult)

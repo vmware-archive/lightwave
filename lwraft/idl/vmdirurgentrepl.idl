@@ -1,0 +1,60 @@
+/*
+ * Copyright (C) 2011 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmdirurgentrepl.idl
+ *
+ * Abstract :
+ *
+ *            VMware Directory Service
+ *
+ *            Interface Definition
+ *
+ *            Core API
+ *
+ * Authors  :
+ *
+ */
+[
+    uuid (0068250C-D22F-4e28-A9F1-84D437E9A02E),
+    version(1.0),
+    pointer_default(unique)
+#if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
+    , endpoint("ncalrpc:[LightwaveRaftService]")
+#endif // #ifdef _WIN32
+]
+
+interface vmdirurgentrepl
+{
+#ifndef _WIN32
+#    include <lw/types.h>
+#   define PWSTR unsigned short int *
+#else
+
+/*
+ * Unfortunately, cannot create a typedef containing a pointer type using
+ * DCE/RPC IDL compiler. This compromise works for both MSRPC and
+ * DCE/RPC compilers.
+ */
+#if HAVE_DCERPC_WIN32
+#   define PWSTR unsigned short int *
+    typedef unsigned long int UINT32;
+#else
+    // defined in windows.h, but cant't include that here.
+    typedef unsigned int UINT32;
+    typedef wchar_t *PWSTR;
+#endif
+#endif
+    UINT32
+    RpcVmDirUrgentReplicationRequest(
+        [in]                            handle_t  hBinding,
+        [in, string, unique]            PWSTR     pwszServer
+        );
+
+    UINT32
+    RpcVmDirUrgentReplicationResponse(
+        [in]                             handle_t  hBinding,
+        [in, string, unique]             PWSTR     pwszServerName,
+        [in, string, unique]             PWSTR     pwszUtdVector,
+        [in, string, unique]             PWSTR     pwszHostName
+    );
+}

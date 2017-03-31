@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- SSO Group Check Service Beans                                        -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="groupCheckServiceMO"
+      class="com.vmware.identity.groupcheck.vlsi.GroupCheckServiceImpl">
+
+      <constructor-arg value="groupCheckService" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="adminServerIms" />
+   </bean>
+
+   <bean id="groupCheckServiceContent"
+      class="com.vmware.vim.binding.sso.groupcheck.ServiceContent">
+
+      <property name="aboutInfo" ref="ssoServerAboutInfo" />
+
+      <property name="sessionManager">
+         <bean factory-bean="ssoSessionManagerMO" factory-method="_getRef" />
+      </property>
+
+      <property name="groupCheckService">
+         <bean factory-bean="groupCheckServiceMO" factory-method="_getRef" />
+      </property>
+   </bean>
+
+   <bean id="groupCheckServiceInstanceMO"
+         class="com.vmware.identity.groupcheck.vlsi.ServiceInstanceImpl">
+
+      <constructor-arg value="ServiceInstance" /> <!-- MoId -->
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="groupCheckServiceContent" />
+   </bean>
+</beans>

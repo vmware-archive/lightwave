@@ -23,6 +23,7 @@ import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.UseKeyType;
 import org.oasis_open.docs.ws_sx.ws_trust._200802.ActAsType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
+import org.w3._2000._09.xmldsig_.ObjectFactory;
 import org.w3._2000._09.xmldsig_.SignatureType;
 
 import com.vmware.identity.sts.CertificateUtil;
@@ -203,7 +204,8 @@ public final class HoKConditionsAnalyzerTest {
    public void testNoKeyTypeNoSignatureId() {
       SecurityHeaderType securityHeaderType = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
-      securityHeaderType.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      securityHeaderType.getAny().add(objectFactory.createSignature(xmlSignature));
       Assert.assertEquals(hokCertificate, analyzer.getSigningCertificate(
               createRequest(
                   null, defSignatureId, noActAs, hokCertificate,
@@ -213,7 +215,8 @@ public final class HoKConditionsAnalyzerTest {
    public void testNoKeyTypeNoSignatureIdBearerSamlToken() {
       SecurityHeaderType securityHeaderType = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
-      securityHeaderType.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      securityHeaderType.getAny().add(objectFactory.createSignature(xmlSignature));
       Assert.assertEquals(hokCertificate, analyzer.getSigningCertificate(
               createRequest(
                   null, defSignatureId, noActAs, hokCertificate,
@@ -223,7 +226,8 @@ public final class HoKConditionsAnalyzerTest {
    public void testNoKeyTypeNoSignatureIdHokSamlToken() {
       SecurityHeaderType securityHeaderType = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
-      securityHeaderType.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      securityHeaderType.getAny().add(objectFactory.createSignature(xmlSignature));
       Assert.assertEquals(hokCertificate, analyzer.getSigningCertificate(
               createRequest(
                   null, defSignatureId, noActAs, hokCertificate,
@@ -235,7 +239,8 @@ public final class HoKConditionsAnalyzerTest {
       SecurityHeaderType securityHeaderType = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
       xmlSignature.setId("notMatchingId");
-      securityHeaderType.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      securityHeaderType.getAny().add(objectFactory.createSignature(xmlSignature));
       Assert.assertEquals(hokCertificate, analyzer.getSigningCertificate(
           createRequest(
               null, defSignatureId, noActAs, hokCertificate,
@@ -246,7 +251,8 @@ public final class HoKConditionsAnalyzerTest {
       SecurityHeaderType securityHeaderType = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
       xmlSignature.setId("notMatchingId");
-      securityHeaderType.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      securityHeaderType.getAny().add(objectFactory.createSignature(xmlSignature));
       Assert.assertEquals(hokCertificate, analyzer.getSigningCertificate(
               createRequest(
                   null, defSignatureId, noActAs, hokCertificate,
@@ -257,7 +263,8 @@ public final class HoKConditionsAnalyzerTest {
       SecurityHeaderType securityHeaderType = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
       xmlSignature.setId("notMatchingId");
-      securityHeaderType.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      securityHeaderType.getAny().add(objectFactory.createSignature(xmlSignature));
       Assert.assertEquals(hokCertificate, analyzer.getSigningCertificate(
           createRequest(
               null, defSignatureId, noActAs, hokCertificate,
@@ -451,7 +458,8 @@ public final class HoKConditionsAnalyzerTest {
       SecurityHeaderType header = new SecurityHeaderType();
       SignatureType xmlSignature = new SignatureType();
       xmlSignature.setId(signatureId);
-      header.setSignature(xmlSignature);
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createSignature(xmlSignature));
 
       return header;
    }

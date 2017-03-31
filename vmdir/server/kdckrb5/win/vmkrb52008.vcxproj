@@ -1,0 +1,182 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>libkdckrb5</ProjectName>
+    <ProjectGuid>{ADE9275A-E161-4366-B1E4-D1EC2962BBCE}</ProjectGuid>
+    <RootNamespace>libkdckrb5</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\vmdird\CommonProjectProperties.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\vmdird\CommonProjectProperties.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\server\vmkrb5;$(SolutionDir)..\server\include;$(SolutionDir)..\include\win;$(SolutionDir)..\include\public;$(SolutionDir)..\include;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(SolutionDir)..\thirdparty\heimdal\asn1;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;_STATIC_ASN1_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\server\vmkrb5;$(SolutionDir)..\server\include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(SolutionDir)..\thirdparty\heimdal\asn1;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;_STATIC_ASN1_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\apreq_p.h" />
+    <ClInclude Include="..\apreq_s.h" />
+    <ClInclude Include="..\asreq_p.h" />
+    <ClInclude Include="..\asreq_s.h" />
+    <ClInclude Include="..\authenticator_p.h" />
+    <ClInclude Include="..\authenticator_s.h" />
+    <ClInclude Include="..\checksum_p.h" />
+    <ClInclude Include="..\checksum_s.h" />
+    <ClInclude Include="..\crypto_p.h" />
+    <ClInclude Include="..\crypto_s.h" />
+    <ClInclude Include="..\data_p.h" />
+    <ClInclude Include="..\data_s.h" />
+    <ClInclude Include="..\encdata_p.h" />
+    <ClInclude Include="..\encdata_s.h" />
+    <ClInclude Include="..\enctypes_p.h" />
+    <ClInclude Include="..\enctypes_s.h" />
+    <ClInclude Include="..\etypeinfo2_p.h" />
+    <ClInclude Include="..\etypeinfo2_s.h" />
+    <ClInclude Include="..\externs.h" />
+    <ClInclude Include="..\includes.h" />
+    <ClInclude Include="..\kdcrep_p.h" />
+    <ClInclude Include="..\kdcrep_s.h" />
+    <ClInclude Include="..\kdcreq_p.h" />
+    <ClInclude Include="..\kdcreq_s.h" />
+    <ClInclude Include="..\key_p.h" />
+    <ClInclude Include="..\key_s.h" />
+    <ClInclude Include="..\keyset_p.h" />
+    <ClInclude Include="..\keyset_s.h" />
+    <ClInclude Include="..\krberror_p.h" />
+    <ClInclude Include="..\krberror_s.h" />
+    <ClInclude Include="..\padata_p.h" />
+    <ClInclude Include="..\padata_s.h" />
+    <ClInclude Include="..\paenctsenc_p.h" />
+    <ClInclude Include="..\paenctsenc_s.h" />
+    <ClInclude Include="..\principal_p.h" />
+    <ClInclude Include="..\principal_s.h" />
+    <ClInclude Include="..\prototypes.h" />
+    <ClInclude Include="..\structs.h" />
+    <ClInclude Include="..\tgsreq_p.h" />
+    <ClInclude Include="..\tgsreq_s.h" />
+    <ClInclude Include="..\ticket_p.h" />
+    <ClInclude Include="..\ticket_s.h" />
+    <ClInclude Include="..\types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\apreq.c" />
+    <ClCompile Include="..\asreq.c" />
+    <ClCompile Include="..\authenticator.c" />
+    <ClCompile Include="..\checksum.c" />
+    <ClCompile Include="..\crypto.c" />
+    <ClCompile Include="..\data.c" />
+    <ClCompile Include="..\encdata.c" />
+    <ClCompile Include="..\enctypes.c" />
+    <ClCompile Include="..\etypeinfo2.c" />
+    <ClCompile Include="..\kdcrep.c" />
+    <ClCompile Include="..\kdcreq.c" />
+    <ClCompile Include="..\key.c" />
+    <ClCompile Include="..\keyset.c" />
+    <ClCompile Include="..\krberror.c" />
+    <ClCompile Include="..\padata.c" />
+    <ClCompile Include="..\paenctsenc.c" />
+    <ClCompile Include="..\principal.c" />
+    <ClCompile Include="..\tgsreq.c" />
+    <ClCompile Include="..\ticket.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\kdcsrvcommon\win\libsrvcommon2008.vcxproj">
+      <Project>{55895521-7840-4841-8568-f122bebc0342}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

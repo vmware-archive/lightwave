@@ -150,6 +150,27 @@
         ]
 
     },
+    "lwio": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "445",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "445",
+                "portoffset": 0
+            }
+        ]
+    },
     "vmdir": {
         "enable": "true",
         "ip4_rules": [
@@ -159,6 +180,10 @@
                 "porttype": "dst",
                 "port": "389",
                 "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "icmp"
             },
             {
                 "direction": "inbound",

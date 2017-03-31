@@ -1,0 +1,13 @@
+dotnet/VMAFD.Client/bin
+dotnet/VMAFD.Client/obj
+dotnet/VMDIR.Client/bin
+dotnet/VMDIR.Client/obj
+interop/csharp/VmDirInterop/LdapTest/bin
+interop/csharp/VmDirInterop/LdapTest/obj
+interop/csharp/VmDirInterop/Samples/bin
+interop/csharp/VmDirInterop/Samples/obj
+interop/csharp/VmDirInterop/SuperLoggingTest/bin/
+interop/csharp/VmDirInterop/SuperLoggingTest/obj
+interop/csharp/VmDirInterop/VmDirInterop.userprefs
+interop/csharp/VmDirInterop/VmDirInterop/bin/
+interop/csharp/VmDirInterop/VmDirInterop/obj

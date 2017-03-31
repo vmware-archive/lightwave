@@ -72,16 +72,74 @@ extern "C" {
 // write access in order to delete child entry in a container entry
 #define VMDIR_RIGHT_DS_DELETE_CHILD ADS_RIGHT_DS_DELETE_CHILD
 
+//
+// Allows the client to delete this object, specifically (as opposed to
+// VMDIR_RIGHT_DS_DELETE_CHILD which allows the client to delete any object
+// underneath the object in question, but not the object itself).
+//
+#define VMDIR_RIGHT_DS_DELETE_OBJECT ADS_RIGHT_DELETE
+
 #define VMDIR_ENTRY_GENERIC_EXECUTE ADS_RIGHT_GENERIC_EXECUTE
 
-#define VMDIR_ENTRY_ALL_ACCESS      (VMDIR_RIGHT_DS_READ_PROP | VMDIR_RIGHT_DS_WRITE_PROP | \
-                                     VMDIR_RIGHT_DS_CREATE_CHILD | VMDIR_RIGHT_DS_DELETE_CHILD | \
-                                     VMDIR_ENTRY_GENERIC_EXECUTE)
+//
+// These two permissions control a client being able to read or write the
+// entry's security descriptor itself (the whole thing, not just the DACL,
+// despite the name).
+//
+#define VMDIR_ENTRY_READ_ACL    ADS_RIGHT_READ_CONTROL
+#define VMDIR_ENTRY_WRITE_ACL   ADS_RIGHT_WRITE_DAC
+
+#define VMDIR_ENTRY_ALL_ACCESS  \
+    (VMDIR_RIGHT_DS_READ_PROP |     \
+     VMDIR_RIGHT_DS_WRITE_PROP |    \
+     VMDIR_ENTRY_READ_ACL |         \
+     VMDIR_ENTRY_WRITE_ACL |        \
+     VMDIR_RIGHT_DS_CREATE_CHILD |  \
+     VMDIR_RIGHT_DS_DELETE_CHILD |  \
+     VMDIR_ENTRY_GENERIC_EXECUTE)
+
+#define VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD \
+    (VMDIR_RIGHT_DS_READ_PROP |      \
+     VMDIR_RIGHT_DS_WRITE_PROP |     \
+     VMDIR_ENTRY_READ_ACL |          \
+     VMDIR_ENTRY_WRITE_ACL |         \
+     VMDIR_RIGHT_DS_CREATE_CHILD |   \
+     VMDIR_ENTRY_GENERIC_EXECUTE)
+
+#define VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD_BUT_DELETE_OBJECT \
+    (VMDIR_RIGHT_DS_READ_PROP |     \
+     VMDIR_RIGHT_DS_WRITE_PROP |    \
+     VMDIR_ENTRY_READ_ACL |         \
+     VMDIR_ENTRY_WRITE_ACL |        \
+     VMDIR_RIGHT_DS_CREATE_CHILD |  \
+     VMDIR_ENTRY_GENERIC_EXECUTE |  \
+     VMDIR_RIGHT_DS_DELETE_OBJECT)
+
+//
+// Members of the DCClients group get full access to entries under
+// "cn=services,<domain>".
+//
+#define VMDIR_DCCLIENTS_FULL_ACCESS \
+    (VMDIR_RIGHT_DS_READ_PROP |     \
+     VMDIR_RIGHT_DS_WRITE_PROP |    \
+     VMDIR_ENTRY_READ_ACL |         \
+     VMDIR_ENTRY_WRITE_ACL |        \
+     VMDIR_RIGHT_DS_CREATE_CHILD |  \
+     VMDIR_RIGHT_DS_DELETE_CHILD)
 
 // Well-known RIDs
 #define VMDIR_DOMAIN_USER_RID_ADMIN      500 // Administrator user
+#define VMDIR_DOMAIN_KRBTGT_RID          502 // Kerberos TGT user
+#define VMDIR_DOMAIN_ADMINS_RID          512 // Domain Admins group
+#define VMDIR_DOMAIN_CLIENTS_RID         515 // Domain Users group
 #define VMDIR_DOMAIN_ALIAS_RID_ADMINS    544 // BUILTIN\Administrators group
 #define VMDIR_DOMAIN_ALIAS_RID_USERS     545 // BUILTIN\Users group
+
+//
+// Well-known SID for a user who has connected anonymously.
+//
+#define VMDIR_ANONYMOUS_LOGON_SID "S-1-5-7"
+
 
 // objectSid.c
 
@@ -132,6 +190,11 @@ VmDirVmAclShutdown(
     VOID
     );
 
+DWORD
+VmDirRegisterACLMode(
+    VOID
+    );
+
 // acl.c
 
 DWORD
@@ -143,7 +206,7 @@ VmDirSrvCreateAccessTokenWithEntry(
 
 DWORD
 VmDirSrvAccessCheck(
-    PVDIR_OPERATION pOperation, /* optional */
+    PVDIR_OPERATION pOperation,
     PVDIR_ACCESS_INFO pAccessInfo,
     PVDIR_ENTRY pEntry,
     ACCESS_MASK AccessDesired
@@ -155,12 +218,18 @@ VmDirAclCtxContentFree(
     );
 
 DWORD
-VmDirSrvCreateDefaultSecDescRel(
-    PSTR                           pszSystemAdministratorDn,
-    PSTR                           pszAdminsGroupSid,
-    PSECURITY_DESCRIPTOR_RELATIVE* ppSecDescRel,
-    PULONG                         pulSecDescLength,
-    PSECURITY_INFORMATION          pSecInfo
+VmDirSrvCreateSecurityDescriptor(
+    ACCESS_MASK amAccess,
+    PCSTR pszSystemAdministratorDn,
+    PCSTR pszAdminsGroupSid,
+    PCSTR pszDomainAdminsGroupSid,
+    PCSTR pszDomainClientsGroupSid,
+    PCSTR pszUsersGroupSid,
+    BOOLEAN bProtectedDacl,
+    BOOLEAN bAnonymousRead,
+    BOOLEAN bServicesDacl,
+    BOOLEAN bTenantDomain,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
     );
 
 VOID
@@ -181,6 +250,21 @@ VmDirIsFailedAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo
     );
 
+DWORD
+VmDirAddAceToSecurityDescriptor(
+    PVDIR_ENTRY pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc,
+    PCSTR pszAdminUserDn,
+    ACCESS_MASK amAccess
+    );
+
+DWORD
+VmDirGetObjectSidFromEntry(
+    PVDIR_ENTRY pEntry,
+    PSTR* ppszObjectSid, /* Optional */
+    PSID* ppSid /* Optional */
+    );
+
 // security.c
 
 DWORD
@@ -194,9 +278,20 @@ VmDirGetSecurityDescriptorForEntry(
 DWORD
 VmDirSetSecurityDescriptorForDn(
     PCSTR pszObjectDn,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRel,
-    ULONG ulSecDescRel
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    );
+
+DWORD
+VmDirEntryCacheSecurityDescriptor(
+    PVDIR_ENTRY pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
+    ULONG ulSecDescToSetLen
+    );
+
+DWORD
+VmDirSetRecursiveSecurityDescriptorForDn(
+    PCSTR pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
     );
 
 DWORD
@@ -205,6 +300,26 @@ VmDirSetSecurityDescriptorForEntry(
     SECURITY_INFORMATION SecurityInformation,
     PSECURITY_DESCRIPTOR_RELATIVE pSecDescRel,
     ULONG ulSecDescRel
+    );
+
+// sdcalc.c
+DWORD
+VmDirComputeObjectSecurityDescriptor(
+    PVDIR_ACCESS_INFO pAccessInfo,
+    PVDIR_ENTRY pEntry,
+    PVDIR_ENTRY pParentEntry
+    );
+
+// token.c
+DWORD
+VmDirSrvCreateAccessTokenForWellKnowObject(
+    PACCESS_TOKEN *ppToken,
+    PCSTR pszWellknownObjectSid
+    );
+
+VOID
+VmDirSetACLMode(
+    VOID
     );
 
 #ifdef __cplusplus

@@ -42,6 +42,60 @@ VmwDeployValidateHostname(
 }
 
 DWORD
+VmwDeployValidateOrgUnit(
+    PCSTR pszOrgUnit
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bHasSpecialChars = FALSE;
+
+    VMW_DEPLOY_LOG_DEBUG(
+            "Validating organizational unit [%s]",
+            VMW_DEPLOY_SAFE_LOG_STRING(pszOrgUnit));
+
+    if (!IsNullOrEmptyString(pszOrgUnit))
+    {
+        PCSTR pszCursor = pszOrgUnit;
+
+        while (*pszCursor && !bHasSpecialChars)
+        {
+            switch (*pszCursor)
+            {
+                case '!':
+                case '@':
+                case '#':
+                case '$':
+                case '%':
+                case '^':
+                case '&':
+                case '*':
+                case '[':
+                case ']':
+                     bHasSpecialChars = TRUE;
+                     break;
+                default:
+                     pszCursor++;
+                     break;
+            }
+        }
+    }
+
+    if (bHasSpecialChars)
+    {
+        VMW_DEPLOY_LOG_ERROR(
+                "Organizational unit [%s] has invalid characters",
+                VMW_DEPLOY_SAFE_LOG_STRING(pszOrgUnit));
+
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+error:
+
+    return dwError;
+}
+
+DWORD
 VmwDeployValidatePassword(
     PCSTR pszPassword
     )

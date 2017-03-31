@@ -43,6 +43,7 @@ import javax.xml.namespace.QName;
 })
 @XmlSeeAlso({
     PasswordString.class,
+    PasscodeString.class,
     EncodedString.class
 })
 public class AttributedString {

@@ -17,6 +17,7 @@ package com.vmware.identity.openidconnect.server;
 import static com.vmware.identity.openidconnect.server.TestContext.ADMIN_SERVER_ROLE;
 import static com.vmware.identity.openidconnect.server.TestContext.AUTHZ_CODE;
 import static com.vmware.identity.openidconnect.server.TestContext.AUTHZ_ENDPOINT_URI;
+import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_CERT_SUBJECT_DN;
 import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_ID;
 import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_PRIVATE_KEY;
 import static com.vmware.identity.openidconnect.server.TestContext.GROUP_FILTER_RS_X;
@@ -46,6 +47,7 @@ import static com.vmware.identity.openidconnect.server.TestContext.solutionUserA
 import static com.vmware.identity.openidconnect.server.TestContext.tokenController;
 import static com.vmware.identity.openidconnect.server.TestContext.tokenRequestParameters;
 import static com.vmware.identity.openidconnect.server.TestContext.tokenRequestParametersClient;
+import static com.vmware.identity.openidconnect.server.TestContext.tokenRequestParametersClientId;
 import static com.vmware.identity.openidconnect.server.TestContext.tokenRequestParametersSltn;
 import static com.vmware.identity.openidconnect.server.TestContext.validateTokenErrorResponse;
 import static com.vmware.identity.openidconnect.server.TestContext.validateTokenSuccessResponse;
@@ -120,6 +122,15 @@ public class TokenControllerTest {
         Flow flow = Flow.AUTHZ_CODE;
         Map<String, String> params = tokenRequestParametersClient(flow);
         assertSuccessResponse(flow, params);
+    }
+
+    @Test
+    public void testAuthzCodeFlowClientId() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        Map<String, String> params = tokenRequestParametersClient(flow);
+        params.remove("client_assertion");
+        params.put("client_id", CLIENT_ID);
+        assertErrorResponse(flow, params, "invalid_request", "client_assertion parameter is required for authz code grant");
     }
 
     @Test
@@ -208,12 +219,12 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testAuthzCodeFlowTokenScopeParameter() throws Exception {
-        // in authz code flow, we do not allow scope token request parameter (because it was already supplied in the authn request)
+    public void testAuthzCodeFlowScopeParameter() throws Exception {
+        // in authz code flow, we ignore scope token request parameter (because it was already supplied in the authn request)
         Flow flow = Flow.AUTHZ_CODE;
         Map<String, String> params = tokenRequestParametersClient(flow);
         params.put("scope", "openid");
-        assertErrorResponse(flow, params, "invalid_request", "scope parameter is not allowed in token request for authz code grant");
+        assertSuccessResponse(flow, params);
     }
 
     @Test
@@ -269,6 +280,15 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testClientCredentialsFlowClientId() throws Exception {
+        Flow flow = Flow.CLIENT_CREDS;
+        Map<String, String> params = tokenRequestParametersClient(flow);
+        params.remove("client_assertion");
+        params.put("client_id", CLIENT_ID);
+        assertErrorResponse(flow, params, "invalid_request", "client_assertion parameter is required for client credentials grant");
+    }
+
+    @Test
     public void testClientCredentialsFlowRefreshTokenDisallowed() throws Exception {
         Flow flow = Flow.CLIENT_CREDS;
         Map<String, String> params = tokenRequestParametersClient(flow);
@@ -287,7 +307,7 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testSolutionUserCredentials() throws Exception {
+    public void testSolutionUserCredentialsFlow() throws Exception {
         Flow flow = Flow.SOLUTION_USER_CREDS;
         Map<String, String> params = tokenRequestParametersSltn(flow);
         params.remove("solution_user_assertion");
@@ -295,20 +315,30 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testSolutionUserCredentialsSltn() throws Exception {
+    public void testSolutionUserCredentialsFlowSltn() throws Exception {
         Flow flow = Flow.SOLUTION_USER_CREDS;
         Map<String, String> params = tokenRequestParametersSltn(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testSolutionUserCredentialsClient() throws Exception {
+    public void testSolutionUserCredentialsFlowClient() throws Exception {
         Flow flow = Flow.SOLUTION_USER_CREDS;
         Map<String, String> params = tokenRequestParametersSltn(flow);
         params.remove("solution_user_assertion");
         params.put("client_assertion", TestUtil.sign(clientAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
         params.put("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
         assertErrorResponse(flow, params, "invalid_request", "solution_user_assertion parameter is required for solution user credentials grant");
+    }
+
+    @Test
+    public void testSolutionUserCredentialsFlowClientId() throws Exception {
+        Flow flow = Flow.SOLUTION_USER_CREDS;
+        Map<String, String> params = tokenRequestParametersSltn(flow);
+        params.put("client_id", CLIENT_ID);
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).solutionUserCertSubjectDN(CLIENT_CERT_SUBJECT_DN).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
     }
 
     @Test
@@ -351,6 +381,15 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testPasswordFlowClientId() throws Exception {
+        Flow flow = Flow.PASSWORD;
+        Map<String, String> params = tokenRequestParametersClientId(flow);
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
+    }
+
+    @Test
     public void testPasswordFlowMissingCorrelationId() throws Exception {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
@@ -385,6 +424,15 @@ public class TokenControllerTest {
         Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParametersClient(flow);
         assertSuccessResponse(flow, params);
+    }
+
+    @Test
+    public void testPersonUserCertFlowClientId() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
+        Map<String, String> params = tokenRequestParametersClientId(flow);
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
     }
 
     @Test
@@ -456,6 +504,15 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testGssTicketFlowClientId() throws Exception {
+        Flow flow = Flow.GSS_TICKET;
+        Map<String, String> params = tokenRequestParametersClientId(flow);
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
+    }
+
+    @Test
     public void testGssTicketFlowMissingContextId() throws Exception {
         Flow flow = Flow.GSS_TICKET;
         Map<String, String> params = tokenRequestParameters(flow);
@@ -502,6 +559,15 @@ public class TokenControllerTest {
         Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParametersClient(flow);
         assertSuccessResponse(flow, params);
+    }
+
+    @Test
+    public void testSecurIdFlowClientId() throws Exception {
+        Flow flow = Flow.SECURID;
+        Map<String, String> params = tokenRequestParametersClientId(flow);
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
     }
 
     @Test
@@ -567,6 +633,18 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testRefreshTokenFlowClientId() throws Exception {
+        Flow flow = Flow.REFRESH_TOKEN;
+        Map<String, String> params = tokenRequestParametersClientId(flow);
+        JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
+        claimsBuilder = claimsBuilder.claim("client_id", CLIENT_ID);
+        params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
+    }
+
+    @Test
     public void testRefreshTokenFlowInvalidRequest() throws Exception {
         Flow flow = Flow.REFRESH_TOKEN;
         Map<String, String> params = tokenRequestParameters(flow);
@@ -599,6 +677,18 @@ public class TokenControllerTest {
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaimsClient();
         params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
         assertErrorResponse(flow, params, "invalid_grant", "refresh_token was not issued to this client");
+    }
+
+    @Test
+    public void testRefreshTokenFlowIncorrectClientId() throws Exception {
+        Flow flow = Flow.REFRESH_TOKEN;
+        Map<String, String> params = tokenRequestParameters(flow);
+        JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
+        claimsBuilder = claimsBuilder.claim("client_id", CLIENT_ID);
+        params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
+        TokenController controller = tokenController(idmClient);
+        assertErrorResponse(flow, params, "invalid_grant", "refresh_token was not issued to this client", controller);
     }
 
     @Test
@@ -716,7 +806,19 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testRefreshTokenFlowJwtExpired() throws Exception {
+    public void testRefreshTokenFlowJwtExpiredNotBefore() throws Exception {
+        Flow flow = Flow.REFRESH_TOKEN;
+        Map<String, String> params = tokenRequestParameters(flow);
+        JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
+        Date now = new Date();
+        claimsBuilder = claimsBuilder.issueTime(new Date(now.getTime() + 8*1000L)); // issued 8 seconds in the future
+        claimsBuilder = claimsBuilder.expirationTime(new Date(now.getTime() + 9*1000L)); // expires 9 seconds in the future
+        params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
+        assertErrorResponse(flow, params, "invalid_grant", "refresh_token has expired");
+    }
+
+    @Test
+    public void testRefreshTokenFlowJwtExpiredNotAfter() throws Exception {
         Flow flow = Flow.REFRESH_TOKEN;
         Map<String, String> params = tokenRequestParameters(flow);
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
@@ -741,11 +843,11 @@ public class TokenControllerTest {
 
     @Test
     public void testRefreshTokenFlowScopeParameter() throws Exception {
-        // in refresh token flow, we do not allow scope token request parameter (because it was already supplied in previous request)
+        // in refresh token flow, we ignore scope token request parameter (because it was already supplied in previous request)
         Flow flow = Flow.REFRESH_TOKEN;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid");
-        assertErrorResponse(flow, params, "invalid_request", "scope parameter is not allowed in token request for refresh token grant");
+        assertSuccessResponse(flow, params);
     }
 
     @Test
@@ -845,7 +947,7 @@ public class TokenControllerTest {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid id_groups_filtered");
-        assertErrorResponse(flow, params, "invalid_scope", "id_token filtered groups requested but no resource server requested");
+        assertErrorResponse(flow, params, "invalid_scope", "id_groups_filtered requested but no resource server requested");
     }
 
     @Test
@@ -909,7 +1011,7 @@ public class TokenControllerTest {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid at_groups_filtered");
-        assertErrorResponse(flow, params, "invalid_scope", "access_token groups requested but no resource server requested");
+        assertErrorResponse(flow, params, "invalid_scope", "at_groups_filtered requested but no resource server requested");
     }
 
     @Test
@@ -918,14 +1020,6 @@ public class TokenControllerTest {
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid at_groups_filtered at_groups");
         assertErrorResponse(flow, params, "invalid_scope", "at_groups together with at_groups_filtered is not allowed");
-    }
-
-    @Test
-    public void testScopeValueAccessTokenGroupsNoResourceServer() throws Exception {
-        Flow flow = Flow.PASSWORD;
-        Map<String, String> params = tokenRequestParameters(flow);
-        params.put("scope", "openid at_groups");
-        assertErrorResponse(flow, params, "invalid_scope", "access_token groups requested but no resource server requested");
     }
 
     @Test
@@ -1023,6 +1117,19 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testQueryParametersDisallowed() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        Map<String, String> params = tokenRequestParametersClient(flow);
+        MockHttpServletRequest request = TestUtil.createPostRequest(params);
+        request.setQueryString("p1=v1");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        TokenController controller = tokenController();
+        controller.acquireTokens(request, response, TENANT_NAME);
+        String expectedErrorMessage = "query parameters are not allowed at token endpoint";
+        validateTokenErrorResponse(response, flow, "invalid_request", expectedErrorMessage);
+    }
+
+    @Test
     public void testUnsupportedGrantType() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         Map<String, String> params = new HashMap<String, String>();
@@ -1071,19 +1178,19 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testMultipleSpacesScopeValue() throws Exception {
+        Flow flow = Flow.PASSWORD;
+        Map<String, String> params = tokenRequestParameters(flow);
+        params.put("scope", "openid   offline_access");
+        assertErrorResponse(flow, params, "invalid_scope", "scope must be a sequence of single-space-delimited values");
+    }
+
+    @Test
     public void testInvalidResourceServerNameScopeValue() throws Exception {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid rs_");
         assertErrorResponse(flow, params, "invalid_scope", "unrecognized scope value: rs_");
-    }
-
-    @Test
-    public void testClientIdDisallowed() throws Exception {
-        Flow flow = Flow.PASSWORD;
-        Map<String, String> params = tokenRequestParameters(flow);
-        params.put("client_id", CLIENT_ID);
-        assertErrorResponse(flow, params, "invalid_request", "client_id parameter is not allowed, send client_assertion instead");
     }
 
     @Test
@@ -1147,6 +1254,15 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testClientAssertionIssuerAndClientIdMismatch() throws Exception {
+        Flow flow = Flow.PASSWORD;
+        Map<String, String> params = tokenRequestParametersClient(flow);
+        params.put("client_id", CLIENT_ID + "non_matching");
+        String expectedErrorMessage = "client_assertion issuer must match client_id";
+        assertErrorResponse(flow, params, "invalid_request", expectedErrorMessage);
+    }
+
+    @Test
     public void testAssertionIncorrectAudience() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
@@ -1177,11 +1293,23 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testAssertionIssuedAt() throws Exception {
+    public void testAssertionIssuedAtTooFarInThePast() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
         Date now = new Date();
         Date issuedAt = new Date(now.getTime() - 5 * 60 * 1000L); // issued 5 mins ago
+        claimsBuilder = claimsBuilder.issueTime(issuedAt);
+        Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
+        String expectedErrorMessage = "stale_client_assertion";
+        assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
+    }
+
+    @Test
+    public void testAssertionIssuedAtTooFarInTheFuture() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
+        Date now = new Date();
+        Date issuedAt = new Date(now.getTime() + 5 * 60 * 1000L); // issued 5 mins in the future
         claimsBuilder = claimsBuilder.issueTime(issuedAt);
         Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
         String expectedErrorMessage = "stale_client_assertion";
@@ -1194,7 +1322,7 @@ public class TokenControllerTest {
         Map<String, String> params = tokenRequestParametersClient(flow);
         CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).build();
         TokenController controller = tokenController(idmClient);
-        String expectedErrorMessage = "client authn failed because client did not register a cert";
+        String expectedErrorMessage = "client_assertion parameter is not allowed since client did not register a cert";
         assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage, controller);
     }
 
@@ -1221,6 +1349,13 @@ public class TokenControllerTest {
             Flow flow,
             Map<String, String> params) throws Exception {
         assertSuccessResponse(flow, params, tokenController(), GROUP_MEMBERSHIP, GROUP_MEMBERSHIP, ADMIN_SERVER_ROLE);
+    }
+
+    private static void assertSuccessResponse(
+            Flow flow,
+            Map<String, String> params,
+            TokenController controller) throws Exception {
+        assertSuccessResponse(flow, params, controller, GROUP_MEMBERSHIP, GROUP_MEMBERSHIP, ADMIN_SERVER_ROLE);
     }
 
     private static void assertSuccessResponse(

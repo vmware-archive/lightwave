@@ -119,10 +119,12 @@ CdcSrvInitDefaultHAMode(
     {
         (DWORD)CdcWakeupCdcCacheUpdate(
                                 pCdcContext->pCdcCacheUpdateContext,
-                                TRUE
+                                TRUE,
+                                FALSE
                                 );
         (DWORD)CdcWakeupStateMachine(
-                                pCdcContext->pCdcStateMachineContext
+                                pCdcContext->pCdcStateMachineContext,
+                                FALSE
                                 );
     }
 
@@ -247,8 +249,51 @@ error:
 }
 
 DWORD
+CdcSrvForceRefreshCache(
+    PCDC_CONTEXT pCdcContext
+    )
+{
+    DWORD dwError = 0;
+    CDC_DB_ENUM_HA_MODE cdcHAMode = CDC_DB_ENUM_HA_MODE_UNDEFINED;
+
+    if (!pCdcContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        VmAfdLog(
+             VMAFD_DEBUG_ERROR,
+             "Invalid CDC context received"
+             );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = CdcRegDbGetHAMode(&cdcHAMode);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (cdcHAMode == CDC_DB_ENUM_HA_MODE_DEFAULT)
+    {
+        (DWORD)CdcWakeupCdcCacheUpdate(
+                                pCdcContext->pCdcCacheUpdateContext,
+                                TRUE,
+                                TRUE
+                                );
+        (DWORD)CdcWakeupStateMachine(
+                                pCdcContext->pCdcStateMachineContext,
+                                TRUE
+                                );
+    }
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
+DWORD
 CdcSrvGetDCName(
     PCWSTR pszDomainName,
+    DWORD  dwFlags,
     PCDC_DC_INFO_W *ppAffinitizedDC
     )
 {
@@ -260,6 +305,7 @@ CdcSrvGetDCName(
     PWSTR pszDomainToUse = NULL;
     UINT64 iStart = 0;
     UINT64 iEnd = 0;
+    BOOL bForceRefresh = FALSE;
 
     if (!ppAffinitizedDC)
     {
@@ -268,6 +314,22 @@ CdcSrvGetDCName(
     }
 
     iStart = VmAfdGetTimeInMilliSec();
+
+    bForceRefresh = dwFlags & CDC_FORCE_REFRESH;
+
+    if (bForceRefresh)
+    {
+        if (!gVmafdGlobals.pCdcContext)
+        {
+            dwError = ERROR_INVALID_STATE;
+        }
+        else
+        {
+           dwError = CdcSrvForceRefreshCache(gVmafdGlobals.pCdcContext);
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfSrvGetDomainName(&pszDomainToUse);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -432,7 +494,7 @@ VmAfSrvGetAffinitizedDC(
     }
 
     iStart = VmAfdGetTimeInMilliSec();
-    dwError = CdcSrvGetDCName(NULL, &pAffinitizedDC);
+    dwError = CdcSrvGetDCName(NULL, 0, &pAffinitizedDC);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringW(
@@ -642,7 +704,10 @@ CdcSrvWakeupStateMachine(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = CdcWakeupStateMachine(pCdcContext->pCdcStateMachineContext);
+    dwError = CdcWakeupStateMachine(
+                    pCdcContext->pCdcStateMachineContext,
+                    FALSE
+                    );
     if (dwError)
     {
         VmAfdLog(

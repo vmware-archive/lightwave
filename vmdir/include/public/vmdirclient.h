@@ -33,7 +33,8 @@ extern "C" {
 #include <ldap.h>
 #include "vmdirtypes.h"
 
-#define VMDIR_MAX_UPN_LEN       512
+#define VMDIR_MAX_UPN_LEN                   512
+#define VMDIR_CLIENT_JOIN_FLAGS_PREJOINED   0x00000001
 
 DWORD
 VmDirConnectionOpen(
@@ -107,6 +108,16 @@ VmDirGetComputers(
     PCSTR               pszHostName,
     PCSTR               pszUserName,
     PCSTR               pszPassword,
+    PSTR**              pppszComputers,
+    DWORD*              pdwNumComputers
+    );
+
+DWORD
+VmDirGetComputersByOrgUnit(
+    PCSTR               pszHostName,
+    PCSTR               pszUserName,
+    PCSTR               pszPassword,
+    PCSTR               pszOrgUnit,
     PSTR**              pppszComputers,
     DWORD*              pdwNumComputers
     );
@@ -193,8 +204,8 @@ VmDirClientJoin(
     PCSTR    pszUserName,
     PCSTR    pszPassword,
     PCSTR    pszMachineName,
-    PCSTR    pszOrgUnit
-    );
+    PCSTR    pszOrgUnit,
+    DWORD    dwJoinFlags);
 
 DWORD
 VmDirClientLeave(
@@ -204,10 +215,45 @@ VmDirClientLeave(
     );
 
 DWORD
+VmDirCreateComputerAccount(
+    PCSTR pszServerName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName,
+    PCSTR pszOrgUnit,
+    PSTR* ppszOutPassword
+    );
+
+DWORD
 VmDirSetupTenantInstance(
     PCSTR pszDomainName,
     PCSTR pszUsername,
     PCSTR pszPassword
+    );
+
+DWORD
+VmDirCreateTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszNewUserName,
+    PCSTR pszNewUserPassword
+    );
+
+
+DWORD
+VmDirDeleteTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName
+    );
+
+DWORD
+VmDirEnumerateTenants(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PSTR **pppszTenants,
+    DWORD *pdwNumTenants
     );
 
 DWORD
@@ -711,11 +757,17 @@ VmDirCloseDatabaseFile(
     FILE **                 ppFileHandle
 );
 
+/*
+ * Deprecated function in LW 1.2
+ */
 DWORD
 VmDirUrgentReplicationRequest(
     PCSTR pszRemoteServerName
     );
 
+/*
+ * Deprecated function in LW 1.2
+ */
 DWORD
 VmDirUrgentReplicationResponse(
     PCSTR    pszRemoteServerName,
@@ -725,14 +777,11 @@ VmDirUrgentReplicationResponse(
     );
 
 DWORD
-VmDirGetMode(
-    PVMDIR_SERVER_CONTEXT hInBinding,
-    UINT32*               pdwMode);
-
-DWORD
-VmDirSetMode(
-    PVMDIR_SERVER_CONTEXT hInBinding,
-    UINT32                dwMode);
+VmDirChangePNID(
+    PSTR    pszUsername,
+    PSTR    pszPassword,
+    PSTR    pszNewPNID
+    );
 
 #ifdef __cplusplus
 }

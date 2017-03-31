@@ -375,9 +375,21 @@ VmDirMDBAddEntry(
         }
     }
 
-    // Update remaining indices
+    // Update remaining indices and attr-value-meta-data
     for (nextAttr = pEntry->attrs; nextAttr != NULL; nextAttr = nextAttr->next)
     {
+        if (!dequeIsEmpty(&nextAttr->valueMetaDataToAdd))
+        {
+            dwError = VmDirMdbUpdateAttrValueMetaData( pBECtx, entryId, nextAttr->pATDesc->usAttrID,
+                                                       BE_INDEX_OP_TYPE_UPDATE, &nextAttr->valueMetaDataToAdd);
+            if (dwError != 0)
+            {
+                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
+                                            "VmDirMdbUpdateAttrValueMetaData");
+                BAIL_ON_VMDIR_ERROR( dwError );
+            }
+        }
+
         if (VmDirStringCompareA(nextAttr->type.lberbv.bv_val, ATTR_DN, FALSE) != 0)
         {
             if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
@@ -480,6 +492,73 @@ error:
     goto cleanup;
 }
 
+/* VmDirMDBAgeOffEntry: remove entry from DB for good.
+ * clean up:
+ *  parentid table
+ *  all indices tables
+ *  entry blob table
+ *
+ * Returns: BE error codes.
+ *
+ */
+DWORD
+VmDirMDBAgeOffEntry(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_ENTRY         pEntry
+    )
+{
+    DWORD             dwError = 0;
+    ENTRYID           entryId = 0;
+    VDIR_DB_TXN*      pTxn = NULL;
+    VDIR_ATTRIBUTE *  nextAttr = NULL;
+
+    assert( pEntry && pBECtx && pBECtx->pBEPrivate );
+
+    pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
+    entryId = pEntry->eId;
+
+    // cleanup parentId index
+    dwError = MDBDeleteParentIdIndex( pBECtx, &(pEntry->pdn), pEntry->eId );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // cleanup index and metadata index
+    for (nextAttr = pEntry->attrs; nextAttr != NULL; nextAttr = nextAttr->next)
+    {
+        if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
+                                                entryId, BE_INDEX_OP_TYPE_DELETE)) == MDB_NOTFOUND)
+        {   // should never happen, but should not block deleting tombstone entry
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if ((dwError = MdbUpdateAttrMetaData( pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_DELETE )) == MDB_NOTFOUND)
+        {   // should never happen, but should not block deleting tombstone entry
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+
+    // cleanup EID/blob index
+    if ((dwError = MDBDeleteEIdIndex(pTxn, entryId)) == MDB_NOTFOUND)
+    {   // should never happen, but should not block deleting tombstone entry
+        dwError = 0;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "VmDirMDBAgeOffEntry DN (%s),  (%u)(%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val),
+                              dwError, VDIR_SAFE_STRING(pBECtx->pszBEErrorMsg));
+
+    VMDIR_SET_BACKEND_ERROR(dwError);   // if dwError no in BE space, set to ERROR_BACKEND_ERROR
+
+    goto cleanup;
+}
+
 /* MdbDeleteEntry: Deletes an entry in the MDB DBs.
  *
  * Returns: BE error codes.
@@ -496,8 +575,16 @@ VmDirMDBDeleteEntry(
 
     assert( pBECtx && pBECtx->pBEPrivate && pEntry );
 
-    dwError = VmDirMDBModifyEntry( pBECtx, pMods, pEntry);
-    BAIL_ON_VMDIR_ERROR( dwError );
+    if (pMods)
+    {
+        dwError = VmDirMDBModifyEntry( pBECtx, pMods, pEntry);
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+    else
+    {
+        dwError = VmDirMDBAgeOffEntry(pBECtx, pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
 
@@ -707,6 +794,18 @@ VmDirMDBModifyEntry(
                 BAIL_ON_VMDIR_ERROR( dwError );
             }
         }
+
+        if (!dequeIsEmpty(&mod->attr.valueMetaDataToAdd))
+        {
+            dwError = VmDirMdbUpdateAttrValueMetaData( pBECtx, pEntry->eId, mod->attr.pATDesc->usAttrID,
+                                                       BE_INDEX_OP_TYPE_UPDATE, &mod->attr.valueMetaDataToAdd );
+            if (dwError != 0)
+            {
+                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
+                                            VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR( dwError );
+            }
+        }
     }
 
     // Create/Delete appropriate indices for DN
@@ -746,6 +845,17 @@ VmDirMDBModifyEntry(
             }
 
             if ((dwError = MdbUpdateAttrMetaData( pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
+            {
+                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
+                                            VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR( dwError );
+            }
+        }
+
+        if (!dequeIsEmpty(&mod->attr.valueMetaDataToDelete))
+        {
+            if ((dwError = VmDirMdbUpdateAttrValueMetaData( pBECtx, pEntry->eId, mod->attr.pATDesc->usAttrID,
+                                                            BE_INDEX_OP_TYPE_DELETE, &mod->attr.valueMetaDataToDelete )) != 0)
             {
                 dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
                                             VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));

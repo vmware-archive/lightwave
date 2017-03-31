@@ -402,16 +402,6 @@ srp_gss_inquire_context(
 {
 	OM_uint32 ret = GSS_S_COMPLETE;
 
-	ret = gss_inquire_context(minor_status,
-				context_handle,
-				src_name,
-				targ_name,
-				lifetime_rec,
-				NULL,
-				ctx_flags,
-				locally_initiated,
-				opened);
-
     if (mech_type)
         *mech_type = context_handle->mech_type;
 

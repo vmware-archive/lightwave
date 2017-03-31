@@ -1,0 +1,49 @@
+[
+    uuid (c7e94609-6ab0-4767-8e92-b6485bff1649),
+    version(1.0),
+    pointer_default(unique)
+]
+
+interface rpc_srp_verifier
+{
+    typedef struct _rpc_srp_bytes_container
+    {
+        long len_B;
+        [size_is(len_B)] unsigned char *bytes_B;
+    }
+    rpc_srp_bytes_container, *rpc_p_srp_bytes_container;
+    typedef [context_handle] void *srp_verifier_handle_t;
+
+    long rpc_srp_verifier_new(
+        [in] handle_t hServer,
+        [in] long alg,
+        [in] long ng_type,
+        [in, string, ptr] char *username,
+        [in] rpc_p_srp_bytes_container bytes_A,
+        [in, out] rpc_p_srp_bytes_container *B_value,
+        [in, out] rpc_p_srp_bytes_container *bytes_s,
+        [in, out] rpc_p_srp_bytes_container *MDA_value,
+        [in, string, ptr] char *n_hex,
+        [in, string, ptr] char *g_hex,
+        [in, out] srp_verifier_handle_t *hSrp);
+
+    long rpc_srp_verifier_get_session_key(
+        [in] handle_t hServer,
+        [in] srp_verifier_handle_t hSrp,
+        [in, out] rpc_p_srp_bytes_container *key);
+
+    long rpc_srp_verifier_get_session_key_length(
+        [in] handle_t hServer,
+        [in] srp_verifier_handle_t hSrp,
+        [in, out] long *key_length);
+
+    long rpc_srp_verifier_verify_session(
+        [in] handle_t hServer,
+        [in] srp_verifier_handle_t hSrp,
+        [in] rpc_p_srp_bytes_container user_M,
+        [in, out] rpc_p_srp_bytes_container *bytes_HAMK);
+
+    long rpc_srp_verifier_delete(
+        [in] handle_t hServer,
+        [in, out] srp_verifier_handle_t *hSrp);
+}

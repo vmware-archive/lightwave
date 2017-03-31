@@ -124,26 +124,11 @@ VmAfSrvConfigureDNSA(
     dwError = VmAfSrvGetLotusServerName(
                     pszServerName,
                     &pszCanonicalServerName);
-    VmAfdLog(
-            VMAFD_DEBUG_ERROR,
-            "Domain Name = %s, server name = %s , server Canonical Name = %s",
-            pszDomainName,
-            pszServerName,
-            pszCanonicalServerName
-           );
-    BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAppendDomain(pszServerName, pszDomainName, &pszServerFQDN);
-    VmAfdLog(
-            VMAFD_DEBUG_ERROR,
-            "Domain Name = %s",
-            pszServerFQDN
-           );
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdStringCpyA(szDomainFQDN, 260, pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
-
 
     if (szDomainFQDN[strlen(szDomainFQDN) - 1] != '.')
     {
@@ -151,12 +136,23 @@ VmAfSrvConfigureDNSA(
         szDomainFQDN[strlen(szDomainFQDN)+1] = 0;
     }
 
-    VmAfdLog(
-        VMAFD_DEBUG_ANY,
-        "%s Server name for dns initialize: %s",
-        __FUNCTION__,
-        pszCanonicalServerName);
+    if (!VmAfdCheckIfIPV4AddressA(pszServerName) &&
+        !VmAfdCheckIfIPV6AddressA(pszServerName))
+    {
+        dwError = VmAfdAppendDomain(pszServerName, pszDomainName, &pszServerFQDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s Server name for dns initialize: %s",
+            __FUNCTION__,
+           pszCanonicalServerName);
+    }
+    else
+    {
+       VmAfdAllocateStringPrintf(
+                        &pszServerFQDN,"%s",pszServerName);
+    }
     initInfo.IpV4Addrs.Addrs = pV4Addresses;
     initInfo.IpV4Addrs.dwCount = numV4Address;
     initInfo.IpV6Addrs.Addrs = pV6Addresses;
@@ -176,6 +172,7 @@ VmAfSrvConfigureDNSA(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmDnsInitializeA(pServerContext, &initInfo);
+    VmAfdLog( VMAFD_DEBUG_ERROR, "%s DnsInitialize : Error:%d,ServerName : %s", __FUNCTION__,dwError,pszServerFQDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:

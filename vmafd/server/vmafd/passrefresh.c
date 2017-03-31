@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -29,8 +29,13 @@ VmAfdGetShutdownFlagThr(
     );
 
 static
-PVOID
+VOID
 VmAfdHandlePassRefresh(
+    );
+
+static
+PVOID
+VmAfdPassRefreshWorker(
     PVOID pData
     );
 
@@ -74,7 +79,7 @@ VmAfdInitPassRefreshThread(
    dwError = pthread_create(
                 &pThread->thread,
                 NULL,
-                &VmAfdHandlePassRefresh,
+                &VmAfdPassRefreshWorker,
                 (PVOID)&pThread->thrData);
     if (dwError)
     {
@@ -145,17 +150,13 @@ VmAfdShutdownPassRefreshThread(
 
 static
 PVOID
-VmAfdHandlePassRefresh(
+VmAfdPassRefreshWorker(
     PVOID pData
-    )
+  )
 {
-    DWORD   dwError = 0;
-    PWSTR   pwszActPassword=NULL;
-    PSTR    pszActPassword=NULL;
-    DWORD   dwSleep8Hrs = 8 * 60 * 60;
+    DWORD   dwSleep8Hrs = 60 * 60 * 8;
 
     PVMAFD_CERT_THR_DATA pThrArgs = (PVMAFD_CERT_THR_DATA)pData;
-    PVMAFD_REG_ARG pArgs = NULL;
 
     while (TRUE)
     {
@@ -166,11 +167,11 @@ VmAfdHandlePassRefresh(
 
         pthread_mutex_lock(pThrArgs->pMutex);
 
-        dwError = pthread_cond_timedwait(
+        pthread_cond_timedwait(
                         pThrArgs->pCond,
                         pThrArgs->pMutex,
                         &ts);
-        // ignore dwError.  just loop if timeout,cond signal or spurious wakeup
+        // ignore errors.  just loop if timeout,cond signal or spurious wakeup
         pthread_mutex_unlock(pThrArgs->pMutex);
 
         bShutdown = VmAfdGetShutdownFlagThr(pThrArgs);
@@ -178,63 +179,90 @@ VmAfdHandlePassRefresh(
         {
             break;
         }
-
-        VmAfdFreeRegArgs( pArgs );
-        pArgs = NULL;
-        dwError = VmAfdGetRegArgs( &pArgs );
-        if ( dwError == 0 )
-        {
-            // Refresh dc account password if needed
-            VMAFD_SAFE_FREE_MEMORY(pszActPassword);
-
-            dwError = VmDirRefreshActPassword( pArgs->pszDCName,
-                                               pArgs->pszDomain,
-                                               pArgs->pszAccountUPN,
-                                               pArgs->pszAccountDN,
-                                               pArgs->pszPassword,
-                                               &pszActPassword);
-            if (dwError == 0 && pszActPassword != NULL )
-            {
-                // store new password in registry
-                VMAFD_SAFE_FREE_MEMORY(pwszActPassword);
-                dwError = VmAfdAllocateStringWFromA( pszActPassword, &pwszActPassword );
-                if ( dwError == 0 )
-                {
-                    dwError = VmAfSrvSetDCActPassword( pwszActPassword );
-                    if ( dwError == 0 )
-                    {
-                        VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh set reg password passed");
-                    }
-                    else
-                    {
-                        VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh set reg password failed (%d)", dwError);
-                    }
-                }
-                else
-                {
-                    VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh alloc password failed (%d)", dwError);
-                }
-            }
-            else if ( dwError != 0 )
-            {
-                VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh VmDirRefreshActPassword failed (%d)", dwError);
-            }
-        }
-        else if ( dwError == ERROR_NOT_JOINED )
-        {
-            // not join yet, do nothing.
-        }
-        else
-        {
-            VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh alloc pArgs failed (%d)", dwError);
-        }
+        VmAfdHandlePassRefresh();
     }
 
+    return NULL;
+
+}
+
+static
+VOID
+VmAfdHandlePassRefresh(
+    )
+{
+    DWORD   dwError = 0;
+    PWSTR   pwszActPassword=NULL;
+    PSTR    pszActPassword=NULL;
+    PWSTR   pwszDCName = NULL;
+    PSTR    pszDCName = NULL;
+
+    PVMAFD_REG_ARG pArgs = NULL;
+
     VmAfdFreeRegArgs( pArgs );
+    pArgs = NULL;
+
+    dwError = VmAfdGetMachineInfo( &pArgs );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirRefreshActPassword( pszDCName,
+                                       pArgs->pszDomain,
+                                       pArgs->pszAccountUPN,
+                                       pArgs->pszAccountDN,
+                                       pArgs->pszPassword,
+                                       &pszActPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (! IsNullOrEmptyString(pszActPassword))
+    {
+        // store new password in registry
+        dwError = VmAfdAllocateStringWFromA( pszActPassword, &pwszActPassword );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDCActPassword( pwszActPassword );
+        BAIL_ON_VMAFD_ERROR(dwError);
+        VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh set reg password passed");
+    }
+
+
+cleanup:
+
+    if(pArgs){
+        VmAfdFreeRegArgs( pArgs );
+    }
     VMAFD_SAFE_FREE_MEMORY(pszActPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszActPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    return;
 
-    return NULL;
+error:
+
+    switch (dwError)
+    {
+        case ERROR_NOT_JOINED:
+
+            VmAfdLog(VMAFD_DEBUG_ANY, "VM not joined yet");
+
+            break;
+
+        default:
+
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "PassRefresh failed (%d)",
+                dwError);
+
+            break;
+    }
+    goto cleanup;
+
 }
 
 static

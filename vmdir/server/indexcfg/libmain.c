@@ -16,7 +16,7 @@
 
 DWORD
 VmDirIndexLibInit(
-    VOID
+    PVMDIR_MUTEX    pModMutex
     )
 {
     static VDIR_DEFAULT_INDEX_CFG defIdx[] = VDIR_INDEX_INITIALIZER;
@@ -29,8 +29,15 @@ VmDirIndexLibInit(
     BOOLEAN             bHasTxn = FALSE;
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
 
-    dwError = VmDirAllocateMutex(&gVdirIndexGlobals.mutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pModMutex)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // pModMutex refers to gVdirSchemaGlobals.cacheModMutex,
+    // so do not free it during shutdown
+    gVdirIndexGlobals.mutex = pModMutex;
 
     dwError = VmDirAllocateCondition(&gVdirIndexGlobals.cond);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -103,6 +110,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszLastOffset);
     return dwError;
 
@@ -186,9 +194,7 @@ VmDirIndexLibShutdown(
     VMDIR_SAFE_FREE_CONDITION(gVdirIndexGlobals.cond);
     gVdirIndexGlobals.cond = NULL;
 
-    VMDIR_SAFE_FREE_MUTEX(gVdirIndexGlobals.mutex);
     gVdirIndexGlobals.mutex = NULL;
-
     gVdirIndexGlobals.bFirstboot = FALSE;
     gVdirIndexGlobals.bLegacyDB = FALSE;
 }

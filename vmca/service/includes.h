@@ -38,6 +38,9 @@ extern "C" {
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
+#include <openssl/bio.h>
+
+#include <gssapi/gssapi.h>
 
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
@@ -48,6 +51,14 @@ extern "C" {
 #include <vmca_h.h>
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
+
+#if 0
+#include <vmrest.h>
+#include <jansson.h>
+#include <common_types.h>
+#include <oidc_types.h>
+#include <oidc.h>
+#endif
 
 #include "defines.h"
 #include "structs.h"

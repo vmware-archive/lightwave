@@ -1,0 +1,4 @@
+
+SUBDIRS = \
+    query \
+    kerberos

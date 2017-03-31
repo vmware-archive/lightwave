@@ -1,117 +1,81 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-      <groupId>com.vmware.identity</groupId>
-      <artifactId>vmware-identity</artifactId>
-      <version>6.6.1</version>
-    </parent>
+  <parent>
+    <groupId>com.vmware.identity</groupId>
+    <artifactId>vmware-identity</artifactId>
+    <version>1.2.0-SNAPSHOT</version>
+  </parent>
 
-    <artifactId>vmware-identity-depends</artifactId>
-    <version>6.6.1</version>
+  <artifactId>vmware-identity-depends</artifactId>
+  <packaging>jar</packaging>
+  <name>VMware Identity Consolidated Dependency</name>
 
-    <properties>
-        <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-        <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
-        <skip.unit.tests>true</skip.unit.tests>
-    </properties>
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
+        <dependencies>
+          <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <version>${java.version}</version>
+            <scope>system</scope>
+            <systemPath>${java.home}/../lib/tools.jar</systemPath>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>build-ant</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <ant antfile="./build.xml" target="build"/>
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
-    <build>
-      <finalName>${project.artifactId}</finalName>
-      <plugins>
-       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.8</version>
-          <dependencies>
-                <dependency>
-                  <groupId>com.sun</groupId>
-                  <artifactId>tools</artifactId>
-                  <version>${java.version}</version>
-                  <scope>system</scope>
-                  <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>build-ant</id>
-              <phase>compile</phase>
-              <goals>
-                <goal>run</goal>
-              </goals>
-              <configuration>
-                <tasks>
-                  <ant antfile="./build.xml" target="build"/>
-                </tasks>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-
-        <!--Provided maven interface to build this project with ant,
-        so install these jars into maven repo with install plugin-->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.1</version>
-          <executions>
-            <execution>
-              <id>admin-interfaces</id>
-              <goals>
-                <goal>install-file</goal>
-              </goals>
-              <phase>package</phase>
-              <configuration>
-                <groupId>com.vmware.identity</groupId>
-                <artifactId>vmware-identity-depends</artifactId>
-                <version>${vmware.version}</version>
-                <packaging>jar</packaging>
-                <file>${outputDirectory}/vmware-identity-depends.jar</file>
-              </configuration>
-           </execution>
-           <execution>
-              <id>default-install</id>
-              <phase>none</phase>
-           </execution>
-         </executions>
-       </plugin>
-       <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>${maven.compiler.plugin.version}</version>
-          <executions>
-            <execution>
-              <id>default-compile</id>
-              <phase>none</phase>
-              <configuration>
-                <source>${java.version}</source>
-                <target>${java.version}</target>
-              </configuration>
-            </execution>
-            <execution>
-              <id>default-testCompile</id>
-              <phase>test-compile</phase>
-              <goals>
-                <goal>testCompile</goal>
-              </goals>
-              <configuration>
-                <skip>true</skip>
-              </configuration>
-            </execution>
-         </executions>
-       </plugin>
-       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>${maven.jar.plugin.version}</version>
-          <executions>
-            <execution>
-              <id>default-jar</id>
-              <phase>none</phase>
-            </execution>
-         </executions>
-       </plugin>
-     </plugins>
+      <!-- Provided maven interface to build this project with ant, so install -->
+      <!-- these jars into maven repo with install plugin                      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>2.5.1</version>
+        <executions>
+          <execution>
+            <id>admin-interfaces</id>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <groupId>com.vmware.identity</groupId>
+              <artifactId>vmware-identity-depends</artifactId>
+              <version>${vmware.version}</version>
+              <packaging>jar</packaging>
+              <file>${outputDirectory}/vmware-identity-depends.jar</file>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-install</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
+
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+  </properties>
 
 </project>

@@ -1,0 +1,87 @@
+{
+    "variables": {
+        "packages": "wget gawk tar sudo less unzip libxml2",
+        "script_path": "..",
+        "build_path": "build"
+    },
+    "builders": [
+        {
+            "type": "virtualbox-iso",
+            "format": "ova",
+            "vm_name": "photon-ova-virtualbox",
+            "guest_os_type": "Linux_64",
+            "iso_checksum": "{{ user `photon_iso_sha1` }}",
+            "iso_checksum_type": "sha1",
+            "iso_url": "{{ user `photon_iso_url` }}",
+            "ssh_username": "root",
+            "ssh_password": "changeme",
+            "shutdown_command": "shutdown -P now",
+            "headless": true,
+            "output_directory": "{{user `build_path`}}/",
+            "guest_additions_mode": "disable",
+            "hard_drive_interface": "scsi",
+            "vboxmanage": [
+                [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+                [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
+            ],
+            "boot_wait": "20s",
+            "boot_command": [
+                "<enter><wait10><wait10><wait10>",
+                "<enter><wait10>",
+                "<enter><wait10>",
+                "<enter><wait10>",
+                "mkLv45RdBP<enter><wait10>",
+                "mkLv45RdBP<enter><wait10>",
+                "<enter><wait10><wait10><wait10><wait10>",
+                "<enter><wait10><wait10><wait10><wait10><wait10>",
+                "<enter><wait10>",
+                "<enter><wait10>",
+                "<enter><wait10>",
+                "mkLv45RdBP<enter>",
+                "<wait10>",
+                "mkLv45RdBP<enter>",
+                "<wait10><wait10><wait10><wait10><wait10><wait10><enter>",
+                "<wait10><wait10><wait10><wait10><wait10><wait10>",
+                "root<enter>",
+                "<wait10>",
+                "mkLv45RdBP<enter>",
+                "<wait10>",
+                "echo root:changeme | chpasswd<enter><wait10>",
+                "sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config<enter><wait10>",
+                "systemctl restart sshd<enter><wait10>",
+                "logout<enter>",
+                "<wait10>"
+            ]
+        }
+    ],
+    "provisioners": [
+	{
+	    "type": "shell",
+	    "inline": "tdnf -y remove docker"
+	},
+        {
+            "type": "shell",
+            "inline": "tdnf makecache && tdnf upgrade -y"
+        },
+        {
+            "type": "shell",
+            "inline": "for pkg in {{ user `packages` }}; do tdnf install -y $pkg; done"
+        },
+        {
+            "type": "shell",
+            "inline": "echo 'enabling network renaming' && sed -i \"s/NamePolicy=kernel database/NamePolicy=kernel database onboard slot path/g\" /lib/systemd/network/99-default.link"
+        },
+        {
+            "type": "shell",
+            "inline": "echo 'enabling network renaming, again ...' && sed -i \"s/ifnames=0/ifnames=1/g\" /boot/grub2/grub.cfg"
+        },
+        {
+            "type": "shell",
+            "inline": "echo 'changing umask' && sed -i '/umask 027/d' /etc/profile"
+        },
+        {
+            "type": "shell",
+            "script": "{{user `script_path`}}/cleanup.sh"
+        }
+    ]
+}

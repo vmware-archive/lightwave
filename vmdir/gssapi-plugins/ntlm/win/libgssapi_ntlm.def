@@ -1,0 +1,4 @@
+LIBRARY "libgssapi_ntlm"
+
+EXPORTS
+  gss_mech_initialize

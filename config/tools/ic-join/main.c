@@ -30,9 +30,12 @@ VmwDeployBuildParams(
     PCSTR pszDomainController,
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
+    PCSTR pszOrgUnit,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
+    BOOLEAN bUseMachineAccount,
+    BOOLEAN bMachinePreJoined,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
 
@@ -191,9 +194,13 @@ ParseArgs(
     PSTR  pszDomainController   = NULL;
     PSTR  pszDomain = NULL;
     PSTR  pszMachineAccount = NULL;
+    PSTR  pszOrgUnit = NULL;
     PSTR  pszSubjectAltName = NULL;
     PSTR  pszPassword = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
+    BOOLEAN bUseMachineAccount = FALSE;
+    BOOLEAN bMachinePreJoined = FALSE;
+
     enum PARSE_MODE
     {
         PARSE_MODE_OPEN = 0,
@@ -201,6 +208,7 @@ ParseArgs(
         PARSE_MODE_DOMAIN,
         PARSE_MODE_PASSWORD,
         PARSE_MODE_MACHINE_ACCOUNT,
+        PARSE_MODE_ORG_UNIT,
         PARSE_MODE_SSL_SUBJECT_ALT_NAME
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
@@ -229,9 +237,21 @@ ParseArgs(
                 {
                     parseMode = PARSE_MODE_MACHINE_ACCOUNT;
                 }
+                else if (!strcmp(pszArg, "--org-unit"))
+                {
+                    parseMode = PARSE_MODE_ORG_UNIT;
+                }
                 else if (!strcmp(pszArg, "--disable-afd-listener"))
                 {
-                        bDisableAfdListener = TRUE;
+                    bDisableAfdListener = TRUE;
+                }
+                else if (!strcmp(pszArg, "--use-machine-accout"))
+                {
+                    bUseMachineAccount = TRUE;
+                }
+                else if (!strcmp(pszArg, "--prejoined"))
+                {
+                    bMachinePreJoined = TRUE;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -306,6 +326,20 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_ORG_UNIT:
+
+                if (pszOrgUnit)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszOrgUnit = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
 
                 if (pszSubjectAltName)
@@ -329,13 +363,22 @@ ParseArgs(
         }
     }
 
+    if ( bUseMachineAccount && IsNullOrEmptyString(pszMachineAccount))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployBuildParams(
                     pszDomainController,
                     pszDomain,
                     pszMachineAccount,
+                    pszOrgUnit,
                     pszPassword,
                     pszSubjectAltName,
                     bDisableAfdListener,
+                    bUseMachineAccount,
+                    bMachinePreJoined,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -363,15 +406,19 @@ VmwDeployBuildParams(
     PCSTR pszDomainController,
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
+    PCSTR pszOrgUnit,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
+    BOOLEAN bUseMachineAccount,
+    BOOLEAN bMachinePreJoined,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
     DWORD dwError = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
     PSTR pszPassword1 = NULL;
+    PCSTR pszUserNamePrompt = NULL;
 
     dwError = VmwDeployAllocateMemory(
                     sizeof(*pSetupParams),
@@ -409,10 +456,21 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pszOrgUnit))
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pszOrgUnit,
+                        &pSetupParams->pszOrgUnit);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     if (!pszPassword)
     {
+        pszUserNamePrompt = (bUseMachineAccount && pszMachineAccount)
+                                ? pszMachineAccount : "administrator";
+
         dwError = VmwDeployReadPassword(
-                        "administrator",
+                        pszUserNamePrompt,
                         pszDomain,
                         &pszPassword1);
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -432,6 +490,8 @@ VmwDeployBuildParams(
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     pSetupParams->bDisableAfdListener = bDisableAfdListener;
+    pSetupParams->bUseMachineAccount = bUseMachineAccount;
+    pSetupParams->bMachinePreJoined = bMachinePreJoined;
 
     *ppSetupParams = pSetupParams;
 
@@ -547,8 +607,11 @@ ShowUsage(
            "Arguments:\n"
            "[--domain-controller <domain controller's hostname or IP Address>]\n"
            "[--domain    <fully qualified domain name. default: vsphere.local>]\n"
-           "[--machine-account-name <preferred computer account name. default: <hostname>\n"
+           "[--machine-account-name <preferred computer account name. default: <hostname>]\n"
+           "[--org-unit <organizational unit. default: Computers]\n"
            "[--disable-afd-listener]\n"
+           "[--use-machine-accout] Use machine account credentials to join\n"
+           "[--prejoined] Machine account is already created in directory \n"
            "[--password  <password to administrator account>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n");
 }

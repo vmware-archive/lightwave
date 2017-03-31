@@ -82,6 +82,7 @@ public class MockIdmClient extends CasIdmClient {
     private final boolean personUserEnabled;
 
     private final String solutionUsername;
+    private final String solutionUserCertSubjectDN;
     private final boolean solutionUserEnabled;
 
     private final long maxBearerTokenLifetime;
@@ -96,8 +97,6 @@ public class MockIdmClient extends CasIdmClient {
     private final Map<String, OIDCClient> clientMap;
 
     private MockIdmClient(Builder builder) {
-        super("hostname");
-
         this.tenantName              = builder.tenantName;
         this.tenantPrivateKey        = builder.tenantPrivateKey;
         this.tenantCertificate       = builder.tenantCertificate;
@@ -122,8 +121,9 @@ public class MockIdmClient extends CasIdmClient {
         this.gssServerLeg            = builder.gssServerLeg;
         this.personUserEnabled       = builder.personUserEnabled;
 
-        this.solutionUsername        = builder.solutionUsername;
-        this.solutionUserEnabled     = builder.solutionUserEnabled;
+        this.solutionUsername               = builder.solutionUsername;
+        this.solutionUserCertSubjectDN      = builder.solutionUserCertSubjectDN;
+        this.solutionUserEnabled            = builder.solutionUserEnabled;
 
         this.maxBearerTokenLifetime         = builder.maxBearerTokenLifetime;
         this.maxHoKTokenLifetime            = builder.maxHoKTokenLifetime;
@@ -171,7 +171,8 @@ public class MockIdmClient extends CasIdmClient {
     @Override
     public PrincipalId authenticate(
             String tenantName,
-            X509Certificate[] tlsCertChain) throws Exception {
+            X509Certificate[] tlsCertChain,
+            String hint) throws Exception {
         Validate.notEmpty(tenantName, "tenantName");
         Validate.notNull(tlsCertChain, "tlsCertChain");
 
@@ -265,7 +266,7 @@ public class MockIdmClient extends CasIdmClient {
         Validate.notEmpty(subjectDN, "subjectDN");
 
         SolutionUser result = null;
-        if (subjectDN.equals(this.clientCertSubjectDN)) {
+        if (subjectDN.equals(this.solutionUserCertSubjectDN) || subjectDN.equals(this.clientCertSubjectDN)) {
             PrincipalId id = new PrincipalId(this.solutionUsername, this.tenantName);
             SolutionDetail detail = new SolutionDetail((X509Certificate) this.clientCertificate);
             boolean disabled = !this.solutionUserEnabled;
@@ -462,6 +463,7 @@ public class MockIdmClient extends CasIdmClient {
         private boolean personUserEnabled;
 
         private String solutionUsername;
+        private String solutionUserCertSubjectDN;
         private boolean solutionUserEnabled;
 
         private long maxBearerTokenLifetime;
@@ -585,6 +587,11 @@ public class MockIdmClient extends CasIdmClient {
 
         public Builder solutionUsername(String solutionUsername) {
             this.solutionUsername = solutionUsername;
+            return this;
+        }
+
+        public Builder solutionUserCertSubjectDN(String solutionUserCertSubjectDN) {
+            this.solutionUserCertSubjectDN = solutionUserCertSubjectDN;
             return this;
         }
 

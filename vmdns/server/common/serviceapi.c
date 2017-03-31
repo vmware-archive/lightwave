@@ -384,7 +384,7 @@ VmDnsSrvDeleteRecord(
         BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
         if (pRecordList &&
-            VmDnsRecordListGetSize(pRecordList) == 1)
+            VmDnsRecordListGetSize(pRecordList) < 1)
         {
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDNS_ERROR(dwError);
@@ -456,28 +456,35 @@ error:
 DWORD
 VmDnsSrvAddRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
-    PVMDNS_RECORD_LIST pRecords
+    PVMDNS_RECORD_LIST  pRecords
     )
 {
     DWORD dwError = 0;
     DWORD dwIndex = 0;
+    PVMDNS_RECORD_OBJECT pRecordObject = NULL;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pZoneObject, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pRecords, dwError);
 
     for (; dwIndex < pRecords->dwCurrentSize; ++dwIndex)
     {
+        pRecordObject = VmDnsRecordListGetRecord(pRecords, dwIndex);
+
         dwError = VmDnsSrvAddRecord(
                         pZoneObject,
-                        VmDnsRecordListGetRecord(pRecords, dwIndex)->pRecord
+                        pRecordObject->pRecord
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsRecordObjectRelease(pRecordObject);
+        pRecordObject = NULL;
     }
 
 
 cleanup:
-
+    VmDnsRecordObjectRelease(pRecordObject);
     return dwError;
+
 error:
 
     goto cleanup;
@@ -775,6 +782,8 @@ VmDnsSrvInitDomain(
     PSTR pszAddressRecordName = NULL;
     PSTR pszLdapRecordName = NULL;
     PSTR pszKrbRecordName = NULL;
+    PSTR pszLdapDcRecordName = NULL;
+    PSTR pszKrbDcRecordName = NULL;
     DWORD idx = 0;
 
     VMDNS_ZONE_INFO zoneInfo = {
@@ -818,6 +827,28 @@ VmDnsSrvInitDomain(
         .Data.SRV.wPort         = VMDNS_DEFAULT_KDC_PORT
     };
 
+    VMDNS_RECORD ldapDcSrvRecord = {
+        .pszName                = VMDNS_LDAP_DC_SRV_NAME,
+        .dwType                 = VMDNS_RR_TYPE_SRV,
+        .iClass                 = VMDNS_CLASS_IN,
+        .dwTtl                  = VMDNS_DEFAULT_TTL,
+        .Data.SRV.pNameTarget   = pInitInfo->pszDcSrvName,
+        .Data.SRV.wPriority     = 1,
+        .Data.SRV.wWeight       = 1,
+        .Data.SRV.wPort         = VMDNS_DEFAULT_LDAP_PORT
+    };
+
+    VMDNS_RECORD kerberosDcSrvRecord = {
+        .pszName                = VMDNS_KERBEROS_DC_SRV_NAME,
+        .dwType                 = VMDNS_RR_TYPE_SRV,
+        .iClass                 = VMDNS_CLASS_IN,
+        .dwTtl                  = VMDNS_DEFAULT_TTL,
+        .Data.SRV.pNameTarget   = pInitInfo->pszDcSrvName,
+        .Data.SRV.wPriority     = 1,
+        .Data.SRV.wWeight       = 1,
+        .Data.SRV.wPort         = VMDNS_DEFAULT_KDC_PORT
+    };
+
     if (IsNullOrEmptyString(pInitInfo->pszDcSrvName) ||
         IsNullOrEmptyString(pInitInfo->pszDomain))
     {
@@ -839,10 +870,28 @@ VmDnsSrvInitDomain(
                             );
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    /* LDAP DC SRV record entry */
+    dwError = VmDnsAllocateStringPrintfA(
+                            &pszLdapDcRecordName,
+                            "%s.%s",
+                            VMDNS_LDAP_DC_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     dwError = VmDnsAllocateStringPrintfA(
                             &pszKrbRecordName,
                             "%s.%s",
                             VMDNS_KERBEROS_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    /* Kerberos DC SRV record entry */
+    dwError = VmDnsAllocateStringPrintfA(
+                            &pszKrbDcRecordName,
+                            "%s.%s",
+                            VMDNS_KERBEROS_DC_SRV_NAME,
                             pInitInfo->pszDomain
                             );
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -866,7 +915,6 @@ VmDnsSrvInitDomain(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     ldapSrvRecord.pszName = pszLdapRecordName;
-
     dwError = VmDnsStoreAddZoneRecord(
                         pInitInfo->pszDomain,
                         &ldapSrvRecord
@@ -875,7 +923,6 @@ VmDnsSrvInitDomain(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     kerberosSrvRecord.pszName = pszKrbRecordName;
-
     dwError = VmDnsStoreAddZoneRecord(
                         pInitInfo->pszDomain,
                         &kerberosSrvRecord
@@ -883,54 +930,80 @@ VmDnsSrvInitDomain(
     dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (VmDnsIsAuthorityZone(pszAddressRecordName, pInitInfo->pszDomain))
-    {
-        for (idx = 0; idx < pInitInfo->IpV4Addrs.dwCount; ++idx)
-        {
-            VMDNS_RECORD ip4AddrRecord =
-            {
-                .pszName = pszAddressRecordName,
-                .dwType = VMDNS_RR_TYPE_A,
-                .iClass = VMDNS_CLASS_IN,
-                .dwTtl = VMDNS_DEFAULT_TTL,
-                .Data.A.IpAddress = pInitInfo->IpV4Addrs.Addrs[idx]
-            };
+    ldapDcSrvRecord.pszName = pszLdapDcRecordName;
+    dwError = VmDnsStoreAddZoneRecord(
+                        pInitInfo->pszDomain,
+                        &ldapDcSrvRecord
+                        );
+    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+    BAIL_ON_VMDNS_ERROR(dwError);
 
-            dwError = VmDnsStoreAddZoneRecord(
+    kerberosDcSrvRecord.pszName = pszKrbDcRecordName;
+    dwError = VmDnsStoreAddZoneRecord(
+                        pInitInfo->pszDomain,
+                        &kerberosDcSrvRecord
+                        );
+    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (!VmDnsCheckIfIPV4AddressA(pInitInfo->pszDcSrvName) &&
+        !VmDnsCheckIfIPV6AddressA(pInitInfo->pszDcSrvName))
+    {
+        dwError = VmDnsMakeFQDN(
+                    pInitInfo->pszDcSrvName,
+                    pInitInfo->pszDomain,
+                    &pszAddressRecordName
+                    );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        if (VmDnsIsAuthorityZone(pszAddressRecordName, pInitInfo->pszDomain))
+        {
+            for (idx = 0; idx < pInitInfo->IpV4Addrs.dwCount; ++idx)
+            {
+                VMDNS_RECORD ip4AddrRecord =
+                {
+                    .pszName = pszAddressRecordName,
+                    .dwType = VMDNS_RR_TYPE_A,
+                    .iClass = VMDNS_CLASS_IN,
+                    .dwTtl = VMDNS_DEFAULT_TTL,
+                    .Data.A.IpAddress = pInitInfo->IpV4Addrs.Addrs[idx]
+                };
+
+                dwError = VmDnsStoreAddZoneRecord(
                                 pInitInfo->pszDomain,
                                 &ip4AddrRecord
                                 );
-            dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
+                dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
 
-        for (idx = 0; idx < pInitInfo->IpV6Addrs.dwCount; ++idx)
-        {
-            VMDNS_RECORD ip6AddrRecord =
+            for (idx = 0; idx < pInitInfo->IpV6Addrs.dwCount; ++idx)
             {
-                .pszName = pszAddressRecordName,
-                .dwType = VMDNS_RR_TYPE_AAAA,
-                .iClass = VMDNS_CLASS_IN,
-                .dwTtl = VMDNS_DEFAULT_TTL
-            };
+                VMDNS_RECORD ip6AddrRecord =
+                {
+                    .pszName = pszAddressRecordName,
+                    .dwType = VMDNS_RR_TYPE_AAAA,
+                    .iClass = VMDNS_CLASS_IN,
+                    .dwTtl = VMDNS_DEFAULT_TTL
+                };
 
-            dwError = VmDnsCopyMemory(
+                dwError = VmDnsCopyMemory(
                             ip6AddrRecord.Data.AAAA.Ip6Address.IP6Byte,
                             sizeof(ip6AddrRecord.Data.AAAA.Ip6Address.IP6Byte),
                             pInitInfo->IpV6Addrs.Addrs[idx].IP6Byte,
                             sizeof(pInitInfo->IpV6Addrs.Addrs[idx].IP6Byte)
                             );
-            BAIL_ON_VMDNS_ERROR(dwError);
+                BAIL_ON_VMDNS_ERROR(dwError);
 
-            dwError = VmDnsStoreAddZoneRecord(
+                dwError = VmDnsStoreAddZoneRecord(
                                 pInitInfo->pszDomain,
                                 &ip6AddrRecord
                                 );
-            dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
-            BAIL_ON_VMDNS_ERROR(dwError);
+                dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
         }
     }
-
     dwError = VmDnsCacheLoadZoneFromStore(
                             gpSrvContext->pCacheContext,
                             pInitInfo->pszDomain
@@ -941,6 +1014,8 @@ cleanup:
     VMDNS_SAFE_FREE_STRINGA(pszAddressRecordName);
     VMDNS_SAFE_FREE_STRINGA(pszLdapRecordName);
     VMDNS_SAFE_FREE_STRINGA(pszKrbRecordName);
+    VMDNS_SAFE_FREE_STRINGA(pszLdapDcRecordName);
+    VMDNS_SAFE_FREE_STRINGA(pszKrbDcRecordName);
     return dwError;
 
 error:
@@ -1220,13 +1295,12 @@ VmDnsSrvGetInverseRRTypeRecordList(
     }
 
     *ppParsedRecordList = pParsedRecordList;
+
 cleanup:
-
     VmDnsRecordObjectRelease(pRecordObj);
-
     return dwError;
-error:
 
+error:
     VmDnsRecordListRelease(pParsedRecordList);
     if (ppParsedRecordList)
     {

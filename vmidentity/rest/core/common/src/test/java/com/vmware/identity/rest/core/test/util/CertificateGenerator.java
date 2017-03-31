@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2017 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -13,79 +13,119 @@
  */
 package com.vmware.identity.rest.core.test.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.SecureRandom;
-import java.security.cert.CertificateEncodingException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
-import com.vmware.identity.rest.core.data.CertificateDTO;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DERBitString;
+import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.cryptopro.CryptoProObjectIdentifiers;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.asn1.x509.TBSCertificate;
+import org.bouncycastle.asn1.x509.Time;
+import org.bouncycastle.asn1.x509.V1TBSCertificateGenerator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateIssuerName;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateSubjectName;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.X500Name;
-import sun.security.x509.X509CertImpl;
-import sun.security.x509.X509CertInfo;
-
-@SuppressWarnings("restriction")
+/**
+ * Certificate generator class based off {@link org.bouncycastle.jce.provider.test.TestUtils}.
+ *
+ * Uses BouncyCastle to generate certificates for the purpose of testing.
+ */
 public class CertificateGenerator {
 
-    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
+    public static enum AlgorithmName {
+        GOST3411_WITH_GOST3410("GOST3411withGOST3410"),
+        SHA1_WITH_RSA("SHA1withRSA"),
+        SHA256_WITH_RSA("SHA256withRSA");
 
-    public static CertificateDTO generateCertificate(KeyPair pair, String dn) throws CertificateEncodingException, GeneralSecurityException, IOException {
-        return new CertificateDTO(generateSelfSignedCertificate(pair, dn));
+        private final String name;
+
+        private AlgorithmName(String name) { this.name = name; }
+
+        public String toString() { return this.name; };
+    }
+
+    private static Map<AlgorithmName, AlgorithmIdentifier> ALGORITHM_IDS = new HashMap<AlgorithmName, AlgorithmIdentifier>();
+
+    static
+    {
+        ALGORITHM_IDS.put(AlgorithmName.GOST3411_WITH_GOST3410, new AlgorithmIdentifier(CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_94));
+        ALGORITHM_IDS.put(AlgorithmName.SHA1_WITH_RSA, new AlgorithmIdentifier(PKCSObjectIdentifiers.sha1WithRSAEncryption, DERNull.INSTANCE));
+        ALGORITHM_IDS.put(AlgorithmName.SHA256_WITH_RSA, new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption, DERNull.INSTANCE));
     }
 
     /**
-     * Create a self-signed X.509 Certificate
+     * Generate a self-signed X.509 certificate
      *
      * @param pair the key pair to use when signing the certificate
+     * @param algorithm the signing algorithm to use
      * @param dn the X.509 distinguished name for the certificate
-     * @return the self-signed X.509 Certificate
-     * @throws GeneralSecurityException
+     * @return a self-signed X.509 certificate
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchProviderException
+     * @throws InvalidKeyException
+     * @throws SignatureException
      * @throws IOException
+     * @throws CertificateException
      */
-    public static X509Certificate generateSelfSignedCertificate(KeyPair pair, String dn) throws GeneralSecurityException, IOException {
-        PrivateKey privateKey = pair.getPrivate();
+    public static X509Certificate generateSelfSignedCertificate(KeyPair pair, AlgorithmName algorithm, String dn)
+            throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException, IOException, CertificateException
+    {
+        if (Security.getProvider("BC") == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
 
-        X509CertInfo info = new X509CertInfo();
-
-        Date from = new Date();
-        // One year duration
-        Date to = new Date(from.getTime() + 31536000000l);
-
-        CertificateValidity interval = new CertificateValidity(from, to);
-        BigInteger sn = new BigInteger(64, new SecureRandom());
+        AtomicLong serialNumber = new AtomicLong(System.currentTimeMillis());
         X500Name owner = new X500Name(dn);
 
-        info.set(X509CertInfo.VALIDITY, interval);
-        info.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(sn));
-        info.set(X509CertInfo.SUBJECT, new CertificateSubjectName(owner));
-        info.set(X509CertInfo.ISSUER, new CertificateIssuerName(owner));
-        info.set(X509CertInfo.KEY, new CertificateX509Key(pair.getPublic()));
-        info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
-        AlgorithmId algo = new AlgorithmId(AlgorithmId.md5WithRSAEncryption_oid);
-        info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(algo));
+        V1TBSCertificateGenerator generator = new V1TBSCertificateGenerator();
+        long time = System.currentTimeMillis();
 
-        X509CertImpl cert = new X509CertImpl(info);
-        cert.sign(privateKey, SIGNATURE_ALGORITHM);
+        generator.setSerialNumber(new ASN1Integer(serialNumber.getAndIncrement()));
+        generator.setIssuer(owner);
+        generator.setSubject(owner);
+        generator.setStartDate(new Time(new Date(time - 5000)));
+        generator.setEndDate(new Time(new Date(time + 30 * 60 * 1000)));
+        generator.setSignature(ALGORITHM_IDS.get(algorithm));
+        generator.setSubjectPublicKeyInfo(SubjectPublicKeyInfo.getInstance(pair.getPublic().getEncoded()));
 
-        algo = (AlgorithmId) cert.get(X509CertImpl.SIG_ALG);
-        info.set(CertificateAlgorithmId.NAME + "." + CertificateAlgorithmId.ALGORITHM, algo);
-        cert = new X509CertImpl(info);
-        cert.sign(privateKey, SIGNATURE_ALGORITHM);
+        Signature sig = Signature.getInstance(algorithm.toString(), "BC");
 
-        return cert;
+        sig.initSign(pair.getPrivate());
+
+        sig.update(generator.generateTBSCertificate().getEncoded(ASN1Encoding.DER));
+
+        TBSCertificate tbsCert = generator.generateTBSCertificate();
+
+        ASN1EncodableVector v = new ASN1EncodableVector();
+
+        v.add(tbsCert);
+        v.add(ALGORITHM_IDS.get(algorithm));
+        v.add(new DERBitString(sig.sign()));
+
+        return (X509Certificate) CertificateFactory.getInstance("X.509", "BC")
+                .generateCertificate(new ByteArrayInputStream(
+                        new DERSequence(v).getEncoded(ASN1Encoding.DER)));
     }
 
 }

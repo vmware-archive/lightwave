@@ -127,10 +127,10 @@ namespace SchemaConnectionTest
             Assert.AreEqual(expectedAtDiff.Count, actualAtDiff.Count);
             for (int i = 0; i < expectedAtDiff.Count; i++)
             {
-                AttributeType expectedAt1 = expectedAtDiff[i].item1;
-                AttributeType expectedAt2 = expectedAtDiff[i].item2;
-                AttributeType actualAt1 = actualAtDiff[i].item1;
-                AttributeType actualAt2 = actualAtDiff[i].item2;
+                AttributeType expectedAt1 = expectedAtDiff[i].Item1;
+                AttributeType expectedAt2 = expectedAtDiff[i].Item2;
+                AttributeType actualAt1 = actualAtDiff[i].Item1;
+                AttributeType actualAt2 = actualAtDiff[i].Item2;
 
                 if (expectedAt1 == null)
                 {
@@ -159,10 +159,10 @@ namespace SchemaConnectionTest
             Assert.AreEqual(expectedOcDiff.Count, actualOcDiff.Count);
             for (int i = 0; i < expectedOcDiff.Count; i++)
             {
-                ObjectClass expectedOc1 = expectedOcDiff[i].item1;
-                ObjectClass expectedOc2 = expectedOcDiff[i].item2;
-                ObjectClass actualOc1 = actualOcDiff[i].item1;
-                ObjectClass actualOc2 = actualOcDiff[i].item2;
+                ObjectClass expectedOc1 = expectedOcDiff[i].Item1;
+                ObjectClass expectedOc2 = expectedOcDiff[i].Item2;
+                ObjectClass actualOc1 = actualOcDiff[i].Item1;
+                ObjectClass actualOc2 = actualOcDiff[i].Item2;
 
                 if (expectedOc1 == null)
                 {
@@ -299,10 +299,10 @@ namespace SchemaConnectionTest
             Assert.AreEqual(expectedDiff.Count, actualDiff.Count);
             for (int i = 0; i < expectedDiff.Count; i++)
             {
-                SchemaEntry expected1 = expectedDiff[i].item1;
-                SchemaEntry expected2 = expectedDiff[i].item2;
-                SchemaEntry actual1 = actualDiff[i].item1;
-                SchemaEntry actual2 = actualDiff[i].item2;
+                SchemaEntry expected1 = expectedDiff[i].Item1;
+                SchemaEntry expected2 = expectedDiff[i].Item2;
+                SchemaEntry actual1 = actualDiff[i].Item1;
+                SchemaEntry actual2 = actualDiff[i].Item2;
 
                 if (expected1 != null && expected2 != null)
                 {
@@ -335,10 +335,10 @@ namespace SchemaConnectionTest
             Assert.AreEqual(expectedMdDiff.Count, actualMdDiff.Count);
             for (int i = 0; i < expectedMdDiff.Count; i++)
             {
-                AttributeMetadata expectedMd1 = expectedMdDiff[i].item1;
-                AttributeMetadata expectedMd2 = expectedMdDiff[i].item2;
-                AttributeMetadata actualMd1 = actualMdDiff[i].item1;
-                AttributeMetadata actualMd2 = actualMdDiff[i].item2;
+                AttributeMetadata expectedMd1 = expectedMdDiff[i].Item1;
+                AttributeMetadata expectedMd2 = expectedMdDiff[i].Item2;
+                AttributeMetadata actualMd1 = actualMdDiff[i].Item1;
+                AttributeMetadata actualMd2 = actualMdDiff[i].Item2;
 
                 if (expectedMd1 == null)
                 {

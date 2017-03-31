@@ -247,6 +247,8 @@ public class TokenValidatorTest {
          Assert.fail();
       } catch (InvalidTokenException e) {
          // expected
+      } catch (Exception e){
+    	  e.printStackTrace();
       }
 
       principalAttributesExtractor

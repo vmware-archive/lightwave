@@ -29,3 +29,5 @@
 extern GENERIC_MAPPING gVmDirEntryGenericMapping;
 
 extern VDIR_SID_GEN_STATE gSidGenState;
+
+extern BOOLEAN bLegacySecurityDescriptorsNeeded;

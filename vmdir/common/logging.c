@@ -147,6 +147,9 @@ VmDirLogInitialize(
        {
            dwError = VMDIR_ERROR_IO;
            BAIL_ON_VMDIR_LOG_ERROR(dwError);
+       } else
+       {
+           chmod(_gpVmDirLogCtx->pszLogFileName, 0644);
        }
    }
 

@@ -30,6 +30,8 @@ libvmkdcserv_la_CPPFLAGS = \
     -I$(top_srcdir)/thirdparty/heimdal \
     -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
     -I$(top_srcdir)/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/build/server/kdcsrvcommon \
+    -I$(top_srcdir)/server/kdcsrvcommon \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@

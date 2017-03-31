@@ -145,7 +145,7 @@ public class AuthnOnlyTokenValidator implements TokenValidator {
 
    private void validateSubject(Subject subject, Boolean isExternal)
    {
-       if ( ( ( isExternal == false ) && ( subject.subjectValidation() != SubjectValidation.Regular ) ) || (subject.subjectUpn() == null) )
+       if ( ( isExternal == false ) && ( subject.subjectValidation() != SubjectValidation.Regular ) )
        {
            throw new InvalidTokenException("Token subject is invalid.");
        }

@@ -1,7 +1,13 @@
 noinst_LTLIBRARIES = libvmkrb5.la
 
+PACSOURCES =
+if VMDIR_ENABLE_PAC
+PACSOURCES += authzdata.c
+endif
+
 libvmkrb5_la_SOURCES = \
     authenticator.c    \
+    $(PACSOURCES)      \
     asreq.c            \
     apreq.c            \
     checksum.c         \

@@ -122,6 +122,43 @@ VmDirMDBGetAllAttrsMetaData(
     int *                       pnumAttrMetaData
     );
 
+DWORD
+VmDirMDBGetAttrValueMetaData(
+    PVDIR_BACKEND_CTX   pBECtx,
+    ENTRYID             entryId,
+    short               attrId,
+    PDEQUE              metaValueData
+    );
+
+DWORD
+VmDirMDBGetAllAttrValueMetaData(
+    PVDIR_BACKEND_CTX   pBECtx,
+    ENTRYID             entryId,
+    PDEQUE              metaValueData
+    );
+
+// writeutil.c
+DWORD
+VmDirMdbUpdateAttrValueMetaData(
+    PVDIR_BACKEND_CTX   pBECtx,
+    ENTRYID             entryId,
+    short               attrId,
+    ULONG               ulOPMask,
+    PDEQUE              metaValueData
+    );
+
+DWORD
+VmDirMdbDeleteAllAttrValueMetaData(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    ENTRYID             entryId
+    );
+
+DWORD
+VmDirMdbApplyIndicesNewMR(
+    VOID
+    );
+
 // txn.c
 DWORD
 VmDirMDBTxnBegin(
@@ -245,6 +282,24 @@ VmDirMDBIndexIterate(
 VOID
 VmDirMDBIndexIteratorFree(
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator
+    );
+
+// iterate.c
+DWORD
+VmDirMDBParentIdIndexIteratorInit(
+    ENTRYID                                 parentId,
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
+    );
+
+DWORD
+VmDirMDBParentIdIndexIterate(
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator,
+    ENTRYID*                                pEntryId
+    );
+
+VOID
+VmDirMDBParentIdIndexIteratorFree(
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator
     );
 
 // config.c

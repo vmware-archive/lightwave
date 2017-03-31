@@ -31,7 +31,7 @@ import com.vmware.identity.rest.idm.data.attributes.ObjectClass;
 
 /**
  * The {@code IdentityProviderDTO} class contains the details of an Identity Provider.
- * 
+ *
  * @author Balaji Boggaram Ramanarayan
  * @author Travis Hall
  */
@@ -63,6 +63,8 @@ public class IdentityProviderDTO extends DTO {
     private final Boolean baseDnForNestedGroupsEnabled;
     private final Boolean directGroupsSearchEnabled;
     private final Boolean siteAffinityEnabled;
+    private final Boolean linkAccountWithUPN;
+    private final String hintAttributeName;
     private final Collection<CertificateDTO> certificates;
 
     /**
@@ -104,11 +106,14 @@ public class IdentityProviderDTO extends DTO {
      *  for token resolution of nested groups.
      * @param directGroupsSearchEnabled enable or disable direct group searching.
      * @param siteAffinityEnabled enable or disable site affinity.
+     * @param linkAccountWithUPN for smartcard login.
+     * @param hintAttributeName  Used for smartcard login, the account attribute that match to username hint. Default is "samAccountName"
      * @param certificates a collection of trusted certificates for LDAPS with the identity provider.
      */
-    public IdentityProviderDTO(String domainType, String name, String alias, String type, String authenticationType, String friendlyName, Long searchTimeOutInSeconds, String username, String password,
+    protected IdentityProviderDTO(String domainType, String name, String alias, String type, String authenticationType, String friendlyName, Long searchTimeOutInSeconds, String username, String password,
                     Boolean machineAccount, String servicePrincipalName, String userBaseDN, String groupBaseDN, Collection<String> connectionStrings, Map<String, String> attributesMap, Set<String> upnSuffixes,
-                    Map<String, SchemaObjectMappingDTO> schema, Boolean matchingRuleInChainEnabled, Boolean baseDnForNestedGroupsEnabled, Boolean directGroupsSearchEnabled, Boolean siteAffinityEnabled, Collection<CertificateDTO> certificates) {
+                    Map<String, SchemaObjectMappingDTO> schema, Boolean matchingRuleInChainEnabled, Boolean baseDnForNestedGroupsEnabled, Boolean directGroupsSearchEnabled, Boolean siteAffinityEnabled,
+                    Boolean linkAccountWithUPN, String hintAttributeName, Collection<CertificateDTO> certificates) {
         this.domainType = domainType;
         this.name = name;
         this.alias = alias;
@@ -131,6 +136,8 @@ public class IdentityProviderDTO extends DTO {
         this.directGroupsSearchEnabled = directGroupsSearchEnabled;
         this.siteAffinityEnabled = siteAffinityEnabled;
         this.certificates = certificates;
+        this.linkAccountWithUPN = linkAccountWithUPN;
+        this.hintAttributeName = hintAttributeName;
     }
 
     /**
@@ -346,6 +353,14 @@ public class IdentityProviderDTO extends DTO {
         return new IdentityProviderDTO.Builder();
     }
 
+    public Boolean getLinkAccountWithUPN() {
+        return linkAccountWithUPN;
+    }
+
+    public String getHintAttributeName() {
+        return hintAttributeName;
+    }
+
     /**
      * The JSON POJO Builder for this class. The builder class is meant mostly for
      * usage when constructing the object from its JSON string and thus only accepts
@@ -376,6 +391,9 @@ public class IdentityProviderDTO extends DTO {
         private Boolean baseDnForNestedGroupsEnabled;
         private Boolean directGroupsSearchEnabled;
         private Boolean siteAffinityEnabled;
+        private Boolean linkAccountWithUPN = true;
+        private String  hintAttributeName;
+
         private Collection<CertificateDTO> certificates;
 
         public Builder withDomainType(String domainType) {
@@ -488,6 +506,16 @@ public class IdentityProviderDTO extends DTO {
             return this;
         }
 
+        public Builder withLinkAccountWithUPN(Boolean linkAccountWithUPN) {
+            this.linkAccountWithUPN = linkAccountWithUPN;
+            return this;
+        }
+
+        public Builder withHintAttributeName(String hintAttrName) {
+            this.hintAttributeName = hintAttrName;
+            return this;
+        }
+
         public IdentityProviderDTO build() {
              return new IdentityProviderDTO(domainType,
                                             name,
@@ -510,6 +538,8 @@ public class IdentityProviderDTO extends DTO {
                                             baseDnForNestedGroupsEnabled,
                                             directGroupsSearchEnabled,
                                             siteAffinityEnabled,
+                                            linkAccountWithUPN,
+                                            hintAttributeName,
                                             certificates);
         }
     }

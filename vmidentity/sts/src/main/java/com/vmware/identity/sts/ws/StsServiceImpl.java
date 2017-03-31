@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 import javax.jws.HandlerChain;
@@ -24,10 +25,11 @@ import javax.jws.WebService;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.ws.Holder;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 import javax.xml.ws.soap.SOAPFaultException;
+
+import oasis.names.tc.saml._2_0.assertion.AssertionType;
 
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RenewTargetType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenResponseCollectionType;
@@ -52,7 +54,6 @@ import com.vmware.identity.performanceSupport.IPerfDataSink;
 import com.vmware.identity.saml.InvalidTokenException;
 import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.ServerValidatableSamlTokenFactory;
-import com.vmware.identity.saml.InvalidTokenException;
 import com.vmware.identity.sts.InvalidCredentialsException;
 import com.vmware.identity.sts.InvalidRequestException;
 import com.vmware.identity.sts.InvalidSecurityException;
@@ -66,6 +67,7 @@ import com.vmware.identity.sts.RequestExpiredException;
 import com.vmware.identity.sts.RequestFailedException;
 import com.vmware.identity.sts.UnableToRenewException;
 import com.vmware.identity.sts.UnsupportedSecurityTokenException;
+import com.vmware.identity.sts.util.JAXBExtractor;
 import com.vmware.identity.sts.ws.SOAPFaultHandler.FaultKey;
 import com.vmware.identity.sts.ws.handlers.SoapMsgMetricsCollector;
 import com.vmware.identity.util.PerfConstants;
@@ -345,7 +347,7 @@ public class StsServiceImpl implements STSService {
          && validateTarget.getAny() != null;
       final boolean tokenInRenew = renew != null
          && renew.getAssertion() != null;
-      final boolean tokenInSecHeader = securityHeader.getAssertion() != null;
+      final boolean tokenInSecHeader = JAXBExtractor.extractFromSecurityHeader(securityHeader, AssertionType.class) != null;
 
       Element token = null;
       if (tokenInValidate) {
@@ -517,6 +519,6 @@ public class StsServiceImpl implements STSService {
    }
 
    private long now() {
-      return System.currentTimeMillis();
+      return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
    }
 }

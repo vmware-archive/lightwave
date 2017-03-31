@@ -3,7 +3,6 @@ package org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAnyAttribute;
@@ -18,14 +17,14 @@ import javax.xml.namespace.QName;
 
 
 /**
- *
+ * 
  * This complex type ties together the timestamp related elements into a composite type.
- *
- *
+ *             
+ * 
  * <p>Java class for TimestampType complex type.
- *
+ * 
  * <p>The following schema fragment specifies the expected content contained within this class.
- *
+ * 
  * <pre>
  * &lt;complexType name="TimestampType">
  *   &lt;complexContent>
@@ -40,8 +39,8 @@ import javax.xml.namespace.QName;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- *
- *
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "TimestampType", propOrder = {
@@ -64,11 +63,11 @@ public class TimestampType {
 
     /**
      * Gets the value of the created property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public AttributedDateTime getCreated() {
         return created;
@@ -76,11 +75,11 @@ public class TimestampType {
 
     /**
      * Sets the value of the created property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public void setCreated(AttributedDateTime value) {
         this.created = value;
@@ -88,11 +87,11 @@ public class TimestampType {
 
     /**
      * Gets the value of the expires property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public AttributedDateTime getExpires() {
         return expires;
@@ -100,11 +99,11 @@ public class TimestampType {
 
     /**
      * Sets the value of the expires property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public void setExpires(AttributedDateTime value) {
         this.expires = value;
@@ -112,11 +111,11 @@ public class TimestampType {
 
     /**
      * Gets the value of the id property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getId() {
         return id;
@@ -124,11 +123,11 @@ public class TimestampType {
 
     /**
      * Sets the value of the id property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setId(String value) {
         this.id = value;
@@ -136,15 +135,15 @@ public class TimestampType {
 
     /**
      * Gets a map that contains attributes that aren't bound to any typed property on this class.
-     *
+     * 
      * <p>
-     * the map is keyed by the name of the attribute and
+     * the map is keyed by the name of the attribute and 
      * the value is the string value of the attribute.
-     *
+     * 
      * the map returned by this method is live, and you can add new attribute
      * by updating the map directly. Because of this design, there's no setter.
-     *
-     *
+     * 
+     * 
      * @return
      *     always non-null
      */

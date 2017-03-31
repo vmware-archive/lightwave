@@ -26,12 +26,14 @@ import javax.xml.ws.handler.soap.SOAPHandler;
 import javax.xml.ws.handler.soap.SOAPMessageContext;
 
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
+import org.w3._2000._09.xmldsig_.SignatureType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.sts.Request.Signature;
+import com.vmware.identity.sts.util.JAXBExtractor;
 import com.vmware.identity.sts.ws.SOAPFaultHandler;
 import com.vmware.identity.sts.ws.SOAPFaultHandler.FaultKey;
 import com.vmware.identity.sts.ws.SignatureValidator;
@@ -63,8 +65,9 @@ public class XMLSignatureValidator implements SOAPHandler<SOAPMessageContext> {
       }
 
       SecurityHeaderType header = extractSecurityHeaderFromRequest(ctx);
-      if (header.getSignature() != null) {
-         String signatureId = header.getSignature().getId();
+      SignatureType sig = JAXBExtractor.extractFromSecurityHeader(header, SignatureType.class);
+      if (sig != null) {
+         String signatureId = sig.getId();
          logger.info("Found signature {}", signatureId);
          Signature signature = null;
          try {

@@ -377,6 +377,7 @@ VMCALog(
     va_start( va, fmt );
     msgsize = vsnprintf(logMessage, VMCA_MAX_MSG_SIZE, fmt, va );
     if ((msgsize > 0) && (msgsize < VMCA_MAX_MSG_SIZE-2)) {
+        logMessage[msgsize++] = '\n';
         logMessage[msgsize] = '\0';
     } else {
         logMessage[VMCA_MAX_MSG_SIZE-1] = '\0';
@@ -422,8 +423,14 @@ VMCALog(
     }
     if (gVMCALogType == VMCA_LOG_TYPE_CONSOLE)
     {
+        unsigned long ulThreadId = -1;
+#ifdef _WIN32
+        ulThreadId = (unsigned long) pthread_self().p;
+#else
+        ulThreadId = (unsigned long) pthread_self();
+#endif
         fprintf(stderr, "VMCA:t@%lu:%-3.7s: %s\n",
-                (unsigned long) pthread_self(),
+                ulThreadId,
                 VMCALevelToText(level),
                 logMessage);
         fflush( stderr );

@@ -891,7 +891,6 @@ VmDnsWriteDomainNameLabelsToBuffer(
         DWORD dwStringLength = 0;
 
         dwStringLength = VmDnsStringLenA(pToken);
-
         if (dwStringLength > VMDNS_LABEL_LENGTH_MAX)
         {
             dwError = ERROR_LABEL_TOO_LONG;
@@ -963,7 +962,6 @@ VmDnsWriteDomainNameStringToBuffer(
         dwError = ERROR_LABEL_TOO_LONG;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-
     if (dwStringLength)
     {
         dwError = VmDnsWriteStringToBuffer(
@@ -1016,7 +1014,6 @@ VmDnsReadDomainNameFromBuffer(
 {
     DWORD dwError = 0;
     DWORD dwTotalStringLength = 0;
-    DWORD dwLabelLength = 0;
     BOOL bEndOfString = FALSE;
     PSTR pszTempString = NULL;
     PSTR pszTempStringCursor = NULL;
@@ -1039,6 +1036,7 @@ VmDnsReadDomainNameFromBuffer(
 
     do
     {
+        DWORD dwLabelLength = 0;
         dwError = VmDnsReadStringFromBuffer(
                             pVmDnsBuffer,
                             &pszLabels,
@@ -1054,7 +1052,6 @@ VmDnsReadDomainNameFromBuffer(
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
-
             dwError = VmDnsCopyMemory(
                           pszTempStringCursor,
                           VMDNS_NAME_LENGTH_MAX - dwTotalStringLength,
@@ -1063,11 +1060,19 @@ VmDnsReadDomainNameFromBuffer(
                           );
             BAIL_ON_VMDNS_ERROR(dwError);
 
-            if (pszTempStringCursor[dwLabelLength - 1] != '.')
+            if (!bEndOfString)
             {
-                pszTempStringCursor[dwLabelLength]='.';
-                dwLabelLength++;
-            }
+                // check if this a valid IPAddress
+                if (!VmDnsCheckIfIPV4AddressA(pszTempString)
+                    && !VmDnsCheckIfIPV6AddressA(pszTempString))
+                {
+                    if (pszTempStringCursor[dwLabelLength - 1] != '.')
+                    {
+                        pszTempStringCursor[dwLabelLength]='.';
+                        dwLabelLength++;
+                    }
+                }
+           }
         }
 
         pszTempStringCursor = &pszTempStringCursor[dwLabelLength];
@@ -1080,6 +1085,19 @@ VmDnsReadDomainNameFromBuffer(
             BAIL_ON_VMDNS_ERROR(dwError);
         }
     }while(!bEndOfString);
+
+
+    if (dwTotalStringLength > 0
+         && !VmDnsCheckIfIPV4AddressA(pszTempString)
+         && !VmDnsCheckIfIPV6AddressA(pszTempString))
+    {
+        if (pszTempString[dwTotalStringLength - 1] != '.')
+        {
+            pszTempString[dwTotalStringLength]='.';
+            dwTotalStringLength++;
+        }
+    }
+
 
     dwError = VmDnsAllocateStringA(
                         pszTempString,

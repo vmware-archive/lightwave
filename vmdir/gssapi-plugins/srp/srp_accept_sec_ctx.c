@@ -29,7 +29,9 @@
 #include "srprpc.h"
 #include <client/structs.h>
 
+#ifndef _WIN32
 #include <config.h>
+#endif
 
 #ifdef _WIN32
 
@@ -190,6 +192,7 @@ _srp_gss_auth_create_machine_acct_binding(
     char *hostname = NULL;
     void *hRegistry = NULL;
     PVMDIR_SERVER_CONTEXT hServer = NULL;
+    PSTR pEnv = NULL;
 
     dwError = srp_reg_get_handle((void **) &hRegistry);
     if (dwError)
@@ -199,13 +202,23 @@ _srp_gss_auth_create_machine_acct_binding(
         goto error;
     }
 
-    /* Determine if this system is a management node */
-    dwError = srp_reg_get_domain_state(hRegistry, &domainState);
-    if (dwError)
+    /* If invoked by lwraft or other server, it can override domain state
+     * (to value 1) since it could obtain peer's credential from its database
+     */
+    pEnv = getenv(VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE);
+    if (pEnv)
     {
-        maj = GSS_S_FAILURE;
-        min = dwError;
-        goto error;
+        domainState = atoi(pEnv);
+    } else
+    {
+        /* Determine if this system is a management node */
+        dwError = srp_reg_get_domain_state(hRegistry, &domainState);
+        if (dwError)
+        {
+            maj = GSS_S_FAILURE;
+            min = dwError;
+            goto error;
+        }
     }
 
     /* Value "2" is a management node: Perform SRP pass-through */
@@ -1045,7 +1058,11 @@ srp_gss_accept_sec_context(
     {
         PVMDIR_SERVER_CONTEXT hServer = srp_context_handle->hServer;
 
+#ifdef SRP_FIPS_ENABLED
+        krb5_err = srp_make_enc_keyblock_FIPS(srp_context_handle);
+#else
         krb5_err = srp_make_enc_keyblock(srp_context_handle);
+#endif
         if (krb5_err)
         {
             maj = GSS_S_FAILURE;

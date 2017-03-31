@@ -1398,14 +1398,383 @@ VMCAFindCertificatesW(
 }
 
 static DWORD
+VMCASetServerOptionPrivate(
+    handle_t BindingHandleKrb,
+    unsigned int dwOption
+    )
+{
+    DWORD dwError = 0;
+
+    VMCARpcCall(
+            RpcVMCASetServerOption(
+                    BindingHandleKrb,
+                    dwOption));
+    BAIL_ON_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+DWORD
+VMCASetServerOptionHW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    )
+{
+    DWORD dwError = 0;
+    handle_t BindingHandleKrb = NULL;
+    handle_t BindingHandleSharedSecret = NULL;
+
+    if (IsNullOrEmptyString(pwszServerName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (hInBinding)
+    {
+        BindingHandleKrb = hInBinding->hBinding;
+    }
+    else
+    {
+        dwError = CreateBindingHandleKrbW(
+                pwszServerName, NULL, &BindingHandleKrb);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    // Try with KRB handle
+    dwError = VMCASetServerOptionPrivate(BindingHandleKrb, dwOption);
+
+    if (dwError && !isVMCAErrorCode(dwError))
+    {
+        dwError = CreateBindingHandleSharedKeyW(
+                pwszServerName, NULL, &BindingHandleSharedSecret);
+        BAIL_ON_ERROR(dwError);
+
+        // Try with shared secret handle Since the server side does not
+        // authenticate, this call will let us go in irrespective of
+        // if you are root or not.
+        dwError = VMCASetServerOptionPrivate(
+                BindingHandleSharedSecret, dwOption);
+    }
+
+    BAIL_ON_ERROR(dwError);
+
+error:
+    if (!hInBinding && BindingHandleKrb)
+    {
+        VMCAFreeBindingHandle(&BindingHandleKrb);
+    }
+    if (BindingHandleSharedSecret)
+    {
+        VMCAFreeBindingHandle(&BindingHandleSharedSecret);
+    }
+    return dwError;
+}
+
+DWORD
+VMCASetServerOptionW(
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    )
+{
+    return VMCASetServerOptionHW(NULL, pwszServerName, dwOption);
+}
+
+DWORD
+VMCASetServerOptionHA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszServerName,
+    unsigned int dwOption
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszServerName = NULL;
+
+    if (IsNullOrEmptyString(pszServerName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateStringWFromA(pszServerName, &pwszServerName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCASetServerOptionHW(hInBinding, pwszServerName, dwOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+error:
+    VMCA_SAFE_FREE_STRINGW(pwszServerName);
+    return dwError;
+}
+
+DWORD
+VMCASetServerOptionA(
+    PCSTR pszServerName,
+    unsigned int dwOption
+    )
+{
+    return VMCASetServerOptionHA(NULL, pszServerName, dwOption);
+}
+
+static DWORD
+VMCAUnsetServerOptionPrivate(
+    handle_t BindingHandleKrb,
+    unsigned int dwOption
+    )
+{
+    DWORD dwError = 0;
+
+    VMCARpcCall(
+            RpcVMCAUnsetServerOption(
+                    BindingHandleKrb,
+                    dwOption));
+    BAIL_ON_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+DWORD
+VMCAUnsetServerOptionHW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    )
+{
+    DWORD dwError = 0;
+    handle_t BindingHandleKrb = NULL;
+    handle_t BindingHandleSharedSecret = NULL;
+
+    if (IsNullOrEmptyString(pwszServerName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (hInBinding)
+    {
+        BindingHandleKrb = hInBinding->hBinding;
+    }
+    else
+    {
+        dwError = CreateBindingHandleKrbW(
+                pwszServerName, NULL, &BindingHandleKrb);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    // Try with KRB handle
+    dwError = VMCAUnsetServerOptionPrivate(BindingHandleKrb, dwOption);
+
+    if (dwError && !isVMCAErrorCode(dwError))
+    {
+        dwError = CreateBindingHandleSharedKeyW(
+                pwszServerName, NULL, &BindingHandleSharedSecret);
+        BAIL_ON_ERROR(dwError);
+
+        // Try with shared secret handle Since the server side does not
+        // authenticate, this call will let us go in irrespective of
+        // if you are root or not.
+        dwError = VMCAUnsetServerOptionPrivate(
+                BindingHandleSharedSecret, dwOption);
+    }
+
+    BAIL_ON_ERROR(dwError);
+
+error:
+    if (!hInBinding && BindingHandleKrb)
+    {
+        VMCAFreeBindingHandle(&BindingHandleKrb);
+    }
+    if (BindingHandleSharedSecret)
+    {
+        VMCAFreeBindingHandle(&BindingHandleSharedSecret);
+    }
+    return dwError;
+}
+
+DWORD
+VMCAUnsetServerOptionW(
+    PCWSTR pwszServerName,
+    unsigned int dwOption
+    )
+{
+    return VMCAUnsetServerOptionHW(NULL, pwszServerName, dwOption);
+}
+
+DWORD
+VMCAUnsetServerOptionHA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszServerName,
+    unsigned int dwOption
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszServerName = NULL;
+
+    if (IsNullOrEmptyString(pszServerName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateStringWFromA(pszServerName, &pwszServerName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAUnsetServerOptionHW(hInBinding, pwszServerName, dwOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+error:
+    VMCA_SAFE_FREE_STRINGW(pwszServerName);
+    return dwError;
+}
+
+DWORD
+VMCAUnsetServerOptionA(
+    PCSTR pszServerName,
+    unsigned int dwOption
+    )
+{
+    return VMCAUnsetServerOptionHA(NULL, pszServerName, dwOption);
+}
+
+static DWORD
+VMCAGetServerOptionPrivate(
+    handle_t BindingHandleKrb,
+    unsigned int *pdwOption
+    )
+{
+    DWORD dwError = 0;
+
+    VMCARpcCall(
+            RpcVMCAGetServerOption(
+                    BindingHandleKrb,
+                    pdwOption));
+    BAIL_ON_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+DWORD
+VMCAGetServerOptionHW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszServerName,
+    unsigned int *pdwOption
+    )
+{
+    DWORD dwError = 0;
+    handle_t BindingHandleKrb = NULL;
+    handle_t BindingHandleSharedSecret = NULL;
+
+    if (IsNullOrEmptyString(pwszServerName) || !pdwOption)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (hInBinding)
+    {
+        BindingHandleKrb = hInBinding->hBinding;
+    }
+    else
+    {
+        dwError = CreateBindingHandleKrbW(
+                pwszServerName, NULL, &BindingHandleKrb);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    // Try with KRB handle
+    dwError = VMCAGetServerOptionPrivate(BindingHandleKrb, pdwOption);
+
+    if (dwError && !isVMCAErrorCode(dwError))
+    {
+        dwError = CreateBindingHandleSharedKeyW(
+                pwszServerName, NULL, &BindingHandleSharedSecret);
+        BAIL_ON_ERROR(dwError);
+
+        // Try with shared secret handle Since the server side does not
+        // authenticate, this call will let us go in irrespective of
+        // if you are root or not.
+        dwError = VMCAGetServerOptionPrivate(
+                BindingHandleSharedSecret, pdwOption);
+    }
+
+    BAIL_ON_ERROR(dwError);
+
+error:
+    if (!hInBinding && BindingHandleKrb)
+    {
+        VMCAFreeBindingHandle(&BindingHandleKrb);
+    }
+    if (BindingHandleSharedSecret)
+    {
+        VMCAFreeBindingHandle(&BindingHandleSharedSecret);
+    }
+    return dwError;
+}
+
+DWORD
+VMCAGetServerOptionW(
+    PCWSTR pwszServerName,
+    unsigned int *pdwOption
+    )
+{
+    return VMCAGetServerOptionHW(NULL, pwszServerName, pdwOption);
+}
+
+DWORD
+VMCAGetServerOptionHA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszServerName,
+    unsigned int *pdwOption
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszServerName = NULL;
+
+    if (IsNullOrEmptyString(pszServerName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateStringWFromA(pszServerName, &pwszServerName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAGetServerOptionHW(hInBinding, pwszServerName, pdwOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+error:
+    VMCA_SAFE_FREE_STRINGW(pwszServerName);
+    return dwError;
+}
+
+DWORD
+VMCAGetServerOptionA(
+    PCSTR pszServerName,
+    unsigned int *pdwOption
+    )
+{
+    return VMCAGetServerOptionHA(NULL, pszServerName, pdwOption);
+}
+
+static DWORD
 VMCAGetServerVersionPrivate(
       handle_t BindingHandleKrb,
       DWORD *dwCertLength,
       PVMCA_CERTIFICATE_CONTAINER *pServerVersion )
 {
     DWORD dwError = 0;
-    VMCARpcCall(RpcVMCAGetServerVersion(BindingHandleKrb, (unsigned int*)dwCertLength, pServerVersion));
+
+    VMCARpcCall(
+            RpcVMCAGetServerVersion(
+                    BindingHandleKrb,
+                    (unsigned int*)dwCertLength,
+                    pServerVersion));
     BAIL_ON_ERROR(dwError);
+
 error:
     return dwError;
 }
@@ -2015,6 +2384,11 @@ VMCAJavaGenCertA(
         BAIL_ON_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pszDNSName)) {
+        dwError = VMCASetCertValueA( VMCA_OID_DNS, pCertReqData, pszDNSName);
+        BAIL_ON_ERROR(dwError);
+    }
+
     dwError = VMCASetKeyUsageConstraintsA(pCertReqData,dwKeyUsageConstraints);
     BAIL_ON_ERROR(dwError);
 
@@ -2128,6 +2502,11 @@ VMCAJavaGenCertHA(
 
     if (!IsNullOrEmptyString(pszIPAddress)) {
         dwError = VMCASetCertValueA( VMCA_OID_IPADDRESS, pCertReqData, pszIPAddress);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszDNSName)) {
+        dwError = VMCASetCertValueA( VMCA_OID_DNS, pCertReqData, pszDNSName);
         BAIL_ON_ERROR(dwError);
     }
 

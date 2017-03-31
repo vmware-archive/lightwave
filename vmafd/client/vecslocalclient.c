@@ -26,6 +26,7 @@
  */
 DWORD
 VecsLocalCreateCertStoreW(
+        PVM_AFD_CONNECTION pConnection,
         PCWSTR pszStoreName,
         PCWSTR pszPassword,
         PBYTE *ppStoreHandle
@@ -33,7 +34,6 @@ VecsLocalCreateCertStoreW(
 {
     DWORD dwError = 0;
     UINT32 apiType = VECS_IPC_CREATE_CERTSTORE;
-
 
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
@@ -60,7 +60,8 @@ VecsLocalCreateCertStoreW(
     input_spec[0].data.pWString = (PWSTR)pszStoreName;
     input_spec[1].data.pWString = (PWSTR)pszPassword;
 
-    dwError = VecsLocalIPCRequest (
+    dwError = VecsLocalIPCRequestH (
+                                    pConnection,
                                     apiType,
                                     noOfArgsIn,
                                     noOfArgsOut,
@@ -187,6 +188,7 @@ error:
  */
 DWORD
 VecsLocalOpenCertStoreW (
+    PVM_AFD_CONNECTION pConnection,
     PCWSTR pszStoreName,
     PCWSTR pszPassword,
     PBYTE *ppStoreHandle
@@ -200,9 +202,9 @@ VecsLocalOpenCertStoreW (
     DWORD noOfArgsOut = 0;
     VMW_TYPE_SPEC output_spec[] = OPEN_STORE_OUTPUT_PARAMS;
 
-
     if (IsNullOrEmptyString(pszStoreName) ||
-        !ppStoreHandle
+        !ppStoreHandle ||
+        !pConnection
        )
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -215,13 +217,14 @@ VecsLocalOpenCertStoreW (
     input_spec[0].data.pWString = (PWSTR) pszStoreName;
     input_spec[1].data.pWString = (PWSTR) pszPassword;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
+    dwError = VecsLocalIPCRequestH (
+                        pConnection,
+                        apiType,
+                        noOfArgsIn,
+                        noOfArgsOut,
+                        input_spec,
+                        output_spec
+                        );
     BAIL_ON_VMAFD_ERROR (dwError);
 
     dwError = *(output_spec[0].data.pUint32);
@@ -328,7 +331,6 @@ VecsLocalSetPermissionW(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
@@ -336,14 +338,27 @@ VecsLocalSetPermissionW(
     input_spec[2].data.pWString = (PWSTR) pszName;
     input_spec[3].data.pUint32 = &dwAccessMask;
 
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
     dwError = VecsLocalIPCRequest (
                                     apiType,
                                     noOfArgsIn,
                                     noOfArgsOut,
                                     input_spec,
-                                    output_spec
-                                  );
+                            output_spec);
     BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -390,7 +405,6 @@ VecsLocalRevokePermissionW(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
@@ -398,14 +412,27 @@ VecsLocalRevokePermissionW(
     input_spec[2].data.pWString = (PWSTR) pszName;
     input_spec[3].data.pUint32 = &dwAccessMask;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                        pStore->pConnection,
+                        apiType,
+                        noOfArgsIn,
+                        noOfArgsOut,
+                        input_spec,
+                        output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                        apiType,
+                        noOfArgsIn,
+                        noOfArgsOut,
+                        input_spec,
+                        output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -466,14 +493,27 @@ VecsLocalGetPermissionW(
 
     input_spec[0].data.pByte = (PBYTE) pStore->pStoreHandle;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -617,14 +657,27 @@ VecsLocalChangeOwnerW(
     input_spec[0].data.pByte = (PBYTE) pStore->pStoreHandle;
     input_spec[2].data.pWString = (PWSTR) pszName;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
 
     dwError = *(output_spec[0].data.pUint32);
@@ -653,7 +706,7 @@ error:
  */
 DWORD
 VecsLocalAddEntryW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     CERT_ENTRY_TYPE entryType,
     PCWSTR pszAlias,
     PCWSTR pszCertificate,
@@ -682,7 +735,7 @@ VecsLocalAddEntryW(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte =   pStore;
+    input_spec[0].data.pByte =   pStore->pStoreHandle;
     input_spec[2].data.pUint32 = (PUINT32) &entryType;
     input_spec[3].data.pWString = (PWSTR) pszAlias;
     input_spec[4].data.pWString = (PWSTR) pszCertificate;
@@ -690,15 +743,27 @@ VecsLocalAddEntryW(
     input_spec[6].data.pWString = (PWSTR) pszPassword;
     input_spec[7].data.pBoolean = &bAutoRefresh;
 
-
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
     dwError = VecsLocalIPCRequest (
                                     apiType,
                                     noOfArgsIn,
                                     noOfArgsOut,
                                     input_spec,
-                                    output_spec
-                                  );
+                            output_spec);
     BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -723,7 +788,7 @@ error:
  */
 DWORD
 VecsLocalDeleteEntryW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias
     )
 {
@@ -748,17 +813,30 @@ VecsLocalDeleteEntryW(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pStore;
+    input_spec[0].data.pByte = pStore->pStoreHandle;
     input_spec[2].data.pWString = (PWSTR) pszAlias;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -782,7 +860,7 @@ error:
  */
 DWORD
 VecsLocalBeginEnumEntries(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     DWORD dwEntryCount,
     ENTRY_INFO_LEVEL infoLevel,
     PBYTE *ppEnumContext,
@@ -812,18 +890,31 @@ VecsLocalBeginEnumEntries(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pStore;
+    input_spec[0].data.pByte = pStore->pStoreHandle;
     input_spec[2].data.pUint32 = (PUINT32) &dwEntryCount;
     input_spec[3].data.pUint32 = (PUINT32) &infoLevel;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
     BAIL_ON_VMAFD_ERROR (dwError);
@@ -892,14 +983,27 @@ VecsLocalEnumEntriesW(
 
     input_spec[0].data.pByte = (PBYTE) pEnumContext->pEnumHandle;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pEnumContext->pStore && pEnumContext->pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pEnumContext->pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
     BAIL_ON_VMAFD_ERROR (dwError);
@@ -950,7 +1054,7 @@ error:
  */
 DWORD
 VecsLocalEndEnumEntries(
-    PBYTE pEnumContext
+    PVECS_ENUM_CONTEXT pEnumContext
     )
 {
 
@@ -974,16 +1078,29 @@ VecsLocalEndEnumEntries(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pEnumContext;
+    input_spec[0].data.pByte = pEnumContext->pEnumHandle;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pEnumContext->pStore && pEnumContext->pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pEnumContext->pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -992,7 +1109,10 @@ VecsLocalEndEnumEntries(
 cleanup:
     VmAfdFreeTypeSpecContent (output_spec, noOfArgsOut);
 
-    VMAFD_SAFE_FREE_MEMORY (pEnumContext);
+    if (pEnumContext)
+    {
+        VMAFD_SAFE_FREE_MEMORY (pEnumContext->pEnumHandle);
+    }
     return dwError;
 error:
     goto cleanup;
@@ -1011,7 +1131,7 @@ error:
  */
 DWORD
 VecsLocalGetEntryByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias,
     ENTRY_INFO_LEVEL infoLevel,
     PVECS_CERT_ENTRY_W *ppEntry
@@ -1041,18 +1161,31 @@ VecsLocalGetEntryByAliasW(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pStore;
+    input_spec[0].data.pByte = pStore->pStoreHandle;
     input_spec[2].data.pWString = (PWSTR) pszAlias;
     input_spec[3].data.pUint32 = (PUINT32) &infoLevel;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -1116,7 +1249,7 @@ error:
  */
 DWORD
 VecsLocalGetKeyByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias,
     PCWSTR pszPassword,
     PWSTR *ppszPrivateKey
@@ -1126,7 +1259,6 @@ VecsLocalGetKeyByAliasW(
     PWSTR pszKey = NULL;
 
     UINT32 apiType = VECS_IPC_GET_KEY_BY_ALIAS;
-
 
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
@@ -1146,18 +1278,32 @@ VecsLocalGetKeyByAliasW(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pStore;
+    input_spec[0].data.pByte = pStore->pStoreHandle;
     input_spec[2].data.pWString = (PWSTR) pszAlias;
     input_spec[3].data.pWString = (PWSTR) pszPassword;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
 
 
     dwError = *(output_spec[0].data.pUint32);
@@ -1198,7 +1344,7 @@ error:
  */
 DWORD
 VecsLocalGetEntryCount(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PDWORD pdwSize
     )
 {
@@ -1224,17 +1370,29 @@ VecsLocalGetEntryCount(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pStore;
+    input_spec[0].data.pByte = pStore->pStoreHandle;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
-
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -1270,7 +1428,7 @@ error:
  
 DWORD
 VecsLocalGetEntryTypeByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pwszAlias,
     CERT_ENTRY_TYPE *pType
     )
@@ -1330,7 +1488,7 @@ error:
 
 DWORD
 VecsLocalGetEntryDateByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pwszAlias,
     PDWORD pdwDate
     )
@@ -1389,7 +1547,7 @@ error:
  */
 DWORD
 VecsLocalGetCertificateByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias,
     PWSTR *ppszCertificate
     )
@@ -1459,7 +1617,7 @@ error:
  */
 DWORD
 VecsLocalCloseCertStore(
-    PBYTE pStore
+    PVECS_STORE pStore
     )
 {
 
@@ -1483,16 +1641,29 @@ VecsLocalCloseCertStore(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[0].data.pByte = pStore;
+    input_spec[0].data.pByte = pStore->pStoreHandle;
 
-    dwError = VecsLocalIPCRequest (
-                                    apiType,
-                                    noOfArgsIn,
-                                    noOfArgsOut,
-                                    input_spec,
-                                    output_spec
-                                  );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (pStore->pConnection)
+    {
+        dwError = VecsLocalIPCRequestH (
+                            pStore->pConnection,
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    else
+    {
+        dwError = VecsLocalIPCRequest (
+                            apiType,
+                            noOfArgsIn,
+                            noOfArgsOut,
+                            input_spec,
+                            output_spec);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
 
     dwError = *(output_spec[0].data.pUint32);
 
@@ -1501,7 +1672,10 @@ VecsLocalCloseCertStore(
 cleanup:
     VmAfdFreeTypeSpecContent (output_spec, noOfArgsOut);
 
-    VMAFD_SAFE_FREE_MEMORY (pStore);
+    if (pStore)
+    {
+        VMAFD_SAFE_FREE_MEMORY (pStore->pStoreHandle);
+    }
     return dwError;
 error:
     goto cleanup;
@@ -1562,7 +1736,8 @@ error:
 }
 
 DWORD
-VecsLocalIPCRequest(
+VecsLocalIPCRequestH(
+                    PVM_AFD_CONNECTION pConnection,
                     UINT32 apiType,
                     DWORD noOfArgsIn,
                     DWORD noOfArgsOut,
@@ -1576,7 +1751,6 @@ VecsLocalIPCRequest(
     PBYTE pRequest = NULL;
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
-    PVM_AFD_CONNECTION pConnection = NULL;
 
     dwError = VmAfdGetMarshalLength (
                             input_spec,
@@ -1599,9 +1773,6 @@ VecsLocalIPCRequest(
                             pRequest,
                             dwRequestSize
                             );
-    BAIL_ON_VMAFD_ERROR (dwError);
-
-    dwError = VmAfdOpenClientConnection ( &pConnection);
     BAIL_ON_VMAFD_ERROR (dwError);
 
     dwError = VmAfdMakeServerRequest (
@@ -1627,9 +1798,41 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY (pResponse);
     VMAFD_SAFE_FREE_MEMORY (pRequest);
 
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
+DWORD
+VecsLocalIPCRequest(
+                    UINT32 apiType,
+                    DWORD noOfArgsIn,
+                    DWORD noOfArgsOut,
+                    VMW_TYPE_SPEC *input_spec,
+                    VMW_TYPE_SPEC *output_spec
+                    )
+{
+    DWORD dwError = 0;
+    PVM_AFD_CONNECTION pConnection = NULL;
+
+    dwError = VmAfdOpenClientConnection ( &pConnection);
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VecsLocalIPCRequestH(
+                    pConnection,
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+cleanup:
+
     if (pConnection)
     {
-
         VmAfdFreeClientConnection (pConnection);
     }
 
@@ -1639,3 +1842,4 @@ error:
     goto cleanup;
 
 }
+

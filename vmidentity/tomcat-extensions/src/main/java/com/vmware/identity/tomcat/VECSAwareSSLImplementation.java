@@ -11,35 +11,86 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-/**
- * @author dmehta
- */
 package com.vmware.identity.tomcat;
 
+import java.io.IOException;
 
-import org.apache.tomcat.util.net.AbstractEndpoint;
+import java.security.KeyStore;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+import org.apache.tomcat.util.net.SSLHostConfigCertificate;
 import org.apache.tomcat.util.net.SSLUtil;
 import org.apache.tomcat.util.net.jsse.JSSEImplementation;
+import org.apache.tomcat.util.net.jsse.JSSEUtil;
+
+import com.vmware.provider.VecsLoadStoreParameter;
 
 public class VECSAwareSSLImplementation extends JSSEImplementation {
 
-    private String kStore;
+	private static final Log log = LogFactory.getLog(VECSAwareSSLImplementation.class);
 
     @Override
-    public String getImplementationName() {
-        return "VECS aware JSSE";
+    public SSLUtil getSSLUtil(SSLHostConfigCertificate certificate) {
+
+        try {
+            KeyStore ks = getKeystore(certificate);
+            certificate.setCertificateKeystore(ks);
+        } catch(Exception ex){
+            log.error(ex.getStackTrace().toString());
+        }
+        return new JSSEUtil(certificate);
     }
 
-    @Override
-    public org.apache.tomcat.util.net.ServerSocketFactory getServerSocketFactory(
-            AbstractEndpoint endpoint) {
-        kStore = endpoint.getProperty("store");
-        endpoint.setProperty("keystoreFile", "");
-        return new VECSAwareJSSESocketFactory(endpoint, kStore);
+    /*
+     * Gets the SSL server's keystore - VECS.
+     */
+    protected KeyStore getKeystore(SSLHostConfigCertificate certificate)
+            throws IOException {
+
+        String type = certificate.getCertificateKeystoreType();
+        String keystoreName = certificate.getCertificateKeystoreFile();
+        try {
+            if (type == null || type.isEmpty()) {
+                throw new IOException(
+                    "keystore type must be provided");
+      }
+            if ("VKS".equalsIgnoreCase(type)) {
+
+                if (keystoreName == null || keystoreName.isEmpty()) {
+                    throw new IOException(
+                        "keystore file must specify the keystore name");
+                }
+
+                KeyStore ks = null;
+                String provider = certificate.getCertificateKeystoreProvider();
+
+                if (provider == null || provider.isEmpty()) {
+                    ks = KeyStore.getInstance(type);
+                } else {
+                    ks = KeyStore.getInstance(type, provider);
+                }
+
+                VecsLoadStoreParameter params = new VecsLoadStoreParameter(keystoreName);
+                ks.load(params);
+                resetCertificateKeyStoreFile(certificate);
+                return ks;
+
+            } else {
+                resetCertificateKeyStoreFile(certificate);
+                return certificate.getCertificateKeystore();
+            }
+        } catch (Exception ex) {
+            throw new IOException(
+                    "Failed to load keystore " + keystoreName, ex);
+        }
     }
 
-    @Override
-    public SSLUtil getSSLUtil(AbstractEndpoint endpoint) {
-        return new VECSAwareJSSESocketFactory(endpoint, kStore);
+    /**
+     * Keystorefile contains the store name. Once store name is used to load the
+     * vecs keystore, reset the certificate keystorefile.
+     * @param certificate
+     */
+    private void resetCertificateKeyStoreFile(SSLHostConfigCertificate certificate){
+        certificate.setCertificateKeystoreFile("");
     }
 }

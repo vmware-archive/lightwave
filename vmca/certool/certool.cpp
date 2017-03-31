@@ -64,6 +64,7 @@ bool argStoreRevoked;
 bool argStoreAll;
 std::string argOutPrivateKey;
 std::string argOutCert;
+std::string argOption;
 int argPredates = VMCA_DEFAULT_CA_CERT_START_PREDATE;
 
 std::string argPassword;
@@ -393,9 +394,9 @@ AddGeneralOptions(po::options_description& desc)
     ("help", po::value<std::string>(&argHelpModule)->implicit_value(""),
      "help <command> for help with each command\n"
      "Commands are :\n"
-     "certool --help init - shows help for all initialization relevant functions \n"
-     "certool --help functions - shows help for all other functions \n"
-     "certool --help config - shows help for the parameters of the config file \n"
+     "certool --help=init - shows help for all initialization relevant functions \n"
+     "certool --help=functions - shows help for all other functions \n"
+     "certool --help=config - shows help for the parameters of the config file \n"
     )
     ("server",po::value<std::string>(&argServerName)->default_value("localhost"),
      "The name of the VMware Certficate Server.")
@@ -410,9 +411,8 @@ AddGeneralOptions(po::options_description& desc)
 
 }
 
-
 void
-AddConfigOptions( po::options_description& config)
+AddConfigOptions(po::options_description& config)
 {
     config.add_options()
     ("Country",         po::value<std::string>(&cfgCountry),"\tdefault: Country = US ")
@@ -428,7 +428,7 @@ AddConfigOptions( po::options_description& config)
 }
 
 void
-AddInitOptions( po::options_description& init)
+AddInitOptions(po::options_description& init)
 {
     init.add_options()
 
@@ -512,7 +512,7 @@ AddInitOptions( po::options_description& init)
 }
 
 void
-AddFunctionsOptions( po::options_description& functions)
+AddFunctionsOptions(po::options_description& functions)
 {
     functions.add_options()
 
@@ -543,7 +543,6 @@ AddFunctionsOptions( po::options_description& functions)
      "Example: certool --getrootca --server=remoteserver\n"
     )
 
-
     ("revokecert","\tRevokes a certificate\n"
      "Different flags used for this command are :\n"
      "--revokecert - required, the command flag\n"
@@ -566,6 +565,7 @@ AddFunctionsOptions( po::options_description& functions)
      "--filter   - required ,values are [all,revoked,active]\n\n"
      "Example: certool --enumcert --filter=revoked\n"
     )
+
     ("genCIScert", "\tUse 'gencert' instead. 'genCIScert' is going to be deprecated.\n"
      "'genCISCert' is equivalent to 'gencert',\n"
      "except the certificate CN is generated using the scheme\n"
@@ -580,6 +580,7 @@ AddFunctionsOptions( po::options_description& functions)
      "--server   - optional, default value of \"localhost\" will be used.\n\n"
      "Example: certool --genCIScert --privkey=<filename> --cert=<filename> --Name=sso\n"
     )
+
     ("status","\tTakes a certificate and sends it server to \n"
      "check if the certificate has been revoked.\n"
      "Different flags used for this command are :\n"
@@ -588,20 +589,24 @@ AddFunctionsOptions( po::options_description& functions)
      "--server  - optional, default value of \"localhost\" will be used.\n\n"
      "Example: certool --status --cert=<filename>\n"
     )
+
     ("gencrl","\t Causes VMCA to re-generate CRLs\n"
     "This command should NOT be used, unless you are an\n"
     "Admin of VMCA and really wants to overwrite the current\n"
     "CRL List.\n"
     )
+
     ("getcrl","\t Allows users to download current CRL from VMCA\n"
     "Different flags used for this command are :\n"
     "--crl=<fileName> - CRL file Name \n\n"
     "Example: certool --getcrl --crl=<filename>\n"
     )
+
     ("viewcrl", "\t Prints out the CRL in human readable format\n"
      "Different flags used for this commands are : \n"
      "--crl=<fileName>\n"
     )
+
     ("genselfcacert", "\tGenerate a self signed CA certificate\n"
      "based on values in the config file.\n"
      "Different flags used for this command are :\n"
@@ -609,20 +614,39 @@ AddFunctionsOptions( po::options_description& functions)
      "--outcert        - required, file name for cert file\n"
      "--outprivkey     - required, file name for private key\n"
      "--config         - optional, default value \"certool.cfg\" will be used.\n\n"
-     "Example: certool --genselfcert --privkey=<filename> --cert=<filename>\n\n"
+     "Example: certool --genselfcert --privkey=<filename> --cert=<filename>\n"
     )
+
     ("gencsrfromcert", "\tGenerate a CSR from a certificate\n"
      "Different flags used for this command are :\n"
      "--gencsrfromcert - required, the command flag\n"
      "--cert           - required, file name of certificate\n"
      "--privkey        - required, file name of private key\n"
-     "--csrfile         - required, file name for the csr\n"
-     "Example: certool --gencsrfromcert --privkey=<filename> --cert=<filename> --csrfile=<csrfilename>\n\n"
+     "--csrfile        - required, file name for the csr\n"
+     "Example: certool --gencsrfromcert --privkey=<filename> --cert=<filename> --csrfile=<csrfilename>\n"
+    )
+
+    ("enableserveroption", "\tEnable server option\n"
+     "Different flags used for this command are :\n"
+     "--option         - required, the server option to enable\n"
+     "--server         - optional, default value of \"localhost\" will be used.\n\n"
+     "Example: certool --enableserveroption --option=multiplesan\n"
+    )
+
+    ("disableserveroption", "\tDisable server option\n"
+     "Different flags used for this command are :\n"
+     "--option         - required, the server option to disable\n"
+     "--server         - optional, default value of \"localhost\" will be used.\n\n"
+     "Example: certool --disableserveroption --option=multiplesan\n"
+    )
+
+    ("getserveroption", "\tGet enabled server options\n"
+     "--server         - optional, default value of \"localhost\" will be used.\n"
     );
 }
 
 void
-AddFilesOptions( po::options_description& files)
+AddFilesOptions(po::options_description& files)
 {
     files.add_options()
     ("config", po::value<std::string>(&argConfig)->default_value("certool.cfg"),
@@ -643,15 +667,15 @@ AddFilesOptions( po::options_description& files)
     ("trs", po::value(&argStoreTrusted)->zero_tokens(),"Trusted certificate Store")
     ("rvk", po::value(&argStoreRevoked)->zero_tokens(),"Revoked certificate Store")
     ("all", po::value(&argStoreAll)->zero_tokens(),"All certificate Store")
-    ("crl",po::value<std::string>(&argCrl),"File Name for the New CRL" )
-    ("currcrl",po::value<std::string>(&argCurrCrl),"Existing CRL, if you have one" )
-    ("outprivkey",po::value<std::string>(&argOutPrivateKey),"Privatekey File to be generated" )
-    ("outcert",po::value<std::string>(&argOutCert),"Certificate to be generated" )
-    ("predate",po::value<int>(&argPredates),"Certificate Valid from predated in minutes" );
+    ("crl",po::value<std::string>(&argCrl),"File Name for the New CRL")
+    ("currcrl",po::value<std::string>(&argCurrCrl),"Existing CRL, if you have one")
+    ("outprivkey",po::value<std::string>(&argOutPrivateKey),"Privatekey File to be generated")
+    ("outcert",po::value<std::string>(&argOutCert),"Certificate to be generated")
+    ("predate",po::value<int>(&argPredates),"Certificate Valid from predated in minutes");
 }
 
 void
-AddParamOptions( po::options_description& params)
+AddParamOptions(po::options_description& params)
 {
     params.add_options()
     ("filter",po::value<std::string>(&argFilter),"\tPossible values for filter are\n"
@@ -659,6 +683,9 @@ AddParamOptions( po::options_description& params)
      "revoked - lists all revoked certificates\n"
      //"expired - all certificates which are expired\n"
      "all - lists all certificates\n"
+    )
+    ("option",po::value<std::string>(&argOption),"\tPossible values for option are\n"
+     "multiplesan - allow multiple SAN in CSR\n"
     );
 }
 
@@ -1045,12 +1072,39 @@ DispatchFunctions(po::variables_map argsMap,po::options_description& config)
         BAIL_ON_ERROR(dwError);
     }
 
+    if (argsMap.count("enableserveroption"))
+    {
+        if(!argsMap.count("option"))
+        {
+            std::cout << "Error : No server option specified.\n"
+                      << "Example : certool --enableserveroption --option=multiplesan\n";
+            dwError =  VMCA_ARGUMENT_ERROR;
+            BAIL_ON_ERROR(dwError);
+        }
 
-     //if(argsMap.count("viewerror")){
-     //    dwError = HandlePrintError();
-     //    BAIL_ON_ERROR(dwError);
-     //}
+        dwError = HandleSetServerOption();
+        BAIL_ON_ERROR(dwError);
+    }
 
+    if (argsMap.count("disableserveroption"))
+    {
+        if(!argsMap.count("option"))
+        {
+            std::cout << "Error : No server option specified.\n"
+                      << "Example : certool --disableserveroption --option=multiplesan\n";
+            dwError =  VMCA_ARGUMENT_ERROR;
+            BAIL_ON_ERROR(dwError);
+        }
+
+        dwError = HandleUnsetServerOption();
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (argsMap.count("getserveroption"))
+    {
+        dwError = HandleGetServerOption();
+        BAIL_ON_ERROR(dwError);
+    }
 
 error :
     return dwError;

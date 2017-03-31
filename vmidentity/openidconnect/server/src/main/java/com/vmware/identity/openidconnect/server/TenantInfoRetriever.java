@@ -15,6 +15,7 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
+import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.Issuer;
@@ -38,16 +40,19 @@ public class TenantInfoRetriever {
         this.idmClient = idmClient;
     }
 
-    public TenantInfo retrieveTenantInfo(String tenant) throws ServerException {
-        Validate.notEmpty(tenant, "tenant");
+    public TenantInfo retrieveTenantInfo(String tenantName) throws ServerException {
+        Validate.notEmpty(tenantName, "tenantName");
 
+        Tenant tenantObject;
         try {
-            this.idmClient.getTenant(tenant);
+            tenantObject = this.idmClient.getTenant(tenantName);
         } catch (NoSuchTenantException e) {
             throw new ServerException(ErrorObject.invalidRequest("non-existent tenant"), e);
         } catch (Exception e) {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant"), e);
         }
+
+        String tenant = tenantObject.getName(); // use tenant name as it appears in directory
 
         RSAPrivateKey privateKey;
         try {
@@ -63,7 +68,8 @@ public class TenantInfoRetriever {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant cert"), e);
         }
 
-        RSAPublicKey publicKey = (RSAPublicKey) certChain.get(0).getPublicKey();
+        X509Certificate certificate = (X509Certificate) certChain.get(0);
+        RSAPublicKey publicKey = (RSAPublicKey) certificate.getPublicKey();
 
         AuthnPolicy authnPolicy;
         String issuer;
@@ -107,6 +113,7 @@ public class TenantInfoRetriever {
         return new TenantInfo.Builder(tenant).
                 privateKey(privateKey).
                 publicKey(publicKey).
+                certificate(certificate).
                 authnPolicy(tenantAuthnPolicy).
                 issuer(new Issuer(issuer)).
                 brandName(brandName).
@@ -123,10 +130,18 @@ public class TenantInfoRetriever {
     }
 
     public String getDefaultTenantName() throws ServerException {
+        String tenant;
+
         try {
-            return this.idmClient.getDefaultTenant();
+            tenant = this.idmClient.getDefaultTenant();
         } catch (Exception e) {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving default tenant name"), e);
         }
+
+        if (tenant == null) {
+            throw new ServerException(ErrorObject.serverError("default tenant is not configured"));
+        }
+
+        return tenant;
     }
 }

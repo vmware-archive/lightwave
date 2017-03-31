@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libkrb5crypto.la
 
 libkrb5crypto_la_SOURCES = \
+    config_file.c \
     crc.c \
     crypto-aes.c \
     crypto-algs.c \
@@ -14,8 +15,15 @@ libkrb5crypto_la_SOURCES = \
     crypto-rand.c \
     crypto-stubs.c \
     data.c \
+    get_default_realm.c \
+    set_default_realm.c \
+    copy_host_realm.c \
+    get_host_realm.c \
+    free_host_realm.c \
     keyblock.c \
     n-fold.c \
+    pac.c \
+    principal.c \
     salt-aes.c \
     salt-arcfour.c \
     salt.c \
@@ -23,9 +31,12 @@ libkrb5crypto_la_SOURCES = \
     salt-des.c \
     store.c \
     store-int.c \
+    store_emem.c \
+    store_mem.c \
     utf8.c \
     warn.c \
     error_string.c
+
 
 libkrb5crypto_la_CPPFLAGS = \
     -DHEIMDAL_SMALLER \

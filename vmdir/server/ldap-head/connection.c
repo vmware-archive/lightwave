@@ -127,8 +127,11 @@ VmDirDeleteConnection(
     VDIR_CONNECTION **conn
     )
 {
-   if (conn && *conn)
-   {
+    if (conn && *conn)
+    {
+        // Release replication (read) lock if holding
+        VMDIR_RWLOCK_UNLOCK((*conn)->bInReplLock, gVmdirGlobals.replRWLock);
+
         if ((*conn)->sb)
         {
             VmDirSASLSessionClose((*conn)->pSaslInfo);
@@ -138,13 +141,18 @@ VmDirDeleteConnection(
             // clean and free sockbuf (io descriptor and socket ...etc.)
             ber_sockbuf_free((*conn)->sb);
         }
+        else if ((*conn)->sd)
+        {   // normally, ber_sockbuf_free above will close socket.
+            // if no ber_sockbuf, close socket if exists
+            tcp_close((*conn)->sd);
+        }
 
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
         _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );
 
         VMDIR_SAFE_FREE_MEMORY(*conn);
         *conn = NULL;
-   }
+    }
 }
 
 DWORD
@@ -317,6 +325,7 @@ NewConnection(
 
     pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
     pConn->sd = sfd;                 // pConn takes over sfd
+    sfd = -1;                        // valid fd > 0
 
     retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szClientIP, sizeof(pConn->szClientIP), &pConn->dwClientPort, true);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -338,7 +347,7 @@ NewConnection(
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_ctrl() failed while setting MAX_INCOMING", pConn->szClientIP);
     }
 
-    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&sfd) != 0)
+    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&pConn->sd) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_addd_io() failed while setting LEVEL_PROVIDER", pConn->szClientIP);
@@ -354,6 +363,10 @@ NewConnection(
     *ppConnection = pConn;
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    if (sfd != -1)
+    {
+        tcp_close(sfd);
+    }
 
     return retVal;
 
@@ -695,7 +708,8 @@ ProcessAConnection(
          {
              VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: ber_get_next() peer (%s) disconnected",
                  __func__, pConn->szClientIP);
-         } else
+         }
+         else
          {
              VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() call failed with errno = %d peer (%s)",
                   __func__, errno, pConn->szClientIP);

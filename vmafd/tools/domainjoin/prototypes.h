@@ -16,12 +16,14 @@
  *                                 default.
  * @param[in]          pszPassword Password of the account used to perform the
  *                                 join.
+ * @param[in,optional] pszOrgUnit  Organizational Unit to contain machine account
  */
 DWORD
 VmAfdJoinDomain(
     PCSTR pszDomain,
     PCSTR pszUsername,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    PCSTR pszOrgUnit
     );
 
 /**

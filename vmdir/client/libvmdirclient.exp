@@ -5,6 +5,7 @@ VmDirDemote
 VmDirJoin
 VmDirClientJoin
 VmDirClientLeave
+VmDirCreateComputerAccount
 VmDirSetupTenantInstance
 VmDirForceResetPassword
 VmDirSetPassword
@@ -99,5 +100,7 @@ VmDirFreeMetadata
 VmDirFreeMetadataList
 VmDirUrgentReplicationRequest
 VmDirUrgentReplicationResponse
-VmDirGetMode
-VmDirSetMode
+VmDirChangePNID
+VmDirCreateTenant
+VmDirDeleteTenant
+VmDirEnumerateTenants

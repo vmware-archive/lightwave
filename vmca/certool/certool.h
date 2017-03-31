@@ -55,6 +55,7 @@ extern std::string argIP;
 extern bool argPKCS12;
 extern std::string argOutPrivateKey;
 extern std::string argOutCert;
+extern std::string argOption;
 extern int argPredates;
 
 extern bool argStorePrivate;
@@ -82,6 +83,8 @@ extern time_t expire;
 
 #define VMCA_MAX_PREDATE_PERMITED           (VMCA_TIME_SECS_PER_WEEK/VMCA_TIME_SECS_PER_MINUTE)
 #define VMCA_DEFAULT_CA_CERT_START_PREDATE  (VMCA_CA_CERT_EXPIRY_START_LAG/VMCA_TIME_SECS_PER_MINUTE)
+
+#define VMCA_OPTION_MULTIPLE_SAN            "multiplesan"
 
 enum VMCA_FILE_ENCODING
 {
@@ -177,6 +180,15 @@ HandleGenSelfCert();
 
 DWORD
 HandleGenCSRFromCert();
+
+DWORD
+HandleSetServerOption();
+
+DWORD
+HandleUnsetServerOption();
+
+DWORD
+HandleGetServerOption();
 //Utility Functions
 
 #define FQDN 1

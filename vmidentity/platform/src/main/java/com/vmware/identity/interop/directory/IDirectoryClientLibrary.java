@@ -33,6 +33,13 @@ public interface IDirectoryClientLibrary
     );
 
     void
+    DeleteDirectoryInstance(
+        String domainName,
+        String administratorId,
+        String password
+    );
+
+    void
     SetPassword(
         String hostURI,
         String adminDN,

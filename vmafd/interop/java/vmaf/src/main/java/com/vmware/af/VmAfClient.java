@@ -132,6 +132,19 @@ public class VmAfClient
         VmAfClientAdapter.leaveVmDir(server, user, password);
     }
 
+    public String createComputerAccount(
+              String user,
+              String password,
+              String machine,
+              String orgunit)
+    {
+        return VmAfClientAdapter.createComputerAccount(
+                      user,
+                      password,
+                      machine,
+                      orgunit);
+    }
+
     public void joinActiveDirectory(String server,
                                     String user,
                                     String password,

@@ -16,6 +16,8 @@ package com.vmware.identity.interop.domainmanager;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.SystemUtils;
+
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.win32.W32APITypeMapper;
@@ -34,7 +36,7 @@ public class WinDcInfoNative extends Structure
 
     public WinDcInfoNative()
     {
-        super(W32APITypeMapper.UNICODE);
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
     }
 
     public WinDcInfoNative(Pointer p)

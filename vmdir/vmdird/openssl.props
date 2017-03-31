@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_OPENSSL_ROOT)\include;%(AdditionalIncludeDirectories);$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_OPENSSL_ROOT)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <Link>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_OPENSSL_ROOT)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>

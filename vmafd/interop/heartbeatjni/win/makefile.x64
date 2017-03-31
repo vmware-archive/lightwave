@@ -1,0 +1,18 @@
+# Map any Linux path separators "/" to Windows path separators "\"
+#
+
+JDK_BASE = $(LIGHTWAVE_JDK_ROOT:/=\)
+
+JAVAH = $(JDK_BASE)\bin\javah.exe
+CLASSNAME = com.vmware.identity.heartbeat.VmAfdHeartbeatAdapter
+JARDIR=..\..\..\build\authentication-framework\packages\afd-heartbeat-service.jar
+
+
+all: heartbeatjni.h
+
+heartbeatjni.h: $(JARDIR)
+    @echo $(JAVAH) -o ..\heartbeatjni.h -classpath $(JARDIR) $(CLASSNAME)
+    $(JAVAH) -o ..\heartbeatjni.h -classpath $(JARDIR) $(CLASSNAME)
+
+clean:
+    -del /f ..\heartbeatjni.h

@@ -175,12 +175,32 @@ VmDirSetSecurityDescriptorInfo(
 
 DWORD
 VmDirCreateSecurityDescriptorAbsolute(
-    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
-    ULONG Revision
+    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecurityDescriptor
     )
 {
-    return LwNtStatusToWin32Error(
-            RtlCreateSecurityDescriptorAbsolute(SecurityDescriptor, Revision));
+    DWORD dwError = 0;
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor = NULL;
+    NTSTATUS Status = 0;
+
+    dwError = VmDirAllocateMemory(
+                SECURITY_DESCRIPTOR_ABSOLUTE_MIN_SIZE,
+                (PVOID*)&SecurityDescriptor);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    Status = RtlCreateSecurityDescriptorAbsolute(
+                SecurityDescriptor,
+                SECURITY_DESCRIPTOR_REVISION);
+    dwError = LwNtStatusToWin32Error(Status);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppSecurityDescriptor = SecurityDescriptor;
+    SecurityDescriptor = NULL;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(SecurityDescriptor);
+    return dwError;
+error:
+    goto cleanup;
 }
 
 VOID
@@ -235,6 +255,16 @@ VmDirCreateAcl(
 }
 
 DWORD
+VmDirGetAce(
+    PACL pAcl,
+    ULONG dwIndex,
+    PACE_HEADER *ppAce
+    )
+{
+    return LwNtStatusToWin32Error(RtlGetAce(pAcl, dwIndex, (PVOID*)ppAce));
+}
+
+DWORD
 VmDirAddAccessAllowedAceEx(
     PACL Acl,
     ULONG AceRevision,
@@ -244,6 +274,22 @@ VmDirAddAccessAllowedAceEx(
     )
 {
     return LwNtStatusToWin32Error(RtlAddAccessAllowedAceEx(Acl,
+                                                           AceRevision,
+                                                           AceFlags,
+                                                           AccessMask,
+                                                           Sid));
+}
+
+DWORD
+VmDirAddAccessDeniedAceEx(
+    PACL Acl,
+    ULONG AceRevision,
+    ULONG AceFlags,
+    ACCESS_MASK AccessMask,
+    PSID Sid
+    )
+{
+    return LwNtStatusToWin32Error(RtlAddAccessDeniedAceEx(Acl,
                                                            AceRevision,
                                                            AceFlags,
                                                            AccessMask,
@@ -363,4 +409,18 @@ VmDirAllocateSddlCStringFromSecurityDescriptor(
 error:
 
     return dwError;
+}
+
+DWORD
+VmDirSetSecurityDescriptorControl(
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecurityDescriptor,
+    SECURITY_DESCRIPTOR_CONTROL BitsToChange,
+    SECURITY_DESCRIPTOR_CONTROL BitsToSet
+    )
+{
+    return LwNtStatusToWin32Error(
+                RtlSetSecurityDescriptorControl(
+                    pSecurityDescriptor,
+                    BitsToChange,
+                    BitsToSet));
 }

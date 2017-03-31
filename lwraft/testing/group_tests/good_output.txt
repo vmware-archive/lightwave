@@ -1,0 +1,431 @@
+#########################################################
+Create Group-1 with John-1 and John-2 as members
+#########################################################
+
+adding new entry "cn=Group-1,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Create Group-2 with John-2, John-3, John-4, and John-5 as members
+#########################################################
+
+adding new entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Try to add a non-existing member to Group-1
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info: BECheckDnRef, (9705)((Unknown error 9703)(cn=John-x,ou=eng,dc=vmware,dc=com))
+modifying entry "cn=Group-1,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Add Group-1 as member to Group-2
+#########################################################
+
+modifying entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for John-1
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=John-1
+# requesting: memberOf 
+#
+
+# John-1, eng, vmware.com
+dn: cn=John-1,ou=eng,dc=vmware,dc=com
+memberOf: cn=Group-1,ou=eng,dc=vmware,dc=com
+memberOf: cn=Group-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Search for John-2
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=John-2
+# requesting: memberOf 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+memberOf: cn=Group-1,ou=eng,dc=vmware,dc=com
+memberOf: cn=Group-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Search for John-3
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=John-3
+# requesting: memberOf 
+#
+
+# John-3, eng, vmware.com
+dn: cn=John-3,ou=eng,dc=vmware,dc=com
+memberOf: cn=Group-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-1, eng, vmware.com
+dn: cn=Group-1,ou=eng,dc=vmware,dc=com
+member: cn=John-1,ou=eng,dc=vmware,dc=com
+member: cn=John-2,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-4
+member: externalObjectId=06783c58-4fdf-1031-8788-c37afe35b265
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: cn=John-2,ou=eng,dc=vmware,dc=com
+member: cn=John-3,ou=eng,dc=vmware,dc=com
+member: cn=John-4,ou=eng,dc=vmware,dc=com
+member: cn=John-5,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+member: cn=Group-1,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+#########################################################
+Delete John-1
+#########################################################
+
+deleting entry "cn=John-1,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-1, eng, vmware.com
+dn: cn=Group-1,ou=eng,dc=vmware,dc=com
+member: cn=John-2,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-4
+member: externalObjectId=06783c58-4fdf-1031-8788-c37afe35b265
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: cn=John-2,ou=eng,dc=vmware,dc=com
+member: cn=John-3,ou=eng,dc=vmware,dc=com
+member: cn=John-4,ou=eng,dc=vmware,dc=com
+member: cn=John-5,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+member: cn=Group-1,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+#########################################################
+Delete John-2
+#########################################################
+
+deleting entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-1, eng, vmware.com
+dn: cn=Group-1,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-4
+member: externalObjectId=06783c58-4fdf-1031-8788-c37afe35b265
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: cn=John-3,ou=eng,dc=vmware,dc=com
+member: cn=John-4,ou=eng,dc=vmware,dc=com
+member: cn=John-5,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+member: cn=Group-1,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+#########################################################
+Delete John-3
+#########################################################
+
+deleting entry "cn=John-3,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-1, eng, vmware.com
+dn: cn=Group-1,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-4
+member: externalObjectId=06783c58-4fdf-1031-8788-c37afe35b265
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: cn=John-4,ou=eng,dc=vmware,dc=com
+member: cn=John-5,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+member: cn=Group-1,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+#########################################################
+Delete Group-1
+#########################################################
+
+deleting entry "cn=Group-1,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: cn=John-4,ou=eng,dc=vmware,dc=com
+member: cn=John-5,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete John-4 as member from Group-2
+#########################################################
+
+modifying entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: cn=John-5,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete John-5 as member from Group-2
+#########################################################
+
+modifying entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: externalObjectId=S-1-2-3-5
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete S-1-2-3-5 as member from Group-2
+#########################################################
+
+modifying entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+member: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+##################################################################
+Delete 06783c58-4fdf-1031-8778-c37afe35b265 from Group-2
+##################################################################
+
+modifying entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for groups
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=groupOfNames
+# requesting: member 
+#
+
+# Group-2, eng, vmware.com
+dn: cn=Group-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete Group-2
+#########################################################
+
+deleting entry "cn=Group-2,ou=eng,dc=vmware,dc=com"
+
+#########################################################
+Search for ForeignSecurityPrincipals
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: objectClass=foreignSecurityPrincipal
+# requesting: externalObjectId 
+#
+
+# S-1-2-3-4, ForeignSecurityPrincipals, vmware.com
+dn: externalObjectId=S-1-2-3-4,cn=ForeignSecurityPrincipals,dc=vmware,dc=com
+externalObjectId: S-1-2-3-4
+
+# 06783c58-4fdf-1031-8788-c37afe35b265, ForeignSecurityPrincipals, vmware.com
+dn: externalObjectId=06783c58-4fdf-1031-8788-c37afe35b265,cn=ForeignSecurityPr
+ incipals,dc=vmware,dc=com
+externalObjectId: 06783c58-4fdf-1031-8788-c37afe35b265
+
+# S-1-2-3-5, ForeignSecurityPrincipals, vmware.com
+dn: externalObjectId=S-1-2-3-5,cn=ForeignSecurityPrincipals,dc=vmware,dc=com
+externalObjectId: S-1-2-3-5
+
+# 06783c58-4fdf-1031-8778-c37afe35b265, ForeignSecurityPrincipals, vmware.com
+dn: externalObjectId=06783c58-4fdf-1031-8778-c37afe35b265,cn=ForeignSecurityPr
+ incipals,dc=vmware,dc=com
+externalObjectId: 06783c58-4fdf-1031-8778-c37afe35b265
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 5
+# numEntries: 4

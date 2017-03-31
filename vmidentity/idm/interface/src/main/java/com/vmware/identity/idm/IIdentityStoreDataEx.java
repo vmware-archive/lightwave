@@ -146,4 +146,15 @@ public interface IIdentityStoreDataEx extends java.io.Serializable {
     * @return the permissible authentication types on provider
     */
    public int[] getAuthnTypes();
+
+   /**
+    * @return if linking account using UPN for certificate authentication
+    */
+   public boolean getCertLinkingUseUPN();
+
+   /**
+    * @return attribute name for hint in certificate authentication
+    */
+   public String getCertUserHintAttributeName();
+
 }

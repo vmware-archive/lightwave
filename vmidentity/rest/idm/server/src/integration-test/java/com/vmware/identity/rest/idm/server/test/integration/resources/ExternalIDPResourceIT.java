@@ -17,8 +17,8 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Collection;
@@ -27,7 +27,6 @@ import java.util.Scanner;
 
 import javax.ws.rs.container.ContainerRequestContext;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,6 +47,7 @@ import com.vmware.identity.rest.idm.server.test.util.IDPConfigUtil;
  * @author Travis Hall
  */
 @Category(IntegrationTest.class)
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class ExternalIDPResourceIT extends TestBase {
 
     private static final String TEST_DATA_EXTERNAL_IDP_PATH = "src/integration-test/resources/external_idp_config.xml";
@@ -176,9 +176,19 @@ public class ExternalIDPResourceIT extends TestBase {
         }
     }
 
+    @Test
+    public void testDeleteJitUsers() throws Exception {
+        IDPConfig config = IDPConfigUtil.createIDPConfig();
+        try {
+            register(config);
+        } finally {
+            delete(config, true);
+        }
+    }
+
     @Test(expected = NotFoundException.class)
     public void testDelete_NoSuchEntity() throws Exception {
-        resource.delete("junk");
+        resource.delete("junk", false);
     }
 
     @Test(expected = NotFoundException.class)
@@ -186,7 +196,7 @@ public class ExternalIDPResourceIT extends TestBase {
         resource = new ExternalIDPResource("unknown.local", request, null);
         resource.setIDMClient(idmClient);
 
-        resource.delete("junk");
+        resource.delete("junk", false);
     }
 
     private ExternalIDPDTO register(IDPConfig config) throws Exception {
@@ -198,11 +208,19 @@ public class ExternalIDPResourceIT extends TestBase {
     }
 
     private void delete(IDPConfig config) throws Exception {
-        resource.delete(config.getEntityID());
+        resource.delete(config.getEntityID(), false);
+    }
+
+    private void delete(IDPConfig config, boolean removeJitUsers) throws Exception {
+        resource.delete(config.getEntityID(), removeJitUsers);
     }
 
     private void delete(String externalIdpEntityId) throws Exception {
-        resource.delete(externalIdpEntityId);
+        resource.delete(externalIdpEntityId, false);
+    }
+
+    private void delete(String externalIdpEntityId, boolean removeJitUsers) throws Exception {
+        resource.delete(externalIdpEntityId, removeJitUsers);
     }
 
 }

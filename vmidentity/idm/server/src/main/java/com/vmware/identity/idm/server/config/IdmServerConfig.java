@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.SystemUtils;
 
@@ -82,6 +83,10 @@ public class IdmServerConfig
    private final String CONFIG_SP_SYSTEM_DOMAIN_USER_ALIASES = "SPSystemDomainUserAliases";
    // LDAP IdPs certificates validation enabled property
    private final String CONFIG_LDAPS_CERT_VALIDATION_KEY = "LdapsCertValidation";
+   private final String CONFIG_LDAP_CONNECTION_POOL_MAX = "LdapConnectionPoolMax";
+   private final String CONFIG_LDAP_CONNECTION_POOL_EVICTION_INTERVAL = "LdapConnectionPoolEvictionInterval";
+   private final String CONFIG_LDAP_CONNECTION_POOL_IDLE_TIME = "LdapConnectionPoolIdleTime";
+   private final String CONFIG_LDAP_CONNECTION_POOL_MAX_WAIT = "LdapConnectionPoolMaxWait";
 
    private static final String UPN_SEP_STR = new String(new char[] {ValidateUtil.UPN_SEPARATOR});
 
@@ -133,6 +138,10 @@ public class IdmServerConfig
    private static final String ATTRIBUTE_EMAIL_FRIENDLY_NAME = "email";
 
    private static final String ATTRNAME_FORMAT_URI = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
+   private static final int DEFAULT_LDAP_CONNECTIONS = 2000;
+   private static final long DEFAULT_LDAP_CONNECTION_POOL_EVICTION_INTERVAL = TimeUnit.MINUTES.toMillis(1);
+   private static final long DEFAULT_LDAP_CONNECTION_POOL_IDLE_TIME = TimeUnit.MINUTES.toMillis(1);
+   private static final long DEFAULT_LDAP_CONNECTION_MAX_WAIT_MILIS = TimeUnit.SECONDS.toMillis(30);
 
    private static IdmServerConfig ourInstance = new IdmServerConfig();
 
@@ -295,6 +304,87 @@ public class IdmServerConfig
          }
        }
    }
+
+    public int getLdapConnPoolMaxConnections() {
+	IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+	try (IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ)) {
+	    Integer maxLdapConnections = regAdapter.getIntValue(rootKey, CONFIG_ROOT_KEY,
+		    CONFIG_LDAP_CONNECTION_POOL_MAX, true);
+
+	    if (maxLdapConnections == null) {
+		return DEFAULT_LDAP_CONNECTIONS;
+	    } else {
+		return maxLdapConnections;
+	    }
+	}
+    }
+
+    public long getLdapConnPoolMaxWait() {
+	IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+	long ldapConnectionMaxWaitMilis = DEFAULT_LDAP_CONNECTION_MAX_WAIT_MILIS;
+
+	try (IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ)) {
+	    String ldapConnectionMaxWaitMilisValue = regAdapter.getStringValue(rootKey, CONFIG_ROOT_KEY,
+		    CONFIG_LDAP_CONNECTION_POOL_MAX_WAIT, true);
+
+	    if (ldapConnectionMaxWaitMilisValue != null) {
+		try {
+		    ldapConnectionMaxWaitMilis = Long.parseLong(ldapConnectionMaxWaitMilisValue);
+		    if (ldapConnectionMaxWaitMilis <= 0) {
+			ldapConnectionMaxWaitMilis = DEFAULT_LDAP_CONNECTION_MAX_WAIT_MILIS;
+		    }
+		} catch (NumberFormatException e) {
+		    ldapConnectionMaxWaitMilis = DEFAULT_LDAP_CONNECTION_MAX_WAIT_MILIS;
+		}
+	    }
+	}
+
+	return ldapConnectionMaxWaitMilis;
+    }
+
+    public long getLdapConnPoolEvictionInterval() {
+	IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+	long ldapConnectionPoolEvictionInterval = DEFAULT_LDAP_CONNECTION_POOL_EVICTION_INTERVAL;
+
+	try (IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ)) {
+	    String ldapConnectionPoolEvictionIntervalValue = regAdapter.getStringValue(rootKey, CONFIG_ROOT_KEY,
+		    CONFIG_LDAP_CONNECTION_POOL_EVICTION_INTERVAL, true);
+
+	    if (ldapConnectionPoolEvictionIntervalValue != null) {
+		try {
+		    ldapConnectionPoolEvictionInterval = Long.parseLong(ldapConnectionPoolEvictionIntervalValue);
+		    if (ldapConnectionPoolEvictionInterval <= 0)
+			ldapConnectionPoolEvictionInterval = DEFAULT_LDAP_CONNECTION_POOL_EVICTION_INTERVAL;
+		} catch (NumberFormatException e) {
+		    ldapConnectionPoolEvictionInterval = DEFAULT_LDAP_CONNECTION_POOL_EVICTION_INTERVAL;
+		}
+	    }
+	}
+
+	return ldapConnectionPoolEvictionInterval;
+    }
+
+    public long getLdapConnPoolIdleTime() {
+	IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+	long ldapConnectionPoolIdleTime = DEFAULT_LDAP_CONNECTION_POOL_IDLE_TIME;
+
+	try (IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ)) {
+	    String ldapConnectionPoolIdleTimeValue = regAdapter.getStringValue(rootKey, CONFIG_ROOT_KEY,
+		    CONFIG_LDAP_CONNECTION_POOL_IDLE_TIME, true);
+
+	    if (ldapConnectionPoolIdleTimeValue != null) {
+		try {
+		    ldapConnectionPoolIdleTime = Long.parseLong(ldapConnectionPoolIdleTimeValue);
+		    if (ldapConnectionPoolIdleTime <= 0)
+			ldapConnectionPoolIdleTime = DEFAULT_LDAP_CONNECTION_POOL_IDLE_TIME;
+		} catch (NumberFormatException e) {
+		    ldapConnectionPoolIdleTime = DEFAULT_LDAP_CONNECTION_POOL_IDLE_TIME;
+		}
+	    }
+	}
+
+	return ldapConnectionPoolIdleTime;
+    }
 
    private IdmServerConfig()
    {

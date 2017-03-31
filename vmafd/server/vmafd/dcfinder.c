@@ -21,6 +21,16 @@ VmAfdGetDomainController(
     return ERROR_NOT_SUPPORTED;
 }
 
+DWORD
+VmAfdGetDomainControllerList(
+    PCSTR pszDomain,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList,
+    PDWORD pdCount
+    )
+{
+    return ERROR_NOT_SUPPORTED;
+}
+
 #else
 
 static
@@ -160,6 +170,7 @@ VmAfdGetDomainControllerList(
     DWORD dwServerCount = 0;
     PSTR  pszQuestion = NULL;
     DWORD dwDsFlags = 0;
+    PSTR  pszUPN = NULL;
     PSTR  pszDomainDN = NULL;
     PVMAFD_DC_INFO_W pVmAfdDCEntries = NULL;
 
@@ -191,12 +202,9 @@ VmAfdGetDomainControllerList(
                             );
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfSrvGetDomainDN(pszDomain, &pszDomainDN);
-
        for (; dwIndex < dwServerCount; dwIndex++)
        {
            PDNS_SERVER_INFO pServerInfo = &pServerArray[dwIndex];
- 
            PVMAFD_DC_INFO_W pDcInfo = &pVmAfdDCEntries[dwIndex];
 
            dwError = VmAfdAllocateStringWFromA(
@@ -221,6 +229,7 @@ cleanup:
         LWNetFreeMemory(pServerArray);
     }
     VMAFD_SAFE_FREE_MEMORY(pszQuestion);
+    VMAFD_SAFE_FREE_MEMORY(pszUPN);
     VMAFD_SAFE_FREE_MEMORY(pszDomainDN);
 
     return dwError;

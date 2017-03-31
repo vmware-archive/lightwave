@@ -75,6 +75,11 @@ VmDirFreeAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo
     );
 
+void
+VmDirDeleteConnection(
+    VDIR_CONNECTION **  conn
+    );
+
 // controls.c
 void
 DeleteControls(
@@ -86,14 +91,10 @@ ParseRequestControls(
    VDIR_LDAP_RESULT *   lr );
 
 int
-ParseSyncStateControlVal(
-    BerValue *  controlValue,
-    int *       entryState);
-
-int
 ParseAndFreeSyncStateControl(
     LDAPControl ***pCtrls,
-    int *piEntryState
+    int*        piEntryState,
+    USN*        pulPartnerUSN
     );
 
 int
@@ -115,12 +116,6 @@ WriteSyncStateControl(
    BerElement *       ber,
    PSTR*              ppszErrorMsg
    );
-
-int
-WriteConsistencyWriteDoneControl(
-    VDIR_OPERATION *       pOp,
-    BerElement *           pBer
-    );
 
 // delete.c
 int

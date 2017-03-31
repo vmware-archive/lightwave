@@ -29,11 +29,15 @@ public class DiagnosticsContextFactory
 
     private static class DiagnosticsContext implements IDiagnosticsContextScope
     {
-        private final String _correlationId;
-        private final String _tenantName;
+        private final String _previousCorrelationId;
+        private final String _previousTenantName;
 
         public DiagnosticsContext( String correlationId, String tenantName )
         {
+            // save the current context
+            _previousCorrelationId = ThreadContext.get(DiagnosticsConstants.CorrelationIdMdcKey);
+            _previousTenantName = ThreadContext.get(DiagnosticsConstants.TenantNameMdcKey);
+
             if ( correlationId == null )
             {
                 correlationId = "";
@@ -42,9 +46,6 @@ public class DiagnosticsContextFactory
             {
                 tenantName = "";
             }
-
-            this._correlationId = correlationId;
-            this._tenantName = tenantName;
 
             ThreadContext.put( DiagnosticsConstants.CorrelationIdMdcKey, correlationId );
             ThreadContext.put( DiagnosticsConstants.TenantNameMdcKey, tenantName );
@@ -55,6 +56,14 @@ public class DiagnosticsContextFactory
         {
             ThreadContext.remove( DiagnosticsConstants.CorrelationIdMdcKey );
             ThreadContext.remove( DiagnosticsConstants.TenantNameMdcKey );
+
+            // restore the previous context
+            if (_previousCorrelationId != null) {
+                ThreadContext.put(DiagnosticsConstants.CorrelationIdMdcKey, _previousCorrelationId);
+            }
+            if (_previousTenantName != null) {
+                ThreadContext.put(DiagnosticsConstants.TenantNameMdcKey, _previousTenantName);
+            }
         }
     }
 

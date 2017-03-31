@@ -117,13 +117,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\include;..\..\include\public;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include;..\..\include\public;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>pthreadVC2.lib;dcelib.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -152,7 +152,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\include;..\..\include\public;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include;..\..\include\public;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -160,7 +160,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>pthreadVC2.lib;dcelib.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,0 +1,4 @@
+SUBDIRS = \
+    common \
+    oidc \
+    restclient

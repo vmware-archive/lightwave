@@ -250,12 +250,15 @@ VmDnsCNameRecordGetRDataLength(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsGetDomainNameLength(
-                                  Data.CNAME.pNameHost,
-                                  &uRdataLength,
-                                  bTokenizeDomainName
-                                  );
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (Data.CNAME.pNameHost != NULL)
+    {
+        dwError = VmDnsGetDomainNameLength(
+                                      Data.CNAME.pNameHost,
+                                      &uRdataLength,
+                                      bTokenizeDomainName
+                                      );
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     *puRDataLength = uRdataLength;
 
@@ -298,13 +301,15 @@ VmDnsSerializeDnsCNameRecord(
                                  );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsWriteDomainNameToBuffer(
+    if (Data.CNAME.pNameHost != NULL)
+    {
+        dwError = VmDnsWriteDomainNameToBuffer(
                                  Data.CNAME.pNameHost,
                                  pVmDnsBuffer,
                                  pVmDnsBuffer->bTokenizeDomainName
                                  );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 cleanup:
 
     return dwError;
@@ -336,25 +341,21 @@ VmDnsDeserializeDnsCNameRecord(
                                 );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (!dwRDataLength)
+    if (dwRDataLength)
     {
-        dwError = ERROR_EMPTY;
+        dwError = VmDnsReadDomainNameFromBuffer(
+                                 pVmDnsBuffer,
+                                 &pData->CNAME.pNameHost
+                                 );
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsCNameRecordGetRDataLength(
+                    *pData,
+                    &uReceivedRDataLength,
+                    pVmDnsBuffer->bTokenizeDomainName);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
     }
-
-    dwError = VmDnsReadDomainNameFromBuffer(
-                             pVmDnsBuffer,
-                             &pData->CNAME.pNameHost
-                             );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsCNameRecordGetRDataLength(
-                *pData,
-                &uReceivedRDataLength,
-                pVmDnsBuffer->bTokenizeDomainName);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-
 cleanup:
 
     return dwError;

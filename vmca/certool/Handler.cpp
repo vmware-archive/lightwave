@@ -55,7 +55,6 @@ _HandleOpenServer(
                   (PCSTR) argSrpUpn.c_str(),
                   NULL,
                   (PCSTR) argSrpPwd.c_str(),
-
                   0, //flags
                   NULL, // Reserved
                   &hServer);
@@ -1688,4 +1687,111 @@ cleanup:
 error:
     goto cleanup;
 
+}
+
+DWORD
+HandleSetServerOption()
+{
+    DWORD   dwError = 0;
+    unsigned int    dwOption = 0;
+    PVMCA_SERVER_CONTEXT    hServer = NULL;
+
+    if (std::strcmp(argOption.c_str(), VMCA_OPTION_MULTIPLE_SAN) == 0) {
+        dwOption = VMCA_SERVER_OPT_ALLOW_MULTIPLE_SAN;
+    }
+    else
+    {
+        std::cerr << "Unrecognizable server option: " << argOption << std::endl;
+        dwError = VMCA_ARGUMENT_ERROR;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = _HandleOpenServer(&hServer);
+    BAIL_ON_ERROR(dwError);
+
+    // Call into VMCA Server to set server option
+    dwError =  VMCASetServerOptionHA(
+            hServer, (PCSTR)argServerName.c_str(), dwOption);
+    BAIL_ON_ERROR(dwError);
+
+error:
+    if (hServer)
+    {
+        VMCACloseServer(hServer);
+    }
+    return dwError;
+}
+
+DWORD
+HandleUnsetServerOption()
+{
+    DWORD   dwError = 0;
+    unsigned int    dwOption = 0;
+    PVMCA_SERVER_CONTEXT    hServer = NULL;
+
+    if (std::strcmp(argOption.c_str(), VMCA_OPTION_MULTIPLE_SAN) == 0) {
+        dwOption = VMCA_SERVER_OPT_ALLOW_MULTIPLE_SAN;
+    }
+    else
+    {
+        std::cerr << "Unrecognizable server option: " << argOption << std::endl;
+        dwError = VMCA_ARGUMENT_ERROR;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = _HandleOpenServer(&hServer);
+    BAIL_ON_ERROR(dwError);
+
+    // Call into VMCA Server to unset server option
+    dwError =  VMCAUnsetServerOptionHA(
+            hServer, (PCSTR)argServerName.c_str(), dwOption);
+    BAIL_ON_ERROR(dwError);
+
+error:
+    if (hServer)
+    {
+        VMCACloseServer(hServer);
+    }
+    return dwError;
+}
+
+DWORD
+HandleGetServerOption()
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    unsigned int    dwOption = 0;
+    PVMCA_SERVER_CONTEXT    hServer = NULL;
+
+    dwError = _HandleOpenServer(&hServer);
+    BAIL_ON_ERROR(dwError);
+
+    // Call into VMCA Server to get server option
+    dwError =  VMCAGetServerOptionHA(
+            hServer, (PCSTR)argServerName.c_str(), &dwOption);
+    BAIL_ON_ERROR(dwError);
+
+    // Print enabled options
+    for (i = 1; i < VMCA_SERVER_OPT_COUNT; i <<= 1)
+    {
+        if (dwOption & i)
+        {
+            switch (i)
+            {
+            case VMCA_SERVER_OPT_ALLOW_MULTIPLE_SAN:
+                std::cout << VMCA_OPTION_MULTIPLE_SAN << std::endl;
+                break;
+
+            default:
+                break;
+            }
+        }
+    }
+
+error:
+    if (hServer)
+    {
+        VMCACloseServer(hServer);
+    }
+    return dwError;
 }

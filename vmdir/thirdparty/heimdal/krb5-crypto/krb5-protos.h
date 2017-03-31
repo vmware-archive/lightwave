@@ -404,4 +404,206 @@ krb5_storage_set_flags (
         krb5_storage * /*sp*/,
         krb5_flags /*flags*/);
 
+KRB5_LIB_FUNCTION krb5_storage * KRB5_LIB_CALL
+krb5_storage_from_mem (
+        void * /*buf*/,
+        size_t /*len*/);
+
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_checksum_is_keyed (
+        krb5_context /*context*/,
+        krb5_cksumtype /*type*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_crypto_init (
+        krb5_context /*context*/,
+        const krb5_keyblock * /*key*/,
+        krb5_enctype /*etype*/,
+        krb5_crypto * /*crypto*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_verify_checksum (
+        krb5_context /*context*/,
+        krb5_crypto /*crypto*/,
+        krb5_key_usage /*usage*/,
+        void * /*data*/,
+        size_t /*len*/,
+        Checksum * /*cksum*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_crypto_destroy (
+        krb5_context /*context*/,
+        krb5_crypto /*crypto*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_create_checksum (
+        krb5_context /*context*/,
+        krb5_crypto /*crypto*/,
+        krb5_key_usage /*usage*/,
+        int /*type*/,
+        void * /*data*/,
+        size_t /*len*/,
+        Checksum * /*result*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_parse_name_flags (
+        krb5_context /*context*/,
+        const char * /*name*/,
+        int /*flags*/,
+        krb5_principal * /*principal*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_unparse_name_flags (
+        krb5_context /*context*/,
+        krb5_const_principal /*principal*/,
+        int /*flags*/,
+        char ** /*name*/);
+
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_principal_compare_any_realm (
+        krb5_context /*context*/,
+        krb5_const_principal /*princ1*/,
+        krb5_const_principal /*princ2*/);
+
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_free_principal (
+        krb5_context /*context*/,
+        krb5_principal /*p*/);
+
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_copy_data (
+        krb5_context /*context*/,
+        const krb5_data * /*indata*/,
+        krb5_data ** /*outdata*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_crypto_get_checksum_type (
+        krb5_context /*context*/,
+        krb5_crypto /*crypto*/,
+        krb5_cksumtype * /*type*/);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_checksumsize (
+        krb5_context /*context*/,
+        krb5_cksumtype /*type*/,
+        size_t * /*size*/);
+
+/* pac.c */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_heim_pac_parse(krb5_context context, const void *ptr, size_t len,
+               krb5_pac *pac);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_heim_pac_init(krb5_context context, krb5_pac *pac);
+
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_heim_pac_add_buffer(krb5_context context, krb5_pac p,
+                    uint32_t type, const krb5_data *data);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_heim_pac_get_buffer(krb5_context context, krb5_pac p,
+                    uint32_t type, krb5_data *data);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_heim_pac_get_types(krb5_context context,
+                   krb5_pac p,
+                   size_t *len,
+                   uint32_t **types);
+
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_heim_pac_free(krb5_context context, krb5_pac pac);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_heim_pac_verify(krb5_context context,
+                const krb5_pac pac,
+                time_t authtime,
+                krb5_const_principal principal,
+                const krb5_keyblock *server,
+                const krb5_keyblock *privsvr);
+
+krb5_error_code
+_krb5_heim_pac_sign(krb5_context context,
+               krb5_pac p,
+               time_t authtime,
+               krb5_principal principal,
+               const krb5_keyblock *server_key,
+               const krb5_keyblock *priv_key,
+               krb5_data *data);
+
+/* principal.c */
+
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_free_principal(krb5_context context,
+                    krb5_principal p);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_parse_name_flags(krb5_context context,
+                      const char *name,
+                      int flags,
+                      krb5_principal *principal);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_unparse_name_flags(krb5_context context,
+                        krb5_const_principal principal,
+                        int flags,
+                        char **name);
+
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_principal_compare_any_realm(krb5_context context,
+                                 krb5_const_principal princ1,
+                                 krb5_const_principal princ2);
+
+/* get_default_realm.c */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_default_realms (krb5_context context,
+			 krb5_realm **realms);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_default_realm(krb5_context context,
+		       krb5_realm *realm);
+
+/* copy_host_realm.c */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_copy_host_realm(krb5_context context,
+		     const krb5_realm *from,
+		     krb5_realm **to);
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_host_realm(krb5_context context,
+                    const char *targethost,
+                    krb5_realm **realms);
+
+/* set_default_realm.c */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_set_default_realm(krb5_context context,
+		       const char *realm);
+/* free_host_realm.c */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_free_host_realm(krb5_context context,
+		     krb5_realm *realmlist);
+
+/* config_file.c */
+
+KRB5_LIB_FUNCTION char** KRB5_LIB_CALL
+krb5_config_get_strings(krb5_context context,
+                        const krb5_config_section *c,
+                        ...);
+
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_config_get_bool_default (krb5_context context,
+                              const krb5_config_section *c,
+                              krb5_boolean def_value,
+                              ...);
+
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
+krb5_config_free_strings(char **strings);
+
+
 #endif

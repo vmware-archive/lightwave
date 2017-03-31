@@ -29,6 +29,7 @@ libmiddle_layer_la_SOURCES = \
     search.c \
     specialsearch.c \
     srputil.c \
+    util.c \
     libmain.c
 
 libmiddle_layer_la_CPPFLAGS = \

@@ -179,6 +179,7 @@ LDAP_END_DECL
 
 #include <process.h>
 #include <windows.h>
+#include <winsock2.h>
 
 LDAP_BEGIN_DECL
 

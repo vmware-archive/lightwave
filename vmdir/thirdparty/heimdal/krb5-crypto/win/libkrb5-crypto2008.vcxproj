@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>libkrb5-crypto</ProjectName>
+    <ProjectGuid>{1A19614B-AF77-4BF9-ABFB-FFE63BBF54DE}</ProjectGuid>
+    <RootNamespace>libkrb5-crypto</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)\CommonProjectProperties.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)\CommonProjectProperties.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include\win;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libeay32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd6;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>krb5-crypto.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include\win;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libeay32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd6;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>krb5-crypto.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\base64.h" />
+    <ClInclude Include="..\com_err.h" />
+    <ClInclude Include="..\config.h" />
+    <ClInclude Include="..\crypto-headers.h" />
+    <ClInclude Include="..\crypto.h" />
+    <ClInclude Include="..\heim_err.h" />
+    <ClInclude Include="..\heim_threads.h" />
+    <ClInclude Include="..\heimbase.h" />
+    <ClInclude Include="..\includes.h" />
+    <ClInclude Include="..\k524_err.h" />
+    <ClInclude Include="..\krb5-private.h" />
+    <ClInclude Include="..\krb5-protos.h" />
+    <ClInclude Include="..\krb5.h" />
+    <ClInclude Include="..\krb5_err.h" />
+    <ClInclude Include="..\krb5_locl.h" />
+    <ClInclude Include="..\parse_time.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="..\wind.h" />
+    <ClInclude Include="..\windlocl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="krb5-crypto.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\crc.c" />
+    <ClCompile Include="..\crypto-aes.c" />
+    <ClCompile Include="..\crypto-algs.c" />
+    <ClCompile Include="..\crypto-arcfour.c" />
+    <ClCompile Include="..\crypto-des-common.c" />
+    <ClCompile Include="..\crypto-des.c" />
+    <ClCompile Include="..\crypto-des3.c" />
+    <ClCompile Include="..\crypto-evp.c" />
+    <ClCompile Include="..\crypto-null.c" />
+    <ClCompile Include="..\crypto-rand.c" />
+    <ClCompile Include="..\crypto-stubs.c" />
+    <ClCompile Include="..\crypto.c" />
+    <ClCompile Include="..\data.c" />
+    <ClCompile Include="..\error_string.c" />
+    <ClCompile Include="..\keyblock.c" />
+    <ClCompile Include="..\n-fold.c" />
+    <ClCompile Include="..\salt-aes.c" />
+    <ClCompile Include="..\salt-arcfour.c" />
+    <ClCompile Include="..\salt-des.c" />
+    <ClCompile Include="..\salt-des3.c" />
+    <ClCompile Include="..\salt.c" />
+    <ClCompile Include="..\store-int.c" />
+    <ClCompile Include="..\store.c" />
+    <ClCompile Include="..\utf8.c" />
+    <ClCompile Include="..\warn.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\krb5-crypto.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\version\win\version.vcxproj">
+      <Project>{07080b1c-2a38-11e3-8065-000c294915dd}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\asn1\win\libasn12008.vcxproj">
+      <Project>{db0bd41d-dfbf-4c81-b850-9b09b4717a29}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\asn1\win\libasn1db2008.vcxproj">
+      <Project>{f28a29f6-1d81-4752-a208-2a4c133c9612}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

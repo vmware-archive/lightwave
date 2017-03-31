@@ -68,6 +68,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_sbindir /opt/vmware/sbin" \
               --define "_lib64dir /opt/vmware/lib64" \
               --define "_datadir /opt/vmware/share" \
+              --define "_logdir $(LIGHTWAVE_LOGDIR)" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
               --define "_vmevent_prefix /opt/vmware" \

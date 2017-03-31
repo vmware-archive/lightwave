@@ -69,10 +69,9 @@ VmDirIndexCfgAcquire(
     pMutex = pIndexCfg->mutex;
     VMDIR_LOCK_MUTEX(bInLock, pMutex);
 
-    if (pIndexCfg->status == VDIR_INDEXING_SCHEDULED &&
-            usage == VDIR_INDEX_READ)
+    if (pIndexCfg->status == VDIR_INDEXING_SCHEDULED)
     {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        goto cleanup;
     }
     else if (pIndexCfg->status == VDIR_INDEXING_IN_PROGRESS &&
             usage == VDIR_INDEX_READ)
@@ -126,19 +125,34 @@ VmDirIndexExist(
     PCSTR   pszAttrName
     )
 {
-    BOOLEAN bExist = FALSE;
+    BOOLEAN bExist = TRUE;
+    PLW_HASHMAP pCurMap = NULL;
+    PLW_HASHMAP pUpdMap = NULL;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
 
-    if (!IsNullOrEmptyString(pszAttrName) &&
-            LwRtlHashMapFindKey(
-                    gVdirIndexGlobals.pIndexCfgMap,
-                    (PVOID*)&pIndexCfg,
-                    pszAttrName) == 0)
+    pCurMap = gVdirIndexGlobals.pIndexCfgMap;
+    pUpdMap = gVdirIndexGlobals.pIndexUpd ?
+            gVdirIndexGlobals.pIndexUpd->pUpdIndexCfgMap : NULL;
+
+    if (IsNullOrEmptyString(pszAttrName))
     {
-        if (pIndexCfg->status != VDIR_INDEXING_DISABLED &&
-            pIndexCfg->status != VDIR_INDEXING_DELETED)
+        bExist = FALSE;
+    }
+    else
+    {
+        if (pUpdMap)
         {
-            bExist = TRUE;
+            LwRtlHashMapFindKey(pUpdMap, (PVOID*)&pIndexCfg, pszAttrName);
+        }
+        if (!pIndexCfg)
+        {
+            LwRtlHashMapFindKey(pCurMap, (PVOID*)&pIndexCfg, pszAttrName);
+        }
+        if (!pIndexCfg ||
+            pIndexCfg->status == VDIR_INDEXING_DISABLED ||
+            pIndexCfg->status == VDIR_INDEXING_DELETED)
+        {
+            bExist = FALSE;
         }
     }
 
@@ -176,7 +190,6 @@ VmDirIndexUpdateBegin(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
     PVDIR_INDEX_UPD pIndexUpd = NULL;
 
     if (!ppIndexUpd)
@@ -187,9 +200,6 @@ VmDirIndexUpdateBegin(
 
     dwError = VmDirIndexUpdInit(pBECtx, &pIndexUpd);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOCK_MUTEX(pIndexUpd->bInLock, gVdirIndexGlobals.mutex);
-    bInLock = pIndexUpd->bInLock;
 
     dwError = VmDirIndexUpdCopy(gVdirIndexGlobals.pIndexUpd, pIndexUpd);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -215,7 +225,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
     VmDirIndexUpdFree(pIndexUpd);
     goto cleanup;
 }
@@ -226,7 +235,6 @@ VmDirIndexUpdateCommit(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
     PSTR            pszStatus = NULL;
@@ -260,12 +268,10 @@ VmDirIndexUpdateCommit(
         pIndexUpd->bHasBETxn = FALSE;
     }
 
-    bInLock = pIndexUpd->bInLock;
     VmDirIndexUpdFree(gVdirIndexGlobals.pIndexUpd);
     gVdirIndexGlobals.pIndexUpd = pIndexUpd;
 
     VmDirConditionSignal(gVdirIndexGlobals.cond);
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s succeeded", __FUNCTION__ );
 
@@ -286,15 +292,12 @@ VmDirIndexUpdateAbort(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
 
     if (!pIndexUpd)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    bInLock = pIndexUpd->bInLock;
 
     if (pIndexUpd->bHasBETxn)
     {
@@ -308,7 +311,6 @@ VmDirIndexUpdateAbort(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s succeeded", __FUNCTION__ );
 
 cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
     VmDirIndexUpdFree(pIndexUpd);
     return dwError;
 
@@ -360,6 +362,11 @@ VmDirIndexSchedule(
             pNewCfg = pUpdCfg;
 
             pUpdCfg->status = VDIR_INDEXING_SCHEDULED;
+        }
+        else if (pCurCfg->status == VDIR_INDEXING_DISABLED)
+        {
+            dwError = VMDIR_ERROR_BUSY;
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
         else
         {
@@ -461,7 +468,6 @@ VmDirIndexAddUniquenessScope(
 {
     DWORD   dwError = 0;
     DWORD   i = 0;
-    PSTR    pszUniqScope = NULL;
     PLW_HASHMAP pCurCfgMap = NULL;
     PLW_HASHMAP pUpdCfgMap = NULL;
     PVDIR_INDEX_CFG pCurCfg = NULL;
@@ -504,23 +510,8 @@ VmDirIndexAddUniquenessScope(
 
     for (i = 0; ppszUniqScopes[i]; i++)
     {
-        if (LwRtlHashMapFindKey(
-                pUpdCfg->pUniqScopes, NULL, ppszUniqScopes[i]) == 0)
-        {
-            dwError = ERROR_ALREADY_EXISTS;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    for (i = 0; ppszUniqScopes[i]; i++)
-    {
-        dwError = VmDirAllocateStringA(ppszUniqScopes[i], &pszUniqScope);
+        dwError = VmDirIndexCfgAddUniqueScopeMod(pUpdCfg, ppszUniqScopes[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirLinkedListInsertHead(
-                pUpdCfg->pNewUniqScopes, pszUniqScope, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        pszUniqScope = NULL;
     }
 
     dwError = LwRtlHashMapInsert(pUpdCfgMap, pUpdCfg->pszAttrName, pUpdCfg, NULL);
@@ -533,7 +524,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
-    VMDIR_SAFE_FREE_MEMORY(pszUniqScope);
     VmDirFreeIndexCfg(pNewCfg);
     goto cleanup;
 }
@@ -547,7 +537,6 @@ VmDirIndexDeleteUniquenessScope(
 {
     DWORD   dwError = 0;
     DWORD   i = 0;
-    PSTR    pszUniqScope = NULL;
     PLW_HASHMAP pCurCfgMap = NULL;
     PLW_HASHMAP pUpdCfgMap = NULL;
     PVDIR_INDEX_CFG pCurCfg = NULL;
@@ -590,23 +579,8 @@ VmDirIndexDeleteUniquenessScope(
 
     for (i = 0; ppszUniqScopes[i]; i++)
     {
-        if (LwRtlHashMapFindKey(
-                pUpdCfg->pUniqScopes, NULL, ppszUniqScopes[i]) != 0)
-        {
-            dwError = VMDIR_ERROR_NOT_FOUND;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    for (i = 0; ppszUniqScopes[i]; i++)
-    {
-        dwError = VmDirAllocateStringA(ppszUniqScopes[i], &pszUniqScope);
+        dwError = VmDirIndexCfgDeleteUniqueScopeMod(pUpdCfg, ppszUniqScopes[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirLinkedListInsertHead(
-                pUpdCfg->pDelUniqScopes, pszUniqScope, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        pszUniqScope = NULL;
     }
 
     dwError = LwRtlHashMapInsert(pUpdCfgMap, pUpdCfg->pszAttrName, pUpdCfg, NULL);
@@ -619,7 +593,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
-    VMDIR_SAFE_FREE_MEMORY(pszUniqScope);
     VmDirFreeIndexCfg(pNewCfg);
     goto cleanup;
 }

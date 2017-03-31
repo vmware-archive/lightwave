@@ -76,6 +76,10 @@ VecsDbReset(
     VOID
     );
 
+DWORD
+VecsDbCleanupPermissions(
+    VOID
+    );
 
 DWORD
 VecsDbCreateCertStore(
@@ -281,6 +285,15 @@ VecsDbQueryCertificateByAlias(
     PCWSTR                      pwszAlias
 );
 
+DWORD
+VecsDbSetDbVersion(
+    DWORD dwVersion
+    );
+
+DWORD
+VecsDbGetDbVersion(
+    PDWORD pdwVersion
+    );
 
 #ifdef __cplusplus
 }

@@ -1646,6 +1646,7 @@ final class ClientCertPolicyLdapObject extends BaseLdapObject<TenantClientCertPo
     public static final String PROPERTY_CLIENT_CERT_CRL_CHECK_CRL_URL = "vmwSTSClientCertCRLUrl";
     public static final String PROPERTY_CLIENT_CERT_CRL_CHECK_CRL_CACHE_SIZE = "vmwSTSClientCertCRLCacheSize";
     public static final String PROPERTY_CLIENT_CERT_CRL_CHECK_CUSTOMER_POLICY_OID = "vmwSTSClientCertCustomCertPolicyOid";
+    public static final String PROPERTY_CLIENT_CERT_ENABLE_HINT = "vmwSTSClientCertEnableUserNameHint";
 
     public static final String CONTAINER_CLIENT_CERT_TRUSTED_CA_CERTIFICATES = "ClientCertAuthnTrustedCAs";
     public static final String CLIENT_CERT_TRUSTED_CA_CERTIFICATES_DEFAULT_NAME = "DefaultClientCertCAStore";
@@ -1877,7 +1878,24 @@ final class ClientCertPolicyLdapObject extends BaseLdapObject<TenantClientCertPo
                                          return ServerUtils.getLdapValue(c);
                                      }
                                  }
-                         )
+                         ),
+                         new PropertyMapperMetaInfo<TenantClientCertPolicy>(
+                             PROPERTY_CLIENT_CERT_ENABLE_HINT,
+                             -1,
+                             true,
+                             new IPropertyGetterSetter<TenantClientCertPolicy>() {
+                                 @Override
+                                 public void SetLdapValue(TenantClientCertPolicy object, LdapValue[] value) {
+                                     ValidateUtil.validateNotNull( object, "object" );
+                                     object.getClientCertPolicy().setEnableHint(ServerUtils.getBooleanValue(value));
+                                 }
+                                 @Override
+                                 public LdapValue[] GetLdapValue(TenantClientCertPolicy object) {
+                                     ValidateUtil.validateNotNull( object, "object" );
+                                     return ServerUtils.getLdapValue(object.getClientCertPolicy().getEnableHint());
+                                 }
+                             }
+                     )
                 }
           );
     }
@@ -2988,6 +3006,8 @@ final class IdentityProviderLdapObject extends BaseLdapObject<IIdentityStoreData
     public static final String PROPERTY_FLAGS = "vmwSTSIdentityStoreFlags";
     public static final String PROPERTY_TRUSTED_CERTIFICATES = "userCertificate";
     public static final String PROPERTY_AUTHN_TYPES = "vmwSTSAuthnTypes";
+    public static final String PROPERTY_CERT_AUTHN_HINT_ATTR_NAME = "vmwSTSUserHintAttributeName";
+    public static final String PROPERTY_CERT_AUTHN_LINKING_USE_UPN = "vmwSTSCertificateAccountLinkingUseUPN";
 
     @SuppressWarnings("unchecked")
     private IdentityProviderLdapObject()
@@ -3032,6 +3052,55 @@ final class IdentityProviderLdapObject extends BaseLdapObject<IIdentityStoreData
                                 },
                                 false // cannot update in ldap
                         ),
+
+                        new PropertyMapperMetaInfo<IIdentityStoreData>(
+                            PROPERTY_CERT_AUTHN_HINT_ATTR_NAME,
+                            -1,
+                            true,
+                            new IPropertyGetterSetter<IIdentityStoreData>() {
+                                @Override
+                                public void SetLdapValue(IIdentityStoreData object, LdapValue[] value)
+                                {
+                                    ServerIdentityStoreData serverIdentityStoreData =
+                                            getServerIdentityStoreData(object);
+
+                                    serverIdentityStoreData.setHintAttributeName(
+                                            ServerUtils.getStringValue( value )
+                                    );
+                                }
+                                @Override
+                                public LdapValue[] GetLdapValue(IIdentityStoreData object)
+                                {
+                                    IIdentityStoreDataEx storeData = getIIdentityStoreDataEx( object );
+                                    return ServerUtils.getLdapValue(
+                                            (storeData != null) ? storeData.getCertUserHintAttributeName() : null );
+                                }
+
+                            },
+                            false // cannot update in ldap
+                        ),
+
+                        new PropertyMapperMetaInfo<IIdentityStoreData>(
+                            PROPERTY_CERT_AUTHN_LINKING_USE_UPN,
+                            -1,
+                            true,
+                            new IPropertyGetterSetter<IIdentityStoreData>() {
+                                @Override
+                                public void SetLdapValue(IIdentityStoreData object, LdapValue[] value) {
+                                    ValidateUtil.validateNotNull( object, "object" );
+                                    ServerIdentityStoreData serverIdentityStoreData =
+                                        getServerIdentityStoreData(object);
+
+                                    serverIdentityStoreData.setAccountLinkingUseUPN(ServerUtils.getBooleanValue(value));
+                                }
+                                @Override
+                                public LdapValue[] GetLdapValue(IIdentityStoreData object) {
+                                    ValidateUtil.validateNotNull( object, "object" );
+                                    return ServerUtils.getLdapValue(object.getExtendedIdentityStoreData().getCertLinkingUseUPN());
+                                }
+                            }
+                        ),
+
                         new PropertyMapperMetaInfo<IIdentityStoreData>(
                                 PROPERTY_DOMAIN_NAME,
                                 -1,
@@ -3592,7 +3661,6 @@ final class ContainerLdapObject extends BaseLdapObject<String>
     public static final String CONTAINER_SINGLE_LOGOUT_SERVICES = "SingleLogoutServices";
     public static final String CONTAINER_SIGNATURE_ALGORITHMS_SERVICES = "SignatureAlgorithms";
     public static final String CONTAINER_TRUSTED_CERTIFICATE_CHAINS = "TrustedCertificateChains";
-    public static final String CONTAINER_SOLUTION_USERS = "ServicePrincipals";
     public static final String CONTAINER_OIDC_CLIENTS = "OIDCClients";
     public static final String CONTAINER_RESOURCE_SERVERS = "ResourceServers";
 

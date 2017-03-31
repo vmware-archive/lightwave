@@ -59,6 +59,7 @@ VmDirSubSchemaSubEntry(
     dwError = VmDirAttrListToNewEntry(pSchemaCtx,
             SUB_SCHEMA_SUB_ENTRY_DN,
             ppszBaseAttr,
+            TRUE,
             &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 

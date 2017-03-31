@@ -57,6 +57,7 @@
 #include <ldaphead.h>
 #include <middlelayer.h>
 #include <replication.h>
+#include <vmacl.h>
 
 #include <structs.h>
 #include <prototypes.h>
@@ -73,14 +74,10 @@
 
 #pragma once
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
 #include <WinSock2.h>
 #include <stdint.h>
 #include <stdlib.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <rpc.h>
-#endif
 #include <assert.h>
 #include <stddef.h>
 #include <tchar.h>
@@ -120,6 +117,7 @@
 #include <ldaphead.h>
 #include <middlelayer.h>
 #include <replication.h>
+#include <vmacl.h>
 
 #include <structs.h>
 #include "prototypes.h"

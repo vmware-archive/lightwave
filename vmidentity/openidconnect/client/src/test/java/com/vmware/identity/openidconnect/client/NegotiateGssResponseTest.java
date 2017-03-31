@@ -57,6 +57,7 @@ public class NegotiateGssResponseTest {
     private static TokenSpec tokenSpec = TokenSpec.EMPTY;
     private static URI tokenEndpointURI = URI.create("https://abc.com/token");
     private static ClientID clientId = new ClientID("__client_id__");
+    private static ClientAuthenticationMethod clientAuthenticationMethod = ClientAuthenticationMethod.NONE;
     private static HolderOfKeyConfig holderOfKeyConfig = null;
     private static KeyStore keyStore = PowerMock.createMock(KeyStore.class);
     private static String contextId = "abcd1234";
@@ -102,6 +103,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore)).andReturn(httpResponseGssContinue);
         EasyMock.expect(OIDCClientUtils.buildAndSendTokenRequest(
@@ -109,6 +111,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore)).andReturn(httpResponseGssSuccess);
         PowerMock.replay(OIDCClientUtils.class);
@@ -118,6 +121,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore,
                 contextId);
@@ -135,6 +139,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore)).andReturn(httpResponseError);
         PowerMock.replay(OIDCClientUtils.class);
@@ -144,6 +149,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore,
                 contextId);
@@ -161,6 +167,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore)).andReturn(httpResponseGssContinueWrongClientId);
         PowerMock.replay(OIDCClientUtils.class);
@@ -170,6 +177,7 @@ public class NegotiateGssResponseTest {
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
+                clientAuthenticationMethod,
                 holderOfKeyConfig,
                 keyStore,
                 contextId);

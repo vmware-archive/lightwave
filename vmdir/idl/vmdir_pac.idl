@@ -1,0 +1,18 @@
+[uuid(0dc138c1-138f-4e1c-834c-846f3b189b19),
+ version(1.0),
+ pointer_default(unique)
+]
+
+
+interface vmdir_pac
+{
+#include <vmdirtypes.h>
+
+    void VmKdcNdrEncodeAuthzInfo(
+        [in] handle_t h,
+        [in, unique] VMDIR_AUTHZ_INFO *pac);
+
+    void VmKdcNdrDecodeAuthzInfo(
+        [in] handle_t h,
+        [out] VMDIR_AUTHZ_INFO **pac);
+}

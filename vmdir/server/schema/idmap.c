@@ -126,6 +126,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pStringList);
     return dwError;
 
@@ -168,7 +169,7 @@ VmDirSchemaAttrIdMapUpdateDB(
 
     while (LwRtlHashMapIterate(pAttrIdMap->pNewIds, &iter, &pair))
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pszMapStr, "%d%s%s",
+        dwError = VmDirAllocateStringPrintf(&pszMapStr, "%d%s%s",
                 (USHORT)(uintptr_t)pair.pValue,
                 SCHEMA_ATTR_ID_MAP_SEP,
                 (PSTR)pair.pKey);
@@ -206,6 +207,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pMapStrList);
     return dwError;
 

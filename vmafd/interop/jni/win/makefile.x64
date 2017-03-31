@@ -1,0 +1,18 @@
+# Map any Linux path separators "/" to Windows path separators "\"
+#
+
+JDK_BASE = $(LIGHTWAVE_JDK_ROOT:/=\)
+
+JAVAH = $(JDK_BASE)\bin\javah.exe
+CLASSNAME = com.vmware.identity.vecs.VecsAdapter
+JARDIR=..\..\..\build\authentication-framework\packages\vmware-endpoint-certificate-store.jar
+
+
+all: vecsjni.h
+
+vecsjni.h: $(JARDIR)
+	@echo $(JAVAH) -o ..\vecsjni.h -classpath $(JARDIR) $(CLASSNAME)
+	$(JAVAH) -o ..\vecsjni.h -classpath $(JARDIR) $(CLASSNAME)
+
+clean:
+	-del /f ..\vecsjni.h

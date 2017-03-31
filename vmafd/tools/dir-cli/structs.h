@@ -45,6 +45,16 @@ typedef struct _DIR_CLI_ENUM_GROUP_CONTEXT
     DWORD dwNumRead;
 } DIR_CLI_ENUM_GROUP_CONTEXT, *PDIR_CLI_ENUM_GROUP_CONTEXT;
 
+typedef struct _DIR_CLI_ENUM_ORGUNIT_CONTEXT
+{
+    LDAP* pLd;
+    DWORD dwMaxCount;
+    LDAPMessage* pSearchRes;
+    LDAPMessage* pEntry;
+    DWORD dwNumEntries;
+    DWORD dwNumRead;
+} DIR_CLI_ENUM_ORGUNIT_CONTEXT, *PDIR_CLI_ENUM_ORGUNIT_CONTEXT;
+
 typedef struct _DIR_CLI_USER_INFO_0
 {
     PSTR pszAccount;

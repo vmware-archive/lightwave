@@ -27,7 +27,6 @@
 
 #include "includes.h"
 
-static
 VOID
 ShowUsage(
     PVOID pvContext
@@ -39,90 +38,19 @@ ShowUsage(
       "Note: change password needs administrator privilege.\n");
 }
 
-static
-DWORD
-HandleServerParameterCallback(
-    PVOID pvContext,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
-
-    pContext->pszHostName = pValue;
-
-    return VMDIR_SUCCESS;
-}
-
-static
-DWORD
-HandleUserNameParameterCallback(
-    PVOID pvContext,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
-
-    pContext->pszLoginUserUPN = pValue;
-
-    return VMDIR_SUCCESS;
-}
-
-static
-DWORD
-HandlePasswordParameterCallback(
-    PVOID pvContext,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
-
-    pContext->pszLoginPassword = pValue;
-
-    return VMDIR_SUCCESS;
-}
-
-static
-DWORD
-HandleNewPassParameterCallback(
-    PVOID pvContext,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
-
-    pContext->pszNewPassword = pValue;
-
-    return VMDIR_SUCCESS;
-}
-
-static
-DWORD
-HandleNewLoginParameterCallback(
-    PVOID pvContext,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
-
-    pContext->pszUserUPN = pValue;
-
-    return VMDIR_SUCCESS;
-}
-
-static
 DWORD
 PostValidationRoutine(
     PVOID pvContext
     )
 {
-     PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
 
-     //
-     // These parameters are all required.
-     //
-     if (pContext->pszHostName == NULL ||
-         pContext->pszLoginUserUPN == NULL ||
-         pContext->pszNewPassword == NULL)
+    //
+    // These parameters are all required.
+    //
+    if (pContext->pszHostName == NULL ||
+        pContext->pszLoginUserUPN == NULL ||
+        pContext->pszNewPassword == NULL)
     {
         return VMDIR_ERROR_INVALID_PARAMETER;
     }
@@ -130,16 +58,17 @@ PostValidationRoutine(
     return VMDIR_SUCCESS;
 }
 
-VMDIR_COMMAND_LINE_OPTIONS CommandLineOptions =
+VOID
+FreeCLStateContent(
+    PCOMMAND_LINE_STATE pState
+    )
 {
-    ShowUsage,
-    PostValidationRoutine,
+    if (pState)
     {
-        {'h', "host", CL_STRING_PARAMETER, HandleServerParameterCallback},
-        {'u', "username", CL_STRING_PARAMETER, HandleUserNameParameterCallback},
-        {'U', "newuser", CL_STRING_PARAMETER, HandleNewLoginParameterCallback},
-        {'w', "password", CL_STRING_PARAMETER, HandlePasswordParameterCallback},
-        {'W', "newpass", CL_STRING_PARAMETER, HandleNewPassParameterCallback},
-        {0, 0, 0, 0}
+        VMDIR_SAFE_FREE_MEMORY(pState->pszHostName);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszLoginUserUPN);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszUserUPN);
+        VMDIR_SECURE_FREE_STRINGA(pState->pszLoginPassword);
+        VMDIR_SECURE_FREE_STRINGA(pState->pszNewPassword);
     }
-};
+}

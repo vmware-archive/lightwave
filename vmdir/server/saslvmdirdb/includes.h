@@ -40,7 +40,6 @@
 #pragma once
 
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 typedef unsigned int (*PFSRPGETFUN)(const char*, unsigned char**, unsigned int*);
 
 #include <windows.h>

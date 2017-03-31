@@ -16,6 +16,8 @@ package com.vmware.identity.interop.ldap;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.SystemUtils;
+
 import com.sun.jna.Structure;
 import com.sun.jna.win32.W32APITypeMapper;
 
@@ -54,7 +56,7 @@ public final class SecWinntAuthId extends Structure
 
     public SecWinntAuthId(String pszUserName, String pszDomain, String password)
     {
-        super(W32APITypeMapper.UNICODE);
+        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : null);
 
         this._pszUserName = pszUserName;
         this._userNameLength = pszUserName == null ? 0 : pszUserName.length();

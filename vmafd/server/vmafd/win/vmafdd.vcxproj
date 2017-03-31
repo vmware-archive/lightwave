@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E32F481E-77B2-11E2-9BE6-000C29B1C8FE}</ProjectGuid>
+    <RootNamespace>myafd</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)\openssl.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)\openssl.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)server\vmafd\win;$(SolutionDir)server\vmafd;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_VMDIR_ROOT)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;$(LIGHTWAVE_VMDNS_ROOT)\include;$(LIGHTWAVE_VMDNS_ROOT)\win64\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME;_CRT_SECURE_NO_WARNINGS;HAVE_DCERPC_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <ExceptionHandling />
+      <BasicRuntimeChecks>StackFrameRuntimeCheck</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ErrorReporting>Prompt</ErrorReporting>
+    </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;ws2_32.lib;user32.lib;netapi32.lib;Gdi32.lib;libldap_r.lib;liblber.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libeay32.lib;ssleay32.lib;libvmdirclient.lib;libvmdnsclient.lib;libvmafdclient.lib;vmeventd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_VMDNS_ROOT)\win64\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)server\vmafd\win;$(SolutionDir)server\vmafd;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_VMDIR_ROOT)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;$(LIGHTWAVE_VMDNS_ROOT)\include;$(LIGHTWAVE_VMDNS_ROOT)\win64\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME;_CRT_SECURE_NO_WARNINGS;HAVE_DCERPC_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <ExceptionHandling />
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;ws2_32.lib;user32.lib;netapi32.lib;Gdi32.lib;libldap_r.lib;liblber.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libeay32.lib;ssleay32.lib;libvecsdb.lib;libvmdirclient.lib;libvmdnsclient.lib;libvmafdclient.lib;vmeventd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_VMDNS_ROOT)\win64\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="ad.c" />
+    <ClCompile Include="..\authservice.c" />
+    <ClCompile Include="..\authutil.c" />
+    <ClCompile Include="..\cdcservice.c" />
+    <ClCompile Include="..\cdcstatemachine.c" />
+    <ClCompile Include="..\cdcthread.c" />
+    <ClCompile Include="..\cdcupdate.c" />
+    <ClCompile Include="..\certutil.c" />
+    <ClCompile Include="..\circularbuffer.c" />
+    <ClCompile Include="..\config.c" />
+    <ClCompile Include="..\dcfinder.c" />
+    <ClCompile Include="..\ddns.c" />
+    <ClCompile Include="..\ddnspackets.c" />
+    <ClCompile Include="..\dns.c" />
+    <ClCompile Include="..\globals.c" />
+    <ClCompile Include="..\heartbeat.c" />
+    <ClCompile Include="includes.c" />
+    <ClCompile Include="..\init.c" />
+    <ClCompile Include="..\ipcapihandler.c" />
+    <ClCompile Include="..\ipclocalapi.c" />
+    <ClCompile Include="..\ipcmarshalhelper.c" />
+    <ClCompile Include="ipcserver.c" />
+    <ClCompile Include="..\krbconfig.c" />
+    <ClCompile Include="..\ldap.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="..\parseargs.c" />
+    <ClCompile Include="..\passrefresh.c" />
+    <ClCompile Include="..\regconfig.c" />
+    <ClCompile Include="..\rootfetch.c" />
+    <ClCompile Include="..\rpc.c" />
+    <ClCompile Include="..\rpcserv.c" />
+    <ClCompile Include="..\rpcserv60.c" />
+    <ClCompile Include="..\service.c" />
+    <ClCompile Include="..\shutdown.c" />
+    <ClCompile Include="..\sourceip.c" />
+    <ClCompile Include="..\signal.c" />
+    <ClCompile Include="..\storehash_util.c" />
+    <ClCompile Include="..\superlogging.c" />
+    <ClCompile Include="..\utils.c" />
+    <ClCompile Include="..\vecsserviceapi.c" />
+    <ClCompile Include="vmafd_stub.c" />
+    <ClCompile Include="vmafd_stub_legacy.c" />
+    <ClCompile Include="vmafdsuperlog_stub.c" />
+    <ClCompile Include="..\vmdir.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\defines.h" />
+    <ClInclude Include="..\directory.h" />
+    <ClInclude Include="..\externs.h" />
+    <ClInclude Include="..\includes.h" />
+    <ClInclude Include="..\logging.h" />
+    <ClInclude Include="..\prototypes.h" />
+    <ClInclude Include="..\structs.h" />
+    <ClInclude Include="..\vmsuperlogging.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="vmafdd.rc">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\client\win\libvmafdclient.vcxproj">
+      <Project>{e32f43d2-77b2-11e2-9be6-000c29b1c8fe}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\win\libcommon.vcxproj">
+      <Project>{e32f4260-77b2-11e2-9be6-000c29b1c8fe}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\idl\win\vmafd-idl.vcxproj">
+      <Project>{4b64280c-9589-11e2-8754-000c29b1c8fe}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\version\win\version.vcxproj">
+      <Project>{b95a9f25-fbd9-431e-b517-9394df869c99}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vmafcfg\api\win\vmafcfgapi.vcxproj">
+      <Project>{3708878f-5516-4c69-974c-a54740fb1f2b}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vmevent\server\win\vmeventd.vcxproj">
+      <Project>{e19317b6-7fff-43e9-b7fc-0562f403c3c3}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\db\win\libdb\libdb.vcxproj">
+      <Project>{da871ac4-d44f-4ed3-9952-8da38a580f03}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
