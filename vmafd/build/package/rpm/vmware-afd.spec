@@ -228,6 +228,7 @@ cd build && make install DESTDIR=%{buildroot}
 %{_bindir}/vecs-cli
 %{_bindir}/vmafd-cli
 %{_bindir}/sl-cli
+%{_bindir}/lw-support-bundle.sh
 %{_sysconfdir}/vmware/java/vmware-override-java.security
 %{_datadir}/config/java.security.linux
 %{_lib64dir}/libvecsjni.so*
