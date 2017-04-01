@@ -32,7 +32,7 @@ artifactList=(
 "com.vmware.identity vmware-identity-websso-client ../../vmidentity/build/vmware-sts/packages/vmware-identity-websso-client.jar ../../vmidentity/ssolib/pom.xml" \
 "com.vmware.identity wsTrustClient ../../vmidentity/build/vmware-sts/packages/vmware-identity-wsTrustClient.jar ../../vmidentity/wsTrustClient/pom.xml" \
 "com.vmware.identity authentication-framework ../../vmafd/build/authentication-framework/packages/authentication-framework.jar" \
-"com.vmware.identity client-domain-controller-cache ../../vmafd/build/authentication-framework/packages/client-domain-controller-cache.jar ../../vmafd/interop/java/cdc/pom.xml" \
+"com.vmware.vmafd client-domain-controller-cache ../../vmafd/build/authentication-framework/packages/client-domain-controller-cache.jar ../../vmafd/interop/java/cdc/pom.xml" \
 "com.vmware.identity vmware-endpoint-certificate-store  ../../vmafd/build/authentication-framework/packages/vmware-endpoint-certificate-store.jar ../../vmafd/interop/java/vks/pom.xml"
 "com.vmware.identity vmware-vmca-client ../../vmca/build/packages/vmware-vmca-client.jar" \
 "com.vmware.identity vmware-identity-depends ../../vmidentity/build/vmware-sts/packages/vmware-identity-depends.jar" \
