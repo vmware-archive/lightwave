@@ -490,8 +490,6 @@ AC_SUBST(systemddir)
 
 AC_CONFIG_FILES([Makefile
                  config/setenv.sh
-                 config/vmware-idmd.sh
-                 config/vmware-idmd.service
                  config/vmware-stsd.sh
                  config/vmware-stsd.service
                  config/configure-build.sh

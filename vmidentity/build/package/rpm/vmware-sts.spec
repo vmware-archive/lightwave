@@ -85,11 +85,6 @@ fi
 case "$1" in
     1)
 
-        /bin/systemctl enable vmware-idmd.service >/dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            /bin/ln -s /lib/systemd/system/vmware-idmd.service /etc/systemd/system/multi-user.target.wants/vmware-idmd.service
-        fi
-
         /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
         if [ $? -ne 0 ]; then
             /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
@@ -141,13 +136,6 @@ if [ "$1" = 0 ]; then
     /bin/systemctl >/dev/null 2>&1
     if [ $? -eq 0 ]; then
 
-         if [ -f /etc/systemd/system/vmware-idmd.service ]; then
-             /bin/systemctl stop vmware-idmd.service
-             /bin/systemctl disable vmware-idmd.service
-             /bin/rm -f /etc/systemd/system/vmware-idmd.service
-             /bin/systemctl daemon-reload
-         fi
-
          if [ -f /etc/systemd/system/vmware-stsd.service ]; then
              /bin/systemctl stop vmware-stsd.service
              /bin/systemctl disable vmware-stsd.service
@@ -182,9 +170,7 @@ fi
 
 %files
 %defattr(-,root,root,0755)
-/lib/systemd/system/vmware-idmd.service
 /lib/systemd/system/vmware-stsd.service
-%{_sbindir}/vmware-idmd.sh
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
 %{_sbindir}/sso-config.sh

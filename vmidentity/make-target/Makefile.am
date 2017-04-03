@@ -39,7 +39,6 @@ vmstswebapps_DATA= \
 
 sbin_SCRIPTS = \
     @top_srcdir@/websso/src/main/resources/sso-config.sh \
-    @top_builddir@/config/vmware-idmd.sh \
     @top_builddir@/config/vmware-stsd.sh \
     @top_builddir@/config/configure-build.sh
 
@@ -63,6 +62,5 @@ vmstsbin_DATA = \
     @top_builddir@/vmware-sts/packages/vmware-identity-tomcat-extensions.jar
 
 systemd_DATA = \
-    @top_builddir@/config/vmware-idmd.service \
     @top_builddir@/config/vmware-stsd.service
 
