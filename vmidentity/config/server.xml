@@ -57,7 +57,7 @@
                    scheme="https"
                    secure="true">
             <SSLHostConfig ciphers="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA"
-                           protocols="TLSv1,TLSv1.1,TLSv1.2" >
+                           protocols="TLSv1.1,TLSv1.2" >
                 <Certificate certificateKeystoreType="VKS"
                      certificateKeyAlias="__MACHINE_CERT"
                      certificateKeystoreFile="MACHINE_SSL_CERT" />
