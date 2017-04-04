@@ -232,62 +232,6 @@ error:
 }
 
 DWORD
-VmDirTestAddUserToGroup(
-    PVMDIR_TEST_STATE pState,
-    PCSTR pszUserDn,
-    PCSTR pszGroupDn
-    )
-{
-    DWORD dwError = 0;
-    LDAPMod addition;
-    LDAPMod *mods[2];
-    PCSTR ppszAttributeValues[] = { pszUserDn, NULL };
-
-    addition.mod_op     = LDAP_MOD_ADD;
-    addition.mod_type   = ATTR_MEMBER;
-    addition.mod_values = (PSTR*)ppszAttributeValues;
-
-    mods[0] = &addition;
-    mods[1] = NULL;
-
-    dwError = ldap_modify_ext_s(pState->pLd, pszGroupDn, mods, NULL, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
-DWORD
-VmDirTestRemoveUserFromGroup(
-    PVMDIR_TEST_STATE pState,
-    PCSTR pszUserDn,
-    PCSTR pszGroupDn
-    )
-{
-    DWORD dwError = 0;
-    LDAPMod addition;
-    LDAPMod *mods[2];
-    PCSTR ppszAttributeValues[] = { pszUserDn, NULL };
-
-    addition.mod_op     = LDAP_MOD_DELETE;
-    addition.mod_type   = ATTR_MEMBER;
-    addition.mod_values = (PSTR*)ppszAttributeValues;
-
-    mods[0] = &addition;
-    mods[1] = NULL;
-
-    dwError = ldap_modify_ext_s(pState->pLd, pszGroupDn, mods, NULL, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
-DWORD
 _VdcConnectionFromUser(
     PVMDIR_TEST_STATE pState,
     PCSTR pszUserCn,

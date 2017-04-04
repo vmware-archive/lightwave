@@ -10,6 +10,7 @@ libmisctests_la_CPPFLAGS = \
 libmisctests_la_SOURCES = \
     main.c \
     dcaccount.c \
+    groupmembership.c \
     tombstone.c
 
 libmisctests_la_LIBADD = \

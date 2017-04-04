@@ -102,6 +102,7 @@ ShouldBeAbleToCreateTenants(
                 "secondary.local",
                 "administrator",
                 pState->pszPassword);
+    TestAssertEquals(dwError, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = SanityCheckTenantDomain(pState, "secondary.local", "dc=secondary,dc=local");
@@ -113,6 +114,7 @@ ShouldBeAbleToCreateTenants(
                 "tertiary.com",
                 "administrator",
                 pState->pszPassword);
+    TestAssertEquals(dwError, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = SanityCheckTenantDomain(pState, "tertiary.com", "dc=tertiary,dc=com");
@@ -124,6 +126,7 @@ ShouldBeAbleToCreateTenants(
                 "quad.com",
                 "administrator",
                 pState->pszPassword);
+    TestAssertEquals(dwError, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = SanityCheckTenantDomain(pState, "quad.com", "dc=quad,dc=com");
@@ -132,7 +135,7 @@ ShouldBeAbleToCreateTenants(
 cleanup:
     return dwError;
 error:
-    TestAssert(dwError == 0);
+    TestAssertEquals(dwError, 0);
     goto cleanup;
 }
 

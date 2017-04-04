@@ -280,6 +280,8 @@ VmDirTestGetObjectList(
     {
         dwObjectCount = ldap_count_entries(pLd, pResult);
         dwError = VmDirStringListInitialize(&pObjectList, dwObjectCount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         if (dwObjectCount > 0)
         {
             LDAPMessage* pEntry = ldap_first_entry(pLd, pResult);

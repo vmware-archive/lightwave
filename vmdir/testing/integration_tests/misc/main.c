@@ -43,6 +43,9 @@ TestRunner(
     dwError = TestTombstone(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = TestGroupMembership(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     printf("Miscellaneous tests completed successfully.\n");
 
 cleanup:
