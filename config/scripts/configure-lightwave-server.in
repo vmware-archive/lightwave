@@ -2,7 +2,7 @@
 
 LW_BIN_DIR=/opt/likewise/bin
 LW_SBIN_DIR=/opt/likewise/sbin
-LW_DEFAULT_VERSION="6.6.0"
+LW_DEFAULT_VERSION="1.2.0"
 LW_KEY="[HKEY_THIS_MACHINE\\Services\\lw-server]"
 
 _get_lw_version(){

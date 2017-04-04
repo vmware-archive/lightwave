@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -66,6 +66,7 @@ extern "C" {
 #define CFG_INDEX_ORGANIZATION_DN               "cn=organization,cn=config"
 #define SERVER_STATUS_DN                        "cn=serverstatus"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
+#define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -421,6 +422,23 @@ extern "C" {
 #define REPL_STATUS_PROCESSED_USN_VECTOR_LEN    sizeof(REPL_STATUS_PROCESSED_USN_VECTOR)-1
 #define REPL_STATUS_ORIGINATING_USN     "MaxOriginatingUSN: "
 #define REPL_STATUS_ORIGINATING_USN_LEN  sizeof(REPL_STATUS_ORIGINATING_USN)-1
+
+#define SCHEMA_REPL_STATUS_CN                       "SchemaReplStatus"
+#define SCHEMA_REPL_STATUS_HOST_NAME                "Host Name"
+#define SCHEMA_REPL_STATUS_DOMAIN_NAME              "Domain Name"
+#define SCHEMA_REPL_STATUS_CHECK_INITIATED          "Check Initiated"
+#define SCHEMA_REPL_STATUS_CHECK_SUCCEEDED          "Check Succeeded"
+#define SCHEMA_REPL_STATUS_TREE_IN_SYNC             "Tree In Sync"
+#define SCHEMA_REPL_STATUS_BLOB_IN_SYNC             "Blob In Sync"
+#define SCHEMA_REPL_STATUS_ATTR_MISSING_IN_TREE     "Attr Missing In Tree"
+#define SCHEMA_REPL_STATUS_ATTR_MISMATCH_IN_TREE    "Attr Mismatch In Tree"
+#define SCHEMA_REPL_STATUS_CLASS_MISSING_IN_TREE    "Class Missing In Tree"
+#define SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_TREE   "Class Mismatch In Tree"
+#define SCHEMA_REPL_STATUS_ATTR_MISSING_IN_BLOB     "Attr Missing In Blob"
+#define SCHEMA_REPL_STATUS_ATTR_MISMATCH_IN_BLOB    "Attr Mismatch In Blob"
+#define SCHEMA_REPL_STATUS_CLASS_MISSING_IN_BLOB    "Class Missing In Blob"
+#define SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_BLOB   "Class Mismatch In Blob"
+#define SCHEMA_REPL_STATUS_REFRESH_IN_PROGRESS      "Refresh In Progress"
 
 #define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
 #define VMDIR_SERVERS_CONTAINER_NAME    "Servers"

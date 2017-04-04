@@ -209,6 +209,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\replstatus.c"
+				>
+			</File>
+			<File
 				RelativePath="..\util.c"
 				>
 			</File>

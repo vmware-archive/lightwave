@@ -54,21 +54,6 @@ interface vmca
     cpp_quote("#endif")
 
     unsigned32
-    RpcVMCASetServerOption(
-        [in] unsigned32 dwOption
-        );
-
-    unsigned32
-    RpcVMCAUnsetServerOption(
-        [in] unsigned32 dwOption
-        );
-
-    unsigned32
-    RpcVMCAGetServerOption(
-        [out] unsigned32 *pdwOption
-        );
-
-    unsigned32
     RpcVMCAGetServerVersion(
         [out] unsigned32 *dwCertLength,
         [out] VMCA_CERTIFICATE_CONTAINER **pServerVersion
@@ -164,5 +149,20 @@ interface vmca
 
     unsigned32
     VMCARpcReGenCRL (
+        );
+
+    unsigned32
+    RpcVMCASetServerOption(
+        [in] unsigned32 dwOption
+        );
+
+    unsigned32
+    RpcVMCAUnsetServerOption(
+        [in] unsigned32 dwOption
+        );
+
+    unsigned32
+    RpcVMCAGetServerOption(
+        [out] unsigned32 *pdwOption
         );
 }

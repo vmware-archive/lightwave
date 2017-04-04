@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -358,6 +358,22 @@ VmDirIsSearchForDseRootEntry(
 BOOLEAN
 VmDirIsSearchForSchemaEntry(
     PVDIR_OPERATION     pOp
+    );
+
+BOOLEAN
+VmDirIsSearchForServerStatus(
+    PVDIR_OPERATION     pOp
+    );
+
+BOOLEAN
+VmDirIsSearchForReplicationStatus(
+    PVDIR_OPERATION     pOp
+    );
+
+BOOLEAN
+VmDirIsSearchForSchemaReplStatus(
+    PVDIR_OPERATION     pOp,
+    PBOOLEAN            pbRefresh
     );
 
 #endif

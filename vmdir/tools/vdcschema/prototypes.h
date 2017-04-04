@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -56,6 +56,12 @@ VdcSchemaOpPatchSchemaDefs(
     PVDC_SCHEMA_OP_PARAM    pOpParam
     );
 
+DWORD
+VdcSchemaOpGetSchemaReplStatus(
+    PVDC_SCHEMA_CONN        pConn,
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    );
+
 VOID
 VdcSchemaFreeOpParam(
     PVDC_SCHEMA_OP_PARAM    pOpParam
@@ -103,4 +109,26 @@ VmDirSchemaPrintSyntaxMap(
 VOID
 VmDirSchemaPrintDiff(
     PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff
+    );
+
+DWORD
+VdcSchemaRefreshSchemaReplStatusEntries(
+    PVDC_SCHEMA_CONN    pConn
+    );
+
+DWORD
+VdcSchemaWaitForSchemaReplStatusEntries(
+    PVDC_SCHEMA_CONN        pConn,
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    );
+
+DWORD
+VdcSchemaGetSchemaReplStatusEntries(
+    PVDC_SCHEMA_CONN            pConn,
+    PVDIR_SCHEMA_REPL_STATE**   pppReplStates
+    );
+
+DWORD
+VdcSchemaPrintSchemaReplStatusEntry(
+    PVDIR_SCHEMA_REPL_STATE pReplState
     );

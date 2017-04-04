@@ -147,6 +147,7 @@
     <ClCompile Include="..\threads.c" />
     <ClCompile Include="..\tsstack.c" />
     <ClCompile Include="..\util.c" />
+    <ClCompile Include="..\replstate\schemareplstate.c" />
     <ClCompile Include="..\schema\compat.c" />
     <ClCompile Include="..\schema\copy.c" />
     <ClCompile Include="..\schema\def.c" />

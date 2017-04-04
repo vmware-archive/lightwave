@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -215,3 +215,16 @@ typedef struct _VDIR_SCHEMA_BOOTSTRAP_TABLE
     PCSTR    pszDesc;
 
 } VDIR_SCHEMA_BOOTSTRAP_TABLE, *PVDIR_SCHEMA_BOOTSTRAP_TABLE;
+
+typedef struct _VDIR_SCHEMA_REPL_STATUS_GLOBALS
+{
+    // NOTE: order of fields MUST stay in sync with struct initializer...
+    PVMDIR_RWLOCK       rwlock;
+    PVMDIR_MUTEX        mutex;
+    PVMDIR_COND         cond;
+    PVDIR_THREAD_INFO   pThrInfo;
+
+    PVDIR_LINKED_LIST   pReplStates;
+    BOOLEAN             bRefreshInProgress;
+
+} VDIR_SCHEMA_REPL_STATUS_GLOBALS, *PVDIR_SCHEMA_REPL_STATUS_GLOBALS;

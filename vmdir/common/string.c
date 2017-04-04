@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -169,6 +169,37 @@ VmDirStringNCompareA(
     {
         return strncasecmp(pszStr1, pszStr2, n) ;
     }
+}
+
+BOOLEAN
+VmDirStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bStartsWith = FALSE;
+
+    if (IsNullOrEmptyString(pszPrefix))
+    {
+        bStartsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        size_t strlen = VmDirStringLenA(pszStr);
+        size_t prefixlen = VmDirStringLenA(pszPrefix);
+
+        if (strlen >= prefixlen)
+        {
+            if (VmDirStringNCompareA(
+                    pszStr, pszPrefix, prefixlen, bIsCaseSensitive) == 0)
+            {
+                bStartsWith = TRUE;
+            }
+        }
+    }
+
+    return bStartsWith;
 }
 
 BOOLEAN

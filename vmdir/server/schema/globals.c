@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -55,4 +55,15 @@ VDIR_MATCHING_RULE_GLOBALS gVdirMatchingRuleGlobals =
         VMDIR_SF_INIT(.pOrderingMatchingRule, NULL),
         VMDIR_SF_INIT(.usSubstrMRSize, 0),
         VMDIR_SF_INIT(.pSubstrMatchingRule, NULL)
+    };
+
+VDIR_SCHEMA_REPL_STATUS_GLOBALS gVdirSchemaReplStatusGlobals =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.rwlock, NULL),
+        VMDIR_SF_INIT(.mutex, NULL),
+        VMDIR_SF_INIT(.cond, NULL),
+        VMDIR_SF_INIT(.pThrInfo, NULL),
+        VMDIR_SF_INIT(.pReplStates, NULL),
+        VMDIR_SF_INIT(.bRefreshInProgress, FALSE)
     };
