@@ -103,8 +103,10 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/sts/target \
     $(SRCROOT)/websso/target \
     $(SRCROOT)/lightwaveui/target \
-    $(SRCROOT)/sso-config/target
-
+    $(SRCROOT)/sso-config/target \
+    $(SRCROOT)/debugfiles.list \
+    $(SRCROOT)/debuglinks.list \
+    $(SRCROOT)/debugsources.list
 
 PKG_SPEC=vmware-sts.spec
 

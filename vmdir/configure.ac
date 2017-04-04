@@ -681,7 +681,6 @@ AC_CONFIG_FILES([Makefile
                  tools/Makefile
                  tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile
-                 tools/vdcpromo/Makefile
                  tools/vdcpass/Makefile
                  tools/vdcrepadmin/Makefile
                  tools/vdcsetupldu/Makefile

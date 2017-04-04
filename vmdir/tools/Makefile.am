@@ -2,7 +2,6 @@ SUBDIRS = \
     test \
     vdcaclmgr \
     vdcadmintool \
-    vdcpromo \
     vdcpass \
     vdcrepadmin \
     vdcsetupldu \

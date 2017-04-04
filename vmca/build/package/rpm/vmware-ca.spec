@@ -37,6 +37,8 @@ BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2,
 %description
 VMware Certificate Authority
 
+%debug_package
+
 %package client
 Summary: VMware Certificate Authority Client
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client >= %{version}, vmware-afd-client >= %{version}
