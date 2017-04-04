@@ -3383,9 +3383,9 @@ VmAfdIpcGetMachineAccountInfo(
     BAIL_ON_VMAFD_ERROR (dwError);
 
     bIsAllowed = VmAfdIsRootSecurityContext(pConnectionContext);
+#ifndef _WIN32
     if (!bIsAllowed)
     {
-#ifndef _WIN32
         dwError = VmAfSrvGetRegKeySecurity(
                     VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
                     &pszSecurity);
@@ -3396,11 +3396,14 @@ VmAfdIpcGetMachineAccountInfo(
                     pszSecurity,
                     &bIsAllowed);
         BAIL_ON_VMAFD_ERROR (dwError);
-#else
+    }
+#endif
+
+    if (!bIsAllowed)
+    {
         VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
         dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMAFD_ERROR (dwError);
-#endif
     }
 
     uResult = VmAfSrvGetMachineAccountInfo(

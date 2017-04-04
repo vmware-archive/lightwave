@@ -1073,7 +1073,19 @@ VmAfSrvLeaveVmDir(
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
     PWSTR pwszServerName = NULL;
+    PWSTR pwszMachineAccount = NULL;
+    PWSTR pwszMachinePassword = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+
+    if (
+        (IsNullOrEmptyString(pwszUserName) && !IsNullOrEmptyString(pwszPassword))
+        ||
+        (!IsNullOrEmptyString(pwszUserName) && IsNullOrEmptyString(pwszPassword))
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -1090,28 +1102,34 @@ VmAfSrvLeaveVmDir(
     dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (pwszUserName)
+    if (IsNullOrEmptyString(pwszUserName) &&
+        IsNullOrEmptyString(pwszPassword) )
     {
-        dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+        dwError = VmAfSrvGetMachineAccountInfo(
+                                        &pwszMachineAccount,
+                                        &pwszMachinePassword,
+                                        NULL,
+                                        NULL
+                                        );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringAFromW(pwszMachineAccount, &pszUserName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringAFromW(pwszMachinePassword, &pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    if (pwszPassword)
+    else
     {
+        dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
         dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
     // Machine credentials will be used if the user name or password are NULL.
-    if (    IsNullOrEmptyString(pszUserName) &&
-            IsNullOrEmptyString(pszPassword) )
-    {
-        VmAfdGetMachineAccountInfoA(
-                    NULL,
-                    &pszUserName,
-                    &pszPassword
-                    );
-    }
 
     dwError = VmDirClientLeave(
                     pszServerName,
@@ -1180,6 +1198,8 @@ cleanup:
 
     VMAFD_SAFE_FREE_MEMORY(pwszServerName);
     VMAFD_SAFE_FREE_STRINGA(pszServerName);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineAccount);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachinePassword);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
 
