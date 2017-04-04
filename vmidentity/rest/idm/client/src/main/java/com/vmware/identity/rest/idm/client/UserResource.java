@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 
 import com.vmware.identity.rest.core.client.BaseClient;
 import com.vmware.identity.rest.core.client.ClientResource;
@@ -34,9 +33,7 @@ import com.vmware.identity.rest.core.client.RequestFactory;
 import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
-import com.vmware.identity.rest.core.client.methods.HttpDeleteWithBody;
 import com.vmware.identity.rest.idm.data.GroupDTO;
-import com.vmware.identity.rest.idm.data.PasswordResetRequestDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
 
 /**
@@ -46,37 +43,12 @@ import com.vmware.identity.rest.idm.data.UserDTO;
  */
 public class UserResource extends ClientResource {
 
-    private static final String USER_URI = "/idm/tenant/%s/users";
-    private static final String USER_NAME_URI = USER_URI + "/%s";
-    private static final String USER_NAME_PASSWORD_URI = USER_NAME_URI + "/password";
-
     private static final String USER_POST_URI = "/idm/post/tenant/%s/users";
     private static final String USER_NAME_POST_URI = USER_POST_URI + "/%s";
     private static final String USER_NAME_GROUPS_POST_URI = USER_NAME_POST_URI + "/groups";
 
     public UserResource(BaseClient parent) {
         super(parent);
-    }
-
-    /**
-     * Create a new user.
-     *
-     * <p><b>Required Role:</b> {@code administrator}.
-     *
-     * @param tenant the tenant to create the user on.
-     * @param user the user to be created.
-     * @return the newly created user.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public UserDTO create(String tenant, UserDTO user) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        URI uri = buildURI(parent.getHostRetriever(), USER_URI, tenant);
-
-        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), user);
-        return execute(parent.getClient(), post, UserDTO.class);
     }
 
     /**
@@ -126,105 +98,6 @@ public class UserResource extends ClientResource {
 
         HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken());
         return executeAndReturnList(parent.getClient(), post, GroupDTO.class);
-    }
-
-    /**
-     * Update a user.
-     *
-     * <p><b>Required Role:</b> {@code administrator}.
-     *
-     * @param tenant the name of the tenant containing the user.
-     * @param name the name of the user.
-     * @param domain the domain of the user.
-     * @param user the contents of the user to update.
-     * @return the newly updated user.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public UserDTO update(String tenant, String name, String domain, UserDTO user) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        String upn = UPNUtil.buildUPN(name, domain);
-        URI uri = buildURI(parent.getHostRetriever(), USER_NAME_URI, tenant, upn);
-
-        HttpPut put = RequestFactory.createPutRequest(uri, parent.getToken(), user);
-        return execute(parent.getClient(), put, UserDTO.class);
-    }
-
-    /**
-     * Update a user's password.
-     *
-     * <p><b>Required Role:</b> {@code user}.
-     *
-     * @param tenant the name of the tenant containing the user.
-     * @param name the name of the user.
-     * @param domain the domain of the user.
-     * @param currentPassword the user's current password.
-     * @param newPassword the new password to set for the user.
-     * @return the newly updated user.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public UserDTO updatePassword(String tenant, String name, String domain, String currentPassword, String newPassword) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        String upn = UPNUtil.buildUPN(name, domain);
-        PasswordResetRequestDTO reset = new PasswordResetRequestDTO(currentPassword, newPassword);
-
-        URI uri = buildURI(parent.getHostRetriever(), USER_NAME_PASSWORD_URI, tenant, upn);
-
-        HttpPut put = RequestFactory.createPutRequest(uri, parent.getToken(), reset);
-        return execute(parent.getClient(), put, UserDTO.class);
-    }
-
-    /**
-     * Reset a user's password.
-     *
-     * <p><b>Required Role:</b> {@code administrator}.
-     *
-     * @param tenant the name of the tenant containing the user.
-     * @param name the name of the user.
-     * @param domain the domain of the user.
-     * @param newPassword the new password to set for the user.
-     * @return the newly updated user.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public UserDTO resetPassword(String tenant, String name, String domain, String newPassword) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        String upn = UPNUtil.buildUPN(name, domain);
-        PasswordResetRequestDTO reset = new PasswordResetRequestDTO(null, newPassword);
-
-        URI uri = buildURI(parent.getHostRetriever(), USER_NAME_PASSWORD_URI, tenant, upn);
-
-        HttpPut put = RequestFactory.createPutRequest(uri, parent.getToken(), reset);
-        return execute(parent.getClient(), put, UserDTO.class);
-    }
-
-    /**
-     * Delete a user.
-     *
-     * <p><b>Required Role:</b> {@code administrator}.
-     *
-     * @param tenant the name of the tenant containing the user.
-     * @param name the name of the user.
-     * @param domain the domain of the user.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public void delete(String tenant, String name, String domain) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        String upn = UPNUtil.buildUPN(name, domain);
-        URI uri = buildURI(parent.getHostRetriever(), USER_NAME_URI, tenant, upn);
-
-        HttpDeleteWithBody delete = RequestFactory.createDeleteRequest(uri, parent.getToken());
-        execute(parent.getClient(), delete);
     }
 
 }

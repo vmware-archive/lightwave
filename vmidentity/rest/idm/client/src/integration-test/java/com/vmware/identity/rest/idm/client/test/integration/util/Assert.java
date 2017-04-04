@@ -160,4 +160,22 @@ public class Assert {
         assertEquals(expected.getDetails().getEmail(), actual.getDetails().getEmail());
     }
 
+    public static void assertUsersEqual(com.vmware.directory.rest.common.data.UserDTO expected, UserDTO actual) {
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDomain(), actual.getDomain());
+        assertEquals(expected.getDetails().getDescription(), actual.getDetails().getDescription());
+        assertEquals(expected.getDetails().getFirstName(), actual.getDetails().getFirstName());
+        assertEquals(expected.getDetails().getLastName(), actual.getDetails().getLastName());
+        assertEquals(expected.getDetails().getEmail(), actual.getDetails().getEmail());
+    }
+
+    public static void assertVmdirUsersEqual(com.vmware.directory.rest.common.data.UserDTO expected, com.vmware.directory.rest.common.data.UserDTO actual) {
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDomain(), actual.getDomain());
+        assertEquals(expected.getDetails().getDescription(), actual.getDetails().getDescription());
+        assertEquals(expected.getDetails().getFirstName(), actual.getDetails().getFirstName());
+        assertEquals(expected.getDetails().getLastName(), actual.getDetails().getLastName());
+        assertEquals(expected.getDetails().getEmail(), actual.getDetails().getEmail());
+    }
+
 }

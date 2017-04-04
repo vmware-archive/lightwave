@@ -31,7 +31,7 @@ import com.vmware.identity.rest.idm.samples.UserSample;
 
 /**
  * Class for handling calls to UserSample from command line.
- * 
+ *
  * @author abapat
  *
  */
@@ -63,11 +63,9 @@ public class UserSampleHandler extends SampleHandler {
 				Gson g = new GsonBuilder().create();
 				UserDTO user = g.fromJson(payload, UserDTO.class);
 				if (operation.equalsIgnoreCase("create")) {
-					log.info("Creating User: " + payload);
-					sample.createUser(user, tenant);
+					log.info("Creating User (Not Implemented): " + payload);
 				} else {
-					log.info("Updating User: " + payload);
-					sample.updateUser(user, tenant);
+					log.info("Updating User (Not Implemented): " + payload);
 				}
 				log.info(user.toPrettyString());
 			} else if (operation.equalsIgnoreCase("read") || operation.equalsIgnoreCase("delete")) {
@@ -77,8 +75,7 @@ public class UserSampleHandler extends SampleHandler {
 					UserDTO user = sample.getUser(JSON.getString("name"), JSON.getString("domain"), tenant);
 					log.info(user.toPrettyString());
 				} else {
-					log.info("Deleting User: " + payload);
-					sample.deleteUser(JSON.getString("name"), JSON.getString("domain"), tenant);
+					log.info("Deleting User (Not Implemented): " + payload);
 				}
 			} else {
 				log.fatal("Invalid command: " + operation);

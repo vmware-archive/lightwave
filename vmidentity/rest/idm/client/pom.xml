@@ -64,6 +64,13 @@
     </dependency>
 
     <dependency>
+      <groupId>com.vmware.vmdir.rest</groupId>
+      <artifactId>vmware-directory-rest-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
