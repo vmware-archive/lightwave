@@ -35,6 +35,17 @@ public class UserGenerator {
             .build();
     }
 
+    public static com.vmware.directory.rest.common.data.UserDTO generateVmdirUser(String name, String domain, String description) {
+        return new com.vmware.directory.rest.common.data.UserDTO.Builder()
+                .withName(name)
+                .withDomain(domain)
+                .withDetails(generateVmdirUserDetails(description))
+                .withPasswordDetails(generateVmdirPasswordDetails())
+                .withLocked(false)
+                .withDisabled(false)
+                .build();
+    }
+
     private static UserDetailsDTO generateUserDetails(String description) {
         return new UserDetailsDTO.Builder()
             .withFirstName(FIRST_NAME)
@@ -44,8 +55,23 @@ public class UserGenerator {
             .build();
     }
 
+    private static com.vmware.directory.rest.common.data.UserDetailsDTO generateVmdirUserDetails(String description) {
+        return new com.vmware.directory.rest.common.data.UserDetailsDTO.Builder()
+            .withFirstName(FIRST_NAME)
+            .withLastName(LAST_NAME)
+            .withDescription(description)
+            .withEmail(EMAIL)
+            .build();
+    }
+
     private static PasswordDetailsDTO generatePasswordDetails() {
         return new PasswordDetailsDTO.Builder()
+            .withPassword(PASSWORD)
+            .build();
+    }
+
+    private static com.vmware.directory.rest.common.data.PasswordDetailsDTO generateVmdirPasswordDetails() {
+        return new com.vmware.directory.rest.common.data.PasswordDetailsDTO.Builder()
             .withPassword(PASSWORD)
             .build();
     }
