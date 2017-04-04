@@ -30,22 +30,10 @@ typedef struct OIDC_SERVER_METADATA
     PSTRING pszSigningCertificatePEM;
 } OIDC_SERVER_METADATA;
 
-typedef struct OIDC_ID_TOKEN
+typedef struct OIDC_TOKEN
 {
     PSSO_JWT pJwt;
-    PSTRING pszIssuer;
-    PSTRING pszSubject;
-    PSTRING pszAudience;
-    SSO_LONG issueTime;
-    SSO_LONG expirationTime;
-    PSTRING pszHolderOfKeyPEM;
-    PSTRING* ppszGroups;
-    size_t groupsSize;
-} OIDC_ID_TOKEN;
-
-typedef struct OIDC_ACCESS_TOKEN
-{
-    PSSO_JWT pJwt;
+    OIDC_TOKEN_TYPE tokenType;
     PSTRING pszIssuer;
     PSTRING pszSubject;
     PSTRING* ppszAudience;
@@ -55,6 +43,17 @@ typedef struct OIDC_ACCESS_TOKEN
     PSTRING pszHolderOfKeyPEM;
     PSTRING* ppszGroups;
     size_t groupsSize;
+    PSTRING pszTenant;
+} OIDC_TOKEN, *POIDC_TOKEN;
+
+typedef struct OIDC_ID_TOKEN
+{
+    POIDC_TOKEN pToken;
+} OIDC_ID_TOKEN;
+
+typedef struct OIDC_ACCESS_TOKEN
+{
+    POIDC_TOKEN pToken;
 } OIDC_ACCESS_TOKEN;
 
 typedef struct OIDC_TOKEN_SUCCESS_RESPONSE

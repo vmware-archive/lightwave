@@ -30,6 +30,7 @@
 
 #include "oidc_types.h"
 #include "oidc.h"
+#include "structs.h"
 #include "prototypes.h"
 
 SSOERROR
