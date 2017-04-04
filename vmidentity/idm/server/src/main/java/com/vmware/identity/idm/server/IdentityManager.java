@@ -2302,13 +2302,17 @@ public class IdentityManager implements IIdentityManager {
                         logger.error("There is already one nativeAD [%s] registered", adIDP);
                         throw new ADIDSAlreadyExistException(machineJoinInfo.getName());
                     }
-                    String adLdapIDPName = findIdpTypeRegisteredWithName(tenantName, IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
-                                                                         machineJoinInfo.getName());
-                    if (adLdapIDPName != null)
-                    {
-                        logger.error(String.format("There is already one AD-Over-LDAP [%s] registered", adLdapIDPName));
-                        throw new ADIDSAlreadyExistException(adLdapIDPName);
+
+                    if (machineJoinInfo != null) {
+                        String adLdapIDPName = findIdpTypeRegisteredWithName(tenantName, IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
+                                                                             machineJoinInfo.getName());
+                        if (adLdapIDPName != null)
+                        {
+                            logger.error(String.format("There is already one AD-Over-LDAP [%s] registered", adLdapIDPName));
+                            throw new ADIDSAlreadyExistException(adLdapIDPName);
+                        }
                     }
+
                     idsData = checkAndNormalizeAdIdStore(idsData);
                 }
                 // Non-native AD

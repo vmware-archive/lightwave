@@ -13,7 +13,6 @@
  */
 package com.vmware.identity.rest.idm.server.mapper;
 
-import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
