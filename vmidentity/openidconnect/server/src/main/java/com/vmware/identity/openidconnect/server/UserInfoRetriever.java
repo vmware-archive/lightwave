@@ -169,12 +169,13 @@ public class UserInfoRetriever {
     private String computeAdminServerRole(User user, List<String> groupMembership) throws ServerException {
         String systemDomainName = getSystemDomainName(user);
         String groupNamePrefix = systemDomainName.toLowerCase() + "\\";
+        String systemTenantGroupNamePrefix = getSystemDomainName(getSystemTenantName()).toLowerCase() + "\\";
         Set<String> groupMembershipLowerCase = toLowerCase(groupMembership);
 
         String role;
         if (groupMembershipLowerCase.contains(groupNamePrefix + "administrators")) {
             role = "Administrator";
-        } else if (groupMembershipLowerCase.contains(groupNamePrefix + "systemconfiguration.administrators")) {
+        } else if (groupMembershipLowerCase.contains(systemTenantGroupNamePrefix + "systemconfiguration.administrators")) {
             role = "ConfigurationUser";
         } else if (groupMembershipLowerCase.contains(groupNamePrefix + "users")) {
             role = "RegularUser";
@@ -185,9 +186,24 @@ public class UserInfoRetriever {
     }
 
     private String getSystemDomainName(User user) throws ServerException {
+        return getSystemDomainName(user.getTenant());
+    }
+
+    private String getSystemTenantName() throws ServerException {
+        String systemTenant;
+        try {
+            systemTenant = this.idmClient.getSystemTenant();
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving system tenant"), e);
+        }
+
+        return systemTenant;
+    }
+
+    private String getSystemDomainName(String tenant) throws ServerException {
         Collection<IIdentityStoreData> identityStores;
         try {
-            identityStores = this.idmClient.getProviders(user.getTenant(), EnumSet.of(DomainType.SYSTEM_DOMAIN));
+            identityStores = this.idmClient.getProviders(tenant, EnumSet.of(DomainType.SYSTEM_DOMAIN));
         } catch (Exception e) {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving system domain"), e);
         }

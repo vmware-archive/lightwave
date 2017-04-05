@@ -25,7 +25,6 @@ import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.authorization.Role;
-import com.vmware.identity.rest.core.server.authorization.RoleGroup;
 import com.vmware.identity.rest.core.server.authorization.RoleMapper;
 import com.vmware.identity.rest.core.server.authorization.exception.InsufficientRoleException;
 import com.vmware.identity.rest.core.server.authorization.exception.InvalidTokenException;
@@ -165,7 +164,7 @@ public class ResourceAccessRequest {
         if (token.getRole() != null) {
             checkRoleField(requiredRole);
         } else {
-            checkGroupsField(roleMapper.getRoleGroup(requiredRole));
+            checkGroupsField(requiredRole);
         }
     }
 
@@ -179,11 +178,24 @@ public class ResourceAccessRequest {
         }
     }
 
-    private void checkGroupsField(RoleGroup requiredRole) throws InsufficientRoleException {
+    private void checkGroupsField(Role requiredRole) throws InsufficientRoleException {
         List<String> groupList = token.getGroupList();
-        if (groupList == null || groupList.isEmpty() || !checkIfGroupExists(groupList, requiredRole.getGroupNetbios())) {
-            throw new InsufficientRoleException(sm.getString("auth.ise.wrong.role", requiredRole.getRole()));
+        if (groupList != null && !groupList.isEmpty()) {
+            Role[] roles = Role.values();
+
+            // Start at the highest role and work our way down until we've gone too low
+            int i = roles.length - 1;
+
+            Role role = roles[i];
+            while (role.is(requiredRole)) {
+                if (checkIfGroupExists(groupList, roleMapper.getRoleGroup(role).getGroupNetbios())) {
+                    return;
+                }
+                role = roles[--i];
+            }
         }
+
+        throw new InsufficientRoleException(sm.getString("auth.ise.wrong.role", requiredRole));
     }
 
     private boolean checkIfGroupExists(List<String> groupList, String group) {
