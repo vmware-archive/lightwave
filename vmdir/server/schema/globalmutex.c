@@ -65,11 +65,14 @@ VmDirSchemaModMutexRelease(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pOperation->dwSchemaWriteOp--;
-    if (pOperation->dwSchemaWriteOp == 0)
+    if (pOperation->dwSchemaWriteOp > 0)
     {
-        dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        pOperation->dwSchemaWriteOp--;
+        if (pOperation->dwSchemaWriteOp == 0)
+        {
+            dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
 error:
