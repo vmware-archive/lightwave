@@ -38,7 +38,7 @@ public enum Role {
      *
      * <p>This role should <b>only</b> be valid on the system tenant.
      */
-    CONFIGURATION_USER("SystemConfiguration.Administrator"),
+    CONFIGURATION_USER("ConfigurationUser"),
 
     /**
      * An administrative user with full permissions.
