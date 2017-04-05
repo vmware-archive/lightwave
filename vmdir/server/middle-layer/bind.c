@@ -92,11 +92,20 @@ VmDirMLBind(
                 }
                 else if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
                 {   // if SASL negotiation completes successfully, it sets pOpeartion->reqDn.
-#if 0 /* TBD:ADAM-This breaks promote; Send SASL response token */
-                    VmDirSendSASLBindResponse(pOperation);
+#if 1 /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
+                    if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val, 
+                        "GSS-SPNEGO", 
+                         pOperation->request.bindReq.bvMechanism.lberbv.bv_len) == 0)
+                    {
+                        VmDirSendSASLBindResponse(pOperation);
+VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' VmDirSendSASLBindResponse() called");
+                    }
+                    else
+                    {
+                        dwError = VmDirInternalBindEntry(pOperation);
+                        BAIL_ON_VMDIR_ERROR(dwError);
+                    }
 #endif
-                    dwError = VmDirInternalBindEntry(pOperation);
-                    BAIL_ON_VMDIR_ERROR(dwError);
                 }
 
                 break;

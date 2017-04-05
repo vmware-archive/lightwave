@@ -678,6 +678,51 @@ VmDnsForwardRequest(
                     flags,
                     &pSocket);
     BAIL_ON_VMDNS_ERROR(dwError);
+#if 1 /* TBD:Adam-This is a hacked version of what Aishu checked into dev */
+{
+typedef enum
+{
+    VM_SOCK_PROTOCOL_UNKNOWN = 0,
+    VM_SOCK_PROTOCOL_TCP,
+    VM_SOCK_PROTOCOL_UDP
+} VM_SOCK_PROTOCOL;
+
+typedef enum
+{
+    VM_SOCK_TYPE_UNKNOWN = 0,
+    VM_SOCK_TYPE_CLIENT,
+    VM_SOCK_TYPE_SERVER,
+    VM_SOCK_TYPE_LISTENER,
+    VM_SOCK_TYPE_SIGNAL
+} VM_SOCK_TYPE;
+
+typedef struct _VM_SOCKET
+{
+    LONG             refCount;
+
+    VM_SOCK_TYPE     type;
+    VM_SOCK_PROTOCOL protocol;
+
+    struct sockaddr  addr;
+    socklen_t        addrLen;
+    struct sockaddr* pAddr;   // Do not free
+
+    PVMDNS_MUTEX       pMutex;
+
+    int              fd;
+
+    PVOID            pData;
+
+} VM_SOCKET;
+
+    struct timeval tv = {0};
+    VM_SOCKET *ps = (VM_SOCKET *) pSocket;
+    tv.tv_sec = 5;
+
+    setsockopt(ps->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(ps->fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+}
+#endif
 
     dwError = VmDnsSockSetNonBlocking(pSocket);
     BAIL_ON_VMDNS_ERROR(dwError);
