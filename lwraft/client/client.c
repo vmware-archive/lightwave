@@ -5213,11 +5213,13 @@ _VmDirJoinPreCondition(
 {
     DWORD   dwError = 0;
     PSTR    pszVersion = NULL;
-    int     iVerCmp65 = 0;
     PSTR    pszSchemaFile = NULL;
     PVMDIR_CONNECTION   pConnection = NULL;
     PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
     PSTR    pszErrMsg = NULL;
+#ifndef LIGHTWAVE_BUILD
+    int     iVerCmp65 = 0;
+#endif
 
     // open connection to remote node
     dwError = VmDirConnectionOpenByHost(
@@ -5242,6 +5244,8 @@ _VmDirJoinPreCondition(
     dwError = VmDirGetPSCVersionInternal(pConnection->pLd, &pszVersion);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+#ifndef LIGHTWAVE_BUILD
+    // For PSC build 6.5 and before.
     // patch remote node so its schema is union of itself and file
     iVerCmp65 = VmDirCompareVersion(pszVersion, "6.5");
     if (iVerCmp65 < 0)
@@ -5262,7 +5266,8 @@ _VmDirJoinPreCondition(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
-    {
+#endif
+    {   // Lightwave or PSC(>=6.6) with new schema object model to support down an up version join
         dwError = VmDirPatchRemoteSchemaObjects(
                 pConnection->pLd, pFileSchema);
         BAIL_ON_VMDIR_ERROR(dwError);
