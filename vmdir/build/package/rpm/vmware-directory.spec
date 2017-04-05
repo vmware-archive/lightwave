@@ -71,7 +71,7 @@ Requires: vmware-directory-client = %{version}
 Development Libraries to communicate with Directory Service
 
 %build
-export CFLAGS="-Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare"
+export CFLAGS="-Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wimplicit-function-declaration -Wno-address -Wno-enum-compare"
 cd build
 autoreconf -mif ..
 ../configure \
