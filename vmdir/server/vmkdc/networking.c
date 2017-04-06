@@ -69,88 +69,9 @@ error:
 
 
 static DWORD
-_VmKdcIsIPV6AddressPresent(BOOLEAN  *pIPV6AddressPresent)
-{
-    int                 retVal = 0;
-#ifndef _WIN32
-    struct ifaddrs *    myaddrs = NULL;
-    struct ifaddrs *    ifa = NULL;
-#else
-    PADDRINFOA          myaddrs = NULL;
-    PADDRINFOA          ifa = NULL;
-    unsigned long       loopback_addr = 0;
-    struct sockaddr_in  *pIp4Addr = NULL;
-    struct addrinfo     hints = {0};
-#endif
-
-    *pIPV6AddressPresent = FALSE;
-
-#ifndef _WIN32
-    retVal = getifaddrs(&myaddrs);
-#else
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    loopback_addr = inet_addr("127.0.0.1");
-
-    if (getaddrinfo( "", NULL, &hints, &myaddrs ) != 0 )
-    {
-        retVal = WSAGetLastError();
-    }
-#endif
-    BAIL_ON_VMKDC_ERROR( retVal );
-
-    for (ifa = myaddrs; ifa != NULL; ifa = VMKDC_ADDR_INFO_NEXT(ifa))
-    {
-        if ((VMKDC_ADDR_INFO_ADDR(ifa) == NULL)
-#ifndef _WIN32 // because getaddrinfo() does NOT set ai_flags in the returned address info structures.
-            || ((VMKDC_ADDR_INFO_FLAGS(ifa) & IFF_UP) == 0)
-            || ((VMKDC_ADDR_INFO_FLAGS(ifa) & IFF_LOOPBACK) != 0)
-#endif
-        )
-        {
-            continue;
-        }
-        if (VMKDC_ADDR_INFO_ADDR(ifa)->sa_family == AF_INET6)
-        {
-            *pIPV6AddressPresent = TRUE;
-        }
-        else if (VMKDC_ADDR_INFO_ADDR(ifa)->sa_family == AF_INET)
-        {
-#ifdef _WIN32
-            pIp4Addr = (struct sockaddr_in *) VMKDC_ADDR_INFO_ADDR(ifa);
-            if (memcmp(&pIp4Addr->sin_addr.s_addr,
-                &loopback_addr,
-                sizeof(loopback_addr)) == 0)
-            {
-                continue;
-            }
-#endif
-
-            *pIPV6AddressPresent = FALSE;
-            break;
-        }
-    }
-
-cleanup:
-    if (myaddrs)
-    {
-#ifndef _WIN32
-        freeifaddrs(myaddrs);
-#else
-        freeaddrinfo(myaddrs);
-#endif
-    }
-    return retVal;
-
-error:
-    goto cleanup;
-}
-
-
-static DWORD
 _VmKdcMakeIpAddress(
     int port,
+    BOOLEAN bIsIpV6,
     struct sockaddr **ppAddr,
     int *pAddrLen,
     int *pAddrType)
@@ -161,10 +82,6 @@ _VmKdcMakeIpAddress(
     void                *pAddr = NULL;
     short               addrType = AF_INET;
     int                 addrLen = 0;
-    BOOLEAN bIsIpV6 = FALSE;
-
-    dwError = _VmKdcIsIPV6AddressPresent(&bIsIpV6);
-    BAIL_ON_VMKDC_ERROR(dwError);
 
     addrLen = bIsIpV6 ? sizeof(struct sockaddr_in6) :
                         sizeof(struct sockaddr_in);
@@ -200,6 +117,7 @@ error:
 DWORD
 VmKdcSrvOpenServicePort(
     PVMKDC_GLOBALS pGlobals,
+    BOOLEAN bIpV6,
     VMKDC_SERVICE_PORT_TYPE portType)
 {
     DWORD dwError = 0;
@@ -215,6 +133,7 @@ VmKdcSrvOpenServicePort(
 
     dwError = _VmKdcMakeIpAddress(
                    pGlobals->iListenPort,
+                   bIpV6,
                    &saddr,
                    &saddr_len,
                    &saddr_type);
@@ -237,6 +156,17 @@ VmKdcSrvOpenServicePort(
 #endif
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMKDC_ERROR(dwError);
+    }
+
+    if (bIpV6)
+    {
+        int on = 1;
+
+#ifdef _WIN32
+        setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &on, sizeof(on));
+#else
+        setsockopt(sock, SOL_IPV6, IPV6_V6ONLY, (void *) &on, sizeof(on));
+#endif
     }
 
     if (portType == VMKDC_SERVICE_PORT_TCP)
@@ -263,22 +193,36 @@ VmKdcSrvOpenServicePort(
     sts = bind(sock, saddr, saddr_len);
     if (sts == -1)
     {
-#ifdef _WIN32
-        errno = WSAGetLastError();
-#endif
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMKDC_ERROR(dwError);
+        tcp_close(sock);
+        sock = -1;
     }
 
     if (portType == VMKDC_SERVICE_PORT_TCP)
     {
-        pGlobals->iAcceptSock = sock;
+        if (bIpV6)
+        {
+            pGlobals->iAcceptSock6 = sock;
+            pGlobals->addrLen6 = saddr_len;
+        }
+        else
+        {
+            pGlobals->iAcceptSock = sock;
+            pGlobals->addrLen = saddr_len;
+        }
     }
     else
     {
-        pGlobals->iAcceptSockUdp = sock;
+        if (bIpV6)
+        {
+            pGlobals->iAcceptSock6Udp = sock;
+            pGlobals->addrLen6 = saddr_len;
+        }
+        else
+        {
+            pGlobals->iAcceptSockUdp = sock;
+            pGlobals->addrLen = saddr_len;
+        }
     }
-    pGlobals->addrLen = saddr_len;
 
 error:
     VMKDC_SAFE_FREE_MEMORY(saddr);
@@ -304,11 +248,24 @@ VmKdcSrvServicePortListen(
     DWORD dwError = 0;
     int sts = 0;
 
-    sts = listen(pGlobals->iAcceptSock, 5);
-    if (sts == -1)
+    if (pGlobals->iAcceptSock >= 0)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMKDC_ERROR(dwError);
+        sts = listen(pGlobals->iAcceptSock, 5);
+        if (sts == -1)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMKDC_ERROR(dwError);
+        }
+    }
+
+    if (pGlobals->iAcceptSock6 >= 0)
+    {
+        sts = listen(pGlobals->iAcceptSock6, 5);
+        if (sts == -1)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMKDC_ERROR(dwError);
+        }
     }
 error:
     return dwError;
@@ -327,15 +284,37 @@ VmKdcSrvServiceAcceptConn(
     INT64 maxFd = -1;
 
     FD_ZERO(&rmask);
-    FD_SET(pGlobals->iAcceptSock, &rmask);
-    if (pGlobals->iAcceptSock > maxFd)
+    if (pGlobals->iAcceptSock >= 0)
     {
-        maxFd = pGlobals->iAcceptSock;
+        FD_SET(pGlobals->iAcceptSock, &rmask);
+        if (pGlobals->iAcceptSock > maxFd)
+        {
+            maxFd = pGlobals->iAcceptSock;
+        }
     }
-    FD_SET(pGlobals->iAcceptSockUdp, &rmask);
-    if (pGlobals->iAcceptSockUdp > maxFd)
+    if (pGlobals->iAcceptSockUdp >= 0)
     {
-        maxFd = pGlobals->iAcceptSockUdp;
+        FD_SET(pGlobals->iAcceptSockUdp, &rmask);
+        if (pGlobals->iAcceptSockUdp > maxFd)
+        {
+            maxFd = pGlobals->iAcceptSockUdp;
+        }
+    }
+    if (pGlobals->iAcceptSock6 >= 0)
+    {
+        FD_SET(pGlobals->iAcceptSock6, &rmask);
+        if (pGlobals->iAcceptSock6 > maxFd)
+        {
+            maxFd = pGlobals->iAcceptSock6;
+        }
+    }
+    if (pGlobals->iAcceptSock6Udp >= 0)
+    {
+        FD_SET(pGlobals->iAcceptSock6Udp, &rmask);
+        if (pGlobals->iAcceptSock6Udp > maxFd)
+        {
+            maxFd = pGlobals->iAcceptSock6Udp;
+        }
     }
 
     sts = select((int) (maxFd + 1), &rmask, NULL, NULL, NULL);
@@ -348,6 +327,8 @@ VmKdcSrvServiceAcceptConn(
     {
         goto error;
     }
+
+    /* Inspect ether IPv4 or IPv6 TCP sockets for activity */
     if (FD_ISSET(pGlobals->iAcceptSock, &rmask))
     {
         sts = accept(pGlobals->iAcceptSock, NULL, NULL);
@@ -356,9 +337,23 @@ VmKdcSrvServiceAcceptConn(
             *acceptSocket = (int) sts;
         }
     }
+    else if (FD_ISSET(pGlobals->iAcceptSock6, &rmask))
+    {
+        sts = accept(pGlobals->iAcceptSock6, NULL, NULL);
+        if (sts != -1)
+        {
+            *acceptSocket = (int) sts;
+        }
+    }
+
+    /* Inspect ether IPv4 or IPv6 UDP sockets for activity */
     if (FD_ISSET(pGlobals->iAcceptSockUdp, &rmask))
     {
         *acceptSocketUdp = (int) pGlobals->iAcceptSockUdp;
+    }
+    else if (FD_ISSET(pGlobals->iAcceptSock6Udp, &rmask))
+    {
+        *acceptSocketUdp = (int) pGlobals->iAcceptSock6Udp;
     }
 error:
     return dwError;
@@ -905,6 +900,18 @@ VmKdcSrvCloseSocketAcceptFd(
     {
         tcp_close(gVmkdcGlobals.iAcceptSockUdp);
         gVmkdcGlobals.iAcceptSockUdp = -1;
+    }
+
+    if (gVmkdcGlobals.iAcceptSock6 >= 0)
+    {
+        tcp_close(gVmkdcGlobals.iAcceptSock6);
+        gVmkdcGlobals.iAcceptSock6 = -1;
+    }
+
+    if (gVmkdcGlobals.iAcceptSock6Udp >= 0)
+    {
+        tcp_close(gVmkdcGlobals.iAcceptSock6Udp);
+        gVmkdcGlobals.iAcceptSock6Udp = -1;
     }
 
     pthread_mutex_unlock(&gVmkdcGlobals.mutex);
