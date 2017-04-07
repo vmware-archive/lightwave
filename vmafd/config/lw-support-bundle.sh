@@ -14,7 +14,7 @@ SERVICE_STATUS_LOG="serviceStatus.log"
 SUPPORT_BUNDLE_TAR_FILE=$DEST_DIR/lw-support-bundle-$timestamp.tar
 
 # Create an archive for the support bundle, add logs from /var/log/lightwave and /var/log/vmware/
-tar -cf $SUPPORT_BUNDLE_TAR_FILE /var/log/lightwave/* /var/log/vmware/*
+tar -cf $SUPPORT_BUNDLE_TAR_FILE /var/log/lightwave/* /var/log/vmware/* /var/log/journal/*
 
 # export registry keys and add it to the archive, filter passwords out
 /opt/likewise/bin/lwregshell export | pcregrep -vM 'Password" = {\n.*\n}' > $LW_REG_EXPORT_LOG

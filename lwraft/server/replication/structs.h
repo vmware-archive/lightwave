@@ -195,5 +195,5 @@ typedef struct _VDIR_RAFT_STAT
 //Wait time in sec for majority of requestVote, appendEntries or ping to be received from peers.
 #define WAIT_CONSENSUS_TIMEOUT_MS 8000
 
-//reelection wait random time in miliseconds (0 ~ 310) on top of a base number (150) - use a prime number for modulus op.
-#define WAIT_REELECTION_RAND_MS 311
+//Wait relection minimum value in MS  when split votes occurred
+#define WAIT_REELECTION_MIN_MS 150

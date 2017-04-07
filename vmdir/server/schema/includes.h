@@ -82,6 +82,7 @@
 #include <vmdirserver.h>
 #include <middlelayer.h>
 #include <replication.h>
+#include <vmacl.h>
 
 #include "defines.h"
 #include "structs.h"

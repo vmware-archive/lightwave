@@ -116,6 +116,16 @@ AC_ARG_WITH([datastore],
         LWRAFTD_DATASTORE="$withval"
     ])
 
+ENABLE_LIGHTWAVE_BUILD=no
+AC_ARG_ENABLE([lightwave-build],
+    [AC_HELP_STRING([--enable-lightwave-build], [enable lightwave build(default: no)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AC_DEFINE_UNQUOTED(LIGHTWAVE_BUILD, 1, [ enable lightwave specific build ])
+        fi
+    ])
+
 # client only build
 
 ENABLE_SERVER=false

@@ -43,6 +43,7 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.server.mapper.ResourceServerMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Web service resource to manage resource servers associated per tenant basis.
@@ -56,7 +57,7 @@ public class ResourceServerResource extends BaseSubResource {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(ResourceServerResource.class);
 
     public ResourceServerResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

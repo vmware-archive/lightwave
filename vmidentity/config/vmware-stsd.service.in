@@ -1,7 +1,7 @@
 [Unit]
 Description=VMware Secure Token Service
-After=syslog.target network.target vmware-idmd.service
-Requires=vmware-idmd.service
+After=syslog.target network.target lwsmd.service
+Requires=lwsmd.service
 
 [Service]
 Type=forking

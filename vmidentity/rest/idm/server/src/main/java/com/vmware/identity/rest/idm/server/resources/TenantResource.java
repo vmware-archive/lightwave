@@ -88,6 +88,7 @@ import com.vmware.identity.rest.idm.server.mapper.ProviderPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.mapper.TenantMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Tenant resource. Serves information specifically about tenants.
@@ -101,7 +102,7 @@ public class TenantResource extends BaseResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(TenantResource.class);
 
     public TenantResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

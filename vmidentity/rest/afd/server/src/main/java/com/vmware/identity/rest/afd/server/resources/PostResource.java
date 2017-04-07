@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
 import com.vmware.identity.rest.afd.data.ActiveDirectoryJoinInfoDTO;
+import com.vmware.identity.rest.afd.server.util.Config;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
@@ -47,7 +48,7 @@ import com.vmware.identity.rest.core.server.resources.BaseResource;
 public class PostResource extends BaseResource {
 
     public PostResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @POST @Path("/provider/ad")

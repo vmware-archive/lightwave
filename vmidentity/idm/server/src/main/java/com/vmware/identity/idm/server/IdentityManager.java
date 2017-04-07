@@ -2302,13 +2302,17 @@ public class IdentityManager implements IIdentityManager {
                         logger.error("There is already one nativeAD [%s] registered", adIDP);
                         throw new ADIDSAlreadyExistException(machineJoinInfo.getName());
                     }
-                    String adLdapIDPName = findIdpTypeRegisteredWithName(tenantName, IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
-                                                                         machineJoinInfo.getName());
-                    if (adLdapIDPName != null)
-                    {
-                        logger.error(String.format("There is already one AD-Over-LDAP [%s] registered", adLdapIDPName));
-                        throw new ADIDSAlreadyExistException(adLdapIDPName);
+
+                    if (machineJoinInfo != null) {
+                        String adLdapIDPName = findIdpTypeRegisteredWithName(tenantName, IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
+                                                                             machineJoinInfo.getName());
+                        if (adLdapIDPName != null)
+                        {
+                            logger.error(String.format("There is already one AD-Over-LDAP [%s] registered", adLdapIDPName));
+                            throw new ADIDSAlreadyExistException(adLdapIDPName);
+                        }
                     }
+
                     idsData = checkAndNormalizeAdIdStore(idsData);
                 }
                 // Non-native AD
@@ -7146,28 +7150,30 @@ public class IdentityManager implements IIdentityManager {
         _configStore.setTenantCredentials(tenantName, tenantCertificates, keyPair.getPrivate());
     }
 
+
     private void setTenantBrandName(String tenantName) throws Exception {
         final String CONFIG_IDENTITY_ROOT_KEY ="Software\\VMware\\Identity\\Configuration";
         final String IS_LIGHTWAVE_KEY = "isLightwave";
 
-        Integer isLigthwave = 0;
-
-        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
-        IRegistryKey rootRegistryKey = registryAdapter.openRootKey((int) RegKeyAccess.KEY_READ);
-
-        try {
-            isLigthwave = registryAdapter.getIntValue(
-                    rootRegistryKey,
-                    CONFIG_IDENTITY_ROOT_KEY,
-                    IS_LIGHTWAVE_KEY,
-                    true);
-        } finally {
-            rootRegistryKey.close();
-        }
-
-        // Set default brand name for LIGHTWAVE
-        if(isLigthwave != null && isLigthwave.intValue() == 1) {
-            _configStore.setBrandName(tenantName, "Photon Platform<br/>Single Sign On");
+        if(getBrandName(tenantName) == null) {
+            logger.info("Brand is not set");
+            // Set default branding if its Lightwave.
+            Integer isLightwave = 0;
+            IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+            IRegistryKey rootRegistryKey = registryAdapter.openRootKey((int) RegKeyAccess.KEY_READ);
+            try {
+            	isLightwave = registryAdapter.getIntValue(
+                        rootRegistryKey,
+                        CONFIG_IDENTITY_ROOT_KEY,
+                        IS_LIGHTWAVE_KEY,
+                        true);
+            	if(isLightwave != 0 ) {
+                logger.info("Configuring branding name for Lightwave instance");
+            	_configStore.setBrandName(tenantName, "Photon Platform<br/>Single Sign-On");
+            }
+            } finally {
+                rootRegistryKey.close();
+            }
         }
     }
 

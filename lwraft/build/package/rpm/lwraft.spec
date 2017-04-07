@@ -96,7 +96,8 @@ autoreconf -mif ..
     --with-oidc=%{_oidc_prefix} \
     --with-ssocommon=%{_ssocommon_prefix} \
     --enable-server=yes \
-    --with-version=%{_version}
+    --with-version=%{_version} \
+    --enable-lightwave-build=yes
 
 make
 

@@ -21,7 +21,6 @@ import java.util.Set;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -35,9 +34,11 @@ import com.vmware.directory.rest.common.data.PasswordPolicyDTO;
 import com.vmware.directory.rest.common.data.TenantConfigType;
 import com.vmware.directory.rest.common.data.TenantConfigurationDTO;
 import com.vmware.directory.rest.server.PathParameters;
+import com.vmware.directory.rest.server.mapper.LockoutPolicyMapper;
+import com.vmware.directory.rest.server.mapper.PasswordPolicyMapper;
+import com.vmware.directory.rest.server.util.Config;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
 import com.vmware.identity.idm.LockoutPolicy;
@@ -48,16 +49,13 @@ import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRol
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
-import com.vmware.identity.rest.core.server.resources.BaseResource;
-import com.vmware.directory.rest.server.mapper.LockoutPolicyMapper;
-import com.vmware.directory.rest.server.mapper.PasswordPolicyMapper;
 
 public class ConfigurationResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ConfigurationResource.class);
 
     public ConfigurationResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @GET

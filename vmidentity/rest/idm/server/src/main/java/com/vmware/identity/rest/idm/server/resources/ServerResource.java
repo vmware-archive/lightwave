@@ -40,6 +40,7 @@ import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.ServerDetailsDTO;
 import com.vmware.identity.rest.idm.data.attributes.ComputerType;
 import com.vmware.identity.rest.idm.server.mapper.ServerDetailsMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Server resource. Serves global information about the IDM server.
@@ -53,11 +54,11 @@ public class ServerResource extends BaseResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ServerResource.class);
 
     public ServerResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     public ServerResource(Locale locale, String correlationId, SecurityContext securityContext) {
-        super(locale, correlationId, securityContext);
+        super(locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

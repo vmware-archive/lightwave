@@ -12,7 +12,12 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.server.LdapCertificateValidationSettings;
 import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
+import com.vmware.identity.interop.ldap.ILdapMessage;
+import com.vmware.identity.interop.ldap.LdapException;
 import com.vmware.identity.interop.ldap.LdapScope;
+import com.vmware.identity.interop.ldap.ServerDownLdapException;
+import com.vmware.identity.interop.ldap.TimeoutLdapException;
+import com.vmware.identity.interop.ldap.UnavailableLdapException;
 
 class PooledLdapConnectionFactory implements KeyedPooledObjectFactory<PooledLdapConnectionIdentity, ILdapConnectionEx> {
 
@@ -65,14 +70,20 @@ class PooledLdapConnectionFactory implements KeyedPooledObjectFactory<PooledLdap
             return false;
         }
 
-        try {
-            String base = ServerUtils.getDomainDN(identity.getTenantName());
-            String[] attributes = new String[0];
-            ldapConnection.search(base, LdapScope.SCOPE_BASE, "objectclass=*", attributes, false);
-            return true;
+        String[] attributes = new String[0];
+        try (ILdapMessage message = ldapConnection.search("", LdapScope.SCOPE_BASE, "objectclass=*", attributes, false)){
+            // Not doing anything, just making sure the search worked
+        } catch (ServerDownLdapException | UnavailableLdapException | TimeoutLdapException e) {
+            logger.error("The connection with the server is no longer viable", e);
+            return false;
+        } catch (LdapException e) {
+            // Ignore these since the connection is at least active
+            logger.debug("Generic LdapException", e);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error("An unexpected error has occurred while validating the connection", e);
             return false;
         }
+
+        return true;
     }
 }

@@ -26,9 +26,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.idm.data.ServerDetailsDTO;
 import com.vmware.identity.rest.idm.data.attributes.ComputerType;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.ServerResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 

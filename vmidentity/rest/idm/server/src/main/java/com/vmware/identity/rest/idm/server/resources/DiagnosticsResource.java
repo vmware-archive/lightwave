@@ -39,6 +39,7 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.idm.data.EventLogDTO;
 import com.vmware.identity.rest.idm.data.EventLogStatusDTO;
 import com.vmware.identity.rest.idm.server.mapper.EventLogMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Web service resource to manage all diagnostic operations for
@@ -52,7 +53,7 @@ public class DiagnosticsResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(DiagnosticsResource.class);
 
     public DiagnosticsResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @GET @Path("/eventlog")

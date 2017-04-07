@@ -48,6 +48,7 @@ import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Resource that contains alternative POST endpoints for every GET endpoint throughought the other
@@ -65,7 +66,7 @@ import com.vmware.identity.rest.idm.data.UserDTO;
 public class PostResource extends BaseResource {
 
     public PostResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     // Server Resource

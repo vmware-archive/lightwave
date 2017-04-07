@@ -337,6 +337,37 @@ VmDirStringNCompareA(
 }
 
 BOOLEAN
+VmDirStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bStartsWith = FALSE;
+
+    if (IsNullOrEmptyString(pszPrefix))
+    {
+        bStartsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        size_t strlen = VmDirStringLenA(pszStr);
+        size_t prefixlen = VmDirStringLenA(pszPrefix);
+
+        if (strlen >= prefixlen)
+        {
+            if (VmDirStringNCompareA(
+                    pszStr, pszPrefix, prefixlen, bIsCaseSensitive) == 0)
+            {
+                bStartsWith = TRUE;
+            }
+        }
+    }
+
+    return bStartsWith;
+}
+
+BOOLEAN
 VmDirStringEndsWith(
     PCSTR   pszStr,
     PCSTR   pszSuffix,

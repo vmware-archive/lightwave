@@ -18,6 +18,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
+import com.vmware.identity.rest.afd.server.util.Config;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 
 /**
@@ -30,7 +31,7 @@ import com.vmware.identity.rest.core.server.resources.BaseResource;
 public class ProviderResource extends BaseResource {
 
     public ProviderResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @Path("/ad")

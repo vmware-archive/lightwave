@@ -27,11 +27,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.vmware.identity.idm.DomainType;
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
 import com.vmware.identity.rest.idm.data.attributes.IdentityProviderType;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.IdentityProviderResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 
