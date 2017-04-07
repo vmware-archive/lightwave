@@ -21,6 +21,7 @@ if [ "$#" -ge 1 ]; then
     tdnf -y install createrepo
     createrepo "/tmp/vmware/lightwave"
     sed -i -e "s/https:\/\/dl.bintray.com/file:\/\/\/tmp/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo
+    tdnf makecache
 fi
 
 sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
@@ -33,6 +34,11 @@ tdnf install -y boost-1.60.0
 tdnf install -y jaxws-ri
 tdnf install -y procps-ng
 tdnf install -y vmware-lightwave-server-1.2.0
+
+if [ "$#" -ge 1 ]; then
+    sed -i -e "s/file:\/\/\/tmp/https:\/\/dl.bintray.com/" -e "s/gpgcheck=0/gpgcheck=1/" /etc/yum.repos.d/lightwave.repo
+    tdnf makecache
+fi
 
 # open iptables ports
 # EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2020
