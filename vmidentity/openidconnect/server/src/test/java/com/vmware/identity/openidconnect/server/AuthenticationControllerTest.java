@@ -350,7 +350,7 @@ public class AuthenticationControllerTest {
         Date issuedAt = new Date(now.getTime() - (2 * 60 * 60 * 1000L)); // issued 2 hrs ago
         claimsBuilder = claimsBuilder.issueTime(issuedAt);
         params.put("client_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
-        assertErrorResponse(flow, params, "invalid_client", "stale_client_assertion");
+        assertErrorResponse(flow, params, "invalid_client", "client_assertion has expired");
     }
 
     @Test

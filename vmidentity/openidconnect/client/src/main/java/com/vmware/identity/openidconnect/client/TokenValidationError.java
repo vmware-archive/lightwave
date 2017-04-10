@@ -23,6 +23,7 @@ package com.vmware.identity.openidconnect.client;
 public enum TokenValidationError {
     INVALID_SIGNATURE,
     EXPIRED_TOKEN,
+    TOKEN_NOT_YET_VALID,
     PARSE_ERROR,
     INVALID_ISSUER,
     INVALID_AUDIENCE;

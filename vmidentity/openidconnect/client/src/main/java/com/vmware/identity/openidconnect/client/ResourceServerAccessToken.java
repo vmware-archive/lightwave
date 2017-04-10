@@ -90,8 +90,11 @@ public final class ResourceServerAccessToken {
         Date now = new Date();
         Date notBefore = new Date(accessToken.getIssueTime().getTime() - clockToleranceInSeconds * 1000L);
         Date notAfter = new Date(accessToken.getExpirationTime().getTime() + clockToleranceInSeconds * 1000L);
-        if (now.before(notBefore) || now.after(notAfter)) {
-            throw new TokenValidationException(TokenValidationError.EXPIRED_TOKEN, "Token is expired.");
+        if (now.before(notBefore)) {
+            throw new TokenValidationException(TokenValidationError.TOKEN_NOT_YET_VALID, "Token is not yet valid.");
+        }
+        if (now.after(notAfter)) {
+            throw new TokenValidationException(TokenValidationError.EXPIRED_TOKEN, "Token has expired.");
         }
 
         return new ResourceServerAccessToken(accessToken);
