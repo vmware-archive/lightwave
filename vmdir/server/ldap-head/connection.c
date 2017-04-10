@@ -150,6 +150,12 @@ VmDirDeleteConnection(
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
         _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );
 
+        if ((*conn)->ReplConnState.phmSyncStateOneMap)
+        {
+            LwRtlHashMapClear((*conn)->ReplConnState.phmSyncStateOneMap, VmDirSimpleHashMapPairFree, NULL);
+            LwRtlFreeHashMap(&(*conn)->ReplConnState.phmSyncStateOneMap);
+        }
+
         VMDIR_SAFE_FREE_MEMORY(*conn);
         *conn = NULL;
     }

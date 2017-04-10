@@ -395,7 +395,7 @@ error:
 int
 WriteSyncStateControl(
    VDIR_OPERATION *   op,
-   VDIR_ATTRIBUTE *   pAttr,
+   VDIR_ENTRY *       pEntry,
    BerElement *       ber,
    PSTR*              ppszErrorMsg
    )
@@ -410,6 +410,10 @@ WriteSyncStateControl(
     PVDIR_BERVALUE      pbvUSN = NULL;
     PSTR                pszLocalErrorMsg = NULL;
     BOOLEAN             bHasFinalSyncState = FALSE;
+    CHAR                pszIDBuf[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
+    PSTR                pszEID = NULL;
+    PSTR                pszUSNCreated = NULL;
+    VDIR_ATTRIBUTE *    pAttr = NULL;
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: Begin" );
 
@@ -425,7 +429,7 @@ WriteSyncStateControl(
      *  => may lead to various conflict resolution scenarios.
      */
 
-    for ( ; pAttr != NULL; pAttr = pAttr->next)
+    for (pAttr = pEntry->attrs ; pAttr != NULL; pAttr = pAttr->next)
     {
         if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
         {
@@ -448,6 +452,23 @@ WriteSyncStateControl(
             {
                 entryState = LDAP_SYNC_ADD;
                 bHasFinalSyncState = TRUE;
+
+                assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
+
+                if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszUSNCreated, pszIDBuf) != 0)
+                {
+                    retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+
+                    retVal = VmDirAllocateStringA(pAttr->vals[0].lberbv_val, &pszUSNCreated);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+
+                    retVal = LwRtlHashMapInsert(op->conn->ReplConnState.phmSyncStateOneMap, pszEID, pszUSNCreated, NULL);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                    pszEID = NULL; pszUSNCreated = NULL; // map takes over
+
+                    VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "entry sync stat ADD %s at USNCreated %llu", pEntry->dn.lberbv_val, pszUSNCreated );
+                }
             }
         }
     }
@@ -512,6 +533,9 @@ cleanup:
     {
         VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     }
+
+    VMDIR_SAFE_FREE_MEMORY(pszEID);
+    VMDIR_SAFE_FREE_MEMORY(pszUSNCreated);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: End" );
 
@@ -683,6 +707,20 @@ ParseSyncRequestControlVal(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
                                         "UpdateSyncDoneUtdVectorEntry: LwRtlCreateHashTable failed");
 
+    }
+
+    if (op->conn->ReplConnState.phmSyncStateOneMap == NULL)
+    {   // replication request, create connection level map for SyncStateControl adjustment (ADD -> MODIFY)
+        if (LwRtlCreateHashMap(
+                &op->conn->ReplConnState.phmSyncStateOneMap,
+                LwRtlHashDigestPstrCaseless,
+                LwRtlHashEqualPstrCaseless,
+                NULL) != 0
+           )
+        {
+            lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
     }
 
     tag = ber_peek_tag( ber, &len );

@@ -1278,3 +1278,60 @@ VmDirOperationTypeToName(
 
     return pszName;
 }
+
+/*
+ * Compare Attribute lberbv value only, no attribute normalization is done.
+ * Used in replication conflict resolution to suppress benign warning log.
+ *
+ * Should NOT be used as attribute semantics comparison.
+ */
+BOOLEAN
+VmDirIsSameConsumerSupplierEntryAttr(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSrcEntry,
+    PVDIR_ENTRY     pDstEntry
+    )
+{
+    BOOLEAN         bIsSameAttr = TRUE;
+    DWORD           dwError = 0;
+    PVDIR_ATTRIBUTE pSrcAttr = NULL;
+    PVDIR_ATTRIBUTE pDstAttr = NULL;
+    unsigned        i = 0;
+    unsigned        j = 0;
+
+    if (!pAttr || !pSrcEntry || !pDstEntry)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pSrcAttr = VmDirFindAttrByName(pSrcEntry, pAttr->type.lberbv_val);
+    pDstAttr = VmDirFindAttrByName(pDstEntry, pAttr->type.lberbv_val);
+
+    if (pSrcAttr && pDstAttr && pSrcAttr->numVals == pDstAttr->numVals)
+    {
+        for (i=0; bIsSameAttr && i < pSrcAttr->numVals; i++)
+        {
+             for (j = 0; j < pDstAttr->numVals; j++)
+             {
+                 if (pSrcAttr->vals[i].lberbv_len == pDstAttr->vals[j].lberbv_len &&
+                     memcmp( pSrcAttr->vals[i].lberbv_val, pDstAttr->vals[j].lberbv_val, pSrcAttr->vals[i].lberbv_len) == 0
+                    )
+                 {
+                     break;
+                 }
+             }
+
+             if (j == pDstAttr->numVals)
+             {
+                 bIsSameAttr = FALSE;
+             }
+        }
+    }
+    else
+    {
+        bIsSameAttr = FALSE;
+    }
+
+error:
+    return bIsSameAttr && dwError==0;
+}

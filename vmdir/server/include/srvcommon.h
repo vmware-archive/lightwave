@@ -224,6 +224,11 @@ typedef struct _VDIR_SUPERLOG_RECORD
     VDIR_SUPERLOG_RECORD_OPERATION_INFO opInfo;
 } VDIR_SUPERLOG_RECORD, *PVDIR_SUPERLOG_RECORD;
 
+typedef struct _VDIR_CONN_REPL_SUPP_STATE
+{
+    PLW_HASHMAP     phmSyncStateOneMap;
+} VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
+
 typedef struct _VDIR_CONNECTION
 {
     Sockbuf *               sb;
@@ -238,6 +243,7 @@ typedef struct _VDIR_CONNECTION
     char                    szClientIP[INET6_ADDRSTRLEN];
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
+    VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -1083,6 +1089,13 @@ VmDirLdapReqCodeToName(
 PCSTR
 VmDirOperationTypeToName(
     VDIR_OPERATION_TYPE opType
+    );
+
+BOOLEAN
+VmDirIsSameConsumerSupplierEntryAttr(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSrcEntry,
+    PVDIR_ENTRY     pDstEntry
     );
 
 // candidates.c
