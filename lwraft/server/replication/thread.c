@@ -2094,7 +2094,6 @@ _VmDirApplyLog(unsigned long long indexToApply)
     char opStr[RAFT_CONTEXT_DN_MAX_LEN] = {0};
     BOOLEAN bLock = FALSE;
     BOOLEAN bHasTxn = FALSE;
-    int iPostCommitPluginRtn = 0;
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (indexToApply <= gRaftState.lastApplied)
@@ -2143,6 +2142,12 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirEntryAttrValueNormalize(&entry, FALSE /*all attributes*/);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirSchemaModMutexAcquire(&ldapOp);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "SchemaModMutexAcquire - PreAdd");
+
+        dwError = VmDirReplSchemaEntryPreAdd(&ldapOp, &entry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "VmDirReplSchemaEntryPreAdd");
+
         dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
         BAIL_ON_VMDIR_ERROR(dwError);
         bHasTxn = TRUE;
@@ -2183,6 +2188,12 @@ _VmDirApplyLog(unsigned long long indexToApply)
         // Apply modify operations to the current entry (in pack format)
         dwError = VmDirApplyModsToEntryStruct(pSchemaCtx, modReq, &entry, &bDnModified, &pszLocalErrorMsg );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "ApplyModsToEntryStruct (%s)", pszLocalErrorMsg);
+
+        dwError = VmDirSchemaModMutexAcquire(&ldapOp);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirSchemaModMutexAcquire for Modify");
+
+        dwError = VmDirReplSchemaEntryPreMoidify(&ldapOp, &entry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "VmDirReplSchemaEntryPreMoidify");
 
         dwError = ldapOp.pBEIF->pfnBEEntryModify(ldapOp.pBECtx, modReq->mods, &entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "BEEntryModify, (%s)",
@@ -2284,28 +2295,21 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirEntryUnpack(&entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "VmDirEntryUnpack)");
 
-        dwError = VmDirSchemaEntryPreAdd(&ldapOp, &entry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "SchemaEntryPreAdd");
-
-        iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(&ldapOp, &entry, dwError);
-
-
-        if (iPostCommitPluginRtn != LDAP_SUCCESS && iPostCommitPluginRtn != ldapOp.ldapResult.errCode)
+        dwError = VmDirReplSchemaEntryPostAdd(&ldapOp, &entry);
+        if (dwError)
         {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: ADD, VdirExecutePostAddCommitPlugins %s - code(%d)",
-                    entry.dn.lberbv_val, iPostCommitPluginRtn);
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: VmDirReplSchemaEntryPostAdd %s - error(%d)",
+                    entry.dn.lberbv_val, dwError);
+            dwError = 0; //don't hold off applying the next raft log since the base transaction has committed. 
         }
     } else if (logEntry.requestCode == LDAP_REQ_MODIFY)
     {
-        dwError = VmDirSchemaModMutexAcquire(&ldapOp);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "Lock schema mod mutex");
-
-        iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(&ldapOp, &entry, dwError);
-
-        if ( iPostCommitPluginRtn != LDAP_SUCCESS && iPostCommitPluginRtn != ldapOp.ldapResult.errCode)
+        dwError = VmDirReplSchemaEntryPostMoidify(&ldapOp, &entry);
+        if (dwError)
         {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: MODIFY: VdirExecutePostModifyCommitPlugins %s - code(%d)",
-                      entry.dn.lberbv_val, iPostCommitPluginRtn);
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: VmDirReplSchemaEntryPostMoidify %s - error(%d)",
+                      entry.dn.lberbv_val, dwError);
+            dwError = 0; //don't hold off applying the next raft log since the base transaction has committed.
         }
     }
 
@@ -2355,7 +2359,7 @@ error:
     {
         ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
     }
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: %s error %d", VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: dn %s error: %s errcode: %d", logEntryDn, VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
     goto cleanup;
 }
 

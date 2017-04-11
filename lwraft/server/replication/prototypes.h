@@ -37,10 +37,24 @@ extern "C" {
 extern VDIR_RAFT_STATE gRaftState;
 
 extern DWORD
-VmDirSchemaEntryPreAdd(
-    PVDIR_OPERATION,
-    PVDIR_ENTRY
-    );
+VmDirReplSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
+
+extern DWORD
+VmDirReplSchemaEntryPostAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
+
+extern DWORD
+VmDirReplSchemaEntryPreMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
+
+extern DWORD
+VmDirReplSchemaEntryPostMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
 
 DWORD
 InitializeReplicationThread(
