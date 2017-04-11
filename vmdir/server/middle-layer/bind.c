@@ -79,19 +79,13 @@ VmDirMLBind(
                 dwError = _VmDirSASLBind(pOperation);
                 BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 0 /* TBD:Adam-No negotiation, just send complete token; cheat here! */
-                if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
-                {
-                    pOperation->ldapResult.errCode = LDAP_SASL_BIND_IN_PROGRESS;
-                }
-#endif
                 if (pOperation->ldapResult.errCode == LDAP_SASL_BIND_IN_PROGRESS)
                 {
                     VmDirSendSASLBindResponse(pOperation);
                     bSendResult = FALSE;
                 }
                 else if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
-                {   // if SASL negotiation completes successfully, it sets pOpeartion->reqDn.
+                {   
 #if 1 /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
                     if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val, 
                         "GSS-SPNEGO", 
@@ -99,9 +93,23 @@ VmDirMLBind(
                     {
                         VmDirSendSASLBindResponse(pOperation);
 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' VmDirSendSASLBindResponse() called");
+if  (pOperation->conn)
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' pOperation->conn=%p", pOperation->conn);
+if  (pOperation->conn->pSaslInfo)
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' pOperation->conn->pSaslInfo=%p", pOperation->conn->pSaslInfo);
+if (pOperation->conn->pSaslInfo->pszBindUserName)
+{
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' pszBindUserName=%s",  pOperation->conn->pSaslInfo->pszBindUserName);
+    dwError = VmDirUPNToDNBerWrap( pOperation->conn->pSaslInfo->pszBindUserName, &pOperation->reqDn);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' %d=VmDirUPNToDNBerWrap()", dwError);
+
+    dwError = VmDirInternalBindEntry(pOperation);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' %d=VmDirInternalBindEntry()", dwError);
+}
+
                     }
                     else
-                    {
+                    {    // if SASL negotiation completes successfully, it sets pOpeartion->reqDn.
                         dwError = VmDirInternalBindEntry(pOperation);
                         BAIL_ON_VMDIR_ERROR(dwError);
                     }
@@ -435,11 +443,7 @@ _VmDirSASLBind(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "(%u)(%s)", retVal, "SASL start failed.");
 
         pLocalInfo->pSockbuf = pOperation->conn->sb;
-#if 0
-        pLocalInfo->saslStatus = SASL_STATUS_DONE;
-#else
         pLocalInfo->saslStatus = SASL_STATUS_IN_PROGRESS;
-#endif
     }
     else
     {
