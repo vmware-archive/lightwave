@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#
+# Note : Assumes your workspace is in $HOME/workspaces
+#
+
+docker run -d \
+           --name lightwave-dev \
+           --privileged \
+           -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+           -v $HOME/workspaces:$HOME/workspaces \
+           -it \
+           vmware/lightwave-dev-kit

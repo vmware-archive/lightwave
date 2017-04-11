@@ -58,6 +58,7 @@ public final class CompositeAuthenticatorFactory implements
          .principalDiscovery(tenantName)));
       authenticators.add(new BETAuthenticator(authService));
       authenticators.add(new SamlTokenAuthenticator(validator));
+      authenticators.add(new UserCertAuthenticator(authService));
 
       return new CompositeAuthenticator(authenticators);
    }

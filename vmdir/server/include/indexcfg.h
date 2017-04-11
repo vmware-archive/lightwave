@@ -79,7 +79,6 @@ typedef struct _VDIR_INDEX_UPD
 
     BOOLEAN             bOwnBECtx;
     BOOLEAN             bHasBETxn;
-    BOOLEAN             bInLock;
 
 } VDIR_INDEX_UPD;
 
@@ -93,7 +92,7 @@ typedef struct _VDIR_INDEX_UPD
  */
 DWORD
 VmDirIndexLibInit(
-    VOID
+    PVMDIR_MUTEX    pModMutex
     );
 
 /*

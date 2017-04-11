@@ -38,6 +38,7 @@ public class RequestFactory {
 
     private final static String DATE_HEADER = "Date";
     private final static ContentType APPLICATION_JSON_UTF8 = ContentType.create(ContentType.APPLICATION_JSON.getMimeType(), "UTF-8");
+    private final static ContentType APPLICATION_XML_UTF8 = ContentType.create(ContentType.APPLICATION_XML.getMimeType(), "UTF-8");
 
     public static HttpGet createGetRequest(URI uri) {
         return prepareRequest(new HttpGet(uri), null);
@@ -53,6 +54,10 @@ public class RequestFactory {
 
     public static HttpPost createPostRequest(URI uri, AccessToken token, Object entity) throws ClientException, JsonProcessingException {
         return prepareRequest(new HttpPost(uri), token, entity);
+    }
+
+    public static HttpPost createPostRequestWithXml(URI uri, AccessToken token, String xml) throws ClientException {
+        return prepareRequestWithXml(new HttpPost(uri), token, xml);
     }
 
     public static HttpPut createPutRequest(URI uri, AccessToken token) throws ClientException, JsonProcessingException {
@@ -87,7 +92,11 @@ public class RequestFactory {
             .append("access_token=").append(token.getToken())
             .append("&").append("token_type=").append(token.getType().getIdentifier());
 
-        String jsonEntity = ObjectMapperSingleton.getInstance().writer().writeValueAsString(entity);
+        String jsonEntity = null;
+        if (entity != null) {
+            jsonEntity = ObjectMapperSingleton.getInstance().writer().writeValueAsString(entity);
+        }
+
         if (token.getType() == AccessToken.Type.JWT_HOK || token.getType() == AccessToken.Type.SAML_HOK) {
             try {
                 String signedRequest = sign(request, jsonEntity, date, token.getPrivateKey());
@@ -102,6 +111,21 @@ public class RequestFactory {
         }
 
         request.setEntity(new StringEntity(builder.toString(), APPLICATION_JSON_UTF8));
+
+        return request;
+    }
+
+    private static <T extends HttpEntityEnclosingRequestBase> T prepareRequestWithXml(T request, AccessToken token, String xml) throws ClientException {
+        Date date = new Date();
+        request.setHeader(DATE_HEADER, RequestSigner.getHttpFormattedDate(date));
+        if (token != null) {
+            request.setHeader(new BasicHeader("Authorization", token.getType().getIdentifier() + " " + token.getToken()));
+        }
+
+        if (xml != null) {
+            StringEntity entity = new StringEntity(xml, APPLICATION_XML_UTF8);
+            request.setEntity(entity);
+        }
 
         return request;
     }

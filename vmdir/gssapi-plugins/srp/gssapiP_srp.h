@@ -54,6 +54,9 @@ extern "C" {
  * constants for der encoding/decoding routines.
  */
 
+/* Build the SRP plugin with FIPS-compatibility mode on by default */
+#define SRP_FIPS_ENABLED 1
+
 #define	MECH_OID		0x10
 #define	OCTET_STRING		0x04
 #define	CONTEXT			0xa0
@@ -145,6 +148,8 @@ typedef struct {
         struct SRPVerifier *srp_ver;     /* Server SRP context handle */
         krb5_context      krb5_ctx;
         krb5_keyblock     *keyblock;
+        EVP_CIPHER_CTX    *evp_encrypt_ctx;   /* Used by FIPS EVP_CIPHER_CTX_new */
+        EVP_CIPHER_CTX    *evp_decrypt_ctx;   /* Used by FIPS EVP_CIPHER_CTX_new */
         AES_KEY           aes_encrypt_key;
         AES_KEY           aes_decrypt_key;
         unsigned char     aes_encrypt_iv[AES_BLOCK_SIZE];

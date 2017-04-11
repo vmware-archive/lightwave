@@ -51,6 +51,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapConnectPorts, 0),
         VMDIR_SF_INIT(.pdwLdapsConnectPorts, NULL),
         VMDIR_SF_INIT(.dwLdapsConnectPorts, 0),
+        VMDIR_SF_INIT(.pszRestListenPort, NULL),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
@@ -62,12 +63,12 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.hStopServiceEvent, 0),
 #endif
         VMDIR_SF_INIT(.bRegisterTcpEndpoint, TRUE),
-        VMDIR_SF_INIT(.gpVmDirSrvSD, 0),
         VMDIR_SF_INIT(.replAgrsMutex, NULL),
         VMDIR_SF_INIT(.replAgrsCondition, NULL),
         VMDIR_SF_INIT(.replCycleDoneMutex, NULL),
         VMDIR_SF_INIT(.replCycleDoneCondition, NULL),
         VMDIR_SF_INIT(.dwReplCycleCounter, 0),
+        VMDIR_SF_INIT(.replRWLock, NULL),
         VMDIR_SF_INIT(.limitLocalUsnToBeSupplied, 0),
         VMDIR_SF_INIT(.pOperationThrSyncCounter, NULL),
         VMDIR_SF_INIT(.pPortListenSyncCounter, NULL),
@@ -87,6 +88,10 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
         VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
+        VMDIR_SF_INIT(.dwCopyDbWritesMin, 100),
+        VMDIR_SF_INIT(.dwCopyDbIntervalInSec, 0),
+        VMDIR_SF_INIT(.dwCopyDbBlockWriteInSec, 30),
+        VMDIR_SF_INIT(.dwLdapWrites, 0)
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =
@@ -134,34 +139,12 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.initialNextUSN, 0),
         VMDIR_SF_INIT(.maxOriginatingUSN, 0),
         VMDIR_SF_INIT(.bvServerObjName, VDIR_BERVALUE_INIT),
-        VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT)
+        VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT),
+        VMDIR_SF_INIT(.dwTombstoneExpirationPeriod, 0),
+        VMDIR_SF_INIT(.dwTombstoneThreadFrequency, 0),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
-
-VMDIR_URGENT_REPL gVmdirUrgentRepl =
-    {
-        // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.pUrgentReplMutex, NULL),
-        VMDIR_SF_INIT(.bUrgentReplicationPending, FALSE),
-        VMDIR_SF_INIT(.dwUrgentReplResponseCount, 0),
-        VMDIR_SF_INIT(.dwUrgentReplTimeout, 0),
-        VMDIR_SF_INIT(.consensusUSN, 0),
-        VMDIR_SF_INIT(.pUTDVector, NULL),
-        VMDIR_SF_INIT(.pUrgentReplResponseRecvMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplResponseRecvCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplResponseRecv, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplThreadMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplThreadCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplThreadPredicate, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplDoneMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplDoneCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplDone, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplStartMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplStartCondition, NULL),
-        VMDIR_SF_INIT(.pUrgentReplPartnerTable, NULL),
-        VMDIR_SF_INIT(.pUrgentReplServerList, NULL)
-    };
 
 VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
     {

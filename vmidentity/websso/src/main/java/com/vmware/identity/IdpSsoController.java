@@ -64,7 +64,7 @@ public class IdpSsoController {
 	/**
 	 * Handle authentication request
 	 */
-	@RequestMapping(value = "/SAML2/IDPSSO/{tenant:.*}", method = RequestMethod.GET)
+	@RequestMapping(value = "/websso/SAML2/IDPSSO/{tenant:.*}", method = RequestMethod.GET)
 	public ModelAndView sso(Locale locale, @PathVariable(value = "tenant") String tenant, HttpServletRequest request, HttpServletResponse response) throws IOException {
 		logger.info("Welcome to IDP-initiated AuthnRequest handler! " +
 				"The client locale is "+ locale.toString() + ", tenant is " + tenant);
@@ -158,9 +158,9 @@ public class IdpSsoController {
 	/**
 	 * Default tenant is not enabled for IDP-initiated requests
 	 * User MUST specify relying party URL as part of request,
-	 * 	then that means that user MUST know tenant as well
+	 *  then that means that user MUST know tenant as well
 	 */
-	@RequestMapping(value = "/SAML2/IDPSSO")
+	@RequestMapping(value = "/websso/SAML2/IDPSSO")
 	public void ssoDefaultTenantError(Locale locale, HttpServletResponse response) throws IOException {
 		logger.info("IDP SSO error! The client locale is "+ locale.toString() + ", DEFAULT tenant");
 
@@ -177,7 +177,7 @@ public class IdpSsoController {
 	/**
 	 * Handle request sent with a wrong binding
 	 */
-	@RequestMapping(value = "/SAML2/IDPSSO/{tenant:.*}")
+	@RequestMapping(value = "/websso/SAML2/IDPSSO/{tenant:.*}")
 	public void ssoBindingError(Locale locale, @PathVariable(value = "tenant") String tenant, HttpServletResponse response) throws IOException {
 		logger.info("IDP SSO binding error! The client locale is "+ locale.toString() + ", tenant is " + tenant);
 

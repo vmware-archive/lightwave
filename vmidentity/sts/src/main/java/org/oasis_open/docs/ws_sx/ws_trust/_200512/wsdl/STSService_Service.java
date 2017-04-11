@@ -3,6 +3,7 @@ package org.oasis_open.docs.ws_sx.ws_trust._200512.wsdl;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import javax.xml.ws.WebEndpoint;
@@ -17,7 +18,7 @@ import javax.xml.ws.WebServiceFeature;
  * Generated source version: 2.2
  * 
  */
-@WebServiceClient(name = "STSService", targetNamespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512/wsdl", wsdlLocation = "file:/home/gstaykov/perforce/vmidentity/main/casj/sts/src/main/webapp/WEB-INF/wsdl/STSService.wsdl")
+@WebServiceClient(name = "STSService", targetNamespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512/wsdl", wsdlLocation = "/WEB-INF/wsdl/STSService.wsdl")
 public class STSService_Service
     extends Service
 {
@@ -30,7 +31,7 @@ public class STSService_Service
         URL url = null;
         WebServiceException e = null;
         try {
-            url = new URL("file:/home/gstaykov/perforce/vmidentity/main/casj/sts/src/main/webapp/WEB-INF/wsdl/STSService.wsdl");
+            url = new URL("/WEB-INF/wsdl/STSService.wsdl");
         } catch (MalformedURLException ex) {
             e = new WebServiceException(ex);
         }

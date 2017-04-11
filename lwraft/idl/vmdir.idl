@@ -1,0 +1,149 @@
+/*
+ * Copyright (C) 2011 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmdir.idl
+ *
+ * Abstract :
+ *
+ *            VMware Directory Service
+ *
+ *            Interface Definition
+ *
+ *            Core API
+ *
+ * Authors  : Sriram Nambakam (snambakam@vmware.com)
+ *
+ */
+[
+    uuid (2ACD53D0-FA52-4eb3-9299-7DD7514B25F4),
+    version(1.4),
+    pointer_default(unique)
+#if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
+    , endpoint("ncalrpc:[LightwaveRaftService]") 
+#endif // #ifdef _WIN32
+]
+
+interface vmdir
+{
+#ifndef _WIN32
+#    include <lw/types.h>
+#   define PWSTR unsigned short int *
+#else
+
+/*
+ * Unfortunately, cannot create a typedef containing a pointer type using
+ * DCE/RPC IDL compiler. This compromise works for both MSRPC and
+ * DCE/RPC compilers.
+ */
+#if HAVE_DCERPC_WIN32
+#   define PWSTR unsigned short int *
+    typedef unsigned long int UINT32;
+#else
+    // defined in windows.h, but cant't include that here.
+    typedef unsigned int UINT32;
+    typedef wchar_t *PWSTR;
+#endif
+#endif
+
+cpp_quote("#ifndef VMDIR_WSTRING_DEFINED")
+cpp_quote("#define VMDIR_WSTRING_DEFINED")
+typedef
+#ifdef _DCE_IDL_
+[ptr, string]
+#endif
+unsigned short *wstring;   /* wchar16_t */
+cpp_quote("#endif")
+
+
+cpp_quote("#ifndef ENUM_VMDIR_LOG_LEVEL")
+cpp_quote("#define ENUM_VMDIR_LOG_LEVEL")
+typedef enum
+{
+    VMDIR_LOG_ERROR = 0,
+    VMDIR_LOG_WARNING,
+    VMDIR_LOG_INFO,
+    VMDIR_LOG_VERBOSE,
+    VMDIR_LOG_DEBUG
+} VMDIR_LOG_LEVEL;
+
+cpp_quote("#endif")
+
+typedef struct _VMDIR_DATA_CONTAINER
+{
+    UINT32 dwCount;
+    [size_is(dwCount)] unsigned char * data;
+} VMDIR_DATA_CONTAINER, *PVMDIR_DATA_CONTAINER;
+
+cpp_quote("#ifndef VMDIR_USER_CREATE_PARAMS_RPC_DEFINED")
+cpp_quote("#define VMDIR_USER_CREATE_PARAMS_RPC_DEFINED 1")
+typedef struct _VMDIR_USER_CREATE_PARAMS_RPC
+{
+    wstring pwszName;      /* optional  */
+    wstring pwszAccount;   /* mandatory */
+    wstring pwszFirstname; /* mandatory */
+    wstring pwszLastname;  /* mandatory */
+    wstring pwszPassword;  /* mandatory */
+    wstring pwszUPN;       /* optional  */
+} VMDIR_USER_CREATE_PARAMS_RPC, *PVMDIR_USER_CREATE_PARAMS_RPC;
+cpp_quote("#endif")
+
+    UINT32
+    RpcVmDirGeneratePassword(
+        [in]                 handle_t     hBinding,
+        [in, out]            VMDIR_DATA_CONTAINER* pPasswdContainer
+    );
+
+    UINT32
+    RpcVmDirGetKeyTabRecBlob(
+        [in]                 handle_t     hBinding,
+        [in, string, unique] PWSTR        pszUPN,
+        [in, out]            VMDIR_DATA_CONTAINER* pKeyTabRecContainer
+    );
+
+    UINT32
+    RpcVmDirGetKrbMasterKey(
+        [in]                 handle_t     hBinding,
+        [in, string, unique] PWSTR        pszDomainName,
+        [in, out]            VMDIR_DATA_CONTAINER* pKrbMasterKeyContainer
+    );
+
+    UINT32
+    RpcVmDirGetKrbUPNKey(
+        [in]                 handle_t     hBinding,
+        [in, string, unique] PWSTR        pszUpnName,
+        [in, out]            VMDIR_DATA_CONTAINER* pKrbUpnKeyContainer
+    );
+
+    UINT32
+    RpcVmDirCreateUser(
+        [in]                 handle_t    hBinding,
+        [in, string, unique] PWSTR psUserName,
+        [in, string, unique] PWSTR pszPassword,
+        [in, string, unique] PWSTR pszUPNName,
+        [in]                 unsigned char bRandKey
+        );
+        
+    UINT32
+    RpcVmDirCreateUserEx(
+        [in] handle_t                      hBinding,
+        [in] PVMDIR_USER_CREATE_PARAMS_RPC pCreateParams
+        );
+
+    UINT32
+    RpcVmDirReplNow(
+	[in]				handle_t	hBinding
+        );
+
+    UINT32
+    RpcVmDirSetLogLevel(
+	[in]				handle_t	hBinding,
+	[in]				VMDIR_LOG_LEVEL vmdirLogLevel
+        );
+
+    UINT32
+    RpcVmDirSetLogMask(
+	[in]				handle_t	hBinding,
+	[in]				UINT32	        vmdirLogMask
+        );
+
+}

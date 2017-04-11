@@ -42,7 +42,6 @@ import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
-import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * @author Yehia Zayour
@@ -127,10 +126,8 @@ public class AuthenticationRequestProcessor {
 
         // check that tenant, client, and redirect_uri are registered (if not, return error to browser, not client)
         try {
-            if (this.tenant == null) {
-                this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
-            }
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
             this.clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, clientId);
             if (!this.clientInfo.getRedirectURIs().contains(redirectUri)) {
                 throw new ServerException(ErrorObject.invalidRequest("unregistered redirect_uri"));
@@ -176,7 +173,9 @@ public class AuthenticationRequestProcessor {
         // if no person user, return login form
         if (personUser == null) {
             try {
-                return Pair.of(generateLoginForm(), (HttpResponse) null);
+                ModelAndView loginForm = generateLoginForm();
+                logger.info("login form generated");
+                return Pair.of(loginForm, (HttpResponse) null);
             } catch (ServerException e) {
                 LoggerUtils.logFailedRequest(logger, e);
                 return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
@@ -195,6 +194,12 @@ public class AuthenticationRequestProcessor {
             }
             HttpResponse httpResponse = authnSuccessResponse.toHttpResponse();
             httpResponse.addCookie(loggedInSessionCookie(sessionId));
+            logger.info(
+                    "subject [{}] response_type [{}] response_mode [{}] login_method [{}]",
+                    personUser.getSubject().getValue(),
+                    this.authnRequest.getResponseType().toString(),
+                    this.authnRequest.getResponseMode().getValue(),
+                    (loginMethod == null) ? "session" : loginMethod.getValue());
             return Pair.of((ModelAndView) null, httpResponse);
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e);
@@ -260,14 +265,6 @@ public class AuthenticationRequestProcessor {
             throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is required since client has registered a cert"));
         }
 
-        URI requestUri = this.httpRequest.getURI();
-        if (requestUri.getPath().contains("/oidc/cac")) {
-            // the client_assertion audience is expected to be the authorization endpoint (/oidc/authorize), but
-            // login using TLS client cert (smart card / CAC) will arrive at the cac endpoint instead (/oidc/cac), so
-            // we do this uri transformation to allow the client_assertion to pass validation
-            requestUri = URIUtils.changePathComponent(requestUri, requestUri.getPath().replace("/oidc/cac", "/oidc/authorize"));
-        }
-
         long clientAssertionLifetimeMs = (this.clientInfo.getAuthnRequestClientAssertionLifetimeMS() > 0) ?
                 this.clientInfo.getAuthnRequestClientAssertionLifetimeMS() :
                 CLIENT_ASSERTION_LIFETIME_MS;
@@ -275,7 +272,7 @@ public class AuthenticationRequestProcessor {
         this.solutionUserAuthenticator.authenticateByClientAssertion(
                 this.authnRequest.getClientAssertion(),
                 clientAssertionLifetimeMs,
-                requestUri,
+                Endpoints.normalizeAuthenticationRequestURI(this.httpRequest.getURI()),
                 this.tenantInfo,
                 this.clientInfo);
     }
@@ -291,7 +288,7 @@ public class AuthenticationRequestProcessor {
 
     private Cookie loggedInSessionCookie(SessionID sessionId) {
         Cookie cookie = new Cookie(SessionManager.getSessionCookieName(this.tenant), sessionId.getValue());
-        cookie.setPath("/openidconnect");
+        cookie.setPath(Endpoints.BASE);
         cookie.setSecure(true);
         cookie.setHttpOnly(true);
         return cookie;
@@ -307,8 +304,8 @@ public class AuthenticationRequestProcessor {
         this.model.addAttribute("spn",                          StringEscapeUtils.escapeEcmaScript(authzServerInfo.getServicePrincipalName()));
 
         this.model.addAttribute("protocol",                     "openidconnect");
-        this.model.addAttribute("cac_endpoint",                 "/openidconnect/oidc/cac");
-        this.model.addAttribute("sso_endpoint",                 "/openidconnect/oidc/authorize");
+        this.model.addAttribute("cac_endpoint",                 Endpoints.BASE + Endpoints.authenticationCacForLoginForm(this.httpRequest.getURI()));
+        this.model.addAttribute("sso_endpoint",                 Endpoints.BASE + Endpoints.AUTHENTICATION);
         this.model.addAttribute("responseMode",                 this.authnRequest.getResponseMode().getValue());
 
         this.model.addAttribute("tenant",                       this.tenant);

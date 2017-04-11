@@ -46,6 +46,7 @@ public abstract class NativeAdapter
         final String propName = "jna.library.path";
 
         final String LINUX_VMDIR_LIB64_PATH    = "/opt/vmware/lib64";
+        final String LINUX_VMDIR_VC_LIB64_PATH    = "/usr/lib/vmware-vmafd/lib64";
         final String LINUX_LIKEWISE_LIB64_PATH = "/opt/likewise/lib64";
 
         final String WIN_REG_VMDIR_PATH =
@@ -66,6 +67,7 @@ public abstract class NativeAdapter
         if (SystemUtils.IS_OS_LINUX)
         {
             paths = Arrays.asList(
+                        LINUX_VMDIR_VC_LIB64_PATH,
                         LINUX_VMDIR_LIB64_PATH,
                         LINUX_LIKEWISE_LIB64_PATH);
         }
@@ -101,14 +103,14 @@ public abstract class NativeAdapter
         }
 
         // Check if the paths exist
-        for (String pathString : paths)
-        {
-            Path path = Paths.get(pathString);
-            if (Files.notExists(path))
-            {
-                throw new IllegalStateException("Path \"" + pathString + "\" does not exist");
-            }
-        }
+        //for (String pathString : paths)
+        //{
+            //Path path = Paths.get(pathString);
+            //if (Files.notExists(path))
+            //{
+                //throw new IllegalStateException("Path \"" + pathString + "\" does not exist");
+            //}
+        //}
 
         String propValue = System.getProperty(propName);
 

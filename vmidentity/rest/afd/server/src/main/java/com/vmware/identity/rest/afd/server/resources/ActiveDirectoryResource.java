@@ -31,6 +31,7 @@ import com.vmware.identity.idm.IdmADDomainAccessDeniedException;
 import com.vmware.identity.rest.afd.data.ActiveDirectoryJoinInfoDTO;
 import com.vmware.identity.rest.afd.data.ActiveDirectoryJoinRequestDTO;
 import com.vmware.identity.rest.afd.server.mapper.ActiveDirectoryInfoMapper;
+import com.vmware.identity.rest.afd.server.util.Config;
 import com.vmware.identity.rest.core.data.CredentialsDTO;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
@@ -51,7 +52,7 @@ public class ActiveDirectoryResource extends BaseResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ActiveDirectoryResource.class);
 
     public ActiveDirectoryResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

@@ -19,7 +19,6 @@
 
 typedef DWORD VMKDC_TICKET_FLAGS;
 typedef char *PVMKDC_ADDRESSES;
-typedef char *PVMKDC_AUTHZDATA;
 
 typedef struct _VMKDC_TRANSITED_ENCODING {
     DWORD tr_type;

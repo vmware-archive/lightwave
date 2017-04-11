@@ -237,16 +237,6 @@ typedef DWORD(*LPVMDNS_PURGE_RECORD_PROC)(
                         PCSTR pszNode
                         );
 
-typedef struct _VMDNS_LRU_LIST
-{
-    LIST_ENTRY          LruListHead;
-    DWORD               dwCurrentCount;
-    DWORD               dwMaxCount;
-    DWORD               dwLowerThreshold;
-    DWORD               dwUpperThreshold;
-    PVMDNS_MUTEX        pLock;
-} VMDNS_LRU_LIST, *PVMDNS_LRU_LIST;
-
 typedef struct _VMDNS_ZONE_OBJECT
 {
     volatile ULONG      lRefCount;
@@ -257,6 +247,18 @@ typedef struct _VMDNS_ZONE_OBJECT
     PVMDNS_RWLOCK       pLock;
 } VMDNS_ZONE_OBJECT;
 
+typedef struct _VMDNS_LRU_LIST
+{
+    LIST_ENTRY          LruListHead;
+    PVMDNS_ZONE_OBJECT  pZoneObject;
+    LPVMDNS_PURGE_ENTRY_PROC pPurgeEntryProc;
+    DWORD               dwCurrentCount;
+    DWORD               dwMaxCount;
+    DWORD               dwLowerThreshold;
+    DWORD               dwUpperThreshold;
+    PVMDNS_MUTEX        pLock;
+} VMDNS_LRU_LIST;
+
 typedef struct _VMDNS_ZONE_LIST
 {
     DWORD               dwZoneCount;
@@ -265,6 +267,7 @@ typedef struct _VMDNS_ZONE_LIST
 
 typedef struct _VMDNS_NAME_ENTRY
 {
+    volatile ULONG      lRefCount;
     LIST_ENTRY          LruList;
     PSTR                pszName;
     PVMDNS_RECORD_LIST  pRecords;

@@ -63,7 +63,7 @@ typedef struct _VMDIR_FTP_DATA_CONTAINER
            [in]                     handle_t    hBinding,
            [in, string]             PWSTR       pwszDBFileName,
            [in, out]                vmdir_ftp_handle_t *pFileHandle  /* Equivalent to FILE ** ppFileHandle */
-       );
+      );
 
        UINT32
        RpcVmDirReadDBFile(
@@ -71,16 +71,11 @@ typedef struct _VMDIR_FTP_DATA_CONTAINER
            [in]                     vmdir_ftp_handle_t fileHandle,
            [in]                     UINT32      dwCount,
            [in, out]                VMDIR_FTP_DATA_CONTAINER  * pReadBufferContainer
-       );
+      );
 
        UINT32
        RpcVmDirCloseDBFile(
            [in]                     handle_t  hBinding,
            [in]                     vmdir_ftp_handle_t fileHandle
-       );
-       UINT32
-       RpcVmDirSetMode(
-           [in]                     handle_t   hBinding,
-           [in]                     UINT32     dwMode
-       );
+      );
 }

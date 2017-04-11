@@ -33,6 +33,7 @@ import javax.ws.rs.core.SecurityContext;
 
 import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.directory.rest.server.mapper.SolutionUserMapper;
+import com.vmware.directory.rest.server.util.Config;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.DuplicateCertificateException;
@@ -62,7 +63,7 @@ public class SolutionUserResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SolutionUserResource.class);
 
     public SolutionUserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

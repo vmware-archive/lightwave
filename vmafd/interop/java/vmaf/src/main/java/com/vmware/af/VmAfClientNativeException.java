@@ -22,6 +22,7 @@ public class VmAfClientNativeException extends RuntimeException
 
     public VmAfClientNativeException(int errCode)
     {
+        super("AFD Native Error Occured: " + errCode);
         _errCode = errCode;
     }
 

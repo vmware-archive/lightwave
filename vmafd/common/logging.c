@@ -89,7 +89,7 @@ VmAfdLogInitialize(
         dwError = _VmAfdCreateDirs(pszLogFileName);
         BAIL_ON_VMAFD_LOG_ERROR(dwError);
 
-        dwError = VmAfdOpenFilePath(pszLogFileName, "a", &gVmafdLogFile);
+        dwError = VmAfdOpenFilePath(pszLogFileName, "a", &gVmafdLogFile, 0644);
         BAIL_ON_VMAFD_LOG_ERROR(dwError);
     }
     if (vmafd_syslog)
@@ -130,7 +130,7 @@ VmAfdLog(
    va_list     va;
    const char* logLevelTag = "";
 
-   if (level <= vmafd_syslog_level)
+   if (level >= vmafd_syslog_level)
    {
       va_start( va, fmt );
       vsnprintf( logMessage, sizeof(logMessage), fmt, va );
@@ -167,6 +167,15 @@ VmAfdLog(
             fprintf(gVmafdLogFile, "%s%s\n", extraLogMessage, logMessage);
             fflush( gVmafdLogFile );
          }
+      }
+      if (vmafd_console_log)
+      {
+          logLevelTag = logLevelToTag(level);
+          fprintf(stderr, "VMAFD:t@%lu:%-3.7s: %s\n",
+                  (unsigned long) pthread_self(),
+                  logLevelTag? logLevelTag : "UNKNOWN",
+                  logMessage);
+          fflush( stderr );
       }
    }
 }

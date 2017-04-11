@@ -90,6 +90,7 @@ krb5_log(krb5_context context,
     return 0;
 }
 
+#if 0 /* Defined in config-file.c */
 /* This function is currently just used to get the location of the EGD
  * socket. If we're not using an EGD, then we can just return NULL */
 
@@ -100,3 +101,4 @@ krb5_config_get_string (krb5_context context,
 {
     return NULL;
 }
+#endif

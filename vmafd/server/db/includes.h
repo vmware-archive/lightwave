@@ -27,6 +27,7 @@
 #include <sqlite3.h>
 #include <vecsdb.h>
 #include <cdcdb.h>
+#include <regdb.h>
 #include <vmafcfg.h>
 #include <securitystructs.h>
 #include <vecsauth.h>

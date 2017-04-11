@@ -19,12 +19,14 @@ import java.io.IOException;
 import java.util.Collection;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -50,6 +52,7 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.server.mapper.ExternalIDPMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * All operations related to external identity providers are implemented in this
@@ -66,7 +69,7 @@ public class ExternalIDPResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ExternalIDPResource.class);
 
     public ExternalIDPResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     @GET
@@ -156,9 +159,9 @@ public class ExternalIDPResource extends BaseSubResource {
 
     @DELETE @Path("/{entityID}")
     @RequiresRole(role=Role.ADMINISTRATOR)
-    public void delete(@PathParam("entityID") String entityID) {
+    public void delete(@PathParam("entityID") String entityID, @DefaultValue("false") @QueryParam("remove") Boolean removeJitUsers) {
         try {
-            getIDMClient().removeExternalIdpConfig(tenant, entityID);
+            getIDMClient().removeExternalIdpConfig(tenant, entityID, removeJitUsers);
         } catch (NoSuchTenantException | NoSuchExternalIdpConfigException e) {
             log.warn("Failed to remove external identity provider '{}' from tenant '{}'", entityID, tenant, e);
             throw new NotFoundException(sm.getString("ec.404"), e);

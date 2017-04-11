@@ -22,6 +22,7 @@ libmdb_store_la_SOURCES = \
     indexwriteutil.c \
     init.c \
     iterate.c \
+    legacy.c \
     txn.c
 
 libmdb_store_la_CPPFLAGS = \

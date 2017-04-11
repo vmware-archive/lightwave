@@ -6,118 +6,35 @@
   <parent>
     <groupId>com.vmware.identity.idm</groupId>
     <artifactId>vmware-identity-idm</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-idm-interface</artifactId>
-  <version>6.6.1</version>
   <packaging>jar</packaging>
-  <name>vmware-identity-idm-interface</name>
-
-  <properties>
-    <outputDirectory>${basedir}/../../build/vmware-sts/packages</outputDirectory>
-  </properties>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-          <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.0.1</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.10</version>
-        <executions>
-          <execution>
-            <id>copy</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>com.vmware.identity.idm</groupId>
-                  <artifactId>vmware-identity-idm-interface</artifactId>
-                  <version>${vmware.version}</version>
-                  <type>jar</type>
-                  <outputDirectory>${outputDirectory}</outputDirectory>
-                  <destFileName>vmware-identity-idm-interface.jar</destFileName>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-   </plugins>
-  </build>
+  <name>Identity Manager - Interfaces</name>
 
   <dependencies>
     <!-- Vmware Dependencies -->
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
-
     <dependency>
-      <groupId>net.sourceforge.cobertura</groupId>
-      <artifactId>cobertura</artifactId>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-platform</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
-    </dependency>
-
-    <!-- Logger Dependencies -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-1.2-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.vmware.identity</groupId>
-      <artifactId>vmware-identity-platform</artifactId>
+      <version>${commons.lang.version}</version>
     </dependency>
   </dependencies>
+
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 
 </project>

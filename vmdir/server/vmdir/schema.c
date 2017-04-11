@@ -31,8 +31,8 @@ _MarkDefaultIndices(
  * Examines the following options in order and use the first detected source
  * to initialize schema:
  *
- * 1. Individual schema entries (7.0)
- * 2. Subschema subentry (6.x)
+ * 1. Schema subtree (6.6 and higher)
+ * 2. Subschema subentry (6.5 and lower)
  * 3. Schema file
  *
  * OUTPUT:
@@ -52,13 +52,16 @@ VmDirLoadSchema(
 
     assert(pbWriteSchemaEntry && pbLegacyDataLoaded);
 
-    dwError = VmDirReadSchemaObjects(&pAtEntries, &pOcEntries);
+    dwError = VmDirReadAttributeSchemaObjects(&pAtEntries);
     if (dwError == 0)
     {
-        dwError = VmDirSchemaLibPrepareUpdateViaEntries(pAtEntries, pOcEntries);
+        dwError = VmDirSchemaLibLoadAttributeSchemaEntries(pAtEntries);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSchemaLibUpdate(0);
+        dwError = VmDirReadClassSchemaObjects(&pOcEntries);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaLibLoadClassSchemaEntries(pOcEntries);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
@@ -66,7 +69,7 @@ VmDirLoadSchema(
         dwError = VmDirReadSubSchemaSubEntry(&pSchemaEntry);
         if (dwError == 0)
         {
-            dwError = VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(pSchemaEntry);
+            dwError = VmDirSchemaLibLoadSubSchemaSubEntry(pSchemaEntry);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             *pbLegacyDataLoaded = TRUE;
@@ -80,14 +83,11 @@ VmDirLoadSchema(
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
 
-            dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
+            dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             *pbWriteSchemaEntry = TRUE;
         }
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSchemaLibUpdate(0);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _MarkDefaultIndices();
@@ -142,7 +142,7 @@ error:
 }
 
 /*
- * During upgrade 7.0 or later, we can patch schema via this function.
+ * If upgrading from 6.6 or higher, use this function to patch schema.
  *
  * INPUT:
  * new version of Lotus schema file
@@ -155,20 +155,27 @@ VmDirSchemaPatchViaFile(
     DWORD    dwError = 0;
     PVDIR_SCHEMA_CTX    pOldSchemaCtx = NULL;
     PVDIR_SCHEMA_CTX    pNewSchemaCtx = NULL;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
 
     dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
+    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibUpdate(0);
+    // support for mixed version (with 6.5 or lower) federation upgrade scenario
+    dwError = VmDirPatchLocalSubSchemaSubEntry();
+    dwError = dwError == ERROR_BACKEND_ENTRY_NOTFOUND ? 0 : dwError;
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaCtxAcquire(&pNewSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirPatchLocalSchemaObjects(pOldSchemaCtx, pNewSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBE = VmDirBackendSelect(NULL);
+    dwError = pBE->pfnBEApplyIndicesNewMR();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -184,7 +191,7 @@ error:
 }
 
 /*
- * During upgrade 6.x, we can patch schema via this function.
+ * If upgrading from 6.5 or lower, use this function to patch schema.
  * Should be called if InitializeSchema() results pbLegacyDataLoaded = TRUE
  *
  * INPUT:
@@ -196,17 +203,19 @@ VmDirSchemaPatchLegacyViaFile(
     )
 {
     DWORD    dwError = 0;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
 
-    dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
+    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirPatchLocalSubSchemaSubEntry();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirWriteSchemaObjects();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBE = VmDirBackendSelect(NULL);
+    dwError = pBE->pfnBEApplyIndicesNewMR();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

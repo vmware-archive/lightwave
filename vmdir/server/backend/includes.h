@@ -39,6 +39,7 @@
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
+#include <vmdirerrors.h>
 #include <vmdirerrorcode.h>
 
 #include <vmdircommon.h>
@@ -49,17 +50,7 @@
 
 #include <backend.h>
 
-#ifdef HAVE_DB_H
-#include <bdbstore.h>
-#endif
-
-#ifdef HAVE_LMDB_H
 #include <mdbstore.h>
-#endif
-
-#ifdef HAVE_TCBDB_H
-#include <tcstore.h>
-#endif
 
 //#include "defines.h"
 #include "structs.h"
@@ -70,12 +61,8 @@
 
 #pragma once
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <errno.h>
 #include <windows.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <rpc.h>
-#endif
 #include <stdint.h>
 #include <assert.h>
 #include <tchar.h>
@@ -95,6 +82,7 @@
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
+#include <vmdirerrors.h>
 #include <vmdirerrorcode.h>
 
 #include <vmdircommon.h>
@@ -105,13 +93,7 @@
 
 #include <backend.h>
 
-#ifdef HAVE_DB_H
-#include <bdbstore.h>
-#endif
-
-#ifdef HAVE_LMDB_H
 #include <mdbstore.h>
-#endif
 
 #include "structs.h"
 #include "externs.h"

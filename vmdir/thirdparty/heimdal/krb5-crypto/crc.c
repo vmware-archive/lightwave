@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-static u_long table[256];
+static unsigned long table[256];
 
 #define CRC_GEN 0xEDB88320L
 

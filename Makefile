@@ -8,9 +8,13 @@ include $(MAKEROOT)/makedefs.mk
 
 PACKAGES=\
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMEVENT_CLIENT_DEVEL_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_SERVER_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_DEVEL_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_SERVER_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_SERVER_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_DEVEL_RPM) \
@@ -24,9 +28,44 @@ PACKAGES=\
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SERVER_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(CFG_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_SERVER_RPM) \
-    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_CLIENTS_RPM)
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_CLIENTS_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_RAFT_RPM)
 
 all: $(LIGHTWAVE_STAGE_DIR) $(PACKAGES)
+
+lw-raft: $(LIGHTWAVE_STAGE_DIR) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_RAFT_RPM)
+
+appliance: $(PHOTON_OVA) $(LIGHTWAVE_OVA)
+
+appliance-sandbox: $(PACKAGES) $(PHOTON_OVA) $(LIGHTWAVE_SB_OVA)
+
+$(PHOTON_OVA): $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance/photon-ova && ./build.sh $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+
+$(LIGHTWAVE_SB_OVA): $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance && $(APPLIANCE_BUILDER) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance -s
+	-$(MV) $(LIGHTWAVE_OVA_STAGE)/lightwave.ova $(LIGHTWAVE_SB_OVA)
+
+$(LIGHTWAVE_OVA): $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance && $(APPLIANCE_BUILDER) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	-$(MV) $(LIGHTWAVE_OVA_STAGE)/lightwave.ova $(LIGHTWAVE_OVA)
+
+appliance-clean: lightwave-ova-clean photon_ova_clean
+	-$(RM) -f $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.ova
+	-$(RM) -f $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.iso
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/packer_cache
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+
+lightwave-ova-clean:
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/lw-ova-build
+	-$(RM) -rf $(SRCROOT)/appliance/packer_cache
+
+photon_ova_clean:
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/photon-ova-build
+	-$(RM) -rf $(SRCROOT)/appliance/photon-ova/packer_cache
 
 container: $(DOCKER_IMAGE)
 
@@ -83,6 +122,18 @@ lw-clients-clean:
 	    cd $(LIGHTWAVE_STAGE_DIR) && $(RM) -f $(LW_CLIENTS_RPM); \
 	fi
 
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_RAFT_RPM): $(LW_RAFT_PKGDIR)/$(LW_RAFT_RPM)
+	$(CP) -f $< $@
+
+$(LW_RAFT_PKGDIR)/$(LW_RAFT_RPM):
+	@cd $(SRCROOT)/lw-raft && make
+
+lw-raft-clean:
+	@cd $(SRCROOT)/lw-raft && make clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR) && $(RM) -f $(LW_RAFT_RPM); \
+	fi
+
 vmevent-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMEVENT_CLIENT_DEVEL_RPM)
 	$(RPM) -Uvh --force --nodeps $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMEVENT_CLIENT_DEVEL_RPM)
 
@@ -96,6 +147,21 @@ vmevent-clean:
 	@cd $(SRCROOT)/vmevent/build && make -f Makefile.bootstrap clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMEVENT_RPMS); \
+	fi
+
+vmsts-c-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM)
+	$(RPM) -Uvh --force --nodeps $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM)
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_C_CLIENT_RPM)
+	$(CP) -f $< $@
+
+$(VMSTS_PKGDIR)/$(VMSTS_C_CLIENT_RPM):
+	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.cclient.bootstrap
+
+vmsts-c-client-clean:
+	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.cclient.bootstrap clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMSTS_C_CLIENT_RPM); \
 	fi
 
 vmdir-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_DEVEL_RPM)
@@ -114,13 +180,38 @@ $(VMDIR_PKGDIR)/$(VMDIR_CLIENT_RPM):$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM)
 
 $(VMDIR_PKGDIR)/$(VMDIR_CLIENT_DEVEL_RPM):$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM)
 
-$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM):$(LIGHTWAVE_STAGE_DIR) vmevent-client-install
+$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM):$(LIGHTWAVE_STAGE_DIR) vmevent-client-install vmsts-c-client-install
 	@cd $(SRCROOT)/vmdir/build && make -f Makefile.bootstrap
 
 vmdir-clean:
 	@cd $(SRCROOT)/vmdir/build && make -f Makefile.bootstrap clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR)/x86_64 ]; then \
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMDIR_RPMS); \
+	fi
+
+lwraft-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM)
+	$(RPM) -Uvh --force --nodeps $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM)
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_RPM)
+	$(CP) -f $< $@
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_DEVEL_RPM)
+	$(CP) -f $< $@
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_SERVER_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM)
+	$(CP) -f $< $@
+
+$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM)
+
+$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_DEVEL_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM)
+
+$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM):$(LIGHTWAVE_STAGE_DIR) vmevent-client-install
+	@cd $(SRCROOT)/lwraft/build && make -f Makefile.bootstrap
+
+lwraft-clean:
+	@cd $(SRCROOT)/lwraft/build && make -f Makefile.bootstrap clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR)/x86_64 ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(LWRAFT_RPMS); \
 	fi
 
 vmdns-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_DEVEL_RPM)
@@ -267,9 +358,10 @@ resources-folder-clean:
 docker-clean:
 	@$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/docker-published
 
-clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean \
+clean: config-clean vmca-clean vmafd-clean vmdns-clean lwraft-clean vmdir-clean vmsts-c-client-clean vmevent-clean \
 		lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean \
-		properties-clean diagnostics-folder-clean resources-folder-clean
+		properties-clean diagnostics-folder-clean resources-folder-clean \
+		appliance-clean lw-raft-clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
 	    $(RMDIR) $(LIGHTWAVE_STAGE_DIR); \
 	fi

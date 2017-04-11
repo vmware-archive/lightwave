@@ -65,8 +65,8 @@ public class RequestSignerTest {
     public void testSigning_BadURI() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
         String md5 = RequestSigner.computeMD5("this is an entity");
         Date date = new Date();
-        URI uri = new URI("http://localhost/");
-        URI badUri = new URI("http://junkhost/");
+        URI uri = new URI("http://localhost/path/to/data");
+        URI badUri = new URI("http://junkhost/not/the/path");
 
         String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
         String badStringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, badUri);

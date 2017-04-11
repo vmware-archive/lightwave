@@ -31,64 +31,64 @@ import com.vmware.identity.rest.idm.samples.UserSample;
 
 /**
  * Class for handling calls to UserSample from command line.
- *
+ * 
  * @author abapat
  *
  */
 public class UserSampleHandler extends SampleHandler {
-    private UserSample sample;
+	private UserSample sample;
 
-    /**
-     * Initializes UserSample and logger.
-     */
-    public UserSampleHandler() {
-        log = Logger.getLogger(getClass().getName());
-        try {
-            sample = new UserSample();
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-            log.fatal("Error occured when initializing UserSample", e);
-        }
-    }
+	/**
+	 * Initializes UserSample and logger.
+	 */
+	public UserSampleHandler() {
+		log = Logger.getLogger(getClass().getName());
+		try {
+			sample = new UserSample();
+		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
+			log.fatal("Error occured when initializing UserSample", e);
+		}
+	}
 
-    @Override
-    public String getType() {
-        return "user";
-    }
+	@Override
+	public String getType() {
+		return "user";
+	}
 
-    @Override
-    public void callSample(String operation, String json) {
-        String payload = parsePayload(json);
-        try {
-            if (operation.equalsIgnoreCase("create") || operation.equalsIgnoreCase("update")) {
-                Gson g = new GsonBuilder().create();
-                UserDTO user = g.fromJson(payload, UserDTO.class);
-                if (operation.equalsIgnoreCase("create")) {
-                    log.info("Creating User: " + payload);
-                    sample.createUser(user, tenant);
-                } else {
-                    log.info("Updating User: " + payload);
-                    sample.updateUser(user, tenant);
-                }
-                log.info(user.toPrettyString());
-            } else if (operation.equalsIgnoreCase("read") || operation.equalsIgnoreCase("delete")) {
-                JSONObject JSON = new JSONObject(payload);
-                if (operation.equalsIgnoreCase("read")) {
-                    log.info("Getting User: " + payload);
-                    UserDTO user = sample.getUser(JSON.getString("name"), JSON.getString("domain"), tenant);
-                    log.info(user.toPrettyString());
-                } else {
-                    log.info("Deleting User: " + payload);
-                    sample.deleteUser(JSON.getString("name"), JSON.getString("domain"), tenant);
-                }
-            } else {
-                log.fatal("Invalid command: " + operation);
-            }
-        } catch (JSONException e) {
-            log.fatal("Error when parsing payload", e);
-        } catch (Exception e) {
-            log.fatal("Error when calling sample", e);
-        }
+	@Override
+	public void callSample(String operation, String json) {
+		String payload = parsePayload(json);
+		try {
+			if (operation.equalsIgnoreCase("create") || operation.equalsIgnoreCase("update")) {
+				Gson g = new GsonBuilder().create();
+				UserDTO user = g.fromJson(payload, UserDTO.class);
+				if (operation.equalsIgnoreCase("create")) {
+					log.info("Creating User: " + payload);
+					sample.createUser(user, tenant);
+				} else {
+					log.info("Updating User: " + payload);
+					sample.updateUser(user, tenant);
+				}
+				log.info(user.toPrettyString());
+			} else if (operation.equalsIgnoreCase("read") || operation.equalsIgnoreCase("delete")) {
+				JSONObject JSON = new JSONObject(payload);
+				if (operation.equalsIgnoreCase("read")) {
+					log.info("Getting User: " + payload);
+					UserDTO user = sample.getUser(JSON.getString("name"), JSON.getString("domain"), tenant);
+					log.info(user.toPrettyString());
+				} else {
+					log.info("Deleting User: " + payload);
+					sample.deleteUser(JSON.getString("name"), JSON.getString("domain"), tenant);
+				}
+			} else {
+				log.fatal("Invalid command: " + operation);
+			}
+		} catch (JSONException e) {
+			log.fatal("Error when parsing payload", e);
+		} catch (Exception e) {
+			log.fatal("Error when calling sample", e);
+		}
 
-    }
+	}
 
 }

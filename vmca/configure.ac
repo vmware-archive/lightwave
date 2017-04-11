@@ -130,33 +130,6 @@ AC_SUBST(OPENSSL_BASE_PATH)
 AC_SUBST(OPENSSL_INCLUDES)
 AC_SUBST(OPENSSL_LDFLAGS)
 
-# vmdir component
-
-AC_ARG_WITH([vmdir],
-    [AC_HELP_STRING([--with-vmdir=<dir>], [use directory-server binaries rooted at prefix <dir> ])],
-    [
-        VMDIR_BASE_PATH="$withval"
-        VMDIR_INCLUDES="-I$withval/include"
-        VMDIR_LDFLAGS="-L$withval/lib -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
-    ])
-
-AC_ARG_WITH([vmdir-includes],
-    [AC_HELP_STRING([--with-vmdir-includes=<dir>], [use directory-server headers located in prefix <dir> ])],
-    [
-        VMDIR_INCLUDES="-I$withval"
-    ])
-
-AC_ARG_WITH([vmdir-libs],
-    [AC_HELP_STRING([--with-vmdir-libs=<dir>], [use directory-server libraries located in prefix <dir> ])],
-    [
-        VMDIR_LDFLAGS="-L$withval"
-    ])
-
-AC_SUBST(VMDIR_BASE_PATH)
-AC_SUBST(VMDIR_INCLUDES)
-AC_SUBST(VMDIR_LDFLAGS)
-
-
 # vmafd component
 
 AC_ARG_WITH([afd],
@@ -164,7 +137,7 @@ AC_ARG_WITH([afd],
     [
         VMAFD_BASE_PATH="$withval"
         VMAFD_INCLUDES="-I$withval/include"
-        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([afd-includes],
@@ -179,6 +152,12 @@ AC_ARG_WITH([afd-libs],
         VMAFD_LDFLAGS="-L$withval"
     ])
 
+AC_ARG_WITH([afd-rpath],
+    [AC_HELP_STRING([--with-afd-rpath=<dir>], [use afd-server libraries located at <dir> at runtime])],
+    [
+        VMAFD_LDFLAGS="-L$VMAFD_BASE_PATH/lib64 -Wl,-rpath,$withval -Wl,-rpath-link,$VMAFD_BASE_PATH/lib64"
+    ])
+
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $VMAFD_INCLUDES $DCERPC_INCLUDES"
 AC_CHECK_HEADERS(vmafdclient.h)
@@ -188,6 +167,74 @@ VMAFD_LIBS="-lvmafdclient"
 AC_SUBST(VMAFD_BASE_PATH)
 AC_SUBST(VMAFD_INCLUDES)
 AC_SUBST(VMAFD_LDFLAGS)
+
+# OIDC
+
+OIDC_DEFAULT_PATH=/opt/vmware/lib64
+SSOCOMMON_LDFLAGS=$OIDC_DEFAULT_PATH
+AC_ARG_WITH([ssocommon],
+    [AC_HELP_STRING([--with-ssocommon=<dir>], [use ssocommon binaries rooted at prefix <dir> ])],
+    [
+        SSOCOMMON_BASE_PATH="$withval"
+        SSOCOMMON_INCLUDES="-I$withval/include"
+        SSOCOMMON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+SSOCOMMON_LIBS="-lssocommon"
+AC_SUBST(SSOCOMMON_BASE_PATH)
+AC_SUBST(SSOCOMMON_INCLUDES)
+AC_SUBST(SSOCOMMON_LDFLAGS)
+
+OIDC_LDFLAGS=$OIDC_DEFAULT_PATH
+AC_ARG_WITH([oidc],
+    [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
+    [
+        OIDC_BASE_PATH="$withval"
+        OIDC_INCLUDES="-I$withval/include"
+        OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+OIDC_LIBS="-loidc"
+AC_CHECK_HEADERS(oidc.h)
+AC_CHECK_HEADERS(oidc_types.h)
+AC_CHECK_HEADERS(common_types.h)
+AC_SUBST(OIDC_BASE_PATH)
+AC_SUBST(OIDC_INCLUDES)
+AC_SUBST(OIDC_LDFLAGS)
+
+
+# Trident
+
+AC_ARG_WITH([trident],
+    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
+    [
+        TRIDENT_BASE_PATH="$withval"
+        TRIDENT_INCLUDES="-I$withval/include/vmware-rest"
+        TRIDENT_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+TRIDENT_LIBS="-lrestengine"
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(TRIDENT_BASE_PATH)
+AC_SUBST(TRIDENT_INCLUDES)
+AC_SUBST(TRIDENT_LDFLAGS)
+
+# Jansson
+
+AC_ARG_WITH([jansson],
+    [AC_HELP_STRING([--with-jansson=<dir>], [use jansson binaries rooted at prefix <dir> ])],
+    [
+        JANSSON_BASE_PATH="$withval"
+        JANSSON_INCLUDES="-I$withval/include"
+        JANSSON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+JANSSON_LIBS="-ljansson"
+AC_CHECK_HEADERS(jansson.h)
+AC_SUBST(JANSSON_BASE_PATH)
+AC_SUBST(JANSSON_INCLUDES)
+AC_SUBST(JANSSON_LDFLAGS)
+
 
 
 # Likewise components
@@ -551,7 +598,10 @@ AC_SUBST(LDAP_LIBS)
 AC_SUBST(LBER_LIBS)
 AC_SUBST(PYTHON_LIBS)
 AC_SUBST(VMAFD_LIBS)
-
+AC_SUBST(TRIDENT_LIBS)
+AC_SUBST(JANSSON_LIBS)
+AC_SUBST(OIDC_LIBS)
+AC_SUBST(SSOCOMMON_LIBS)
 
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
@@ -607,8 +657,6 @@ AC_CONFIG_FILES([Makefile
                  vmcadb/Makefile
                  certool/Makefile
                  test/Makefile
-                 tools/Makefile
-                 tools/certificate-manager/Makefile
                  python/Makefile
                  jdepends/Makefile
                  java/Makefile

@@ -88,6 +88,7 @@ import com.vmware.identity.rest.idm.server.mapper.ProviderPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.mapper.TenantMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Tenant resource. Serves information specifically about tenants.
@@ -101,7 +102,7 @@ public class TenantResource extends BaseResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(TenantResource.class);
 
     public TenantResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**
@@ -552,18 +553,17 @@ public class TenantResource extends BaseResource {
                 .build();
     }
 
-    private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
-        ProviderPolicyDTO providerPolicyDTO = null;
-        Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
-        if(defaultProviders != null) {
-          IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName, defaultProviders.iterator().next());
-
-          providerPolicyDTO = ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
-                  defaultIdentitySource.getExtendedIdentityStoreData() != null ? defaultIdentitySource.getExtendedIdentityStoreData().getAlias() : null,
-                  getIDMClient().isTenantIDPSelectionEnabled(tenantName));
-        }
-        return providerPolicyDTO;
-    }
+        private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
+                ProviderPolicyDTO providerPolicyDTO = null;
+                Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
+                if(defaultProviders != null) {
+                          IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName, defaultProviders.iterator().next());
+                          providerPolicyDTO = ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
+                                                defaultIdentitySource.getExtendedIdentityStoreData() != null ? defaultIdentitySource.getExtendedIdentityStoreData().getAlias() : null,
+                                                                  getIDMClient().isTenantIDPSelectionEnabled(tenantName));
+                        }
+                return providerPolicyDTO;
+            }
 
     private BrandPolicyDTO getBrandPolicy(String tenantName) throws Exception {
         String logonBannerTitle = getIDMClient().getLogonBannerTitle(tenantName);

@@ -52,6 +52,18 @@ VmDirIndexCfgCopy(
     );
 
 DWORD
+VmDirIndexCfgAddUniqueScopeMod(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PCSTR           pszUniqScope
+    );
+
+DWORD
+VmDirIndexCfgDeleteUniqueScopeMod(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PCSTR           pszUniqScope
+    );
+
+DWORD
 VmDirIndexCfgValidateUniqueScopeMods(
     PVDIR_INDEX_CFG pIndexCfg
     );

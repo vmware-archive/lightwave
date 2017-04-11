@@ -22,7 +22,6 @@
 #include "targetver.h"
 #include <time.h>
 #include <stdio.h>
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
 #include <stdint.h>
 #include <assert.h>
@@ -41,7 +40,19 @@
 #include <vmkdcerrorcode.h>
 
 #include <dce/rpc.h>
+#ifdef FALSE
+#undef FALSE
+#endif
+#ifdef TRUE
+#undef TRUE
+#endif
+#include <dce/idlddefs.h>
 #include <pthread.h>
+#include <vmdirtypes.h>
 #include <vmkdccommon.h>
 #include <kdcsrvcommon.h>
 #include <vmkdcserver.h>
+
+#ifdef VMDIR_ENABLE_PAC
+#include "vmdir_pac_h.h"
+#endif

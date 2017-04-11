@@ -135,9 +135,18 @@ VmDirKeyTabOpen(
         dwError = EINVAL;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    fseek(ktfp, sizeof(size_16), SEEK_SET);
 
-    pKeyTab->ktOffset = sizeof(size_16);
+    if (ktMode == 3)
+    {
+        fseek(ktfp, 0, SEEK_END);
+        pKeyTab->ktOffset = ftell(ktfp);
+    }
+    else
+    {
+        fseek(ktfp, sizeof(size_16), SEEK_SET);
+        pKeyTab->ktOffset = sizeof(size_16);
+    }
+
     pKeyTab->ktType = 1; // Only support file KT for now
     pKeyTab->ktfp = ktfp;
     pKeyTab->ktMode = ktMode;

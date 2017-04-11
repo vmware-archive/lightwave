@@ -1,0 +1,6 @@
+typedef struct _VMDIR_SD_CACHE_ENTRY
+{
+    LW_HASHTABLE_NODE Node;
+    PSTR pszDn;
+    PSTR pszAcl;
+} VMDIR_SD_CACHE_ENTRY, *PVMDIR_SD_CACHE_ENTRY;

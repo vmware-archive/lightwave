@@ -77,17 +77,18 @@ public abstract class ClientIssuedAssertion extends JWTToken {
             long assertionLifetimeMs,
             URI requestUri,
             long clockToleranceMS) {
-        // if we are behind rhttp proxy, the requestUri will have http scheme instead of https
-        URI httpsRequestUri = URIUtils.changeSchemeComponent(requestUri, "https");
-        if (!URIUtils.areEqual(httpsRequestUri, this.targetEndpoint)) {
+        // if we are behind rhttp proxy, we will receive the request as http instead of https, also the port number might be non-443
+        if (!Objects.equals(
+                URIUtils.changePortComponent(URIUtils.changeSchemeComponent(requestUri, "https"), 443),
+                URIUtils.changePortComponent(this.targetEndpoint, 443))) {
             return String.format("%s audience does not match request URI", this.getTokenClass().getValue());
         }
 
         Date now = new Date();
         Date issueTime = this.getIssueTime();
-        Date lowerBound = new Date(now.getTime() - clockToleranceMS - assertionLifetimeMs);
-        Date upperBound = new Date(now.getTime() + clockToleranceMS);
-        if (issueTime.before(lowerBound) || issueTime.after(upperBound)) {
+        Date notBefore = new Date(now.getTime() - clockToleranceMS - assertionLifetimeMs);
+        Date notAfter = new Date(now.getTime() + clockToleranceMS);
+        if (issueTime.before(notBefore) || issueTime.after(notAfter)) {
             return String.format("stale_%s", this.getTokenClass().getValue());
         }
 

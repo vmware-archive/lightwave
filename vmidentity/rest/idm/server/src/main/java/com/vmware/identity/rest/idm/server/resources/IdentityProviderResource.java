@@ -14,7 +14,6 @@
 package com.vmware.identity.rest.idm.server.resources;
 
 import java.net.MalformedURLException;
-import java.rmi.NotBoundException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -52,8 +51,8 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
 import com.vmware.identity.rest.idm.data.attributes.IdentityProviderType;
-import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
 import com.vmware.identity.rest.idm.server.mapper.IdentityProviderMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * All operations related to identity providers( aka identity sources) are implemented in this
@@ -78,7 +77,7 @@ public class IdentityProviderResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(IdentityProviderResource.class);
 
     public IdentityProviderResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**
@@ -136,7 +135,7 @@ public class IdentityProviderResource extends BaseSubResource {
         } catch (NoSuchTenantException e) {
             log.warn("Failed to {} identity provider '{}' for tenant '{}'", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (MalformedURLException | NotBoundException | InvalidProviderException | ADIDSAlreadyExistException | IDMLoginException e) {
+        } catch (MalformedURLException | InvalidProviderException | ADIDSAlreadyExistException | IDMLoginException e) {
             log.warn("Failed to {} identity provider '{}' for tenant '{}' due to a client side error", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
             throw new BadRequestException(sm.getString("res.provider.add.failed", identityProvider.getName(), tenant), e);
         } catch (Exception e) {
@@ -156,8 +155,13 @@ public class IdentityProviderResource extends BaseSubResource {
     public IdentityProviderDTO get(@PathParam("providerName") String providerName) {
         try {
             IIdentityStoreData identitySource = getIDMClient().getProvider(tenant, providerName);
+
+            if (identitySource == null) {
+                throw new InvalidProviderException(String.format("Provider '%s' does not exist in tenant '%s'", providerName, tenant), providerName, tenant);
+            }
+
             return IdentityProviderMapper.getIdentityProviderDTO(identitySource);
-        } catch (NoSuchTenantException e) {
+        } catch (NoSuchTenantException | InvalidProviderException e) {
             log.warn("Failed to retrieve identity provider '{}' from tenant '{}'", providerName, tenant, e);
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {

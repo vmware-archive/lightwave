@@ -27,6 +27,12 @@ public final class Directory
     }
 
     public static
+    void deleteInstance(String domainName, String adminId, String password)
+    {
+        library.DeleteDirectoryInstance(domainName, adminId, password);
+    }
+
+    public static
     void
     SetPassword(
         String hostURI,

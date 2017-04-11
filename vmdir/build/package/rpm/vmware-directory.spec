@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client = %{version}
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, vmware-event-devel >= %{_vmevent_ver}
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, vmware-directory-client = %{version}
+BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.11, vmware-event-devel >= %{_vmevent_ver}
 
 %if 0%{?_sasl_prefix:1} == 0
 %define _sasl_prefix /usr
@@ -29,11 +29,30 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _vmevent_prefix /opt/vmware
 %endif
 
+%if 0%{?_trident_prefix:1} == 0
+%define _trident_prefix /opt/vmware
+%endif
+
+%if 0%{?_jansson_prefix:1} == 0
+%define _jansson_prefix /usr
+%endif
+
+%if 0%{?_copenapi_prefix:1} == 0
+%define _copenapi_prefix /usr
+%endif
+
+%if 0%{?_oidc_prefix:1} == 0
+%define _oidc_prefix /opt/vmware
+%endif
+
+%if 0%{?_ssocommon_prefix:1} == 0
+%define _ssocommon_prefix /opt/vmware
+%endif
+
 %define _dbdir %{_localstatedir}/lib/vmware/vmdir
 %define _sasl2dir %{_sasl_prefix}/lib64/sasl2
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
-%define _logdir /var/log/lightwave
 %define _logconfdir /etc/syslog-ng/lightwave.conf.d
 
 %description
@@ -41,7 +60,7 @@ VMware Directory Service
 
 %package client
 Summary: VMware Directory Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10
 %description client
 Client libraries to communicate with Directory Service
 
@@ -52,7 +71,7 @@ Requires: vmware-directory-client = %{version}
 Development Libraries to communicate with Directory Service
 
 %build
-export CFLAGS="-Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare"
+export CFLAGS="-Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wimplicit-function-declaration -Wno-address -Wno-enum-compare"
 cd build
 autoreconf -mif ..
 ../configure \
@@ -64,8 +83,15 @@ autoreconf -mif ..
     --with-sasl=%{_sasl_prefix} \
     --with-datastore=mdb \
     --with-vmevent=%{_vmevent_prefix} \
+    --with-trident=%{_trident_prefix} \
+    --with-jansson=%{_jansson_prefix} \
+    --with-copenapi=%{_copenapi_prefix} \
+    --with-oidc=%{_oidc_prefix} \
+    --with-ssocommon=%{_ssocommon_prefix} \
     --enable-server=yes \
-    --with-version=%{_version}
+    --with-logdir=%{_logdir} \
+    --with-version=%{_version} \
+    --enable-lightwave-build=yes
 
 make
 
@@ -111,7 +137,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
     # add vmdird.conf to sasl2 directory
     /bin/ln -s %{_datadir}/config/saslvmdird.conf %{_sasl2dir}/vmdird.conf
 
-    /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmdird-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/vmdird-syslog-ng.conf
@@ -187,6 +212,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
     esac
 
 %post client
+    /bin/mkdir -m 755 -p %{_logdir}
 
     # add libgssapi_srp.so to GSSAPI plugin directory
     if [ ! -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
@@ -345,7 +371,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_sbindir}/*
 %{_bindir}/vdcadmintool
 %{_bindir}/vdcbackup
-%{_bindir}/vdcaclmgr
 %{_bindir}/vdcleavefed
 %{_bindir}/vdcpass
 %{_bindir}/vdcrepadmin
@@ -365,9 +390,11 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_datadir}/config/vmdir.reg
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
+%{_datadir}/config/vmdir-rest.json
 
 %files client
 %defattr(-,root,root)
+%{_bindir}/vdcaclmgr
 %{_datadir}/config/vmdir-client.reg
 %{_lib64dir}/libvmdirclient.so*
 %{_lib64dir}/libcsrp.so*
@@ -393,13 +420,39 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_lib64dir}/libgssapi_unix.a
 %{_lib64dir}/libgssapi_unix.la
 
-%exclude %{_bindir}/dequetest
 %exclude %{_bindir}/vdcpromo
 %exclude %{_bindir}/vmdirclienttest
-%exclude %{_bindir}/circularbuffertest
-%exclude %{_bindir}/parseargstest
-%exclude %{_bindir}/registrytest
-%exclude %{_bindir}/stringtest
+%exclude %{_lib64dir}/libcommonunittests.a
+%exclude %{_lib64dir}/libcommonunittests.la
+%exclude %{_lib64dir}/libcommonunittests.so
+%exclude %{_lib64dir}/libcommonunittests.so.0
+%exclude %{_lib64dir}/libcommonunittests.so.0.0.0
+%exclude %{_lib64dir}/libmisctests.a
+%exclude %{_lib64dir}/libmisctests.la
+%exclude %{_lib64dir}/libmisctests.so
+%exclude %{_lib64dir}/libmisctests.so.0
+%exclude %{_lib64dir}/libmisctests.so.0.0.0
+%exclude %{_lib64dir}/libmultitenancytests.a
+%exclude %{_lib64dir}/libmultitenancytests.la
+%exclude %{_lib64dir}/libmultitenancytests.so
+%exclude %{_lib64dir}/libmultitenancytests.so.0
+%exclude %{_lib64dir}/libmultitenancytests.so.0.0.0
+%exclude %{_lib64dir}/libpasswordapistests.a
+%exclude %{_lib64dir}/libpasswordapistests.la
+%exclude %{_lib64dir}/libpasswordapistests.so
+%exclude %{_lib64dir}/libpasswordapistests.so.0
+%exclude %{_lib64dir}/libpasswordapistests.so.0.0.0
+%exclude %{_lib64dir}/libsearchtests.a
+%exclude %{_lib64dir}/libsearchtests.la
+%exclude %{_lib64dir}/libsearchtests.so
+%exclude %{_lib64dir}/libsearchtests.so.0
+%exclude %{_lib64dir}/libsearchtests.so.0.0.0
+%exclude %{_lib64dir}/libsecuritydescriptortests.a
+%exclude %{_lib64dir}/libsecuritydescriptortests.la
+%exclude %{_lib64dir}/libsecuritydescriptortests.so
+%exclude %{_lib64dir}/libsecuritydescriptortests.so.0
+%exclude %{_lib64dir}/libsecuritydescriptortests.so.0.0.0
+
 %exclude %{_lib64dir}/libkrb5crypto.a
 %exclude %{_lib64dir}/libkrb5crypto.la
 %exclude %{_lib64dir}/sasl2/libsaslvmdirdb.a

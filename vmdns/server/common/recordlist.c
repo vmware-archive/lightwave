@@ -151,10 +151,15 @@ VmDnsRecordListGetRecord(
     UINT                        nIndex
     )
 {
+    PVMDNS_RECORD_OBJECT        pRecordObject = NULL;
+
     assert(pList);
     assert(pList->dwCurrentSize > nIndex);
 
-    return pList->ppRecords[nIndex];
+    pRecordObject = pList->ppRecords[nIndex];
+    VmDnsRecordObjectAddRef(pRecordObject);
+
+    return pRecordObject;
 }
 
 UINT

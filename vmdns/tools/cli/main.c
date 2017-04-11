@@ -162,6 +162,13 @@ VmDnsMakeZoneFQDN(
     PSTR* ppszZoneFqdn
     );
 
+static
+DWORD
+VmDnsSetDefaultParams(
+    PSTR* ppszServer,
+    PSTR* ppszUserName
+    );
+
 
 int main(int argc, char* argv[])
 {
@@ -380,6 +387,11 @@ ParseArgs(
     {
         dwError = ERROR_INVALID_PARAMETER;
     }
+    BAIL_ON_VMDNS_ERROR(dwError);
+    // set defaults if not set
+    dwError = VmDnsSetDefaultParams(&pContext->pszServer,
+                                    &pszUserName
+                                    );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VerifyRemoteConnectionArgs(
@@ -2209,17 +2221,18 @@ ShowUsage(
         "\t\t--ns-host <hostname>\n"
         "\t\t--ns-ip <ip address>\n"
         "\t\t[--admin-email <admin-email>]\n"
-        "\t\t[--type <forward|reverse>]\n"
+        "\t\t[--type <forward>]\n"
+        /*"\t\t[--type <forward|reverse>]\n"*/
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
         "\t\t--domain <domain>\n"
         "\t\t--password <pwd>\n"
-        "\t\tfor reverse lookup zone, pass network id instead of zone name. Zone name will be generated based on network id.\n"
+        /*"\t\tfor reverse lookup zone, pass network id instead of zone name. Zone name will be generated based on network id.\n"
         "\t\tfor example, 10.118.1.0/24 where 24 is the network id length in bits.\n"
         "\t\tfor ipv4, network id length can be 8, 16 or 24.\n"
         "\t\tfor ipv6, network id length must be more than 0 and less than 128 and must be dividable by 8.\n"
         "\t\tip address part must be full ip address.\n"
-        "\t\t--ns-ip isn't needed for reverse zone.\n"
+        "\t\t--ns-ip isn't needed for reverse zone.\n"*/
         "\tExample: add-zone zone1 --ns-host ns1 --ns-ip 1.10.0.192 --type forward\n\n"
         "\tdel-zone <zone name>\n"
         "\t\t--server <server>\n"
@@ -2256,9 +2269,9 @@ ShowUsage(
         "\t\t<key> <value> pair for NS:\n"
         "\t\t\t--ns-domain   <domain>\n"
         "\t\t\t--hostname <hostname>\n"
-        "\t\t<key> <value> pair for PTR:\n"
+/*      "\t\t<key> <value> pair for PTR:\n"
         "\t\t\t--<ip|ip6> <address>\n"
-        "\t\t\t--hostname <hostname>\n"
+        "\t\t\t--hostname <hostname>\n" */
         "\t\t<key> <value> pair for CNAME:\n"
         "\t\t\t--<name> <name>\n"
         "\t\t\t--hostname <hostname>\n"
@@ -2284,9 +2297,9 @@ ShowUsage(
         "\t\t<key> <value> pair for NS:\n"
         "\t\t\t--ns-domain <domain>\n"
         "\t\t\t--hostname <hostname>\n"
-        "\t\t<key> <value> pair for PTR:\n"
+/*        "\t\t<key> <value> pair for PTR:\n"
         "\t\t\t--<ip|ip6> <address>\n"
-        "\t\t\t--hostname <hostname>\n"
+        "\t\t\t--hostname <hostname>\n" */
         "\t\t<key> <value> pair for CNAME:\n"
         "\t\t\t--name <name>\n"
         "\t\t\t--hostname <hostname>\n"
@@ -2575,6 +2588,47 @@ cleanup:
 
 error:
     VMDNS_SAFE_FREE_STRINGA(pszPassword);
+    goto cleanup;
+}
+
+
+static
+DWORD
+VmDnsSetDefaultParams(
+    PSTR* ppszServer,
+    PSTR* ppszUserName
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszServerName = NULL;
+    PSTR pszUser = NULL;
+
+    if ((*ppszServer) == NULL )
+    {
+        dwError = VmDnsAllocateStringA("localhost", &pszServerName);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+    }
+
+    if ((*ppszUserName) == NULL )
+
+    {
+        dwError = VmDnsAllocateStringA("Administrator", &pszUser );
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    if (pszServerName != NULL)
+    {
+        *ppszServer = pszServerName;
+    }
+    if (pszUser != NULL)
+    {
+        *ppszUserName = pszUser;
+    }
+cleanup:
+    return dwError;
+
+error:
+
     goto cleanup;
 }
 

@@ -1,0 +1,27 @@
+++++++++ Using 'full_test_scripts.sh' ++++++++
+'./full_test_scripts.sh' automatically set up vdcpromo and runs a sequences of test and generates test results in 'results' directory. The 'diff' sub-directory in 'results' holds the diff files between current running outputs and the good outputs under each directory. We should expect to see zero size diff files for all the tests. For instance,
+
+ls -la results/diff
+
+Should output all zero sized diff files.
+
+Note 1: full_test_scripts.sh can either be run in the "local" mode or in the "package" mode. In the "local" mode, it picks binaries from ../build location, and in the "package" mode, it picks binaries from /opt/vmware/bin location.
+Note 2: Usage: ./full_test_scripts.sh [<any arg to run in the "local" mode>]
+Note 3: full_test_scripts.sh needs to be run as root.
+Note 4: Make sure, by setting correct PATH variable, that the LDAP command line tools (ldapadd/modify/search etc.) are picked from /opt/likewise/bin directory.
+
+
+++++++++ Running individual test scripts +++++++++++++++
+
+A brief description on how to use 'testing' scripts.
+
+- In 'data' folder, 'generate_data.sh' is a sample script that simply generates user data file, the output of running the current 'generate_data.sh' is stored in 'data.ldif', which creates sample data to be manipulated by various test scripts.
+
+- Steps:
+(1) Set up domain instance using '/opt/vmware/bin/vdcpromo -d vmware -u admin -p 123 -i 1'
+(2) Initialize sample data by running 'ldapadd -c -h localhost -p 11711 -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 -f ./../data/data.ldif' (This creates 100 objects in vmdird)
+(3) Go into each testing folder, and run './test_script1.sh' and compare the output against the 'good_output.txt' to make sure no regression occurrs.
+
+Note:
+(1) If running 'delete_tests' after 'group_tests' you might see different results from yours against 'good_output.txt' due to two groups created during group tests, hence, you can run 'delete_tests' before 'group_tests' and regenerating data before running 'group_tests'.
+(2) When running 'group_tests' and 'modify_tests' the current output from a vanity install might be different from the 'good_output' only in terms of 'vmwobjectSid' and 'vmwSecurityDescriptor' due to the sid generation state for the particular fresh install.

@@ -1,0 +1,4 @@
+The test procedures for WAL (Write Ahead Logging) capabilities is not part of Lotus build,
+and should be built and run separately. Running the test cases are not automatic yet,
+and need visual inspection of the test result. The test cases are described in:
+[ https://wiki.eng.vmware.com/File:Lotus-Write-Performance-Enhancement-spec.docx ].

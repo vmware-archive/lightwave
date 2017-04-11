@@ -63,12 +63,8 @@
 
 #pragma once
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
 #include <stdint.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <rpc.h>
-#endif
 #include <assert.h>
 #include <Sddl.h>
 #include <stddef.h>
@@ -83,6 +79,8 @@
 #include <lber-int.h>
 
 #define LW_STRICT_NAMESPACE
+#include <lw/ntstatus.h>
+#include <lw/rtlmemory.h>
 #include <lw/types.h>
 #include <lw/hash.h>
 #include <lw/security-types.h>

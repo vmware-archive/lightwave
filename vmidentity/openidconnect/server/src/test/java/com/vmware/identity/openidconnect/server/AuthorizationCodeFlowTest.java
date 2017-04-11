@@ -18,6 +18,7 @@ import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_CERT_S
 import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_PRIVATE_KEY;
 import static com.vmware.identity.openidconnect.server.TestContext.REDIRECT_URI;
 import static com.vmware.identity.openidconnect.server.TestContext.SESSION_COOKIE_NAME;
+import static com.vmware.identity.openidconnect.server.TestContext.TENANT_NAME;
 import static com.vmware.identity.openidconnect.server.TestContext.authnRequestParameters;
 import static com.vmware.identity.openidconnect.server.TestContext.clientAssertionClaims;
 import static com.vmware.identity.openidconnect.server.TestContext.idmClientBuilder;
@@ -112,7 +113,7 @@ public class AuthorizationCodeFlowTest {
         // request with no session and no login string results in login form
         MockHttpServletRequest request = TestUtil.createGetRequest(params);
         MockHttpServletResponse response = new MockHttpServletResponse();
-        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         Assert.assertEquals("status", 200, response.getStatus());
         Assert.assertTrue("ModelAndView!=null", modelView != null); // login form is returned
 
@@ -121,7 +122,7 @@ public class AuthorizationCodeFlowTest {
         formParams.put("CastleAuthorization", passwordLoginString("invalid_username0", "invalid_password0"));
         request = TestUtil.createPostRequestWithQueryString(formParams, params);
         response = new MockHttpServletResponse();
-        modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         Assert.assertEquals("status", 401, response.getStatus());
         Assert.assertTrue("ModelAndView==null", modelView == null);
 
@@ -130,7 +131,7 @@ public class AuthorizationCodeFlowTest {
         formParams.put("CastleAuthorization", passwordLoginString());
         request = TestUtil.createPostRequestWithQueryString(formParams, params);
         response = new MockHttpServletResponse();
-        modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         Assert.assertTrue("ModelAndView==null", modelView == null);
         AuthnResponse authnResponse = validateAuthnSuccessResponse(
                 response,
@@ -152,7 +153,7 @@ public class AuthorizationCodeFlowTest {
         request = TestUtil.createGetRequest(params);
         request.setCookies(new Cookie(SESSION_COOKIE_NAME, sessionCookie.getValue()));
         response = new MockHttpServletResponse();
-        modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         Assert.assertTrue("ModelAndView==null", modelView == null);
         AuthnResponse secondAuthnResponse = validateAuthnSuccessResponse(
                 response,
@@ -229,7 +230,7 @@ public class AuthorizationCodeFlowTest {
         MockHttpServletRequest request = TestUtil.createGetRequest(params);
         request.setCookies(new Cookie(SESSION_COOKIE_NAME, sessionId));
         MockHttpServletResponse response = new MockHttpServletResponse();
-        logoutController.logout(request, response);
+        logoutController.logout(request, response, TENANT_NAME);
         validateLogoutSuccessResponse(
                 response,
                 true /* expectingLogoutUriLinks */,

@@ -193,6 +193,15 @@ VmAfSrvLeaveVmDir(
     );
 
 DWORD
+VmAfSrvCreateComputerAccount(
+    PCWSTR   pwszUserName,      /* IN            */
+    PCWSTR   pwszPassword,      /* IN            */
+    PCWSTR   pwszMachineName,   /* IN            */
+    PCWSTR   pwszOrgUnit,       /* IN   OPTIONAL */
+    PWSTR*   pszOutPassword     /* OUT           */
+    );
+
+DWORD
 VmAfSrvJoinAD(
     PWSTR    pwszUserName,       /* IN              */
     PWSTR    pwszPassword,       /* IN              */
@@ -305,6 +314,13 @@ VmAfSrvCfgGetMachineID(
     PWSTR *ppszMachineID
     );
 
+DWORD
+VmAfSrvChangePNID(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszPNID
+    );
+
 /* dcfinder.c */
 
 DWORD
@@ -314,6 +330,13 @@ VmAfdGetDomainController(
     PCSTR pszPassword,
     PSTR* ppszHostname,
     PSTR* ppszDCAddress
+    );
+
+DWORD
+VmAfdGetDomainControllerList(
+    PCSTR pszDomain,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList,
+    PDWORD pdCount
     );
 
 /* dns.c */
@@ -603,12 +626,10 @@ VmAfdSrvGetDomainState(
     PVMAFD_DOMAIN_STATE
     );
 
-
 DWORD
-VmAfdGetRegArgs(
+VmAfdGetMachineInfo(
     PVMAFD_REG_ARG *ppArgs
     );
-
 
 VOID
 VmAfdFreeRegArgs(
@@ -808,7 +829,7 @@ VmAfdWakeupCertificateUpdatesThr(
 
 DWORD
 VmAfdRootFetchTask(
-    BOOLEAN bForceFlush
+    BOOLEAN bLogOnDuplicate
     );
 
 
@@ -1212,6 +1233,13 @@ VmAfdIpcJoinValidateCredentials(
     );
 
 DWORD
+VmAfSrvJoinValidateCredentials(
+    PWSTR pwszDomainName,       /* IN            */
+    PWSTR pwszUserName,         /* IN            */
+    PWSTR pwszPassword          /* IN            */
+    );
+
+DWORD
 VmAfdIpcJoinVmDir(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
@@ -1231,6 +1259,15 @@ VmAfdIpcJoinVmDir2(
 
 DWORD
 VmAfdIpcLeaveVmDir(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcCreateComputerAccount(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
     DWORD dwRequestSize,
@@ -1418,6 +1455,24 @@ VmAfdIpcGetHeartbeatStatus(
     PDWORD pdwResponseSize
     );
 
+DWORD
+VmAfdIpcChangePNID(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcGetDCList(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE *ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 //rpcserv_internal.c
 
 DWORD
@@ -1590,20 +1645,23 @@ VecsSrvValidateAddEntryInput(
 DWORD
 VecsSrvFlushRootCertificate(
     PVECS_SERV_STORE pStore,
-    PWSTR pszCanonicalCertPEM
+    PWSTR pszCanonicalCertPEM,
+    BOOLEAN bLogOnDuplicate
     );
 
 DWORD
 VecsSrvFlushMachineSslCertificate(
     PVECS_SERV_STORE pStore,
     PWSTR pszCanonicalCertPEM,
-    PWSTR pszCanonicalKeyPEM
+    PWSTR pszCanonicalKeyPEM,
+    BOOL  bLogOnError
     );
 
 DWORD
 VecsSrvFlushCrl(
     PVECS_SERV_STORE pStore,
-    PWSTR pszCanonicalCertPEM
+    PWSTR pszCanonicalCertPEM,
+    BOOLEAN bLogOnDuplicate
     );
 
 DWORD
@@ -1616,6 +1674,17 @@ VecsSrvComputeCertAlias(
      PWSTR pszCertificate,
      PWSTR *ppszHash
     );*/
+
+DWORD
+VecsSrvFlushCertsToDisk(
+    VOID
+    );
+
+DWORD
+VecsSrvFlushSSLCertFromDB(
+    BOOL bLogOnError
+    );
+
 
 //ipcmarshalhelper.c
 //
@@ -1669,7 +1738,6 @@ VmAfdDecodeEnumContextHandle(
                       DWORD dwBlobSize,
                       PVECS_SRV_ENUM_CONTEXT_HANDLE *ppEnumContext
                       );
-
 
 
 //authservice.c
@@ -2074,8 +2142,14 @@ CdcSrvEnableLegacyModeHA(
     );
 
 DWORD
+CdcSrvForceRefreshCache(
+    PCDC_CONTEXT pContext
+    );
+
+DWORD
 CdcSrvGetDCName(
     PCWSTR pszDomain,
+    DWORD  dwFlags,
     PCDC_DC_INFO_W *ppAffinitizedDC
     );
 
@@ -2120,6 +2194,12 @@ CdcRpcFreeDCStatuInfo(
     PCDC_DC_STATUS_INFO_W  pRpcDCStatusInfo
     );
 
+DWORD
+VmAfSrvGetRegKeySecurity(
+    PCSTR    pszSubKey,
+    PSTR*    ppszSecurity
+    );
+
 //cdcstatemachine.c
 
 
@@ -2151,7 +2231,8 @@ CdcShutdownStateMachine(
 
 DWORD
 CdcWakeupStateMachine(
-      PCDC_STATE_MACHINE_CONTEXT pStateMachine
+      PCDC_STATE_MACHINE_CONTEXT pStateMachine,
+      BOOLEAN                    bWaitForCompletion
       );
 
 
@@ -2170,10 +2251,17 @@ CdcShutdownCdcCacheUpdate(
 DWORD
 CdcWakeupCdcCacheUpdate(
       PCDC_CACHE_UPDATE_CONTEXT pDCCaching,
-      BOOLEAN                   bPurgeRefresh
+      BOOLEAN                   bPurgeRefresh,
+      BOOLEAN                   bWaitForRefresh
       );
 
 //heartbeat.c
+
+DWORD
+VmAfSrvInitHeartbeatTable(
+    VOID
+    );
+
 DWORD
 VmAfSrvPostHeartbeat(
     PCWSTR pwszServiceName,
@@ -2204,6 +2292,62 @@ VmAfdRpcAllocateHeartbeatStatus(
 VOID
 VmAfdRpcFreeHeartbeatStatus(
     PVMAFD_HB_STATUS_W pHeartbeatStatus
+    );
+
+
+//ddns.c
+
+DWORD
+VmDdnsInitThread(
+        PDDNS_CONTEXT* ppDdnsContext
+        );
+
+VOID
+VmDdnsShutdown(
+        PDDNS_CONTEXT pDdnsContext
+        );
+
+VOID
+VmDdnsExit(
+          PDDNS_CONTEXT pDdnsContext
+          );
+
+DWORD
+VmDdnsGetSourceIp(
+        VMDNS_IP4_ADDRESS** ppSourceIp4,
+        VMDNS_IP6_ADDRESS** ppSourceIp6
+        );
+
+DWORD
+VmDdnsUpdateMakePacket(
+          PSTR pszZone,
+          PSTR pszHostname,
+          PSTR pszName,
+          PSTR* ppDnsPacket,
+          DWORD* ppacketSize,
+          DWORD hederId,
+          DWORD dwFlag
+          );
+
+//sourceip.c
+
+VOID
+VmAfdShutdownSrcIpThread(
+    PSOURCE_IP_CONTEXT pSourceIpContext
+    );
+
+DWORD
+VmAfdInitSourceIpThread(
+    PSOURCE_IP_CONTEXT* ppSourceIpContext
+    );
+
+DWORD
+VmAfdIpcCreateComputerAccount(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
     );
 
 #ifdef __cplusplus

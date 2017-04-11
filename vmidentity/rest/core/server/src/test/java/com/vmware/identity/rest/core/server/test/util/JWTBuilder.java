@@ -131,19 +131,19 @@ public class JWTBuilder {
     public SignedJWT build() throws JOSEException {
         JWSSigner signer = new RSASSASigner((RSAPrivateKey) this.privateKey);
 
-        JWTClaimsSet claimsSet = new JWTClaimsSet();
-        claimsSet.setSubject(this.subject);
-        claimsSet.setIssuer(this.issuer);
-
-        claimsSet.setCustomClaim(TOKEN_CLASS_CLAIM, this.tokenClass);
-        claimsSet.setCustomClaim(TOKEN_TYPE_CLAIM, this.type.getJsonName());
+        JWTClaimsSet claimsSet;
+        JWTClaimsSet.Builder jwtTokenBuilder = new JWTClaimsSet.Builder()
+        .subject(this.subject)
+        .issuer(this.issuer)
+        .claim(TOKEN_CLASS_CLAIM, this.tokenClass)
+        .claim(TOKEN_TYPE_CLAIM, this.type.getJsonName());
 
         if (!this.groups.isEmpty()) {
-            claimsSet.setCustomClaim(GROUPS_CLAIM, this.groups);
+            jwtTokenBuilder.claim(GROUPS_CLAIM, this.groups);
         }
 
         if (this.hotk != null) {
-            claimsSet.setCustomClaim(HOK_CLAIM, this.hotk.toJSONObject());
+            jwtTokenBuilder.claim(HOK_CLAIM, this.hotk.toJSONObject());
         }
 
         Calendar cal = Calendar.getInstance();
@@ -156,15 +156,15 @@ public class JWTBuilder {
         cal.add(Calendar.MINUTE, this.duration);
         Date expiresAt = cal.getTime();
 
-        claimsSet.setIssueTime(this.issuedAt);
-        claimsSet.setExpirationTime(expiresAt);
-
-        claimsSet.setAudience(this.audiences);
+        jwtTokenBuilder.issueTime(this.issuedAt);
+        jwtTokenBuilder.expirationTime(expiresAt);
+        jwtTokenBuilder.audience(this.audiences);
 
         if (this.role != null) {
-            claimsSet.setCustomClaim(ROLE_CLAIM, this.role);
+            jwtTokenBuilder.claim(ROLE_CLAIM, this.role);
         }
 
+        claimsSet = jwtTokenBuilder.build();
         SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
         signedJWT.sign(signer);
 

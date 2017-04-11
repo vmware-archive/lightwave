@@ -67,7 +67,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
 
     @Test
     public void testVerification() throws Exception {
-        ContainerRequestContext context = createMockRequest("some/arbitrary/endpoint", "PUT", "", MediaType.APPLICATION_FORM_URLENCODED_TYPE, new Date());
+        ContainerRequestContext context = createMockRequest("some/arbitrary/endpoint", "PUT", null, MediaType.APPLICATION_FORM_URLENCODED_TYPE, new Date());
 
         SignedJWT jwt = new JWTBuilder(TokenType.HOK, privateKey)
             .subject("administrator")
@@ -406,10 +406,14 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
 
         ContainerRequestContext context = createMock(ContainerRequestContext.class);
         expect(context.getMethod()).andReturn(method).anyTimes();
-        expect(context.hasEntity()).andReturn(!entity.isEmpty()).anyTimes();
-        expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes())).anyTimes();
-        context.setEntityStream(isA(InputStream.class));
-        expectLastCall().anyTimes();
+        if (entity != null) {
+            expect(context.hasEntity()).andReturn(!entity.isEmpty()).anyTimes();
+            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes())).anyTimes();
+            context.setEntityStream(isA(InputStream.class));
+            expectLastCall().anyTimes();
+        } else {
+            expect(context.hasEntity()).andReturn(false).anyTimes();
+        }
         expect(context.getMediaType()).andReturn(mediaType).anyTimes();
         expect(context.getDate()).andReturn(date).anyTimes();
         expect(context.getUriInfo()).andReturn(uriInfo).anyTimes();

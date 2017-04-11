@@ -72,6 +72,7 @@ import com.vmware.identity.openidconnect.protocol.JWTUtils;
  * @author Yehia Zayour
  */
 public class TestContext {
+    public static final String SERVER_NAME = "psc.vmware.com";
     public static final String TENANT_NAME = "tenant_name";
     public static final String ISSUER = "https://psc.vmware.com/openidconnect/" + TENANT_NAME;
     public static final String SCOPE_VALUE_RSX = "rs_x";
@@ -346,7 +347,7 @@ public class TestContext {
         claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
         claimsBuilder = claimsBuilder.issuer(CLIENT_CERT_SUBJECT_DN);
         claimsBuilder = claimsBuilder.subject(CLIENT_CERT_SUBJECT_DN);
-        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.audience("https://" + SERVER_NAME);
         claimsBuilder = claimsBuilder.issueTime(now);
         return claimsBuilder;
     }
@@ -360,7 +361,7 @@ public class TestContext {
         claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
         claimsBuilder = claimsBuilder.issuer(CLIENT_CERT_SUBJECT_DN);
         claimsBuilder = claimsBuilder.subject(CLIENT_CERT_SUBJECT_DN);
-        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.audience("https://" + SERVER_NAME);
         claimsBuilder = claimsBuilder.issueTime(now);
         return claimsBuilder;
     }
@@ -374,7 +375,7 @@ public class TestContext {
         claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
         claimsBuilder = claimsBuilder.issuer(CLIENT_ID);
         claimsBuilder = claimsBuilder.subject(CLIENT_ID);
-        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.audience("https://" + SERVER_NAME);
         claimsBuilder = claimsBuilder.issueTime(now);
         return claimsBuilder;
     }
@@ -475,6 +476,14 @@ public class TestContext {
         Map<String, String> params = tokenRequestParameters(flow, refreshTokenClaimsClient().build());
         params.put("client_assertion", TestUtil.sign(clientAssertionClaims, CLIENT_PRIVATE_KEY).serialize());
         params.put("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+        return params;
+    }
+
+    public static Map<String, String> tokenRequestParametersClientId(Flow flow) throws Exception {
+        assert flow.isTokenEndpointFlow();
+        assert flow != Flow.AUTHZ_CODE && flow != Flow.CLIENT_CREDS && flow != Flow.SOLUTION_USER_CREDS;
+        Map<String, String> params = tokenRequestParameters(flow, refreshTokenClaims().build());
+        params.put("client_id", CLIENT_ID);
         return params;
     }
 
@@ -781,7 +790,6 @@ public class TestContext {
 
         assertEquals("token_class", tokenClass, claims.getStringClaim("token_class"));
         assertEquals("scope", scope.getScopeValues(), Scope.parse(claims.getStringClaim("scope")).getScopeValues());
-        assertEquals("client_id", (wClientAssertion || flow.isImplicit()) ? CLIENT_ID : null, claims.getStringClaim("client_id"));
         assertEquals("tenant", TENANT_NAME, claims.getStringClaim("tenant"));
         assertEquals("issuer", ISSUER, claims.getIssuer());
 
@@ -789,16 +797,6 @@ public class TestContext {
                 SOLUTION_USER.getSubject().getValue() :
                 PERSON_USER.getSubject().getValue();
         assertEquals("subject", expectedSubject, claims.getSubject());
-
-        String expectedAudience;
-        if (wClientAssertion || flow.isImplicit()) {
-            expectedAudience = CLIENT_ID;
-        } else if (wSltnAssertion) {
-            expectedAudience = SOLUTION_USER.getSubject().getValue();
-        } else {
-            expectedAudience = PERSON_USER.getSubject().getValue();
-        }
-        assertTrue("audience", claims.getAudience().contains(expectedAudience));
 
         assertTrue("issued at", claims.getIssueTime().before(now));
         assertTrue("expiration", claims.getExpirationTime().after(now));

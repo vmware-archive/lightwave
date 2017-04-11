@@ -13,7 +13,8 @@ DWORD
 VmAfdJoinDomain(
     PCSTR pszDomain,
     PCSTR pszUsername,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    PCSTR pszOrgUnit
     )
 {
     DWORD dwError = 0;
@@ -54,7 +55,7 @@ VmAfdJoinDomain(
                     pszUsername,
                     pszPassword,
                     NULL, /* machine account */
-                    NULL, /* OU              */
+                    pszOrgUnit,
                     dwFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 

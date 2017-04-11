@@ -290,7 +290,25 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
     }
 
     @Override
+    public UserSet findActiveUsersInDomain(String attributeName, String attributeValue
+            , String userDomain, String additionalAttribute)
+            throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String getStoreUPNAttributeName() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public String getStoreUserHintAttributeName() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean getCertificateMappingUseUPN() {
+        throw new UnsupportedOperationException();
+    }
+
 }

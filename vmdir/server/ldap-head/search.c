@@ -144,6 +144,58 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirSearchPreCondition(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_LDAP_RESULT   pResult
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrorMsg = NULL;
+
+    // Is sync request operable?
+    if (pOperation->syncReqCtrl)
+    {
+        if (VmDirdState() != VMDIRD_STATE_NORMAL &&
+            VmDirdState() != VMDIRD_STATE_READ_ONLY)
+        {
+            // Why block out-bound replication when catching up during restore mode?
+            //
+            // Reason: Partners have high-water-mark (lastLocalUsn) corresponding to this replica that is being
+            // restored. If out-bound replication is not blocked while restore/catching-up is going on, originating
+            // or replicated updates (if this replica is the only partner) made between the current-local-usn and
+            // high-water-marks, that partners remember, will not get replicated out (even if the invocationId
+            // has been fixed/changed).
+
+            dwError = pResult->errCode = LDAP_UNWILLING_TO_PERFORM;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg,
+                    "Server in not in normal mode, not allowing outward replication.");
+        }
+
+        // Sync request must acquire replication (read) lock
+        VMDIR_RWLOCK_READLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock, 1000);
+        if (!pOperation->conn->bInReplLock)
+        {
+            dwError = pResult->errCode = LDAP_BUSY;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return dwError;
+
+error:
+    if (pszLocalErrorMsg)
+    {
+        VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: %s",
+                __FUNCTION__, pszLocalErrorMsg);
+    }
+    goto cleanup;
+}
+
 /* PerformSearch: Parse the search request on the wire, and call middle-layer Search functionality.
  *
  * From RFC 4511:
@@ -181,8 +233,16 @@ VmDirPerformSearch(
    int           retVal = LDAP_SUCCESS;
    BerValue*           pLberBerv = NULL;
    PSTR                pszLocalErrorMsg = NULL;
-   BOOLEAN             bResultAlreadySent = FALSE;
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
+   BOOLEAN             bSetAccessInfo = FALSE;
+
+    if (pOperation->conn->AccessInfo.pszBindedObjectSid == NULL)
+    {
+        retVal = VmDirMLSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        bSetAccessInfo = TRUE;
+    }
 
    // Parse base object, scope, deref alias, sizeLimit, timeLimit and typesOnly search parameters.
    if ( ber_scanf( pOperation->ber, "{miiiib", &(pOperation->reqDn.lberbv), &sr->scope, &sr->derefAlias, &sr->sizeLimit,
@@ -265,47 +325,60 @@ VmDirPerformSearch(
    retVal = ParseRequestControls(pOperation, pResult);  // ldapResult.errCode set inside
    BAIL_ON_VMDIR_ERROR( retVal );
 
+   // Check all pre-conditions before processing operation
+   retVal = _VmDirSearchPreCondition(pOperation, pResult);
+   BAIL_ON_VMDIR_ERROR(retVal);
+
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
-   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
    retVal = _VmDirLogSearchParameters(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    return retVal;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
         VmDirSendLdapResult( pOperation );
     }
+    if (bSetAccessInfo)
+    {
+        VmDirFreeAccessInfo(&pOperation->conn->AccessInfo);
+    }
 
+    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 
 void
 VmDirFreeSearchRequest(
    SearchReq * sr,
-   BOOLEAN     freeSelf)
+   BOOLEAN     freeSelf
+   )
 {
-   if (sr != NULL)
-   {
-      DeleteFilter( sr->filter );
-      VMDIR_SAFE_FREE_MEMORY( sr->attrs );
-      if (freeSelf)
-      {
-          VMDIR_SAFE_FREE_MEMORY( sr );
-      }
-   }
+    if (sr)
+    {
+        if (sr->attrs)
+        {
+            int i = 0;
+            for (i = 0; sr->attrs[i].lberbv.bv_val; i++)
+            {
+                VmDirFreeBervalContent(&sr->attrs[i]);
+            }
+            VMDIR_SAFE_FREE_MEMORY(sr->attrs);
+        }
 
-   return;
+        DeleteFilter(sr->filter);
+
+        if (freeSelf)
+        {
+            VMDIR_SAFE_FREE_MEMORY(sr);
+        }
+    }
+
+    return;
 }
-
-

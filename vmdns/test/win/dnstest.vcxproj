@@ -85,13 +85,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gssapi64.lib;advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;gssapi64.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -101,13 +101,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gssapi64.lib;advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,15 +119,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gssapi64.lib;advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -139,15 +139,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)test\win;$(SolutionDir)$(IntDir);$(SolutionDir)server\vmdns\win;$(SolutionDir)server\vmdns;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(SolutionDir)server\include;$(SolutionDir)server;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gssapi64.lib;advapi32.lib;dcelib.lib;ws2_32.lib;user32.lib;Gdi32.lib;wldap32.lib;libcommon.lib;libsrvcommon.lib;pthreadVC2.lib;libldap_r.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -173,7 +173,7 @@
     <ProjectReference Include="..\..\vmsock\vmsock.vcxproj">
       <Project>{39e99556-f76d-4d1c-b0e5-3b0fcd271aff}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\server\common\win\libsrvcommon.vcxproj">
+    <ProjectReference Include="..\..\server\common\win\libsrvcommon.vcxproj">
       <Project>{65c190f2-b089-11e4-90f7-f8bc1233efa6}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

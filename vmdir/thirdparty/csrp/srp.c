@@ -43,6 +43,7 @@
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
 
@@ -229,11 +230,10 @@ static void delete_ng( NGConstant * ng )
 
 
 
-typedef union 
+typedef struct _HashCTX
 {
-    SHA_CTX    sha;
-    SHA256_CTX sha256;
-    SHA512_CTX sha512;
+    EVP_MD_CTX mdctx;
+    const EVP_MD *md;
 } HashCTX;
 
 
@@ -276,55 +276,114 @@ struct SRPUser
 
 static int hash_init( SRP_HashAlgorithm alg, HashCTX *c )
 {
+    int sts = 0;
+    char *alg_str = NULL;
+
+
     switch (alg)
     {
-      case SRP_SHA1  : return SHA1_Init( &c->sha );
-      case SRP_SHA224: return SHA224_Init( &c->sha256 );
-      case SRP_SHA256: return SHA256_Init( &c->sha256 );
-      case SRP_SHA384: return SHA384_Init( &c->sha512 );
-      case SRP_SHA512: return SHA512_Init( &c->sha512 );
+      case SRP_SHA1  : alg_str = "sha1"; break;
+      case SRP_SHA224: alg_str = "sha224"; break;
+      case SRP_SHA256: alg_str = "sha256"; break;
+      case SRP_SHA384: alg_str = "sha384"; break;
+      case SRP_SHA512: alg_str = "sha512"; break;
       default:
         return -1;
-    };
+    }
+
+    c->md = EVP_get_digestbyname(alg_str);
+    if (!c->md)
+    {
+        return -1;
+    }
+
+    /* This can't fail; void function */
+    EVP_MD_CTX_init(&c->mdctx);
+    sts = EVP_DigestInit_ex(&c->mdctx, c->md, NULL);
+    if (!sts)
+    {
+        sts = -1;
+    }
+    else
+    {
+        sts = 0;
+    }
+   
+    return sts;
 }
 static int hash_update( SRP_HashAlgorithm alg, HashCTX *c, const void *data, size_t len )
 {
+    int sts = 0;
+
     switch (alg)
     {
-      case SRP_SHA1  : return SHA1_Update( &c->sha, data, len );
-      case SRP_SHA224: return SHA224_Update( &c->sha256, data, len );
-      case SRP_SHA256: return SHA256_Update( &c->sha256, data, len );
-      case SRP_SHA384: return SHA384_Update( &c->sha512, data, len );
-      case SRP_SHA512: return SHA512_Update( &c->sha512, data, len );
+      case SRP_SHA1  :
+      case SRP_SHA224:
+      case SRP_SHA256:
+      case SRP_SHA384:
+      case SRP_SHA512:
+          sts = EVP_DigestUpdate( &c->mdctx, data, len );
+          return sts ? 0 : -1; /* EVP_xxx returns 1 for success */
+          break;
       default:
         return -1;
-    };
+    }
 }
-static int hash_final( SRP_HashAlgorithm alg, HashCTX *c, unsigned char *md )
+static int hash_final( SRP_HashAlgorithm alg, HashCTX *c, unsigned char *md, unsigned int *len )
 {
+    int sts = 0;
+
     switch (alg)
     {
-      case SRP_SHA1  : return SHA1_Final( md, &c->sha );
-      case SRP_SHA224: return SHA224_Final( md, &c->sha256 );
-      case SRP_SHA256: return SHA256_Final( md, &c->sha256 );
-      case SRP_SHA384: return SHA384_Final( md, &c->sha512 );
-      case SRP_SHA512: return SHA512_Final( md, &c->sha512 );
+      case SRP_SHA1  :
+      case SRP_SHA224:
+      case SRP_SHA256:
+      case SRP_SHA384:
+      case SRP_SHA512:
+          sts =  EVP_DigestFinal_ex( &c->mdctx, md, len );
+          return sts ? 0 : -1; /* EVP_xxx returns 1 for success */
+          break;
       default:
         return -1;
-    };
+    }
 }
 static unsigned char * hash( SRP_HashAlgorithm alg, const unsigned char *d, size_t n, unsigned char *md )
 {
+    HashCTX ctx;
+    int sts = 0;
+    unsigned int len = 0;
+
     switch (alg)
     {
-      case SRP_SHA1  : return SHA1( d, n, md );
-      case SRP_SHA224: return SHA224( d, n, md );
-      case SRP_SHA256: return SHA256( d, n, md );
-      case SRP_SHA384: return SHA384( d, n, md );
-      case SRP_SHA512: return SHA512( d, n, md );
+      case SRP_SHA1  :
+      case SRP_SHA224:
+      case SRP_SHA256:
+      case SRP_SHA384:
+      case SRP_SHA512:
+          break;
       default:
-        return 0;
-    };
+        return NULL;
+    }
+
+    sts = hash_init(alg, &ctx);
+    if (sts)
+    {
+        return NULL;
+    }
+
+    sts = hash_update(alg, &ctx, d, n);
+    if (sts)
+    {
+        return NULL;
+    }
+
+    sts = hash_final(alg, &ctx, md, &len);
+    if (sts)
+    {
+        return NULL;
+    }
+    EVP_MD_CTX_cleanup(&ctx.mdctx);
+    return md;
 }
 static int hash_length( SRP_HashAlgorithm alg )
 {
@@ -376,6 +435,7 @@ static BIGNUM * calculate_x( SRP_HashAlgorithm alg, const BIGNUM * salt, const c
 {
     unsigned char ucp_hash[SHA512_DIGEST_LENGTH];
     HashCTX       ctx;
+    unsigned int len = 0;
 
     hash_init( alg, &ctx );
 
@@ -383,9 +443,9 @@ static BIGNUM * calculate_x( SRP_HashAlgorithm alg, const BIGNUM * salt, const c
     hash_update( alg, &ctx, ":", 1 );
     hash_update( alg, &ctx, password, password_len );
     
-    hash_final( alg, &ctx, ucp_hash );
+    hash_final( alg, &ctx, ucp_hash, &len );
         
-    return H_ns( alg, salt, ucp_hash, hash_length(alg) );
+    return H_ns( alg, salt, ucp_hash, len );
 }
 
 static void update_hash_n( SRP_HashAlgorithm alg, HashCTX *ctx, const BIGNUM * n )
@@ -420,6 +480,7 @@ static void calculate_M( SRP_HashAlgorithm alg, NGConstant *ng, unsigned char * 
     HashCTX       ctx;
     int           i = 0;
     int           hash_len = hash_length(alg);
+    unsigned int len = 0;
         
     hash_num( alg, ng->N, H_N );
     hash_num( alg, ng->g, H_g );
@@ -439,20 +500,21 @@ static void calculate_M( SRP_HashAlgorithm alg, NGConstant *ng, unsigned char * 
     update_hash_n( alg, &ctx, B );
     hash_update( alg, &ctx, K, hash_len );
     
-    hash_final( alg, &ctx, dest );
+    hash_final( alg, &ctx, dest, &len );
 }
 
 static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const BIGNUM * A, const unsigned char * M, const unsigned char * K )
 {
     HashCTX ctx;
+    unsigned int len = hash_length(alg);
     
     hash_init( alg, &ctx );
     
     update_hash_n( alg, &ctx, A );
-    hash_update( alg, &ctx, M, hash_length(alg) );
-    hash_update( alg, &ctx, K, hash_length(alg) );
+    hash_update( alg, &ctx, M, len );
+    hash_update( alg, &ctx, K, len );
     
-    hash_final( alg, &ctx, dest );
+    hash_final( alg, &ctx, dest, &len );
 }
 
 
@@ -468,6 +530,7 @@ static void init_random()
     if (g_initialized)
         return;
 
+    OpenSSL_add_all_digests();
 #ifdef _WIN32
 
         CryptAcquireContext(&wctx, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
@@ -502,7 +565,11 @@ static void init_random()
 
 void srp_random_seed( const unsigned char * random_data, int data_length )
 {
-    g_initialized = 1;
+    if (!g_initialized)
+    {
+        OpenSSL_add_all_digests();
+        g_initialized = 1;
+    }
 
     if (random_data)
         RAND_seed( random_data, data_length );
@@ -955,4 +1022,37 @@ void srp_user_verify_session( struct SRPUser * usr, const unsigned char * bytes_
 {
     if ( memcmp( usr->H_AMK, bytes_HAMK, hash_length(usr->hash_alg) ) == 0 )
         usr->authenticated = 1;
+}
+
+void srp_hash(int argc, char *argv[])
+{
+    HashCTX hctx;
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len = 0;
+    int i = 0;
+
+    OpenSSL_add_all_digests();
+
+    hash_init( SRP_SHA1, &hctx);
+    for (i=0; i<argc; i++)
+    {
+        hash_update( SRP_SHA1, &hctx, argv[i], strlen(argv[i]));
+    }
+    hash_final( SRP_SHA1, &hctx, md_value, &md_len);
+
+    printf("Digest is: ");
+    for(i = 0; i < md_len; i++) printf("%02x", md_value[i]);
+    printf("\n");
+}
+
+void srp_hash2(char *message)
+{
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len = hash_length(SRP_SHA1);
+    int i = 0;
+
+    hash( SRP_SHA1, message, strlen(message), md_value);
+    printf("Digest is: ");
+    for(i = 0; i < md_len; i++) printf("%02x", md_value[i]);
+    printf("\n");
 }

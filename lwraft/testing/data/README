@@ -1,0 +1,21 @@
+Steps required to make ADSI Edit work against vmdird:
+----------------------------------------------------
+
+1. After installing the vmdird RPM, perform the following steps to restart
+   vmdird:
+   - sudo /etc/init.d/vmdird stop
+   - sudo rm -rf /var/lib/vmware/vmdir
+   - sudo mkdir /var/lib/vmware/vmdir
+   - sudo /opt/vmware/sbin/vmdird -f /opt/vmware/share/config/vmdir_ad_schema_v1.ldif -l 4
+
+2. Load (ldapadd -c -h <vmdird host> -x -D "cn=abc" -w 123 -f <file name>) 
+   the following data files in this order:
+   - ad_domain_sample.ldif
+   - ad_config_sample.ldif
+   - ad_schema_sample.ldif
+   - ad_cn_users_mod.ldif
+
+3. Connect ADSI Edit to the vmdird server with:
+   - naming context: DC=sj-dom1,DC=jains,DC=com
+   - Bind credentials: cn=abc/123
+   - Bind type: Simple Bind

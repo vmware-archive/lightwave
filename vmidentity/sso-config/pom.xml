@@ -6,108 +6,73 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-sso-config</artifactId>
-  <version>6.6.1</version>
   <packaging>jar</packaging>
-  <name>vmware-identity-sso-config</name>
-
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-          <archive>
-            <manifestFile>${bundle.manifestTemplatePath}</manifestFile>
-          </archive>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <configuration>
-            <outputDirectory>${outputDirectory}</outputDirectory>
-          </configuration>
-          <executions>
-            <execution>
-              <id>attach-sources</id>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>${maven.surefire.plugin.version}</version>
-          <configuration>
-            <skipTests>${skip.unit.tests}</skipTests>
-          </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
-          <executions>
-            <execution>
-              <id>copy-resources</id>
-              <phase>install</phase>
-              <goals>
-                 <goal>copy-resources</goal>
-              </goals>
-              <configuration>
-                <outputDirectory>${classesOutputDirectory}</outputDirectory>
-                <resources>
-                  <resource>
-                    <directory>${basedir}/target/classes/</directory>
-                    <filtering>true</filtering>
-                  </resource>
-                </resources>
-              </configuration>
-            </execution>
-           </executions>
-       </plugin>
-    </plugins>
-  </build>
+  <name>SSO Configuration Utility</name>
 
   <dependencies>
     <dependency>
-      <groupId>com.vmware.identity.idm</groupId>
-      <artifactId>vmware-identity-idm-client</artifactId>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-install</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.vmware.identity.idm</groupId>
-      <artifactId>vmware-identity-idm-interface</artifactId>
-      </dependency>
+      <groupId>com.vmware.identity.rest.core</groupId>
+      <artifactId>vmware-identity-rest-core-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.core</groupId>
+      <artifactId>vmware-identity-rest-core-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.idm</groupId>
+      <artifactId>vmware-identity-rest-idm-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.idm</groupId>
+      <artifactId>vmware-identity-rest-idm-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.afd</groupId>
+      <artifactId>vmware-identity-rest-afd-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmdir.rest</groupId>
+      <artifactId>vmware-directory-rest-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.oidc</groupId>
+      <artifactId>openidconnect-client-lib</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.oidc</groupId>
+      <artifactId>openidconnect-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.vmware.identity.commons</groupId>
       <artifactId>samltoken</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -117,15 +82,53 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
- </dependencies>
+    <dependency>
+      <groupId>args4j</groupId>
+      <artifactId>args4j</artifactId>
+      <version>${args4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${httpclient.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>${httpcore.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>xml-apis</groupId>
+      <artifactId>xml-apis</artifactId>
+      <version>${xml.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>xalan</groupId>
+      <artifactId>serializer</artifactId>
+      <version>${serializer.version}</version>
+    </dependency>
+    <!-- Jackson Dependencies -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
 
- <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
-    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/vmware-identity-sso-config/classes</classesOutputDirectory>
- </properties>
-
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+  </properties>
 </project>

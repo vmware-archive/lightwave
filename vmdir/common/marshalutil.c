@@ -898,6 +898,10 @@ error:
     goto cleanup;
 }
 
+//
+// VmDirFreeIpcContainer should be called on *ppContainer once the caller's
+// done with the data.
+//
 DWORD
 VmDirUnMarshalContainer(
     DWORD dwBlobSize,
@@ -955,12 +959,20 @@ cleanup:
     return dwError;
 
 error:
-    if (ppContainer)
-    {
-        *ppContainer = NULL;
-    }
-
+    VmDirFreeIpcContainer(pContainer);
     goto cleanup;
+}
+
+VOID
+VmDirFreeIpcContainer(
+    PVMDIR_IPC_DATA_CONTAINER pContainer
+    )
+{
+    if (pContainer != NULL)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pContainer->data);
+        VMDIR_SAFE_FREE_MEMORY(pContainer);
+    }
 }
 
 static

@@ -31,6 +31,7 @@ import org.junit.experimental.categories.Category;
 
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.SolutionUser;
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
 import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
@@ -44,7 +45,6 @@ import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.data.attributes.SearchType;
 import com.vmware.identity.rest.idm.data.attributes.TenantConfigType;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.TenantResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 import com.vmware.identity.rest.idm.server.test.integration.util.data.TenantDataGenerator;

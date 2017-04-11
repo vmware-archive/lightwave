@@ -68,7 +68,8 @@ VmDirApplyModsToEntryStruct(
     ModifyReq *         modReq,
     PVDIR_ENTRY         pEntry,
     PBOOLEAN            pbDnModified,
-    PSTR*               ppszErrorMsg
+    PSTR*               ppszErrorMsg,
+    BOOLEAN             bIsReplOp
     );
 
 int
@@ -120,6 +121,11 @@ VmDirMLBind(
 int
 VmDirInternalBindEntry(
     PVDIR_OPERATION  pOperation
+    );
+
+DWORD
+VmDirMLSetupAnonymousAccessInfo(
+    PVDIR_ACCESS_INFO pAccessInfo
     );
 
 // dn.c
@@ -220,6 +226,14 @@ DWORD
 VmDirGenerateRandomPasswordByDefaultPolicy
 (
     PSTR *ppRandPwd
+    );
+
+// util.c
+
+VOID
+VmDirAuditWriteOp(
+    PVDIR_OPERATION  pOp,
+    PCSTR            pszDN
     );
 
 #endif /* ML_INTERFACE_H_ */

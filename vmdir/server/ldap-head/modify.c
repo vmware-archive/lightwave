@@ -53,7 +53,7 @@ VmDirPerformModify(
    ber_len_t          size = 0;
    BerValue*          pLberBerv = NULL;
    PSTR               pszLocalErrorMsg = NULL;
-   BOOLEAN            bResultAlreadySent = FALSE;
+   DWORD              dwModCount = 0;
 
    // Get entry DN. 'm' => reqDn.bv_val points to DN within (in-place) ber
    if ( ber_scanf( pOperation->ber, "{m", &(pOperation->reqDn.lberbv) ) == LBER_ERROR )
@@ -135,13 +135,34 @@ VmDirPerformModify(
               PCSTR pszLogValue = (0 == VmDirStringCompareA( pMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
                                     "XXX" : pLberBerv[iCnt].bv_val;
 
-              VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "MOD VALUE: (%.*s)",
-                        VMDIR_MIN(pLberBerv[iCnt].bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
-                        VDIR_SAFE_STRING( pszLogValue ));
+              if (iCnt < MAX_NUM_MOD_CONTENT_LOG)
+              {
+                  VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s: (%.*s)",
+                            ++dwModCount,
+                            VmDirLdapModOpTypeToName(pMod->operation),
+                            VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                            VMDIR_MIN(pLberBerv[iCnt].bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
+                            VDIR_SAFE_STRING( pszLogValue ));
+              }
+              else if (iCnt == MAX_NUM_MOD_CONTENT_LOG)
+              {
+                  VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s: .... Total MOD %d)",
+                            ++dwModCount,
+                            VmDirLdapModOpTypeToName(pMod->operation),
+                            VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                            size);
+              }
 
               pMod->attr.vals[iCnt].lberbv.bv_val = pLberBerv[iCnt].bv_val;
               pMod->attr.vals[iCnt].lberbv.bv_len = pLberBerv[iCnt].bv_len;
           }
+      }
+      else
+      {   // delete attribute
+          VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s",
+                    ++dwModCount,
+                    VmDirLdapModOpTypeToName(pMod->operation),
+                    VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val));
       }
 
       // we should be safe to cast ...
@@ -152,10 +173,6 @@ VmDirPerformModify(
       mr->numMods++;
    }
 
-    retVal = ParseRequestControls(pOperation, pResult);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                 "Strong consistency request control parsing failed");
-
    if ( ber_scanf( pOperation->ber, "}") == LBER_ERROR )
    {
       VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "PerformModify: ber_scanf failed" );
@@ -165,28 +182,20 @@ VmDirPerformModify(
    }
 
    retVal = pResult->errCode = VmDirMLModify( pOperation );
-   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
-
-    return retVal;
-
-error:
-
-    if (pMod)
-    {
-        VmDirModificationFree( pMod );
-    }
-
-    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
         VmDirSendLdapResult( pOperation );
     }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
+    VmDirModificationFree( pMod );
     goto cleanup;
 }
 

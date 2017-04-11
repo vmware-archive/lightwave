@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -42,11 +42,7 @@
 
 #pragma once
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <rpc.h>
-#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -83,7 +79,10 @@
 #include <backend.h>
 #include <indexcfg.h>
 #include <schema.h>
+#include <vmdirserver.h>
 #include <middlelayer.h>
+#include <replication.h>
+#include <vmacl.h>
 
 #include "defines.h"
 #include "structs.h"

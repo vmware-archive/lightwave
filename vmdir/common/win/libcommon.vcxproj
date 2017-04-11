@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E528219E-4329-48A5-8A40-B845D8ECA100}</ProjectGuid>
+    <RootNamespace>libcommon</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\vmdird\CommonProjectProperties.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\vmdird\CommonProjectProperties.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <PrecompiledHeaderFile />
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ShowIncludes>false</ShowIncludes>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>liblwbase.lib;libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;ssleay32.lib;liblber.lib;libldap_r.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(OutDir);$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader />
+      <PrecompiledHeaderFile />
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>liblwbase.lib;libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;ssleay32.lib;liblber.lib;libldap_r.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(OutDir);$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\circularbuffer.c" />
+    <ClCompile Include="..\deque.c" />
+    <ClCompile Include="..\krbmisc.c" />
+    <ClCompile Include="..\krbutil.c" />
+    <ClCompile Include="..\ldapbind.c" />
+    <ClCompile Include="..\ldaputil.c" />
+    <ClCompile Include="..\linkedlist.c" />
+    <ClCompile Include="..\marshalutil.c" />
+    <ClCompile Include="..\memory.c" />
+    <ClCompile Include="..\networkutil.c" />
+    <ClCompile Include="networkutilwindowsimpl.c" />
+    <ClCompile Include="..\opensslclient.c" />
+    <ClCompile Include="parseargs.c" />
+    <ClCompile Include="..\parsearguments.c" />
+    <ClCompile Include="..\rpcmemory.c" />
+    <ClCompile Include="..\securityutil.c" />
+    <ClCompile Include="securityutilwinimpl.c" />
+    <ClCompile Include="string.c" />
+    <ClCompile Include="..\stringlist.c" />
+    <ClCompile Include="..\superlogutil.c" />
+    <ClCompile Include="..\synchronizing.c" />
+    <ClCompile Include="..\threads.c" />
+    <ClCompile Include="..\tsstack.c" />
+    <ClCompile Include="..\util.c" />
+    <ClCompile Include="..\replstate\schemareplstate.c" />
+    <ClCompile Include="..\schema\compat.c" />
+    <ClCompile Include="..\schema\copy.c" />
+    <ClCompile Include="..\schema\def.c" />
+    <ClCompile Include="..\schema\deflist.c" />
+    <ClCompile Include="..\schema\diff.c" />
+    <ClCompile Include="..\schema\file.c" />
+    <ClCompile Include="..\schema\globals.c" />
+    <ClCompile Include="..\schema\load.c" />
+    <ClCompile Include="..\schema\merge.c" />
+    <ClCompile Include="..\schema\parse.c" />
+    <ClCompile Include="..\schema\patch.c" />
+    <ClCompile Include="..\schema\resolve.c" />
+    <ClCompile Include="..\schema\schema.c" />
+    <ClCompile Include="..\schema\verify.c" />
+    <ClCompile Include="..\schema\legacy\legacyload.c" />
+    <ClCompile Include="..\schema\legacy\legacypatch.c" />
+    <ClCompile Include="..\schema\legacy\legacyschema.c" />
+    <ClCompile Include="..\schema\legacy\legacyschemamod.c" />
+    <ClCompile Include="..\schema\legacy\legacyutil.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\includes.h" />
+    <ClInclude Include="..\prototypes.h" />
+    <ClInclude Include="..\structs.h" />
+    <ClInclude Include="..\schema\includes.h" />
+    <ClInclude Include="..\..\include\vmdircommon.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\thirdparty\heimdal\asn1\win\libasn12008.vcxproj">
+      <Project>{db0bd41d-dfbf-4c81-b850-9b09b4717a29}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\thirdparty\heimdal\asn1\win\libasn1db2008.vcxproj">
+      <Project>{f28a29f6-1d81-4752-a208-2a4c133c9612}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\thirdparty\heimdal\krb5-crypto\win\libkrb5-crypto2008.vcxproj">
+      <Project>{1a19614b-af77-4bf9-abfb-ffe63bbf54de}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\thirdparty\openldap\libraries\liblber\liblber\liblber.vcxproj">
+      <Project>{6a7d33dd-889f-4a32-9be2-7e02170b4262}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\thirdparty\openldap\libraries\libldap_r\libldap_r\libldap_r.vcxproj">
+      <Project>{c03fe715-86fc-4449-b945-118cce3b5e3f}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

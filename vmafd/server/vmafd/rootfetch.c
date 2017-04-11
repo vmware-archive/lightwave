@@ -108,7 +108,7 @@ VmAfdProcessCACerts(
     PVECS_SERV_STORE     pCertStore,
     CERT_ENTRY_TYPE      entryType,
     PVMAFD_CA_CERT_ARRAY pCACertArray,
-    BOOLEAN              bForceFlush
+    BOOLEAN              bLogOnDuplicate
     );
 
 DWORD
@@ -120,6 +120,8 @@ VmAfdInitCertificateThread(
    PVMAFD_THREAD pThread = NULL;
 
    VmAfdLog(VMAFD_DEBUG_ANY, "Starting Roots Fetch Thread, %s", __FUNCTION__);
+
+   (DWORD)VecsSrvFlushCertsToDisk();
 
    dwError = VmAfdAllocateMemory(
                 sizeof(VMAFD_THREAD),
@@ -178,6 +180,7 @@ error:
     {
         VmAfdShutdownCertificateThread(pThread);
     }
+    VmAfdLog(VMAFD_DEBUG_ANY, "Starting Roots Fetch Thread failed with error: [%d]", dwError);
     goto cleanup;
 }
 
@@ -222,7 +225,7 @@ VmAfdShutdownCertificateThread(
 
 DWORD
 VmAfdRootFetchTask(
-    BOOLEAN bForceFlush
+    BOOLEAN bLogOnDuplicate
     )
 {
     DWORD dwError = 0;
@@ -258,11 +261,14 @@ VmAfdRootFetchTask(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdProcessCACerts(pCertStore,
-                CERT_ENTRY_TYPE_TRUSTED_CERT, pCACerts, bForceFlush);
+                CERT_ENTRY_TYPE_TRUSTED_CERT, pCACerts, bLogOnDuplicate);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdProcessCACerts(pCrlStore,
-                CERT_ENTRY_TYPE_REVOKED_CERT_LIST, pCACerts, bForceFlush);
+                CERT_ENTRY_TYPE_REVOKED_CERT_LIST, pCACerts, bLogOnDuplicate);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsSrvFlushSSLCertFromDB(bLogOnDuplicate);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     VMAFD_UNLOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
@@ -316,6 +322,7 @@ VmAfdHandleCertUpdates(
     {
         DWORD   dwSleepSecs = VmAfdGetSleepInterval() ;
         BOOLEAN bShutdown = FALSE;
+        VMAFD_DOMAIN_STATE vmafdState = VMAFD_DOMAIN_STATE_NONE;
 
         bShutdown = VmAfdToShutdownCertUpdateThr(pThrArgs);
         if (bShutdown)
@@ -323,15 +330,26 @@ VmAfdHandleCertUpdates(
             break;
         }
 
-        dwError = VmAfdRootFetchTask(pThrArgs->forceFlush);
+        dwError = VmAfSrvGetDomainState (&vmafdState);
         if (dwError)
         {
-            VmAfdLog(
-                VMAFD_DEBUG_ANY,
-                "Failed to update trusted roots. Error [%u]",
-                dwError);
+            vmafdState = VMAFD_DOMAIN_STATE_NONE;
+            dwError = 0;
         }
-        pThrArgs->forceFlush = FALSE;
+
+        if (vmafdState == VMAFD_DOMAIN_STATE_CONTROLLER ||
+            vmafdState == VMAFD_DOMAIN_STATE_CLIENT)
+        {
+            dwError = VmAfdRootFetchTask(pThrArgs->forceFlush);
+            if (dwError)
+            {
+                VmAfdLog(
+                    VMAFD_DEBUG_ANY,
+                    "Failed to update trusted roots. Error [%u]",
+                    dwError);
+            }
+            pThrArgs->forceFlush = FALSE;
+        }
 
         dwError = VmAfdCertUpdateThrSleep(pThrArgs, dwSleepSecs);
         if (dwError == ETIMEDOUT)
@@ -711,7 +729,7 @@ VmAfdProcessCACerts(
     PVECS_SERV_STORE     pStore,
     CERT_ENTRY_TYPE      entryType,
     PVMAFD_CA_CERT_ARRAY pCACertArray,
-    BOOLEAN              bForceFlush
+    BOOLEAN              bLogOnDuplicate
     )
 {
     DWORD   dwError = 0;
@@ -789,25 +807,31 @@ VmAfdProcessCACerts(
                             pVecsCertContainer, nFound);
                 BAIL_ON_VMAFD_ERROR(dwError);
 
-                if (bForceFlush)
+                if (bLogOnDuplicate)
                 {
                     VmAfdLog(VMAFD_DEBUG_ANY,
                         "VmAfdProcessCACerts: force flushing.");
+                }
 
-                    if (entryType == CERT_ENTRY_TYPE_TRUSTED_CERT
-                            && pStore->dwStoreId == VECS_TRUSTED_ROOT_STORE_ID)
-                    {
-                        dwError = VecsSrvFlushRootCertificate(pStore,
-                                pVecsCertContainer->certificates[nFound].pCert);
-                        BAIL_ON_VMAFD_ERROR (dwError);
-                    }
-                    else if (entryType == CERT_ENTRY_TYPE_REVOKED_CERT_LIST
-                            && pStore->dwStoreId == VECS_CRL_STORE_ID)
-                    {
-                        dwError = VecsSrvFlushCrl(pStore,
-                                pVecsCertContainer->certificates[nFound].pCert);
-                        BAIL_ON_VMAFD_ERROR (dwError);
-                    }
+                if (entryType == CERT_ENTRY_TYPE_TRUSTED_CERT
+                        && pStore->dwStoreId == VECS_TRUSTED_ROOT_STORE_ID)
+                {
+                    dwError = VecsSrvFlushRootCertificate(
+                               pStore,
+                               pVecsCertContainer->certificates[nFound].pCert,
+                               bLogOnDuplicate
+                               );
+                    BAIL_ON_VMAFD_ERROR (dwError);
+                }
+                else if (entryType == CERT_ENTRY_TYPE_REVOKED_CERT_LIST
+                        && pStore->dwStoreId == VECS_CRL_STORE_ID)
+                {
+                    dwError = VecsSrvFlushCrl(
+                                pStore,
+                                pVecsCertContainer->certificates[nFound].pCert,
+                                bLogOnDuplicate
+                                );
+                    BAIL_ON_VMAFD_ERROR (dwError);
                 }
             }
 

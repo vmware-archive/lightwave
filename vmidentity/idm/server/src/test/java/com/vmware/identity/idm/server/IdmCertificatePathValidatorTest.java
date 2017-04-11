@@ -381,6 +381,8 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setRevocationCheckEnabled(true);
             certPolicy.setUseOCSP(true);
             certPolicy.setUseCRLAsFailOver(true);
+            certPolicy.setCRLUrl(testUtil
+                    .getCRLLocalCacheURL(testUtil.dodCRLCacheROOTCA2)); //this should not interfare since ocsp check should succeed.
             certPolicy.setOCSPUrl(testUtil.getDODResponderUrl());
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(

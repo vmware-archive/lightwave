@@ -17,6 +17,7 @@ package com.vmware.identity.openidconnect.protocol;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.Validate;
 
@@ -46,12 +47,14 @@ public final class TokenRequest extends ProtocolRequest {
             Scope scope,
             SolutionUserAssertion solutionUserAssertion,
             ClientAssertion clientAssertion,
+            ClientID clientId,
             CorrelationID correlationId) {
         Validate.notNull(uri, "uri");
         Validate.notNull(authzGrant, "authzGrant");
         // nullable scope
         // nullable solutionUserAssertion
         // nullable clientAssertion
+        // nullable clientId
         // nullable correlationId
 
         this.uri = uri;
@@ -61,7 +64,13 @@ public final class TokenRequest extends ProtocolRequest {
         this.clientAssertion = clientAssertion;
         this.correlationId = correlationId;
 
-        this.clientId = (this.clientAssertion != null) ? new ClientID(this.clientAssertion.getIssuer().getValue()) : null;
+        if (this.clientAssertion != null) {
+            this.clientId = new ClientID(this.clientAssertion.getIssuer().getValue());
+        } else if (clientId != null) {
+            this.clientId = clientId;
+        } else {
+            this.clientId = null;
+        }
     }
 
     public AuthorizationGrant getAuthorizationGrant() {
@@ -103,10 +112,14 @@ public final class TokenRequest extends ProtocolRequest {
         if (this.solutionUserAssertion != null) {
             result.put("solution_user_assertion", this.solutionUserAssertion.serialize());
         }
+
         if (this.clientAssertion != null) {
             result.put("client_assertion", this.clientAssertion.serialize());
             result.put("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+        } else if (this.clientId != null) {
+            result.put("client_id", this.clientId.getValue());
         }
+
         if (this.correlationId != null) {
             result.put("correlation_id", this.correlationId.getValue());
         }
@@ -122,8 +135,14 @@ public final class TokenRequest extends ProtocolRequest {
         AuthorizationGrant authzGrant = AuthorizationGrant.parse(parameters);
 
         Scope scope = null;
-        if (parameters.containsKey("scope")) {
-            scope = Scope.parse(ParameterMapUtils.getString(parameters, "scope"));
+        if (authzGrant.getGrantType() == GrantType.AUTHORIZATION_CODE || authzGrant.getGrantType() == GrantType.REFRESH_TOKEN) {
+            // ignore scope, ignore instead of reject because kubectl will send scope in refresh_token request
+        } else {
+            if (parameters.containsKey("scope")) {
+                scope = Scope.parse(ParameterMapUtils.getString(parameters, "scope"));
+            } else {
+                throw new ParseException("missing scope parameter");
+            }
         }
 
         SolutionUserAssertion solutionUserAssertion = null;
@@ -136,16 +155,17 @@ public final class TokenRequest extends ProtocolRequest {
             clientAssertion = ClientAssertion.parse(parameters);
         }
 
+        ClientID clientId = null;
+        if (parameters.get("client_id") != null) {
+            clientId = new ClientID(ParameterMapUtils.getString(parameters, "client_id"));
+        }
+
         CorrelationID correlationId = null;
         if (parameters.containsKey("correlation_id")) {
             correlationId = new CorrelationID(ParameterMapUtils.getString(parameters, "correlation_id"));
         }
 
-        if (parameters.get("client_id") != null) {
-            throw new ParseException("client_id parameter is not allowed, send client_assertion instead");
-        }
-
-        validate(authzGrant, scope, solutionUserAssertion, clientAssertion);
+        validate(authzGrant, scope, solutionUserAssertion, clientAssertion, clientId);
 
         return new TokenRequest(
                 httpRequest.getURI(),
@@ -153,6 +173,7 @@ public final class TokenRequest extends ProtocolRequest {
                 scope,
                 solutionUserAssertion,
                 clientAssertion,
+                clientId,
                 correlationId);
     }
 
@@ -160,27 +181,17 @@ public final class TokenRequest extends ProtocolRequest {
             AuthorizationGrant authzGrant,
             Scope scope,
             SolutionUserAssertion solutionUserAssertion,
-            ClientAssertion clientAssertion) throws ParseException {
+            ClientAssertion clientAssertion,
+            ClientID clientId) throws ParseException {
         if (clientAssertion != null && solutionUserAssertion != null) {
             throw new ParseException("client_assertion and solution_user_assertion in the same request is not allowed");
         }
 
-        GrantType grantType = authzGrant.getGrantType();
-
-        // scope is not allowed in authz code and refresh token grants but required in all others
-        if (grantType == GrantType.AUTHORIZATION_CODE) {
-            if (scope != null) {
-                throw new ParseException("scope parameter is not allowed in token request for authz code grant");
-            }
-        } else if (grantType == GrantType.REFRESH_TOKEN) {
-            if (scope != null) {
-                throw new ParseException("scope parameter is not allowed in token request for refresh token grant");
-            }
-        } else {
-            if (scope == null) {
-                throw new ParseException("missing scope parameter");
-            }
+        if (clientAssertion != null && clientId != null && !Objects.equals(clientAssertion.getIssuer().getValue(), clientId.getValue())) {
+            throw new ParseException("client_assertion issuer must match client_id");
         }
+
+        GrantType grantType = authzGrant.getGrantType();
 
         if (grantType == GrantType.CLIENT_CREDENTIALS && scope.contains(ScopeValue.OFFLINE_ACCESS)) {
             throw new ParseException(ErrorObject.invalidScope("refresh token (offline_access) is not allowed for client credentials grant"));

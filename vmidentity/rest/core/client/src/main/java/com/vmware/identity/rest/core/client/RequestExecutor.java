@@ -72,7 +72,9 @@ public class RequestExecutor {
 
         if (type != null) {
             try {
-                object = ObjectMapperSingleton.getInstance().<T>readValue(response.getEntity().getContent(), type);
+                if (response != null && response.getEntity() != null && response.getEntity().getContent() != null) {
+                    object = ObjectMapperSingleton.getInstance().<T>readValue(response.getEntity().getContent(), type);
+                }
             } catch (IOException e) {
                throw new IllegalArgumentException("An error occurred unmarshalling the server's response", e);
             }

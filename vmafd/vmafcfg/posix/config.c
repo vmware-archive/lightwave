@@ -497,6 +497,65 @@ error:
 	return dwError;
 }
 
+DWORD
+VmAfPosixCfgGetSecurity(
+    PVMAF_CFG_KEY         pKey,
+    PSTR                 *ppszSecurityDescriptor
+    )
+{
+    DWORD dwError = 0;
+    PSECURITY_DESCRIPTOR_RELATIVE pSecurityDescriptor = NULL;
+    DWORD dwSecurityDescriptorLen = 0;
+    SECURITY_INFORMATION secInfoAll = (OWNER_SECURITY_INFORMATION |
+                                       GROUP_SECURITY_INFORMATION |
+                                       DACL_SECURITY_INFORMATION  |
+                                       SACL_SECURITY_INFORMATION);
+    PSTR pszSecurityDescriptor = NULL;
+
+    if (!pKey || !ppszSecurityDescriptor)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwSecurityDescriptorLen = SECURITY_DESCRIPTOR_RELATIVE_MAX_SIZE;
+    dwError = RegGetKeySecurity(
+                  pKey->pConnection->hConnection,
+                  pKey->hKey,
+                  secInfoAll,
+                  NULL,
+                  &dwSecurityDescriptorLen);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateMemory(
+                  dwSecurityDescriptorLen,
+                  (PVOID)&pSecurityDescriptor);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = RegGetKeySecurity(
+                  pKey->pConnection->hConnection,
+                  pKey->hKey,
+                  secInfoAll,
+                  pSecurityDescriptor,
+                  &dwSecurityDescriptorLen);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = RtlAllocateSddlCStringFromSecurityDescriptor(
+                   &pszSecurityDescriptor,
+                   (PSECURITY_DESCRIPTOR_RELATIVE)pSecurityDescriptor,
+                   SDDL_REVISION_1,
+                   secInfoAll);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszSecurityDescriptor = pszSecurityDescriptor;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pSecurityDescriptor);
+    return dwError;
+
+error:
+    goto cleanup;
+}
 
 VOID
 VmAfPosixCfgCloseKey(

@@ -281,7 +281,37 @@ public class VMCAClient implements Iterable<X509Certificate> {
     }
 
     /*
-     * Returns a Signed Certificate from the Server
+     * Returns a Signed Host Certificate from the Server 
+     *
+     * @param hostName -- Host name, CSR will be validated against hostname
+     *
+     * @param ipAddress -- optional -- ipAddress to validate against CSR
+     *
+     * @param certificateRequest -- A PKCS 10 Certificate request
+     *
+     * @param notBefore - Start date of the Certificate
+     *
+     * @param notAfter - End Date of the Certificate
+     *
+     * @return X509Certificate
+     *
+     * @throws Exception
+     */
+
+    public X509Certificate
+    getCertificateForHost(String hostName, String ipAddress,
+            String certificateRequest,
+            Date notBefore, Date notAfter) throws Exception {
+
+        try(VMCAServerContext context = getServerContext())
+        {
+            return this.getCertificateForHost(context, hostName, ipAddress,
+                                  certificateRequest, notBefore, notAfter);
+        }
+    }
+
+    /*
+     * Returns a Signed Host Certificate from the Server
      *
      * @param certificateRequest -- A PKCS 10 Certificate request
      *

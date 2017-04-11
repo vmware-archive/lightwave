@@ -50,7 +50,7 @@ VmAfdFindFileIndex(
     if (!(pDir = opendir(pszDirPath)))
     {
         dwError = VmAfdGetWin32ErrorCode(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     len = strlen(pszFile);
@@ -105,7 +105,7 @@ VmAfdFindFileIndex(
     if (maxIndex < 0)
     {
         dwError = ERROR_FILE_NOT_FOUND;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     *pIndex = maxIndex;
@@ -205,10 +205,10 @@ VmAfdCopyFile(
     size_t cbRead = 0;
     BYTE  buf[COPY_BUFFER_SIZE];
 
-    dwError = VmAfdOpenFilePath(pszSrc, "r", &pfSrc);
+    dwError = VmAfdOpenFilePath(pszSrc, "r", &pfSrc, 0);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdOpenFilePath(pszDest, "w", &pfDest);
+    dwError = VmAfdOpenFilePath(pszDest, "w", &pfDest, 0);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     while ((cbRead = fread(buf, 1, COPY_BUFFER_SIZE, pfSrc)) > 0)
@@ -450,7 +450,8 @@ DWORD
 VmAfdOpenFilePath(
     PCSTR   pszFileName,
     PCSTR   pszOpenMode,
-    FILE**  fp
+    FILE**  fp,
+    int mode
 )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -467,9 +468,21 @@ VmAfdOpenFilePath(
     }
 
     temp = fopen(pszFileName, pszOpenMode);
-    if (temp == NULL) {
+    if (temp == NULL) 
+    {
         dwError = VmAfdGetWin32ErrorCode(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+    } 
+    else 
+    {
+        if (mode != 0)
+        {
+            if(chmod(pszFileName, mode) != 0)
+            {
+                dwError = VmAfdGetWin32ErrorCode(errno);
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+        }
     }
 
     *fp = temp;

@@ -5,15 +5,14 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
 import org.w3._2005._08.addressing.EndpointReferenceType;
 
 
 /**
  * <p>Java class for ParticipantType complex type.
- *
+ * 
  * <p>The following schema fragment specifies the expected content contained within this class.
- *
+ * 
  * <pre>
  * &lt;complexType name="ParticipantType">
  *   &lt;complexContent>
@@ -25,8 +24,8 @@ import org.w3._2005._08.addressing.EndpointReferenceType;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- *
- *
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ParticipantType", propOrder = {
@@ -39,11 +38,11 @@ public class ParticipantType {
 
     /**
      * Gets the value of the endpointReference property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link EndpointReferenceType }
-     *
+     *     
      */
     public EndpointReferenceType getEndpointReference() {
         return endpointReference;
@@ -51,11 +50,11 @@ public class ParticipantType {
 
     /**
      * Sets the value of the endpointReference property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link EndpointReferenceType }
-     *
+     *     
      */
     public void setEndpointReference(EndpointReferenceType value) {
         this.endpointReference = value;

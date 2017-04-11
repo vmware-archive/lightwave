@@ -1,0 +1,99 @@
+{
+    "variables": {
+        "source_ova": "{{env `SOURCE_OVA`}}",
+        "build_path": "build",
+        "sandbox_build": "{{env `SANDBOX_BUILD`}}"
+    },
+    "builders": [
+        {
+            "type": "virtualbox-ovf",
+            "format": "ova",
+            "source_path": "{{ user `source_ova` }}",
+            "ssh_username": "root",
+            "ssh_password": "changeme",
+            "shutdown_command": "echo 'packer' | shutdown -P now",
+            "headless": true,
+            "guest_additions_mode": "disable",
+            "output_directory": "{{user `build_path`}}/",
+            "vm_name": "lightwave-vb",
+            "vboxmanage": [
+                [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+                [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
+            ]
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline": "mkdir -p /tmp/vmware/lightwave/x86_64"
+        },
+        {
+            "type": "file",
+            "source": "../stage/x86_64/",
+            "destination": "/tmp/vmware/lightwave/x86_64"
+        },
+        {
+            "type": "shell",
+            "inline": "df"
+        },
+        {
+            "type": "shell",
+            "inline": "tdnf makecache && tdnf install -y tar && tdnf install -y wget"
+        },
+        {
+            "type": "shell",
+            "inline": "echo Installing libxml2 for xmlint && tdnf install -y libxml2"
+        },
+        {
+            "type": "file",
+            "source": "packer/scripts",
+            "destination": "/tmp"
+        },
+        {
+            "type": "shell",
+            "inline": "/tmp/scripts/install-lightwave.sh {{user `sandbox_build`}}"
+        },
+        {
+            "type": "shell",
+            "inline": "/tmp/scripts/configure-users.sh"
+        },
+        {
+            "type": "file",
+            "source": "packer/photon",
+            "destination": "/etc"
+        },
+        {
+            "type": "shell",
+            "inline": "wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && rm -rf get-pip.py && pip install pystache"
+        },
+        {
+            "type": "file",
+            "source": "packer/service/configure-guest.service",
+            "destination": "/lib/systemd/system/configure-guest.service"
+        },
+        {
+            "type": "shell",
+            "inline": "systemctl enable configure-guest"
+        },
+        {
+            "type": "shell",
+            "inline": "systemctl disable vmware-idmd"
+        },
+        {
+            "type": "shell",
+            "inline": "systemctl disable vmware-stsd"
+        },
+        {
+            "type": "shell",
+            "inline": "rm -rf /tmp/*"
+        },
+        {
+            "type": "shell",
+            "script": "./cleanup.sh"
+        },
+        {
+            "type": "shell",
+            "inline": "chage -d 0 root"
+        }
+    ]
+}

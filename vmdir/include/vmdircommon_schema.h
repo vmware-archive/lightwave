@@ -117,6 +117,7 @@ typedef struct _VDIR_LDAP_SCHEMA
 
 } VDIR_LDAP_SCHEMA, *PVDIR_LDAP_SCHEMA;
 
+// make sure enum stat with 0 and w/o gap.
 typedef enum
 {
     MOD_OP_ADD = 0,

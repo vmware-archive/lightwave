@@ -8,18 +8,18 @@ import javax.xml.namespace.QName;
 
 
 /**
- * This object contains factory methods for each
- * Java content interface and Java element interface
- * generated in the org.oasis_open.docs.ws_sx.ws_trust._200512 package.
- * <p>An ObjectFactory allows you to programatically
- * construct new instances of the Java representation
- * for XML content. The Java representation of XML
- * content can consist of schema derived interfaces
- * and classes representing the binding of schema
- * type definitions, element declarations and model
- * groups.  Factory methods for each of these are
+ * This object contains factory methods for each 
+ * Java content interface and Java element interface 
+ * generated in the org.oasis_open.docs.ws_sx.ws_trust._200512 package. 
+ * <p>An ObjectFactory allows you to programatically 
+ * construct new instances of the Java representation 
+ * for XML content. The Java representation of XML 
+ * content can consist of schema derived interfaces 
+ * and classes representing the binding of schema 
+ * type definitions, element declarations and model 
+ * groups.  Factory methods for each of these are 
  * provided in this class.
- *
+ * 
  */
 @XmlRegistry
 public class ObjectFactory {
@@ -45,14 +45,14 @@ public class ObjectFactory {
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: org.oasis_open.docs.ws_sx.ws_trust._200512
-     *
+     * 
      */
     public ObjectFactory() {
     }
 
     /**
      * Create an instance of {@link DelegateToType }
-     *
+     * 
      */
     public DelegateToType createDelegateToType() {
         return new DelegateToType();
@@ -60,7 +60,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link RequestSecurityTokenType }
-     *
+     * 
      */
     public RequestSecurityTokenType createRequestSecurityTokenType() {
         return new RequestSecurityTokenType();
@@ -68,7 +68,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link UseKeyType }
-     *
+     * 
      */
     public UseKeyType createUseKeyType() {
         return new UseKeyType();
@@ -76,7 +76,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link RequestSecurityTokenResponseType }
-     *
+     * 
      */
     public RequestSecurityTokenResponseType createRequestSecurityTokenResponseType() {
         return new RequestSecurityTokenResponseType();
@@ -84,7 +84,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link RequestedSecurityTokenType }
-     *
+     * 
      */
     public RequestedSecurityTokenType createRequestedSecurityTokenType() {
         return new RequestedSecurityTokenType();
@@ -92,7 +92,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link RequestSecurityTokenResponseCollectionType }
-     *
+     * 
      */
     public RequestSecurityTokenResponseCollectionType createRequestSecurityTokenResponseCollectionType() {
         return new RequestSecurityTokenResponseCollectionType();
@@ -100,7 +100,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link ParticipantsType }
-     *
+     * 
      */
     public ParticipantsType createParticipantsType() {
         return new ParticipantsType();
@@ -108,7 +108,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link StatusType }
-     *
+     * 
      */
     public StatusType createStatusType() {
         return new StatusType();
@@ -116,7 +116,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link ValidateTargetType }
-     *
+     * 
      */
     public ValidateTargetType createValidateTargetType() {
         return new ValidateTargetType();
@@ -124,7 +124,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link LifetimeType }
-     *
+     * 
      */
     public LifetimeType createLifetimeType() {
         return new LifetimeType();
@@ -132,7 +132,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link RenewTargetType }
-     *
+     * 
      */
     public RenewTargetType createRenewTargetType() {
         return new RenewTargetType();
@@ -140,7 +140,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link RenewingType }
-     *
+     * 
      */
     public RenewingType createRenewingType() {
         return new RenewingType();
@@ -148,7 +148,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link BinaryExchangeType }
-     *
+     * 
      */
     public BinaryExchangeType createBinaryExchangeType() {
         return new BinaryExchangeType();
@@ -156,7 +156,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link ParticipantType }
-     *
+     * 
      */
     public ParticipantType createParticipantType() {
         return new ParticipantType();
@@ -164,7 +164,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link RequestSecurityTokenType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "RequestSecurityToken")
     public JAXBElement<RequestSecurityTokenType> createRequestSecurityToken(RequestSecurityTokenType value) {
@@ -173,7 +173,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link RequestSecurityTokenResponseType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "RequestSecurityTokenResponse")
     public JAXBElement<RequestSecurityTokenResponseType> createRequestSecurityTokenResponse(RequestSecurityTokenResponseType value) {
@@ -182,7 +182,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link RequestedSecurityTokenType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "RequestedSecurityToken")
     public JAXBElement<RequestedSecurityTokenType> createRequestedSecurityToken(RequestedSecurityTokenType value) {
@@ -191,7 +191,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link RequestSecurityTokenResponseCollectionType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "RequestSecurityTokenResponseCollection")
     public JAXBElement<RequestSecurityTokenResponseCollectionType> createRequestSecurityTokenResponseCollection(RequestSecurityTokenResponseCollectionType value) {
@@ -200,7 +200,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "SignatureAlgorithm")
     public JAXBElement<String> createSignatureAlgorithm(String value) {
@@ -209,7 +209,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link RenewTargetType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "RenewTarget")
     public JAXBElement<RenewTargetType> createRenewTarget(RenewTargetType value) {
@@ -218,7 +218,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link Boolean }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "Delegatable")
     public JAXBElement<Boolean> createDelegatable(Boolean value) {
@@ -227,7 +227,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link UseKeyType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "UseKey")
     public JAXBElement<UseKeyType> createUseKey(UseKeyType value) {
@@ -236,7 +236,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link DelegateToType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "DelegateTo")
     public JAXBElement<DelegateToType> createDelegateTo(DelegateToType value) {
@@ -245,7 +245,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link ParticipantsType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "Participants")
     public JAXBElement<ParticipantsType> createParticipants(ParticipantsType value) {
@@ -254,7 +254,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "KeyType")
     public JAXBElement<String> createKeyType(String value) {
@@ -263,7 +263,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link RenewingType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "Renewing")
     public JAXBElement<RenewingType> createRenewing(RenewingType value) {
@@ -272,7 +272,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "TokenType")
     public JAXBElement<String> createTokenType(String value) {
@@ -281,7 +281,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link LifetimeType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "Lifetime")
     public JAXBElement<LifetimeType> createLifetime(LifetimeType value) {
@@ -290,7 +290,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link ValidateTargetType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "ValidateTarget")
     public JAXBElement<ValidateTargetType> createValidateTarget(ValidateTargetType value) {
@@ -299,7 +299,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link StatusType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "Status")
     public JAXBElement<StatusType> createStatus(StatusType value) {
@@ -308,7 +308,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "RequestType")
     public JAXBElement<String> createRequestType(String value) {
@@ -317,7 +317,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link BinaryExchangeType }{@code >}}
-     *
+     * 
      */
     @XmlElementDecl(namespace = "http://docs.oasis-open.org/ws-sx/ws-trust/200512", name = "BinaryExchange")
     public JAXBElement<BinaryExchangeType> createBinaryExchange(BinaryExchangeType value) {

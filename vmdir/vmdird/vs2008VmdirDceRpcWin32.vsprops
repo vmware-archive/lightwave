@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="vs2008VmdirDceRpcWin32"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include\win32&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\libldap&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\mdb&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+		PreprocessorDefinitions="HAVE_DCERPC_WIN32;HAVE_PTHREADS_WIN32;HAVE_NCACN_IP_TCP;UUID_DEFINED;VDIR_PSC_VERSION=$(LIGHTWAVE_VERSION_STRING)"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="dcelib.lib pthreadVC2.lib"
+		AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
+	/>
+</VisualStudioPropertySheet>

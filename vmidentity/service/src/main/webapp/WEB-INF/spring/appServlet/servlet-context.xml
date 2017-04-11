@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+	<context:annotation-config />
+
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+	<resources mapping="/websso/resources/**" location="/resources/" />
+	<resources mapping="/openidconnect/resources/**" location="/resources/" />
+
+    <!-- websso client lib configuration -->
+
+    <!-- Instantiate default Metadata Settings implementation -->
+    <beans:bean id = "metadataSettings" class = "com.vmware.identity.websso.client.MetadataSettingsImpl"/>
+
+    <!-- Instantiate default Message Store implementation -->
+    <beans:bean id = "messageStore" class = "com.vmware.identity.websso.client.MessageStoreImpl"/>
+    <!-- Instantiate Sample Logout Processor -->
+    <beans:bean id = "logoutProcessor" class = "com.vmware.identity.proxyservice.LogoutProcessorImpl"/>
+
+    <!-- Instantiate Sample Logon Processor -->
+    <beans:bean id = "logonProcessor" class = "com.vmware.identity.proxyservice.LogonProcessorImpl"/>
+
+    <!-- Instantiate Sso Request Sender -->
+    <beans:bean id = "ssoRequestSender" class = "com.vmware.identity.websso.client.endpoint.SsoRequestSender"/>
+
+    <!-- Instantiate Slo Sender -->
+    <beans:bean id = "sloRequestSender" class = "com.vmware.identity.websso.client.endpoint.SloRequestSender"/>
+
+    <!-- Scan directive to instantiate all Spring @Controllers -->
+	<context:component-scan base-package="com.vmware.identity, com.vmware.identity.openidconnect.server" />
+
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+
+    <beans:bean id="externalAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStateExternalAuthenticationFilter">
+    </beans:bean>
+
+    <beans:bean id="kerbAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStateKerbAuthenticationFilter">
+    </beans:bean>
+
+    <beans:bean id="passwordAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStatePasswordAuthenticationFilter">
+    </beans:bean>
+
+    <beans:bean id="rsaamAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStateRsaAmAuthenticationFilter">
+    </beans:bean>
+
+    <beans:bean id="tlsClientAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStateTLSClientAuthenticationFilter">
+    </beans:bean>
+
+    <beans:bean id="kerbAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
+       <beans:property name="authenticator">
+           <beans:ref bean="kerbAuth"/>
+       </beans:property>
+    </beans:bean>
+
+    <beans:bean id="passwordAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
+       <beans:property name="authenticator">
+           <beans:ref bean="passwordAuth"/>
+       </beans:property>
+    </beans:bean>
+
+    <beans:bean id="rsaamAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
+       <beans:property name="authenticator">
+           <beans:ref bean="rsaamAuth"/>
+       </beans:property>
+    </beans:bean>
+
+    <beans:bean id="tlsClientAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
+       <beans:property name="authenticator">
+           <beans:ref bean="tlsClientAuth"/>
+       </beans:property>
+    </beans:bean>
+
+    <beans:bean id="cookieAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
+      <beans:property name="externalAuthenticator">
+           <beans:ref bean="externalAuth"/>
+       </beans:property>
+    </beans:bean>
+
+    <beans:bean id="processor" class="com.vmware.identity.samlservice.impl.LogoutStateProcessingFilter">
+    </beans:bean>
+
+	<beans:bean id="sessionManager" class="com.vmware.identity.session.impl.SessionManagerImpl">
+	</beans:bean>
+
+    <beans:bean id="sessionCleanupWrapper" class="com.vmware.identity.session.SessionCleanupWrapper">
+    </beans:bean>
+
+    <beans:bean id="cleanupThread" class="java.lang.Thread" init-method="start" destroy-method="interrupt">
+        <beans:constructor-arg ref="sessionCleanupWrapper"/>
+    </beans:bean>
+
+    <!-- Filter to wrap httpRequest as SSL request based on proxy header. This ensures spring
+     HttpServletResponse generates https re-direct and post url.  -->
+
+    <beans:bean id="securityWrapperFilter" class="com.vmware.identity.SecurityRequestWrapperFilter">
+    </beans:bean>
+
+    <beans:bean id="tomcatAccessLogCleaner" class="com.vmware.identity.session.TomcatAccessLogCleaner">
+    </beans:bean>
+
+    <beans:bean id = "eventListenerBean" class="com.vmware.identity.WebssoApplicationListener" />
+
+    <beans:bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+        <beans:property name="basenames">
+            <beans:list>
+                <beans:value>messages</beans:value>
+            </beans:list>
+        </beans:property>
+    </beans:bean>
+
+    <beans:bean id="serviceContextProvider" class="com.vmware.identity.openidconnect.server.IdmServiceContextProvider"/>
+
+    <beans:bean id="idmClient" class="com.vmware.identity.idm.client.CasIdmClient">
+        <beans:constructor-arg value="localhost" />
+        <beans:constructor-arg ref="serviceContextProvider" />
+    </beans:bean>
+
+    <beans:bean id="authzCodeManager" class="com.vmware.identity.openidconnect.server.AuthorizationCodeManager"/>
+
+    <beans:bean id="oidcSessionManager" class="com.vmware.identity.openidconnect.server.SessionManager"/>
+
+</beans:beans>

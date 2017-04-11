@@ -64,6 +64,12 @@ VmDnsRpcFreeForwarders(
     PVMDNS_FORWARDERS       pForwarder
     );
 
+static
+DWORD
+VmDnsCheckRecord(
+    PVMDNS_RECORD pRecord
+    );
+
 // Public client interfaces for RPC calls
 
 VMDNS_API
@@ -351,7 +357,6 @@ VmDnsInitializeA(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-
     DCETHREAD_TRY
     {
         dwError = VmDnsRpcInitialize(
@@ -618,6 +623,9 @@ VmDnsAddRecordA(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
+    dwError = VmDnsCheckRecord(pRecord);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     DCETHREAD_TRY
     {
@@ -910,3 +918,51 @@ VmDnsRpcFreeForwarders(
         VmDnsRpcFreeMemory(pForwarder);
     }
 }
+
+static
+DWORD
+VmDnsCheckRecord(
+    PVMDNS_RECORD pRecord
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pRecord)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    if (pRecord->dwType == VMDNS_RR_TYPE_A)
+    {
+        if (VmDnsCheckIfIPV4AddressA(pRecord->pszName))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    if (pRecord->dwType == VMDNS_RR_TYPE_AAAA)
+    {
+        if (VmDnsCheckIfIPV6AddressA(pRecord->pszName))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    if (pRecord->dwType == VMDNS_RR_TYPE_SRV)
+    {
+        if (VmDnsCheckIfIPV4AddressA(pRecord->pszName) ||
+            VmDnsCheckIfIPV6AddressA(pRecord->pszName))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+

@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -294,6 +294,7 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 #define VMCA_REG_KEY_LOGLEVEL                "LogLevel"
 #define VMCA_REG_KEY_ENABLEEVENTLOGS         "EnableEventLogs"
 #define VMCA_REG_KEY_ENABLESERVICE           "EnableService"
+#define VMCA_REG_KEY_SERVER_OPTION           "ServerOption"
 
 #define VMCA_RPC_TCP_END_POINT               "2014"
 #define VMCA_NCALRPC_END_POINT               "vmcasvc"
@@ -398,6 +399,13 @@ DWORD
 VMCAAllocateMemory(
     DWORD dwSize,
     PVOID * ppMemory
+    );
+
+DWORD
+VMCAReallocateMemory(
+    PVOID        pMemory,
+    PVOID*       ppNewMemory,
+    DWORD        dwSize
     );
 
 VOID
@@ -516,6 +524,13 @@ VMCAStringTokA(
     );
 
 DWORD
+VMCAStringCountSubstring(
+    PSTR pszHaystack,
+    PCSTR pszNeedle,
+    int** ppnCount
+);
+
+DWORD
 VMCAStringCatA(
     PSTR strDestination,
     size_t numberOfElements,
@@ -602,6 +617,11 @@ VMCAOpenFilePath(
     FILE** fp
     );
 
+DWORD
+VMCACopyFile(
+    PCSTR pszSrc,
+    PCSTR pszDest
+    );
 
 DWORD
 VMCARestrictDirectoryAccess(
@@ -1347,6 +1367,17 @@ VMCAConfigGetDword(
     );
 
 DWORD
+VMCAConfigSetDword(
+    PCSTR  pcszValueName,
+    DWORD  dwInput
+    );
+
+BOOLEAN
+VMCAConfigIsServerOptionEnabled(
+    VMCA_SERVER_OPTION  option
+    );
+
+DWORD
 VMCAAccountDnToUpn(
     PSTR dn,
     PSTR *retUpn
@@ -1382,7 +1413,7 @@ VMCAGetWin32ErrorDesc(
     DWORD dwUnixError
     );
 
-#endif 
+#endif
 
 #ifdef __cplusplus
 }

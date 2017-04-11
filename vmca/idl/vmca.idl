@@ -42,14 +42,14 @@ interface vmca
     {
         unsigned32 dwCount;
         [size_is(dwCount)] unsigned char* buffer;
-    }VMCA_FILE_BUFFER, *PVMCA_FILE_BUFFER;
+    } VMCA_FILE_BUFFER, *PVMCA_FILE_BUFFER;
 
     typedef enum {
         CERTIFICATE_ACTIVE  = 0,
         CERTIFICATE_REVOKED = 1,
         CERTIFIFCATE_EXPIRED  = 2,
         CERTIFICATE_ALL   = 4
-    }CERTIFICATE_STATUS;
+    } CERTIFICATE_STATUS;
 
     cpp_quote("#endif")
 
@@ -149,5 +149,20 @@ interface vmca
 
     unsigned32
     VMCARpcReGenCRL (
+        );
+
+    unsigned32
+    RpcVMCASetServerOption(
+        [in] unsigned32 dwOption
+        );
+
+    unsigned32
+    RpcVMCAUnsetServerOption(
+        [in] unsigned32 dwOption
+        );
+
+    unsigned32
+    RpcVMCAGetServerOption(
+        [out] unsigned32 *pdwOption
         );
 }

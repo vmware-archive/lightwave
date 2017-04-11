@@ -203,6 +203,22 @@ VmwSockSetNonBlocking(
     );
 
 /**
+ * @brief sets socket to time out
+ *
+ * @param[in] pSocket Pointer to socket
+ * @param[in] dwTimeOut Timeout value
+ *
+ * @return 0 on success
+ */
+
+DWORD
+VmwSockSetTimeOut(
+    PVM_SOCKET           pSocket,
+    DWORD                dwTimeOut
+    );
+
+
+/**
  * @brief Retrieves the protocol the socket has been configured with
  *
  * @param[in]     pSocket     Pointer to socket

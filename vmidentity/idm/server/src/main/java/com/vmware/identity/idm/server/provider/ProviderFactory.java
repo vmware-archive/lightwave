@@ -48,12 +48,12 @@ public class ProviderFactory implements IProviderFactory
             {
                 case IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY:
                 {
-                    provider = new ActiveDirectoryProvider(store);
+                    provider = new ActiveDirectoryProvider(tenantName, store);
                     break;
                 }
                 case IDENTITY_STORE_TYPE_LDAP:
                 {
-                    provider = new LdapProvider(store, trustedCertificates);
+                    provider = new LdapProvider(tenantName, store, trustedCertificates);
                     break;
                 }
                 case IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING:
@@ -74,11 +74,11 @@ public class ProviderFactory implements IProviderFactory
                          ( ServerUtils.isNullOrEmpty(storeDataEx.getAlias()) == false ) )
                     {
 
-                        provider = new SystemDomainAliasedProvider( store, settings.getServiceProviderSystemDomianUserAliases() );
+                        provider = new SystemDomainAliasedProvider(tenantName, store, settings.getServiceProviderSystemDomianUserAliases() );
                     }
                     else
                     {
-                        provider = new VMwareDirectoryProvider(store, isSystemDomain);
+                        provider = new VMwareDirectoryProvider(tenantName, store, isSystemDomain);
                     }
                     break;
                 }

@@ -1404,7 +1404,8 @@ VmDnsSecGssAcceptSecCtx(
     BAIL_ON_VMDNS_INVALID_POINTER(ppRespTkey, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pbAuthSuccess, dwError);
 
-    pszKeyName = pReqTkey->pszName;
+    dwError = VmDnsStringToLower(pReqTkey->pszName, &pszKeyName);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSecBlobToGssBuffer(
                             pReqTkey->Data.TKEY.pKey,

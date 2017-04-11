@@ -51,12 +51,14 @@ import com.vmware.identity.openidconnect.protocol.JWTUtils;
 public class TestUtil {
     public static MockHttpServletRequest createGetRequest(Map<String, String> params) {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "");
+        request.setServerName(TestContext.SERVER_NAME);
         request.setParameters(multiValuedMap(params));
         return request;
     }
 
     public static MockHttpServletRequest createPostRequest(Map<String, String> params) throws IOException {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "");
+        request.setServerName(TestContext.SERVER_NAME);
         request.setContentType("application/x-www-form-urlencoded");
         request.setParameters(multiValuedMap(params));
         return request;

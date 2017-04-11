@@ -29,7 +29,7 @@
   <target name="install.vmware-dependencies">
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${tcRoot}/noarch/apache-maven-3.0.3" />
-      <arg line="install:install-file -Dfile=${GOBUILD_RD_AUTHENTICATION_FRAMEWORK_ROOT}/lib64/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+      <arg line="install:install-file -Dfile=${LIGHTWAVE_VMAFD_ROOT}/lib64/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${IDM_VERSION} -Dpackaging=jar" />
     </exec>
   </target>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -45,6 +45,9 @@ extern "C" {
 #define DEFAULT_LDAPS_PORT_NUM          636
 #define DEFAULT_LDAPS_PORT_STR          "636"
 
+#define DEFAULT_REST_PORT_NUM           7477
+#define DEFAULT_REST_PORT_STR           "7477"
+
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
 #define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
@@ -63,6 +66,7 @@ extern "C" {
 #define CFG_INDEX_ORGANIZATION_DN               "cn=organization,cn=config"
 #define SERVER_STATUS_DN                        "cn=serverstatus"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
+#define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -228,6 +232,10 @@ extern "C" {
 
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR       "nTSecurityDescriptor"
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR_LEN   sizeof(ATTR_OBJECT_SECURITY_DESCRIPTOR)-1
+
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR      "defaultSecurityDescriptor"
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR_LEN  sizeof(ATTR_DEFAULT_SECURITY_DESCRIPTOR)-1
+
 #define ATTR_ORG_LIST_DESC                    "vmwAttrOrganizationList"
 #define VDIR_ATTRIBUTE_SEQUENCE_RID           "vmwRidSequenceNumber"
 
@@ -249,6 +257,9 @@ extern "C" {
 #define ATTR_PASS_SPECIAL_CHARS             "vmwPasswordSpecialChars"
 // Attributes related to support for "functional levels" in vmdir
 #define ATTR_DOMAIN_FUNCTIONAL_LEVEL        "vmwDomainFunctionalLevel"
+#define ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL    "vmwMaximumDomainFunctionalLevel"
+#define ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL_LEN sizeof(ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL)-1
+
 #define ATTR_FOREST_FUNCTIONAL_LEVEL        "vmwForestFunctionalLevel"
 #define ATTR_SERVER_VERSION                 "vmwServerVersion"
 #define ATTR_PSC_VERSION                    "vmwPlatformServicesControllerVersion"
@@ -412,6 +423,23 @@ extern "C" {
 #define REPL_STATUS_ORIGINATING_USN     "MaxOriginatingUSN: "
 #define REPL_STATUS_ORIGINATING_USN_LEN  sizeof(REPL_STATUS_ORIGINATING_USN)-1
 
+#define SCHEMA_REPL_STATUS_CN                       "SchemaReplStatus"
+#define SCHEMA_REPL_STATUS_HOST_NAME                "Host Name"
+#define SCHEMA_REPL_STATUS_DOMAIN_NAME              "Domain Name"
+#define SCHEMA_REPL_STATUS_CHECK_INITIATED          "Check Initiated"
+#define SCHEMA_REPL_STATUS_CHECK_SUCCEEDED          "Check Succeeded"
+#define SCHEMA_REPL_STATUS_TREE_IN_SYNC             "Tree In Sync"
+#define SCHEMA_REPL_STATUS_BLOB_IN_SYNC             "Blob In Sync"
+#define SCHEMA_REPL_STATUS_ATTR_MISSING_IN_TREE     "Attr Missing In Tree"
+#define SCHEMA_REPL_STATUS_ATTR_MISMATCH_IN_TREE    "Attr Mismatch In Tree"
+#define SCHEMA_REPL_STATUS_CLASS_MISSING_IN_TREE    "Class Missing In Tree"
+#define SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_TREE   "Class Mismatch In Tree"
+#define SCHEMA_REPL_STATUS_ATTR_MISSING_IN_BLOB     "Attr Missing In Blob"
+#define SCHEMA_REPL_STATUS_ATTR_MISMATCH_IN_BLOB    "Attr Mismatch In Blob"
+#define SCHEMA_REPL_STATUS_CLASS_MISSING_IN_BLOB    "Class Missing In Blob"
+#define SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_BLOB   "Class Mismatch In Blob"
+#define SCHEMA_REPL_STATUS_REFRESH_IN_PROGRESS      "Refresh In Progress"
+
 #define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
 #define VMDIR_SERVERS_CONTAINER_NAME    "Servers"
 #define VMDIR_SERVICES_CONTAINER_NAME   "Services"
@@ -441,9 +469,6 @@ extern "C" {
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
-
-// vmw OID for Strong Consistency Write Control
-#define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
 
 #ifndef _WIN32
 #define VMDIR_NCALRPC_END_POINT "vmdirsvc"

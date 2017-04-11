@@ -82,7 +82,9 @@ public class IdentityProviderMapper {
                        .withBaseDnForNestedGroupsEnabled(isBaseDnForNestedGroupsEnabled(extendedIdentityStoreData.getFlags()))
                        .withDirectGroupsSearchEnabled(isDirectGroupsSearchEnabled(extendedIdentityStoreData.getFlags()))
                        .withSiteAffinityEnabled(isSiteAffinityEnabled(extendedIdentityStoreData.getFlags()))
-                       .withCertificates(CertificateMapper.getCertificateDTOs(extendedIdentityStoreData.getCertificates()));
+                       .withCertificates(CertificateMapper.getCertificateDTOs(extendedIdentityStoreData.getCertificates()))
+                       .withLinkAccountWithUPN(extendedIdentityStoreData.getCertLinkingUseUPN())
+                       .withHintAttributeName(extendedIdentityStoreData.getCertUserHintAttributeName());
                 // Set schema mappings if any.
                 IdentityStoreSchemaMapping idmSchemaMappings = extendedIdentityStoreData.getIdentityStoreSchemaMapping();
                 if (idmSchemaMappings != null) {
@@ -150,14 +152,19 @@ public class IdentityProviderMapper {
 
             case IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY:
                 // TODO : Cleanup IDM code to customize configurable parameters.
-                identityStore = IdentityStoreData.createActiveDirectoryIdentityStoreData(identityProvider.getName(),
+                identityStore = IdentityStoreData.createActiveDirectoryIdentityStoreDataWithPIVControls(identityProvider.getName(),
                                 identityProvider.getUsername(),
                                 identityProvider.isMachineAccount() != null ? identityProvider.isMachineAccount() : false,
                                 identityProvider.getServicePrincipalName(),
                                 identityProvider.getPassword(),
                                 identityProvider.getAttributesMap(),
                                 identityProvider.getSchema() != null ? populateObjectMappingData(identityProvider.getSchema()) : null,
-                                null);
+                                0, //flags
+                                null, //authnTypes
+                                identityProvider.getHintAttributeName(),
+                                identityProvider.getLinkAccountWithUPN()
+                                );
+
                  break;
 
             case IDENTITY_STORE_TYPE_LDAP:
@@ -182,7 +189,9 @@ public class IdentityProviderMapper {
                                                                                           identityProvider.isDirectGroupsSearchEnabled(),
                                                                                           identityProvider.isSiteAffinityEnabled()),
                                                                                   CertificateMapper.getX509Certificates(identityProvider.getCertificates()),
-                                                                                  null);
+                                                                                  null,
+                                                                                  identityProvider.getHintAttributeName(),
+                                                                                  identityProvider.getLinkAccountWithUPN());
                 break;
 
             case IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING:
@@ -207,7 +216,9 @@ public class IdentityProviderMapper {
                                                                                           identityProvider.isDirectGroupsSearchEnabled(),
                                                                                           identityProvider.isSiteAffinityEnabled()),
                                                                                      CertificateMapper.getX509Certificates(identityProvider.getCertificates()),
-                                                                                     null);
+                                                                                     null,
+                                                                                     identityProvider.getHintAttributeName(),
+                                                                                     identityProvider.getLinkAccountWithUPN());
                 break;
 
             default:

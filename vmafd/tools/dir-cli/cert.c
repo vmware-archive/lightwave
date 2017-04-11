@@ -126,7 +126,7 @@ DirCliGetCertContent(
     dwError = VmAfdAllocateMemory(fileSize + 1, (PVOID*)&pszContent);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdOpenFilePath(pszCertPath, "rb", &fp);
+    dwError = VmAfdOpenFilePath(pszCertPath, "rb", &fp, 0);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     bytesToRead = fileSize;

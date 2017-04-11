@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2010 VMware, Inc. All rights reserved. VMware confidential. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+   xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+
+   xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+      http://www.springframework.org/schema/aop
+      http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+      http://www.springframework.org/schema/tx
+      http://www.springframework.org/schema/tx/spring-tx-2.5.xsd">
+
+   <!-- HTTP Server Beans -->
+   <bean id="ls_httpResponseCorrelator" class="com.vmware.vim.vmomi.server.impl.Correlator" />
+
+   <bean id="ls_localClient" class="com.vmware.vim.vmomi.server.impl.LocalClientImpl">
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_localCorrelator" />
+      <constructor-arg ref="ls_validationStartStep" />
+      <constructor-arg ref="ls_localFilterStartStep" />
+   </bean>
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VMOMI Server Beans -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="ls_lsVmodlContext" class="com.vmware.vim.vmomi.core.types.VmodlContext"
+      factory-method="initContext">
+
+      <constructor-arg>
+         <list>
+            <value>com.vmware.vim.binding.lookup</value>
+         </list>
+      </constructor-arg>
+   </bean>
+
+   <bean id="ls_versionFinder" class="com.vmware.vim.lookup.vlsi.util.VersionFinder"
+      depends-on="ls_lsVmodlContext" />
+
+   <bean id="ls_lsVersion" factory-bean="ls_versionFinder" factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.lookup.version.version1" />
+   </bean>
+
+   <bean id="ls_lsVersion1_5" factory-bean="ls_versionFinder"
+         factory-method="findVersion">
+
+        <constructor-arg
+                value="com.vmware.vim.binding.lookup.version.version1_5" />
+   </bean>
+
+   <bean id="ls_lsVersion2" factory-bean="ls_versionFinder" factory-method="findVersion">
+      <constructor-arg value="com.vmware.vim.binding.lookup.version.version2" />
+   </bean>
+
+   <bean id="ls_lsVersion3_0" factory-bean="ls_versionFinder" factory-method="findVersion">
+      <constructor-arg value="com.vmware.vim.binding.lookup.version.version3_0" />
+   </bean>
+
+   <bean id="ls_lsInternalVersion" factory-bean="ls_versionFinder" factory-method="findVersion">
+      <constructor-arg value="com.vmware.vim.binding.lookup.version.internal.version1" />
+   </bean>
+
+   <bean id="ls_lsInternalVersion1_5" factory-bean="ls_versionFinder"
+            factory-method="findVersion">
+     <constructor-arg
+           value="com.vmware.vim.binding.lookup.version.internal.version1_5" />
+   </bean>
+
+   <bean id="ls_lsInternalVersion2" factory-bean="ls_versionFinder" factory-method="findVersion">
+         <constructor-arg value="com.vmware.vim.binding.lookup.version.internal.version2" />
+   </bean>
+
+   <bean id="ls_lsInternalVersion3_0" factory-bean="ls_versionFinder" factory-method="findVersion">
+         <constructor-arg value="com.vmware.vim.binding.lookup.version.internal.version3_0" />
+   </bean>
+
+   <bean id="ls_sessionManager"
+      class="com.vmware.vim.vmomi.server.session.impl.SessionManagerImpl" />
+   <bean id="ls_dispatcher" class="com.vmware.vim.vmomi.server.impl.DispatcherImpl"
+      depends-on="ls_lsVmodlContext">
+
+      <constructor-arg ref="ls_sessionManager" />
+
+      <property name="versionUriHandlers">
+         <list>
+            <ref bean="ls_bodyHandler" />
+            <ref bean="ls_internalBodyHandler" />
+            <ref bean="ls_lsBodyHandler_v1_5" />
+            <ref bean="ls_lsInternalBodyHandler_v1_5" />
+            <ref bean="ls_lsBodyHandler_v2" />
+            <ref bean="ls_lsInternalBodyHandler_v2" />
+            <ref bean="ls_lsBodyHandler_v3_0" />
+            <ref bean="ls_lsInternalBodyHandler_v3_0" />
+         </list>
+      </property>
+   </bean>
+
+   <bean id="ls_adapterServer"
+         class="com.vmware.vim.vmomi.server.impl.AdapterServerImpl"
+         depends-on="ls_lsVmodlContext"   />
+
+   <bean id="ls_bodyHandler" class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+
+      <constructor-arg ref="ls_lsVersion" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <bean id="ls_internalBodyHandler" class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ls_lsInternalVersion" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <bean id="ls_lsBodyHandler_v1_5"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+
+        <constructor-arg ref="ls_lsVersion1_5" />
+        <constructor-arg ref="ls_adapterServer" />
+        <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+   <bean id="ls_lsInternalBodyHandler_v1_5"
+            class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+     <constructor-arg ref="ls_lsInternalVersion1_5" />
+     <constructor-arg ref="ls_adapterServer" />
+     <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <bean id="ls_lsBodyHandler_v2"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+
+        <constructor-arg ref="ls_lsVersion2" />
+        <constructor-arg ref="ls_adapterServer" />
+        <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <bean id="ls_lsBodyHandler_v3_0"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+
+        <constructor-arg ref="ls_lsVersion3_0" />
+        <constructor-arg ref="ls_adapterServer" />
+        <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <bean id="ls_lsInternalBodyHandler_v2"
+            class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+     <constructor-arg ref="ls_lsInternalVersion2" />
+     <constructor-arg ref="ls_adapterServer" />
+     <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <bean id="ls_lsInternalBodyHandler_v3_0"
+            class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+     <constructor-arg ref="ls_lsInternalVersion3_0" />
+     <constructor-arg ref="ls_adapterServer" />
+     <constructor-arg ref="ls_lsVmodlContext" />
+   </bean>
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VLSI Pipeline Configuration -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+     <bean id="firstStep"
+      class="com.vmware.vim.vmomi.server.http.impl.CorrelationDispatcherStep">
+      <property name="nextStep"><ref bean="ls_validationStartStep"/></property>
+      <property name="completionStep"><ref bean="ls_filterStartStep"/></property>
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="dispatcher"><ref bean="ls_dispatcher"/></property>
+      <property name="correlator"><ref bean="ls_httpResponseCorrelator"/></property>
+   </bean>
+
+   <bean id="ls_validationStartStep"
+      class="com.vmware.identity.vlsi.STSDiagnosticLogValidationStartStep">
+      <property name="nextStep"><ref bean="ls_invocationStep"/></property>
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="adapterServer"><ref bean="ls_adapterServer"/></property>
+      <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="ls_invocationStep"
+      class="com.vmware.identity.vlsi.STSDiagnosticLogInvocationStep">
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="ls_filterStartStep"
+      class="com.vmware.vim.vmomi.server.impl.FilterStartStep">
+      <property name="nextStep"><ref bean="ls_completionContinuerStep"/></property>
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="adapterServer"><ref bean="ls_adapterServer"/></property>
+   </bean>
+
+   <bean id="ls_localFilterStartStep"
+      class="com.vmware.vim.vmomi.server.impl.FilterStartStep">
+      <property name="nextStep"><ref bean="ls_localCompletionStep"/></property>
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="adapterServer"><ref bean="ls_adapterServer"/></property>
+   </bean>
+
+   <bean id="ls_localCompletionStep"
+      class="com.vmware.vim.vmomi.server.impl.LocalCompletionStep">
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="correlator"><ref bean="ls_localCorrelator"/></property>
+   </bean>
+
+   <bean id="ls_localCorrelator"
+      class="com.vmware.vim.vmomi.server.impl.Correlator"/>
+
+   <bean id="ls_completionContinuerStep"
+      class="com.vmware.vim.vmomi.server.http.impl.CompletionContinuerStep">
+      <!-- This is the last step - no nextStep -->
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="correlator"><ref bean="ls_httpResponseCorrelator"/></property>
+      <property name="vmodlContext"><ref bean="ls_lsVmodlContext"/></property>
+      <property name="responder"><ref bean="ls_vmomiResponder"/></property>
+   </bean>
+
+   <bean id="ls_vmomiResponder"
+      class="com.vmware.vim.vmomi.server.http.impl.AsyncCompleteResponder" />
+
+   <bean id = "eventListenerBean" class="com.vmware.vim.lookup.impl.LookupApplicationListener" />
+
+   <bean id="firstMobStep" class="com.vmware.vim.vmomi.server.mob.impl.MobProcessingStep">
+      <constructor-arg>
+         <ref bean="executor"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_adapterServer"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_localClient"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_sessionManager"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_mobAuthenticator"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_lsVersion3_0"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_lsVmodlContext"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_serviceInstanceMO"/>
+      </constructor-arg>
+      <constructor-arg>
+         <ref bean="ls_mobResponder"/>
+      </constructor-arg>
+      <constructor-arg value="/lookupservice/mob"/>
+   </bean>
+
+   <bean id="ls_mobAuthenticator" class="com.vmware.vim.lookup.vlsi.MobAuthenticator">
+     <constructor-arg ref="ls_ssoServerAdapter" />
+   </bean>
+
+   <bean id="ls_mobResponder" class="com.vmware.vim.vmomi.server.mob.impl.AsyncCompleteResponder"/>
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- LS Server Beans -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="ls_serverConfiguration" class="com.vmware.vim.lookup.impl.ServerConfiguration" factory-method="getInstance" >
+   </bean>
+
+   <bean id="ls_storage" class="com.vmware.vim.lookup.impl.LdapStorage">
+      <constructor-arg ref="ls_serverConfiguration" />
+   </bean>
+
+   <bean id="ls_lookupService" class="com.vmware.vim.lookup.impl.LookupServiceImpl">
+      <constructor-arg ref="ls_storage" />
+   </bean>
+
+   <bean id="ls_serviceRegistration" class="com.vmware.vim.lookup.impl.ServiceRegistrationImpl">
+      <constructor-arg ref="ls_storage" />
+   </bean>
+
+   <bean id="ls_ssoServerAdapter" class="com.vmware.vim.lookup.impl.SameServerSsoAdapter">
+      <constructor-arg>
+         <bean class="com.vmware.vim.lookup.impl.SsoServerAdapterImpl">
+            <constructor-arg ref="ls_lookupService" />
+         </bean>
+      </constructor-arg>
+   </bean>
+
+   <bean id="ls_vlsiAuthorizationDataParser" class="com.vmware.vim.lookup.vlsi.VlsiAuthorizationDataParser"
+      depends-on="ls_lsVmodlContext">
+      <constructor-arg ref="ls_ssoServerAdapter" />
+   </bean>
+
+   <bean id="ls_securityChecker" class="com.vmware.vim.lookup.impl.SecurityCheckerImpl" >
+      <constructor-arg ref="ls_storage" />
+      <constructor-arg ref="ls_ssoServerAdapter" />
+   </bean>
+
+   <bean id="ls_vlsiSecurityChecker" class="com.vmware.vim.lookup.vlsi.VlsiSecurityChecker" >
+      <constructor-arg ref="ls_securityChecker" />
+      <constructor-arg ref="ls_vlsiAuthorizationDataParser" />
+   </bean>
+
+   <!-- LS Managed Object Beans -->
+
+   <bean id="ls_lookupServiceMO" class="com.vmware.vim.lookup.vlsi.LookupServiceImpl">
+
+      <constructor-arg value="lookupService" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_lookupService" />
+      <constructor-arg ref="ls_vlsiSecurityChecker" />
+   </bean>
+
+   <bean id="ls_serviceRegistrationMO" class="com.vmware.vim.lookup.vlsi.ServiceRegistrationImpl">
+
+      <constructor-arg value="ServiceRegistration" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_serviceRegistration" />
+      <constructor-arg ref="ls_vlsiSecurityChecker" />
+   </bean>
+
+   <bean id="ls_deploymentInformationServiceMO" class="com.vmware.vim.lookup.vlsi.DeploymentInformationServiceImpl">
+
+      <constructor-arg value="deploymentInformationService" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_vlsiSecurityChecker" />
+      <constructor-arg ref="ls_serverConfiguration" />
+   </bean>
+
+   <bean id="ls_l10nMO" class="com.vmware.vim.lookup.vlsi.L10nImpl">
+      <constructor-arg value="l10n" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg value="locales" />
+   </bean>
+
+   <bean id="ls_serviceContent" class="com.vmware.vim.binding.lookup.ServiceContent">
+
+      <property name="lookupService">
+         <bean factory-bean="ls_lookupServiceMO" factory-method="_getRef" />
+      </property>
+      <property name="serviceRegistration">
+         <bean factory-bean="ls_serviceRegistrationMO" factory-method="_getRef" />
+      </property>
+      <property name="deploymentInformationService">
+         <bean factory-bean="ls_deploymentInformationServiceMO" factory-method="_getRef" />
+      </property>
+      <property name="l10n">
+         <bean factory-bean="ls_l10nMO" factory-method="_getRef" />
+      </property>
+   </bean>
+
+   <bean id="ls_serviceInstanceMO" class="com.vmware.vim.lookup.vlsi.ServiceInstanceImpl">
+
+      <constructor-arg value="ServiceInstance" />
+      <constructor-arg ref="ls_adapterServer" />
+      <constructor-arg ref="ls_serviceContent" />
+   </bean>
+</beans>

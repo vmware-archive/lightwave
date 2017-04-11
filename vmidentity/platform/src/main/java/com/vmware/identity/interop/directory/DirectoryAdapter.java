@@ -119,6 +119,14 @@ public class DirectoryAdapter extends NativeAdapter
             String              tgtPassword
         );
 
+        int
+        VmDirDeleteTenant
+        (
+            String              adminId,
+            String              password,
+            String              domainName
+        );
+
     }
     private static final DirectoryAdapter _instance = new DirectoryAdapter();
 
@@ -145,6 +153,24 @@ public class DirectoryAdapter extends NativeAdapter
                                             domainName,
                                             administratorId,
                                             password));
+    }
+
+    @Override
+    public
+    void
+    DeleteDirectoryInstance(
+            String domainName,
+            String administratorId,
+            String password)
+    {
+        Validate.validateNotEmpty(administratorId, "administrator id");
+        Validate.validateNotEmpty(password, "password");
+        Validate.validateNotEmpty(domainName, "domain name");
+
+        CheckError(DirectoryClientLibrary.INSTANCE.VmDirDeleteTenant(
+                                            administratorId,
+                                            password,
+                                            domainName));
     }
 
     @Override

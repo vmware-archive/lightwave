@@ -47,10 +47,11 @@ public class SAMLNames
     public static final String ENTDESCRIPTOR = "EntityDescriptor";
     public static final String SPSSODESCRIPTOR = "SPSSODescriptor";
     public static final String IDPSSODESCRIPTOR = "IDPSSODescriptor";
+    public static final String ENTITY_ID_PLACEHOLDER = "/SAML2/Metadata/";
     public static final String ASSERTIONCONSUMERSERVICE =
             "AssertionConsumerService";
-    public static final String SP_ASSERTIONCONSUMERSERVICE_PLACEHOLDER ="SsoClient/SSO";
-    public static final String SP_SINGLELOGOUTSERVICE_PLACEHOLDER = "SsoClient/SLO";
+    public static final String SP_ASSERTIONCONSUMERSERVICE_PLACEHOLDER = "/SAML2/SP/ACS/";
+    public static final String SP_SINGLELOGOUTSERVICE_PLACEHOLDER = "/SAML2/SP/SLO/";
     public static final String SINGLELOGOUTSERVICE = "SingleLogoutService";
     public static final String SINGLESIGNONSERVICE = "SingleSignOnService";
     public static final String EXTENSIONS = "Extensions";
@@ -160,6 +161,7 @@ public class SAMLNames
     public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     public static final String UTC = "UTC";
     public static final String X509 = "X.509";
+
 
     //This enum allow using saml keywords as enum.
     //The names has to match the keyword strings.

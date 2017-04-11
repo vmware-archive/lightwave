@@ -22,4 +22,4 @@ $JAVA_BIN $JAVA_OPTS     \
           -Dlog4j.configurationFile=$LOG_CONFIG \
           -Dvmware.log.dir=/var/log/vmware/sso \
           -cp $CLASSPATH \
-          com.vmware.identity.ssoconfig.SsoConfig "$@"
+com.vmware.identity.ssoconfig.SSOConfigCommand "$@"

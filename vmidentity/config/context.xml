@@ -12,4 +12,7 @@
             <Valve className="org.apache.catalina.valves.CometConnectionManagerValve" />
             -->
     <WatchedResource>${catalina.base}/conf/web.xml</WatchedResource>
+    <JarScanner scanClassPath="false" />
+    <Resources cachingAllowed="true" cacheMaxSize="100000" />
+
 </Context>

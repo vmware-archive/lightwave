@@ -17,22 +17,11 @@ package com.vmware.identity.rest.afd.server.util;
 /**
  * Generic configuration class - mostly just contains a great deal of static values
  *
- * TODO make this configurable
+ * @author Balaji Boggaram Ramanarayan
+ * @author Travis Hall
  */
 public class Config {
 
-    public static final String RESOURCE_SERVER_AUDIENCE = "rs_admin_server";
-
-    public static final String X_SSL_SECURE_HEADER = "X-SSL-SECURE";
-    public static final String CORRELATION_ID_HEADER = "id";
-    public static final String ACCESS_TOKEN_HEADER = "Authorization";
-
-    public static final String ACCESS_TOKEN_PARAMETER = "access_token";
-    public static final String TOKEN_TYPE_PARAMETER = "token_type";
-
-    public static final String JWT_ROLE_FIELD = "admin_server_role";
-    public static final String JWT_HOK_FIELD = "hotk";
-
-    public static final int HOK_MINUTES_OF_SKEW = 15;
+    public static final String LOCALIZATION_PACKAGE_NAME = "i18n.afd";
 
 }

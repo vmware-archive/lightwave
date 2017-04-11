@@ -149,6 +149,10 @@ public interface ISystemDomainIdentityProvider extends IIdentityProvider
 
     String getSiteId() throws Exception;
 
+    boolean doesContainerExist(String containerName) throws Exception;
+
+    void addContainer(String containerName) throws Exception;
+
     //GroupName is in domainFqdn\\groupName
     List<String> findGroupsForFsps(List<String> fspIds) throws Exception;
 

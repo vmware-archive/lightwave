@@ -5,15 +5,14 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_0.AttributedDateTime;
 
 
 /**
  * <p>Java class for LifetimeType complex type.
- *
+ * 
  * <p>The following schema fragment specifies the expected content contained within this class.
- *
+ * 
  * <pre>
  * &lt;complexType name="LifetimeType">
  *   &lt;complexContent>
@@ -26,8 +25,8 @@ import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_0
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- *
- *
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "LifetimeType", propOrder = {
@@ -43,11 +42,11 @@ public class LifetimeType {
 
     /**
      * Gets the value of the created property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public AttributedDateTime getCreated() {
         return created;
@@ -55,11 +54,11 @@ public class LifetimeType {
 
     /**
      * Sets the value of the created property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public void setCreated(AttributedDateTime value) {
         this.created = value;
@@ -67,11 +66,11 @@ public class LifetimeType {
 
     /**
      * Gets the value of the expires property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public AttributedDateTime getExpires() {
         return expires;
@@ -79,14 +78,14 @@ public class LifetimeType {
 
     /**
      * Sets the value of the expires property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link AttributedDateTime }
-     *
+     *     
      */
     public void setExpires(AttributedDateTime value) {
-      this.expires = value;
-   }
+        this.expires = value;
+    }
 
 }

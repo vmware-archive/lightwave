@@ -3,7 +3,7 @@
 # entry into container
 
 JSVC_BIN=/var/opt/commons-daemon-1.0.15/bin/jsvc
-JAVA_HOME=/var/opt/OpenJDK-1.8.0.102-bin
+JAVA_HOME=/var/opt/OpenJDK-1.8.0.112-bin
 
 function stop_idmd {
     local SERVICE_NAME=vmware-idmd
@@ -72,7 +72,7 @@ if [ $? -ne 0 ]; then
 fi
 
 /opt/likewise/sbin/lwsmd &
-sleep 5
+sleep 1
 
 echo "perform autostart"
 /opt/likewise/bin/lwsm autostart

@@ -51,8 +51,6 @@ import org.xml.sax.SAXException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vmware.identity.configure.STSHealthChecker;
-
 public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
     private static final String ID = "vmware-secure-token-service";
@@ -76,15 +74,10 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private String sslImplementationName="";
     private String keyAlias ="";
     private String keyStoreType ="";
-    private STSHealthChecker stsHealthChecker;
 
-    public SecureTokenServerInstaller() {
-        params = null;
-	stsHealthChecker = new STSHealthChecker();
-    }
+
     public SecureTokenServerInstaller(VmIdentityParams installParams) {
         params = installParams;
-	stsHealthChecker = new STSHealthChecker();
     }
 
     @Override
@@ -94,20 +87,16 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         log.info("Configuring STS");
         configureSTS();
 
-        String tcSTSBase = InstallerUtils.getInstallerHelper().getTCBase(); 
-        Path tomcatTempDir = Paths.get(tcSTSBase, "temp");
-        if (!Files.exists(tomcatTempDir)) {
-            Files.createDirectories(tomcatTempDir);
-        }
         // Only on Windows the STS service has to be installed as a service
         installInstAsWinService();
 
         startSTSService();
-        //TODO: Properly install ROOT hosting index.html SSO landing page
-        //configureInfraNodeHomePage();
+        String portNumber = HostnameReader.readPortNumber();
+        if (portNumber == null) {
+            throw new SecureTokenServerInstallerException("Invalid port number" , null);
+        }
 
-	// Validate to make sure all STS service endpoints are up and listening
-        stsHealthChecker.checkHealth(hostnameURL);
+        new STSHealthChecker(hostnameURL, HostnameReader.readPortNumber()).checkHealth();
     }
 
     private void initialize() {
@@ -117,40 +106,6 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         }
     }
 
-   private void configureInfraNodeHomePage()
-            throws SecureTokenServerInstallerException {
-        // TODO: Do configuration specific for install type. This does the
-        // configuration for infrastructure node
-
-        String webappDir = InstallerUtils.joinPath(InstallerUtils
-                .getInstallerHelper().getTCBase(), "webapps");
-        log.info("Configure ROOT index.html on infrastructure node");
-
-        String rootPagePath = InstallerUtils.joinPath(webappDir, "ROOT",
-                "index.html");
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(
-                rootPagePath))) {
-
-            writer.append("<html>");
-            writer.append(System.lineSeparator());
-            writer.append("<head>");
-            writer.append(System.lineSeparator());
-            writer.append(String
-                    .format("<meta http-equiv=\"refresh\" content=\"0;URL=http://%s/websso/\">%s",
-                            hostnameURL, System.lineSeparator()));
-            writer.append("</head>");
-            writer.append(System.lineSeparator());
-            writer.append("<body> </body>");
-            writer.append(System.lineSeparator());
-            writer.append("</html>");
-            writer.append(System.lineSeparator());
-
-        } catch (IOException e) {
-            log.error("Failed to configure InfraNodeHomePage", e);
-            throw new SecureTokenServerInstallerException(
-                    "Failed to configure InfraNodeHomePage", e);
-        }
-    }
     private void startSTSService() throws SecureTokenServerInstallerException {
 
         ProcessBuilder pb = new ProcessBuilder(InstallerUtils
@@ -183,15 +138,16 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
             throws SecureTokenServerInstallerException {
         if (SystemUtils.IS_OS_WINDOWS) {
 
+            createJavaSecurityFile();
             String wrapper_bin = new WinInstallerHelper().getWrapperBinPath();
             String wrapper_exe = InstallerUtils.joinPath(wrapper_bin, "wrapper.exe");
             String wrapper_conf = InstallerUtils.joinPath(InstallerUtils
                         .getInstallerHelper().getTCBase(), "conf", "wrapper.conf");
 
             // Install STS instance as windows service using Service controller
-            String sc_binPath = wrapper_exe + " -s " +  wrapper_conf ;
-            String command = "sc.exe create VMwareSTS type= own start= auto error= normal binPath= "+sc_binPath+ " depend= VMwareIdentityMgmtService displayname= \"VMware Secure Token Service\" ";
-
+            String sc_binPath = "\"" + wrapper_exe + " -s " +  wrapper_conf +"\"";
+            String command = "sc.exe create VMwareSTS  type= own start= auto error= normal binPath= "+sc_binPath+ " depend= VMwareIdentityMgmtService displayname= \"VMware Secure Token Service\" ";
+            System.out.println(command);
             int exitCode = -1;
             try {
                 Process p = Runtime.getRuntime().exec(command);
@@ -266,19 +222,20 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     }
 
     @Override
-    public void upgrade() throws Exception{
-        if ( params.getBackupDir() != null) {
-            log.debug("SecureTokenServerInstaller : Upgrade");
-            mergeServerXMl();
-        }
-        if (params.getServiceStart()){
-            startSTSService();
-        }
+    public void upgrade() {
+        log.debug("SecureTokenServerInstaller : Upgrade");
+        mergeServerXMl();
+
     }
 
     @Override
     public void uninstall() {
         // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void migrate() {
 
     }
 
@@ -376,9 +333,9 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
     private void setServerAttributes() {
 
+	try {
         String filePath = InstallerUtils.joinPath( InstallerUtils.getInstallerHelper().getTCBase(),
                             "conf","server.xml");
-        try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document doc = builder.parse(new File(filePath));
             NodeList connectorList = doc.getElementsByTagName("Connector");
@@ -410,6 +367,17 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
             log.debug("SecureTokenServerInstaller : setServerAttributes - Completed");
         } catch (Exception ex) {
            log.error("SecureTokenServerInstaller : setServerAttributes - failed");
+        }
+
+    }
+    private void createJavaSecurityFile() {
+        try {
+        File  securityFile = new  File(InstallerUtils.joinPath(System.getenv("VMWARE_CFG_DIR"), "java","vmware-override-java.security"));
+        File vmIdentitySecurityFile = new File (InstallerUtils.joinPath(InstallerUtils
+                        .getInstallerHelper().getTCBase(), "conf","vmware-identity-override-java.security"));
+        Files.copy(securityFile.toPath(), vmIdentitySecurityFile.toPath());
+        } catch (Exception ex ) {
+            System.out.println("Failedin to create VMIdentity java security File");
         }
 
     }

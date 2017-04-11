@@ -961,6 +961,14 @@
             " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )")                  \
     },                                                                  \
     {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 47),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.281"                                   \
+            " NAME 'nTSecurityDescriptor'"                              \
+            " SYNTAX 1.2.840.113556.1.4.907"                            \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
     VMDIR_SF_INIT(.usAttrID, 0),                                        \
     VMDIR_SF_INIT(.pszDesc, NULL)                                       \
     },                                                                  \

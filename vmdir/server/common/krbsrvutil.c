@@ -45,6 +45,7 @@ static DWORD
 _VmKdcAsn1EncodeStringToKeys(
     krb5_keyblock *keyBlockArray,
     DWORD keyBlockArrayLen,
+    DWORD kvno,
     PBYTE *ppAsn1Keys,
     PDWORD asn1KeysLen);
 
@@ -72,6 +73,7 @@ _VmKdcStringToKeyEncrypt(
 static DWORD
 VmDirKeyTabMakeEntry(
     PCSTR pszUpnName,
+    int kvno,
     krb5_keyblock *key,
     PVMDIR_KEYTAB_ENTRY *ppRetKeyTabEntry);
 
@@ -332,6 +334,7 @@ static DWORD
 _VmKdcAsn1EncodeStringToKeys(
     krb5_keyblock *keyBlockArray,
     DWORD keyBlockArrayLen,
+    DWORD kvno,
     PBYTE *ppAsn1Keys,
     PDWORD asn1KeysLen)
 {
@@ -346,7 +349,7 @@ _VmKdcAsn1EncodeStringToKeys(
 
     inKeySet.attribute_major_vno = 1;
     inKeySet.attribute_minor_vno = 0;
-    inKeySet.kvno = VMKDC_DEFAULT_KVNO;
+    inKeySet.kvno = kvno;
     inKeySet.mkvno = NULL; // Optional, but should match current MKVNO
 
     dwError = VmDirAllocateMemory(sizeof(*krbKeyArray) * keyBlockArrayLen,
@@ -480,6 +483,7 @@ VmKdcStringToKeysEncrypt(
     PSTR password,
     PBYTE pKey,
     DWORD keyLen,
+    DWORD kvno,
     PBYTE *ppUpnKeys,
     PDWORD pUpnKeysLen)
 {
@@ -548,6 +552,7 @@ VmKdcStringToKeysEncrypt(
     dwError = _VmKdcAsn1EncodeStringToKeys(
                   keyBlocks,
                   2,
+                  kvno,
                   &pAsn1Keys,
                   &asn1KeysLen);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -618,6 +623,7 @@ VmKdcStringToKeys(
     dwError = _VmKdcAsn1EncodeStringToKeys(
                   keyBlocks,
                   2,
+                  VMKDC_DEFAULT_KVNO, /* TBD: Get real kvno */
                   &pAsn1Keys,
                   &asn1KeysLen);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -950,6 +956,7 @@ VmDirKeyTabFreeEntry(
 static DWORD
 VmDirKeyTabMakeEntry(
     PCSTR pszUpnName,
+    int kvno,
     krb5_keyblock *key,
     PVMDIR_KEYTAB_ENTRY *ppRetKeyTabEntry)
 {
@@ -991,6 +998,7 @@ VmDirKeyTabMakeEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pKeyTabEntry->key->heimKey.keytype = key->keytype;
+    pKeyTabEntry->kvno = kvno;
     err = krb5_heim_data_copy(
                &pKeyTabEntry->key->heimKey.keyvalue,
                key->keyvalue.data,
@@ -1090,6 +1098,7 @@ VmDirKeyTabWriteKeys(
         pKeyTabEntry = NULL;
         /* make a new keytab entry */
         dwError = VmDirKeyTabMakeEntry(pszUpnName,
+                                       keyset.kvno,
                                        (krb5_keyblock *)&keyset.keys.val[i].key,
                                        &pKeyTabEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1203,6 +1212,7 @@ VmDirKeyTabWriteKeysBlob(
         pKeyTabEntry = NULL;
         /* make a new keytab entry */
         dwError = VmDirKeyTabMakeEntry(pszUpnName,
+                                       keyset.kvno,
                                        (krb5_keyblock *)&keyset.keys.val[i].key,
                                        &pKeyTabEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1411,5 +1421,32 @@ error:
         krb5_heim_free_context(krb5Context);
     }
 
+    return dwError;
+}
+
+DWORD
+VmDirKeySetGetKvno(
+    PBYTE pUpnKeys,
+    DWORD upnKeysLen,
+    DWORD *kvno)
+{
+    DWORD       dwError = 0;
+    int         err = 0;
+    KrbKeySet   keyset = {0};
+    size_t      keysetLen = 0;
+
+    err = decode_KrbKeySet(pUpnKeys, upnKeysLen, &keyset, &keysetLen);
+    if (err || keysetLen <= 0)
+    {
+        dwError = ERROR_NO_MEMORY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    *kvno = keyset.kvno;
+
+error:
+    if (err == 0)
+    {
+        free_KrbKeySet(&keyset);
+    }
     return dwError;
 }

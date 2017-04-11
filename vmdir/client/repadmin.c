@@ -60,53 +60,6 @@ VmDirGetServersInfo(
 }
 
 /*
- *  Bind to a host with the handle to be used later
- */
-DWORD VmDirCreateLdAtHostViaMachineAccount(
-    PCSTR  pszHostName,
-    LDAP** ppLd
-)
-{
-    DWORD dwError = 0;
-    PSTR pszDCAccount = NULL;
-    PSTR pszDCAccountPassword = NULL;
-    PSTR pszServerName = NULL;
-    PSTR pszDomain = NULL;
-    char bufUPN[VMDIR_MAX_UPN_LEN] = {0};
-    LDAP* pLd = NULL;
-
-    dwError = VmDirRegReadDCAccount( &pszDCAccount);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirReadDCAccountPassword( &pszDCAccountPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetServerName( pszHostName, &pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetDomainName( pszServerName, &pszDomain);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszDCAccount, pszDomain);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSafeLDAPBind( &pLd, pszServerName, bufUPN, pszDCAccountPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppLd = pLd;
-
-cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszDCAccount);
-    VMDIR_SECURE_FREE_STRINGA(pszDCAccountPassword);
-    VMDIR_SAFE_FREE_STRINGA(pszServerName);
-    VMDIR_SAFE_FREE_STRINGA(pszDomain);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-/*
  * Query the host (pszHostName) for servers topology, and
  * follow those servers (partners) to get the highest USN
  */
@@ -132,13 +85,13 @@ VmDirGetUsnFromPartners(
     PSTR pPartnerRaDn = NULL;
 
     //Get all vmdir servers in the forest.
-    dwError = VmDirCreateLdAtHostViaMachineAccount(pszHostName, &pLd);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirGetServerName( pszHostName, &pszServerName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetDomainName( pszServerName, &pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectLDAPServerWithMachineAccount(pszHostName, pszDomain, &pLd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
@@ -170,7 +123,7 @@ VmDirGetUsnFromPartners(
                 pPartnerLd = NULL;
             }
             //Bind to the partner
-            dwError = VmDirCreateLdAtHostViaMachineAccount(pPartnerHost, &pPartnerLd);
+            dwError = VmDirConnectLDAPServerWithMachineAccount(pPartnerHost, pszDomain, &pPartnerLd);
             if (dwError != 0)
             {
                 //Cannot connect/bind to the partner - treat is as non-partner (i.e. best-effort approach)
@@ -783,7 +736,7 @@ VmDirGetServersInfoOnSite(
 
     if (pszSiteName == NULL)
     {
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                       &pszSearchBaseDN,
                       "cn=Sites,cn=Configuration,%s",
                       pszDomainDN
@@ -791,7 +744,7 @@ VmDirGetServersInfoOnSite(
         searchLevel = LDAP_SCOPE_SUBTREE;
     } else
     {
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                       &pszSearchBaseDN,
                       "cn=Servers,cn=%s,cn=Sites,cn=Configuration,%s",
                       pszSiteName,
@@ -973,7 +926,7 @@ _VmDirIsHostAPartner(
        {
            *pIsParter = TRUE;
            pszPartnerRaDn = ldap_get_dn(pLd, pEntry);
-           dwError = VmDirAllocateStringAVsnprintf(ppszPartnerRaDn, "%s", pszPartnerRaDn);
+           dwError = VmDirAllocateStringPrintf(ppszPartnerRaDn, "%s", pszPartnerRaDn);
            BAIL_ON_VMDIR_ERROR(dwError);
            goto cleanup;
        }

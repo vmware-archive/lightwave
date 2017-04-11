@@ -125,7 +125,7 @@ public class ReverseProxyInstaller implements IPlatformComponentInstaller {
 	}
 
 	@Override
-	public void upgrade() throws Exception{
+	public void upgrade() throws Exception {
 		// TODO Auto-generated method stub
 
 	}
@@ -135,6 +135,11 @@ public class ReverseProxyInstaller implements IPlatformComponentInstaller {
 		// TODO Auto-generated method stub
 
 	}
+
+    @Override
+    public void migrate() {
+
+    }
 
 	@Override
 	public PlatformInstallComponent getComponentInfo() {

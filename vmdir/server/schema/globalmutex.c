@@ -38,12 +38,14 @@ VmDirSchemaModMutexAcquire(
     }
 
     if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE) &&
-            VmDirStringLenA(pszDN) > (SCHEMA_NAMING_CONTEXT_DN_LEN))
+        pszDN[SCHEMA_NAMING_CONTEXT_DN_LEN])
     {
-        dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pOperation->bSchemaWriteOp = TRUE;
+        if (pOperation->dwSchemaWriteOp == 0)
+        {
+            dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        pOperation->dwSchemaWriteOp++;
     }
 
 error:
@@ -63,10 +65,14 @@ VmDirSchemaModMutexRelease(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp > 0)
     {
-        dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        pOperation->dwSchemaWriteOp--;
+        if (pOperation->dwSchemaWriteOp == 0)
+        {
+            dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
 error:

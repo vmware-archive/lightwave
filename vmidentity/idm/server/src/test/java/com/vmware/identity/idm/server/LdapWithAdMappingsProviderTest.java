@@ -46,6 +46,7 @@ import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
 import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
@@ -175,6 +176,7 @@ public class LdapWithAdMappingsProviderTest
           );
 
       PerformanceMonitorFactory.setPerformanceMonitor(new TestPerfMonitor());
+      LdapConnectionPool.getInstance().createPool("vsphere.local");
    }
    // bugzilla#1173915
    //private static final IIdentityProvider realAdProvider = new ActiveDirectoryProvider(realADProviderstoreData);

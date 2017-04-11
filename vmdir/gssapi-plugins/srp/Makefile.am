@@ -33,7 +33,6 @@ libgssapi_srp_la_SOURCES = \
 
 libgssapi_srp_la_LIBADD = \
     $(top_builddir)/client/libvmdirclient.la \
-    $(top_builddir)/common/libcommon.la \
     $(top_builddir)/thirdparty/csrp/libcsrp.la \
     $(top_builddir)/client/libvmdirclient_la-srp_verifier_cstub.lo \
     @DCERPC_LIBS@ \

@@ -547,6 +547,12 @@ VmDnsForwardRequest(
                     &pSocket);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmwSockSetTimeOut(
+                    pSocket,
+                    VMDNS_FORWARDER_TIMEOUT
+                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     dwError = VmwSockGetAddress(
                     pSocket,
                     &address,

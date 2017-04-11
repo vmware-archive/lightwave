@@ -1,6 +1,5 @@
 /*
- *
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -11,13 +10,19 @@
  *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
- *
  */
-
 package com.vmware.identity.configure;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.vmware.identity.installer.ReleaseUtil;
 
 public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     private static final String ID = "vmware-identity-manager";
@@ -27,40 +32,22 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
             .getLogger(IdentityManagerInstaller.class);
 
     private String hostnameURL = null;
+    private boolean isLightwave = false;
     private boolean initialized = false;
-    private String domainName;
-    private String password;
-    private String username;
     private boolean setReverseProxy = false;
-    private boolean startService = false;
 
-    public IdentityManagerInstaller(String username, String domainName,
-
-    String password, boolean setReverseProxy, boolean isUpgrade, boolean startService) {
+    public IdentityManagerInstaller(boolean setReverseProxy, boolean isUpgrade) {
         if (!isUpgrade) {
-            Validate.validateNotEmpty(username, "Username");
-            Validate.validateNotEmpty(domainName, "Domain name");
-            Validate.validateNotEmpty(password, "Password");
-
-            this.domainName = domainName;
-            this.password = password;
-            this.username = username;
             this.setReverseProxy = setReverseProxy;
-        }else {
-            this.startService = startService;
         }
-        
     }
 
     @Override
     public void install() throws Exception {
         initialize();
-        log.info("Writing hostname file");
-
-        writeHostnameFile();
 
         if(setReverseProxy){
-		    log.info("Setting reverse proxy port");
+            log.info("Setting reverse proxy port");
 		    setReverseProxyPort();
         }
 
@@ -68,19 +55,43 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
         InstallerUtils.getInstallerHelper().configRegistry();
 
-        log.info("Configuring Identity Manager");
+        log.info("Writing host info to Regisry");
 
-        configureIDM();
+        writeHostinfo();
+
+        log.info("Configuring registry setting for IDM Complete");
     }
 
     @Override
-    public void upgrade() throws Exception{
-        IdentityManagerUtil.createIDMLoginFile();
+    public void upgrade() {
+        if (isHostnameFilePresent()) {
+            try {
+                this.hostnameURL = readHostnameFromFile();
+                if (this.hostnameURL == null) {
+                    initialize();
+                }
+            } catch (Exception ex) {
+              this.hostnameURL = VmAfClientUtil.getHostnameURL();
+            }
+            try {
+                writeHostinfo();
+                removeHostnameFile();
+            } catch (Exception ex){
+
+            }
+        }
+
+
     }
 
     @Override
     public void uninstall() {
         // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void migrate() {
 
     }
 
@@ -90,20 +101,26 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
             this.hostnameURL = hostnameURL;
 
+            try {
+                this.isLightwave = ReleaseUtil.isLightwave();
+            } catch (IOException e) {
+                throw new IllegalStateException(String.format("Failed to check whehter the installation is Lightwave: %s", e.getMessage()));
+            }
+
             initialized = true;
         }
     }
 
-    private void writeHostnameFile() throws IdentityManagerInstallerException {
+    private void writeHostinfo() throws IdentityManagerInstallerException {
         Validate.validateNotEmpty(hostnameURL, "Host name URL");
 
-        HostnameWriter writer = new HostnameWriter(hostnameURL);
+        HostinfoWriter writer = new HostinfoWriter(hostnameURL, isLightwave);
         try {
             writer.write();
-        } catch (HostnameCreationFailedException e) {
-            log.debug(e.getStackTrace().toString());
+        } catch (HostinfoCreationFailedException e) {
+            e.printStackTrace();
             throw new IdentityManagerInstallerException(
-                    "Failed to create hostname file", e);
+                    "Failed to create hostinfo file", e);
         }
     }
 
@@ -111,15 +128,60 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
         VmAfClientUtil.setReverseProxyPort(InstallerUtils.REVERSE_PROXY_PORT);
     }
 
-    private void configureIDM() throws Exception {
-        IdentityManagerUtil idmUtil = new IdentityManagerUtil(username,
-                domainName, password);
-        idmUtil.install();
-    }
-
     @Override
     public PlatformInstallComponent getComponentInfo() {
         return new PlatformInstallComponent(ID, Name, Description);
+    }
+
+    private boolean isHostnameFilePresent() {
+        String configPath = InstallerUtils.getInstallerHelper().getConfigFolderPath();
+        if (!configPath.endsWith(File.separator)){
+            configPath += File.separator;
+        }
+        String hostnameFile = configPath + "hostname.txt";
+        return (new File(hostnameFile).exists());
+    }
+
+    private String readHostnameFromFile() throws IOException{
+        String hostname = null;
+        String configPath = InstallerUtils.getInstallerHelper().getConfigFolderPath();
+        if (!configPath.endsWith(File.separator)){
+            configPath += File.separator;
+        }
+        String hostnameFile = configPath + "hostname.txt";
+        BufferedReader br = null;
+        FileInputStream fr = null;
+        try {
+            fr = new FileInputStream(hostnameFile);
+            br = new BufferedReader(new InputStreamReader(fr));
+            String str = br.readLine().trim();
+            if (str != null)
+                hostname  = str;
+        } catch (Exception ex){
+
+        } finally {
+
+            if (br != null){
+                br.close();
+            }
+            if (fr != null) {
+                fr.close();
+            }
+        }
+        return hostname;
+    }
+
+    private void removeHostnameFile() {
+        String configPath = InstallerUtils.getInstallerHelper().getConfigFolderPath();
+        if (!configPath.endsWith(File.separator)){
+            configPath += File.separator;
+        }
+        File hostnameFile = new File(configPath + "hostname.txt");
+        try {
+            hostnameFile.delete();
+        } catch (Exception ex){
+
+        }
     }
 
 }

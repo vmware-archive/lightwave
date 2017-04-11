@@ -218,3 +218,174 @@ VmDirMDBIndexIteratorFree(
         VMDIR_SAFE_FREE_MEMORY(pIterator);
     }
 }
+
+DWORD
+VmDirMDBParentIdIndexIteratorInit(
+    ENTRYID                                 parentId,
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_DB mdbDBi = 0;
+    VDIR_DB_DBT     key = {0};
+    VDIR_DB_DBT     value = {0};
+    PVDIR_DB_TXN    pTxn = NULL;
+    PVDIR_DB_DBC    pCursor = NULL;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator = NULL;
+    PVDIR_MDB_PARENT_ID_INDEX_ITERATOR      pMdbIterator = NULL;
+
+    unsigned char   parentEIdBytes[sizeof( ENTRYID )] = {0};
+
+    if (!ppIterator)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_BACKEND_PARENT_ID_INDEX_ITERATOR),
+            (PVOID*)&pIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_MDB_PARENT_ID_INDEX_ITERATOR),
+            (PVOID*)&pMdbIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pIterator->pIterator = (PVOID)pMdbIterator;
+
+    dwError = VmDirIndexCfgAcquire(ATTR_PARENT_ID, VDIR_INDEX_WRITE, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMdbIterator->pTxn = pTxn;
+
+    dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMdbIterator->pCursor = pCursor;
+
+    key.mv_data = &parentEIdBytes[0];
+    MDBEntryIdToDBT(parentId, &key);
+
+    dwError = mdb_cursor_get(pCursor, &key, &value, MDB_SET_RANGE);
+    MDBDBTToEntryId(&key, &pMdbIterator->parentId);
+    MDBDBTToEntryId(&value, &pMdbIterator->entryId);
+
+    if (dwError == 0 && parentId == pMdbIterator->parentId)
+    {
+        pIterator->bHasNext = TRUE;
+    }
+    else
+    {
+        pIterator->bHasNext = FALSE;
+        dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
+        pMdbIterator->bAbort = dwError ? TRUE : FALSE;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppIterator = pIterator;
+
+cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VmDirMDBParentIdIndexIteratorFree(pIterator);
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBParentIdIndexIterate(
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator,
+    ENTRYID*                                pEntryId
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_MDB_PARENT_ID_INDEX_ITERATOR  pMdbIterator = NULL;
+    PVDIR_DB_DBC    pCursor = NULL;
+    VDIR_DB_DBT     key = {0};
+    VDIR_DB_DBT     value = {0};
+    ENTRYID         parentId = 0;
+
+    if (!pIterator || !pEntryId)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pMdbIterator = (PVDIR_MDB_PARENT_ID_INDEX_ITERATOR)pIterator->pIterator;
+
+    pCursor = pMdbIterator->pCursor;
+    if (pIterator->bHasNext)
+    {
+        *pEntryId = pMdbIterator->entryId;
+
+        dwError = mdb_cursor_get(pCursor, &key, &value, MDB_NEXT);
+        MDBDBTToEntryId(&key, &parentId);
+        MDBDBTToEntryId(&value, &pMdbIterator->entryId);
+
+        if (dwError == 0 && parentId == pMdbIterator->parentId)
+        {
+            pIterator->bHasNext = TRUE;
+        }
+        else
+        {
+            pIterator->bHasNext = FALSE;
+            dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
+            pMdbIterator->bAbort = dwError ? TRUE : FALSE;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+VOID
+VmDirMDBParentIdIndexIteratorFree(
+    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator
+    )
+{
+    PVDIR_MDB_PARENT_ID_INDEX_ITERATOR  pMdbIterator = NULL;
+
+    if (pIterator)
+    {
+        pMdbIterator = (PVDIR_MDB_PARENT_ID_INDEX_ITERATOR)pIterator->pIterator;
+        if (pMdbIterator)
+        {
+            if (pMdbIterator->pCursor)
+            {
+                mdb_cursor_close(pMdbIterator->pCursor);
+            }
+            if (pMdbIterator->pTxn)
+            {
+                if (pMdbIterator->bAbort)
+                {
+                    mdb_txn_abort(pMdbIterator->pTxn);
+                }
+                else
+                {
+                    mdb_txn_commit(pMdbIterator->pTxn);
+                }
+            }
+            VMDIR_SAFE_FREE_MEMORY(pMdbIterator);
+        }
+        VMDIR_SAFE_FREE_MEMORY(pIterator);
+    }
+}

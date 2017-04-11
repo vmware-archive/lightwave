@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.vmware.identity.installer.ReleaseUtil;
 import com.vmware.identity.interop.registry.IRegistryAdapter;
 import com.vmware.identity.interop.registry.IRegistryKey;
 import com.vmware.identity.interop.registry.RegKeyAccess;
@@ -34,16 +35,6 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String[] getIDMServiceStartCommand() {
-        if (Files.exists(Paths.get("/.dockerenv"))) {
-            return new String[] { "/opt/vmware/sbin/vmware-idmd.sh", "start" };
-        } else {
-            return new String[] { "systemctl", "restart", "vmware-idmd" };
-        }
-
-    }
-
-    @Override
     public String getLogPaths() {
         return "/var/log/vmware/sso/";
     }
@@ -59,17 +50,39 @@ public class LinuxInstallerHelper implements InstallerHelper {
         return null;
     }
 
+  /**
+  * IDM service (dummy) EXISTS ONLY IN VSPHERE context. This was created only for the purpose of 
+  * backward compatibility such that VCHA will address in their code base to remove IDM service. 
+  * LIGHTWAVE is totally independent of these thick dependencies, Hence, we avoid this service.
+  **/
+   @Override
+   public String[] getIDMServiceStartCommand() {
+        return new String[] { "/etc/init.d/vmware-sts-idmd", "restart" };
+    }
+
+
     @Override
-    public String[] getSTSServiceStartCommand() {
-        if (Files.exists(Paths.get("/.dockerenv"))) {
-            return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
-        } else {
-            return new String[] { "systemctl", "restart", "vmware-stsd" };
+    public String[] getSTSServiceStartCommand() throws SecureTokenServerInstallerException {
+        String[] stsStartCommand = null;
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                 if (Files.exists(Paths.get("/.dockerenv"))) {
+                        return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
+                    } else {
+                        return new String[] { "systemctl", "restart", "vmware-stsd" };
+            } 
+                 }else {
+                stsStartCommand = new String[] { "/etc/init.d/vmware-stsd", "restart" };
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to get STS service start command");
+            throw new SecureTokenServerInstallerException("Failed to retrieve STS service start command", e);
         }
+        return stsStartCommand;
     }
 
     @Override
-    public String getTCBase() {
+    public String getTCBase() throws SecureTokenServerInstallerException {
         String tcRoot = getSSOHomePath();
         return tcRoot + File.separator + "vmware-sts";
     }
@@ -81,50 +94,61 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public void configRegistry() {
-        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
-                .getRegistryAdapter();
-        IRegistryKey rootKey = registryAdapter
-                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
-        String subkey = "Software\\VMware\\Identity\\Configuration";
+        IRegistryAdapter registryAdapter = null;
+        IRegistryKey rootKey = null;
+        IRegistryKey configKey = null;
+        try{
+            registryAdapter = RegistryAdapterFactory.getInstance()
+                    .getRegistryAdapter();
+            rootKey = registryAdapter
+                    .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
+            String subkey = "Software\\VMware\\Identity\\Configuration";
 
-        boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
+            boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
 
-        IRegistryKey configKey;
+            if (exists) {
+                configKey = registryAdapter.openKey(rootKey, subkey, 0,
+                        (int) RegKeyAccess.KEY_ALL_ACCESS);
+            } else {
+                configKey = registryAdapter.createKey(rootKey, subkey, null,
+                        (int) RegKeyAccess.KEY_ALL_ACCESS);
+            }
 
-        if (exists) {
-            configKey = registryAdapter.openKey(rootKey, subkey, 0,
-                    (int) RegKeyAccess.KEY_ALL_ACCESS);
-        } else {
-            configKey = registryAdapter.createKey(rootKey, subkey, null,
-                    (int) RegKeyAccess.KEY_ALL_ACCESS);
+            registryAdapter.setStringValue(configKey, "ConfigStoreType",
+                    "vmware_directory");
+            registryAdapter.setIntValue(configKey, "Multitenant", 0);
+            registryAdapter.setIntValue(configKey, "SystemDomainSearchTimeout", 0);
+
+            Collection<String> domainAttributes = new ArrayList<String>();
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname:givenName");
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname:sn");
+            domainAttributes
+                    .add("http://rsa.com/schemas/attr-names/2009/01/GroupIdentity:memberOf");
+            domainAttributes
+                    .add("http://vmware.com/schemas/attr-names/2011/07/isSolution:subjectType");
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress:mail");
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/claims/UPN:userPrincipalName");
+            registryAdapter.setMultiStringValue(configKey,
+                    "SystemDomainAttributesMap", domainAttributes);
+
+            // TODO: get port as config setting
+            registryAdapter.setStringValue(configKey, "StsLocalTcPort", "7444");
+            // TODO: use port from reverse proxy
+            registryAdapter.setStringValue(configKey, "StsTcPort",
+                    Integer.toString(InstallerUtils.REVERSE_PROXY_PORT));
+        } finally {
+                if(rootKey != null) {
+                        rootKey.close();
+                }
+                if(configKey != null){
+                        configKey.close();
+                }
         }
 
-        registryAdapter.setStringValue(configKey, "ConfigStoreType",
-                "vmware_directory");
-        registryAdapter.setIntValue(configKey, "Multitenant", 0);
-        registryAdapter.setIntValue(configKey, "SystemDomainSearchTimeout", 0);
-
-        Collection<String> domainAttributes = new ArrayList<String>();
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname:givenName");
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname:sn");
-        domainAttributes
-                .add("http://rsa.com/schemas/attr-names/2009/01/GroupIdentity:memberOf");
-        domainAttributes
-                .add("http://vmware.com/schemas/attr-names/2011/07/isSolution:subjectType");
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress:mail");
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/claims/UPN:userPrincipalName");
-        registryAdapter.setMultiStringValue(configKey,
-                "SystemDomainAttributesMap", domainAttributes);
-
-        // TODO: get port as config setting
-        registryAdapter.setStringValue(configKey, "StsLocalTcPort", "7444");
-        // TODO: use port from reverse proxy
-        registryAdapter.setStringValue(configKey, "StsTcPort",
-                Integer.toString(InstallerUtils.REVERSE_PROXY_PORT));
     }
 
     @Override
@@ -153,12 +177,21 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getCertoolPath() {
-        return "/opt/vmware/bin/certool";
+    public String getCertoolPath() throws SecureTokenServerInstallerException {
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                return "/opt/vmware/bin/certool";
+            } else {
+                return "/usr/lib/vmware-vmca/bin/certool";
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to get cert tool path");
+            throw new SecureTokenServerInstallerException("Failed to get cert tool path", e);
+        }
     }
 
     @Override
-    public String getVmcaSvcChkCommand(String hostname) {
+    public String getVmcaSvcChkCommand(String hostname) throws SecureTokenServerInstallerException {
         String command = null;
         if (hostname != null && !hostname.isEmpty()) {
             command = getCertoolPath() + " --WaitVMCA --server=" + hostname
@@ -187,16 +220,24 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getSSOHomePath() {
-        return "/opt/vmware";
+    public String getSSOHomePath() throws SecureTokenServerInstallerException {
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                return "/opt/vmware";
+            } else {
+                return "/usr/lib/vmware-sso";
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to get SSO homepath");
+            throw new SecureTokenServerInstallerException("Failed to get SSO homepath", e);
+        }
     }
 
     @Override
     public String getIdmLoginPath(){
         return "/etc/vmware-sso/keys/";
     }
-    
-    @Override
+
     public String getConfigDirectoryRootKey() {
         return "Services\\vmdir";
     }

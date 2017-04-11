@@ -30,7 +30,6 @@ import javax.ws.rs.core.SecurityContext;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.DuplicatedOIDCRedirectURLException;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
@@ -45,6 +44,7 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.server.mapper.OIDCClientMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Web service resource to manage OIDC clients associated per tenant basis.
@@ -59,7 +59,7 @@ public class OIDCClientResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(OIDCClientResource.class);
 
     public OIDCClientResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**
@@ -78,7 +78,7 @@ public class OIDCClientResource extends BaseSubResource {
         } catch (NoSuchTenantException e) {
             log.debug("Failed to add an OIDC client for tenant '{}' due to missing tenant", this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
-        } catch (DTOMapperException | InvalidArgumentException | DuplicatedOIDCRedirectURLException e) {
+        } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to add an OIDC client for tenant '{}' due to a client side error", this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.create.failed", clientId, this.tenant), e);
         } catch (Exception e) {
@@ -176,7 +176,7 @@ public class OIDCClientResource extends BaseSubResource {
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
             log.debug("Failed to update an OIDC client '{}' on tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
-        } catch (DTOMapperException | InvalidArgumentException | DuplicatedOIDCRedirectURLException e) {
+        } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to update an OIDC client '{}' on tenant '{}' due to a client side error", clientId, this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.update.failed", clientId, this.tenant), e);
         } catch (Exception e) {

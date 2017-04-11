@@ -86,8 +86,10 @@ public final class IDToken {
             throw new TokenValidationException(TokenValidationError.INVALID_AUDIENCE, "Audience in claim set does not match with client identifier.");
         }
 
-        Date adjustedCurrentDate = new Date(new Date().getTime() - clockToleranceInSeconds * 1000L);
-        if (idToken.getExpirationTime().before(adjustedCurrentDate)) {
+        Date now = new Date();
+        Date notBefore = new Date(idToken.getIssueTime().getTime() - clockToleranceInSeconds * 1000L);
+        Date notAfter = new Date(idToken.getExpirationTime().getTime() + clockToleranceInSeconds * 1000L);
+        if (now.before(notBefore) || now.after(notAfter)) {
             throw new TokenValidationException(TokenValidationError.EXPIRED_TOKEN, "Token is expired.");
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -11,8 +11,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
-
 
 #ifndef KDC_SRV_COMMON_H_
 #define KDC_SRV_COMMON_H_
@@ -58,6 +56,8 @@ typedef struct _VMKDC_THREAD_INFO
 
 } VMKDC_THREAD_INFO, *PVMKDC_THREAD_INFO;
 
+/* util.c */
+
 int
 VmKdcQsortPPCHARCmp(
     const void*		ppStr1,
@@ -86,6 +86,24 @@ VmKdcCurrentGeneralizedTime(
 VOID
 VmKdcSleep(
     DWORD dwMilliseconds);
+
+#ifdef VMDIR_ENABLE_PAC
+/* pacops.c */
+
+DWORD
+VmKdcEncodeAuthzInfo(
+    VMDIR_AUTHZ_INFO *pac,
+    long *bufsiz,
+    void **buf
+    );
+
+DWORD
+VmKdcDecodeAuthzInfo(
+    long bufsiz,
+    void *buf,
+    VMDIR_AUTHZ_INFO **pac
+    );
+#endif
 
 #ifdef __cplusplus
 }

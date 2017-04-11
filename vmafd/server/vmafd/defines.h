@@ -27,13 +27,15 @@
 #endif
 #define VMAFD_MAX_OLD_LOGS    5
 #define VMAFD_MAX_LOG_SIZE    1000
+#define VMAFD_OPEN_FILES_MAX  16384
 
 #ifndef _WIN32
 
 #define VMAFD_OPTION_LOGGING_LEVEL 'l'
 #define VMAFD_OPTION_LOG_FILE_NAME 'L'
 #define VMAFD_OPTION_ENABLE_SYSLOG 's'
-#define VMAFD_OPTIONS_VALID "f:l:L:p:s"
+#define VMAFD_OPTION_ENABLE_CONSOLE 'c'
+#define VMAFD_OPTIONS_VALID "f:l:L:p:sc"
 #define VMAFD_CERT_DB VMAFD_DB_DIR "/afd.db"
 #define VMAFD_OLD_CERT_DB VMAFD_DB_DIR "/vecs/afd.db"
 
@@ -89,6 +91,7 @@
 
 #define ATTR_AUTOREFRESH           "AutoRefresh"
 
+#define VECS_DB_CURRENT_VERSION     650
 // This is the prefix in flush store for marking left over cert files.
 #define VECS_DEL_FILE_PREFIX       "delete_"
 #define VECS_DEL_RETRY_INTV        1000
@@ -98,7 +101,7 @@
 #define VECS_CRL_STORE_ID          3
 
 #define DEFAULT_VECS_CERT_SEC       60 // default value at which certs are pulled down by VECS, in Seconds
-#define VECS_STOREHASH_MAP_SIZE     64
+#define VECS_STOREHASH_MAP_SIZE     128
 #define VMAFD_FILE_COPY_BUFSZ       1024
 
 /*
@@ -250,3 +253,100 @@ if (bLocked) \
 
 #define SSO_HA_MIN_DOMAIN_LEVEL_MAJOR   2
 #define SSO_HA_MIN_DOMAIN_LEVEL_MINOR   0
+
+#define VMDDNS_TYPE_A             1
+#define VMDDNS_TYPE_AAAA          28
+#define VMDDNS_TYPE_SOA           6
+#define VMDDNS_CLASS_INTERNET     1
+#define VMDDNS_CLASS_ANY          0x00FF
+#define VMDDNS_UPDATE_CODES_WORD  0x2800
+
+#define VMDDNS_UPDATE_HEADER_SIZE 12
+#define VMDDNS_RR_SIZE            10
+#define VMDDNS_RR_A_SIZE          14
+#define VMDDNS_RR_AAAA_SIZE       20
+#define VMDDNS_ZONE_SIZE          4
+#define VMDDNS_BUFFER_SIZE        8*1024
+#define VMDNS_IP4_ADDRESS_SIZE    4
+#define VMDNS_IP6_ADDRESS_SIZE    16
+#define VMDDNS_ID_SEED            2000
+#define VMDDNS_DEFAULT_TTL        3600
+#define VMDDNS_RECV_TIMEOUT       10
+#define VMDDNS_UPDATE_PACKET      1
+#define VMDDNS_DELETE_PACKET      0
+#define VMDNS_SERVER_PORT         "53"
+#define VMDNS_SOURCEIP_UDP_PORT   "2020"
+
+#define VMDIR_HEARTBEAT_ENTRY_W \
+{'V','M','w','a','r','e',' ','D','i','r','e','c','t','o','r','y','-','S','e','r','v','i','c','e',0}
+#define VMDIR_HEARTBEAT_ENTRY_PORT 2012
+#define VMCA_HEARTBEAT_ENTRY_W \
+{'V','M','w','a','r','e',' ','C','e','r','t','i','f','i','c','a','t','e','-','S','e','r','v','i','c','e',0}
+#define VMCA_HEARTBEAT_ENTRY_PORT 2014
+#define WEBSSO_ENTRY_W \
+{'W','e','b','s','s','o',0}
+#define WEBSSO_ENTRY_PORT 443
+#define LOOKUP_SERVICE_ENTRY_W \
+{'L','o','o','k','u','p',' ','s','e','r','v','i','c','e',0}
+#define LOOKUP_SERVICE_ENTRY_PORT 443
+#define STS_HEARTBEAT_ENTRY_W \
+{'S','e','c','u','r','i','t','y',' ','T','o','k','e','n',' ','S','e','r','v','i','c','e',0}
+#define STS_HEARTBEAT_ENTRY_PORT 443
+#define LICENSING_ENTRY_W \
+{'L','i','c','e','n','s','e',' ','S','e','r','v','i','c','e',0}
+#define LICENSING_ENTRY_PORT 0
+
+#define VMAFD_HEARTBEAT_ENTRY_NAMES_W \
+{\
+      VMDIR_HEARTBEAT_ENTRY_W,\
+      VMCA_HEARTBEAT_ENTRY_W,\
+      WEBSSO_ENTRY_W, \
+      LOOKUP_SERVICE_ENTRY_W, \
+      STS_HEARTBEAT_ENTRY_W, \
+      LICENSING_ENTRY_W \
+}
+
+#define VMAFD_HEARTBEAT_ENTRY_PORTS \
+{\
+      VMDIR_HEARTBEAT_ENTRY_PORT,\
+      VMCA_HEARTBEAT_ENTRY_PORT, \
+      WEBSSO_ENTRY_PORT, \
+      LOOKUP_SERVICE_ENTRY_PORT, \
+      STS_HEARTBEAT_ENTRY_PORT, \
+       LICENSING_ENTRY_PORT \
+}
+
+
+#define VMAFD_HEARTBEAT_TABLE_ENTRIES \
+{\
+  {\
+      VMDIR_HEARTBEAT_ENTRY_W,\
+      VMDIR_HEARTBEAT_ENTRY_PORT,\
+      0\
+  },\
+  {\
+      VMCA_HEARTBEAT_ENTRY_W,\
+      VMCA_HEARTBEAT_ENTRY_PORT,\
+      0\
+  },\
+  {\
+      WEBSSO_ENTRY_W,\
+      WEBSSO_ENTRY_PORT,\
+      0\
+  },\
+  {\
+      LOOKUP_SERVICE_ENTRY_W,\
+      LOOKUP_SERVICE_ENTRY_PORT, \
+      0\
+  },\
+  {\
+      STS_HEARTBEAT_ENTRY_W,\
+      STS_HEARTBEAT_ENTRY_PORT,\
+      0\
+  },\
+  {\
+      LICENSING_ENTRY_W,\
+      LICENSING_ENTRY_PORT, \
+      0\
+  },\
+}

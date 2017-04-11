@@ -24,6 +24,7 @@ import java.util.Locale;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -53,8 +54,10 @@ import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.CertificateChainDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
+import com.vmware.identity.rest.idm.data.attributes.CertificateGranularity;
 import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Operations related to Single Sign On certificates
@@ -67,11 +70,11 @@ public class CertificateResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(CertificateResource.class);
 
     public CertificateResource(String tenant, Locale locale, String correlationId, SecurityContext securityContext) {
-        super(tenant, locale, correlationId, securityContext);
+        super(tenant, locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     public CertificateResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**
@@ -83,14 +86,22 @@ public class CertificateResource extends BaseSubResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Collection<CertificateChainDTO> getCertificates(@QueryParam("scope") String certificateScope) {
+    public Collection<CertificateChainDTO> getCertificates(@QueryParam("scope") String certificateScope, @DefaultValue("CHAIN") @QueryParam("granularity") String granularity) {
         CertificateScope scope = validateCertificateScope(certificateScope);
-
+        CertificateGranularity certGranularity = validateCertificateGranularity(granularity);
         try {
             Collection<List<Certificate>> idmCertChains = new ArrayList<List<Certificate>>();
             if (scope == CertificateScope.TENANT) {
+                    if(certGranularity == CertificateGranularity.LEAF) {
+                        // Retrieve all leaf certificates associated with tenant
+                        Collection<Certificate> stsIssuersCertificates = getIDMClient().getStsIssuersCertificates(tenant);
+                        List<Certificate> stsTrustedCerts = new ArrayList<Certificate>(stsIssuersCertificates);
+                        idmCertChains.add(stsTrustedCerts);
+                    } else {
+                    // default to return all certificates chains associated with a tenant
+                    idmCertChains = getIDMClient().getTenantCertificates(tenant);
+                }
                 // Get certificate chains of system provider, localos, and other directly registered external IDPs (AD or OpenLDAP)
-                idmCertChains = getIDMClient().getTenantCertificates(tenant);
             } else if (scope == CertificateScope.EXTERNAL_IDP) {
                 // Get certificate chains of externalIDPs (trusted) associated with tenant if any
                 Collection<IDPConfig> idpConfigs = getIDMClient().getAllExternalIdpConfig(tenant); // Retrieve configuration of all trusted external IDPs
@@ -246,5 +257,15 @@ public class CertificateResource extends BaseSubResource {
         }
 
         return type;
+    }
+
+    private CertificateGranularity validateCertificateGranularity(String granularity) throws BadRequestException {
+        CertificateGranularity certGranularity = null;
+        try{
+            certGranularity = CertificateGranularity.valueOf(granularity.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BadRequestException(sm.getString("valid.invalid.type", "granularity", Arrays.toString(CertificateGranularity.values())));
+        }
+        return certGranularity;
     }
 }

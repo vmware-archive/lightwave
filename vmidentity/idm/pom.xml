@@ -5,25 +5,22 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>com.vmware.identity.idm</groupId>
   <artifactId>vmware-identity-idm</artifactId>
-  <version>6.6.1</version>
   <packaging>pom</packaging>
-  <name>vmware-identity-idm</name>
+  <name>Identity Manager</name>
 
   <modules>
     <module>interface</module>
-    <module>client</module>
     <module>server</module>
+    <module>client</module>
   </modules>
 
   <properties>
-    <java.version>1.7</java.version>
-    <vmware.version>6.6.1</vmware.version>
+    <rootDirectory>${basedir}/..</rootDirectory>
   </properties>
 
 </project>
-

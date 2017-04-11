@@ -30,12 +30,14 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang.Validate;
+import org.apache.http.client.methods.HttpGet;
 import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLVersion;
@@ -124,6 +126,8 @@ public final class Shared {
     public final static String ssoCACEndpoint = "/websso/SAML2/SSOCAC";
     public final static String ssoSmartcardRealmEndpoint = "/websso/SAML2/SmartcardRealm";
     public final static String ssoEndpoint = "/websso/SAML2/SSO";
+    public static final String CACHE_CONTROL_HEADER = "Cache-Control";
+    public static final String PRAGMA = "Pragma";
 
     /**
      * Return exception stack trace as a string
@@ -364,6 +368,15 @@ public final class Shared {
         return Shared.TENANT_IDP_COOKIE_NAME + nameSuffix;
     }
 
+    public static void addNoCacheHeader(HttpServletResponse response) {
+        response.addHeader(Shared.CACHE_CONTROL_HEADER, "no-store");
+        response.addHeader(Shared.PRAGMA, "no-cache");
+    }
+
+    public static void addNoCacheHeader(HttpGet httpGet) {
+        httpGet.addHeader(Shared.CACHE_CONTROL_HEADER, "no-store");
+        httpGet.addHeader(Shared.PRAGMA, "no-cache");
+    }
     // retrieve valid (non-expired) session from the browser cookie, or return null
     public static Session getSession(SessionManager sessionManager, HttpServletRequest request, String tenant) {
         Session retval = null;

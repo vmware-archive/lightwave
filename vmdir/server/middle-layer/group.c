@@ -56,7 +56,7 @@ VmDirPluginGroupTypePreAdd(
 
     if ( pOperation->opType != VDIR_OPERATION_TYPE_REPL
          &&
-         TRUE == VmDirIsEntryWithObjectclass(pEntry, OC_GROUP)
+         TRUE == VmDirEntryIsObjectclass(pEntry, OC_GROUP)
        )
     {
         PVDIR_ATTRIBUTE pAttrGroupType = VmDirFindAttrByName(pEntry, ATTR_GROUPTYPE);
@@ -74,7 +74,7 @@ VmDirPluginGroupTypePreAdd(
                                        GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
                )
             {
-                dwError = ERROR_INVALID_ENTRY;
+                dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
                 BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
                                               VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
             }
@@ -113,7 +113,7 @@ VmDirPluginGroupTypePreModify(
 
     if ( pOperation->opType != VDIR_OPERATION_TYPE_REPL
          &&
-         TRUE == VmDirIsEntryWithObjectclass(pEntry, OC_GROUP)
+         TRUE == VmDirEntryIsObjectclass(pEntry, OC_GROUP)
        )
     {
         PVDIR_ATTRIBUTE pAttrGroupType = VmDirFindAttrByName(pEntry, ATTR_GROUPTYPE);
@@ -125,7 +125,7 @@ VmDirPluginGroupTypePreModify(
              VmDirStringCompareA( pAttrGroupType->vals[0].lberbv.bv_val , GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
            )
         {
-            dwError = ERROR_INVALID_ENTRY;
+            dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
                                           VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
         }
@@ -145,5 +145,76 @@ error:
 
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszLocalErrorMsg);
 
+    goto cleanup;
+}
+
+DWORD
+VmDirPluginGroupMemberPreModApplyDelete(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,    // pEntry is NULL
+    DWORD            dwPriorResult
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PVDIR_BERVALUE  pMemberDN = NULL;
+    PVDIR_BERVALUE  pGroupDN = NULL;
+    PVDIR_OPERATION pGroupOp = NULL;
+    VDIR_ENTRY_ARRAY    entryArray = {0};
+
+    pMemberDN = &pOperation->request.deleteReq.dn;
+
+    // look up groups by searching "(member=dn)"
+    dwError = VmDirSimpleEqualFilterInternalSearch(
+            "",
+            LDAP_SCOPE_SUBTREE,
+            ATTR_MEMBER,
+            pMemberDN->lberbv.bv_val,
+            &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // delete the member from groups
+    for (i = 0; i < entryArray.iSize; i++)
+    {
+        VmDirFreeOperation(pGroupOp);
+        pGroupOp = NULL;
+
+        dwError = VmDirExternalOperationCreate(
+                NULL, -1, LDAP_REQ_MODIFY, pOperation->conn, &pGroupOp);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pGroupDN = &entryArray.pEntry[i].dn;
+        pGroupOp->reqDn.lberbv = pGroupDN->lberbv;
+        pGroupOp->request.modifyReq.dn.lberbv = pGroupDN->lberbv;
+
+        dwError = VmDirAppendAMod(
+                pGroupOp,
+                MOD_OP_DELETE,
+                ATTR_MEMBER,
+                ATTR_MEMBER_LEN,
+                pMemberDN->lberbv.bv_val,
+                pMemberDN->lberbv.bv_len);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirMLModify(pGroupOp);
+        // Handle possible conflicts gracefully:
+        // - The member is already removed from group since search
+        // - The group entry is deleted since search
+        if (dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE ||
+            dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
+        {
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VmDirFreeEntryArrayContent(&entryArray);
+    VmDirFreeOperation(pGroupOp);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
     goto cleanup;
 }

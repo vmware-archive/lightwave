@@ -76,16 +76,7 @@ public class SolutionUserAuthenticator {
             throw new ServerException(ErrorObject.invalidClient(errorDescription));
         }
 
-        String certSubjectDn;
-        if (assertion instanceof ClientAssertion) {
-            certSubjectDn = clientInfo.getCertSubjectDN();
-            if (certSubjectDn == null) {
-                throw new ServerException(ErrorObject.invalidClient("client authn failed because client did not register a cert"));
-            }
-        } else {
-            certSubjectDn = assertion.getIssuer().getValue();
-        }
-
+        String certSubjectDn = (assertion instanceof ClientAssertion) ? clientInfo.getCertSubjectDN() : assertion.getIssuer().getValue();
         solutionUser = retrieveSolutionUser(tenantInfo.getName(), certSubjectDn);
 
         try {

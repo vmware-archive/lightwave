@@ -1,0 +1,99 @@
+[base]
+# default values that are common to all sections
+# individual sections can redefine to override them.  (e.g. threadNum)
+host = SLES-TEST-1
+port = 636
+
+# ldap/ldaps
+protocol = ldaps
+
+threadNum = 1
+
+baseDN = cn=users,dc=vmware,dc=com
+bindDN = cn=admin,cn=users,dc=vmware,dc=com
+bindPassword = 123
+domainDN = dc=vmware,dc=com
+filter = cn=cn-bucket.1.[0-9].[0-99999]
+
+# synchronize add and delelete threads
+DNQueueSize = 100
+
+[bind thread]
+threadNum = 0
+bindContainerDN = cn=users,dc=vmware,dc=com
+bindPattern = 1.[0-9].[0-99999]
+
+# bind RDN construction - "bindRDNPrefix + bindPattern + bindContainerDN"
+# e.g. "cn=cn-bucket.1.100.1
+bindRDNPrefix = cn=cn-bucket.
+
+# bind password construction - "bindPasswordPrefix + bindPattern"
+# e.g. "userPassword=userPassword.1.100.1"
+bindPasswordPrefix = userPassword.
+
+[search thread]
+# threads will randomly choose available filters
+threadNum = 0
+
+# number of search filter defined
+searchDefinitionNum = 2
+
+# search filter definition
+# e.g. -b "cn=users,dc=vmware,dc=com" -s one "cn=cn-bucket.100"
+searchBaseDN1 = cn=users,dc=vmware,dc=com
+searchScope1 = one
+filter1 = cn=cn-bucket.1.[0-9].[0-99999]
+
+searchBaseDN2 = dc=vmware,dc=com
+searchScope2 = sub
+filter2 = cn=cn-bucket.1.[0-9].[0-99999]
+
+[modify thread]
+threadNum = 0
+
+# filter pattern to identify entry been modified
+# e.g. -b "baseDN" -s sub "cn=cn-bucket.1.3.50"
+filter = cn=cn-bucket.1.[0-9].[0-99999]
+
+# attribute to modify
+modifyAttribute = emailaddress
+
+# new attribute value "modifyValuePrefix.32bits-random"
+modifyValuePrefix = email-bucket.
+
+[add thread]
+# add threads will synchronize with delete threads via a DN queue, which has size defined by
+# DNQueueSize in base section
+#
+threadNum = 0
+
+# enable threadID to be part of RDN geneartion.  value "on/off"
+# if it is on, RDN=rdnAttribute.threadID.random
+# otherise, RDN=rdnAttribute.32bits-random
+threadIDPrefix = off
+
+rdnAttribute = cn
+
+# objectclass of the entry
+objectclassNum = 1
+objectclass1: vmidentity-user
+
+# attribute of the entry
+# for now, we only support string type value and each attribute will have
+# value "attributename.32bits-random"
+attributeNum = 6
+attribute1 = sn
+attribute2 = cn
+attribute3 = title
+attribute4 = vmIdentity-Account
+attribute5 = description
+attribute6 = emailAddress
+attribute7 = userPassword
+
+
+[delete thread]
+# delete threads will synchronize with add threads via a DN queue, which has size defined by
+# DNQueueSize in base section
+#
+threadNum = 0
+

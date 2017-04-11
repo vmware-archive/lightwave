@@ -10,9 +10,9 @@ import oasis.names.tc.saml._2_0.assertion.AssertionType;
 
 /**
  * <p>Java class for ActAsType complex type.
- *
+ * 
  * <p>The following schema fragment specifies the expected content contained within this class.
- *
+ * 
  * <pre>
  * &lt;complexType name="ActAsType">
  *   &lt;complexContent>
@@ -24,8 +24,8 @@ import oasis.names.tc.saml._2_0.assertion.AssertionType;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- *
- *
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "ActAsType", propOrder = {
@@ -38,11 +38,11 @@ public class ActAsType {
 
     /**
      * Gets the value of the assertion property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link AssertionType }
-     *
+     *     
      */
     public AssertionType getAssertion() {
         return assertion;
@@ -50,11 +50,11 @@ public class ActAsType {
 
     /**
      * Sets the value of the assertion property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link AssertionType }
-     *
+     *     
      */
     public void setAssertion(AssertionType value) {
         this.assertion = value;

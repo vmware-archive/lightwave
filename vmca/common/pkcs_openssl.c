@@ -1646,7 +1646,11 @@ VMCASetCSRSubjectKeyIdentifier(
     X509V3_set_ctx_nodb(&ctx);
     X509V3_set_ctx(&ctx, NULL, NULL, pReq, NULL, 0);
 
-    pExtension = X509V3_EXT_conf_nid(NULL, &ctx, NID_subject_key_identifier, "hash");
+    pExtension = X509V3_EXT_conf_nid(
+                                NULL,
+                                &ctx,
+                                NID_subject_key_identifier,
+                                (char*)"hash");
     if (pExtension == NULL)
     {
         dwError = VMCA_INVALID_CSR_FIELD;
@@ -1655,6 +1659,49 @@ VMCASetCSRSubjectKeyIdentifier(
 
     sk_X509_EXTENSION_push(pStack, pExtension);
 error:
+    return dwError;
+}
+
+static DWORD
+VMCASetCSRAuthorityInfoAccess(
+    STACK_OF(X509_EXTENSION) *pStack,
+    X509 *pCert,
+    X509 *pIssuer
+    )
+{
+    DWORD dwError = 0;
+    X509V3_CTX ctx;
+    X509_EXTENSION *pExtension = NULL;
+    PSTR pszIPAddress = NULL;
+    PSTR pszAIAString = NULL;
+
+    X509V3_set_ctx_nodb(&ctx);
+    X509V3_set_ctx(&ctx, pIssuer, pCert, NULL, NULL, 0);
+
+    dwError = VmAfdGetPNIDA(NULL, &pszIPAddress);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VMCAAllocateStringPrintfA(
+                                &pszAIAString,
+                                "caIssuers;URI:https://%s/afd/vecs/ssl",
+                                pszIPAddress);
+    BAIL_ON_ERROR(dwError);
+
+    pExtension = X509V3_EXT_conf_nid(
+                                NULL,
+                                &ctx,
+                                NID_info_access,
+                                (char*)pszAIAString);
+    if (pExtension == NULL)
+    {
+        dwError = VMCA_INVALID_CSR_FIELD;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    sk_X509_EXTENSION_push(pStack, pExtension);
+error:
+    VMCA_SAFE_FREE_MEMORY(pszIPAddress);
+    VMCA_SAFE_FREE_MEMORY(pszAIAString);
     return dwError;
 }
 
@@ -1672,7 +1719,11 @@ VMCASetAuthorityKeyIdentifier(
     X509V3_set_ctx_nodb(&ctx);
     X509V3_set_ctx(&ctx, pIssuer, pCert, NULL, NULL, 0);
 
-    pExtension = X509V3_EXT_conf_nid(NULL, &ctx, NID_authority_key_identifier, "keyid");
+    pExtension = X509V3_EXT_conf_nid(
+                                NULL,
+                                &ctx,
+                                NID_authority_key_identifier,
+                                "keyid");
     if (pExtension == NULL)
     {
         dwError = VMCA_INVALID_CSR_FIELD;
@@ -2010,6 +2061,9 @@ VMCACreateSigningRequestPrivate(
 
     dwError = VMCASetCSRSubjectKeyIdentifier(pStack, pReq);
     BAIL_ON_ERROR(dwError);
+
+//    dwError = VMCASetCSRAuthorityInfoAccess(pStack, pReq, pCertRequest->pszIPAddress);
+//    BAIL_ON_ERROR(dwError);
 
     dwError = X509_REQ_add_extensions(pReq, pStack);
     BAIL_ON_SSL_ERROR(dwError, VMCA_SSL_ADD_EXTENSION);
@@ -2599,6 +2653,9 @@ VMCACopyExtensions(
     dwError = VMCASetAuthorityKeyIdentifier(pStack, pCertificate, pCACertificate);
     BAIL_ON_ERROR(dwError);
 
+    dwError = VMCASetCSRAuthorityInfoAccess(pStack, pCertificate, pCACertificate);
+    BAIL_ON_ERROR(dwError);
+
     extCount = sk_X509_EXTENSION_num(pStack);
     for(Counter = 0; Counter < extCount; Counter ++)
     {
@@ -2738,7 +2795,8 @@ VMCAVerifySubjectAltNames(
         }
     }
 
-    if (dwDNSCount > 1)
+    if (dwDNSCount > 1 &&
+        !VMCAConfigIsServerOptionEnabled(VMCA_SERVER_OPT_ALLOW_MULTIPLE_SAN))
     {
         dwError = VMCA_ERROR_INVALID_SAN;
         BAIL_ON_ERROR(dwError);
@@ -3641,7 +3699,8 @@ error:
 DWORD
 VMCAVerifyHostNameInSAN(
     X509_REQ* pCSR,
-    PCSTR szHostName
+    PCSTR szHostName,
+    PBOOLEAN pIsSANPresent
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -3708,6 +3767,12 @@ VMCAVerifyHostNameInSAN(
     }
 
 cleanup:
+
+    if (pIsSANPresent)
+    {
+        *pIsSANPresent = (pSANNames != NULL);
+    }
+
     if (pszSANName)
     {
         OPENSSL_free(pszSANName);
@@ -3817,6 +3882,7 @@ VMCAVerifyHostName(
     X509_REQ *pRequest = NULL;
     ASN1_OCTET_STRING* pAsnHostNameIp = NULL;
     ASN1_OCTET_STRING* pAnsHostIp = NULL;
+    BOOLEAN bIsSANPresent = FALSE;
 
     if (IsNullOrEmptyString(pszCSR))
     {
@@ -3827,36 +3893,42 @@ VMCAVerifyHostName(
     dwError = VMCAPEMToCSR(pszCSR, &pRequest);
     BAIL_ON_ERROR(dwError);
 
-    dwError = VMCAVerifyHostNameInCN(pRequest, pszHostName);
+    dwError = VMCAVerifyHostNameInSAN(pRequest, pszHostName, &bIsSANPresent);
     BAIL_ON_ERROR(dwError);
 
-    dwError = VMCAVerifyHostNameInSAN(pRequest, pszHostName);
-    BAIL_ON_ERROR(dwError);
-
-    pAsnHostNameIp = a2i_IPADDRESS(pszHostName);
-    if (pAsnHostNameIp)
+    if (bIsSANPresent)
     {
-        dwError = VMCAVerifyIpAddressInSAN(pRequest, pAsnHostNameIp);
-        BAIL_ON_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pszHostIp))
-    {
-        pAnsHostIp = a2i_IPADDRESS(pszHostIp);
-
-        if (!pszHostIp)
+        pAsnHostNameIp = a2i_IPADDRESS(pszHostName);
+        if (pAsnHostNameIp)
         {
-            dwError = ERROR_INVALID_PARAMETER;
+            dwError = VMCAVerifyIpAddressInSAN(pRequest, pAsnHostNameIp);
             BAIL_ON_ERROR(dwError);
         }
 
-        dwError = VMCAVerifyIpAddressInSAN(pRequest, pAnsHostIp);
-        BAIL_ON_ERROR(dwError);
-    }
+        if (!IsNullOrEmptyString(pszHostIp))
+        {
+            pAnsHostIp = a2i_IPADDRESS(pszHostIp);
 
-    if (!pAsnHostNameIp && IsNullOrEmptyString(pszHostIp))
+            if (!pszHostIp)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_ERROR(dwError);
+            }
+
+            dwError = VMCAVerifyIpAddressInSAN(pRequest, pAnsHostIp);
+            BAIL_ON_ERROR(dwError);
+        }
+
+        if (!pAsnHostNameIp && IsNullOrEmptyString(pszHostIp))
+        {
+            dwError = VMCAVerifyIpAddressInSAN(pRequest, NULL);
+            BAIL_ON_ERROR(dwError);
+        }
+    }
+    else
     {
-        dwError = VMCAVerifyIpAddressInSAN(pRequest, NULL);
+        // If SAN is missing from CSR check CN for hostnane
+        dwError = VMCAVerifyHostNameInCN(pRequest, pszHostName);
         BAIL_ON_ERROR(dwError);
     }
 
@@ -3882,3 +3954,4 @@ cleanup:
 error:
     goto cleanup;
 }
+

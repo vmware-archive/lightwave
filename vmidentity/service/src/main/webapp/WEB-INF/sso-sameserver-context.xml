@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2013 VMware, Inc. All rights reserved. VMware confidential. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+   <bean id="systemTenantName" factory-bean="casIdmClient" factory-method="getSystemTenant" />
+
+   <bean class="com.vmware.identity.admin.util.GlobalApiProvider" lazy-init="false">
+      <constructor-arg>
+         <bean factory-bean="adminServerIms" factory-method="getServerConfigurator">
+            <constructor-arg ref="systemTenantName" />
+         </bean>
+      </constructor-arg>
+      <constructor-arg>
+         <bean factory-bean="adminServerIms" factory-method="getIdentitySourceManagement">
+            <constructor-arg ref="systemTenantName" />
+         </bean>
+      </constructor-arg>
+      <constructor-arg>
+         <bean class="com.vmware.identity.admin.util.UserLookupImpl">
+            <constructor-arg>
+               <bean factory-bean="adminServerIms" factory-method="getPrincipalDiscovery">
+                  <constructor-arg ref="systemTenantName" />
+               </bean>
+            </constructor-arg>
+         </bean>
+      </constructor-arg>
+   </bean>
+</beans>

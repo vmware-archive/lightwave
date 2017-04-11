@@ -60,6 +60,12 @@ typedef VMDIR_COND_2003  VMDIR_COND;
 
 #endif /* HAVE_DCERPC_WIN32 */
 
+typedef struct _VMDIR_RWLOCK
+{
+    BOOLEAN             bInitialized;
+    pthread_rwlock_t    lock;
+} VMDIR_RWLOCK;
+
 typedef struct _VMDIR_THREAD_START_INFO
 {
     VmDirStartRoutine* pStartRoutine;
@@ -137,3 +143,9 @@ typedef struct _VM_DIR_SECURITY_CONTEXT_
         uid_t uid;
 #endif
 }VM_DIR_SECURITY_CONTEXT;
+
+typedef struct _VMDIR_DFL_VERSION_MAP
+{
+    DWORD dfl;
+    PCSTR version;
+} VMDIR_DFL_VERSION_MAP, *PVMDIR_DFL_VERSION_MAP;

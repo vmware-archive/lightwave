@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -28,7 +28,8 @@ typedef enum
 {
     OP_UNDEFINED,
     OP_GET_SUPPORTED_SYNTAXES,
-    OP_PATCH_SCHEMA_DEFS
+    OP_PATCH_SCHEMA_DEFS,
+    OP_GET_SCHEMA_REPL_STATUS
 
 } VDC_SCHEMA_OP_CODE;
 
@@ -37,5 +38,7 @@ typedef struct _VDC_SCHEMA_OP_PARAM
     VDC_SCHEMA_OP_CODE  opCode;
     PSTR                pszFileName;
     BOOLEAN             bDryrun;
+    BOOLEAN             bVerbose;
+    int                 iTimeout;
 
 } VDC_SCHEMA_OP_PARAM, *PVDC_SCHEMA_OP_PARAM;

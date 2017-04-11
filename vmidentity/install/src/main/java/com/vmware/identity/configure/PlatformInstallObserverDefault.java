@@ -1,5 +1,4 @@
 /*
- *
  *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -11,9 +10,7 @@
  *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
- *
  */
-
 package com.vmware.identity.configure;
 
 import java.util.List;
@@ -89,6 +86,39 @@ public class PlatformInstallObserverDefault implements IPlatformInstallObserver 
             System.out.println("Upgrade completed successfully.");
         } else {
             System.out.println("Upgrade failed.");
+        }
+    }
+    @Override
+    public void beginMigration(List<PlatformInstallComponent> components)
+    {
+        System.out.println("\n-----Begin Migration of components----- ");
+        for (PlatformInstallComponent info : components) {
+            System.out.println(info.getName());
+        }
+    }
+
+    @Override
+    public void beginComponentMigration(String component)
+    {
+        System.out.println("\nBegin Migrating component: " + component);
+    }
+
+    @Override
+    public void endComponentMigration(String component, boolean status)
+    {
+        if (status) {
+            System.out.println("Migrating " + component + " succesfully.");
+        } else {
+            System.out.println(component + " Migration  failed.");
+        }
+    }
+    @Override
+    public void endMigration(boolean status)
+    {
+        if (status) {
+            System.out.println("Migration completed successfully.");
+        } else {
+            System.out.println("Migration failed.");
         }
     }
 

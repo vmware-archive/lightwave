@@ -41,25 +41,28 @@
                    executor="tomcatThreadPool"
                    maxKeepAliveRequests="-1"
                    port="${bio-custom.http.port}"
-                   protocol="org.apache.coyote.http11.Http11Protocol"
+                   protocol="org.apache.coyote.http11.Http11NioProtocol"
                    redirectPort="${bio-custom.https.port}"/>
         <Connector SSLEnabled="true"
                    acceptCount="200"
-                   ciphers="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA"
                    connectionTimeout="20000"
                    keepAliveTimeout="60000"
                    executor="tomcatThreadPool"
-                   keystoreType="VKS"
-                   keyAlias="__MACHINE_CERT"
                    store="MACHINE_SSL_CERT"
                    sslImplementationName="com.vmware.identity.tomcat.VECSAwareSSLImplementation"
-                   sslEnabledProtocols="TLSv1.1,TLSv1.2"
                    maxKeepAliveRequests="-1"
                    port="${bio-ssl-localhost.https.port}"
-                   protocol="org.apache.coyote.http11.Http11Protocol"
+                   protocol="org.apache.coyote.http11.Http11NioProtocol"
                    redirectPort="${bio-ssl-localhost.https.port}"
                    scheme="https"
-                   secure="true"/>
+                   secure="true">
+            <SSLHostConfig ciphers="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA"
+                           protocols="TLSv1.1,TLSv1.2" >
+                <Certificate certificateKeystoreType="VKS"
+                     certificateKeyAlias="__MACHINE_CERT"
+                     certificateKeystoreFile="MACHINE_SSL_CERT" />
+            </SSLHostConfig>
+    </Connector>
     </Service>
     <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener"/>
 </Server>

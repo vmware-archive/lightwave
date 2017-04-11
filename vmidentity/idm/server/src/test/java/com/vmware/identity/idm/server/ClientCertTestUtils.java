@@ -26,9 +26,11 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.lang.Validate;
@@ -79,6 +81,14 @@ public class ClientCertTestUtils {
     public final String dodValidCert1UPN = "9301000121@mil";
     public final Calendar dodCertExpireDate = new GregorianCalendar(
                     2017, 3, 10);
+    // X509 mapp strings for "bill.preston.s.9301000121.email_sig.cer"
+    public final String x509_PREFIX = "X509:";
+    public final String dodValidCert1_I = "<I>C=US,O=U.S. Government,OU=DoD,OU=PKI,CN=DOD JITC EMAIL CA-29";
+    public final String dodValidCert1_S = "<S>C=US,O=U.S. Government,OU=DoD,OU=PKI,OU=DARPA,CN=Bill.Preston.S.9301000121";
+    public final String dodValidCert1_SR = "<SR>433816";
+    public final String dodValidCert1_SKI = "<SKI>7efdbcb2b04d1a74eb317e104ca36bf65c7f3d0b";
+    public final String dodValidCert1_SHA1_PUKEY = "<SHA1-PUKEY>b1beaf825f9b57111dfa313402321355df693d2e";
+    public final String dodValidCert1_RFC822 = "<RFC822>bill.s.preston@dod.mil";
 
     // More DOD test certs store. In P12 format
     //
@@ -239,4 +249,20 @@ public class ClientCertTestUtils {
 
         return testProps;
      }
+
+    public List<String> getDodValidCert1X509_IS() throws KeyStoreException {
+
+        String IS = x509_PREFIX + dodValidCert1_I + dodValidCert1_S;
+        List<String> result = new ArrayList<String>();
+        result.add(IS);
+        return result;
+    }
+
+    public List<String> getDodValidCert1X509_ISR() throws KeyStoreException {
+
+        String ISR = x509_PREFIX + dodValidCert1_I + dodValidCert1_SR;
+        List<String> result = new ArrayList<String>();
+        result.add(ISR);
+        return result;
+    }
 }

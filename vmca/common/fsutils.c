@@ -42,6 +42,7 @@
 
 #endif
 
+#define COPY_BUFFER_SIZE 4*1024
 
 DWORD
 VMCAOpenFilePath(
@@ -95,7 +96,89 @@ error :
     goto cleanup;
 }
 
+#ifndef _WIN32
+
+DWORD
+VMCACopyFile(
+    PCSTR pszSrc,
+    PCSTR pszDest
+    )
+{
+    DWORD dwError = 0;
+    FILE* pfSrc = NULL;
+    FILE* pfDest = NULL;
+    size_t cbRead = 0;
+    BYTE  buf[COPY_BUFFER_SIZE];
+
+    dwError = VMCAOpenFilePath(pszSrc, "r", &pfSrc);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAOpenFilePath(pszDest, "w", &pfDest);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    while ((cbRead = fread(buf, 1, COPY_BUFFER_SIZE, pfSrc)) > 0)
+    {
+        size_t bytesWritten = 0;
+
+        if ((bytesWritten = fwrite(buf, 1, cbRead, pfDest)) == 0)
+        {
+            dwError = VMCAGetWin32ErrorCode(errno);
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+    }
+
+    if (pfDest)
+    {
+        fclose(pfDest);
+        pfDest = NULL;
+    }
+
+    if(chmod(pszDest,S_IRUSR | S_IWUSR) != 0)
+    {
+        dwError = VMCAGetWin32ErrorCode(errno);
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+cleanup:
+
+    if (pfSrc)
+    {
+        fclose(pfSrc);
+        pfSrc = NULL;
+    }
+    return dwError;
+
+error:
+
+    if (pfDest)
+    {
+        fclose(pfDest);
+        pfDest = NULL;
+    }
+
+    goto cleanup;
+}
+
+#endif
+
 #ifdef _WIN32
+
+DWORD
+VMCACopyFile(
+    PCSTR pszSrc,
+    PCSTR pszDest
+    )
+{
+    DWORD dwError = 0;
+
+    errno = 0;
+    if (!CopyFileA(pszSrc, pszDest, FALSE))
+    {
+        dwError = GetLastError();
+    }
+
+    return dwError;
+}
 
 DWORD
 VMCARestrictDirectoryAccess(

@@ -31,7 +31,7 @@ public class IdmServiceContextFactory {
 
         public IdmServiceContext(String correlationId)
         {
-            Validate.notEmpty(correlationId, "correlationId");
+            Validate.notEmpty(correlationId, "Invalid correlationId. CorrelationId cannot be null or empty");
             this._correlationId = correlationId;
         }
 

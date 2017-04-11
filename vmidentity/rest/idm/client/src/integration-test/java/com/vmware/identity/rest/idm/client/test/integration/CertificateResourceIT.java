@@ -34,6 +34,7 @@ import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.data.CertificateChainDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
+import com.vmware.identity.rest.idm.data.attributes.CertificateGranularity;
 import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
 
 public class CertificateResourceIT extends IntegrationTestBase {
@@ -66,7 +67,7 @@ public class CertificateResourceIT extends IntegrationTestBase {
 
         testAdminClient.certificate().setCredentials(testTenant.getName(), credentials);
 
-        List<CertificateChainDTO> chains = testAdminClient.certificate().get(testTenant.getName(), CertificateScope.TENANT);
+        List<CertificateChainDTO> chains = testAdminClient.certificate().get(testTenant.getName(), CertificateScope.TENANT, CertificateGranularity.CHAIN);
         assertFalse(chains.isEmpty());
 
         List<CertificateDTO> retrievedCerts = chains.get(chains.size() - 1).getCertificates();
@@ -82,7 +83,7 @@ public class CertificateResourceIT extends IntegrationTestBase {
 
     @Test
     public void testGet() throws ClientProtocolException, HttpException, ClientException, IOException {
-        List<CertificateChainDTO> chains = testAdminClient.certificate().get(testTenant.getName(), CertificateScope.TENANT);
+        List<CertificateChainDTO> chains = testAdminClient.certificate().get(testTenant.getName(), CertificateScope.TENANT, CertificateGranularity.CHAIN);
 
         assertFalse(chains.isEmpty());
         List<CertificateDTO> certs = chains.get(0).getCertificates();

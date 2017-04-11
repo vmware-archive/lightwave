@@ -38,11 +38,11 @@ import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.NoSuchResourceServerException;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.ResourceServerResource;
 
 /**

@@ -46,7 +46,6 @@ VmDirPerformRename(
     PVDIR_LDAP_RESULT  pResult = &(pOperation->ldapResult);
     ber_len_t          size = 0;
     PSTR               pszLocalErrorMsg = NULL;
-    BOOLEAN            bResultAlreadySent = FALSE;
 
     if (!_VmDirIsRenameSupported())
     {
@@ -73,10 +72,6 @@ VmDirPerformRename(
         }
     }
 
-    retVal = ParseRequestControls(pOperation, pResult);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                 "Strong consistency request control parsing failed");
-
    if ( ber_scanf( pOperation->ber, "}") == LBER_ERROR )
    {
       VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "PerformRename: ber_scanf failed" );
@@ -86,22 +81,18 @@ VmDirPerformRename(
    }
 
    retVal = pResult->errCode = VmDirMLModify( pOperation );
-   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    return retVal;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
         VmDirSendLdapResult( pOperation );
     }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 

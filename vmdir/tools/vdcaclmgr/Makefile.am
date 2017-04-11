@@ -3,7 +3,6 @@ bin_PROGRAMS = vdcaclmgr
 vdcaclmgr_SOURCES = \
     acl.c           \
     ldap.c          \
-    stringlist.c    \
     main.c
 
 vdcaclmgr_CPPFLAGS = \

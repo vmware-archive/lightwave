@@ -1,0 +1,5 @@
+
+SUBDIRS = \
+    openldap \
+    csrp \
+    heimdal

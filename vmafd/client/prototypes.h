@@ -154,6 +154,16 @@ VecsLocalIPCRequest(
     VMW_TYPE_SPEC *output_spec
 );
 
+DWORD
+VecsLocalIPCRequestH(
+	PVM_AFD_CONNECTION pConnection,
+	UINT32 apiType,
+	DWORD noOfArgsIn,
+	DWORD noOfArgsOut,
+	VMW_TYPE_SPEC *input_spec,
+	VMW_TYPE_SPEC *output_spec
+	);
+
 /* afdlocalclient.c */
 
 DWORD
@@ -300,6 +310,15 @@ VmAfdLocalLeaveVmDir(
 );
 
 DWORD
+VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszMachineName,
+    PCWSTR pwszOrgUnit,
+    PWSTR* ppwszOutPassword
+);
+
+DWORD
 VmAfdLocalJoinAD(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
@@ -378,6 +397,13 @@ DWORD
 VmAfdLocalConfigureDNSW(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword
+    );
+
+DWORD
+VmAfdLocalChangePNID(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszPNID
     );
 
 // cdclocalclient.c

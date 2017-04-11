@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -84,6 +84,12 @@
     VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPreModApplyModify), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_OPERATION_TYPE_EXTERNAL),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginVerifyAclAccess),       \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
@@ -115,11 +121,23 @@
     VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPreModify),    \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginDflValidatePreModify),  \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
 #define VDIR_POST_MODIFY_COMMIT_PLUGIN_INITIALIZER                  \
 {                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginDflUpdatePostModifyCommit), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
     VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
@@ -235,9 +253,9 @@
 #define VDIR_PRE_MODAPPLY_DELETE_PLUGIN_INITIALIZER                 \
 {                                                                   \
     {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreModApplyDelete), \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginGroupMemberPreModApplyDelete), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -297,6 +315,13 @@ _VmDirPluginSchemaLibUpdatePreModify(
 
 static
 DWORD
+_VmDirPluginDflValidatePreModify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult);
+
+static
+DWORD
 _VmDirPluginSchemaLibUpdatePostModifyCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
@@ -309,6 +334,13 @@ _VmDirPluginLockoutCachePostModifyCommit(
         PVDIR_ENTRY      pEntry,
         DWORD            dwPriorResult
         );
+
+static
+DWORD
+_VmDirPluginDflUpdatePostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult);
 
 static
 DWORD
@@ -396,6 +428,14 @@ _VmDIrPluginPasswordPreModApplyModify(
 
 static
 DWORD
+_VmDirPluginVerifyAclAccess(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+static
+DWORD
 _VmDirPluginReplaceOpAttrsPreModApplyModify(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
@@ -428,13 +468,6 @@ _VmDirPluginMapAclStringAttributePreModApplyModify(
 static
 DWORD
 _VmDirPluginSetDeletedObjAttrsPreModApplyDelete(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePreModApplyDelete(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -745,7 +778,7 @@ _VmDirPluginSchemaLibUpdatePreModify(
     DWORD dwRtn = 0;
     PVDIR_MODIFICATION pMod = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         pMod = pOperation->request.modifyReq.mods;
         for (; pMod; pMod = pMod->next)
@@ -769,6 +802,163 @@ _VmDirPluginSchemaLibUpdatePreModify(
 error:
     return dwPriorResult ? dwPriorResult : dwRtn;
 }
+
+/*
+ * Check if modified domain functional level can be supported.
+ * If operation is external, check that all DCs can support dfl.
+ * If operation is replication and level is above max DFL, force exit server
+ * as it cannot give the functionality that the domain requires.
+ */
+static
+DWORD
+_VmDirPluginDflValidatePreModify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult)
+{
+    DWORD dwError = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    PVDIR_ATTRIBUTE pAttrVer = NULL;
+    PVDIR_ATTRIBUTE pAttrCn = NULL;
+    PVDIR_ATTRIBUTE pAttrMaxDfl = NULL;
+    PSTR pszDomainDN = NULL;
+    PSTR pszDCContainerDN = NULL;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+    int iCnt = 0;
+    DWORD dwReqDfl = 0;
+    DWORD dwMaxDfl = 0;
+    PSTR pszCn = NULL;
+
+    pszDomainDN = gVmdirServerGlobals.systemDomainDN.bvnorm_val;
+
+    // check if entry is domain object
+    if (pszDomainDN && VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn),
+                                           pszDomainDN,
+                                           FALSE) == 0)
+    {
+        // Search for vmwDomainFunctionalLevel attr
+        pAttr = VmDirFindAttrByName(pEntry, ATTR_DOMAIN_FUNCTIONAL_LEVEL);
+        if (pAttr != NULL)
+        {
+            // get requested dfl value
+            dwReqDfl = atoi(BERVAL_NORM_VAL(pAttr->vals[0]));
+
+            if (dwReqDfl < gVmdirServerGlobals.dwDomainFunctionalLevel)
+            {
+                // Don't allow downgrade of DFL
+                if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+                {
+                    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                                     "Downgrade of domain functional level not allowed (%d)",
+                                     dwReqDfl);
+                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
+                }
+                // Replicated DFL is lower
+                else
+                {
+                    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                                       "WARNING WARNING WARNING Domain functional level modification (%d) "
+                                       "is lower than local DFL (%d)",
+                                       dwReqDfl,
+                                       gVmdirServerGlobals.dwDomainFunctionalLevel);
+
+                }
+            }
+
+            // Can local DC support DFL?
+            if(dwReqDfl > VMDIR_MAX_DFL)
+            {
+                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                                 "Server cannot support requested domain functional level (%d)",
+                                 dwReqDfl);
+
+                if (pOperation->opType == VDIR_OPERATION_TYPE_REPL)
+                {
+                    // This server cannot perform as intended in this domain, shut it down.
+                    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
+                    VmDirForceExit();
+                }
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
+            }
+
+            // Check if domain can support requested DFL
+            if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+            {
+                dwError = VmDirAllocateStringPrintf(
+                                &pszDCContainerDN,
+                                "OU=%s,%s",
+                                VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
+                                pszDomainDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmDirSimpleEqualFilterInternalSearch(
+                                                pszDCContainerDN,
+                                                LDAP_SCOPE_ONE,
+                                                ATTR_OBJECT_CLASS,
+                                                OC_COMPUTER,
+                                                &entryArray);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                // For each DC
+                for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
+                {
+                    // Find its version number
+                    pAttrVer = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_PSC_VERSION);
+                    pAttrMaxDfl = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL);
+                    pAttrCn = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_CN);
+
+                    // Get Cn of DC
+                    if (pAttrCn)
+                    {
+                        pszCn = BERVAL_NORM_VAL(pAttrCn->vals[0]);
+                    }
+                    else
+                    {
+                        pszCn = "n/a";
+                    }
+
+                    if (pAttrMaxDfl)
+                    {
+                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrVer->vals[0]));
+                    }
+                    else if (pAttrVer)
+                    {
+                        dwMaxDfl = 0;
+
+                        // Get its max DFL for version
+                        dwError = VmDirMapVersionToMaxDFL(BERVAL_NORM_VAL(pAttrVer->vals[0]), &dwMaxDfl);
+                        BAIL_ON_VMDIR_ERROR(dwError);
+
+                    }
+                    // PSC version not found for node, use default.
+                    else
+                    {
+                        dwMaxDfl = VMDIR_DFL_DEFAULT;
+                    }
+
+                    // Can DC support requested DFL?
+                    if( dwMaxDfl <  dwReqDfl)
+                    {
+                        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                                         "Domain Controller (%s) cannot support requested domain functional level (%d)",
+                                         pszCn,
+                                         dwReqDfl);
+                        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
+                    }
+                }
+            }
+        }
+    }
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDCContainerDN);
+    VmDirFreeEntryArrayContent(&entryArray);
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
 
 /*
  * Generic place to validate attribute values for LDAP_ADD operation.
@@ -809,8 +999,8 @@ _VmDirPluginGenericPreAdd(
         BOOLEAN bReturn = FALSE;
 
         bReturn = VmDirValidRelativeSecurityDescriptor(
-                    (PSECURITY_DESCRIPTOR_RELATIVE)pAttrSD->vals[0].bvnorm_val,
-                    (ULONG)pAttrSD->vals[0].bvnorm_len,
+                    (PSECURITY_DESCRIPTOR_RELATIVE)pAttrSD->vals[0].lberbv_val,
+                    (ULONG)pAttrSD->vals[0].lberbv_len,
                     OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION);
         if (!bReturn)
         {
@@ -939,6 +1129,38 @@ error:
     goto cleanup;
 }
 
+
+/*
+* Only users and groups ("security principals") require a real SID. Domain
+* objects need the domain-specific SID we store there (to construct SIDs for
+* real security principals). Rather than hard-code the classes that get a
+* SID here we just let the schema definition drive the logic.
+*/
+DWORD
+_VmDirNeedsSid(
+    PVDIR_ENTRY pEntry,
+    BOOLEAN *pbNeedsSid
+    )
+{
+    BOOLEAN bMustHaveAttr = FALSE;
+    BOOLEAN bMayHaveAttr = FALSE;
+    DWORD dwError = 0;
+
+    dwError = VmDirEntryIsAttrAllowed(
+                pEntry,
+                ATTR_OBJECT_SID,
+                &bMustHaveAttr,
+                &bMayHaveAttr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pbNeedsSid = bMustHaveAttr || bMayHaveAttr;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirPluginGenerateSidPreAdd(
@@ -949,6 +1171,7 @@ _VmDirPluginGenerateSidPreAdd(
 {
     DWORD           dwError = 0;
     PSTR            pszObjectSid = NULL;
+    BOOLEAN         bNeedsSid = FALSE;
     PVDIR_ATTRIBUTE pObjectSidAttrExist = NULL;
 
     PVDIR_ATTRIBUTE pObjectSidAttr = NULL;
@@ -963,6 +1186,13 @@ _VmDirPluginGenerateSidPreAdd(
                              ATTR_OBJECT_SID,
                              pEntry);
     if (pObjectSidAttrExist)
+    {
+        goto cleanup;
+    }
+
+    dwError = _VmDirNeedsSid(pEntry, &bNeedsSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!bNeedsSid)
     {
         goto cleanup;
     }
@@ -1191,7 +1421,7 @@ _VmDirPluginSchemaEntryPreAdd(
     PVDIR_ATTRIBUTE pCnAttr = NULL;
     PSTR    pszSchemaIdGuid = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         // lDAPDisplayName attribute takes cn as default
         if (!VmDirFindAttrByName(pEntry, ATTR_LDAP_DISPLAYNAME))
@@ -1223,7 +1453,7 @@ _VmDirPluginSchemaEntryPreAdd(
             BAIL_ON_VMDIR_ERROR(dwRtn);
         }
 
-        if (VmDirIsEntryWithObjectclass(pEntry, OC_CLASS_SCHEMA))
+        if (VmDirEntryIsObjectclass(pEntry, OC_CLASS_SCHEMA))
         {
             // defaultObjectCategory attribute takes dn as default
             if (!VmDirFindAttrByName(pEntry, ATTR_DEFAULT_OBJECT_CATEGORY))
@@ -1251,7 +1481,7 @@ _VmDirPluginSchemaLibUpdatePreAdd(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR(dwRtn);
@@ -1385,6 +1615,7 @@ _VmDirPluginReplAgrPostDeleteCommit(
     }
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
     for (pReplAgr = gVmdirReplAgrs; pReplAgr != NULL; pReplAgr = pReplAgr->next )
     {
         if (VmDirStringCompareA(pReplAgr->dn.bvnorm_val, pEntry->dn.bvnorm_val, TRUE)  == 0)
@@ -1393,10 +1624,7 @@ _VmDirPluginReplAgrPostDeleteCommit(
             break;
         }
     }
-    if (pReplAgr && pReplAgr->isDeleted)
-    {
-        VmDirReplUpdateUrgentReplCoordinatorTableForDelete(pReplAgr);
-    }
+
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
 
 cleanup:
@@ -1580,27 +1808,6 @@ error:
 
 static
 DWORD
-_VmDirPluginSchemaLibUpdatePreModApplyDelete(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    // reject delete if it's a schema entry
-    DWORD   dwError = 0;
-    PSTR    pszDN = BERVAL_NORM_VAL(pOperation->request.deleteReq.dn);
-
-    if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE))
-    {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-error:
-    return dwError;
-}
-
-static
-DWORD
 _VmDirPluginSchemaLibUpdatePostModifyCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
@@ -1608,12 +1815,48 @@ _VmDirPluginSchemaLibUpdatePostModifyCommit(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaLibUpdate(dwPriorResult);
     }
 
     return dwPriorResult ? dwPriorResult : dwRtn;
+}
+
+/*
+ * Update cached domain functional level
+ */
+static
+DWORD
+_VmDirPluginDflUpdatePostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult)
+{
+    PVDIR_ATTRIBUTE  pAttr = NULL;
+    DWORD dwDfl = 0;
+
+    // check if domain object
+    if (gVmdirServerGlobals.systemDomainDN.bvnorm_val &&
+        VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn),
+                            gVmdirServerGlobals.systemDomainDN.bvnorm_val,
+                            FALSE) == 0)
+    {
+        // Search for vmwDomainFunctionalLevel attr
+        pAttr = VmDirFindAttrByName(pEntry, ATTR_DOMAIN_FUNCTIONAL_LEVEL);
+
+        if (pAttr)
+        {
+            dwDfl = atoi(BERVAL_NORM_VAL(pAttr->vals[0]));
+
+            gVmdirServerGlobals.dwDomainFunctionalLevel = dwDfl;
+
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Domain Functional Level cache changed to (%d)",
+                            gVmdirServerGlobals.dwDomainFunctionalLevel);
+        }
+    }
+
+    return dwPriorResult;
 }
 
 /*
@@ -1720,7 +1963,7 @@ _VmDirConstructFSPDN(
         assert( pszDomainDN );
 
         // FSP DN looks like: objectIdd=<a SID or entryUUID or etc...>,cn=ForeignSecurityPrincipals,<domain DN>
-        dwError = VmDirAllocateStringAVsnprintf( &pszFSPDN, "%s,%s=%s,%s", pSpecialDn->lberbv.bv_val,
+        dwError = VmDirAllocateStringPrintf( &pszFSPDN, "%s,%s=%s,%s", pSpecialDn->lberbv.bv_val,
                                                  FSP_CONTAINER_RDN_ATTR, FSP_CONTAINER_RDN_ATTR_VALUE,
                                                  pszDomainDN );
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2091,4 +2334,48 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirPluginVerifyAclAccess(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    )
+{
+    DWORD               dwError = 0;
+    PVDIR_MODIFICATION  pModReq  = pOperation->request.modifyReq.mods;
+    PVDIR_MODIFICATION  pMod = NULL;
+    PVDIR_ENTRY         pCurrentEntry = NULL;
 
+    for (pMod = pModReq; pMod != NULL; pMod = pMod->next)
+    {
+        if (pMod->attr.type.lberbv.bv_val == NULL)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+         //
+         // In general a caller can modify an entry if they have
+         // VMDIR_RIGHT_DS_WRITEPROP access. However, the entry's security
+         // descriptor is special-cased and requires a separate permission
+         // (VMDIR_ENTRY_WRITE_ACL). This is the same behavior as AD.
+         //
+        if (VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_ACL_STRING, FALSE) == 0 ||
+            VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+        {
+            dwError = VmDirSimpleDNToEntry(pOperation->request.modifyReq.dn.lberbv_val, &pCurrentEntry);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirSrvAccessCheck(pOperation, &pOperation->conn->AccessInfo, pCurrentEntry, VMDIR_ENTRY_WRITE_ACL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    VmDirFreeEntry(pCurrentEntry);
+    return dwPriorResult ? dwPriorResult : dwError;
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirPluginVerifyAclAccess failed with error %d", dwError);
+    goto cleanup;
+}

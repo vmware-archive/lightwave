@@ -12,13 +12,46 @@ public class VMIdentityStandaloneInstaller {
     public static void main(String[] args) {
 
         VmIdentityParams params = build(args);
-        if (params.isUpgradeMode()) {
+
+        if (params.isCheckSTSHealth()) {
+            try {
+
+                String hostName   = HostnameReader.readHostName();
+                String portNumber = HostnameReader.readPortNumber();
+                if (hostName == null || portNumber == null){
+                    throw new NullPointerException("Hostname or Portnumber are not configured");
+                }
+                new STSHealthChecker(hostName,portNumber ).checkHealth();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }  else if (params.isHostnameMode() ){
+            try {
+                new HostinfoWriter(params.getHostname(), params.getHostnameType()).write();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                System.exit(1);
+            }
+        } else if (params.isUpgradeMode()) {
             System.out.println("\n\n-----Performing VMIdentity Upgrade-----");
             VMIdentityController idmController = new VMIdentityController();
             idmController
                     .setPlatformInstallObserver(new PlatformInstallObserverDefault());
             try {
                 idmController.upgradeStandaloneInstance(params);
+            } catch (DomainControllerNativeException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                System.exit(1);
+            }
+        } else if (params.isMigrationMode()) {
+            System.out.println("\n\n-----Performing VMIdentity Migration-----");
+            VMIdentityController idmController = new VMIdentityController();
+            idmController
+                    .setPlatformInstallObserver(new PlatformInstallObserverDefault());
+            try {
+                idmController.migrateStandaloneInstance(params);
             } catch (DomainControllerNativeException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -31,8 +64,8 @@ public class VMIdentityStandaloneInstaller {
                     && (passwd = cons.readPassword("Password:")) != null) {
                 params.setPassword(new String(passwd));
             }
-        } 
-        if (!params.isUpgradeMode())
+        }
+        else
         {
             try {
                 VMIdentityController idmController = new VMIdentityController();
@@ -56,6 +89,8 @@ public class VMIdentityStandaloneInstaller {
             case PARSE_MODE_OPEN:
                 if (arg.equals("--hostname")) {
                     mode = ParseMode.PARSE_MODE_HOSTNAME;
+                } else if (arg.equals("--hostnametype")) {
+                    mode = ParseMode.PARSE_MODE_HOSTNAMETYPE;
                 } else if (arg.equals("--password")) {
                     mode = ParseMode.PARSE_MODE_PASSWORD;
                 } else if (arg.equals("--domain")) {
@@ -68,12 +103,28 @@ public class VMIdentityStandaloneInstaller {
                     mode = ParseMode.PARSE_MODE_BACKUPDIR;
                 } else if (arg.equals("--identity-conf-file-path")) {
                     mode = ParseMode.PARSE_MODE_VMIDENTITY_CONF;
-                } else if (arg.equals("--start-service")) {
-                    params.setServiceStart();
-		}
+                } else if (arg.equals("--migration")) {
+                    params.setMigrationMode(true);
+                } else if (arg.equals("--sourceVersion")) {
+                    mode = ParseMode.PARSE_MODE_SOURCE_VERSION;
+                } else if (arg.equals("--sourcePlatform")) {
+                    mode = ParseMode.PARSE_MODE_SOURCE_PLATFORM;
+                } else if (arg.equals("--exportFolder")){
+                    mode = ParseMode.PARSE_MODE_EXPORT_FOLDER;
+                } else if (arg.equals("--set-hostname")) {
+                    params.setHostNameMode(true);
+                } else if (arg.equals("--sts-health-check")) {
+                    params.setCheckSTSHealth(true);
+                } else if (arg.equals("--ssl-subject-alt-name")) {
+                    mode = ParseMode.PARSE_MODE_SSL_SUBJECT_ALT_NAME;
+                 }
                 break;
             case PARSE_MODE_HOSTNAME:
                 params.setHostname(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_HOSTNAMETYPE:
+                params.setHostnameType(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
             case PARSE_MODE_USERNAME:
@@ -96,6 +147,22 @@ public class VMIdentityStandaloneInstaller {
                 params.setVmIdentityConf(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
+            case PARSE_MODE_SOURCE_VERSION:
+                params.setSourceVersion(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_SOURCE_PLATFORM:
+                params.setSourcePlatform(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_EXPORT_FOLDER:
+                params.setVmIdentityConf(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
+                params.setSubjectAltName(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
             default:
                 break;
             }
@@ -106,11 +173,16 @@ public class VMIdentityStandaloneInstaller {
     enum ParseMode {
         PARSE_MODE_OPEN,
         PARSE_MODE_HOSTNAME,
+        PARSE_MODE_HOSTNAMETYPE,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_USERNAME,
         PARSE_MODE_PASSWORD,
         PARSE_MODE_BACKUPDIR,
         PARSE_MODE_UPGRADE,
-        PARSE_MODE_VMIDENTITY_CONF
+        PARSE_MODE_VMIDENTITY_CONF,
+        PARSE_MODE_SOURCE_VERSION,
+        PARSE_MODE_SOURCE_PLATFORM,
+        PARSE_MODE_EXPORT_FOLDER,
+        PARSE_MODE_SSL_SUBJECT_ALT_NAME
     }
 }

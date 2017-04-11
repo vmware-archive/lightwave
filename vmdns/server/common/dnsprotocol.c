@@ -781,6 +781,9 @@ VmDnsProcessUpdatePrerequisites(
                                 pRecordObj
                                 );
             BAIL_ON_VMDNS_ERROR(dwError);
+
+            VmDnsRecordObjectRelease(pRecordObj);
+            pRecordObj = NULL;
         }
         else
         {

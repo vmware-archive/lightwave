@@ -22,7 +22,6 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -43,7 +42,6 @@ import com.vmware.identity.idm.PasswordPolicyViolationException;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.rest.core.server.authorization.Role;
-import com.vmware.identity.rest.core.server.authorization.annotation.DynamicRole;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
 import com.vmware.identity.rest.core.server.exception.DTOMapperException;
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
@@ -52,13 +50,12 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.GroupDTO;
-import com.vmware.identity.rest.idm.data.PasswordResetRequestDTO;
 import com.vmware.identity.rest.idm.data.PrincipalDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
-import com.vmware.identity.rest.idm.server.PathParameters;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.PrincipalMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Web service resource to manage all person user operations.
@@ -74,7 +71,7 @@ public class UserResource extends BaseSubResource {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResource.class);
 
     public UserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(tenant, request, securityContext);
+        super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**
@@ -148,7 +145,7 @@ public class UserResource extends BaseSubResource {
         try {
             PersonUser idmPersonUser = getIDMClient().findPersonUser(tenant, id);
             if (idmPersonUser == null) {
-                throw new InvalidPrincipalException(String.format("User '%s' does not exist in tenant '%s'", name, tenant));
+                throw new InvalidPrincipalException(String.format("User '%s' does not exist in tenant '%s'", name, tenant), name);
             }
             return UserMapper.getUserDTO(idmPersonUser, includePasswordDetails(name));
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {

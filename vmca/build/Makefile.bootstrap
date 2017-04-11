@@ -43,7 +43,6 @@ CLEAN_OBJECTS = \
     rpmbuild \
     service \
     test \
-    tools \
     vmcadb \
     vmware-vmca-client \
     $(SRCROOT)/aclocal.m4 \

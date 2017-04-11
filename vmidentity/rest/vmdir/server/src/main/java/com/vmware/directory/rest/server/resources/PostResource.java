@@ -34,6 +34,7 @@ import com.vmware.directory.rest.common.data.SearchResultDTO;
 import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.directory.rest.common.data.TenantConfigurationDTO;
 import com.vmware.directory.rest.common.data.UserDTO;
+import com.vmware.directory.rest.server.util.Config;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
@@ -54,7 +55,7 @@ import com.vmware.identity.rest.core.server.resources.BaseResource;
 public class PostResource extends BaseResource {
 
     public PostResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     // Group Resource

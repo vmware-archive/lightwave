@@ -28,7 +28,6 @@ package com.vmware.identity.idm.client;
 */
 
 import java.net.Inet6Address;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -251,8 +250,7 @@ class SAMLExporter {
 
         String normalizedLoc = convertToIPV6ShortForm(entityID);
         String acsLocStr =
-                normalizedLoc.replaceAll("/SAML2/Metadata/", "/"
-                        + SAMLNames.SP_ASSERTIONCONSUMERSERVICE_PLACEHOLDER + "/");
+ normalizedLoc.replaceAll(SAMLNames.ENTITY_ID_PLACEHOLDER, SAMLNames.SP_ASSERTIONCONSUMERSERVICE_PLACEHOLDER);
 
         int index = 0;
         Element ssoEndpoint =
@@ -880,7 +878,7 @@ class SAMLExporter {
             // entID is required attribute
             ssoLoc = tenantName;
         }
-        String sloLoc = ssoLoc.replaceAll("SAML2/Metadata",
+        String sloLoc = ssoLoc.replaceAll(SAMLNames.ENTITY_ID_PLACEHOLDER,
                 SAMLNames.SP_SINGLELOGOUTSERVICE_PLACEHOLDER);
         Element slosEle = createEndPoint(SAMLNames.SLOS, binding, sloLoc, null);
         return slosEle;

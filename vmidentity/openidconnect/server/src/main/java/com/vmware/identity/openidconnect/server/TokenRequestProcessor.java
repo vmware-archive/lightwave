@@ -111,9 +111,15 @@ public class TokenRequestProcessor {
                 this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
             }
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
 
             TokenSuccessResponse tokenSuccessResponse = processInternal();
-            return tokenSuccessResponse.toHttpResponse();
+            HttpResponse httpResponse = tokenSuccessResponse.toHttpResponse();
+            logger.info(
+                    "subject [{}] grant_type [{}]",
+                    tokenSuccessResponse.getIDToken().getSubject().getValue(),
+                    this.tokenRequest.getAuthorizationGrant().getGrantType().getValue());
+            return httpResponse;
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e);
             TokenErrorResponse tokenErrorResponse = new TokenErrorResponse(e.getErrorObject());
@@ -125,15 +131,23 @@ public class TokenRequestProcessor {
         GrantType grantType = this.tokenRequest.getAuthorizationGrant().getGrantType();
 
         SolutionUser solutionUser = null;
-        if (this.tokenRequest.getClientAssertion() != null) {
+        if (this.tokenRequest.getClientID() != null) {
             ClientInfo clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, this.tokenRequest.getClientID());
-            solutionUser = this.solutionUserAuthenticator.authenticateByClientAssertion(
-                    this.tokenRequest.getClientAssertion(),
-                    ASSERTION_LIFETIME_MS,
-                    this.httpRequest.getURI(),
-                    this.tenantInfo,
-                    clientInfo);
-        } else if (this.tokenRequest.getSolutionUserAssertion() != null) {
+            boolean certRegistered = clientInfo.getCertSubjectDN() != null;
+            if (certRegistered && this.tokenRequest.getClientAssertion() != null) {
+                solutionUser = this.solutionUserAuthenticator.authenticateByClientAssertion(
+                        this.tokenRequest.getClientAssertion(),
+                        ASSERTION_LIFETIME_MS,
+                        this.httpRequest.getURI(),
+                        this.tenantInfo,
+                        clientInfo);
+            } else if (certRegistered && this.tokenRequest.getClientAssertion() == null) {
+                throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is required since client has registered a cert"));
+            } else if (!certRegistered && this.tokenRequest.getClientAssertion() != null) {
+                throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is not allowed since client did not register a cert"));
+            }
+        }
+        if (this.tokenRequest.getSolutionUserAssertion() != null) {
             solutionUser = this.solutionUserAuthenticator.authenticateBySolutionUserAssertion(
                     this.tokenRequest.getSolutionUserAssertion(),
                     ASSERTION_LIFETIME_MS,
@@ -432,8 +446,9 @@ public class TokenRequestProcessor {
         }
 
         Date now = new Date();
-        Date adjustedExpirationTime = new Date(refreshToken.getExpirationTime().getTime() + this.tenantInfo.getClockToleranceMs());
-        if (now.after(adjustedExpirationTime)) {
+        Date notBefore = new Date(refreshToken.getIssueTime().getTime() - this.tenantInfo.getClockToleranceMs());
+        Date notAfter = new Date(refreshToken.getExpirationTime().getTime() + this.tenantInfo.getClockToleranceMs());
+        if (now.before(notBefore) || now.after(notAfter)) {
             throw new ServerException(ErrorObject.invalidGrant("refresh_token has expired"));
         }
     }

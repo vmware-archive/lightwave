@@ -73,36 +73,9 @@ public class AuthenticationController {
         this.messageSource = messageSource;
     }
 
-    // login using TLS client cert (smart card/CAC) requires a different endpoint so we can tell rhttp-proxy/tomcat to require TLS client cert
-    @RequestMapping(value = "/oidc/cac", method = { RequestMethod.GET, RequestMethod.POST })
-    public ModelAndView authenticateByPersonUserCertificate(
-            Model model,
-            Locale locale,
-            HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        return authenticate(model, locale, request, response, null);
-    }
-
-    @RequestMapping(value = "/oidc/cac/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
-    public ModelAndView authenticateByPersonUserCertificate(
-            Model model,
-            Locale locale,
-            HttpServletRequest request,
-            HttpServletResponse response,
-            @PathVariable("tenant") String tenant) throws IOException {
-        return authenticate(model, locale, request, response, tenant);
-    }
-
-    @RequestMapping(value = "/oidc/authorize", method = { RequestMethod.GET, RequestMethod.POST })
-    public ModelAndView authenticate(
-            Model model,
-            Locale locale,
-            HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        return authenticate(model, locale, request, response, null);
-    }
-
-    @RequestMapping(value = "/oidc/authorize/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
+    @RequestMapping(
+            value = { Endpoints.BASE + Endpoints.AUTHENTICATION + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_RPROXY + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_TOMCAT + "/{tenant:.*}" },
+            method = { RequestMethod.GET, RequestMethod.POST })
     public ModelAndView authenticate(
             Model model,
             Locale locale,

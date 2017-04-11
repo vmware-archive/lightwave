@@ -945,6 +945,44 @@ typedef struct _VMW_TYPE_SPEC_
     }\
 }
 
+#define CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS \
+{\
+    {\
+        "UserName",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "MachineName",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Organizational Unit",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    }\
+}
+
+#define CREATE_COMPUTER_ACCOUNT_OUTPUT_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Out Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    }\
+}
+
 #define JOIN_AD_INPUT_PARAMS \
 {\
     {\
@@ -1236,13 +1274,32 @@ typedef struct _VMW_TYPE_SPEC_
     }\
 }
 
+#define CHANGE_PNID_INPUT_PARAMS \
+{\
+    {\
+        "User Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "PNID",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    }\
+}
+
 #define GET_DOMAIN_NAME_LIST_PARAMS \
 { \
     {\
        "Domain Name", \
         VMW_IPC_TYPE_STRING, \
         {NULL}\
-    },\
+    }\
 }
 
 #define GET_DOMAIN_LIST_OUTPUT_PARAMS \
@@ -1268,3 +1325,6 @@ typedef struct _VMW_TYPE_SPEC_
         {NULL}\
     }\
 }
+
+
+

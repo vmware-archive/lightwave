@@ -7,96 +7,12 @@
   <parent>
     <groupId>com.vmware.identity.rest.afd</groupId>
     <artifactId>vmware-identity-rest-afd</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-rest-afd-client</artifactId>
   <packaging>jar</packaging>
-  <name>vmware-identity-rest-afd-client</name>
-
-  <profiles>
-    <profile>
-      <id>dev</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <skip.integration.tests>true</skip.integration.tests>
-        <skip.unit.tests>false</skip.unit.tests>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>integration-test</id>
-      <properties>
-        <skip.integration.tests>false</skip.integration.tests>
-        <skip.unit.tests>true</skip.unit.tests>
-      </properties>
-    </profile>
-  </profiles>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-      </plugin>
-
-      <!-- Integration Testing Plugins -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.9.1</version>
-        <executions>
-          <execution>
-            <id>add-integration-test-source</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>${basedir}/src/integration-test/java</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.18</version>
-        <configuration>
-          <skipTests>${skip.integration.tests}</skipTests>
-        </configuration>
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <goals>
-              <goal>integration-test</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+  <name>REST Services - Authentication Framework - Client</name>
 
   <dependencies>
     <dependency>
@@ -132,13 +48,6 @@
 
     <!-- Test Dependencies -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>com.vmware.identity.rest.core</groupId>
       <artifactId>vmware-identity-rest-core-client</artifactId>
       <version>${project.version}</version>
@@ -148,6 +57,7 @@
   </dependencies>
 
   <properties>
-    <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+    <rootDirectory>${basedir}/../../..</rootDirectory>
   </properties>
+
 </project>

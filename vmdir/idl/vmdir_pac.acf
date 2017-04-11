@@ -1,0 +1,5 @@
+interface vmdir_pac
+{
+    [encode] VmKdcNdrEncodeAuthzInfo();
+    [decode] VmKdcNdrDecodeAuthzInfo();
+}

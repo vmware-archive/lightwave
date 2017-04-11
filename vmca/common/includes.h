@@ -28,6 +28,9 @@
 #include <reg/lwreg.h>
 #include <reg/regutil.h>
 
+#include <vmafdclient.h>
+#include <vmafdtypes.h>
+
 #else
 
 #pragma once
@@ -54,6 +57,9 @@
 #include <time.h>
 
 #include "banned.h"
+
+#include <vmafdclient.h>
+#include <vmafdtypes.h>
 
 #endif
 

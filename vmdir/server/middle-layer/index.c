@@ -31,7 +31,7 @@ VmDirPluginIndexEntryPreAdd(
     PSTR    pszSearchFlags = NULL;
     int     iSearchFlags = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -103,7 +103,7 @@ VmDirPluginIndexEntryPostAdd(
     PVMDIR_STRING_LIST  pScopes = NULL;
     PVDIR_INDEX_UPD     pIndexUpd = NULL;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -199,7 +199,7 @@ VmDirPluginIndexEntryPreModApplyModify(
     PSTR    pszSearchFlags = NULL;
     int     iSearchFlags = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -335,7 +335,7 @@ VmDirPluginIndexEntryPreModify(
     PVMDIR_STRING_LIST  pScopes = NULL;
     PVDIR_INDEX_UPD     pIndexUpd = NULL;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }

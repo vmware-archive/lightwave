@@ -183,7 +183,8 @@ struct client {
     void DisableClientAffinity();
 
     std::string GetAffinitizedDC(
-             std::string DomainName);
+             std::string DomainName,
+             bool bForceRefresh);
 
     bpl::list EnumDCEntries();
 

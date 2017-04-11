@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -35,6 +35,7 @@ extern "C" {
 #include <dce/uuid.h>
 #include <dce/dcethread.h>
 #include <type_spec.h>
+#define VMAFD_MAX_SIZE_BUFFER 2048
 
 #if defined(_WIN32)
 typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
@@ -42,12 +43,17 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 typedef struct _VM_AFD_CONNECTION_ *PVM_AFD_CONNECTION;
 typedef struct _VM_AFD_SECURITY_CONTEXT_ *PVM_AFD_SECURITY_CONTEXT;
+typedef struct __VMAFD_MESSAGE_BUFFER *PVMAFD_MESSAGE_BUFFER;
+typedef struct _VECS_STORE_HANDLE *PVECS_SRV_STORE_HANDLE;
 
 typedef struct _VM_AFD_CONNECTION_CONTEXT_
 {
     BOOL                        bAnonymousContext;
     PVM_AFD_CONNECTION          pConnection;
     PVM_AFD_SECURITY_CONTEXT    pSecurityContext;
+    PVECS_SRV_STORE_HANDLE      pStoreHandle;
+    PSTR                        pszProcessName;
+    DWORD                       pid;
 } VM_AFD_CONNECTION_CONTEXT;
 
 typedef struct _VM_AFD_CONNECTION_CONTEXT_ *PVM_AFD_CONNECTION_CONTEXT;
@@ -64,7 +70,9 @@ typedef struct
 
 // Logging
 extern int  vmafd_syslog;
+extern int  vmafd_debug;
 extern int  vmafd_syslog_level;
+extern int  vmafd_console_log;
 
 #define ENTER_LOG() \
     do { \
@@ -509,7 +517,8 @@ DWORD
 VmAfdOpenFilePath(
     PCSTR   pszFileName,
     PCSTR   pszOpenMode,
-    FILE**  fp
+    FILE**  fp,
+    int mode
     );
 
 DWORD
@@ -556,6 +565,10 @@ VmAfdSaveStringToFile(
     );
 
 DWORD
+VmAfdGetTickCount(
+    );
+
+DWORD
 VmAfdOpenServerConnection(
 	PVM_AFD_CONNECTION * ppConnection
 	);
@@ -567,8 +580,8 @@ VmAfdCloseServerConnection(
 
 VOID
 VmAfdFreeServerConnection(
-  PVM_AFD_CONNECTION pConnection
-  );
+    PVM_AFD_CONNECTION pConnection
+    );
 
 DWORD
 VmAfdOpenClientConnection(
@@ -738,8 +751,28 @@ VmAfdUnMarshalHeartbeatStatusArray (
                            PVMAFD_HB_INFO_W *ppInfoArray
                            );
 
+DWORD
+VmAfdMarshalGetDCListArrLength(
+              PVMAFD_DC_INFO_W pVmAfdDCInfoList,
+              DWORD dwCount,
+              PDWORD pdwSizeRequired
+              );
 
+DWORD
+VmAfdMarshalGetDCList(
+              DWORD dwCount,
+              PVMAFD_DC_INFO_W pVmAfdDCInfoList,
+              DWORD dwBlobSize,
+              PBYTE pMarshaledBlob
+              );
 
+DWORD
+VmAfdUnMarshalGetDCList(
+              DWORD dwServerCount,
+              DWORD dwBlobSize,
+              PBYTE pMarshaledBlob,
+              PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+              );
 
 DWORD
 VmAfdInitializeConnectionContext(
@@ -836,9 +869,22 @@ VmAfdContextBelongsToGroup (
     );
 
 DWORD
+VmAfdCheckAclContext(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PSTR pszSddlAcl,
+    BOOL *pbIsAllowed
+    );
+
+DWORD
 VmAfdGenRandom (
                 PDWORD pdwRandomNumber
                );
+
+DWORD
+VmAfdGetProcessName(
+    DWORD pid,
+    PSTR *ppszName
+    );
 
 /*DWORD
 VmAfdInitializeSecurityDescriptor (
@@ -1315,6 +1361,217 @@ VmAfdCheckIfServerIsUp(
     PCWSTR pwszNetworkAddress,
     DWORD  dwPort
     );
+
+
+DWORD
+VmAfdAllocateBufferStream(
+        size_t dwMaxSize,
+        PVMAFD_MESSAGE_BUFFER *ppVmAfdBuffer
+        );
+
+VOID
+VmAfdFreeBufferStream(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdLockBufferForWrite(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdAllocateBufferStreamWithBuffer(
+        PBYTE pBuffer,
+        size_t szBufSize,
+        size_t szMaxSize,
+        BOOL bCanWrite,
+        PVMAFD_MESSAGE_BUFFER *ppVmAfdBuffer
+        );
+
+DWORD
+VmAfdAllocateBufferStreamFromBufferStream(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBufferSource,
+        BOOL bCanWrite,
+        PVMAFD_MESSAGE_BUFFER *ppVmAfdBufferDest
+        );
+
+DWORD
+VmAfdCopyBufferFromBufferStream(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PBYTE pBuffer,
+        PDWORD pdwBufferSize
+        );
+
+DWORD
+VmAfdWriteBoolToBuffer(
+        BOOL bData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteBooleanToBuffer(
+        BOOLEAN bData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteCharToBuffer(
+        CHAR cData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteUCharToBuffer(
+        UCHAR ucData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteUINT16ToBuffer(
+        UINT16 uData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteUINT32ToBuffer(
+        UINT32 uData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteUINT64ToBuffer(
+        UINT64 uData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteINT16ToBuffer(
+        INT16 iData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteINT32ToBuffer(
+        INT32 iData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteINT64ToBuffer(
+        INT64 iData,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteStringToBuffer(
+        PSTR pszString,
+        UINT8 uStringLength,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdWriteBlobToBuffer(
+        PBYTE pBlob,
+        DWORD dwSize,
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer
+        );
+
+DWORD
+VmAfdReadBoolFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PBOOL pbData
+        );
+
+DWORD
+VmAfdReadBooleanFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PBOOLEAN pbData
+        );
+
+DWORD
+VmAfdReadCharFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PCHAR pcData
+        );
+
+DWORD
+VmAfdReadUCharFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PUCHAR pucData
+        );
+
+DWORD
+VmAfdReadUINT16FromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PUINT16 puData
+        );
+
+DWORD
+VmAfdReadUINT32FromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PUINT32 puData
+        );
+
+DWORD
+VmAfdReadUINT64FromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PUINT64 puData
+        );
+
+DWORD
+VmAfdReadINT16FromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PINT16 piData
+        );
+
+DWORD
+VmAfdReadINT32FromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PINT32 piData
+        );
+
+DWORD
+VmAfdReadINT64FromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PINT64 piData
+        );
+
+DWORD
+VmAfdReadStringFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PSTR *ppszString,
+        PDWORD pdwStringLength,
+        PBOOL pbEndOfString
+        );
+
+DWORD
+VmAfdReadOffsetStringFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        UINT8 unOffset,
+        PSTR *ppszString,
+        PDWORD pdwStringLength,
+        PBOOL pbEndOfString
+        );
+
+DWORD
+VmAfdReadBlobFromBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        PBYTE *pBlob,
+        PDWORD pdwSize
+        );
+
+DWORD
+VmAfdIsTokenizedBuffer(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        BOOL bTokenized
+        );
+
+DWORD
+VmAfdSetBufferTokenizedFlag(
+        PVMAFD_MESSAGE_BUFFER pVmAfdBuffer,
+        BOOL bTokenized
+        );
+
 
 #ifdef __cplusplus
 }

@@ -2,7 +2,7 @@
 
 LW_BIN_DIR=/opt/likewise/bin
 LW_SBIN_DIR=/opt/likewise/sbin
-LW_DEFAULT_VERSION="6.6.0"
+LW_DEFAULT_VERSION="1.2.0"
 LW_KEY="[HKEY_THIS_MACHINE\\Services\\lw-server]"
 
 _get_lw_version(){
@@ -215,50 +215,53 @@ case "$LOTUS_DEPLOYMENT" in
         ;;
 esac
 
-# Stop all services as a precaution.
-if [ -x /etc/init.d/vmcad ]; then
-     /etc/init.d/vmcad stop
-fi
+if [[ ! -f /.dockerenv ]]; then
 
-if [ -x /etc/init.d/vmdnsd ]; then
-     /etc/init.d/vmdnsd stop
-fi
+    # Stop all services as a precaution.
+    if [ -x /etc/init.d/vmcad ]; then
+        /etc/init.d/vmcad stop
+    fi
 
-if [ -x /etc/init.d/vmdird ]; then
-     /etc/init.d/vmdird stop
-fi
+    if [ -x /etc/init.d/vmdnsd ]; then
+        /etc/init.d/vmdnsd stop
+    fi
 
-if [ -x /etc/init.d/vmware-stsd ]; then
-     /etc/init.d/vmware-stsd stop
-fi
+    if [ -x /etc/init.d/vmdird ]; then
+        /etc/init.d/vmdird stop
+    fi
 
-if [ -x /etc/init.d/vmware-sts-idmd ]; then
-     /etc/init.d/vmware-sts-idmd stop
-fi
-if [ -x /etc/init.d/vmafd ]; then
-     /etc/init.d/vmafd stop
-fi
+    if [ -x /etc/init.d/vmware-stsd ]; then
+        /etc/init.d/vmware-stsd stop
+    fi
 
-if [ -x /etc/init.d/vmware-license ]; then
-     /etc/init.d/vmware-license stop
-fi
+    if [ -x /etc/init.d/vmware-sts-idmd ]; then
+        /etc/init.d/vmware-sts-idmd stop
+    fi
+    if [ -x /etc/init.d/vmafd ]; then
+        /etc/init.d/vmafd stop
+    fi
 
-# Configure syslog-ng
-LINE='@include "lightwave.conf.d"'
-FILE=/etc/syslog-ng/syslog-ng.conf
-if [ -f "$FILE" ]; then
-    grep -qs "$LINE" "$FILE"
-    if [ "$?" -ne 0 ]; then
-        echo "$LINE" >> "$FILE"
-        pid=$( pidof syslog-ng )
-        if [ -n "$pid" ]; then
-            kill -HUP $pid
+    if [ -x /etc/init.d/vmware-license ]; then
+        /etc/init.d/vmware-license stop
+    fi
+
+    # Configure syslog-ng
+    LINE='@include "lightwave.conf.d"'
+    FILE=/etc/syslog-ng/syslog-ng.conf
+    if [ -f "$FILE" ]; then
+        grep -qs "$LINE" "$FILE"
+        if [ "$?" -ne 0 ]; then
+            echo "$LINE" >> "$FILE"
+            pid=$( pidof syslog-ng )
+            if [ -n "$pid" ]; then
+                kill -HUP $pid
+            fi
         fi
     fi
 fi
 
 # Setup vmafd, vmdir and SSO STS server.
-JAVA_HOME=@JAVA_HOME@
+JAVA_HOME=${JAVA_HOME:-@JAVA_HOME@}
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 VMWARE_DIR=/opt/vmware
 CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
@@ -382,7 +385,7 @@ else
     if [ ! -f /.dockerenv ]; then
            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
                     -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
-                    --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
+                    --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
     fi
 
     if [ $? -ne 0 ]; then

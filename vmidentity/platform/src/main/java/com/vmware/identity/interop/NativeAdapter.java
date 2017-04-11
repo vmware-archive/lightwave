@@ -56,6 +56,7 @@ public abstract class NativeAdapter
       final String WIN_REG_VMDIR_PATH = "SOFTWARE\\VMware, Inc.\\VMware Directory Services";
       final String WIN_REG_INSTALL_KEY = "InstallPath";
       final String WIN_REG_VMAFD_PATH = "SOFTWARE\\VMware, Inc.\\VMware afd Services";
+      final String WIN_ENV_OPENSSL_BIN = "VMWARE_OPENSSL_BIN";
 
       String WIN_VMWARE_CIS_VMDIRD_PATH =
               "C:" + File.separator + "Program Files" + File.separator +
@@ -73,6 +74,9 @@ public abstract class NativeAdapter
       else if (SystemUtils.IS_OS_WINDOWS)
       {
          WinRegistryAdapter regAdapter = WinRegistryAdapter.getInstance();
+
+         // No default if the environment variable is not present
+         String opensslPath = null;
 
             IRegistryKey rootKey = regAdapter
                     .openRootKey((int) RegKeyAccess.KEY_READ);
@@ -93,6 +97,15 @@ public abstract class NativeAdapter
                         String.format(
                                     "vmafd install path= [%s]",
                                     WIN_VMWARE_CIS_VMAFD_PATH));
+
+                String opensslBin = System.getenv(WIN_ENV_OPENSSL_BIN);
+                // Strip the executable so we have only the install path...
+                if (opensslBin != null && !opensslBin.isEmpty()) {
+                    File executable = new File(opensslBin);
+                    opensslPath = executable.getParent();
+                }
+
+                logger.info(String.format("OpenSSL install path= [%s]", opensslPath));
             }
             catch (Exception e) {
 
@@ -103,7 +116,11 @@ public abstract class NativeAdapter
                 rootKey.close();
             }
 
-            paths = Arrays.asList(WIN_VMWARE_CIS_VMDIRD_PATH, WIN_VMWARE_CIS_VMAFD_PATH);
+            if (opensslPath != null) {
+                paths = Arrays.asList(WIN_VMWARE_CIS_VMDIRD_PATH, WIN_VMWARE_CIS_VMAFD_PATH, opensslPath);
+            } else {
+                paths = Arrays.asList(WIN_VMWARE_CIS_VMDIRD_PATH, WIN_VMWARE_CIS_VMAFD_PATH);
+            }
       }
       else
       {

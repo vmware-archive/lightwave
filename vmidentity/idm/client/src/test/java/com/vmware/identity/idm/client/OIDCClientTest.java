@@ -28,7 +28,6 @@ import junit.framework.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.vmware.identity.idm.DuplicatedOIDCRedirectURLException;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.OIDCClient;
@@ -111,27 +110,6 @@ public class OIDCClientTest {
                 thrown = true;
             }
             Assert.assertTrue(thrown);
-        } finally {
-            // clean up tenant
-            IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
-        }
-    }
-
-    @Test(expected=DuplicatedOIDCRedirectURLException.class)
-    public void testAddOIDCClientDuplicatedRedirectURL() throws Exception, IDMException
-    {
-        String tenantName = props.getProperty(IdmClientTestUtil.CFG_KEY_IDM_TENANT_1_NAME);
-
-        Assert.assertNotNull(tenantName);
-
-        Tenant tenant = IdmClientTestUtil.ensureTenantExists(idmClient, tenantName);
-
-        Assert.assertNotNull(tenant);
-
-        try {
-            // Add the same client twice
-            idmClient.addOIDCClient(tenantName, oidcClient);
-            idmClient.addOIDCClient(tenantName, oidcClient);
         } finally {
             // clean up tenant
             IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);

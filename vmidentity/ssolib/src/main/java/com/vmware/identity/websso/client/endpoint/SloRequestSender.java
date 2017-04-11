@@ -1,6 +1,16 @@
-/* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client.endpoint;
 
 import java.io.IOException;
@@ -23,6 +33,7 @@ import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SPConfiguration;
 import com.vmware.identity.websso.client.SamlNames;
 import com.vmware.identity.websso.client.SamlUtils;
+import com.vmware.identity.websso.client.SharedUtils;
 import com.vmware.identity.websso.client.SloRequestSettings;
 import com.vmware.identity.websso.client.SubjectData;
 
@@ -89,6 +100,7 @@ public class SloRequestSender {
         String redirectUrl = getRequestUrl(requestSettings);
 
         if (redirectUrl != null) {
+            SharedUtils.SetNoCacheHeader(response);
             response.sendRedirect(redirectUrl);
         } else {
             if (SamlUtils.isIdpSupportSLO(getMetadataSettings(), requestSettings)) {
@@ -108,14 +120,28 @@ public class SloRequestSender {
      * @return url if succeed null if failed
      */
     public String getRequestUrl(SloRequestSettings requestSettings) {
+        return getRequestUrl(requestSettings,null);
+    }
+
+
+    /**
+     * Create logout request url with SloRerequestSettings object.
+     *
+     * @param requestSettings
+     *            SSO request settings
+     * @param reqID
+     * @return url if succeed null if failed
+     */
+    public String getRequestUrl(SloRequestSettings requestSettings, String reqID) {
 
         Validate.notNull(requestSettings);
+        Validate.notEmpty(reqID, "regID");
 
         String redirectUrl = null;
 
         try {
             logger.info("Producing redirect url");
-            LogoutRequest samlRequest = createRequest(requestSettings);
+            LogoutRequest samlRequest = createRequest(requestSettings, reqID);
             if (samlRequest != null) {
                 logger.info("SP LogoutRequest is created.");
 
@@ -208,9 +234,10 @@ public class SloRequestSender {
      * Construct LogoutRequest from requestSettings
      *
      * @param requestSettings
+     * @param reqID   optional requestID. The ID will be generated if not provided by caller.
      * @return openSaml LogoutRequest
      */
-    private LogoutRequest createRequest(SloRequestSettings requestSettings) {
+    private LogoutRequest createRequest(SloRequestSettings requestSettings, String reqID) {
 
         LogoutRequest request = null;
 
@@ -248,7 +275,7 @@ public class SloRequestSender {
 
             // 3. create openSaml LogoutRequest object
             request = samlUtils.createSamlLogoutRequest(
-                    null, // id. optional
+                    reqID,
                     destination, requestSettings.getNameIDFormat(), requestSettings.getSubject(),
                     requestSettings.getSessionIndex());
 

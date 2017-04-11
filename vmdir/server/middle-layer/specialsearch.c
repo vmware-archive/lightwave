@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -16,18 +16,6 @@
 
 #include "includes.h"
 
-static
-BOOLEAN
-_VmDirIsSearchForServerStatus(
-    PVDIR_OPERATION     pOp
-    );
-
-static
-BOOLEAN
-_VmDirIsSearchForReplicationStatus(
-    PVDIR_OPERATION     pOp
-    );
-
 /*
  * Return TRUE if search request require special handling.
  * If TRUE, the request will be served within this function.
@@ -40,10 +28,22 @@ VmDirHandleSpecialSearch(
     PVDIR_LDAP_RESULT  pLdapResult
     )
 {
-    DWORD       dwError = 0;
-    BOOLEAN     bRetVal = TRUE;
-    VDIR_ENTRY  dseRootEntry = {0};
-    PVDIR_ENTRY pEntry = NULL;
+    DWORD   dwError = 0;
+    size_t  i = 0;
+    BOOLEAN bRetVal = FALSE;
+    BOOLEAN bHasTxn = FALSE;
+    BOOLEAN bRefresh = FALSE;
+    PVDIR_ENTRY_ARRAY   pEntryArray = NULL;
+    VDIR_SPECIAL_SEARCH_ENTRY_TYPE entryType = REGULAR_SEARCH_ENTRY_TYPE;
+
+    static PCSTR pszEntryType[] =
+    {
+            "DSE Root",
+            "Schema Entry",
+            "Server Status",
+            "Replication Status",
+            "Schema Repl Status"
+    };
 
     if ( !pOp || !pLdapResult )
     {
@@ -51,74 +51,103 @@ VmDirHandleSpecialSearch(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    pEntryArray = &pOp->internalSearchEntryArray;
+
     if (VmDirIsSearchForDseRootEntry( pOp ))
     {
-        dwError = pOp->pBEIF->pfnBESimpleIdToEntry(DSE_ROOT_ENTRY_ID, &dseRootEntry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "DSE Root Entry search failed.");
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_DSE_ROOT;
+        pEntryArray->iSize = 1;
 
-        dwError = VmDirBuildComputedAttribute( pOp, &dseRootEntry );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "DSE Root Entry send failed.");
+        dwError = VmDirAllocateMemory(
+                sizeof(VDIR_ENTRY), (PVOID*)&pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSendSearchEntry( pOp, &dseRootEntry );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "DSE Root Entry send failed.");
+        dwError = pOp->pBEIF->pfnBESimpleIdToEntry(
+                DSE_ROOT_ENTRY_ID, pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                "%s Entry search failed.", pszEntryType[entryType]);
+
+        dwError = VmDirBuildComputedAttribute(pOp, pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                "%s Entry send failed.", pszEntryType[entryType]);
     }
     else if (VmDirIsSearchForSchemaEntry( pOp ))
     {
-      dwError = VmDirSubSchemaSubEntry( &pEntry );
-      BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                    "Schema Entry search failed.");
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_SCHEMA_ENTRY;
+        pEntryArray->iSize = 1;
 
-      dwError = VmDirSendSearchEntry( pOp, pEntry );
-      BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                    "Schema Entry send failed.");
+        dwError = VmDirSubSchemaSubEntry(&pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                "%s Entry search failed.", pszEntryType[entryType]);
     }
-    else if (_VmDirIsSearchForServerStatus(pOp))
+    else if (VmDirIsSearchForServerStatus(pOp))
     {
-        dwError = VmDirServerStatusEntry(&pEntry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "Server Status Entry search failed.");
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_SERVER_STATUS;
+        pEntryArray->iSize = 1;
 
-        dwError = VmDirSendSearchEntry( pOp, pEntry );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "Server Status Entry send failed.");
+        dwError = VmDirServerStatusEntry(&pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                "%s Entry search failed.", pszEntryType[entryType]);
     }
-    else if (_VmDirIsSearchForReplicationStatus(pOp))
+    else if (VmDirIsSearchForReplicationStatus(pOp))
     {
-        dwError = VmDirReplicationStatusEntry(&pEntry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "Replication Status Entry search failed.");
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_REPL_STATUS;
+        pEntryArray->iSize = 1;
 
-        dwError = VmDirSendSearchEntry( pOp, pEntry );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
-                                      "Replication Status Entry send failed.");
+        dwError = VmDirReplicationStatusEntry(&pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                "%s Entry search failed.", pszEntryType[entryType]);
     }
-    else
+    else if (VmDirIsSearchForSchemaReplStatus(pOp, &bRefresh))
     {
-       bRetVal = FALSE;
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_SCHEMA_REPL_STATUS;
+
+        if (bRefresh)
+        {
+            dwError = VmDirSchemaReplStatusEntriesRefresh();
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                    "%s Entry refresh failed.", pszEntryType[entryType]);
+        }
+        else
+        {
+            dwError = VmDirSchemaReplStatusEntriesRetrieve(
+                    pEntryArray, pOp->request.searchReq.scope);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                    "%s Entry search failed.", pszEntryType[entryType]);
+        }
+    }
+
+    if (entryType != REGULAR_SEARCH_ENTRY_TYPE)
+    {
+        bRetVal = TRUE;
+
+        /*
+         * Read txn for preventing server crash (PR 1634501)
+         */
+        dwError = pOp->pBEIF->pfnBETxnBegin(pOp->pBECtx, VDIR_BACKEND_TXN_READ);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        bHasTxn = TRUE;
+
+        for (i = 0; i < pEntryArray->iSize; i++)
+        {
+            dwError = VmDirSendSearchEntry(pOp, &pEntryArray->pEntry[i]);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                    "%s Entry send failed.", pszEntryType[entryType]);
+        }
     }
 
 cleanup:
-
-    if (pEntry)
+    if (bHasTxn)
     {
-        VmDirFreeEntry(pEntry);
+        pOp->pBEIF->pfnBETxnCommit(pOp->pBECtx);
     }
-
-    if (dseRootEntry.dn.lberbv_val)
-    {
-        VmDirFreeEntryContent( &dseRootEntry );
-    }
-
     return bRetVal;
 
 error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VmDirHandleSpecialSearch: (%d)(%s)", dwError, VDIR_SAFE_STRING(pLdapResult->pszErrMsg) );
+    VmDirLog( LDAP_DEBUG_ANY, "VmDirHandleSpecialSearch: (%d)(%s)",
+            dwError, VDIR_SAFE_STRING(pLdapResult->pszErrMsg) );
     pLdapResult->errCode = dwError;
-
     goto cleanup;
 }
 
@@ -208,9 +237,8 @@ VmDirIsSearchForSchemaEntry(
  * SCOPE:   BASE
  * FILTER:  (objectclass=*)
  */
-static
 BOOLEAN
-_VmDirIsSearchForServerStatus(
+VmDirIsSearchForServerStatus(
     PVDIR_OPERATION     pOp
     )
 {
@@ -252,9 +280,8 @@ _VmDirIsSearchForServerStatus(
  * SCOPE:   BASE
  * FILTER:  (objectclass=*)
  */
-static
 BOOLEAN
-_VmDirIsSearchForReplicationStatus(
+VmDirIsSearchForReplicationStatus(
     PVDIR_OPERATION     pOp
     )
 {
@@ -286,4 +313,51 @@ _VmDirIsSearchForReplicationStatus(
 
     return bRetVal;
 
+}
+
+/*
+ * For schema replication status
+ * The search pattern is:
+ * BASE:    cn=schemareplstatus
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE - returns the pseudo entry that tells if refresh is in progress
+ *          ONELEVEL - returns the status entries
+ *          SUBTREE - returns the pseudo entry + status entries
+ *
+ * Optional:
+ * ATTRS:   refresh - trigger server to refresh schema replication status
+ */
+BOOLEAN
+VmDirIsSearchForSchemaReplStatus(
+    PVDIR_OPERATION     pOp,
+    PBOOLEAN            pbRefresh
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, SCHEMA_REPL_STATUS_DN, FALSE) == 0       &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0)
+    {
+        bRetVal = TRUE;
+    }
+
+    if (pbRefresh && pSearchReq->attrs)
+    {
+        PSTR pszAttr = pSearchReq->attrs[0].lberbv.bv_val;
+        if (VmDirStringCompareA(pszAttr, "refresh", FALSE) == 0)
+        {
+            *pbRefresh = TRUE;
+        }
+    }
+
+    return bRetVal;
 }

@@ -74,7 +74,6 @@ import org.xml.sax.SAXException;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IIdentityManager;
-import com.vmware.identity.idm.ILoginManager;
 import com.vmware.identity.idm.IdmDataCreator;
 import com.vmware.identity.idm.IdmDataRemover;
 import com.vmware.identity.idm.RelyingParty;
@@ -107,42 +106,11 @@ public class SharedUtils {
 
     private static final String IDM_HOST_NAME_PROPERTY = "idm.hostname";
     private static String _idmHostName = null;
-    private static IdmLoginManagerForwarder _loginManagerForwarder = null;
     private static Registry _registry = null;
 
     // null in the beginning, true if "official" config has been committed last,
     // false if test config has been committed last
     private static Boolean lastData = null;
-
-    static
-    {
-        logger.debug("static initializer called");
-        _idmHostName = readIdmHostName();
-           logger.debug("idm host name from config {0}", _idmHostName);
-        if ( ( "localhost".equalsIgnoreCase(_idmHostName) == false ) &&
-             ( "127.0.0.1".equalsIgnoreCase(_idmHostName) == false ) )
-        {
-            logger.debug("bootstrap -- we are configured to talk to remote idm at {0} -- need to setup forwarder", _idmHostName);
-            // stand up local "forwarder"
-            try {
-                _loginManagerForwarder = new IdmLoginManagerForwarder(_idmHostName);
-                logger.debug("created IdmLoginManagerForwarder");
-
-                _registry = LocateRegistry.createRegistry(Tenant.RMI_PORT);
-                logger.debug("created RmiRegistry");
-
-                ILoginManager stub =(ILoginManager) UnicastRemoteObject.exportObject(_loginManagerForwarder, 0);
-                logger.debug("created ILoginManager Rmi stub");
-
-                Naming.rebind (
-                    String.format("rmi://localhost:%d/%s", Tenant.RMI_PORT, "IdentityManager"),
-                    stub);
-                logger.debug("Naming.rebind for the stub");
-            } catch (RemoteException | MalformedURLException e) {
-                logger.warn("Unable to create idm forwarder", e);
-            }
-        }
-    }
 
     // create sample SAML request
     // (expect callers to ensure that ServerConfig is loaded)
@@ -589,6 +557,7 @@ public class SharedUtils {
     public static HttpServletResponse buildMockResponseSuccessObject(StringWriter sw,
             String contentType, boolean expectCookie, String contentDispositionValue) throws IOException {
         HttpServletResponse response = createMock(HttpServletResponse.class);
+        Shared.addNoCacheHeader(response);
         if (expectCookie) {
             response.addCookie(isA(Cookie.class));
         }
@@ -709,113 +678,5 @@ class NullResolver implements EntityResolver {
     public InputSource resolveEntity(String publicId, String systemId)
             throws SAXException, IOException {
         return new InputSource(new StringReader(""));
-    }
-}
-
-// stand up a local instance of the ILoginManager so that it can forward to the real idm server
-// this is only in test, where we want to be able to run against remote idm
-// but the existing code hard-codes the localhost (Shared.IDM_HOSTNAME) for the idm location...
-// this needs more involving refactoring to be able to plumb through all places....
-class IdmLoginManagerForwarder implements com.vmware.identity.idm.ILoginManager
-{
-    private static final int RETRY_COUNT=3;
-    private static final int RETRY_TIMEOUT_SECS = 30;
-
-    private final String _realIdmHostName;
-    IdmLoginManagerForwarder( String realIdmHostName ) throws RemoteException, MalformedURLException
-    {
-        Validate.notEmpty(realIdmHostName);
-        this._realIdmHostName = realIdmHostName;
-    }
-
-    @Override
-    public IIdentityManager Login(String hash) throws RemoteException,
-            SecurityException
-    {
-        ILoginManager loginManager;
-        try {
-            loginManager = getLoginManager();
-        } catch (MalformedURLException | NotBoundException e) {
-            throw new RemoteException("Unable to get real ILoginManager", e);
-        }
-        return loginManager.Login(hash);
-    }
-
-    @Override
-    public File getSecretFile() throws RemoteException
-    {
-        ILoginManager loginManager;
-        try {
-            loginManager = getLoginManager();
-            return loginManager.getSecretFile();
-        } catch (MalformedURLException | NotBoundException e) {
-            throw new RemoteException("Unable to get real ILoginManager", e);
-        }
-    }
-
-    private ILoginManager getLoginManager() throws  NotBoundException,
-        MalformedURLException,
-        RemoteException
-    {
-        String endpointURL = String.format(
-            "rmi://%s:%d/IdentityManager",
-            this._realIdmHostName,
-            Tenant.RMI_PORT);
-
-            boolean bNotBound = false;
-            boolean bRemoteException = false;
-
-            for (int i = 0; i < RETRY_COUNT; i++)
-            {
-                bNotBound = false;
-                bRemoteException = false;
-
-                try
-                {
-                    return (ILoginManager) Naming.lookup(endpointURL);
-                }
-                catch (NotBoundException e)
-                {
-                    bNotBound = true;
-                }
-                catch(RemoteException e)
-                {
-                    bRemoteException = true;
-                }
-
-                try
-                {
-                    Thread.sleep(RETRY_TIMEOUT_SECS * 1000);
-                }
-                catch (InterruptedException e)
-                {
-                }
-            }
-
-            if (bNotBound)
-            {
-                throw new NotBoundException(
-                    String.format(
-                        "Failed to bind to [%s] after [%d] attempts",
-                        endpointURL,
-                        RETRY_COUNT));
-            }
-            else if (bRemoteException)
-            {
-                throw new RemoteException(
-                    String.format(
-                        "Failed due to remote exception when looking up " +
-                        "[%s] after [%d] attempts",
-                        endpointURL,
-                        RETRY_COUNT));
-            }
-            else
-            {
-                throw new RuntimeException(
-                    String.format(
-                        "Failed to contact [%s] after [%d] attempts",
-                        endpointURL,
-                        RETRY_COUNT));
-        }
     }
 }

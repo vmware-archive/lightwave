@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+    ProjectType="Visual C++"
+    Version="8.00"
+    Name="openssl"
+    >
+    <!--
+         NB: If changing the flavor of openssl ("win64_vc90sp1") then you probably need to update the vmdir_openssl_dlls
+             component in the MergeModule.wxs files.
+    -->
+
+    <Tool
+        Name="VCCLCompilerTool"
+        AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\win64_vc90sp1\include&quot;"
+    />
+
+    <Tool
+        Name="VCLibrarianTool"
+        AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;"
+    />
+
+    <Tool
+        Name="VCLinkerTool"
+        AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;"
+    />
+
+</VisualStudioPropertySheet>

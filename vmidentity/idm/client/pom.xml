@@ -6,92 +6,50 @@
   <parent>
     <groupId>com.vmware.identity.idm</groupId>
     <artifactId>vmware-identity-idm</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-idm-client</artifactId>
-  <version>6.6.1</version>
   <packaging>jar</packaging>
-  <name>vmware-identity-idm-client</name>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-source-plugin</artifactId>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-	<executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven.surefire.plugin.version}</version>
-        <configuration>
-          <skipTests>${skip.unit.tests}</skipTests>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <name>Identity Manager - Client</name>
 
   <dependencies>
-
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-server</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
       <groupId>xerces</groupId>
       <artifactId>xercesImpl</artifactId>
+      <version>${xerces.impl.version}</version>
     </dependency>
     <dependency>
       <groupId>xalan</groupId>
       <artifactId>xalan</artifactId>
+      <version>${xalan.version}</version>
     </dependency>
     <dependency>
       <groupId>xml-resolver</groupId>
       <artifactId>xml-resolver</artifactId>
+      <version>${xml.resolver.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.opensaml</groupId>
       <artifactId>xmltooling</artifactId>
+      <version>${xml.tooling.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.bouncycastle</groupId>
@@ -103,66 +61,18 @@
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>net.sourceforge.cobertura</groupId>
-      <artifactId>cobertura</artifactId>
+      <version>${commons.logging.version}</version>
     </dependency>
 
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
       <scope>test</scope>
     </dependency>
+  </dependencies>
 
-    <!-- Logger Dependencies -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-1.2-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
- </dependencies>
-
- <properties>
-    <skip.unit.tests>true</skip.unit.tests>
-    <outputDirectory>${basedir}/../../build/vmware-sts/packages</outputDirectory>
- </properties>
-
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 </project>

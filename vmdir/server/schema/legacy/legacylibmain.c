@@ -47,15 +47,7 @@ VmDirSchemaLibInitLegacy(
     // possible conflict with subschema subentry. After attempt
     // taking attrIdMap from subschema subentry, it is time to
     // load the new bootstrap table
-    dwError = VmDirLdapSchemaCopy(
-            gVdirSchemaGlobals.pLdapSchema,
-            &gVdirSchemaGlobals.pPendingLdapSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirSchemaLibLoadBootstrapTable(ATTable);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -70,7 +62,7 @@ error:
 }
 
 DWORD
-VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
+VmDirSchemaLibLoadSubSchemaSubEntry(
     PVDIR_ENTRY pSchemaEntry
     )
 {
@@ -99,7 +91,13 @@ VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+    pNewLdapSchema = NULL;
+
     gVdirSchemaGlobals.pPendingVdirSchema = pNewVdirSchema;
+    pNewVdirSchema = NULL;
+
+    dwError = VmDirSchemaLibUpdate(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VmDirFreeLdapSchema(pTmpLdapSchema);

@@ -25,13 +25,14 @@ import org.easymock.EasyMock;
 import org.junit.Test;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.BinarySecurityTokenType;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.ObjectFactory;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
 
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SolutionDetail;
 import com.vmware.identity.idm.SolutionUser;
-import com.vmware.identity.sts.InvalidCredentialsException;
 import com.vmware.identity.sts.CertificateUtil;
+import com.vmware.identity.sts.InvalidCredentialsException;
 import com.vmware.identity.sts.Request;
 import com.vmware.identity.sts.Request.CertificateLocation;
 import com.vmware.identity.sts.Request.Signature;
@@ -60,7 +61,8 @@ public class BSTAuthenticatorTest {
 
       final SecurityHeaderType header = new SecurityHeaderType();
       Assert.assertNull(authenticator.authenticate(newBSTRequest(header)));
-      header.setBinarySecurityToken(new BinarySecurityTokenType());
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createBinarySecurityToken(new BinarySecurityTokenType()));
       Assert.assertNull(authenticator.authenticate(newBSTRequest(header)));
       EasyMock.verify(principalDiscovery);
    }
@@ -354,7 +356,8 @@ public class BSTAuthenticatorTest {
       final SecurityHeaderType header = new SecurityHeaderType();
       final BinarySecurityTokenType bst = new BinarySecurityTokenType();
       bst.setValue("base64certificatecontent");
-      header.setBinarySecurityToken(bst);
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createBinarySecurityToken(bst));
       return header;
    }
 

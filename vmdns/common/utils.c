@@ -28,6 +28,7 @@
 #define LOW_HEX(byte) ((byte) & 0xF)
 #define HIGH_HEX(byte) (((byte) & 0xF0) >> 4)
 
+
 VOID
 VmDnsClearZoneInfo(
     PVMDNS_ZONE_INFO    pZoneInfo
@@ -523,18 +524,64 @@ VmDnsMakeFQDN(
             (pszHostName)[dwLength - 1] != '.' &&
             !VmDnsStringStrA(pszHostName, pszDomainName))
         {
-            dwError = VmDnsAllocateStringPrintfA(
-                        &pszFQDN,
-                        "%s.%s",
-                        pszHostName,
-                        pszDomainName);
-            BAIL_ON_VMDNS_ERROR(dwError);
+            DWORD dwDomainLength = VmDnsStringLenA(pszDomainName);
+            if ( pszDomainName[dwDomainLength -1] != '.')
+            {
+                dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s.%s.",
+                                             pszHostName,
+                                             pszDomainName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+            else
+            {
+                dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s.%s",
+                                             pszHostName,
+                                             pszDomainName);
 
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
             *ppszFQDN = pszFQDN;
             pszFQDN = NULL;
         }
-    }
+        else
+        {
+           if ((pszHostName)[dwLength - 1] != '.')
+           {
+                dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s.",
+                                             pszHostName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                *ppszFQDN = pszFQDN;
+                pszFQDN = NULL;
+           }
+           else
+           {
+               dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s",
+                                             pszHostName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                *ppszFQDN = pszFQDN;
+                pszFQDN = NULL;
+           }
 
+        }
+    }
+    else
+    {
+        dwError = VmDnsAllocateStringPrintfA(
+                                      &pszFQDN,
+                                      "%s",
+                                       pszHostName);
+        BAIL_ON_VMDNS_ERROR(dwError);
+        *ppszFQDN = pszFQDN;
+        pszFQDN = NULL;
+    }
 cleanup:
     return dwError;
 
@@ -593,4 +640,39 @@ error:
     goto cleanup;
 }
 
+
+DWORD
+VmDnsStringToLower(
+    PCSTR pszSrcStr,
+    PSTR *pszDstStr
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwSrcStrLen = 0;
+    PSTR  pszToLowerStr = NULL;
+    DWORD index = 0;
+
+    if (IsNullOrEmptyString(pszSrcStr))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwSrcStrLen = strlen (pszSrcStr);
+
+    dwError = VmDnsAllocateMemory (dwSrcStrLen, (VOID *) &pszToLowerStr);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    for (; index < dwSrcStrLen; index++)
+    {
+        pszToLowerStr [index] = tolower(pszSrcStr [index]);
+    }
+    *pszDstStr = pszToLowerStr;
+    pszToLowerStr = NULL;
+cleanup:
+    return dwError;
+error:
+     VMDNS_SAFE_FREE_MEMORY(pszToLowerStr);
+     goto cleanup;
+}
 

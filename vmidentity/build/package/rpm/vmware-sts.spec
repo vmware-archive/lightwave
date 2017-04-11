@@ -7,14 +7,15 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.10, vmware-directory = %{version}, vmware-afd = %{version}, vmware-ca = %{version}, openjre >= 1.8.0.102, commons-daemon >= 1.0.15, apache-tomcat >= 8.0.37, %{name}-client = %{version}
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, vmware-ca-client-devel = %{version}, openjdk >= 1.8.0.102, apache-ant >= 1.9.4
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.10, vmware-directory = %{version}, vmware-afd = %{version}, vmware-ca = %{version}, openjre >= 1.8.0.112, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8, %{name}-client = %{version}
+BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, vmware-ca-client-devel = %{version}, openjdk >= 1.8.0.112, apache-ant >= 1.9.4
 
 %define _dbdir %_localstatedir/lib/vmware/vmsts
 %define _jarsdir %_prefix/jars
 %define _binsdir %_prefix/bin
 %define _webappsdir %_prefix/vmware-sts/webapps
 %define _backupdir /tmp/sso
+%define _lwisbindir %_likewise_open_prefix/bin
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %_javahome
@@ -25,13 +26,13 @@ VMware Secure Token Server
 
 %package client
 Summary: VMware Secure Token Service Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= 6.6.1, likewise-open >= 6.2.9 
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= %{version}, likewise-open >= 6.2.10
 %description client
 Client libraries to communicate with VMware Secure Token Service
 
 %package samples
 Summary: VMware Secure Token Service Samples
-Requires:  vmware-sts-client >= 6.6.1
+Requires:  vmware-sts-client >= %{version}
 %description samples
 Samples for VMware Secure Token Service
 
@@ -44,7 +45,9 @@ autoreconf -mif .. &&
              --localstatedir=%{_dbdir} \
              --with-afd=%{_prefix} \
              --with-likewise=%{_likewise_open_prefix} \
-             --with-ssl=/usr \
+             --with-jansson=%{_janssondir} \
+             --with-curl=%{_curldir} \
+             --with-ssl=%{_ssldir} \
              --with-java=%{_javahome} \
              --with-commons-daemon=%{_commons_daemondir} \
              --with-ant=%{_antdir} \
@@ -70,6 +73,7 @@ then
     fi
     /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
 fi
+
 %post
 
     # First argument is 1 => New Installation
@@ -81,11 +85,6 @@ fi
 case "$1" in
     1)
 
-        /bin/systemctl enable vmware-idmd.service >/dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            /bin/ln -s /lib/systemd/system/vmware-idmd.service /etc/systemd/system/multi-user.target.wants/vmware-idmd.service
-        fi
-
         /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
         if [ $? -ne 0 ]; then
             /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
@@ -94,12 +93,39 @@ case "$1" in
         if [ $? -eq 0 ]; then
             /bin/systemctl daemon-reload
         fi
+
         ;;
 
     2)
         %{_sbindir}/configure-build.sh "%{_backupdir}"
         ;;
 esac
+
+if [ -x "%{_lwisbindir}/lwregshell" ]
+then
+    %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add key if not exist
+        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software]"
+        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware]"
+        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
+    fi
+
+    %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Release" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add value if not exist
+        %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Release" REG_SZ "Lightwave"
+    fi
+
+    %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Version" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add value if not exist
+        %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" REG_SZ "%{_version}"
+    else
+        # set value if exists
+        %{_lwisbindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
+    fi
+fi
 
 %preun
 
@@ -109,13 +135,6 @@ esac
 if [ "$1" = 0 ]; then
     /bin/systemctl >/dev/null 2>&1
     if [ $? -eq 0 ]; then
-
-         if [ -f /etc/systemd/system/vmware-idmd.service ]; then
-             /bin/systemctl stop vmware-idmd.service
-             /bin/systemctl disable vmware-idmd.service
-             /bin/rm -f /etc/systemd/system/vmware-idmd.service
-             /bin/systemctl daemon-reload
-         fi
 
          if [ -f /etc/systemd/system/vmware-stsd.service ]; then
              /bin/systemctl stop vmware-stsd.service
@@ -136,17 +155,26 @@ fi
     case "$1" in
         0)
             /bin/rm -rf %{_dbdir}
+
+            if [ -x "%{_lwisbindir}/lwregshell" ]
+            then
+                %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
+                if [ $? -eq 0 ]; then
+                    # delete key if exist
+                    %{_lwisbindir}/lwregshell delete_tree "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
+                fi
+            fi
+
             ;;
     esac
 
 %files
 %defattr(-,root,root,0755)
-/lib/systemd/system/vmware-idmd.service
 /lib/systemd/system/vmware-stsd.service
-%{_sbindir}/vmware-idmd.sh
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
 %{_sbindir}/sso-config.sh
+%{_includedir}/*.h
 %{_lib64dir}/*.so*
 %{_binsdir}/test-ldapbind
 %{_binsdir}/test-logon
@@ -160,16 +188,14 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-server.jar
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
+%{_jarsdir}/vmware-directory-rest-server.jar
 %{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-sso-config.jar
-%{_webappsdir}/idm.war
-%{_webappsdir}/afd.war
-%{_webappsdir}/openidconnect.war
-%{_webappsdir}/sts.war
-%{_webappsdir}/websso.war
+%{_jarsdir}/websso.jar
+%{_jarsdir}/sts.jar
+%{_jarsdir}/openidconnect-server.jar
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
-%{_webappsdir}/vmdir.war
 %{_webappsdir}/uaa.war
 %{_datadir}/config/idm/*
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
@@ -190,6 +216,8 @@ fi
 %defattr(-,root,root)
 %{_jarsdir}/samltoken.jar
 %{_jarsdir}/vmware-identity-rest-idm-common.jar
+%{_jarsdir}/vmware-directory-rest-common.jar
+%{_jarsdir}/vmware-directory-rest-client.jar
 %{_jarsdir}/vmware-identity-rest-core-common.jar
 %{_jarsdir}/vmware-identity-websso-client.jar
 %{_jarsdir}/vmware-identity-platform.jar
@@ -204,6 +232,11 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
 %{_jarsdir}/vmware-directory-rest-client.jar
+%{_includedir}/*.h
+%{_lib64dir}/*.so*
+
+%exclude %{_bindir}/*test
+
 # %doc ChangeLog README COPYING
 
 %files samples

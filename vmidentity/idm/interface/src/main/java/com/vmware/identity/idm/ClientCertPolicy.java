@@ -34,7 +34,7 @@ public class ClientCertPolicy implements Serializable {
 
     private static final long serialVersionUID = 3793003706126097551L;
 
-    private boolean _enabled = true;
+    private boolean _revCheck = true;
     private boolean _ocspEnabled = false;
     private boolean _useCRLAsFailOver = false;
     private boolean _sendOCSPNonce = false;
@@ -47,6 +47,7 @@ public class ClientCertPolicy implements Serializable {
     private int _crlCacheSize = 512;
     private String[] _oids = null;
     private Certificate[] _trustedCAs = null;
+    private boolean _enableHint = false;
 
     public ClientCertPolicy() {}
 
@@ -67,7 +68,7 @@ public class ClientCertPolicy implements Serializable {
                     URL ocspURL, X509Certificate ocspResponderCert,
                     boolean useCRLDP, URL crlAddress, int crlCacheSize,
                     String[] oidFilters) {
-        this._enabled = revCheckEnabled;
+        this._revCheck = revCheckEnabled;
         this._ocspEnabled = ocspEnabled;
         this._useCRLAsFailOver = useCRLAsFailOver;
         this._sendOCSPNonce = sendOCSPNonce;
@@ -75,6 +76,7 @@ public class ClientCertPolicy implements Serializable {
         this._crlUrl = crlAddress;
         this._crlCacheSize = crlCacheSize;
         this._oids = oidFilters;
+        this._enableHint = false;
     }
 
     /**
@@ -95,8 +97,8 @@ public class ClientCertPolicy implements Serializable {
             boolean useCRLAsFailOver, boolean sendOCSPNonce,
             HashMap<String, AlternativeOCSPList> altOCSPmap,
             boolean useCRLDP, URL crlAddress, int crlCacheSize,
-            String[] oidFilters) {
-        this._enabled = revCheckEnabled;
+            String[] oidFilters, boolean enableHint) {
+        this._revCheck = revCheckEnabled;
         this._ocspEnabled = ocspEnabled;
         this._useCRLAsFailOver = useCRLAsFailOver;
         this._sendOCSPNonce = sendOCSPNonce;
@@ -105,20 +107,21 @@ public class ClientCertPolicy implements Serializable {
         this._crlUrl = crlAddress;
         this._crlCacheSize = crlCacheSize;
         this._oids = oidFilters;
+        this._enableHint = enableHint;
 }
 
     /*
      * if certificate revocation check is enabled or not
      */
     public boolean revocationCheckEnabled() {
-        return this._enabled;
+        return this._revCheck;
     }
 
     /*
      * enable or disable certificate revocation check
      */
     public void setRevocationCheckEnabled(boolean enabled) {
-        this._enabled = enabled;
+        this._revCheck = enabled;
     }
 
     /*
@@ -273,5 +276,13 @@ public class ClientCertPolicy implements Serializable {
      */
     public void set_siteOCSPMap(HashMap<String, AlternativeOCSPList> _siteOCSPMap) {
         this._siteOCSPMap = _siteOCSPMap;
+    }
+
+    public boolean getEnableHint() {
+      return _enableHint;
+    }
+
+    public void setEnableHint(boolean enableHint) {
+      this._enableHint = enableHint;
     }
 }

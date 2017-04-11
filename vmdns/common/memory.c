@@ -294,6 +294,8 @@ VmDnsFreeStringArrayA(
         VmDnsFreeStringA(ppszString[dwCnt]);
     }
 
+    VMDNS_SAFE_FREE_MEMORY(ppszString);
+
     return;
 }
 

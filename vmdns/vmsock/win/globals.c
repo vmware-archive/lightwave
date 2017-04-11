@@ -27,6 +27,7 @@ VM_SOCK_PACKAGE gVmSockWinPackage =
     .pfnStartListening = &VmSockWinStartListening,
     .pfnCloseEventQueue = &VmSockWinCloseEventQueue,
     .pfnSetNonBlocking = &VmSockWinSetNonBlocking,
+    .pfnSetTimeOut = &VmSockWinSetTimeOut,
     .pfnGetProtocol = &VmSockWinGetProtocol,
     .pfnSetData = &VmSockWinSetData,
     .pfnGetData = &VmSockWinGetData,

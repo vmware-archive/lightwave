@@ -21,17 +21,18 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.PersonUser;
+import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.context.AuthorizationContext;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.idm.data.UserDTO;
-import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 import com.vmware.identity.rest.idm.server.resources.UserResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
@@ -43,6 +44,7 @@ import com.vmware.identity.rest.idm.server.test.resources.UserResourceTest;
  * Integration tests for User Resource
  */
 @Category(IntegrationTest.class)
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class UserResourceIT extends TestBase {
 
     private static final String USERNAME = "testUser";
@@ -51,8 +53,6 @@ public class UserResourceIT extends TestBase {
     private static final String USER_UPN_UNKNOWN_TENANT = USERNAME + "@" + "unknown.local";
     private static final boolean DISABLED = false;
     private static final boolean LOCKED = false;
-
-    private IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResourceTest.class);
 
     private UserResource userResource;
     private ContainerRequestContext request;

@@ -71,6 +71,7 @@ public class CertificateResourceTest {
     private static final String TEST_TENANT = "test.local";
     private static final String TEST_FINGER_PRINT = "f5:67:cc:e6:53:9b:f5:1e:f3:0a:fc:56:52:d7:09:22:d6:af:b5:5f";
     private static final String TEST_CERT_LOC = "src/test/resources/test_cert.pem";
+    private static final String CERTIFICATE_GRANULARITY = "CHAIN";
 
     private CertificateResource certificateResource;
     private IMocksControl mControl;
@@ -106,7 +107,7 @@ public class CertificateResourceTest {
         expect(mockCasIDMClient.getTenantCertificates(TEST_TENANT)).andReturn(certChains);
         mControl.replay();
 
-        Collection<CertificateChainDTO> tenantCerts = certificateResource.getCertificates(CertificateScope.TENANT.toString());
+        Collection<CertificateChainDTO> tenantCerts = certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY);
         assertEquals(1, tenantCerts.size());
         assertEquals(2, tenantCerts.iterator().next().getCertificates().size());
         mControl.verify();
@@ -117,7 +118,7 @@ public class CertificateResourceTest {
         mockCasIDMClient.getTenantCertificates(TEST_TENANT);
         expectLastCall().andThrow(new NoSuchTenantException("no such tenant"));
         mControl.replay();
-        certificateResource.getCertificates(CertificateScope.TENANT.toString());
+        certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY);
         mControl.verify();
 
     }
@@ -127,7 +128,7 @@ public class CertificateResourceTest {
         mockCasIDMClient.getTenantCertificates(TEST_TENANT);
         expectLastCall().andThrow(new InvalidArgumentException("invalid argument"));
         mControl.replay();
-        certificateResource.getCertificates(CertificateScope.TENANT.toString());
+        certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY);
         mControl.verify();
     }
 
@@ -136,7 +137,7 @@ public class CertificateResourceTest {
         mockCasIDMClient.getTenantCertificates(TEST_TENANT);
         expectLastCall().andThrow(new IDMException("IDM error"));
         mControl.replay();
-        certificateResource.getCertificates(CertificateScope.TENANT.toString());
+        certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY);
         mControl.verify();
     }
 

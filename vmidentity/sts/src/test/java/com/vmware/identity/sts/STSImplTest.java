@@ -50,6 +50,7 @@ import org.oasis_open.docs.ws_sx.ws_trust._200512.ValidateTargetType;
 import org.oasis_open.docs.ws_sx.ws_trust._200802.ActAsType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_0.AttributedDateTime;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_0.ObjectFactory;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_0.TimestampType;
 import org.w3._2000._09.xmldsig_.SignatureType;
 import org.w3c.dom.Document;
@@ -57,10 +58,6 @@ import org.w3c.dom.Element;
 
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.saml.Advice;
-import com.vmware.identity.saml.ServerValidatableSamlToken;
-import com.vmware.identity.saml.ServerValidatableSamlToken.SamlTokenDelegate;
-import com.vmware.identity.saml.ServerValidatableSamlToken.Subject;
-import com.vmware.identity.saml.ServerValidatableSamlToken.SubjectValidation;
 import com.vmware.identity.saml.InvalidTokenException;
 import com.vmware.identity.saml.SamlToken;
 import com.vmware.identity.saml.SamlTokenSpec;
@@ -71,6 +68,10 @@ import com.vmware.identity.saml.SamlTokenSpec.ConfirmationType;
 import com.vmware.identity.saml.SamlTokenSpec.DelegationSpec;
 import com.vmware.identity.saml.SamlTokenSpec.DelegationSpec.DelegationHistory;
 import com.vmware.identity.saml.SamlTokenSpec.RenewSpec;
+import com.vmware.identity.saml.ServerValidatableSamlToken;
+import com.vmware.identity.saml.ServerValidatableSamlToken.SamlTokenDelegate;
+import com.vmware.identity.saml.ServerValidatableSamlToken.Subject;
+import com.vmware.identity.saml.ServerValidatableSamlToken.SubjectValidation;
 import com.vmware.identity.saml.SignatureAlgorithm;
 import com.vmware.identity.saml.TokenAuthority;
 import com.vmware.identity.saml.TokenValidator;
@@ -188,7 +189,8 @@ public class STSImplTest {
 
       SecurityHeaderType header = new SecurityHeaderType();
 
-      header.setTimestamp(createTimestamp(createdTime, expiresTime));
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createTimestamp(createTimestamp(createdTime, expiresTime)));
 
       ServerValidatableSamlToken token = createMock(ServerValidatableSamlToken.class);
       Request req = new Request(header, rst, null, token, null);
@@ -213,7 +215,8 @@ public class STSImplTest {
 
       SecurityHeaderType header = new SecurityHeaderType();
 
-      header.setTimestamp(createTimestamp(createdTime, expiresTime));
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createTimestamp(createTimestamp(createdTime, expiresTime)));
 
       ServerValidatableSamlToken token = createMock(ServerValidatableSamlToken.class);
       Request req = new Request(header, rst, null, token, null);
@@ -248,7 +251,9 @@ public class STSImplTest {
    @Test
    public void testIssueAmbiguous() {
       SecurityHeaderType header = new SecurityHeaderType();
-      header.setTimestamp(createTimestamp(createdTime, expiresTime));
+
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createTimestamp(createTimestamp(createdTime, expiresTime)));
 
       RequestSecurityTokenType rst = new RequestSecurityTokenType();
       rst.setDelegateTo(new DelegateToType());
@@ -287,7 +292,9 @@ public class STSImplTest {
       TimestampType timestamp = createTimestamp(createdTime, expiresTime);
 
       SecurityHeaderType header = new SecurityHeaderType();
-      header.setTimestamp(timestamp);
+
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createTimestamp(timestamp));
 
       RequestSecurityTokenType rst = new RequestSecurityTokenType();
       rst.setLifetime(createLifetimeType(createdTime, expiresTime));
@@ -329,7 +336,9 @@ public class STSImplTest {
 
       SignatureType signatureInHeader = new SignatureType();
       signatureInHeader.setId(signatureId);
-      header.setSignature(signatureInHeader);
+
+      org.w3._2000._09.xmldsig_.ObjectFactory objectFactorySig = new org.w3._2000._09.xmldsig_.ObjectFactory();
+      header.getAny().add(objectFactorySig.createSignature(signatureInHeader));
 
       X509Certificate signingCertificate = createMock(X509Certificate.class);
       Signature signature = new Signature(signingCertificate,
@@ -428,7 +437,10 @@ public class STSImplTest {
       setValidateTarget(rst);
 
       SecurityHeaderType header = new SecurityHeaderType();
-      header.setTimestamp(createTimestamp(createdTime, expiresTime));
+
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createTimestamp(createTimestamp(createdTime, expiresTime)));
+
       ServerValidatableSamlToken token = createMock(ServerValidatableSamlToken.class);
       Request req = new Request(header, rst, null, token, null);
 
@@ -463,7 +475,10 @@ public class STSImplTest {
       setValidateTarget(rst);
 
       SecurityHeaderType header = new SecurityHeaderType();
-      header.setTimestamp(createTimestamp(createdTime, expiresTime));
+
+      ObjectFactory objectFactory = new ObjectFactory();
+      header.getAny().add(objectFactory.createTimestamp(createTimestamp(createdTime, expiresTime)));
+
       ServerValidatableSamlToken token = createMock(ServerValidatableSamlToken.class);
       Request req = new Request(header, rst, null, token, null);
 

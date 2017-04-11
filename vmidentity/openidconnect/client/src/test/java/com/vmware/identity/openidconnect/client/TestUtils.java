@@ -98,7 +98,21 @@ class TestUtils {
         return x509Certificate;
     }
 
-    static String buildBaseToken(Issuer issuer, String audience, String tokenClass, RSAPrivateKey rsaPrivateKey, Long tokenLifeTime) throws Exception {
+    static String buildBaseToken(Issuer issuer, String audience, String tokenClass, RSAPrivateKey rsaPrivateKey, long tokenLifeTime) throws Exception {
+
+        Date now = new Date();
+        Date issueTime = now;
+        Date expirationTime = new Date(now.getTime() + tokenLifeTime);
+        return buildBaseToken(issuer, audience, tokenClass, rsaPrivateKey, issueTime, expirationTime);
+    }
+
+    static String buildBaseToken(
+            Issuer issuer,
+            String audience,
+            String tokenClass,
+            RSAPrivateKey rsaPrivateKey,
+            Date issueTime,
+            Date expirationTime) throws Exception {
 
         // build an id token
         JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder();
@@ -106,10 +120,10 @@ class TestUtils {
         claimsBuilder = claimsBuilder.issuer(issuer.getValue());
         claimsBuilder = claimsBuilder.claim("token_type", TokenType.HOK.getValue());
         claimsBuilder = claimsBuilder.audience(audience);
-        claimsBuilder = claimsBuilder.expirationTime(new Date(new Date().getTime() + tokenLifeTime));
+        claimsBuilder = claimsBuilder.expirationTime(expirationTime);
         claimsBuilder = claimsBuilder.claim("token_class", tokenClass);
         claimsBuilder = claimsBuilder.jwtID(new JWTID().getValue());
-        claimsBuilder = claimsBuilder.issueTime(new Date());
+        claimsBuilder = claimsBuilder.issueTime(issueTime);
         claimsBuilder = claimsBuilder.claim("scope", "openid");
         claimsBuilder = claimsBuilder.claim("tenant", "test_tenant");
 
@@ -249,7 +263,8 @@ class TestUtils {
             AccessToken accessToken,
             String domainControllerFQDN,
             int domainControllerPort,
-            KeyStore keyStore) throws Exception {
+            KeyStore keyStore,
+            RSAPrivateKey privateKey) throws Exception {
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
         SSLContext sslContext = SSLContext.getInstance("SSL");
@@ -260,8 +275,12 @@ class TestUtils {
                 new DefaultHostnameVerifier(),
                 sslContext);
         com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
-                        com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+                new com.vmware.identity.rest.core.client.AccessToken(
+                        accessToken.getValue(),
+                        privateKey == null ?
+                                com.vmware.identity.rest.core.client.AccessToken.Type.JWT :
+                                com.vmware.identity.rest.core.client.AccessToken.Type.JWT_HOK,
+                        privateKey);
         idmClient.setToken(restAccessToken);
         return idmClient;
     }

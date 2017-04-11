@@ -264,6 +264,7 @@ VecsCreateCertStoreW(
     handle_t hBinding = NULL;
     PWSTR pszServerEndpoint = NULL;
     size_t storeNameLength = 0;
+    PVM_AFD_CONNECTION pConnection = NULL;
 
     if (!pszStoreName)
     {
@@ -284,11 +285,15 @@ VecsCreateCertStoreW(
         VmAfdIsLocalHostW(pszServerName)
        )
     {
+        dwError = VmAfdOpenClientConnection (&pConnection);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
         dwError = VecsLocalCreateCertStoreW (
-                                              pszStoreName,
-                                              pszPassword,
-                                              (PBYTE *)&pStoreHandle
-                                            );
+                                pConnection,
+                                pszStoreName,
+                                pszPassword,
+                                (PBYTE *)&pStoreHandle
+                                );
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
@@ -329,6 +334,8 @@ VecsCreateCertStoreW(
     pStore->bOwnBinding = TRUE;
 
     pStore->pStoreHandle = pStoreHandle;
+    pStore->pConnection = pConnection;
+    pConnection = NULL;
 
     if (ppStore)
     {
@@ -357,7 +364,10 @@ error:
     {
         VmAfdFreeBindingHandle(&hBinding);
     }
-
+    if (pConnection)
+    {
+        VmAfdFreeClientConnection (pConnection);
+    }
     goto cleanup;
 }
 
@@ -373,6 +383,7 @@ VecsCreateCertStoreHW(
     PVECS_STORE pStore = NULL;
     vecs_store_handle_t pStoreHandle = NULL;
     size_t storeNameLength = 0;
+    PVM_AFD_CONNECTION pConnection = NULL;
 
     if (!pszStoreName || !pServer)
     {
@@ -391,11 +402,15 @@ VecsCreateCertStoreHW(
 
     if (!pServer->hBinding)
     {
+        dwError = VmAfdOpenClientConnection ( &pConnection);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
         dwError = VecsLocalCreateCertStoreW (
-                                              pszStoreName,
-                                              pszPassword,
-                                              (PBYTE *)&pStoreHandle
-                                            );
+                        pConnection,
+                        pszStoreName,
+                        pszPassword,
+                        (PBYTE *)&pStoreHandle
+                        );
         BAIL_ON_VMAFD_ERROR (dwError);
     }
     else
@@ -429,6 +444,8 @@ VecsCreateCertStoreHW(
     pStore->pServer = VmAfdAcquireServer(pServer);
 
     pStore->pStoreHandle = pStoreHandle;
+    pStore->pConnection = pConnection;
+    pConnection = NULL;
 
     if (ppStore)
     {
@@ -452,6 +469,10 @@ error:
     if (pStoreHandle && pServer && pServer->hBinding)
     {
         VecsRpcCloseCertStore(pServer->hBinding, &pStoreHandle);
+    }
+    if (pConnection)
+    {
+        VmAfdFreeClientConnection (pConnection);
     }
 
     goto cleanup;
@@ -525,6 +546,7 @@ VecsOpenCertStoreHW(
     DWORD dwError = 0;
     PVECS_STORE pStore = NULL;
     vecs_store_handle_t pStoreHandle = NULL;
+    PVM_AFD_CONNECTION pConnection = NULL;
 
     if (IsNullOrEmptyString(pszStoreName) || !ppStore || !pServer)
     {
@@ -534,7 +556,11 @@ VecsOpenCertStoreHW(
 
     if (!pServer->hBinding)
     {
+        dwError = VmAfdOpenClientConnection ( &pConnection);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
         dwError = VecsLocalOpenCertStoreW (
+                                            pConnection,
                                             pszStoreName,
                                             pszPassword,
                                             (PBYTE *)&pStoreHandle
@@ -570,6 +596,9 @@ VecsOpenCertStoreHW(
     pStore->hBinding = pServer->hBinding;
     pStore->bOwnBinding = FALSE;
 
+    pStore->pConnection = pConnection;
+    pConnection = NULL;
+
     pStore->pServer = VmAfdAcquireServer(pServer);
 
     pStore->pStoreHandle = pStoreHandle;
@@ -603,7 +632,10 @@ error:
         }
         DCETHREAD_ENDTRY;
     }
-
+    if (pConnection)
+    {
+        VmAfdFreeClientConnection (pConnection);
+    }
     goto cleanup;
 }
 
@@ -702,6 +734,7 @@ VecsOpenCertStoreW(
     handle_t hBinding = NULL;
     vecs_store_handle_t pStoreHandle = NULL;
     PWSTR pszServerEndpoint = NULL;
+    PVM_AFD_CONNECTION pConnection = NULL;
 
     if (IsNullOrEmptyString(pszStoreName) || !ppStore)
     {
@@ -713,11 +746,15 @@ VecsOpenCertStoreW(
         VmAfdIsLocalHostW(pszServerName)
        )
     {
+        dwError = VmAfdOpenClientConnection (&pConnection);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
         dwError = VecsLocalOpenCertStoreW (
-                                            pszStoreName,
-                                            pszPassword,
-                                            (PBYTE *)&pStoreHandle
-                                          );
+                            pConnection,
+                            pszStoreName,
+                            pszPassword,
+                            (PBYTE *)&pStoreHandle
+                            );
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
@@ -759,6 +796,9 @@ VecsOpenCertStoreW(
 
     pStore->pStoreHandle = pStoreHandle;
 
+    pStore->pConnection = pConnection;
+    pConnection = NULL;
+
     *ppStore = pStore;
 
 cleanup:
@@ -791,6 +831,10 @@ error:
     if (hBinding)
     {
         VmAfdFreeBindingHandle(&hBinding);
+    }
+    if (pConnection)
+    {
+        VmAfdFreeClientConnection (pConnection);
     }
 
     goto cleanup;
@@ -986,7 +1030,7 @@ VecsEnumCertStoreW(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    if (IsNullOrEmptyString (pwszServerName) ||
+    if (IsNullOrEmptyString(pwszServerName) ||
         VmAfdIsLocalHostW(pwszServerName)
        )
     {
@@ -1338,7 +1382,7 @@ VecsAddEntryW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalAddEntryW(
-                                     (PBYTE) pStore->pStoreHandle,
+                                     pStore,
                                      entryType,
                                      pszAlias,
                                      pszCanonicalCertPEM,
@@ -1461,7 +1505,7 @@ VecsGetEntryTypeByAliasW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalGetEntryTypeByAliasW(
-                                                (PBYTE)pStore->pStoreHandle,
+                                                pStore,
                                                 pwszAlias,
                                                 &cEntryType
                                                );
@@ -1592,7 +1636,7 @@ VecsGetEntryDateByAliasW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalGetEntryDateByAliasW(
-                                                (PBYTE)pStore->pStoreHandle,
+                                                pStore,
                                                 pwszAlias,
                                                 &dwDate
                                                );
@@ -1743,7 +1787,7 @@ VecsGetEntryByAliasW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalGetEntryByAliasW(
-                                            (PBYTE) pStore->pStoreHandle,
+                                            pStore,
                                             pszAlias,
                                             infoLevel,
                                             &pEntry
@@ -1893,7 +1937,7 @@ VecsGetCertificateByAliasW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalGetCertificateByAliasW(
-                                                  (PBYTE)pStore->pStoreHandle,
+                                                  pStore,
                                                   pszAlias,
                                                   &pszCertificate
                                                  );
@@ -2037,7 +2081,7 @@ VecsGetKeyByAliasW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalGetKeyByAliasW (
-                                           (PBYTE) pStore->pStoreHandle,
+                                           pStore,
                                            pszAlias,
                                            pszPassword,
                                            &pszPrivateKey
@@ -2108,7 +2152,7 @@ VecsGetEntryCount(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalGetEntryCount(
-                                         (PBYTE)pStore->pStoreHandle,
+                                         pStore,
                                          &dwSize
                                         );
     }
@@ -2175,7 +2219,7 @@ VecsBeginEnumEntries(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalBeginEnumEntries(
-                                            (PBYTE) pStore->pStoreHandle,
+                                            pStore,
                                             dwEntryCount,
                                             infoLevel,
                                             (PBYTE *) &pEnumHandle,
@@ -2495,7 +2539,7 @@ VecsDeleteEntryW(
     if (!pStore->hBinding)
     {
         dwError = VecsLocalDeleteEntryW(
-                                        (PBYTE) pStore->pStoreHandle,
+                                        pStore,
                                         pwszAlias
                                        );
     }
@@ -3756,9 +3800,7 @@ VecsFreeEnumContext(
 
             if (!pStore->hBinding)
             {
-                dwError = VecsLocalEndEnumEntries(
-                                             (PBYTE) pContext->pEnumHandle
-                                            );
+                dwError = VecsLocalEndEnumEntries(pContext);
             }
 
             else
@@ -3846,9 +3888,11 @@ VecsFreeCertStore(
         }
         else if (pStore->pStoreHandle)
         {
-            dwError = VecsLocalCloseCertStore(
-                                                (PBYTE) pStore->pStoreHandle
-                                             );
+            dwError = VecsLocalCloseCertStore(pStore);
+        }
+        if (pStore->pConnection)
+        {
+            VmAfdFreeClientConnection(pStore->pConnection);
         }
         VmAfdFreeMemory(pStore);
     }

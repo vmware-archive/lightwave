@@ -13,7 +13,6 @@
  */
 package com.vmware.identity.saml.config.impl;
 
-import java.rmi.RemoteException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -102,8 +101,6 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
          }
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
-      } catch (RemoteException e) {
-         throw new SystemConfigurationException(e);
       } catch (RuntimeException e) {
          throw new SystemConfigurationException(e);
       } catch (Exception e) {

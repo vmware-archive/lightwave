@@ -130,6 +130,92 @@ typedef struct _VMW_TYPE_SPEC_
     },\
 }
 
+#define CREATE_TENANT_INPUT_PARAMS \
+{\
+    {\
+        "Admin UPN",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "Admin Password",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "Domain Name",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "New User Name",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "New User Password",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+}
+
+#define DELETE_TENANT_INPUT_PARAMS \
+{\
+    {\
+        "Admin UPN",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "Admin Password",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "Domain",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+}
+
+#define ENUMERATE_TENANTS_INPUT_PARAMS \
+{\
+    {\
+        "Admin UPN",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+    {\
+        "Admin Password",\
+        VMW_IPC_TYPE_STRING,\
+        {NULL}\
+    },\
+}
+
+#define ENUMERATE_TENANTS_OUTPUT_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Enumerate Tenants Data Size",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Enumerate Tenants String Count",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Enumerate Tenants Data",\
+        VMW_IPC_TYPE_BLOB,\
+        {NULL}\
+    }\
+}
+
 #define FORCE_RESET_PASSWORD_INPUT_PARAMS \
 {\
     {\

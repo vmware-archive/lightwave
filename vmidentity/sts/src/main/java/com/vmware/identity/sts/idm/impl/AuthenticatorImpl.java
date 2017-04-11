@@ -13,21 +13,28 @@
  */
 package com.vmware.identity.sts.idm.impl;
 
-import java.rmi.RemoteException;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.CertificateRevocationCheckException;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMLoginException;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
+import com.vmware.identity.idm.IdmCertificateRevokedException;
+import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.sts.NoSuchIdPException;
 import com.vmware.identity.sts.idm.Authenticator;
+import com.vmware.identity.sts.idm.IdmSecureIDNewPinException;
 import com.vmware.identity.sts.idm.InvalidCredentialsException;
 import com.vmware.identity.sts.idm.InvalidPrincipalException;
 import com.vmware.identity.sts.idm.LockedUserAccountException;
@@ -37,6 +44,7 @@ import com.vmware.identity.sts.idm.STSConfigExtractor;
 import com.vmware.identity.sts.idm.STSConfiguration;
 import com.vmware.identity.sts.idm.SsoStatisticsService;
 import com.vmware.identity.sts.idm.SystemException;
+import com.vmware.identity.sts.idm.UserCertificateValidateException;
 import com.vmware.identity.util.PerfConstants;
 
 /**
@@ -91,8 +99,6 @@ final class AuthenticatorImpl implements Authenticator, STSConfigExtractor,
          throw new InvalidCredentialsException(e);
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
-      } catch (RemoteException e) {
-         throw new SystemException(e);
       } catch (RuntimeException e) {
          throw new SystemException(e);
       } catch (Exception e) {
@@ -116,8 +122,58 @@ final class AuthenticatorImpl implements Authenticator, STSConfigExtractor,
          throw new InvalidCredentialsException(e);
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
-      } catch (RemoteException e) {
+      } catch (RuntimeException e) {
          throw new SystemException(e);
+      } catch (Exception e) {
+         throw new SystemException(e);
+      }
+      checkNotNull(result);
+      return result;
+   }
+
+   @Override
+   public PrincipalId authenticate(X509Certificate[] x509CertificateChain)
+      throws UserCertificateValidateException, InvalidCredentialsException, NoSuchIdPException, SystemException {
+
+      final PrincipalId result;
+      try {
+         final long startedAt = now();
+         result = idmClient.authenticate(tenantName, x509CertificateChain, null); // PR 1747182
+         perfLog.trace("'idm.authenticateByUserCertificate' took {} ms.", now() - startedAt);
+      } catch (CertificateRevocationCheckException e) {
+         throw new UserCertificateValidateException("Revocation check fails to determine the certificate status.", e);
+      } catch (IdmCertificateRevokedException e) {
+         throw new UserCertificateValidateException("Certificate is revoked.", e);
+      } catch (InvalidArgumentException e) {
+         throw new UserCertificateValidateException("Certificate check parameter was incorrectly set.", e);
+      } catch (IDMLoginException e) {
+         throw new InvalidCredentialsException(e);
+      } catch (NoSuchTenantException e) {
+         throw noSuchIdPExc(e);
+      } catch (RuntimeException e) {
+         throw new SystemException(e);
+      } catch (Exception e) {
+         throw new SystemException(e);
+      }
+      checkNotNull(result);
+      return result;
+   }
+
+   @Override
+   public RSAAMResult authenticate(String username, String sessionID, String passcode)
+      throws IdmSecureIDNewPinException, InvalidCredentialsException, NoSuchIdPException, SystemException {
+
+      final RSAAMResult result;
+      try {
+         final long startedAt = now();
+         result = idmClient.authenticateRsaSecurId(tenantName, sessionID, username, passcode);
+         perfLog.trace("'idm.authenticateByRSASecurId' took {} ms.", now() - startedAt);
+      } catch (IDMSecureIDNewPinException e) {
+         throw new IdmSecureIDNewPinException("SecurID asks for a new PIN.", e);
+      } catch (IDMLoginException e) {
+         throw new InvalidCredentialsException(e);
+      } catch (NoSuchTenantException e) {
+         throw noSuchIdPExc(e);
       } catch (RuntimeException e) {
          throw new SystemException(e);
       } catch (Exception e) {
@@ -139,8 +195,6 @@ final class AuthenticatorImpl implements Authenticator, STSConfigExtractor,
             - startedAt);
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
-      } catch (RemoteException e) {
-         throw new SystemException(e);
       } catch (RuntimeException e) {
          throw new SystemException(e);
       } catch (Exception e) {
@@ -163,8 +217,6 @@ final class AuthenticatorImpl implements Authenticator, STSConfigExtractor,
          return solutionUser;
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
-      } catch (RemoteException e) {
-         throw new SystemException(e);
       } catch (RuntimeException e) {
          throw new SystemException(e);
       } catch (Exception e) {
@@ -185,8 +237,6 @@ final class AuthenticatorImpl implements Authenticator, STSConfigExtractor,
          return solutionUser;
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
-      } catch (RemoteException e) {
-         throw new SystemException(e);
       } catch (RuntimeException e) {
          throw new SystemException(e);
       } catch (Exception e) {
@@ -250,6 +300,6 @@ final class AuthenticatorImpl implements Authenticator, STSConfigExtractor,
    }
 
    private long now() {
-      return System.currentTimeMillis();
+      return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
    }
 }

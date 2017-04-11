@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -103,20 +103,223 @@ error:
     goto cleanup;
 }
 
+
+/*
+ * Return all partners for the localhost using the machine account credentials.
+ */
+DWORD
+getReplicationPartnersViaMachineAccount(
+    PVMDIR_REPL_PARTNER_INFO* ppReplPartnerInfo,
+    DWORD* pdwNumReplPartner
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszServerName = NULL;
+    PSTR pszDCAccount = NULL;
+    PSTR pszDCAccountPassword = NULL;
+    PVMDIR_REPL_PARTNER_INFO  pReplPartnerInfo = NULL;
+    DWORD dwNumReplPartner = 0;
+
+    if (pdwNumReplPartner == NULL ||
+        ppReplPartnerInfo == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Support for local backup only.
+    dwError = VmDirGetServerName( "localhost", &pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Get machine account name
+    dwError = VmDirRegReadDCAccount( &pszDCAccount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Get machine account password
+    dwError = VmDirReadDCAccountPassword( &pszDCAccountPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetReplicationPartners(
+                                pszServerName,
+                                pszDCAccount,
+                                pszDCAccountPassword,
+                                &pReplPartnerInfo,
+                                &dwNumReplPartner
+                                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppReplPartnerInfo = pReplPartnerInfo;
+    *pdwNumReplPartner = dwNumReplPartner;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+    VMDIR_SAFE_FREE_STRINGA(pszDCAccount);
+    VMDIR_SECURE_FREE_STRINGA(pszDCAccountPassword);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Write partner hostnames to file in specified directory.
+ * Filename is 'partnerlist'
+ */
+DWORD
+writePartnerList(
+    PCSTR pszTgtDir
+    )
+{
+    DWORD dwError = 0;
+    PVMDIR_REPL_PARTNER_INFO pReplPartnerInfo = NULL;
+    DWORD dwNumReplPartner = 0;
+    DWORD dwCnt = 0;
+    DWORD dwWritten = 0;
+    PSTR pszPartnerHostname = NULL;
+    FILE* fPartnerList = NULL;
+    PSTR pszFileName = NULL;
+#ifdef _WIN32
+    PCSTR pszSeparator = "\\";
+#else
+    PCSTR pszSeparator = "/";
+#endif
+
+    if (pszTgtDir == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Get partners
+    dwError = getReplicationPartnersViaMachineAccount(
+                                &pReplPartnerInfo,
+                                &dwNumReplPartner
+                                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Only write file if server has partners
+    if ( dwNumReplPartner > 0 )
+    {
+
+        // Build the filename, i.e., /tmp/backup/partnerlist
+        dwError = VmDirAllocateStringPrintf(
+                                        &pszFileName,
+                                        "%s%spartnerlist",
+                                        pszTgtDir,
+                                        pszSeparator
+                                        );
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Open file
+        fPartnerList =fopen(pszFileName, "w+");
+        if (fPartnerList == NULL)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+
+        // For each partner
+        for ( dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++ )
+        {
+
+            VMDIR_SAFE_FREE_MEMORY(pszPartnerHostname);
+
+            dwError = VmDirReplURIToHostname(
+                                pReplPartnerInfo[dwCnt].pszURI,
+                                &pszPartnerHostname
+                                );
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            // Write partner hostname to file.
+            dwWritten = (DWORD)fwrite(
+                                pszPartnerHostname,
+                                sizeof(char),
+                                VmDirStringLenA(pszPartnerHostname),
+                                fPartnerList);
+            if (dwWritten != VmDirStringLenA(pszPartnerHostname))
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+            }
+
+            // Add newline to file.
+            dwWritten = (DWORD)fwrite(
+                                    "\n",
+                                    sizeof(char),
+                                    VmDirStringLenA("\n"),
+                                    fPartnerList
+                                    );
+            if (dwWritten != VmDirStringLenA("\n"))
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+            }
+        }
+    }
+
+cleanup:
+    if (fPartnerList)
+    {
+        fclose(fPartnerList);
+    }
+
+    for (dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo[dwCnt].pszURI);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pszFileName);
+    VMDIR_SAFE_FREE_MEMORY(pszPartnerHostname);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+Cleanup(VOID)
+{
+    DWORD   dwError = 0;
+
+    printf( "Cleanup: Setting vmdir state to VMDIRD_NORMAL \n" );
+
+    if ((dwError = VmDirSetState( NULL, VMDIRD_STATE_NORMAL )) != 0)
+    {
+        fprintf(stderr, "Cleanup: Setting vmdir state to VMDIRD_NORMAL failed, error (%d) \n", dwError);
+    }
+
+    return dwError;
+}
+
 static
 int
 VmDirMain(int argc, char* argv[])
 {
     DWORD   dwError = 0;
 
-    if (argc != 3)
+    if (argc == 2 && VmDirStringCompareA("-c", argv[1], TRUE) == 0)
     {
-        fprintf(stderr, "usage: %s srcpath dstpath\n", argv[0]);
-        exit(1);
+        dwError = Cleanup();
+    }
+    else if (argc == 3)
+    {
+        dwError = writePartnerList(argv[2]);
+        if (dwError != 0)
+        {
+            fprintf(stderr, "Warning: could not create partner list");
+        }
+
+        dwError = BackupDB(argv[1], argv[2]);
+
+    }
+    else
+    {
+        dwError = EINVAL;
+        fprintf(stderr, "usage: %s srcpath dstpath\n"
+                        "       %s -c\n",
+                        argv[0], argv[0]);
     }
 
-    dwError = BackupDB(argv[1], argv[2]);
-    exit(dwError);
+    return dwError;
 }
 
 #ifdef _WIN32

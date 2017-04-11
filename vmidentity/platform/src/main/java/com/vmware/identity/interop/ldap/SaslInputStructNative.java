@@ -13,7 +13,6 @@
 
 package com.vmware.identity.interop.ldap;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,7 +56,7 @@ public class SaslInputStructNative extends Structure implements AutoCloseable{
         password = nativeMemories[1];
         passwordLength = bytes.length - 1; // Not including the ending '\0'
 
-       write();
+        write();
     }
 
     public SaslInputStructNative(Pointer ptr) {

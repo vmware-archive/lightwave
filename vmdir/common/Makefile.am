@@ -15,6 +15,7 @@ libcommon_la_SOURCES = \
     krbmisc.c \
     krbutil.c \
     ldapbind.c \
+    ldaputil.c \
     linkedlist.c \
     logging.c \
     marshalutil.c \
@@ -33,6 +34,7 @@ libcommon_la_SOURCES = \
     threading.c  \
     tsstack.c \
     util.c \
+    replstate/schemareplstate.c \
     schema/compat.c \
     schema/copy.c \
     schema/def.c \

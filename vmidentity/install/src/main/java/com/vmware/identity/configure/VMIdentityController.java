@@ -6,12 +6,14 @@ package com.vmware.identity.configure;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Inet6Address;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.vmware.identity.installer.ReleaseUtil;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.LdapBindMethod;
 import com.vmware.identity.interop.ldap.LdapConnectionFactoryEx;
@@ -60,6 +62,65 @@ public class VMIdentityController {
         return true;
     }
 
+    public boolean migrateStandaloneInstance(
+            VmIdentityParams standaloneParams) throws DomainControllerNativeException {
+
+        migrateInstance(standaloneParams);
+        return true;
+    }
+
+    private void migrateInstance(VmIdentityParams params) throws DomainControllerNativeException{
+        // check services vmafd, vmca and vmdir if they are confgiured.
+        try {
+            // check authentication services
+            checkVMAFDService();
+
+            // check directory services
+            checkVMDIRService();
+
+            // check certificate services
+            checkVMCAService(params.getHostname());
+
+        } catch (Exception ex) {
+            System.err.println("Error: Cannot proceed. Failed to check services.\n");
+            ex.printStackTrace(System.err);
+            System.exit(1);
+        }
+
+        List<IPlatformComponentInstaller> components = getComponents(params);
+        List<PlatformInstallComponent> componentsInfo = new ArrayList<>();
+
+        if (observer != null) {
+            for (IPlatformComponentInstaller comp : components) {
+                componentsInfo.add(comp.getComponentInfo());
+            }
+            observer.beginMigration(componentsInfo);
+        }
+
+        boolean status = true;
+        try {
+            for (IPlatformComponentInstaller comp : components) {
+                try {
+                    if (observer != null)
+                        observer.beginComponentMigration(comp.getComponentInfo()
+                                .getId());
+
+                    comp.upgrade();
+
+                } catch (Exception e) {
+                    status = false;
+                    throw new DomainControllerNativeException(-1, e);
+                } finally {
+                    if (observer != null)
+                        observer.endComponentMigration(comp.getComponentInfo()
+                                .getId(), status);
+                }
+            }
+        } finally {
+            if (observer != null)
+                observer.endUpgrade(status);
+        }
+    }
     private void upgradeInstance (VmIdentityParams params) throws DomainControllerNativeException
     {
         // check services vmafd, vmca and vmdir if they are confgiured.
@@ -158,8 +219,6 @@ public class VMIdentityController {
         try {
             for (IPlatformComponentInstaller comp : components) {
                 try {
-					String id = comp.getComponentInfo().getId();
-					System.out.println("\nAdded getComponentInfo: " + id);
                     if (observer != null)
                         observer.beginComponentInstall(comp.getComponentInfo()
                                 .getId());
@@ -171,6 +230,9 @@ public class VMIdentityController {
                     throw e;
                 } catch (Exception e) {
                     status = false;
+                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+
                     throw new DomainControllerNativeException(-1, e);
                 } finally {
                     if (observer != null)
@@ -190,14 +252,21 @@ public class VMIdentityController {
 
     private List<IPlatformComponentInstaller> getComponents(
             VmIdentityParams standaloneParams) {
-
         List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
-        components.add(new IdentityManagerInstaller(standaloneParams
-                .getUsername(), standaloneParams.getDomainName(),
-                standaloneParams.getPassword(),false, standaloneParams.isUpgradeMode(), standaloneParams.getServiceStart()));
-        components.add(new SecureTokenServerInstaller(standaloneParams));
-        components.add(new LightwaveUIInstaller(standaloneParams));
-		System.out.println("\nAdded Lightwave UI installer");
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
+                components.add(new SecureTokenServerInstaller(standaloneParams));
+                components.add(new LightwaveUIInstaller(standaloneParams));
+            } else {
+                components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
+                // components.add(new LookupServiceInstaller(false));
+                components.add(new SecureTokenServerInstaller(standaloneParams));
+                }
+        } catch (IOException e) {
+            System.err.println("Failed to fetch components for SecureTokenservice");
+            System.exit(1);
+        }
         return components;
     }
 
@@ -264,6 +333,7 @@ public class VMIdentityController {
             throw new ServiceCheckException("Failed to check directory service. Cannot configure IDM or STS.", ex);
         }
         System.out.println("Directory Service checked successfully.");
+
     }
 
     private void checkVMAFDService() throws Exception {
@@ -279,7 +349,6 @@ public class VMIdentityController {
 
         System.out.println("Authentication Service checked successfully.");
     }
-
     private synchronized DirectoryBindInformation getBindInformation()
     {
 
@@ -330,9 +399,9 @@ public class VMIdentityController {
                 rootKey.close();
             }
         }
+
         return _bindInformation;
     }
-
     private static class DirectoryBindInformation
     {
         private final String  _bindDN;
@@ -379,7 +448,7 @@ public class VMIdentityController {
                     LdapOption.LDAP_OPT_PROTOCOL_VERSION,
                     LdapConstants.LDAP_VERSION3);
 
-           connection.setOption(
+            connection.setOption(
                     LdapOption.LDAP_OPT_REFERRALS,
                     false);
 
@@ -390,5 +459,4 @@ public class VMIdentityController {
 
         return connection;
     }
-
 }

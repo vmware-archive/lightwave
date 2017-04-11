@@ -48,6 +48,7 @@ import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
+import com.vmware.identity.rest.idm.server.util.Config;
 
 /**
  * Resource that contains alternative POST endpoints for every GET endpoint throughought the other
@@ -65,7 +66,7 @@ import com.vmware.identity.rest.idm.data.UserDTO;
 public class PostResource extends BaseResource {
 
     public PostResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
-        super(request, securityContext);
+        super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     // Server Resource
@@ -147,8 +148,8 @@ public class PostResource extends BaseResource {
 
     @POST @Path("/tenant/{tenantName}/certificates")
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    public Collection<CertificateChainDTO> getAllCertificates(@PathParam("tenantName") String tenantName, @QueryParam("scope") String certificateLocation) {
-        return new CertificateResource(tenantName, getRequest(), getSecurityContext()).getCertificates(certificateLocation);
+    public Collection<CertificateChainDTO> getAllCertificates(@PathParam("tenantName") String tenantName, @QueryParam("scope") String certificateLocation,@QueryParam("granularity") String granularity) {
+        return new CertificateResource(tenantName, getRequest(), getSecurityContext()).getCertificates(certificateLocation, granularity);
     }
 
     @POST @Path("/tenant/{tenantName}/certificates/privatekey")

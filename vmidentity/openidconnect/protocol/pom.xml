@@ -1,119 +1,66 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>com.vmware.identity</groupId>
-    <artifactId>openidconnect-protocol</artifactId>
-    <version>6.6.1</version>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <properties>
-        <java.version>1.7</java.version>
-        <vmware.version>6.6.1</vmware.version>
-        <nimbus-jose-jwt.version>4.12</nimbus-jose-jwt.version>
-        <commons-validator.version>1.4.0</commons-validator.version>
-        <commons-lang3.version>3.3.2</commons-lang3.version>
-        <httpclient.version>4.5.1</httpclient.version>
-        <javax.servlet-api.version>3.0.1</javax.servlet-api.version>
-        <junit.version>4.12</junit.version>
-        <bouncycastle.version>1.47</bouncycastle.version>
-        <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
-    </properties>
+  <modelVersion>4.0.0</modelVersion>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>copy-jar-to-output</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${outputDirectory}</outputDirectory>
-                            <finalName>${artifactId}</finalName>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+  <parent>
+    <groupId>com.vmware.identity.oidc</groupId>
+    <artifactId>vmware-identity-oidc</artifactId>
+    <version>1.2.0-SNAPSHOT</version>
+  </parent>
 
-    <distributionManagement>
-        <repository>
-            <id>lightwave</id>
-            <name>lightwave</name>
-            <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
-        </repository>
-    </distributionManagement>
+  <artifactId>openidconnect-protocol</artifactId>
+  <packaging>jar</packaging>
+  <name>OpenID Connect - Protocol</name>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.vmware.identity</groupId>
-            <artifactId>openidconnect-common</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>com.vmware.identity.oidc</groupId>
+      <artifactId>openidconnect-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>${nimbus-jose-jwt.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+      <version>${nimbusds.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>commons-validator</groupId>
-            <artifactId>commons-validator</artifactId>
-            <version>${commons-validator.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${commons.lang3.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${httpclient.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>${javax.servlet-api.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${javax.servlet-api.version}</version>
-        </dependency>
+    <!-- Test Dependencies -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+      <scope>test</scope>
+    </dependency>
 
-        <!-- Test Dependencies -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${bouncycastle.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>${bouncycastle.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 </project>

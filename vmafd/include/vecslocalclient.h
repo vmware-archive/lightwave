@@ -30,6 +30,7 @@ extern "C" {
  */
 DWORD
 VecsLocalCreateCertStoreW(
+        PVM_AFD_CONNECTION pConnection,
         PCWSTR pszStoreName,
         PCWSTR pszPassword,
         PBYTE *ppStore
@@ -60,6 +61,7 @@ VecsLocalEnumCertStoreW(
  */
 DWORD
 VecsLocalOpenCertStoreW (
+    PVM_AFD_CONNECTION pConnection,
     PCWSTR pszStoreName,
     PCWSTR pszPassword,
     PBYTE *ppStore
@@ -81,7 +83,7 @@ VecsLocalOpenCertStoreW (
  */
 DWORD
 VecsLocalAddEntryW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     CERT_ENTRY_TYPE entryType,
     PCWSTR pszAlias,
     PCWSTR pszCertificate,
@@ -102,7 +104,7 @@ VecsLocalAddEntryW(
  */
 DWORD
 VecsLocalDeleteEntryW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pwszAlias
     );
 
@@ -117,7 +119,7 @@ VecsLocalDeleteEntryW(
  */
 DWORD
 VecsLocalBeginEnumEntries(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     DWORD dwEntryCount,
     ENTRY_INFO_LEVEL infoLevel,
     PBYTE *ppEnumContext,
@@ -150,7 +152,7 @@ VecsLocalEnumEntriesW(
  */
 DWORD
 VecsLocalEndEnumEntries(
-    PBYTE pEnumContext
+    PVECS_ENUM_CONTEXT pEnumContext
     );
 
 
@@ -166,7 +168,7 @@ VecsLocalEndEnumEntries(
  */
 DWORD
 VecsLocalGetEntryByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias,
     ENTRY_INFO_LEVEL infoLevel,
     PVECS_CERT_ENTRY_W *ppEntry
@@ -186,7 +188,7 @@ VecsLocalGetEntryByAliasW(
  */
 DWORD
 VecsLocalGetKeyByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias,
     PCWSTR pszPassword,
     PWSTR *ppszPrivateKey
@@ -205,7 +207,7 @@ VecsLocalGetKeyByAliasW(
  */
 DWORD
 VecsLocalGetEntryTypeByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pwszAlias,
     CERT_ENTRY_TYPE *pType
     );
@@ -223,7 +225,7 @@ VecsLocalGetEntryTypeByAliasW(
  */
 DWORD
 VecsLocalGetEntryDateByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pwszAlias,
     PDWORD pdwDate
     );
@@ -241,7 +243,7 @@ VecsLocalGetEntryDateByAliasW(
  */
 DWORD
 VecsLocalGetCertificateByAliasW(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PCWSTR pszAlias,
     PWSTR *ppszCertificate
     );
@@ -256,7 +258,7 @@ VecsLocalGetCertificateByAliasW(
  */
 DWORD
 VecsLocalGetEntryCount(
-    PBYTE pStore,
+    PVECS_STORE pStore,
     PDWORD pdwSize
     );
 
@@ -269,7 +271,7 @@ VecsLocalGetEntryCount(
  */
 DWORD
 VecsLocalCloseCertStore(
-    PBYTE pStore
+    PVECS_STORE pStore
     );
 
 /*

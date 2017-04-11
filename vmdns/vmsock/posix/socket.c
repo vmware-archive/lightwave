@@ -708,6 +708,57 @@ error:
 }
 
 DWORD
+VmSockPosixSetTimeOut(
+    PVM_SOCKET pSocket,
+    DWORD      dwTimeOut
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (!pSocket)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+
+    if (dwTimeOut)
+    {
+        struct timeval tv = {0};
+        dwError = VmDnsLockMutex(pSocket->pMutex);
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+        bLocked = TRUE;
+
+        tv.tv_sec = dwTimeOut;
+        if (setsockopt(pSocket->fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
+        }
+
+        if (setsockopt(pSocket->fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
+        }
+    }
+
+cleanup:
+
+    if (bLocked)
+    {
+        VmDnsUnlockMutex(pSocket->pMutex);
+    }
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+
+DWORD
 VmSockPosixGetProtocol(
     PVM_SOCKET           pSocket,
     PDWORD               pdwProtocol

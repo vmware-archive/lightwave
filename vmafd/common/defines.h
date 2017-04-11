@@ -22,6 +22,12 @@
 #define VmAfd_SF_INIT( fieldName, fieldValue ) fieldValue
 #endif
 
+#ifndef VMDDNS_COMPRESSED_NAME
+#define VMDDNS_COMPRESSED_NAME(Data)     \
+    (((Data) & (1 << 0x07))) &&          \
+    (((Data) & (1 << 0x06)))
+#endif /* VMAFD_DNS_COMPRESSED_NAME */
+
 #define VMAFD_IPC_PACKET_SIZE 64*1024
 #define VMAFD_FQDN_SEPARATOR '.'
 #define VMAFD_IPC_SIZE_T UINT64
@@ -35,12 +41,16 @@
 #ifndef _WIN32
 #define SOCKET_FILE_PATH "/var/run/vmafd_socket"
 #define EVERYONE_UID -1
+#define MAX_GWTPWR_BUF_LENGTH 16384
 #endif
 #if defined _WIN32
 #define NAME_OF_PIPE "\\\\.\\pipe\\vmafd_pipe"
 #define PIPE_TIMEOUT_INTERVAL 5000
 #define PIPE_CLIENT_RETRY_COUNT 3
 #endif
+
+#define VMDDNS_LABEL_LENGTH_MAX 63
+#define VMDDNS_NAME_LENGTH_MAX  255
 
 //
 // VMDIR Errors

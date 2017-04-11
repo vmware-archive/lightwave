@@ -361,6 +361,37 @@ VdirSubstrMRLookupBySyntaxOid(
     return pMatchingRule;
 }
 
+/*
+ * Note: this only works for string types
+ */
+DWORD
+VmDirSchemaATDescOverrideMR(
+    PVDIR_SCHEMA_AT_DESC    pATDesc,
+    PSTR                    pszSyntaxOid
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pATDesc || IsNullOrEmptyString(pszSyntaxOid))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pATDesc->pEqualityMR = VdirEqualityMRLookupBySyntaxOid(pszSyntaxOid);
+    pATDesc->pOrderingMR = VdirOrderingMRLookupBySyntaxOid(pszSyntaxOid);
+    pATDesc->pSubStringMR = VdirSubstrMRLookupBySyntaxOid(pszSyntaxOid);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
 static
 int
 matchingrulePSyntaxOidCmp(

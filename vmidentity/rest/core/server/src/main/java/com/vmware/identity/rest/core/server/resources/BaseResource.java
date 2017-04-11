@@ -38,20 +38,20 @@ public abstract class BaseResource {
 
     protected StringManager sm;
 
-    protected BaseResource(Locale locale, String correlationId, SecurityContext securityContext) {
+    protected BaseResource(Locale locale, String correlationId, String localizationPackage, SecurityContext securityContext) {
         this.securityContext = securityContext;
 
         if (locale == null) {
             locale = Locale.getDefault();
         }
         StringManager.setThreadLocale(locale);
-        this.sm = StringManager.getManager("i18n");
+        this.sm = StringManager.getManager(localizationPackage);
 
         this.correlationId = correlationId;
     }
 
-    public BaseResource(ContainerRequestContext request, SecurityContext securityContext) {
-        this(request.getLanguage(), request.getHeaderString(Config.CORRELATION_ID_HEADER), securityContext);
+    public BaseResource(ContainerRequestContext request, String localizationPackage, SecurityContext securityContext) {
+        this(request.getLanguage(), request.getHeaderString(Config.CORRELATION_ID_HEADER), localizationPackage, securityContext);
 
         this.request = request;
     }

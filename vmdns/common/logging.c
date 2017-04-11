@@ -123,7 +123,11 @@ VmDnsLog(
          }
          else
          {
-            fprintf(stderr, "%s%s\n", extraLogMessage, logMessage);
+             logLevelTag = logLevelToTag(level);
+             fprintf(stderr, "VMDNS:t@%lu:%-3.7s: %s\n",
+                     (unsigned long) pthread_self(),
+                     logLevelTag? logLevelTag : "UNKNOWN",
+                     logMessage);
             fflush( stderr );
          }
       }

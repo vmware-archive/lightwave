@@ -55,6 +55,10 @@ krb5_error_code
 srp_make_enc_keyblock(
     srp_gss_ctx_id_t srp_context_handle);
 
+krb5_error_code
+srp_make_enc_keyblock_FIPS(
+    srp_gss_ctx_id_t srp_context_handle);
+
 int
 srp_encrypt_aes256_hmac_sha1(
     srp_gss_ctx_id_t srp_context_handle,

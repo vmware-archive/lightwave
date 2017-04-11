@@ -114,9 +114,18 @@ VmKdcParseKeyTabOpen(
         dwError = EINVAL;
         BAIL_ON_VMKDC_ERROR(dwError);
     }
-    fseek(ktfp, sizeof(size_16), SEEK_SET);
 
-    pKeyTab->ktOffset = sizeof(size_16);
+    if (ktMode == 3)
+    {
+        fseek(ktfp, 0, SEEK_END);
+        pKeyTab->ktOffset = ftell(ktfp);
+    }
+    else
+    {
+        fseek(ktfp, sizeof(size_16), SEEK_SET);
+        pKeyTab->ktOffset = sizeof(size_16);
+    }
+
     pKeyTab->ktType = 1; // Only support file KT for now
     pKeyTab->ktfp = ktfp;
     pKeyTab->ktMode = ktMode;
@@ -441,6 +450,25 @@ VmKdcParseKeyTabRead(
     key = calloc(keyLength, sizeof(unsigned char));
     sts = fread(key, sizeof(unsigned char), keyLength, pKt->ktfp);
     BAIL_ON_VMKDC_ERROR(sts != keyLength ? (dwError = EINVAL) : 0);
+
+    /* keytab version variation */
+    sts = fread(&size_32, 1, sizeof(size_32), pKt->ktfp);
+    if (sts == sizeof(size_32))
+    {
+        /* This value may or may not be present */
+        entrySize = ntohl(size_32);
+        if (((uint8_t) (entrySize % 0xff)) != kvno)
+        {
+            /* Peek at next DWORD, which may be kvno. If not put it back */
+            fseek(pKt->ktfp, -4, SEEK_CUR);
+        }
+    }
+    else if (sts != 0 || !feof(pKt->ktfp))
+    {
+        /* Unknown data at end of entry */
+        dwError = EINVAL;
+        BAIL_ON_VMKDC_ERROR(dwError);
+    }
 
     dwError = VmKdcMakeKey(
                   keyType,

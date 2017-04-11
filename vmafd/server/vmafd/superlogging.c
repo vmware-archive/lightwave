@@ -528,28 +528,23 @@ VmAfdAddCDCSuperLogEntry(
     PSTR pszSiteName = NULL;
     PSTR pszDCAddress = NULL;
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "Super Logger: VmAfdAddCDCSuperLogEntry.");
-
     // AFD should not fail if super logging is disabled. This is why returning 0 here
     if (!VmAfdIsSuperLoggingEnabled(pLogger))
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry::Super Logger is not enabled.");
         dwError = ERROR_NOT_READY;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
     if(!pDCEntry)
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: DC Entry (PCDC_DC_INFO_W) is NULL.");
-        //dwError = ERROR_INVALID_PARAMETER;
-        //BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
 
     pLogEntry = (PVMAFD_SUPERLOG_ENTRY)VmAfdCircularBufferGetNextEntry(pLogger->pCircularBuffer);
 
     if(!pLogEntry)
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: pLogEntry of Super Logger is NULL.");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
@@ -561,7 +556,6 @@ VmAfdAddCDCSuperLogEntry(
     pLogEntry->dwErrorCode = dwErrorCode;
     pLogEntry->dwState = dwState;
 
-    //pLogEntry->dwDCAddressType = pDCEntry->DcAddressType;
 
     if(pDCEntry && pDCEntry->pszDCName)
     {
@@ -570,8 +564,6 @@ VmAfdAddCDCSuperLogEntry(
 
         dwError = VmAfdStringCpyA(pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
-
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: %s", pLogEntry->pszDCName);
     }
 
     if(pDCEntry && pDCEntry->pszDomainName)
@@ -581,8 +573,6 @@ VmAfdAddCDCSuperLogEntry(
 
         dwError = VmAfdStringCpyA(pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
-
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: %s", pLogEntry->pszDomainName);
     }
 
     if(pDCEntry && pDCEntry->pszDcSiteName)
@@ -592,8 +582,6 @@ VmAfdAddCDCSuperLogEntry(
 
         dwError = VmAfdStringCpyA(pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
-
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: %s", pLogEntry->pszSiteName);
     }
 
     if(pDCEntry && pDCEntry->pszDCAddress)
@@ -603,13 +591,7 @@ VmAfdAddCDCSuperLogEntry(
 
         dwError = VmAfdStringCpyA(pLogEntry->pszDCAddress, VMAFD_MAX_DN_LEN, pszDCAddress);
         BAIL_ON_VMAFD_ERROR(dwError);
-
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: %s", pLogEntry->pszDCAddress);
     }
-
-   VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdAddCDCSuperLogEntry:: Super Logger entry is added.");
-
-   VmAfdLog(VMAFD_DEBUG_ANY, "Super Logger: The size of super logger buffer: %d.", pLogger->pCircularBuffer->dwSize);
 
 cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDCName);
@@ -636,15 +618,11 @@ VmAfdSuperLoggingGetEntries(
     DWORD dwError = 0;
     PVMAFD_SUPERLOG_ENTRY_ARRAY pEntries = NULL;
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "Super Logging: VmAfdSuperLoggingGetEntries.");
-
     if(!pLogger || !pEnumerationCookie || !ppEntries)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "Super Logging args validation in VmAfdSuperLoggingGetEntries.");
 
     //
     // If the client requests zero entries then we give them everything we've got. Note
@@ -662,8 +640,6 @@ VmAfdSuperLoggingGetEntries(
     {
         dwError = VmAfdCircularBufferGetSize(pLogger->pCircularBuffer, &dwCount);
         BAIL_ON_VMAFD_ERROR(dwError);
-
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdSuperLoggingGetEntries:: size of circular buffer after retrieving it: %d", dwCount);;
     }
 
     dwError = _VmAfdCopyLogEntries(pLogger, pEnumerationCookie, dwCount, &pEntries);

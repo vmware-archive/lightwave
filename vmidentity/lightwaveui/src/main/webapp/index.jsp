@@ -23,7 +23,7 @@
 	<link rel="stylesheet" href="app/css/lightwave-ui.1.0.2.0.min.css">
 	<link rel="stylesheet" href="app/css/lightwave-ui-vendor.1.0.2.0.min.css">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>Lightwave Admin</title>
+	<title>Photon Authentication Services</title>
 	<style>
 	.headerLogo {
 		margin-left:10px;
@@ -61,12 +61,12 @@
 	
 		<div class="title">
 		 	<img src="app/assets/vm_logo.png" height="32px;" width="32px" class="headerLogo"/>
-			Lightwave Admin
+			Photon Authentication Services
 			<sup><small>beta</small></sup>
 		</div>
 		<div class="row content contentRow">
-			<div class="caption">Lightwave Admin</div><br/>
-			<strong>Lightwave </strong> comprises of enterprise-grade, identity and access management services targeting critical security, governance & compliance challenges for Cloud-Native Apps within the enterprise.
+			<div class="caption">Photon Authentication Services</div><br/>
+			<strong>Photon Authentication Services </strong> comprises of enterprise-grade, identity and access management services targeting critical security, governance & compliance challenges for Cloud-Native Apps within the enterprise.
 			<br/><br/>
 			Lightwave includes ...<br/><br/>
 			<div><strong>Lightwave Authentication Services </strong><br/>A cloud authentication services with support for Kerberos, OAuth 2.0/OpenID Connect, SAML and WSTrust.</div><br/>

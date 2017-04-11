@@ -106,6 +106,12 @@ VmAfConfigDeleteValue(
 	PCSTR               pszName
 	);
 
+DWORD
+VmAfConfigGetSecurity(
+    PVMAF_CFG_KEY         pKey,
+    PSTR                 *ppszSecurityDescriptor
+    );
+
 VOID
 VmAfConfigCloseKey(
     PVMAF_CFG_KEY pKey

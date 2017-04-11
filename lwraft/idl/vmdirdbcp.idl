@@ -1,0 +1,134 @@
+/*
+ * Copyright (C) 2015 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmdirdbcp.idl
+ *
+ * Abstract :
+ *
+ *            VMware Directory Service File Copy RPCs
+ *
+ *            Interface Definition
+ *
+ *            Core API
+ *
+ */
+[
+    uuid (72C780FE-AF6B-42BA-9B02-F61F4CCC98ED),
+    version(1.0),
+    pointer_default(unique)
+#if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
+    , endpoint("ncalrpc:[LightwaveRaftService]")
+#endif // #ifdef _WIN32
+]
+
+interface vmdirdbcp
+{
+#ifndef _WIN32
+#    include <lw/types.h>
+#   define PWSTR unsigned short int *
+#else
+/*
+ * Unfortunately, cannot create a typedef containing a pointer type using
+ * DCE/RPC IDL compiler. This compromise works for both MSRPC and
+ * DCE/RPC compilers.
+ */
+#if HAVE_DCERPC_WIN32
+#   define PWSTR unsigned short int *
+    typedef unsigned long int UINT32;
+#else
+    // defined in windows.h, but cant't include that here.
+    typedef unsigned int UINT32;
+    typedef wchar_t *PWSTR;
+#endif
+#endif
+
+cpp_quote("#ifndef ENUM_VMDIR_LOG_LEVEL")
+cpp_quote("#define ENUM_VMDIR_LOG_LEVEL")
+typedef enum
+{
+    VMDIR_LOG_ERROR = 0,
+    VMDIR_LOG_WARNING,
+    VMDIR_LOG_INFO,
+    VMDIR_LOG_VERBOSE,
+    VMDIR_LOG_DEBUG
+} VMDIR_LOG_LEVEL;
+
+cpp_quote("#endif")
+
+typedef [context_handle] void *vmdir_dbcp_handle_t;
+
+typedef struct _VMDIR_DBCP_DATA_CONTAINER
+{
+    UINT32 dwCount;
+    [size_is(dwCount)] unsigned char * data;
+} VMDIR_DBCP_DATA_CONTAINER, *PVMDIR_DBCP_DATA_CONTAINER;
+
+cpp_quote("#ifndef MDB_STATE_OP")
+cpp_quote("#define MDB_STATE_OP")
+
+typedef enum {
+        MDB_STATE_CLEAR = 0,
+        MDB_STATE_READONLY,
+        MDB_STATE_KEEPXLOGS,
+        MDB_STATE_GETXLOGNUM
+} MDB_state_op;
+
+cpp_quote("#endif")
+
+       UINT32
+       RpcVmDirOpenDatabaseFile(
+           [in]                     handle_t    hBinding,
+           [in, string]             PWSTR       pwszDatabaseFileName,
+           [in, out]                vmdir_dbcp_handle_t *pFileHandle  /* Equivalent to FILE ** ppFileHandle */
+      );
+
+       UINT32
+       RpcVmDirReadDatabaseFile(
+           [in]                     handle_t    hBinding,
+           [in]                     vmdir_dbcp_handle_t fileHandle,
+           [in]                     UINT32      dwCount,
+           [in, out]                VMDIR_DBCP_DATA_CONTAINER  * pReadBufferContainer
+      );
+
+       UINT32
+       RpcVmDirCloseDatabaseFile(
+           [in]                     handle_t  hBinding,
+           [in, out]                vmdir_dbcp_handle_t *fileHandle
+      );
+
+       UINT32
+       RpcVmDirSetBackendState(
+           [in]                     handle_t  hBinding,
+           [in]                     MDB_state_op op,
+           [out]                    UINT32  * pdwXlogNum,
+           [out]                    UINT32  * pdwDbSizeMb,
+           [out]                    UINT32  * pdwDbMapSizeMb,
+           [in, out]                VMDIR_DBCP_DATA_CONTAINER  * pDbPath,
+           [in]                     UINT32    dwDbPathSize
+      );
+
+      UINT32
+      RpcVmDirGetState(
+           [in]                     handle_t   hBinding,
+           [out]                    UINT32  *  pdwState
+      );
+
+      UINT32
+      RpcVmDirGetLogLevel(
+           [in]                     handle_t   hBinding,
+           [out]                    VMDIR_LOG_LEVEL  *  pLogLevel
+      );
+
+      UINT32
+      RpcVmDirGetLogMask(
+           [in]                     handle_t   hBinding,
+           [out]                    UINT32  *  pdwLogMask
+      );
+
+          UINT32
+      RpcVmDirGetMode(
+           [in]                     handle_t   hBinding,
+           [out]                    UINT32  *  pdwMode
+      );
+
+}

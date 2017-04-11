@@ -394,6 +394,7 @@ public class IdmCertificatePathValidator {
             AlternativeOCSP altOCSP)
         throws CertificateRevocationCheckException,  IdmCertificateRevokedException {
 
+        logRevocationOptions(altOCSP);
 
         setupOCSPOptions(certPath, altOCSP);
         PKIXParameters params = createPKIXParameters(crlCollection);
@@ -425,10 +426,10 @@ public class IdmCertificatePathValidator {
         } catch (CertPathValidatorException e) {
             if (e.getReason() == CertPathValidatorException.BasicReason.REVOKED) {
                 throw new IdmCertificateRevokedException(
-                        "CRL shows certificate status as revoked");
+                        "Revocation checking shows certificate status as revoked");
             } else if (e.getReason() == CertPathValidatorException.BasicReason.UNDETERMINED_REVOCATION_STATUS) {
                 throw new CertRevocationStatusUnknownException(
-                                "CRL checking could not determine certificate status.");
+                                "Revocation checking could not determine certificate status.");
             }
             throw new CertificateRevocationCheckException("Certificate path validation failed:"
                     + e.getMessage(), e);
@@ -439,6 +440,29 @@ public class IdmCertificatePathValidator {
         }
 
 
+    }
+
+    private void logRevocationOptions(AlternativeOCSP altOCSP) {
+        logger.info("Revocation check: "+(this.certPolicy.revocationCheckEnabled() == true? "on" : "off" ));
+        if (this.certPolicy.revocationCheckEnabled()) {
+            //OCSP options
+            String revOptions = "Revocation check options: [Use OCSP=" + this.certPolicy.useOCSP();
+            if (this.certPolicy.useOCSP()) {
+                URL altOCSPUrl = (altOCSP == null)? this.certPolicy.getCRLUrl() : altOCSP.get_responderURL();
+                revOptions += ", Alternative OCSP responder url = "+altOCSPUrl;
+                if (altOCSP != null && altOCSP.get_responderSigningCert()!= null) {
+                    revOptions += ", altOcspSigningCACert="+altOCSP.get_responderSigningCert().getSubjectDN();
+                }
+                revOptions += ", CrlFailOver="+this.certPolicy.useCRLAsFailOver();
+            }
+
+            //CRL options
+            if (!this.certPolicy.useOCSP() || (this.certPolicy.useOCSP() && this.certPolicy.useCRLAsFailOver()) ) {
+                revOptions += ", useCRLDP="+this.certPolicy.useCertCRL();
+                revOptions += ", Custom CRL location= "+this.certPolicy.getCRLUrl();
+            }
+            logger.info(revOptions+"]");
+        }
     }
 
     /**
@@ -470,7 +494,7 @@ public class IdmCertificatePathValidator {
                     setupOCSPResonderConfig(altOcsp.get_responderURL(), altOcsp.get_responderSigningCert());
                 }
                 else {  //backward compatibility handling
-                    setupOCSPResonderConfig(this.certPolicy.getCRLUrl(), this.certPolicy.getOCSPResponderSigningCert());
+                    setupOCSPResonderConfig(this.certPolicy.getOCSPUrl(), this.certPolicy.getOCSPResponderSigningCert());
                 }
             } else {
                 Security.setProperty("ocsp.enable", "false");
@@ -644,7 +668,6 @@ public class IdmCertificatePathValidator {
         }
 
         String error = null;
-        boolean atLeastOneCrlAdded = false;
         X509CertImpl certImpl = (X509CertImpl) leafCert;
         CRLDistributionPointsExtension crlDistributionPointsExt = certImpl
               .getCRLDistributionPointsExtension();
@@ -663,34 +686,33 @@ public class IdmCertificatePathValidator {
                               .substring(PREFIX_URI_NAME.length());
                         try {
                             addCRLToWorkingList(crlURLString, crlCollection);
-                            atLeastOneCrlAdded = true;
                         } catch (CrlDownloadException e) {
                             if (logger.isDebugEnabled()) {
                                 logger.debug("No cached copy and failed to download CRL"
                                         + e.getMessage());
                             }
-                            //continue fetching remaining crl in case of error
-                            if (error == null) {
-                                error = String.format("Unable to obtain CRL from certificate at following distribution points: %s", crlURLString);
-                            } else {
-                                error += String.format(error+", %s", crlURLString);
-                            }
+                            // We warn when first seeing an unaccessible CRL rather than throw because:
+                            // a) there could be other accessible CRL
+                            // b) CRL could be just used as failover to OCSP. In
+                            // which case we don't throw if the fail-over CRL is
+                            // not downloadable.
 
+                            error = String.format("Unable to obtain CRL from certificate at following distribution points: %s", crlURLString);
+                            logger.warn(error);
                         }
                    }
 
                 }
             }
         } catch (IOException e) {
-            logger.error("IOException in accessing CRLDP"
+            logger.error("IOException in accessing CRLDP extension"
                         + e.getMessage());
             throw new CertificateRevocationCheckException("IOException in calling CRLDistributionPointsExtension.get()");
         }
 
         if (error != null) {
-            logger.warn(error);
-            if (!atLeastOneCrlAdded) {
-                throw new CertificateRevocationCheckException(error);
+            if (crlCollection.isEmpty() && false == this.certPolicy.useOCSP()) {
+                throw new CertificateRevocationCheckException("No CRL is available for revocation checking. " + error);
             }
         }
     }
@@ -710,9 +732,7 @@ public class IdmCertificatePathValidator {
     private void addCRLToWorkingList(String crlURLString, Collection<Object> crlCollection)
                     throws CrlDownloadException {
 
-        if (logger.isDebugEnabled()) {
-             logger.debug("Adding CRL: " + crlURLString);
-        }
+        logger.info("Adding CRL: " + crlURLString);
 
         X509CRL crlImpl = null;
 

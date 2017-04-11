@@ -22,6 +22,9 @@ VmAfdLocalAPIHandler(
     UINT32 uApiType = 0;
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
+    PCSTR pszLogString = NULL;
+    time_t start_time = 0;
+    time_t total_time = 0;
 
     if (dwRequestSize < sizeof (UINT32)){
       dwError = ERROR_INVALID_PARAMETER;
@@ -34,11 +37,14 @@ VmAfdLocalAPIHandler(
             BAIL_ON_VMAFD_ERROR (dwError);
     }
 
+    start_time = time(NULL);
+
     uApiType = *((PUINT32)pRequest);
 
     switch(uApiType)
     {
           case VECS_IPC_CREATE_CERTSTORE:
+                pszLogString = "VECS_IPC_CREATE_CERTSTORE";
                 dwError = VecsIpcCreateCertStore(
                                         pConnectionContext,
                                         pRequest,
@@ -49,6 +55,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_DELETE_CERTSTORE:
+                pszLogString = "VECS_IPC_DELETE_CERTSTORE";
                 dwError = VecsIpcDeleteCertStore(
                                         pConnectionContext,
                                         pRequest,
@@ -59,6 +66,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_OPEN_CERTSTORE:
+                pszLogString = "VECS_IPC_OPEN_CERTSTORE";
                 dwError = VecsIpcOpenCertStore (
                                         pConnectionContext,
                                         pRequest,
@@ -69,6 +77,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_SET_PERMISSION:
+                pszLogString = "VECS_IPC_SET_PERMISSION";
                 dwError = VecsIpcSetPermission (
                                         pConnectionContext,
                                         pRequest,
@@ -79,6 +88,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_REVOKE_PERMISSION:
+                pszLogString = "VECS_IPC_REVOKE_PERMISSION";
                 dwError = VecsIpcRevokePermission (
                                         pConnectionContext,
                                         pRequest,
@@ -89,6 +99,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_GET_PERMISSIONS:
+                pszLogString = "VECS_IPC_GET_PERMISSIONS";
                 dwError = VecsIpcGetPermissions (
                                         pConnectionContext,
                                         pRequest,
@@ -99,6 +110,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_CHANGE_OWNER:
+                pszLogString = "VECS_IPC_CHANGE_OWNER";
                 dwError = VecsIpcChangeOwner (
                                         pConnectionContext,
                                         pRequest,
@@ -109,6 +121,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_ADD_ENTRY:
+                pszLogString = "VECS_IPC_ADD_ENTRY";
                 dwError = VecsIpcAddEntry (
                                           pConnectionContext,
                                           pRequest,
@@ -119,6 +132,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_DELETE_ENTRY:
+                pszLogString = "VECS_IPC_DELETE_ENTRY";
                 dwError = VecsIpcDeleteEntry (
                                               pConnectionContext,
                                               pRequest,
@@ -129,6 +143,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_BEGIN_ENUM_ENTRIES:
+                pszLogString = "VECS_IPC_BEGIN_ENUM_ENTRIES";
                 dwError = VecsIpcBeginEnumEntries (
                                                    pConnectionContext,
                                                    pRequest,
@@ -139,6 +154,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_ENUM_ENTRIES:
+                pszLogString = "VECS_IPC_ENUM_ENTRIES";
                 dwError = VecsIpcEnumEntries (
                                                 pConnectionContext,
                                                 pRequest,
@@ -149,6 +165,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_GET_ENTRY_BY_ALIAS:
+                pszLogString = "VECS_IPC_GET_ENTRY_BY_ALIAS";
                 dwError = VecsIpcGetEntryByAlias (
                                                   pConnectionContext,
                                                   pRequest,
@@ -159,6 +176,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_GET_KEY_BY_ALIAS:
+                pszLogString = "VECS_IPC_GET_KEY_BY_ALIAS";
                 dwError = VecsIpcGetKeyByAlias (
                                                 pConnectionContext,
                                                 pRequest,
@@ -169,6 +187,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_ENUM_STORES:
+                pszLogString = "VECS_IPC_ENUM_STORES";
                 dwError = VecsIpcEnumStores (
                                              pConnectionContext,
                                              pRequest,
@@ -179,6 +198,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_GET_ENTRY_COUNT:
+                pszLogString = "VECS_IPC_GET_ENTRY_COUNT";
                 dwError = VecsIpcGetEntryCount (
                                              pConnectionContext,
                                              pRequest,
@@ -189,6 +209,7 @@ VmAfdLocalAPIHandler(
                 break;
 
            case VECS_IPC_CLOSE_CERTSTORE:
+                pszLogString = "VECS_IPC_CLOSE_CERTSTORE";
                 dwError = VecsIpcCloseCertStore (
                                               pConnectionContext,
                                               pRequest,
@@ -199,6 +220,7 @@ VmAfdLocalAPIHandler(
                 break;
 
             case VECS_IPC_END_ENUM_ENTRIES:
+                pszLogString = "VECS_IPC_END_ENUM_ENTRIES";
                 dwError = VecsIpcEndEnumEntries (
                                               pConnectionContext,
                                               pRequest,
@@ -461,6 +483,17 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_CREATE_COMPUTER_ACCOUNT:
+
+            dwError = VmAfdIpcCreateComputerAccount(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         case VMAFD_IPC_JOIN_AD:
 
             dwError = VmAfdIpcJoinAD(
@@ -687,18 +720,42 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+       case VMAFD_IPC_CHANGE_PNID:
+            dwError = VmAfdIpcChangePNID(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         default:
 
             dwError = ERROR_INVALID_PARAMETER;
             break;
 
     }
-        BAIL_ON_VMAFD_ERROR(dwError);
 
-        *ppResponse = pResponse;
-        *pdwResponseSize = dwResponseSize;
+    if (pszLogString)
+    {
+        total_time = time(NULL) - start_time;
+        if (total_time > 1)
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY,
+                     "%s: elasped time %d seconds",
+                     pszLogString, total_time);
+        }
+    }
+
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
 cleanup:
     return dwError;
+
 error:
         if (ppResponse)
         {

@@ -59,6 +59,19 @@
     default = dword:00093a80
     doc     = "Maximum Ticket Renewable Lifetime"
 }
+"CopyDbBlockWriteInSec" = {
+    default = dword:0000001e
+}
+"CopyDbIntervalInSec" = {
+    default = dword:00000000
+}
+"CopyDbWritesMin" = {
+    default = dword:00000001
+}
+"EnableRename" = {
+    default = dword:00000000
+    doc     = "Enable Modify DN (renaming). Domain functional level must also be greater than 1."
+}
 "SslDisabledProtocols" = {
     default = "TLSv1"
     doc     = "List of protocols to disable"

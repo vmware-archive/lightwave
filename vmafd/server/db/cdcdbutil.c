@@ -486,7 +486,7 @@ CdcDbGetHAClientState(
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
     }
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     *pdwHAState = dwHAState;
 
@@ -599,7 +599,7 @@ CdcDbGetAffinitizedDC(
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
     }
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     *ppAffinitizedDC = pAffinitizedDC;
     *pdwAffinitizedSince = dwAffinitizedSince;
@@ -1193,7 +1193,7 @@ CdcDbIsDCAlive(
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
     }
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     bIsAlive = dwIsAlive?TRUE:FALSE;
 
@@ -1507,7 +1507,8 @@ CdcDbGetClosestDCOnSite(
                      " WHERE IsAlive = 1 AND"
                      " Site = :site AND"
                      " Domain = :domainName"
-                     " ORDER BY PingResponse;";
+                     " ORDER BY PingResponse,RANDOM()"
+                     " LIMIT 1;";
 
     if (!ppszDCName ||
         IsNullOrEmptyString(pwszClientSiteName) ||
@@ -1560,7 +1561,7 @@ CdcDbGetClosestDCOnSite(
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
     }
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     *ppszDCName = pwszDCName;
 
@@ -1604,7 +1605,8 @@ CdcDbGetClosestDC(
                      " WHERE IsAlive = 1 AND"
                      " Domain = :domainName"
                      //" LastPing > :time"
-                     " ORDER BY PingResponse;";
+                     " ORDER BY PingResponse, RANDOM()"
+                     " LIMIT 1;";
 
     if (!ppszDCName ||
         IsNullOrEmptyString(pwszDomainName)
@@ -1668,7 +1670,7 @@ CdcDbGetClosestDC(
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
     }
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     *ppszDCName = pwszDCName;
 
@@ -2075,7 +2077,7 @@ CdcDbGetDCInfo(
     else if (dwError == SQLITE_DONE)
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     *ppCdcStatusInfo = pCdcStatusInfo;

@@ -17,6 +17,7 @@ package com.vmware.identity.samlservice;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
 import java.security.cert.CertPath;
 
 import org.junit.AfterClass;
@@ -24,12 +25,13 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.vmware.identity.SharedUtils;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IdmDataCreator;
 import com.vmware.identity.idm.ServerConfig;
-import com.vmware.identity.SharedUtils;
 
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class IdmAccessorTest {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(IdmAccessorTest.class);
 

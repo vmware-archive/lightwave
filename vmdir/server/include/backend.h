@@ -92,6 +92,13 @@ typedef struct _VDIR_BACKEND_INDEX_ITERATOR
 
 } VDIR_BACKEND_INDEX_ITERATOR, *PVDIR_BACKEND_INDEX_ITERATOR;
 
+typedef struct _VDIR_BACKEND_PARENT_ID_INDEX_ITERATOR
+{
+    PVOID   pIterator;
+    BOOLEAN bHasNext;
+
+} VDIR_BACKEND_PARENT_ID_INDEX_ITERATOR, *PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR;
+
 typedef struct _VDIR_BACKEND_USN_LIST*          PVDIR_BACKEND_USN_LIST;
 
 /*
@@ -348,6 +355,33 @@ typedef VOID (*PFN_BACKEND_INDEX_ITERATOR_FREE)(
                     PVDIR_BACKEND_INDEX_ITERATOR    pIterator
                     );
 /*
+ * Initialize index table iterator
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_INIT)(
+                    ENTRYID                                 parentId,
+                    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
+                    );
+/*
+ * Iterate value and eid pairs in the index table
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_PARENT_ID_INDEX_ITERATE)(
+                    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator,
+                    ENTRYID*                                pEntryId
+                    );
+/*
+ * Free index table iterator
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef VOID (*PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_FREE)(
+                    PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator
+                    );
+
+/*
  * Shutdown backend
  * return error -
  * ERROR_BACKEND_ERROR:             all others
@@ -410,6 +444,42 @@ typedef DWORD (*PFN_BACKEND_UNIQKEY_SET_VALUE)(
 typedef DWORD (*PFN_BACKEND_CONFIGURE_FSYNC)(
                     BOOLEAN);
 
+typedef DWORD (*PFN_BACKEND_GET_ATTR_VALUE_META_DATA)(
+                    PVDIR_BACKEND_CTX,
+                    ENTRYID,
+                    short,
+                    PDEQUE
+                    );
+
+typedef DWORD (*PFN_BACKEND_GET_ALL_ATTR_VALUE_META_DATA)(
+                    PVDIR_BACKEND_CTX,
+                    ENTRYID,
+                    PDEQUE
+                    );
+
+typedef DWORD (*PFN_BACKEND_UPDATE_ATTR_VALUE_META_DATA)(
+                    PVDIR_BACKEND_CTX,
+                    ENTRYID,
+                    short,
+                    ULONG ulOPMask,
+                    PDEQUE
+                    );
+
+typedef DWORD (*PFN_BACKEND_DELETE_ALL_ATTR_VALUE_META_DATA)(
+                    PVDIR_BACKEND_CTX,
+                    PVDIR_SCHEMA_CTX,
+                    ENTRYID
+                    );
+
+/*
+ * Apply new matching rules to indices during schema upgrade
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_APPLY_INDICES_NEW_MR)(
+                    VOID
+                    );
+
 /*******************************************************************************
  * if success, interface function return 0.
  * if fail, interface function return ERROR_BACKEND_XXX. also, VDIR_BACKEND_CTX should
@@ -462,6 +532,22 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Free index table enumerator
      */
     PFN_BACKEND_INDEX_ITERATOR_FREE pfnBEIndexIteratorFree;
+
+    //////////////////////////////////////////////////////////////////////
+    // Index iterator
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * initialize index table enumerator
+     */
+    PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_INIT   pfnBEParentIdIndexIteratorInit;
+    /*
+     * enumerate value and eid pairs in the index table
+     */
+    PFN_BACKEND_PARENT_ID_INDEX_ITERATE         pfnBEParentIdIndexIterate;
+    /*
+     * Free index table enumerator
+     */
+    PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_FREE   pfnBEParentIdIndexIteratorFree;
 
     //////////////////////////////////////////////////////////////////////
     // transaction related functions
@@ -596,6 +682,37 @@ typedef struct _VDIR_BACKEND_INTERFACE
     PFN_BACKEND_CONFIGURE_FSYNC             pfnBEConfigureFsync;
 
     //////////////////////////////////////////////////////////////////////
+    // support concurrent multi value attribute add and delete
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Read attribute value meta data for an entry's attribute
+     */
+    PFN_BACKEND_GET_ATTR_VALUE_META_DATA        pfnBEGetAttrValueMetaData;
+
+    /*
+     * Read all attribute value meta data for an entry
+     */
+    PFN_BACKEND_GET_ALL_ATTR_VALUE_META_DATA    pfnBEGetAllAttrValueMetaData;
+
+    /*
+     * Update attribute value meta data for an entry's attribute
+     */
+    PFN_BACKEND_UPDATE_ATTR_VALUE_META_DATA     pfnBEUpdateAttrValueMetaData;
+
+    /*
+     * Delete all attribute value meta data for an entry
+     */
+    PFN_BACKEND_DELETE_ALL_ATTR_VALUE_META_DATA pfnBEDeleteAllAttrValueMetaData;
+
+    //////////////////////////////////////////////////////////////////////
+    // Upgrade specific (from 6.5 or lower)
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Apply new matching rules to indices during schema upgrade
+     */
+    PFN_BACKEND_APPLY_INDICES_NEW_MR        pfnBEApplyIndicesNewMR;
+
+    //////////////////////////////////////////////////////////////////////
     // function to get the least outstanding USN in BACKEND_USN_LIST
     // replication can trust and search USN change below this number
     //////////////////////////////////////////////////////////////////////
@@ -641,7 +758,6 @@ typedef struct _VDIR_BACKEND_GLOBALS
     PCSTR                           pszBERootDN;
     PVDIR_BACKEND_INTERFACE         pBE;
     USN                             usnFirstNext;
-
 } VDIR_BACKEND_GLOBALS, *PVDIR_BACKEND_GLOBALS;
 
 // backend.c
@@ -704,6 +820,18 @@ VmDirBackendRemoveOriginatingUSN(
     PVDIR_BACKEND_CTX      pBECtx
     );
 
+DWORD
+VmDirBackendUniqKeyGetValue(
+    PCSTR       pKey,
+    PSTR*       ppValue
+    );
+
+DWORD
+VmDirBackendUniqKeySetValue(
+    PCSTR       pKey,
+    PCSTR       pValue,
+    BOOLEAN     bForce
+    );
 
 // util.c
 DWORD

@@ -199,8 +199,13 @@ public class SamlServiceImpl implements SamlService {
         log.debug("Creating SAML Response status:" + status + ", substatus: "
                 + substatus + ", message:" + message);
         log.debug("Creating SAML Response document:" + token);
-        Validate.notNull(where);
-        Validate.notNull(this.getIssuer());
+
+        if (where == null) {
+            // ACS is not validated. We can not generate SAML response to the
+            // requester.
+            return null;
+        }
+        Validate.notNull(this.getIssuer(), "Issuer");
 
         if (status == null) {
             // assume success
@@ -754,13 +759,13 @@ public class SamlServiceImpl implements SamlService {
 
         assertionConsumerServices = new ArrayList<AssertionConsumerService>();
         assertionConsumerServices.add(new AssertionConsumerService(entityID
-                .replaceAll("/SAML2/Metadata/", "/"
-                        + SAMLNames.SP_ASSERTIONCONSUMERSERVICE_PLACEHOLDER + "/"), true,
+.replaceAll(SAMLNames.ENTITY_ID_PLACEHOLDER,
+                SAMLNames.SP_ASSERTIONCONSUMERSERVICE_PLACEHOLDER), true,
                 SAMLNames.HTTP_POST_BINDING, 0));
 
         singleLogoutServices = new ArrayList<com.vmware.identity.websso.client.SingleLogoutService>();
-        singleLogoutServices.add(new com.vmware.identity.websso.client.SingleLogoutService(entityID.replaceAll("/SAML2/Metadata/", "/"
-                + SAMLNames.SP_SINGLELOGOUTSERVICE_PLACEHOLDER + "/"),
+        singleLogoutServices.add(new com.vmware.identity.websso.client.SingleLogoutService(entityID.replaceAll(SAMLNames.ENTITY_ID_PLACEHOLDER,
+                SAMLNames.SP_SINGLELOGOUTSERVICE_PLACEHOLDER),
                 SAMLNames.HTTP_REDIRECT_BINDING));
 
         // set nameID formats
@@ -887,6 +892,7 @@ public class SamlServiceImpl implements SamlService {
         CloseableHttpClient client = HttpClients.custom().setSSLSocketFactory(socketFactory).build();
         URI httpUri = new URI(requestUrl);
         HttpGet httpGet = new HttpGet(httpUri);
+        Shared.addNoCacheHeader(httpGet);
         CloseableHttpResponse response = client.execute(httpGet);
         response.close();
     }

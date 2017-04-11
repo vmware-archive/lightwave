@@ -61,12 +61,12 @@ TestVmDirSASLClient(
     printf( "Please entry LDAP server host:");
     scanf("%s", pszServerHost);
 
-    dwError = VmDirAllocateStringAVsnprintf(    &pszLDAPURI,
+    dwError = VmDirAllocateStringPrintf(    &pszLDAPURI,
                                                 "ldap://%s:389",
                                                 pszServerHost[0] != '\0' ? pszServerHost : "localhost");
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(    &pszLDAPSURI,
+    dwError = VmDirAllocateStringPrintf(    &pszLDAPSURI,
                                                 "ldaps://%s",
                                                 pszServerHost[0] != '\0' ? pszServerHost : "localhost");
     BAIL_ON_VMDIR_ERROR(dwError);

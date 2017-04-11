@@ -2,14 +2,47 @@
 #include "../server/common/includes.h"
 #include "vmdnscommon.h"
 
-void 
+extern int  vmdns_syslog_level;
+
+#define DEFAULT_EXPIRE  (60*60*24*30*6)
+#define DEFAULT_TTL     (60*30)
+#define DEFAULT_SERIAL  1
+#define DEFAULT_REFRESH (60*60)
+#define DEFAULT_RETRY   (60*10)
+
+static
+DWORD
+CachePurgeProc(
+    PVMDNS_NAME_ENTRY pNameEntry,
+    PVMDNS_ZONE_OBJECT pZoneObject
+    )
+{
+    return 0;
+}
+
+void
 TestLruInitialize(
     CuTest* tc
     )
 {
     DWORD dwError = 0;
     PVMDNS_LRU_LIST pList = NULL;
-    dwError = VmDnsLruInitialize(&pList);
+    VMDNS_ZONE_INFO zi = {0};
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+
+    zi.pszName ="lw.local";
+    zi.pszPrimaryDnsSrvName = "dns.lw.local";
+    zi.pszRName = "admin@lw.local";
+    zi.expire = DEFAULT_EXPIRE;
+    zi.minimum = DEFAULT_TTL;
+    zi.serial = DEFAULT_SERIAL;
+    zi.retryInterval = DEFAULT_RETRY;
+    zi.refreshInterval = DEFAULT_REFRESH;
+
+    dwError = VmDnsZoneCreate(&zi, &pZoneObject);
+    CuAssert(tc, "Zones create should succeed.", !dwError);
+
+    dwError = VmDnsLruInitialize(pZoneObject, CachePurgeProc, &pList);
     CuAssert(tc, "VmDnsLruInitialize: Error code check.", !dwError);
     CuAssert(tc, "VmDnsLruInitialize: Error code check.", !!pList);
     CuAssert(tc, "VmDnsLruInitialize: Zero entries.", pList->dwCurrentCount == 0);
@@ -26,10 +59,24 @@ TestLruAddRemoveList(
     )
 {
     DWORD dwError = 0;
+    VMDNS_NAME_ENTRY ne1 = { 1, { NULL, NULL }, "lw.local", NULL };
     PVMDNS_LRU_LIST pList = NULL;
-    VMDNS_NAME_ENTRY ne1 = { { NULL, NULL }, "vsphere.local", NULL };
+    VMDNS_ZONE_INFO zi = {0};
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
 
-    dwError = VmDnsLruInitialize(&pList);
+    zi.pszName ="lw.local";
+    zi.pszPrimaryDnsSrvName = "dns.lw.local";
+    zi.pszRName = "admin@lw.local";
+    zi.expire = DEFAULT_EXPIRE;
+    zi.minimum = DEFAULT_TTL;
+    zi.serial = DEFAULT_SERIAL;
+    zi.retryInterval = DEFAULT_RETRY;
+    zi.refreshInterval = DEFAULT_REFRESH;
+
+    dwError = VmDnsZoneCreate(&zi, &pZoneObject);
+    CuAssert(tc, "Zones create should succeed.", !dwError);
+
+    dwError = VmDnsLruInitialize(pZoneObject, CachePurgeProc, &pList);
     CuAssert(tc, "VmDnsLruInitialize: Allocation check.", !!pList);
 
     dwError = VmDnsLruAddNameEntry(pList, &ne1);

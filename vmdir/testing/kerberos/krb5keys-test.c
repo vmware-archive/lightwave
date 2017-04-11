@@ -14,6 +14,8 @@
 
 #include "includes.h"
 
+#define VMKDC_DEFAULT_KVNO 1
+
 typedef struct _PROG_ARGS
 {
     char *upnName;
@@ -169,6 +171,7 @@ int main(int argc, char *argv[])
                       pRandPwd,
                       pMasterKey,
                       masterKeyLen,
+                      VMKDC_DEFAULT_KVNO,
                       &pUpnKeys,
                       &upnKeysLen);
     printf("\nCreated krbtgt keys len=%d for %s\n", upnKeysLen, krbtgtName);
@@ -181,6 +184,7 @@ int main(int argc, char *argv[])
                       password,
                       pMasterKey,
                       masterKeyLen,
+                      VMKDC_DEFAULT_KVNO,
                       &pUpnKeys,
                       &upnKeysLen);
         BAIL_ON_VMDIR_ERROR(dwError);

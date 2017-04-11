@@ -95,10 +95,8 @@ public class LogoutRequestProcessor {
         }
 
         try {
-            if (this.tenant == null) {
-                this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
-            }
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
             this.clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, clientId);
             if (!this.clientInfo.getPostLogoutRedirectURIs().contains(postLogoutRedirectUri)) {
                 throw new ServerException(ErrorObject.invalidRequest("unregistered post_logout_redirect_uri"));
@@ -125,6 +123,9 @@ public class LogoutRequestProcessor {
             if (personUserCertificateLoggedOutCookie != null) {
                 httpResponse.addCookie(personUserCertificateLoggedOutCookie);
             }
+            logger.info(
+                    "subject [{}]",
+                    this.logoutRequest.getIDTokenHint().getSubject().getValue());
             return httpResponse;
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e);
@@ -217,7 +218,7 @@ public class LogoutRequestProcessor {
 
     private Cookie loggedOutSessionCookie() {
         Cookie cookie = new Cookie(SessionManager.getSessionCookieName(this.tenant), "");
-        cookie.setPath("/openidconnect");
+        cookie.setPath(Endpoints.BASE);
         cookie.setSecure(true);
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
@@ -226,7 +227,7 @@ public class LogoutRequestProcessor {
 
     private Cookie personUserCertificateLoggedOutCookie() {
         Cookie cookie = new Cookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(this.tenant), "");
-        cookie.setPath("/openidconnect");
+        cookie.setPath(Endpoints.BASE);
         cookie.setSecure(true);
         cookie.setHttpOnly(true);
         return cookie;

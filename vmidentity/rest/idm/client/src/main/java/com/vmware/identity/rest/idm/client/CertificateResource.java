@@ -38,6 +38,7 @@ import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.data.CertificateChainDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
+import com.vmware.identity.rest.idm.data.attributes.CertificateGranularity;
 import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
 
 /**
@@ -71,8 +72,9 @@ public class CertificateResource extends ClientResource {
      * @throws HttpException if there was a generic error with the remote call.
      * @throws IOException if there was an error with the IO stream.
      */
-    public List<CertificateChainDTO> get(String tenant, CertificateScope scope) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        Map<String, Object> params = URIFactory.buildParameters("scope", scope);
+    public List<CertificateChainDTO> get(String tenant, CertificateScope scope, CertificateGranularity granularity) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        Map<String, Object> params = URIFactory.buildParameters("scope", scope,
+                                                                "granularity", granularity);
         URI uri = buildURI(parent.getHostRetriever(), CERTIFICATE_URI, tenant, params);
 
         HttpGet get = RequestFactory.createGetRequest(uri);

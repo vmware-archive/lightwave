@@ -44,7 +44,6 @@ VmDirIndexUpdInit(
     pIndexUpd->pBECtx = pBECtx;
     pIndexUpd->bOwnBECtx = FALSE;
     pIndexUpd->bHasBETxn = FALSE;
-    pIndexUpd->bInLock = FALSE;
 
     if (!pIndexUpd->pBECtx)
     {

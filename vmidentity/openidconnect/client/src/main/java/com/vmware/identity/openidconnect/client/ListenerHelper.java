@@ -113,6 +113,7 @@ public final class ListenerHelper {
         Validate.notNull(publicKey, "publicKey");
         Validate.notNull(issuer, "issuer");
         Validate.notNull(clientId, "clientId");
+        Validate.isTrue(0 <= clockToleranceSeconds && clockToleranceSeconds <= 10 * 60L, "0 <= clockToleranceSeconds && clockToleranceSeconds <= 10 * 60L");
         return parseAuthenticationTokensResponse(HttpRequest.from(request), publicKey, issuer, clientId, clockToleranceSeconds);
     }
 
@@ -135,6 +136,7 @@ public final class ListenerHelper {
         Validate.notNull(publicKey, "publicKey");
         Validate.notNull(issuer, "issuer");
         Validate.notNull(clientId, "clientId");
+        Validate.isTrue(0 <= clockToleranceSeconds && clockToleranceSeconds <= 10 * 60L, "0 <= clockToleranceSeconds && clockToleranceSeconds <= 10 * 60L");
         return parseAuthenticationTokensResponse(httpRequestFromMap(parameterMap), publicKey, issuer, clientId, clockToleranceSeconds);
     }
 

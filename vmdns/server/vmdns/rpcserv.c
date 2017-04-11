@@ -171,7 +171,7 @@ VmDnsRpcAddRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsCheckAccess(hBinding, TRUE);
+    dwError = VmDnsCheckAccess(hBinding, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
@@ -204,7 +204,7 @@ VmDnsRpcDeleteRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsCheckAccess(hBinding, TRUE);
+    dwError = VmDnsCheckAccess(hBinding, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
@@ -343,6 +343,7 @@ VmDnsRpcListRecords(
     pRecordArray = NULL;
 
 cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
     VmDnsRecordListRelease(pRecordList);
     return dwError;
 error:

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -28,15 +28,26 @@ extern "C" {
 #define VMDIR_ORIG_TIME_STR_LEN         ( 4 /* year */ + 2 /* month */ + 2 /* day */ + 2 /* hour */ + 2 /* minute */ + \
                                           2 /* sec */ + 1 /* . */ + 3 /* milli sec */ + 1 /* null byte terminator */ )
 
-#define VMDIR_UUID_LEN                  16 /* typedef __darwin_uuid_t uuid_t; typedef unsigned char __darwin_uuid_t[16] */
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
 #define VMDIR_MAX_VERSION_NO_STR_LEN    VMDIR_MAX_I64_ASCII_STR_LEN /* Version number used in attribute meta-data */
-#define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX_I64_ASCII_STR_LEN + 1 /* comma */ + VMDIR_GUID_STR_LEN + 1)
+
+//
+// If the new paged search is turned on then the cookie is a guid; otherwise,
+// it's an ENTRYID.
+//
+#define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX(VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_GUID_STR_LEN))
 
 // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
 #define VMDIR_MAX_ATTR_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
                                          VMDIR_GUID_STR_LEN + 1 + VMDIR_ORIG_TIME_STR_LEN + 1 +    \
                                          VMDIR_MAX_USN_STR_LEN + 1)
+
+// Format is: <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
+//       :<value-change-originating time>:<value-change-originating-usn>:
+//       Remaining portion of attr-value-meta-data to be stored in backend: <opcode>:<value-size>:<value>
+#define VMDIR_MAX_ATTR_VALUE_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
+                                               VMDIR_GUID_STR_LEN + 1 + VMDIR_GUID_STR_LEN + 1 + \
+                                               VMDIR_ORIG_TIME_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1 + 1)
 
 #define VMDIR_IS_DELETED_TRUE_STR      "TRUE"
 #define VMDIR_IS_DELETED_TRUE_STR_LEN  4
@@ -47,10 +58,15 @@ extern "C" {
 
 #define VMDIR_DEFAULT_REPL_INTERVAL     "30"
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
+#define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
+#define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
 
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
+// backend generic table keys
+#define VMDIR_KEY_BE_GENERIC_ACL_MODE   "acl-mode"
+#define VMDIR_ACL_MODE_ENABLED          "enabled"
 
 #define VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED_LEN   sizeof(VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED)
 
@@ -68,15 +84,42 @@ extern "C" {
 
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
 // This value is the DFL for the current version
-#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"3"
+#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"4"
 
 // Mapping of functionality to levels
 // Base DFL, support for all 6.0 and earlier functionality
 #define VDIR_DFL_DEFAULT 1
+
 // Support for 6.5 functionality, PSCHA
 #define VDIR_DFL_PSCHA   2
-// Support for 7.0 functionality, ModDn
+
+// Support for 6.6 functionality, ModDn
+// Support for LW 1.0 functionality, ModDn
 #define VDIR_DFL_MODDN   3
+
+// Support for 6.6 functionality, Custom Schema Modification
+// Support for LW 1.0 functionality, Custom Schema Modification
+#define VDIR_DFL_CUSTOM_SCHEMA_MODIFICATION     3
+
+// Support for 6.6 functionality, Concurrent Attribute Value Update
+// Support for LW 1.1 functionality, Concurrent Attribute Value Update
+#define VDIR_DFL_CONCURRENT_ATTR_VALUE_UPDATE   4
+
+// Support for 6.6 functionality, better write operation audit
+// Support for LW 1.1 functionality, better write operation audit
+#define VDIR_DFL_WRITE_OP_AUDIT                 4
+
+#define VDIR_CUSTOM_SCHEMA_MODIFICATION_ENABLED     \
+    (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
+            VDIR_DFL_CUSTOM_SCHEMA_MODIFICATION)
+
+#define VDIR_WRITE_OP_AUDIT_ENABLED   \
+    (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
+            VDIR_DFL_WRITE_OP_AUDIT)
+
+#define VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED   \
+    (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
+            VDIR_DFL_CONCURRENT_ATTR_VALUE_UPDATE)
 
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
@@ -188,6 +231,7 @@ typedef struct _VDIR_CONNECTION
     VDIR_ACCESS_INFO        AccessInfo;
     BOOLEAN                 bIsAnonymousBind;
     BOOLEAN                 bIsLdaps;
+    BOOLEAN                 bInReplLock;
     PVDIR_SASL_BIND_INFO    pSaslInfo;
     char                    szServerIP[INET6_ADDRSTRLEN];
     DWORD                   dwServerPort;
@@ -203,7 +247,6 @@ typedef struct _VDIR_CONNECTION_CTX
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
-typedef struct _VDIR_SCHEMA_OC_DESC*    PVDIR_SCHEMA_OC_DESC;
 
 typedef struct _VDIR_ATTRIBUTE
 {
@@ -220,6 +263,19 @@ typedef struct _VDIR_ATTRIBUTE
     * Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
     */
    char                 metaData[VMDIR_MAX_ATTR_META_DATA_LEN];
+
+   /* A queue of attr-value-meta-data elements to add to the backend index database.
+    * Each element contains a VDIR_BERVALUE variable, and its bv_val is in format:
+    *     <local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
+    *       :<value-change-originating time>:<value-change-originating-usn>:<opcode>:<value-size>:<value>
+    *     <value> is an octet string.
+    */
+   DEQUE  valueMetaDataToAdd;
+   /* Hold obsolete attr-value-meta-data elements to be deleted.
+    * The elements to be added to this queue when MOD_OP_REPLACE
+    * or modify MOD_OP_DELETE with empty value on multi-value attribute.
+    */
+   DEQUE  valueMetaDataToDelete;
 
    struct _VDIR_ATTRIBUTE *  next;
 } VDIR_ATTRIBUTE, *PVDIR_ATTRIBUTE;
@@ -247,13 +303,6 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_PACK,
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
-
-//SCW - strong consistency write
-typedef enum _VDIR_ENTRY_SCW_STATUS
-{
-    VDIR_SCW_SUCCEEDED,
-    VDIR_SCW_FAILED
-} VDIR_ENTRY_SCW_STATUS;
 
 typedef struct _VDIR_ENTRY
 {
@@ -426,7 +475,8 @@ typedef struct SearchReq
     VDIR_BERVALUE * attrs;
     VDIR_FILTER *   filter;
     VDIR_BERVALUE   filterStr;
-    size_t          iNumEntrySent;  // total number entries sent for this request
+    size_t          iNumEntrySent;      // total number entries sent for this request
+    BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
 } SearchReq;
 
 typedef union _VDIR_LDAP_REQUEST
@@ -492,7 +542,7 @@ typedef struct SyncDoneControlValue
 {
     USN                     intLastLocalUsnProcessed;
     PLW_HASHTABLE           htUtdVector;
-    BOOLEAN                 refreshDeletes;
+    BOOLEAN                 bContinue;
 } SyncDoneControlValue;
 
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
@@ -501,18 +551,11 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
-//SCW - Strong Consistency Write
-typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
-{
-    DWORD    status;
-} VMDIR_SCW_DONE_CONTROL_VALUE;
-
 typedef union LdapControlValue
 {
     SyncRequestControlValue            syncReqCtrlVal;
     SyncDoneControlValue               syncDoneCtrlVal;
     VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
-    VMDIR_SCW_DONE_CONTROL_VALUE       scwDoneCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -547,10 +590,9 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
-    VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
-    BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
+    DWORD               dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for both INTERNAL and EXTERNAL operations
@@ -578,6 +620,12 @@ typedef struct _VDIR_OPERATION
     PSTR                pszFilters; // filter candidates' size recorded in string
 
     DWORD               dwSentEntries; // number of entries sent back to client
+
+    ///////////////////////////////////////////////////////////////////////////
+    // fields valid for REPLICATION operations
+    ///////////////////////////////////////////////////////////////////////////
+    USN                 ulPartnerUSN; // in replication, the partner USN been processed.
+
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
@@ -621,22 +669,15 @@ typedef struct _VMDIR_OPERATION_STATISTIC
 
 extern VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
 
-typedef struct _VMDIR_URGENT_REPL_SERVER_LIST
+//
+// Wrapper for a relative security descriptor and some of its related info.
+//
+typedef struct _VMDIR_SECURITY_DESCRIPTOR
 {
-    PSTR    pInitiatorServerName;
-    struct _VMDIR_URGENT_REPL_SERVER_LIST *next;
-} VMDIR_URGENT_REPL_SERVER_LIST, *PVMDIR_URGENT_REPL_SERVER_LIST;
-
-typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
-{
-    PSTR     pInvocationId;
-    PSTR     pServerName;
-    BOOLEAN  isDeleted;
-    USN      lastConfirmedUSN;
-    char     lastNotifiedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    char     lastConfirmedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT   *next;
-} VMDIR_STRONG_WRITE_PARTNER_CONTENT, *PVMDIR_STRONG_WRITE_PARTNER_CONTENT;
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc;
+    ULONG ulSecDesc;
+    SECURITY_INFORMATION SecInfo;
+} VMDIR_SECURITY_DESCRIPTOR, *PVMDIR_SECURITY_DESCRIPTOR;
 
 DWORD
 VmDirInitBackend();
@@ -756,6 +797,11 @@ VmDirAttributeInitialize(
     );
 
 VOID
+VmDirFreeAttrValueMetaDataContent(
+    PDEQUE  pValueMetaData
+    );
+
+VOID
 VmDirFreeAttribute(
     PVDIR_ATTRIBUTE pAttr
     );
@@ -765,7 +811,7 @@ VmDirAttributeAllocate(
     PCSTR               pszName,
     USHORT              usBerSize,
     PVDIR_SCHEMA_CTX    pCtx,
-    PVDIR_ATTRIBUTE*         ppOutAttr
+    PVDIR_ATTRIBUTE*    ppOutAttr
     );
 
 
@@ -777,7 +823,7 @@ VmDirAttributeDup(
 
 DWORD
 VmDirStringToBervalContent(
-    PSTR               pszBerval,
+    PCSTR              pszBerval,
     PVDIR_BERVALUE     pDupBerval
     );
 
@@ -793,9 +839,17 @@ VmDirIsInternalEntry(
     );
 
 BOOLEAN
-VmDirIsEntryWithObjectclass(
+VmDirEntryIsObjectclass(
     PVDIR_ENTRY     pEntry,
     PCSTR           pszOCName
+    );
+
+DWORD
+VmDirEntryIsAttrAllowed(
+    PVDIR_ENTRY pEntry,
+    PSTR        pszAttrName,
+    PBOOLEAN    pbMust,
+    PBOOLEAN    pbMay
     );
 
 /*
@@ -820,9 +874,9 @@ VmDirBervalContentDup(
     );
 
 DWORD
-VmDirNewEntry(
-    PCSTR pszDn,
-    PVDIR_ENTRY* ppEntry
+VmDirCreateTransientSecurityDescriptor(
+    BOOL bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR pvsd
     );
 
 DWORD
@@ -830,6 +884,7 @@ VmDirAttrListToNewEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     PSTR                pszDN,
     PSTR*               ppszAttrList,
+    BOOLEAN             bAllowAnonymousRead,
     PVDIR_ENTRY*        ppEntry
     );
 
@@ -843,6 +898,11 @@ DWORD
 VmDirEntryReplaceAttribute(
     PVDIR_ENTRY     pEntry,
     PVDIR_ATTRIBUTE pNewAttr
+    );
+
+DWORD
+VmDirDeleteEntry(
+    PVDIR_ENTRY pEntry
     );
 
 // util.c
@@ -873,6 +933,13 @@ void
 VmDirCurrentGeneralizedTime(
     PSTR    pszTimeBuf,
     int     iBufSize
+    );
+
+void
+VmDirCurrentGeneralizedTimeWithOffset(
+    PSTR    pszTimeBuf,
+    int     iBufSize,
+    DWORD   dwOffset
     );
 
 VOID
@@ -929,6 +996,7 @@ VmDirSrvCreateContainerWithEID(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
     PCSTR            pszContainerName,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc,
     ENTRYID          eID);
 
 DWORD
@@ -995,6 +1063,26 @@ VmDirValidatePrincipalName(
 DWORD
 VmDirSrvGetDomainFunctionalLevel(
     PDWORD pdwLevel
+    );
+
+BOOLEAN
+VmDirValidValueMetaEntry(
+    PVDIR_BERVALUE  pValueMetaData
+    );
+
+PCSTR
+VmDirLdapModOpTypeToName(
+    VDIR_LDAP_MOD_OP modOp
+    );
+
+PCSTR
+VmDirLdapReqCodeToName(
+    ber_tag_t reqCode
+    );
+
+PCSTR
+VmDirOperationTypeToName(
+    VDIR_OPERATION_TYPE opType
     );
 
 // candidates.c
@@ -1188,7 +1276,23 @@ VmDirCreateAcl(
     );
 
 DWORD
+VmDirGetAce(
+    PACL pAcl,
+    ULONG dwIndex,
+    PACE_HEADER *ppAce
+    );
+
+DWORD
 VmDirAddAccessAllowedAceEx(
+    PACL Acl,
+    ULONG AceRevision,
+    ULONG AceFlags,
+    ACCESS_MASK AccessMask,
+    PSID Sid
+    );
+
+DWORD
+VmDirAddAccessDeniedAceEx(
     PACL Acl,
     ULONG AceRevision,
     ULONG AceFlags,
@@ -1299,8 +1403,7 @@ VmDirSetSecurityDescriptorInfo(
 
 DWORD
 VmDirCreateSecurityDescriptorAbsolute(
-    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
-    ULONG Revision
+    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecurityDescriptor
     );
 
 VOID
@@ -1346,6 +1449,13 @@ VmDirAllocateSddlCStringFromSecurityDescriptor(
     PSTR* ppStringSecurityDescriptor
 );
 
+DWORD
+VmDirSetSecurityDescriptorControl(
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecurityDescriptor,
+    SECURITY_DESCRIPTOR_CONTROL BitsToChange,
+    SECURITY_DESCRIPTOR_CONTROL BitsToSet
+    );
+
 // srp.c
 DWORD
 VmDirSRPCreateSecret(
@@ -1354,23 +1464,18 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pSecretResult
     );
 
-//server/common/urgentrepl.c
-BOOLEAN
-VmDirPerformUrgentReplication(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
+//vmafdlib.c
+DWORD
+VmDirOpenVmAfdClientLib(
+    VMDIR_LIB_HANDLE*   pplibHandle
     );
 
-VOID
-VmDirRetryUrgentReplication(
-    VOID
-    );
-
-VOID
-VmDirPerformUrgentReplIfRequired(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
-    );
+DWORD
+VmDirKeySetGetKvno(
+    PBYTE pUpnKeys,
+    DWORD upnKeysLen,
+    DWORD *kvno
+);
 
 #ifdef __cplusplus
 }

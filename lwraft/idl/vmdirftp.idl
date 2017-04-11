@@ -1,0 +1,86 @@
+/*
+ * Copyright (C) 2011 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmdir.idl
+ *
+ * Abstract :
+ *
+ *            VMware Directory Service File Transfer RPCs
+ *
+ *            Interface Definition
+ *
+ *            Core API
+ *
+ * Authors  : Sanjay Jain (sanjain@vmware.com)
+ *
+ */
+[
+    uuid (3ACD53D0-FA52-4eb3-9299-7DD7514B25F4),
+    version(1.0),
+    pointer_default(unique)
+#if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
+    , endpoint("ncalrpc:[LightwaveRaftService]")
+#endif // #ifdef _WIN32
+]
+
+interface vmdirftp
+{
+#ifndef _WIN32
+#    include <lw/types.h>
+#   define PWSTR unsigned short int *
+#else
+/*
+ * Unfortunately, cannot create a typedef containing a pointer type using
+ * DCE/RPC IDL compiler. This compromise works for both MSRPC and
+ * DCE/RPC compilers.
+ */
+#if HAVE_DCERPC_WIN32
+#   define PWSTR unsigned short int *
+    typedef unsigned long int UINT32;
+#else
+    // defined in windows.h, but cant't include that here.
+    typedef unsigned int UINT32;
+    typedef wchar_t *PWSTR;
+#endif
+#endif
+
+typedef [context_handle] void *vmdir_ftp_handle_t;
+
+typedef struct _VMDIR_FTP_DATA_CONTAINER
+{
+    UINT32 dwCount;
+    [size_is(dwCount)] unsigned char * data;
+} VMDIR_FTP_DATA_CONTAINER, *PVMDIR_FTP_DATA_CONTAINER;
+
+       UINT32
+       RpcVmDirSetState(
+           [in]                     handle_t   hBinding,
+           [in]                     UINT32     dwState
+       );
+
+       UINT32
+       RpcVmDirOpenDBFile(
+           [in]                     handle_t    hBinding,
+           [in, string]             PWSTR       pwszDBFileName,
+           [in, out]                vmdir_ftp_handle_t *pFileHandle  /* Equivalent to FILE ** ppFileHandle */
+       );
+
+       UINT32
+       RpcVmDirReadDBFile(
+           [in]                     handle_t    hBinding,
+           [in]                     vmdir_ftp_handle_t fileHandle,
+           [in]                     UINT32      dwCount,
+           [in, out]                VMDIR_FTP_DATA_CONTAINER  * pReadBufferContainer
+       );
+
+       UINT32
+       RpcVmDirCloseDBFile(
+           [in]                     handle_t  hBinding,
+           [in]                     vmdir_ftp_handle_t fileHandle
+       );
+       UINT32
+       RpcVmDirSetMode(
+           [in]                     handle_t   hBinding,
+           [in]                     UINT32     dwMode
+       );
+}

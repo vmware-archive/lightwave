@@ -68,20 +68,20 @@ namespace SchemaConnectionTest
 
             TupleList<TestSchemaComparable, TestSchemaComparable> diff = scList1.GetDiff(scList2);
 
-            Assert.AreEqual("C-CCC", diff[0].item1.full);
-            Assert.AreEqual("C-CC", diff[0].item2.full);
+            Assert.AreEqual("C-CCC", diff[0].Item1.full);
+            Assert.AreEqual("C-CC", diff[0].Item2.full);
 
-            Assert.AreEqual("D-DDD", diff[1].item1.full);
-            Assert.AreEqual("D-DD", diff[1].item2.full);
+            Assert.AreEqual("D-DDD", diff[1].Item1.full);
+            Assert.AreEqual("D-DD", diff[1].Item2.full);
 
-            Assert.IsNull(diff[2].item1);
-            Assert.AreEqual("E-EEE", diff[2].item2.full);
+            Assert.IsNull(diff[2].Item1);
+            Assert.AreEqual("E-EEE", diff[2].Item2.full);
 
-            Assert.AreEqual("F-FFF", diff[3].item1.full);
-            Assert.IsNull(diff[3].item2);
+            Assert.AreEqual("F-FFF", diff[3].Item1.full);
+            Assert.IsNull(diff[3].Item2);
 
-            Assert.AreEqual("G-GGG", diff[4].item1.full);
-            Assert.IsNull(diff[4].item2);
+            Assert.AreEqual("G-GGG", diff[4].Item1.full);
+            Assert.IsNull(diff[4].Item2);
         }
 
         [TestMethod()]

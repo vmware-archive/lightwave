@@ -58,12 +58,6 @@ VmAfdFreeCertArray(PVMAFD_CERT_ARRAY pArray)
     }
 }
 
-VOID
-VmAfdFreeString(
-    PSTR pszString)
-{
-    VMAFD_SAFE_FREE_STRINGA(pszString);
-}
 
 DWORD
 VmAfdGetSSLCertificate(

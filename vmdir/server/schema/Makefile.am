@@ -13,6 +13,7 @@ libschema_la_SOURCES = \
     matchingrule.c \
     parse.c \
     patch.c \
+    replstatus.c \
     syntax.c \
     util.c \
     legacy/legacylibmain.c \

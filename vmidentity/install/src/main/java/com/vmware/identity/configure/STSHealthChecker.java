@@ -1,3 +1,5 @@
+package com.vmware.identity.configure;
+
 /*
  *  Copyright (c) 2016 VMware, Inc.  All Rights Reserved.
  *
@@ -11,8 +13,6 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-
-package com.vmware.identity.configure;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -48,26 +48,36 @@ public class STSHealthChecker {
     private static final String REST_IDM = "/idm/";
     private static final String OPENIDCONNECT = "/openidconnect/jwks";
     private static final String STS = "/sts/STSService";
-    private static final String STS_HTTP_PORT = "443";
-    private static final String STS_BASE_URL = "https://%s:" + STS_HTTP_PORT;
+
+
+    private String sts_https_url;
+    private static final String STS_BASE_URL = "https://%s:%s";
+
     private static final String VKS_KEYSTORE_INSTANCE = "VKS";
     private static final String VKS_KEYSTORE_NAME = "TRUSTED_ROOTS";
+
     private static final long MAX_TIME_TO_WAIT_MILLIS = 120000 ; // 2 minutes
     private static final long WAIT_TIME_PER_ITERATION = 5000; // 5 seconds
 
-    private static final List<String> stsUrls = new ArrayList<String> () {
-        {
-            add(getStsUrl(REST_AFD));
-            add(getStsUrl(REST_IDM));
-            add(getStsUrl(OPENIDCONNECT));
-            add(getStsUrl(STS));
-        }
-        private String getStsUrl(String contextPath) {
-            return STS_BASE_URL + contextPath;
-        }
-    };
+    private  List<String> stsUrls;
 
-    public void checkHealth(String hostname) throws Exception {
+    public STSHealthChecker(String hostname, String portnum) {
+
+        sts_https_url = String.format(STS_BASE_URL, hostname, portnum) ;
+        stsUrls  = new ArrayList<String> () {
+            {
+                add(getStsUrl(REST_AFD));
+                add(getStsUrl(REST_IDM));
+                add(getStsUrl(OPENIDCONNECT));
+                add(getStsUrl(STS));
+            }};
+    }
+
+    private String getStsUrl(String contextPath) {
+        return sts_https_url + contextPath;
+    }
+
+    public void checkHealth() throws Exception {
 
         // Load the VKS keystore
         KeyStore vksKeyStore = getVksKeyStore();
@@ -78,16 +88,15 @@ public class STSHealthChecker {
         SSLContext sslCnxt = SSLContext.getInstance("SSL");
         sslCnxt.init(null, trustMgrFactory.getTrustManagers(), null);
         SSLSocketFactory sslFactory = sslCnxt.getSocketFactory();
-
+        HttpsURLConnection connection = null;
         long startTimeMillis = System.currentTimeMillis();
         // validate if all the web applications are deployed successfully.
         for (String endpoint : stsUrls) {
-            endpoint = String.format(endpoint,hostname);
-        	System.out.println(String.format("Checking health of endpoint: '%s'", endpoint));
+            System.out.println(String.format("Checking health of endpoint: '%s'", endpoint));
             while(true) {
-                try{
+                try {
                     URL stsEndpoint = new URL(endpoint);
-                    HttpsURLConnection connection = (HttpsURLConnection) stsEndpoint.openConnection();
+                    connection =  (HttpsURLConnection) stsEndpoint.openConnection();
                     connection.setSSLSocketFactory(sslFactory);
                     connection.setRequestMethod("GET");
                     connection.connect();
@@ -102,9 +111,15 @@ public class STSHealthChecker {
                 }catch(Exception e) {
                     log.error(e.getMessage());
                     long totalTimeElapsedMillis = System.currentTimeMillis() - startTimeMillis;
-                    if(totalTimeElapsedMillis > MAX_TIME_TO_WAIT_MILLIS) throw e;
+
+                    if(totalTimeElapsedMillis > MAX_TIME_TO_WAIT_MILLIS) {
+                        throw e;
+                    }
                     Thread.sleep(WAIT_TIME_PER_ITERATION);
+                } finally {
+                    connection.disconnect();
                 }
+
             }
         }
     }

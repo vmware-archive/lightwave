@@ -127,62 +127,6 @@ error:
 }
 
 DWORD
-VmDirSrvInitializeTenant(
-    PWSTR    pwszDomainName,
-    PWSTR    pwszUsername,
-    PWSTR    pwszPassword
-    )
-{
-    DWORD dwError = 0;
-    PSTR  pszDomainName = NULL;
-    PSTR  pszUsername = NULL;
-    PSTR  pszPassword = NULL;
-
-    if (IsNullOrEmptyString(pwszDomainName) ||
-        IsNullOrEmptyString(pwszUsername) ||
-        IsNullOrEmptyString(pwszPassword))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAFromW(pwszDomainName, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszUsername, &pszUsername);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszPassword, &pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvSetupTenantInstance(
-                    pszDomainName,
-                    pszUsername,
-                    pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeTenant (%u)(%s)(%s)",
-                                       dwError,
-                                       VDIR_SAFE_STRING(pszDomainName),
-                                       VDIR_SAFE_STRING(pszUsername));
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszUsername);
-    VMDIR_SAFE_FREE_MEMORY(pszPassword);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeTenant failed (%u)(%s)(%s)",
-                                      dwError,
-                                      VDIR_SAFE_STRING(pszDomainName),
-                                      VDIR_SAFE_STRING(pszUsername));
-    goto cleanup;
-}
-
-DWORD
 VmDirSrvForceResetPassword(
     PWSTR                   pwszTargetUPN,  // [in] UPN
     VMDIR_DATA_CONTAINER*   pContainer      // [out]
@@ -852,9 +796,6 @@ Srv_RpcVmDirReplNow(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirdSetReplNow(TRUE);
-    VmDirUrgentReplSignal();
-
 cleanup:
     if (pAccessToken)
     {
@@ -937,58 +878,58 @@ Srv_RpcVmDirSetState(
     UINT32   dwState)
 {
     DWORD dwError = 0;
-        DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                                   | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                                   | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                                   | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-            | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-        PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-        VDIR_SERVER_STATE currentState = VMDIRD_STATE_UNDEFINED;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    VDIR_SERVER_STATE currentState = VMDIRD_STATE_UNDEFINED;
 
-        dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Only valid target states
+    if (dwState != VMDIRD_STATE_READ_ONLY &&
+        dwState != VMDIRD_STATE_READ_ONLY_DEMOTE &&
+        dwState != VMDIRD_STATE_NORMAL &&
+        dwState != VMDIRD_STATE_STANDALONE)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-        // Only valid target states
-        if (dwState != VMDIRD_STATE_READ_ONLY &&
-                    dwState != VMDIRD_STATE_READ_ONLY_DEMOTE &&
-                    dwState != VMDIRD_STATE_NORMAL &&
-            dwState != VMDIRD_STATE_STANDALONE)
-        {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+    currentState = VmDirdState();
 
-        currentState = VmDirdState();
+    if (currentState == VMDIRD_STATE_SHUTDOWN ||
+        currentState == VMDIRD_STATE_FAILURE ||
+        currentState == VMDIRD_STATE_RESTORE ||
+        currentState == VMDIRD_STATE_STARTUP)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                        "%s: State (%u) cannot be changed from state (%u)",
+                        __FUNCTION__,
+                        dwState,
+                        currentState);
+        dwError = VMDIR_ERROR_OPERATION_NOT_PERMITTED;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-        if (currentState == VMDIRD_STATE_SHUTDOWN ||
-                    currentState == VMDIRD_STATE_FAILURE ||
-                    currentState == VMDIRD_STATE_RESTORE ||
-            currentState == VMDIRD_STATE_STARTUP)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                            "%s: State (%u) cannot be changed from state (%u)",
-                            __FUNCTION__,
-                            dwState,
-                            currentState);
-            dwError = VMDIR_ERROR_OPERATION_NOT_PERMITTED;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+    // no return value
+    VmDirdStateSet(dwState);
 
-        // no return value
-        VmDirdStateSet(dwState);
-
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: VmDir State (%u)", dwState );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: VmDir State (%u)", dwState );
 
 cleanup:
-        if (pAccessToken)
-        {
-            VmDirSrvReleaseAccessToken(pAccessToken);
-        }
-        return dwError;
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
 
 error:
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState failed (%u)(%u)", dwError, dwState );
-        goto cleanup;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState failed (%u)(%u)", dwError, dwState );
+    goto cleanup;
 }
 
 UINT32
@@ -1895,48 +1836,7 @@ Srv_RpcVmDirUrgentReplicationRequest(
     PWSTR       pwszServerName
     )
 {
-    DWORD  dwError = 0;
-    PSTR   pszServerName = NULL;
-    DWORD  dwRpcFlags =   VMDIR_RPC_FLAG_ALLOW_TCPIP
-                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    if (IsNullOrEmptyString(pwszServerName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // pszServerName will be freed later as part of VmDirdFreeUrgentReplicationServerList
-    dwError = VmDirAllocateStringAFromW(pwszServerName, &pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    VMDIR_LOG_INFO(LDAP_DEBUG_RPC, "RpcVmDirUrgentReplicationRequest: starting Urgent Replication request. Initiator: %s ", pszServerName);
-
-    /*
-     * VmDirdInitiateUrgentRepl
-     * Acquire Lock, Set the bUrgentReplRequest to True
-     * Add the corresponding host to the pUrgentReplServerList
-     * gVmdirUrgentRepl.pUrgentReplServerList owns pszServerName
-     */
-    dwError = VmDirdInitiateUrgentRepl(pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    pszServerName = NULL;
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirUrgentReplicationRequest failed (%u)", dwError );
-    VMDIR_SAFE_FREE_MEMORY(pszServerName);
-    goto cleanup;
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
 UINT32
@@ -1947,121 +1847,5 @@ Srv_RpcVmDirUrgentReplicationResponse(
     PWSTR     pwszHostName
     )
 {
-    DWORD  dwError = 0;
-    PSTR   pszInvocationId = NULL;
-    PSTR   pszUtdVector = NULL;
-    PSTR   pszHostName = NULL;
-    DWORD  dwRpcFlags =  VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-    PVMDIR_REPL_UTDVECTOR   pUtdVector = NULL;
-
-    if (IsNullOrEmptyString(pwszInvocationId) ||
-        IsNullOrEmptyString(pwszUtdVector) ||
-        IsNullOrEmptyString(pwszHostName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszInvocationId, &pszInvocationId);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszUtdVector, &pszUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszHostName, &pszHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirUTDVectorToStruct(pszUtdVector, &pUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //Update urgent replication coordinator threads data structure
-    VmDirReplUpdateUrgentReplCoordinatorTableForResponse(pUtdVector, pszInvocationId, pszHostName);
-    VmDirReplUpdateUrgentReplResponseCount();
-    VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv();
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszInvocationId);
-    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
-    VMDIR_SAFE_FREE_MEMORY(pszHostName);
-    VmDirFreeReplVector(pUtdVector);
-
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirUrgentReplicationResponse failed status (%u)", dwError );
-    goto cleanup;
-}
-
-// SetMode is a noop but kept to keep idl in sync.
-UINT32
-Srv_RpcVmDirSetMode(
-    handle_t hBinding,
-    UINT32   dwMode)
-{
-    DWORD dwError = 0;
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)", __FUNCTION__, dwError, dwMode );
-    goto cleanup;
-}
-
-// GetMode is a noop but kept to keep idl in sync.
-UINT32
-Srv_RpcVmDirGetMode(
-    handle_t    hBinding,
-    UINT32*     pdwMode
-    )
-{
-    DWORD dwError = 0;
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (!pdwMode)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    goto cleanup;
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }

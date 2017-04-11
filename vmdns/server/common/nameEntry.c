@@ -1,12 +1,12 @@
 /*
-* Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+* Copyright ï¿½ 2012-2015 VMware, Inc.  All Rights Reserved.
 *
-* Licensed under the Apache License, Version 2.0 (the “License”); you may not
+* Licensed under the Apache License, Version 2.0 (the ï¿½Licenseï¿½); you may not
 * use this file except in compliance with the License.  You may obtain a copy
 * of the License at http://www.apache.org/licenses/LICENSE-2.0
 *
 * Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an “AS IS” BASIS, without
+* distributed under the License is distributed on an ï¿½AS ISï¿½ BASIS, without
 * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 * License for the specific language governing permissions and limitations
 * under the License.
@@ -29,6 +29,8 @@ VmDnsNameEntryCreate(
     dwError = VmDnsAllocateMemory(sizeof(VMDNS_NAME_ENTRY), (VOID*)&pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    pNameEntry->lRefCount = 1;
+
     dwError = VmDnsAllocateStringA(pszName, &pNameEntry->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -40,8 +42,27 @@ VmDnsNameEntryCreate(
 cleanup:
     return dwError;
 error:
-    VmDnsNameEntryDelete(pNameEntry);
+    VmDnsNameEntryRelease(pNameEntry);
     goto cleanup;
+}
+
+ULONG
+VmDnsNameEntryAddRef(
+    PVMDNS_NAME_ENTRY  pNameEntry
+    )
+{
+    return InterlockedIncrement(&pNameEntry->lRefCount);
+}
+
+VOID
+VmDnsNameEntryRelease(
+    PVMDNS_NAME_ENTRY   pNameEntry
+    )
+{
+    if (pNameEntry && InterlockedDecrement(&pNameEntry->lRefCount) == 0)
+    {
+        VmDnsNameEntryDelete(pNameEntry);
+    }
 }
 
 VOID
@@ -131,13 +152,17 @@ VmDnsNameEntryGetRecords(
             dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
             BAIL_ON_VMDNS_ERROR(dwError);
         }
+
+        VmDnsRecordObjectRelease(pRecordObj);
+        pRecordObj = NULL;
     }
 
     *ppRecordList = pRecordList;
 
 cleanup:
-
+    VmDnsRecordObjectRelease(pRecordObj);
     return dwError;
+
 error:
     VmDnsRecordListRelease(pRecordList);
     goto cleanup;

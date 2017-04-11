@@ -1465,6 +1465,7 @@ int	mdb_reader_check(MDB_env *env, int *dead);
          * @param[in]  1 - set mdb to READONLY state
          *             2 - set mdb to keep xlogs state (used for hot database file copy only)
          *             0 - clear MDB_KEEPXLOGS flag or mdb READONLY state
+         *             3 - don't change mdb state, only return database sizes, path, etc.
          * @param[out] The starting transaction log number if dwFileTransferState is 2 and mdb support WAL.
          *             If dwFileTransferState is 2 but mdb doesn't support WAL, then mdb would
          *             be put at READONLY mode, and pdwLogNum set to 0.
@@ -1478,6 +1479,8 @@ int	mdb_reader_check(MDB_env *env, int *dead);
          *              3 failed - db_path buffer too small
          */
 int     mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_num, unsigned long *dbSizeMb, unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
+
+unsigned long long mdb_env_get_lasttid(MDB_env *env);
 
 /**	@} */
 

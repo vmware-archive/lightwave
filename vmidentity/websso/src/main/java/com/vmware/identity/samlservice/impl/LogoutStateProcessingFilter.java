@@ -13,11 +13,13 @@
  */
 package com.vmware.identity.samlservice.impl;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.Validate;
+import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
 import org.opensaml.saml2.core.LogoutRequest;
 import org.opensaml.saml2.core.LogoutResponse;
 import org.opensaml.saml2.core.SessionIndex;
@@ -41,8 +43,6 @@ import com.vmware.identity.websso.client.SamlUtils;
 import com.vmware.identity.websso.client.SloRequestSettings;
 import com.vmware.identity.websso.client.endpoint.SloRequestSender;
 
-
-
 /**
  * LogoutRequest/Response processing.
  *
@@ -61,17 +61,26 @@ public class LogoutStateProcessingFilter implements
     private SloRequestSender sloRequestSender;
 
     @Override
-	public void preProcess(LogoutState t) throws SamlServiceException {
-        // TODO initiate logout of other session participants here
+    public void preProcess(LogoutState t) throws SamlServiceException {
+    }
+
+    private static SecureRandomIdentifierGenerator generator;
+
+    static {
+        try {
+            generator = new SecureRandomIdentifierGenerator();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Unexpected error in creating SecureRandomIdentifierGenerator", e);
+        }
     }
 
     /**
-     * Validate logout request/response session id, cache in LogoutState.
-     * In case of a request for logging out an external authenticated session, issue
-     * composed a lotus initiated logout request to the IDP.
+     * Validate logout request/response session id, cache in LogoutState. In
+     * case of a request for logging out an external authenticated session,
+     * issue composed a lotus initiated logout request to the IDP.
      */
     @Override
-	public void process(LogoutState t) throws SamlServiceException {
+    public void process(LogoutState t) throws SamlServiceException {
         log.debug("LogoutStateProcessingFilter.process is called");
 
         Validate.notNull(t);
@@ -96,82 +105,94 @@ public class LogoutStateProcessingFilter implements
         Validate.notNull(sessionId, "sessionId");
         t.setSessionId(sessionId);
 
-        //Remove Castle session cookie
+        // Remove Castle session cookie
         t.removeResponseHeaders();
-        //send the logout request to external IDP
-        if (logoutRequest != null && sessionManager.get(sessionId).isUsingExtIDP()) {
-        	sendRequestToIDP(t);
+        // send the logout request to external IDP
+        if (logoutRequest != null
+                && sessionManager.get(sessionId).isUsingExtIDP()) {
+            sendRequestToIDP(t);
         }
     }
 
-    //Consruct and send a logout request to exteral IDP.  Should be called only when
-    //the target session is authenticated with external idp
+    // Consruct and send a logout request to exteral IDP. Should be called only
+    // when
+    // the target session is authenticated with external idp
     private void sendRequestToIDP(LogoutState t) throws SamlServiceException {
         log.debug("LogoutStateProcessingFilter.sendRequestToIDP is called");
         try {
-	    	String sessionId  = t.getSessionId();
-	    	Validate.notEmpty(sessionId, "sessionId");
-	        SessionManager sessionManager = t.getSessionManager();
-	        Validate.notNull(sessionManager, "sessionManager");
+            String sessionId = t.getSessionId();
+            Validate.notEmpty(sessionId, "sessionId");
+            SessionManager sessionManager = t.getSessionManager();
+            Validate.notNull(sessionManager, "sessionManager");
 
-	        Session session = sessionManager.get(sessionId);
+            Session session = sessionManager.get(sessionId);
 
-	        Validate.isTrue(session.isUsingExtIDP(),
+            Validate.isTrue(session.isUsingExtIDP(),
                     "Not expected to call sendRequestToIDP!");
 
-	        IDPConfig extIDPConfig = session.getExtIDPUsed();
-	        Validate.notNull(extIDPConfig, "extIDPConfig");
-	        String spAlias = t.getIdmAccessor().getTenant();
-	        Validate.notEmpty(spAlias, "spAlias");
+            IDPConfig extIDPConfig = session.getExtIDPUsed();
+            Validate.notNull(extIDPConfig, "extIDPConfig");
+            String spAlias = t.getIdmAccessor().getTenant();
+            Validate.notEmpty(spAlias, "spAlias");
 
-	        if (null == metadataSettings.getIDPConfigurationByEntityID(extIDPConfig.getEntityID())
-	                || null == metadataSettings.getSPConfiguration(spAlias)) {
-	            SamlServiceImpl.initMetadataSettings(metadataSettings,extIDPConfig,t.getIdmAccessor() );
-	        }
+            if (null == metadataSettings
+                    .getIDPConfigurationByEntityID(extIDPConfig.getEntityID())
+                    || null == metadataSettings.getSPConfiguration(spAlias)) {
+                SamlServiceImpl.initMetadataSettings(metadataSettings,
+                        extIDPConfig, t.getIdmAccessor());
+            }
 
-	        IDPConfiguration extIDPConfiguration = metadataSettings.getIDPConfigurationByEntityID(extIDPConfig.getEntityID());
-	        Validate.notNull(extIDPConfiguration, "extIDPConfiguration");
+            IDPConfiguration extIDPConfiguration = metadataSettings
+                    .getIDPConfigurationByEntityID(extIDPConfig.getEntityID());
+            Validate.notNull(extIDPConfiguration, "extIDPConfiguration");
 
-	        String idpAlias = extIDPConfiguration.getAlias();
-	        Validate.notEmpty(idpAlias, "idpAlias");
+            String idpAlias = extIDPConfiguration.getAlias();
+            Validate.notEmpty(idpAlias, "idpAlias");
 
-	        /*
-	         * Skip if the slo request was sent from external idp itself. This could happen this lotus instance
-	         * is one of multiple SP participated in the external IDP session.
-	         */
-	        if (extIDPConfiguration.getEntityID().equals(t.getIssuerValue()))
-	        	return;
+            /*
+             * Skip if the slo request was sent from external idp itself. This
+             * could happen this lotus instance is one of multiple SP
+             * participated in the external IDP session.
+             */
+            if (extIDPConfiguration.getEntityID().equals(t.getIssuerValue()))
+                return;
 
-	        SloRequestSettings extSLORequestSettings = new SloRequestSettings(
-	                spAlias,
-	                idpAlias,
-	                true,
-	                session.getPrincipalId().getUPN(), //subject
-	                OasisNames.IDENTITY_FORMAT_UPN,
-	                session.getExtIDPSessionID(),
-	                null);
+            SloRequestSettings extSLORequestSettings = new SloRequestSettings(
+                    spAlias, idpAlias, true, session.getPrincipalId().getUPN(), // subject
+                    OasisNames.IDENTITY_FORMAT_UPN,
+                    session.getExtIDPSessionID(), null);
 
-	        LogoutProcessorImpl logoutProcessorImpl = (LogoutProcessorImpl) getSloRequestSender().getLogoutProcessor();
-	        logoutProcessorImpl.setLogoutState(t);
+            LogoutProcessorImpl logoutProcessorImpl = (LogoutProcessorImpl) getSloRequestSender()
+                    .getLogoutProcessor();
 
-	        String redirectUrl = getSloRequestSender().getRequestUrl(extSLORequestSettings);
+            String outGoingReqID = generator.generateIdentifier();
+            String redirectUrl = getSloRequestSender().getRequestUrl(
+                    extSLORequestSettings, outGoingReqID);
+            logoutProcessorImpl.registerRequestState(t.getLogoutRequest()
+                    .getID(), outGoingReqID, t);
 
-	        if (SamlUtils.isIdpSupportSLO(metadataSettings, extSLORequestSettings)) {
-	            Validate.notEmpty(redirectUrl, "redirectUrl");
-	            t.getResponse().sendRedirect(redirectUrl);
-	        } else {
-	            log.warn(String.format(
-	                    "SLO end point does not exist for external IDP: %s, SLO request is not sent.", extSLORequestSettings.getIDPAlias()));
-	        }
+            if (SamlUtils.isIdpSupportSLO(metadataSettings,
+                    extSLORequestSettings)) {
+                Validate.notEmpty(redirectUrl, "redirectUrl");
+                t.getResponse().sendRedirect(redirectUrl);
+            } else {
+                log.warn(String
+                        .format("SLO end point does not exist for external IDP: %s, SLO request is not sent.",
+                                extSLORequestSettings.getIDPAlias()));
+            }
         } catch (Exception e) {
             // failed to authenticate with via proxying.
-            log.debug("Caught exception in proxying logout request to external IDP: {}" , e.getMessage());
-            throw new SamlServiceException("Caught error in proxying logout request to external IDP:", e);
-       }
+            log.debug(
+                    "Caught exception in proxying logout request to external IDP: {}",
+                    e.getMessage());
+            throw new SamlServiceException(
+                    "Caught error in proxying logout request to external IDP:",
+                    e);
+        }
 
-	}
+    }
 
-	/**
+    /**
      * Process LogoutResponse
      *
      * @param logoutResponse
@@ -220,8 +241,9 @@ public class LogoutStateProcessingFilter implements
     }
 
     /**
-     * Process LogoutRequest
-     *     return the session found or throw SamlServiceException
+     * Process LogoutRequest return the session found or throw
+     * SamlServiceException
+     *
      * @param t
      * @param logoutRequest
      * @param sessionManager
@@ -278,11 +300,11 @@ public class LogoutStateProcessingFilter implements
         return sessionId;
     }
 
-	public SloRequestSender getSloRequestSender() {
-		return sloRequestSender;
-	}
+    public SloRequestSender getSloRequestSender() {
+        return sloRequestSender;
+    }
 
-	public void setSloRequestSender(SloRequestSender sloRequestSender) {
-		this.sloRequestSender = sloRequestSender;
-	}
+    public void setSloRequestSender(SloRequestSender sloRequestSender) {
+        this.sloRequestSender = sloRequestSender;
+    }
 }

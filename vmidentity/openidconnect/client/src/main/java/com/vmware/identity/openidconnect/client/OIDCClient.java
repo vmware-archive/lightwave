@@ -65,6 +65,7 @@ public final class OIDCClient {
     private final Issuer issuer;
 
     private final ClientID clientId;
+    private final ClientAuthenticationMethod clientAuthenticationMethod;
     private final HolderOfKeyConfig holderOfKeyConfig;
     private final HighAvailabilityConfig highAvailabilityConfig;
     private final long clockToleranceInSeconds;
@@ -85,6 +86,7 @@ public final class OIDCClient {
         this.issuer = clientConfig.getConnectionConfig().getIssuer();
 
         this.clientId = clientConfig.getClientId();
+        this.clientAuthenticationMethod = clientConfig.getClientAuthenticationMethod();
         this.holderOfKeyConfig = clientConfig.getHolderOfKeyConfig();
         this.highAvailabilityConfig = clientConfig.getHighAvailabilityConfig();
         this.clockToleranceInSeconds = clientConfig.getClockToleranceInSeconds();
@@ -118,8 +120,8 @@ public final class OIDCClient {
         Validate.notNull(nonce, "nonce");
 
         if (responseType.contains(ResponseTypeValue.AUTHORIZATION_CODE)) {
-            if (this.holderOfKeyConfig == null) {
-                throw new OIDCClientException("HolderOfKeyConfig is required when response type is code.");
+            if (this.clientAuthenticationMethod != ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
+                throw new OIDCClientException("ClientAuthenticationMethod.PRIVATE_KEY_JWT is required when response type is code.");
             }
             if (responseMode != ResponseMode.QUERY && responseMode != ResponseMode.FORM_POST) {
                 throw new OIDCClientException("Only 'QUERY' or 'FORM_POST' response mode is supported when response type is code.");
@@ -139,7 +141,7 @@ public final class OIDCClient {
         Scope scope = OIDCClientUtils.buildScopeFromTokenSpec(tokenSpec);
 
         ClientAssertion clientAssertion = null;
-        if (this.holderOfKeyConfig != null) {
+        if (this.clientAuthenticationMethod == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
             clientAssertion = OIDCClientUtils.createClientAssertion(this.clientId, this.holderOfKeyConfig, authorizationEndpointURI);
         }
 
@@ -171,6 +173,7 @@ public final class OIDCClient {
                 tokenSpec,
                 getTokenEndpointURI(),
                 this.clientId,
+                this.clientAuthenticationMethod,
                 this.holderOfKeyConfig,
                 this.keyStore);
 
@@ -237,6 +240,7 @@ public final class OIDCClient {
                 tokenSpec,
                 getTokenEndpointURI(),
                 this.clientId,
+                this.clientAuthenticationMethod,
                 this.holderOfKeyConfig,
                 this.keyStore,
                 UUID.randomUUID().toString());
@@ -279,6 +283,7 @@ public final class OIDCClient {
                 tokenSpec,
                 getTokenEndpointURI(),
                 this.clientId,
+                this.clientAuthenticationMethod,
                 this.holderOfKeyConfig,
                 this.keyStore);
 
@@ -324,8 +329,9 @@ public final class OIDCClient {
     public OIDCTokens acquireTokensByClientCredentials(
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         Validate.notNull(tokenSpec, "tokenSpec");
-        Validate.notNull(this.holderOfKeyConfig, "this.holderOfKeyConfig");
-        Validate.notNull(this.clientId, "this.clientId");
+        Validate.isTrue(
+                this.clientAuthenticationMethod == ClientAuthenticationMethod.PRIVATE_KEY_JWT,
+                "this.clientAuthenticationMethod == ClientAuthenticationMethod.PRIVATE_KEY_JWT");
         return acquireTokens(new ClientCredentialsGrant(), tokenSpec);
     }
 
@@ -380,7 +386,7 @@ public final class OIDCClient {
         }
 
         ClientAssertion clientAssertion = null;
-        if (this.holderOfKeyConfig != null) {
+        if (this.clientAuthenticationMethod == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
             clientAssertion = OIDCClientUtils.createClientAssertion(this.clientId, this.holderOfKeyConfig, endSessionEndpointURI);
         }
 

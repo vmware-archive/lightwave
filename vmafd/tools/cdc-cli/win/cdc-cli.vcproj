@@ -41,7 +41,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME"
 				RuntimeLibrary="3"
 				DebugInformationFormat="3"
@@ -51,15 +51,15 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(TCROOT)\win32\winsdk-7.0.7600\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib libvmafdclient.lib dcelib.lib pthreadVC2.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Lib\x64&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Lib\amd64&quot;"
+				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Psapi.lib Gdi32.lib libcommon.lib libvmafdclient.lib dcelib.lib pthreadVC2.lib"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -111,7 +111,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME"
 				RuntimeLibrary="2"
 			/>
@@ -120,15 +120,15 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(TCROOT)\win32\winsdk-7.0.7600\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib dcelib.lib pthreadVC2.lib libvmafdclient.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Lib\x64&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Lib\amd64&quot;"
+				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Psapi.lib Gdi32.lib libcommon.lib dcelib.lib pthreadVC2.lib libvmafdclient.lib"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>

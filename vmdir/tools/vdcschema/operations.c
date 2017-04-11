@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -32,6 +32,44 @@ VdcSchemaOpParamInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppOpParam = pOpParam;
+
+error:
+    return dwError;
+}
+
+DWORD
+VdcSchemaOpParamValidate(
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pOpParam)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pOpParam->opCode == OP_PATCH_SCHEMA_DEFS)
+    {
+        if (IsNullOrEmptyString(pOpParam->pszFileName))
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else if (pOpParam->opCode == OP_GET_SCHEMA_REPL_STATUS)
+    {
+        if (pOpParam->iTimeout < 0)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (pOpParam->iTimeout == 0)
+        {
+            pOpParam->iTimeout = 60; // default value
+        }
+    }
 
 error:
     return dwError;
@@ -124,6 +162,62 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+DWORD
+VdcSchemaOpGetSchemaReplStatus(
+    PVDC_SCHEMA_CONN        pConn,
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    BOOLEAN bAllInSync = TRUE;
+    PVDIR_SCHEMA_REPL_STATE*    ppReplStates = NULL;
+
+    if (!pConn || !pOpParam)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VdcSchemaRefreshSchemaReplStatusEntries(pConn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VdcSchemaWaitForSchemaReplStatusEntries(pConn, pOpParam);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VdcSchemaGetSchemaReplStatusEntries(pConn, &ppReplStates);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; ppReplStates[i]; i++)
+    {
+        PVDIR_SCHEMA_REPL_STATE pReplState = ppReplStates[i];
+
+        if (pOpParam->bVerbose)
+        {
+            printf("\nPartner %d\n-----------------\n", i + 1);
+            dwError = VdcSchemaPrintSchemaReplStatusEntry(pReplState);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        bAllInSync &= pReplState->bTreeInSync;
+    }
+
+    dwError = bAllInSync ? 0 : VMDIR_ERROR_SCHEMA_MISMATCH;
+    printf("\nSync: %s\n", bAllInSync ? "TRUE" : "FALSE");
+
+cleanup:
+    for (i = 0; ppReplStates && ppReplStates[i]; i++)
+    {
+        VmDirFreeSchemaReplState(ppReplStates[i]);
+    }
+    VMDIR_SAFE_FREE_MEMORY(ppReplStates);
+    return dwError;
+
+error:
+    printf("Failed to get schema repl status\n");
     goto cleanup;
 }
 

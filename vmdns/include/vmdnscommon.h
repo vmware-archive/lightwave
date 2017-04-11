@@ -915,6 +915,12 @@ VmDnsIsRecordMType(
     VMDNS_RR_TYPE   dwRecordType
     );
 
+DWORD
+VmDnsStringToLower (
+    PCSTR pszSrcStr,
+    PSTR *pszDstStr
+    );
+
 #define VMDNS_FREE_RECORD(pRecord) \
     if (pRecord) \
     { \

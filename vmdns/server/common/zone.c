@@ -79,7 +79,10 @@ VmDnsZoneCreate(
     dwError = VmDnsRecordListAdd(pRecordList, pSoaObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneCreateFromRecordList(pZoneInfo->pszName, pRecordList, &pZoneObject);
+    dwError = VmDnsZoneCreateFromRecordList(
+                        pZoneInfo->pszName,
+                        pRecordList,
+                        &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppZoneObject = pZoneObject;
@@ -109,7 +112,9 @@ VmDnsZoneCreateFromRecordList(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsAllocateMemory(sizeof(VMDNS_ZONE_OBJECT), (void**)&pZoneObject);
+    dwError = VmDnsAllocateMemory(
+                    sizeof(VMDNS_ZONE_OBJECT),
+                    (void**)&pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pZoneObject->lRefCount = 1;
@@ -117,16 +122,24 @@ VmDnsZoneCreateFromRecordList(
     dwError = VmDnsAllocateStringA(szZoneName, &pZoneObject->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsHashTableAllocate(&pZoneObject->pNameEntries, DEFAULT_NAME_HASHTABLE_SIZE);
+    dwError = VmDnsHashTableAllocate(
+                    &pZoneObject->pNameEntries,
+                    DEFAULT_NAME_HASHTABLE_SIZE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateRWLock(&pZoneObject->pLock);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsLruInitialize(&pZoneObject->pLruList);
+    dwError = VmDnsLruInitialize(
+                    pZoneObject,
+                    VmDnsCacheEvictEntryProc,
+                    &pZoneObject->pLruList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneUpdateRecords(pZoneObject, pZoneObject->pszName, pRecordList);
+    dwError = VmDnsZoneUpdateRecords(
+                    pZoneObject,
+                    pZoneObject->pszName,
+                    pRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppZoneObject = pZoneObject;
@@ -247,8 +260,8 @@ VmDnsZoneCopyZoneInfo(
 
 cleanup:
     VmDnsUnlockRead(pZoneObject->pLock);
-
     VmDnsRecordObjectRelease(pSoaObject);
+
     return dwError;
 
 error:
@@ -288,9 +301,10 @@ VmDnsZoneUpdateRecords(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsNameEntryRelease(pNameEntry);
     VmDnsUnlockWrite(pZoneObject->pLock);
-
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -326,6 +340,7 @@ VmDnsZoneAddRecord(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsNameEntryRelease(pNameEntry);
     VmDnsUnlockWrite(pZoneObject->pLock);
 
     return dwError;
@@ -352,6 +367,7 @@ VmDnsZoneRemoveRecord(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsNameEntryRelease(pNameEntry);
     VmDnsUnlockWrite(pZoneObject->pLock);
 
     return dwError;
@@ -373,7 +389,7 @@ VmDnsZonePurgeRecords(
     dwError = VmDnsZoneFindNameEntry(pZoneObject, pszName, &pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneRemoveNameEntry(pZoneObject, pszName, &pNameEntry);
+    dwError = VmDnsZoneRemoveNameEntry(pZoneObject, pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsLruRemoveNameEntry(pZoneObject->pLruList, pNameEntry);
@@ -381,6 +397,7 @@ VmDnsZonePurgeRecords(
 
 cleanup:
     VmDnsUnlockWrite(pZoneObject->pLock);
+    VmDnsNameEntryRelease(pNameEntry);
 
     return dwError;
 error:
@@ -413,6 +430,7 @@ VmDnsZoneGetRecords(
     *ppRecordList = pRecordList;
 cleanup:
     VmDnsUnlockRead(pZoneObject->pLock);
+    VmDnsNameEntryRelease(pNameEntry);
 
     return dwError;
 error:
@@ -520,13 +538,13 @@ VmDnsZoneGetSoaRecord(
     }
 
     pSoaObject = VmDnsRecordListGetRecord(pRecordList, 0);
-    VmDnsRecordObjectAddRef(pSoaObject);
 
     *ppSoaObject = pSoaObject;
 
 cleanup:
-
     VmDnsRecordListRelease(pRecordList);
+    VmDnsNameEntryRelease(pNameEntry);
+
     return dwError;
 error:
     goto cleanup;
@@ -597,6 +615,8 @@ VmDnsZoneFindNameEntry(
                         (PVOID *)&pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    VmDnsNameEntryAddRef(pNameEntry);
+
     *ppNameEntry = pNameEntry;
 
 cleanup:
@@ -608,30 +628,21 @@ error:
 DWORD
 VmDnsZoneRemoveNameEntry(
     PVMDNS_ZONE_OBJECT  pZoneObject,
-    PCSTR               pszName,
-    PVMDNS_NAME_ENTRY*  ppNameEntry
+    PVMDNS_NAME_ENTRY   pNameEntry
 )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_NAME_ENTRY pNameEntry = NULL;
 
-    BAIL_ON_VMDNS_EMPTY_STRING(pszName, dwError);
-    BAIL_ON_VMDNS_INVALID_POINTER(ppNameEntry, dwError);
-
-    dwError = VmDnsHashTableGet(
-                    pZoneObject->pNameEntries,
-                    pszName,
-                    (PVOID *)&pNameEntry);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(pNameEntry, dwError);
 
     dwError = VmDnsHashTableRemove(
                     pZoneObject->pNameEntries,
-                    pszName);
+                    pNameEntry->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    *ppNameEntry = pNameEntry;
+    VmDnsNameEntryRelease(pNameEntry);
 
-cleanup:
+ cleanup:
     return dwError;
 
 error:
@@ -655,6 +666,7 @@ VmDnsZoneAddNameEntry(
                         pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    VmDnsNameEntryAddRef(pNameEntry);
 cleanup:
     return dwError;
 

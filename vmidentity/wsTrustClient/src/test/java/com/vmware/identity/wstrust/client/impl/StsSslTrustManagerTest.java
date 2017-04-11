@@ -25,13 +25,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vmware.identity.wstrust.client.SecurityTokenServiceConfig.ConnectionConfig;
 import com.vmware.identity.wstrust.client.SecurityTokenServiceConfig.SSLTrustedManagerConfig;
 
 public class StsSslTrustManagerTest {
-
+	// Ignoring as of now. Need to check if we really need this JKS keystore test since we use VKS now.
+    @Ignore
     @Test
     public void testFileBasedCrl() throws Exception {
         KeyStore serverCertKeyStore = KeyStore.getInstance("JKS");

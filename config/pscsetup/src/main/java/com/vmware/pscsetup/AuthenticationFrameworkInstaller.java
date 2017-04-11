@@ -40,6 +40,12 @@ public class AuthenticationFrameworkInstaller implements
 	// TODO Auto-generated method stub
 
     }
+    @Override
+     public void migrate() {
+ 
+     }
+ 
+
 
     @Override
     public PlatformInstallComponent getComponentInfo() {

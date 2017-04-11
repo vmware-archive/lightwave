@@ -419,9 +419,9 @@ _VmDirSwapDB(
 
     VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
-    VmDirSchemaLibShutdown();
-
     VmDirIndexLibShutdown();
+
+    VmDirSchemaLibShutdown();
 
     pBE->pfnBEShutdown();
     VmDirBackendContentFree(pBE);
@@ -476,10 +476,12 @@ _VmDirSwapDB(
     if (bLegacyDataLoaded)
     {
         retVal = VmDirPatchLocalSubSchemaSubEntry();
-        BAIL_ON_VMDIR_ERROR(retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrorMsg,
+                "_VmDirSwapDB: failed to patch subschema subentry: %d", retVal );
 
         retVal = VmDirWriteSchemaObjects();
-        BAIL_ON_VMDIR_ERROR(retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrorMsg,
+                "_VmDirSwapDB: failed to create schema tree: %d", retVal );
     }
 
     VmDirdStateSet(VMDIRD_STATE_NORMAL);
@@ -587,7 +589,7 @@ _VmDirWrapUpFirstReplicationCycle(
         }
 
         // <partnerLocalUSN>,<partner up-to-date vector>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringAVsnprintf( &(syncDoneCtrlVal.bv_val), "%s,%s%s%s:%s,",
+        retVal = VmDirAllocateStringPrintf( &(syncDoneCtrlVal.bv_val), "%s,%s%s%s:%s,",
                                                 partnerlocalUsnStr,
                                                 pAttrUpToDateVector->vals[0].lberbv.bv_val,
                                                 pszSeparator,
@@ -598,12 +600,14 @@ _VmDirWrapUpFirstReplicationCycle(
     else
     {
         // <partnerLocalUSN>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringAVsnprintf( &(syncDoneCtrlVal.bv_val), "%s,%s:%s,",
+        retVal = VmDirAllocateStringPrintf( &(syncDoneCtrlVal.bv_val), "%s,%s:%s,",
                                                 partnerlocalUsnStr,
                                                 pAttrInvocationId->vals[0].lberbv.bv_val,
                                                 partnerlocalUsnStr);
         BAIL_ON_VMDIR_ERROR(retVal);
     }
+
+    VmDirSetACLMode();
 
     syncDoneCtrlVal.bv_len = VmDirStringLenA(syncDoneCtrlVal.bv_val);
 
@@ -630,6 +634,10 @@ error:
     retVal = LDAP_OPERATIONS_ERROR;
     goto cleanup;
 }
+
+#ifndef VDIR_PSC_VERSION
+#define VDIR_PSC_VERSION "6.7.0"
+#endif
 
 static
 int
@@ -691,6 +699,12 @@ _VmDirPatchDSERoot(
                               VmDirStringLenA(VDIR_PSC_VERSION) );
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    retVal = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,
+                              ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL_LEN,
+                              VMDIR_MAX_DFL_STRING,
+                              VmDirStringLenA(VMDIR_MAX_DFL_STRING) );
+    BAIL_ON_VMDIR_ERROR( retVal );
+
     if ((retVal = VmDirInternalModifyEntry( &op )) != 0)
     {
         // If VmDirInternall call failed, reset retVal to LDAP level error space (for B/C)
@@ -729,7 +743,7 @@ _VmGetHighestCommittedUSN(
         VMDIR_SAFE_FREE_MEMORY(usnStr);
         VmDirFreeEntryArrayContent(&entryArray);
 
-        dwError = VmDirAllocateStringAVsnprintf(&usnStr, "%llu", usn);
+        dwError = VmDirAllocateStringPrintf(&usnStr, "%llu", usn);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSimpleEqualFilterInternalSearch(

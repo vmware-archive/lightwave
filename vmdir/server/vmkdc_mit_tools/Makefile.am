@@ -1,8 +1,9 @@
-thirdparty_srcdir = $(top_srcdir)/../vmdir/thirdparty
-thirdparty_builddir = $(top_builddir)/../../vmdir/build/thirdparty
+thirdparty_srcdir = $(top_srcdir)/thirdparty
+thirdparty_builddir = $(top_builddir)/thirdparty
 
 noinst_PROGRAMS = \
     parsedb \
+    ktdump \
     testcrypto
 
 #noinst_PROGRAMS = \
@@ -58,12 +59,12 @@ parsedb_CPPFLAGS = $(MIT_TOOLS_INCLUDES)
 parsedb_LDADD = $(MIT_TOOLS_LDADD)
 parsedb_LDFLAGS = $(MIT_TOOLS_LD_FLAGS)
 
-# # ---- ktdump ----
-# ktdump_SOURCES = ktdump.c
-# ktdump_CPPFLAGS = $(MIT_TOOLS_INCLUDES)
-# ktdump_LDADD = $(MIT_TOOLS_LDADD)
-# ktdump_LDFLAGS = $(MIT_TOOLS_LD_FLAGS)
-# 
+# ---- ktdump ----
+ktdump_SOURCES = ktdump.c
+ktdump_CPPFLAGS = $(MIT_TOOLS_INCLUDES)
+ktdump_LDADD = $(MIT_TOOLS_LDADD)
+ktdump_LDFLAGS = $(MIT_TOOLS_LD_FLAGS)
+
 # ---- testcrypto ----
 testcrypto_SOURCES = test-crypto.c
 testcrypto_LDADD = $(MIT_TOOLS_LDADD)

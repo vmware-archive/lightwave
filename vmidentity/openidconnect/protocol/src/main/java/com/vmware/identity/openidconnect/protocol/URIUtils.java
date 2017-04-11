@@ -75,6 +75,18 @@ public final class URIUtils {
         }
     }
 
+    public static URI changePortComponent(URI uri, int port) {
+        Validate.notNull(uri, "uri");
+
+        URIBuilder uriBuilder = new URIBuilder(uri);
+        uriBuilder.setPort(port);
+        try {
+            return uriBuilder.build();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("failed to change port component", e);
+        }
+    }
+
     public static URI appendQueryParameter(URI uri, String parameterName, String parameterValue) {
         Validate.notNull(uri, "uri");
         Validate.notEmpty(parameterName, "parameterName");
@@ -145,47 +157,5 @@ public final class URIUtils {
         }
 
         return uri;
-    }
-
-    public static boolean areEqual(URI lhs, URI rhs) {
-        Validate.notNull(lhs, "lhs");
-        Validate.notNull(rhs, "rhs");
-
-        URI lhsCopy;
-        URI rhsCopy;
-        try {
-            lhsCopy = new URI(
-                    lhs.getScheme(),
-                    lhs.getUserInfo(),
-                    lhs.getHost(),
-                    URIUtils.getPort(lhs),
-                    lhs.getPath(),
-                    lhs.getQuery(),
-                    lhs.getFragment());
-            rhsCopy = new URI(
-                    rhs.getScheme(),
-                    rhs.getUserInfo(),
-                    rhs.getHost(),
-                    URIUtils.getPort(rhs),
-                    rhs.getPath(),
-                    rhs.getQuery(),
-                    rhs.getFragment());
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("failed to transform uri for equality check", e);
-        }
-
-        return lhsCopy.equals(rhsCopy);
-    }
-
-    private static int getPort(URI uri) {
-        int port = uri.getPort();
-        if (port == -1) {
-            if (("https").equalsIgnoreCase(uri.getScheme())) {
-                port = 443;
-            } else if (("http").equalsIgnoreCase(uri.getScheme())) {
-                port = 80;
-            }
-        }
-        return port;
     }
 }

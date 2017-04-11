@@ -1,9 +1,3 @@
-When generating classes using the schemas, in RequestedSecurityTokenType we have
-an assertion. In the schema it is Assertion type, in generated class it is Any
-type and more specifically - DOM representation. So when generating classes from
-schemas, in RequestedSecurityTokenType method should for setting token should be
-setAny(element).
-
 How to generate java classes for all entities used in our wsdl(STSService.wsdl).
  
 First we will need a simple tool called wsimport which will generate the classes.
@@ -28,6 +22,7 @@ this wsimport.sh executable (chmod +x).
 		    -d <path to dir for compiled classes> 
 		    -s <path to dir for java classes> 
 		    -extension 
+		    -Xno-addressing-databinding 
 		    STSService.wsdl
  
 The output as you expect will be in the folder you created in step 1).

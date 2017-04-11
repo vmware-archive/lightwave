@@ -154,6 +154,7 @@ public class LogoutState {
         }
 
         this.processingState = ProcessingState.INITIALIZED;
+
     }
 
     /**
@@ -455,6 +456,9 @@ public class LogoutState {
                 if (getSessionId() != null) {
                     getSessionManager().remove(getSessionId());
                 }
+
+                Validate.notNull(this.response, "this.response");
+                Shared.addNoCacheHeader(this.response);
 
             } catch (Exception e) {
                 log.debug("Caught exception while generating response "

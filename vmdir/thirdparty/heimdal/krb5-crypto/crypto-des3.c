@@ -198,7 +198,7 @@ _krb5_DES3_random_to_key(krb5_context context,
 			 size_t size)
 {
     unsigned char *x = key->keyvalue.data;
-    const u_char *q = data;
+    const unsigned char *q = data;
     DES_cblock *k;
     int i, j;
 

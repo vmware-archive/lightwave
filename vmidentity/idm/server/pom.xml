@@ -6,139 +6,66 @@
   <parent>
     <groupId>com.vmware.identity.idm</groupId>
     <artifactId>vmware-identity-idm</artifactId>
-    <version>6.6.1</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-idm-server</artifactId>
-  <version>6.6.1</version>
   <packaging>jar</packaging>
-  <name>vmware-identity-idm-server</name>
-
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven.compiler.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <configuration>
-          <archive>
-            <manifestFile>${manifestPath}</manifestFile>
-          </archive>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-source-plugin</artifactId>
-        <configuration>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-	<executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven.surefire.plugin.version}</version>
-        <configuration>
-          <skipTests>${skip.unit.tests}</skipTests>
-        </configuration>
-      </plugin>
-       <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
-          <executions>
-            <execution>
-              <id>copy-resources</id>
-              <phase>package</phase>
-              <goals>
-                 <goal>copy-resources</goal>
-              </goals>
-              <configuration>
-                <outputDirectory>${classesOutputDirectory}</outputDirectory>
-                <resources>
-                  <resource>
-                    <directory>${basedir}/target/classes/</directory>
-                    <filtering>true</filtering>
-                  </resource>
-                </resources>
-              </configuration>
-            </execution>
-           </executions>
-       </plugin>
-    </plugins>
-  </build>
+  <name>Identity Manager - Server</name>
 
   <dependencies>
-
     <!-- Vmware Dependencies -->
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-platform</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
-
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.vmafd</groupId>
       <artifactId>authentication-framework</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
-
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.vmafd</groupId>
       <artifactId>afd-heartbeat-service</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmca</groupId>
+      <artifactId>vmware-vmca-client</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
 
     <!-- Common  Dependencies -->
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
+      <version>${commons.logging.version}</version>
     </dependency>
-
-    <dependency>
-      <groupId>net.sourceforge.cobertura</groupId>
-      <artifactId>cobertura</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-daemon</groupId>
       <artifactId>commons-daemon</artifactId>
+      <version>${commons.daemon.version}</version>
     </dependency>
     <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-pool2</artifactId>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-pool2</artifactId>
+      <version>${commons.pool2.version}</version>
     </dependency>
 
     <!-- Jackson Parser -->
@@ -149,72 +76,32 @@
     </dependency>
 
     <!-- Bouncy Castle dependencies -->
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15on</artifactId>
-      </dependency>
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk15on</artifactId>
-      </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
 
-     <!-- Jna dependencies -->
-
+    <!-- Jna dependencies -->
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna</artifactId>
-      <version>${jna.platform}</version>
+      <version>${net.dev.jna}</version>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna-platform</artifactId>
-      <version>${jna.platform}</version>
+      <version>${net.dev.jna}</version>
     </dependency>
+  </dependencies>
 
-    <!-- Logger Dependencies -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-1.2-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
- </dependencies>
-
- <properties>
-    <skip.unit.tests>false</skip.unit.tests>
-    <outputDirectory>${basedir}/../../build/vmware-sts/packages</outputDirectory>
-    <classesOutputDirectory>${basedir}/../../build/vmware-sts/vmware-identity-idm-server/classes</classesOutputDirectory>
-    <manifestPath>src/main/resources/MANIFEST.MF</manifestPath>
- </properties>
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 
 </project>

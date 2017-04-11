@@ -19,9 +19,12 @@ import static org.junit.Assert.*;
 
 import java.security.KeyStoreException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vmware.identity.idm.ClientCertPolicy;
@@ -45,10 +48,123 @@ public class IdmClientCertificateValidatorTest {
         X509Certificate[] certs = testUtil.getDodValidCert1();
         ClientCertPolicy certPolicy = new ClientCertPolicy();
         certPolicy.setTrustedCAs(certs);
-        IdmClientCertificateValidator validator = new IdmClientCertificateValidator(certPolicy,ClientCertTestUtils.tenant1);
 
-        String upn = validator.extractUPN(certs[0]);
+        String upn = IdmClientCertificateValidator.extractUPN(certs[0]);
         assertTrue(upn.equals(testUtil.dodValidCert1UPN));
+    }
+
+    @Test
+    public void testValidateAltSec_IS() throws KeyStoreException {
+
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
+            return;
+        }
+        X509Certificate[] certs = testUtil.getDodValidCert1();
+        List<String> altSecIdentities = testUtil.getDodValidCert1X509_IS();
+
+        try {
+            IdmClientCertificateValidator.ValidateAltSec(certs[0], altSecIdentities);
+        }
+        catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testValidateAltSec_ISR() throws KeyStoreException {
+
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
+            return;
+        }
+        X509Certificate[] certs = testUtil.getDodValidCert1();
+        List<String> altSecIdentities = testUtil.getDodValidCert1X509_ISR();
+
+        try {
+            IdmClientCertificateValidator.ValidateAltSec(certs[0], altSecIdentities);
+        }
+        catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testValidateAltSec_SKI() throws KeyStoreException {
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
+            return;
+        }
+        X509Certificate[] certs = testUtil.getDodValidCert1();
+        List<String> altSecIdentities = new ArrayList<String>();
+        altSecIdentities.add(testUtil.x509_PREFIX + testUtil.dodValidCert1_SKI);
+
+        try {
+            IdmClientCertificateValidator.ValidateAltSec(certs[0], altSecIdentities);
+        }
+        catch (Exception e) {
+            fail();
+        }
+
+    }
+
+    @Test
+    public void testValidateAltSec_S() throws KeyStoreException {
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
+            return;
+        }
+        X509Certificate[] certs = testUtil.getDodValidCert1();
+        List<String> altSecIdentities = new ArrayList<String>();
+        altSecIdentities.add(testUtil.x509_PREFIX + testUtil.dodValidCert1_S);
+
+        try {
+            IdmClientCertificateValidator.ValidateAltSec(certs[0], altSecIdentities);
+        }
+        catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Ignore
+    @Test
+    public void testValidateAltSec_SHA1_PUKEY() throws KeyStoreException {
+        // TODO PR1744196 unclear how to output pubkey from cert and hash it.
+        // This is failing for some reason.
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
+            return;
+        }
+
+        X509Certificate[] certs = testUtil.getDodValidCert1();
+        List<String> altSecIdentities = new ArrayList<String>();
+        altSecIdentities.add(testUtil.x509_PREFIX + testUtil.dodValidCert1_SHA1_PUKEY);
+
+        try {
+            IdmClientCertificateValidator.ValidateAltSec(certs[0], altSecIdentities);
+        }
+        catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testValidateAltSec_RFC822() throws KeyStoreException {
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
+            return;
+        }
+
+        X509Certificate[] certs = testUtil.getDodValidCert1();
+        List<String> altSecIdentities = new ArrayList<String>();
+        altSecIdentities.add(testUtil.x509_PREFIX + testUtil.dodValidCert1_RFC822);
+
+        try {
+            IdmClientCertificateValidator.ValidateAltSec(certs[0], altSecIdentities);
+        }
+        catch (Exception e) {
+            fail();
+        }
     }
 
 }

@@ -98,7 +98,8 @@ VmDirMain(
     dwError = VmDirLeaveFederation(pszServerName, pszUserName, pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf(" Leave federation cleanup done\n");
+    printf(" %s server cleanup performed.\n",
+           pszServerName?pszServerName:"Local");
 
 cleanup:
 

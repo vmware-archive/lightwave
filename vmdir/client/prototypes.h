@@ -20,7 +20,8 @@
 
 #define VMDIR_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmdir"
 #define VMDIR_START_SERVICE "/opt/likewise/bin/lwsm start vmdir"
-#define VMDIR_CLEANUP_DATA "rm /storage/db/vmware-vmdir/*"
+// in embedded VCHA, snapshot database live under vmware-vmdir/
+#define VMDIR_CLEANUP_DATA "rm -rf /storage/db/vmware-vmdir/*"
 
 #define VMKDC_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmkdc"
 #define VMKDC_START_SERVICE "/opt/likewise/bin/lwsm start vmkdc"
@@ -212,11 +213,6 @@ VmDirGetDomainName(
     PSTR* ppszDomainName);
 
 DWORD
-VmDirGetServerName(
-    PCSTR pszHostName,
-    PSTR* ppszServerName);
-
-DWORD
 VmDirGetLocalLduGuid(
     PSTR pszLduGuid
     );
@@ -263,12 +259,32 @@ VmDirLdapSetupDCAccountOnPartner(
     );
 
 DWORD
+VmDirLdapCreateComputerOUContainer(
+    LDAP* pLd,
+    PCSTR pszDomainName,
+    PCSTR pszOUContainer
+    );
+
+DWORD
+VmDirLdapConfigureComputerAccount(
+    LDAP* pLd,
+    PCSTR pszDomainName,
+    PCSTR pszPassword,
+    PCSTR pszComputerHostName
+    );
+
+DWORD
 VmDirLdapSetupComputerAccount(
+    LDAP* pLd,
     PCSTR pszDomainName,
     PCSTR pszHostName,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszComputerHostName
+    PCSTR pszComputerOU,
+    PCSTR pszComputerHostName,
+    BOOLEAN bStoreInRegistry,
+    PBYTE* ppByteOutPassword,
+    PDWORD pdwOutPasswordSize
     );
 
 DWORD
@@ -295,11 +311,13 @@ VmDirLdapDeleteDCAccount(
     LDAP*   pLd,
     PCSTR   pszDomainName,
     PCSTR   pszDCHostName,           // Self host name
+    BOOLEAN bSuccessOnMissing,
     BOOLEAN bActuallyDelete
     );
 
 DWORD
 VmDirLdapSetupServiceAccount(
+    LDAP* pLd,
     PCSTR pszDomainName,
     PCSTR pszHostName,
     PCSTR pszUsername,
@@ -384,11 +402,6 @@ VmDirConnectLDAPServer(
     PCSTR       pszPassword
     );
 
-VOID
-VmDirLdapUnbind(
-    LDAP** ppLd
-    );
-
 DWORD
 VmDirAddVmIdentityContainer(
     LDAP* pLd,
@@ -447,15 +460,6 @@ VmDirDnLastRDNToCn(
     );
 
 DWORD
-VmDirLdapGetSingleAttribute(
-    LDAP*   pLD,
-    PCSTR   pszDN,
-    PCSTR   pszAttr,
-    PBYTE*  ppByte,
-    DWORD*  pdwLen
-    );
-
-DWORD
 VmDirLdapModReplaceAttribute(
     LDAP*   pLd,
     PCSTR   pszDN,
@@ -477,13 +481,6 @@ VmDirGetDCContainerDN(
     );
 
 DWORD
-VmDirGetServerAccountDN(
-    PCSTR pszDomain,
-    PCSTR pszMachineName,
-    PSTR* ppszServerDN
-    );
-
-DWORD
 VmDirGetServerGuidInternal(
     LDAP* pLd,
     PCSTR pszDomain,
@@ -501,6 +498,7 @@ VmDirSetServerGuidInternal(
 
 DWORD
 VmDirGetComputerAccountDN(
+    LDAP* pLd,
     PCSTR pszDomain,
     PCSTR pszMachineName,
     PSTR* ppszAccountDN
@@ -573,7 +571,31 @@ VmDirLocalInitializeTenant(
     PWSTR   pwszNamingContext,
     PWSTR   pwszUserName,
     PWSTR   pwszPassword
-);
+    );
+
+DWORD
+VmDirLocalCreateTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszNewUserName,
+    PCSTR pszNewUserPassword
+    );
+
+DWORD
+VmDirLocalDeleteTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pwszDomain
+    );
+
+DWORD
+VmDirLocalEnumerateTenants(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PSTR **pppszTenants,
+    PDWORD pdwNumTenants
+    );
 
 DWORD
 VmDirLocalForceResetPassword(
@@ -599,11 +621,6 @@ VmDirGetLastLocalUsnProcessedForHostFromRADN(
     USN* pUsn
     );
 
-DWORD VmDirCreateLdAtHostViaMachineAccount(
-    PCSTR  pszHostName,
-    LDAP** ppLd
-);
-
 DWORD
 VmDirLdapCreateReplHostNameDN(
     PSTR* ppszReplHostNameDN,
@@ -618,20 +635,6 @@ VmDirDCEGetErrorCode(
     );
 
 #endif
-
-DWORD
-VmDirGetDomainFuncLvlInternal(
-    LDAP*  pLd,
-    PCSTR  pszDomain,
-    PDWORD pdwFuncLvl
-    );
-
-DWORD
-VmDirSetDomainFuncLvlInternal(
-    LDAP* pLd,
-    PCSTR pszDomain,
-    DWORD dwFuncLvl
-    );
 
 DWORD
 VmDirGetAllDCInternal(
@@ -713,3 +716,21 @@ VmDirLdapGetHighWatermark(
     USN*       pLastLocalUsn
     );
 
+DWORD
+VmDirSetupDefaultAccount(
+    PCSTR pszDomainName,
+    PCSTR pszPartnerServerName,
+    PCSTR pszLdapHostName,
+    PCSTR pszBindUserName,
+    PCSTR pszBindPassword
+    );
+
+DWORD
+VmDirUpdateKeytabFile(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    BOOLEAN bIsServer
+    );

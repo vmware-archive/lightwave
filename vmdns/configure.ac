@@ -137,29 +137,39 @@ case "${host_os}:${host_cpu}" in
     darwin*:x86_64)
     LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
     ;;
+    linux*:aarch64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
+    ;;
     *)
     AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
     ;;
 esac
 
+LW_RPATH=$LIKEWISE_DEFAULT_PATH
+AC_ARG_WITH([likewise-rpath],
+    [AC_HELP_STRING([--with-likewise-rpath=<dir>], [use Likewise libraries located at <dir> at runtime])],
+    [
+        LW_RPATH="$withval"
+    ])
+
 AC_ARG_WITH([likewise],
-    [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
+    [AC_HELP_STRING([--with-likewise=<dir>], [use Likewise binaries rooted at prefix <dir> ])],
     [
         LW_BASE_PATH="$withval"
         LW_INCLUDES="-I$withval/include"
-        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,LIKEWISE_DEFAULT_PATH -Wl,-rpath-link,$withval/$PLATFORM_LIB_PREFIX"
+        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$LW_RPATH -Wl,-rpath-link,$withval/$PLATFORM_LIB_PREFIX"
     ])
 
 AC_ARG_WITH([likewise-includes],
-    [AC_HELP_STRING([--with-likewise-includes=<dir>], [use likewise headers located in prefix <dir> ])],
+    [AC_HELP_STRING([--with-likewise-includes=<dir>], [use Likewise headers located in prefix <dir> ])],
     [
         LW_INCLUDES="-I$withval"
     ])
 
 AC_ARG_WITH([likewise-libs],
-    [AC_HELP_STRING([--with-likewise-libs=<dir>], [use likewise libraries located in prefix <dir> ])],
+    [AC_HELP_STRING([--with-likewise-libs=<dir>], [use Likewise libraries located in prefix <dir> ])],
     [
-        LW_LDFLAGS="-L$withval"
+        LW_LDFLAGS="-L$withval -Wl,-rpath,$LW_RPATH -Wl,-rpath-link,$withval"
     ])
 
 AC_SUBST(LW_BASE_PATH)

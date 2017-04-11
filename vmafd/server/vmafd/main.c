@@ -21,6 +21,7 @@
 //TODO, move to gVmafdGlobals?
 int  vmafd_syslog_level = 0;
 int  vmafd_syslog = 0;
+int  vmafd_console_log = 0;
 
 static
 DWORD
@@ -72,6 +73,10 @@ main(
     {
         vmafd_syslog = 1;
     }
+    if (bEnableConsole)
+    {
+        vmafd_console_log = 1;
+    }
 
     dwError = VmAfdInit();
     if (dwError)
@@ -93,12 +98,8 @@ main(
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (domainState == VMAFD_DOMAIN_STATE_CONTROLLER ||
-        domainState == VMAFD_DOMAIN_STATE_CLIENT)
-    {
-        dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
+    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdInitPassRefreshThread(&gVmafdGlobals.pPassRefreshThr);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -106,8 +107,15 @@ main(
     dwError = CdcInitCdcService(&gVmafdGlobals.pCdcContext);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
+#if 0
+    //TODO: Comment out DDNS client code for now
+    dwError = VmDdnsInitThread(&gVmafdGlobals.pDdnsContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
     /*
      * Start the init loop which initializes configuration and
      * then waits until signaled to reinitialize.  It returns

@@ -13,13 +13,9 @@
  */
 package com.vmware.identity.idm.client;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -29,9 +25,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.Source;
@@ -45,6 +38,8 @@ import org.w3c.dom.Document;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.ADIDSAlreadyExistException;
 import com.vmware.identity.idm.ActiveDirectoryJoinInfo;
 import com.vmware.identity.idm.Attribute;
@@ -53,7 +48,6 @@ import com.vmware.identity.idm.AuthenticationType;
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.CertificateInUseException;
 import com.vmware.identity.idm.CertificateType;
-import com.vmware.identity.idm.CommonUtil;
 import com.vmware.identity.idm.DomainManagerException;
 import com.vmware.identity.idm.DomainTrustsInfo;
 import com.vmware.identity.idm.DomainType;
@@ -72,13 +66,11 @@ import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityManager;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdmServiceContext;
-import com.vmware.identity.idm.ILoginManager;
 import com.vmware.identity.idm.IdmADDomainAccessDeniedException;
 import com.vmware.identity.idm.IdmADDomainException;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.InvalidProviderException;
-import com.vmware.identity.idm.LocalISRegistrationException;
 import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.MemberAlreadyExistException;
 import com.vmware.identity.idm.NoSuchCertificateException;
@@ -110,6 +102,7 @@ import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.VmHostData;
+import com.vmware.identity.idm.server.IdentityManager;
 import com.vmware.identity.performanceSupport.IIdmAuthStat;
 import com.vmware.identity.performanceSupport.IIdmAuthStatus;
 
@@ -118,14 +111,20 @@ import com.vmware.identity.performanceSupport.IIdmAuthStatus;
  */
 public class CasIdmClient
 {
+
+    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(CasIdmClient.class);
+
     private static final String SAML_SCHEMA_FILE = "/saml-schema-metadata-2.0.xsd";
-    private final String hostName;
     private final IServiceContextProvider _serviceContextProvider;
-    private static final int RETRY_COUNT = 3;
-    private static final int RETRY_TIMEOUT_SECS = 30;
-    private final ReadWriteLock _authHashLock;
-    private  String _authHash = null;
+
     private Schema schema;
+    private IIdentityManager identityManager;
+
+    // a constructor temporarily added for unit test.
+    protected CasIdmClient()
+    {
+        _serviceContextProvider = null;
+    }
 
     /**
      * Constructs an instance of the IDM Client
@@ -134,21 +133,25 @@ public class CasIdmClient
      */
     public CasIdmClient(String hostName)
     {
-		this(hostName, null);
+        this(hostName, null);
     }
 
     /**
      * Constructs an instance of the IDM Client
      *
      * @param hostName IDM Server host location
-     * @param correlationIdProvider Optional ICorrelationIdProvider (see ICorrelationIdProvider).
+     * @param serviceContextProvider Optional IServiceContextProvider (see IServiceContextProvider).
      */
     public CasIdmClient(String hostName, IServiceContextProvider serviceContextProvider)
     {
-        this.hostName = hostName;
         this._serviceContextProvider = serviceContextProvider;
-        _authHashLock = new ReentrantReadWriteLock();
-    }
+        try {
+            identityManager = IdentityManager.getIdmInstance();
+        } catch (IDMException e){
+            log.error(String.format("Failed to initialize CasIdmClient: %s", e.getMessage()));
+            throw new IllegalStateException("Failed to initialize CasIdmClient", e);
+        }
+     }
 
     /**
      * Adds the specified tenant with administrator credentials to the IDM configuration
@@ -156,9 +159,6 @@ public class CasIdmClient
      * @param  tenant       Tenant to be added.
      * @param  adminAccountName name of the account with administrator privilege, cannot be null or empty
      * @param  adminPwd         cannot be null or zero length array
-     * @throws IDMException
-     * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws DuplicateTenantException  - if tenant already exist.
      * @throws InvalidArgumentException    -- if the tenant name or
      *                                 other required parameter is null or empty
@@ -179,7 +179,6 @@ public class CasIdmClient
      * @throws IDMException
      * @throws NoSuchTenantException    - tenant does not exist
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      */
     public Tenant getTenant(String name) throws Exception
     {
@@ -193,7 +192,6 @@ public class CasIdmClient
      * @return System tenant name - should not be null.
      * @throws Exception
      * @throws IDMException         - if fail to find system tenant.
-     * @throws RemoteException        - if unable to connect the IDM server
      */
     public String getSystemTenant() throws Exception
     {
@@ -207,7 +205,6 @@ public class CasIdmClient
      *             in the list.
      * @throws Exception
      * @throws IDMException          - if no tenant is found
-     * @throws RemoteException        - if unable to connect the IDM server
      */
     public Collection<String> getAllTenants() throws Exception
     {
@@ -218,10 +215,8 @@ public class CasIdmClient
      * Updates the tenant configuration with the specified information.
      * This action only allies to existing tenant.
      * @param tenant      Tenant information.
-
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist, user should call
      *                                      addTenant first for new tenant.
      * @throws InvalidArgumentException    -- if the tenant name or
@@ -239,7 +234,6 @@ public class CasIdmClient
      * @param tenantName
      * @return brand name. Could be null value.
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws InvalidArgumentException    -- if the tenant name is null or empty
      */
@@ -261,7 +255,6 @@ public class CasIdmClient
      *            Could be null value or empty value.
      * @return
      * @throws Exception
-     * @throws RemoteException
      *             - if unable to connect the IDM server
      * @throws NoSuchTenantException
      *             - if no such tenant exist
@@ -326,7 +319,6 @@ public class CasIdmClient
      * @param tenantName
      * @return algorithm name. Could be null value.
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws InvalidArgumentException    -- if the tenant name is null or empty
      */
@@ -341,7 +333,6 @@ public class CasIdmClient
      * @param tenantName
      * @return
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws InvalidArgumentException    -- if the tenant name or
      *                                 signatureAlgorithm is null or empty
@@ -383,7 +374,7 @@ public class CasIdmClient
      * @param rp             Relying Party information
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
+
      */
     public
     void
@@ -401,7 +392,7 @@ public class CasIdmClient
      *                   Required, non-null, non-empty, case-insensitive.
      * @throws Exception
      * @throws NoSuchRelyingPartyException.   if the relying party can't be found.
-     * @throws RemoteException        - if unable to connect the IDM server
+
      */
     public
     void
@@ -420,7 +411,7 @@ public class CasIdmClient
      * @return           Relying party information. Null if none were found.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
+
      */
     public
     RelyingParty
@@ -438,7 +429,7 @@ public class CasIdmClient
      * @return           Relying party information. Null if none were found
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
+
      */
     public
     RelyingParty
@@ -454,7 +445,6 @@ public class CasIdmClient
      * @param rp         Relying party information to be updated
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchRElyingParty
      */
     public
@@ -471,7 +461,6 @@ public class CasIdmClient
      * @return           The collection of relying parties.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws InvalidArgumentException    -- if the tenant name is illegal.
      */
@@ -493,7 +482,6 @@ public class CasIdmClient
      *            OIDC client information
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      *             - if unable to connect the IDM server
      */
     public void addOIDCClient(String tenantName, OIDCClient oidcClient) throws Exception {
@@ -511,7 +499,6 @@ public class CasIdmClient
      *            case-insensitive.
      * @throws Exception
      * @throws NoSuchRelyingPartyException. if the OIDC client can't be found.
-     * @throws RemoteException
      *             - if unable to connect the IDM server
      */
     public void deleteOIDCClient(String tenantName, String clientId) throws Exception {
@@ -530,7 +517,6 @@ public class CasIdmClient
      * @return OIDC client information. Null if none were found.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      *             - if unable to connect the IDM server
      */
     public OIDCClient getOIDCClient(String tenantName, String clientId) throws Exception {
@@ -547,7 +533,6 @@ public class CasIdmClient
      *            OIDC client information to be updated
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      *             - if unable to connect the IDM server
      * @throws NoSuchOIDCClientException
      */
@@ -564,7 +549,6 @@ public class CasIdmClient
      * @return The collection of OIDC clients.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      *             - if unable to connect the IDM server
      * @throws NoSuchTenantException
      *             - if no such tenant exist
@@ -604,7 +588,6 @@ public class CasIdmClient
      * @param idpConfig
      *            Cannot be null
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -625,7 +608,6 @@ public class CasIdmClient
      * @param configEntityId
      *            Cannot not null or empty
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -650,7 +632,6 @@ public class CasIdmClient
      * @param removeJitUsers
      *            true if remove all Jit users created for the external IDP
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -673,7 +654,6 @@ public class CasIdmClient
      * @return Collection of external IDP configuration for the tenant, empty if
      *         none are found
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -692,7 +672,6 @@ public class CasIdmClient
      * @param tenantName cannot be null or empty
      * @return set of trust anchors for ExteralIDP.
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -719,7 +698,6 @@ public class CasIdmClient
      * @param tenantName cannot be null or empty
      * @return set of issuers certificates for ExteralIDP.
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -747,7 +725,6 @@ public class CasIdmClient
      *            Cannot be null or empty;
      * @return IdpConfiguration with the matching entityId, null if not found
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -782,7 +759,6 @@ public class CasIdmClient
      *         not found. Note the result matches either the SSO service
      *         end-points or SLO service end-points
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             argument validation failed
@@ -824,16 +800,11 @@ public class CasIdmClient
     *            when trying to register a native AD provider;
     *            Or, nativeAD already exist when adding ADLdap.
     * @throws InvalidProviderException
-    * 			 Invalid configuration for provider, such as invalid users baseDN or
-    * 			 invalid groups baseDN.
-    * @throws LocalISRegistrationException
-    *            when trying to add localOS provider is already exist
-    * @throws RemoteException
-    *            if unable to connect the IDM server
+    *              Invalid configuration for provider, such as invalid users baseDN or
+    *              invalid groups baseDN.
     */
     public void addProvider(String tenantName, IIdentityStoreData idp)
-         throws LocalISRegistrationException, NotBoundException,
-         MalformedURLException, RemoteException, IDMException
+         throws Exception
     {
         getService().addProvider(tenantName, idp, this.getServiceContext());
     }
@@ -845,8 +816,8 @@ public class CasIdmClient
      * @param ProviderName Name of Identity Provider. Required.
      * @return             Identity Provider information, null if not found.
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
-     *  @ NoSuchTenantException
+     * @throws NoSuchTenantException
+     *            tenant not exist.
      * @throws InvalidArgumentException - one or more input argument is invalid.
      */
     public
@@ -874,7 +845,6 @@ public class CasIdmClient
      * @throws Exception
      * @throws NoSuchTenantException
      * @throws InvalidArgumentException  - result of illegal input.
-     * @throws RemoteException        - if unable to connect the IDM server
      */
     public
     void
@@ -891,7 +861,6 @@ public class CasIdmClient
      *            insensitive.
      * @param idpd
      *            Identity provider information
-     *
      * @throws NoSuchTenantException
      *             tenant not exist.
      * @throws InvalidArgumentException
@@ -904,8 +873,6 @@ public class CasIdmClient
      * @throws DomainManagerException
      *             DomainManager native API invocation error when trying to
      *             update a native AD provider.
-     * @throws RemoteException
-     *             if unable to connect the IDM server
      */
     public void setNativeADProvider(String tenantName, IIdentityStoreData idpd)
             throws Exception
@@ -922,14 +889,13 @@ public class CasIdmClient
      * @throws IDMException
      * @throws Exception
      * @throws NoSuchTenantException
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws InvalidArgumentException
      *            when the sanity check of input failure, such as null or empty
      *            value was used;
      * @throws IDMLoginException
      *            failed generic probe connectivity test;
      * @throws InvalidProviderException
-     * 			 Invalid configuration for provider, such as invalid users baseDN or groups baseDN.
+     *              Invalid configuration for provider, such as invalid users baseDN or groups baseDN.
      */
     public
     void
@@ -946,7 +912,6 @@ public class CasIdmClient
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NoSuchTenantException
-     * @throws RemoteException        - if unable to connect the IDM server
      */
     public
     Collection<IIdentityStoreData>
@@ -965,7 +930,6 @@ public class CasIdmClient
      * @throws Exception
      * @throws InvalidArgumentException
      * @throws NoSuchTenantException
-     * @throws RemoteException        - if unable to connect the IDM server
      * @see    DomainType
      */
     public
@@ -1304,9 +1268,8 @@ public class CasIdmClient
      *
      * @param tenantName Name of tenant
      * @param tlsCertChain
+     * @param hint         optional user name hint
      * @return Normalized principal if successfully authenticated.
-     * @throws NotBoundException
-     * @throws RemoteException
      * @throws MalformedURLException
      * @throws IDMLoginException when authentication failed.
      * @throws UserAccountLockedException when authentication failed due to
@@ -1314,10 +1277,10 @@ public class CasIdmClient
      * @throws Exception
      */
 	public PrincipalId authenticate(String tenantName,
-			X509Certificate[] tlsCertChain) throws Exception {
-        return getService().authenticate(tenantName, tlsCertChain, this.getServiceContext());
+			X509Certificate[] tlsCertChain, String hint) throws Exception {
+        return getService().authenticate(tenantName, tlsCertChain, hint, this.getServiceContext());
 
-	}
+    }
 
     /**
      * Authenticates a principal using the password specified
@@ -1420,7 +1383,6 @@ public class CasIdmClient
      * @param tenantName Name of tenant
      * @return value of current clock tolerance in milliseconds
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException       - when target tenant does not exist.
      *           InvalidaArgumentException   - for illegal input value.
      */
@@ -1438,7 +1400,6 @@ public class CasIdmClient
      * @param tenantName   Name of tenant, non-null, non-empty.
      * @param milliseconds Clock tolerance in milli seconds. non-negative.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException       - when target tenant does not exist.
      *           InvalidaArgumentException   - for illegal input value.
      */
@@ -1560,7 +1521,6 @@ public class CasIdmClient
      * @param tenantName      Name of tenant, required, non-null, non-empty.
      * @param delegationCount A positive integer, required, non-negative
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -1577,7 +1537,6 @@ public class CasIdmClient
      *
      * @param tenantName Name of tenant, required, non-null, non-empty
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -1594,7 +1553,6 @@ public class CasIdmClient
      * @param renewCount Maximum number of time. Positive integer
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -1609,24 +1567,24 @@ public class CasIdmClient
         return getService().getSsoStatistics(tenantName, this.getServiceContext());
     }
 
-	/**
-	 * Increments the generated tokens count for a tenant.
-	 *
-	 * @param tenant
-	 * @throws Exception
-	 */
-	public void incrementGeneratedTokens(String tenant) throws Exception {
-		getService().incrementGeneratedTokens(tenant, this.getServiceContext());
-	}
+    /**
+     * Increments the generated tokens count for a tenant.
+     *
+     * @param tenant
+     * @throws Exception
+     */
+    public void incrementGeneratedTokens(String tenant) throws Exception {
+        getService().incrementGeneratedTokens(tenant, this.getServiceContext());
+    }
 
-	/**
-	 * Increments the renewed tokens count for a tenant.
-	 * @param tenant
-	 * @throws Exception
-	 */
-	public void incrementRenewedTokens(String tenant) throws Exception {
-		getService().incrementRenewedTokens(tenant, this.getServiceContext());
-	}
+    /**
+     * Increments the renewed tokens count for a tenant.
+     * @param tenant
+     * @throws Exception
+     */
+    public void incrementRenewedTokens(String tenant) throws Exception {
+        getService().incrementRenewedTokens(tenant, this.getServiceContext());
+    }
 
     /**
      * Retrieves the configuration setting about the maximum lifetime in milliseconds
@@ -1648,7 +1606,6 @@ public class CasIdmClient
      * @param tenantName  Name of tenant, required.non-null non-empty
      * @param maxLifetime Maximum lifetime in milliseconds, required, non-negative.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -1669,7 +1626,6 @@ public class CasIdmClient
      * @param tenantName Name of tenant, required.non-null non-empty.
      * @return maximum HOK token lifetime in milliseconds
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -1685,7 +1641,6 @@ public class CasIdmClient
      * @param tenantName  Name of tenant, required.non-null non-empty
      * @param maxLifetime Maximum lifetime in milliseconds, non negative.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -1790,7 +1745,6 @@ public class CasIdmClient
      * @param idmCert Certificate to add
      * @param certificateType type of the certificate, valid type are 'LDAP' and 'STS'
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input (for instance, invalid certificate type)
      * @throws DuplicateCertificateException - if the particular certificate with certType already exists
@@ -1815,7 +1769,6 @@ public class CasIdmClient
      * @return A complete collection of certificates of 'certificateType' for tenant 'tenantName'
      *         In case no such certificate, an empty collection is returned
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input (for instance, invalid certificate type)
      */
@@ -1833,7 +1786,6 @@ public class CasIdmClient
      * @return A complete collection of root STS certificates for tenant 'tenantName'
      *         In case no such certificate, an empty collection is returned
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input (for instance, invalid certificate type)
      */
@@ -1851,7 +1803,6 @@ public class CasIdmClient
      * @return A complete collection of leaf STS certificates for tenant 'tenantName'
      *         In case no such certificate, an empty collection is returned
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input (for instance, invalid certificate type)
      */
@@ -1869,7 +1820,6 @@ public class CasIdmClient
      * @param fingerprint fingerprint of the certificate to be deleted
      * @param certificateType type of the certificate, valid type are 'LDAP' and 'STS'
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input (for instance, invalid certificate type)
      * @throws NoSuchCertificateException - in case the certificate of certificateType does not exist
@@ -1997,7 +1947,6 @@ public class CasIdmClient
      * @param objectSid  User ObjectSid, required, non-null.
      * @return the regular user information
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -2015,7 +1964,6 @@ public class CasIdmClient
      * @param id         Group to be found
      * @return Group object of the security group. could be null if no such group
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws NoSuchIdpException         - can't find provider for this group.
@@ -2035,7 +1983,6 @@ public class CasIdmClient
      * @param id         Group to be found
      * @return Group object of the security group. could be null if no such group
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException   - invalid input
      * @throws NoSuchIdpException         - can't find provider for this group.
@@ -2066,7 +2013,6 @@ public class CasIdmClient
      * @return Set of regular users found. Empty set when no user found.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws NoSuchIdpException         - can't find provider for this group.
@@ -2096,7 +2042,6 @@ public class CasIdmClient
      * @return Set of regular users found. Empty set when no user found.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws NoSuchIdpException         - can't find provider for this group.
@@ -2369,11 +2314,9 @@ public class CasIdmClient
      * The principal whose immediate parents are desired, may be a user or group
      *
      * @param tenantName  Name of tenant, required.non-null non-empty
-
      * @param principalId Security principal id, required, non-null.
      * @return Set of immediate parent groups found.
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws NoSuchIdpException   - system tenant is not set up.
      * @throws InvalidArgumentException    -- if the tenant name is null or empty
@@ -2404,7 +2347,6 @@ public class CasIdmClient
      * @return
      *         if that group does not exist or the principal is not its member
      * @throws Exception
-     * @throws RemoteException        - if unable to connect the IDM server
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws NoSuchIdpException   - system tenant is not set up.
      * @throws InvalidArgumentException    -- if the tenant name is null or empty
@@ -2512,7 +2454,6 @@ public class CasIdmClient
      * @param password   User's password
      * @return Principal id of the regular user after it has been created.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException    - when tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws InvalidPrincipalException    - empty username or user already exist
@@ -2542,7 +2483,6 @@ public class CasIdmClient
      *        only supports 'SSO-v1-1'. required, non-null,
      * @return Principal id of the regular user after it has been created.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException    - when tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws InvalidPrincipalException    - empty username or user already exist
@@ -2569,7 +2509,6 @@ public class CasIdmClient
      * @param extUserId required, non-null, non-empty
      * @return id of the JIT user after it has been created
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException    - when tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws InvalidPrincipalException    - empty username or user already exist
@@ -2604,7 +2543,6 @@ public class CasIdmClient
      * @param Principal id of the user
      * @return User's hashed password blob
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException - if no such tenant exist
      * @throws NoSuchIdpException   - system tenant is not set up.
      * @throws InvalidArgumentException    -- if the tenant name is null or empty
@@ -2653,7 +2591,6 @@ public class CasIdmClient
      * @return true if the user's group membership was successfully assigned,
      *         false otherwise.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException    - when tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws InvalidPrincipalException  - unable to find the group
@@ -2675,7 +2612,6 @@ public class CasIdmClient
      * Removes a principal from a security group in the tenant's system domain.
      *
      * @param tenantName  Name of tenant, required.non-null non-empty
-
      * @param principalId Name of principal whose membership must be adjusted
      * @param groupName   Name of group from which the principal must be removed
      * @return true if the group membership was successfully adjusted
@@ -2707,7 +2643,6 @@ public class CasIdmClient
      * @return true if the membership has been successfully changed,
      *         false otherwise
      * @throws Exception
-     * @throws RemoteException
      * @throws InvalidArgumentException    illegal input
      * @throws NoSuchTenantException        tenant does not exist
      * @throws NoSuchIdpException            System tenant is missing
@@ -2765,7 +2700,6 @@ public class CasIdmClient
      * @return true if the account was disabled by this call, false if already disabled.
      * @throws IDMException
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException      - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      * @throws NoSuchIdpException         - can't find provider for this group.
@@ -2878,10 +2812,9 @@ public class CasIdmClient
      * that governs the principal.
      *
      * @param tenantName  Name of tenant, required.non-null non-empty
-
      * @param userName    Principal for whom the password must be set. required.non-null non-empty
      * @param newPassword New password. required.non-null non-empty
-     * @throws PasswordPolicyViolationException	Illegal password, such as empty pw, was used
+     * @throws PasswordPolicyViolationException    Illegal password, such as empty pw, was used
      * @throws InvalidPrincipalException  Empty user name or user can not be found
      * @throws NoSuchTenantException
      * @throws IDMException
@@ -2940,7 +2873,6 @@ public class CasIdmClient
      * @param tenantName Name of tenant, required non-null, non-empty
      * @return policy     pw Policy for the tenant.
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException        - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -2956,7 +2888,6 @@ public class CasIdmClient
      * @param tenantName Name of tenant, required non-null, non-empty
      * @param policy     password Policy for the tenant, required non-null
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException        - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -2972,7 +2903,6 @@ public class CasIdmClient
      *
      * @param tenantName Name of tenant, required non-null, non-empty
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException        - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -2987,7 +2917,6 @@ public class CasIdmClient
      * @param tenantName Name of tenant, required non-null, non-empty
      * @param policy     Lockout Policy for the tenant, required non-null
      * @throws Exception
-     * @throws RemoteException
      * @throws NoSuchTenantException        - tenant does not exist
      * @throws InvalidArgumentException  - invalid input
      */
@@ -3177,7 +3106,6 @@ public class CasIdmClient
      *            required non-null.
      * @return true if the external IDP user was successfully registered.
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             invalid input
@@ -3208,7 +3136,6 @@ public class CasIdmClient
      *            required non-null.
      * @return true if the external IDP user was successfully removed.
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             invalid input
@@ -3241,7 +3168,6 @@ public class CasIdmClient
     /**
      * @return the name of the group designated for external IDP user registration
      * @throws NotBoundException
-     * @throws RemoteException
      * @throws MalformedURLException
      */
     public String getExternalIDPRegistrationGroupName()
@@ -3264,7 +3190,6 @@ public class CasIdmClient
      *         operation handled gracefully.
      *         <p> Value matching is not case-sensitive.
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      * @throws InvalidArgumentException
      *             invalid input
@@ -3293,7 +3218,6 @@ public class CasIdmClient
     *         <p>
     *         Value matching is not case-sensitive.
     * @throws Exception
-    * @throws RemoteException
     * @throws IDMException
     * @throws InvalidArgumentException
     *            invalid input
@@ -3319,7 +3243,6 @@ public class CasIdmClient
     *           or empty.
     * @return set of strings for the suffixes or {@code null} if none registered
     * @throws Exception
-    * @throws RemoteException
     * @throws IDMException
     * @throws InvalidArgumentException
     *            invalid input
@@ -3338,7 +3261,6 @@ public class CasIdmClient
      *      If the {@link ErrorHandler} throws a {@link SAXException} or
      *      if a fatal error is found and the {@link ErrorHandler} returns
      *      normally.
-     *
      * @throws IOException
      *      If the validator is processing a
      *      {@link javax.xml.transform.sax.SAXSource} and the
@@ -3409,7 +3331,6 @@ public class CasIdmClient
     /**
      * @return Returns host name of the sso box. (IP as a fall-back)
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      */
     public String getSsoMachineHostName() throws Exception
@@ -3426,11 +3347,8 @@ public class CasIdmClient
      * @param getDCOnly
      *           indicates whether the caller is interested in Domain Controller accounts only.
      *           If <tt>false</tt>, retrieves Computer accounts as well.
-     *
      * @return list of VmHostData containing information about the joined systems.
-     *
      * @throws Exception
-     * @throws RemoteException
      * @throws IDMException
      */
     public Collection<VmHostData> getComputers(String tenantName, boolean getDCOnly) throws Exception
@@ -3553,7 +3471,6 @@ public class CasIdmClient
      * Operation for retrieving the tenant Client Authentication Policy
      *
      * @param tenantName
-     * @throws RemoteException
      * @throws IDMException
      */
     public AuthnPolicy getAuthnPolicy(String tenantName) throws Exception {
@@ -3565,7 +3482,6 @@ public class CasIdmClient
      * Operation for setting the tenant Client Authentication Policy
      *
      * @param tenantName
-     * @throws RemoteException
      * @throws IDMException
      */
     public void setAuthnPolicy(String tenantName, AuthnPolicy policy)
@@ -3619,150 +3535,20 @@ public class CasIdmClient
     }
 
     /**
-     * Retrieves the bound RMI client proxy.
-     * @return RMI interface object corresponding to the identity manager.
-     * @throws NotBoundException
-     * @throws MalformedURLException
-     * @throws RemoteException
+     * Retrieves fully configured IdentityManager.
      */
     private
     IIdentityManager
-    getService() throws NotBoundException,
-    MalformedURLException,
-    RemoteException
+    getService() throws Exception
     {
-
-        final ILoginManager loginManager = getLoginManager();
-
-        final String authHash = getAuthHash(loginManager);
-
-        ValidateUtil.validateNotEmpty(authHash, "Server Hash");
-
-        return loginManager.Login(authHash);
+        return identityManager;
     }
 
-    private
-    String
-    getAuthHash(ILoginManager loginManager) throws RemoteException
-    {
-        ValidateUtil.validateNotNull(loginManager, "Login Manager");
-
-        final Lock readLock = _authHashLock.readLock();
-
-        readLock.lock();
-
-        try
-        {
-            if (_authHash != null)
-            {
-                return _authHash;
-            }
-        }
-        finally
-        {
-            readLock.unlock();
-        }
-
-        final Lock writeLock = _authHashLock.writeLock();
-
-        writeLock.lock();
-
-        try
-        {
-            if (_authHash == null)
-            {
-                File challengeFile = loginManager.getSecretFile();
-                if (!challengeFile.exists() || challengeFile.isDirectory()) {
-                    throw new RuntimeException(
-                            String.format("Secret file: %s, does not exist to compute server hash", challengeFile.getCanonicalPath()));
-                }
-                _authHash = CommonUtil.Computesha256Hash(challengeFile);
-            }
-
-            return _authHash;
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(
-                    String.format("IOException encountered to compute server hash: %s", e.getMessage()));
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-            throw new RuntimeException(
-                    "Failed to find algorithm to compute server hash");
-        }
-        finally
-        {
-            writeLock.unlock();
-        }
-    }
-
-    private ILoginManager getLoginManager() throws  NotBoundException,
-                                                    MalformedURLException,
-                                                    RemoteException
-    {
-        String endpointURL = String.format(
-                                        "rmi://%s:%d/IdentityManager",
-                                        hostName,
-                                        Tenant.RMI_PORT);
-
-        boolean bNotBound = false;
-        boolean bRemoteException = false;
-
-        for (int i = 0; i < RETRY_COUNT; i++)
-        {
-            bNotBound = false;
-            bRemoteException = false;
-
-            try
-            {
-                return (ILoginManager) Naming.lookup(endpointURL);
-            }
-            catch (NotBoundException e)
-            {
-                bNotBound = true;
-            }
-            catch(RemoteException e)
-            {
-                bRemoteException = true;
-            }
-
-            try
-            {
-                Thread.sleep(RETRY_TIMEOUT_SECS * 1000);
-            }
-            catch (InterruptedException e)
-            {
-            }
-        }
-
-        if (bNotBound)
-        {
-            throw new NotBoundException(
-                        String.format(
-                                "Failed to bind to [%s] after [%d] attempts",
-                                endpointURL,
-                                RETRY_COUNT));
-        }
-        else if (bRemoteException)
-        {
-            throw new RemoteException(
-                    String.format(
-                            "Failed due to remote exception when looking up " +
-                                    "[%s] after [%d] attempts",
-                            endpointURL,
-                            RETRY_COUNT));
-        }
-        else
-        {
-            throw new RuntimeException(
-                    String.format(
-                            "Failed to contact [%s] after [%d] attempts",
-                            endpointURL,
-                            RETRY_COUNT));
-        }
-    }
-
+    /**
+     * Queries the current diagnostics to fetch a correlationID, If the correlationId is not present in received request, then a new one is generated.
+     *
+     * @return Context information about IDM service which includes correlationId for diagnostics purpose
+     */
     private IIdmServiceContext getServiceContext()
     {
         IIdmServiceContext serviceContext = null;

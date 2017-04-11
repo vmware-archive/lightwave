@@ -291,6 +291,12 @@ VmDirDecodeEntry(
         attr->numVals = j;
         attr->vals = bvPtr;
 
+        // If the attribute has no value, skip it
+        if (attr->numVals == 0)
+        {
+            bKeepAttr = FALSE;
+        }
+
         // Set vals array
         while (j)
         {

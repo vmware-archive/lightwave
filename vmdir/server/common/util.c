@@ -16,7 +16,7 @@
 
 #include "includes.h"
 
-#define VMDIR_FQDN_SEPARATOR '.'
+#define VMDIR_FQDN_SEPARATOR    '.'
 
 static
 DWORD
@@ -267,43 +267,41 @@ error:
 }
 
 void
-VmDirCurrentGeneralizedTime(
+VmDirCurrentGeneralizedTimeWithOffset(
     PSTR    pszTimeBuf,
-    int     iBufSize)
+    int     iBufSize,
+    DWORD dwOffset // in seconds
+    )
 {
-#ifndef _WIN32
     time_t      tNow = time(NULL);
     struct tm   tmpTm = {0};
+    struct tm   *ptm = NULL;
 
-    assert (pszTimeBuf);
+    tNow -= dwOffset;
 
-    gmtime_r(&tNow, &tmpTm);
-
-    snprintf(pszTimeBuf, iBufSize, "%04d%02d%02d%02d%02d%02d.0Z",
-            tmpTm.tm_year + 1900,
-            tmpTm.tm_mon + 1,
-            tmpTm.tm_mday,
-            tmpTm.tm_hour,
-            tmpTm.tm_min,
-            tmpTm.tm_sec);
-
-    return;
+#ifdef _WIN32
+    ptm = gmtime(&tNow);
 #else
-    SYSTEMTIME sysTime = {0};
-
-    GetSystemTime( &sysTime );
-
-    _snprintf_s(
-        pszTimeBuf,
-        iBufSize,
-        iBufSize-1,
-        "%04d%02d%02d%02d%02d%02d.0Z",
-        sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour,
-        sysTime.wMinute, sysTime.wSecond
-        );
-
+    gmtime_r(&tNow, &tmpTm);
+    ptm = &tmpTm;
 #endif
 
+    VmDirStringPrintFA(pszTimeBuf, iBufSize, "%04d%02d%02d%02d%02d%02d.0Z",
+            ptm->tm_year + 1900,
+            ptm->tm_mon + 1,
+            ptm->tm_mday,
+            ptm->tm_hour,
+            ptm->tm_min,
+            ptm->tm_sec);
+}
+
+void
+VmDirCurrentGeneralizedTime(
+    PSTR    pszTimeBuf,
+    int     iBufSize
+    )
+{
+    VmDirCurrentGeneralizedTimeWithOffset(pszTimeBuf, iBufSize, 0);
 }
 
 VOID
@@ -408,7 +406,7 @@ VmDirSrvCreateDN(
     DWORD dwError = 0;
     PSTR  pszContainerDN = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszContainerDN, "cn=%s,%s", pszContainerName, pszDomainDN);
+    dwError = VmDirAllocateStringPrintf(&pszContainerDN, "cn=%s,%s", pszContainerName, pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszContainerDN = pszContainerDN;
@@ -541,6 +539,7 @@ VmDirSrvCreateContainerWithEID(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
     PCSTR            pszContainerName,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc, // OPTIONAL
     ENTRYID          eID
     )
 {
@@ -555,6 +554,12 @@ VmDirSrvCreateContainerWithEID(
 
     dwError = VmDirSimpleEntryCreate(pSchemaCtx, ppszAttributes, (PSTR)pszContainerDN, eID);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pSecDesc != NULL)
+    {
+        dwError = VmDirSetSecurityDescriptorForDn(pszContainerDN, pSecDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     return dwError;
@@ -573,7 +578,7 @@ VmDirSrvCreateContainer(
 {
     DWORD dwError = 0;
 
-    dwError = VmDirSrvCreateContainerWithEID(pSchemaCtx, pszContainerDN, pszContainerName, 0);
+    dwError = VmDirSrvCreateContainerWithEID(pSchemaCtx, pszContainerDN, pszContainerName, NULL, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
@@ -1146,8 +1151,9 @@ VmDirSrvGetDomainFunctionalLevel(
 
     if ( entryArray.iSize == 1)
     {
-        pAttrDomainLevel = VmDirEntryFindAttribute(ATTR_DOMAIN_FUNCTIONAL_LEVEL,
-&entryArray.pEntry[0]);
+        pAttrDomainLevel = VmDirEntryFindAttribute(
+                                ATTR_DOMAIN_FUNCTIONAL_LEVEL,
+                                &entryArray.pEntry[0]);
         if (!pAttrDomainLevel)
         {
             dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
@@ -1176,4 +1182,99 @@ cleanup:
 
 error:
     goto cleanup;
+}
+
+PCSTR
+VmDirLdapModOpTypeToName(
+    VDIR_LDAP_MOD_OP modOp
+    )
+{
+    struct
+    {
+        VDIR_LDAP_MOD_OP  modOp;
+        PCSTR             pszOpName;
+    }
+    static modTypeToNameTable[] =
+    {
+        { MOD_OP_ADD,    "add" },
+        { MOD_OP_DELETE, "del" },
+        { MOD_OP_REPLACE,"rep" },
+    };
+
+    // make sure VDIR_MOD_OPERATION_TYPE enum starts with 0
+    return modOp >= VMDIR_ARRAY_SIZE(modTypeToNameTable) ?
+             VMDIR_PCSTR_UNKNOWN :  modTypeToNameTable[modOp].pszOpName;
+}
+
+PCSTR
+VmDirLdapReqCodeToName(
+    ber_tag_t reqCode
+    )
+{
+    struct
+    {
+        ber_tag_t   reqCode;
+        PCSTR       pszOpName;
+    }
+    static regCodeToNameTable[] =
+    {
+        {LDAP_REQ_BIND,       "Bind"},
+        {LDAP_REQ_UNBIND,     "Unbind"},
+        {LDAP_REQ_SEARCH,     "Search"},
+        {LDAP_REQ_MODIFY,     "Modify"},
+        {LDAP_REQ_ADD,        "Add"},
+        {LDAP_REQ_DELETE,     "Delete"},
+        {LDAP_REQ_MODDN,      "Moddn"},
+        {LDAP_REQ_MODRDN,     "Modrdn"},
+        {LDAP_REQ_RENAME,     "Rename"},
+        {LDAP_REQ_COMPARE,    "Compare"},
+        {LDAP_REQ_ABANDON,    "Abandon"},
+        {LDAP_REQ_EXTENDED,   "Extended"},
+    };
+
+    PCSTR pszName = VMDIR_PCSTR_UNKNOWN;
+    int i=0;
+
+    for (; i< VMDIR_ARRAY_SIZE(regCodeToNameTable); i++)
+    {
+        if (reqCode == regCodeToNameTable[i].reqCode)
+        {
+            pszName = regCodeToNameTable[i].pszOpName;
+            break;
+        }
+    }
+
+    return pszName;
+}
+
+PCSTR
+VmDirOperationTypeToName(
+    VDIR_OPERATION_TYPE opType
+    )
+{
+    struct
+    {
+        VDIR_OPERATION_TYPE opType;
+        PCSTR               pszOpName;
+    }
+    static operationTypeToNameTable[] =
+    {
+        {VDIR_OPERATION_TYPE_EXTERNAL,  "Ext"},
+        {VDIR_OPERATION_TYPE_INTERNAL,  "Int"},
+        {VDIR_OPERATION_TYPE_REPL,      "Rep"},
+    };
+
+    PCSTR pszName = VMDIR_PCSTR_UNKNOWN;
+    int i=0;
+
+    for (; i< VMDIR_ARRAY_SIZE(operationTypeToNameTable); i++)
+    {
+        if (opType == operationTypeToNameTable[i].opType)
+        {
+            pszName = operationTypeToNameTable[i].pszOpName;
+            break;
+        }
+    }
+
+    return pszName;
 }

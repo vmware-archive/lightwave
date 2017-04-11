@@ -1,172 +1,152 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>com.vmware.identity</groupId>
-    <artifactId>openidconnect-sample-rp</artifactId>
-    <version>6.6.1</version>
-    <packaging>war</packaging>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <properties>
-        <java.version>1.7</java.version>
-        <vmware.version>6.6.1</vmware.version>
-        <javax.servlet-api.version>3.0.1</javax.servlet-api.version>
-        <bouncycastle.version>1.47</bouncycastle.version>
-        <springframework.version>4.0.6.RELEASE</springframework.version>
-        <jstl.version>1.2</jstl.version>
-        <jackson.annotations.version>2.3.2</jackson.annotations.version>
-        <jackson.databind.version>2.3.2</jackson.databind.version>
-        <jackson.core.version>2.3.2</jackson.core.version>
-        <jax.ws.rs.version>2.0.1</jax.ws.rs.version>
-        <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
-    </properties>
+  <modelVersion>4.0.0</modelVersion>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>copy-war-to-output</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>war</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${outputDirectory}</outputDirectory>
-                            <warName>${artifactId}</warName>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+  <parent>
+    <groupId>com.vmware.identity.oidc</groupId>
+    <artifactId>vmware-identity-oidc</artifactId>
+    <version>1.2.0-SNAPSHOT</version>
+  </parent>
 
-    <distributionManagement>
-        <repository>
-            <id>lightwave</id>
-            <name>lightwave</name>
-            <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
-        </repository>
-    </distributionManagement>
+  <artifactId>openidconnect-sample-rp</artifactId>
+  <packaging>war</packaging>
+  <name>OpenID Connect - Sample Relying Party</name>
 
-    <dependencies>
-        <!-- VMware Dependencies -->
-        <dependency>
-            <groupId>com.vmware.identity</groupId>
-            <artifactId>openidconnect-client-lib</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>${maven.war.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>copy-war-to-output</id>
+            <phase>package</phase>
+            <goals>
+              <goal>war</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${outputDirectory}</outputDirectory>
+              <warName>${project.artifactId}</warName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
-        <dependency>
-            <groupId>com.vmware.identity.rest.core</groupId>
-            <artifactId>vmware-identity-rest-core-client</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+  <dependencies>
+    <!-- VMware Dependencies -->
+    <dependency>
+      <groupId>com.vmware.identity.oidc</groupId>
+      <artifactId>openidconnect-client-lib</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>com.vmware.identity.rest.afd</groupId>
-            <artifactId>vmware-identity-rest-afd-client</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.core</groupId>
+      <artifactId>vmware-identity-rest-core-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>com.vmware.identity.rest.idm</groupId>
-            <artifactId>vmware-identity-rest-idm-client</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.vmware.identity.rest.idm</groupId>
-            <artifactId>vmware-identity-rest-idm-common</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.afd</groupId>
+      <artifactId>vmware-identity-rest-afd-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>com.vmware.identity.rest.core</groupId>
-            <artifactId>vmware-identity-rest-core-common</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.idm</groupId>
+      <artifactId>vmware-identity-rest-idm-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>com.vmware.vmdir.rest</groupId>
-            <artifactId>vmware-directory-rest-client</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.idm</groupId>
+      <artifactId>vmware-identity-rest-idm-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>com.vmware.vmdir.rest</groupId>
-            <artifactId>vmware-directory-rest-common</artifactId>
-            <version>${vmware.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.core</groupId>
+      <artifactId>vmware-identity-rest-core-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <!-- Compile Dependencies -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.vmdir.rest</groupId>
+      <artifactId>vmware-directory-rest-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${springframework.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>com.vmware.vmdir.rest</groupId>
+      <artifactId>vmware-directory-rest-common</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
-        <!-- Provided Dependencies -->
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${javax.servlet-api.version}</version>
-            <scope>provided</scope>
-        </dependency>
+    <!-- Compile Dependencies -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
 
-        <!-- Runtime Dependencies -->
-        <dependency>
-            <groupId>javax.servlet.jsp.jstl</groupId>
-            <artifactId>jstl-api</artifactId>
-            <version>${jstl.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>${spring.release.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>org.glassfish.web</groupId>
-            <artifactId>jstl-impl</artifactId>
-            <version>${jstl.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+    <!-- Provided Dependencies -->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>${javax.servlet-api.version}</version>
+      <scope>provided</scope>
+    </dependency>
 
-        <dependency>
-           <groupId>javax.ws.rs</groupId>
-	   <artifactId>javax.ws.rs-api</artifactId>
-	   <version>${jax.ws.rs.version}</version>
-       </dependency>
+    <!-- Runtime Dependencies -->
+    <dependency>
+      <groupId>javax.servlet.jsp.jstl</groupId>
+      <artifactId>jstl-api</artifactId>
+      <version>${jstl.version}</version>
+      <scope>runtime</scope>
+    </dependency>
 
-       <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
-	  <artifactId>jackson-annotations</artifactId>
-	  <version>${jackson.annotations.version}</version>
-      </dependency>
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jstl-impl</artifactId>
+      <version>${jstl.version}</version>
+      <scope>runtime</scope>
+    </dependency>
 
-      <dependency>
-         <groupId>com.fasterxml.jackson.core</groupId>
-	 <artifactId>jackson-core</artifactId>
-	 <version>${jackson.core.version}</version>
-      </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>javax.ws.rs-api</artifactId>
+      <version>${javax.ws.version}</version>
+    </dependency>
 
-      <dependency>
-	 <groupId>com.fasterxml.jackson.core</groupId>
-	 <artifactId>jackson-databind</artifactId>
-	 <version>${jackson.databind.version}</version>
-      </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
 
-    </dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <rootDirectory>${basedir}/../..</rootDirectory>
+  </properties>
 </project>
