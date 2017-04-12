@@ -1446,7 +1446,7 @@ VmDnsReadOffsetStringFromBuffer(
     }
 
     dwError = VmDnsAllocateMemory(
-                        VMDNS_NAME_LENGTH_MAX + 1,
+                        VMDNS_NAME_LENGTH_MAX + 2,
                         (PVOID *)&pszTempString
                         );
     BAIL_ON_VMDNS_ERROR(dwError);

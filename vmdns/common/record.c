@@ -1027,7 +1027,7 @@ VmDnsReadDomainNameFromBuffer(
     }
 
     dwError = VmDnsAllocateMemory(
-                        VMDNS_NAME_LENGTH_MAX + 1,
+                        VMDNS_NAME_LENGTH_MAX + 2,
                         (PVOID *)&pszTempString
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -1062,15 +1062,10 @@ VmDnsReadDomainNameFromBuffer(
 
             if (!bEndOfString)
             {
-                // check if this a valid IPAddress
-                if (!VmDnsCheckIfIPV4AddressA(pszTempString)
-                    && !VmDnsCheckIfIPV6AddressA(pszTempString))
+                if (pszTempStringCursor[dwLabelLength - 1] != '.')
                 {
-                    if (pszTempStringCursor[dwLabelLength - 1] != '.')
-                    {
-                        pszTempStringCursor[dwLabelLength]='.';
-                        dwLabelLength++;
-                    }
+                    pszTempStringCursor[dwLabelLength]='.';
+                    dwLabelLength++;
                 }
            }
         }
