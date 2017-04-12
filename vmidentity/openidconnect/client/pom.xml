@@ -12,6 +12,21 @@
   <packaging>jar</packaging>
   <name>OpenID Connect - Client</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven.failsafe.plugin.version}</version>
+        <configuration>
+          <excludes>
+            <exclude>**/OIDCClientGssIT.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <!-- VMware Dependencies -->
     <dependency>
