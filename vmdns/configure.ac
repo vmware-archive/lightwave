@@ -45,51 +45,6 @@ AC_ARG_ENABLE([debug],
         fi
     ])
 
-MODACL_CHECK_ENABLED="yes"
-AC_ARG_ENABLE([modacl],
-    [AC_HELP_STRING([--enable-modacl], [enable acl check on modify (default: enabled)])],
-    [
-        if test x"$enableval" = x"no"
-        then
-            MODACL_CHECK_ENABLED="no"
-        fi
-    ])
-
-if test x"$MODACL_CHECK_ENABLED" = x"no"
-then
-AC_DEFINE_UNQUOTED(MODACL_CHECK_DISABLED, "1", [ Disable ACL checks on modify ])
-fi
-
-DELACL_CHECK_ENABLED="yes"
-AC_ARG_ENABLE([delacl],
-    [AC_HELP_STRING([--enable-delacl], [enable acl check on delete (default: enabled)])],
-    [
-        if test x"$enableval" = x"no"
-        then
-            DELACL_CHECK_ENABLED="no"
-        fi
-    ])
-
-if test x"$DELACL_CHECK_ENABLED" = x"no"
-then
-AC_DEFINE_UNQUOTED(DELACL_CHECK_DISABLED, "1", [ Disable ACL checks on delete ])
-fi
-
-SEAACL_CHECK_ENABLED="yes"
-AC_ARG_ENABLE([seaacl],
-    [AC_HELP_STRING([--enable-seaacl], [enable acl check on search (default: enabled)])],
-    [
-        if test x"$enableval" = x"no"
-        then
-            SEAACL_CHECK_ENABLED="no"
-        fi
-    ])
-
-if test x"$SEAACL_CHECK_ENABLED" = x"no"
-then
-AC_DEFINE_UNQUOTED(SEAACL_CHECK_DISABLED, "1", [ Disable ACL checks on search ])
-fi
-
 # openssl component
 case "${host_os}:${host_cpu}" in
     linux*:x86_64)
