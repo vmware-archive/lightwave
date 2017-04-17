@@ -626,6 +626,8 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_MAX_LDAP_URI_LEN         256 /* e.g. ldap://192.168.122.65 */
 #define VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED       "0"
 
+#define VMDIR_URL_PATH_DELIMITER_STR    "/"
+
 #define VMDIR_UPN_REALM_SEPARATOR       '@'
 
 #define VMDIR_KDC_RANDOM_PWD_LEN        20

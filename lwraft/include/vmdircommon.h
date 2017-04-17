@@ -1670,6 +1670,13 @@ VmDirUPNToNameAndDomain(
     PSTR*   ppszDomain
     );
 
+DWORD
+VmDirDNToRDNList(
+    PCSTR               pszDN,
+    int                 iNotypes,
+    PVMDIR_STRING_LIST* ppRDNStrList
+    );
+
 //IPC
 //networkutil.c
 DWORD

@@ -347,6 +347,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_datadir}/config/lwraft.reg
 %{_datadir}/config/lwraftschema.ldif
 %{_datadir}/config/lwraftd-syslog-ng.conf
+%{_datadir}/config/lwraft-rest.json
 
 %files client
 %defattr(-,root,root)

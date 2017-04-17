@@ -50,8 +50,8 @@ VmDirRESTAuthToken(
 // decode.c
 DWORD
 VmDirRESTDecodeEntry(
-    json_t*         pjInput,
-    PVDIR_ENTRY*    ppEntry
+    PVDIR_REST_OPERATION    pRestOp,
+    PVDIR_ENTRY*            ppEntry
     );
 
 DWORD
@@ -59,6 +59,24 @@ VmDirRESTDecodeMods(
     json_t*             pjInput,
     PVDIR_MODIFICATION* ppMods,
     DWORD*              pdwNumMods
+    );
+
+DWORD
+VmDirRESTGetDNFromObjectEndpoint(
+    json_t*         pjEntry,
+    PSTR*           ppszOutDN
+    );
+
+DWORD
+VmDirRESTObjPathToDN(
+    PCSTR   pszObjPath,
+    PSTR*   ppOutDN
+    );
+
+DWORD
+VmDirRESTEndpointToDN(
+    PVDIR_REST_OPERATION    pRestOp,
+    PSTR*                   ppOutDN
     );
 
 // encode.c
@@ -70,16 +88,18 @@ VmDirRESTEncodeAttribute(
 
 DWORD
 VmDirRESTEncodeEntry(
-    PVDIR_ENTRY     pEntry,
-    PVDIR_BERVALUE  pbvAttrs,
-    json_t**        ppjOutput
+    PVDIR_REST_OPERATION    pRestOp,
+    PVDIR_ENTRY             pEntry,
+    PVDIR_BERVALUE          pbvAttrs,
+    json_t**                ppjOutput
     );
 
 DWORD
 VmDirRESTEncodeEntryArray(
-    PVDIR_ENTRY_ARRAY   pEntryArray,
-    PVDIR_BERVALUE      pbvAttrs,
-    json_t**            ppjOutput
+    PVDIR_REST_OPERATION    pRestOp,
+    PVDIR_ENTRY_ARRAY       pEntryArray,
+    PVDIR_BERVALUE          pbvAttrs,
+    json_t**                ppjOutput
     );
 
 // httperror.c
@@ -208,6 +228,11 @@ VmDirRESTGetEndpointRscType(
 
 PVDIR_REST_RESOURCE
 VmDirRESTGetResource(
+    VDIR_REST_RESOURCE_TYPE rscType
+    );
+
+PCSTR
+VmDirRESTGetRscEndpoint(
     VDIR_REST_RESOURCE_TYPE rscType
     );
 

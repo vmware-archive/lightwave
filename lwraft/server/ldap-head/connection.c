@@ -772,7 +772,7 @@ ProcessAConnection(
          case LDAP_REQ_COMPARE:
          case LDAP_REQ_ABANDON:
          case LDAP_REQ_EXTENDED:
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: Operation is not yet implemented.." );
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: %d Operation is not yet implemented..", tag);
             pOperation->ldapResult.errCode = retVal = LDAP_UNWILLING_TO_PERFORM;
             // ignore following VmDirAllocateStringA error.
             VmDirAllocateStringA( "Operation is not yet implemented.", &pOperation->ldapResult.pszErrMsg);

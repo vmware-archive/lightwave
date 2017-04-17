@@ -36,6 +36,7 @@ VmDirRESTServerInit(
     MODULE_REG_MAP stRegMap[] =
     {
         {"ldap", VmDirRESTGetLdapModule},
+        {"lwraftobject", VmDirRESTGetLdapModule},
         {NULL, NULL}
     };
 
@@ -69,6 +70,7 @@ VmDirRESTServerInit(
 //    dwError = OidcClientGlobalInit();
 //    BAIL_ON_VMCA_ERROR(dwError);
 
+// TODO should we call this only if promoted?  or we need to rest head to return unwilling to perform in unpromoted state.
     dwError = VmRESTStart();
     BAIL_ON_VMDIR_ERROR(dwError);
 

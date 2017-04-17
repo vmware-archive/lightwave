@@ -3571,3 +3571,58 @@ VmDirCompareVersion(
     return 0;
 }
 
+/*
+ * convert DN to a list of RDN.
+ *
+ * say dc=lwraft,dc=local
+ * if iNotypes == 0, {"dc=lwraft", "dc=local"} is returned;
+ * otherwise {"lwraft", "local"} is returned.
+ */
+DWORD
+VmDirDNToRDNList(
+    PCSTR               pszDN,
+    int                 iNotypes,
+    PVMDIR_STRING_LIST* ppRDNStrList
+    )
+{
+    DWORD               dwError = 0;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+    PSTR*               ppRDN = NULL;
+    PSTR*               ppTmp = NULL;
+
+    if (!pszDN || !ppRDNStrList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    ppRDN = ldap_explode_dn(pszDN, iNotypes);
+    if (!ppRDN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_DN);
+    }
+
+    dwError = VmDirStringListInitialize(&pStrList, 10);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (ppTmp = ppRDN; *ppTmp; ppTmp++)
+    {
+        dwError = VmDirStringListAddStrClone(*ppTmp, pStrList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppRDNStrList = pStrList;
+    pStrList = NULL;
+
+cleanup:
+    if (ppRDN)
+    {
+        ldap_value_free(ppRDN);
+    }
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pStrList);
+
+    goto cleanup;
+}

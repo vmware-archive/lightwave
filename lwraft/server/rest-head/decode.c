@@ -14,24 +14,30 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VmDirRESTGetDNFromPayload(
+    json_t*         pjEntry,
+    PSTR*           ppszOutDN
+    );
+
 DWORD
 VmDirRESTDecodeEntry(
-    json_t*         pjInput,
-    PVDIR_ENTRY*    ppEntry
+    PVDIR_REST_OPERATION    pRestOp,
+    PVDIR_ENTRY*            ppEntry
     )
 {
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
     json_t* pjEntry = NULL;
-    json_t* pjDN = NULL;
     json_t* pjAttrs = NULL;
     json_t* pjAttr = NULL;
     json_t* pjType = NULL;
     json_t* pjVals = NULL;
     json_t* pjVal = NULL;
-    PCSTR   pszDN = NULL;
     PCSTR   pszType = NULL;
     PCSTR   pszVal = NULL;
+    PSTR    pszLocalDN = NULL;
     PVDIR_ENTRY     pEntry = NULL;
     PVDIR_ATTRIBUTE pAttr = NULL;
 
@@ -41,7 +47,7 @@ VmDirRESTDecodeEntry(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pjEntry = pjInput;
+    pjEntry = pRestOp->pjInput;
     if (!pjEntry || !json_is_object(pjEntry))
     {
         dwError = VMDIR_ERROR_INVALID_REQUEST;
@@ -53,15 +59,22 @@ VmDirRESTDecodeEntry(
 
     pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
 
-    pjDN = json_object_get(pjEntry, "dn");
-    if (!pjDN || !json_is_string(pjDN))
+    switch (pRestOp->pResource->rscType)
     {
-        dwError = VMDIR_ERROR_INVALID_REQUEST;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    pszDN = json_string_value(pjDN);
+        case VDIR_REST_RSC_LDAP:
+                dwError = _VmDirRESTGetDNFromPayload(pjEntry, &pszLocalDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
 
-    dwError = VmDirStringToBervalContent(pszDN, &pEntry->dn);
+        case VDIR_REST_RSC_OBJECT:
+                dwError = VmDirRESTEndpointToDN(pRestOp, &pszLocalDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        default:  BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
+
+    dwError = VmDirStringToBervalContent(pszLocalDN, &pEntry->dn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pjAttrs = json_object_get(pjEntry, "attributes");
@@ -129,6 +142,8 @@ VmDirRESTDecodeEntry(
     *ppEntry = pEntry;
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalDN);
+
     return dwError;
 
 error:
@@ -282,5 +297,142 @@ error:
         VmDirModificationFree(pMod);
         pMod = pNext;
     }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirRESTGetDNFromPayload(
+    json_t*         pjEntry,
+    PSTR*           ppszOutDN
+    )
+{
+    DWORD   dwError=0;
+    json_t* pjDN = NULL;
+    PCSTR   pszDN = NULL;
+    PSTR    pszLocalDN = NULL;
+    PCSTR   pszFieldName = VMDIR_REST_DN_STR;
+
+    pjDN = json_object_get(pjEntry, pszFieldName);
+    if (!pjDN || !json_is_string(pjDN))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
+    pszDN = json_string_value(pjDN);
+
+    if (IsNullOrEmptyString(pszDN))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
+
+    dwError = VmDirAllocateStringA(pszDN, &pszLocalDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszOutDN = pszLocalDN;
+    pszLocalDN = NULL;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszLocalDN);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTEndpointToDN(
+    PVDIR_REST_OPERATION    pRestOp,
+    PSTR*                   ppOutDN
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR   pszObjectPath = NULL;
+    PSTR    pszLocalDN = NULL;
+
+    pszObjectPath = VmDirRESTGetRscEndpoint(pRestOp->pResource->rscType);
+    assert(pszObjectPath);
+
+    dwError = memcmp(pszObjectPath, pRestOp->pszEndpoint, strlen(pszObjectPath));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTObjPathToDN(pRestOp->pszEndpoint+strlen(pszObjectPath)+1, &pszLocalDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppOutDN = pszLocalDN;
+    pszLocalDN = NULL;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalDN);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTObjPathToDN(
+    PCSTR   pszObjPath,
+    PSTR*   ppszOutDN
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalDN = NULL;
+    PVMDIR_STRING_LIST  pRDNList = NULL;
+    size_t  dwDNLen = 0;
+    size_t  dwIdx = 0;
+    DWORD   dwCnt = 0;
+
+    dwError = VmDirStringToTokenList(pszObjPath, VMDIR_URL_PATH_DELIMITER_STR, &pRDNList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // all RDNs are "cn=XXX,"
+    // So NumRDN * (4-1) + 1  system domain DN
+    dwDNLen = VmDirStringLenA(pszObjPath) + (pRDNList->dwCount * 3) + 1 +
+              (VmDirStringLenA(gVmdirServerGlobals.systemDomainDN.lberbv_val));
+
+    dwError = VmDirAllocateMemory(dwDNLen, (PVOID*)&pszLocalDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = pRDNList->dwCount; dwCnt > 0; dwCnt--)
+    {
+        size_t dwRDNLen = 0;
+
+        if (pRDNList->pStringList[dwCnt-1][0] == '\0')
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+        }
+
+        pszLocalDN[dwIdx++] = 'c';
+        pszLocalDN[dwIdx++] = 'n';
+        pszLocalDN[dwIdx++] = '=';
+
+        dwRDNLen = VmDirStringLenA(pRDNList->pStringList[dwCnt-1]);
+        dwError = VmDirCopyMemory( pszLocalDN+dwIdx, dwDNLen-dwIdx, pRDNList->pStringList[dwCnt-1], dwRDNLen);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        dwIdx += dwRDNLen;
+
+        pszLocalDN[dwIdx++] = ',';
+    }
+
+    dwError = VmDirCopyMemory(pszLocalDN+dwIdx, dwDNLen-dwIdx,
+                    (VOID*)gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VmDirStringLenA(gVmdirServerGlobals.systemDomainDN.lberbv_val));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszOutDN = pszLocalDN; pszLocalDN = NULL;
+
+cleanup:
+    VmDirStringListFree(pRDNList);
+
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalDN);
+
     goto cleanup;
 }
