@@ -670,6 +670,7 @@ AC_CONFIG_FILES([Makefile
                  tools/lwraftpromo/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
+                 tools/vdcschema/Makefile
                  tools/test/Makefile
                  tools/test/circularbuffer/Makefile
                  tools/test/dequetest/Makefile
