@@ -1374,6 +1374,14 @@ _VmDirConsumePartner(
         {
             if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
             {
+                if (iEntriesOutOfSequence == 0)
+                {   // no parent/child out of sequence so far, should update UTDVector before existing.
+                    // this avoids create->modify(s) scenario lost modify(s) if cycle force ended by service shutdown.
+                    // i.e. next cycle would receive SYNC_STATE(2)/modify instead of SYNC_STATE(1)/create.
+                    goto replcycledone;
+                }
+
+                // this should be very rare after LW1.0/PSC6.6 where we switch to db copy for first replication cycle.
                 retVal = LDAP_CANCELLED;
                 goto cleanup;
             }
@@ -1458,6 +1466,7 @@ _VmDirConsumePartner(
 
     } while ( bReTrialDesired );
 
+replcycledone:
     if (retVal == LDAP_SUCCESS)
     {
         // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.

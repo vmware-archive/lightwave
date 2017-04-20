@@ -797,7 +797,10 @@ _VmDirIsBenignReplConflict(
     CHAR    excludeAttrs[] = {ATTR_USN_CHANGED};  // supplier always send USNChanged, but it has a local context.
     int     i = 0;
 
-    assert(pConsumerEntry->eId);
+    if (pConsumerEntry->eId == 0) // don't expect this, but pass through if no eid.
+    {
+        goto cleanup;
+    }
 
     // query consumer entry if needed
     if (!pConsumerEntry->dn.lberbv_val)
