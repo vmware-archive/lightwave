@@ -391,8 +391,8 @@ VmDirRESTObjPathToDN(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // all RDNs are "cn=XXX,"
-    // So NumRDN * (4-1) + 1  system domain DN
-    dwDNLen = VmDirStringLenA(pszObjPath) + (pRDNList->dwCount * 3) + 1 +
+    // So NumRDN * (4) + 1  system domain DN
+    dwDNLen = VmDirStringLenA(pszObjPath) + (pRDNList->dwCount * 4) + 1 +
               (VmDirStringLenA(gVmdirServerGlobals.systemDomainDN.lberbv_val));
 
     dwError = VmDirAllocateMemory(dwDNLen, (PVOID*)&pszLocalDN);
