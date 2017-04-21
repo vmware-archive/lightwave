@@ -422,6 +422,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_lib64dir}/libgssapi_unix.a
 %{_lib64dir}/libgssapi_unix.la
 
+%exclude %{_bindir}/vdcvmdirpromo
 %exclude %{_bindir}/vmdirclienttest
 %exclude %{_lib64dir}/libcommonunittests.a
 %exclude %{_lib64dir}/libcommonunittests.la
