@@ -36,8 +36,6 @@ extern int VmDirEntryAttrValueNormalize(PVDIR_ENTRY, BOOLEAN);
 extern DWORD VmDirSyncCounterReset(PVMDIR_SYNCHRONIZE_COUNTER pSyncCounter, int syncValue);
 extern DWORD VmDirConditionBroadcast(PVMDIR_COND pCondition);
 
-int VmDirRaftCommitHook(VOID);
-
 static DWORD _VmDirAppendEntriesRpc(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxySelf, int);
 static DWORD _VmDirRequestVoteRpc(PVMDIR_SERVER_CONTEXT *pServer, PVMDIR_PEER_PROXY pProxySelf);
 static DWORD _VmDirReplicationThrFun(PVOID);
@@ -158,7 +156,7 @@ _VmDirRaftVoteSchdThread()
 
     gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
     //Set initial election timeout higher to avoid triggering new election due to slow startup.
-    UINT64 waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS + WAIT_CONSENSUS_TIMEOUT_MS;
+    UINT64 waitTime = (gVmdirGlobals.dwRaftElectionTimeoutMS << 1) + 5000;
     BOOLEAN bLock = FALSE;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: started.");
@@ -167,8 +165,6 @@ _VmDirRaftVoteSchdThread()
     {
         UINT64 now = {0};
         int term = 0;
-        int waitConsensus = WAIT_CONSENSUS_TIMEOUT_MS;
-        BOOLEAN bWaitTimeout = FALSE;
 
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
         {
@@ -228,7 +224,7 @@ startVote:
             if (_VmDirPeersIdleInLock() < (gRaftState.clusterSize/2))
             {
                  //Wait gPeersReadyCond only if not enough peers are Ready
-                 dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, WAIT_PEERS_READY_MS);
+                 dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, gVmdirGlobals.dwRaftPingIntervalMS);
             }
         } while (dwError == ETIMEDOUT);
 
@@ -266,7 +262,6 @@ startVote:
         gRaftState.voteDeniedCnt = 0;
         gRaftState.voteConsenusuTerm = term;
         gRaftState.cmd = ExecReqestVote;
-        bWaitTimeout = FALSE;
 
         //Now invoke paralle RPC calls to all (available) peers
         VmDirConditionBroadcast(gRaftRequestPendingCond);
@@ -275,13 +270,13 @@ startVote:
                        gRaftState.role, gRaftState.currentTerm);
 
         //Wait for (majority of) peer threads to complete their RRC calls.
-        VmDirConditionTimedWait(gGotVoteResultCond, gRaftStateMutex, waitConsensus);
+        VmDirConditionTimedWait(gGotVoteResultCond, gRaftStateMutex, gVmdirGlobals.dwRaftElectionTimeoutMS);
         gRaftState.cmd = ExecNone;
 
         //Now evalute vote outcome
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-            "_VmDirRaftVoteSchdThread: evalute vote outcome: term %d role %d timeout %s voteConsensusTerm %d voteConsusCnt %d",
-            gRaftState.currentTerm, gRaftState.role, bWaitTimeout?"true":"false", gRaftState.voteConsenusuTerm, gRaftState.voteConsensusCnt);
+            "_VmDirRaftVoteSchdThread: evalute vote outcome: term %d role %d voteConsensusTerm %d voteConsusCnt %d",
+            gRaftState.currentTerm, gRaftState.role, gRaftState.voteConsenusuTerm, gRaftState.voteConsensusCnt);
 
         if (gRaftState.role == VDIR_RAFT_ROLE_CANDIDATE)
         {
@@ -308,8 +303,8 @@ startVote:
                continue;
            } else
            {
-                //Stay in candidate - split vote; wait at least WAIT_REELECTION_MIN_MS
-                waitTime = (UINT64)(rand()%(gVmdirGlobals.dwRaftPingIntervalMS>>1) + WAIT_REELECTION_MIN_MS);
+                //Stay in candidate - split vote; wait randomly with a mean value dwRaftPingIntervalMS
+                waitTime = (UINT64)(rand()%(gVmdirGlobals.dwRaftPingIntervalMS>>1));
            }
         } else
         {
@@ -781,14 +776,14 @@ error:
     if (VmDirdState() != VMDIRD_STATE_SHUTDOWN)
     {
         VmDirdStateSet( VMDIRD_STATE_FAILURE );
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "_VmDirReplicationThrFun: Replication has failed with unrecoverable error %d", dwError);
     }
 
     if (pRaftVoteSchdThreadInfo)
     {
          VmDirSrvThrFree(pRaftVoteSchdThreadInfo);
     }
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "_VmDirReplicationThrFun: Replication has failed with unrecoverable error %d", dwError);
     goto cleanup;
 }
 
@@ -1575,12 +1570,29 @@ error:
     goto cleanup;
 }
 
-//Only one thread can enter VmDirRaftCommitHook - it is serialzied by the MDB write transaction mutex.
-int VmDirRaftCommitHook()
+/*  The following three callbacks are (conditionally, sequentially) invoked by MDB txn_commit to
+ *  ensure protocol safety due to a modification from the original Raft algorithm, i.e. it tries
+ *  to commit LDAP operation, log entry and the persistent state changes in the same MDB transaction at
+ *  Raft leader instead of persisting the Raft log at the leader first before obtaining consensus from peers.
+ *
+ *  This callback is invoted first by MDB txn_commit when the LDAP transaction is ready to commit after
+ *  the log entry is created. When this function returns 0 (after consensus has reached or a standalone server),
+ *  txn_commit will proceed with its commit process. Or this function may return non-zero to explicitly abort
+ *  the local transaction which is only allowed when the server is no longer a Raft leader.
+ *
+ *  MDB callback VmDirRaftPostCommit would be invoked for the same transaction when this function return 0, and
+ *  after the transaction has successfully committed (peristed) locally, which would update commitIndex/lastApplied.
+ *
+ *  In a rare case (when disk is full), the current transaction is implicitly aborted within txn_commit, and
+ *  MDB callback VmDirRaftCommitFail will be invoked (though this function returned 0) which would put
+ *  the server to Follower role to avoid the same log index/term being reused.
+ *
+ *  See the functional spec section 3.3.5.2 for detail.
+ */
+int VmDirRaftPrepareCommit(unsigned long long *pLogIndex, unsigned int *pLogTerm)
 {
     int dwError = 0;
     BOOLEAN bLock = FALSE;
-    int retryCnt = 0;
 
     if (gLogEntry.index == 0)
     {
@@ -1598,31 +1610,32 @@ int VmDirRaftCommitHook()
     if (gRaftState.clusterSize < 2)
     {
         //This is a standalone server
-        goto update_volatile_state;
+        goto raft_commit_done;
     }
 
-    if (gRaftState.role != VDIR_RAFT_ROLE_LEADER)
+get_consensus_begin:
+    if (gRaftState.role != VDIR_RAFT_ROLE_LEADER || VmDirdState() == VMDIRD_STATE_SHUTDOWN)
     {
+        // Commit hook can abort a user transaciton only when it is no longer a leader or the server is to
+        // be shutdown to ensure that the longIndex used by the aborted transaction can never be reused.
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    retryCnt = 0;
     do
     {
+        dwError = 0;
         if (_VmDirPeersIdleInLock() < (gRaftState.clusterSize/2))
         {
-             //Wait only if not enough in Ready.
-             dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, WAIT_PEERS_READY_MS);
-        }
-        if (dwError == ETIMEDOUT && retryCnt++ > 5)
-        {
-            dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR(dwError);
+             //Wait if not enough peer threads are Ready to accept RPC request.
+             dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, gVmdirGlobals.dwRaftPingIntervalMS);
         }
     } while (dwError == ETIMEDOUT);
 
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (dwError)
+    {
+        goto get_consensus_begin;
+    }
 
     //Now invoke paralle RPC calls to all (available) peers
     VmDirConditionBroadcast(gRaftRequestPendingCond);
@@ -1633,26 +1646,27 @@ int VmDirRaftCommitHook()
     _VmDirClearProxyLogReplicatedInLock();
 
     //Wait for majority peers to replicate the log.
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftCommitHook: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPrepareCommit: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
                     gRaftState.role, gRaftState.currentTerm);
 
-    VmDirConditionTimedWait(gRaftAppendEntryReachConsensusCond, gRaftStateMutex, WAIT_CONSENSUS_TIMEOUT_MS);
+    VmDirConditionTimedWait(gRaftAppendEntryReachConsensusCond, gRaftStateMutex, gVmdirGlobals.dwRaftElectionTimeoutMS);
 
     if (_VmDirGetAppendEntriesConsensusCountInLock() < (gRaftState.clusterSize/2 + 1))
     {
-        //Check ConsensusCount again since it may be waken up by shutdown;
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        //Check ConsensusCount again
+        VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "VmDirRaftPrepareCommit: no consensus reached on log entry: logIndex %lu role %d term %d, will retry",
+                       gLogEntry.index, gRaftState.role, gRaftState.currentTerm);
+        goto get_consensus_begin;
     }
 
-update_volatile_state:
+raft_commit_done:
     //The log entry is committed,
     gRaftState.cmd = ExecNone;
-    gRaftState.commitIndex = gRaftState.lastApplied = gRaftState.lastLogIndex = gLogEntry.index;
-    gRaftState.lastLogTerm = gRaftState.commitIndexTerm = gLogEntry.term;
     gRaftState.opCounts++;
+    *pLogIndex = gLogEntry.index;
+    *pLogTerm = gLogEntry.term;
 
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftCommitHook: succeeded; server role %d term %d lastApplied %llu",
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPrepareCommit: succeeded; server role %d term %d lastApplied %llu",
                     gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
 
 cleanup:
@@ -1662,8 +1676,30 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirRaftCommitHook: error %d", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirRaftPrepareCommit: error %d", dwError);
     goto cleanup;
+}
+
+/* This is the callback invoted by MDB txn_commit when it has successfully
+ * committed (persisted) the transaction, and the callback can safely set
+ * its volatile state variablies
+ */
+VOID
+VmDirRaftPostCommit(unsigned long long logIndex, unsigned int logTerm)
+{
+    gRaftState.commitIndex = gRaftState.lastApplied = gRaftState.lastLogIndex = logIndex;
+    gRaftState.lastLogTerm = gRaftState.commitIndexTerm = logTerm;
+}
+
+/* This is the callback invoted by MDB txn_commit when it has failed to
+ * persist the transaction when trying to write WAL or MDB meta page
+ * (due to disk full/failure). It prevents the server from resuing logIndex/logTerm
+ * for new client request.
+ */
+VOID
+VmDirRaftCommitFail(VOID)
+{
+    gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
 }
 
 //This create chglog for the LDAP Add right becore calling pfnBETxnCommit, At this poiont,
