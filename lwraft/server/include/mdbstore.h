@@ -165,6 +165,23 @@ VmDirSetMdbBackendState(
     DWORD               dwDbPathSize
     );
 
+int
+VmDirRaftPrepareCommit(
+    unsigned long long *pLogIndex,
+    unsigned int *pLogTerm
+    );
+
+VOID
+VmDirRaftPostCommit(
+    unsigned long long logIndex,
+    unsigned int logTerm
+    );
+
+VOID
+VmDirRaftCommitFail(
+    VOID
+    );
+
 // generic.c
 DWORD
 VmDirMDBDupKeyGetValues(
