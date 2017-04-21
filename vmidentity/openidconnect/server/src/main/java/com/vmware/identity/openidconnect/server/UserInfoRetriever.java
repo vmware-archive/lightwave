@@ -177,6 +177,8 @@ public class UserInfoRetriever {
             role = "Administrator";
         } else if (groupMembershipLowerCase.contains(systemTenantGroupNamePrefix + "systemconfiguration.administrators")) {
             role = "ConfigurationUser";
+        } else if (groupMembershipLowerCase.contains(groupNamePrefix + "trustedusers")) {
+            role = "TrustedUser";
         } else if (groupMembershipLowerCase.contains(groupNamePrefix + "users")) {
             role = "RegularUser";
         } else {

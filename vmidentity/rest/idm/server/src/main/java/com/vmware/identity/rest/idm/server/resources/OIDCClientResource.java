@@ -67,7 +67,7 @@ public class OIDCClientResource extends BaseSubResource {
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role=Role.ADMINISTRATOR)
+    @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO add(OIDCClientMetadataDTO oidcClientMetadataDTO) {
         String clientId = null;
         try {
@@ -92,7 +92,7 @@ public class OIDCClientResource extends BaseSubResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role=Role.ADMINISTRATOR)
+    @RequiresRole(role=Role.TRUSTED_USER)
     public Collection<OIDCClientDTO> getAll() {
         try {
             Collection<OIDCClient> oidcClients = getIDMClient().getOIDCClients(this.tenant);
@@ -115,7 +115,7 @@ public class OIDCClientResource extends BaseSubResource {
      */
     @GET @Path("/{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role=Role.ADMINISTRATOR)
+    @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO get(@PathParam("clientId") String clientId) {
         try {
             OIDCClient oidcClient = getIDMClient().getOIDCClient(this.tenant, clientId);
@@ -142,7 +142,7 @@ public class OIDCClientResource extends BaseSubResource {
      * Delete an OIDC client from requested tenant.
      */
     @DELETE @Path("/{clientId}")
-    @RequiresRole(role=Role.ADMINISTRATOR)
+    @RequiresRole(role=Role.TRUSTED_USER)
     public void delete(@PathParam("clientId") String clientId) {
         try {
             getIDMClient().deleteOIDCClient(this.tenant, clientId);
@@ -163,7 +163,7 @@ public class OIDCClientResource extends BaseSubResource {
      */
     @PUT @Path("/{clientId}")
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role=Role.ADMINISTRATOR)
+    @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO update(@PathParam("clientId") String clientId, OIDCClientMetadataDTO oidcClientMetadataDTO) {
         try {
             OIDCClientDTO oidcClientDTO = new OIDCClientDTO.Builder().

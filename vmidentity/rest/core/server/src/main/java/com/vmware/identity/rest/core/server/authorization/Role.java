@@ -34,6 +34,11 @@ public enum Role {
     REGULAR_USER("RegularUser"),
 
     /**
+     * A trusted user with more permissions than a regular user.
+     */
+    TRUSTED_USER("TrustedUser"),
+
+    /**
      * A configuration user with slightly elevated permissions.
      *
      * <p>This role should <b>only</b> be valid on the system tenant.
