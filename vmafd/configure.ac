@@ -2,7 +2,7 @@ AC_PREREQ(2.59)
 
 AC_INIT([vmafd], [1.0.0], [support@vmware.com])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 m4_pattern_allow([AM_PROG_AR])
@@ -200,8 +200,8 @@ AC_SUBST(MAVEN_HOME)
 
 # Java
 
-AC_ARG_WITH([jdk],
-    [AC_HELP_STRING([--with-jdk=<dir>], [use jdk binaries rooted at prefix <dir> ])],
+AC_ARG_WITH([java],
+    [AC_HELP_STRING([--with-java=<dir>], [use java binaries rooted at prefix <dir> ])],
     [
         JAVA_HOME="$withval"
         JDK_INCLUDES="-I$withval/include -I$withval/include/linux"
@@ -209,14 +209,14 @@ AC_ARG_WITH([jdk],
         TOOLS_CLASSPATH=$JAVA_HOME/lib/tools.jar
     ])
 
-AC_ARG_WITH([jdk-includes],
-    [AC_HELP_STRING([--with-jdk-includes=<dir>], [use java headers located in prefix <dir> ])],
+AC_ARG_WITH([java-includes],
+    [AC_HELP_STRING([--with-java-includes=<dir>], [use java headers located in prefix <dir> ])],
     [
         JDK_INCLUDES="-I$withval"
     ])
 
-AC_ARG_WITH([jdk-libs],
-    [AC_HELP_STRING([--with-jdk-libs=<dir>], [use java libraries located in prefix <dir> ])],
+AC_ARG_WITH([java-libs],
+    [AC_HELP_STRING([--with-java-libs=<dir>], [use java libraries located in prefix <dir> ])],
     [
         JDK_LDFLAGS="-L$withval"
     ])

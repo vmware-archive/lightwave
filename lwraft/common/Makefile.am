@@ -59,6 +59,7 @@ libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/thirdparty/heimdal \
     -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
     -I$(top_srcdir)/thirdparty/heimdal/asn1 \
+    -DLDAP_DEPRECATED \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 

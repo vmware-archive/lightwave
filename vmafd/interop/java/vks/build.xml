@@ -15,7 +15,7 @@
 
    <property file="../product.properties" />
    <property name="MAINSRCROOT" value="${basedir}/../../.."/>
-   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
+   <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}"/>
 
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />

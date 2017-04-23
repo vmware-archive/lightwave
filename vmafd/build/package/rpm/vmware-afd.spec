@@ -76,7 +76,7 @@ autoreconf -mif .. &&
             --with-ssl=/usr \
             --with-sqlite=/usr \
             --with-python=/usr \
-            --with-jdk=%{_javahome} \
+            --with-java=%{_javahome} \
             --with-ant=%{_anthome} \
             --with-maven=%{_mavendir} \
             --with-boost=/usr \

@@ -244,10 +244,10 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
                 &pszClassDn,
                 "cn=%s,cn=schemacontext",
                 pOCDesc->pszName);
-    BAIL_ON_VMDIR_ERROR(dwError)
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSimpleDNToEntry(pszClassDn, &pOCEntry);
-    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND);
+    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
     {
         //
         // This is being called for the class object itself, so there's
