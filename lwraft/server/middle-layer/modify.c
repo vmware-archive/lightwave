@@ -277,6 +277,13 @@ VmDirInternalModifyEntry(
 
     modReq = &(pOperation->request.modifyReq);
 
+    // make sure we have minimum DN length
+    if (modReq->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", modReq->dn.lberbv_len);
+    }
+
     // Normalize DN
     retVal = VmDirNormalizeDN( &(modReq->dn), pOperation->pSchemaCtx);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
