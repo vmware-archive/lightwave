@@ -6,21 +6,25 @@ AM_PROG_AR
 AC_PROG_CC
 AC_CONFIG_FILES([Makefile])
 
-#
-# append to ac_configure_args
-#
-ac_configure_args="$ac_configure_args --enable-server=yes"
-
-ac_cv_header_vmdns_h = yes
-ac_cv_lib_vmdnsclient_VmDnsOpenServerA = yes
+ac_configure_args="$ac_configure_args \
+                   --enable-server=yes \
+                   ac_cv_header_vmevent=yes \
+                   ac_cv_header_vmdirclient_h=yes \
+                   ac_cv_lib_vmdirclient_VmDirSetupHostInstance=yes \
+                   ac_cv_lib_vmdirclient_VmDirConnectionOpen=yes \
+                   ac_cv_header_vmdns_h=yes \
+                   ac_cv_lib_vmdnsclient_VmDnsOpenServerA=yes \
+                   ac_cv_header_vmafdclient_h=yes \
+                   ac_cv_lib_vmafdclient_VmAfdGetDomainNameA=yes \
+                   ac_cv_header_vmcaclient_h=yes"
 
 AC_CONFIG_SUBDIRS([vmevent
                    vmdir
-                   config
                    lwraft
                    vmdns
                    vmafd
                    vmca
                    vmidentity
+                   config
                   ])
 AC_OUTPUT
