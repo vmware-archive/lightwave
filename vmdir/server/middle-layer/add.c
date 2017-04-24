@@ -101,6 +101,13 @@ VmDirInternalAddEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode");
     }
 
+    // make sure we have minimum DN length
+    if (pEntry->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", pEntry->dn.lberbv_len);
+    }
+
     // Make sure Attribute has its ATDesc set
     retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "%s",
