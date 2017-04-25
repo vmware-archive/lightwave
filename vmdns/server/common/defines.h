@@ -24,7 +24,7 @@ extern "C" {
 
 #define VMW_DNS_DEFAULT_LISTENER_QUEUE_COUNT (5)
 
-#define VMW_DNS_DEFAULT_THREAD_COUNT (1)
+#define VMW_DNS_DEFAULT_THREAD_COUNT (4)
 
 #define ATTR_KRB_UPN  "userPrincipalName"
 #define ATTR_MEMBEROF "memberOf"
