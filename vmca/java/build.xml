@@ -4,19 +4,19 @@
 -->
 <project name="vmware-vmca-client" default="build" basedir=".">
 
-           <property name="target-sets" value="main" />
+  <property name="target-sets" value="main" />
    
-   	   <property file="../product.properties" />
- 	   <property name="MAINSRCROOT" value="${basedir}/.." />
-   	   <property name="buildRoot" location="${MAINSRCROOT}/build" />
- 
-           <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+  <property file="../product.properties" />
+  <property name="MAINSRCROOT" value="${basedir}/.." />
 
-	  <path id="classpath.main">
-             <fileset refid="jar-set.jna" />
-             <fileset refid="jar-set.commons-codec" />          
-	 </path>
+  <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+  <property name="buildRoot" location="${build_dir}/build" />
 
-          <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
+  <path id="classpath.main">
+    <fileset refid="jar-set.jna" />
+    <fileset refid="jar-set.commons-codec" />          
+  </path>
+
+  <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
 
 </project>

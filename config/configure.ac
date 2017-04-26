@@ -2,7 +2,7 @@ AC_PREREQ(2.59)
 
 AC_INIT([ic-config], [1.0.0], [support@vmware.com])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 m4_pattern_allow([AM_PROG_AR])
@@ -138,7 +138,7 @@ AC_ARG_WITH([vmdir],
     [
         VMDIR_BASE_PATH="$withval"
         VMDIR_INCLUDES="-I$withval/include"
-        VMDIR_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64"
+        VMDIR_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([vmdir-includes],
@@ -185,7 +185,7 @@ AC_ARG_WITH([afd],
     [
         VMAFD_BASE_PATH="$withval"
         VMAFD_INCLUDES="-I$withval/include"
-        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64"
+        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([afd-includes],
@@ -216,7 +216,7 @@ AC_ARG_WITH([vmca],
     [
         VMCA_BASE_PATH="$withval"
         VMCA_INCLUDES="-I$withval/include"
-        VMCA_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64"
+        VMCA_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([vmca-includes],
@@ -246,7 +246,7 @@ AC_ARG_WITH([vmdns],
     [
         VMDNS_BASE_PATH="$withval"
         VMDNS_INCLUDES="-I$withval/include"
-        VMDNS_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64"
+        VMDNS_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([vmdns-includes],

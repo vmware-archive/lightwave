@@ -1,17 +1,16 @@
 #SUBDIRS = \
 #        vmevent \
 #        vmdir \
-#        config \
 #        vmdns \
 #        vmafd \
 #        vmca \
-#        vmidentity
+#        vmidentity \
+#        config
 
 subdirs = vmevent vmdir vmdns vmafd vmca config
-destdir = "/home/brownj/workspaces/git/pslabs/lightwave/stage"
 
 $(subdirs):
-	make $(AM_MAKEFLAGS) DESTDIR=$(destdir) install -C $@
+	make -C $@ $(AM_MAKEFLAGS) DESTDIR=$(PWD)/stage install
 
 .PHONY: $(subdirs)
 

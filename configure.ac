@@ -16,7 +16,8 @@ ac_configure_args="$ac_configure_args \
                    ac_cv_lib_vmdnsclient_VmDnsOpenServerA=yes \
                    ac_cv_header_vmafdclient_h=yes \
                    ac_cv_lib_vmafdclient_VmAfdGetDomainNameA=yes \
-                   ac_cv_header_vmcaclient_h=yes"
+                   ac_cv_header_vmca_h=yes \
+                   ac_cv_lib_vmcaclient_VMCACreateSelfSignedCertificateA=yes"
 
 AC_CONFIG_SUBDIRS([vmevent
                    vmdir

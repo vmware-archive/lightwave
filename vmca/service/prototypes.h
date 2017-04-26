@@ -595,6 +595,23 @@ VMCAStopHeartbeat(
     PVMAFD_HB_HANDLE pHandle
     );
 
+DWORD
+VMCACopyExtensions(
+    X509 *pCertificate,
+    X509 *pCACertificate,
+    X509_REQ *pRequest
+    );
+
+DWORD
+VMCASignedRequestPrivate(
+    PVMCA_X509_CA pCA,
+    PSTR pszPKCS10Request,
+    PSTR *ppszCertificate,
+    time_t tmNotBefore,
+    time_t tmNotAfter
+    );
+
+
 //vmcaHTTPCallback.c
 #if 0
 #ifndef _WIN32

@@ -66,15 +66,5 @@ typedef enum
 #define CA_CONTAINER_NAME   "Certificate-Authorities"
 
 #define MAX_CN_LENGTH 64
-#define VMCA_MIN_CERT_PRIV_KEY_LENGTH        2048
-
-#define VMCA_TIME_SECS_PER_MINUTE           ( 60)
-#define VMCA_TIME_SECS_PER_HOUR             ( 60 * VMCA_TIME_SECS_PER_MINUTE)
-#define VMCA_TIME_SECS_PER_DAY              ( 24 * VMCA_TIME_SECS_PER_HOUR)
-#define VMCA_TIME_SECS_PER_WEEK             (  7 * VMCA_TIME_SECS_PER_DAY)
-#define VMCA_TIME_SECS_PER_YEAR             (366 * VMCA_TIME_SECS_PER_DAY)
-
-#define VMCA_VALIDITY_SYNC_BACK_DATE        (VMCA_TIME_SECS_PER_WEEK * 2)
-#define VMCA_MAX_CERT_DURATION              (VMCA_TIME_SECS_PER_YEAR * 10)
 
 #endif //__VMCA_COMMON_DEFINES_H__
