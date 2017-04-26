@@ -59,6 +59,10 @@ VmDirLdapSchemaLoadStrLists(
         dwError = VmDirLdapOcParseStr(pOcStrList->pStringList[i], &pOc);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // class sup defaults to 'top' (PR 1853569)
+        dwError = VmDirLdapOcResolveSup(pSchema, pOc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         dwError = VmDirLdapSchemaAddOc(pSchema, pOc);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
