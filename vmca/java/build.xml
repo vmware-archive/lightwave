@@ -6,11 +6,11 @@
 
   <property name="target-sets" value="main" />
    
-  <property file="../product.properties" />
   <property name="MAINSRCROOT" value="${basedir}/.." />
+  <property file="${MAINSRCROOT}/java/product.properties" />
 
   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
-  <property name="buildRoot" location="${build_dir}/build" />
+  <property name="buildRoot" location="${build_dir}/${PRODUCT_NAME}" />
 
   <path id="classpath.main">
     <fileset refid="jar-set.jna" />
