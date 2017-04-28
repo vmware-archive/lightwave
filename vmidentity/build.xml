@@ -55,7 +55,6 @@
 
   <target name="copy.uaa">
     <copy file="uaa/samples/src/main/tomcatwebapps/manager.war" tofile="${PACKAGE_BASE}/uaa-manager.war"/>
-    <copy file="uaa/uaa/build/libs/cloudfoundry-identity-uaa-3.9.3.war" tofile="${PACKAGE_BASE}/uaa.war"/>
     <copy file="uaa/samples/app/build/libs/cloudfoundry-identity-app-3.9.3.war" tofile="${PACKAGE_BASE}/uaa-app.war"/>
     <copy file="uaa/samples/api/build/libs/cloudfoundry-identity-api-3.9.3.war" tofile="${PACKAGE_BASE}/uaa-api.war"/>
   </target>

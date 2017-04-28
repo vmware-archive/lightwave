@@ -196,7 +196,6 @@ fi
 %{_jarsdir}/openidconnect-server.jar
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
-%{_webappsdir}/uaa.war
 %{_datadir}/config/idm/*
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar

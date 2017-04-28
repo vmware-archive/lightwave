@@ -11,7 +11,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-package com.vmware.identity.diagnostics;
+package com.vmware.identity.webapp;
 
 import org.apache.logging.log4j.ThreadContext;
 
@@ -49,13 +49,14 @@ import java.io.IOException;
  * "/websso"                  ->  websso ->                 websso.log
  * "/vmdir"                   ->  vmdir  ->                 vmware-identity-rest-vmdir.log
  * "/lookup"                  ->  lookup  ->                vmware-identity-rest-lookup.log
+ * "/uaa"                     ->  uaa  ->                   uaa.log
  *
  * <li> Once, the application serves with response - The context for "service" is cleared </li>
  *
  * </p>
  */
 @WebFilter(urlPatterns = {"/*"}, asyncSupported = true )
-public class STSLogDiagnosticsFilter implements Filter {
+public class ServletLogFilter implements Filter {
 
     private static final String SERVICE = "service";
 
@@ -68,6 +69,7 @@ public class STSLogDiagnosticsFilter implements Filter {
     private static final String SERVICE_OPENIDCONNECT_BASEURL = "/openidconnect";
     private static final String SERVICE_LEGACY_LOOKUPSERVER_BASEURL = "/lookupservice";
     private static final String SERVICE_LEGACY_ADMIN_BASEURL = "/sso-adminserver";
+    private static final String SERVICE_UAA_BASEURL = "/uaa";
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -91,7 +93,9 @@ public class STSLogDiagnosticsFilter implements Filter {
                 serviceName = "websso";
             } else if (servletpath.startsWith(SERVICE_OPENIDCONNECT_BASEURL)) {
                 serviceName = "openidconnect";
-            }else if (servletpath.startsWith(SERVICE_LEGACY_LOOKUPSERVER_BASEURL)) {
+            } else if (servletpath.startsWith(SERVICE_UAA_BASEURL)) {
+                serviceName = "uaa";
+            } else if (servletpath.startsWith(SERVICE_LEGACY_LOOKUPSERVER_BASEURL)) {
                 serviceName = "lookupServer";
             } else if(servletpath.startsWith(SERVICE_LEGACY_ADMIN_BASEURL)) {
                 serviceName = "ssoAdminServer";

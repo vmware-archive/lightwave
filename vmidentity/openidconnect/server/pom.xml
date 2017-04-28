@@ -32,6 +32,9 @@
               <resources>
                 <resource>
                   <directory>${basedir}/../../service/resources</directory>
+                  <includes>
+                    <include>messages*.properties</include>
+                  </includes>
                 </resource>
               </resources>
             </configuration>

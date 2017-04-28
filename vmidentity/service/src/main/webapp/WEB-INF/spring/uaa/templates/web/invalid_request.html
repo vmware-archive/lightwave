@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layouts/main">
+<div class="island" layout:fragment="page-content">
+    <div class="island-content">
+        <div class="alert alert-error">
+            <p>Warning: Invalid Request Error</p>
+        </div>
+        <img src="/resources/images/sad_cloud.png" th:src="@{/resources/images/sad_cloud.png}" role="presentation" />
+    </div>
+    <h2>
+        You have attempted to make a request that does not meet our security requirements.<br/>
+        This may indicate that the request was not originated by you,
+        or the request time limit was reached.<br/>
+        Please retry your action.
+
+    </h2>
+</div>
+</html>

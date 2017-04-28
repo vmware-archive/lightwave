@@ -33,7 +33,9 @@
               <resources>
                 <resource>
                   <directory>${basedir}/../service/resources</directory>
-                  <filtering>true</filtering>
+                  <includes>
+                    <include>messages*.properties</include>
+                  </includes>
                 </resource>
               </resources>
             </configuration>
@@ -315,7 +317,7 @@
       <version>${cglib.version}</version>
     </dependency>
     <dependency>
-      <groupId>asm</groupId>
+      <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>
     </dependency>

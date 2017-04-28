@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Cloud Foundry
+    Copyright (c) [2009-2014] Pivotal Software, Inc. All Rights Reserved.
+
+    This product is licensed to you under the Apache License, Version 2.0 (the "License").
+    You may not use this product except in compliance with the License.
+
+    This product includes a number of subcomponents with
+    separate copyright notices and license terms. Your use of these
+    subcomponents is subject to the terms and conditions of the
+    subcomponent's license, as noted in the LICENSE file.
+
+-->
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+
+    <bean id="vmidentityClientDetailsService" class="org.cloudfoundry.identity.uaa.zone.MultitenantVmidentityClientDetailsService">
+        <constructor-arg ref="idmClient" />
+        <constructor-arg ref="cachingPasswordEncoder" />
+    </bean>
+
+    <bean id="clientDetailsService" class="org.cloudfoundry.identity.uaa.client.VmidentityQueryableClientDetailsService">
+        <constructor-arg ref="vmidentityClientDetailsService" />
+    </bean>
+
+    <bean id="vmidentityClientMetadataProvisioning" class="org.cloudfoundry.identity.uaa.client.VmidentityClientMetadataProvisioning">
+        <constructor-arg ref="idmClient" />
+    </bean>
+
+    <bean id="clientAdminBootstrap" class="org.cloudfoundry.identity.uaa.client.ClientAdminBootstrap">
+        <constructor-arg ref="bcryptPasswordEncoder"/>
+        <property name="clientRegistrationService" ref="vmidentityClientDetailsService" />
+        <property name="clientMetadataProvisioning" ref="vmidentityClientMetadataProvisioning" />
+        <property name="defaultOverride" value="${oauth.client.override:true}" />
+        <property name="clients" value="#{@config['oauth']==null ? null : @config['oauth']['clients']}" />
+        <property name="autoApproveClients"
+            value="#{@applicationProperties.containsKey('oauth.client.autoapprove')?@config['oauth']['client']['autoapprove']:'cf'}" />
+    </bean>
+
+    <beans profile="default">
+        <bean class="org.cloudfoundry.identity.uaa.client.ClientAdminBootstrap">
+            <constructor-arg ref="bcryptPasswordEncoder"/>
+            <property name="clientRegistrationService" ref="vmidentityClientDetailsService" />
+            <property name="clientMetadataProvisioning" ref="vmidentityClientMetadataProvisioning" />
+            <property name="clients">
+                <map>
+                    <entry key="admin">
+                        <map>
+                            <entry key="authorized-grant-types" value="client_credentials" />
+                            <entry key="scope" value="uaa.none" />
+                            <entry key="authorities" value="uaa.admin,clients.read,clients.write,clients.secret,scim.read,scim.write,clients.admin" />
+                            <entry key="secret" value="adminsecret" />
+                        </map>
+                    </entry>
+                    <entry key="cf">
+                        <map>
+                            <entry key="authorized-grant-types" value="implicit,password,refresh_token" />
+                            <entry key="scope"
+                                value="uaa.user,cloud_controller.read,cloud_controller.write,openid,password.write,scim.userids,cloud_controller.admin,scim.read,scim.write" />
+                            <entry key="authorities" value="uaa.none" />
+                            <entry key="autoapprove" value="true" />
+                        </map>
+                    </entry>
+                    <entry key="app">
+                        <map>
+                            <entry key="secret" value="appclientsecret" />
+                            <entry key="authorized-grant-types" value="password,implicit,authorization_code,client_credentials,refresh_token" />
+                            <entry key="scope"
+                                value="cloud_controller.read,cloud_controller.write,openid,password.write,scim.userids,organizations.acme" />
+                            <entry key="authorities" value="uaa.resource" />
+                            <entry key="autoapprove">
+                                <list>
+                                    <value>openid</value>
+                                </list>
+                            </entry>
+                            <entry key="redirect-uri" value="http://localhost:7080/app/*" />
+                            <entry key="signup_redirect_url" value="http://localhost:7080/app/" />
+                            <entry key="change_email_redirect_url" value="http://localhost:7080/app/" />
+                            <entry key="name" value="The Ultimate Oauth App" />
+                        </map>
+                    </entry>
+                    <entry key="login">
+                        <map>
+                            <entry key="secret" value="loginsecret" />
+                            <entry key="scope" value="openid,oauth.approvals" />
+                            <entry key="authorized-grant-types" value="client_credentials,authorization_code" />
+                            <entry key="authorities" value="oauth.login,scim.write,clients.read,notifications.write,critical_notifications.write,emails.write,scim.userids,password.write,idps.write" />
+                            <entry key="autoapprove" value="true" />
+                        </map>
+                    </entry>
+                    <entry key="dashboard">
+                        <map>
+                            <entry key="secret" value="dashboardsecret" />
+                            <entry key="scope" value="dashboard.user,openid" />
+                            <entry key="authorized-grant-types" value="authorization_code" />
+                            <entry key="authorities" value="uaa.resource" />
+                        </map>
+                    </entry>
+                    <entry key="notifications">
+                        <map>
+                            <entry key="secret" value="notificationssecret" />
+                            <entry key="authorized-grant-types" value="client_credentials" />
+                            <entry key="authorities" value="cloud_controller.admin,scim.read" />
+                        </map>
+                    </entry>
+                    <entry key="identity">
+                        <map>
+                            <entry key="secret" value="identitysecret" />
+                            <entry key="authorized-grant-types" value="authorization_code,client_credentials,refresh_token" />
+                            <entry key="scope" value="cloud_controller.admin,cloud_controller.read,cloud_controller.write,openid,zones.*.*,zones.*.*.*,zones.read,zones.write" />
+                            <entry key="authorities" value="scim.zones,zones.read,cloud_controller.read,uaa.resource,zones.write" />
+                            <entry key="autoapprove" value="true" />
+                        </map>
+                    </entry>
+                    <entry key="oauth_showcase_authorization_code">
+                        <map>
+                            <entry key="secret" value="secret" />
+                            <entry key="authorized-grant-types" value="authorization_code" />
+                            <entry key="scope" value="openid" />
+                            <entry key="authorities" value="uaa.resource" />
+                            <entry key="allowedproviders">
+                                <array>
+                                    <value>uaa</value>
+                                </array>
+                            </entry>
+                        </map>
+                    </entry>
+                    <entry key="oauth_showcase_client_credentials">
+                        <map>
+                            <entry key="secret" value="secret" />
+                            <entry key="authorized-grant-types" value="client_credentials" />
+                            <entry key="scope" value="uaa.none" />
+                            <entry key="authorities" value="uaa.resource,clients.read" />
+                        </map>
+                    </entry>
+                    <entry key="oauth_showcase_password_grant">
+                        <map>
+                            <entry key="secret" value="secret" />
+                            <entry key="authorized-grant-types" value="password" />
+                            <entry key="scope" value="openid" />
+                            <entry key="authorities" value="uaa.resource" />
+                        </map>
+                    </entry>
+                    <entry key="oauth_showcase_implicit_grant">
+                        <map>
+                            <entry key="authorized-grant-types" value="implicit" />
+                            <entry key="scope" value="openid" />
+                            <entry key="authorities" value="uaa.resource" />
+                        </map>
+                    </entry>
+                    <entry key="oauth_showcase_user_token">
+                        <map>
+                            <entry key="authorized-grant-types" value="user_token,password" />
+                            <entry key="scope" value="openid,uaa.user" />
+                            <entry key="secret" value="secret" />
+                        </map>
+                    </entry>
+
+                </map>
+            </property>
+        </bean>
+    </beans>
+</beans>

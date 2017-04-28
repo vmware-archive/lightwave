@@ -48,7 +48,7 @@ public class HealthStatusController {
     /**
      * Handle GET request for the health status
      */
-    @RequestMapping(value = "/websso/HealthStatus", method = RequestMethod.GET)
+    @RequestMapping(value = "/HealthStatus", method = RequestMethod.GET)
     public void  getHealthStatus(HttpServletRequest request, HttpServletResponse response) throws ServletException {
 
         Validate.notNull(request, "HttpServletRequest should not be null.");

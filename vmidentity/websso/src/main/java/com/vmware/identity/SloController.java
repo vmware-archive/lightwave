@@ -59,7 +59,7 @@ public final class SloController {
     /**
      * Handle SAML LogoutRequest/LogoutResponse
      */
-    @RequestMapping(value = "/websso/SAML2/SLO/{tenant:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = "/SAML2/SLO/{tenant:.*}", method = RequestMethod.GET)
     public void slo(Locale locale, @PathVariable(value = "tenant") String tenant, Model model
         , HttpServletRequest request, HttpServletResponse response) throws IOException {
         logger.info("Welcome to Single Logout request/response handler! " +
@@ -119,7 +119,7 @@ public final class SloController {
     /**
      * Handle SAML LogoutRequest/LogoutResponse for default tenant
      */
-    @RequestMapping(value = "/websso/SAML2/SLO", method = RequestMethod.GET)
+    @RequestMapping(value = "/SAML2/SLO", method = RequestMethod.GET)
     public void sloDefaultTenant(Locale locale, Model model, HttpServletRequest request
         , HttpServletResponse response) throws IOException {
         logger.info("Welcome to Single Logout request/response handler! " +
@@ -131,7 +131,7 @@ public final class SloController {
     /**
      * Handle request sent with a wrong binding
      */
-    @RequestMapping(value = "/websso/SAML2/SLO/{tenant:.*}")
+    @RequestMapping(value = "/SAML2/SLO/{tenant:.*}")
     public void sloError(Locale locale, @PathVariable(value = "tenant") String tenant
         , HttpServletResponse response) throws IOException {
         logger.info("SLO binding error! The client locale is "+ locale.toString() + ", tenant is " + tenant);
@@ -142,7 +142,7 @@ public final class SloController {
     /**
      * Handle default tenant request sent with a wrong binding
      */
-    @RequestMapping(value = "/websso/SAML2/SLO")
+    @RequestMapping(value = "/SAML2/SLO")
     public void sloDefaultTenantBindingError(Locale locale, HttpServletResponse response) throws IOException {
         logger.info("SLO binding error! The client locale is "+ locale.toString() + ", DEFAULT tenant");
 

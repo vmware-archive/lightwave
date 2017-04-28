@@ -36,7 +36,6 @@ vmstswebapps_DATA= \
     @top_builddir@/vmware-sts/packages/openidconnect-sample-rp.war \
     @top_builddir@/vmware-sts/packages/ROOT.war \
     @top_builddir@/vmware-sts/packages/lightwaveui.war \
-    @top_builddir@/vmware-sts/packages/uaa.war \
     @top_builddir@/vmware-sts/packages/uaa-api.war \
     @top_builddir@/vmware-sts/packages/uaa-app.war \
     @top_builddir@/vmware-sts/packages/uaa-manager.war

@@ -304,8 +304,8 @@ public class AuthenticationRequestProcessor {
         this.model.addAttribute("spn",                          StringEscapeUtils.escapeEcmaScript(authzServerInfo.getServicePrincipalName()));
 
         this.model.addAttribute("protocol",                     "openidconnect");
-        this.model.addAttribute("cac_endpoint",                 Endpoints.BASE + Endpoints.authenticationCacForLoginForm(this.httpRequest.getURI()));
-        this.model.addAttribute("sso_endpoint",                 Endpoints.BASE + Endpoints.AUTHENTICATION);
+        this.model.addAttribute("cac_endpoint",                 Endpoints.authenticationCacForLoginForm(this.httpRequest.getURI()));
+        this.model.addAttribute("sso_endpoint",                 Endpoints.AUTHENTICATION);
         this.model.addAttribute("responseMode",                 this.authnRequest.getResponseMode().getValue());
 
         this.model.addAttribute("tenant",                       this.tenant);

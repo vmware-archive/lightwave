@@ -59,14 +59,14 @@ public class JWKSController {
         this.idmClient = idmClient;
     }
 
-    @RequestMapping(value = Endpoints.BASE + Endpoints.JWKS, method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.JWKS, method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws IOException {
         jwks(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = Endpoints.BASE + Endpoints.JWKS + "/{tenant:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{tenant:.*}", method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,

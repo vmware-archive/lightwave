@@ -74,7 +74,7 @@ public class AuthenticationController {
     }
 
     @RequestMapping(
-            value = { Endpoints.BASE + Endpoints.AUTHENTICATION + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_RPROXY + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_TOMCAT + "/{tenant:.*}" },
+            value = { Endpoints.AUTHENTICATION + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_RPROXY + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_TOMCAT + "/{tenant:.*}" },
             method = { RequestMethod.GET, RequestMethod.POST })
     public ModelAndView authenticate(
             Model model,

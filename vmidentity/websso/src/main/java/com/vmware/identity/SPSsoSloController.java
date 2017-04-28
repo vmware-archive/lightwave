@@ -71,7 +71,7 @@ public class SPSsoSloController {
      * @return void
      * @throws IOException
      */
-    @RequestMapping(value = "/websso/SAML2/SP/ACS/{tenant:.*}", method = { RequestMethod.POST })
+    @RequestMapping(value = "/SAML2/SP/ACS/{tenant:.*}", method = { RequestMethod.POST })
     public void spSso(Locale locale, @PathVariable(value = "tenant") final String tenant, HttpServletRequest httpRequest,
             HttpServletResponse httpResponse)
             throws IOException {
@@ -92,7 +92,7 @@ public class SPSsoSloController {
      * @throws IOException
      * @throws Exception
      */
-    @RequestMapping(value = "/websso/SAML2/SP/SLO/{tenant:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = "/SAML2/SP/SLO/{tenant:.*}", method = RequestMethod.GET)
     public void slo(@PathVariable(value = "tenant") final String tenant, final HttpServletRequest httpRequest, final HttpServletResponse httpResponse) {
         logger.info("SLO request or response is received at SP SLO endpoint!" + " Tenant: " + tenant);
         ssolibSLOListener.slo(tenant, httpRequest, httpResponse);

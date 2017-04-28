@@ -61,14 +61,14 @@ public class TokenController {
         this.authzCodeManager = authzCodeManager;
     }
 
-    @RequestMapping(value = Endpoints.BASE + Endpoints.TOKEN, method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
+    @RequestMapping(value = Endpoints.TOKEN, method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
     public void acquireTokens(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         acquireTokens(request, response, null);
     }
 
-    @RequestMapping(value = Endpoints.BASE + Endpoints.TOKEN + "/{tenant:.*}", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
+    @RequestMapping(value = Endpoints.TOKEN + "/{tenant:.*}", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
     public void acquireTokens(
             HttpServletRequest request,
             HttpServletResponse response,

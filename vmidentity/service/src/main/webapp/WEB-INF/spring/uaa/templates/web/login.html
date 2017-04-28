@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorator="layouts/main">
+<div class="island" layout:fragment="page-content">
+    <h1 th:text="${T(org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder).uaa ? 'Welcome!':'Welcome to '+zone_name+'!'}">Welcome!</h1>
+    <div class="island-content">
+        <th:block th:if="${fieldUsernameShow}">
+        <form th:action="@{/uaa/login.do}" method="post" novalidate="novalidate" accept-charset="UTF-8">
+            <div th:if="${param.error}" class="alert alert-error">
+                <p th:text="#{'login.' + ${param.error[0]}}">Error Message</p>
+            </div>
+            <input th:each="prompt,iter : ${prompts}"
+                   th:name="${prompt.key}"
+                   th:type="${prompt.value[0]}"
+                   th:placeholder="${prompt.value[1]}"
+                   th:attr="autocomplete=${(prompt.value[0] == 'password') ? 'off' : null}"
+                   th:autofocus="${iter.index} == 0"
+                   class="form-control"/>
+            <input type="submit" value="Sign in" class="island-button"/>
+            <input th:if="${session.SPRING_SECURITY_SAVED_REQUEST}"
+                   th:unless="${form_redirect_uri}"
+                   th:name="form_redirect_uri"
+                   th:type="hidden"
+                   th:value="${session.SPRING_SECURITY_SAVED_REQUEST.redirectUrl}"/>
+            <input th:if="${form_redirect_uri}"
+                   th:name="form_redirect_uri"
+                   th:type="hidden"
+                   th:value="${form_redirect_uri}"/>
+        </form>
+        </th:block>
+        <div class="saml-login">
+            <p th:if="${showLoginLinks==true and fieldUsernameShow}">or Sign in with: </p>
+            <div th:each="idp : ${idpDefinitions}" th:if="${idp.showSamlLink}">
+                <a href="" th:href="@{uaa/saml/discovery(returnIDParam=idp,entityID=${entityID},idp=${idp.idpEntityAlias},isPassive=true)}" th:text="${idp.linkText}" class="saml-login-link">Use your corporate credentials</a>
+            </div>
+            <div th:each="oauthIdp : ${oauthDefinitions}" th:if="${oauthIdp.value.showLinkText}">
+                <div>
+                    <a href="/uaa" th:href="@{'/uaa/' + ${oauthIdp.value.getCompleteAuthorizationURI(T(org.cloudfoundry.identity.uaa.util.UaaUrlUtils).getBaseURL(#httpServletRequest), oauthIdp.key)}}" th:text="${oauthIdp.value.linkText}" class="saml-login-link">Use your corporate credentials</a>
+                </div>
+            </div>
+        </div>
+        <th:block th:if="${linkCreateAccountShow}">
+        <span class="left">
+            <a th:unless="${#strings.isEmpty(links['createAccountLink'])}" href="/uaa/create_account" th:href="@{'/uaa' + ${links['createAccountLink']}}" class="link-lowlight">Create account</a>
+        </span><span class="right" th:unless="${#strings.isEmpty(links['forgotPasswordLink'])}">
+            <a href="/uaa/forgot_password" th:href="@{'/uaa' + ${links['forgotPasswordLink']}}" class="link-lowlight">Reset password</a>
+        </span>
+        </th:block>
+    </div>
+</div>
+</html>

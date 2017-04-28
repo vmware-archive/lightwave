@@ -52,7 +52,7 @@ public class WebssoMetadataController {
     /**
      * Handle GET request for the metadata
      */
-    @RequestMapping(value = "/websso/SAML2/Metadata/{tenant:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = "/SAML2/Metadata/{tenant:.*}", method = RequestMethod.GET)
     public void  metadata(Locale locale, @PathVariable(value = "tenant") String tenant, Model model, HttpServletResponse response) throws IOException {
         logger.info("Welcome to Metadata handler! " +
                 "The client locale is "+ locale.toString() + ", tenant is " + tenant);
@@ -84,7 +84,7 @@ public class WebssoMetadataController {
     /**
      * Handle GET request for the metadata for default tenant
      */
-    @RequestMapping(value = "/websso/SAML2/Metadata", method = RequestMethod.GET)
+    @RequestMapping(value = "/SAML2/Metadata", method = RequestMethod.GET)
     public void metadataDefaultTenant(Locale locale, Model model, HttpServletResponse response) throws IOException {
         logger.info("Welcome to Metadata handler! The client locale is {}, DEFAULT tenant",locale.toString());
 
@@ -94,7 +94,7 @@ public class WebssoMetadataController {
     /**
      * Handle request sent with a wrong binding
      */
-    @RequestMapping(value = "/websso/SAML2/Metadata/{tenant:.*}")
+    @RequestMapping(value = "/SAML2/Metadata/{tenant:.*}")
     public void metadataError(Locale locale, @PathVariable(value = "tenant") String tenant, HttpServletResponse response) throws IOException {
         logger.info("Metadata binding error! The client locale is {}, tenant is {}",locale.toString() , tenant);
 
@@ -104,7 +104,7 @@ public class WebssoMetadataController {
     /**
      * Handle default tenant request sent with a wrong binding
      */
-    @RequestMapping(value = "/websso/SAML2/Metadata")
+    @RequestMapping(value = "/SAML2/Metadata")
     public void metadataDefaultTenantBindingError(Locale locale, HttpServletResponse response) throws IOException {
         logger.info("Metadata binding error! The client locale is {}, DEFAULT tenant",locale.toString());
 

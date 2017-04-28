@@ -1,191 +1,245 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="
-      http://java.sun.com/xml/ns/javaee
-      http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+  http://java.sun.com/xml/ns/javaee
+  http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 
-    <description>sso</description>
-    <display-name>SSO</display-name>
+  <display-name>VMware SSO Services</display-name>
+  <description>VMware Lightwave Single Sign-On Services Web Application</description>
 
-    <!-- The definition of the Root Spring Container shared by all Servlets and Filters -->
-    <context-param>
-        <param-name>contextConfigLocation</param-name>
-        <param-value>
-             <!-- websso -->
-             /WEB-INF/spring/root-context.xml,
+  <!-- Core Configuration -->
+  <!-- The definition of the Root Spring container shared by all servlets and filters -->
+  <context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>/WEB-INF/root-context.xml</param-value>
+  </context-param>
 
-        </param-value>
-    </context-param>
+  <!-- Default Session Timeout: 60s -->
+  <session-config>
+    <session-timeout>60</session-timeout>
+  </session-config>
 
-    <!-- Creates the Spring Container shared by all Servlets and Filters -->
-    <listener>
-        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-    </listener>
+  <!-- Welcome File -->
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
 
-    <session-config>
-        <!-- taken from sts, admin and lookup use 30 -->
-        <session-timeout>60</session-timeout>
-    </session-config>
+  <login-config>
+    <auth-method>CLIENT-CERT</auth-method>
+    <realm-name>SmartcardRealm</realm-name>
+  </login-config>
 
-    <!-- sts -->
-    <listener>
-        <listener-class>com.sun.xml.ws.transport.http.servlet.WSServletContextListener</listener-class>
-    </listener>
+  <!-- Listeners -->
+  <!-- The Spring Container shared by all servlets and filters -->
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
 
-    <listener>
-        <listener-class>com.vmware.identity.sts.ws.StsApplicationListener</listener-class>
-    </listener>
+  <!-- The SLF4J Listener for all VMware REST servlets -->
+  <listener>
+    <listener-class>com.vmware.identity.rest.core.server.util.SLF4JListener</listener-class>
+  </listener>
 
-    <servlet>
-        <servlet-name>sts</servlet-name>
-        <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
-        <load-on-startup>1</load-on-startup>
-    </servlet>
+  <!-- The default logging filter that handles redirecting servlets to their respective log files -->
+  <filter>
+    <filter-name>ServletLogFilter</filter-name>
+    <filter-class>com.vmware.identity.webapp.ServletLogFilter</filter-class>
+  </filter>
 
-    <servlet-mapping>
-        <servlet-name>sts</servlet-name>
-        <url-pattern>/sts/STSService/*</url-pattern>
-    </servlet-mapping>
+  <!-- Servlets -->
+  <!-- Servlet: STS -->
+  <listener>
+    <listener-class>com.sun.xml.ws.transport.http.servlet.WSServletContextListener</listener-class>
+  </listener>
 
-    <!-- websso, oidc -->
-    <!-- Processes application requests -->
-    <filter>
-        <filter-name>SecurityRequestFilter</filter-name>
-        <filter-class>com.vmware.identity.SecurityRequestWrapperFilter</filter-class>
-   </filter>
+  <listener>
+    <listener-class>com.vmware.identity.sts.ws.StsApplicationListener</listener-class>
+  </listener>
 
-    <filter-mapping>
-        <filter-name>SecurityRequestFilter</filter-name>
-        <servlet-name>appServlet</servlet-name>
-    </filter-mapping>
+  <servlet>
+    <servlet-name>sts</servlet-name>
+    <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
+  </servlet>
 
-    <servlet>
-        <servlet-name>appServlet</servlet-name>
-        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-        <init-param>
-            <param-name>contextConfigLocation</param-name>
-            <param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-    </servlet>
+  <servlet-mapping>
+    <servlet-name>sts</servlet-name>
+    <url-pattern>/sts/STSService/*</url-pattern>
+  </servlet-mapping>
 
-	<servlet-mapping>
-		<servlet-name>appServlet</servlet-name>
-		<url-pattern>/</url-pattern>
-	</servlet-mapping>
+  <!-- Servlet: WebSSO -->
+  <filter>
+    <filter-name>webssoRequestFilter</filter-name>
+    <filter-class>com.vmware.identity.SecurityRequestWrapperFilter</filter-class>
+  </filter>
 
-    <welcome-file-list>
-        <welcome-file>index.jsp</welcome-file>
-    </welcome-file-list>
+  <filter-mapping>
+    <filter-name>webssoRequestFilter</filter-name>
+    <servlet-name>websso</servlet-name>
+  </filter-mapping>
 
-    <!-- rest -->
-    <listener>
-        <listener-class>com.vmware.identity.rest.core.server.util.SLF4JListener</listener-class>
-    </listener>
+  <servlet>
+    <servlet-name>websso</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+  </servlet>
 
-   <!-- rest afd -->
-    <servlet>
-        <servlet-name>restafd</servlet-name>
-        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
-        <load-on-startup>1</load-on-startup>
-      <init-param>
-         <param-name>javax.ws.rs.Application</param-name>
-         <param-value>com.vmware.identity.rest.afd.server.AfdRestApplication</param-value>
-      </init-param>
+  <servlet-mapping>
+    <servlet-name>websso</servlet-name>
+    <url-pattern>/websso/*</url-pattern>
+  </servlet-mapping>
 
-      <init-param>
-         <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
-         <param-value>true</param-value>
-      </init-param>
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>SmartcardAuthn</web-resource-name>
+      <url-pattern>/websso/SAML2/SmartcardRealm/*</url-pattern>
+    </web-resource-collection>
+    <user-data-constraint>
+      <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+    </user-data-constraint>
+    <auth-constraint>
+      <role-name>X509</role-name>
+    </auth-constraint>
+  </security-constraint>
 
-      <init-param>
-         <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
-         <param-value>/afd/.*json</param-value>
-      </init-param>
-    </servlet>
+  <!-- Servlet: OIDC -->
+  <filter>
+    <filter-name>oidcRequestFilter</filter-name>
+    <filter-class>com.vmware.identity.SecurityRequestWrapperFilter</filter-class>
+  </filter>
 
-    <servlet-mapping>
-        <servlet-name>restafd</servlet-name>
-        <url-pattern>/afd/*</url-pattern>
-    </servlet-mapping>
+  <filter-mapping>
+    <filter-name>oidcRequestFilter</filter-name>
+    <servlet-name>oidc</servlet-name>
+  </filter-mapping>
 
-   <!--Register STS Log4j Filter for all sts webapps resply -->
-    <filter>
-        <filter-name>STSDiagnosticsLogFilter</filter-name>
-        <filter-class>com.vmware.identity.diagnostics.STSLogDiagnosticsFilter</filter-class>
-    </filter>
+  <servlet>
+    <servlet-name>oidc</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+  </servlet>
 
-    <!-- rest idm -->
-    <servlet>
-        <servlet-name>restidm</servlet-name>
-        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
-        <load-on-startup>10</load-on-startup>
-      <init-param>
-         <param-name>javax.ws.rs.Application</param-name>
-         <param-value>com.vmware.identity.rest.idm.server.IdmRestApplication</param-value>
-      </init-param>
+  <servlet-mapping>
+    <servlet-name>oidc</servlet-name>
+    <url-pattern>/openidconnect/*</url-pattern>
+  </servlet-mapping>
 
-      <init-param>
-         <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
-         <param-value>true</param-value>
-      </init-param>
+  <!-- Servlet: REST AFD -->
+  <servlet>
+    <servlet-name>rest-afd</servlet-name>
+    <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>com.vmware.identity.rest.afd.server.AfdRestApplication</param-value>
+    </init-param>
+    <init-param>
+      <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
+      <param-value>/afd/.*json</param-value>
+    </init-param>
+  </servlet>
 
-      <init-param>
-         <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
-         <param-value>/idm/.*json</param-value>
-      </init-param>
-    </servlet>
+  <servlet-mapping>
+    <servlet-name>rest-afd</servlet-name>
+    <url-pattern>/afd/*</url-pattern>
+  </servlet-mapping>
 
-    <servlet-mapping>
-        <servlet-name>restidm</servlet-name>
-        <url-pattern>/idm/*</url-pattern>
-    </servlet-mapping>
+  <!-- Servlet: REST IDM -->
+  <servlet>
+    <servlet-name>rest-idm</servlet-name>
+    <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>com.vmware.identity.rest.idm.server.IdmRestApplication</param-value>
+    </init-param>
+    <init-param>
+      <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
+      <param-value>/idm/.*json</param-value>
+    </init-param>
+  </servlet>
 
-    <!-- rest vmdir -->
-    <servlet>
-        <servlet-name>restvmdir</servlet-name>
-        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
-        <load-on-startup>10</load-on-startup>
-      <init-param>
-         <param-name>javax.ws.rs.Application</param-name>
-         <param-value>com.vmware.directory.rest.server.VmdirRestApplication</param-value>
-      </init-param>
-      <init-param>
-         <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
-         <param-value>true</param-value>
-      </init-param>
-      <init-param>
-         <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
-         <param-value>/vmdir/.*json</param-value>
-      </init-param>
-    </servlet>
+  <servlet-mapping>
+    <servlet-name>rest-idm</servlet-name>
+    <url-pattern>/idm/*</url-pattern>
+  </servlet-mapping>
 
-        <servlet-mapping>
-        <servlet-name>restvmdir</servlet-name>
-        <url-pattern>/vmdir/*</url-pattern>
-    </servlet-mapping>
+  <!-- Servlet: REST VMDir -->
+  <servlet>
+    <servlet-name>rest-vmdir</servlet-name>
+    <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>com.vmware.directory.rest.server.VmdirRestApplication</param-value>
+    </init-param>
+    <init-param>
+      <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>jersey.config.servlet.filter.staticContentRegex</param-name>
+      <param-value>/vmdir/.*json</param-value>
+    </init-param>
+  </servlet>
 
+  <servlet-mapping>
+    <servlet-name>rest-vmdir</servlet-name>
+    <url-pattern>/vmdir/*</url-pattern>
+  </servlet-mapping>
 
-    <security-constraint>
-        <web-resource-collection>
-            <web-resource-name>SmartcardAuthn</web-resource-name>
-            <url-pattern>/websso/SAML2/SmartcardRealm/*</url-pattern>
-        </web-resource-collection>
+  <!-- Servlet: UAA -->
+  <listener>
+    <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+  </listener>
 
-        <user-data-constraint>
-            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
-        </user-data-constraint>
+  <filter>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    <init-param>
+      <param-name>contextAttribute</param-name>
+      <param-value>org.springframework.web.servlet.FrameworkServlet.CONTEXT.uaa</param-value>
+    </init-param>
+  </filter>
 
-        <auth-constraint>
-            <role-name>X509</role-name>
-        </auth-constraint>
-    </security-constraint>
+  <filter-mapping>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <servlet-name>uaa</servlet-name>
+  </filter-mapping>
 
-   <login-config>
-       <auth-method>CLIENT-CERT</auth-method>
-       <realm-name>SmartcardRealm</realm-name>
-   </login-config>
+  <!-- After we merge in epic/multitenancy, we can add this to the post process of the security filter -->
+  <filter>
+    <filter-name>backwardsCompatibleScopeParameter</filter-name>
+    <filter-class>org.cloudfoundry.identity.uaa.web.BackwardsCompatibleScopeParsingFilter</filter-class>
+  </filter>
 
+  <filter-mapping>
+    <filter-name>backwardsCompatibleScopeParameter</filter-name>
+    <servlet-name>uaa</servlet-name>
+  </filter-mapping>
+
+  <servlet>
+    <servlet-name>uaa</servlet-name>
+    <servlet-class>org.cloudfoundry.identity.uaa.web.RecognizeFailureDispatcherServlet</servlet-class>
+    <init-param>
+      <param-name>contextInitializerClasses</param-name>
+      <param-value>org.cloudfoundry.identity.uaa.impl.config.YamlServletProfileInitializer</param-value>
+    </init-param>
+    <init-param>
+      <param-name>environmentConfigDefaults</param-name>
+      <param-value>uaa.yml,login.yml</param-value>
+    </init-param>
+    <init-param>
+      <param-name>environmentConfigLocations</param-name>
+      <param-value>${LOGIN_CONFIG_URL},file:${LOGIN_CONFIG_PATH}/login.yml,file:${CLOUD_FOUNDRY_CONFIG_PATH}/login.yml,${UAA_CONFIG_URL},file:${UAA_CONFIG_PATH}/uaa.yml,file:${CLOUD_FOUNDRY_CONFIG_PATH}/uaa.yml</param-value>
+    </init-param>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>uaa</servlet-name>
+    <url-pattern>/uaa/*</url-pattern>
+  </servlet-mapping>
 </web-app>
-

@@ -64,14 +64,14 @@ public class MetadataController {
         this.idmClient = idmClient;
     }
 
-    @RequestMapping(value = Endpoints.BASE + Endpoints.METADATA, method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.METADATA, method = RequestMethod.GET)
     public void metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws IOException {
         metadata(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = Endpoints.BASE + "/{tenant:.*}" + Endpoints.METADATA, method = RequestMethod.GET)
+    @RequestMapping(value = "/{tenant:.*}" + Endpoints.METADATA, method = RequestMethod.GET)
     public void metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,

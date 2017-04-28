@@ -340,7 +340,7 @@
       <version>${cglib.version}</version>
     </dependency>
     <dependency>
-      <groupId>asm</groupId>
+      <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>
     </dependency>

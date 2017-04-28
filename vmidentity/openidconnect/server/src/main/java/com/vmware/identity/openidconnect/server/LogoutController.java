@@ -61,7 +61,7 @@ public class LogoutController {
         this.sessionManager = sessionManager;
     }
 
-    @RequestMapping(value = Endpoints.BASE + Endpoints.LOGOUT + "/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
+    @RequestMapping(value = Endpoints.LOGOUT + "/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
     public void logout(
             HttpServletRequest request,
             HttpServletResponse response,
