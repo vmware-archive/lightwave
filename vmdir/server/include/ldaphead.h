@@ -273,4 +273,11 @@ PCSTR
 VmDirGetOperationStringFromTag(
     ber_tag_t opTag);
 
+// vecs.c
+DWORD
+VmDirGetVecsMachineCert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
+
 #endif /* LH_H_ */

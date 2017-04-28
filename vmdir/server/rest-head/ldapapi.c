@@ -24,8 +24,7 @@ REST_MODULE _ldap_rest_module[] =
     {
         "/v1/vmdir/ldap",
         {VmDirRESTLdapSearch, VmDirRESTLdapAdd, NULL, VmDirRESTLdapDelete, VmDirRESTLdapModify}
-    },
-    {0}
+    }
 };
 
 DWORD

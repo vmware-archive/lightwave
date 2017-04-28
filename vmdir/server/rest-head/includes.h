@@ -42,7 +42,9 @@
 
 #include <backend.h>
 #include <middlelayer.h>
+#include <ldaphead.h>
 #include <resthead.h>
+#include <schema.h>
 #include <vmdirserver.h>
 
 #include <copenapi/copenapi.h>
@@ -53,7 +55,7 @@
 #include <sasl/saslutil.h>
 #include <vmrest.h>
 
-#include <common_types.h>
+#include <ssotypes.h>
 #include <oidc_types.h>
 #include <oidc.h>
 

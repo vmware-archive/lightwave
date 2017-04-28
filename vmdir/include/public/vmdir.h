@@ -46,7 +46,7 @@ extern "C" {
 #define DEFAULT_LDAPS_PORT_STR          "636"
 
 #define DEFAULT_REST_PORT_NUM           7477
-#define DEFAULT_REST_PORT_STR           "7477"
+#define DEFAULT_REST_PORT_STR           "7477p" // TODO remove p
 
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
