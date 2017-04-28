@@ -12,10 +12,7 @@
  * under the License.
  */
 
-// REST ENGINE CONFIG VALUES
-// TRIDENT
-#define VMDIR_REST_SSLCERT          LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraftcert.pem"
-#define VMDIR_REST_SSLKEY           LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraftkey.pem"
+// C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraft-rest.json"
 #define VMDIR_REST_DEBUGLOGFILE     "/tmp/lwraft-rest.log"
 //#define VMDIR_REST_DEBUGLOGFILE     VMDIR_LOG_DIR    VMDIR_PATH_SEPARATOR_STR "lwraft-rest.log"    TODO use this when lightwave-first is complete

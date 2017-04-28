@@ -64,12 +64,13 @@ error:
 DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0, done = 0;
+    DWORD   i = 0, bytesRead = 0;
     json_error_t    jError = {0};
     PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
@@ -77,7 +78,7 @@ VmDirRESTOperationReadRequest(
     PSTR    pszInput = NULL;
     size_t  len = 0;
 
-    if (!pRestOp || !pRestReq)
+    if (!pRestOp || !pRESTHandle || !pRestReq)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -136,7 +137,7 @@ VmDirRESTOperationReadRequest(
     }
 
     // read request input json
-    while (!done)
+    do
     {
         dwError = VmDirReallocateMemory(
                 (PVOID)pszInput,
@@ -144,11 +145,13 @@ VmDirRESTOperationReadRequest(
                 len + MAX_REST_PAYLOAD_LENGTH);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmRESTGetData(pRestReq, pszInput + len, &done);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmRESTGetData(
+                pRESTHandle, pRestReq, pszInput + len, &bytesRead);
 
-        len = strlen(pszInput);
+        len += bytesRead;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!IsNullOrEmptyString(pszInput))
     {
@@ -190,11 +193,12 @@ error:
 DWORD
 VmDirRESTOperationWriteResponse(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_RESPONSE*         ppResponse
     )
 {
     DWORD   dwError = 0;
-    DWORD   done = 0;
+    DWORD   bytesWritten = 0;
     PSTR    pszHttpStatus = NULL;
     PSTR    pszHttpReason = NULL;
     PSTR    pszBody = NULL;
@@ -202,7 +206,7 @@ VmDirRESTOperationWriteResponse(
     size_t  bodyLen = 0;
     size_t  sentLen = 0;
 
-    if (!pRestOp || !ppResponse)
+    if (!pRestOp || !pRESTHandle || !ppResponse)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -240,21 +244,23 @@ VmDirRESTOperationWriteResponse(
             ppResponse, bodyLen > MAX_REST_PAYLOAD_LENGTH ? NULL : pszBodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (!done)
+    do
     {
         size_t chunkLen = bodyLen > MAX_REST_PAYLOAD_LENGTH ?
                 MAX_REST_PAYLOAD_LENGTH : bodyLen;
 
         dwError = VmRESTSetData(
+                pRESTHandle,
                 ppResponse,
                 VDIR_SAFE_STRING(pszBody) + sentLen,
                 chunkLen,
-                &done);
-        BAIL_ON_VMDIR_ERROR(dwError);
+                &bytesWritten);
 
-        sentLen += chunkLen;
-        bodyLen -= chunkLen;
+        sentLen += bytesWritten;
+        bodyLen -= bytesWritten;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);

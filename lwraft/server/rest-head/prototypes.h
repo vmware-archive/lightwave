@@ -215,6 +215,7 @@ VmDirRESTLdapGetHttpError(
 // libmain.c
 DWORD
 VmDirRESTRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
@@ -259,6 +260,7 @@ VmDirRESTOperationCreate(
 DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
     );
@@ -266,6 +268,7 @@ VmDirRESTOperationReadRequest(
 DWORD
 VmDirRESTOperationWriteResponse(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_RESPONSE*         ppResponse
     );
 
