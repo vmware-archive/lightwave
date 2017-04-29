@@ -220,4 +220,7 @@ VmDirCleanupGlobals(
     VMDIR_SAFE_FREE_MUTEX( gVmdirTrackLastLoginTime.pMutex );
     VMDIR_SAFE_FREE_CONDITION(gVmdirTrackLastLoginTime.pCond);
     // ignore gVmdirTrackLastLoginTime.pTSStack
+
+    VMDIR_SAFE_FREE_MUTEX( gVmdirIntegrityCheck.pMutex );
+    VMDIR_SAFE_FREE_MEMORY( gVmdirIntegrityCheck.pJob );
 }

@@ -117,6 +117,18 @@ WriteSyncStateControl(
    PSTR*              ppszErrorMsg
    );
 
+int
+VmDirCreateDigestControlContent(
+    PCSTR           pszDigest,
+    DWORD           dwDigestLen,
+    LDAPControl*    pDigestCtrl
+    );
+
+VOID
+VmDirDeleteDigestControlContent(
+    LDAPControl*    pDigestCtrl
+    );
+
 // delete.c
 int
 VmDirPerformDelete(

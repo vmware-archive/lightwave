@@ -81,13 +81,6 @@ _VmDirSrvCreatePersistedDSERoot(VOID);
 
 static
 DWORD
-_VmDirGetHostsInternal(
-    PSTR **pppszServerInfo,
-    size_t *pdwInfoCount
-    );
-
-static
-DWORD
 _VmDirCheckPartnerDomainFunctionalLevel(
     VOID
     );
@@ -533,9 +526,8 @@ error:
     goto cleanup;
 }
 
-static
 VOID
-_VmDirFreeCountedStringArray(
+VmDirFreeCountedStringArray(
     PSTR *ppszStrings,
     size_t iCount
     )
@@ -588,7 +580,7 @@ _VmDirRestoreInstance(
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
+    dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
     if (dwError != 0)
     {
         printf("_VmDirRestoreInstance: fail to get hosts from topology: %d\n", dwError );
@@ -764,7 +756,7 @@ _VmDirRestoreInstance(
     printf("Lotus instance restore succeeded.\n");
 
 cleanup:
-    _VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
     VmDirFreeBervalContent(&newUtdVector);
     VmDirFreeOperationContent(&op);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -809,7 +801,7 @@ _VmDirCheckPartnerDomainFunctionalLevel(
         goto cleanup;
     }
 
-    dwError = _VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
+    dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // No partners to compare DFL with.
@@ -902,7 +894,7 @@ cleanup:
         VmDirLdapUnbind(&pPartnerLd);
     }
 
-    _VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     return dwError;
 
@@ -1584,6 +1576,9 @@ InitializeGlobalVars(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = VmDirAllocateMutex(&gVmdirIntegrityCheck.pMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
 
     return dwError;
@@ -1599,9 +1594,8 @@ error:
  * Lookup servers topology internally first. Then one of the servers
  * will be used to query uptoupdate servers topology
  */
-static
 DWORD
-_VmDirGetHostsInternal(
+VmDirGetHostsInternal(
     PSTR **pppszServerInfo,
     size_t *pdwInfoCount
     )
@@ -1650,7 +1644,7 @@ cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
 error:
-    _VmDirFreeCountedStringArray(ppszServerInfo, entryArray.iSize);
+    VmDirFreeCountedStringArray(ppszServerInfo, entryArray.iSize);
     goto cleanup;
 }
 

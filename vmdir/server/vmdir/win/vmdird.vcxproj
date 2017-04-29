@@ -138,6 +138,7 @@
     <ClCompile Include="..\index.c" />
     <ClCompile Include="..\init.c" />
     <ClCompile Include="..\instance.c" />
+    <ClCompile Include="..\integritychk.c" />
     <ClCompile Include="..\ipcapihandler.c" />
     <ClCompile Include="..\ipclocalapi.c" />
     <ClCompile Include="ipcserver.c" />

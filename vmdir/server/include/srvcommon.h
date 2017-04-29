@@ -557,11 +557,17 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
+typedef struct _VDIR_DIGEST_CONTROL_VALUE
+{
+    CHAR                    sha1Digest[SHA_DIGEST_LENGTH+1];
+} VDIR_DIGEST_CONTROL_VALUE, *PVDIR_DIGEST_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
     SyncRequestControlValue            syncReqCtrlVal;
     SyncDoneControlValue               syncDoneCtrlVal;
     VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
+    VDIR_DIGEST_CONTROL_VALUE          digestCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -596,6 +602,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
+    VDIR_LDAP_CONTROL *       digestCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
@@ -1096,6 +1103,12 @@ VmDirIsSameConsumerSupplierEntryAttr(
     PVDIR_ATTRIBUTE pAttr,
     PVDIR_ENTRY     pSrcEntry,
     PVDIR_ENTRY     pDstEntry
+    );
+
+int
+VmDirPVdirBValCmp(
+    const void *p1,
+    const void *p2
     );
 
 // candidates.c

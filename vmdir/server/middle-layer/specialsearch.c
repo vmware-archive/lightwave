@@ -30,11 +30,11 @@ VmDirHandleSpecialSearch(
 {
     DWORD   dwError = 0;
     size_t  i = 0;
-    BOOLEAN bRetVal = FALSE;
     BOOLEAN bHasTxn = FALSE;
     BOOLEAN bRefresh = FALSE;
     PVDIR_ENTRY_ARRAY   pEntryArray = NULL;
     VDIR_SPECIAL_SEARCH_ENTRY_TYPE entryType = REGULAR_SEARCH_ENTRY_TYPE;
+    VMDIR_INTEGRITY_CHECK_JOB_STATE integrityCheckStat = INTEGRITY_CHECK_JOB_NONE;
 
     static PCSTR pszEntryType[] =
     {
@@ -42,7 +42,8 @@ VmDirHandleSpecialSearch(
             "Schema Entry",
             "Server Status",
             "Replication Status",
-            "Schema Repl Status"
+            "Schema Repl Status",
+            "Integrity Check Status"
     };
 
     if ( !pOp || !pLdapResult )
@@ -116,10 +117,44 @@ VmDirHandleSpecialSearch(
                     "%s Entry search failed.", pszEntryType[entryType]);
         }
     }
+    else if (VmDirIsSearchForIntegrityCheckStatus(pOp, &integrityCheckStat))
+    {
+        BOOLEAN bIsMember = FALSE;
+
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_INTEGRITY_CHECK_STATUS;
+
+        dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(NULL, &pOp->conn->AccessInfo, &bIsMember);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!bIsMember)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+        }
+
+        if (integrityCheckStat == INTEGRITY_CHECK_JOB_START ||
+            integrityCheckStat == INTEGRITY_CHECK_JOB_RECHECK)
+        {
+            dwError = VmDirIntegrityCheckStart(integrityCheckStat);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (integrityCheckStat == INTEGRITY_CHECK_JOB_STOP)
+        {
+            VmDirIntegrityCheckStop();
+        }
+        else if (integrityCheckStat == INTEGRITY_CHECK_JOB_SHOW_SUMMARY)
+        {
+            dwError = VmDirIntegrityCheckShowStatus(&pEntryArray->pEntry);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (pEntryArray->pEntry)
+            {
+                pEntryArray->iSize = 1;
+            }
+        }
+    }
 
     if (entryType != REGULAR_SEARCH_ENTRY_TYPE)
     {
-        bRetVal = TRUE;
 
         /*
          * Read txn for preventing server crash (PR 1634501)
@@ -142,12 +177,14 @@ cleanup:
     {
         pOp->pBEIF->pfnBETxnCommit(pOp->pBECtx);
     }
-    return bRetVal;
+
+    return entryType != REGULAR_SEARCH_ENTRY_TYPE;
 
 error:
     VmDirLog( LDAP_DEBUG_ANY, "VmDirHandleSpecialSearch: (%d)(%s)",
             dwError, VDIR_SAFE_STRING(pLdapResult->pszErrMsg) );
-    pLdapResult->errCode = dwError;
+    pLdapResult->vmdirErrCode = dwError;
+
     goto cleanup;
 }
 
@@ -357,6 +394,66 @@ VmDirIsSearchForSchemaReplStatus(
         {
             *pbRefresh = TRUE;
         }
+    }
+
+    return bRetVal;
+}
+
+/*
+ * For integrity check status
+ * The search pattern is:
+ * BASE:    cn=integritycheckstatus
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE - with optional attribute operation=start|stop|recheck
+ *          ONELEVEL - returns job summary with optional attribute detail
+ *
+ */
+BOOLEAN
+VmDirIsSearchForIntegrityCheckStatus(
+    PVDIR_OPERATION                     pOp,
+    PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, INTEGRITY_CHECK_STATUS_DN, FALSE) == 0   &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0)
+    {
+        bRetVal = TRUE;
+    }
+
+    if (pSearchReq->scope == LDAP_SCOPE_BASE && pState && pSearchReq->attrs)
+    {
+        PSTR pszAttr = pSearchReq->attrs[0].lberbv.bv_val;
+        if (VmDirStringCompareA(pszAttr, "start", FALSE) == 0)
+        {
+            *pState = INTEGRITY_CHECK_JOB_START;
+        }
+        else if (VmDirStringCompareA(pszAttr, "stop", FALSE) == 0)
+        {
+            *pState = INTEGRITY_CHECK_JOB_STOP;
+        }
+        else if (VmDirStringCompareA(pszAttr, "recheck", FALSE) == 0)
+        {
+            *pState = INTEGRITY_CHECK_JOB_RECHECK;
+        }
+        else
+        {
+            *pState = INTEGRITY_CHECK_JOB_NONE;
+        }
+    }
+    else if (pSearchReq->scope == LDAP_SCOPE_ONELEVEL && pState )
+    {
+        *pState = INTEGRITY_CHECK_JOB_SHOW_SUMMARY;
     }
 
     return bRetVal;

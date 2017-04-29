@@ -1335,3 +1335,47 @@ VmDirIsSameConsumerSupplierEntryAttr(
 error:
     return bIsSameAttr && dwError==0;
 }
+
+/*
+ * Sort function -
+ * Array of PVDIR_BERVALUE
+ */
+int
+VmDirPVdirBValCmp(
+    const void *p1,
+    const void *p2
+    )
+{
+
+    PVDIR_BERVALUE* ppBV1 = (PVDIR_BERVALUE*) p1;
+    PVDIR_BERVALUE* ppBV2 = (PVDIR_BERVALUE*) p2;
+
+    if ((ppBV1 == NULL || *ppBV1 == NULL) &&
+        (ppBV2 == NULL || *ppBV2 == NULL))
+    {
+        return 0;
+    }
+
+    if (ppBV1 == NULL || *ppBV1 == NULL)
+    {
+        return -1;
+    }
+
+    if (ppBV2 == NULL || *ppBV2 == NULL)
+    {
+        return 1;
+    }
+
+    if ( (*ppBV1)->lberbv_len > (*ppBV2)->lberbv_len )
+    {
+        return -1;
+    }
+    else if ( (*ppBV1)->lberbv_len < (*ppBV2)->lberbv_len )
+    {
+        return 1;
+    }
+    else
+    {
+        return memcmp((*ppBV1)->lberbv_val, (*ppBV2)->lberbv_val, (*ppBV1)->lberbv_len);
+    }
+}

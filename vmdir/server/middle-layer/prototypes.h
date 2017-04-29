@@ -376,4 +376,10 @@ VmDirIsSearchForSchemaReplStatus(
     PBOOLEAN            pbRefresh
     );
 
+BOOLEAN
+VmDirIsSearchForIntegrityCheckStatus(
+    PVDIR_OPERATION                     pOp,
+    PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
+    );
+
 #endif
