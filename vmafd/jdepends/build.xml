@@ -5,7 +5,7 @@
 <project name="vmware-vmafd-depends" default="build" basedir=".">
 
    <property name="MAINSRCROOT" value="${basedir}/.." />
-   <property file="${MAINSRCROOT}/java/product.properties" />
+   <property file="${MAINSRCROOT}/interop/java/product.properties" />
    <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
    <property name="depends" value="${build_dir}/depends" />
 

@@ -2,11 +2,16 @@
 <project name="vmidentity" default="build" basedir=".">
 
   <!-- Configuration set up -->
-  <property file="product.properties" />
   <property name="MAINSRCROOT" value="${basedir}" />
-  <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
-  <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />
-  <property name="VMCA_PACKAGE_BASE" value="${MAINSRCROOT}/../vmca/build/packages" />
+  <property file="${MAINSRCROOT}/product.properties" />
+  <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
+
+<echo message="DEBUG: MAINSRCROOT=${MAINSRCROOT}" />
+<echo message="DEBUG: PRODUCT_NAME=${PRODUCT_NAME}" />
+<echo message="DEBUG: build_dir=${build_dir}" />
+
+  <property name="AFD_PACKAGE_BASE" value="${build_dir}/../vmafd/authentication-framework/packages" />
+  <property name="VMCA_PACKAGE_BASE" value="${build_dir}/../vmca/certificate-authority/packages" />
 
   <property name="AFD_GROUP_BASE" value="com.vmware.vmafd" />
   <property name="VMCA_GROUP_BASE" value="com.vmware.vmca" />

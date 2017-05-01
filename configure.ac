@@ -6,19 +6,6 @@ AM_PROG_AR
 AC_PROG_CC
 AC_CONFIG_FILES([Makefile])
 
-ac_configure_args="$ac_configure_args \
-                   --enable-server=yes \
-                   ac_cv_header_vmevent=yes \
-                   ac_cv_header_vmdirclient_h=yes \
-                   ac_cv_lib_vmdirclient_VmDirSetupHostInstance=yes \
-                   ac_cv_lib_vmdirclient_VmDirConnectionOpen=yes \
-                   ac_cv_header_vmdns_h=yes \
-                   ac_cv_lib_vmdnsclient_VmDnsOpenServerA=yes \
-                   ac_cv_header_vmafdclient_h=yes \
-                   ac_cv_lib_vmafdclient_VmAfdGetDomainNameA=yes \
-                   ac_cv_header_vmca_h=yes \
-                   ac_cv_lib_vmcaclient_VMCACreateSelfSignedCertificateA=yes"
-
 AC_CONFIG_SUBDIRS([vmevent
                    vmdir
                    lwraft
@@ -28,4 +15,7 @@ AC_CONFIG_SUBDIRS([vmevent
                    vmidentity
                    config
                   ])
+
+AC_SUBST(STAGEDIR)
+
 AC_OUTPUT
