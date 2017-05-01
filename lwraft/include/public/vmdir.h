@@ -69,6 +69,7 @@ extern "C" {
 #define RAFT_CONTEXT_DN                         "cn=raftcontext"
 #define RAFT_LOGS_CONTAINER_DN                  "cn=logs,cn=raftcontext"
 #define RAFT_PERSIST_STATE_DN                   "cn=persiststate,cn=raftcontext"
+#define RAFT_STATE_DN                           "cn=raftstate"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -354,6 +355,10 @@ extern "C" {
 #define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
 #define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"
 #define ATTR_REF                            "ref"
+#define ATTR_RAFT_LEADER                    "vmwRaftLeader"
+#define ATTR_RAFT_FOLLOWERS                 "vmwRaftActiveFollower"
+#define ATTR_RAFT_MEMBERS                   "vmwRaftMember"
+#define ATTR_RAFT_STATE                     "vmwRaftState"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -406,6 +411,7 @@ extern "C" {
 #define OC_CLASS_SCHEMA_LEN             sizeof(OC_CLASS_SCHEMA)-1
 #define OC_CLASS_RAFT_PERSIST_STATE     "vmwraftpersiststate"
 #define OC_CLASS_RAFT_LOG_ENTRY         "vmwraftlogentry"
+#define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
 
 #define CM_COMPONENTMANAGER             "ComponentManager"

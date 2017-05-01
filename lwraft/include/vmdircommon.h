@@ -1237,6 +1237,10 @@ BOOLEAN
 dequeIsEmpty(
     PDEQUE pDeque
     );
+VOID
+dequeFreeStringContents(
+    PDEQUE pDeque
+    );
 
 DWORD
 VmDirLinkedListCreate(
@@ -2136,6 +2140,12 @@ VmDirStrToNameAndNumber(
 VOID
 VmDirFreeReplVector(
     PVMDIR_REPL_UTDVECTOR  pVector
+    );
+
+DWORD
+VmDirAppendRaftState(
+    PDEQUE pRaftState,
+    PCSTR hostName
     );
 
 #ifdef __cplusplus

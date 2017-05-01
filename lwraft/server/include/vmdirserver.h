@@ -374,6 +374,11 @@ VmDirServerStatusEntry(
     );
 
 DWORD
+VmDirRaftStateEntry(
+    PVDIR_ENTRY*    ppEntry
+    );
+
+DWORD
 VmDirReplicationStatusEntry(
     PVDIR_ENTRY*    ppEntry
     );

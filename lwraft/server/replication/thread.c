@@ -997,7 +997,7 @@ _VmDirAppendEntriesRpc(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxy
         args.entries = NULL;
         startLogIndex = gRaftState.lastLogIndex;
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-        dwError = _VmDirGetPrevLogArgs(&args.preLogIndex, &args.preLogTerm, startLogIndex, __LINE__);
+        dwError = _VmDirGetPrevLogArgs(&args.preLogIndex, &args.preLogTerm, startLogIndex+1, __LINE__);
         BAIL_ON_VMDIR_ERROR(dwError);
     } else
     {
@@ -1301,7 +1301,7 @@ _VmDirStartProxies(
         dwError = VmDirRdnToNameValue(&dcContainerDNrdn, &pszName, &pHostname);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _VmDirNewPeerProxyInLock(pHostname, RPC_IDLE);
+        dwError = _VmDirNewPeerProxyInLock(pHostname, RPC_DISCONN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         gRaftState.clusterSize++;
@@ -2668,5 +2668,229 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+/*
+ * Set ppszLeader to raft leader's server name if it exists
+ */
+DWORD
+VmDirRaftGetLeaderString(PSTR *ppszLeader)
+{
+    BOOLEAN bLock = FALSE;
+    PSTR pszLeader = NULL;
+    DWORD dwError = 0;
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0 )
+    {
+        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
+    } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER && gRaftState.hostname.lberbv_len > 0)
+    {
+        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszLeader = pszLeader;
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Get raft active followers
+ */
+DWORD
+VmDirRaftGetFollowers(PDEQUE pFollowers)
+{
+    BOOLEAN bLock = FALSE;
+    DWORD dwError = 0;
+    PSTR pFollower = NULL;
+    PVMDIR_PEER_PROXY pPeerProxy = NULL;
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.hostname.lberbv_len > 0)
+    {
+        dwError = VmDirAllocateStringAVsnprintf(&pFollower, "%s", gRaftState.hostname.lberbv_val);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = dequePush(pFollowers, pFollower);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pFollower = NULL;
+    } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
+    {
+        for (pPeerProxy=gRaftState.proxies; pPeerProxy != NULL; pPeerProxy = pPeerProxy->pNext)
+        {
+            if (pPeerProxy->isDeleted || pPeerProxy->proxy_state==RPC_DISCONN)
+            {
+                continue;
+            }
+            // list active followers only
+            dwError = VmDirAllocateStringAVsnprintf(&pFollower, "%s", pPeerProxy->raftPeerHostname);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = dequePush(pFollowers, pFollower);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pFollower = NULL;
+        }
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pFollower);
+    dequeFreeStringContents(pFollowers);
+    goto cleanup;
+}
+
+/*
+ * Get raft volatile state on at this server
+ */
+DWORD
+VmDirRaftGetState(PDEQUE pStateQueue)
+{
+    BOOLEAN bLock = FALSE;
+    DWORD dwError = 0;
+    PSTR pNode = NULL;
+    PVMDIR_PEER_PROXY pPeerProxy = NULL;
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (gRaftState.hostname.lberbv_len == 0)
+    {
+        //Not set yet during server start or promo
+        goto cleanup;
+    }
+
+    dwError = VmDirAllocateStringAVsnprintf(&pNode, "node: %s", gRaftState.hostname.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = dequePush(pStateQueue, pNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pNode = NULL;
+
+    dwError = VmDirAllocateStringAVsnprintf(&pNode, "role: %s",
+                gRaftState.role==VDIR_RAFT_ROLE_LEADER?"leader":(gRaftState.role==VDIR_RAFT_ROLE_FOLLOWER?"follower":"candidate"));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = dequePush(pStateQueue, pNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pNode = NULL;
+
+    dwError = VmDirAllocateStringAVsnprintf(&pNode, "lastIndex: %llu", gRaftState.lastLogIndex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = dequePush(pStateQueue, pNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pNode = NULL;
+
+    dwError = VmDirAllocateStringAVsnprintf(&pNode, "lastAppliedIndex: %llu", gRaftState.lastApplied);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = dequePush(pStateQueue, pNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pNode = NULL;
+
+    dwError = VmDirAllocateStringAVsnprintf(&pNode, "term: %u", gRaftState.currentTerm);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = dequePush(pStateQueue, pNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pNode = NULL;
+
+    if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0)
+    {
+       dwError = VmDirAllocateStringAVsnprintf(&pNode, "leader: %s", gRaftState.leader.lberbv_val);
+       BAIL_ON_VMDIR_ERROR(dwError);
+
+       dwError = dequePush(pStateQueue, pNode);
+       BAIL_ON_VMDIR_ERROR(dwError);
+       pNode = NULL;
+    } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
+    {
+        for (pPeerProxy=gRaftState.proxies; pPeerProxy != NULL; pPeerProxy = pPeerProxy->pNext)
+        {
+            if (pPeerProxy->isDeleted)
+            {
+                continue;
+            }
+            dwError = VmDirAllocateStringAVsnprintf(&pNode, "follower: %s %s", pPeerProxy->raftPeerHostname,
+                        pPeerProxy->proxy_state==RPC_DISCONN?"disconnected":"active");
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = dequePush(pStateQueue, pNode);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pNode = NULL;
+        }
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pNode);
+    dequeFreeStringContents(pStateQueue);
+    goto cleanup;
+}
+
+/*
+ * Get raft cluster members
+ */
+DWORD
+VmDirRaftGetMembers(PDEQUE pMembers)
+{
+    DWORD dwError = 0;
+    VDIR_BERVALUE dcContainerDN = VDIR_BERVALUE_INIT;
+    PSTR pHostname = NULL;
+    PSTR pszName = NULL;
+    VDIR_BERVALUE dcRdn = VDIR_BERVALUE_INIT;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+    int i = 0;
+
+    VmDirGetParentDN(&(gVmdirServerGlobals.dcAccountDN), &dcContainerDN);
+    if (dcContainerDN.lberbv.bv_len == 0)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(dcContainerDN.lberbv.bv_val,
+                    LDAP_SCOPE_ONE, ATTR_OBJECT_CLASS, OC_COMPUTER, &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < entryArray.iSize; i++)
+    {
+        dwError = VmDirNormalizeDNWrapper(&(entryArray.pEntry[i].dn));
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirGetRdn(&entryArray.pEntry[i].dn, &dcRdn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirRdnToNameValue(&dcRdn, &pszName, &pHostname);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirFreeBervalContent(&dcRdn);
+        VMDIR_SAFE_FREE_STRINGA(pszName);
+
+        dwError = dequePush(pMembers, pHostname);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pHostname = NULL;
+    }
+
+cleanup:
+    VmDirFreeBervalContent(&dcContainerDN);
+    VmDirFreeBervalContent(&dcRdn);
+    VMDIR_SAFE_FREE_MEMORY(pHostname);
+    VmDirFreeEntryArrayContent(&entryArray);
+    return dwError;
+
+error:
+    dequeFreeStringContents(pMembers);
     goto cleanup;
 }

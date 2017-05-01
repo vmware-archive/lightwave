@@ -73,6 +73,10 @@ objectClasses: (
         $ msDS-SiteName
         $ vmwPlatformServicesControllerVersion
         $ ref
+        $ vmwRaftLeader
+        $ vmwRaftActiveFollower
+        $ vmwRaftMember
+        $ vmwRaftState
         )
     )
 
@@ -192,6 +196,18 @@ objectClasses: (
          $ vmwRaftFirstLogIndex
          )
     MAY  ( vmwRaftVotedFor
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.13
+    NAME 'vmwRaftClusterState'
+    DESC 'Raft state of all memmbers'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY  ( vmwRaftState
          )
     )
 
@@ -1533,6 +1549,46 @@ attributeTypes: (
     EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.15
+    NAME 'vmwRaftLeader'
+    DESC 'Raft Leader'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.16
+    NAME 'vmwRaftActiveFollower'
+    DESC 'A list of active Raft Followers'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.17
+    NAME 'vmwRaftMember'
+    DESC 'A list of Raft cluster members'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.18
+    NAME 'vmwRaftState'
+    DESC 'Raft volatile state'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
     )
 
 attributeTypes: (
