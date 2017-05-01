@@ -53,7 +53,7 @@
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}"/>
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" versions:set -DskipTests=true -Dmaven.javadoc.skip=true clean install" />
+      <arg line=" versions:set -DskipTests=true -Dmaven.javadoc.skip=true -DbuildDir=${build_dir}/vmware-sts clean install" />
     </exec>
   </target>
 
