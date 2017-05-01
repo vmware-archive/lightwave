@@ -14,15 +14,20 @@ vdcpass_CPPFLAGS = \
 vdcpass_LDADD = \
     $(top_builddir)/client/libvmdirclient.la \
     $(top_builddir)/common/libcommon.la \
+    @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @UUID_LIBS@ \
+    @SASL_LIBS@ \
+    @LDAP_LIBS@ \
+    @LBER_LIBS@
 
 vdcpass_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
