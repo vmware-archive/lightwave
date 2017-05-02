@@ -49,6 +49,44 @@
 
 #define DNS_NAME_COMPRESSION 0xC0
 
+/*
+ * TBD: Adam-Fixme
+ * This is a hack to look into BER encoded packets for
+ * specific strings. This should be fixed with proper 
+ * ber_scanf() for a more correct implementation.
+ */
+static int 
+matchBlob(unsigned char *blob, int bloblen, char *match)
+{
+    int found = 0;
+    int i = 0;
+    int j = 0;
+    int m = 0;
+    int match_len = strlen(match);
+
+    while (i<bloblen)
+    {
+        m = 0;
+        j = 0;
+        while (match[m] && (i+j) < bloblen &&
+               ((unsigned char) match[m]) == blob[i+j])
+        {
+            m++;
+            j++;
+            if (m == match_len)
+            {
+                found = 1;
+                goto done;
+            }
+        }
+        i++;
+    }
+
+done:
+    return found;
+}
+
+
 static
 void
 SetupLdapPort(
@@ -677,7 +715,7 @@ static int format_dns_name(unsigned char *buf, int off, char *forest)
     return off;
 }
 
-int format_cldap_ping_response_msg(
+int format_cldap_netlogon_response_msg(
     int messageId,
     char *forest,
     char *domainName,
@@ -840,6 +878,86 @@ error:
 }
 
 
+int format_cldap_curtime_response_msg(
+    int messageId,
+    struct berval **ret_flatten)
+{
+    int berror = 0;
+    int sts = 0;
+    BerElement *ber = NULL;
+    struct berval *flatten = NULL;
+    char curtime[32] = {0};
+    int curtime_len = 0;
+    struct tm tmv = {0};
+    struct timeval tv = {0};
+    int ths_sec = 0;  /* tenths of a sec */
+
+    ber = ber_alloc_t(LBER_USE_DER);
+    if (!ber)
+    {
+        sts = -1;
+        goto error;
+    }
+
+    gettimeofday(&tv, NULL);
+    gmtime_r(&tv.tv_sec, &tmv);
+    ths_sec = tv.tv_usec / 100000;
+
+    /*
+     * Time string format example: "20170426231645.0Z"
+     *                year mon day  hr min sec   hs */
+    sprintf(curtime, "%.4d%.2d%.2d%.2d%.2d%.2d.%.1dZ",
+        tmv.tm_year + 1900, /* 1900 offset */
+        tmv.tm_mon + 1,     /* 0 offset */
+        tmv.tm_mday,
+        tmv.tm_hour,
+        tmv.tm_min,
+        tmv.tm_sec,
+        ths_sec);
+    curtime_len = strlen(curtime);
+
+    /* Message payload response */
+    berror = ber_printf(ber,"{it{o{{o[o]}}}}",
+                        messageId, 
+                        0x64, /* tag 4; 6=Application/Constructed */
+                        "", (ber_len_t) 0, /* Empty string; 1st "o" */
+                        "currentTime", (ber_len_t) 11, /* 2nd "o" */
+                        curtime, (ber_len_t)  curtime_len);  /* 3rd "o" */
+
+    /* LDAP search done response */
+    berror = ber_printf(ber,"{it{eoo}}",
+                        messageId,
+                        0x65, /* tag 5; 6=Application/Constructed */
+                        0, /* enumerated field */
+                        "", (ber_len_t) 0,
+                        "", (ber_len_t) 0);
+    if (berror == -1)
+    {
+        sts = -3;
+        goto error;
+    }
+
+    berror = ber_flatten(ber, &flatten);
+    if (berror == -1)
+    {
+        sts = -4;
+        goto error;
+    }
+    *ret_flatten = flatten; flatten = NULL;
+
+error:
+    if (ber)
+    {
+        ber_free(ber, 1);
+    }
+    if (flatten)
+    {
+        ber_bvfree(flatten);
+    }
+    return sts;
+}
+
+
 /*
  *  Process UDP message; CLDAP requests are only supported so far.
  */
@@ -856,10 +974,16 @@ ProcessUdpConnection(
     struct berval in_ber_val = {0};
     BerElement *in_ber = NULL;
 
+#if 1
+    /*
+     * TBD: Adam-All of these hard-coded values must be removed, and this 
+     * data obtained from vmdird.
+     */
+#endif
     char *forest = "lightwave.local";
     char DomainName[] = "lightwave.local";
     char HostName[] = "photon-psc-adam";
-    char *user = "";
+    char *user = "photon-psc-adam";    /* TBD: Adam-End name in '$'?? */
     char *site = "Default-First-Site-Name";
     unsigned char GUID[] = {
         0x81, 0x2d, 0xe7, 0xdf, 0x97, 0x57, 0x4b, 0x40, 
@@ -881,17 +1005,46 @@ ProcessUdpConnection(
         goto error;
     }
 
-    retVal = format_cldap_ping_response_msg(
-                messageId,
-                forest,
-                DomainName,
-                HostName,
-                user,
-                site,
-                NULL,
-                GUID,
-                sizeof(GUID),
-                &flatten);
+    if (matchBlob(in_ber_val.bv_val, in_ber_val.bv_len, "Netlogon"))
+    {
+        if (matchBlob(in_ber_val.bv_val,
+                      in_ber_val.bv_len,
+                      "User"))
+        {
+            retVal = format_cldap_netlogon_response_msg(
+                        messageId,
+                        forest,
+                        DomainName,
+                        HostName,
+                        user,
+                        site,
+                        NULL,
+                        GUID,
+                        sizeof(GUID),
+                        &flatten);
+        }
+        else
+        {
+            retVal = format_cldap_netlogon_response_msg(
+                        messageId,
+                        forest,
+                        DomainName,
+                        HostName,
+                        NULL,  /* No user name requested */
+                        site,
+                        NULL,
+                        GUID,
+                        sizeof(GUID),
+                        &flatten);
+        }
+    }
+    else if (matchBlob(in_ber_val.bv_val, in_ber_val.bv_len, "currentTime"))
+    {
+        retVal = format_cldap_curtime_response_msg(
+                    messageId,
+                    &flatten);
+    }
+
     if (retVal != 0)
     {
         goto error;
