@@ -18,6 +18,7 @@ STAGEDIR=$PWD/stage
     --with-vmdns=$STAGEDIR/opt/vmware \
     --with-afd=$STAGEDIR/opt/vmware \
     --with-vmca=$STAGEDIR/opt/vmware \
+    --with-sts=$STAGEDIR/opt/vmware \
     --with-likewise=/opt/likewise \
     --with-ssl=/usr \
     --with-jansson=/usr \
@@ -53,3 +54,5 @@ STAGEDIR=$PWD/stage
     #--with-config=./config \
     #--with-version="1.3.0" \
     #--enable-lightwave-build=yes
+
+make

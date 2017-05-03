@@ -8,14 +8,12 @@
 
         <property file="../product.properties" />
         <property name="MAINSRCROOT" value="${basedir}/.."/>
-<!--
-        <property name="VMSTS_PACKAGE_BASE" value="${MAINSRCROOT}/../vmidentity/build/vmware-sts/packages" />
+        <property name="VMSTS_PACKAGE_BASE" value="${VMSTS_CLASSPATH}" />
         <property name="vmsts.classpath" value="${VMSTS_CLASSPATH}" />
         <property name="build.packages.vmware-identity-platform"
              value="${vmsts.classpath}/vmware-identity-platform.jar" />
         <property name="build.packages.vmware-identity-install" 
              value="${VMSTS_PACKAGE_BASE}/vmware-identity-install.jar" />
--->
         <property name="build.packages.vmware-authentication-framework"
              value="${vmsts.classpath}/authentication-framework.jar" />
         <property name="build.packages.vmware-vmca-client"
@@ -27,26 +25,20 @@
         <import file="${MAINSRCROOT}/build/ant/presets.xml" />
 
         <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}"/>
-	
         <property name="manifest_mf" value="MANIFEST.MF" />
 	<property name="src.main.resources.manifest_mf" value="${src.main.resources}/${manifest_mf}" description="Instructs the 'package' task to use this manifest file." />
 
 	<path id="classpath.main">
-<!--
       <pathelement location="${build.packages.vmware-identity-platform}" />
--->
       <pathelement location="${build.packages.vmware}" />
-<!--
       <pathelement location="${build.packages.vmware-identity-install}" />
--->
       <pathelement location="${build.packages.vmware-vmca-client}" />
       <pathelement location="${build.packages.vmware-authentication-framework}" />
       <pathelement location="${build.packages.vmware-vecs}" />
       <fileset refid="jar-set.jna" />
-      <fileset refid="jar-set.commons-codec" />	
+      <fileset refid="jar-set.commons-codec" />
       <fileset refid="jar-set.LOG4J2" />
       <fileset refid="jar-set.apache-commons-lang" />
-     
      </path>
    <!--  
     <path id="classpath.test">
