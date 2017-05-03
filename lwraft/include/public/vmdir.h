@@ -71,7 +71,7 @@ extern "C" {
 #define RAFT_PERSIST_STATE_DN                   "cn=persiststate,cn=raftcontext"
 #define RAFT_STATE_DN                           "cn=raftstate"
 
-#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
+#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Raft Clusters"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
