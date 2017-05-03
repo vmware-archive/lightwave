@@ -714,12 +714,6 @@ VdirPasswordModifyPreCheck(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, " read entry (%s) failed",
                                      VDIR_SAFE_STRING(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn)));
 
-        // handle krb logic first while we have clear text password
-        dwError = VmDirKrbUPNKeySet(  pOperation,
-                                      pEntry,
-                                      &pModAddPasswd->attr.vals[0]);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
         // handle srp password logic.
         dwError = VmDirSRPSetSecret( pOperation,
                                      pEntry,

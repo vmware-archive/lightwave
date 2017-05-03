@@ -88,9 +88,9 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        invocationId;
     VDIR_BERVALUE        bvDefaultAdminDN;
     VDIR_BERVALUE        systemDomainDN;
-    VDIR_BERVALUE        delObjsContainerDN;
+    VDIR_BERVALUE        delObjsContainerDN;    //TODO, delete this
     VDIR_BERVALUE        bvDCGroupDN;
-    VDIR_BERVALUE        bvDCClientGroupDN;
+    VDIR_BERVALUE        bvDCClientGroupDN;     //TODO, delete this
     VDIR_BERVALUE        bvServicesRootDN;
     VDIR_BERVALUE        serverObjDN;
     VDIR_BERVALUE        dcAccountDN;   // Domain controller account DN
@@ -98,7 +98,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     int                  replInterval;
     int                  replPageSize;
     VDIR_BERVALUE        utdVector; // In string format, it is stored as: <serverId1>:<origUsn1>;<serverId2>:<origUsn2>;...
-    PSTR                 pszSiteName;
+    PSTR                 pszSiteName;           //TODO, delete this
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
     USN                  initialNextUSN; // used for server restore only

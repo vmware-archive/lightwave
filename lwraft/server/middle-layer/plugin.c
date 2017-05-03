@@ -858,11 +858,6 @@ _VmDirPluginPasswordHashPreAdd(
         {
             PVDIR_PASSWORD_HASH_SCHEME pPasswdScheme = VdirDefaultPasswordScheme();
 
-            // handle krb password logic first.
-            pszErrorContext = "Krb password add";
-            dwError = VmDirKrbUPNKeySet( pOperation, pEntry, &(pAttrPasswd->vals[0]) );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             // handle srp password logic.
             pszErrorContext = "srp password add";
             dwError = VmDirSRPSetSecret( pOperation, pEntry, &(pAttrPasswd->vals[0]) );
