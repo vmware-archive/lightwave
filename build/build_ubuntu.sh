@@ -1,7 +1,5 @@
 #!/bin/sh
 
-make clean
-make distclean
 autoreconf -vif ..
 
 STAGEDIR=$PWD/stage
