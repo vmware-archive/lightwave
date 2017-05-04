@@ -53,6 +53,8 @@ VmDirIndexingThreadFun(
     VDIR_SERVER_STATE   vmdirState = VMDIRD_STATE_UNDEFINED;
     PVDIR_INDEXING_TASK pTask = NULL;
 
+    VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
+
 resume:
     while (1)
     {

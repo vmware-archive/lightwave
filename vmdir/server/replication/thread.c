@@ -182,92 +182,6 @@ error:
     goto cleanup;
 }
 
-/*
- * If the old policy is a realtime one (RR or FIFO), then increase it by
- * REPL_THREAD_SCHED_PRIORITY, otherwise (e.g. old policy is SCHED_NORMAL),
- * then set the new policy to RR with priority REPL_THREAD_SCHED_PRIORITY.
- * Assume that all operational threads have the same schedule policy/priority as
- * the replication thread before this change so that the replication thread
- * would be scheduled ahead of the operational threads.  This is to address
- * the backend's writer mutex contention problem so that the replication thread
- * wouldn't be starved by the local operational threads' write operations.
- * Pitfall: the priority upgrade has no effect on Windows 2008 server with
- * process under NORMAL_PRIORITY_CLASS, and has slight effect with
- * IDLE_PRIORITY_CLASS. If appears that Windows wakes up threads (for those
- * waiting for a mutex in NORMAL_PRIORITY_CLASS) in a FIFO way regardless of
- * their priorities. Therefore, there is no implementation of this function
- * for Windows.
- */
-static
-void
-vdirRaiseThreadSchedPriority()
-{
-    int                  old_sch_policy = 0;
-    int                  new_sch_policy = 0;
-    int                  max_sched_pri = 0;
-    struct sched_param   old_sch_param = {0};
-    struct sched_param   new_sch_param = {0};
-    int                  retVal = 0;
-    PSTR                 pszLocalErrorMsg = NULL;
-
-    retVal=pthread_getschedparam(pthread_self(), &old_sch_policy, &old_sch_param);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-         "vdirRaiseThreadSchedPriority: pthread_getschedparam failed");
-
-    if (old_sch_policy == SCHED_FIFO || old_sch_policy == SCHED_RR)
-    {
-        // Thread is already in a realtime policy,
-        // though the current vmdird wouldn't be setup at this policy
-        max_sched_pri = sched_get_priority_max(old_sch_policy);
-        if (max_sched_pri < 0)
-        {
-            retVal = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                  "vdirRaiseThreadSchedPriority: sched_get_priority_max failed on policy %d", old_sch_policy);
-
-        }
-
-        new_sch_policy = old_sch_policy;
-        new_sch_param.sched_priority = old_sch_param.sched_priority + REPL_THREAD_SCHED_PRIORITY;
-        if (new_sch_param.sched_priority > max_sched_pri )
-        {
-            new_sch_param.sched_priority =  max_sched_pri;
-        }
-    } else
-    {
-        /*
-         * Thread is in a non-realtime policy
-         * put it on the lowest RR priority which would be schduled ahead of
-         * operational threads with SCHED_OTHER
-         */
-        new_sch_policy = SCHED_RR;
-        new_sch_param.sched_priority = sched_get_priority_min(new_sch_policy);
-        if (new_sch_param.sched_priority < 0)
-        {
-            retVal = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                 "vdirRaiseThreadSchedPriority: sched_get_priority_min failed sch_policy=%d", new_sch_policy);
-        }
-    }
-
-   retVal = pthread_setschedparam(pthread_self(), new_sch_policy, &new_sch_param);
-   BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-        "vdirRaiseThreadSchedPriority: setschedparam failed: errno=%d old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
-        errno, old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
-
-   VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "vdirRaiseThreadSchedPriority: old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
-          old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
-
-done:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    return;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg));
-    goto done;
-}
-
 // vdirReplicationThrFun is the main replication function that:
 //  - Executes replication cycles endlessly
 //  - Each replication cycle consist of processing all the RAs for this vmdird instance.
@@ -300,9 +214,12 @@ vdirReplicationThrFun(
     VMDIR_REPLICATION_CONNECTION    sConnection = {0};
     VMDIR_REPLICATION_CONTEXT       sContext = {0};
 
-#ifndef _WIN32
-    vdirRaiseThreadSchedPriority();
-#endif
+    /*
+     * This is to address the backend's writer mutex contention problem so that
+     * the replication thread wouldn't be starved by the local operational threads'
+     * write operations.
+     */
+    VmDirRaiseThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
 
     retVal = _VmDirWaitForReplicationAgreement(
                 &sContext.bFirstReplicationCycle, &bExitThread);

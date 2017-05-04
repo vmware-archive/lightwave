@@ -225,6 +225,8 @@ _VmDirTombstoneReapingThreadFun(
     BOOLEAN bInLock = FALSE;
     PVDIR_THREAD_INFO pThreadInfo = (PVDIR_THREAD_INFO)pArg;
 
+    VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
+
     while (TRUE)
     {
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)

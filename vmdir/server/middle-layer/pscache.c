@@ -633,6 +633,8 @@ _VmDirPagedSearchWorkerThread(
     PVDIR_PAGED_SEARCH_ENTRY_LIST pEntryIdList = NULL;
     VDIR_OPERATION searchOp = {0};
 
+    VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
+
     dwError = VmDirInitStackOperation(
                 &searchOp,
                 VDIR_OPERATION_TYPE_INTERNAL,

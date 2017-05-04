@@ -573,6 +573,8 @@ _VmDirIntegrityCheckingThreadFun(
                     __FUNCTION__,
                     pJob->state == INTEGRITY_CHECK_JOB_START ? "start" : "recheck");
 
+    VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
+
     /*
      * TODO, lower thread priority.  Pending PR 1860315
      */

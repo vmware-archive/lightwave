@@ -695,4 +695,188 @@ VmDirFreeVmDirThread(
     }
 }
 
+/*
+ * If the old policy is a realtime one (RR or FIFO), then increase priority
+ * by iDelta, otherwise (e.g. old policy is SCHED_NORMAL), set the new policy
+ * to RR and set priority to minimum.
+ *
+ * Assume that all operational threads have the same schedule policy/priority
+ * initially so that this function would put the calling thread ahead of
+ * operational threads.
+ *
+ * Pitfall: the priority upgrade has no effect on Windows 2008 server with
+ * process under NORMAL_PRIORITY_CLASS, and has slight effect with
+ * IDLE_PRIORITY_CLASS. If appears that Windows wakes up threads (for those
+ * waiting for a mutex in NORMAL_PRIORITY_CLASS) in a FIFO way regardless of
+ * their priorities. Therefore, there is no implementation of this function
+ * for Windows.
+ */
+VOID
+VmDirRaiseThreadPriority(
+    int iDelta
+    )
+{
+#ifdef _WIN32
+    return;
+#else
+    int retVal = 0;
+    int old_sch_policy = 0;
+    int new_sch_policy = 0;
+    int max_sched_pri = 0;
+    struct sched_param  old_sch_param = {0};
+    struct sched_param  new_sch_param = {0};
+    PSTR    pszLocalErrorMsg = NULL;
+
+    retVal=pthread_getschedparam(pthread_self(), &old_sch_policy, &old_sch_param);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+            "%s: pthread_getschedparam failed", __FUNCTION__);
+
+    if (old_sch_policy == SCHED_FIFO || old_sch_policy == SCHED_RR)
+    {
+        // Thread is already in a realtime policy, though the current
+        // vmdird wouldn't be setup at this policy
+        max_sched_pri = sched_get_priority_max(old_sch_policy);
+        if (max_sched_pri < 0)
+        {
+            retVal = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+                    "%s: sched_get_priority_max failed on policy %d",
+                    __FUNCTION__, old_sch_policy);
+
+        }
+
+        new_sch_policy = old_sch_policy;
+        new_sch_param.sched_priority = old_sch_param.sched_priority + iDelta;
+        if (new_sch_param.sched_priority > max_sched_pri)
+        {
+            new_sch_param.sched_priority = max_sched_pri;
+        }
+    }
+    else
+    {
+        // Thread is in a non-realtime policy, put it on the lowest RR
+        // priority which would be schedule ahead of operational threads
+        // with SCHED_OTHER
+        new_sch_policy = SCHED_RR;
+        new_sch_param.sched_priority = sched_get_priority_min(new_sch_policy);
+        if (new_sch_param.sched_priority < 0)
+        {
+            retVal = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+                    "%s: sched_get_priority_min failed sch_policy=%d",
+                    __FUNCTION__, new_sch_policy);
+        }
+    }
+
+    retVal = pthread_setschedparam(pthread_self(), new_sch_policy, &new_sch_param);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+            "%s: setschedparam failed: errno=%d old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
+            __FUNCTION__, errno, old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+            "%s: old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
+            __FUNCTION__, old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg));
+    goto cleanup;
+#endif
+}
+
+/*
+ * If the old policy is a realtime one (RR or FIFO), then set the new policy
+ * to OTHER and set priority to maximum, otherwise (e.g. old policy is
+ * SCHED_NORMAL), decrease priority by iDelta.
+ *
+ * Assume that all operational threads have the same schedule policy/priority
+ * initially so that this function would put the calling thread behind
+ * operational threads.
+ *
+ * Pitfall: the priority upgrade has no effect on Windows 2008 server with
+ * process under NORMAL_PRIORITY_CLASS, and has slight effect with
+ * IDLE_PRIORITY_CLASS. If appears that Windows wakes up threads (for those
+ * waiting for a mutex in NORMAL_PRIORITY_CLASS) in a FIFO way regardless of
+ * their priorities. Therefore, there is no implementation of this function
+ * for Windows.
+ */
+VOID
+VmDirDropThreadPriority(
+    int iDelta
+    )
+{
+#ifdef _WIN32
+    return;
+#else
+    int retVal = 0;
+    int old_sch_policy = 0;
+    int new_sch_policy = 0;
+    int min_sched_pri = 0;
+    struct sched_param  old_sch_param = {0};
+    struct sched_param  new_sch_param = {0};
+    PSTR    pszLocalErrorMsg = NULL;
+
+    retVal=pthread_getschedparam(pthread_self(), &old_sch_policy, &old_sch_param);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+            "%s: pthread_getschedparam failed", __FUNCTION__);
+
+    if (old_sch_policy == SCHED_FIFO || old_sch_policy == SCHED_RR)
+    {
+        // Thread is in a realtime policy, though the current vmdird
+        // wouldn't be setup at this policy. Put it on the highest
+        // OTHER priority which would be schedule behind operational
+        // threads with SCHED_RR/SCHED_FIFO
+        new_sch_policy = SCHED_OTHER;
+        new_sch_param.sched_priority = sched_get_priority_max(new_sch_policy);
+        if (new_sch_param.sched_priority < 0)
+        {
+            retVal = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+                    "%s: sched_get_priority_min failed sch_policy=%d",
+                    __FUNCTION__, new_sch_policy);
+        }
+    }
+    else
+    {
+        // Thread is in a non-realtime policy, lower its priority by iDelta
+        min_sched_pri = sched_get_priority_min(old_sch_policy);
+        if (min_sched_pri < 0)
+        {
+            retVal = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+                    "%s: sched_get_priority_max failed on policy %d",
+                    __FUNCTION__, old_sch_policy);
+
+        }
+
+        new_sch_policy = old_sch_policy;
+        new_sch_param.sched_priority = old_sch_param.sched_priority - iDelta;
+        if (new_sch_param.sched_priority < min_sched_pri)
+        {
+            new_sch_param.sched_priority = min_sched_pri;
+        }
+    }
+
+    retVal = pthread_setschedparam(pthread_self(), new_sch_policy, &new_sch_param);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+            "%s: setschedparam failed: errno=%d old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
+            __FUNCTION__, errno, old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+            "%s: old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
+            __FUNCTION__, old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg));
+    goto cleanup;
+#endif
+}
+
 #endif

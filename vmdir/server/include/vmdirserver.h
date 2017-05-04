@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-#define REPL_THREAD_SCHED_PRIORITY 10
+#define DEFAULT_THREAD_PRIORITY_DELTA 10
 
 /*
  * Plugin logic has four hook points per LDAP operation -
