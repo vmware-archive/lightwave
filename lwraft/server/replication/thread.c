@@ -100,9 +100,6 @@ InitializeReplicationThread(
     dwError = VmDirAllocateCondition(&gRaftNewLogCond);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory( sizeof(*pThrInfo), (PVOID*)&pThrInfo);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     if (gVmdirGlobals.dwRaftElectionTimeoutMS < 10 ||
         gVmdirGlobals.dwRaftPingIntervalMS < 20 ||
         gVmdirGlobals.dwRaftElectionTimeoutMS <= (gVmdirGlobals.dwRaftPingIntervalMS << 1))
@@ -118,14 +115,18 @@ InitializeReplicationThread(
       "RaftElectionTimeoutMS", gVmdirGlobals.dwRaftElectionTimeoutMS,
       "RaftPingIntervalMS", gVmdirGlobals.dwRaftPingIntervalMS);
 
-    VmDirSrvThrInit(
-                &pThrInfo,
-                gVmdirGlobals.replAgrsMutex,       // alternative mutex
-                gVmdirGlobals.replAgrsCondition,   // alternative cond
-                TRUE);
+    dwError = VmDirSrvThrInit(
+            &pThrInfo,
+            gVmdirGlobals.replAgrsMutex,       // alternative mutex
+            gVmdirGlobals.replAgrsCondition,   // alternative cond
+            TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-
-    dwError = VmDirCreateThread( &pThrInfo->tid, FALSE, _VmDirReplicationThrFun, pThrInfo);
+    dwError = VmDirCreateThread(
+            &pThrInfo->tid,
+            pThrInfo->bJoinThr,
+            _VmDirReplicationThrFun,
+            pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pThrInfo);
@@ -611,7 +612,7 @@ _VmDirNewPeerProxyInLock(PCSTR pHostname, VDIR_RAFT_PROXY_STATE state)
     //If the proxy is in promo process, then it Will be set to RpcIdle when receving a vote request from the peer.
     pPp->proxy_state = state;
 
-    dwError = VmDirCreateThread(&pPp->tid, TRUE, VmDirRaftPeerThread, (PVOID)pPp);
+    dwError = VmDirCreateThread(&pPp->tid, FALSE, VmDirRaftPeerThread, (PVOID)pPp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirNewPeerProxy: added new peer proxy for host %s", pHostname);
@@ -699,37 +700,55 @@ _VmDirReplicationThrFun(
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "_VmDirReplicationThrFun: _VmDirRaftLoadGlobals");
 
     dwError = _VmDirLoadRaftState();
-    BAIL_ON_VMDIR_ERROR( dwError);
-
-    dwError = _VmDirStartProxies();
-    BAIL_ON_VMDIR_ERROR( dwError);
-
-    dwError = VmDirAllocateMemory( sizeof(*pRaftVoteSchdThreadInfo), (PVOID*)&pRaftVoteSchdThreadInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirSrvThrInit( &pRaftVoteSchdThreadInfo, gVmdirGlobals.replAgrsMutex, gVmdirGlobals.replAgrsCondition, TRUE);
+    dwError = _VmDirStartProxies();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateThread( &pRaftVoteSchdThreadInfo->tid, TRUE, _VmDirRaftVoteSchdThread, pRaftVoteSchdThreadInfo);
+    dwError = VmDirSrvThrInit(
+            &pRaftVoteSchdThreadInfo,
+            gVmdirGlobals.replAgrsMutex,
+            gVmdirGlobals.replAgrsCondition,
+            TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateThread(
+            &pRaftVoteSchdThreadInfo->tid,
+            pRaftVoteSchdThreadInfo->bJoinThr,
+            _VmDirRaftVoteSchdThread,
+            pRaftVoteSchdThreadInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pRaftVoteSchdThreadInfo);
 
-    dwError = VmDirAllocateMemory( sizeof(*pRaftLogApplyThreadInfo), (PVOID*)&pRaftLogApplyThreadInfo);
+    dwError = VmDirSrvThrInit(
+            &pRaftLogApplyThreadInfo,
+            gVmdirGlobals.replAgrsMutex,
+            gVmdirGlobals.replAgrsCondition,
+            TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirSrvThrInit( &pRaftLogApplyThreadInfo, gVmdirGlobals.replAgrsMutex, gVmdirGlobals.replAgrsCondition, TRUE);
-
-    dwError = VmDirCreateThread( &pRaftLogApplyThreadInfo->tid, TRUE, _VmDirRaftLogApplyThread, pRaftLogApplyThreadInfo);
+    dwError = VmDirCreateThread(
+            &pRaftLogApplyThreadInfo->tid,
+            pRaftLogApplyThreadInfo->bJoinThr,
+            _VmDirRaftLogApplyThread,
+            pRaftLogApplyThreadInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pRaftLogApplyThreadInfo);
 
-    dwError = VmDirAllocateMemory( sizeof(*pRaftLogCompactThreadInfo), (PVOID*)&pRaftLogCompactThreadInfo);
+    dwError = VmDirSrvThrInit(
+            &pRaftLogCompactThreadInfo,
+            gVmdirGlobals.replAgrsMutex,
+            gVmdirGlobals.replAgrsCondition,
+            TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirSrvThrInit( &pRaftLogCompactThreadInfo, gVmdirGlobals.replAgrsMutex, gVmdirGlobals.replAgrsCondition, TRUE);
-
-    dwError = VmDirCreateThread( &pRaftLogCompactThreadInfo->tid, TRUE, _VmDirRaftLogCompactThread, pRaftLogCompactThreadInfo);
+    dwError = VmDirCreateThread(
+            &pRaftLogCompactThreadInfo->tid,
+            pRaftLogCompactThreadInfo->bJoinThr,
+            _VmDirRaftLogCompactThread,
+            pRaftLogCompactThreadInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pRaftLogCompactThreadInfo);

@@ -1099,7 +1099,7 @@ _TestVmDirCreateThread(
     *pdwStartVal = dwStartVal;
 
    //create and start the thread
-   dwError = VmDirCreateThread(pTid, FALSE, pStartRoutine, pdwStartVal);
+   dwError = VmDirCreateThread(pTid, TRUE, pStartRoutine, pdwStartVal);
    BAIL_ON_VMDIR_ERROR(dwError);
 
    *ppTID = pTid;
