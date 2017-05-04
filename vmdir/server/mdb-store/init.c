@@ -697,7 +697,7 @@ VmDirInitDbCopyThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirDbCopyThread,
                 NULL);
     BAIL_ON_VMDIR_ERROR(dwError);

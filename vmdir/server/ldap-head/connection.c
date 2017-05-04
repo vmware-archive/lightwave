@@ -194,11 +194,6 @@ VmDirInitConnAcceptThread(
     for (i = 0; i < dwLdapPorts; i++)
     {
         dwError = VmDirAllocateMemory(
-                sizeof(*pThrInfo),
-                (PVOID*)&pThrInfo);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirAllocateMemory(
                 sizeof(DWORD),
                 (PVOID)&pdwPort);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -206,15 +201,15 @@ VmDirInitConnAcceptThread(
         *pdwPort = pdwLdapPorts[i];
 
         dwError = VmDirSrvThrInit(
-                    &pThrInfo,
-                    gVmdirGlobals.replCycleDoneMutex,
-                    gVmdirGlobals.replCycleDoneCondition,
-                    TRUE);
+                &pThrInfo,
+                gVmdirGlobals.replCycleDoneMutex,
+                gVmdirGlobals.replCycleDoneCondition,
+                TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 vmdirConnAcceptThrFunc,
                 (PVOID)pdwPort);  // New thread owns pdwPort
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -241,7 +236,7 @@ VmDirInitConnAcceptThread(
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 vmdirSSLConnAcceptThrFunc,
                 (PVOID)pdwPort);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1047,7 +1042,7 @@ vmdirConnAccept(
         newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
 
-        retVal = VmDirCreateThread(&threadId, TRUE, ProcessAConnection, (PVOID)pConnCtx);
+        retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: VmDirCreateThread() (port) failed with errno: %d",

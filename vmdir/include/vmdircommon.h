@@ -1152,7 +1152,7 @@ VmDirConditionBroadcast2003(
 DWORD
 VmDirCreateThread(
     PVMDIR_THREAD pThread,
-    BOOLEAN bDetached,
+    BOOLEAN bJoinThr,
     PVMDIR_START_ROUTINE pStartRoutine,
     PVOID pArgs
     );

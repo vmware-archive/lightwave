@@ -22,15 +22,15 @@ InitializeIndexingThread(
     DWORD   dwError = 0;
 
     dwError = VmDirSrvThrInit(
-                &gVdirIndexGlobals.pThrInfo,
-                gVdirIndexGlobals.mutex,
-                gVdirIndexGlobals.cond,
-                TRUE);
+            &gVdirIndexGlobals.pThrInfo,
+            gVdirIndexGlobals.mutex,
+            gVdirIndexGlobals.cond,
+            TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateThread(
             &gVdirIndexGlobals.pThrInfo->tid,
-            FALSE,
+            gVdirIndexGlobals.pThrInfo->bJoinThr,
             VmDirIndexingThreadFun,
             gVdirIndexGlobals.pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);

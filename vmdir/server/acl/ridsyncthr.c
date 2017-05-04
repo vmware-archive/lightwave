@@ -35,7 +35,7 @@ VmDirInitRidSynchThr(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirRidSyncThr,
                 pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);

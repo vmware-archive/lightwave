@@ -276,7 +276,7 @@ _VmDirInitIntegrityCheckThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirIntegrityCheckingThreadFun,
                 pGlobalJob);
     BAIL_ON_VMDIR_ERROR(dwError);

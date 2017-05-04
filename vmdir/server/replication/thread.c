@@ -160,13 +160,17 @@ InitializeReplicationThread(
     PVDIR_THREAD_INFO   pThrInfo = NULL;
 
     dwError = VmDirSrvThrInit(
-                &pThrInfo,
-                gVmdirGlobals.replAgrsMutex,
-                gVmdirGlobals.replAgrsCondition,
-                TRUE);
+            &pThrInfo,
+            gVmdirGlobals.replAgrsMutex,
+            gVmdirGlobals.replAgrsCondition,
+            TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateThread( &pThrInfo->tid, FALSE, vdirReplicationThrFun, pThrInfo);
+    dwError = VmDirCreateThread(
+            &pThrInfo->tid,
+            pThrInfo->bJoinThr,
+            vdirReplicationThrFun,
+            pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pThrInfo);

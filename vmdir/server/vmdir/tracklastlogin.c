@@ -103,7 +103,7 @@ VmDirInitTrackLastLoginThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirTrackLastLoginTimeThreadFun,
                 pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);

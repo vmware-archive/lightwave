@@ -52,7 +52,7 @@ VmDirInitTombstoneReapingThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirTombstoneReapingThreadFun,
                 pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
