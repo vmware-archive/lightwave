@@ -1,5 +1,5 @@
-thirdparty_srcdir = $(top_srcdir)/../lwraft/thirdparty
-thirdparty_builddir = $(top_builddir)/../../lwraft/build/thirdparty
+thirdparty_srcdir = $(top_srcdir)/thirdparty
+thirdparty_builddir = $(top_builddir)/thirdparty
 
 noinst_PROGRAMS = \
     parsedb \

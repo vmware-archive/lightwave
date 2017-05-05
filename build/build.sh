@@ -25,6 +25,7 @@ STAGEDIR=$PWD/stage
     --with-ant=/usr/share/ant \
     --with-config=./config \
     --with-version="1.3.0" \
+    --with-datastore=mdb \
     --enable-server=yes \
     --enable-lightwave-build=yes \
     --enable-krb5-default=yes \
