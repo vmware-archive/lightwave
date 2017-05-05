@@ -36,7 +36,7 @@ VmDirRESTServerInit(
     MODULE_REG_MAP stRegMap[] =
     {
         {"ldap", VmDirRESTGetLdapModule},
-        {"lwraftobject", VmDirRESTGetLdapModule},
+        {"object", VmDirRESTGetObjectModule},
         {NULL, NULL}
     };
 
@@ -143,7 +143,7 @@ VmDirRESTRequestHandler(
 
     dwError = coapi_find_handler(
             gpVdirRestApiDef,
-            pRestOp->pszEndpoint,
+            pRestOp->pszPath,
             pRestOp->pszMethod,
             &pMethod);
     BAIL_ON_VMDIR_ERROR(dwError);

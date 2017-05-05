@@ -45,9 +45,10 @@
 
 #include <backend.h>
 #include <middlelayer.h>
+#include <ldaphead.h>
 #include <resthead.h>
-#include <vmdirserver.h>
 #include <schema.h>
+#include <vmdirserver.h>
 
 #include <copenapi/copenapi.h>
 #include <curl/curl.h>

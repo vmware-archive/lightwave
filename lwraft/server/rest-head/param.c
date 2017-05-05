@@ -17,7 +17,7 @@
 DWORD
 VmDirRESTGetStrParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     PSTR*                   ppszVal,
     BOOLEAN                 bRequired
     )
@@ -57,7 +57,7 @@ error:
 DWORD
 VmDirRESTGetIntParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     int*                    piVal,
     BOOLEAN                 bRequired
     )
@@ -94,9 +94,57 @@ error:
 }
 
 DWORD
+VmDirRESTGetBoolParam(
+    PVDIR_REST_OPERATION    pRestOp,
+    PCSTR                   pszKey,
+    BOOLEAN*                pbVal,
+    BOOLEAN                 bRequired
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszVal = NULL;
+
+    if (!pRestOp || IsNullOrEmptyString(pszKey) || !pbVal)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (LwRtlHashMapFindKey(pRestOp->pParamMap, (PVOID*)&pszVal, pszKey) ||
+        IsNullOrEmptyString(pszVal))
+    {
+        dwError = bRequired ? VMDIR_ERROR_INVALID_REQUEST : 0;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (VmDirStringCompareA(pszVal, "true", FALSE) == 0)
+    {
+        *pbVal = TRUE;
+    }
+    else if (VmDirStringCompareA(pszVal, "false", FALSE) == 0)
+    {
+        *pbVal = FALSE;
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d) (pszKey=%s)",
+            __FUNCTION__, dwError, VDIR_SAFE_STRING(pszKey));
+
+    goto cleanup;
+}
+
+DWORD
 VmDirRESTGetStrListParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     PVMDIR_STRING_LIST*     ppValList,
     BOOLEAN                 bRequired
     )
@@ -136,7 +184,6 @@ error:
 DWORD
 VmDirRESTGetLdapSearchParams(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR*                   ppszDN,
     int*                    piScope,
     PVDIR_FILTER*           ppFilter,
     PVDIR_BERVALUE*         ppbvAttrs,
@@ -145,7 +192,6 @@ VmDirRESTGetLdapSearchParams(
 {
     DWORD   dwError = 0;
     DWORD   i = 0;
-    PSTR    pszDN = NULL;
     PSTR    pszScope = NULL;
     PSTR    pszFilter = NULL;
     PVMDIR_STRING_LIST  pAttrs = NULL;
@@ -160,21 +206,6 @@ VmDirRESTGetLdapSearchParams(
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    switch (pRestOp->pResource->rscType)
-    {
-        case VDIR_REST_RSC_LDAP:
-                dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
-                BAIL_ON_VMDIR_ERROR(dwError);
-                break;
-
-        case VDIR_REST_RSC_OBJECT:
-                dwError = VmDirRESTEndpointToDN(pRestOp, &pszDN);
-                BAIL_ON_VMDIR_ERROR(dwError);
-                break;
-
-        default: BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
     }
 
     dwError = VmDirRESTGetStrParam(pRestOp, "scope", &pszScope, FALSE);
@@ -269,7 +300,6 @@ VmDirRESTGetLdapSearchParams(
         VMDIR_SAFE_FREE_MEMORY(pPagedResultsCtrl);
     }
 
-    *ppszDN = pszDN;
     *piScope = scope;
     *ppFilter = pFilter;
     *ppbvAttrs = pbvAttrs;
@@ -286,9 +316,162 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError);
 
-    VMDIR_SAFE_FREE_MEMORY(pszDN);
     DeleteFilter(pFilter);
     VMDIR_SAFE_FREE_MEMORY(pbvAttrs);
     VMDIR_SAFE_FREE_MEMORY(pPagedResultsCtrl);
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTGetObjectTenantParam(
+    PVDIR_REST_OPERATION    pRestOp,
+    PSTR*                   ppszTenant
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszTenant = NULL;
+
+    if (!pRestOp || !ppszTenant)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirRESTGetStrParam(pRestOp, "tenant", &pszTenant, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pszTenant))
+    {
+        dwError = VmDirDomainDNToName(
+                BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN),
+                &pszTenant);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszTenant = pszTenant;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pszTenant);
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTGetObjectGetParams(
+    PVDIR_REST_OPERATION    pRestOp,
+    PSTR*                   ppszTenant,
+    int*                    piSearchScope,
+    PVDIR_FILTER*           ppFilter,
+    PVDIR_BERVALUE*         ppbvAttrs,
+    PVDIR_LDAP_CONTROL*     ppPagedResultsCtrl
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszTenant = NULL;
+    int     scope = LDAP_SCOPE_BASE;
+    VDIR_BERVALUE   bvFilter = {0};
+    PVDIR_FILTER    pFilter = NULL;
+    PVDIR_FILTER    pDecodedFilter = NULL;
+    PVDIR_BERVALUE  pbvAttrs = NULL;
+    PVDIR_LDAP_CONTROL  pPagedResultsCtrl = NULL;
+
+    if (!pRestOp || !ppszTenant || !piSearchScope || !ppFilter || !ppbvAttrs || !ppPagedResultsCtrl)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirRESTRenameParamKey(pRestOp, "searchscope", "scope");
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTGetLdapSearchParams(
+            pRestOp,
+            &scope,
+            &pFilter,
+            &pbvAttrs,
+            &pPagedResultsCtrl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTGetObjectTenantParam(pRestOp, &pszTenant);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pFilter)
+    {
+        dwError = VmDirRESTDecodeObjectFilter(pFilter, pszTenant);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // need to convert filter -> string -> filter because
+        // parsing the first filter might have failed
+        dwError = FilterToStrFilter(pFilter, &bvFilter);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = StrFilterToFilter(bvFilter.lberbv.bv_val, &pDecodedFilter);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppPagedResultsCtrl = pPagedResultsCtrl;
+    *ppFilter = pDecodedFilter;
+    *ppszTenant = pszTenant;
+    *piSearchScope = scope;
+    *ppbvAttrs = pbvAttrs;
+
+cleanup:
+    VmDirFreeBervalContent(&bvFilter);
+    DeleteFilter(pFilter);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pPagedResultsCtrl);
+    VMDIR_SAFE_FREE_MEMORY(pszTenant);
+    VMDIR_SAFE_FREE_MEMORY(pbvAttrs);
+    DeleteFilter(pDecodedFilter);
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTRenameParamKey(
+    PVDIR_REST_OPERATION    pRestOp,
+    PCSTR                   pszOldKey,
+    PCSTR                   pszNewKey
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszNewKeyCp = NULL;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+
+    if (IsNullOrEmptyString(pszOldKey) || IsNullOrEmptyString(pszNewKey))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (LwRtlHashMapRemove(pRestOp->pParamMap, (PVOID)pszOldKey, &pair) == 0)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pair.pKey);
+
+        dwError = VmDirAllocateStringA(pszNewKey, &pszNewKeyCp);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = LwRtlHashMapInsert(
+                pRestOp->pParamMap, pszNewKeyCp, pair.pValue, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pszNewKeyCp);
     goto cleanup;
 }

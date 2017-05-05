@@ -10,6 +10,7 @@ librest_head_la_SOURCES = \
     httperror.c \
     ldapapi.c \
     libmain.c \
+    objectapi.c \
     operation.c \
     param.c \
     resource.c \

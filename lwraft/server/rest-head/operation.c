@@ -46,7 +46,7 @@ VmDirRESTOperationCreate(
     dwError = VmDirRESTResultCreate(&pRestOp->pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pRestOp->pResource = VmDirRESTGetResource(VDIR_REST_RSC_UNKNOWN);
+    pRestOp->pResource = VmDirRESTGetResource(NULL);
 
     *ppRestOp = pRestOp;
 
@@ -71,7 +71,6 @@ VmDirRESTOperationReadRequest(
     DWORD   dwError = 0;
     DWORD   i = 0, done = 0;
     json_error_t    jError = {0};
-    VDIR_REST_RESOURCE_TYPE  rscType = VDIR_REST_RSC_UNKNOWN;
     PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
     PSTR    pszVal = NULL;
@@ -89,23 +88,31 @@ VmDirRESTOperationReadRequest(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request URI
-    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszEndpoint);
+    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pszTmp = VmDirStringChrA(pRestOp->pszEndpoint, '?');
+    pszTmp = VmDirStringChrA(pRestOp->pszPath, '?');
     if (pszTmp)
     {
         *pszTmp = '\0';
     }
 
-    // determine resource and assign error callbacks
-    rscType = VmDirRESTGetEndpointRscType(pRestOp->pszEndpoint);
-    if (rscType == VDIR_REST_RSC_UNKNOWN)
+    // determine resource
+    pRestOp->pResource = VmDirRESTGetResource(pRestOp->pszPath);
+    if (pRestOp->pResource->rscType == VDIR_REST_RSC_UNKNOWN)
     {
         dwError = VMDIR_ERROR_INVALID_REQUEST;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    pRestOp->pResource = VmDirRESTGetResource(rscType);
+
+    // extract sub-path
+    if (pRestOp->pResource->bIsEndpointPrefix)
+    {
+        dwError = VmDirAllocateStringA(
+                pRestOp->pszPath + strlen(pRestOp->pResource->pszEndpoint) + 1,
+                &pRestOp->pszSubPath);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // read request authorization info
     dwError = VmRESTGetHttpHeader(pRestReq, "Authorization", &pRestOp->pszAuth);
@@ -144,6 +151,20 @@ VmDirRESTOperationReadRequest(
         pRestOp->pjInput = json_loads(pszInput, 0, &jError);
         if (!pRestOp->pjInput)
         {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s failed to parse json payload: "
+                    "(text=%s), "
+                    "(source=%s), "
+                    "(line=%d), "
+                    "(column=%d), "
+                    "(position=%d)",
+                    __FUNCTION__,
+                    jError.text,
+                    jError.source,
+                    jError.line,
+                    jError.column,
+                    jError.position);
+
             dwError = VMDIR_ERROR_INVALID_REQUEST;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -251,7 +272,8 @@ VmDirFreeRESTOperation(
     {
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszEndpoint);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

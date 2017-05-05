@@ -403,6 +403,13 @@ VmDirStringNCompareA(
     );
 
 BOOLEAN
+VmDirStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    );
+
+BOOLEAN
 VmDirStringEndsWith(
     PCSTR   pszStr,
     PCSTR   pszSuffix,

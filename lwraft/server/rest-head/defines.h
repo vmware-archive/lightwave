@@ -24,9 +24,6 @@
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
-#define VMDIR_REST_DN_STR           "dn"
-#define VMDIR_REST_OBJECTPATH_STR   "objectpath"
-
 // OIDC
 #define VMDIR_REST_OIDC_SERVER              "localhost"
 #define VMDIR_REST_OIDC_PORT                443
