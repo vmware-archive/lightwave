@@ -19,6 +19,7 @@ STAGEDIR=$PWD/stage
     --with-ssl=/usr \
     --with-sqlite=/usr \
     --with-jansson=/usr \
+    --with-maven=/usr \
     --with-boost=/usr \
     --with-python=/usr \
     --with-java=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.121-10.b14.fc25.x86_64 \
@@ -39,6 +40,3 @@ STAGEDIR=$PWD/stage
     ac_cv_lib_vmafdclient_VmAfdGetDomainNameA=yes \
     ac_cv_header_vmca_h=yes \
     ac_cv_lib_vmcaclient_VMCACreateSelfSignedCertificateA=yes
-
-#    --with-maven=/usr
-#    --localstatedir=/var/lib/vmware/vmafd

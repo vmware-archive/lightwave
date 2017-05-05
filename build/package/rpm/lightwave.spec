@@ -1,4 +1,4 @@
-Name:    vmware-lightwave
+Name:    lightwave
 Summary: VMware Lightwave
 Version: %{_version}
 Release: %{_patch}
@@ -7,12 +7,13 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
+
 #Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, openjre >= 1.8.0.112, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8
 #BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, krb5-devel >= 1.14, likewise-open-devel >= 6.2.10, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.112, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, apache-maven >= 3.3.9, boost-devel = 1.60.0 
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, openjre >= 1.8.0.112, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, java-1.8.0-openjdk >= 1.8.0.112, apache-commons-daemon >= 1.0.15, tomcat >= 8.5.8, lightwave-client = %{_version}
 BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, krb5-devel >= 1.14, likewise-open-devel >= 6.2.10, sqlite-devel >= 3.14, python2-devel >= 2.7.8, java-1.8.0-openjdk-devel > 1.8.0.112, ant-lib >= 1.9.4, ant-contrib >= 1.0, maven >= 3.3.9, boost-devel = 1.60.0 
 %description
-VMware Lightwave
+VMware Lightwave Server
 
 #
 # The _unpackaged_files_terminate_build macro, if set to 1,
@@ -28,7 +29,7 @@ VMware Lightwave
 %define _bindir %{_prefix}/bin
 %define _webappsdir %{_prefix}/vmware-sts/webapps
 %define _configdir %{_prefix}/share/config
-%define _serviceddir /lib/systemd/system
+%define _servicedir /lib/systemd/system
 
 %if 0%{?_likewise_open_prefix:1} == 0
 %define _likewise_open_prefix /opt/likewise
@@ -110,26 +111,21 @@ VMware Lightwave
 
 %package client
 Summary: Lightwave Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, openjre >= 1.8.0.45
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, java-1.8.0-openjdk >= 1.8.0.45
 %description client
 Client libraries to communicate with Lightwave Services
 
-%package client-devel
+%package devel
 Summary: Lightwave Client Development Library
-Requires: lightwave-client = %{version}
-%description client-devel
+Requires: lightwave-client = %{_version}
+%description devel
 Development Libraries to communicate with Ligthwave Services
 
-%package client-python
-Summary: VMware Lightwave Python Files
-Requires: boost = 1.60.0
-%description client-python
-Python files included in Lightwave
-
-%package samples
-Summary: VMware Secure Token Service Samples
-%description samples
-Samples for VMware Secure Token Service
+%package raft
+Summary: Lightwave Raft Service
+Requires: lightwave-client = %{_version}
+%description raft
+Lightwave Raft Service
 
 %pre
 #
@@ -207,7 +203,7 @@ Samples for VMware Secure Token Service
 
     /bin/systemctl enable firewall.service >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        /bin/ln -s %{_serviceddir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
+        /bin/ln -s %{_servicedir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
     fi
 
     /bin/systemctl >/dev/null 2>&1
@@ -701,43 +697,15 @@ fi
 %files
 
 %defattr(-,root,root,0755)
+
 %{_bindir}/ic-promote
 %{_bindir}/ic-join
 %{_bindir}/configure-lightwave-server
 %{_bindir}/configure-identity-server
 %{_bindir}/domainjoin.sh
-%{_lib64dir}/*.so*
-%{_jarsdir}/*.jar
-%{_configdir}/firewall.json
-%{_configdir}/setfirewallrules.py
-%{_serviceddir}/firewall.service
-
-%exclude %{_lib64dir}/*.a
-%exclude %{_lib64dir}/*.la
-
-%defattr(-,root,root)
-%{_sbindir}/*
-#%{_bindir}/lwraftpromo
-#%{_bindir}/lwraftadmintool
-#%{_bindir}/lwraftleavefed
-#%{_bindir}/lwraftschema
-#%{_bindir}/unix_srp
-#%{_lib64dir}/sasl2/libsasllwraftdb.so*
-#%{_lib64dir}/libkrb5crypto.so*
-#%{_lib64dir}/libvmkdcserv.so*
-#%{_datadir}/config/sasllwraftd.conf
-#%{_datadir}/config/lwraftschema.ldif
-#%{_datadir}/config/lwraft-rest.json
-#
-#%{_datadir}/config/lwraft.reg
-#%{_datadir}/config/lwraftd-syslog-ng.conf
-
-%{_datadir}/config/vmafd.reg
-%{_datadir}/config/vmafdd-syslog-ng.conf
-
-%{_datadir}/config/vmca.reg
-%{_datadir}/config/vmcad-syslog-ng.conf
-
+%{_bindir}/test-ldapbind
+%{_bindir}/test-logon
+%{_bindir}/test-svr
 %{_bindir}/vdcadmintool
 %{_bindir}/vdcbackup
 %{_bindir}/vdcleavefed
@@ -752,28 +720,30 @@ fi
 %{_bindir}/vdcschema
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
-%{_lib64dir}/libkrb5crypto.so*
+
+%{_sbindir}/vmafdd
+%{_sbindir}/vmcad
+%{_sbindir}/vmdird
+%{_sbindir}/vmdnsd
+%{_sbindir}/vmware-stsd.sh
+%{_sbindir}/configure-build.sh
+%{_sbindir}/sso-config.sh
+
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
-%{_lib64dir}/libvmkdcserv.so*
+
+%{_datadir}/config/vmafd.reg
+%{_datadir}/config/vmafdd-syslog-ng.conf
+%{_datadir}/config/vmca.reg
+%{_datadir}/config/vmcad-syslog-ng.conf
 %{_datadir}/config/saslvmdird.conf
 %{_datadir}/config/vmdir.reg
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
 %{_datadir}/config/vmdir-rest.json
-
-%{_sbindir}/vmdnsd
 %{_datadir}/config/vmdns.reg
 %{_datadir}/config/vmdnsd-syslog-ng.conf
+%{_datadir}/config/idm/*
 
-/lib/systemd/system/vmware-stsd.service
-%{_sbindir}/vmware-stsd.sh
-%{_sbindir}/configure-build.sh
-%{_sbindir}/sso-config.sh
-%{_includedir}/*.h
-%{_lib64dir}/*.so*
-%{_bindir}/test-ldapbind
-%{_bindir}/test-logon
-%{_bindir}/test-svr
 %{_jarsdir}/openidconnect-client-lib.jar
 %{_jarsdir}/openidconnect-common.jar
 %{_jarsdir}/openidconnect-protocol.jar
@@ -789,12 +759,18 @@ fi
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-server.jar
+
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
-%{_datadir}/config/idm/*
+
+%{_configdir}/firewall.json
+%{_configdir}/setfirewallrules.py
+
+%{_servicedir}/firewall.service
+%{_servicedir}/vmware-stsd.service
+
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
-
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.policy
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.properties
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/context.xml
@@ -803,52 +779,61 @@ fi
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
 
-%exclude %{_lib64dir}/*.la
-%exclude %{_lib64dir}/*.a
-
 %files client
 
 %defattr(-,root,root)
+
 %{_bindir}/cdc-cli
+%{_bindir}/certool
 %{_bindir}/dir-cli
 %{_bindir}/domainjoin
+%{_bindir}/lw-support-bundle.sh
+%{_bindir}/sl-cli
+%{_bindir}/vmafd-cli
+%{_bindir}/vmdns-cli
+%{_bindir}/vdcaclmgr
 %{_bindir}/vdcpromo
 %{_bindir}/vecs-cli
-%{_bindir}/vmafd-cli
-%{_bindir}/sl-cli
-%{_bindir}/lw-support-bundle.sh
-%{_sysconfdir}/vmware/java/vmware-override-java.security
-%{_datadir}/config/java.security.linux
+
 %{_lib64dir}/libvecsjni.so*
 %{_lib64dir}/libcdcjni.so*
 %{_lib64dir}/libheartbeatjni.so*
-%{_jreextdir}/vmware-endpoint-certificate-store.jar
-%{_jreextdir}/client-domain-controller-cache.jar
-%{_jreextdir}/afd-heartbeat-service.jar
-%{_jarsdir}/*.jar
 %{_lib64dir}/libvmafcfgapi.so*
 %{_lib64dir}/libvmafdclient.so*
 %{_lib64dir}/libvmeventclient.so*
-
-%{_bindir}/certool
-%{_datadir}/config/certool.cfg
-%{_lib64dir}/libvmcaclient.so
-%{_lib64dir}/libvmcaclient.so.0
-%{_lib64dir}/libvmcaclient.so.0.0.0
-%{_jarsdir}/*.jar
-
-%{_bindir}/vdcaclmgr
-%{_datadir}/config/vmdir-client.reg
+%{_lib64dir}/libvmcaclient.so*
 %{_lib64dir}/libvmdirclient.so*
+%{_lib64dir}/libkrb5crypto.so*
+%{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/libcsrp.so*
 %{_lib64dir}/libgssapi_ntlm.so*
 %{_lib64dir}/libgssapi_srp.so*
 %{_lib64dir}/libgssapi_unix.so*
+%{_lib64dir}/libvmdnsclient.so*
+%{_lib64dir}/libcfgutils.so*
+%{_lib64dir}/libidm.so*
+%{_lib64dir}/liblwraftclient.so*
+%{_lib64dir}/libssoafdclient.so*
+%{_lib64dir}/libssocommon.so*
+%{_lib64dir}/libssocoreclient.so*
+%{_lib64dir}/libssoidmclient.so*
+%{_lib64dir}/libssooidc.so*
+%{_lib64dir}/libssovmdirclient.so*
+%{_lib64dir}/libvmdirauth.so*
 
-%{_bindir}/vmdns-cli
+%{_datadir}/config/java.security.linux
+%{_datadir}/config/certool.cfg
+%{_datadir}/config/vmdir-client.reg
 %{_datadir}/config/vmdns-client.reg
-%{_lib64dir}/libvmdnsclient.*
 
+%{_jreextdir}/vmware-endpoint-certificate-store.jar
+%{_jreextdir}/client-domain-controller-cache.jar
+%{_jreextdir}/afd-heartbeat-service.jar
+
+%{_jarsdir}/authentication-framework.jar
+%{_jarsdir}/pscsetup.jar
+%{_jarsdir}/vmware-identity-rest-idm-samples.jar
+%{_jarsdir}/vmware-vmca-client.jar
 %{_jarsdir}/samltoken.jar
 %{_jarsdir}/vmware-identity-rest-idm-common.jar
 %{_jarsdir}/vmware-directory-rest-common.jar
@@ -866,25 +851,50 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-client.jar
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
-%{_jarsdir}/vmware-directory-rest-client.jar
-%{_includedir}/*.h
-%{_lib64dir}/*.so*
 
-%exclude %{_bindir}/*test
+%{_sysconfdir}/vmware/java/vmware-override-java.security
 
-%files client-python
+%files raft
+
 %defattr(-,root,root)
-%{_pymodulesdir}/vmafd.*
-%{_pymodulesdir}/*.py
 
-%files client-devel
+%{_sbindir}/lwraftd
+
+%{_bindir}/lwraft_upgrade.sh
+%{_bindir}/lwraftadmintool
+%{_bindir}/lwraftleavefed
+%{_bindir}/lwraftpromo
+%{_bindir}/lwraftschema
+
+%{_lib64dir}/sasl2/libsasllwraftdb.so*
+
+%{_datadir}/config/sasllwraftd.conf
+%{_datadir}/config/lwraftschema.ldif
+%{_datadir}/config/lwraft-rest.json
+%{_datadir}/config/lwraft.reg
+%{_datadir}/config/lwraftd-syslog-ng.conf
+%{_datadir}/config/lwraft-client.reg
+
+%files devel
+
 %defattr(-,root,root)
+
 %{_includedir}/vmafd.h
 %{_includedir}/vmafdtypes.h
 %{_includedir}/vmafdclient.h
 %{_includedir}/vecsclient.h
 %{_includedir}/cdcclient.h
 %{_includedir}/vmsuperlogging.h
+%{_includedir}/vmca.h
+%{_includedir}/vmcatypes.h
+%{_includedir}/vmdir.h
+%{_includedir}/vmdirauth.h
+%{_includedir}/vmdirclient.h
+%{_includedir}/vmdirerrors.h
+%{_includedir}/vmdirtypes.h
+%{_includedir}/vmdns.h
+%{_includedir}/vmdnstypes.h
+
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la
 %{_lib64dir}/libvecsjni.a
@@ -897,17 +907,8 @@ fi
 %{_lib64dir}/libvmafcfgapi.la
 %{_lib64dir}/libvmeventclient.a
 %{_lib64dir}/libvmeventclient.la
-
-%{_includedir}/vmca.h
-%{_includedir}/vmcatypes.h
 %{_lib64dir}/libvmcaclient.a
 %{_lib64dir}/libvmcaclient.la
-
-%{_includedir}/vmdir.h
-%{_includedir}/vmdirauth.h
-%{_includedir}/vmdirclient.h
-%{_includedir}/vmdirerrors.h
-%{_includedir}/vmdirtypes.h
 %{_lib64dir}/libvmdirclient.a
 %{_lib64dir}/libvmdirclient.la
 %{_lib64dir}/libcsrp.a
@@ -918,57 +919,40 @@ fi
 %{_lib64dir}/libgssapi_srp.la
 %{_lib64dir}/libgssapi_unix.a
 %{_lib64dir}/libgssapi_unix.la
+%{_lib64dir}/libvmdnsclient.a
+%{_lib64dir}/libvmdnsclient.la
 
-%{_includedir}/vmdns.h
-%{_includedir}/vmdnstypes.h
-%{_lib64dir}/libvmdnsclient.*
-
-%exclude %{_lib64dir}/libvecsdb.a
-%exclude %{_lib64dir}/libvecsdb.la
+#
+# TBD - not sure if these should be included or excluded
+#
+%{_includedir}/oidc.h
+%{_includedir}/oidc_types.h
+%{_includedir}/ssoafdclient.h
+%{_includedir}/ssocoreclient.h
+%{_includedir}/ssoerrors.h
+%{_includedir}/ssoidmclient.h
+%{_includedir}/ssotypes.h
+%{_includedir}/ssovmdirclient.h
+%{_includedir}/vmevent.h
 
 %exclude %{_bindir}/vdcvmdirpromo
 %exclude %{_bindir}/vmdirclienttest
-%exclude %{_lib64dir}/libcommonunittests.a
-%exclude %{_lib64dir}/libcommonunittests.la
-%exclude %{_lib64dir}/libcommonunittests.so
-%exclude %{_lib64dir}/libcommonunittests.so.0
-%exclude %{_lib64dir}/libcommonunittests.so.0.0.0
-%exclude %{_lib64dir}/libmisctests.a
-%exclude %{_lib64dir}/libmisctests.la
-%exclude %{_lib64dir}/libmisctests.so
-%exclude %{_lib64dir}/libmisctests.so.0
-%exclude %{_lib64dir}/libmisctests.so.0.0.0
-%exclude %{_lib64dir}/libmultitenancytests.a
-%exclude %{_lib64dir}/libmultitenancytests.la
-%exclude %{_lib64dir}/libmultitenancytests.so
-%exclude %{_lib64dir}/libmultitenancytests.so.0
-%exclude %{_lib64dir}/libmultitenancytests.so.0.0.0
-%exclude %{_lib64dir}/libpasswordapistests.a
-%exclude %{_lib64dir}/libpasswordapistests.la
-%exclude %{_lib64dir}/libpasswordapistests.so
-%exclude %{_lib64dir}/libpasswordapistests.so.0
-%exclude %{_lib64dir}/libpasswordapistests.so.0.0.0
-%exclude %{_lib64dir}/libsearchtests.a
-%exclude %{_lib64dir}/libsearchtests.la
-%exclude %{_lib64dir}/libsearchtests.so
-%exclude %{_lib64dir}/libsearchtests.so.0
-%exclude %{_lib64dir}/libsearchtests.so.0.0.0
-%exclude %{_lib64dir}/libsecuritydescriptortests.a
-%exclude %{_lib64dir}/libsecuritydescriptortests.la
-%exclude %{_lib64dir}/libsecuritydescriptortests.so
-%exclude %{_lib64dir}/libsecuritydescriptortests.so.0
-%exclude %{_lib64dir}/libsecuritydescriptortests.so.0.0.0
+%exclude %{_bindir}/*test
 
-%exclude %{_lib64dir}/libkrb5crypto.a
-%exclude %{_lib64dir}/libkrb5crypto.la
-%exclude %{_lib64dir}/sasl2/libsaslvmdirdb.a
-%exclude %{_lib64dir}/sasl2/libsaslvmdirdb.la
-%exclude %{_lib64dir}/libvmkdcserv.a
-%exclude %{_lib64dir}/libvmkdcserv.la
+%exclude %{_lib64dir}/*.la
+%exclude %{_lib64dir}/*.a
+%exclude %{_lib64dir}/sasl2/*.a
+%exclude %{_lib64dir}/sasl2/*.la
+%exclude %{_lib64dir}/libcommonunittests.*
+%exclude %{_lib64dir}/libmisctests.*
+%exclude %{_lib64dir}/libmultitenancytests.*
+%exclude %{_lib64dir}/libpasswordapistests.*
+%exclude %{_lib64dir}/libsearchtests.*
+%exclude %{_lib64dir}/libsecuritydescriptortests.*
 
-%exclude %{_bindir}/dnstest
+%exclude %{_prefix}/site-packages/identity/*
+%exclude %{_webappsdir}/openidconnect-sample-rp.war
 
 # %doc ChangeLog README COPYING
 
 %changelog
-
