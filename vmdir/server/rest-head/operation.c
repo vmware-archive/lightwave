@@ -217,21 +217,22 @@ VmDirRESTOperationWriteResponse(
             ppResponse, bodyLen > MAX_REST_PAYLOAD_LENGTH ? NULL : pszBodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (pszBody && !done)
+    while (!done)
     {
         size_t chunkLen = bodyLen > MAX_REST_PAYLOAD_LENGTH ?
                 MAX_REST_PAYLOAD_LENGTH : bodyLen;
 
         dwError = VmRESTSetData(
-                pRESTHandle, ppResponse, pszBody + sentLen, chunkLen, &done);
+                pRESTHandle,
+                ppResponse,
+                VDIR_SAFE_STRING(pszBody) + sentLen,
+                chunkLen,
+                &done);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         sentLen += chunkLen;
         bodyLen -= chunkLen;
     }
-
-    dwError = VmRESTSetHttpPayload(pRESTHandle, ppResponse, "", 0, &done);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);
