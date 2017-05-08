@@ -142,6 +142,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapsConnectPorts;
     PSTR                            pszRestListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
+    BOOLEAN                         bIsLDAPPortOpen;
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
     VDIR_SERVER_STATE               vmdirdState;

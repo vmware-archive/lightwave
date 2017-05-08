@@ -89,13 +89,6 @@ _VmDirSrvCreateBuiltInGroup(
 
 static
 DWORD
-VmDirSrvCreateDefaultPasswdPolicy(
-    PVDIR_SCHEMA_CTX pSchemaCtx,
-    PCSTR            pszPolicyDN
-    );
-
-static
-DWORD
 VmDirSrvCreateBuiltinContainer(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
@@ -393,7 +386,6 @@ VmDirSrvSetupDomainInstance(
     PSTR pszBuiltInContainerDN = NULL; // CN=BuiltIn,<domain DN>
     PSTR pszUserDN = NULL;
     PSTR pszBuiltInAdministratorsGroupDN = NULL;
-    PSTR pszDefaultPasswdLockoutPolicyDN = NULL;
     PSTR pszDCGroupDN = NULL;
     PSTR pszTenantRealmName = NULL;
 
@@ -574,24 +566,12 @@ VmDirSrvSetupDomainInstance(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    // Create default password and lockout policy
-    dwError = VmDirSrvCreateDN(PASSWD_LOCKOUT_POLICY_DEFAULT_CN, pszDomainDN, &pszDefaultPasswdLockoutPolicyDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateDefaultPasswdPolicy(pSchemaCtx, pszDefaultPasswdLockoutPolicyDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Set SD for Password lockout policy object
-    dwError = VmDirSetSecurityDescriptorForDn(pszDefaultPasswdLockoutPolicyDN, SecInfo, pSecDescRel, ulSecDescRel);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pszUsersContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszBuiltInContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszUserDN);
     VMDIR_SAFE_FREE_MEMORY(pszBuiltInAdministratorsGroupDN);
-    VMDIR_SAFE_FREE_MEMORY(pszDefaultPasswdLockoutPolicyDN);
     VMDIR_SAFE_FREE_MEMORY(pszDCGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszTenantRealmName);
 
@@ -893,50 +873,6 @@ _VmDirSrvCreateBuiltInGroup(
                     pSchemaCtx,
                     ppszAttributes,
                     (PSTR)pszDN,
-                    0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-error:
-
-    return dwError;
-}
-
-static
-DWORD
-VmDirSrvCreateDefaultPasswdPolicy(
-    PVDIR_SCHEMA_CTX pSchemaCtx,
-    PCSTR            pszPolicyDN
-    )
-{
-    DWORD dwError = 0;
-
-    PSTR ppszAttributes[] =
-    {
-        ATTR_OBJECT_CLASS,          OC_VMW_POLICY,
-        ATTR_OBJECT_CLASS,          OC_VMW_PASSWORD_POLICY,
-        ATTR_OBJECT_CLASS,          OC_VMW_LOCKOUT_POLICY,
-        ATTR_CN,                    PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
-        ATTR_ENABLED,               VDIR_LDAP_BOOLEN_SYNTAX_TRUE_STR,
-        ATTR_PASS_RECYCLE_CNT,          "5",
-        ATTR_PASS_EXP_IN_DAY,           "90",
-        ATTR_PASS_MAX_SIZE,             "20",
-        ATTR_PASS_MIN_SIZE,             "8",
-        ATTR_PASS_MIN_ALPHA_CHAR,       "2",
-        ATTR_PASS_MIN_UPPER_CHAR,       "1",
-        ATTR_PASS_MIN_LOWER_CHAR,       "1",
-        ATTR_PASS_MIN_MUN_CHAR,         "1",
-        ATTR_PASS_MIN_SP_CHAR,          "1",
-        ATTR_PASS_MAX_SAME_ADJ_CHAR,    "3",
-        ATTR_PASS_MAX_FAIL_ATTEMPT,     "5",
-        ATTR_PASS_FAIL_ATTEMPT_SEC,     "180",
-        ATTR_PASS_AUTO_UNLOCK_SEC,      "300",
-        NULL
-    };
-
-    dwError = VmDirSimpleEntryCreate(
-                    pSchemaCtx,
-                    ppszAttributes,
-                    (PSTR)pszPolicyDN,
                     0);
     BAIL_ON_VMDIR_ERROR(dwError);
 

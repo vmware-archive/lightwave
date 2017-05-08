@@ -913,6 +913,7 @@ vmdirConnAccept(
         goto cleanup;
     }
 
+    gVmdirGlobals.bIsLDAPPortOpen = TRUE;
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Connection accept thread: listening on LDAP port (%u).", dwPort);
 
     iLocalLogMask = VmDirLogGetMask();

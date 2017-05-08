@@ -23,13 +23,6 @@
     NULL                                    \
 }
 
-#define VDIR_CFG_ORG_ENTRY_INITIALIZER      \
-{                                           \
-    "objectclass",  "vmwDirCfg",            \
-    "cn",           "organization",         \
-    NULL                                    \
-}
-
 #define VDIR_OPEN_FILES_MAX 16384
 
 static
@@ -1163,20 +1156,12 @@ InitializeCFGEntries(
 {
     DWORD   dwError = 0;
     static PSTR ppszCFG_ROOT[] = VDIR_CFG_ROOT_ENTRY_INITIALIZER;
-    static PSTR ppszCFG_ORG[] = VDIR_CFG_ORG_ENTRY_INITIALIZER;
 
     dwError = VmDirSimpleEntryCreate(
             pSchemaCtx,
             ppszCFG_ROOT,
             CFG_ROOT_DN,
             CFG_ROOT_ENTRY_ID);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEntryCreate(
-            pSchemaCtx,
-            ppszCFG_ORG,
-            CFG_INDEX_ORGANIZATION_DN,
-            CFG_ORGANIZATION_ENTRY_ID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
