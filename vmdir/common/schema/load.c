@@ -24,12 +24,15 @@ VmDirLdapSchemaLoadStrLists(
 {
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
+    BOOLEAN bEmpty = FALSE;
 
     if (!pSchema || !pAtStrList || !pOcStrList || !pCrStrList)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    bEmpty = VmDirLdapSchemaIsEmpty(pSchema);
 
     for (i = 0; i < pAtStrList->dwCount; i++)
     {
@@ -38,6 +41,14 @@ VmDirLdapSchemaLoadStrLists(
 
         dwError = VmDirLdapAtParseStr(pAtStrList->pStringList[i], &pAt);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        // inherit sup syntax if available (PR 1868307)
+        if (!bEmpty)
+        {
+            (VOID)VmDirLdapAtResolveSup(pSchema, pAt);
+            // cast VOID because this might not succeed
+            // if sup isn't already added in pSchema
+        }
 
         dwError = VmDirLdapAtResolveAliases(pAt, &pAtList);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -79,6 +90,9 @@ VmDirLdapSchemaLoadStrLists(
     }
 
     dwError = VmDirLdapSchemaResolveAndVerifyAll(pSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaRemoveNoopData(pSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
