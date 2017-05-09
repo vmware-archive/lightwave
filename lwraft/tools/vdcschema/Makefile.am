@@ -23,10 +23,12 @@ lwraftschema_LDADD = \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
+    @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@
 
