@@ -94,20 +94,21 @@ VMware Lightwave Server
 %define _ssocommon_prefix /opt/vmware
 %endif
 
-%define _lwraft_dbdir %{_localstatedir}/lib/vmware/lwraft
 %define _sasl2dir %{_sasl_prefix}/lib64/sasl2
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
 %define _logdir /var/log/lightwave
 %define _logconfdir /etc/syslog-ng/lightwave.conf.d
-%define _vmafd_dbdir %_localstatedir/lib/vmware/vmafd
-%define _vecsdir %{_vmafd_dbdir}/vecs
-%define _crlsdir %{_vmafd_dbdir}/crl
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
 
-%define _vmca_dbdir %_localstatedir/lib/vmware/vmca
-%define _vmdir_dbdir %{_localstatedir}/lib/vmware/vmdir
+%define _lwraft_dbdir %{_localstatedir}/lib/vmware/lwraft
+%define _vmca_dbdir   %{_localstatedir}/lib/vmware/vmca
+%define _vmdir_dbdir  %{_localstatedir}/lib/vmware/vmdir
+%define _vmafd_dbdir  %{_localstatedir}/lib/vmware/vmafd
+
+%define _vecsdir %{_vmafd_dbdir}/vecs
+%define _crlsdir %{_vmafd_dbdir}/crl
 
 %package client
 Summary: Lightwave Client
@@ -128,9 +129,6 @@ Requires: lightwave-client = %{_version}
 Lightwave Raft Service
 
 %pre
-#
-# Pre install script
-#
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -189,10 +187,32 @@ Lightwave Raft Service
             ;;
     esac
 
+%pre raft
+
+    # First argument is 1 => New Installation
+    # First argument is 2 => Upgrade
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    /bin/systemctl start lwsmd
+                fi
+            fi
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
 %post
-#
-# Post installl script
-#
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -212,51 +232,9 @@ Lightwave Raft Service
     fi
     /bin/systemctl start firewall.service
 
-# lwraft
-
-#    /bin/mkdir -m 700 -p %{_dbdir}
-#
-#    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
-#        /bin/rm %{_sasl2dir}/lwraftd.conf
-#    fi
-#
-#    # add lwraftd.conf to sasl2 directory
-#    /bin/ln -s %{_datadir}/config/sasllwraftd.conf %{_sasl2dir}/lwraftd.conf
-#
-#    /bin/mkdir -m 755 -p %{_logdir}
-#    /bin/mkdir -m 755 -p %{_logconfdir}
-#    if [ -a %{_logconfdir}/lwraftd-syslog-ng.conf ]; then
-#        /bin/rm %{_logconfdir}/lwraftd-syslog-ng.conf
-#    fi
-#    /bin/ln -s %{_datadir}/config/lwraftd-syslog-ng.conf %{_logconfdir}/lwraftd-syslog-ng.conf
-
-# vmafd
-
-    /bin/mkdir -m 700 -p %{_dbdir}
-    /bin/mkdir -m 700 -p %{_vecsdir}
-    /bin/mkdir -m 700 -p %{_crlsdir}
-
-    /bin/mkdir -m 755 -p %{_logdir}
-    /bin/mkdir -m 755 -p %{_logconfdir}
-    if [ -a %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
-        /bin/rm %{_logconfdir}/vmafdd-syslog-ng.conf
-    fi
-    /bin/ln -s %{_datadir}/config/vmafdd-syslog-ng.conf %{_logconfdir}/vmafdd-syslog-ng.conf
-
-# vmca
-
-    /bin/mkdir -m 700 -p %{_dbdir}
-
-    /bin/mkdir -m 755 -p %{_logdir}
-    /bin/mkdir -m 755 -p %{_logconfdir}
-    if [ -a %{_logconfdir}/vmcad-syslog-ng.conf ]; then
-        /bin/rm %{_logconfdir}/vmcad-syslog-ng.conf
-    fi
-    /bin/ln -s %{_datadir}/config/vmcad-syslog-ng.conf %{_logconfdir}/vmcad-syslog-ng.conf
-
 # vmdir
 
-    /bin/mkdir -m 700 -p %{_dbdir}
+    /bin/mkdir -m 700 -p %{_vmdir_dbdir}
 
     if [ -a %{_sasl2dir}/vmdird.conf ]; then
         /bin/rm %{_sasl2dir}/vmdird.conf
@@ -280,6 +258,16 @@ Lightwave Raft Service
     fi
     /bin/ln -s %{_datadir}/config/vmdnsd-syslog-ng.conf %{_logconfdir}/vmdnsd-syslog-ng.conf
 
+# vmca
+
+    /bin/mkdir -m 700 -p %{_vmca_dbdir}
+    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/mkdir -m 755 -p %{_logconfdir}
+    if [ -a %{_logconfdir}/vmcad-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/vmcad-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/vmcad-syslog-ng.conf %{_logconfdir}/vmcad-syslog-ng.conf
+
     case "$1" in
         1)
             #
@@ -297,11 +285,9 @@ Lightwave Raft Service
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-#                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
                 sleep 2
             else
@@ -312,11 +298,9 @@ Lightwave Raft Service
                     started_lwregd=true
                     sleep 5
                 fi
-#                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -353,11 +337,9 @@ Lightwave Raft Service
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-#                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/lwraft.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
                 sleep 2
             else
@@ -368,11 +350,9 @@ Lightwave Raft Service
                     started_lwregd=true
                     sleep 5
                 fi
-#                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -410,6 +390,8 @@ fi
 
 %post client
 
+echo "DEBUG: 0" >>/tmp/DEBUG
+
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
 
@@ -436,6 +418,17 @@ fi
         fi
     fi
 
+    /bin/mkdir -m 700 -p %{_vmafd_dbdir}
+    /bin/mkdir -m 700 -p %{_vecsdir}
+    /bin/mkdir -m 700 -p %{_crlsdir}
+
+    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/mkdir -m 755 -p %{_logconfdir}
+    if [ -a %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/vmafdd-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/vmafdd-syslog-ng.conf %{_logconfdir}/vmafdd-syslog-ng.conf
+
     case "$1" in
         1)
             #
@@ -453,7 +446,7 @@ fi
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-#                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft-client.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
             else
@@ -464,7 +457,7 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-#                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft-client.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
                 if [ $started_lwregd = true ]; then
@@ -490,7 +483,7 @@ fi
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-#                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/lwraft-client.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
                 started_lwregd=false
@@ -500,7 +493,7 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-#                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft-client.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
                 if [ $started_lwregd = true ]; then
@@ -511,10 +504,97 @@ fi
             ;;
     esac
 
+%post raft
+
+    /bin/mkdir -m 700 -p %{_lwraft_dbdir}
+
+    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
+        /bin/rm %{_sasl2dir}/lwraftd.conf
+    fi
+
+    # add lwraftd.conf to sasl2 directory
+    /bin/ln -s %{_datadir}/config/sasllwraftd.conf %{_sasl2dir}/lwraftd.conf
+
+    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/mkdir -m 755 -p %{_logconfdir}
+    if [ -a %{_logconfdir}/lwraftd-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/lwraftd-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/lwraftd-syslog-ng.conf %{_logconfdir}/lwraftd-syslog-ng.conf
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            try_starting_lwregd_svc=true
+
+            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            if [ $try_starting_lwregd_svc = true ]; then
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
+                sleep 2
+            else
+                started_lwregd=false
+                if [ -z "`pidof lwregd`" ]; then
+                    echo "Starting lwregd"
+                    %{_likewise_open_sbindir}/lwregd &
+                    started_lwregd=true
+                    sleep 5
+                fi
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                if [ $started_lwregd = true ]; then
+                    kill -TERM `pidof lwregd`
+                    wait
+                fi
+            fi
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+            try_starting_lwregd_svc=true
+
+            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            if [ $try_starting_lwregd_svc = true ]; then
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
+                sleep 2
+            else
+                started_lwregd=false
+                if [ -z "`pidof lwregd`" ]; then
+                    echo "Starting lwregd"
+                    %{_likewise_open_sbindir}/lwregd &
+                    started_lwregd=true
+                    sleep 5
+                fi
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                if [ $started_lwregd = true ]; then
+                    kill -TERM `pidof lwregd`
+                    wait
+                fi
+            fi
+            ;;
+    esac
+
 %preun
-#
-# Pre uninstall script
-#
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
@@ -534,14 +614,6 @@ fi
                  fi
             fi
 
-            %{_likewise_open_bindir}/lwsm info vmdir > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop vmdir
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdir'
-                /bin/systemctl restart lwsmd
-                %{_likewise_open_bindir}/lwsm autostart
-            fi
-
             %{_likewise_open_bindir}/lwsm info vmca > /dev/null 2>&1
             if [ $? -eq 0 ]; then
                 echo "Stopping the Certificate Authority Service..."
@@ -555,26 +627,15 @@ fi
                 %{_likewise_open_bindir}/lwsm autostart
             fi
 
-            %{_likewise_open_bindir}/lwsm info vmafd > /dev/null 2>&1
+            %{_likewise_open_bindir}/lwsm info vmdir > /dev/null 2>&1
             if [ $? -eq 0 ]; then
-                echo "Stopping the AFD Service..."
-                %{_likewise_open_bindir}/lwsm stop vmafd
-                echo "Removing service configuration..."
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmafd'
-                echo "Restarting service control manager..."
+                %{_likewise_open_bindir}/lwsm stop vmdir
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdir'
                 /bin/systemctl restart lwsmd
-                sleep 2
-                echo "Autostart services..."
                 %{_likewise_open_bindir}/lwsm autostart
             fi
 
-#            %{_likewise_open_bindir}/lwsm info lwraft > /dev/null 2>&1
-#            if [ $? -eq 0 ]; then
-#                %{_likewise_open_bindir}/lwsm stop lwraft
-#                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\lwraft'
-#                /bin/systemctl restart lwsmd
-#                %{_likewise_open_bindir}/lwsm autostart
-#            fi
+# dns also?
 
             /bin/systemctl >/dev/null 2>&1
             if [ $? -eq 0 ]; then
@@ -584,6 +645,16 @@ fi
                      /bin/rm -f /etc/systemd/system/firewall.service
                      /bin/systemctl daemon-reload
                  fi
+            fi
+
+            if [ -h %{_logconfdir}/vmdird-syslog-ng.conf ]; then
+                /bin/rm -f %{_logconfdir}/vmdird-syslog-ng.conf
+            fi
+            if [ -h %{_logconfdir}/vmcad-syslog-ng.conf ]; then
+                /bin/rm -f %{_logconfdir}/vmcad-syslog-ng.conf
+            fi
+            if [ -h %{_logconfdir}/vmdnsd-syslog-ng.conf ]; then
+                /bin/rm -f %{_logconfdir}/vmdnsd-syslog-ng.conf
             fi
             ;;
 
@@ -604,6 +675,18 @@ fi
             #
             # Uninstall
             #
+            %{_likewise_open_bindir}/lwsm info vmafd > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                echo "Stopping the AFD Service..."
+                %{_likewise_open_bindir}/lwsm stop vmafd
+                echo "Removing service configuration..."
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmafd'
+                echo "Restarting service control manager..."
+                /bin/systemctl restart lwsmd
+                sleep 2
+                echo "Autostart services..."
+                %{_likewise_open_bindir}/lwsm autostart
+            fi
 
             # Cleanup GSSAPI SRP symlink
             if [ -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
@@ -619,6 +702,36 @@ fi
                     fi
                 fi
             fi
+
+            if [ -h %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
+                /bin/rm -f %{_logconfdir}/vmafdd-syslog-ng.conf
+            fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%preun raft
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+            %{_likewise_open_bindir}/lwsm info lwraft > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                %{_likewise_open_bindir}/lwsm stop lwraft
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\lwraft'
+                /bin/systemctl restart lwsmd
+                %{_likewise_open_bindir}/lwsm autostart
+            fi
             ;;
 
         1)
@@ -629,9 +742,6 @@ fi
     esac
 
 %postun
-#
-# Post uninstall script
-#
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
@@ -643,10 +753,7 @@ fi
             #
             # Uninstall
             #
-            echo "Existing VECS files kept under [%{_dbdir}]"
-            echo "Existing database files kept at [%{_dbdir}]."
-            echo "Existing database files kept at [%{_dbdir}]."
-            /bin/rm -rf %{_dbdir} ????
+            echo "Existing database files kept at [%{_vmdir_dbdir}]."
 
             if [ -x "%{_lwisbindir}/lwregshell" ]
             then
@@ -669,22 +776,19 @@ fi
         /bin/rm %{_sasl2dir}/vmdird.conf
     fi
 
-#    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
-#        /bin/rm %{_sasl2dir}/lwraftd.conf
-#    fi
-
 %postun client
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
 
+    /sbin/ldconfig
+
     case "$1" in
         0)
-             #
-             # Uninstall
-             #
-#            %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\lwraft'
-#            %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdir'
+            #
+            # Uninstall
+            #
+            echo "Existing VECS files kept under [%{_vmafd_dbdir}]"
             ;;
 
         1)
@@ -694,6 +798,32 @@ fi
             ;;
     esac
 
+%postun raft
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    /sbin/ldconfig
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+            echo "Existing database files kept at [%{_lwraft_dbdir}]."
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
+        /bin/rm %{_sasl2dir}/lwraftd.conf
+    fi
+
 %files
 
 %defattr(-,root,root,0755)
@@ -702,7 +832,6 @@ fi
 %{_bindir}/ic-join
 %{_bindir}/configure-lightwave-server
 %{_bindir}/configure-identity-server
-%{_bindir}/domainjoin.sh
 %{_bindir}/test-ldapbind
 %{_bindir}/test-logon
 %{_bindir}/test-svr
@@ -721,7 +850,6 @@ fi
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
 
-%{_sbindir}/vmafdd
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird
 %{_sbindir}/vmdnsd
@@ -731,8 +859,6 @@ fi
 
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
 
-%{_datadir}/config/vmafd.reg
-%{_datadir}/config/vmafdd-syslog-ng.conf
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
 %{_datadir}/config/saslvmdird.conf
@@ -787,6 +913,7 @@ fi
 %{_bindir}/certool
 %{_bindir}/dir-cli
 %{_bindir}/domainjoin
+%{_bindir}/domainjoin.sh
 %{_bindir}/lw-support-bundle.sh
 %{_bindir}/sl-cli
 %{_bindir}/vmafd-cli
@@ -794,6 +921,8 @@ fi
 %{_bindir}/vdcaclmgr
 %{_bindir}/vdcpromo
 %{_bindir}/vecs-cli
+
+%{_sbindir}/vmafdd
 
 %{_lib64dir}/libvecsjni.so*
 %{_lib64dir}/libcdcjni.so*
@@ -823,8 +952,10 @@ fi
 
 %{_datadir}/config/java.security.linux
 %{_datadir}/config/certool.cfg
+%{_datadir}/config/vmafd.reg
 %{_datadir}/config/vmdir-client.reg
 %{_datadir}/config/vmdns-client.reg
+%{_datadir}/config/vmafdd-syslog-ng.conf
 
 %{_jreextdir}/vmware-endpoint-certificate-store.jar
 %{_jreextdir}/client-domain-controller-cache.jar

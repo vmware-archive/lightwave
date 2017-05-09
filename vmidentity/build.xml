@@ -2,13 +2,9 @@
 <project name="vmidentity" default="build" basedir=".">
 
   <!-- Configuration set up -->
-  <property name="MAINSRCROOT" value="${basedir}/.." />
+  <property name="MAINSRCROOT" value="${basedir}" />
   <property file="${MAINSRCROOT}/product.properties" />
   <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
-
-<echo message="DEBUG: MAINSRCROOT=${MAINSRCROOT}" />
-<echo message="DEBUG: PRODUCT_NAME=${PRODUCT_NAME}" />
-<echo message="DEBUG: build_dir=${build_dir}" />
 
   <property name="AFD_PACKAGE_BASE" value="${build_dir}/../vmafd/authentication-framework/packages" />
   <property name="VMCA_PACKAGE_BASE" value="${build_dir}/../vmca/certificate-authority/packages" />
@@ -53,7 +49,7 @@
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}"/>
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" versions:set -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/vmware-sts clean install" />
+      <arg line=" versions:set -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/${PRODUCT_NAME} clean install" />
     </exec>
   </target>
 

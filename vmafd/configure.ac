@@ -607,7 +607,7 @@ AC_SUBST(VMAFD_BIN_DIR)
 AS_AC_EXPAND(VMAFD_SBIN_DIR, ["${sbindir}"])
 AC_SUBST(VMAFD_SBIN_DIR)
 
-if test x"$localstatedir" = x"/var"; then
+if test x"$localstatedir" = x"$prefix/var"; then
     vmafddbdir="$localstatedir/lib/afd"
 else
     vmafddbdir="$localstatedir"
@@ -635,11 +635,6 @@ AC_DEFINE_UNQUOTED(VMAFD_KEYTAB_CONFIG_DIR, "$VMAFD_KEYTAB_CONFIG_DIR", [Config 
 AC_SUBST(VMAFD_KEYTAB_CONFIG_DIR)
 AC_SUBST(VMAFD_KRB5CONF_FILENAME)
 AC_SUBST(VMAFD_KRB5CONF_FILEPATH)
-
-databasedir=$localstatedir
-AC_SUBST(databasedir)
-AS_AC_EXPAND(VMAFD_DB_DIR, $databasedir)
-AC_DEFINE_UNQUOTED(VMAFD_DB_DIR, "$VMAFD_DB_DIR", [DB path for vmafd])
 
 initddir=$sysconfdir/init.d
 AC_SUBST(initddir)

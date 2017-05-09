@@ -454,7 +454,7 @@ if test x"$IDL" = x"no"; then
     AC_MSG_ERROR([DCERPC IDL compiler not found])
 fi
 
-if test x"$localstatedir" = x"/var"; then
+if test x"$localstatedir" = x"$prefix/var"; then
     vmstsdbdir="$localstatedir/lib/vmware/vmsts"
 else
     vmstsdbdir="$localstatedir"
