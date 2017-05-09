@@ -21,27 +21,27 @@
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/client-domain-controller-cache.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dmaven.repo.local=${build_dir}/repo -Dfile=${AFD_PACKAGE_BASE}/client-domain-controller-cache.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/authentication-framework.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=authentication-framework -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dmaven.repo.local=${build_dir}/repo -Dfile=${AFD_PACKAGE_BASE}/authentication-framework.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=authentication-framework -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/afd-heartbeat-service.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dmaven.repo.local=${build_dir}/repo -Dfile=${AFD_PACKAGE_BASE}/afd-heartbeat-service.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" install:install-file -Dfile=${VMCA_PACKAGE_BASE}/vmware-vmca-client.jar -DgroupId=${VMCA_GROUP_BASE} -DartifactId=vmware-vmca-client -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dmaven.repo.local=${build_dir}/repo -Dfile=${VMCA_PACKAGE_BASE}/vmware-vmca-client.jar -DgroupId=${VMCA_GROUP_BASE} -DartifactId=vmware-vmca-client -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/vmware-endpoint-certificate-store.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dmaven.repo.local=${build_dir}/repo -Dfile=${AFD_PACKAGE_BASE}/vmware-endpoint-certificate-store.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
   </target>
 
@@ -49,8 +49,9 @@
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}"/>
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" versions:set -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/${PRODUCT_NAME} clean install" />
+      <arg line=" versions:set -Dmaven.repo.local=${build_dir}/repo -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/${PRODUCT_NAME} clean install" />
     </exec>
   </target>
+
 
 </project>

@@ -1,5 +1,4 @@
 #!/bin/sh
-
 autoreconf -vif ..
 
 STAGEDIR=$PWD/stage

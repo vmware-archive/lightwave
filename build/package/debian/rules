@@ -1,0 +1,105 @@
+#!/usr/bin/make -f
+#-*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+DESTDIR=$(CURDIR)/debian/tmp
+
+DDEBUG=`if (echo $(DEB_BUILD_OPTIONS) | grep -q debug) then \
+		echo "--enable-debug"; \
+	else \
+		echo ""; \
+	fi`
+
+export DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+export DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+export DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+export CFLAGS += -Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare 
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	dh_autoreconf --as-needed
+	dh_autotools-dev_updateconfig
+	../../configure     \
+        LDFLAGS=-ldl \
+        LIBS=-ldl \
+        STAGEDIR=$(DESTDIR) \
+        --prefix=/opt/vmware \
+        --libdir=/opt/vmware/lib64 \
+        --with-vmevent=$(DESTDIR)/opt/vmware \
+        --with-vmdir=$(DESTDIR)/opt/vmware \
+        --with-vmdns=$(DESTDIR)/opt/vmware \
+        --with-afd=$(DESTDIR)/opt/vmware \
+        --with-vmca=$(DESTDIR)/opt/vmware \
+        --with-sts=$(DESTDIR)/opt/vmware \
+        --with-likewise=/opt/likewise \
+        --with-ssl=/usr \
+        --with-jansson=/usr \
+        --with-java=/usr/lib/jvm/default-java \
+        --with-maven=/usr/share/maven \
+        --with-ant=/usr/share/ant \
+        --with-python=/usr \
+        --with-config=./config \
+        --with-version="1.3.0" \
+        --with-datastore=mdb \
+        --enable-server=yes \
+        --enable-krb5-default=yes \
+        --enable-lightwave-build=yes \
+        ac_cv_header_vmevent=yes \
+        ac_cv_header_vmdirclient_h=yes \
+        ac_cv_lib_vmdirclient_VmDirSetupHostInstance=yes \
+        ac_cv_lib_vmdirclient_VmDirConnectionOpen=yes \
+        ac_cv_header_vmdns_h=yes \
+        ac_cv_lib_vmdnsclient_VmDnsOpenServerA=yes \
+        ac_cv_header_vmafdclient_h=yes \
+        ac_cv_lib_vmafdclient_VmAfdGetDomainNameA=yes \
+        ac_cv_header_vmca_h=yes \
+        ac_cv_lib_vmcaclient_VMCACreateSelfSignedCertificateA=yes
+
+	touch $@
+
+build-arch: build-stamp
+build-indep: build-stamp
+
+build: build-arch build-indep
+build-stamp: configure
+	dh_testdir
+	$(MAKE)
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f configure-stamp build-stamp
+	rm -f config.log config.h
+	[ ! -f Makefile ] || $(MAKE) distclean
+	rm -f config.h 
+	dh_autotools-dev_restoreconfig
+	dh_autoreconf_clean
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+
+	$(MAKE) install DESTDIR=$(DESTDIR)
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_install -a --sourcedir=$(DESTDIR)
+	dh_installman -a
+	dh_installdocs -a
+	dh_strip -a --dbg-package=lightwave-dbg
+	dh_compress -a
+	dh_fixperms -a
+	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_gencontrol -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build build-indep build-arch clean configure binary-indep binary-arch binary
