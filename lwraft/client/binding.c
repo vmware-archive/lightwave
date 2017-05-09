@@ -162,11 +162,11 @@ VmDirCreateBindingHandleUtilityA(
     {
         {
             VMDIR_SF_INIT(.pszProtocolSequence, "ncalrpc"),
-            VMDIR_SF_INIT(.pszEndPoint, VMDIR_NCALRPC_END_POINT),
+            VMDIR_SF_INIT(.pszEndPoint, LWRAFT_NCALRPC_END_POINT),
         },
         {
             VMDIR_SF_INIT(.pszProtocolSequence, "ncacn_ip_tcp"),
-            VMDIR_SF_INIT(.pszEndPoint, VMDIR_RPC_TCP_END_POINT),
+            VMDIR_SF_INIT(.pszEndPoint, LWRAFT_RPC_TCP_END_POINT),
         }
     };
     PCSTR pszProtocolSequence = NULL;

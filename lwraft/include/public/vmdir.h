@@ -480,13 +480,13 @@ extern "C" {
 #define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
 
 #ifndef _WIN32
-#define VMDIR_NCALRPC_END_POINT "lwraftsvc"
+#define LWRAFT_NCALRPC_END_POINT "lwraftsvc"
 #else
 // note: keep in sync with /vmdir/main/idl/vmdir.idl
-#define VMDIR_NCALRPC_END_POINT "LightwaveRaftService"
+#define LWRAFT_NCALRPC_END_POINT "LightwaveRaftService"
 #endif
 
-#define VMDIR_RPC_TCP_END_POINT "2012"
+#define LWRAFT_RPC_TCP_END_POINT "2011"
 #define VMDIR_MAX_SERVER_ID     255
 
 #define NSECS_PER_SEC       1000000000
