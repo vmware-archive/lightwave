@@ -8,7 +8,6 @@ include $(MAKEROOT)/makedefs.mk
 
 SUBDIRS = \
         vmevent \
-        lwraft \
         vmdir \
         vmdns \
         vmafd \

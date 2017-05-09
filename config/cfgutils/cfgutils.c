@@ -863,7 +863,7 @@ VmwDeployGetVmDirConfigPath(
     PSTR  pszPath = NULL;
 
     dwError = VmwDeployAllocateStringA(
-                    VMDIR_CONFIG_PATH,
+                    "/opt/vmware/share/config", //TODO
                     &pszPath);
     BAIL_ON_DEPLOY_ERROR(dwError);
 

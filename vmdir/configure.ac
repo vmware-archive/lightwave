@@ -263,10 +263,10 @@ AC_ARG_WITH([sasl-includes],
         SASL_INCLUDES="-I$withval"
     ])
 
-AC_ARG_WITH([sasl-libs],
+AC_ARG_WITH([],
     [AC_HELP_STRING([--with-sasl-libs=<dir>], [use SASL libraries located in prefix <dir> ])],
     [
-        SASL_LIBPATH="$withval/lib64"
+        SASL_LIBPATH="$withval"
         SASL_LDFLAGS="-L$withval"
     ])
 

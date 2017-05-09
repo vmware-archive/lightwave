@@ -3,7 +3,6 @@
 #
 # see: dh_installdeb(1)
 
-set -e
 
 # summary of how this script can be called:
 #        * <new-preinst> `install'
@@ -16,6 +15,13 @@ set -e
 
 case "$1" in
     install|upgrade)
+    
+    /bin/systemctl >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        if [ -z "`pidof lwsmd`" ]; then
+            /bin/systemctl start lwsmd
+        fi
+    fi
     ;;
 
     abort-upgrade)

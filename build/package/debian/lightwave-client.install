@@ -39,6 +39,8 @@ opt/vmware/share/config/java.security.linux
 opt/vmware/share/config/certool.cfg
 opt/vmware/share/config/vmdir-client.reg
 opt/vmware/share/config/vmdns-client.reg
+opt/vmware/share/config/vmafd.reg
+opt/vmware/share/config/vmafdd-syslog-ng.conf
 
 usr/lib/jvm/default-java/jre/lib/ext/vmware-endpoint-certificate-store.jar
 usr/lib/jvm/default-java/jre/lib/ext/client-domain-controller-cache.jar
