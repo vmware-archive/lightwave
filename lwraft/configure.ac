@@ -588,10 +588,10 @@ AC_SUBST(OIDC_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
-if test x"$localstatedir" = x"$prefix/var"; then
+if test x"$localstatedir" = x"/var"; then
     lwraftdbdir="$localstatedir/lib/vmware/lwraft"
 else
-    lwraftdbdir="$localstatedir"
+    lwraftdbdir="$localstatedir/lwraft"
 fi
 AC_SUBST(lwraftdbdir)
 AS_AC_EXPAND(LWRAFT_DB_DIR, $lwraftdbdir)

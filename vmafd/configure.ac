@@ -607,10 +607,10 @@ AC_SUBST(VMAFD_BIN_DIR)
 AS_AC_EXPAND(VMAFD_SBIN_DIR, ["${sbindir}"])
 AC_SUBST(VMAFD_SBIN_DIR)
 
-if test x"$localstatedir" = x"$prefix/var"; then
-    vmafddbdir="$localstatedir/lib/afd"
+if test x"$localstatedir" = x"/var"; then
+    vmafddbdir="$localstatedir/lib/vmware/vmafd"
 else
-    vmafddbdir="$localstatedir"
+    vmafddbdir="$localstatedir/vmafd"
 fi
 AC_SUBST(vmafddbdir)
 AS_AC_EXPAND(VMAFD_DB_DIR, $vmafddbdir)

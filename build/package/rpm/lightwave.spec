@@ -102,10 +102,11 @@ VMware Lightwave Server
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
 
-%define _lwraft_dbdir %{_localstatedir}/lib/vmware/lwraft
-%define _vmca_dbdir   %{_localstatedir}/lib/vmware/vmca
-%define _vmdir_dbdir  %{_localstatedir}/lib/vmware/vmdir
-%define _vmafd_dbdir  %{_localstatedir}/lib/vmware/vmafd
+%define _lwraft_dbdir %{_localstatedir}/lwraft
+%define _vmca_dbdir   %{_localstatedir}/vmca
+%define _vmdir_dbdir  %{_localstatedir}/vmdir
+%define _vmafd_dbdir  %{_localstatedir}/vmafd
+%define _vmsts_dbdir  %{_localstatedir}/vmsts
 
 %define _vecsdir %{_vmafd_dbdir}/vecs
 %define _crlsdir %{_vmafd_dbdir}/crl
@@ -120,7 +121,7 @@ Client libraries to communicate with Lightwave Services
 Summary: Lightwave Client Development Library
 Requires: lightwave-client = %{_version}
 %description devel
-Development Libraries to communicate with Ligthwave Services
+Development Libraries to communicate with Lightwave Services
 
 %package raft
 Summary: Lightwave Raft Service
@@ -389,8 +390,6 @@ fi
 
 
 %post client
-
-echo "DEBUG: 0" >>/tmp/DEBUG
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade

@@ -612,10 +612,10 @@ AC_SUBST(VMCA_BIN_DIR)
 AS_AC_EXPAND(VMCA_SBIN_DIR, ["${sbindir}"])
 AC_SUBST(VMCA_SBIN_DIR)
 
-if test x"$localstatedir" = x"$prefix/var"; then
-    vmcadbdir="$localstatedir/lib/vmca"
+if test x"$localstatedir" = x"/var"; then
+    vmcadbdir="$localstatedir/lib/vmware/vmca"
 else
-    vmcadbdir="$localstatedir"
+    vmcadbdir="$localstatedir/vmca"
 fi
 AC_SUBST(vmcadbdir)
 AS_AC_EXPAND(VMCA_DB_DIR, $vmcadbdir)
