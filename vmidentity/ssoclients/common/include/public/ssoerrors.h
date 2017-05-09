@@ -55,8 +55,4 @@
 #define SSOERROR_REST_SERVER_INVALID_REQUEST            208
 #define SSOERROR_REST_SERVER_INVALID_TOKEN              209
 
-PCSTRING
-SSOErrorToString(
-    SSOERROR code);
-
 #endif

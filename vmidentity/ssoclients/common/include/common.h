@@ -209,10 +209,6 @@ SSOStringEqual(
     PCSTRING psz2  /* OPT */);
 
 void
-SSOStringFree(
-    PSTRING psz /* OPT */);
-
-void
 SSOStringFreeAndClear(
     PSTRING psz /* OPT */);
 

@@ -20,7 +20,6 @@ typedef struct OIDC_CLIENT
     PSTRING pszServer;
     PSTRING pszTokenEndpointUrl;
     PSTRING pszSigningCertificatePEM;
-    SSO_LONG clockToleranceInSeconds;
     PSSO_CDC pClientDCCache;
 } OIDC_CLIENT;
 
@@ -58,7 +57,7 @@ typedef struct OIDC_ACCESS_TOKEN
 
 typedef struct OIDC_TOKEN_SUCCESS_RESPONSE
 {
-    OIDC_ID_TOKEN* pIDToken;
+    PSTRING pszIDToken;
     PSTRING pszAccessToken;
     PSTRING pszRefreshToken;
 } OIDC_TOKEN_SUCCESS_RESPONSE;

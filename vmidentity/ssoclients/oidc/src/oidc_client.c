@@ -31,8 +31,7 @@ OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
-    PCSTRING pszTenant,
-    SSO_LONG clockToleranceInSeconds)
+    PCSTRING pszTenant)
 {
     SSOERROR e = SSOERROR_NONE;
     POIDC_CLIENT p = NULL;
@@ -43,8 +42,6 @@ OidcClientBuild(
 
     e = SSOMemoryAllocate(sizeof(OIDC_CLIENT), (void**) &p);
     BAIL_ON_ERROR(e);
-
-    p->clockToleranceInSeconds = clockToleranceInSeconds;
 
     if (NULL == pszServer)
     {
@@ -241,7 +238,7 @@ OidcClientAcquireTokens(
 
     if (200 == httpStatusCode)
     {
-        e = OidcTokenSuccessResponseParse(&pOutTokenSuccessResponse, pszJsonResponse, p->pszSigningCertificatePEM, p->clockToleranceInSeconds);
+        e = OidcTokenSuccessResponseParse(&pOutTokenSuccessResponse, pszJsonResponse);
         BAIL_ON_ERROR(e);
     }
     else
