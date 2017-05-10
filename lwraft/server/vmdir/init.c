@@ -321,6 +321,8 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
+
         if (bLegacyDataLoaded)
         {
             dwError = VmDirSchemaPatchLegacyViaFile(
@@ -333,6 +335,9 @@ VmDirInit(
                     gVmdirGlobals.pszBootStrapSchemaFile);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
+
         (VOID)VmDirSetAdministratorPasswordNeverExpires();
     }
     else
@@ -401,8 +406,12 @@ VmDirInit(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Config MaxLdapOpThrs (%d)", gVmdirGlobals.dwMaxFlowCtrlThr );
 
-error:
+cleanup:
     return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%d)", __FUNCTION__, dwError );
+    goto cleanup;
 }
 
 static

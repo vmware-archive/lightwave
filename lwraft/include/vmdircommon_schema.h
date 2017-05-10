@@ -161,6 +161,12 @@ VmDirLdapSchemaCopy(
     );
 
 DWORD
+VmDirLdapSchemaDeepCopy(
+    PVDIR_LDAP_SCHEMA   pOrgSchema,
+    PVDIR_LDAP_SCHEMA*  ppCopySchema
+    );
+
+DWORD
 VmDirLdapAtDeepCopy(
     PVDIR_LDAP_ATTRIBUTE_TYPE   pOrgAt,
     PVDIR_LDAP_ATTRIBUTE_TYPE*  ppCopyAt
@@ -441,6 +447,11 @@ VmDirLdapSchemaResolveAndVerifyAll(
 
 DWORD
 VmDirLdapSchemaRemoveNoopData(
+    PVDIR_LDAP_SCHEMA   pSchema
+    );
+
+BOOLEAN
+VmDirLdapSchemaIsEmpty(
     PVDIR_LDAP_SCHEMA   pSchema
     );
 
