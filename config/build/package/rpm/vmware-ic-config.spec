@@ -45,6 +45,8 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 %description
 VMware Infrastructure Controller Configuration Tool
 
+%debug_package
+
 %build
 
 cd build
@@ -81,7 +83,7 @@ cd build && make install DESTDIR=%{buildroot}
 
     /bin/systemctl enable firewall.service >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        /bin/ln -s %{_serviceddir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service 
+        /bin/ln -s %{_serviceddir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
     fi
 
     /bin/systemctl >/dev/null 2>&1

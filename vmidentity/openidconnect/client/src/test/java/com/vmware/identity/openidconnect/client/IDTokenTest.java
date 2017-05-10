@@ -131,7 +131,7 @@ public class IDTokenTest {
     }
 
     @Test
-    public void testBuildIdTokenExpiredTokenNotBefore() throws Exception {
+    public void testBuildIdTokenNotYetValid() throws Exception {
 
         Date now = new Date();
         Date issueTime = new Date(now.getTime() + 1*60*1000L); // issued in the future
@@ -141,12 +141,12 @@ public class IDTokenTest {
             IDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
             Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
-            Assert.assertEquals(TokenValidationError.EXPIRED_TOKEN, e.getTokenValidationError());
+            Assert.assertEquals(TokenValidationError.TOKEN_NOT_YET_VALID, e.getTokenValidationError());
         }
     }
 
     @Test
-    public void testBuildIdTokenExpiredTokenNotAfter() throws Exception {
+    public void testBuildIdTokenExpired() throws Exception {
 
         Date now = new Date();
         Date issueTime = new Date(now.getTime() - 2*60*1000L);

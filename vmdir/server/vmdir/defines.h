@@ -119,6 +119,8 @@
 #define TOMBSTONE_REAPING_THROTTLE_SLEEP (1 * 1000)
 #define VDIR_REAP_EXPIRED_ENTRIES_BATCH 2000
 
+#define VDIR_INTEGRITY_CHECK_BATCH     1000
+
 /*
  * Table to define and initialize VMDIR configuration data.
  *

@@ -24,6 +24,7 @@ IsAttrInReplScope(
     VDIR_OPERATION *    op,
     char *              attrType,
     char *              attrMetaData,
+    USN                 priorSentUSNCreated,
     BOOLEAN *           inScope,
     PSTR*               ppszErrorMsg
     );
@@ -523,7 +524,7 @@ VmDirSendSearchEntry(
 
         if ( pOperation->syncReqCtrl != NULL ) // Replication, => write Sync State Control
         {
-            retVal = WriteSyncStateControl( pOperation, pSrEntry->attrs, ber, &pszLocalErrorMsg );
+            retVal = WriteSyncStateControl( pOperation, pSrEntry, ber, &pszLocalErrorMsg );
             BAIL_ON_VMDIR_ERROR( retVal );
         }
 
@@ -604,8 +605,10 @@ static
 int
 _VmDirIsUsnInScope(
     VDIR_OPERATION *    op,
+    PCSTR               pAttrName,
     char *              origInvocationId,
     USN                 origUsn,
+    USN                 priorSentUSNCreated,
     BOOLEAN *           isUsnInScope
     )
 {
@@ -661,7 +664,26 @@ _VmDirIsUsnInScope(
         {
             utdVectorEntry->currMaxOrigUsnProcessed = origUsn;
         }
-        *isUsnInScope = TRUE;
+
+        // Note, this handles ADD->MODIFY case but not multiple MODIFYs scenario.
+        // However, it is fine as consumer should be able to handle redundant feed from supplier.
+        // The key point here is to NOT send ATTR_USN_CREATED, so we can derive correct sync_state in WriteSyncStateControl.
+        if (origUsn > priorSentUSNCreated)
+        {
+            *isUsnInScope = TRUE;
+
+            if (priorSentUSNCreated > 0)
+            {
+                VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s new usn %llu after prior usncreated %llu attr %s",
+                                        __FUNCTION__, origUsn, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
+            }
+        }
+        else
+        {
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s skip prior usncreated %llu attr %s",
+                                    __FUNCTION__, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
+        }
+
         goto cleanup;
     }
 
@@ -679,6 +701,7 @@ IsAttrInReplScope(
     VDIR_OPERATION *    op,
     char *              attrType,
     char *              attrMetaData,
+    USN                 priorSentUSNCreated,
     BOOLEAN *           inScope,
     PSTR*               ppszErrorMsg
     )
@@ -736,7 +759,7 @@ IsAttrInReplScope(
     else
     {
         BOOLEAN usnInScope = FALSE;
-        retVal = _VmDirIsUsnInScope(op, origInvocationId, origUsn, &usnInScope);
+        retVal = _VmDirIsUsnInScope(op, attrType, origInvocationId, origUsn, priorSentUSNCreated, &usnInScope);
         BAIL_ON_VMDIR_ERROR(retVal);
         if (!usnInScope)
         {
@@ -791,6 +814,21 @@ WriteAttributes(
     PVDIR_ATTRIBUTE pRetAttrs[3] = {pEntry->attrs, pEntry->pComputedAttrs, NULL};
     DWORD           dwCnt = 0;
     PSTR            pszLocalErrorMsg = NULL;
+    CHAR            pszIDBuf[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
+    PSTR            pszPriorSentUSNCreated = NULL;
+    USN             priorSentUSNCreated = 0;
+
+    if (op->syncReqCtrl != NULL)
+    {
+        assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
+
+        if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszPriorSentUSNCreated, pszIDBuf) == 0)
+        {   // we have already sent this entry back with sync_state ADD in the same replication cycle
+            priorSentUSNCreated = VmDirStringToLA( pszPriorSentUSNCreated, NULL, 10 );
+
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s sent %s with USNCreatd %llu before", __FUNCTION__, pEntry->dn.lberbv_val, priorSentUSNCreated);
+        }
+    }
 
     // loop through both normal and computed attributes
     for ( dwCnt = 0, pAttr = pRetAttrs[dwCnt];
@@ -804,7 +842,7 @@ WriteAttributes(
             if (op->syncReqCtrl != NULL) // Replication,
             {
                 // Filter attributes based on the input utdVector, and attribute's meta-data
-                retVal = IsAttrInReplScope( op, pAttr->type.lberbv.bv_val, pAttr->metaData, &bSendAttribute, &pszLocalErrorMsg );
+                retVal = IsAttrInReplScope( op, pAttr->type.lberbv.bv_val, pAttr->metaData, priorSentUSNCreated, &bSendAttribute, &pszLocalErrorMsg );
                 BAIL_ON_VMDIR_ERROR( retVal );
             }
             else
@@ -1074,7 +1112,7 @@ WriteMetaDataAttribute(
 
             if (pOp->syncReqCtrl != NULL) // Replication
             {
-                retVal = IsAttrInReplScope( pOp, NULL, pAttrMetaData[i].metaData, &bSendAttrMetaData, &pszLocalErrorMsg );
+                retVal = IsAttrInReplScope( pOp, NULL, pAttrMetaData[i].metaData, 0, &bSendAttrMetaData, &pszLocalErrorMsg );
                 BAIL_ON_VMDIR_ERROR( retVal );
             }
             else
@@ -1253,7 +1291,7 @@ PrepareValueMetaDataAttribute(
                 continue;
                 //Change is originated from the requesting server. Don't send it.
             }
-            retVal = _VmDirIsUsnInScope(pOp, origInvocationId, origUsn, &usnInScope);
+            retVal = _VmDirIsUsnInScope(pOp, NULL, origInvocationId, origUsn, 0, &usnInScope);
             BAIL_ON_VMDIR_ERROR(retVal);
             if (!usnInScope)
             {

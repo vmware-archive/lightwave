@@ -858,11 +858,6 @@ _VmDirPluginPasswordHashPreAdd(
         {
             PVDIR_PASSWORD_HASH_SCHEME pPasswdScheme = VdirDefaultPasswordScheme();
 
-            // handle krb password logic first.
-            pszErrorContext = "Krb password add";
-            dwError = VmDirKrbUPNKeySet( pOperation, pEntry, &(pAttrPasswd->vals[0]) );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             // handle srp password logic.
             pszErrorContext = "srp password add";
             dwError = VmDirSRPSetSecret( pOperation, pEntry, &(pAttrPasswd->vals[0]) );
@@ -1202,26 +1197,6 @@ _VmDirPluginSchemaEntryPreAdd(
 error:
     VMDIR_SAFE_FREE_MEMORY(pszSchemaIdGuid);
     return dwPriorResult ? dwPriorResult : dwRtn;
-}
-
-DWORD
-VmDirSchemaEntryPreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry)
-{
-    DWORD dwError = 0;
-
-    dwError = VmDirSchemaModMutexAcquire(pOperation);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError =  _VmDirPluginSchemaLibUpdatePreAdd(pOperation, pEntry, 0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
 }
 
 static
@@ -1929,4 +1904,106 @@ error:
     goto cleanup;
 }
 
+/* The following functions (prefixed with VmDirRepl) perform pre/post operations (plugins)
+ * at a Raft follower. Those plugins are much simpler than those executed at Raft leader because:
+ *  1. All prechecks and validations are not neeed at the follower (have done at raft leader).
+ *  2. All derived attributes (through plugin at Raft leader) are included in the Raft log,
+ *     and have applied to the entry structure before posted to the backend.
+ * However some functions in pre-plugin are still needed, such as Attribute Reindexing Schedule,
+ * Rollback schema unique scope if the existing entries have violated the uniqueness.
+ *
+ * Fixme: Any other post plugin functions need to be included?
+ */
+DWORD
+VmDirReplSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
 
+    if (!pOperation->bSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibPrepareUpdateViaModify(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirReplSchemaEntryPostAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    if (!pOperation->bSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibUpdate(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirPluginIndexEntryPostAdd(pOperation, pEntry, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirReplSchemaEntryPreMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    if (!pOperation->bSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibPrepareUpdateViaModify(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirPluginIndexEntryPreModify(pOperation, pEntry, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirReplSchemaEntryPostMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    if (!pOperation->bSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibUpdate(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}

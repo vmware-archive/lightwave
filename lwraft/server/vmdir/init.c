@@ -23,13 +23,6 @@
     NULL                                    \
 }
 
-#define VDIR_CFG_ORG_ENTRY_INITIALIZER      \
-{                                           \
-    "objectclass",  "vmwDirCfg",            \
-    "cn",           "organization",         \
-    NULL                                    \
-}
-
 #define VDIR_OPEN_FILES_MAX 16384
 
 static
@@ -86,7 +79,7 @@ DWORD _VmDirGetHostsInternal(
     );
 
 /*
- * load krb master key into gVmdirKrbGlobals.bervMasterKey
+ * no krb function needed in lwraft, but we use gVmdirKrbGlobals.pszRealm in various places.
  */
 DWORD
 VmDirKrbInit(
@@ -94,73 +87,39 @@ VmDirKrbInit(
     )
 {
     DWORD               dwError = 0;
-    PSTR                pszLocalRealm = NULL;
-    PSTR                pszLocalDomain = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
-    int                 iCnt = 0;
+    PVDIR_ATTRIBUTE     pAttrRootNamingCtx = NULL;
     BOOLEAN             bInLock = FALSE;
 
-    //TODO, use PERSISTED_DSE_ROOT_DN.ATTR_ROOT_DOMAIN_NAMING_CONTEXT instead of "/SUBTREE search?
-    // find domain entries (objectclass=dcobject)
     dwError = VmDirSimpleEqualFilterInternalSearch(
-                    "",
-                    LDAP_SCOPE_SUBTREE,
+                    PERSISTED_DSE_ROOT_DN,
+                    LDAP_SCOPE_BASE,
                     ATTR_OBJECT_CLASS,
-                    OC_DC_OBJECT,
+                    OC_DSE_ROOT,
                     &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
+    if (entryArray.iSize != 1
+        ||
+        ((pAttrRootNamingCtx = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_ROOT_DOMAIN_NAMING_CONTEXT)) == NULL))
     {
-        PVDIR_ATTRIBUTE pAttrKrbMKey = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_KRB_MASTER_KEY);
-
-        if (pAttrKrbMKey)
-        {
-            VMDIR_LOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
-
-            // BUGBUG BUGBUG, assume we only have one realm now
-            dwError = VmDirNormalizeDNWrapper( &(entryArray.pEntry[iCnt].dn) );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirAllocateStringA( entryArray.pEntry[iCnt].dn.bvnorm_val,
-                                            &pszLocalDomain );
-            BAIL_ON_VMDIR_ERROR(dwError);
-            gVmdirKrbGlobals.pszDomainDN = pszLocalDomain;  // gVmdirKrbGlobals takes over pszLocalDomain
-            pszLocalDomain = NULL;
-
-            dwError = VmDirKrbSimpleDNToRealm( &(entryArray.pEntry[iCnt].dn), &pszLocalRealm);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            gVmdirKrbGlobals.pszRealm = pszLocalRealm;   // gVmdirKrbGlobals takes over pszLocalRealm
-            pszLocalRealm = NULL;
-
-            dwError = VmDirBervalContentDup( &(pAttrKrbMKey->vals[0]), &gVmdirKrbGlobals.bervMasterKey);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            VmDirConditionSignal(gVmdirKrbGlobals.pcond);   // wake up VmKdcInitKdcServiceThread
-            VMDIR_UNLOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
-
-            break;
-        }
+        goto cleanup; // not promoted yet
     }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirKrbInit, REALM (%s)", VDIR_SAFE_STRING(gVmdirKrbGlobals.pszRealm));
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
+
+    dwError = VmDirKrbSimpleDNToRealm( pAttrRootNamingCtx->vals, (PSTR*)(&gVmdirKrbGlobals.pszRealm));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Set realm to (%s)", gVmdirKrbGlobals.pszRealm);
 
 cleanup:
-
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
-
     VmDirFreeEntryArrayContent(&entryArray);
 
     return dwError;
 
 error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirKrbInit failed (%d), REALM (%s)",
-                     dwError, VDIR_SAFE_STRING(gVmdirKrbGlobals.pszRealm));
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalRealm);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalDomain);
-
     goto cleanup;
 }
 
@@ -362,6 +321,8 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
+
         if (bLegacyDataLoaded)
         {
             dwError = VmDirSchemaPatchLegacyViaFile(
@@ -374,6 +335,9 @@ VmDirInit(
                     gVmdirGlobals.pszBootStrapSchemaFile);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
+
         (VOID)VmDirSetAdministratorPasswordNeverExpires();
     }
     else
@@ -442,8 +406,12 @@ VmDirInit(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Config MaxLdapOpThrs (%d)", gVmdirGlobals.dwMaxFlowCtrlThr );
 
-error:
+cleanup:
     return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%d)", __FUNCTION__, dwError );
+    goto cleanup;
 }
 
 static
@@ -1197,20 +1165,12 @@ InitializeCFGEntries(
 {
     DWORD   dwError = 0;
     static PSTR ppszCFG_ROOT[] = VDIR_CFG_ROOT_ENTRY_INITIALIZER;
-    static PSTR ppszCFG_ORG[] = VDIR_CFG_ORG_ENTRY_INITIALIZER;
 
     dwError = VmDirSimpleEntryCreate(
             pSchemaCtx,
             ppszCFG_ROOT,
             CFG_ROOT_DN,
             CFG_ROOT_ENTRY_ID);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEntryCreate(
-            pSchemaCtx,
-            ppszCFG_ORG,
-            CFG_INDEX_ORGANIZATION_DN,
-            CFG_ORGANIZATION_ENTRY_ID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

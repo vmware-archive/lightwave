@@ -196,14 +196,14 @@ VmDirTestCreateUser(
 
 DWORD
 VmDirTestAddUserToGroup(
-    PVMDIR_TEST_STATE pState,
+    LDAP *pLd,
     PCSTR pszUserDn,
     PCSTR pszGroupDn
     );
 
 DWORD
 VmDirTestRemoveUserFromGroup(
-    PVMDIR_TEST_STATE pState,
+    LDAP *pLd,
     PCSTR pszUserDn,
     PCSTR pszGroupDn
     );
@@ -262,6 +262,28 @@ VmDirTestConnectionFromUser(
     );
 
 DWORD
+VmDirTestCreateGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszGroupName,
+    PCSTR pszAcl /* OPTIONAL */
+    );
+
+DWORD
+VmDirTestListUsersGroups(
+    LDAP *pLd,
+    PCSTR pszUserDn,
+    PVMDIR_STRING_LIST *ppvsGroups /* OUT */
+    );
+
+DWORD
+VmDirTestListGroupMembers(
+    LDAP *pLd,
+    PCSTR pszUserDn,
+    PVMDIR_STRING_LIST *ppvsMembers/* OUT */
+    );
+
+DWORD
 VmDirTestCreateClass(
     PVMDIR_TEST_STATE pState,
     PCSTR pszClassName
@@ -294,6 +316,9 @@ VmDirTestGetGuid(
 
 #define TestAssertStrEquals(a, b) if (strcmp(a, b) != 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertStrNotEquals(a, b) if (strcmp(a, b) == 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
+
+#define TestAssertStrIEquals(a, b) if (VmDirStringCompare(a, b, TRUE) != 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
+#define TestAssertStrINotEquals(a, b) if (VmDirStringCompare(a, b, TRUE) == 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
 
 #define TestAssert(expr) if (!(expr)) { VmDirTestReportAssertionFailure(#expr, "", __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertMsg(expr, msg) if (!(expr)) { VmDirTestReportAssertionFailure(#expr, msg, __FILE__, __FUNCTION__, __LINE__, pState); }

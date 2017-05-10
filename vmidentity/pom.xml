@@ -208,6 +208,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${maven.failsafe.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-junit47</artifactId>
+            <version>${maven.failsafe.plugin.version}</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <skipTests>${skipIntegrationTests}</skipTests>
           <groups>${test.integration.group}</groups>
@@ -375,7 +382,7 @@
     <xml.api.version>1.4.01</xml.api.version>
     <xml.resolver.version>1.2</xml.resolver.version>
     <xml.sec.version>1.4.5</xml.sec.version>
-    <xml.tooling.version>1.3.4</xml.tooling.version>
+    <xml.tooling.version>1.4.4</xml.tooling.version>
   </properties>
 
   <dependencies>

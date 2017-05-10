@@ -608,6 +608,8 @@ VmDirIndexCfgRevertBadUniqueScopeMods(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    ldapOp.bNoRaftLog = TRUE;
+
     ldapOp.pBEIF = VmDirBackendSelect(NULL);
     ldapOp.reqDn.lberbv_val = pszDn;
     ldapOp.reqDn.lberbv_len = VmDirStringLenA(pszDn);

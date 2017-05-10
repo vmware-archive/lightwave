@@ -277,6 +277,13 @@ VmDirInternalModifyEntry(
 
     modReq = &(pOperation->request.modifyReq);
 
+    // make sure we have minimum DN length
+    if (modReq->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", modReq->dn.lberbv_len);
+    }
+
     // Normalize DN
     retVal = VmDirNormalizeDN( &(modReq->dn), pOperation->pSchemaCtx);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
@@ -366,7 +373,8 @@ txnretry:
 
         pEntry = &entry;
 
-        if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId, FALSE, pEntry )) != 0)
+        if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId,
+                                                 pOperation->bNoRaftLog, pEntry )) != 0)
         {
             switch (retVal)
             {
@@ -1316,6 +1324,20 @@ DelAttrValsFromEntryStruct(
                             VDIR_SAFE_STRING(eAttr->pATDesc->pszName),
                             VMDIR_MIN(eAttr->vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
                             VDIR_SAFE_STRING(eAttr->vals[i].lberbv.bv_val));
+    }
+
+    if (modAttr->numVals == 1 && eAttr->pATDesc->bSingleValue &&
+        (VmDirStringCompareA(eAttr->pATDesc->pszName, ATTR_MODIFYTIMESTAMP, FALSE) == 0 ||
+         VmDirStringCompareA(eAttr->pATDesc->pszName, ATTR_CREATETIMESTAMP, FALSE) == 0 ||
+         VmDirStringCompareA(eAttr->pATDesc->pszName, ATTR_CREATORS_NAME, FALSE) == 0 ||
+         VmDirStringCompareA(eAttr->pATDesc->pszName, ATTR_MODIFIERS_NAME, FALSE) == 0))
+    {
+        /* Force deleting the attribute value whether or not the value matches.
+         * A raft follower may alter the timestamps/creator locally, e.g. rollback vmwAttrUniquenessScope,
+         * which may fail to remove the value if it doesn't match that value seen  at the raft leader.
+         */
+        VmDirFreeBervalContent(&modAttr->vals[0]);
+        modAttr->numVals = 0;
     }
 
     // Complete attribute is to be deleted.

@@ -103,3 +103,4 @@ VmDirGetMode
 VmDirSetMode
 VmDirRaftRequestVote
 VmDirRaftAppendEntries
+VmDirAppendRaftState

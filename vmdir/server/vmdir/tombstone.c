@@ -52,7 +52,7 @@ VmDirInitTombstoneReapingThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirTombstoneReapingThreadFun,
                 pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -224,6 +224,8 @@ _VmDirTombstoneReapingThreadFun(
     DWORD dwError = 0;
     BOOLEAN bInLock = FALSE;
     PVDIR_THREAD_INFO pThreadInfo = (PVDIR_THREAD_INFO)pArg;
+
+    VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
 
     while (TRUE)
     {

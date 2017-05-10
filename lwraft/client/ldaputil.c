@@ -4368,3 +4368,72 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed. Error(%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
+
+/*
+ * Search DSE root for Raft state at the host and append them to the dequeue
+ */
+DWORD
+VmDirAppendRaftState(
+    PDEQUE pRaftState,
+    PCSTR pHostName
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszLocalHostURI = NULL;
+    LDAP* pLd = NULL;
+    BerValue** ppBerValues = NULL;
+    PSTR pNode = NULL;
+    int i = 0;
+
+    if (IsNullOrEmptyString(pHostName) || pRaftState == NULL)
+    {
+        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if ( VmDirIsIPV6AddrFormat( pHostName ) )
+    {
+        dwError = VmDirAllocateStringAVsnprintf( &pszLocalHostURI, "%s://[%s]:%d", VMDIR_LDAP_PROTOCOL,
+                                                 pHostName, DEFAULT_LDAP_PORT_NUM);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringAVsnprintf( &pszLocalHostURI, "%s://%s:%d",
+                                                 VMDIR_LDAP_PROTOCOL, pHostName, DEFAULT_LDAP_PORT_NUM);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAnonymousLDAPBind( &pLd, pszLocalHostURI);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapGetAttributeValues( pLd, "", ATTR_RAFT_STATE, NULL, &ppBerValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; ppBerValues[i] && ppBerValues[i]->bv_len > 0; i++)
+    {
+        dwError = VmDirAllocateStringAVsnprintf(&pNode, "%s", ppBerValues[i]->bv_val);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = dequePush(pRaftState, pNode);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pNode = NULL;
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalHostURI);
+    if (pLd)
+    {
+        ldap_unbind_ext_s(pLd, NULL, NULL);
+    }
+
+    if(ppBerValues)
+    {
+        ldap_value_free_len(ppBerValues);
+    }
+
+    return dwError;
+error:
+    VMDIR_SAFE_FREE_MEMORY(pNode);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirAppendRaftState failed with error (%u)", dwError);
+    goto cleanup;
+}

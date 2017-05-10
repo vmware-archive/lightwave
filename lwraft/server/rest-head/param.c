@@ -162,8 +162,20 @@ VmDirRESTGetLdapSearchParams(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    switch (pRestOp->pResource->rscType)
+    {
+        case VDIR_REST_RSC_LDAP:
+                dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        case VDIR_REST_RSC_OBJECT:
+                dwError = VmDirRESTEndpointToDN(pRestOp, &pszDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        default: BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
 
     dwError = VmDirRESTGetStrParam(pRestOp, "scope", &pszScope, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);

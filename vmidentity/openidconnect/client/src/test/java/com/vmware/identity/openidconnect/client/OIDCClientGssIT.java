@@ -27,7 +27,7 @@ public class OIDCClientGssIT extends OIDCClientITBase {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        setUp("resources/config.properties");
+        setUp("config.properties");
     }
 
     // NonRegNoHOKConfigClient, GssGrant

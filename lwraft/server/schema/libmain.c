@@ -165,9 +165,6 @@ VmDirSchemaLibPrepareUpdateViaFile(
             pCurLdapSchema, pTmpLdapSchema, &pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaRemoveNoopData(pNewLdapSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     while (LwRtlHashMapIterate(pNewLdapSchema->attributeTypes, &iter, &pair))
     {
         PVDIR_LDAP_ATTRIBUTE_TYPE pAt = (PVDIR_LDAP_ATTRIBUTE_TYPE)pair.pValue;

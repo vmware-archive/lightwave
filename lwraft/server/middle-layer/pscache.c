@@ -158,7 +158,7 @@ VmDirPagedSearchCreateThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirPagedSearchWorkerThread,
                 pSearchRecord);
     BAIL_ON_VMDIR_ERROR(dwError);

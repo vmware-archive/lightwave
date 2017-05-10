@@ -179,19 +179,6 @@ VmDirSrvAccessCheck(
         }
     }
 
-    //
-    // If the caller is checking for VMDIR_RIGHT_DS_DELETE_CHILD then pEntry
-    // is the child object (the one we actually want to delete). However, we
-    // need to check the ACL on the parent, so we re-assign pEntry here.
-    // This is only necessary due to the 6.5-compat shim which needs the actual
-    // pEntry that's being deleted so we can block certain objects from being
-    // deleted.
-    //
-    if (accessDesired == VMDIR_RIGHT_DS_DELETE_CHILD)
-    {
-        pEntry = pEntry->pParentEntry;
-    }
-
     dwError = _VmDirLoadSecurityDescriptorForEntry(pEntry, &pSecDescAbs);
     BAIL_ON_VMDIR_ERROR(dwError);
 

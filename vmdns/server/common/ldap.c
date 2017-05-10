@@ -1968,6 +1968,8 @@ VmDnsDirProcessRecord(
 
 cleanup:
     VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
+    VMDNS_SAFE_FREE_MEMORY(pRecordEntry);
+
     return dwError;
 error:
     VMDNS_LOG_DEBUG("Failed op %u on %s dir record %s %u.",

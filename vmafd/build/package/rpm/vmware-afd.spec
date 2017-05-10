@@ -42,6 +42,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %description
 VMware Authentication Framework
 
+%debug_package
+
 %package client
 Summary: VMware Authentication Framework Client
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client >= %{version}
@@ -242,7 +244,7 @@ cd build && make install DESTDIR=%{buildroot}
 %{_lib64dir}/libvmafdclient.so*
 %{_lib64dir}/libvmeventclient.so*
 
-%files client-python 
+%files client-python
 %defattr(-,root,root)
 %{_pymodulesdir}/vmafd.*
 %{_pymodulesdir}/*.py

@@ -16,14 +16,14 @@
 DWORD
 AdminGroupShouldBeAbleToDeleteObject(
     PVMDIR_TEST_STATE pState,
-    PCSTR pszContainer // TODO
+    PCSTR pszContainer
     )
 {
     DWORD dwError = 0;
     PSTR pszUserName = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -47,7 +47,7 @@ AdminGroupShouldBeAbleToReadProperties(
     PSTR pszUserDn = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -84,7 +84,7 @@ AdminGroupShouldBeAbleToReadSD(
     PSTR pszUserDn = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -121,7 +121,7 @@ AdminGroupShouldBeAbleToWriteProperties(
     PSTR pszUserDn = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -158,7 +158,7 @@ AdminGroupShouldBeAbleToWriteSD(
     PSTR pszDomainSid = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -213,7 +213,7 @@ AdminGroupShouldBeAbleToListObject(
     PSTR pszUserName = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -252,7 +252,7 @@ AdminGroupShouldBeAbleToListChildObjects(
     PSTR pszContainerDn = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainerName, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -285,10 +285,8 @@ TestStandardRightsForAdminGroup(
     LDAP *pLdNewUser = NULL;
     LDAP *pLdOld = NULL;
 
-    raise(SIGTRAP);
-
     dwError = VmDirTestGetGuid(&pszUserName);
-    TestAssertEquals(dwError, 0); // TODO
+    TestAssertEquals(dwError, 0);
 
     dwError = VmDirTestCreateUser(pState, pszContainerName, pszUserName, NULL);
     TestAssertEquals(dwError, 0);
@@ -307,7 +305,7 @@ TestStandardRightsForAdminGroup(
                 pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestAddUserToGroup(pState, pszUserDn, pszGroupDn);
+    dwError = VmDirTestAddUserToGroup(pState->pLd, pszUserDn, pszGroupDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestConnectionFromUser(pState, pszUserName, &pLdNewUser);

@@ -16,7 +16,6 @@
 
 #define VMDIR_RPC_FREE_MEMORY VmDirRpcClientFreeMemory
 
-static
 DWORD
 _VmDirUpdateKeytabFile(
     PCSTR pszServerName,
@@ -1065,8 +1064,8 @@ VmDirClientJoin(
 {
     DWORD   dwError = 0;
     PSTR    pszDomainName = NULL;
-    PCSTR   pszServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
-    int     iCnt = 0;
+//    PCSTR   pszServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
+//    int     iCnt = 0;
 
     if (IsNullOrEmptyString(pszServerName) ||
         IsNullOrEmptyString(pszUserName) ||
@@ -1088,6 +1087,7 @@ VmDirClientJoin(
                       pszMachineName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+/*
     for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
     {
         dwError = VmDirLdapSetupServiceAccount(
@@ -1105,7 +1105,7 @@ VmDirClientJoin(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
+*/
     dwError = _VmDirUpdateKeytabFile(
                       pszServerName,
                       pszDomainName,
@@ -3763,7 +3763,7 @@ error:
 
 // Write UPN keys for the machine and service accounts to the keytab file.
 
-static
+
 DWORD
 _VmDirUpdateKeytabFile(
     PCSTR pszServerName,
@@ -3789,6 +3789,8 @@ _VmDirUpdateKeytabFile(
     DWORD                   dwByteSize = 0;
     DWORD                   dwWriteLen = 0;
     PSTR                    pszLowerCaseHostName = NULL;
+
+goto cleanup; // To cleanup
 
     dwError = VmDirAllocASCIILowerToUpper( pszDomainName, &pszUpperCaseDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -4004,8 +4006,8 @@ _VmDirSetupDefaultAccount(
     )
 {
     DWORD   dwError = 0;
-    PCSTR   pszServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
-    int     iCnt = 0;
+//    PCSTR   pszServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
+//    int     iCnt = 0;
 
     dwError = VmDirLdapSetupDCAccountOnPartner(
                                     pszDomainName,
@@ -4015,6 +4017,7 @@ _VmDirSetupDefaultAccount(
                                     pszLdapHostName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+/*
     for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
     {
         dwError = VmDirLdapSetupServiceAccount(
@@ -4032,6 +4035,7 @@ _VmDirSetupDefaultAccount(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+*/
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirSetupKrbAccount (%s)(%s) passed",
                                         VDIR_SAFE_STRING(pszDomainName),

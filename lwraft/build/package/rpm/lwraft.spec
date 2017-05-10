@@ -65,6 +65,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %description
 Lightwave Raft Service
 
+%debug_package
+
 %package client
 Summary: Lightwave Raft Client
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9
@@ -184,7 +186,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     wait
                 fi
             fi
-            ;;         
+            ;;
         2)
             try_starting_lwregd_svc=true
 
@@ -252,7 +254,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     wait
                 fi
             fi
-            ;;         
+            ;;
         2)
             try_starting_lwregd_svc=true
 
@@ -337,6 +339,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_bindir}/lwraftpromo
 %{_bindir}/lwraftadmintool
 %{_bindir}/lwraftleavefed
+%{_bindir}/lwraftschema
 %{_bindir}/unix_srp
 %{_lib64dir}/sasl2/libsasllwraftdb.so*
 %{_lib64dir}/libkrb5crypto.so*
@@ -345,6 +348,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_datadir}/config/lwraft.reg
 %{_datadir}/config/lwraftschema.ldif
 %{_datadir}/config/lwraftd-syslog-ng.conf
+%{_datadir}/config/lwraft-rest.json
 
 %files client
 %defattr(-,root,root)

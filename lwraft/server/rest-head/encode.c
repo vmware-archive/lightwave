@@ -98,15 +98,72 @@ error:
 }
 
 DWORD
+VmDirRESTDNToObjectpath(
+    PCSTR                   pszDN,
+    PSTR*                   ppOutObjectPath
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszObjectPath = NULL;
+    PSTR    pszLocalDN = NULL;
+    PVMDIR_STRING_LIST  pRDNList = NULL;
+    DWORD   dwCnt = 0;
+    DWORD   dwLen = 0;
+    DWORD   dwIdx = 0;
+
+int iSystemDomainRDNCnt = 2;  // TODO
+
+    dwError = VmDirDNToRDNList(pszDN, 1, &pRDNList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt+iSystemDomainRDNCnt < pRDNList->dwCount; dwCnt++)
+    {
+        dwLen += VmDirStringLenA(pRDNList->pStringList[dwCnt]);
+    }
+    dwLen += pRDNList->dwCount;
+
+    dwError = VmDirAllocateMemory(dwLen, (PVOID*)&pszObjectPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = pRDNList->dwCount - iSystemDomainRDNCnt, dwIdx = 0;
+         dwCnt > 0;
+         dwCnt--)
+    {
+        DWORD dwRDNLen = VmDirStringLenA(pRDNList->pStringList[dwCnt-1]);
+
+        pszObjectPath[dwIdx++] = '/';
+        dwError = VmDirCopyMemory( pszObjectPath+dwIdx, dwLen-dwIdx, pRDNList->pStringList[dwCnt-1], dwRDNLen);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwIdx += dwRDNLen;
+    }
+
+    *ppOutObjectPath = pszObjectPath;
+    pszObjectPath = NULL;
+
+cleanup:
+    VmDirStringListFree(pRDNList);
+
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalDN);
+
+    goto cleanup;
+}
+
+DWORD
 VmDirRESTEncodeEntry(
-    PVDIR_ENTRY     pEntry,
-    PVDIR_BERVALUE  pbvAttrs,
-    json_t**        ppjOutput
+    PVDIR_REST_OPERATION    pRestOp,
+    PVDIR_ENTRY             pEntry,
+    PVDIR_BERVALUE          pbvAttrs,
+    json_t**                ppjOutput
     )
 {
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
     BOOLEAN bReturn = FALSE;
+    PSTR    pszObjctPath = NULL;
     PVDIR_ATTRIBUTE pAttr = NULL;
     PVDIR_ATTRIBUTE pAttrs[3] = {0};
     json_t*         pjAttr = NULL;
@@ -122,9 +179,25 @@ VmDirRESTEncodeEntry(
     pjEntry = json_object();
     pjAttrs = json_array();
 
-    dwError = json_object_set_new(
-            pjEntry, "dn", json_string(pEntry->dn.lberbv.bv_val));
-    BAIL_ON_VMDIR_ERROR(dwError);
+    switch (pRestOp->pResource->rscType)
+    {
+        case VDIR_REST_RSC_LDAP:
+                dwError = json_object_set_new(
+                            pjEntry, VMDIR_REST_DN_STR, json_string(pEntry->dn.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        case VDIR_REST_RSC_OBJECT:
+                dwError = VmDirRESTDNToObjectpath(pEntry->dn.lberbv.bv_val, &pszObjctPath);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = json_object_set_new(
+                                            pjEntry, VMDIR_REST_OBJECTPATH_STR, json_string(pszObjctPath));
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        default: BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
 
     // TODO special char?
     pAttrs[0] = pEntry->attrs;
@@ -134,7 +207,7 @@ VmDirRESTEncodeEntry(
     {
         for (pAttr = pAttrs[i]; pAttr; pAttr = pAttr->next)
         {
-            bReturn = pbvAttrs == NULL;
+            bReturn = FALSE;
 
             for (j = 0; pbvAttrs && pbvAttrs[j].lberbv.bv_val; j++)
             {
@@ -148,7 +221,9 @@ VmDirRESTEncodeEntry(
                 }
             }
 
-            if (bReturn)
+            if ( bReturn ||
+                 (!pbvAttrs && pAttr->pATDesc->usage == VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
+               )
             {
                 dwError = VmDirRESTEncodeAttribute(pAttr, &pjAttr);
                 BAIL_ON_VMDIR_ERROR(dwError);
@@ -167,6 +242,8 @@ VmDirRESTEncodeEntry(
     *ppjOutput = pjEntry;
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszObjctPath);
+
     return dwError;
 
 error:
@@ -190,9 +267,10 @@ error:
 
 DWORD
 VmDirRESTEncodeEntryArray(
-    PVDIR_ENTRY_ARRAY   pEntryArray,
-    PVDIR_BERVALUE      pbvAttrs,
-    json_t**            ppjOutput
+    PVDIR_REST_OPERATION    pRestOp,
+    PVDIR_ENTRY_ARRAY       pEntryArray,
+    PVDIR_BERVALUE          pbvAttrs,
+    json_t**                ppjOutput
     )
 {
     DWORD   dwError = 0;
@@ -213,7 +291,7 @@ VmDirRESTEncodeEntryArray(
     {
         pEntry = &pEntryArray->pEntry[i];
 
-        dwError = VmDirRESTEncodeEntry(pEntry, pbvAttrs, &pjEntry);
+        dwError = VmDirRESTEncodeEntry(pRestOp, pEntry, pbvAttrs, &pjEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = json_array_append_new(pjEntryArray, pjEntry);

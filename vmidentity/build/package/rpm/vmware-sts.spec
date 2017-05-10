@@ -24,6 +24,8 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 %description
 VMware Secure Token Server
 
+%debug_package
+
 %package client
 Summary: VMware Secure Token Service Client
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= %{version}, likewise-open >= 6.2.10

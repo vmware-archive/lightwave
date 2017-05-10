@@ -17,6 +17,8 @@
 #include <config.h>
 #include <vmdirsys.h>
 
+#include <ldap_log.h>
+
 #else
 
 #pragma once
@@ -45,6 +47,7 @@
 #include <middlelayer.h>
 #include <resthead.h>
 #include <vmdirserver.h>
+#include <schema.h>
 
 #include <copenapi/copenapi.h>
 #include <curl/curl.h>
@@ -54,7 +57,7 @@
 #include <sasl/saslutil.h>
 #include <vmrest.h>
 
-#include <common_types.h>
+#include <ssotypes.h>
 #include <oidc_types.h>
 #include <oidc.h>
 

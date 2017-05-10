@@ -596,6 +596,106 @@ VmDirSrvValidateUserCreateParams(
     return dwError;
 }
 
+DWORD
+VmDirRaftStateEntry(
+    PVDIR_ENTRY*    ppEntry
+    )
+{
+    DWORD dwError = 0;
+    DEQUE members = {0};
+    DEQUE membersState = {0};
+    PSTR pNode = NULL;
+    PSTR pHost = NULL;
+    PVDIR_ENTRY pEntry = NULL;
+    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
+    PVDIR_BERVALUE pBerv = NULL;
+    int i = 0;
+    int attrCnt = 0;
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRaftGetMembers(&members);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (members.iSize == 0)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    while(dequePopLeft(&members, (PVOID*)&pHost) == 0)
+    {
+        dwError = VmDirAppendRaftState(&membersState, pHost);
+        if (dwError)
+        {
+            //best-effort to get state from members
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirRaftStateEntry fail to get raft state on host %d, error %d",
+                            pHost, dwError);
+        }
+        VMDIR_SAFE_FREE_MEMORY(pHost);
+
+        if (dwError==0)
+        {
+            dwError = VmDirAllocateStringAVsnprintf(&pNode, "-");
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = dequePush(&membersState, pNode);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pNode = NULL;
+        }
+    }
+
+    attrCnt = membersState.iSize;
+    if (attrCnt == 0)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    {
+        PSTR ppStateEntry[] = {ATTR_CN, "raftstate", ATTR_OBJECT_CLASS, OC_CLASS_RAFT_STATE, NULL};
+        dwError = VmDirAttrListToNewEntry(pSchemaCtx, RAFT_STATE_DN, ppStateEntry, &pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (attrCnt + 1), (PVOID*)&pBerv);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    i=0;
+    while(dequePopLeft(&membersState, (PVOID*)&pNode) == 0)
+    {
+         pBerv[i].lberbv_len = VmDirStringLenA(pNode);
+         pBerv[i].lberbv_val = pNode;
+         pBerv[i].bOwnBvVal = TRUE;
+         pNode = NULL;
+         i++;
+    }
+    dwError = VmDirEntryAddBervArrayAttribute(pEntry, ATTR_RAFT_STATE, pBerv, attrCnt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppEntry = pEntry;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pNode);
+    dequeFreeStringContents(&members);
+    dequeFreeStringContents(&membersState);
+    if (pSchemaCtx)
+    {
+        VmDirSchemaCtxRelease(pSchemaCtx);
+    }
+    VmDirFreeBervalArrayContent(pBerv, attrCnt);
+    VMDIR_SAFE_FREE_MEMORY(pBerv);
+    return dwError;
+
+error:
+    if (pEntry)
+    {
+        VmDirFreeEntry(pEntry);
+    }
+    goto cleanup;
+}
+
 #ifdef _WIN32
 
 DWORD
