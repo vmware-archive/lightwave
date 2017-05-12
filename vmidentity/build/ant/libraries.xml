@@ -6,7 +6,7 @@
    <!-- - - - - - Ant Task Libraries - - - - - -->
 
    <property name="libs.ant-contrib-home"
-             location="/var/opt/ant-contrib" />
+             location="${ant.home}" />
 
    <fileset id="jar-set.apache-commons-daemon"
             dir="${build_dir}/depends">

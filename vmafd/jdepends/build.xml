@@ -29,6 +29,7 @@
 
           <!-- TEST DEPENDENCIES -->
            <url url="http://central.maven.org/maven2/org/powermock/powermock-easymock-release-full/1.6.2/powermock-easymock-release-full-1.6.2-full.jar" />
+           <url url="http://central.maven.org/maven2/ant-contrib/ant-contrib/1.0b3/ant-contrib-1.0b3.jar" />
 
          </resources>
      </copy>

@@ -4,4 +4,4 @@ all: jar
 
 jar:
 	@echo "Building vmidentity"
-	cd @top_srcdir@ && @JAVA@ -Xmx128m -Xms64m -Xss1024k -classpath "$(CLASSPATH)" -Dant.home="@ANT_HOME@" -Djre.home="@JAVA_HOME@/jre" -Dmaven.home="@MAVEN_HOME@" -DBUILD_NUMBER="0" -Dbuild_dir="@abs_top_builddir@" org.apache.tools.ant.launch.Launcher $(ANT_VERBOSE) -f build.xml build
+	cd @top_srcdir@ && @JAVA@ -Xmx128m -Xms64m -Xss1024k -classpath "$(CLASSPATH)" -Dant.home="@ANT_HOME@" -Dlibs.ant-contrib-home="@abs_top_builddir@/depends" -Djre.home="@JAVA_HOME@/jre" -Dmaven.home="@MAVEN_HOME@" -DBUILD_NUMBER="0" -Dbuild_dir="@abs_top_builddir@" org.apache.tools.ant.launch.Launcher $(ANT_VERBOSE) -f build.xml build

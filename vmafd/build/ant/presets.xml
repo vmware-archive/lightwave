@@ -7,20 +7,13 @@
    <target name="import-helper-tasks" unless="flow.helper-tasks-defined">
       <taskdef resource="net/sf/antcontrib/antcontrib.properties">
          <classpath>
-      <!-- DEBUG DEBUG DEBUG DEBUG
             <pathelement
-               location="${libs.ant-contrib-home}/ant-contrib.jar"/>
-      -->
-            <pathelement
-               location="/usr/share/ant/lib/ant-contrib.jar"/>
+               location="${libs.ant-contrib-home}/ant-contrib-1.0b3.jar"/>
          </classpath>
       </taskdef>
 
       <taskdef resource="net/sf/antcontrib/antlib.xml">
-      <!-- DEBUG DEBUG DEBUG DEBUG
-         <classpath location="${libs.ant-contrib-home}/ant-contrib.jar" />
-      -->
-         <classpath location="/usr/share/ant/lib/ant-contrib.jar"/>
+         <classpath location="${libs.ant-contrib-home}/ant-contrib-1.0b3.jar" />
       </taskdef>
 
       <property name="flow.helper-tasks-defined" value="true" />

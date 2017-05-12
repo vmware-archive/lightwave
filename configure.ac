@@ -8,8 +8,8 @@ AC_PROG_CC
 AC_CONFIG_FILES([Makefile])
 
 AC_CONFIG_SUBDIRS([vmevent
-                   vmdir
                    lwraft
+                   vmdir
                    vmdns
                    vmafd
                    vmca

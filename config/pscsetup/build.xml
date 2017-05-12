@@ -6,8 +6,8 @@
 
 	<property name="target-sets" value="main, test" />
 
-        <property file="../product.properties" />
         <property name="MAINSRCROOT" value="${basedir}/.."/>
+        <property file="${MAINSRCROOT}/product.properties" />
         <property name="VMSTS_PACKAGE_BASE" value="${VMSTS_CLASSPATH}" />
         <property name="vmsts.classpath" value="${VMSTS_CLASSPATH}" />
         <property name="build.packages.vmware-identity-platform"

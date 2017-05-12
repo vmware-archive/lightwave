@@ -5,7 +5,7 @@
    <!-- - - - - - Ant Task Libraries - - - - - -->
 
    <property name="libs.ant-contrib-home"
-             location="/var/opt/ant-contrib" />
+             location="${ant.home}" />
 
    <fileset id="jar-set.LOG4J2" dir="${build_dir}/depends">
         <include name="log4j-1.2-api-2.0.2.jar"/>
