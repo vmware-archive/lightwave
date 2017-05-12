@@ -17,7 +17,7 @@
 
     <bean id="vmidentityClientDetailsService" class="org.cloudfoundry.identity.uaa.zone.MultitenantVmidentityClientDetailsService">
         <constructor-arg ref="idmClient" />
-        <constructor-arg ref="cachingPasswordEncoder" />
+        <constructor-arg ref="passthroughPasswordEncoder" />
     </bean>
 
     <bean id="clientDetailsService" class="org.cloudfoundry.identity.uaa.client.VmidentityQueryableClientDetailsService">
@@ -29,7 +29,7 @@
     </bean>
 
     <bean id="clientAdminBootstrap" class="org.cloudfoundry.identity.uaa.client.ClientAdminBootstrap">
-        <constructor-arg ref="bcryptPasswordEncoder"/>
+        <constructor-arg ref="passthroughPasswordEncoder"/>
         <property name="clientRegistrationService" ref="vmidentityClientDetailsService" />
         <property name="clientMetadataProvisioning" ref="vmidentityClientMetadataProvisioning" />
         <property name="defaultOverride" value="${oauth.client.override:true}" />

@@ -43,25 +43,25 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
         return _instance;
     }
 
-    private static final String OBJECT_CLASS = "vmwOidcRelyingParty";
+    public static final String OBJECT_CLASS = "vmwOidcRelyingParty";
 
-    private static final String PROPERTY_NAME = CN;
-    private static final String PROPERTY_OIDC_CLIENT_ID = "vmwOidcClientID";
+    public static final String PROPERTY_NAME = CN;
+    public static final String PROPERTY_OIDC_CLIENT_ID = "vmwOidcClientID";
     public static final String PROPERTY_OIDC_REDIRECT_URIS = "vmwOidcRedirectURIs";
-    private static final String PROPERTY_OIDC_TOKEN_ENDPOINT_AUTH_METHOD = "vmwOidcTokenEndpointAuthMethod";
-    private static final String PROPERTY_OIDC_TOKEN_ENDPOINT_JWS_ALG = "vmwOidcTokenEndpointJWSAlg";
-    private static final String PROPERTY_OIDC_ID_TOKEN_JWS_ALG = "vmwOidcIDTokenJWSAlg";
+    public static final String PROPERTY_OIDC_TOKEN_ENDPOINT_AUTH_METHOD = "vmwOidcTokenEndpointAuthMethod";
+    public static final String PROPERTY_OIDC_TOKEN_ENDPOINT_JWS_ALG = "vmwOidcTokenEndpointJWSAlg";
+    public static final String PROPERTY_OIDC_ID_TOKEN_JWS_ALG = "vmwOidcIDTokenJWSAlg";
     public static final String PROPERTY_OIDC_POST_LOGOUT_REDIRECT_URI = "vmwOidcPostLogoutRedirectURI";
     public static final String PROPERTY_OIDC_LOGOUT_URI = "vmwOidcLogoutURI";
     public static final String PROPERTY_OIDC_CERT_SUB_DN = "vmwOidcCertSubDN";
     public static final String PROPERTY_OIDC_AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS = "vmwOidcAuthnRequestClientAssertionLifetimeMS";
-    private static final String PROPERTY_OIDC_CLIENT_SECRET = "vmwOidcClientSecret";
-    private static final String PROPERTY_OIDC_CLIENT_AUTHORITIES = "vmwOidcClientAuthorities";
-    private static final String PROPERTY_OIDC_CLIENT_RESOURCE_IDS = "vmwOidcResourceIds";
-    private static final String PROPERTY_OIDC_CLIENT_SCOPES = "vmwOidcScopes";
-    private static final String PROPERTY_OIDC_CLIENT_AUTO_APPROVE_SCOPES = "vmwOidcAutoApproveScopes";
-    private static final String PROPERTY_OIDC_CLIENT_AUTHORIZED_GRANT_TYPES = "vmwOidcAuthorizedGrantTypes";
-    private static final String PROPERTY_OIDC_CLIENT_ADDITIONAL_INFORMATION = "vmwOidcAdditionalInformation";
+    public static final String PROPERTY_OIDC_CLIENT_SECRET = "vmwOidcClientSecret";
+    public static final String PROPERTY_OIDC_CLIENT_AUTHORITIES = "vmwOidcClientAuthorities";
+    public static final String PROPERTY_OIDC_CLIENT_RESOURCE_IDS = "vmwOidcResourceIds";
+    public static final String PROPERTY_OIDC_CLIENT_SCOPES = "vmwOidcScopes";
+    public static final String PROPERTY_OIDC_CLIENT_AUTO_APPROVE_SCOPES = "vmwOidcAutoApproveScopes";
+    public static final String PROPERTY_OIDC_CLIENT_AUTHORIZED_GRANT_TYPES = "vmwOidcAuthorizedGrantTypes";
+    public static final String PROPERTY_OIDC_CLIENT_ADDITIONAL_INFORMATION = "vmwOidcAdditionalInformation";
 
     private static final String REDIRECT_URI_EMPTY_SENTINEL = "N/A";
 

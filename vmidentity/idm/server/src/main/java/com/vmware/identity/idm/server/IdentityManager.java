@@ -52,6 +52,7 @@ import org.apache.commons.lang.Validate;
 
 import sun.security.krb5.KrbException;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.af.VmAfClientNativeException;
 import com.vmware.af.interop.VmAfAccessDeniedException;
 import com.vmware.af.interop.VmAfAlreadyJoinedException;
@@ -2104,6 +2105,19 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "tenantName");
 
             return _configStore.getOIDCClients(tenantName);
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to get OIDC clients for tenant [%s]", tenantName));
+
+            throw ex;
+        }
+    }
+
+    private Collection<OIDCClient> getOIDCClients(String tenantName, String filter) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            SCIMFilter scimFilter = SCIMFilter.parse(filter);
+
+            return _configStore.getOIDCClients(tenantName, scimFilter);
         } catch (Exception ex) {
             logger.error(String.format("Failed to get OIDC clients for tenant [%s]", tenantName));
 
@@ -4451,6 +4465,23 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
+    private Set<PersonUser> findPersonUsersByScimFilter(String tenantName, String filter) throws Exception {
+        SCIMFilter scimFilter = SCIMFilter.parse(filter);
+        Set<PersonUser> users = new HashSet<PersonUser>();
+        try {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            Collection<IIdentityProvider> providers = tenantInfo.getProviders();
+            for (IIdentityProvider provider : providers) {
+                users.addAll(provider.findUsersByScimFilter(scimFilter));
+            }
+        } catch (Exception ex) {
+            logger.error("Failed to find person users by filter [{}] in tenant [{}]", filter, tenantName, ex);
+            throw ex;
+        }
+
+        return users;
+    }
+
     private
     Set<Group>
     findGroups(
@@ -4788,6 +4819,23 @@ public class IdentityManager implements IIdentityManager {
 
             throw ex;
         }
+    }
+
+    private Set<Group> findGroupsByScimFilter(String tenantName, String filter) throws Exception {
+        SCIMFilter scimFilter = SCIMFilter.parse(filter);
+        Set<Group> groups = new HashSet<Group>();
+        try {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            Collection<IIdentityProvider> providers = tenantInfo.getProviders();
+            for (IIdentityProvider provider : providers) {
+                groups.addAll(provider.findGroupsByScimFilter(scimFilter));
+            }
+        } catch (Exception ex) {
+            logger.error("Failed to find person users by filter [{}] in tenant [{}]", filter, tenantName, ex);
+            throw ex;
+        }
+
+        return groups;
     }
 
 
@@ -9334,6 +9382,21 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Collection<OIDCClient> getOIDCClients(String tenantName, String filter, IIdmServiceContext serviceContext)
+            throws  IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOIDCClients")) {
+            try {
+                return this.getOIDCClients(tenantName, filter);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
     @Override
     public void addResourceServer(
             String tenantName,
@@ -10059,6 +10122,16 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
+    @Override
+    public Set<PersonUser> findPersonUsersByScimFilter(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException
+    {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUsersByScimFilter")) {
+            return this.findPersonUsersByScimFilter(tenantName, filter);
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -10222,6 +10295,17 @@ public class IdentityManager implements IIdentityManager {
             }
             catch(Exception ex)
             {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Set<Group> findGroupsByScimFilter(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroupsByScimFilter")) {
+            try {
+                return this.findGroupsByScimFilter(tenantName, filter);
+            } catch (Exception ex) {
                 throw ServerUtils.getRemoteException(ex);
             }
         }

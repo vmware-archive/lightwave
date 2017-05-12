@@ -28,6 +28,7 @@
 
 package com.vmware.identity.idm.server.provider.ldap;
 
+import java.lang.reflect.Field;
 import java.security.InvalidParameterException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
@@ -53,6 +54,7 @@ import javax.security.auth.login.LoginException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -85,6 +87,8 @@ import com.vmware.identity.idm.server.provider.NoSuchUserException;
 import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.UserSet;
+import com.vmware.identity.idm.server.scim.ConversionException;
+import com.vmware.identity.idm.server.scim.SearchQueryConverter.ProcessedFilter;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ILdapEntry;
 import com.vmware.identity.interop.ldap.ILdapMessage;
@@ -806,34 +810,7 @@ public class LdapProvider extends BaseLdapProvider
                         DEFAULT_PAGE_SIZE,
                         limit);
 
-                if (messages != null && messages.size() > 0)
-                {
-                    for (ILdapMessage message : messages)
-                    {
-                        try
-                        {
-                            ILdapEntry[] entries = message.getEntries();
-
-                            if (entries != null && entries.length > 0)
-                            {
-                                for (ILdapEntry entry : entries)
-                                {
-
-                                    int flag = getAccountFlags(entry);
-
-                                    users.add(buildPersonUser(entry, flag));
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (message != null)
-                            {
-                                message.close();
-                            }
-                        }
-                    }
-                }
+                buildPersonUsers(users, messages);
             }
             catch (NoSuchObjectLdapException e)
             {
@@ -854,6 +831,84 @@ public class LdapProvider extends BaseLdapProvider
     {
         String filter = createSearchFilter(_ldapSchemaMapping.getAllUsersQuery(), _ldapSchemaMapping.getUserQueryByCriteria(), searchString);
         return findUsersInGroupInternal(groupId, filter, limit);
+    }
+
+    @Override
+    public Set<PersonUser> findUsersByScimFilter(SCIMFilter filter) throws Exception {
+        Set<PersonUser> users = new HashSet<PersonUser>();
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+            final String ATTR_NAME_CN = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName);
+            final String ATTR_DESCRIPTION = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeDescription);
+            final String ATTR_FIRST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName);
+            final String ATTR_LAST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeLastName);
+            final String ATTR_EMAIL_ADDRESS = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeEmail);
+            final String ATTR_ACCOUNT_FLAGS = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl);
+            final String ATTR_ENTRY_UUID = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeObjectId);
+            final String ATTR_PWD_ACCOUNT_LOCKED_TIME = getMappedAttrPwdAccountLockedTime();
+
+            String[] attrNames = {
+                    ATTR_NAME_CN,
+                    ATTR_DESCRIPTION,
+                    ATTR_FIRST_NAME,
+                    ATTR_LAST_NAME,
+                    ATTR_EMAIL_ADDRESS,
+                    ATTR_ACCOUNT_FLAGS,
+                    ATTR_PWD_ACCOUNT_LOCKED_TIME,
+                    ATTR_ENTRY_UUID
+            };
+
+            String searchBaseDn = getStoreDataEx().getUserBaseDn();
+
+            try {
+                ProcessedFilter processedFilter = getUserSearchQueryConverter().convert(filter);
+                String ldapFilter = "(&" +
+                        _ldapSchemaMapping.getAllUsersQuery() +
+                        processedFilter.getConvertedFilter() +
+                        ")";
+
+                log.debug("Finding users with SCIM filter: '{}'. LDAP: '{}'", filter, ldapFilter);
+
+                Collection<ILdapMessage> messages = ldap_search(
+                        connection,
+                        searchBaseDn,
+                        LdapScope.SCOPE_SUBTREE,
+                        ldapFilter,
+                        Arrays.asList(attrNames),
+                        DEFAULT_PAGE_SIZE,
+                        NON_PAGED_SEARCH_MAX_RESULT_RETURN);
+
+                buildPersonUsers(users, messages);
+            } catch (ConversionException e) {
+                // Do nothing - we'll just return the empty results since we'd be querying on an attribute that doesn't exist
+                log.warn("Unable to convert SCIM to LDAP query", e);
+            } catch (NoSuchObjectLdapException e) {
+                throw new InvalidPrincipalException(String.format("errorCode; %d; %s", e.getErrorCode(), e.getMessage()), searchBaseDn);
+            }
+        }
+
+        return users;
+    }
+
+    private void buildPersonUsers(Set<PersonUser> users, Collection<ILdapMessage> messages) throws InvalidPrincipalException {
+        try {
+            if (messages != null && messages.size() > 0) {
+                for (ILdapMessage message : messages) {
+                    ILdapEntry[] entries = message.getEntries();
+
+                    if (entries != null && entries.length > 0) {
+                        for (ILdapEntry entry : entries) {
+                            int flag = getAccountFlags(entry);
+                            users.add(buildPersonUser(entry, flag));
+                        }
+                    }
+                }
+            }
+        } finally {
+            ServerUtils.disposeLdapMessages(messages);
+        }
     }
 
     @Override
@@ -1008,27 +1063,13 @@ public class LdapProvider extends BaseLdapProvider
                       DEFAULT_PAGE_SIZE,
                       -1);
 
-                 if (messages != null && messages.size() > 0)
+                 try
                  {
-                     for (ILdapMessage message : messages)
-                     {
-                         try
-                         {
-                             ILdapEntry[] entries = message.getEntries();
-
-                             if (entries != null && entries.length > 0)
-                             {
-                                 for (ILdapEntry entry : entries)
-                                 {
-                                     groups.add(buildGroup(entry, null));
-                                 }
-                             }
-                         }
-                         finally
-                         {
-                             message.close();
-                         }
-                     }
+                     buildGroups(groups, messages);
+                 }
+                 finally
+                 {
+                     ServerUtils.disposeLdapMessages(messages);
                  }
              }
              catch (NoSuchObjectLdapException e)
@@ -1254,27 +1295,13 @@ public class LdapProvider extends BaseLdapProvider
                         DEFAULT_PAGE_SIZE,
                         limit);
 
-                if (messages != null && messages.size() > 0)
+                try
                 {
-                    for (ILdapMessage message : messages)
-                    {
-                        try
-                        {
-                            ILdapEntry[] entries = message.getEntries();
-
-                            if (entries != null && entries.length > 0)
-                            {
-                                for (ILdapEntry entry : entries)
-                                {
-                                    groups.add(buildGroup(entry, null));
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            message.close();
-                        }
-                    }
+                    buildGroups(groups, messages);
+                }
+                finally
+                {
+                    ServerUtils.disposeLdapMessages(messages);
                 }
             }
             catch (NoSuchObjectLdapException e)
@@ -1372,7 +1399,70 @@ public class LdapProvider extends BaseLdapProvider
         return groups;
     }
 
-   @Override
+    @Override
+    public Set<Group> findGroupsByScimFilter(SCIMFilter filter) throws Exception {
+        Set<Group> groups = new HashSet<Group>();
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+
+            final String ATTR_NAME_CN = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName);
+            final String ATTR_DESCRIPTION = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeDescription);
+            final String ATTR_ENTRY_UUID = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
+
+            String[] attrNames = { ATTR_NAME_CN, ATTR_DESCRIPTION, ATTR_ENTRY_UUID };
+            String searchBaseDn = getStoreDataEx().getGroupBaseDn();
+
+            try {
+                ProcessedFilter processedFilter = getGroupSearchQueryConverter().convert(filter);
+                String ldapFilter = "(&" +
+                        _ldapSchemaMapping.getAllGroupsQuery() +
+                        processedFilter.getConvertedFilter() +
+                        ")";
+
+                log.debug("Finding groups with SCIM filter: '{}'. LDAP: '{}'", filter, ldapFilter);
+
+                Collection<ILdapMessage> messages = ldap_search(
+                        connection,
+                        searchBaseDn,
+                        LdapScope.SCOPE_SUBTREE,
+                        ldapFilter,
+                        Arrays.asList(attrNames),
+                        DEFAULT_PAGE_SIZE,
+                        NON_PAGED_SEARCH_MAX_RESULT_RETURN);
+
+                try {
+                    buildGroups(groups, messages);
+                } finally {
+                    ServerUtils.disposeLdapMessages(messages);
+                }
+            } catch (ConversionException e) {
+                // Do nothing - we'll just return the empty results since we'd be querying on an attribute that doesn't exist
+                log.warn("Unable to convert SCIM to LDAP query", e);
+            } catch (NoSuchObjectLdapException e) {
+                throw new InvalidPrincipalException(String.format("errorCode; %d; %s", e.getErrorCode(), e.getMessage()), searchBaseDn);
+            }
+        }
+
+        return groups;
+    }
+
+    private void buildGroups(Set<Group> groups, Collection<ILdapMessage> messages) throws InvalidPrincipalException {
+        if (messages != null && messages.size() > 0) {
+            for (ILdapMessage message : messages) {
+                ILdapEntry[] entries = message.getEntries();
+
+                if (entries != null && entries.length > 0) {
+                    for (ILdapEntry entry : entries) {
+                        groups.add(buildGroup(entry, null));
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
    public SearchResult find(String searchString, String domainName, int limit) throws Exception
    {
       Set<PersonUser> users = this.findUsers(searchString, domainName, limit<0? -1: (limit/2 + limit%2));
@@ -2063,11 +2153,11 @@ public class LdapProvider extends BaseLdapProvider
                   DEFAULT_PAGE_SIZE,
                   limit);
 
-             if (messages != null && messages.size() > 0)
+             try
              {
-                 for (ILdapMessage message : messages)
+                 if (messages != null && messages.size() > 0)
                  {
-                     try
+                     for (ILdapMessage message : messages)
                      {
                          ILdapEntry[] entries = message.getEntries();
 
@@ -2087,12 +2177,12 @@ public class LdapProvider extends BaseLdapProvider
                              }
                          }
                      }
-                     finally
-                     {
-                          message.close();
-                     }
                  }
-             }
+            }
+            finally
+            {
+                ServerUtils.disposeLdapMessages(messages);
+            }
          }
          catch (NoSuchObjectLdapException e)
          {
@@ -2475,6 +2565,11 @@ public class LdapProvider extends BaseLdapProvider
     @Override
     public String getStoreUPNAttributeName() {
         return _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName);
+    }
+
+    @Override
+    protected ILdapSchemaMapping getSchemaMapping() {
+       return _ldapSchemaMapping;
     }
 
 }

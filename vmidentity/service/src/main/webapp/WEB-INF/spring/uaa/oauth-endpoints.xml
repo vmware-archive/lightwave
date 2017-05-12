@@ -273,7 +273,7 @@
 
     <bean id="clientAuthenticationProvider" class="org.cloudfoundry.identity.uaa.authentication.ClientDetailsAuthenticationProvider">
         <constructor-arg name="userDetailsService" ref="clientDetailsUserService"/>
-        <constructor-arg name="encoder" ref="cachingPasswordEncoder"/>
+        <constructor-arg name="encoder" ref="passthroughPasswordEncoder"/>
     </bean>
 
     <bean id="clientAuthenticationPublisher" class="org.cloudfoundry.identity.uaa.client.ClientAuthenticationPublisher"/>
@@ -292,7 +292,7 @@
 
     <bean id="clientDetailsUserService" class="org.springframework.security.oauth2.provider.client.ClientDetailsUserDetailsService">
         <constructor-arg ref="vmidentityClientDetailsService" />
-        <property name="passwordEncoder" ref="cachingPasswordEncoder" />
+        <property name="passwordEncoder" ref="passthroughPasswordEncoder" />
     </bean>
 
     <bean id="oauthAuthorizeRequestMatcher" class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">

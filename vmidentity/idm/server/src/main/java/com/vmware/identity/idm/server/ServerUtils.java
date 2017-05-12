@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
+import com.unboundid.scim.sdk.SCIMException;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
@@ -123,6 +124,10 @@ public class ServerUtils
            return new IDMLoginException(ex.getMessage(), ((IDMLoginException) ex).getUri());
         }
         else if (ex instanceof IllegalArgumentException)
+        {
+            idmEx = new InvalidArgumentException(ex.getMessage());
+        }
+        else if (ex instanceof SCIMException)
         {
             idmEx = new InvalidArgumentException(ex.getMessage());
         }
@@ -1179,6 +1184,29 @@ public class ServerUtils
         String[] userInfo = { name, domainName };
 
         return userInfo;
+    }
+
+    /**
+     * Split the name and domain at '@'. If there is no domain, returns an empty string
+     *
+     * @param value string to split
+     * @return an array of two strings: {@code [name, domain]} where {@code domain} may
+     *  be an empty string if there was no {@code domain} component.
+     */
+    public static String[] splitNameAndDomain(String value) {
+        int index = value.lastIndexOf(ValidateUtil.UPN_SEPARATOR);
+        String name;
+        String domain;
+
+        if (index > -1) {
+            name = value.substring(0, index);
+            domain = value.substring(index + 1);
+        } else {
+            name = value;
+            domain = "";
+        }
+
+        return new String[]{ name, domain };
     }
 
     public static PrincipalId getUserPrincipal(TenantInformation tenantInfo, String userPrincipal) throws Exception {

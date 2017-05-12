@@ -44,8 +44,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
+import com.unboundid.scim.sdk.SCIMFilterType;
+import com.vmware.identity.idm.server.provider.ILdapSchemaMapping;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.Validate;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -88,6 +92,9 @@ import com.vmware.identity.idm.server.provider.NoSuchUserException;
 import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.UserSet;
+import com.vmware.identity.idm.server.scim.ConversionException;
+import com.vmware.identity.idm.server.scim.SearchQueryConverter.ProcessedFilter;
+import com.vmware.identity.idm.server.scim.ldap.LdapSearchQueryConverter;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.AttributeOrValueExistsLdapException;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
@@ -941,6 +948,78 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
+        }
+
+        return users;
+    }
+
+    @Override
+    public Set<PersonUser> findUsersByScimFilter(SCIMFilter filter) throws Exception {
+        Set<PersonUser> users = new HashSet<PersonUser>();
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            String[] attrNames = {
+                    ATTR_NAME_ACCOUNT,
+                    ATTR_USER_PRINCIPAL_NAME,
+                    ATTR_DESCRIPTION,
+                    ATTR_FIRST_NAME,
+                    ATTR_LAST_NAME,
+                    ATTR_EMAIL_ADDRESS,
+                    ATTR_NAME_ACCOUNT_FLAGS
+            };
+
+            String domainName = this.getDomain();
+            String searchBaseDn = getUsersDN(getDomain());
+            ProcessedFilter processedFilter = getUserSearchQueryConverter().convert(filter);
+            String ldapFilter = "(&" +
+                    USER_ALL_PRINC_QUERY +
+                    processedFilter.getConvertedFilter() +
+                    ")";
+
+            logger.debug("Finding users with SCIM filter: '{}'. LDAP: '{}'", filter, ldapFilter);
+
+            ILdapMessage message = connection.search(
+                    searchBaseDn,
+                    LdapScope.SCOPE_SUBTREE,
+                    ldapFilter,
+                    attrNames,
+                    false);
+
+            try {
+                ILdapEntry[] entries = message.getEntries();
+
+                if (entries == null || entries.length == 0) {
+                    return users;
+                }
+
+                for (ILdapEntry entry : entries) {
+                    String accountName = getStringValue(entry.getAttributeValues(ATTR_NAME_ACCOUNT));
+                    String upn = getOptionalStringValue(entry.getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                    String description = getOptionalStringValue(entry.getAttributeValues(ATTR_DESCRIPTION));
+                    String firstName = getOptionalStringValue(entry.getAttributeValues(ATTR_FIRST_NAME));
+                    String lastName = getOptionalStringValue(entry.getAttributeValues(ATTR_LAST_NAME));
+                    String email = getOptionalStringValue(entry.getAttributeValues(ATTR_EMAIL_ADDRESS));
+                    PrincipalId id = this.getPrincipalId(upn, accountName, domainName);
+
+                    PersonDetail detail = new PersonDetail.Builder().firstName(firstName)
+                                    .lastName(lastName).emailAddress(email)
+                                    .userPrincipalName(upn)
+                                    .description(description).build(); // leave pwdLastSet as default for group query
+
+                    int flag = getOptionalIntegerValue(entry.getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS), 0);
+
+                    boolean locked = ((flag & USER_ACCT_LOCKED_FLAG) != 0);
+                    boolean disabled = ((flag & USER_ACCT_DISABLED_FLAG) != 0);
+
+                    users.add(new PersonUser(id, this.getPrincipalAliasId(accountName), null, detail, disabled, locked));
+                }
+            } finally {
+                message.close();
+            }
+        } catch (ConversionException e) {
+            // Do nothing - we'll just return the empty results since we'd be querying on an attribute that doesn't exist
+            logger.warn("Unable to convert SCIM to LDAP query", e);
         }
 
         return users;
@@ -2038,6 +2117,60 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     message.close();
                 }
             }
+        }
+
+        return groups;
+    }
+
+    @Override
+    public Set<Group> findGroupsByScimFilter(SCIMFilter filter) throws Exception {
+        Set<Group> groups = new HashSet<Group>();
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            String[] attrNames = { ATTR_NAME_CN, ATTR_DESCRIPTION, ATTR_NAME_MEMBER };
+
+            String domainName = this.getDomain();
+            String searchBaseDn = getDomainDN(domainName);
+            ProcessedFilter processedFilter = getGroupSearchQueryConverter().convert(filter);
+            String ldapFilter = "(&" +
+                    GROUP_ALL_PRINC_QUERY +
+                    processedFilter.getConvertedFilter() +
+                    ")";
+
+            logger.debug("Finding groups with SCIM filter: '{}'. LDAP: '{}'", filter, ldapFilter);
+
+            ILdapMessage message = connection.search(
+                    searchBaseDn,
+                    LdapScope.SCOPE_SUBTREE,
+                    ldapFilter,
+                    attrNames,
+                    false);
+
+            try {
+                ILdapEntry[] entries = message.getEntries();
+
+                if (entries == null || entries.length == 0) {
+                    return groups;
+                }
+
+                for (ILdapEntry entry : entries) {
+
+                        String groupName = getStringValue(entry.getAttributeValues(ATTR_NAME_CN));
+                        String description = getOptionalStringValue(entry.getAttributeValues(ATTR_DESCRIPTION));
+
+                        GroupDetail detail = new GroupDetail(description);
+
+                        PrincipalId groupId = new PrincipalId(groupName, domainName);
+
+                        groups.add(new Group(groupId, this.getPrincipalAliasId(groupName), null, detail));
+                }
+            } finally {
+                message.close();
+            }
+        } catch (ConversionException e) {
+            // Do nothing - we'll just return the empty results since we'd be querying on an attribute that doesn't exist
+            logger.warn("Unable to convert SCIM to LDAP query", e);
         }
 
         return groups;
@@ -6324,6 +6457,77 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private PooledLdapConnection borrowConnection() throws Exception {
         return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
+    }
+
+    protected ILdapSchemaMapping getSchemaMapping() {
+        throw new NotImplementedException("VMwareDirectoryProvider does not implement a schema mapping");
+    }
+
+    @Override
+    protected LdapSearchQueryConverter getUserSearchQueryConverter() {
+        LdapSearchQueryConverter converter = new LdapSearchQueryConverter();
+        converter.setMapping("id", (sb, type, value) -> {
+            String[] components = ServerUtils.splitNameAndDomain(value);
+            ProviderLocation location = findProviderLocation(type, components[1]);
+
+            // If we should never match, we'll sabotage and bail out early
+            if (location == ProviderLocation.NONE) {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        ATTR_NAME_CN,
+                        SCIMFilterType.EQUALITY, "*", true);
+                return;
+            }
+
+            // If we're in the domain, we need to match against both options
+            // otherwise match only against the UPN
+            if (location == ProviderLocation.DOMAIN) {
+                sb.append("(|");
+            }
+
+            LdapSearchQueryConverter.constructPredicate(sb,
+                    ATTR_USER_PRINCIPAL_NAME,
+                    type, value);
+
+            if (location == ProviderLocation.DOMAIN) {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        ATTR_NAME_ACCOUNT,
+                        type, components[0]);
+
+                sb.append(")");
+            }
+        });
+        converter.setMapping("externalid", ATTR_NAME_EXTERNAL_OBJECT_ID);
+        converter.setMapping("username", ATTR_NAME_ACCOUNT);
+        converter.setMapping("name.familyname", ATTR_LAST_NAME);
+        converter.setMapping("name.givenname", ATTR_FIRST_NAME);
+        converter.setMapping("displayname", ATTR_NAME_ACCOUNT);
+        converter.setMapping("email", ATTR_EMAIL_ADDRESS);
+        converter.setMapping("groups", (sb, type, value) -> {});
+        return converter;
+    }
+
+    @Override
+    protected LdapSearchQueryConverter getGroupSearchQueryConverter() {
+        LdapSearchQueryConverter converter = new LdapSearchQueryConverter();
+        converter.setMapping("id", (sb, type, value) -> {
+            String[] components = ServerUtils.splitNameAndDomain(value);
+            ProviderLocation location = findProviderLocation(type, components[1]);
+
+            // If we should never match, we'll sabotage and bail out early
+            if (location == ProviderLocation.NONE) {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        ATTR_NAME_CN,
+                        SCIMFilterType.EQUALITY, "*", true);
+            } else {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        ATTR_NAME_ACCOUNT,
+                        type, components[0]);
+            }
+        });
+        converter.setMapping("externalid", ATTR_NAME_EXTERNAL_OBJECT_ID);
+        converter.setMapping("displayname", ATTR_NAME_GROUP_NAME);
+        converter.setMapping("members", ATTR_NAME_MEMBER);
+        return converter;
     }
 
 }

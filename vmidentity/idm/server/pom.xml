@@ -75,6 +75,13 @@
       <version>${jackson.version}</version>
     </dependency>
 
+    <!-- SCIM Filter -->
+    <dependency>
+      <groupId>com.unboundid.product.scim</groupId>
+      <artifactId>scim-sdk</artifactId>
+      <version>${scim.version}</version>
+    </dependency>
+
     <!-- Bouncy Castle dependencies -->
     <dependency>
       <groupId>org.bouncycastle</groupId>

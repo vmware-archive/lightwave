@@ -90,7 +90,9 @@ public class JWKSController {
                     null,
                     null,
                     null,
-                    x5c);
+                    null,
+                    x5c,
+                    null);
             JWKSet jwks = new JWKSet(rsaKey);
 
             httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, jwks.toJSONObject());

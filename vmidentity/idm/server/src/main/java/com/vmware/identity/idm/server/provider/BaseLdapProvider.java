@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.unboundid.scim.sdk.SCIMFilterType;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -58,6 +59,7 @@ import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.performance.IdmAuthStatRecorder;
 import com.vmware.identity.idm.server.performance.NoopIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
+import com.vmware.identity.idm.server.scim.ldap.LdapSearchQueryConverter;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ILdapConnectionExWithGetConnectionString;
 import com.vmware.identity.interop.ldap.ILdapEntry;
@@ -68,6 +70,7 @@ import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 import com.vmware.identity.performanceSupport.LdapQueryStat;
+import org.apache.commons.lang.StringUtils;
 
 public abstract class BaseLdapProvider implements IIdentityProvider
 {
@@ -952,6 +955,163 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         } else {
             return NoopIdmAuthStatRecorder.getInstance();
         }
+    }
+
+    protected abstract ILdapSchemaMapping getSchemaMapping();
+
+    protected LdapSearchQueryConverter getUserSearchQueryConverter() {
+        ILdapSchemaMapping schema = getSchemaMapping();
+        LdapSearchQueryConverter converter = new LdapSearchQueryConverter();
+        converter.setMapping("id", (sb, type, value) -> {
+            String[] components = ServerUtils.splitNameAndDomain(value);
+            ProviderLocation location = findProviderLocation(type, components[1]);
+
+            // If we should never match, we'll sabotage and bail out early
+            if (location == ProviderLocation.NONE) {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName),
+                        SCIMFilterType.EQUALITY, "*", true);
+                return;
+            }
+
+            // If we're in the domain, we need to match against both options
+            // otherwise match only against the UPN
+            if (location == ProviderLocation.DOMAIN) {
+                sb.append("(|");
+            }
+
+            LdapSearchQueryConverter.constructPredicate(sb,
+                    schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName),
+                    type, value);
+
+            if (location == ProviderLocation.DOMAIN) {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName),
+                        type, components[0]);
+
+                sb.append(")");
+            }
+        });
+        converter.setMapping("externalid", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeCommonName));
+        converter.setMapping("username", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName));
+        converter.setMapping("name.familyname", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeLastName));
+        converter.setMapping("name.givenname", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName));
+        converter.setMapping("displayname", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeDisplayName));
+        converter.setMapping("email", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeEmail));
+        converter.setMapping("groups", schema.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeMemberOf));
+        return converter;
+    }
+
+    protected LdapSearchQueryConverter getGroupSearchQueryConverter() {
+        ILdapSchemaMapping schema = getSchemaMapping();
+        LdapSearchQueryConverter converter = new LdapSearchQueryConverter();
+        converter.setMapping("id", (sb, type, value) -> {
+            String[] components = ServerUtils.splitNameAndDomain(value);
+            ProviderLocation location = findProviderLocation(type, components[1]);
+
+            // If we should never match, we'll sabotage and bail out early
+            if (location == ProviderLocation.NONE) {
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        schema.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName),
+                        SCIMFilterType.EQUALITY, "*", true);
+            } else {
+                // Default to the regular value so that we handle 'sw' or 'co' queries that do not include a domain
+                // otherwise use only the name component
+                LdapSearchQueryConverter.constructPredicate(sb,
+                        schema.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName),
+                        type, components[0]);
+            }
+        });
+        converter.setMapping("id", schema.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName));
+        converter.setMapping("externalid", schema.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName));
+        converter.setMapping("displayname", schema.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName));
+        converter.setMapping("members", schema.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeMembersList));
+        return converter;
+    }
+
+    protected enum ProviderLocation {
+        DOMAIN,
+        PROVIDER,
+        NONE
+    }
+
+    protected ProviderLocation findProviderLocation(SCIMFilterType type, String sequence) {
+        ProviderLocation location = ProviderLocation.NONE;
+        switch (type) {
+            case EQUALITY:
+                location = findProviderLocationEquals(sequence);
+                break;
+            case CONTAINS:
+                location = findProviderLocationContains(sequence);
+                break;
+            case STARTS_WITH:
+                location = findProviderLocationStartsWith(sequence);
+                break;
+        }
+
+        return location;
+    }
+
+    private ProviderLocation findProviderLocationEquals(String domain) {
+        if (getDomain().equalsIgnoreCase(domain)) {
+            return ProviderLocation.DOMAIN;
+        }
+
+        String alias = getAlias();
+        if (StringUtils.isNotBlank(alias) && alias.equalsIgnoreCase(domain)) {
+            return ProviderLocation.PROVIDER;
+        }
+
+        Set<String> upnSuffixes = this.getRegisteredUpnSuffixes();
+        if (upnSuffixes != null) {
+            if (upnSuffixes.stream().anyMatch(s -> s.equalsIgnoreCase(domain))) {
+                return ProviderLocation.PROVIDER;
+            }
+        }
+
+        return ProviderLocation.NONE;
+    }
+
+    private ProviderLocation findProviderLocationContains(String sequence) {
+        final String downCasedSequence = sequence.toLowerCase(); // Downcase for case-insensitive comparisons
+        if (getDomain().toLowerCase().contains(downCasedSequence)) {
+            return ProviderLocation.DOMAIN;
+        }
+
+        String alias = getAlias();
+        if (StringUtils.isNotBlank(alias) && alias.toLowerCase().contains(downCasedSequence)) {
+            return ProviderLocation.PROVIDER;
+        }
+
+        Set<String> upnSuffixes = this.getRegisteredUpnSuffixes();
+        if (upnSuffixes != null) {
+            if (upnSuffixes.stream().anyMatch(s -> s.toLowerCase().contains(downCasedSequence))) {
+                return ProviderLocation.PROVIDER;
+            }
+        }
+
+        return ProviderLocation.NONE;
+    }
+
+    private ProviderLocation findProviderLocationStartsWith(String prefix) {
+        final String downCasedPrefix = prefix.toLowerCase(); // Downcase for case-insensitive comparisons
+        if (getDomain().toLowerCase().startsWith(downCasedPrefix)) {
+            return ProviderLocation.DOMAIN;
+        }
+
+        String alias = getAlias();
+        if (StringUtils.isNotBlank(alias) && alias.toLowerCase().startsWith(downCasedPrefix)) {
+            return ProviderLocation.PROVIDER;
+        }
+
+        Set<String> upnSuffixes = this.getRegisteredUpnSuffixes();
+        if (upnSuffixes != null) {
+            if (upnSuffixes.stream().anyMatch(s -> s.toLowerCase().startsWith(downCasedPrefix))) {
+                return ProviderLocation.PROVIDER;
+            }
+        }
+
+        return ProviderLocation.NONE;
     }
 
 }

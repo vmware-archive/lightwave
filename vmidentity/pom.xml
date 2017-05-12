@@ -278,7 +278,7 @@
   <properties>
     <!-- Project Settings -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>1.7</java.version>
+    <java.version>1.8</java.version>
     <vmware.version>${project.version}</vmware.version>
     <skipIntegrationTests>true</skipIntegrationTests>
 
@@ -355,7 +355,7 @@
     <management-api.version>3.1.0-b001</management-api.version>
     <mimepull.version>1.9.3</mimepull.version>
     <net.dev.jna>4.2.1</net.dev.jna>
-    <nimbusds.version>4.12</nimbusds.version>
+    <nimbusds.version>4.36</nimbusds.version>
     <objenesis.version>1.2</objenesis.version>
     <opensaml.version>2.6.4</opensaml.version>
     <openws.version>1.5.4</openws.version>
@@ -364,6 +364,7 @@
     <reflections.version>0.9.10</reflections.version>
     <saaj-api.version>1.3.5</saaj-api.version>
     <saaj-impl.version>1.3</saaj-impl.version>
+    <scim.version>1.6.0</scim.version>
     <serializer.version>2.7.1</serializer.version>
     <slf4j.version>1.7.10</slf4j.version> 
     <spring.release.version>4.3.1.RELEASE</spring.release.version>

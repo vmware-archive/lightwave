@@ -114,7 +114,9 @@ public class JWKSControllerTest {
                 null,
                 null,
                 null,
-                Arrays.asList(Base64.encode(TestContext.TENANT_CERT.getEncoded())));
+                null,
+                Arrays.asList(Base64.encode(TestContext.TENANT_CERT.getEncoded())),
+                null);
 
         Assert.assertEquals("RS256", alg);
         Assert.assertEquals("sig", use);

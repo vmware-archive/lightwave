@@ -366,6 +366,7 @@
 
     <bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint" />
 
+	<!--
     <bean id="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
 
     <bean id="cachingPasswordEncoder" class="org.cloudfoundry.identity.uaa.util.CachingPasswordEncoder">
@@ -375,6 +376,9 @@
         <property name="enabled" value="${oauth.client.encoder_cache:true}"/>
         <property name="expiryInSeconds" value="${oauth.client.encoder_expiry:300}"/>
     </bean>
+    -->
+
+    <bean id="passthroughPasswordEncoder" class="org.cloudfoundry.identity.uaa.util.PassthroughPasswordEncoder"/>
 
     <bean id="uaaIdentityZone" class="org.cloudfoundry.identity.uaa.zone.IdentityZone" factory-method="getUaa"/>
 

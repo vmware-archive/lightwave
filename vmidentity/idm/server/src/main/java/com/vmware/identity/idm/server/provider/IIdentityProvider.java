@@ -33,6 +33,7 @@ import java.util.Set;
 
 import javax.security.auth.login.LoginException;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.Group;
@@ -72,6 +73,8 @@ public interface IIdentityProvider
 
     Set<PersonUser> findUsersByNameInGroup(PrincipalId groupId, String searchString, int limit) throws Exception;
 
+    Set<PersonUser> findUsersByScimFilter(SCIMFilter filter) throws Exception;
+
     Set<PersonUser> findDisabledUsers(String searchString, int limit) throws Exception;
 
     Set<PersonUser> findLockedUsers(String searchString, int limit) throws Exception;
@@ -92,6 +95,8 @@ public interface IIdentityProvider
 
     Set<Group> findGroupsByNameInGroup(PrincipalId groupId, String searchString, int limit) throws Exception;
 
+    Set<Group> findGroupsByScimFilter(SCIMFilter filter) throws Exception;
+
     SearchResult find(String searchString, String domainName, int limit) throws Exception;
 
     SearchResult findByName(String searchString, String domainName, int limit) throws Exception;
@@ -102,7 +107,7 @@ public interface IIdentityProvider
 
     /**
      * Search by attribute to return one user.
-     * 
+     *
      * @param attributeName
      * @param attributeValue
      * @return
@@ -144,5 +149,6 @@ public interface IIdentityProvider
      * @return mapping user certificate using principal name field in SAN to account's UPN attribute.
      */
     boolean getCertificateMappingUseUPN();
+
 }
 

@@ -50,9 +50,7 @@ import java.util.UUID;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
-
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.AlternativeOCSP;
@@ -105,6 +103,8 @@ import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PooledLdapConnectionIdentity;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
+import com.vmware.identity.idm.server.scim.SearchQueryConverter.ProcessedFilter;
+import com.vmware.identity.idm.server.scim.ldap.LdapSearchQueryConverter;
 import com.vmware.identity.interop.directory.Directory;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.AttributeOrValueExistsLdapException;
@@ -116,6 +116,9 @@ import com.vmware.identity.interop.ldap.LdapScope;
 import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.interop.ldap.NoSuchAttributeLdapException;
 import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
+
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 public class DirectoryConfigStore implements IConfigStore {
 
@@ -1559,6 +1562,11 @@ public class DirectoryConfigStore implements IConfigStore {
                     false /* createIfNotExists */);
 
             if (!ServerUtils.isNullOrEmpty(oidcClientsContainerDn)) {
+                if (oidcClient.getClientSecret() != null && !oidcClient.getClientSecret().isEmpty()) {
+                    Tenant tenant = this.getTenant(connection, tenantName);
+                    oidcClient = encryptPassword(tenant._tenantKey, oidcClient);
+                }
+
                 OIDCClientLdapObject oidcClientLdapObject = OIDCClientLdapObject.getInstance();
                 String oidcClientDn = oidcClientLdapObject.lookupObject(
                         connection,
@@ -1581,28 +1589,40 @@ public class DirectoryConfigStore implements IConfigStore {
 
     @Override
     public Collection<OIDCClient> getOIDCClients(String tenantName) throws Exception {
-	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+    	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
 
-	try (PooledLdapConnection pooledConnection = borrowConnection()) {
-	    ILdapConnectionEx connection = pooledConnection.getConnection();
-	    Collection<OIDCClient> clients = DirectoryConfigStore.getOIDCClients(this, connection, tenantName, null);
+    	try (PooledLdapConnection pooledConnection = borrowConnection()) {
+    	    ILdapConnectionEx connection = pooledConnection.getConnection();
+    	    return getOIDCClients(this, connection, tenantName, null);
+    	}
+    }
 
-	    ArrayList<OIDCClient> decryptedClients = new ArrayList<OIDCClient>(clients.size());
-	    Tenant tenant = null;
-	    for (OIDCClient client : clients) {
-	        if (client.getClientSecret() != null && !client.getClientSecret().isEmpty()) {
-	            if (tenant == null) {
-	                tenant = this.getTenant(connection, tenantName);
-	            }
+    @Override
+    public Collection<OIDCClient> getOIDCClients(String tenantName, SCIMFilter filter) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
 
-	            decryptedClients.add(decryptPassword(tenant._tenantKey, client));
-	        } else {
-	            decryptedClients.add(client);
-	        }
-	    }
+        ProcessedFilter processedFilter = getOIDCClientSearchQueryConverter().convert(filter);
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            return getOIDCClients(this, connection, tenantName, processedFilter.getConvertedFilter());
+        }
+    }
 
-	    return decryptedClients;
-	}
+    private LdapSearchQueryConverter getOIDCClientSearchQueryConverter() {
+		LdapSearchQueryConverter converter = new LdapSearchQueryConverter();
+		converter.setMapping("client_id", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_ID);
+//        converter.setMapping("client_secret", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_SECRET);
+		converter.setMapping("resource_ids", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_RESOURCE_IDS);
+		converter.setMapping("scope", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_SCOPES);
+		converter.setMapping("authorized_grant_types", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_AUTHORIZED_GRANT_TYPES);
+		converter.setMapping("web_server_redirect_uri", OIDCClientLdapObject.PROPERTY_OIDC_REDIRECT_URIS);
+		converter.setMapping("authorities", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_AUTHORITIES);
+//        converter.setMapping("access_token_validity", value);
+//        converter.setMapping("refresh_token_validity", value);
+		converter.setMapping("additional_information", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_ADDITIONAL_INFORMATION);
+		converter.setMapping("autoapprove", OIDCClientLdapObject.PROPERTY_OIDC_CLIENT_AUTO_APPROVE_SCOPES);
+//        converter.setMapping("lastmodified", value);
+        return converter;
     }
 
     @Override
@@ -1741,16 +1761,30 @@ public class DirectoryConfigStore implements IConfigStore {
     }
 
     // Helper function for getOIDCClients method
-    private static Collection<OIDCClient> getOIDCClients(DirectoryConfigStore directoryConfigStore,
-	    ILdapConnectionEx connection, String tenantName, String propertyFilter) {
-	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+    private Collection<OIDCClient> getOIDCClients(DirectoryConfigStore directoryConfigStore,
+	    ILdapConnectionEx connection, String tenantName, String propertyFilter) throws Exception {
+    	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
 
-	String tenantsRootDn = directoryConfigStore.ensureTenantExists(connection, tenantName);
+    	String tenantsRootDn = directoryConfigStore.ensureTenantExists(connection, tenantName);
 
-	Collection<OIDCClient> oidcClients = retrieveObjectsCollection(connection, tenantsRootDn,
-		ContainerLdapObject.CONTAINER_OIDC_CLIENTS, propertyFilter, OIDCClientLdapObject.getInstance(), null);
+    	Collection<OIDCClient> oidcClients = retrieveObjectsCollection(connection, tenantsRootDn,
+    		ContainerLdapObject.CONTAINER_OIDC_CLIENTS, propertyFilter, OIDCClientLdapObject.getInstance(), null);
 
-	return oidcClients;
+        ArrayList<OIDCClient> decryptedClients = new ArrayList<OIDCClient>(oidcClients.size());
+        Tenant tenant = null;
+        for (OIDCClient client : oidcClients) {
+            if (client.getClientSecret() != null && !client.getClientSecret().isEmpty()) {
+                if (tenant == null) {
+                    tenant = this.getTenant(connection, tenantName);
+                }
+
+                decryptedClients.add(decryptPassword(tenant._tenantKey, client));
+            } else {
+                decryptedClients.add(client);
+            }
+        }
+
+    	return oidcClients;
     }
 
     @Override

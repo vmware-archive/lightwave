@@ -15,7 +15,6 @@ package com.vmware.identity.rest.core.server.test.util;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Calendar;
 import java.util.Date;
@@ -123,13 +122,13 @@ public class JWTBuilder {
     }
 
     public JWTBuilder hotk(PublicKey key) {
-        RSAKey rsaKey = new RSAKey((RSAPublicKey) key, KeyUse.SIGNATURE, null, JWSAlgorithm.RS256, null, null, null, null);
+        RSAKey rsaKey = new RSAKey((RSAPublicKey) key, KeyUse.SIGNATURE, null, JWSAlgorithm.RS256, null, null, null, null, null, null);
         this.hotk = new JWKSet(rsaKey);
         return this;
     }
 
     public SignedJWT build() throws JOSEException {
-        JWSSigner signer = new RSASSASigner((RSAPrivateKey) this.privateKey);
+        JWSSigner signer = new RSASSASigner(this.privateKey);
 
         JWTClaimsSet claimsSet;
         JWTClaimsSet.Builder jwtTokenBuilder = new JWTClaimsSet.Builder()

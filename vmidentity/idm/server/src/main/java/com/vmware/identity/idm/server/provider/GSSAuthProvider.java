@@ -22,9 +22,9 @@ import java.util.Set;
 
 import javax.security.auth.login.LoginException;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
-import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.PersonUser;
@@ -131,6 +131,11 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
     }
 
     @Override
+    public Set<PersonUser> findUsersByScimFilter(SCIMFilter filter) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Set<PersonUser> findDisabledUsers(String searchString, int limit)
             throws Exception {
         throw new UnsupportedOperationException();
@@ -189,6 +194,11 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
           String searchString, int limit)
                 throws Exception {
        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Set<Group> findGroupsByScimFilter(SCIMFilter filter) throws Exception {
+        throw new UnsupportedOperationException();
     }
 
     @Override

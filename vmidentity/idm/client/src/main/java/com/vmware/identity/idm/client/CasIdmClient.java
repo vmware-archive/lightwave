@@ -559,6 +559,27 @@ public class CasIdmClient
         return getService().getOIDCClients(tenantName, this.getServiceContext());
     }
 
+    /**
+     * Retrieves the collection of OIDC clients configured for the tenant.
+     *
+     * @param tenantName
+     *            Name of the tenant Required, non-null, non-empty,
+     *            case-insensitive.
+     * @param filter
+     *            SCIM filter
+     * @return The collection of OIDC clients.
+     * @throws IDMException
+     * @throws Exception
+     *             - if unable to connect the IDM server
+     * @throws NoSuchTenantException
+     *             - if no such tenant exist
+     * @throws InvalidArgumentException
+     *             -- if the tenant name is illegal.
+     */
+    public Collection<OIDCClient> getOIDCClients(String tenantName, String filter) throws Exception {
+        return getService().getOIDCClients(tenantName, filter, this.getServiceContext());
+    }
+
     public void addResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
         getService().addResourceServer(tenantName, resourceServer, this.getServiceContext());
     }
@@ -1958,6 +1979,20 @@ public class CasIdmClient
     }
 
     /**
+     * Find all regular users that match with a SCIM filter
+     *
+     * @param tenantName name of the tenant, required, non-null, non-empty
+     * @param filter a string representing a SCIM filter
+     * @return a set of regular users matching the SCIM filter
+     * @throws Exception
+     * @see {@link http://www.simplecloud.info/specs/draft-scim-api-01.html#query-resources}
+     */
+    public Set<PersonUser> findPersonUsersByScimFilter(String tenantName, String filter) throws Exception
+    {
+        return getService().findPersonUsersByScimFilter(tenantName, filter, this.getServiceContext());
+    }
+
+    /**
      * Finds a security group defined in one of the tenant's identity providers
      *
      * @param tenantName Name of tenant
@@ -1993,6 +2028,20 @@ public class CasIdmClient
     findGroupByObjectId(String tenantName, String GroupObjectId) throws Exception
     {
         return getService().findGroupByObjectId(tenantName, GroupObjectId, this.getServiceContext());
+    }
+
+    /**
+     * Find all groups that match with a SCIM filter
+     *
+     * @param tenantName name of the tenant, required, non-null, non-empty
+     * @param filter a string representing a SCIM filter
+     * @return a set of groups matching the SCIM filter
+     * @throws Exception
+     * @see {@link http://www.simplecloud.info/specs/draft-scim-api-01.html#query-resources}
+     */
+    public Set<Group> findGroupsByScimFilter(String tenantName, String filter) throws Exception
+    {
+        return getService().findGroupsByScimFilter(tenantName, filter, this.getServiceContext());
     }
 
     /**

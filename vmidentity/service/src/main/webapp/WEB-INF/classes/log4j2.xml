@@ -112,7 +112,7 @@
       filePattern="${sys:catalina.base}/logs/uaa-%i.log.gz">
       <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
       <PatternLayout class="org.cloudfoundry.identity.uaa.util.LineAwareLayout">
-        <pattern>[%d{yyy-MM-dd HH:mm:ss.SSS}] cloudfoundry-identtiy-uaa%X{context} - [%t] .... %5p --- %c{1}: %m%n</pattern>
+        <pattern>[%d{yyy-MM-dd HH:mm:ss.SSS}] cloudfoundry-identity-uaa%X{context} - [%t] .... %5p --- %c{1}: %m%n</pattern>
       </PatternLayout>
       <SizeBasedTriggeringPolicy size="50 MB"/>
       <DefaultRolloverStrategy max="10"/>

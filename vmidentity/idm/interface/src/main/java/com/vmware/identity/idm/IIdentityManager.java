@@ -255,6 +255,11 @@ public interface IIdentityManager
             String tenantName,
             IIdmServiceContext serviceContext) throws  IDMException;
 
+    public Collection<OIDCClient> getOIDCClients(
+            String tenantName,
+            String filter,
+            IIdmServiceContext serviceContext) throws  IDMException;
+
     /*
      *  ResourceServer
      */
@@ -389,11 +394,15 @@ public interface IIdentityManager
 
     public Set<PersonUser> findPersonUsersByNameInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public Set<PersonUser> findPersonUsersByScimFilter(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException;
+
     public Set<SolutionUser> findSolutionUsersInGroup(String tenantName, String groupName, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
     public Set<Group> findGroupsInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
     public Set<Group> findGroupsByNameInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
+
+    public Set<Group> findGroupsByScimFilter(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException;
 
     public Set<Group> findDirectParentGroups(String tenantName, PrincipalId principalId, IIdmServiceContext serviceContext) throws  IDMException;
 

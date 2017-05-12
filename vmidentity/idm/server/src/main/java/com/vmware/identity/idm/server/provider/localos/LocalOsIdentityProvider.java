@@ -29,6 +29,7 @@ import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.DomainType;
@@ -437,6 +438,12 @@ public class LocalOsIdentityProvider implements IIdentityProvider
     }
 
     @Override
+    public Set<PersonUser> findUsersByScimFilter(SCIMFilter filter) throws Exception {
+        logger.warn("LocalOsIdentityProvider#findUsersByScimFilter() not yet implemented");
+        return Collections.<PersonUser> emptySet();
+    }
+
+    @Override
     public Set<PersonUser> findDisabledUsers(String searchString, int limit) throws Exception
     {
         Set<PersonUser> users = new HashSet<PersonUser>();
@@ -633,6 +640,12 @@ public class LocalOsIdentityProvider implements IIdentityProvider
                     String.format( "Group '%s' was not found.", groupId.getName() )
             );
         }
+    }
+
+    @Override
+    public Set<Group> findGroupsByScimFilter(SCIMFilter filter) throws Exception {
+        logger.warn("LocalOsIdentityProvider#findGroupsByScimFilter() not yet implemented");
+        return Collections.<Group> emptySet();
     }
 
     @Override

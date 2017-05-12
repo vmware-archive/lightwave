@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
+import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.CertificateType;
 import com.vmware.identity.idm.ClientCertPolicy;
@@ -263,6 +264,8 @@ public interface IConfigStore
     public void setOIDCClient(String tenantName, OIDCClient oidcClient) throws Exception;
 
     public Collection<OIDCClient> getOIDCClients(String tenantName) throws Exception;
+
+    public Collection<OIDCClient> getOIDCClients(String tenantName, SCIMFilter filter) throws Exception;
 
     /*
      *  Resource Server

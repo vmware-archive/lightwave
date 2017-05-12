@@ -22,7 +22,7 @@
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
 
     <!-- <bean id="scimUserProvisioning" class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimUserProvisioning"> -->
-    <bean id="scimUserProvisioning" class="org.cloudfoundry.identity.uaa.scim.jdbc.VmidentityScimUserProvisioning" >
+    <bean id="scimUserProvisioning" class="org.cloudfoundry.identity.uaa.scim.vmidentity.VmidentityScimUserProvisioning" >
         <constructor-arg name="casIdmClient" ref="idmClient" />
     </bean>
 
@@ -71,14 +71,14 @@
         </aop:aspect>
     </aop:config>
 
-    <bean id="scimGroupProvisioning" class="org.cloudfoundry.identity.uaa.scim.jdbc.VmidentityScimGroupProvisioning">
+    <bean id="scimGroupProvisioning" class="org.cloudfoundry.identity.uaa.scim.vmidentity.VmidentityScimGroupProvisioning">
             <!-- class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupProvisioning">
         <constructor-arg ref="jdbcTemplate" />
         <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory" /> -->
         <constructor-arg name="casIdmClient" ref="idmClient" />
     </bean>
 
-    <bean id="groupMembershipManager" class="org.cloudfoundry.identity.uaa.scim.jdbc.VmidentityScimGroupMembershipManager">
+    <bean id="groupMembershipManager" class="org.cloudfoundry.identity.uaa.scim.vmidentity.VmidentityScimGroupMembershipManager">
           <!-- class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupMembershipManager">
         <constructor-arg name="jdbcTemplate" ref="jdbcTemplate" />
         <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory"/>
@@ -88,7 +88,7 @@
         <constructor-arg name="casIdmClient" ref="idmClient" />
     </bean>
 
-    <bean id="externalGroupMembershipManager" class="org.cloudfoundry.identity.uaa.scim.jdbc.VmidentityScimGroupExternalMembershipManager">
+    <bean id="externalGroupMembershipManager" class="org.cloudfoundry.identity.uaa.scim.vmidentity.VmidentityScimGroupExternalMembershipManager">
          <!-- class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupExternalMembershipManager">
         <constructor-arg name="jdbcTemplate" ref="jdbcTemplate" />
         <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory" />
