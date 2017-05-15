@@ -1,4 +1,4 @@
-package main
+package oidc
 
 /*
 #cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/common/include/public/
