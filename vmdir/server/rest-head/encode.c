@@ -24,7 +24,7 @@ VmDirRESTEncodeAttribute(
     DWORD   i = 0;
     json_t* pjVals = NULL;
     json_t* pjAttr = NULL;
-    PSTR    pszEncodedVal = NULL;
+    PSTR    pszEncoded = NULL;
     int     len = 0;
 
     if (!pAttr || !ppjOutput)
@@ -45,23 +45,23 @@ VmDirRESTEncodeAttribute(
         // check if value needs to be encoded
         if (VmDirSchemaAttrIsOctetString(pAttr->pATDesc))
         {
-            VMDIR_SAFE_FREE_STRINGA(pszEncodedVal);
+            VMDIR_SAFE_FREE_STRINGA(pszEncoded);
 
             dwError = VmDirAllocateMemory(
                     pAttr->vals[i].lberbv.bv_len * 2 + 1,
-                    (PVOID*)&pszEncodedVal);
+                    (PVOID*)&pszEncoded);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = sasl_encode64(
                     pAttr->vals[i].lberbv.bv_val,
                     pAttr->vals[i].lberbv.bv_len,
-                    pszEncodedVal,
+                    pszEncoded,
                     pAttr->vals[i].lberbv.bv_len * 2 + 1,
                     &len);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = json_array_append_new(
-                    pjVals, json_string(pszEncodedVal));
+                    pjVals, json_string(pszEncoded));
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else
@@ -79,7 +79,7 @@ VmDirRESTEncodeAttribute(
     *ppjOutput = pjAttr;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszEncodedVal);
+    VMDIR_SAFE_FREE_STRINGA(pszEncoded);
     return dwError;
 
 error:
@@ -134,18 +134,26 @@ VmDirRESTEncodeEntry(
     {
         for (pAttr = pAttrs[i]; pAttr; pAttr = pAttr->next)
         {
-            bReturn = pbvAttrs == NULL;
+            bReturn = FALSE;
 
-            for (j = 0; pbvAttrs && pbvAttrs[j].lberbv.bv_val; j++)
+            if (pbvAttrs)
             {
-                if (VmDirStringCompareA(
-                        pAttr->type.lberbv.bv_val,
-                        pbvAttrs[j].lberbv.bv_val,
-                        FALSE) == 0)
+                for (j = 0; pbvAttrs[j].lberbv.bv_val; j++)
                 {
-                    bReturn = TRUE;
-                    break;
+                    if (VmDirStringCompareA(
+                            pAttr->type.lberbv.bv_val,
+                            pbvAttrs[j].lberbv.bv_val,
+                            FALSE) == 0)
+                    {
+                        bReturn = TRUE;
+                        break;
+                    }
                 }
+            }
+            else if (pAttr->pATDesc->usage ==
+                    VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
+            {
+                bReturn = TRUE;
             }
 
             if (bReturn)
