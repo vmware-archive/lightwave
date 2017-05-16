@@ -13,6 +13,7 @@
  */
 package com.vmware.identity.rest.idm.server.resources;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import javax.ws.rs.Consumes;
@@ -28,6 +29,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.InvalidArgumentException;
@@ -63,16 +66,27 @@ public class OIDCClientResource extends BaseSubResource {
     }
 
     /**
-     * Add an OIDC client for tenant
+     * Add an OIDC client for tenant by way of OIDCClientDTO or OIDCClientMetadataDTO
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
-    public OIDCClientDTO add(OIDCClientMetadataDTO oidcClientMetadataDTO) {
-        String clientId = null;
+    public OIDCClientDTO add(String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode obj = mapper.readTree(json);
+        if (obj.hasNonNull("oidcclientMetadataDTO")) { // If there's a metadata defined then try using it as a client object
+            OIDCClientDTO oidcClient = mapper.treeToValue(obj, OIDCClientDTO.class);
+            return add(oidcClient.getClientId(), oidcClient.getOIDCClientMetadataDTO());
+        } else {
+            OIDCClientMetadataDTO oidcClientMetadataDTO = mapper.treeToValue(obj, OIDCClientMetadataDTO.class);
+            return add(null, oidcClientMetadataDTO);
+        }
+    }
+
+    private OIDCClientDTO add(String clientId, OIDCClientMetadataDTO oidcClientMetadataDTO) {
         try {
-            OIDCClient oidcClient = OIDCClientMapper.getOIDCClient(oidcClientMetadataDTO);
-            clientId = oidcClient.getClientId();
+            OIDCClient oidcClient = OIDCClientMapper.getOIDCClient(clientId, oidcClientMetadataDTO);
+            clientId = oidcClient.getClientId(); // Fetch the client id if it was generated
             getIDMClient().addOIDCClient(this.tenant, oidcClient);
             return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, clientId));
         } catch (NoSuchTenantException e) {

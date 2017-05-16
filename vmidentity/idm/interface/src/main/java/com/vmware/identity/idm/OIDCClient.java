@@ -279,9 +279,11 @@ public class OIDCClient implements Serializable {
         // Validate and set OIDC meta data defaults
         // Refer OIDC SDK code for string representation of each fields
         private void validateAndSetDefaults() {
-            for (String uri : this.redirectUris) {
-                if (!isValidUri(uri)) {
-                    throw new IllegalArgumentException("Invalid redirect URI: " + uri);
+            if (this.redirectUris != null) {
+                for (String uri : this.redirectUris) {
+                    if (!isValidUri(uri)) {
+                        throw new IllegalArgumentException("Invalid redirect URI: " + uri);
+                    }
                 }
             }
 

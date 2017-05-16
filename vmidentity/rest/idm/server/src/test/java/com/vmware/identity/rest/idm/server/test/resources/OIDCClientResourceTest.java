@@ -134,14 +134,15 @@ public class OIDCClientResourceTest {
     }
 
     @Test
-    public void testAddOIDCClient() throws Exception{
+    public void testAddOIDCClient_Metadata() throws Exception {
         OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = new OIDCClientMetadataDTO.Builder().
                 withRedirectUris(REDIRECT_URIS).
                 withTokenEndpointAuthMethod(TOKEN_ENDPOINT_AUTH_METHOD).
                 withPostLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS).
                 withLogoutUri(LOGOUT_URI).
                 withCertSubjectDN(CERT_SUBJECT_DN).
-                withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).build();
+                withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
+                build();
 
         this.mockIDMClient.addOIDCClient(eq(TENANT),isA(OIDCClient.class));
         expect(this.mockIDMClient.getOIDCClient(eq(TENANT), isA(String.class))).andAnswer(
@@ -153,7 +154,38 @@ public class OIDCClientResourceTest {
                 }
         );
         this.mControl.replay();
-        OIDCClientDTO resultOIDCClientDTO = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO resultOIDCClientDTO = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
+        assertOIDCClient(resultOIDCClientDTO, resultOIDCClientDTO.getClientId());
+        this.mControl.verify();
+    }
+
+    @Test
+    public void testAddOIDCClient_Client() throws Exception {
+        OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = new OIDCClientMetadataDTO.Builder().
+                withRedirectUris(REDIRECT_URIS).
+                withTokenEndpointAuthMethod(TOKEN_ENDPOINT_AUTH_METHOD).
+                withPostLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS).
+                withLogoutUri(LOGOUT_URI).
+                withCertSubjectDN(CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
+                build();
+
+        OIDCClientDTO oidcClientDTOToAdd = new OIDCClientDTO.Builder().
+                withClientId("jibberish").
+                withOIDCClientMetadataDTO(oidcClientMetadataDTOToAdd).
+                build();
+
+        this.mockIDMClient.addOIDCClient(eq(TENANT),isA(OIDCClient.class));
+        expect(this.mockIDMClient.getOIDCClient(eq(TENANT), isA(String.class))).andAnswer(
+                new IAnswer<OIDCClient>() {
+                    @Override
+                    public OIDCClient answer() throws Throwable {
+                        return getTestOIDCClient((String) EasyMock.getCurrentArguments()[1]);
+                    }
+                }
+        );
+        this.mControl.replay();
+        OIDCClientDTO resultOIDCClientDTO = this.oidcClientResource.add(oidcClientDTOToAdd.toString());
         assertOIDCClient(resultOIDCClientDTO, resultOIDCClientDTO.getClientId());
         this.mControl.verify();
     }

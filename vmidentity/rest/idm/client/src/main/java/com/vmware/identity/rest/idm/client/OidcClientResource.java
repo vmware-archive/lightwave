@@ -53,7 +53,7 @@ public class OidcClientResource extends ClientResource {
     }
 
     /**
-     * Register a new Open ID Connect client.
+     * Register a new Open ID Connect client using only metadata.
      *
      * <p><b>Required Role:</b> {@code administrator}.
      *
@@ -65,11 +65,34 @@ public class OidcClientResource extends ClientResource {
      * @throws WebApplicationException in the event of an application error.
      * @throws HttpException if there was a generic error with the remote call.
      * @throws IOException if there was an error with the IO stream.
+     * @deprecated As of release 1.3, replaced by {@link #register(String, OIDCClientDTO)}.
      */
+    @Deprecated
     public OIDCClientDTO register(String tenant, OIDCClientMetadataDTO metadata) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
         URI uri = buildURI(parent.getHostRetriever(), OIDC_CLIENT_URI, tenant);
 
         HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), metadata);
+        return execute(parent.getClient(), post, OIDCClientDTO.class);
+    }
+
+    /**
+     * Register a new Open ID Connect client.
+     *
+     * <p><b>Required Role:</b> {@code administrator}.
+     *
+     * @param tenant the name of the tenant to register the client with.
+     * @param client the client to register
+     * @return the newly registered client.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public OIDCClientDTO register(String tenant, OIDCClientDTO client) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), OIDC_CLIENT_URI, tenant);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), client);
         return execute(parent.getClient(), post, OIDCClientDTO.class);
     }
 

@@ -44,17 +44,25 @@ public class OIDCClientMapper {
         return oidcClient;
     }
 
-    public static OIDCClient getOIDCClient(OIDCClientMetadataDTO oidcClientMetadataDTO) {
+    public static OIDCClient getOIDCClient(String clientId, OIDCClientMetadataDTO oidcClientMetadataDTO) {
         OIDCClient oidcClient  = null;
         try {
             Long lifetimeMS = oidcClientMetadataDTO.getAuthnRequestClientAssertionLifetimeMS();
-            oidcClient = new OIDCClient.Builder().
+            oidcClient = new OIDCClient.Builder(clientId).
                          redirectUris(oidcClientMetadataDTO.getRedirectUris()).
                          tokenEndpointAuthMethod(oidcClientMetadataDTO.getTokenEndpointAuthMethod()).
                          postLogoutRedirectUris(oidcClientMetadataDTO.getPostLogoutRedirectUris()).
                          logoutUri(oidcClientMetadataDTO.getLogoutUri()).
                          certSubjectDN(oidcClientMetadataDTO.getCertSubjectDN()).
-                         authnRequestClientAssertionLifetimeMS((lifetimeMS == null) ? 0L : lifetimeMS.longValue()).build();
+                         authnRequestClientAssertionLifetimeMS((lifetimeMS == null) ? 0L : lifetimeMS.longValue()).
+                         clientSecret(oidcClientMetadataDTO.getClientSecret()).
+                         authorities(oidcClientMetadataDTO.getAuthorities()).
+                         resourceIds(oidcClientMetadataDTO.getResourceIds()).
+                         scopes(oidcClientMetadataDTO.getScopes()).
+                         autoApproveScopes(oidcClientMetadataDTO.getAutoApproveScopes()).
+                         authorizedGrantTypes(oidcClientMetadataDTO.getAuthorizedGrantTypes()).
+                         additionalInformation(oidcClientMetadataDTO.getAdditionalInformation()).
+                         build();
         } catch(Exception e) {
             throw new DTOMapperException("Failed to map OIDCClientMetadataDTO to OIDCClient", e);
         }
@@ -66,18 +74,33 @@ public class OIDCClientMapper {
         try {
             oidcClientDTO = new OIDCClientDTO.Builder().
                             withClientId(oidcClient.getClientId()).
-                            withOIDCClientMetadataDTO(new OIDCClientMetadataDTO.Builder().
-                            withRedirectUris(oidcClient.getRedirectUris()).
-                            withTokenEndpointAuthMethod(oidcClient.getTokenEndpointAuthMethod()).
-                            withPostLogoutRedirectUris(oidcClient.getPostLogoutRedirectUris()).
-                            withLogoutUri(oidcClient.getLogoutUri()).
-                            withCertSubjectDN(oidcClient.getCertSubjectDN()).
-                            withAuthnRequestClientAssertionLifetimeMS(oidcClient.getAuthnRequestClientAssertionLifetimeMS()).build()).
+                            withOIDCClientMetadataDTO(getOIDCClientMetadataDTO(oidcClient)).
                             build();
         } catch(Exception e) {
             throw new DTOMapperException("Failed to map OIDCClient to OIDCClientDTO", e);
         }
         return oidcClientDTO;
+    }
+
+    public static OIDCClientMetadataDTO getOIDCClientMetadataDTO(OIDCClient oidcClient) {
+        try {
+            return new OIDCClientMetadataDTO.Builder().
+                    withRedirectUris(oidcClient.getRedirectUris()).
+                    withTokenEndpointAuthMethod(oidcClient.getTokenEndpointAuthMethod()).
+                    withPostLogoutRedirectUris(oidcClient.getPostLogoutRedirectUris()).
+                    withLogoutUri(oidcClient.getLogoutUri()).
+                    withCertSubjectDN(oidcClient.getCertSubjectDN()).
+                    withAuthnRequestClientAssertionLifetimeMS(oidcClient.getAuthnRequestClientAssertionLifetimeMS()).
+                    withAuthorities(oidcClient.getAuthorities()).
+                    withResourceIds(oidcClient.getResourceIds()).
+                    withScopes(oidcClient.getScopes()).
+                    withAutoApproveScopes(oidcClient.getAutoApproveScopes()).
+                    withAuthorizedGrantTypes(oidcClient.getAuthorizedGrantTypes()).
+                    withAdditionalInformation(oidcClient.getAdditionalInformation()).
+                    build();
+        } catch (Exception e) {
+            throw new DTOMapperException ("Failed to map OIDCClient to OIDCClientMetadataDTO", e);
+        }
     }
 
     public static Collection<OIDCClientDTO> getOIDCClientDTOs(Collection<OIDCClient> oidcClients) {

@@ -30,7 +30,6 @@ import org.junit.Test;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
-import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 
 public class OidcClientResourceIT extends IntegrationTestBase {
 
@@ -40,10 +39,10 @@ public class OidcClientResourceIT extends IntegrationTestBase {
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
         IntegrationTestBase.init(true);
 
-        OIDCClientMetadataDTO metadata = TestGenerator.generateOIDCClientMetadata();
+        OIDCClientDTO client = TestGenerator.generateOIDCClient("Integration.Test.Client");
 
-        testOidcClient = testAdminClient.oidcClient().register(testTenant.getName(), metadata);
-        assertMetadataEqual(metadata, testOidcClient.getOIDCClientMetadataDTO());
+        testOidcClient = testAdminClient.oidcClient().register(testTenant.getName(), client);
+        assertMetadataEqual(client.getOIDCClientMetadataDTO(), testOidcClient.getOIDCClientMetadataDTO());
     }
 
     @AfterClass

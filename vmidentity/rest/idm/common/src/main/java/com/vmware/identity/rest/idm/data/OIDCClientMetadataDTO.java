@@ -14,6 +14,7 @@
 package com.vmware.identity.rest.idm.data;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -47,6 +48,13 @@ public class OIDCClientMetadataDTO extends DTO {
     private final String logoutUri;
     private final String certSubjectDN;
     private final Long authnRequestClientAssertionLifetimeMS;
+    private final String clientSecret;
+    private final List<String> authorities;
+    private final List<String> resourceIds;
+    private final List<String> scopes;
+    private final List<String> autoApproveScopes;
+    private final List<String> authorizedGrantTypes;
+    private final Map<String, Object> additionalInformation;
 
     /**
      * Construct an {@code OIDCClientMetadataDTO} with its various details.
@@ -64,13 +72,27 @@ public class OIDCClientMetadataDTO extends DTO {
             List<String> postLogoutRedirectUris,
             String logoutUri,
             String certSubjectDN,
-            Long authnRequestClientAssertionLifetimeMS) {
+            Long authnRequestClientAssertionLifetimeMS,
+            String clientSecret,
+            List<String> authorities,
+            List<String> resourceIds,
+            List<String> scopes,
+            List<String> autoApproveScopes,
+            List<String> authorizedGrantTypes,
+            Map<String, Object> additionalInformation) {
         this.redirectUris = redirectUris;
         this.tokenEndpointAuthMethod = tokenEndpointAuthMethod;
         this.postLogoutRedirectUris = postLogoutRedirectUris;
         this.logoutUri = logoutUri;
         this.certSubjectDN = certSubjectDN;
         this.authnRequestClientAssertionLifetimeMS = authnRequestClientAssertionLifetimeMS;
+        this.clientSecret = clientSecret;
+        this.authorities = authorities;
+        this.resourceIds = resourceIds;
+        this.scopes = scopes;
+        this.autoApproveScopes = autoApproveScopes;
+        this.authorizedGrantTypes = authorizedGrantTypes;
+        this.additionalInformation = additionalInformation;
     }
 
     /**
@@ -118,8 +140,76 @@ public class OIDCClientMetadataDTO extends DTO {
         return this.certSubjectDN;
     }
 
+    /**
+     * Get the authentication request client assertion lifetime in milliseconds.
+     *
+     * @return the authentication request client assertion lifetime, in milliseconds.
+     */
     public Long getAuthnRequestClientAssertionLifetimeMS() {
         return this.authnRequestClientAssertionLifetimeMS;
+    }
+
+    /**
+     * Get the client secret.
+     *
+     * @return the client secret.
+     */
+    public String getClientSecret() {
+        return this.clientSecret;
+    }
+
+    /**
+     * Get the client authorities.
+     *
+     * @return the client authorities.
+     */
+    public List<String> getAuthorities() {
+        return this.authorities;
+    }
+
+    /**
+     * Get the list of resources that the client can access.
+     *
+     * @return the list of resources that the client can access.
+     */
+    public List<String> getResourceIds() {
+        return this.resourceIds;
+    }
+
+    /**
+     * Get the scopes of the client.
+     *
+     * @return the list of scopes the client is granted.
+     */
+    public List<String> getScopes() {
+        return this.scopes;
+    }
+
+    /**
+     * Get the list of scopes for which the client does not require user approval.
+     *
+     * @return the list of scopes for which the client does not require user approval.
+     */
+    public List<String> getAutoApproveScopes() {
+        return this.autoApproveScopes;
+    }
+
+    /**
+     * Get the list of grant types for which this client is authorized.
+     *
+     * @return the list of grant types for which this client is authorized.
+     */
+    public List<String> getAuthorizedGrantTypes() {
+        return this.authorizedGrantTypes;
+    }
+
+    /**
+     * Get additional information not required for vanilla OAuth (JSON blob).
+     *
+     * @return the additional information not required for vanilla OAuth.
+     */
+    public Map<String, Object> getAdditionalInformation() {
+        return this.additionalInformation;
     }
 
     /**
@@ -146,6 +236,13 @@ public class OIDCClientMetadataDTO extends DTO {
         private String logoutUri;
         private String certSubjectDN;
         private Long authnRequestClientAssertionLifetimeMS;
+        private String clientSecret;
+        private List<String> authorities;
+        private List<String> resourceIds;
+        private List<String> scopes;
+        private List<String> autoApproveScopes;
+        private List<String> authorizedGrantTypes;
+        private Map<String, Object> additionalInformation;
 
         public Builder withRedirectUris(List<String> redirectUris) {
             this.redirectUris = redirectUris;
@@ -177,6 +274,41 @@ public class OIDCClientMetadataDTO extends DTO {
             return this;
         }
 
+        public Builder withClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+            return this;
+        }
+
+        public Builder withAuthorities(List<String> authorities) {
+            this.authorities = authorities;
+            return this;
+        }
+
+        public Builder withResourceIds(List<String> resourceIds) {
+            this.resourceIds = resourceIds;
+            return this;
+        }
+
+        public Builder withScopes(List<String> scopes) {
+            this.scopes = scopes;
+            return this;
+        }
+
+        public Builder withAutoApproveScopes(List<String> autoApproveScopes) {
+            this.autoApproveScopes = autoApproveScopes;
+            return this;
+        }
+
+        public Builder withAuthorizedGrantTypes(List<String> authorizedGrantTypes) {
+            this.authorizedGrantTypes = authorizedGrantTypes;
+            return this;
+        }
+
+        public Builder withAdditionalInformation(Map<String, Object> additionalInformation) {
+            this.additionalInformation = additionalInformation;
+            return this;
+        }
+
         public OIDCClientMetadataDTO build() {
             return new OIDCClientMetadataDTO(
                     redirectUris,
@@ -184,7 +316,14 @@ public class OIDCClientMetadataDTO extends DTO {
                     postLogoutRedirectUris,
                     logoutUri,
                     certSubjectDN,
-                    authnRequestClientAssertionLifetimeMS);
+                    authnRequestClientAssertionLifetimeMS,
+                    clientSecret,
+                    authorities,
+                    resourceIds,
+                    scopes,
+                    autoApproveScopes,
+                    authorizedGrantTypes,
+                    additionalInformation);
         }
     }
 

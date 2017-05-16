@@ -25,6 +25,7 @@ import com.vmware.identity.rest.core.test.util.CertificateGenerator;
 import com.vmware.identity.rest.core.test.util.KeyPairUtil;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
+import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
@@ -78,6 +79,10 @@ public class TestGenerator {
 
     public static GroupDTO generateGroup(String name, String domain, String description) {
         return GroupGenerator.generateGroup(name, domain, description);
+    }
+
+    public static OIDCClientDTO generateOIDCClient(String clientId) {
+        return OidcClientGenerator.generateOIDCClient(clientId);
     }
 
     public static OIDCClientMetadataDTO generateOIDCClientMetadata() {

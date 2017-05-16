@@ -61,12 +61,30 @@ public class OIDCClientResourceIT extends TestBase {
     }
 
     @Test
-    public void testAddOIDCClient() throws Exception {
+    public void testAddOIDCClient_Metadata() throws Exception {
         String clientId1 = null;
 
         // test add
         OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = OIDCClientDataGenerator.generateOIDCClientMetadataDTO();
-        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
+        clientId1 = response1.getClientId();
+        assertOIDCClient(response1, clientId1);
+
+        Assert.assertNotNull(this.oidcClientResource.get(clientId1));
+        this.oidcClientResource.delete(clientId1);
+    }
+
+    @Test
+    public void testAddOIDCClient_Client() throws Exception {
+        String clientId1 = null;
+
+        // test add
+        OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = OIDCClientDataGenerator.generateOIDCClientMetadataDTO();
+        OIDCClientDTO oidcClientDTOToAdd = OIDCClientDTO.builder().
+                withClientId("jibberish").
+                withOIDCClientMetadataDTO(oidcClientMetadataDTOToAdd).
+                build();
+        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientDTOToAdd.toString());
         clientId1 = response1.getClientId();
         assertOIDCClient(response1, clientId1);
 
@@ -80,7 +98,7 @@ public class OIDCClientResourceIT extends TestBase {
 
         // test add
         OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = OIDCClientDataGenerator.generateOIDCClientMetadataDTO();
-        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
         clientId1 = response1.getClientId();
         assertOIDCClient(response1, clientId1);
 
@@ -98,7 +116,7 @@ public class OIDCClientResourceIT extends TestBase {
 
         // test add
         OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = OIDCClientDataGenerator.generateOIDCClientMetadataDTO();
-        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
         clientId1 = response1.getClientId();
         assertOIDCClient(response1, clientId1);
 
@@ -128,7 +146,7 @@ public class OIDCClientResourceIT extends TestBase {
 
         // test add
         OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = OIDCClientDataGenerator.generateOIDCClientMetadataDTO();
-        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
         clientId1 = response1.getClientId();
         assertOIDCClient(response1, clientId1);
 
@@ -143,7 +161,7 @@ public class OIDCClientResourceIT extends TestBase {
                 withCertSubjectDN(OIDCClientDataGenerator.CERT_SUBJECT_DN).
                 withAuthnRequestClientAssertionLifetimeMS(OIDCClientDataGenerator.AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
                 build();
-        OIDCClientDTO response2 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO response2 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
         clientId2 = response2.getClientId();
 
         // test get all
@@ -162,7 +180,7 @@ public class OIDCClientResourceIT extends TestBase {
 
         // test add
         OIDCClientMetadataDTO oidcClientMetadataDTOToAdd = OIDCClientDataGenerator.generateOIDCClientMetadataDTO();
-        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
+        OIDCClientDTO response1 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd.toString());
         clientId1 = response1.getClientId();
         assertOIDCClient(response1, clientId1);
 

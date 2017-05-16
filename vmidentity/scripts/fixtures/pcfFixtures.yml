@@ -1,0 +1,467 @@
+---
+groups:
+  bosh.admin: bosh.admin
+  bosh.read: bosh.read
+  clients.admin: Create, modify and delete OAuth clients
+  clients.read: Read information about OAuth clients
+  clients.secret: Change the password of an OAuth client
+  clients.write: Create and modify OAuth clients
+  cloud_controller.admin_read_only: cloud_controller.admin_read_only
+  cloud_controller.admin: cloud_controller.admin
+  cloud_controller.read: cloud_controller.read
+  cloud_controller.write: cloud_controller.write
+  console.admin: console.admin
+  console.support: console.support
+  dashboard.user: dashboard.user
+  doppler.firehose: doppler.firehose
+  emails.write: emails.write
+  groups.update: Update group information and memberships
+  idps.read: Retrieve identity providers
+  idps.write: Create and update identity providers
+  notification_preferences.read: notification_preferences.read
+  notification_preferences.write: notification_preferences.write
+  notification_templates.read: notification_templates.read
+  notification_templates.write: notification_templates.write
+  notifications.manage: notifications.manage
+  notifications.write: notifications.write
+  oauth.approval: Manage approved scopes
+  oauth.login: Authenticate users outside of the UAA
+  openid: Access profile information, i.e. email, first and last name, and phone number
+  password.write: Change your password
+  routing.router_groups.read: routing.router_groups.read
+  routing.router_groups.write: routing.router_groups.write
+  scim.create: Create users
+  scim.invite: Send invitations to users
+  scim.read: Read all SCIM entities, i.e. users and groups
+  scim.userids: Read user IDs and retrieve users by ID
+  scim.write: Create, modify and delete SCIM entities, i.e. users and groups
+  scim.zones: Control a user's ability to manage a zone
+  uaa.admin: Act as an administrator throughout the UAA
+  uaa.none: Forbid acting as a user
+  uaa.offline_token: Allow offline access
+  uaa.resource: Serve resources protected by the UAA
+  uaa.user: Act as a user in the UAA
+  zones.read: Read identity zones
+  zones.uaa.admin: zones.uaa.admin
+  zones.write: Create and update identity zones
+
+users:
+  - name: bosh_admin
+    password: PCF!user23
+    groups:
+      - bosh.admin
+      - bosh.read
+      - clients.read
+      - clients.write
+      - scim.read
+      - scim.write
+  - name: bosh_director
+    password: PCF!user23
+    groups:
+      - bosh.admin
+  - name: logsearch-firehose
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+      - doppler.firehose
+  - name: pcf_admin
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+      - cloud_controller.read
+      - cloud_controller.write
+      - console.admin
+      - console.support
+      - dashboard.user
+      - doppler.firehose
+      - emails.write
+      - notification_preferences.read
+      - notification_preferences.write
+      - notification_templates.read
+      - notification_templates.write
+      - notifications.manage
+      - notifications.write
+      - openid
+      - password.write
+      - scim.read
+      - scim.userids
+      - scim.write
+      - zones.read
+      - zones.write
+  - name: push_apps_manager
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+  - name: smoke_tests
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+  - name: splunk-firehose
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+      - doppler.firehose
+  - name: system_services
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+  - name: system_verification
+    password: PCF!user23
+    groups:
+      - cloud_controller.admin
+      - console.admin
+      - console.support
+      - dashboard.user
+      - openid
+      - scim.read
+      - scim.write
+
+clients:
+  apps_manager_js:
+    authorized_grant_types:
+      - implicit
+    autoapprove:
+      - cloud_controller.read
+      - cloud_controller.write
+      - cloud_controller.admin
+    scopes:
+      - cloud_controller.read
+      - cloud_controller.write
+      - cloud_controller.admin
+    redirect_uris:
+      - https://apps.lw-pcf.esxcloud
+      - https://apps.lw-pcf.esxcloud/
+      - https://apps.lw-pcf.esxcloud/*
+  apps_metrics:
+    authorized_grant_types:
+      - authorization_code
+      - refresh_token
+    redirect_uris:
+      - https://apm.lw-pcf.esxcloud
+      - https://apm.lw-pcf.esxcloud/
+      - https://apm.lw-pcf.esxcloud/*
+      - https://metrics.lw-pcf.esxcloud
+      - https://metrics.lw-pcf.esxcloud/
+      - https://metrics.lw-pcf.esxcloud/*
+    scopes:
+      - cloud_controller.admin
+      - cloud_controller.read
+      - metrics.read
+    secret: 81429vyvbby0qh6y56s1
+    additional_information:
+      override: true
+  apps_metrics_processing:
+    authorities:
+      - oauth.login
+      - doppler.firehose
+      - cloud_controller.admin
+    authorized_grant_types:
+      - authorization_code
+      - client_credentials
+      - refresh_token
+    scopes:
+      - openid
+      - oauth.approvals
+      - doppler.firehose
+      - cloud_controller.admin
+    secret: bxpyrx9gi13qw9vcb9d0
+    additional_information:
+      override: true
+  autoscaling_service:
+    authorities:
+      - cloud_controller.write
+      - cloud_controller.read
+      - cloud_controller.admin
+      - notifications.write
+      - critical_notifications.write
+      - emails.write
+    authorized_grant_types:
+      - client_credentials
+      - authorization_code
+      - refresh_token
+    autoapprove:
+      - true
+    scopes:
+      - openid
+      - cloud_controller.permissions
+      - cloud_controller.read
+      - cloud_controller.write
+    secret: e7tpsqea9zv3xqbtdrz8
+    additional_information:
+      override: true
+  cc-service-dashboards:
+    authorities:
+      - clients.read
+      - clients.write
+      - clients.admin
+    authorized_grant_types:
+      - client_credentials
+    scopes:
+      - cloud_controller.write
+      - openid
+      - cloud_controller.read
+      - cloud_controller_service_permissions.read
+    secret: e24xx1ya6w61ctzv7gcy
+    additional_information:
+      override: true
+  cc_routing:
+    authorities:
+      - routing.router_groups.read
+    authorized_grant_types: 
+      - client_credentials
+    secret: avbrqfdzxe37pas2v79r
+    additional_information:
+      override: true
+  cf:
+    authorities:
+      - uaa.none
+    authorized_grant_types:
+      - password
+      - refresh_token
+    scopes:
+      - cloud_controller.read
+      - cloud_controller.write
+      - openid
+      - password.write
+      - cloud_controller.admin
+      - scim.read
+      - scim.write
+      - doppler.firehose
+      - uaa.user
+    additional_information:
+      override: true
+  cloud_controller_username_lookup:
+    authorities:
+      - scim.userids
+    authorized_grant_types:
+      - client_credentials
+    secret: 7v1gxuz488a6s7dwa6ew
+    additional_information:
+      override: true
+  doppler:
+    authorities:
+      - uaa.resource
+    secret: 31tcz2yuwti31rpizrq5
+    authorities:
+      - clients.read
+      - clients.write
+      - clients.admin
+      - routing.routes.write
+      - routing.routes.read
+    authorized_grant_types:
+      - client_credentials
+      - refresh_token
+    scopes:
+      - openid
+      - cloud_controller_service_permissions.read
+    secret: 121vdz9hcce7203ivzih
+    additional_information:
+      override: true
+  identity:
+    authorities:
+      - scim.zones
+      - zones.read
+      - uaa.resource
+      - zones.write
+      - cloud_controller.admin
+    authorized_grant_types:
+      - authorization_code
+      - client_credentials
+      - refresh_token
+    autoapprove:
+      - true
+    redirect_uris:
+      - https://p-identity.lw-pcf.esxcloud/dashboard/
+      - https://p-identity.lw-pcf.esxcloud/dashboard/**
+    resource_ids:
+      - none
+    scopes:
+      - cloud_controller.admin
+      - cloud_controller.read
+      - cloud_controller.write
+      - openid
+      - zones.*.*
+      - zones.*.*.*
+      - zones.read
+      - zones.write
+      - scim.read
+    secret: zuaqa36v7c6w4xutavzu
+  login:
+    authorities:
+      - oauth.login
+      - scim.write
+      - clients.read
+      - notifications.write
+      - critical_notifications.write
+      - emails.write
+      - scim.userids
+      - password.write
+    authorized_grant_types:
+      - authorization_code
+      - client_credentials
+      - refresh_token
+    autoapprove:
+      - true
+    scopes:
+      - openid
+      - oauth.approvals
+    secret: 3hb4weq4yzsu1a1gt91g
+    authorities:
+      - cloud_controller.admin
+      - scim.read
+      - notifications.write
+      - critical_notifications.write
+      - emails.write
+    authorized_grant_types:
+      - client_credentials
+    secret: zeebqwufbtpcaadpdfax
+    additional_information:
+      override: true
+  notifications_template:
+    authorities:
+      - clients.read
+      - clients.write
+      - clients.secret
+      - notification_templates.write
+      - notification_templates.read
+      - notifications.manage
+    authorized_grant_types:
+      - client_credentials
+    scopes:
+      - openid
+      - clients.read
+      - clients.write
+      - clients.secret
+    secret: bb6be96896c5ab64c897
+  notifications_ui_client:
+    authorities:
+      - notification_preferences.admin
+    authorized_grant_types:
+      - authorization_code
+      - client_credentials
+      - refresh_token
+    autoapprove:
+      - true
+    redirect_uris:
+      - https://notifications-ui.lw-pcf.esxcloud/sessions/create
+    scopes:
+      - notification_preferences.read
+      - notification_preferences.write
+      - openid
+    secret: 7evd81rxpzps03qeiwp4
+    additional_information:
+      override: true
+  opentsdb-firehose-nozzle:
+    authorities:
+      - oauth.login
+      - doppler.firehose
+    authorized_grant_types:
+      - authorization_code
+      - client_credentials
+      - refresh_token
+    scopes:
+      - openid
+      - oauth.approvals
+      - doppler.firehose
+    secret: tbv6icub6t9bca72b400
+    additional_information:
+      override: true
+  portal:
+    authorities:
+      - scim.write
+      - scim.read
+      - cloud_controller.read
+      - cloud_controller.write
+      - password.write
+      - uaa.admin
+      - uaa.resource
+      - cloud_controller.admin
+      - emails.write
+      - notifications.write
+    authorized_grant_types:
+      - authorization_code
+      - client_credentials
+      - password
+      - implicit
+    autoapprove:
+      - true
+    name: Pivotal Apps Manager
+    scopes:
+      - openid
+      - cloud_controller.read
+      - cloud_controller.write
+      - password.write
+      - console.admin
+      - console.support
+      - cloud_controller.admin
+    secret: zfd94rv012izhsupr36v
+    additional_information:
+      app-icon: iVBORw0KGgoAAAANSUhEUgAAAGwAAABsCAYAAACPZlfNAAAAAXNSR0IArs4c6QAABYtJREFUeAHtnVtsFFUYx7/d3ruWotUKVIkNaCw02YgJGBRTMd4CokUejD4QH4gxQcIDeHnBmPjkhSghUYLGe3ywPtAHNCo0QgkWwi2tXG2V1kIpLXTbLt1tS9dzlmzSJssZhv32zDk7/2km2znn7Pd9+/vt2Z2dmW0D9Obat4gCiwiLBQQSLflSViAQeN6Can1fYiJBFPQ9BcsAQBiEWUbAsnIxwyDMMgKWlYsZBmGWEbCsXMwwCLOMgGXlYoZBmGUELCsXMwzCLCNgWbmYYRBmGQHLysUMgzDLCFhWLmYYhFlGwLJyMcMgzDIClpWLGQZhlhGwrFzMMAizjIBl5WKGQZhlBCwrV1xbb96y59V1VFJQmLawQNrWa43x8XEaHo1fW+Oj1H8lSqf6eulEbw+dvNhLvcNDinvb0WWksAdm3UWhwiJ2gt2RAWo80UY7jrdSU8cZGrt6lT1HtgMaKSxbD7qqfDq99tAjyTUSG6FP9v1BH+3dTUPxeLZSssf17U5HeXEJbXr8aerY+A6tf7iOxFeu2OFmI6BvhaVgVoRCtHl5PTW8/AoV5xekmo299b2wlJn6+WFqWrOWKkpDqSYjbyFskpZFs++hL1e9NKnFvF+t3OmQOwzdkcgUmnnBABXm5Ys1j8qKisVadFPvS8tramn1goX09eEDU+KbsmGlsMbjbbT6x++UDOVORGXoFppXOYMerLqbVsyrpcWzqykYdH5R+fjZlcnd/8sjV5Q5vOh0rt6LqhhyJsQ3uC+ID8ry89aHYtf90W1bKLzlffr19EnH6HIP8oXasOM4LwbkrLB0MP+6cJ6e+eoz+vTP5nTdU9peDC+Ysm3Khq+ESehy5r3e2ECHu7uUDuqq59Id4iXVtMV3wqSACSHt3V2/KF3I97qayjuVY7zo9KUwCfq3M6coNjamZD6zrFzZ70Wnb4XFxseoK3JZyXzWtGnKfi86fStMwu6LRpXMZ5RBmBKQ7k75XqZa8gLmPZ/Nq0hFkLnvttJSZUT5Oc60xbfC5CGs6lsrlD56hgaV/V50+lbYkuo5VFygPp3SMwxhXjwp0+bcsGRp2vZU48TEBB09153aNObWlzNMHo1/6r4apYTmsx10MTqsHONFp5VH6zMBtWbhYtq6YpVjiJ/ajjmO8WKAL4QFxamWZffPT1678dicex05D4jTKj8cO+Q4zosBOSXs7bonktci5ovjgPIUye3ieo3wzKrk+TC5faPLGz83On6ovtFY3ONySth7Ty67qbPMk6Hu+edv+vzg/slNRv3uy52O6xk40HWW6r/94nrdRrTn1AzLhOju9tP03DfbKTo6mkmYrN/X98L6xQHgTb/vpG0t+5LnybJOPMMEvhXWOXCJvj9yiD7Yu4sGRkYyxKjv7r4RJi+Na+05Rwf/66SG1qO0v/NffZQZM+WUsI07d1BC/MTE144GYzHxJYcYDYq1vb/f8WQlI9OshsopYZubm7IKy4Tg2K03wYKLGiDMBSwThkKYCRZc1ABhLmCZMBTCTLDgogYIcwHLhKEQZoIFFzVAmAtYJgyFMBMsuKgBwlzAMmEohJlgwUUNEOYClglDIcwECy5qgDAXsEwYCmEmWHBRA4S5gGXCUAgzwYKLGow84yyvuyhR/GW19kt9Lh5ibg01UtjS7VtzizLjo8FLIiNMHaEgTAdlxhwQxghTRygI00GZMQeEMcLUEQrCdFBmzAFhjDB1hIIwHZQZc0AYI0wdoSBMB2XGHBDGCFNHKAjTQZkxB4QxwtQRCsJ0UGbMAWGMMHWEgjAdlBlzQBgjTB2hIEwHZcYcEMYIU0coCNNBmTEHhDHC1BEKwnRQZswBYYwwdYSCMB2UGXNAGCNMHaEgTAdlxhziUu1Ei8M/+WFMh1CZEUi0/A+j7hNSB5Wo2wAAAABJRU5ErkJggg==
+      app-launch-url: https://apps.lw-pcf.esxcloud
+      override: true
+      show-on-homepage: true
+  ssh-proxy:
+    authorized_grant_types:
+      - authorization_code
+    autoapprove:
+      - true
+    #redirect_uris:
+      #- /login
+    scopes:
+      - openid
+      - cloud_controller.read
+      - cloud_controller.write
+    secret: qwcz4e60gzqd5ai30bsp
+    additional_information:
+      override: true
+  system_passwords:
+    authorities:
+      - uaa.admin
+      - scim.read
+      - scim.write
+      - password.write
+    authorized_grant_types:
+      - client_credentials
+    autoapprove:
+      - true
+    secret: ubwypt9zqy4zv225qyxx
+    additional_information:
+      override: true
+  cloud_controller_username_lookup:
+    authorities:
+      - scim.userids
+    authorized_grant_types:
+      - client_credentials
+    secret: 7v1gxuz488a6s7dwa6ew
+    additional_information:
+      override: true
+  bosh_cli:
+    scopes:
+      - openid
+      - bosh.admin
+      - bosh.read
+      - bosh.*.admin
+      - bosh.*.read
+    authorized_grant_types:
+      - password
+      - refresh_token
+    authorities:
+      - uaa.none
+    additional_information:
+      override: true
+  bosh_director:
+    secret: PCF!user23
+    authorized_grant_types:
+      - client_credentials
+    authorities:
+      - bosh.admin
+    additional_information:
+      override: true
+  bosh_health_monitor:
+    secret: hcr4eax1cqrrw5z2citt
+    authorized_grant_types:
+      - client_credentials
+    authorities:
+      - bosh.admin
+    additional_information:
+      override: true

@@ -16,6 +16,7 @@ package com.vmware.identity.rest.idm.client.test.integration.util;
 import java.util.Arrays;
 import java.util.List;
 
+import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 
 public class OidcClientGenerator {
@@ -35,6 +36,13 @@ public class OidcClientGenerator {
             .withLogoutUri(LOGOUT_URI)
             .withCertSubjectDN(OIDC_CERT_SUBJECT_DN)
             .withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS)
+            .build();
+    }
+
+    public static OIDCClientDTO generateOIDCClient(String clientId) {
+        return new OIDCClientDTO.Builder()
+            .withClientId(clientId)
+            .withOIDCClientMetadataDTO(generateOIDCClientMetadata())
             .build();
     }
 }
