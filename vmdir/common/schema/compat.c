@@ -69,6 +69,8 @@ VmDirLdapOcAreCompat(
     )
 {
     DWORD   dwError = 0;
+    PSTR*   ppszRemovedMust = NULL;
+    PSTR*   ppszMinimumMay = NULL;
 
     if (!pPrevOc || !pNewOc)
     {
@@ -80,10 +82,6 @@ VmDirLdapOcAreCompat(
             pNewOc->pszName, pPrevOc->pszName) ||
         !VMDIR_TWO_STRING_COMPATIBLE(
             pNewOc->pszSup, pPrevOc->pszSup) ||
-        !VmDirIsStrArrayIdentical(
-            pNewOc->ppszMust, pPrevOc->ppszMust) ||
-        !VmDirIsStrArraySuperSet(
-            pNewOc->ppszMay, pPrevOc->ppszMay) ||
         pNewOc->type != pPrevOc->type)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
@@ -93,7 +91,48 @@ VmDirLdapOcAreCompat(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirIsStrArrayIdentical(pNewOc->ppszMust, pPrevOc->ppszMust))
+    {
+        if (!VmDirIsStrArraySuperSet(pNewOc->ppszMay, pPrevOc->ppszMay))
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "%s: cannot remove maycontain attribute (%s).",
+                    __FUNCTION__, pPrevOc->pszName);
+            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else if (VmDirIsStrArraySuperSet(pPrevOc->ppszMust, pNewOc->ppszMust))
+    {
+        dwError = VmDirGetStrArrayDiffs(
+                pNewOc->ppszMust, pPrevOc->ppszMust, &ppszRemovedMust, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirMergeStrArray(
+                pPrevOc->ppszMay, ppszRemovedMust, &ppszMinimumMay);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!VmDirIsStrArraySuperSet(pNewOc->ppszMay, ppszMinimumMay))
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "%s: cannot remove must contain attribute (%s).",
+                    __FUNCTION__, pPrevOc->pszName);
+            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot add must contain attribute (%s).",
+                __FUNCTION__, pPrevOc->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
 error:
+    VmDirFreeStrArray(ppszRemovedMust);
+    VmDirFreeStrArray(ppszMinimumMay);
     return dwError;
 }
 
@@ -104,6 +143,8 @@ VmDirLdapCrAreCompat(
     )
 {
     DWORD   dwError = 0;
+    PSTR*   ppszRemovedMust = NULL;
+    PSTR*   ppszMinimumMay = NULL;
 
     if (!pPrevCr || !pNewCr)
     {
@@ -113,10 +154,6 @@ VmDirLdapCrAreCompat(
 
     if (!VMDIR_TWO_STRING_COMPATIBLE(
             pNewCr->pszName, pPrevCr->pszName) ||
-        !VmDirIsStrArrayIdentical(
-            pNewCr->ppszMust, pPrevCr->ppszMust) ||
-        !VmDirIsStrArraySuperSet(
-            pNewCr->ppszMay, pPrevCr->ppszMay) ||
         !VmDirIsStrArraySuperSet(
             pNewCr->ppszAux, pPrevCr->ppszAux))
     {
@@ -125,10 +162,50 @@ VmDirLdapCrAreCompat(
                 __FUNCTION__, pPrevCr->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
+    if (VmDirIsStrArrayIdentical(pNewCr->ppszMust, pPrevCr->ppszMust))
+    {
+        if (!VmDirIsStrArraySuperSet(pNewCr->ppszMay, pPrevCr->ppszMay))
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "%s: cannot remove maycontain attribute (%s).",
+                    __FUNCTION__, pPrevCr->pszName);
+            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else if (VmDirIsStrArraySuperSet(pPrevCr->ppszMust, pNewCr->ppszMust))
+    {
+        dwError = VmDirGetStrArrayDiffs(
+                pNewCr->ppszMust, pPrevCr->ppszMust, &ppszRemovedMust, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirMergeStrArray(
+                pPrevCr->ppszMay, ppszRemovedMust, &ppszMinimumMay);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!VmDirIsStrArraySuperSet(pNewCr->ppszMay, ppszMinimumMay))
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "%s: cannot remove must contain attribute (%s).",
+                    __FUNCTION__, pPrevCr->pszName);
+            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot add must contain attribute (%s).",
+                __FUNCTION__, pPrevCr->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 error:
+    VmDirFreeStrArray(ppszRemovedMust);
+    VmDirFreeStrArray(ppszMinimumMay);
     return dwError;
 }
 
