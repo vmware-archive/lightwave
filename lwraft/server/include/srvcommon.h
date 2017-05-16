@@ -504,6 +504,11 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
+typedef struct _VDIR_CONDWRITE_CONTROL_VALUE
+{
+    PSTR                    pszFilter;
+} VDIR_CONDWRITE_CONTROL_VALUE, *PVDIR_CONDWRITE_CONTROL_VALUE;
+
 //SCW - Strong Consistency Write
 typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
 {
@@ -512,10 +517,11 @@ typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
 
 typedef union LdapControlValue
 {
-    SyncRequestControlValue            syncReqCtrlVal;
-    SyncDoneControlValue               syncDoneCtrlVal;
-    VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
-    VMDIR_SCW_DONE_CONTROL_VALUE       scwDoneCtrlVal;
+    SyncRequestControlValue                 syncReqCtrlVal;
+    SyncDoneControlValue                    syncDoneCtrlVal;
+    VDIR_PAGED_RESULT_CONTROL_VALUE         pagedResultCtrlVal;
+    VMDIR_SCW_DONE_CONTROL_VALUE            scwDoneCtrlVal;
+    VDIR_CONDWRITE_CONTROL_VALUE            condWriteCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -552,6 +558,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
     VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
     VDIR_LDAP_CONTROL *       manageDsaITCtrl;
+    VDIR_LDAP_CONTROL *       pCondWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
@@ -884,18 +891,6 @@ DWORD
 VmDirUuidFromString(
     PCSTR pStr,
     uuid_t* pGuid
-);
-
-DWORD
-VmDirFQDNToDNSize(
-    PCSTR pszFQDN,
-    UINT32 *sizeOfDN
-);
-
-DWORD
-VmDirFQDNToDN(
-    PCSTR pszFQDN,
-    PSTR* ppszDN
 );
 
 VOID

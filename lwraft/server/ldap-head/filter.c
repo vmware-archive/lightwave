@@ -382,6 +382,37 @@ done:
     return retVal;
 }
 
+DWORD
+VmDirMatchEntryWithFilter(
+    PVDIR_OPERATION     pOp,
+    PVDIR_ENTRY         pEntry,
+    PCSTR               pszFilter
+    )
+{
+    DWORD           dwError = 0;
+    PVDIR_FILTER    pFilter = NULL;
+
+    if (!pOp || !pEntry || !pszFilter)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = StrFilterToFilter(pszFilter, &pFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (CheckIfEntryPassesFilter(pOp, pEntry, pFilter) != FILTER_RES_TRUE)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_LDAP_ERROR_PRE_CONDITION);
+    }
+
+cleanup:
+    DeleteFilter(pFilter);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 void
 DeleteFilter(
     VDIR_FILTER *     f)

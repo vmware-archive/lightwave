@@ -180,11 +180,6 @@ VmDirInitConnAcceptThread(
     for (i = 0; i < dwLdapPorts; i++)
     {
         dwError = VmDirAllocateMemory(
-                sizeof(*pThrInfo),
-                (PVOID*)&pThrInfo);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirAllocateMemory(
                 sizeof(DWORD),
                 (PVOID)&pdwPort);
         BAIL_ON_VMDIR_ERROR(dwError);

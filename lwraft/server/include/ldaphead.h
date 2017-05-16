@@ -146,13 +146,22 @@ VmDirConcatTwoFilters(
 
 int
 AppendDNFilter(
-	VDIR_OPERATION *    op);
+	VDIR_OPERATION *    op
+	);
 
 VDIR_FILTER_COMPUTE_RESULT
 CheckIfEntryPassesFilter(
     VDIR_OPERATION * op,
     VDIR_ENTRY *     e,
-    VDIR_FILTER *   f);
+    VDIR_FILTER *   f
+    );
+
+DWORD
+VmDirMatchEntryWithFilter(
+    PVDIR_OPERATION     pOp,
+    PVDIR_ENTRY         pEntry,
+    PCSTR               pszFilter
+    );
 
 void
 DeleteFilter(

@@ -103,6 +103,18 @@ VmDirModifyEntryCoreLogic(
                                                 VDIR_BACKEND_ENTRY_LOCK_WRITE );
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    if (pOperation->pCondWriteCtrl)
+    {
+        retVal = VmDirMatchEntryWithFilter(
+                    pOperation,
+                    pEntry,
+                    pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
+                    "Conditional Write pre-conditions (%s) failed - (%d)",
+                    VDIR_SAFE_STRING(pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter),
+                    retVal);
+    }
+
     if (modReq->dn.lberbv.bv_val == NULL) // If not already set by the caller
     {   // e.g. delete membership case via index lookup to get EID.
         retVal = VmDirBervalContentDup(&pEntry->dn, &modReq->dn);

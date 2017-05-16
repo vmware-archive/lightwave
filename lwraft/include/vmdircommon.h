@@ -1595,6 +1595,18 @@ VmDirMapLdapError(
     int ldapErrorCode
     );
 
+// common/ldapcontrol.c
+int
+VmDirCreateCondWriteCtrlContent(
+    PCSTR           pszFilter,
+    LDAPControl*    pCondWriteCtrl
+    );
+
+VOID
+VmDirFreeCtrlContent(
+    LDAPControl*    pCtrl
+    );
+
 // common/tsstack.c
 VOID
 VmDirFreeTSStack(
@@ -1686,6 +1698,18 @@ VmDirDNToRDNList(
     PCSTR               pszDN,
     int                 iNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
+    );
+
+DWORD
+VmDirFQDNToDNSize(
+    PCSTR pszFQDN,
+    UINT32 *sizeOfDN
+    );
+
+DWORD
+VmDirFQDNToDN(
+    PCSTR pszFQDN,
+    PSTR* ppszDN
     );
 
 //IPC

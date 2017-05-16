@@ -476,8 +476,12 @@ extern "C" {
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 
-// vmw OID for Strong Consistency Write Control
+// vmw OID for Strong Consistency Write Control (obsoleted)
 #define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
+// vmw OID for Integrity Check Control Search
+#define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
+// vmw OID for Conditional Write
+#define LDAP_CONTROL_CONDITIONAL_WRITE          "1.3.6.1.4.1.6876.40.10.3"
 
 #ifndef _WIN32
 #define LWRAFT_NCALRPC_END_POINT "lwraftsvc"

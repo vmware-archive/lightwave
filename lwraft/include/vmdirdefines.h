@@ -630,6 +630,8 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 
 #define VMDIR_UPN_REALM_SEPARATOR       '@'
 
+#define VMDIR_FQDN_SEPARATOR            '.'
+
 #define VMDIR_KDC_RANDOM_PWD_LEN        20
 #define VMDIR_MAX_REALM_LEN             256
 
