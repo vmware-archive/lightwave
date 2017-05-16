@@ -13,19 +13,18 @@
    <property name="vmware-authentication-framework.vendor"
              value="VMWare, Inc." />
 
-   <property file="../product.properties" />
    <property name="MAINSRCROOT" value="${basedir}/../../.."/>
-   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
-
+   <property file="${MAINSRCROOT}/interop/java/product.properties" />
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+   <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}"/>
 
    <path id="classpath.main">
 
       <fileset refid="jar-set.jna" />
       <fileset refid="jar-set.apache-commons-logging" />
       <fileset refid="jar-set.apache-commons-lang" />
-     
+
    </path>
 
    <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />

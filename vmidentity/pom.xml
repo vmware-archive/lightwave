@@ -288,8 +288,8 @@
     <skipIntegrationTests>true</skipIntegrationTests>
 
     <!-- Output Directories -->
-    <cleanDirectory>${rootDirectory}/build/vmware-sts/</cleanDirectory>
-    <outputDirectory>${rootDirectory}/build/vmware-sts/packages</outputDirectory>
+    <cleanDirectory>${buildDir}/</cleanDirectory>
+    <outputDirectory>${buildDir}/packages</outputDirectory>
     <rootDirectory>${basedir}</rootDirectory>
 
     <!-- Maven Plugin Versions -->

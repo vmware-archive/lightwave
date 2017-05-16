@@ -172,14 +172,14 @@ AC_ARG_WITH([ssl],
     [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
     [
         OPENSSL_BASE_PATH="$withval"
-        OPENSSL_INCLUDES="-I$withval/include"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval/include"
         OPENSSL_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$OPEN_SSL_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([ssl-includes],
     [AC_HELP_STRING([--with-ssl-includes=<dir>], [use SSL headers located in prefix <dir> ])],
     [
-        OPENSSL_INCLUDES="-I$withval"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval/include"
     ])
 
 AC_ARG_WITH([ssl-libs],
@@ -591,7 +591,7 @@ AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 if test x"$localstatedir" = x"/var"; then
     lwraftdbdir="$localstatedir/lib/vmware/lwraft"
 else
-    lwraftdbdir="$localstatedir"
+    lwraftdbdir="$localstatedir/lwraft"
 fi
 AC_SUBST(lwraftdbdir)
 AS_AC_EXPAND(LWRAFT_DB_DIR, $lwraftdbdir)

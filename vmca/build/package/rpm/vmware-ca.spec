@@ -58,7 +58,7 @@ cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix}  \
             --libdir=%{_lib64dir} \
-            --localstatedir=/var/lib/vmware/vmca \
+            --localstatedir=/var/lib/vmware \
             --with-java=%{_javahome} \
             --with-ant=%{_anthome} \
             --with-likewise=%{_likewise_open_prefix} \

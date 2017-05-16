@@ -44,7 +44,7 @@ cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
              --libdir=%{_lib64dir} \
-             --localstatedir=%{_dbdir} \
+             --localstatedir=%{_localstatedir}/lib/vmware \
              --with-afd=%{_prefix} \
              --with-likewise=%{_likewise_open_prefix} \
              --with-jansson=%{_janssondir} \
@@ -191,7 +191,6 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/vmware-directory-rest-server.jar
-%{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-sso-config.jar
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
@@ -219,6 +218,7 @@ fi
 %{_jarsdir}/vmware-identity-rest-idm-common.jar
 %{_jarsdir}/vmware-directory-rest-common.jar
 %{_jarsdir}/vmware-directory-rest-client.jar
+%{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-rest-core-common.jar
 %{_jarsdir}/vmware-identity-websso-client.jar
 %{_jarsdir}/vmware-identity-platform.jar

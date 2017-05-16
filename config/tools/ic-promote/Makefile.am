@@ -17,12 +17,14 @@ ic_promote_LDADD = \
     @VMCA_LIBS@ \
     @VMDIR_LIBS@ \
     @LWSM_LIBS@ \
-    @LWADVAPI_LIBS@ \
+    @DCERPC_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
+    @LWADVAPI_LIBS@ \
     @CRYPTO_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \

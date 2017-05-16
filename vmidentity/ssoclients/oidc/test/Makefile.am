@@ -11,4 +11,5 @@ ssooidctest_CPPFLAGS = \
     -I$(top_srcdir)/ssoclients/oidc/src/
 
 ssooidctest_LDADD = \
+    @top_builddir@/ssoclients/common/src/libssocommon.la \
     @top_builddir@/ssoclients/oidc/src/libssooidc.la

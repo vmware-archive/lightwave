@@ -162,14 +162,14 @@ AC_ARG_WITH([ssl],
     [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
     [
         OPENSSL_BASE_PATH="$withval"
-        OPENSSL_INCLUDES="-I$withval/include"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval/include"
         OPENSSL_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$OPEN_SSL_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([ssl-includes],
     [AC_HELP_STRING([--with-ssl-includes=<dir>], [use SSL headers located in prefix <dir> ])],
     [
-        OPENSSL_INCLUDES="-I$withval"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval"
     ])
 
 AC_ARG_WITH([ssl-libs],
@@ -263,10 +263,10 @@ AC_ARG_WITH([sasl-includes],
         SASL_INCLUDES="-I$withval"
     ])
 
-AC_ARG_WITH([sasl-libs],
+AC_ARG_WITH([],
     [AC_HELP_STRING([--with-sasl-libs=<dir>], [use SASL libraries located in prefix <dir> ])],
     [
-        SASL_LIBPATH="$withval/lib64"
+        SASL_LIBPATH="$withval"
         SASL_LDFLAGS="-L$withval"
     ])
 
@@ -589,7 +589,7 @@ AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 if test x"$localstatedir" = x"/var"; then
     vmdirdbdir="$localstatedir/lib/vmware/vmdir"
 else
-    vmdirdbdir="$localstatedir"
+    vmdirdbdir="$localstatedir/vmdir"
 fi
 AC_SUBST(vmdirdbdir)
 AS_AC_EXPAND(VMDIR_DB_DIR, $vmdirdbdir)

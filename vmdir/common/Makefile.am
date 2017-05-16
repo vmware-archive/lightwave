@@ -56,6 +56,7 @@ libcommon_la_SOURCES = \
     schema/legacy/legacyutil.c
 
 libcommon_la_CPPFLAGS = \
+    -DOPENSSL_NO_KRB5 \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/thirdparty/heimdal \

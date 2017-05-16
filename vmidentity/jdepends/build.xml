@@ -5,12 +5,11 @@
 <project name="vmware-identity-depends" default="build" basedir=".">
 
   <property name="MAINSRCROOT" value="${basedir}/.." />
-  <property file="../product.properties" />
-  <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
-  <property name="depends" value="${MAINSRCROOT}/build/depends" />
-
+  <property file="${MAINSRCROOT}/product.properties" />
   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+  <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
+  <property name="depends" value="${build_dir}/depends" />
 
   <target name="build">
 

@@ -28,6 +28,7 @@ libvmkrb5_la_SOURCES = \
     ticket.c
 
 libvmkrb5_la_CPPFLAGS = \
+    -DOPENSSL_NO_KRB5 \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/server/include \

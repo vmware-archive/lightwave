@@ -79,7 +79,7 @@ autoreconf -mif ..
 ../configure \
     --prefix=%{_prefix} \
     --libdir=%{_lib64dir} \
-    --localstatedir=%{_localstatedir}/lib/vmware/vmdir \
+    --localstatedir=%{_localstatedir}/lib/vmware \
     --with-likewise=%{_likewise_open_prefix} \
     --with-ssl=/usr \
     --with-sasl=%{_sasl_prefix} \

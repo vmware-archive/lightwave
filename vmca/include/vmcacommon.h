@@ -1002,14 +1002,6 @@ VMCAVerifyExtensions(
 );
 
 DWORD
-VMCACopyExtensions(
-    X509 *pCertificate,
-    X509 *pCACertificate,
-    X509_REQ *pRequest
-);
-
-
-DWORD
 VMCAVerifyCertificateName(
     X509 *pCertificate
 );
@@ -1019,15 +1011,6 @@ VMCAVerifySubjectAltNames(
     X509 *pCertificate
 );
 
-
-DWORD
-VMCASignedRequestPrivate(
-    PVMCA_X509_CA pCA,
-    PSTR pszPKCS10Request,
-    PSTR *ppszCertificate,
-    time_t tmNotBefore,
-    time_t tmNotAfter
-);
 
 DWORD
 VMCAWIntegerToASN1Integer(

@@ -1,7 +1,6 @@
 Building the Lightwave STS Container
 ====================================
 
- 
 
 Deliverables
 ------------

@@ -5,9 +5,9 @@
    <!-- - - - - - Ant Task Libraries - - - - - -->
 
    <property name="libs.ant-contrib-home"
-             location="/var/opt/ant-contrib" />
+             location="${ant.home}" />
 
-   <fileset id="jar-set.LOG4J2" dir="${MAINSRCROOT}/build/depends">
+   <fileset id="jar-set.LOG4J2" dir="${build_dir}/depends">
         <include name="log4j-1.2-api-2.0.2.jar"/>
         <include name="log4j-api-2.2.jar"/>
         <include name="log4j-core-2.2.jar"/>
@@ -16,17 +16,17 @@
         <include name="jcl-over-slf4j-1.7.10.jar"/>
   </fileset>
 
-  <fileset id="jar-set.apache-commons-lang" dir="${MAINSRCROOT}/build/depends">
+  <fileset id="jar-set.apache-commons-lang" dir="${build_dir}/depends">
         <include name="commons-lang-2.5.jar"/>
    </fileset>
 
 
-   <fileset id="jar-set.jna" dir="${MAINSRCROOT}/build/depends">
+   <fileset id="jar-set.jna" dir="${build_dir}/depends">
         <include name="jna.jar"/>
         <include name="platform.jar"/>
    </fileset>
 
-   <fileset id="jar-set.commons-codec" dir="${MAINSRCROOT}/build/depends">
+   <fileset id="jar-set.commons-codec" dir="${build_dir}/depends">
         <include name="commons-codec-1.4.jar" />
    </fileset>
 
