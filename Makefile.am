@@ -8,6 +8,7 @@ include $(MAKEROOT)/makedefs.mk
 
 SUBDIRS = \
         vmevent \
+        lwraft \
         vmdir \
         vmdns \
         vmafd \
@@ -64,7 +65,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_vmca_prefix /opt/vmware" \
               --define "_vmdns_prefix /opt/vmware" \
               --define "_vmsts_prefix /opt/vmware" \
-              --define "_javahome /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.121-10.b14.fc25.x86_64" \
+              --define "_javahome $(JAVA_HOME)" \
               --define "_anthome $(ANT_HOME)" \
               --define "_version $(LW_SERVER_MAJOR_VER).$(LW_SERVER_MINOR_VER).$(LW_SERVER_RELEASE_VER)" \
               --define "_patch $(LW_SERVER_PATCH_VER)" \
@@ -73,6 +74,9 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
 
 $(RPMBUILD_SPECS)/$(PKG_SPEC) : $(CURDIR)/package/rpm/$(PKG_SPEC) | $(RPMBUILD_SPECS)
 	@$(CP) -f $< $@
+
+$(RPMBUILD_DIRS):
+	@$(MKDIR) -p $@
 
 $(RPMBUILD_SPECS):
 	@$(MKDIR) -p $@

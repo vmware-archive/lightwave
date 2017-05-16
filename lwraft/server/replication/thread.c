@@ -1331,7 +1331,7 @@ _VmDirRequestVoteGetReply(UINT32 term, char *candidateId, unsigned long long las
     UINT32 iVotedForTerm = 0;
     BOOLEAN bLock = FALSE;
     int oldterm = 0;
-    VDIR_BERVALUE bvVotedFor = {0};
+    VDIR_BERVALUE bvVotedFor = VDIR_BERVALUE_INIT;
 
     *voteGranted = iVoteGranted = 1; //Default to denied with reason split vote or other than larger highest logIndex of mine.
 
@@ -1776,7 +1776,7 @@ DWORD VmDirModifyRaftPreCommit(
     DWORD dwError = 0;
     char *p = NULL;
     BOOLEAN bLock = FALSE;
-    VDIR_BERVALUE encodedMods = {0};
+    VDIR_BERVALUE encodedMods = VDIR_BERVALUE_INIT;
 
     if ((p=VmDirStringCaseStrA(dn, RAFT_CONTEXT_DN)) &&
         VmDirStringCompareA(p, RAFT_CONTEXT_DN, FALSE)==0)
