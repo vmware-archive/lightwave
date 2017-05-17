@@ -33,7 +33,6 @@ CLEAN_OBJECTS = \
     diagnostics \
     idm \
     interop \
-    jdepends \
     platform \
     config.log \
     config.status \
@@ -88,7 +87,6 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/server/src/main/resources/messages.properties \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
     $(SRCROOT)/ROOT/target \
-    $(SRCROOT)/jdepends/target \
     $(SRCROOT)/diagnostics/target \
     $(SRCROOT)/platform/target \
     $(SRCROOT)/idm/interface/target \

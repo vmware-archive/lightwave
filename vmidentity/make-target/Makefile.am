@@ -1,6 +1,5 @@
 
 vmstsjars_DATA= \
-    @top_builddir@/vmware-sts/packages/vmware-identity-depends.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-diagnostics.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-platform.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-idm-client.jar \
@@ -30,7 +29,13 @@ vmstsjars_DATA= \
     @top_builddir@/vmware-sts/packages/openidconnect-server.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-sso-config.jar \
     @top_builddir@/vmware-sts/packages/websso.jar \
-    @top_builddir@/vmware-sts/packages/sts.jar
+    @top_builddir@/vmware-sts/packages/sts.jar \
+    @top_builddir@/vmware-sts/packages/lib/commons-lang-2.6.jar \
+    @top_builddir@/vmware-sts/packages/lib/jna-4.2.1.jar \
+    @top_builddir@/vmware-sts/packages/lib/commons-logging-1.1.1.jar \
+    @top_builddir@/vmware-sts/packages/lib/httpclient-4.5.1.jar \
+    @top_builddir@/vmware-sts/packages/lib/slf4j-api-1.7.10.jar \
+    @top_builddir@/vmware-sts/packages/lib/log4j-api-2.2.jar
 
 vmstswebapps_DATA= \
     @top_builddir@/vmware-sts/packages/openidconnect-sample-rp.war \
