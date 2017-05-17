@@ -630,7 +630,7 @@ VmDirRaftStateEntry(
         if (dwError)
         {
             //best-effort to get state from members
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirRaftStateEntry fail to get raft state on host %d, error %d",
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirRaftStateEntry fail to get raft state on host %s, error %d",
                             pHost, dwError);
         }
         VMDIR_SAFE_FREE_MEMORY(pHost);

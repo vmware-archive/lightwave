@@ -20,6 +20,11 @@
 
 static DWORD _VmDirGetLastIndex(UINT64 *index, UINT32 *term);
 
+static int
+_VmDirCompareLogIdx(
+    const void * logIdx1,
+    const void * logIdx2);
+
 /*
  * This is to create entry Id for Raft log entry, which is within the same
  * MDB transaction for its associated (external) LDAP Add
@@ -452,7 +457,7 @@ error:
 
 //Remove all logs with index >= startLogIndex
 DWORD
-_VmDirDeleteAllLogs(unsigned long long startLogIndex)
+_VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
 {
     DWORD dwError = 0;
     VDIR_ENTRY_ARRAY entryArray = {0};
@@ -460,6 +465,10 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex)
     int i = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
     UINT64 logIndex = 0;
+    int logCnt = 0;
+    unsigned long long *pLogIdxArray = NULL;
+
+    *pbFatalError = FALSE;
 
     dwError = VmDirStringPrintFA(filterStr, sizeof(filterStr), "(%s>=%llu)",
                                  ATTR_RAFT_LOGINDEX, startLogIndex);
@@ -468,32 +477,63 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex)
     dwError = VmDirFilterInternalSearch(RAFT_LOGS_CONTAINER_DN, LDAP_SCOPE_ONE, filterStr, 0, NULL, &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (i = 0; i < entryArray.iSize; i++)
+    logCnt = entryArray.iSize;
+    if (logCnt < 1)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirAllocateMemory( sizeof(unsigned long long)*logCnt, (PVOID*)&pLogIdxArray );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < logCnt; i++)
     {
         pAttr = VmDirFindAttrByName(&(entryArray.pEntry[i]), ATTR_RAFT_LOGINDEX);
         if (!pAttr)
         {
             //This indicate the corruption of the log entry data.
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs invalid log entry, logIdx %llu", logIndex);
-            assert(0);
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs invalid log entry, logIdx %llu lastLogIndex %llu",
+                            logIndex, gRaftState.lastLogIndex);
+            *pbFatalError = TRUE;
+            dwError = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
 
         logIndex = VmDirStringToLA(pAttr->vals[0].lberbv.bv_val, NULL, 10);
-        if (logIndex <= gRaftState.lastApplied)
+        pLogIdxArray[i] = logIndex;
+    }
+
+    //To delete logs in high to low order
+    qsort(pLogIdxArray, logCnt, sizeof(unsigned long long), _VmDirCompareLogIdx);
+
+    if (logCnt > 1)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs deleting %d logs from %llu to %llu ...",
+                       logCnt, pLogIdxArray[0], pLogIdxArray[logCnt-1]);
+    }
+
+    for (i=0; i<logCnt; i++)
+    {
+        if (pLogIdxArray[i] <= gRaftState.lastApplied)
         {
              /* This shouldn't occur. If it does, then there would be a bug, and the consistency might be 
               * compromised. We should investigate the sequence of events on how to get here.
               */
-             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs attempt to delete log already applied, logIdx %llu", logIndex);
-             assert(0);
-        }
+             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+               "_VmDirDeleteAllLogs attempt to delete log already applied, logIdx %llu lastApplied %llu lastLogIndex %llu",
+               pLogIdxArray[i], gRaftState.lastApplied, gRaftState.lastLogIndex);
 
-        dwError = _VmdirDeleteLog(entryArray.pEntry[i].dn.lberbv_val);
+             *pbFatalError = TRUE;
+             dwError = LDAP_OPERATIONS_ERROR;
+             BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        dwError = _VmdirDeleteLog(pLogIdxArray[i], FALSE);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
+    VMDIR_SAFE_FREE_MEMORY(pLogIdxArray);
     return dwError;
 
 error:
@@ -617,54 +657,6 @@ cleanup:
 error:
     _VmDirChgLogFree(pLogEntry);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s line %d", VDIR_SAFE_STRING(pszLocalErrorMsg), from);
-    goto cleanup;
-}
-
-DWORD
-_VmdirDeleteLog(PSTR pDn)
-{
-    DWORD dwError = 0;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    VDIR_OPERATION ldapOp = {0};
-    DeleteReq *dr = NULL;
-
-    dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
-    assert(ldapOp.pBEIF);
-
-    ldapOp.reqDn.lberbv.bv_val = pDn;
-    ldapOp.reqDn.lberbv.bv_len = VmDirStringLenA(pDn);
-
-    dr = &(ldapOp.request.deleteReq);
-
-    dwError = VmDirAllocateBerValueAVsnprintf(&(dr->dn), "%s", ldapOp.reqDn.lberbv.bv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    ldapOp.bSuppressLogInfo = TRUE;
-    dwError = VmDirInternalDeleteEntry(&ldapOp);
-    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
-    {
-        dwError = 0;
-    }
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmdirDeleteLog deleted log %s ...", pDn);
-
-cleanup:
-    VmDirFreeOperationContent(&ldapOp);
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmdirDeleteLog: entry %s error %d", pDn,  dwError);
     goto cleanup;
 }
 
@@ -1067,4 +1059,26 @@ cleanup:
 error:
     *ppszLocalErrorMsg = pszLocalErrorMsg;
     goto cleanup;
+}
+
+/*
+ * Sort log index array in high to lower order
+ */
+static int
+_VmDirCompareLogIdx(
+    const void * logIdx1,
+    const void * logIdx2)
+{
+    if ( *(unsigned long long *)logIdx1 < *(unsigned long long*)logIdx2 )
+    {
+        return 1;
+    }
+    else if (*(unsigned long long *)logIdx1 == *(unsigned long long*)logIdx2 )
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
 }
