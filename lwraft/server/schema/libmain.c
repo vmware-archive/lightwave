@@ -41,11 +41,8 @@ VmDirSchemaLibInit(
 {
     DWORD   dwError = 0;
 
-    // legacy support
-    // - replace with VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER
-    //   when legacy support is no longer required
     VDIR_SCHEMA_BOOTSTRAP_TABLE ATTable[] =
-            VDIR_LEGACY_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
+            VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
 
     dwError = VdirSyntaxLoad();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -74,10 +71,6 @@ VmDirSchemaLibInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaLibUpdate(0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // legacy support
-    dwError = VmDirSchemaLibInitLegacy();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

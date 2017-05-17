@@ -81,13 +81,6 @@ VmDirModifyEntryCoreLogic(
     );
 
 int
-VmDirGenerateModsNewMetaData(
-    PVDIR_OPERATION          pOperation,
-    PVDIR_MODIFICATION       pmods,
-    USN                      entryId
-    );
-
-int
 VmDirInternalModifyEntry(
     PVDIR_OPERATION pOperation
     );

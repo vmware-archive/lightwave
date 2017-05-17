@@ -173,18 +173,6 @@ VmDirIndexCfgRestoreProgress(
     PBOOLEAN            pbRestore
     );
 
-// vmit.c
-DWORD
-VmDirIndexLibInitVMIT(
-    VOID
-    );
-
-DWORD
-VmDirVMITIndexCfgInit(
-    PVDIR_DEFAULT_INDEX_CFG pDefIdxCfg,
-    PVDIR_INDEX_CFG*        ppIndexCfg
-    );
-
 #ifdef __cplusplus
 }
 #endif

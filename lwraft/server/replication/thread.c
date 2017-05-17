@@ -2004,6 +2004,77 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirUpdateRaftLogChangedAttr(
+    PVDIR_OPERATION pOperation,
+    PVDIR_ENTRY     pEntry
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    UINT64  iLogIdxChgd = 0;
+    PSTR    pszLogIdxChgd = NULL;
+    VDIR_BERVALUE   bvLogIdxChgd = {0};
+
+    if (!pOperation || !pEntry)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pOperation->opType == VDIR_OPERATION_TYPE_REPL ||
+        (pEntry->eId &&
+         (pEntry->eId < NEW_ENTRY_EID_PREFIX ||
+          pEntry->eId >= LOG_ENTRY_EID_PREFIX)))
+    {
+        goto cleanup;
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gRaftStateMutex);
+    iLogIdxChgd = gRaftState.commitIndex + 1;
+    VMDIR_UNLOCK_MUTEX(bInLock, gRaftStateMutex);
+
+    dwError = VmDirAllocateStringPrintf(&pszLogIdxChgd, "%"PRIu64, iLogIdxChgd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    switch (pOperation->reqCode)
+    {
+    case LDAP_REQ_ADD:
+
+        dwError = VmDirEntryAddSingleValueStrAttribute(
+                pEntry, ATTR_RAFT_LOG_CHANGED, pszLogIdxChgd);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        break;
+
+    case LDAP_REQ_MODIFY:
+
+        bvLogIdxChgd.lberbv.bv_val = pszLogIdxChgd;
+        bvLogIdxChgd.lberbv.bv_len = VmDirStringLenA(pszLogIdxChgd);
+
+        dwError = VmDirOperationAddModReq(
+                pOperation,
+                LDAP_MOD_REPLACE,
+                ATTR_RAFT_LOG_CHANGED,
+                &bvLogIdxChgd,
+                1);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        break;
+
+    default:
+
+        break;
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLogIdxChgd);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirDeleteRaftProxy(char *dn_norm)

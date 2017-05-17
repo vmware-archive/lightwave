@@ -253,31 +253,6 @@ syntaxOID(
     PVDIR_BERVALUE pBerv
     );
 
-// legacy/legacyload.c
-DWORD
-VmDirSchemaAttrIdMapLoadSubSchemaSubEntry(
-    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
-    PVDIR_ENTRY                 pSchemaEntry
-    );
-
-DWORD
-VmDirLdapSchemaLoadSubSchemaSubEntry(
-    PVDIR_LDAP_SCHEMA   pLdapSchema,
-    PVDIR_ENTRY         pSchemaEntry
-    );
-
-DWORD
-VmDirLegacySchemaLoadSubSchemaSubEntry(
-    PVDIR_LEGACY_SCHEMA pLegacySchema,
-    PVDIR_ENTRY         pSchemaEntry
-    );
-
-// legacy/legacyutil.c
-DWORD
-VmDirUpdateSubSchemaSubEntry(
-    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod
-    );
-
 #ifdef __cplusplus
 }
 #endif

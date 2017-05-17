@@ -91,10 +91,6 @@ VmDirIndexLibInit(
         pIndexCfg = NULL;
     }
 
-    // VMIT support
-    dwError = VmDirIndexLibInitVMIT();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = InitializeIndexingThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 

@@ -47,12 +47,8 @@ libcommon_la_SOURCES = \
     schema/patch.c \
     schema/resolve.c \
     schema/schema.c \
-    schema/verify.c \
-    schema/legacy/legacyload.c \
-    schema/legacy/legacypatch.c \
-    schema/legacy/legacyschema.c \
-    schema/legacy/legacyschemamod.c \
-    schema/legacy/legacyutil.c
+    schema/util.c \
+    schema/verify.c
 
 libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

@@ -359,6 +359,7 @@ extern "C" {
 #define ATTR_RAFT_FOLLOWERS                 "vmwRaftActiveFollower"
 #define ATTR_RAFT_MEMBERS                   "vmwRaftMember"
 #define ATTR_RAFT_STATE                     "vmwRaftState"
+#define ATTR_RAFT_LOG_CHANGED               "vmwRaftLogChanged"
 
 // Object classes
 #define OC_TOP                              "top"

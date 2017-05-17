@@ -125,7 +125,7 @@ error:
 
 DWORD
 VmDirInitBackend(
-    PBOOLEAN    pbLegacyDataLoaded
+    VOID
     )
 {
     DWORD   dwError = 0;
@@ -147,10 +147,10 @@ VmDirInitBackend(
     dwError = VmDirSchemaLibInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadSchema(&bInitializeEntries, pbLegacyDataLoaded);
+    dwError = VmDirLoadSchema(&bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadIndex(bInitializeEntries || *pbLegacyDataLoaded);
+    dwError = VmDirLoadIndex(bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // prepare USNList to guarantee safe USN for replication
@@ -239,7 +239,6 @@ VmDirInit(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bLegacyDataLoaded = FALSE;
     BOOLEAN bWriteInvocationId = FALSE;
     BOOLEAN bWaitTimeOut = FALSE;
     VMDIR_RUNMODE runMode = VmDirdGetRunMode();
@@ -286,7 +285,7 @@ VmDirInit(
     dwError = VmDirPluginInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirInitBackend(&bLegacyDataLoaded);
+    dwError = VmDirInitBackend();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // load server globals before any write operations
@@ -303,15 +302,7 @@ VmDirInit(
     dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!gVmdirGlobals.bPatchSchema && bLegacyDataLoaded)
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                "Legacy data store is detected. "
-                "Run schema patch (-u option) before running in normal mode" );
-        dwError = ERROR_NO_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (gVmdirGlobals.bPatchSchema)
+    if (gVmdirGlobals.bPatchSchema)
     {
         if (IsNullOrEmptyString(gVmdirGlobals.pszBootStrapSchemaFile))
         {
@@ -323,18 +314,9 @@ VmDirInit(
 
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
 
-        if (bLegacyDataLoaded)
-        {
-            dwError = VmDirSchemaPatchLegacyViaFile(
-                    gVmdirGlobals.pszBootStrapSchemaFile);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else
-        {
-            dwError = VmDirSchemaPatchViaFile(
-                    gVmdirGlobals.pszBootStrapSchemaFile);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VmDirSchemaPatchViaFile(
+                gVmdirGlobals.pszBootStrapSchemaFile);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
 

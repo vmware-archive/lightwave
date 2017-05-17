@@ -213,43 +213,6 @@ VmDirSubSchemaSubEntry(
     );
 
 ///////////////////////////////////////////////////////////////////////////////
-// Schema legacy support for 6.0u3 and 6.5
-///////////////////////////////////////////////////////////////////////////////
-/*
- * Auxiliary function to tune schema library compatible with legacy data
- */
-DWORD
-VmDirSchemaLibInitLegacy(
-    VOID
-    );
-
-/*
- * Reads subschema subentry from legacy data store and loads it
- * into schema library.
- *
- * Should be called once and only once in the node's lifetime when
- * 1) join to legacy partner.
- * 2) upgrade a legacy node.
- *
- * New schema changes from this function is not effective until
- * VmDirSchemaLibUpdate() is called.
- */
-DWORD
-VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
-    PVDIR_ENTRY pSchemaEntry
-    );
-
-DWORD
-VmDirReadSubSchemaSubEntry(
-    PVDIR_ENTRY*    ppSubSchemaSubEntry
-    );
-
-DWORD
-VmDirPatchLocalSubSchemaSubEntry(
-    VOID
-    );
-
-///////////////////////////////////////////////////////////////////////////////
 // Schema context
 ///////////////////////////////////////////////////////////////////////////////
 /*

@@ -62,10 +62,6 @@ extern "C" {
 
 #define SOCK_BUF_MAX_INCOMING ((1<<24) - 1) // 16M - 1, e.g. to handle large Add object requests.
 
-// Fix bootstrap attribute id used in schema/defines.h VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER definition
-#define SCHEMA_BOOTSTRAP_EID_SEQ_ATTRID_22     22
-#define SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23     23
-
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
 // This value is the DFL for the current version
 #define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"3"
