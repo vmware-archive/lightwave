@@ -31,16 +31,16 @@
    var idp_display_name_list = '${idp_display_name_list}';
    </script>
 
-   <script type="text/javascript" src="../../resources/js/Base64.js"></script>
-   <script type="text/javascript" src="../../resources/js/jquery-2.1.4.min.js"></script>
-   <script type="text/javascript" src="../../resources/js/IDPSelection.js"></script>
+   <script type="text/javascript" src="/resources/js/Base64.js"></script>
+   <script type="text/javascript" src="/resources/js/jquery-2.1.4.min.js"></script>
+   <script type="text/javascript" src="/resources/js/IDPSelection.js"></script>
 
 </head>
 <body>
 <script type="text/javascript">
-    document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/chooseidp.css">');
-    document.write("<img id=\"topSplash\" src=\"../../resources/img/AppBgPattern.png\"/>");
-    document.write("<img id=\"brand\" src=\"../../resources/img/vmwareLogoBigger.png\" />");
+    document.write('<link rel="stylesheet" type="text/css" href="/resources/css/chooseidp.css">');
+    document.write("<img id=\"topSplash\" src=\"/resources/img/AppBgPattern.png\"/>");
+    document.write("<img id=\"brand\" src=\"/resources/img/vmwareLogoBigger.png\" />");
 </script>
 
 <div id="pageTitle">${title}</div>

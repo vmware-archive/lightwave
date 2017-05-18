@@ -31,14 +31,14 @@
    var saml_response = '${trusted_saml_response}';
 
    </script>
-   <script type="text/javascript" src="../../resources/js/Base64.js"></script>
-   <script type="text/javascript" src="../../resources/js/jquery-2.1.4.min.js"></script>
-   <script type="text/javascript" src="../../resources/js/RPSelection.js"></script>
+   <script type="text/javascript" src="/resources/js/Base64.js"></script>
+   <script type="text/javascript" src="/resources/js/jquery-2.1.4.min.js"></script>
+   <script type="text/javascript" src="/resources/js/RPSelection.js"></script>
 </head>
 <body>
 <script type="text/javascript">
-    document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/chooseRP.css">');
-    document.write("<img id=\"topSplash\" src=\"../../resources/img/AppBgPattern.png\"/>");
+    document.write('<link rel="stylesheet" type="text/css" href="/resources/css/chooseRP.css">');
+    document.write("<img id=\"topSplash\" src=\"/resources/img/AppBgPattern.png\"/>");
 </script>
 
 <div id="pageTitle">${tittle}</div>
