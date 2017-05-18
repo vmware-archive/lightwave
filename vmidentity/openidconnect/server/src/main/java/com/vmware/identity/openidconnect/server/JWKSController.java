@@ -66,7 +66,7 @@ public class JWKSController {
         jwks(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = "/{tenant:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.JWKS + "/{tenant:.*}", method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,
