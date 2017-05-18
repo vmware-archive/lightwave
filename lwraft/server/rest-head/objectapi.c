@@ -14,6 +14,14 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VmDirRESTCreateCondWriteCtrl(
+    PVDIR_OPERATION pOp,
+    PCSTR           pszTenant,
+    PCSTR           pszCondWriteFilter
+    );
+
 /*
  * REST_MODULE (from copenapitypes.h)
  * callback indices must correspond to:
@@ -237,6 +245,15 @@ VmDirRESTObjectPatch(
             &pModifyOp->request.modifyReq.numMods);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (pRestOp->pszHeaderIfMatch)
+    {
+        dwError = _VmDirRESTCreateCondWriteCtrl(
+                    pModifyOp,
+                    pszTenant,
+                    pRestOp->pszHeaderIfMatch);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = VmDirMLModify(pModifyOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -311,5 +328,44 @@ cleanup:
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirRESTCreateCondWriteCtrl(
+    PVDIR_OPERATION pOp,
+    PCSTR           pszTenant,
+    PCSTR           pszCondWriteFilter
+    )
+{
+    DWORD           dwError = 0;
+    VDIR_BERVALUE   bvFilter = VDIR_BERVALUE_INIT;
+    PVDIR_FILTER    pObjectFilter = NULL;
+    PVDIR_FILTER    pDNFilter = NULL;
+
+    dwError = StrFilterToFilter(pszCondWriteFilter, &pObjectFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTFilterObjectToDN(
+                pszTenant,
+                pObjectFilter,
+                &pDNFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = FilterToStrFilter(pDNFilter, &bvFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAddCondWriteCtrl(pOp, bvFilter.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeBervalContent(&bvFilter);
+    DeleteFilter(pObjectFilter);
+    DeleteFilter(pDNFilter);
+
+    return dwError;
+
+error:
     goto cleanup;
 }

@@ -9,6 +9,7 @@ librest_head_la_SOURCES = \
     globals.c \
     httperror.c \
     ldapapi.c \
+    ldapcontrol.c \
     libmain.c \
     objectapi.c \
     operation.c \

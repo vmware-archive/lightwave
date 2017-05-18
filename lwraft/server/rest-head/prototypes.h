@@ -198,6 +198,13 @@ VmDirRESTLdapSetResult(
     PSTR                pszErrMsg
     );
 
+// ldapcontro.c
+DWORD
+VmDirAddCondWriteCtrl(
+    PVDIR_OPERATION pOp,
+    PCSTR           pszCondWriteFilter
+    );
+
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
@@ -330,6 +337,13 @@ VmDirRESTRenameParamKey(
     PVDIR_REST_OPERATION    pRestOp,
     PCSTR                   pszOldKey,
     PCSTR                   pszNewKey
+    );
+
+DWORD
+VmDirRESTFilterObjectToDN(
+    PCSTR           pszTenant,
+    PVDIR_FILTER    pObjectFilter,
+    PVDIR_FILTER*   ppDNFilter
     );
 
 // resource.c

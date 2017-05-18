@@ -361,6 +361,47 @@ error:
     goto cleanup;
 }
 
+/*
+ * Convert filter from ObjectPath format to DN format
+ */
+DWORD
+VmDirRESTFilterObjectToDN(
+    PCSTR           pszTenant,
+    PVDIR_FILTER    pObjectFilter,
+    PVDIR_FILTER*   ppDNFilter
+    )
+{
+    DWORD           dwError = 0;
+    VDIR_BERVALUE   bvFilter = VDIR_BERVALUE_INIT;
+    PVDIR_FILTER    pDNFilter = NULL;
+
+    if (!pszTenant || !pObjectFilter || !ppDNFilter)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirRESTDecodeObjectFilter(pObjectFilter, pszTenant);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // need to convert filter -> string -> filter because
+    // parsing the first filter might have failed
+    dwError = FilterToStrFilter(pObjectFilter, &bvFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = StrFilterToFilter(bvFilter.lberbv.bv_val, &pDNFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppDNFilter = pDNFilter;
+
+cleanup:
+    VmDirFreeBervalContent(&bvFilter);
+    return dwError;
+
+error:
+    DeleteFilter(pDNFilter);
+    goto cleanup;
+}
+
 DWORD
 VmDirRESTGetObjectGetParams(
     PVDIR_REST_OPERATION    pRestOp,
@@ -374,7 +415,7 @@ VmDirRESTGetObjectGetParams(
     DWORD   dwError = 0;
     PSTR    pszTenant = NULL;
     int     scope = LDAP_SCOPE_BASE;
-    VDIR_BERVALUE   bvFilter = {0};
+
     PVDIR_FILTER    pFilter = NULL;
     PVDIR_FILTER    pDecodedFilter = NULL;
     PVDIR_BERVALUE  pbvAttrs = NULL;
@@ -402,15 +443,7 @@ VmDirRESTGetObjectGetParams(
 
     if (pFilter)
     {
-        dwError = VmDirRESTDecodeObjectFilter(pFilter, pszTenant);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        // need to convert filter -> string -> filter because
-        // parsing the first filter might have failed
-        dwError = FilterToStrFilter(pFilter, &bvFilter);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = StrFilterToFilter(bvFilter.lberbv.bv_val, &pDecodedFilter);
+        dwError = VmDirRESTFilterObjectToDN(pszTenant, pFilter, &pDecodedFilter);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -421,7 +454,6 @@ VmDirRESTGetObjectGetParams(
     *ppbvAttrs = pbvAttrs;
 
 cleanup:
-    VmDirFreeBervalContent(&bvFilter);
     DeleteFilter(pFilter);
     return dwError;
 

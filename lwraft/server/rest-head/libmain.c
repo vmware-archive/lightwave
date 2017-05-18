@@ -162,7 +162,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
     goto response;
 }

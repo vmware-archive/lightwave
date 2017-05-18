@@ -223,6 +223,14 @@ VmDirRESTLdapModify(
             &pModifyOp->request.modifyReq.numMods);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (pRestOp->pszHeaderIfMatch)
+    {
+        dwError = VmDirAddCondWriteCtrl(
+                    pModifyOp,
+                    pRestOp->pszHeaderIfMatch);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = VmDirMLModify(pModifyOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -395,6 +403,10 @@ VmDirRESTLdapGetHttpError(
 
     case LDAP_SIZELIMIT_EXCEEDED:
         httpStatus = HTTP_PAYLOAD_TOO_LARGE;
+        break;
+
+    case VMDIR_LDAP_ERROR_PRE_CONDITION:
+        httpStatus = HTTP_PRECONDITION_FAILED;
         break;
 
     default:

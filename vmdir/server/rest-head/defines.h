@@ -28,6 +28,10 @@
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_vmdir"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
 
+// HTTP headers
+#define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
+#define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
+
 // HTTP STATUS CODES
 // 1xx Informational
 #define HTTP_CONTINUE                           100

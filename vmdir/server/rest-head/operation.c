@@ -116,7 +116,7 @@ VmDirRESTOperationReadRequest(
     }
 
     // read request authorization info
-    dwError = VmRESTGetHttpHeader(pRestReq, "Authorization", &pRestOp->pszAuth);
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
@@ -277,6 +277,7 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);
