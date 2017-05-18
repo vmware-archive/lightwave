@@ -30,7 +30,8 @@ lwraftschema_LDADD = \
     @CRYPT_LIBS@ \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @PTHREAD_LIBS@
 
 lwraftschema_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
