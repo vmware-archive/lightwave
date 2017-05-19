@@ -399,7 +399,7 @@
             "type": "object",
             "properties": {
                 "operation": {
-                    "description": "add/modify/replace LDAP Modify changetype",
+                    "description": "add/delete/replace LDAP Modify changetype",
                     "type": "string"
                 },
                 "attribute": {
