@@ -633,7 +633,7 @@ VMCARESTAddRootCertificate(
     json_t *pJsonOverWrite = NULL;
 
 
-    dwError = VMCAConvertStringInputToJSON(*request.pszPayload, &pRoot);
+    dwError = VMCAConvertStringInputToJSON(request.pszPayload, &pRoot);
     BAIL_ON_VMREST_ERROR(dwError);
     pJsonCert = json_object_get(pRoot, VMCA_ADD_ROOT_PARAM_KEY_CERT);
     pJsonPriv = json_object_get(pRoot, VMCA_ADD_ROOT_PARAM_KEY_PRIVKEY);
@@ -778,7 +778,7 @@ VMCARESTGetSignedCertificate(
     json_t *pJsonDuration = NULL;
 
 
-    dwError = VMCAConvertStringInputToJSON(*request.pszPayload, &pRoot);
+    dwError = VMCAConvertStringInputToJSON(request.pszPayload, &pRoot);
     BAIL_ON_VMREST_ERROR(dwError);
 
     pJsonCSR = json_object_get(pRoot, VMCA_GET_SIGNED_CERT_PARAM_KEY_CSR);
@@ -846,7 +846,7 @@ VMCARESTRevokeCertificate(
     json_t *pRoot = NULL;
     json_t *pJsonCert = NULL;
 
-    dwError = VMCAConvertStringInputToJSON(*request.pszPayload, &pRoot);
+    dwError = VMCAConvertStringInputToJSON(request.pszPayload, &pRoot);
     BAIL_ON_VMCA_ERROR(dwError);
 
     pJsonCert = json_object_get(pRoot, VMCA_REVOKE_CERT_PARAM_KEY_CERT);

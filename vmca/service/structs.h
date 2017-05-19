@@ -117,7 +117,9 @@ typedef enum
     VMCA_AUTHORIZATION_TOKEN_TYPE_KRB,
     VMCA_AUTHORIZATION_TOKEN_TYPE_MAX
 } VMCA_AUTHORIZATION_TYPE;
-#if 0
+
+#if VMCARESTENABLED
+
 typedef struct _VMCA_AUTHORIZATION_PARAM
 {
     PSTR pszAuthorizationToken;
@@ -161,17 +163,11 @@ _VMCA_HTTP_REQ_OBJ {
     PSTR                            pszConnection;
     PSTR                            pszTransferEncoding;
     PSTR                            pszContentLength;
-    PSTR*                           pszPayload;
+    PSTR                            pszPayload;
     FILE*                           debugFile;
-    JSON_KEY_VALUE*                 params;
     PVMCA_ACCESS_TOKEN              pAccessToken;
 } VMCA_HTTP_REQ_OBJ, *PVMCA_HTTP_REQ_OBJ;
 
-typedef struct OIDC_SERVER_METADATA
-{
-    PSTRING pszTokenEndpointUrl;
-    PSTRING pszSigningCertificatePEM;
-} OIDC_SERVER_METADATA;
 #endif
 
 #ifdef _WIN32

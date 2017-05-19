@@ -194,7 +194,7 @@ AC_ARG_WITH([oidc],
         OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
     ])
 
-OIDC_LIBS="-loidc"
+OIDC_LIBS="-lssooidc"
 AC_CHECK_HEADERS(oidc.h)
 AC_CHECK_HEADERS(oidc_types.h)
 AC_CHECK_HEADERS(common_types.h)

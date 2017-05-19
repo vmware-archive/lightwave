@@ -94,11 +94,12 @@ VMCAGetTenantSigningCert(
     PSTR* ppszSigningCertPEM
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
     POIDC_SERVER_METADATA pMetadata = NULL;
-    PCSTR pszServer = "localhost";
-    int nPortNumber = 443;
-    PSTR pszTenant = NULL;
+    PCSTR   pszServer = "localhost";
+    int     nPortNumber = 443;
+    PSTR    pszTenant = NULL;
+    PCSTR   pszSigningCertPEM = NULL;
 
     if (!ppszSigningCertPEM)
     {
@@ -115,7 +116,8 @@ VMCAGetTenantSigningCert(
                                 pszTenant);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *ppszSigningCertPEM = pMetadata->pszSigningCertificatePEM;
+    pszSigningCertPEM = OidcServerMetadataGetSigningCertificatePEM(pMetadata);
+    *ppszSigningCertPEM = (PSTR)pszSigningCertPEM;
 
 cleanup:
     return dwError;

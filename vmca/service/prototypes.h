@@ -613,7 +613,7 @@ VMCASignedRequestPrivate(
 
 
 //vmcaHTTPCallback.c
-#if 0
+#if VMCARESTENABLED
 #ifndef _WIN32
 DWORD
 VMCARESTGetCRL(

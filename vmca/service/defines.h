@@ -226,10 +226,14 @@ typedef DWORD VMCA_FUNC_LEVEL;
 // TRIDENT
 #define VMCARESTSSLCERT "/root/mycert.pem"
 #define VMCARESTSSLKEY "/root/mycert.pem"
-#define VMCARESTPORT "81"
+#define VMCARESTPORT "81p"  // TODO remove p
 #define VMCARESTDEBUGLOGFILE "/tmp/restServer.log"
 #define VMCARESTCLIENTCNT "5"
 #define VMCARESTWORKERTHCNT "5"
+#define VMCARESTMAXPAYLOADLENGTH 4096
+
+// TODO remove this
+#define VMCARESTENABLED 0
 
 //VMCA HTTP ENDPOINT URI VALUES
 #define VMCA_CRL_URI "vmca/crl"

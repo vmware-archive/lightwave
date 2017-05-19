@@ -283,8 +283,8 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 #define IsNullOrEmptyString(str) (!(str) || !*(str))
 #endif
 
-#ifndef VMCA_SAFE_LOG_STRING
-#define VMCA_SAFE_LOG_STRING(str) ((str) ? (str) : "")
+#ifndef VMCA_SAFE_STRING
+#define VMCA_SAFE_STRING(str) ((str) ? (str) : "")
 #endif
 
 #define VMCA_REG_KEY_VMCADBPATH              "DbPath"
