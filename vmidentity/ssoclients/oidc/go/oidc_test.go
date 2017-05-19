@@ -2,6 +2,7 @@ package oidc
 
 import "testing"
 import "os"
+import "fmt"
 
 func TestOidc(t *testing.T) {
     var server string = os.Getenv("LW_SERVER")
@@ -29,7 +30,10 @@ func test(
     exitOnError(t, err)
     defer client.Close()
 
-    successResponse, errorResponse, err := client.AcquireTokensByPassword(username, password, "openid offline_access")
+    successResponse, errorResponse, err := client.AcquireTokensByPassword(
+        username,
+        password,
+        "openid offline_access id_groups at_groups rs_admin_server")
     if errorResponse != nil {
         t.Error(errorResponse.GetErrorDescription())
         errorResponse.Close()
@@ -58,6 +62,12 @@ func validateIDToken(t *testing.T, jwt string, pem string) {
         "", /* issuer */
         10  /* clockToleranceInSeconds */)
     exitOnError(t, err)
+    fmt.Printf(
+        "id_token: [issuer: %v] [subject: %v] [audience: %v] [groups: %v]\n",
+        id.GetIssuer(),
+        id.GetSubject(),
+        id.GetAudience(),
+        id.GetGroups())
     id.Close()
 }
 
@@ -69,6 +79,12 @@ func validateAccessToken(t *testing.T, jwt string, pem string) {
         "", /* resourceServerName */
         10  /* clockToleranceInSeconds */)
     exitOnError(t, err)
+    fmt.Printf(
+        "access_token: [issuer: %v] [subject: %v] [audience: %v] [groups: %v]\n",
+        at.GetIssuer(),
+        at.GetSubject(),
+        at.GetAudience(),
+        at.GetGroups())
     at.Close()
 }
 

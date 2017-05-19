@@ -97,6 +97,8 @@ TestPasswordGrantSuccessResponse()
     TEST_ASSERT_TRUE(ppszAudience != NULL);
     TEST_ASSERT_TRUE(audienceSize == 1);
     TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, ppszAudience[0]);
+    TEST_ASSERT_TRUE(OidcIDTokenGetAudienceSize(pIDToken) == audienceSize);
+    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcIDTokenGetAudienceEntry(pIDToken, 0));
 
     TEST_ASSERT_TRUE(OidcIDTokenGetIssueTime(pIDToken) > 0);
     TEST_ASSERT_TRUE(OidcIDTokenGetExpirationTime(pIDToken) > 0);
@@ -121,6 +123,8 @@ TestPasswordGrantSuccessResponse()
     TEST_ASSERT_TRUE(ppszAudience != NULL);
     TEST_ASSERT_TRUE(audienceSize == 1);
     TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, ppszAudience[0]);
+    TEST_ASSERT_TRUE(OidcAccessTokenGetAudienceSize(pAccessToken) == audienceSize);
+    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcAccessTokenGetAudienceEntry(pAccessToken, 0));
 
     e = OidcAccessTokenGetStringClaim(pAccessToken, "token_class", &pszStringClaim);
     TEST_ASSERT_SUCCESS(e);

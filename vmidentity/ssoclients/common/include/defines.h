@@ -21,6 +21,9 @@
 #define BAIL_ON_NULL_ARGUMENT(x) \
     { if (NULL == (x)) { fprintf(stderr, "NULL argument! variable [%s] in function [%s]", #x, __FUNCTION__); e = SSOERROR_INVALID_ARGUMENT; goto error; } }
 
+#define ASSERT_TRUE(x) \
+    { if (!(x)) { fprintf(stderr, "assertion violation! expression [%s] in function [%s]", #x, __FUNCTION__); } }
+
 #define ASSERT_NOT_NULL(x) \
     { if (NULL == (x)) { fprintf(stderr, "NULL argument! variable [%s] in function [%s]", #x, __FUNCTION__); } }
 

@@ -116,6 +116,15 @@ OidcIDTokenGetAudience(
     const PSTRING** pppszAudience,
     size_t* pAudienceSize);
 
+size_t
+OidcIDTokenGetAudienceSize(
+    PCOIDC_ID_TOKEN p);
+
+PCSTRING
+OidcIDTokenGetAudienceEntry(
+    PCOIDC_ID_TOKEN p,
+    int index);
+
 SSO_LONG
 OidcIDTokenGetIssueTime(
     PCOIDC_ID_TOKEN p);
@@ -133,6 +142,15 @@ OidcIDTokenGetGroups(
     PCOIDC_ID_TOKEN p,
     const PSTRING** pppszGroups,
     size_t* pGroupsSize);
+
+size_t
+OidcIDTokenGetGroupsSize(
+    PCOIDC_ID_TOKEN p);
+
+PCSTRING
+OidcIDTokenGetGroupsEntry(
+    PCOIDC_ID_TOKEN p,
+    int index);
 
 PCSTRING
 OidcIDTokenGetTenant(
@@ -177,6 +195,15 @@ OidcAccessTokenGetAudience(
     const PSTRING** pppzAudience,
     size_t* pAudienceSize);
 
+size_t
+OidcAccessTokenGetAudienceSize(
+    PCOIDC_ACCESS_TOKEN p);
+
+PCSTRING
+OidcAccessTokenGetAudienceEntry(
+    PCOIDC_ACCESS_TOKEN p,
+    int index);
+
 SSO_LONG
 OidcAccessTokenGetIssueTime(
     PCOIDC_ACCESS_TOKEN p);
@@ -194,6 +221,15 @@ OidcAccessTokenGetGroups(
     PCOIDC_ACCESS_TOKEN p,
     const PSTRING** pppszGroups,
     size_t* pGroupsSize);
+
+size_t
+OidcAccessTokenGetGroupsSize(
+    PCOIDC_ACCESS_TOKEN p);
+
+PCSTRING
+OidcAccessTokenGetGroupsEntry(
+    PCOIDC_ACCESS_TOKEN p,
+    int index);
 
 PCSTRING
 OidcAccessTokenGetTenant(
