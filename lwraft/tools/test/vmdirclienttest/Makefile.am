@@ -2,7 +2,8 @@ bin_PROGRAMS = lwraftclienttest
 
 lwraftclienttest_SOURCES = \
     main.c \
-    saslclient.c
+    saslclient.c \
+    testldapcontrol.c
 
 lwraftclienttest_CPPFLAGS = \
     -I$(top_srcdir)/include \
