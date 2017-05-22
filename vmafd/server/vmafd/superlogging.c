@@ -532,7 +532,7 @@ VmAfdAddCDCSuperLogEntry(
     if (!VmAfdIsSuperLoggingEnabled(pLogger))
     {
         dwError = ERROR_NOT_READY;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     if(!pDCEntry)

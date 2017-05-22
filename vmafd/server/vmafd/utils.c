@@ -66,7 +66,7 @@ VmAfdGetMachineInfo(
     if (domainState == VMAFD_DOMAIN_STATE_NONE)
     {
         dwError = ERROR_NOT_JOINED;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     dwError = VmAfSrvGetMachineAccountInfo(
