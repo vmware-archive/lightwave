@@ -107,6 +107,8 @@ VmDirRESTEncodeEntry(
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
     BOOLEAN bReturn = FALSE;
+    BOOLEAN bAsterisk = FALSE;
+    BOOLEAN bPlusSign = FALSE;
     PVDIR_ATTRIBUTE pAttr = NULL;
     PVDIR_ATTRIBUTE pAttrs[3] = {0};
     json_t*         pjAttr = NULL;
@@ -126,7 +128,18 @@ VmDirRESTEncodeEntry(
             pjEntry, "dn", json_string(pEntry->dn.lberbv.bv_val));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // TODO special char?
+    for (i = 0; pbvAttrs && pbvAttrs[i].lberbv.bv_val; i++)
+    {
+        if (VmDirStringCompareA("*", pbvAttrs[i].lberbv.bv_val, TRUE) == 0)
+        {
+            bAsterisk = TRUE;
+        }
+        else if (VmDirStringCompareA("+", pbvAttrs[i].lberbv.bv_val, TRUE) == 0)
+        {
+            bPlusSign = TRUE;
+        }
+    }
+
     pAttrs[0] = pEntry->attrs;
     pAttrs[1] = pEntry->pComputedAttrs;
 
@@ -136,7 +149,19 @@ VmDirRESTEncodeEntry(
         {
             bReturn = FALSE;
 
-            if (pbvAttrs)
+            if ((bAsterisk || !pbvAttrs) &&
+                    pAttr->pATDesc->usage ==
+                            VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
+            {
+                bReturn = TRUE;
+            }
+            else if (bPlusSign &&
+                    pAttr->pATDesc->usage ==
+                            VDIR_LDAP_DIRECTORY_OPERATION_ATTRIBUTE)
+            {
+                bReturn = TRUE;
+            }
+            else if (pbvAttrs)
             {
                 for (j = 0; pbvAttrs[j].lberbv.bv_val; j++)
                 {
@@ -149,11 +174,6 @@ VmDirRESTEncodeEntry(
                         break;
                     }
                 }
-            }
-            else if (pAttr->pATDesc->usage ==
-                    VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
-            {
-                bReturn = TRUE;
             }
 
             if (bReturn)
@@ -403,6 +423,8 @@ VmDirRESTEncodeObject(
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
     BOOLEAN bReturn = FALSE;
+    BOOLEAN bAsterisk = FALSE;
+    BOOLEAN bPlusSign = FALSE;
     PSTR    pszObjPath = NULL;
     PVDIR_ATTRIBUTE pObjAttr = NULL;
     PVDIR_ATTRIBUTE pObjAttrs[3] = {0};
@@ -427,7 +449,18 @@ VmDirRESTEncodeObject(
             pjObj, "objectpath", json_string(pszObjPath));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // TODO special char?
+    for (i = 0; pbvAttrs && pbvAttrs[i].lberbv.bv_val; i++)
+    {
+        if (VmDirStringCompareA("*", pbvAttrs[i].lberbv.bv_val, TRUE) == 0)
+        {
+            bAsterisk = TRUE;
+        }
+        else if (VmDirStringCompareA("+", pbvAttrs[i].lberbv.bv_val, TRUE) == 0)
+        {
+            bPlusSign = TRUE;
+        }
+    }
+
     pObjAttrs[0] = pObj->attrs;
     pObjAttrs[1] = pObj->pComputedAttrs;
 
@@ -437,7 +470,19 @@ VmDirRESTEncodeObject(
         {
             bReturn = FALSE;
 
-            if (pbvAttrs)
+            if ((bAsterisk || !pbvAttrs) &&
+                    pObjAttr->pATDesc->usage ==
+                            VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
+            {
+                bReturn = TRUE;
+            }
+            else if (bPlusSign &&
+                    pObjAttr->pATDesc->usage ==
+                            VDIR_LDAP_DIRECTORY_OPERATION_ATTRIBUTE)
+            {
+                bReturn = TRUE;
+            }
+            else if (pbvAttrs)
             {
                 for (j = 0; pbvAttrs[j].lberbv.bv_val; j++)
                 {
@@ -450,11 +495,6 @@ VmDirRESTEncodeObject(
                         break;
                     }
                 }
-            }
-            else if (pObjAttr->pATDesc->usage ==
-                    VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
-            {
-                bReturn = TRUE;
             }
 
             if (bReturn)
