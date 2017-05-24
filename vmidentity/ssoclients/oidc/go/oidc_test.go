@@ -9,8 +9,9 @@ func TestOidc(t *testing.T) {
     var tenant string = os.Getenv("LW_TENANT")
     var username string = os.Getenv("LW_USERNAME")
     var password string = os.Getenv("LW_PASSWORD")
+    var clientID string = os.Getenv("LW_CLIENT_ID")
 
-    test(t, server, tenant, username, password)
+    test(t, server, tenant, username, password, clientID)
 }
 
 func test(
@@ -18,7 +19,8 @@ func test(
         server string,
         tenant string,
         username string,
-        password string) {
+        password string,
+        clientID string) {
     OidcClientGlobalInit()
     defer OidcClientGlobalCleanup()
 
@@ -26,7 +28,7 @@ func test(
     exitOnError(t, err)
     defer serverMetadata.Close()
 
-    client, err := OidcClientBuild(server, 443, tenant)
+    client, err := OidcClientBuild(server, 443, tenant, clientID)
     exitOnError(t, err)
     defer client.Close()
 

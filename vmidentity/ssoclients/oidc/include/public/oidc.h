@@ -28,7 +28,8 @@ OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
-    PCSTRING pszTenant);
+    PCSTRING pszTenant,
+    PCSTRING pszClientID /* OPT */);
 
 void
 OidcClientDelete(
