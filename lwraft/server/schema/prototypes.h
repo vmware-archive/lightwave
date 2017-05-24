@@ -53,13 +53,6 @@ VmDirSchemaIsAncestorOC(
     PVDIR_SCHEMA_OC_DESC    pAncestorOCDesc
     );
 
-// check.c
-DWORD
-VmDirSchemaGetEntryStructureOCDesc(
-    PVDIR_ENTRY             pEntry,
-    PVDIR_SCHEMA_OC_DESC*   ppStructureOCDesc   // caller does not own *ppStructureOCDesc
-    );
-
 // idmap.c
 DWORD
 VmDirSchemaAttrIdMapInit(

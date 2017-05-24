@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -130,6 +130,7 @@ VmDirInitBackend(
 {
     DWORD   dwError = 0;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
+    PVMDIR_MUTEX    pSchemaModMutex = NULL;
     BOOLEAN bInitializeEntries = FALSE;
 
     dwError = VmDirBackendConfig();
@@ -141,10 +142,18 @@ VmDirInitBackend(
     dwError = pBE->pfnBEInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirIndexLibInit();
+    /*
+     * Attribute indices are configured by attribute type entries.
+     *
+     * Note this implies that all index modification is schema modification.
+     *
+     * Concurrency control can be simplified by sharing mutex
+     * between schema library and index library.
+     */
+    dwError = VmDirSchemaLibInit(&pSchemaModMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibInit();
+    dwError = VmDirIndexLibInit(pSchemaModMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirLoadSchema(&bInitializeEntries);
@@ -170,7 +179,6 @@ VmDirInitBackend(
 
         dwError = _VmDirSrvCreatePersistedDSERoot();
         BAIL_ON_VMDIR_ERROR(dwError);
-
     }
 
 cleanup:

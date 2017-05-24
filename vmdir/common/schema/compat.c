@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -96,7 +96,7 @@ VmDirLdapOcAreCompat(
         if (!VmDirIsStrArraySuperSet(pNewOc->ppszMay, pPrevOc->ppszMay))
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: cannot remove maycontain attribute (%s).",
+                    "%s: cannot remove maycontain attribute types (%s).",
                     __FUNCTION__, pPrevOc->pszName);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -115,7 +115,7 @@ VmDirLdapOcAreCompat(
         if (!VmDirIsStrArraySuperSet(pNewOc->ppszMay, ppszMinimumMay))
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: cannot remove must contain attribute (%s).",
+                    "%s: cannot remove must contain attribute types (%s).",
                     __FUNCTION__, pPrevOc->pszName);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -124,7 +124,7 @@ VmDirLdapOcAreCompat(
     else
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                "%s: cannot add must contain attribute (%s).",
+                "%s: cannot add must contain attribute types (%s).",
                 __FUNCTION__, pPrevOc->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -76,6 +76,22 @@ typedef struct _VDIR_SCHEMA_AT_DESC
 
 } VDIR_SCHEMA_AT_DESC;
 
+typedef struct _VDIR_SCHEMA_OC_DESC
+{
+    PVDIR_LDAP_OBJECT_CLASS pLdapOc;
+
+    PSTR        pszName;
+    PSTR        pszOid;
+    PSTR        pszSup;
+    PSTR*       ppszMustATs;    // ends with NULL PSTR
+    PSTR*       ppszMayATs;     // ends with NULL PSTR
+
+    BOOLEAN     bObsolete;
+
+    VDIR_LDAP_OBJECT_CLASS_TYPE type;
+
+} VDIR_SCHEMA_OC_DESC, *PVDIR_SCHEMA_OC_DESC;
+
 typedef DWORD (*PFN_VDIR_NORMALIZE_FUNCTION)(PVDIR_BERVALUE pBerv);
 
 typedef BOOLEAN (*PFN_VDIR_COMPARE_FUNCTION)(VDIR_SCHEMA_MATCH_TYPE type, PVDIR_BERVALUE pBerv1, PVDIR_BERVALUE pBerv2);
@@ -98,7 +114,7 @@ typedef struct _VDIR_MATCHING_RULE_DESC
  */
 DWORD
 VmDirSchemaLibInit(
-    VOID
+    PVMDIR_MUTEX*   ppModMutex
     );
 
 /*
@@ -107,27 +123,31 @@ VmDirSchemaLibInit(
  * not compatible with the current definitions in the library.
  *
  * Should be called once during server startup / schema patch.
- *
- * New schema changes from this function is not effective until
- * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaLibPrepareUpdateViaFile(
+VmDirSchemaLibLoadFile(
     PCSTR   pszSchemaFilePath
     );
 
 /*
- * Reads schema objects entries from data store and loads them
+ * Loads attribute schema objects entries from data store
  * into schema library.
  *
  * Should be called once during server startup.
- *
- * New schema changes from this function is not effective until
- * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaLibPrepareUpdateViaEntries(
-    PVDIR_ENTRY_ARRAY   pAtEntries,
+VmDirSchemaLibLoadAttributeSchemaEntries(
+    PVDIR_ENTRY_ARRAY   pAtEntries
+    );
+
+/*
+ * Loads class schema objects entries from data store
+ * into schema library.
+ *
+ * Should be called once during server startup.
+ */
+DWORD
+VmDirSchemaLibLoadClassSchemaEntries(
     PVDIR_ENTRY_ARRAY   pOcEntries
     );
 
@@ -185,8 +205,12 @@ VmDirSchemaLibShutdown(
 // Schema storage read and write
 ///////////////////////////////////////////////////////////////////////////////
 DWORD
-VmDirReadSchemaObjects(
-    PVDIR_ENTRY_ARRAY*  ppAtEntries,
+VmDirReadAttributeSchemaObjects(
+    PVDIR_ENTRY_ARRAY*  ppAtEntries
+    );
+
+DWORD
+VmDirReadClassSchemaObjects(
     PVDIR_ENTRY_ARRAY*  ppOcEntries
     );
 
@@ -303,6 +327,20 @@ DWORD
 VmDirSchemaAttrList(
     PVDIR_SCHEMA_CTX        pCtx,
     PVDIR_SCHEMA_AT_DESC**  pppATDescList
+    );
+
+DWORD
+VmDirSchemaClassGetAllMayAttrs(
+    PVDIR_SCHEMA_CTX        pCtx,           // IN
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
+    PLW_HASHMAP             pAllMayAttrMap  // IN
+    );
+
+DWORD
+VmDirSchemaClassGetAllMustAttrs(
+    PVDIR_SCHEMA_CTX        pCtx,           // IN
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
+    PLW_HASHMAP             pAllMustAttrMap // IN
     );
 
 BOOLEAN
@@ -428,10 +466,14 @@ VmDirIsLiveSchemaCtx(
     PVDIR_SCHEMA_CTX    pCtx
     );
 
+DWORD
+VmDirSchemaGetEntryStructureOCDesc(
+    PVDIR_ENTRY             pEntry,
+    PVDIR_SCHEMA_OC_DESC*   ppStructureOCDesc       // caller does not own *ppStructureOCDesc
+    );
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __VIDRSCHEMA_H__ */
-
-

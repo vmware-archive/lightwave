@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -726,7 +726,7 @@ _VmDirPluginSchemaLibUpdatePreModify(
     DWORD dwRtn = 0;
     PVDIR_MODIFICATION pMod = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         pMod = pOperation->request.modifyReq.mods;
         for (; pMod; pMod = pMod->next)
@@ -1148,7 +1148,7 @@ _VmDirPluginSchemaEntryPreAdd(
     PVDIR_ATTRIBUTE pCnAttr = NULL;
     PSTR    pszSchemaIdGuid = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         // lDAPDisplayName attribute takes cn as default
         if (!VmDirFindAttrByName(pEntry, ATTR_LDAP_DISPLAYNAME))
@@ -1180,7 +1180,7 @@ _VmDirPluginSchemaEntryPreAdd(
             BAIL_ON_VMDIR_ERROR(dwRtn);
         }
 
-        if (VmDirIsEntryWithObjectclass(pEntry, OC_CLASS_SCHEMA))
+        if (VmDirEntryIsObjectclass(pEntry, OC_CLASS_SCHEMA))
         {
             // defaultObjectCategory attribute takes dn as default
             if (!VmDirFindAttrByName(pEntry, ATTR_DEFAULT_OBJECT_CATEGORY))
@@ -1208,7 +1208,7 @@ _VmDirPluginSchemaLibUpdatePreAdd(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR(dwRtn);
@@ -1421,7 +1421,7 @@ _VmDirPluginSchemaLibUpdatePostModifyCommit(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaLibUpdate(dwPriorResult);
     }
@@ -1921,7 +1921,7 @@ VmDirReplSchemaEntryPreAdd(
 {
     DWORD dwError = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -1943,7 +1943,7 @@ VmDirReplSchemaEntryPostAdd(
 {
     DWORD dwError = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -1968,7 +1968,7 @@ VmDirReplSchemaEntryPreMoidify(
 {
     DWORD dwError = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -1993,7 +1993,7 @@ VmDirReplSchemaEntryPostMoidify(
 {
     DWORD dwError = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }

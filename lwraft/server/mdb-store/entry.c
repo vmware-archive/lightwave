@@ -133,43 +133,57 @@ VmDirMDBMaxEntryId(
 {
     DWORD           dwError = 0;
     PVDIR_DB_TXN    pTxn = NULL;
+    VDIR_DB         mdbDBi = 0;
+    PVDIR_DB_DBC    pCursor = NULL;
     MDB_val         key = {0};
     MDB_val         value  = {0};
-    unsigned char   EIDBytes[sizeof( ENTRYID )] = {0};
+    ENTRYID         eId = LOG_ENTRY_EID_PREFIX;
+    unsigned char   EIDBytes[sizeof(ENTRYID)] = {0};
 
     assert(pEId);
 
-    dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn );
+    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    mdbDBi = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+
+    dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     key.mv_data = &EIDBytes[0];
-    MDBEntryIdToDBT(BE_MDB_ENTRYID_SEQ_KEY, &key);
+    MDBEntryIdToDBT(eId, &key);
 
-    dwError =  mdb_get(pTxn, gVdirMdbGlobals.mdbSeqDBi, &key, &value);
+    dwError = mdb_cursor_get(pCursor, &key, &value, MDB_SET_RANGE);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    do
+    {
+        dwError = mdb_cursor_get(pCursor, &key, &value, MDB_PREV);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        MDBDBTToEntryId(&key, &eId);
+    }
+    while (eId >= LOG_ENTRY_EID_PREFIX);
+
+    mdb_cursor_close(pCursor);
+    pCursor = NULL;
 
     dwError = mdb_txn_commit(pTxn);
     pTxn = NULL;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    assert(value.mv_size == sizeof(ENTRYID));
-    *pEId = *((ENTRYID*)value.mv_data);
+    *pEId = eId;
 
 cleanup:
-
     return dwError;
 
 error:
-
-    if (pTxn)
-    {
-        mdb_txn_abort(pTxn);
-    }
-
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "VmDirMDBMaxEntryId: failed with error (%d),(%s)",
              dwError, mdb_strerror(dwError) );
 
+    mdb_cursor_close(pCursor);
+    mdb_txn_abort(pTxn);
     VMDIR_SET_BACKEND_ERROR(dwError);
     goto cleanup;
 }

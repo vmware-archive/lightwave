@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -938,6 +938,14 @@
             " SINGLE-VALUE"                                             \
             " NO-USER-MODIFICATION"                                     \
             " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 45),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.281"                                   \
+            " NAME 'nTSecurityDescriptor'"                              \
+            " SYNTAX 1.2.840.113556.1.4.907"                            \
+            " SINGLE-VALUE )")                                          \
     },                                                                  \
     {                                                                   \
     VMDIR_SF_INIT(.usAttrID, 0),                                        \

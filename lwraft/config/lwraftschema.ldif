@@ -1260,7 +1260,6 @@ attributeTypes: (
     NAME 'nTSecurityDescriptor'
     SYNTAX 1.2.840.113556.1.4.907
     SINGLE-VALUE
-    USAGE directoryOperation
     )
 
 attributeTypes: (

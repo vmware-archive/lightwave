@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -76,6 +76,10 @@ extern "C" {
 
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
+
+// Entry ID prefixes
+#define NEW_ENTRY_EID_PREFIX 0x2000000000000000
+#define LOG_ENTRY_EID_PREFIX 0x4000000000000000
 
 typedef struct _VDIR_INDEX_CFG*             PVDIR_INDEX_CFG;
 typedef struct _VDIR_INDEX_UPD*             PVDIR_INDEX_UPD;
@@ -199,7 +203,6 @@ typedef struct _VDIR_CONNECTION_CTX
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
-typedef struct _VDIR_SCHEMA_OC_DESC*    PVDIR_SCHEMA_OC_DESC;
 
 typedef struct _VDIR_ATTRIBUTE
 {
@@ -557,7 +560,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       pCondWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
-    BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
+    DWORD               dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for both INTERNAL and EXTERNAL operations
@@ -774,7 +777,7 @@ VmDirAttributeAllocate(
     PCSTR               pszName,
     USHORT              usBerSize,
     PVDIR_SCHEMA_CTX    pCtx,
-    PVDIR_ATTRIBUTE*         ppOutAttr
+    PVDIR_ATTRIBUTE*    ppOutAttr
     );
 
 
@@ -802,7 +805,7 @@ VmDirIsInternalEntry(
     );
 
 BOOLEAN
-VmDirIsEntryWithObjectclass(
+VmDirEntryIsObjectclass(
     PVDIR_ENTRY     pEntry,
     PCSTR           pszOCName
     );

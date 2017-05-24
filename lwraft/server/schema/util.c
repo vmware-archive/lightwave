@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -15,25 +15,22 @@
 #include "includes.h"
 
 DWORD
-VmDirReadSchemaObjects(
-    PVDIR_ENTRY_ARRAY*  ppAtEntries,
-    PVDIR_ENTRY_ARRAY*  ppOcEntries
+VmDirReadAttributeSchemaObjects(
+    PVDIR_ENTRY_ARRAY*  ppAtEntries
     )
 {
     DWORD   dwError = 0;
     PVDIR_ENTRY_ARRAY   pAtEntries = NULL;
-    PVDIR_ENTRY_ARRAY   pOcEntries = NULL;
 
-    assert(ppAtEntries && ppOcEntries);
+    if (!ppAtEntries)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirAllocateMemory(
             sizeof(VDIR_ENTRY_ARRAY),
             (PVOID*)&pAtEntries);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_ENTRY_ARRAY),
-            (PVOID*)&pOcEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSimpleEqualFilterInternalSearch(
@@ -44,6 +41,44 @@ VmDirReadSchemaObjects(
             pAtEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (pAtEntries->iSize == 0)
+    {
+        dwError = ERROR_BACKEND_ENTRY_NOTFOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppAtEntries = pAtEntries;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VmDirFreeEntryArray(pAtEntries);
+    goto cleanup;
+}
+
+DWORD
+VmDirReadClassSchemaObjects(
+    PVDIR_ENTRY_ARRAY*  ppOcEntries
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_ENTRY_ARRAY   pOcEntries = NULL;
+
+    if (!ppOcEntries)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_ENTRY_ARRAY),
+            (PVOID*)&pOcEntries);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirSimpleEqualFilterInternalSearch(
             SCHEMA_NAMING_CONTEXT_DN,
             LDAP_SCOPE_SUBTREE,
@@ -52,20 +87,21 @@ VmDirReadSchemaObjects(
             pOcEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pAtEntries->iSize == 0 && pOcEntries->iSize == 0)
+    if (pOcEntries->iSize == 0)
     {
         dwError = ERROR_BACKEND_ENTRY_NOTFOUND;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    *ppAtEntries = pAtEntries;
     *ppOcEntries = pOcEntries;
 
 cleanup:
     return dwError;
 
 error:
-    VmDirFreeEntryArray(pAtEntries);
+    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
     VmDirFreeEntryArray(pOcEntries);
     goto cleanup;
 }
