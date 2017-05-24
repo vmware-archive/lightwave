@@ -124,7 +124,6 @@ cd build && make install DESTDIR=%{buildroot}
 %{_bindir}/configure-identity-server
 %{_bindir}/domainjoin.sh
 %{_lib64dir}/*.so*
-%{_jarsdir}/*.jar
 %{_configdir}/firewall.json
 %{_configdir}/setfirewallrules.py
 %{_serviceddir}/firewall.service

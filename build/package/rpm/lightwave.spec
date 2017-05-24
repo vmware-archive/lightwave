@@ -970,7 +970,6 @@ fi
 %{_jreextdir}/afd-heartbeat-service.jar
 
 %{_jarsdir}/authentication-framework.jar
-%{_jarsdir}/pscsetup.jar
 %{_jarsdir}/vmware-identity-rest-idm-samples.jar
 %{_jarsdir}/vmware-vmca-client.jar
 %{_jarsdir}/samltoken.jar

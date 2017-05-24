@@ -47,7 +47,6 @@ usr/lib/jvm/default-java/jre/lib/ext/client-domain-controller-cache.jar
 usr/lib/jvm/default-java/jre/lib/ext/afd-heartbeat-service.jar
 
 opt/vmware/jars/authentication-framework.jar
-opt/vmware/jars/pscsetup.jar
 opt/vmware/jars/vmware-identity-rest-idm-samples.jar
 opt/vmware/jars/vmware-vmca-client.jar
 opt/vmware/jars/samltoken.jar

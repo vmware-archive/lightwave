@@ -474,7 +474,6 @@ AC_SUBST(pscsetupjarsdir)
 AC_CONFIG_FILES([Makefile
                  jdepends/Makefile
                  cfgutils/Makefile
-                 pscsetup/Makefile
                  tools/Makefile
                  tools/ic-promote/Makefile
                  tools/ic-join/Makefile
