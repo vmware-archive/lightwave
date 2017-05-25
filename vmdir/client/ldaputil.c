@@ -1835,6 +1835,7 @@ VmDirLdapSetupComputerAccount(
     BOOLEAN     bAcctExists = FALSE;
     PSTR        pszSRPUPN = NULL;
     PSTR        pszExtendedOU = (PSTR)pszComputerOU;
+    PSTR        pszOUPrefix = ATTR_OU "=";
 
     char* modv_oc[] = {OC_PERSON, OC_ORGANIZATIONAL_PERSON, OC_USER, OC_COMPUTER, OC_TOP, NULL};
     char* modv_cn[] = {(PSTR)pszComputerHostName, NULL};
@@ -1940,15 +1941,30 @@ VmDirLdapSetupComputerAccount(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringPrintf(
-                    &pszComputerDN,
-                    "%s=%s,%s=%s,%s",
-                    ATTR_CN,
-                    pszLowerCaseComputerHostName,
-                    ATTR_OU,
-                    pszExtendedOU,
-                    pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (VmDirStringNCompareA(pszExtendedOU, pszOUPrefix,
+                             VmDirStringLenA(pszOUPrefix), FALSE) != 0)
+    {
+        dwError = VmDirAllocateStringPrintf(
+                        &pszComputerDN,
+                        "%s=%s,%s=%s,%s",
+                        ATTR_CN,
+                        pszLowerCaseComputerHostName,
+                        ATTR_OU,
+                        pszExtendedOU,
+                        pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                        &pszComputerDN,
+                        "%s=%s,%s,%s",
+                        ATTR_CN,
+                        pszLowerCaseComputerHostName,
+                        pszExtendedOU,
+                        pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirStringCompareA( pszHostName, pszComputerHostName, FALSE ) != 0 )
     {   // BUGBUG, does not consider simple vs fqdn name scenario.
@@ -4148,6 +4164,7 @@ VmDirLdapCreateComputerOUContainer(
                           {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
                       };
     LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
+    PSTR        pszOUPrefix = ATTR_OU "=";
 
     if (!pLd || !pszDomainName || !pszOUContainer)
     {
@@ -4162,17 +4179,32 @@ VmDirLdapCreateComputerOUContainer(
     dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // create user specified OU container under default OU=computers container.
-    dwError = VmDirAllocateStringPrintf(
-                &pszOuDN,
-                "%s=%s,%s=%s,%s",
-                ATTR_OU,
-                pszOUContainer,
-                ATTR_OU,
-                VMDIR_COMPUTERS_RDN_VAL,
-                pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
+    // create user specified OU container under default OU=computers container.
+    if (VmDirStringNCompareA(pszOUContainer, pszOUPrefix,
+                             VmDirStringLenA(pszOUPrefix), FALSE) != 0)
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszOuDN,
+                    "%s=%s,%s=%s,%s",
+                    ATTR_OU,
+                    pszOUContainer,
+                    ATTR_OU,
+                    VMDIR_COMPUTERS_RDN_VAL,
+                    pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszOuDN,
+                    "%s,%s=%s,%s",
+                    pszOUContainer,
+                    ATTR_OU,
+                    VMDIR_COMPUTERS_RDN_VAL,
+                    pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirIfDNExist(pLd, pszOuDN) )
     {
