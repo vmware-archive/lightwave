@@ -27,6 +27,7 @@
 #include "common_types.h"
 #include "common.h"
 #include "ssoerrors.h"
+#include "ssocommon.h"
 
 bool
 TestStringAllocate();

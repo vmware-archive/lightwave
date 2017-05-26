@@ -56,9 +56,7 @@ OidcAccessTokenParse(
 SSOERROR
 OidcTokenSuccessResponseParse(
     POIDC_TOKEN_SUCCESS_RESPONSE* pp,
-    PCSTRING pszJsonResponse,
-    PCSTRING pszSigningCertificatePEM,
-    SSO_LONG clockToleranceInSeconds);
+    PCSTRING pszJsonResponse);
 
 // OIDC_ERROR_RESPONSE
 

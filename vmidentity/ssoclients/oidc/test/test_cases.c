@@ -46,7 +46,7 @@ TestInit(
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&s_pClient, highAvailabilityEnabled ? NULL : s_pszServer, 443, s_pszTenant, CLOCK_TOLERANCE_IN_SECONDS);
+    e = OidcClientBuild(&s_pClient, highAvailabilityEnabled ? NULL : s_pszServer, 443, s_pszTenant);
     BAIL_ON_ERROR(e);
 
 error:
@@ -68,7 +68,7 @@ TestPasswordGrantSuccessResponse()
 
     POIDC_TOKEN_SUCCESS_RESPONSE pTokenSuccessResponse = NULL;
     POIDC_ERROR_RESPONSE pTokenErrorResponse = NULL;
-    PCOIDC_ID_TOKEN pIDToken = NULL;
+    POIDC_ID_TOKEN pIDToken = NULL;
     POIDC_ACCESS_TOKEN pAccessToken = NULL;
     PSTRING pszStringClaim = NULL;
     const PSTRING* ppszAudience = NULL;
@@ -83,7 +83,13 @@ TestPasswordGrantSuccessResponse()
         &pTokenErrorResponse);
     TEST_ASSERT_SUCCESS(e);
 
-    pIDToken = OidcTokenSuccessResponseGetIDToken(pTokenSuccessResponse);
+    e = OidcIDTokenBuild(
+        &pIDToken,
+        OidcTokenSuccessResponseGetIDToken(pTokenSuccessResponse),
+        OidcClientGetSigningCertificatePEM(s_pClient),
+        "issuer",
+        CLOCK_TOLERANCE_IN_SECONDS);
+    TEST_ASSERT_SUCCESS(e);
     TEST_ASSERT_TRUE(OidcIDTokenGetIssuer(pIDToken) != NULL);
     TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcIDTokenGetSubject(pIDToken));
 
@@ -126,6 +132,7 @@ TestPasswordGrantSuccessResponse()
 
     OidcTokenSuccessResponseDelete(pTokenSuccessResponse);
     OidcErrorResponseDelete(pTokenErrorResponse);
+    OidcIDTokenDelete(pIDToken);
     OidcAccessTokenDelete(pAccessToken);
 
     return true;

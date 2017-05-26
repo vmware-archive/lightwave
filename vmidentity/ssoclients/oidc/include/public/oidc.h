@@ -28,8 +28,7 @@ OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
-    PCSTRING pszTenant,
-    SSO_LONG clockToleranceInSeconds);
+    PCSTRING pszTenant);
 
 void
 OidcClientDelete(
@@ -212,7 +211,7 @@ void
 OidcTokenSuccessResponseDelete(
     POIDC_TOKEN_SUCCESS_RESPONSE p);
 
-PCOIDC_ID_TOKEN
+PCSTRING
 OidcTokenSuccessResponseGetIDToken(
     PCOIDC_TOKEN_SUCCESS_RESPONSE p);
 
