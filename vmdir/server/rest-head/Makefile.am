@@ -24,9 +24,9 @@ librest_head_la_CPPFLAGS = \
     -I$(top_srcdir)/server/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
-    @TRIDENT_INCLUDES@ \
     @JANSSON_INCLUDES@ \
     @COPENAPI_INCLUDES@ \
+    @CRESTENGINE_INCLUDES@ \
     @SSOCOMMON_INCLUDES@ \
     @OIDC_INCLUDES@
 

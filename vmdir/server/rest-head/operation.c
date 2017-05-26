@@ -70,7 +70,7 @@ VmDirRESTOperationReadRequest(
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0, done = 0;
+    DWORD   i = 0, bytesRead = 0;
     json_error_t    jError = {0};
     PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
@@ -133,7 +133,7 @@ VmDirRESTOperationReadRequest(
     }
 
     // read request input json
-    while (!done)
+    do
     {
         dwError = VmDirReallocateMemory(
                 (PVOID)pszInput,
@@ -141,11 +141,13 @@ VmDirRESTOperationReadRequest(
                 len + MAX_REST_PAYLOAD_LENGTH);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmRESTGetData(pRESTHandle, pRestReq, pszInput + len, &done);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmRESTGetData(
+                pRESTHandle, pRestReq, pszInput + len, &bytesRead);
 
-        len = strlen(pszInput);
+        len += bytesRead;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!IsNullOrEmptyString(pszInput))
     {
@@ -192,7 +194,7 @@ VmDirRESTOperationWriteResponse(
     )
 {
     DWORD   dwError = 0;
-    DWORD   done = 0;
+    DWORD   bytesWritten = 0;
     PSTR    pszHttpStatus = NULL;
     PSTR    pszHttpReason = NULL;
     PSTR    pszBody = NULL;
@@ -238,7 +240,7 @@ VmDirRESTOperationWriteResponse(
             ppResponse, bodyLen > MAX_REST_PAYLOAD_LENGTH ? NULL : pszBodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (!done)
+    do
     {
         size_t chunkLen = bodyLen > MAX_REST_PAYLOAD_LENGTH ?
                 MAX_REST_PAYLOAD_LENGTH : bodyLen;
@@ -248,12 +250,13 @@ VmDirRESTOperationWriteResponse(
                 ppResponse,
                 VDIR_SAFE_STRING(pszBody) + sentLen,
                 chunkLen,
-                &done);
-        BAIL_ON_VMDIR_ERROR(dwError);
+                &bytesWritten);
 
-        sentLen += chunkLen;
-        bodyLen -= chunkLen;
+        sentLen += bytesWritten;
+        bodyLen -= bytesWritten;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);

@@ -61,6 +61,7 @@ vmdird_CPPFLAGS = \
 vmdird_LDADD = \
     $(top_builddir)/server/vmkdc/libvmkdcserv.la \
     $(top_builddir)/server/ldap-head/libldap-head.la \
+    $(top_builddir)/server/rest-head/librest-head.la \
     $(top_builddir)/server/indexcfg/libindexcfg.la \
     $(top_builddir)/server/middle-layer/libmiddle-layer.la \
     $(top_builddir)/server/schema/libschema.la \
@@ -89,13 +90,23 @@ vmdird_LDADD = \
     @LBER_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @JANSSON_LIBS@ \
+    @COPENAPI_LIBS@ \
+    @CRESTENGINE_LIBS@ \
+    @SSOCOMMON_LIBS@ \
+    @OIDC_LIBS@
 
 vmdird_LDFLAGS = \
     -rdynamic -ldl \
     $(VMDIRD_BACKEND_LD_FLAGS) \
     @OPENSSL_LDFLAGS@ \
-    @LW_LDFLAGS@
+    @LW_LDFLAGS@ \
+    @JANSSON_LDFLAGS@ \
+    @COPENAPI_LDFLAGS@ \
+    @CRESTENGINE_LDFLAGS@ \
+    @SSOCOMMON_LDFLAGS@ \
+    @OIDC_LDFLAGS@
 
 CLEANFILES = \
     vmdir_h.h \
