@@ -70,7 +70,7 @@
   <!-- Servlet: WebSSO -->
   <filter>
     <filter-name>webssoRequestFilter</filter-name>
-    <filter-class>com.vmware.identity.SecurityRequestWrapperFilter</filter-class>
+    <filter-class>com.vmware.identity.websso.SecurityRequestWrapperFilter</filter-class>
   </filter>
 
   <filter-mapping>
@@ -104,7 +104,7 @@
   <!-- Servlet: OIDC -->
   <filter>
     <filter-name>oidcRequestFilter</filter-name>
-    <filter-class>com.vmware.identity.SecurityRequestWrapperFilter</filter-class>
+    <filter-class>com.vmware.identity.websso.SecurityRequestWrapperFilter</filter-class>
   </filter>
 
   <filter-mapping>
