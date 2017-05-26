@@ -61,7 +61,7 @@
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}"/>
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" versions:set -Dmaven.repo.local=${build_dir}/repo -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/${PRODUCT_NAME} clean install" />
+      <arg line=" versions:set -DnewVersion=${VERSION} -DgenerateBackupPoms=false -Dmaven.repo.local=${build_dir}/repo -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/${PRODUCT_NAME} clean install" />
     </exec>
   </target>
 

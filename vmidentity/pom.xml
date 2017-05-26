@@ -92,7 +92,7 @@
     <repository>
       <id>lightwave</id>
       <name>lightwave</name>
-      <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
+      <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave-testmaven</url>
     </repository>
   </distributionManagement>
 
