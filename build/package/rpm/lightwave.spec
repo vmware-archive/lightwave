@@ -884,6 +884,12 @@ fi
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-server.jar
+%{_jarsdir}/commons-lang-2.6.jar
+%{_jarsdir}/commons-logging-1.1.1.jar
+%{_jarsdir}/jna-4.2.1.jar
+%{_jarsdir}/httpclient-4.5.1.jar
+%{_jarsdir}/slf4j-api-1.7.10.jar
+%{_jarsdir}/log4j-api-2.2.jar
 
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
@@ -974,7 +980,6 @@ fi
 %{_jarsdir}/vmware-identity-wsTrustClient.jar
 %{_jarsdir}/vmware-identity-rest-afd-common.jar
 %{_jarsdir}/openidconnect-common.jar
-%{_jarsdir}/vmware-identity-depends.jar
 %{_jarsdir}/openidconnect-client-lib.jar
 %{_jarsdir}/vmware-identity-idm-client.jar
 %{_jarsdir}/vmware-identity-idm-interface.jar
