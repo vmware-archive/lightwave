@@ -135,6 +135,12 @@
                                 "$ref": "#/definitions/LDAPMod"
                             }
                         }
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -314,6 +320,12 @@
                                 "$ref": "#/definitions/LDAPMod"
                             }
                         }
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
