@@ -613,7 +613,6 @@ VMCASignedRequestPrivate(
 
 
 //vmcaHTTPCallback.c
-#if VMCARESTENABLED
 #ifndef _WIN32
 DWORD
 VMCARESTGetCRL(
@@ -712,7 +711,6 @@ VMCAFreeOIDC(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
 
-
 #endif
 
 //restbasicauth.c
@@ -747,7 +745,6 @@ VOID
 VMCARESTFreeKrb(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
-#endif
 
 #ifdef __cplusplus
 }

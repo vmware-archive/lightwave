@@ -52,13 +52,11 @@ extern "C" {
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
 
-#if VMCARESTENABLED && 0
 #include <vmrest.h>
 #include <jansson.h>
 #include <ssotypes.h>
 #include <oidc_types.h>
 #include <oidc.h>
-#endif
 
 #include "defines.h"
 #include "structs.h"

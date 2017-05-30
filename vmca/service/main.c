@@ -62,8 +62,6 @@ error:
     return dwError;
 }
 
-#if VMCARESTENABLED
-
 REST_PROCESSOR sVmcaHttpHandlers =
 {
     .pfnHandleRequest  = NULL,
@@ -156,8 +154,6 @@ VMCAHttpServiceShutdown()
 }
 #endif
 
-#endif
-
 int
 main(
     int   argc,
@@ -196,13 +192,13 @@ main(
     BAIL_ON_VMCA_ERROR(dwError);
 
     VMCA_LOG_INFO("VM Certificate Service started.");
-#if VMCARESTENABLED
+
 #ifndef _WIN32
     dwError = VMCAHttpServiceStartup();
     BAIL_ON_VMCA_ERROR(dwError);
     VMCA_LOG_INFO("VM Certificate ReST Protocol started.");
 #endif
-#endif
+
     PrintCurrentState();
 
     // interact with likewise service manager (start/stop control)
@@ -237,10 +233,8 @@ main(
 cleanup:
 
     VMCAShutdown();
-#if VMCARESTENABLED
 #ifndef _WIN32
     VMCAHttpServiceShutdown();
-#endif
 #endif
     return (dwError);
 

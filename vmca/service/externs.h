@@ -31,8 +31,6 @@ extern "C" {
 
 extern VMCA_SERVER_GLOBALS gVMCAServerGlobals;
 
-#if VMCARESTENABLED
-
 extern PVMREST_HANDLE gpVMCARESTHandle;
 
 extern VMCA_ACCESS_TOKEN_METHODS gVMCAAccessTokenMethods[];
@@ -46,7 +44,7 @@ VMCAHandleHttpRequest(
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
     );
-#endif
+
 #endif
 
 #ifdef __cplusplus

@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client = %{version}, vmware-afd-client = %{version}, boost = 1.60.0
-BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, sqlite-autoconf, boost = 1.60.0
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, jansson >= 2.9, c-rest-engine >= 1.0.1, vmware-sts-c-client = %{version}, vmware-directory-client = %{version}, vmware-afd-client = %{version}, boost = 1.60.0
+BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, jansson-devel >= 2.9, c-rest-engine-devel >= 1.0.1, vmware-sts-c-client = %{version}, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, sqlite-autoconf, boost = 1.60.0
 
 %define _dbdir %_localstatedir/lib/vmware/vmca
 %define _jarsdir %{_prefix}/jars
@@ -32,6 +32,22 @@ BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2,
 
 %if 0%{?_vmafd_prefix:1} == 0
 %define _vmafd_prefix /opt/vmware
+%endif
+
+%if 0%{?_jansson_prefix:1} == 0
+%define _jansson_prefix /usr
+%endif
+
+%if 0%{?_c_rest_engine_prefix:1} == 0
+%define _c_rest_engine_prefix /usr
+%endif
+
+%if 0%{?_oidc_prefix:1} == 0
+%define _oidc_prefix /opt/vmware
+%endif
+
+%if 0%{?_ssocommon_prefix:1} == 0
+%define _ssocommon_prefix /opt/vmware
 %endif
 
 %description
@@ -65,10 +81,10 @@ autoreconf -mif .. &&
             --with-afd=%{_vmafd_prefix} \
             --with-ssl=/usr \
             --with-boost=/usr \
-            --with-oidc=/opt/vmware \
-            --with-ssocommon=/opt/vmware \
-            --with-trident=/usr \
-            --with-jansson=/usr
+            --with-jansson=%{_jansson_prefix} \
+            --with-c-rest-engine=%{_c_rest_engine_prefix} \
+            --with-oidc=%{_oidc_prefix} \
+            --with-ssocommon=%{_ssocommon_prefix}
 
 %install
 

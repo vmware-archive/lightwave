@@ -118,8 +118,6 @@ typedef enum
     VMCA_AUTHORIZATION_TOKEN_TYPE_MAX
 } VMCA_AUTHORIZATION_TYPE;
 
-#if VMCARESTENABLED
-
 typedef struct _VMCA_AUTHORIZATION_PARAM
 {
     PSTR pszAuthorizationToken;
@@ -167,8 +165,6 @@ _VMCA_HTTP_REQ_OBJ {
     FILE*                           debugFile;
     PVMCA_ACCESS_TOKEN              pAccessToken;
 } VMCA_HTTP_REQ_OBJ, *PVMCA_HTTP_REQ_OBJ;
-
-#endif
 
 #ifdef _WIN32
 typedef struct _VMCA_NTSERVICE_DATA

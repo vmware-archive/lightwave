@@ -203,22 +203,6 @@ AC_SUBST(OIDC_INCLUDES)
 AC_SUBST(OIDC_LDFLAGS)
 
 
-# Trident
-
-AC_ARG_WITH([trident],
-    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
-    [
-        TRIDENT_BASE_PATH="$withval"
-        TRIDENT_INCLUDES="-I$withval/include/vmware-rest"
-        TRIDENT_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
-    ])
-
-TRIDENT_LIBS="-lrestengine"
-AC_CHECK_HEADERS(vmrest.h)
-AC_SUBST(TRIDENT_BASE_PATH)
-AC_SUBST(TRIDENT_INCLUDES)
-AC_SUBST(TRIDENT_LDFLAGS)
-
 # Jansson
 
 AC_ARG_WITH([jansson],
@@ -235,6 +219,22 @@ AC_SUBST(JANSSON_BASE_PATH)
 AC_SUBST(JANSSON_INCLUDES)
 AC_SUBST(JANSSON_LDFLAGS)
 
+
+# C rest engine
+
+AC_ARG_WITH([c-rest-engine],
+    [AC_HELP_STRING([--with-c-rest-engine=<dir>], [use c-rest-engine server binaries rooted at prefix <dir> ])],
+    [
+        CRESTENGINE_BASE_PATH="$withval"
+        CRESTENGINE_INCLUDES="-I$withval/include"
+        CRESTENGINE_LDFLAGS="-L$withval/lib"
+    ])
+
+CRESTENGINE_LIBS="-lrestengine"
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(CRESTENGINE_BASE_PATH)
+AC_SUBST(CRESTENGINE_INCLUDES)
+AC_SUBST(CRESTENGINE_LDFLAGS)
 
 
 # Likewise components
@@ -598,8 +598,8 @@ AC_SUBST(LDAP_LIBS)
 AC_SUBST(LBER_LIBS)
 AC_SUBST(PYTHON_LIBS)
 AC_SUBST(VMAFD_LIBS)
-AC_SUBST(TRIDENT_LIBS)
 AC_SUBST(JANSSON_LIBS)
+AC_SUBST(CRESTENGINE_LIBS)
 AC_SUBST(OIDC_LIBS)
 AC_SUBST(SSOCOMMON_LIBS)
 

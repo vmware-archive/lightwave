@@ -2,33 +2,43 @@ sbin_PROGRAMS = vmcad
 
 idl_srcdir=$(top_srcdir)/idl
 
-vmcad_SOURCES =         \
-    auth.c              \
-    dirsync.c           \
-    entrypoints.c       \
-    errormap.c          \
-    globals.c           \
-    init.c              \
-    main.c              \
-    rpc.c               \
-    rpcmemory.c         \
-    rpcserv.c           \
-    service.c           \
-    signal.c            \
-    state.c             \
-    thread.c            \
-    utils.c             \
-    vmcaservice.c       \
+vmcad_SOURCES = \
+    auth.c \
+    dirsync.c \
+    entrypoints.c \
+    errormap.c \
+    globals.c \
+    init.c \
+    main.c \
+    oidcutil.c \
+    restauth.c \
+    restnegauth.c \
+    restutil.c \
+    rpc.c \
+    rpcmemory.c \
+    rpcserv.c \
+    service.c \
+    signal.c \
+    state.c \
+    thread.c \
+    utils.c \
+    vmcaHTTPCallBack.c \
+    vmcaHTTPHandlers.c \
+    vmcaservice.c \
     vmca_sstub.c
 
-vmcad_CPPFLAGS =                    \
-    -I$(top_srcdir)/include         \
-    -I$(top_srcdir)/include/public  \
-    @DCERPC_INCLUDES@               \
-    @LW_INCLUDES@                   \
-    @POPT_INCLUDES@                 \
-    @OPENSSL_INCLUDES@              \
-    @VMAFD_INCLUDES@
+vmcad_CPPFLAGS = \
+    -I$(top_srcdir)/include \
+    -I$(top_srcdir)/include/public \
+    @DCERPC_INCLUDES@ \
+    @LW_INCLUDES@ \
+    @POPT_INCLUDES@ \
+    @OPENSSL_INCLUDES@ \
+    @VMAFD_INCLUDES@ \
+    @JANSSON_INCLUDES@ \
+    @CRESTENGINE_INCLUDES@ \
+    @SSOCOMMON_INCLUDES@ \
+    @OIDC_INCLUDES@
 
 vmcad_LDADD = \
     $(top_builddir)/common/libcommon.la \
@@ -46,13 +56,21 @@ vmcad_LDADD = \
     @LDAP_LIBS@ \
     @POPT_LIBS@ \
     @UUID_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @JANSSON_LIBS@ \
+    @CRESTENGINE_LIBS@ \
+    @SSOCOMMON_LIBS@ \
+    @OIDC_LIBS@
 
 vmcad_LDFLAGS = \
     @VMAFD_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
-    @POPT_LDFLAGS@
+    @POPT_LDFLAGS@ \
+    @JANSSON_LDFLAGS@ \
+    @CRESTENGINE_LDFLAGS@ \
+    @SSOCOMMON_LDFLAGS@ \
+    @OIDC_LDFLAGS@
 
 CLEANFILES = \
     vmca_h.h \
