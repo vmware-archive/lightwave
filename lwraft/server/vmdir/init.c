@@ -376,10 +376,8 @@ VmDirInit(
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 0
         dwError = VmDirRESTServerInit();
         BAIL_ON_VMDIR_ERROR(dwError);
-#endif
     }
 
     //Wait only if there is not a vdcprome pending.

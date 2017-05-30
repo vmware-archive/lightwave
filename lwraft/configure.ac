@@ -292,22 +292,6 @@ AC_SUBST(SASL_LDFLAGS)
 
 AC_DEFINE_UNQUOTED(LWRAFT_CONFIG_SASL2_LIB_PATH, "$SASL_PLUGINSPATH", [SASL2 Library path])
 
-# Trident
-
-AC_ARG_WITH([trident],
-    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
-    [
-        TRIDENT_BASE_PATH="$withval"
-        TRIDENT_INCLUDES="-I$withval/include"
-        TRIDENT_LDFLAGS="-L$withval/lib64"
-    ])
-
-TRIDENT_LIBS="-lrestengine"
-AC_CHECK_HEADERS(vmrest.h)
-AC_SUBST(TRIDENT_BASE_PATH)
-AC_SUBST(TRIDENT_INCLUDES)
-AC_SUBST(TRIDENT_LDFLAGS)
-
 # Jansson
 
 AC_ARG_WITH([jansson],
@@ -339,6 +323,22 @@ AC_CHECK_HEADERS(copenapi/copenapi.h)
 AC_SUBST(COPENAPI_BASE_PATH)
 AC_SUBST(COPENAPI_INCLUDES)
 AC_SUBST(COPENAPI_LDFLAGS)
+
+# C rest engine
+
+AC_ARG_WITH([c-rest-engine],
+    [AC_HELP_STRING([--with-c-rest-engine=<dir>], [use c-rest-engine server binaries rooted at prefix <dir> ])],
+    [
+        CRESTENGINE_BASE_PATH="$withval"
+        CRESTENGINE_INCLUDES="-I$withval/include"
+        CRESTENGINE_LDFLAGS="-L$withval/lib"
+    ])
+
+CRESTENGINE_LIBS="-lrestengine"
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(CRESTENGINE_BASE_PATH)
+AC_SUBST(CRESTENGINE_INCLUDES)
+AC_SUBST(CRESTENGINE_LDFLAGS)
 
 # OIDC
 
@@ -580,9 +580,9 @@ AC_SUBST(LBER_LIBS)
 AC_SUBST(SHADOW_LIBS)
 AC_SUBST(CRYPT_LIBS)
 AC_SUBST(SASL_LIBS)
-AC_SUBST(TRIDENT_LIBS)
 AC_SUBST(JANSSON_LIBS)
 AC_SUBST(COPENAPI_LIBS)
+AC_SUBST(CRESTENGINE_LIBS)
 AC_SUBST(SSOCOMMON_LIBS)
 AC_SUBST(OIDC_LIBS)
 
@@ -658,6 +658,7 @@ AC_CONFIG_FILES([Makefile
                  server/schema/Makefile
                  server/acl/Makefile
                  server/ldap-head/Makefile
+                 server/rest-head/Makefile
                  server/replication/Makefile
                  server/saslvmdirdb/Makefile
                  server/vmdir/Makefile
