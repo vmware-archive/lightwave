@@ -24,11 +24,11 @@ VMCARESTGetPayload(
     )
 {
     DWORD   dwError = 0;
-    DWORD   done = 0;
+    DWORD   bytesRead = 0;
     size_t  len = 0;
     PSTR    pszPayload = NULL;
 
-    while (!done)
+    do
     {
         dwError = VMCAReallocateMemory(
                 (PVOID)pszPayload,
@@ -40,11 +40,12 @@ VMCARESTGetPayload(
                 pRESTHandle,
                 pRESTRequest,
                 pszPayload + len,
-                &done);
-        BAIL_ON_VMCA_ERROR(dwError);
+                &bytesRead);
 
-        len = strlen(pszPayload);
+        len += bytesRead;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMCA_ERROR(dwError);
 
     pVMCARequest->pszPayload = pszPayload;
     pszPayload = NULL;
@@ -520,7 +521,7 @@ VMCARESTSetResponsePayload(
     )
 {
     DWORD   dwError = 0;
-    DWORD   done = 0;
+    DWORD   bytesWritten = 0;
     PSTR    pszPyldLen = NULL;
     size_t  pyldLen = 0;
     size_t  sentLen = 0;
@@ -535,7 +536,7 @@ VMCARESTSetResponsePayload(
             pyldLen > VMCARESTMAXPAYLOADLENGTH ? NULL : pszPyldLen);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    while (!done)
+    do
     {
         size_t chunkLen = pyldLen > VMCARESTMAXPAYLOADLENGTH ?
                 VMCARESTMAXPAYLOADLENGTH : pyldLen;
@@ -545,12 +546,13 @@ VMCARESTSetResponsePayload(
                 ppResponse,
                 VMCA_SAFE_STRING(pszRespPayload) + sentLen,
                 chunkLen,
-                &done);
-        BAIL_ON_VMREST_ERROR(dwError);
+                &bytesWritten);
 
-        sentLen += chunkLen;
-        pyldLen -= chunkLen;
+        sentLen += bytesWritten;
+        pyldLen -= bytesWritten;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     VMCA_SAFE_FREE_MEMORY(pszPyldLen);
