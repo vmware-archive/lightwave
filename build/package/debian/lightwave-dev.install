@@ -51,6 +51,7 @@ opt/vmware/include/ssocoreclient.h
 opt/vmware/include/ssoerrors.h
 opt/vmware/include/ssoidmclient.h
 opt/vmware/include/ssotypes.h
+opt/vmware/include/ssocommon.h
 opt/vmware/include/ssovmdirclient.h
 opt/vmware/include/vmevent.h
 

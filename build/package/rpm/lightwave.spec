@@ -1067,6 +1067,7 @@ fi
 %{_includedir}/ssoerrors.h
 %{_includedir}/ssoidmclient.h
 %{_includedir}/ssotypes.h
+%{_includedir}/ssocommon.h
 %{_includedir}/ssovmdirclient.h
 %{_includedir}/vmevent.h
 
