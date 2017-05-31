@@ -198,7 +198,7 @@ RestBuildAndExecuteHttp(
     e = RestBuildPostEntity(pAccessToken, httpMethodType, pJson, httpFormattedDate, resourceUri, &post);
     BAIL_ON_ERROR(e);
 
-    e = SSOHttpClientNew(&pHttpClient);
+    e = SSOHttpClientNew(&pHttpClient, NULL /* skip TLS validation for now */);
     BAIL_ON_ERROR(e);
 
     if (httpMethodType == REST_HTTP_METHOD_TYPE_POST)

@@ -171,12 +171,14 @@ error:
     return e;
 }
 
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcServerMetadataAcquire(
     POIDC_SERVER_METADATA* pp,
     PCSTRING pszServer,
     int portNumber,
-    PCSTRING pszTenant)
+    PCSTRING pszTenant,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */)
 {
     SSOERROR e = SSOERROR_NONE;
     POIDC_SERVER_METADATA p = NULL;
@@ -191,7 +193,7 @@ OidcServerMetadataAcquire(
     e = SSOMemoryAllocate(sizeof(OIDC_SERVER_METADATA), (void**) &p);
     BAIL_ON_ERROR(e);
 
-    e = SSOHttpClientNew(&pHttpClient);
+    e = SSOHttpClientNew(&pHttpClient, pszTlsCAPath);
     BAIL_ON_ERROR(e);
 
     e = OidcServerMetadataConstructMetadataEndpoint(pszServer, portNumber, pszTenant, &pszMetadataEndpoint);

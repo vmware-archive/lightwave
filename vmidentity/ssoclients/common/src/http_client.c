@@ -14,6 +14,9 @@
 
 #include "includes.h"
 
+// keep this in sync with LIGHTWAVE_TLS_CA_PATH in oidc_client.go
+const PCSTRING LIGHTWAVE_TLS_CA_PATH = "/etc/ssl/certs/";
+
 static
 SSOERROR
 SSOHttpClientSetCurlOptionInt(
@@ -131,7 +134,8 @@ SSOHttpClientGlobalCleanup()
 
 SSOERROR
 SSOHttpClientNew(
-    PSSO_HTTP_CLIENT* pp)
+    PSSO_HTTP_CLIENT* pp,
+    PCSTRING pszTlsCAPath /* OPT, NULL means skip TLS validation */)
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_HTTP_CLIENT p = NULL;
@@ -145,6 +149,12 @@ SSOHttpClientNew(
     if (NULL == p->pCurl)
     {
         e = SSOERROR_CURL_FAILURE;
+        BAIL_ON_ERROR(e);
+    }
+
+    if (pszTlsCAPath != NULL)
+    {
+        e = SSOStringAllocate(pszTlsCAPath, &p->pszTlsCAPath);
         BAIL_ON_ERROR(e);
     }
 
@@ -168,6 +178,7 @@ SSOHttpClientDelete(
         {
             curl_easy_cleanup(p->pCurl);
         }
+        SSOStringFree(p->pszTlsCAPath);
         SSOMemoryFree(p, sizeof(SSO_HTTP_CLIENT));
     }
 }
@@ -233,10 +244,24 @@ SSOHttpClientSend(
     BAIL_ON_ERROR(e);
     e = SSOHttpClientSetCurlOptionPointer(p, CURLOPT_HTTPHEADER, pHeaderList);
     BAIL_ON_ERROR(e);
-    e = SSOHttpClientSetCurlOptionInt(p, CURLOPT_SSL_VERIFYPEER, 0); // TODO: enable TLS verification
-    BAIL_ON_ERROR(e);
-    e = SSOHttpClientSetCurlOptionInt(p, CURLOPT_SSL_VERIFYHOST, 0);
-    BAIL_ON_ERROR(e);
+
+    if (p->pszTlsCAPath != NULL)
+    {
+        e = SSOHttpClientSetCurlOptionInt(p, CURLOPT_SSL_VERIFYPEER, 1); // 1 means verify
+        BAIL_ON_ERROR(e);
+        e = SSOHttpClientSetCurlOptionInt(p, CURLOPT_SSL_VERIFYHOST, 2); // 2 means verify (cert subject or san matches name in url)
+        BAIL_ON_ERROR(e);
+        e = SSOHttpClientSetCurlOptionPointer(p, CURLOPT_CAPATH, p->pszTlsCAPath);
+        BAIL_ON_ERROR(e);
+    }
+    else
+    {
+        // skip TLS validation
+        e = SSOHttpClientSetCurlOptionInt(p, CURLOPT_SSL_VERIFYPEER, 0);
+        BAIL_ON_ERROR(e);
+        e = SSOHttpClientSetCurlOptionInt(p, CURLOPT_SSL_VERIFYHOST, 0);
+        BAIL_ON_ERROR(e);
+    }
 
     code = curl_easy_perform(p->pCurl);
     if (code != CURLE_OK)

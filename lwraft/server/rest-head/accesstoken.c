@@ -97,7 +97,8 @@ VmDirRESTAccessTokenParse(
             &pOidcMetadata,
             pszDCName,
             VMDIR_REST_OIDC_PORT,
-            pszDomainName);
+            pszDomainName,
+            NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
     dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 

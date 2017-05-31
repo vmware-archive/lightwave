@@ -36,7 +36,8 @@ TestInit(
     PCSTRING pszUsername,
     PCSTRING pszPassword,
     PCSTRING pszClientID,
-    bool highAvailabilityEnabled)
+    bool highAvailabilityEnabled,
+    bool validateTls)
 {
     SSOERROR e = SSOERROR_NONE;
 
@@ -49,7 +50,13 @@ TestInit(
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&s_pClient, highAvailabilityEnabled ? NULL : s_pszServer, 443, s_pszTenant, s_pszClientID);
+    e = OidcClientBuild(
+        &s_pClient,
+        highAvailabilityEnabled ? NULL : s_pszServer,
+        443,
+        s_pszTenant,
+        s_pszClientID,
+        validateTls ? LIGHTWAVE_TLS_CA_PATH : NULL);
     BAIL_ON_ERROR(e);
 
 error:

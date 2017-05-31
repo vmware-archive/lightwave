@@ -25,7 +25,8 @@ SSOHttpClientGlobalCleanup();
 
 SSOERROR
 SSOHttpClientNew(
-    PSSO_HTTP_CLIENT* pp);
+    PSSO_HTTP_CLIENT* pp,
+    PCSTRING pszTlsCAPath /* OPT, NULL means skip TLS validation */);
 
 void
 SSOHttpClientDelete(

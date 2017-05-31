@@ -18,6 +18,7 @@
 typedef struct SSO_HTTP_CLIENT
 {
     CURL* pCurl;
+    PSTRING pszTlsCAPath;
 } SSO_HTTP_CLIENT;
 
 typedef struct SSO_KEY_VALUE_PAIR

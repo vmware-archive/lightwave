@@ -11,6 +11,9 @@ import "C"
 
 import "runtime"
 
+// keep this in sync with LIGHTWAVE_TLS_CA_PATH in http_client.c
+const LIGHTWAVE_TLS_CA_PATH = "/etc/ssl/certs/"
+
 type OidcClient struct {
     p C.POIDC_CLIENT
 }
@@ -27,18 +30,22 @@ func OidcClientGlobalCleanup() {
     C.OidcClientGlobalCleanup()
 }
 
+// tlsCAPath: empty means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 func OidcClientBuild(
         server string,
         portNumber int,
         tenant string,
-        clientID string) (result *OidcClient, err error) {
-    serverCStr   := goStringToCString(server)
-    tenantCStr   := goStringToCString(tenant)
-    clientIDCStr := goStringToCString(clientID)
+        clientID string, /* optional */
+        tlsCAPath string /* optional, see comment above */) (result *OidcClient, err error) {
+    serverCStr      := goStringToCString(server)
+    tenantCStr      := goStringToCString(tenant)
+    clientIDCStr    := goStringToCString(clientID)
+    tlsCAPathCStr   := goStringToCString(tlsCAPath)
 
     defer freeCString(serverCStr)
     defer freeCString(tenantCStr)
     defer freeCString(clientIDCStr)
+    defer freeCString(tlsCAPathCStr)
 
     var p C.POIDC_CLIENT = nil
     var e C.SSOERROR = C.OidcClientBuild(
@@ -46,7 +53,8 @@ func OidcClientBuild(
         serverCStr,
         C.int(portNumber),
         tenantCStr,
-        clientIDCStr)
+        clientIDCStr,
+        tlsCAPathCStr)
     if e != 0 {
         err = cErrorToGoError(e)
         return

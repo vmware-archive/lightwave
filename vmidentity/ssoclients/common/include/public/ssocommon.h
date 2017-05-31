@@ -15,6 +15,8 @@
 #ifndef _SSOCOMMON_H_
 #define _SSOCOMMON_H_
 
+extern const PCSTRING LIGHTWAVE_TLS_CA_PATH;
+
 void
 SSOStringFree(
     PSTRING psz /* OPT */);

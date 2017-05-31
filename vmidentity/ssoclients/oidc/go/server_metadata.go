@@ -15,22 +15,27 @@ type ServerMetadata struct {
     p C.POIDC_SERVER_METADATA
 }
 
+// tlsCAPath: empty means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 func ServerMetadataAcquire(
         server string,
         portNumber int,
-        tenant string) (result *ServerMetadata, err error) {
-    serverCStr := goStringToCString(server)
-    tenantCStr := goStringToCString(tenant)
+        tenant string,
+        tlsCAPath string /* optional, see comment above */) (result *ServerMetadata, err error) {
+    serverCStr      := goStringToCString(server)
+    tenantCStr      := goStringToCString(tenant)
+    tlsCAPathCStr   := goStringToCString(tlsCAPath)
 
     defer freeCString(serverCStr)
     defer freeCString(tenantCStr)
+    defer freeCString(tlsCAPathCStr)
 
     var p C.POIDC_SERVER_METADATA = nil
     var e C.SSOERROR = C.OidcServerMetadataAcquire(
         &p,
         serverCStr,
         C.int(portNumber),
-        tenantCStr)
+        tenantCStr,
+        tlsCAPathCStr)
     if e != 0 {
         err = cErrorToGoError(e)
         return

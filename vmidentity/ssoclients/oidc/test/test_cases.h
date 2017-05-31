@@ -41,7 +41,8 @@ TestInit(
     PCSTRING pszUsername,
     PCSTRING pszPassword,
     PCSTRING pszClientID,
-    bool highAvailabilityEnabled);
+    bool highAvailabilityEnabled,
+    bool validateTls);
 
 void
 TestCleanup();
