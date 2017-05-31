@@ -110,6 +110,8 @@ typedef struct _VMCA_SERVER_GLOBALS
 
 } VMCA_SERVER_GLOBALS, *PVMCA_SERVER_GLOBALS;
 
+#ifdef REST_ENABLED
+
 typedef enum
 {
     VMCA_AUTHORIZATION_TYPE_UNDEFINED = 0,
@@ -165,6 +167,8 @@ _VMCA_HTTP_REQ_OBJ {
     FILE*                           debugFile;
     PVMCA_ACCESS_TOKEN              pAccessToken;
 } VMCA_HTTP_REQ_OBJ, *PVMCA_HTTP_REQ_OBJ;
+
+#endif
 
 #ifdef _WIN32
 typedef struct _VMCA_NTSERVICE_DATA

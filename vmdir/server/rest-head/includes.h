@@ -47,6 +47,8 @@
 #include <schema.h>
 #include <vmdirserver.h>
 
+#ifdef REST_ENABLED
+
 #include <copenapi/copenapi.h>
 #include <curl/curl.h>
 #include <gssapi/gssapi.h>
@@ -63,3 +65,5 @@
 #include "externs.h"
 #include "structs.h"
 #include "prototypes.h"
+
+#endif

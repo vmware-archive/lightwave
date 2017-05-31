@@ -94,7 +94,6 @@ vmdird_LDADD = \
     @JANSSON_LIBS@ \
     @COPENAPI_LIBS@ \
     @CRESTENGINE_LIBS@ \
-    @SSOCOMMON_LIBS@ \
     @OIDC_LIBS@
 
 vmdird_LDFLAGS = \
@@ -105,7 +104,6 @@ vmdird_LDFLAGS = \
     @JANSSON_LDFLAGS@ \
     @COPENAPI_LDFLAGS@ \
     @CRESTENGINE_LDFLAGS@ \
-    @SSOCOMMON_LDFLAGS@ \
     @OIDC_LDFLAGS@
 
 CLEANFILES = \

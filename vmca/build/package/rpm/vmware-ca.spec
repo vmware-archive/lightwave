@@ -46,10 +46,6 @@ BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2,
 %define _oidc_prefix /opt/vmware
 %endif
 
-%if 0%{?_ssocommon_prefix:1} == 0
-%define _ssocommon_prefix /opt/vmware
-%endif
-
 %description
 VMware Certificate Authority
 
@@ -84,7 +80,7 @@ autoreconf -mif .. &&
             --with-jansson=%{_jansson_prefix} \
             --with-c-rest-engine=%{_c_rest_engine_prefix} \
             --with-oidc=%{_oidc_prefix} \
-            --with-ssocommon=%{_ssocommon_prefix}
+            --enable-rest=%{_enable-rest}
 
 %install
 

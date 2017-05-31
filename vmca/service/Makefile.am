@@ -10,10 +10,6 @@ vmcad_SOURCES = \
     globals.c \
     init.c \
     main.c \
-    oidcutil.c \
-    restauth.c \
-    restnegauth.c \
-    restutil.c \
     rpc.c \
     rpcmemory.c \
     rpcserv.c \
@@ -22,10 +18,20 @@ vmcad_SOURCES = \
     state.c \
     thread.c \
     utils.c \
-    vmcaHTTPCallBack.c \
-    vmcaHTTPHandlers.c \
     vmcaservice.c \
     vmca_sstub.c
+
+if REST_ENABLED
+
+vmcad_SOURCES += \
+    oidcutil.c \
+    restauth.c \
+    restnegauth.c \
+    restutil.c \
+    vmcaHTTPCallBack.c \
+    vmcaHTTPHandlers.c
+
+endif
 
 vmcad_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -37,7 +43,6 @@ vmcad_CPPFLAGS = \
     @VMAFD_INCLUDES@ \
     @JANSSON_INCLUDES@ \
     @CRESTENGINE_INCLUDES@ \
-    @SSOCOMMON_INCLUDES@ \
     @OIDC_INCLUDES@
 
 vmcad_LDADD = \
@@ -59,7 +64,6 @@ vmcad_LDADD = \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
     @CRESTENGINE_LIBS@ \
-    @SSOCOMMON_LIBS@ \
     @OIDC_LIBS@
 
 vmcad_LDFLAGS = \
@@ -69,7 +73,6 @@ vmcad_LDFLAGS = \
     @POPT_LDFLAGS@ \
     @JANSSON_LDFLAGS@ \
     @CRESTENGINE_LDFLAGS@ \
-    @SSOCOMMON_LDFLAGS@ \
     @OIDC_LDFLAGS@
 
 CLEANFILES = \

@@ -23,7 +23,6 @@ STAGEDIR=$PWD/stage
     --with-copenapi=/usr \
     --with-oidc=/opt/vmware \
     --with-trident=/opt/vmware \
-    --with-ssocommon=/opt/vmware \
     --with-java=/var/opt/OpenJDK-1.8.0.112-bin \
     --with-maven=/var/opt/apache-maven-3.3.9 \
     --with-ant=/var/opt/apache-ant-1.9.6 \

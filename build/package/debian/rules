@@ -44,7 +44,6 @@ configure-stamp:
 		--with-copenapi=/usr \
 		--with-oidc=/opt/vmware \
 		--with-trident=/opt/vmware \
-		--with-ssocommon=/opt/vmware \
 		--with-java=/usr/lib/jvm/default-java \
 		--with-maven=/usr/share/maven \
 		--with-ant=/usr/share/ant \

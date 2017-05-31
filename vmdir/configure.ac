@@ -108,6 +108,25 @@ then
 AC_DEFINE_UNQUOTED(SEAACL_CHECK_DISABLED, "1", [ Disable ACL checks on search ])
 fi
 
+# rest head flag
+
+REST_ENABLED=true
+AC_ARG_ENABLE([rest],
+    [AC_HELP_STRING([--enable-rest], [enable rest heads (default: enabled)])],
+    [
+        if test x"$enableval" = x"no"
+        then
+            REST_ENABLED=false
+        fi
+    ])
+
+if $REST_ENABLED
+then
+AC_DEFINE_UNQUOTED(REST_ENABLED, 1, [ Enable rest heads ])
+fi
+
+AM_CONDITIONAL(REST_ENABLED, [$REST_ENABLED])
+
 # datastore flag
 
 AC_ARG_WITH([datastore],
@@ -115,6 +134,8 @@ AC_ARG_WITH([datastore],
     [
         VMDIRD_DATASTORE="$withval"
     ])
+
+# lightwave build flag
 
 ENABLE_LIGHTWAVE_BUILD=no
 AC_ARG_ENABLE([lightwave-build],
@@ -125,7 +146,6 @@ AC_ARG_ENABLE([lightwave-build],
             AC_DEFINE_UNQUOTED(LIGHTWAVE_BUILD, 1, [ enable lightwave specific build ])
         fi
     ])
-
 
 # client only build
 
@@ -292,7 +312,6 @@ AC_ARG_WITH([jansson],
         JANSSON_LDFLAGS="-L$withval/lib"
     ])
 
-JANSSON_LIBS="-ljansson"
 AC_CHECK_HEADERS(jansson.h)
 AC_SUBST(JANSSON_BASE_PATH)
 AC_SUBST(JANSSON_INCLUDES)
@@ -308,7 +327,6 @@ AC_ARG_WITH([copenapi],
         COPENAPI_LDFLAGS="-L$withval/lib"
     ])
 
-COPENAPI_LIBS="-lcopenapi"
 AC_CHECK_HEADERS(copenapi/copenapi.h)
 AC_SUBST(COPENAPI_BASE_PATH)
 AC_SUBST(COPENAPI_INCLUDES)
@@ -324,26 +342,12 @@ AC_ARG_WITH([c-rest-engine],
         CRESTENGINE_LDFLAGS="-L$withval/lib"
     ])
 
-CRESTENGINE_LIBS="-lrestengine"
 AC_CHECK_HEADERS(vmrest.h)
 AC_SUBST(CRESTENGINE_BASE_PATH)
 AC_SUBST(CRESTENGINE_INCLUDES)
 AC_SUBST(CRESTENGINE_LDFLAGS)
 
 # OIDC
-
-AC_ARG_WITH([ssocommon],
-    [AC_HELP_STRING([--with-ssocommon=<dir>], [use ssocommon binaries rooted at prefix <dir> ])],
-    [
-        SSOCOMMON_BASE_PATH="$withval"
-        SSOCOMMON_INCLUDES="-I$withval/include"
-        SSOCOMMON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
-    ])
-
-SSOCOMMON_LIBS="-lssocommon"
-AC_SUBST(SSOCOMMON_BASE_PATH)
-AC_SUBST(SSOCOMMON_INCLUDES)
-AC_SUBST(SSOCOMMON_LDFLAGS)
 
 AC_ARG_WITH([oidc],
     [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
@@ -353,7 +357,6 @@ AC_ARG_WITH([oidc],
         OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
     ])
 
-OIDC_LIBS="-lssooidc"
 AC_CHECK_HEADERS(oidc.h)
 AC_CHECK_HEADERS(oidc_types.h)
 AC_CHECK_HEADERS(common_types.h)
@@ -548,6 +551,30 @@ AC_CHECK_LIB(
     [$DCERPC_LDFLAGS $OPENSSL_LDFLAGS $GSSAPI_LIBS $SCHANNEL_LIBS $CRYPTO_LIBS $LWIO_LIBS
      $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS
     ])
+AC_CHECK_LIB(
+    [jansson],
+    [json_object],
+    [JANSSON_LIBS="-ljansson"],
+    [],
+    [$JANSSON_LDFLAGS])
+AC_CHECK_LIB(
+    [copenapi],
+    [coapi_load_from_file],
+    [COPENAPI_LIBS="-lcopenapi"]
+    [],
+    [$COPENAPI_LDFLAGS])
+AC_CHECK_LIB(
+    [restengine],
+    [VmRESTInit],
+    [CRESTENGINE_LIBS="-lrestengine"],
+    [],
+    [$CRESTENGINE_LDFLAGS])
+AC_CHECK_LIB(
+    [ssooidc],
+    [OidcAccessTokenBuild],
+    [OIDC_LIBS="-lssocommon -lssooidc"],
+    [],
+    [$OIDC_LDFLAGS])
 
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 

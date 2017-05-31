@@ -45,10 +45,6 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _oidc_prefix /opt/vmware
 %endif
 
-%if 0%{?_ssocommon_prefix:1} == 0
-%define _ssocommon_prefix /opt/vmware
-%endif
-
 %define _dbdir %{_localstatedir}/lib/vmware/vmdir
 %define _sasl2dir %{_sasl_prefix}/lib64/sasl2
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
@@ -89,11 +85,11 @@ autoreconf -mif ..
     --with-copenapi=%{_copenapi_prefix} \
     --with-c-rest-engine=%{_c_rest_engine_prefix} \
     --with-oidc=%{_oidc_prefix} \
-    --with-ssocommon=%{_ssocommon_prefix} \
     --enable-server=yes \
     --with-logdir=%{_logdir} \
     --with-version=%{_version} \
-    --enable-lightwave-build=yes
+    --enable-lightwave-build=yes \
+    --enable-rest=%{_enable-rest}
 
 make
 

@@ -14,6 +14,8 @@
 
 #include "includes.h"
 
+#ifdef REST_ENABLED
+
 REST_PROCESSOR sVmDirRESTHandlers =
 {
     .pfnHandleCreate = &VmDirRESTRequestHandler,
@@ -179,3 +181,23 @@ error:
             "%s failed, error (%d)", __FUNCTION__, dwError );
     goto response;
 }
+
+#else
+
+DWORD
+VmDirRESTServerInit(
+    VOID
+    )
+{
+    return 0;
+}
+
+VOID
+VmDirRESTServerShutdown(
+    VOID
+    )
+{
+    return;
+}
+
+#endif

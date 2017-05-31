@@ -611,6 +611,7 @@ VMCASignedRequestPrivate(
     time_t tmNotAfter
     );
 
+#ifdef REST_ENABLED
 
 //vmcaHTTPCallback.c
 #ifndef _WIN32
@@ -745,6 +746,8 @@ VOID
 VMCARESTFreeKrb(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
+
+#endif
 
 #ifdef __cplusplus
 }
