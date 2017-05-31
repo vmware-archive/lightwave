@@ -60,7 +60,6 @@ opt/vmware/jars/vmware-identity-platform.jar
 opt/vmware/jars/vmware-identity-wsTrustClient.jar
 opt/vmware/jars/vmware-identity-rest-afd-common.jar
 opt/vmware/jars/openidconnect-common.jar
-opt/vmware/jars/vmware-identity-depends.jar
 opt/vmware/jars/openidconnect-client-lib.jar
 opt/vmware/jars/vmware-identity-idm-client.jar
 opt/vmware/jars/vmware-identity-idm-interface.jar
