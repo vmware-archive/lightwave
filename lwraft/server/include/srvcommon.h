@@ -1013,6 +1013,11 @@ OrFilterResults(
     VDIR_FILTER * src,
     VDIR_FILTER * dst);
 
+VOID
+VmDirSortCandidateList(
+    VDIR_CANDIDATES *  pCl
+    );
+
 // entryencodedecode.c
 DWORD
 VmDirComputeEncodedEntrySize(

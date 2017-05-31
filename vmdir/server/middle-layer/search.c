@@ -1002,7 +1002,7 @@ SetPagedSearchCookie(
         dwError = VmDirStringPrintFA(
                     pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
                     VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
-                    "%u",
+                    "%llu",
                     eId);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1050,10 +1050,13 @@ ProcessCandidateList(
             pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize < (DWORD)pOperation->request.searchReq.sizeLimit))
     {
         VmDirLog( LDAP_DEBUG_TRACE, "showPagedResultsCtrl applies to this query." );
+
         bPageResultsCtrl = TRUE;
         dwPageSize = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize;
-        lastEID = atoi(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
+        lastEID = atoll(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
         pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
+
+        VmDirSortCandidateList(cl);  // sort candidate list if not yet sorted
     }
 
     if (cl && cl->size > 0)
@@ -1077,13 +1080,9 @@ ProcessCandidateList(
         {
             if (!gVmdirGlobals.bPagedSearchReadAhead)
             {
-                //skip entries we sent before
-                if (bPageResultsCtrl && lastEID > 0)
+                //skip entries we sent before in sorted cl->eIds.
+                if (bPageResultsCtrl && cl->eIds[i] <= lastEID)
                 {
-                    if (cl->eIds[i] == lastEID)
-                    {
-                        lastEID = 0;
-                    }
                     continue;
                 }
             }
