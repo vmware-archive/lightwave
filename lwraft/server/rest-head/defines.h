@@ -22,7 +22,6 @@
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
 // OIDC
-#define VMDIR_REST_OIDC_SERVER              "localhost"
 #define VMDIR_REST_OIDC_PORT                443
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_lwraft"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0

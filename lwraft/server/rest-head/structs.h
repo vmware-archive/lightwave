@@ -93,3 +93,22 @@ typedef struct _VDIR_HTTP_ERROR
     PSTR    pszHttpReason;
 
 } VDIR_HTTP_ERROR, *PVDIR_HTTP_ERROR;
+
+// vmafd.c
+typedef DWORD (*PFN_VMAFD_GET_DC_NAME)(
+        PCSTR,
+        PSTR*
+        );
+
+typedef DWORD (*PFN_VMAFD_GET_DOMAIN_NAME)(
+        PCSTR,
+        PSTR*
+        );
+
+typedef struct _VDIR_VMAFD_API
+{
+    VMDIR_LIB_HANDLE            pVmAfdLib;
+    PFN_VMAFD_GET_DC_NAME       pfnGetDCName;
+    PFN_VMAFD_GET_DOMAIN_NAME   pfnGetDomainName;
+
+} VDIR_VMAFD_API, *PVDIR_VMAFD_API;

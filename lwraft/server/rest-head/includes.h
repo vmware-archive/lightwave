@@ -65,8 +65,8 @@
 #include <oidc.h>
 
 #include "defines.h"
-#include "externs.h"
 #include "structs.h"
+#include "externs.h"
 #include "prototypes.h"
 
 #endif

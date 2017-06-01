@@ -42,6 +42,9 @@ VmDirRESTServerInit(
         {NULL, NULL}
     };
 
+    dwError = VmDirRESTLoadVmAfdAPI(&gpVdirVmAfdAPI);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     config.pSSLCertificate = RSA_SERVER_CERT;
     config.pSSLKey = RSA_SERVER_KEY;
     config.pServerPort = gVmdirGlobals.pszRestListenPort;
@@ -122,6 +125,7 @@ VmDirRESTServerShutdown(
     // TODO uncomment
 //    OidcClientGlobalCleanup();
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
+    VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdAPI);
 }
 
 DWORD

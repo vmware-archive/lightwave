@@ -415,3 +415,14 @@ VOID
 VmDirFreeRESTResult(
     PVDIR_REST_RESULT   pRestRslt
     );
+
+// vmafd.c
+DWORD
+VmDirRESTLoadVmAfdAPI(
+    PVDIR_VMAFD_API*    ppVmAfdAPI
+    );
+
+VOID
+VmDirRESTUnloadVmAfdAPI(
+    PVDIR_VMAFD_API pVmAfdAPI
+    );

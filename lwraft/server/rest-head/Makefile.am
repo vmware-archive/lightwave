@@ -19,7 +19,8 @@ librest_head_la_SOURCES += \
     operation.c \
     param.c \
     resource.c \
-    result.c
+    result.c \
+    vmafd.c
 
 endif
 

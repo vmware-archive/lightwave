@@ -1344,22 +1344,10 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pSecretResult
     );
 
-//server/common/urgentrepl.c
-BOOLEAN
-VmDirPerformUrgentReplication(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
-    );
-
-VOID
-VmDirRetryUrgentReplication(
-    VOID
-    );
-
-VOID
-VmDirPerformUrgentReplIfRequired(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
+// vmafdlib.c
+DWORD
+VmDirOpenVmAfdClientLib(
+    VMDIR_LIB_HANDLE*   pplibHandle
     );
 
 #ifdef __cplusplus
