@@ -58,6 +58,7 @@ configure-stamp:
 		--enable-server=yes \
 		--enable-krb5-default=yes \
 		--enable-lightwave-build=yes \
+		--enable-rest=no \
 		ac_cv_header_vmevent=yes \
 		ac_cv_header_vmdirclient_h=yes \
 		ac_cv_lib_vmdirclient_VmDirSetupHostInstance=yes \
