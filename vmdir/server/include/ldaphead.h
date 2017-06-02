@@ -80,6 +80,12 @@ VmDirDeleteConnection(
     VDIR_CONNECTION **  conn
     );
 
+DWORD
+VmDirWhichAddressPresent(
+    BOOLEAN *pIPV4AddressPresent,
+    BOOLEAN *pIPV6AddressPresent
+    );
+
 // controls.c
 void
 DeleteControls(

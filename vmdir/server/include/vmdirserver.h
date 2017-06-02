@@ -351,7 +351,12 @@ VmDirGetLdapsConnectPorts(
 DWORD
 VmDirGetAllLdapPortsCount(
     VOID
-);
+    );
+
+DWORD
+VmDirBindPort(
+    DWORD   dwPort
+    );
 
 VOID
 VmDirdSetReplNow(

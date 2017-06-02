@@ -367,6 +367,14 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        // Bind to the default LDAP port:
+        //  - If fails, then it means another vmdird process is running in
+        //    normal mode.
+        //  - If succeeds, then it will prevent another vmdird process from
+        //    accepting LDAP requests.
+        dwError = VmDirBindPort(DEFAULT_LDAP_PORT_NUM);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
 
         if (bLegacyDataLoaded)
