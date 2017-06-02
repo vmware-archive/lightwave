@@ -72,12 +72,6 @@ NewConnection(
     Sockbuf_IO      *pSockbuf_IO
     );
 
-static DWORD
-VmDirWhichAddressPresent(
-    BOOLEAN *pIPV4AddressPresent,
-    BOOLEAN *pIPV6AddressPresent
-);
-
 static
 BOOLEAN
 _VmDirFlowCtrlThrEnter(
@@ -1070,11 +1064,11 @@ error:
  VmDirWhichAddressPresent: Check if ipv4 or ipv6 addresses exist
  */
 
-static DWORD
+DWORD
 VmDirWhichAddressPresent(
     BOOLEAN *pIPV4AddressPresent,
     BOOLEAN *pIPV6AddressPresent
-)
+    )
 {
     int                 retVal = 0;
 #ifndef _WIN32
