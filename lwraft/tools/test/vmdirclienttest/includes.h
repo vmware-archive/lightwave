@@ -40,6 +40,7 @@
 #include <vmdirerrors.h>
 #include <vmdirclient.h>
 #include "defines.h"
+#include "structs.h"
 #include "prototypes.h"
 
 #else
@@ -66,6 +67,7 @@
 #include <vmdirerrors.h>
 #include <vmdirclient.h>
 #include "defines.h"
+#include "structs.h"
 #include "prototypes.h"
 
 #include "banned.h"

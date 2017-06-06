@@ -6,10 +6,9 @@
 
 	<property name="target-sets" value="main, test" />
 
-        <property file="../product.properties" />
         <property name="MAINSRCROOT" value="${basedir}/.."/>
-        <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
-        <property name="VMSTS_PACKAGE_BASE" value="${MAINSRCROOT}/../vmidentity/build/vmware-sts/packages" />
+        <property file="${MAINSRCROOT}/product.properties" />
+        <property name="VMSTS_PACKAGE_BASE" value="${VMSTS_CLASSPATH}" />
         <property name="vmsts.classpath" value="${VMSTS_CLASSPATH}" />
         <property name="build.packages.vmware-identity-platform"
              value="${vmsts.classpath}/vmware-identity-platform.jar" />
@@ -24,22 +23,22 @@
 
         <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
         <import file="${MAINSRCROOT}/build/ant/presets.xml" />
-	
+
+        <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}"/>
         <property name="manifest_mf" value="MANIFEST.MF" />
 	<property name="src.main.resources.manifest_mf" value="${src.main.resources}/${manifest_mf}" description="Instructs the 'package' task to use this manifest file." />
 
 	<path id="classpath.main">
       <pathelement location="${build.packages.vmware-identity-platform}" />
-      <pathelement location="{build.packages.vmware}" />
+      <pathelement location="${build.packages.vmware}" />
       <pathelement location="${build.packages.vmware-identity-install}" />
       <pathelement location="${build.packages.vmware-vmca-client}" />
       <pathelement location="${build.packages.vmware-authentication-framework}" />
       <pathelement location="${build.packages.vmware-vecs}" />
       <fileset refid="jar-set.jna" />
-      <fileset refid="jar-set.commons-codec" />	
+      <fileset refid="jar-set.commons-codec" />
       <fileset refid="jar-set.LOG4J2" />
       <fileset refid="jar-set.apache-commons-lang" />
-     
      </path>
    <!--  
     <path id="classpath.test">

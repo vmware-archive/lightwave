@@ -10,15 +10,16 @@
 noinst_LTLIBRARIES = libsrvcommon.la
 
 libsrvcommon_la_SOURCES = \
-    candidates.c          \
-    entryencodedecode.c   \
-    krbsrvutil.c          \
-    oprequestutil.c       \
-    security-sd.c         \
-    srp.c                 \
-    util.c                \
-    vmdirentry.c          \
-    urgentrepl.c          \
+    candidates.c \
+    entryencodedecode.c \
+    krbsrvutil.c \
+    oprequestutil.c \
+    security-sd.c \
+    srp.c \
+    util.c \
+    vmdirentry.c \
+    urgentrepl.c \
+    vmafdlib.c \
     vmdirtoldaperror.c
 
 libsrvcommon_la_CPPFLAGS = \

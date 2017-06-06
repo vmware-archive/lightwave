@@ -15,23 +15,156 @@
 #include "includes.h"
 
 DWORD
+VmDirRESTDecodeAttributeNoAlloc(
+    json_t*         pjInput,
+    PVDIR_ATTRIBUTE pAttr
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    json_t* pjAttr = NULL;
+    json_t* pjType = NULL;
+    json_t* pjVals = NULL;
+    json_t* pjVal = NULL;
+    PCSTR   pszType = NULL;
+    PCSTR   pszVal = NULL;
+    PSTR    pszDecoded = NULL;
+    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
+    size_t  valLen = 0;
+    int     len = 0;
+
+    if (!pAttr)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pjAttr = pjInput;
+    if (!pjAttr || !json_is_object(pjAttr))
+    {
+        dwError = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pjType = json_object_get(pjAttr, "type");
+    if (!pjType || !json_is_string(pjType))
+    {
+        dwError = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    pszType = json_string_value(pjType);
+
+    dwError = VmDirStringToBervalContent(pszType, &pAttr->type);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaAttrNameToDescriptor(
+            pSchemaCtx, pszType, &pAttr->pATDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pjVals = json_object_get(pjAttr, "value");
+    if (!pjVals || !json_is_array(pjVals))
+    {
+        dwError = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    pAttr->numVals = (DWORD)json_array_size(pjVals);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_BERVALUE) * (pAttr->numVals + 1),
+            (PVOID*)&pAttr->vals);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < pAttr->numVals; i++)
+    {
+        pjVal = json_array_get(pjVals, i);
+        if (!pjVal || !json_is_string(pjVal))
+        {
+            dwError = VMDIR_ERROR_INVALID_REQUEST;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        pszVal = json_string_value(pjVal);
+
+        // check if value needs to be decoded
+        if (VmDirSchemaAttrIsOctetString(pAttr->pATDesc))
+        {
+            VMDIR_SAFE_FREE_STRINGA(pszDecoded);
+
+            valLen = VmDirStringLenA(pszVal);
+            dwError = VmDirAllocateMemory(valLen + 1, (PVOID*)&pszDecoded);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = sasl_decode64(pszVal, valLen, pszDecoded, valLen, &len);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirStringToBervalContent(pszVal, &pAttr->vals[i]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDecoded);
+    VmDirSchemaCtxRelease(pSchemaCtx);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTDecodeAttribute(
+    json_t*             pjInput,
+    PVDIR_ATTRIBUTE*    ppAttr
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+
+    if (!ppAttr)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID*)&pAttr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTDecodeAttributeNoAlloc(pjInput, pAttr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppAttr = pAttr;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VmDirFreeAttribute(pAttr);
+    goto cleanup;
+}
+
+DWORD
 VmDirRESTDecodeEntry(
     json_t*         pjInput,
     PVDIR_ENTRY*    ppEntry
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0, j = 0;
+    DWORD   i = 0;
     json_t* pjEntry = NULL;
     json_t* pjDN = NULL;
     json_t* pjAttrs = NULL;
     json_t* pjAttr = NULL;
-    json_t* pjType = NULL;
-    json_t* pjVals = NULL;
-    json_t* pjVal = NULL;
     PCSTR   pszDN = NULL;
-    PCSTR   pszType = NULL;
-    PCSTR   pszVal = NULL;
     PVDIR_ENTRY     pEntry = NULL;
     PVDIR_ATTRIBUTE pAttr = NULL;
 
@@ -73,53 +206,9 @@ VmDirRESTDecodeEntry(
 
     for (i = 0; i < json_array_size(pjAttrs); i++)
     {
-        dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID*)&pAttr);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
         pjAttr = json_array_get(pjAttrs, i);
-        if (!pjAttr || !json_is_object(pjAttr))
-        {
-            dwError = VMDIR_ERROR_INVALID_REQUEST;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        pjType = json_object_get(pjAttr, "type");
-        if (!pjType || !json_is_string(pjType))
-        {
-            dwError = VMDIR_ERROR_INVALID_REQUEST;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        pszType = json_string_value(pjType);
-
-        dwError = VmDirStringToBervalContent(pszType, &pAttr->type);
+        dwError = VmDirRESTDecodeAttribute(pjAttr, &pAttr);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        pjVals = json_object_get(pjAttr, "value");
-        if (!pjVals || !json_is_array(pjVals))
-        {
-            dwError = VMDIR_ERROR_INVALID_REQUEST;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        pAttr->numVals = (DWORD)json_array_size(pjVals);
-
-        dwError = VmDirAllocateMemory(
-                sizeof(VDIR_BERVALUE) * (pAttr->numVals + 1),
-                (PVOID*)&pAttr->vals);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        for (j = 0; j < pAttr->numVals; j++)
-        {
-            pjVal = json_array_get(pjVals, j);
-            if (!pjVal || !json_is_string(pjVal))
-            {
-                dwError = VMDIR_ERROR_INVALID_REQUEST;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            pszVal = json_string_value(pjVal);
-
-            dwError = VmDirStringToBervalContent(pszVal, &pAttr->vals[j]);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
 
         pAttr->next = pEntry->attrs;
         pEntry->attrs = pAttr;
@@ -141,7 +230,7 @@ error:
 }
 
 DWORD
-VmDirRESTDecodeMods(
+VmDirRESTDecodeEntryMods(
     json_t*             pjInput,
     PVDIR_MODIFICATION* ppMods,
     DWORD*              pdwNumMods
@@ -149,17 +238,12 @@ VmDirRESTDecodeMods(
 {
     DWORD   dwError = 0;
     DWORD   dwNumMods = 0;
-    DWORD   i = 0, j = 0;
+    DWORD   i = 0;
     json_t* pjMods = NULL;
     json_t* pjMod = NULL;
     json_t* pjOp = NULL;
     json_t* pjAttr = NULL;
-    json_t* pjType = NULL;
-    json_t* pjVals = NULL;
-    json_t* pjVal = NULL;
     PCSTR   pszOp = NULL;
-    PCSTR   pszType = NULL;
-    PCSTR   pszVal = NULL;
     PVDIR_MODIFICATION  pMod = NULL;
     PVDIR_MODIFICATION  pMods = NULL;
 
@@ -222,43 +306,8 @@ VmDirRESTDecodeMods(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        pjType = json_object_get(pjAttr, "type");
-        if (!pjType || !json_is_string(pjType))
-        {
-            dwError = VMDIR_ERROR_INVALID_REQUEST;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        pszType = json_string_value(pjType);
-
-        dwError = VmDirStringToBervalContent(pszType, &pMod->attr.type);
+        dwError = VmDirRESTDecodeAttributeNoAlloc(pjAttr, &pMod->attr);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        pjVals = json_object_get(pjAttr, "value");
-        if (!pjVals || !json_is_array(pjVals))
-        {
-            dwError = VMDIR_ERROR_INVALID_REQUEST;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        pMod->attr.numVals = (DWORD)json_array_size(pjVals);
-
-        dwError = VmDirAllocateMemory(
-                sizeof(VDIR_BERVALUE) * (pMod->attr.numVals + 1),
-                (PVOID*)&pMod->attr.vals);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        for (j = 0; j < pMod->attr.numVals; j++)
-        {
-            pjVal = json_array_get(pjVals, j);
-            if (!pjVal || !json_is_string(pjVal))
-            {
-                dwError = VMDIR_ERROR_INVALID_REQUEST;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            pszVal = json_string_value(pjVal);
-
-            dwError = VmDirStringToBervalContent(pszVal, &pMod->attr.vals[j]);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
 
         pMod->next = pMods;
         pMods = pMod;

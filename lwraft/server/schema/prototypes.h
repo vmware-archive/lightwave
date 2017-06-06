@@ -53,13 +53,6 @@ VmDirSchemaIsAncestorOC(
     PVDIR_SCHEMA_OC_DESC    pAncestorOCDesc
     );
 
-// check.c
-DWORD
-VmDirSchemaGetEntryStructureOCDesc(
-    PVDIR_ENTRY             pEntry,
-    PVDIR_SCHEMA_OC_DESC*   ppStructureOCDesc   // caller does not own *ppStructureOCDesc
-    );
-
 // idmap.c
 DWORD
 VmDirSchemaAttrIdMapInit(
@@ -251,31 +244,6 @@ VdirSyntaxGetDefinition(
 BOOLEAN
 syntaxOID(
     PVDIR_BERVALUE pBerv
-    );
-
-// legacy/legacyload.c
-DWORD
-VmDirSchemaAttrIdMapLoadSubSchemaSubEntry(
-    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
-    PVDIR_ENTRY                 pSchemaEntry
-    );
-
-DWORD
-VmDirLdapSchemaLoadSubSchemaSubEntry(
-    PVDIR_LDAP_SCHEMA   pLdapSchema,
-    PVDIR_ENTRY         pSchemaEntry
-    );
-
-DWORD
-VmDirLegacySchemaLoadSubSchemaSubEntry(
-    PVDIR_LEGACY_SCHEMA pLegacySchema,
-    PVDIR_ENTRY         pSchemaEntry
-    );
-
-// legacy/legacyutil.c
-DWORD
-VmDirUpdateSubSchemaSubEntry(
-    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod
     );
 
 #ifdef __cplusplus

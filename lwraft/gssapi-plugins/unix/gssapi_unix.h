@@ -63,13 +63,6 @@ extern "C" {
 
 /* Reserved static storage for GSS_oids.  See rfc 1964 for more details. */
 
-/* 2.1.1. Kerberos Principal Name Form: */
-GSS_DLLIMP extern const gss_OID_desc * const GSS_KRB5_NT_PRINCIPAL_NAME;
-/* This name form shall be represented by the Object Identifier {iso(1)
- * member-body(2) United States(840) mit(113554) infosys(1) gssapi(2)
- * krb5(2) krb5_name(1)}.  The recommended symbolic name for this type
- * is "GSS_KRB5_NT_PRINCIPAL_NAME". */
-
 /* 2.1.2. Host-Based Service Name Form */
 #define GSS_KRB5_NT_HOSTBASED_SERVICE_NAME GSS_C_NT_HOSTBASED_SERVICE
 /* This name form shall be represented by the Object Identifier {iso(1)

@@ -46,7 +46,7 @@ extern "C" {
 #define DEFAULT_LDAPS_PORT_STR          "636"
 
 #define DEFAULT_REST_PORT_NUM           7577
-#define DEFAULT_REST_PORT_STR           "7577"
+#define DEFAULT_REST_PORT_STR           "7577p" // TODO remove p
 
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
@@ -359,6 +359,7 @@ extern "C" {
 #define ATTR_RAFT_FOLLOWERS                 "vmwRaftActiveFollower"
 #define ATTR_RAFT_MEMBERS                   "vmwRaftMember"
 #define ATTR_RAFT_STATE                     "vmwRaftState"
+#define ATTR_RAFT_LOG_CHANGED               "vmwRaftLogChanged"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -476,8 +477,12 @@ extern "C" {
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 
-// vmw OID for Strong Consistency Write Control
+// vmw OID for Strong Consistency Write Control (obsoleted)
 #define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
+// vmw OID for Integrity Check Control Search
+#define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
+// vmw OID for Conditional Write
+#define LDAP_CONTROL_CONDITIONAL_WRITE          "1.3.6.1.4.1.6876.40.10.3"
 
 #ifndef _WIN32
 #define LWRAFT_NCALRPC_END_POINT "lwraftsvc"

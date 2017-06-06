@@ -69,14 +69,14 @@ cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
             --libdir=%{_lib64dir} \
-            --localstatedir=/var/lib/vmware/vmafd \
+            --localstatedir=/var/lib/vmware \
             --with-vmdir=%{_vmdir_prefix} \
             --with-vmdns=%{_vmdns_prefix} \
             --with-likewise=%{_likewise_open_prefix} \
             --with-ssl=/usr \
             --with-sqlite=/usr \
             --with-python=/usr \
-            --with-jdk=%{_javahome} \
+            --with-java=%{_javahome} \
             --with-ant=%{_anthome} \
             --with-maven=%{_mavendir} \
             --with-boost=/usr \

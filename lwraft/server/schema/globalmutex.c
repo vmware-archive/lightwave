@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -38,12 +38,14 @@ VmDirSchemaModMutexAcquire(
     }
 
     if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE) &&
-            VmDirStringLenA(pszDN) > (SCHEMA_NAMING_CONTEXT_DN_LEN))
+        pszDN[SCHEMA_NAMING_CONTEXT_DN_LEN])
     {
-        dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pOperation->bSchemaWriteOp = TRUE;
+        if (pOperation->dwSchemaWriteOp == 0)
+        {
+            dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        pOperation->dwSchemaWriteOp++;
     }
 
 error:
@@ -63,10 +65,14 @@ VmDirSchemaModMutexRelease(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp > 0)
     {
-        dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        pOperation->dwSchemaWriteOp--;
+        if (pOperation->dwSchemaWriteOp == 0)
+        {
+            dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
 error:

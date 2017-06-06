@@ -115,9 +115,11 @@ VmDirRESTLdapSearch(
             NULL, -1, LDAP_REQ_SEARCH, pRestOp->pConn, &pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError)
+
     dwError = VmDirRESTGetLdapSearchParams(
             pRestOp,
-            &pszDN,
             &pSearchOp->request.searchReq.scope,
             &pSearchOp->request.searchReq.filter,
             &pSearchOp->request.searchReq.attrs,
@@ -215,7 +217,7 @@ VmDirRESTLdapModify(
     dwError = VmDirStringToBervalContent(pszDN, &pModifyOp->request.modifyReq.dn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTDecodeMods(
+    dwError = VmDirRESTDecodeEntryMods(
             pRestOp->pjInput,
             &pModifyOp->request.modifyReq.mods,
             &pModifyOp->request.modifyReq.numMods);

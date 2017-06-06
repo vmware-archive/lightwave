@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 207 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,32 +12,18 @@
  * under the License.
  */
 
-#ifndef _WIN32
 
-#include <config.h>
-#include <vmdirsys.h>
+#ifndef _VMDIRCLIENT_TEST_STRUCTS_H_
+#define _VMDIRCLIENT_TEST_STRUCTS_H_
 
-#else
-
-#pragma once
-
-#include "targetver.h"
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-#include <windows.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <errno.h>
-#include <tchar.h>
+typedef struct _VMDIRCLIENT_TEST_CONTEXT
+{
+    PSTR    pszServerName;
+    PSTR    pszDomainName;
+    PSTR    pszUserName;
+    PSTR    pszPassword;
+    PSTR    pszUPN;
+    LDAP*   pLd;
+} VMDIRCLIENT_TEST_CONTEXT, *PVMDIRCLIENT_TEST_CONTEXT;
 
 #endif
-
-#include <vmdir.h>
-#include <vmdirtypes.h>
-#include <vmdirdefines.h>
-#include <vmdirerrorcode.h>
-#include <vmdirerrors.h>
-#include <vmdircommon.h>
-
-#include "prototypes.h"

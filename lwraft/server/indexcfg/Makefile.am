@@ -9,8 +9,7 @@ libindexcfg_la_SOURCES = \
     indexingthr.c \
     indexupd.c \
     libmain.c \
-    progress.c \
-    vmit.c
+    progress.c
 
 libindexcfg_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

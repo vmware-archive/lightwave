@@ -22,6 +22,7 @@ SUBDIRS = \
     $(STOREDIRS) \
     indexcfg \
     ldap-head \
+    rest-head \
     middle-layer \
     replication \
     saslvmdirdb \

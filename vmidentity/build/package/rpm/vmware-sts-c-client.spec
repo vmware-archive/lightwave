@@ -23,7 +23,7 @@ cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
              --libdir=%{_lib64dir} \
-             --localstatedir=%{_dbdir} \
+             --localstatedir=%{_localstatedir}/lib/vmware \
              --with-afd=%{_prefix} \
              --with-likewise=%{_likewise_open_prefix} \
              --with-jansson=%{_janssondir} \

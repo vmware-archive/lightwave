@@ -45,10 +45,8 @@ VmDirShutdown(
 
     pBE = VmDirBackendSelect(NULL);
 
-#if 0
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop REST listening threads", __func__);
     VmDirRESTServerShutdown();
-#endif
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();

@@ -18,7 +18,7 @@ DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
 # JAVA Security Properties
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 
-# STS Instance 
+# STS Instance
 SERVICE_NAME=vmware-sts-stsd
 
 STSD_LOG_DIR="/var/log/vmware/sso"

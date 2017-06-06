@@ -52,6 +52,7 @@ VmDirRESTAccessTokenParse(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwOIDCError = 0;
     PSTR    pszTokenType = NULL;
     PSTR    pszAccessToken = NULL;
     PSTR    pszDomainName = NULL;
@@ -87,20 +88,22 @@ VmDirRESTAccessTokenParse(
             &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = OidcServerMetadataAcquire(
+    dwOIDCError = OidcServerMetadataAcquire(
             &pOidcMetadata,
             VMDIR_REST_OIDC_SERVER,
             VMDIR_REST_OIDC_PORT,
             pszDomainName);
+    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = OidcAccessTokenBuild(
+    dwOIDCError = OidcAccessTokenBuild(
             &pOidcAccessToken,
             pszAccessToken,
             OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
             NULL,
             VMDIR_REST_DEFAULT_SCOPE,
             VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
+    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(
@@ -116,7 +119,8 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+            "%s failed, error (%d) OIDC error (%d)",
+            __FUNCTION__, dwError, dwOIDCError );
     goto cleanup;
 }
 

@@ -106,7 +106,7 @@ RestTestBearerTokenClientNew(
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant);
+    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant, NULL /* pszClientID */);
     BAIL_ON_ERROR(e);
 
     e = OidcClientAcquireTokensByPassword(
@@ -196,7 +196,7 @@ RestTestHOKTokenClientNew(
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant);
+    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant, NULL /* pszClientID */);
     BAIL_ON_ERROR(e);
 
     e = OidcClientAcquireTokensByPassword(

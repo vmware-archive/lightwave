@@ -1244,7 +1244,7 @@ VecsSrvFlushMachineSslCertificate(
     }
 
     dwError = VecsSrvWriteCertStringToDisk(pszCert, pszSslCertPath, bLogOnError, 0644);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     dwError = VmAfdAllocateStringPrintf(
                         &pszSslKeyPath,
@@ -1607,7 +1607,7 @@ VecsSrvFlushSSLCertFromDB(
                                         pwszSSLKey,
                                         bLogOnError
                                         );
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 
 cleanup:

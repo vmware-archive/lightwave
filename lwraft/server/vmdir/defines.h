@@ -348,7 +348,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 200,                              \
         /*.dwMax          = */ 90000,                            \
-        /*.dwDefault      = */ 20000,                             \
+        /*.dwDefault      = */ 10000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -359,7 +359,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 100,                              \
         /*.dwMax          = */ 30000,                            \
-        /*.dwDefault      = */ 7000,                                \
+        /*.dwDefault      = */ 3000,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

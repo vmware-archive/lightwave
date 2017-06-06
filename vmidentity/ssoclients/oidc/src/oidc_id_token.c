@@ -125,6 +125,24 @@ OidcIDTokenGetAudience(
     *pAudienceSize = p->pToken->audienceSize;
 }
 
+size_t
+OidcIDTokenGetAudienceSize(
+    PCOIDC_ID_TOKEN p)
+{
+    ASSERT_NOT_NULL(p);
+    return p->pToken->audienceSize;
+}
+
+PCSTRING
+OidcIDTokenGetAudienceEntry(
+    PCOIDC_ID_TOKEN p,
+    int index)
+{
+    ASSERT_NOT_NULL(p);
+    ASSERT_TRUE(0 <= index && index < p->pToken->audienceSize);
+    return p->pToken->ppszAudience[index];
+}
+
 SSO_LONG
 OidcIDTokenGetIssueTime(
     PCOIDC_ID_TOKEN p)
@@ -161,6 +179,25 @@ OidcIDTokenGetGroups(
 
     *pppszGroups = p->pToken->ppszGroups;
     *pGroupsSize = p->pToken->groupsSize;
+}
+
+size_t
+OidcIDTokenGetGroupsSize(
+    PCOIDC_ID_TOKEN p)
+{
+    ASSERT_NOT_NULL(p);
+    return p->pToken->groupsSize;
+}
+
+PCSTRING
+OidcIDTokenGetGroupsEntry(
+    PCOIDC_ID_TOKEN p,
+    int index)
+{
+    ASSERT_NOT_NULL(p);
+    ASSERT_TRUE(0 <= index && index < p->pToken->groupsSize);
+    return p->pToken->ppszGroups[index];
+
 }
 
 PCSTRING

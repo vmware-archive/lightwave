@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -481,6 +481,134 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirSchemaClassGetAllMayAttrs(
+    PVDIR_SCHEMA_CTX        pCtx,           // IN
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
+    PLW_HASHMAP             pAllMayAttrMap  // IN
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    PVDIR_SCHEMA_OC_DESC pCurOC = NULL;
+    PVDIR_SCHEMA_CR_DESC pCR = NULL;
+
+    if (!pCtx || !pOCDesc || !pAllMayAttrMap)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pCurOC = pOCDesc;
+    while (pCurOC)
+    {
+        for (i = 0; pCurOC->ppszMayATs && pCurOC->ppszMayATs[i]; i++)
+        {
+            dwError = LwRtlHashMapInsert(pAllMayAttrMap,
+                    pCurOC->ppszMayATs[i], pCurOC->ppszMayATs[i], NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pCurOC->type == VDIR_LDAP_STRUCTURAL_CLASS)
+        {
+            dwError = VmDirSchemaCRNameToDescriptor(
+                    pCtx, pCurOC->pszName, &pCR);
+
+            if (dwError == 0)
+            {
+                for (i = 0; pCR->ppszMayATs && pCR->ppszMayATs[i]; i++)
+                {
+                    dwError = LwRtlHashMapInsert(pAllMayAttrMap,
+                            pCR->ppszMayATs[i], pCR->ppszMayATs[i], NULL);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+            }
+            else if (dwError != ERROR_NO_SUCH_DITCONTENTRULES)
+            {
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
+        if (VmDirStringCompareA(OC_TOP, pCurOC->pszName, FALSE) == 0)
+        {
+            pCurOC = NULL;
+        }
+        else
+        {
+            dwError = VmDirSchemaOCNameToDescriptor(
+                    pCtx, pCurOC->pszSup, &pCurOC);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+error:
+    return dwError;
+}
+
+DWORD
+VmDirSchemaClassGetAllMustAttrs(
+    PVDIR_SCHEMA_CTX        pCtx,           // IN
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
+    PLW_HASHMAP             pAllMustAttrMap // IN
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    PVDIR_SCHEMA_OC_DESC pCurOC = NULL;
+    PVDIR_SCHEMA_CR_DESC pCR = NULL;
+
+    if (!pCtx || !pOCDesc || !pAllMustAttrMap)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pCurOC = pOCDesc;
+    while (pCurOC)
+    {
+        for (i = 0; pCurOC->ppszMustATs && pCurOC->ppszMustATs[i]; i++)
+        {
+            dwError = LwRtlHashMapInsert(pAllMustAttrMap,
+                    pCurOC->ppszMustATs[i], pCurOC->ppszMustATs[i], NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pCurOC->type == VDIR_LDAP_STRUCTURAL_CLASS)
+        {
+            dwError = VmDirSchemaCRNameToDescriptor(
+                    pCtx, pCurOC->pszName, &pCR);
+
+            if (dwError == 0)
+            {
+                for (i = 0; pCR->ppszMustATs && pCR->ppszMustATs[i]; i++)
+                {
+                    dwError = LwRtlHashMapInsert(pAllMustAttrMap,
+                            pCR->ppszMustATs[i], pCR->ppszMustATs[i], NULL);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+            }
+            else if (dwError != ERROR_NO_SUCH_DITCONTENTRULES)
+            {
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
+        if (VmDirStringCompareA(OC_TOP, pCurOC->pszName, FALSE) == 0)
+        {
+            pCurOC = NULL;
+        }
+        else
+        {
+            dwError = VmDirSchemaOCNameToDescriptor(
+                    pCtx, pCurOC->pszSup, &pCurOC);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+error:
+    return dwError;
+}
+
 BOOLEAN
 VmDirSchemaIsNameEntryLeafStructureOC(
     PVDIR_ENTRY     pEntry,
@@ -554,13 +682,31 @@ VmDirSchemaAttrIsOctetString(
     if (pATDesc && pATDesc->pSyntax)
     {
         if (!IsNullOrEmptyString(pATDesc->pSyntax->pszOid) &&
-                 VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OCTET_STRING, FALSE) == 0)
+            VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OCTET_STRING, FALSE) == 0)
         {
             bIsOctetStr = TRUE;
         }
     }
 
     return bIsOctetStr;
+}
+
+BOOLEAN
+VmDirSchemaAttrIsDN(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    )
+{
+    BOOLEAN bIsDN = FALSE;
+    if (pATDesc && pATDesc->pSyntax)
+    {
+        if (!IsNullOrEmptyString(pATDesc->pSyntax->pszOid) &&
+            VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_DN, FALSE) == 0)
+        {
+            bIsDN = TRUE;
+        }
+    }
+
+    return bIsDN;
 }
 
 /*
@@ -597,7 +743,7 @@ VmDirSchemaBervalSyntaxCheck(
         pCtx->dwErrorCode = ERROR_INVALID_SYNTAX;
 
         VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                 &pCtx->pszErrorMsg,
                 "%s value (%s) is not a valid (%s) syntax",
                 pATDesc->pszName,

@@ -457,8 +457,8 @@ srp_gss_inquire_context(
 				locally_initiated,
 				opened);
 
-    if (mech_type)
-        *mech_type = context_handle->mech_type;
+	if (mech_type)
+		*mech_type = context_handle->mech_type;
 
 	return (ret);
 }

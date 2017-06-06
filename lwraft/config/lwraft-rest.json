@@ -14,7 +14,7 @@
     ],
     "tags": [
         {
-            "name": "lwraftobject",
+            "name": "object",
             "description": "Lightwave Raft data store object API implemented in RESTful interface"
         },
         {
@@ -44,7 +44,7 @@
                     "200": {
                         "description": "Generic LDAP response",
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectResponse"
+                            "$ref": "#/definitions/GenericResponse"
                         }
                     }
                 },
@@ -53,7 +53,7 @@
                 ]
             },
             "get": {
-                "summary": "Serach for LDAP entries",
+                "summary": "Search for LDAP entries",
                 "description": "Search for LDAP entries",
                 "produces": [
                     "application/json"
@@ -132,16 +132,22 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/LWRaftObjectMod"
+                                "$ref": "#/definitions/LDAPMod"
                             }
                         }
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Generic LDAP responses",
+                        "description": "Generic LDAP response",
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectResponse"
+                            "$ref": "#/definitions/GenericResponse"
                         }
                     }
                 },
@@ -164,7 +170,7 @@
                     "200": {
                         "description": "Generic LDAP response",
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectResponse"
+                            "$ref": "#/definitions/GenericResponse"
                         }
                     }
                 },
@@ -194,11 +200,11 @@
                         "type": "string"
                     },
                     {
-                        "name": "entry",
+                        "name": "attributes",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObject"
+                            "$ref": "#/definitions/LWRaftObjectAttributes"
                         }
                     }
                 ],
@@ -206,90 +212,12 @@
                     "200": {
                         "description": "Generic LWRAFT object response",
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectResponse"
+                            "$ref": "#/definitions/GenericResponse"
                         }
                     }
                 },
                 "tags": [
-                    "lwraftobject"
-                ]
-            },
-            "patch": {
-                "summary": "Modify a lwraft object",
-                "description": "Modify a lwraft object",
-                "consumes": [
-                    "application/json"
-                ],
-                "parameters": [
-                    {
-                        "name": "objectpath",
-                        "in": "path",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "tenant",
-                        "in": "query",
-                        "required": false,
-                        "type": "string"
-                    },
-                    {
-                        "name": "mods",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/LWRaftObjectMod"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Generic LWRAFT response",
-                        "schema": {
-                            "$ref": "#/definitions/LWRaftObjectResponse"
-                        }
-                    }
-                },
-                "tags": [
-                    "lwraftobject"
-                ]
-            },
-            "delete": {
-                "summary": "Delete a lwraft object",
-                "description": "Delete a lwraft object",
-                "parameters": [
-                    {
-                        "name": "objectpath",
-                        "in": "path",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "tenant",
-                        "in": "query",
-                        "required": false,
-                        "type": "string"
-                    },
-                    {
-                        "name": "recursive",
-                        "in": "query",
-                        "required": false,
-                        "type": "boolean"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Generic LWRAFT response",
-                        "schema": {
-                            "$ref": "#/definitions/LWRaftObjectResponse"
-                        }
-                    }
-                },
-                "tags": [
-                    "lwraftobject"
+                    "object"
                 ]
             },
             "get": {
@@ -301,7 +229,7 @@
                 "parameters": [
                     {
                         "name": "objectpath",
-                        "description": "maps to LDAP search base DN.  '*' means top objects container.",
+                        "description": "maps to LDAP search base DN",
                         "in": "path",
                         "required": true,
                         "type": "string"
@@ -355,12 +283,96 @@
                     "200": {
                         "description": "LWRaft objects search response ( how to treat blob attribute ?? base64 encode it or not ?? )",
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectSearchResponse"
+                            "$ref": "#/definitions/LWRaftObjectGetResponse"
                         }
                     }
                 },
                 "tags": [
-                    "lwraftobject"
+                    "object"
+                ]
+            },
+            "patch": {
+                "summary": "Modify a lwraft object",
+                "description": "Modify a lwraft object",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "objectpath",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tenant",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "mods",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LDAPMod"
+                            }
+                        }
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic LWRAFT response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "object"
+                ]
+            },
+            "delete": {
+                "summary": "Delete a lwraft object",
+                "description": "Delete a lwraft object",
+                "parameters": [
+                    {
+                        "name": "objectpath",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tenant",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "recursive",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic LWRAFT response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "object"
                 ]
             }
         }
@@ -375,8 +387,51 @@
                 "attributes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/LWRaftObjectAttribute"
+                        "$ref": "#/definitions/LDAPAttribute"
                     }
+                }
+            }
+        },
+        "LDAPAttribute": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "name of the attribute",
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "LDAPMod": {
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "description": "add/delete/replace LDAP Modify changetype",
+                    "type": "string"
+                },
+                "attribute": {
+                    "$ref": "#/definitions/LDAPAttribute"
+                }
+            }
+        },
+        "GenericResponse": {
+            "type": "object",
+            "properties": {
+                "error_code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "result_count": {
+                    "type": "integer",
+                    "format": "int32"
                 }
             }
         },
@@ -405,6 +460,17 @@
                 }
             }
         },
+        "LWRaftObjectAttributes": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LDAPAttribute"
+                    }
+                }
+            }
+        },
         "LWRaftObject": {
             "type": "object",
             "properties": {
@@ -415,44 +481,12 @@
                 "attributes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/LWRaftObjectAttribute"
+                        "$ref": "#/definitions/LDAPAttribute"
                     }
                 }
             }
         },
-        "LWRaftObjectAttribute": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "description": "name of the attribute",
-                    "type": "string"
-                },
-                "value": {
-                    "type": "array",
-                    "items": {
-                        "description": "what about binary attribute? need base64 encode??",
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "LWRaftObjectResponse": {
-            "type": "object",
-            "properties": {
-                "error_code": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "error_message": {
-                    "type": "string"
-                },
-                "result_count": {
-                    "type": "integer",
-                    "format": "int32"
-                }
-            }
-        },
-        "LWRaftObjectSearchResponse": {
+        "LWRaftObjectGetResponse": {
             "type": "object",
             "properties": {
                 "error_code": {
@@ -474,18 +508,6 @@
                     "items": {
                         "$ref": "#/definitions/LWRaftObject"
                     }
-                }
-            }
-        },
-        "LWRaftObjectMod": {
-            "type": "object",
-            "properties": {
-                "operation": {
-                    "description": "add/modify/replace LDAP Modify changetype",
-                    "type": "string"
-                },
-                "attribute": {
-                    "$ref": "#/definitions/LWRaftObjectAttribute"
                 }
             }
         }

@@ -26,6 +26,7 @@
  */
 #ifndef _WIN32
 
+#include <inttypes.h>
 #include <config.h>
 
 #include <vmdirsys.h>
@@ -84,6 +85,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <tchar.h>
+#include <inttypes.h>
 #define LDAP_UNICODE 0
 
 // OpenLDAP ber library include files

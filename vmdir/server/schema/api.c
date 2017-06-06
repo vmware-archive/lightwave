@@ -682,13 +682,31 @@ VmDirSchemaAttrIsOctetString(
     if (pATDesc && pATDesc->pSyntax)
     {
         if (!IsNullOrEmptyString(pATDesc->pSyntax->pszOid) &&
-                 VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OCTET_STRING, FALSE) == 0)
+            VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OCTET_STRING, FALSE) == 0)
         {
             bIsOctetStr = TRUE;
         }
     }
 
     return bIsOctetStr;
+}
+
+BOOLEAN
+VmDirSchemaAttrIsDN(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    )
+{
+    BOOLEAN bIsDN = FALSE;
+    if (pATDesc && pATDesc->pSyntax)
+    {
+        if (!IsNullOrEmptyString(pATDesc->pSyntax->pszOid) &&
+            VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_DN, FALSE) == 0)
+        {
+            bIsDN = TRUE;
+        }
+    }
+
+    return bIsDN;
 }
 
 /*

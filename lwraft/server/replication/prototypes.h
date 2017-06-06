@@ -107,7 +107,8 @@ _VmDirLogLookup(
 
 DWORD
 _VmDirDeleteAllLogs(
-    unsigned long long startLogIndex
+    unsigned long long startLogIndex,
+    BOOLEAN *pbFatalError
     );
 
 DWORD
@@ -124,7 +125,8 @@ _VmDirFetchLogEntry(
 
 DWORD
 _VmdirDeleteLog(
-    PSTR pDn
+    unsigned long long logIndex,
+    BOOLEAN bCompactLog
     );
 
 DWORD

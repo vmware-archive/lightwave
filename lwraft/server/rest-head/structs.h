@@ -46,6 +46,8 @@ typedef DWORD (*PFN_GET_HTTP_ERROR)(
 typedef struct _VDIR_REST_RESOURCE
 {
     VDIR_REST_RESOURCE_TYPE rscType;
+    PCSTR                   pszEndpoint;
+    BOOLEAN                 bIsEndpointPrefix;
     PFN_SET_RESULT          pfnSetResult;
     PFN_GET_HTTP_ERROR      pfnGetHttpError;
     PCSTR                   pszErrCodeKey;
@@ -57,7 +59,9 @@ typedef struct _VDIR_REST_OPERATION
 {
     PSTR                pszAuth;
     PSTR                pszMethod;
-    PSTR                pszEndpoint;
+    PSTR                pszPath;
+    PSTR                pszSubPath;
+    PSTR                pszHeaderIfMatch;
     json_t*             pjInput;
     PLW_HASHMAP         pParamMap;
     PVDIR_CONNECTION    pConn;
@@ -90,10 +94,21 @@ typedef struct _VDIR_HTTP_ERROR
 
 } VDIR_HTTP_ERROR, *PVDIR_HTTP_ERROR;
 
-// resource.c
-typedef struct _VDIR_REST_RESOURCE_ENDPOINT
-{
-    VDIR_REST_RESOURCE_TYPE rscType;
-    PCSTR                   pszEndpoint;
+// vmafd.c
+typedef DWORD (*PFN_VMAFD_GET_DC_NAME)(
+        PCSTR,
+        PSTR*
+        );
 
-} VDIR_REST_RESOURCE_ENDPOINT, *PVDIR_REST_RESOURCE_ENDPOINT;
+typedef DWORD (*PFN_VMAFD_GET_DOMAIN_NAME)(
+        PCSTR,
+        PSTR*
+        );
+
+typedef struct _VDIR_VMAFD_API
+{
+    VMDIR_LIB_HANDLE            pVmAfdLib;
+    PFN_VMAFD_GET_DC_NAME       pfnGetDCName;
+    PFN_VMAFD_GET_DOMAIN_NAME   pfnGetDomainName;
+
+} VDIR_VMAFD_API, *PVDIR_VMAFD_API;

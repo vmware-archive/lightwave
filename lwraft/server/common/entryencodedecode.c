@@ -635,7 +635,7 @@ VmDirDecodeMods(
         // Set vals array
         while (j)
         {
-            VDIR_BERVALUE bv = {0};
+            VDIR_BERVALUE bv = VDIR_BERVALUE_INIT;
 
             len = VmDirDecodeShort(&strPtr);
             bv.lberbv.bv_len = len;

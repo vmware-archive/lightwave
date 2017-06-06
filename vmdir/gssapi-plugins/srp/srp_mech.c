@@ -402,8 +402,8 @@ srp_gss_inquire_context(
 {
 	OM_uint32 ret = GSS_S_COMPLETE;
 
-    if (mech_type)
-        *mech_type = context_handle->mech_type;
+	if (mech_type)
+		*mech_type = context_handle->mech_type;
 
 	return (ret);
 }

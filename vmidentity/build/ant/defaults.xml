@@ -68,7 +68,7 @@
    <!-- - - - - - build directories - - - - - -->
 
    <!-- map from GoBuild-style (all uppercase) to local style names -->
-   <property name="BUILD_ROOT" location="../../build/${PRODUCT_NAME}" />
+   <property name="BUILD_ROOT" location="${build_dir}/${PRODUCT_NAME}" />
    <property name="buildRoot" location="${BUILD_ROOT}" />
 
    <property name="PUBLISH_DIR" location="${buildRoot}/publish" />

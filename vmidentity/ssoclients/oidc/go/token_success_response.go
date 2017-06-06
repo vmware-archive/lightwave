@@ -1,10 +1,6 @@
 package oidc
 
 /*
-#cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/common/include/public/
-#cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/oidc/include/public/
-#cgo LDFLAGS: -L/root/git/lightwave/vmidentity/build/ssoclients/common/src/.libs/ -l ssocommon
-#cgo LDFLAGS: -L/root/git/lightwave/vmidentity/build/ssoclients/oidc/src/.libs/ -l ssooidc
 #include <stdlib.h>
 #include "ssotypes.h"
 #include "ssoerrors.h"

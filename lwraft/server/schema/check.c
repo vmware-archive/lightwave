@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -43,10 +43,10 @@ _getOCAttr(
     if (!pAttr || pAttr->numVals < 1)
     {
         VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-        VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+        VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                 "Entry has no objectclass");
 
-        dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+        dwError = pCtx->dwErrorCode = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -98,11 +98,11 @@ _getOCDescs(
         if (dwError)
         {
             VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-            VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+            VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                     "Objectclass (%s) is not defined in schema",
                     pszOCName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_NO_SUCH_OBJECTCLASS;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -200,136 +200,6 @@ error:
 
 static
 DWORD
-_getAllMayAttributes(
-    PVDIR_SCHEMA_CTX        pCtx,           // IN
-    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
-    PLW_HASHMAP             pAllMayAttrMap  // IN
-    )
-{
-    DWORD dwError = 0;
-    DWORD i = 0;
-    PVDIR_SCHEMA_OC_DESC pCurOC = NULL;
-    PVDIR_SCHEMA_CR_DESC pCR = NULL;
-
-    if (!pCtx || !pOCDesc || !pAllMayAttrMap)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    pCurOC = pOCDesc;
-    while (pCurOC)
-    {
-        for (i = 0; pCurOC->ppszMayATs && pCurOC->ppszMayATs[i]; i++)
-        {
-            dwError = LwRtlHashMapInsert(pAllMayAttrMap,
-                    pCurOC->ppszMayATs[i], pCurOC->ppszMayATs[i], NULL);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pCurOC->type == VDIR_LDAP_STRUCTURAL_CLASS)
-        {
-            dwError = VmDirSchemaCRNameToDescriptor(
-                    pCtx, pCurOC->pszName, &pCR);
-
-            if (dwError == 0)
-            {
-                for (i = 0; pCR->ppszMayATs && pCR->ppszMayATs[i]; i++)
-                {
-                    dwError = LwRtlHashMapInsert(pAllMayAttrMap,
-                            pCR->ppszMayATs[i], pCR->ppszMayATs[i], NULL);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-            }
-            else if (dwError != ERROR_NO_SUCH_DITCONTENTRULES)
-            {
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-
-        if (VmDirStringCompareA(OC_TOP, pCurOC->pszName, FALSE) == 0)
-        {
-            pCurOC = NULL;
-        }
-        else
-        {
-            dwError = VmDirSchemaOCNameToDescriptor(
-                    pCtx, pCurOC->pszSup, &pCurOC);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-error:
-    return dwError;
-}
-
-static
-DWORD
-_getAllMustAttributes(
-    PVDIR_SCHEMA_CTX        pCtx,           // IN
-    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
-    PLW_HASHMAP             pAllMustAttrMap // IN
-    )
-{
-    DWORD dwError = 0;
-    DWORD i = 0;
-    PVDIR_SCHEMA_OC_DESC pCurOC = NULL;
-    PVDIR_SCHEMA_CR_DESC pCR = NULL;
-
-    if (!pCtx || !pOCDesc || !pAllMustAttrMap)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    pCurOC = pOCDesc;
-    while (pCurOC)
-    {
-        for (i = 0; pCurOC->ppszMustATs && pCurOC->ppszMustATs[i]; i++)
-        {
-            dwError = LwRtlHashMapInsert(pAllMustAttrMap,
-                    pCurOC->ppszMustATs[i], pCurOC->ppszMustATs[i], NULL);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pCurOC->type == VDIR_LDAP_STRUCTURAL_CLASS)
-        {
-            dwError = VmDirSchemaCRNameToDescriptor(
-                    pCtx, pCurOC->pszName, &pCR);
-
-            if (dwError == 0)
-            {
-                for (i = 0; pCR->ppszMustATs && pCR->ppszMustATs[i]; i++)
-                {
-                    dwError = LwRtlHashMapInsert(pAllMustAttrMap,
-                            pCR->ppszMustATs[i], pCR->ppszMustATs[i], NULL);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-            }
-            else if (dwError != ERROR_NO_SUCH_DITCONTENTRULES)
-            {
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-
-        if (VmDirStringCompareA(OC_TOP, pCurOC->pszName, FALSE) == 0)
-        {
-            pCurOC = NULL;
-        }
-        else
-        {
-            dwError = VmDirSchemaOCNameToDescriptor(
-                    pCtx, pCurOC->pszSup, &pCurOC);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-error:
-    return dwError;
-}
-
-static
-DWORD
 _checkAttributeSyntax(
     PVDIR_SCHEMA_CTX    pCtx,           // IN
     PVDIR_ENTRY         pEntry          // IN
@@ -368,11 +238,11 @@ _checkAttributeDimension(
         if (pAttr->pATDesc->bSingleValue && pAttr->numVals != 1)
         {
             VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-            VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+            VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                     "Attribute (%s) can have at most one value",
                     VDIR_SAFE_STRING(pAttr->type.lberbv.bv_val));
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -404,11 +274,11 @@ _checkObjectClassHierarchy(
         else if (!VmDirSchemaIsAncestorOC(pCtx, pBottomOC, ppStrOCs[i]))
         {
             VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-            VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+            VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                     "Entry has incompatible structural objectclass (%s) (%s)",
                     pBottomOC->pszName, ppStrOCs[i]->pszName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -416,10 +286,10 @@ _checkObjectClassHierarchy(
     if (!pBottomOC)
     {
         VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-        VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+        VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                 "Entry has no structural objectclass");
 
-        dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+        dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -428,11 +298,11 @@ _checkObjectClassHierarchy(
        if (!VmDirSchemaIsAncestorOC(pCtx, pBottomOC, ppAbsOCs[i]))
        {
            VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-           VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+           VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                    "Entry has invalid abstract objectclass (%s)",
                    ppAbsOCs[i]->pszName);
 
-           dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+           dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
            BAIL_ON_VMDIR_ERROR(dwError);
        }
     }
@@ -476,11 +346,11 @@ _checkAuxContentRules(
         if (LwRtlHashMapFindKey(pAllowedAuxOCMap, NULL, ppAuxOCs[i]->pszName))
         {
             VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-            VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+            VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                     "Aux objectclass (%s) is not allowed.",
                     ppAuxOCs[i]->pszName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -524,18 +394,22 @@ _checkAttributePresences(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _getAllMayAttributes(pCtx, pBottomOC, pAllMayAttrMap);
+    dwError = VmDirSchemaClassGetAllMayAttrs(
+            pCtx, pBottomOC, pAllMayAttrMap);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _getAllMustAttributes(pCtx, pBottomOC, pAllMustAttrMap);
+    dwError = VmDirSchemaClassGetAllMustAttrs(
+            pCtx, pBottomOC, pAllMustAttrMap);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i = 0; ppAuxOCs && ppAuxOCs[i]; i++)
     {
-        dwError = _getAllMayAttributes(pCtx, ppAuxOCs[i], pAllMayAttrMap);
+        dwError = VmDirSchemaClassGetAllMayAttrs(
+                pCtx, ppAuxOCs[i], pAllMayAttrMap);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _getAllMustAttributes(pCtx, ppAuxOCs[i], pAllMustAttrMap);
+        dwError = VmDirSchemaClassGetAllMustAttrs(
+                pCtx, ppAuxOCs[i], pAllMustAttrMap);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -546,11 +420,11 @@ _checkAttributePresences(
             pAttr->pATDesc->usage == VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
         {
             VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-            VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+            VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                     "Attribute (%s) is not allowed.",
                     pAttr->pATDesc->pszName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -572,11 +446,11 @@ _checkAttributePresences(
         }
 
         VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-        VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+        VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                 "Missing must attribute (%s)",
                 pszAttrName);
 
-        dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+        dwError = pCtx->dwErrorCode = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -800,11 +674,11 @@ VmDirSchemaCheckSetAttrDesc(
             if (!pAttr->pATDesc)
             {
                 VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-                VmDirAllocateStringAVsnprintf(&pCtx->pszErrorMsg,
+                VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                         "Attribute (%s) is not defined in schema",
                         VDIR_SAFE_STRING(pAttr->type.lberbv.bv_val));
 
-                dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+                dwError = pCtx->dwErrorCode = ERROR_NO_SUCH_ATTRIBUTE;
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
@@ -844,13 +718,13 @@ VmDirSchemaGetEntryStructureOCDesc(
             pEntry->pSchemaCtx,
             pObjectClassAttr->vals[0].lberbv.bv_val,
             &pOCDesc);
-
-    if (dwError == ERROR_NO_SUCH_OBJECTCLASS ||
-            pOCDesc->type != VDIR_LDAP_STRUCTURAL_CLASS)
-    {
-        dwError = ERROR_INVALID_ENTRY;
-    }
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pOCDesc->type != VDIR_LDAP_STRUCTURAL_CLASS)
+    {
+        dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // pszStructureOC point into pEntry->attrs content.
     pEntry->pszStructureOC = pObjectClassAttr->vals[0].lberbv.bv_val;

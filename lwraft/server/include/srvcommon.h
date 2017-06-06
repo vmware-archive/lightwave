@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -62,10 +62,6 @@ extern "C" {
 
 #define SOCK_BUF_MAX_INCOMING ((1<<24) - 1) // 16M - 1, e.g. to handle large Add object requests.
 
-// Fix bootstrap attribute id used in schema/defines.h VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER definition
-#define SCHEMA_BOOTSTRAP_EID_SEQ_ATTRID_22     22
-#define SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23     23
-
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
 // This value is the DFL for the current version
 #define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"3"
@@ -80,6 +76,10 @@ extern "C" {
 
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
+
+// Entry ID prefixes
+#define NEW_ENTRY_EID_PREFIX 0x2000000000000000
+#define LOG_ENTRY_EID_PREFIX 0x4000000000000000
 
 typedef struct _VDIR_INDEX_CFG*             PVDIR_INDEX_CFG;
 typedef struct _VDIR_INDEX_UPD*             PVDIR_INDEX_UPD;
@@ -203,7 +203,6 @@ typedef struct _VDIR_CONNECTION_CTX
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
-typedef struct _VDIR_SCHEMA_OC_DESC*    PVDIR_SCHEMA_OC_DESC;
 
 typedef struct _VDIR_ATTRIBUTE
 {
@@ -504,6 +503,11 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
+typedef struct _VDIR_CONDWRITE_CONTROL_VALUE
+{
+    PSTR                    pszFilter;
+} VDIR_CONDWRITE_CONTROL_VALUE, *PVDIR_CONDWRITE_CONTROL_VALUE;
+
 //SCW - Strong Consistency Write
 typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
 {
@@ -512,10 +516,11 @@ typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
 
 typedef union LdapControlValue
 {
-    SyncRequestControlValue            syncReqCtrlVal;
-    SyncDoneControlValue               syncDoneCtrlVal;
-    VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
-    VMDIR_SCW_DONE_CONTROL_VALUE       scwDoneCtrlVal;
+    SyncRequestControlValue                 syncReqCtrlVal;
+    SyncDoneControlValue                    syncDoneCtrlVal;
+    VDIR_PAGED_RESULT_CONTROL_VALUE         pagedResultCtrlVal;
+    VMDIR_SCW_DONE_CONTROL_VALUE            scwDoneCtrlVal;
+    VDIR_CONDWRITE_CONTROL_VALUE            condWriteCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -552,9 +557,10 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
     VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
     VDIR_LDAP_CONTROL *       manageDsaITCtrl;
+    VDIR_LDAP_CONTROL *       pCondWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
-    BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
+    DWORD               dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for both INTERNAL and EXTERNAL operations
@@ -771,7 +777,7 @@ VmDirAttributeAllocate(
     PCSTR               pszName,
     USHORT              usBerSize,
     PVDIR_SCHEMA_CTX    pCtx,
-    PVDIR_ATTRIBUTE*         ppOutAttr
+    PVDIR_ATTRIBUTE*    ppOutAttr
     );
 
 
@@ -799,7 +805,7 @@ VmDirIsInternalEntry(
     );
 
 BOOLEAN
-VmDirIsEntryWithObjectclass(
+VmDirEntryIsObjectclass(
     PVDIR_ENTRY     pEntry,
     PCSTR           pszOCName
     );
@@ -884,18 +890,6 @@ DWORD
 VmDirUuidFromString(
     PCSTR pStr,
     uuid_t* pGuid
-);
-
-DWORD
-VmDirFQDNToDNSize(
-    PCSTR pszFQDN,
-    UINT32 *sizeOfDN
-);
-
-DWORD
-VmDirFQDNToDN(
-    PCSTR pszFQDN,
-    PSTR* ppszDN
 );
 
 VOID
@@ -1018,6 +1012,11 @@ void
 OrFilterResults(
     VDIR_FILTER * src,
     VDIR_FILTER * dst);
+
+VOID
+VmDirSortCandidateList(
+    VDIR_CANDIDATES *  pCl
+    );
 
 // entryencodedecode.c
 DWORD
@@ -1345,22 +1344,10 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pSecretResult
     );
 
-//server/common/urgentrepl.c
-BOOLEAN
-VmDirPerformUrgentReplication(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
-    );
-
-VOID
-VmDirRetryUrgentReplication(
-    VOID
-    );
-
-VOID
-VmDirPerformUrgentReplIfRequired(
-    PVDIR_OPERATION pOperation,
-    USN currentTxnUSN
+// vmafdlib.c
+DWORD
+VmDirOpenVmAfdClientLib(
+    VMDIR_LIB_HANDLE*   pplibHandle
     );
 
 #ifdef __cplusplus

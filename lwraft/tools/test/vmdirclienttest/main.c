@@ -39,8 +39,6 @@ _TestVmDirCreateThread(
     PVMDIR_THREAD *ppTID
     );
 
-#define SIZE_256    256
-
 #if 0
 static void _PrintKrbKey(PBYTE pMasterKey, DWORD dwLen)
 {
@@ -1114,19 +1112,66 @@ error:
 
 /*  StrongConsistentWrite end */
 
+VOID
+TestSetupServerInfo(
+    PVMDIRCLIENT_TEST_CONTEXT    pCtx
+    )
+{
+    DWORD   dwError = 0;
+    CHAR    serverName[SIZE_256] = {0};
+    CHAR    domainName[SIZE_256] = {0};
+    CHAR    userName[SIZE_256] = {0};
+    CHAR    password[SIZE_256] = {0};
+
+    printf("\n host name: (example: hostname or Ip addr): ");
+    scanf("%s", serverName);
+    printf("\n domain name: ");
+    scanf("%s", domainName);
+    printf("\n user name: ");
+    scanf("%s", userName);
+    printf("\n password: ");
+    scanf("%s", password);
+
+    dwError = VmDirAllocateStringA(serverName, &pCtx->pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(domainName, &pCtx->pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(userName, &pCtx->pszUserName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(password, &pCtx->pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(&pCtx->pszUPN, "%s@%s", userName, domainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBind(&pCtx->pLd, pCtx->pszServerName, pCtx->pszUPN, pCtx->pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return;
+
+error:
+    goto cleanup;
+}
+
 #ifndef _WIN32
 int main(int argc, char* argv[])
 #else
 int _tmain(int argc, TCHAR *targv[])
 #endif
 {
+    VMDIRCLIENT_TEST_CONTEXT srvCtx = {0};
+
     while (1)
     {
         int choice = -1;
 
         printf( "\n\n==================\n");
         printf( "Please select:\n");
-        printf( "0. exit\n");
+        printf( "0. Input setup server information\n");
         printf( "1. TestVmDirSASLClient\n");
 #if 0
         printf( "2. TestVmDirGetKrbMasterKey\n");
@@ -1143,16 +1188,17 @@ int _tmain(int argc, TCHAR *targv[])
         printf( "12. TestVmDirDeleteUserWithControls\n");
         printf( "13. TestVmDirStrongConsistencyOperations\n");
         printf( "14. TestVmDirConcurrentStrongConsistencyOperation\n");
+        printf( "15. TestVmDirCondWriteControl\n");
+        printf( "99. exit\n");
         printf( "==================\n\n");
         scanf("%d", &choice);
 
-        if (!choice)
-        {
-            goto cleanup;
-        }
-
         switch (choice)
         {
+          case 0:
+              TestSetupServerInfo(&srvCtx);
+              break;
+
           case 1:
               TestVmDirSASLClient();
               break;
@@ -1223,12 +1269,26 @@ int _tmain(int argc, TCHAR *targv[])
                TestVmDirConcurrentStrongConsistencyOperations();
                break;
 
+          case 15:
+               TestVmDirCondWriteControl(&srvCtx);
+               break;
+
           default:
               goto cleanup;
         }
     }
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(srvCtx.pszServerName);
+    VMDIR_SAFE_FREE_MEMORY(srvCtx.pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(srvCtx.pszUPN);
+    VMDIR_SAFE_FREE_MEMORY(srvCtx.pszPassword);
+    VMDIR_SAFE_FREE_MEMORY(srvCtx.pszUPN);
+
+    if ( srvCtx.pLd )
+    {
+        ldap_unbind_ext_s(srvCtx.pLd, NULL, NULL);
+    }
 
     return 0;
 

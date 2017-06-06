@@ -1,10 +1,6 @@
 package oidc
 
 /*
-#cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/common/include/public/
-#cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/oidc/include/public/
-#cgo LDFLAGS: -L/root/git/lightwave/vmidentity/build/ssoclients/common/src/.libs/ -l ssocommon
-#cgo LDFLAGS: -L/root/git/lightwave/vmidentity/build/ssoclients/oidc/src/.libs/ -l ssooidc
 #include <stdlib.h>
 #include "ssotypes.h"
 #include "ssoerrors.h"
@@ -34,19 +30,23 @@ func OidcClientGlobalCleanup() {
 func OidcClientBuild(
         server string,
         portNumber int,
-        tenant string) (result *OidcClient, err error) {
-    serverCStr := goStringToCString(server)
-    tenantCStr := goStringToCString(tenant)
+        tenant string,
+        clientID string) (result *OidcClient, err error) {
+    serverCStr   := goStringToCString(server)
+    tenantCStr   := goStringToCString(tenant)
+    clientIDCStr := goStringToCString(clientID)
 
     defer freeCString(serverCStr)
     defer freeCString(tenantCStr)
+    defer freeCString(clientIDCStr)
 
     var p C.POIDC_CLIENT = nil
     var e C.SSOERROR = C.OidcClientBuild(
         &p,
         serverCStr,
         C.int(portNumber),
-        tenantCStr)
+        tenantCStr,
+        clientIDCStr)
     if e != 0 {
         err = cErrorToGoError(e)
         return

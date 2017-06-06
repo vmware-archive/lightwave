@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -125,11 +125,12 @@ error:
 
 DWORD
 VmDirInitBackend(
-    PBOOLEAN    pbLegacyDataLoaded
+    VOID
     )
 {
     DWORD   dwError = 0;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
+    PVMDIR_MUTEX    pSchemaModMutex = NULL;
     BOOLEAN bInitializeEntries = FALSE;
 
     dwError = VmDirBackendConfig();
@@ -141,16 +142,24 @@ VmDirInitBackend(
     dwError = pBE->pfnBEInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirIndexLibInit();
+    /*
+     * Attribute indices are configured by attribute type entries.
+     *
+     * Note this implies that all index modification is schema modification.
+     *
+     * Concurrency control can be simplified by sharing mutex
+     * between schema library and index library.
+     */
+    dwError = VmDirSchemaLibInit(&pSchemaModMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibInit();
+    dwError = VmDirIndexLibInit(pSchemaModMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadSchema(&bInitializeEntries, pbLegacyDataLoaded);
+    dwError = VmDirLoadSchema(&bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadIndex(bInitializeEntries || *pbLegacyDataLoaded);
+    dwError = VmDirLoadIndex(bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // prepare USNList to guarantee safe USN for replication
@@ -170,7 +179,6 @@ VmDirInitBackend(
 
         dwError = _VmDirSrvCreatePersistedDSERoot();
         BAIL_ON_VMDIR_ERROR(dwError);
-
     }
 
 cleanup:
@@ -239,7 +247,6 @@ VmDirInit(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bLegacyDataLoaded = FALSE;
     BOOLEAN bWriteInvocationId = FALSE;
     BOOLEAN bWaitTimeOut = FALSE;
     VMDIR_RUNMODE runMode = VmDirdGetRunMode();
@@ -286,7 +293,7 @@ VmDirInit(
     dwError = VmDirPluginInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirInitBackend(&bLegacyDataLoaded);
+    dwError = VmDirInitBackend();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // load server globals before any write operations
@@ -303,15 +310,7 @@ VmDirInit(
     dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!gVmdirGlobals.bPatchSchema && bLegacyDataLoaded)
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                "Legacy data store is detected. "
-                "Run schema patch (-u option) before running in normal mode" );
-        dwError = ERROR_NO_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (gVmdirGlobals.bPatchSchema)
+    if (gVmdirGlobals.bPatchSchema)
     {
         if (IsNullOrEmptyString(gVmdirGlobals.pszBootStrapSchemaFile))
         {
@@ -321,20 +320,16 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        // Bind to the default LDAP port - If it fails, then it means another
+        // vmdird process is running in normal mode.
+        dwError = VmDirBindPort(DEFAULT_LDAP_PORT_NUM);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
 
-        if (bLegacyDataLoaded)
-        {
-            dwError = VmDirSchemaPatchLegacyViaFile(
-                    gVmdirGlobals.pszBootStrapSchemaFile);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else
-        {
-            dwError = VmDirSchemaPatchViaFile(
-                    gVmdirGlobals.pszBootStrapSchemaFile);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VmDirSchemaPatchViaFile(
+                gVmdirGlobals.pszBootStrapSchemaFile);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
 
@@ -386,10 +381,8 @@ VmDirInit(
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 0
         dwError = VmDirRESTServerInit();
         BAIL_ON_VMDIR_ERROR(dwError);
-#endif
     }
 
     //Wait only if there is not a vdcprome pending.

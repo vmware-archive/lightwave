@@ -1,10 +1,6 @@
 package oidc
 
 /*
-#cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/common/include/public/
-#cgo CFLAGS: -I/root/git/lightwave/vmidentity/ssoclients/oidc/include/public/
-#cgo LDFLAGS: -L/root/git/lightwave/vmidentity/build/ssoclients/common/src/.libs/ -l ssocommon
-#cgo LDFLAGS: -L/root/git/lightwave/vmidentity/build/ssoclients/oidc/src/.libs/ -l ssooidc
 #include <stdlib.h>
 #include "ssotypes.h"
 #include "ssoerrors.h"
@@ -74,14 +70,14 @@ func (this *IDToken) GetSubject() string {
     return cStringToGoString(C.OidcIDTokenGetSubject(this.p))
 }
 
-// TODO: GetAudience
-/*
-void
-OidcIDTokenGetAudience(
-    PCOIDC_ACCESS_TOKEN p,
-    const PSTRING** pppzAudience,
-    size_t* pAudienceSize);
-*/
+func (this *IDToken) GetAudience() []string {
+    var size int = int(C.OidcIDTokenGetAudienceSize(this.p))
+    var result []string = make([]string, size)
+    for i := 0; i < size; i++ {
+        result[i] = cStringToGoString(C.OidcIDTokenGetAudienceEntry(this.p, C.int(i)))
+    }
+    return result
+}
 
 func (this *IDToken) GetIssueTime() time.Time {
     return time.Unix(int64(C.OidcIDTokenGetIssueTime(this.p)), 0)
@@ -95,14 +91,14 @@ func (this *IDToken) GetHolderOfKeyPEM() string {
     return cStringToGoString(C.OidcIDTokenGetHolderOfKeyPEM(this.p))
 }
 
-// TODO: GetGroups
-/*
-void
-OidcIDTokenGetGroups(
-    PCOIDC_ACCESS_TOKEN p,
-    const PSTRING** pppszGroups,
-    size_t* pGroupsSize);
-*/
+func (this *IDToken) GetGroups() []string {
+    var size int = int(C.OidcIDTokenGetGroupsSize(this.p))
+    var result []string = make([]string, size)
+    for i := 0; i < size; i++ {
+        result[i] = cStringToGoString(C.OidcIDTokenGetGroupsEntry(this.p, C.int(i)))
+    }
+    return result
+}
 
 func (this *IDToken) GetTenant() string {
     return cStringToGoString(C.OidcIDTokenGetTenant(this.p))

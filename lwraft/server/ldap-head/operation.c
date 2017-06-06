@@ -169,11 +169,6 @@ VmDirFreeOperationContent(
             VmDirSchemaCtxRelease(op->pSchemaCtx);
         }
 
-        if (op->reqControls)
-        {
-            DeleteControls(&(op->reqControls));
-        }
-
         if (op->syncDoneCtrl)
         {
             PLW_HASHTABLE_NODE      pNode = NULL;
@@ -193,6 +188,16 @@ VmDirFreeOperationContent(
             assert( syncDoneCtrlVal->htUtdVector == NULL );
 
             VMDIR_SAFE_FREE_MEMORY( op->syncDoneCtrl );
+        }
+
+        if (op->pCondWriteCtrl)
+        {
+            VMDIR_SAFE_FREE_MEMORY(op->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter);
+        }
+
+        if (op->reqControls)
+        {
+            DeleteControls(&(op->reqControls));
         }
 
         switch (op->reqCode)

@@ -39,13 +39,6 @@ VmDirOPStatisticUpdate(
     uint64_t iThisTimeInMilliSecs
     );
 
-// vecs.c
-DWORD
-VmDirGetVecsMachineCert(
-    PSTR*   ppszCert,
-    PSTR*   ppszKey
-    );
-
 #ifdef __cplusplus
 }
 #endif

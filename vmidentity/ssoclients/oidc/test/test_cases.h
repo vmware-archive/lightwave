@@ -40,6 +40,7 @@ TestInit(
     PCSTRING pszTenant,
     PCSTRING pszUsername,
     PCSTRING pszPassword,
+    PCSTRING pszClientID,
     bool highAvailabilityEnabled);
 
 void

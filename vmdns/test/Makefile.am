@@ -27,6 +27,7 @@ dnstest_LDADD = \
     $(top_builddir)/common/libcommon.la \
     @SCHANNEL_LIBS@ \
     @VMDIR_LIBS@ \
+    @DCERPC_LIBS@ \
     @LDAP_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \

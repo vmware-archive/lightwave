@@ -4,12 +4,13 @@
 -->
 <project name="vmaf-dist" default="build" basedir=".">
    <property name="MAINSRCROOT" value="${basedir}/../.." />
-   <property name="buildRoot" location="${MAINSRCROOT}/build" />
+   <property file="${MAINSRCROOT}/interop/java/product.properties" />
+   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/build/ant/libraries.xml" />
+   <property name="buildRoot" location="${build_dir}/${PRODUCT_NAME}" />
    <property name="PKGBASE" location="${buildRoot}/packages" />
    <property name="GROUP_BASE" value="com.vmware.identity" />
    <property name="AFD_VERSION" value="1.0" />
-   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
-   <import file="${MAINSRCROOT}/build/ant/libraries.xml" />
 
    <target name="module.af-client" >
       <make-module dir="vmaf" />

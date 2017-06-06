@@ -4,7 +4,7 @@
 
   <groupId>com.vmware.identity</groupId>
   <artifactId>vmware-identity</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
+  <version>1.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>VMware Identity Services</name>
@@ -39,7 +39,6 @@
         <module>lightwaveui</module>
         <module>sso-config</module>
         <module>service</module>
-        <module>jdepends</module>
       </modules>
     </profile>
 
@@ -93,7 +92,7 @@
     <repository>
       <id>lightwave</id>
       <name>lightwave</name>
-      <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
+      <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave-testmaven</url>
     </repository>
   </distributionManagement>
 
@@ -277,6 +276,27 @@
           </execution>
         </executions>
       </plugin>
+      <!-- copy dependencies to target folder -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${outputDirectory}/lib</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <excludeTransitive>true</excludeTransitive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -288,8 +308,8 @@
     <skipIntegrationTests>true</skipIntegrationTests>
 
     <!-- Output Directories -->
-    <cleanDirectory>${rootDirectory}/build/vmware-sts/</cleanDirectory>
-    <outputDirectory>${rootDirectory}/build/vmware-sts/packages</outputDirectory>
+    <cleanDirectory>${buildDir}/</cleanDirectory>
+    <outputDirectory>${buildDir}/packages</outputDirectory>
     <rootDirectory>${basedir}</rootDirectory>
 
     <!-- Maven Plugin Versions -->

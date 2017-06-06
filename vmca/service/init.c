@@ -96,8 +96,8 @@ InitializeDatabase(
     BAIL_ON_VMCA_ERROR(dwError);
 
     VMCA_LOG_INFO(
-    	"Initializing database: [%s]",
-    	VMCA_SAFE_LOG_STRING(pszCertDBPath));
+            "Initializing database: [%s]",
+            VMCA_SAFE_STRING(pszCertDBPath));
 
     dwError = VmcaDbInitialize(pszCertDBPath);
     BAIL_ON_VMCA_ERROR(dwError);

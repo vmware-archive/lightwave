@@ -92,8 +92,6 @@ objectClasses: (
          $ replPageSize
          $ invocationId
          )
-    MAY  ( upToDateVector
-         )
     )
 
 objectClasses: (
@@ -283,7 +281,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.9
     NAME 'vmwServerGUID'
     DESC 'A GUID identifying a vmware directory server and the associated DB'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44{36}
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -312,39 +309,15 @@ attributeTypes: (
     VMWare.DIR.attribute.0.12
     NAME 'replBindPassword'
     DESC 'Attribute containing the bind password to be used to bind to a replication partner.'
-    EQUALITY octetStringMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40{128}
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.0.13
-    NAME 'lastLocalUsnProcessed'
-    DESC 'Last local update sequence number, corresponding to this replication partner, processed by the current server.'
-    EQUALITY integerMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
     )
 
 # attribute replInterval from AD
 
 attributeTypes: (
-    VMWare.DIR.attribute.0.14
-    NAME 'upToDateVector'
-    DESC 'Up-to-date vector data structure used in multi-master replication.'
-    EQUALITY caseExactMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
     VMWare.DIR.attribute.0.15
     NAME 'replPageSize'
     DESC 'Number of changes requested in seach replication search request'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -353,7 +326,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.17
     NAME 'vmwRidSequenceNumber'
     DESC 'An integer uniquely identifying the current rid sequence number used to generate next RID'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -364,7 +336,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.18
     NAME 'vmwNodeSequenceNumber'
     DESC 'An integer uniquely identifying the current node sequence number used to generate next RID'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -392,7 +363,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.21
     NAME 'oldUserPassword'
     DESC 'Old passwords in digest form to prevent password recycle per policy'
-    EQUALITY octetStringMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -400,29 +370,9 @@ attributeTypes: (
     )
 
 attributeTypes: (
-    VMWare.DIR.attribute.0.22
-    NAME 'attributeMetaData'
-    DESC 'An internal computed attribute used to store info for replication'
-    EQUALITY caseExactMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    )
-
-attributeTypes: (
     VMWare.DIR.attribute.0.23
     NAME 'vmwEntryIdSequenceNumber'
     DESC 'Entry ID sequence number generator key prefix, not used in any objectclass'
-    EQUALITY integerMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.0.24
-    NAME 'vmwUSNSequenceNumber'
-    DESC 'USN sequence number generator key prefix, not used in any objectclass'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -433,7 +383,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.25
     NAME 'parentid'
     DESC 'VMW internal usage to represent sudo parent id attribute, not used in any objectclass'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -444,7 +393,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.26
     NAME 'passwordHashScheme'
     DESC 'Name of the password hashing scheme'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     SINGLE-VALUE
     )
@@ -453,7 +401,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.27
     NAME 'serverId'
     DESC 'An ID used in SID allocation relative to this server'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -474,7 +421,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.30
     NAME 'vmwDomainFunctionalLevel'
     DESC 'Domain functional level supported by a Lotus domain'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -485,7 +431,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.31
     NAME 'vmwForestFunctionalLevel'
     DESC 'Forest functional level supported by the Lotus forest'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -496,7 +441,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.32
     NAME 'vmwServerVersion'
     DESC 'Lotus server version'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -507,7 +451,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.33
     NAME 'vmwServerRunTimeStatus'
     DESC 'Server runtime status'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     NO-USER-MODIFICATION
     USAGE directoryOperation
@@ -517,7 +460,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.34
     NAME 'vmwPasswordProhibitedPreviousCount'
     DESC 'VMWare - prohibited previous passwords count'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -526,7 +468,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.35
     NAME 'vmwPasswordLifetimeDays'
     DESC 'VMWare - password expiration in days'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -535,7 +476,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.36
     NAME 'vmwPasswordMaxLength'
     DESC 'VMWare- password max length'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -544,7 +484,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.37
     NAME 'vmwPasswordMinLength'
     DESC 'VMWare - password min length'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -553,7 +492,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.38
     NAME 'vmwPasswordMinAlphabeticCount'
     DESC 'VMWare i- password min alphabetic count'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -562,7 +500,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.39
     NAME 'vmwPasswordMinUpperCaseCount'
     DESC 'VMWare - password min upper case count'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -571,7 +508,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.40
     NAME 'vmwPasswordMinNumericCount'
     DESC 'VMWare - password min numeric count'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -580,7 +516,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.41
     NAME 'vmwPasswordMinSpecialCharCount'
     DESC 'VMWare - password min special char @#$%&^* count'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -589,7 +524,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.42
     NAME 'vmwPasswordMaxIdenticalAdjacentChars'
     DESC 'VMWare - password max identical adjacent char'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -598,7 +532,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.43
     NAME 'vmwPasswordChangeMaxFailedAttempts'
     DESC 'VMWare - password change max failed attempts'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -607,7 +540,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.43
     NAME 'vmwPasswordChangeFailedAttemptIntervalSec'
     DESC 'VMWare - password change failed attempt interval in second'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -616,7 +548,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.45
     NAME 'vmwPasswordChangeAutoUnlockIntervalSec'
     DESC 'VMWare - password change unlock interval in second'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -625,7 +556,6 @@ attributetypes: (
     VMWare.DIR.attribute.0.46
     NAME 'vmwPasswordMinLowerCaseCount'
     DESC 'VMWare - password min lower case count'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -648,7 +578,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.48
     NAME 'vmwMaxServerId'
     DESC 'Maximum server id allocated to servers in this forest so far.'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -668,7 +597,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.50
     NAME 'vmwLDUGuid'
     DESC 'A GUID identifying an LDU associated with this vmware directory server'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44{36}
     SINGLE-VALUE
     USAGE directoryOperation
@@ -678,7 +606,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.51
     NAME 'vmwPasswordNeverExpires'
     DESC 'Attribute to indicate if the password ever expires for the object'
-    EQUALITY booleanMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
     SINGLE-VALUE
     )
@@ -697,7 +624,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.53
     NAME 'vmwSRPSecret'
     DESC 'SRP secret'
-    EQUALITY octetStringMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -708,7 +634,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.54
     NAME 'vmwAclString'
     DESC 'ACL in string format'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     USAGE directoryOperation
@@ -718,7 +643,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.55
     NAME 'vmwPasswordSpecialChars'
     DESC 'List of special characters'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{32}
     SINGLE-VALUE
     )
@@ -727,7 +651,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.56
     NAME 'vmwMachineGUID'
     DESC 'A GUID identifying a machine'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44{36}
     SINGLE-VALUE
     )
@@ -736,7 +659,6 @@ attributeTypes: (
     VMWare.DIR.attribute.0.57
     NAME 'vmwPlatformServicesControllerVersion'
     DESC 'Platform Services Controller version'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -751,47 +673,14 @@ attributeTypes: (
     NO-USER-MODIFICATION
     )
 
-attributeTypes: (
-    VMWare.DIR.attribute.0.59
-    NAME 'attributeValueMetaData'
-    DESC 'An internal computed attribute used to store info for replication'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
 ##############################################################
 ########## Following attribute override AD schema.  ##########
 ########## ??????????? should we do this ?????????  ##########
 ##############################################################
 attributeTypes: (
-    VMWare.DIR.attribute.1.1
-    NAME 'uSNCreated'
-    DESC 'Update sequence number identifying the transaction that created the object'
-    EQUALITY integerMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.2
-    NAME 'uSNChanged'
-    DESC 'Update sequence number identifying the transaction that last modified the object'
-    EQUALITY integerMatch
-    ORDERING integerOrderingMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
     VMWare.DIR.attribute.1.3
     NAME 'isDeleted'
     DESC 'Value of the attribute determines if an object is in the DELETED state'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{256}
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -802,7 +691,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.4
     NAME 'objectGUID'
     DESC 'GUID'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{36}
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -819,17 +707,6 @@ attributeTypes: (
     USAGE directoryOperation
     )
 
-attributeTypes: (
-    VMWare.DIR.attribute.1.6
-    NAME 'highestCommittedUSN'
-    DESC 'Highest committed USN on this vmware directory server'
-    EQUALITY integerMatch
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
 ############################################################
 ########## vmdird other RFC definition - BEGIN
 ############################################################
@@ -838,7 +715,6 @@ attributeTypes: (
     2.5.18.3
     NAME 'creatorsName'
     DESC 'RFC4512: name of creator'
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -849,7 +725,6 @@ attributeTypes: (
     2.5.18.4
     NAME 'modifiersName'
     DESC 'RFC4512: name of last modifier'
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -860,7 +735,6 @@ attributeTypes: (
     2.5.18.9
     NAME 'hasSubordinates'
     DESC 'X.501: entry has children'
-    EQUALITY booleanMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -871,8 +745,6 @@ attributeTypes: (
     1.3.6.1.1.16.4
     NAME 'entryUUID'
     DESC 'UUID of the entry'
-    EQUALITY UUIDMatch
-    ORDERING UUIDOrderingMatch
     SYNTAX 1.3.6.1.1.16.1
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -892,7 +764,6 @@ attributeTypes: (
     NAME 'namingContexts'
     DESC 'RFC4512: naming contexts'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     USAGE dSAOperation
     )
@@ -933,7 +804,6 @@ attributeTypes: (
     1.3.6.1.4.1.4203.1.3.5
     NAME 'supportedFeatures'
     DESC 'RFC4512: features supported by the server'
-    EQUALITY objectIdentifierMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
     USAGE dSAOperation
     )
@@ -942,7 +812,6 @@ attributeTypes: (
     1.3.6.1.1.4
     NAME 'vendorName'
     DESC 'RFC3045: name of implementation vendor'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -953,7 +822,6 @@ attributeTypes: (
     1.3.6.1.1.5
     NAME 'vendorVersion'
     DESC 'RFC3045: version of implementation'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -962,14 +830,12 @@ attributeTypes: (
 
 attributeTypes: (
     2.5.21.1 NAME 'dITStructureRules'
-    EQUALITY integerFirstComponentMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.17
     USAGE directoryOperation
     )
 
 attributeTypes: (
     2.5.21.7 NAME 'nameForms'
-    EQUALITY objectIdentifierFirstComponentMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.35
     USAGE directoryOperation
     )
@@ -978,7 +844,6 @@ attributeTypes: (
     2.16.840.1.113730.3.1.34
     NAME 'ref'
     DESC 'RFC3296: subordinate referral URL'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     USAGE distributedOperation
     )
@@ -987,7 +852,6 @@ attributeTypes: (
     2.5.4.48
     NAME 'protocolInformation'
     DESC 'RFC2256: protocol information'
-    EQUALITY protocolInformationMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.42
     )
 
@@ -1077,7 +941,6 @@ attributeTypes: (
     0.9.2342.19200300.100.1.38
     NAME 'associatedName'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     )
 
@@ -1187,7 +1050,6 @@ attributeTypes: (
     1.2.840.113556.1.2.102
     NAME 'memberOf'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     NO-USER-MODIFICATION
     )
@@ -1204,22 +1066,6 @@ attributeTypes: (
     1.2.840.113556.1.2.118
     NAME 'otherPager'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
-    )
-
-#attributeTypes: (
-#    1.2.840.113556.1.2.120
-#    NAME 'uSNChanged'
-#    SYNTAX 1.2.840.113556.1.4.906
-#    SINGLE-VALUE
-#    NO-USER-MODIFICATION
-#    )
-
-attributeTypes: (
-    1.2.840.113556.1.2.121
-    NAME 'uSNLastObjRem'
-    SYNTAX 1.2.840.113556.1.4.906
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
     )
 
 attributeTypes: (
@@ -1247,7 +1093,6 @@ attributeTypes: (
     1.2.840.113556.1.2.14
     NAME 'hasMasterNCs'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     NO-USER-MODIFICATION
     )
@@ -1270,7 +1115,6 @@ attributeTypes: (
     1.2.840.113556.1.2.15
     NAME 'hasPartialReplicaNCs'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     NO-USER-MODIFICATION
     )
@@ -1279,7 +1123,6 @@ attributeTypes: (
     1.2.840.113556.1.2.16
     NAME 'nCName'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -1297,14 +1140,6 @@ attributeTypes: (
     NAME 'otherTelephone'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     )
-
-#attributeTypes: (
-#    1.2.840.113556.1.2.19
-#    NAME 'uSNCreated'
-#    SYNTAX 1.2.840.113556.1.4.906
-#    SINGLE-VALUE
-#    NO-USER-MODIFICATION
-#    )
 
 attributeTypes: (
     1.2.840.113556.1.2.194
@@ -1421,19 +1256,10 @@ attributeTypes: (
     )
 
 attributeTypes: (
-    1.2.840.113556.1.2.267
-    NAME 'uSNDSALastObjRemoved'
-    SYNTAX 1.2.840.113556.1.4.906
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    )
-
-attributeTypes: (
     1.2.840.113556.1.2.281
     NAME 'nTSecurityDescriptor'
     SYNTAX 1.2.840.113556.1.4.907
     SINGLE-VALUE
-    USAGE directoryOperation
     )
 
 attributeTypes: (
@@ -1485,7 +1311,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.8
     NAME 'vmwRaftTerm'
     DESC 'VMware Raft Election Term'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -1496,7 +1321,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.9
     NAME 'vmwRaftLastApplied'
     DESC 'VMware Raft highest log entry applied'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -1507,7 +1331,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.10
     NAME 'vmwRaftVotedForTerm'
     DESC 'VMware Raft voted Term'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -1518,7 +1341,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.11
     NAME 'vmwRaftLogindex'
     DESC 'VMware Raft Log index'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -1546,7 +1368,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.14
     NAME 'vmwRaftFirstLogindex'
     DESC 'VMware Raft First Log index'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -1555,7 +1376,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.15
     NAME 'vmwRaftLeader'
     DESC 'Raft Leader'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -1566,7 +1386,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.16
     NAME 'vmwRaftActiveFollower'
     DESC 'A list of active Raft Followers'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     NO-USER-MODIFICATION
     USAGE directoryOperation
@@ -1576,7 +1395,6 @@ attributeTypes: (
     VMWare.DIR.attribute.1.17
     NAME 'vmwRaftMember'
     DESC 'A list of Raft cluster members'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     NO-USER-MODIFICATION
     USAGE directoryOperation
@@ -1586,9 +1404,17 @@ attributeTypes: (
     VMWare.DIR.attribute.1.18
     NAME 'vmwRaftState'
     DESC 'Raft volatile state'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.19
+    NAME 'vmwRaftLogChanged'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
     )
 
 attributeTypes: (
@@ -1673,7 +1499,6 @@ attributeTypes: (
 attributeTypes: (
     1.2.840.113556.1.2.598
     NAME 'dmdName'
-    SUBSTR caseIgnoreSubstringsMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
@@ -1682,7 +1507,6 @@ attributeTypes: (
     1.2.840.113556.1.2.7
     NAME 'subRefs'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     NO-USER-MODIFICATION
     )
@@ -1721,7 +1545,6 @@ attributeTypes: (
     1.2.840.113556.1.4.1336
     NAME 'replInterval'
     DESC 'Replication interval in seconds.'
-    EQUALITY integerMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
@@ -1750,7 +1573,6 @@ attributeTypes: (
 attributeTypes: (
     1.2.840.113556.1.4.146
     NAME 'objectSid'
-    EQUALITY octetStringMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -1840,8 +1662,6 @@ attributeTypes: (
 attributeTypes: (
     1.2.840.113556.1.4.221
     NAME 'sAMAccountName'
-    EQUALITY caseIgnoreMatch
-    SUBSTR caseIgnoreSubstringsMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
@@ -1872,14 +1692,6 @@ attributeTypes: (
     NAME 'siteGUID'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
     SINGLE-VALUE
-    )
-
-attributeTypes: (
-    1.2.840.113556.1.4.4
-    NAME 'replUpToDateVector'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
     )
 
 attributeTypes: (
@@ -1956,7 +1768,6 @@ attributeTypes: (
 attributeTypes: (
     1.2.840.113556.1.4.656
     NAME 'userPrincipalName'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
@@ -1991,7 +1802,6 @@ attributeTypes: (
 attributeTypes: (
     1.2.840.113556.1.4.771
     NAME 'servicePrincipalName'
-    EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     )
 
@@ -2072,7 +1882,6 @@ attributeTypes: (
     1.3.6.1.1.20
     NAME 'entryDN'
     DESC 'DN of the entry'
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     SINGLE-VALUE
     NO-USER-MODIFICATION
@@ -2083,7 +1892,6 @@ attributeTypes: (
     1.3.6.1.4.1.1466.101.120.16
     NAME 'ldapSyntaxes'
     DESC 'RFC4512: LDAP syntaxes'
-    EQUALITY objectIdentifierFirstComponentMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
     USAGE directoryOperation
     )
@@ -2091,7 +1899,6 @@ attributeTypes: (
 attributeTypes: (
     1.3.6.1.4.1.250.1.57
     NAME 'labeledURI'
-    EQUALITY caseExactMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     )
 
@@ -2132,7 +1939,6 @@ attributeTypes: (
 attributeTypes: (
     2.5.21.2
     NAME 'dITContentRules'
-    EQUALITY objectIdentifierFirstComponentMatch
 #  AD use following, RFC use different (need consolidate?)
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     USAGE directoryOperation
@@ -2142,7 +1948,6 @@ attributeTypes: (
     2.5.21.4
     NAME 'matchingRules'
     DESC 'RFC4512: matching rules'
-    EQUALITY objectIdentifierFirstComponentMatch
 #  AD use DirectoryString syntax, RFC use following
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
     USAGE directoryOperation
@@ -2151,7 +1956,6 @@ attributeTypes: (
 attributeTypes: (
     2.5.21.5
     NAME 'attributeTypes'
-    EQUALITY objectIdentifierFirstComponentMatch
 #  AD use following , RFC use different
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     USAGE directoryOperation
@@ -2160,7 +1964,6 @@ attributeTypes: (
 attributeTypes: (
     2.5.21.6
     NAME 'objectClasses'
-    EQUALITY objectIdentifierFirstComponentMatch
 #  AD use following, RFC use different
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     USAGE directoryOperation
@@ -2170,7 +1973,6 @@ attributeTypes: (
     2.5.21.8
     NAME 'matchingRuleUse'
     DESC 'RFC4512: matching rule uses'
-    EQUALITY objectIdentifierFirstComponentMatch
 #  AD use following, RFC use different
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
     USAGE directoryOperation
@@ -2326,7 +2128,6 @@ attributeTypes: (
     2.5.4.31
     NAME 'member'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     )
 
@@ -2334,7 +2135,6 @@ attributeTypes: (
     2.5.4.32
     NAME 'owner'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     SINGLE-VALUE
     )
@@ -2343,7 +2143,6 @@ attributeTypes: (
     2.5.4.34
     NAME 'seeAlso'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     )
 
@@ -2379,7 +2178,6 @@ attributeTypes: (
     NAME 'distinguishedName'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
 #vmw
-    EQUALITY distinguishedNameMatch
     SINGLE-VALUE
     NO-USER-MODIFICATION
     )
@@ -2394,7 +2192,6 @@ attributeTypes: (
     2.5.4.50
     NAME 'uniqueMember'
 #vmw
-    EQUALITY distinguishedNameMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     )
 
@@ -2645,13 +2442,10 @@ objectClasses: (
         $ whenCreated
         $ whenChanged
         $ subRefs
-        $ uSNCreated
         $ isDeleted
         $ memberOf
-        $ uSNChanged
         $ extensionName
         $ objectGUID
-        $ replUpToDateVector
         $ wellKnownObjects
         $ allowedChildClasses
         $ allowedChildClassesEffective
@@ -2664,6 +2458,7 @@ objectClasses: (
         $ createTimeStamp
         $ modifyTimeStamp
         $ subSchemaSubEntry
+        $ vmwRaftLogChanged
         )
     )
 
@@ -2852,22 +2647,18 @@ objectClasses: (
 attributetypes: (
     VMWare.Kerberos.attribute.1
     NAME 'krbPrincipalName'
-    EQUALITY caseExactIA5Match
-    SUBSTR caseExactSubstringsMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
     )
 
 attributetypes: (
     VMWare.Kerberos.attribute.28
     NAME 'krbPrincipalKey'
-    EQUALITY octetStringMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
     )
 
 attributetypes: (
     VMWare.Kerberos.attribute.36
     NAME 'krbMKey'
-    EQUALITY octetStringMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
     )
 

@@ -72,12 +72,6 @@ NewConnection(
     Sockbuf_IO      *pSockbuf_IO
     );
 
-static DWORD
-VmDirWhichAddressPresent(
-    BOOLEAN *pIPV4AddressPresent,
-    BOOLEAN *pIPV6AddressPresent
-);
-
 static
 BOOLEAN
 _VmDirFlowCtrlThrEnter(
@@ -179,11 +173,6 @@ VmDirInitConnAcceptThread(
 
     for (i = 0; i < dwLdapPorts; i++)
     {
-        dwError = VmDirAllocateMemory(
-                sizeof(*pThrInfo),
-                (PVOID*)&pThrInfo);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
         dwError = VmDirAllocateMemory(
                 sizeof(DWORD),
                 (PVOID)&pdwPort);
@@ -1075,11 +1064,11 @@ error:
  VmDirWhichAddressPresent: Check if ipv4 or ipv6 addresses exist
  */
 
-static DWORD
+DWORD
 VmDirWhichAddressPresent(
     BOOLEAN *pIPV4AddressPresent,
     BOOLEAN *pIPV6AddressPresent
-)
+    )
 {
     int                 retVal = 0;
 #ifndef _WIN32

@@ -29,13 +29,6 @@
 #define VDIR_INDEX_INITIALIZER                                           \
 {                                                                        \
     {                                                                    \
-        VMDIR_SF_INIT(.pszAttrName, ATTR_ATTR_META_DATA),                \
-        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
-        VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
-        VMDIR_SF_INIT(.bGlobalUniq, TRUE),                               \
-        VMDIR_SF_INIT(.bIsNumeric, FALSE)                                \
-    },                                                                   \
-    {                                                                    \
         VMDIR_SF_INIT(.pszAttrName, ATTR_CN),                            \
         VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY | INDEX_TYPE_SUBSTR), \
         VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
@@ -106,21 +99,14 @@
         VMDIR_SF_INIT(.bIsNumeric, FALSE)                                \
     },                                                                   \
     {                                                                    \
-        VMDIR_SF_INIT(.pszAttrName, ATTR_USN_CHANGED),                   \
-        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
-        VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
-        VMDIR_SF_INIT(.bGlobalUniq, TRUE),                               \
-        VMDIR_SF_INIT(.bIsNumeric, TRUE)                                 \
-    },                                                                   \
-    {                                                                    \
-        VMDIR_SF_INIT(.pszAttrName, ATTR_ATTR_VALUE_META_DATA),          \
-        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
-        VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
-        VMDIR_SF_INIT(.bGlobalUniq, FALSE),                              \
-        VMDIR_SF_INIT(.bIsNumeric, FALSE)                                \
-    },                                                                   \
-    {                                                                    \
         VMDIR_SF_INIT(.pszAttrName, ATTR_RAFT_LOGINDEX),                 \
+        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
+        VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
+        VMDIR_SF_INIT(.bGlobalUniq, TRUE ),                              \
+        VMDIR_SF_INIT(.bIsNumeric, TRUE )                                \
+    },                                                                   \
+    {                                                                    \
+        VMDIR_SF_INIT(.pszAttrName, ATTR_RAFT_LOG_CHANGED),              \
         VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
         VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
         VMDIR_SF_INIT(.bGlobalUniq, TRUE ),                              \

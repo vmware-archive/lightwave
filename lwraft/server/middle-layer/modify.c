@@ -103,6 +103,18 @@ VmDirModifyEntryCoreLogic(
                                                 VDIR_BACKEND_ENTRY_LOCK_WRITE );
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    if (pOperation->pCondWriteCtrl)
+    {
+        retVal = VmDirMatchEntryWithFilter(
+                    pOperation,
+                    pEntry,
+                    pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
+                    "Conditional Write pre-conditions (%s) failed - (%d)",
+                    VDIR_SAFE_STRING(pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter),
+                    retVal);
+    }
+
     if (modReq->dn.lberbv.bv_val == NULL) // If not already set by the caller
     {   // e.g. delete membership case via index lookup to get EID.
         retVal = VmDirBervalContentDup(&pEntry->dn, &modReq->dn);
@@ -113,6 +125,10 @@ VmDirModifyEntryCoreLogic(
     retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pEntry, VMDIR_RIGHT_DS_WRITE_PROP);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                                   "VmDirSrvAccessCheck failed - (%u)", retVal);
+
+    // update vmwRaftLogChanged attribute
+    retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     // Apply modify operations to the current entry (in pack format)
     retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &bDnModified, &pszLocalErrMsg );
@@ -351,23 +367,6 @@ txnretry:
                 default:
                     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryModify (%u)(%s)",
                                                   retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
-
-        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
-        {
-            // Generate attributes' new meta-data
-            if ((retVal = VmDirGenerateModsNewMetaData( pOperation, modReq->mods, entryId )) != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_LOCK_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                                      "GenerateModsNewMetaData (%u)", retVal );
-                }
             }
         }
 
@@ -891,118 +890,11 @@ error:
     goto cleanup;
 }
 
-/* GenerateModsNewMetaData:
- *
- * Returns:
- *      LDAP_SUCCESS: On Success
- *      LDAP_OPERATIONS_ERROR: In case of an error
- *
- */
-
-int
-VmDirGenerateModsNewMetaData(
-    PVDIR_OPERATION          pOperation,
-    PVDIR_MODIFICATION       pmods,
-    USN                      entryId
-    )
-{
-    int                  retVal = LDAP_SUCCESS;
-    int                  dbRetVal = 0;
-    PVDIR_MODIFICATION   pMod = NULL;
-    PVDIR_MODIFICATION   pUsnChangedMod = NULL;
-    char                 origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    int                  currentVersion = 0;
-    PSTR                 pszLocalErrMsg = NULL;
-
-    if (1)
-       return 0;
-
-    // Look for Replace USN_MODIFIED mod
-    for (pMod = pmods; pMod; pMod = pMod->next)
-    {
-        if (VmDirStringCompareA(ATTR_USN_CHANGED, pMod->attr.type.lberbv.bv_val, FALSE) == 0)
-        {
-            pUsnChangedMod = pMod;
-            break;
-        }
-    }
-    assert(pUsnChangedMod);
-
-    retVal = VmDirGenOriginatingTimeStr( origTimeStamp );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                  "GenerateModsNewMetaData: VmDirGenOriginatingTimeStr failed.");
-
-    if (gVmdirServerGlobals.invocationId.lberbv.bv_val == NULL)
-    {
-        retVal = VMDIR_ERROR_GENERIC;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                "GenerateModsNewMetaData: gVmdirServerGlobals.invocationId.lberbv.bv_val not set.");
-    }
-
-    for (pMod = pmods; pMod; pMod = pMod->next)
-    {
-        if ((dbRetVal = pOperation->pBEIF->pfnBEGetAttrMetaData( pOperation->pBECtx, &(pMod->attr), entryId )) != 0)
-        {
-            switch (dbRetVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                     retVal = dbRetVal;
-                     BAIL_ON_VMDIR_ERROR( retVal );
-
-                case VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND:
-                    currentVersion = 0;
-                    break;
-
-                default:
-                    retVal = dbRetVal;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                        "pfnBEGetAttrMetaData failed - (%d)(%s)", retVal,
-                                        VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
-        else
-        {
-            currentVersion = VmDirStringToIA(strchr(pMod->attr.metaData, ':') + 1);
-        }
-
-        // Force version gap if specified by pMod composer.
-        // User case: force sync schema metadata version in 6.5 schema patch.
-        currentVersion += pMod->usForceVersionGap;
-
-        // SJ-TBD: Since, currently, Replace mod is replaced by Delete and Add mods, the logic to set new attribute
-        // meta data in each of these 2 mods is bit strange, but works, because both Delete and Add mods read
-        // current attribute meta data from the DB, and not Add mod seeing attribute meta data from the previous
-        // Delete and therefore increasing the version # one extra time.
-
-        // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-        VmDirStringNPrintFA( pMod->attr.metaData, sizeof( pMod->attr.metaData ), sizeof( pMod->attr.metaData ) - 1,
-                             "%s:%d:%s:%s:%s", pUsnChangedMod->attr.vals[0].lberbv.bv_val, currentVersion + 1,
-                             gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                             origTimeStamp, pUsnChangedMod->attr.vals[0].lberbv.bv_val );
-
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
-    return retVal;
-
-error:
-
-    VmDirLog(LDAP_DEBUG_ANY, "VmDirGenerateModsNewMetaData failed: (%u)(%s)",
-                             retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
-
-    goto cleanup;
-}
-
-
 /*
  * NormalizeMods:
  * 1. Normalize attribute values present in the modifications list.
  * 2. Make sure no duplicate value
  */
-
 int
 VmDirNormalizeMods(
     PVDIR_SCHEMA_CTX    pSchemaCtx,

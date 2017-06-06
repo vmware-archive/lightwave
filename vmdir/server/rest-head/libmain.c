@@ -14,6 +14,8 @@
 
 #include "includes.h"
 
+#ifdef REST_ENABLED
+
 REST_PROCESSOR sVmDirRESTHandlers =
 {
     .pfnHandleCreate = &VmDirRESTRequestHandler,
@@ -155,7 +157,7 @@ VmDirRESTRequestHandler(
 
     dwError = coapi_find_handler(
             gpVdirRestApiDef,
-            pRestOp->pszEndpoint,
+            pRestOp->pszPath,
             pRestOp->pszMethod,
             &pMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -179,3 +181,23 @@ error:
             "%s failed, error (%d)", __FUNCTION__, dwError );
     goto response;
 }
+
+#else
+
+DWORD
+VmDirRESTServerInit(
+    VOID
+    )
+{
+    return 0;
+}
+
+VOID
+VmDirRESTServerShutdown(
+    VOID
+    )
+{
+    return;
+}
+
+#endif

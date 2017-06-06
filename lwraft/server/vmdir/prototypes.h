@@ -176,8 +176,7 @@ VmDirRpcAllocateStringW(
 
 DWORD
 VmDirLoadSchema(
-    PBOOLEAN    pbWriteSchemaEntry,
-    PBOOLEAN    pbLegacyDataLoaded
+    PBOOLEAN    pbWriteSchemaEntry
     );
 
 DWORD
@@ -187,11 +186,6 @@ InitializeSchemaEntries(
 
 DWORD
 VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
-    );
-
-DWORD
-VmDirSchemaPatchLegacyViaFile(
     PCSTR       pszSchemaFilePath
     );
 

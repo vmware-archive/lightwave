@@ -46,7 +46,7 @@ VmDirRESTOperationCreate(
     dwError = VmDirRESTResultCreate(&pRestOp->pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pRestOp->pResource = VmDirRESTGetResource(VDIR_REST_RSC_UNKNOWN);
+    pRestOp->pResource = VmDirRESTGetResource(NULL);
 
     *ppRestOp = pRestOp;
 
@@ -64,21 +64,21 @@ error:
 DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0, done = 0;
+    DWORD   i = 0, bytesRead = 0;
     json_error_t    jError = {0};
-    VDIR_REST_RESOURCE_TYPE  rscType = VDIR_REST_RSC_UNKNOWN;
     PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
     PSTR    pszVal = NULL;
     PSTR    pszInput = NULL;
     size_t  len = 0;
 
-    if (!pRestOp || !pRestReq)
+    if (!pRestOp || !pRESTHandle || !pRestReq)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -89,26 +89,38 @@ VmDirRESTOperationReadRequest(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request URI
-    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszEndpoint);
+    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pszTmp = VmDirStringChrA(pRestOp->pszEndpoint, '?');
+    pszTmp = VmDirStringChrA(pRestOp->pszPath, '?');
     if (pszTmp)
     {
         *pszTmp = '\0';
     }
 
-    // determine resource and assign error callbacks
-    rscType = VmDirRESTGetEndpointRscType(pRestOp->pszEndpoint);
-    if (rscType == VDIR_REST_RSC_UNKNOWN)
+    // determine resource
+    pRestOp->pResource = VmDirRESTGetResource(pRestOp->pszPath);
+    if (pRestOp->pResource->rscType == VDIR_REST_RSC_UNKNOWN)
     {
         dwError = VMDIR_ERROR_INVALID_REQUEST;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    pRestOp->pResource = VmDirRESTGetResource(rscType);
+
+    // extract sub-path
+    if (pRestOp->pResource->bIsEndpointPrefix)
+    {
+        dwError = VmDirAllocateStringA(
+                pRestOp->pszPath + strlen(pRestOp->pResource->pszEndpoint) + 1,
+                &pRestOp->pszSubPath);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // read request authorization info
-    dwError = VmRESTGetHttpHeader(pRestReq, "Authorization", &pRestOp->pszAuth);
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // read header If-Match
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_IF_MATCH, &pRestOp->pszHeaderIfMatch);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
@@ -125,7 +137,7 @@ VmDirRESTOperationReadRequest(
     }
 
     // read request input json
-    while (!done)
+    do
     {
         dwError = VmDirReallocateMemory(
                 (PVOID)pszInput,
@@ -133,17 +145,33 @@ VmDirRESTOperationReadRequest(
                 len + MAX_REST_PAYLOAD_LENGTH);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmRESTGetData(pRestReq, pszInput + len, &done);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmRESTGetData(
+                pRESTHandle, pRestReq, pszInput + len, &bytesRead);
 
-        len = strlen(pszInput);
+        len += bytesRead;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!IsNullOrEmptyString(pszInput))
     {
         pRestOp->pjInput = json_loads(pszInput, 0, &jError);
         if (!pRestOp->pjInput)
         {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s failed to parse json payload: "
+                    "(text=%s), "
+                    "(source=%s), "
+                    "(line=%d), "
+                    "(column=%d), "
+                    "(position=%d)",
+                    __FUNCTION__,
+                    jError.text,
+                    jError.source,
+                    jError.line,
+                    jError.column,
+                    jError.position);
+
             dwError = VMDIR_ERROR_INVALID_REQUEST;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -165,11 +193,12 @@ error:
 DWORD
 VmDirRESTOperationWriteResponse(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_RESPONSE*         ppResponse
     )
 {
     DWORD   dwError = 0;
-    DWORD   done = 0;
+    DWORD   bytesWritten = 0;
     PSTR    pszHttpStatus = NULL;
     PSTR    pszHttpReason = NULL;
     PSTR    pszBody = NULL;
@@ -177,7 +206,7 @@ VmDirRESTOperationWriteResponse(
     size_t  bodyLen = 0;
     size_t  sentLen = 0;
 
-    if (!pRestOp || !ppResponse)
+    if (!pRestOp || !pRESTHandle || !ppResponse)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -215,21 +244,23 @@ VmDirRESTOperationWriteResponse(
             ppResponse, bodyLen > MAX_REST_PAYLOAD_LENGTH ? NULL : pszBodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (!done)
+    do
     {
         size_t chunkLen = bodyLen > MAX_REST_PAYLOAD_LENGTH ?
                 MAX_REST_PAYLOAD_LENGTH : bodyLen;
 
         dwError = VmRESTSetData(
+                pRESTHandle,
                 ppResponse,
                 VDIR_SAFE_STRING(pszBody) + sentLen,
                 chunkLen,
-                &done);
-        BAIL_ON_VMDIR_ERROR(dwError);
+                &bytesWritten);
 
-        sentLen += chunkLen;
-        bodyLen -= chunkLen;
+        sentLen += bytesWritten;
+        bodyLen -= bytesWritten;
     }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);
@@ -251,7 +282,9 @@ VmDirFreeRESTOperation(
     {
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszEndpoint);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

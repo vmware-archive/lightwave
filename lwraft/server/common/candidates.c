@@ -363,6 +363,20 @@ done:
     VmDirLog( LDAP_DEBUG_TRACE, "OrFilterResults: End" );
 }
 
+VOID
+VmDirSortCandidateList(
+    VDIR_CANDIDATES *  pCl
+    )
+{
+    if (pCl && pCl->eIdsSorted == FALSE)
+    {
+        qsort ( pCl->eIds, pCl->size, sizeof( ENTRYID ), _VmDirCompareEntryIds );
+        pCl->eIdsSorted = TRUE;
+    }
+
+    return;
+}
+
 /* IntersectCandidates: Intersect 2 +ve candidates lists.
  *
  */

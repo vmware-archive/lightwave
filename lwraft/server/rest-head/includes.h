@@ -45,9 +45,12 @@
 
 #include <backend.h>
 #include <middlelayer.h>
+#include <ldaphead.h>
 #include <resthead.h>
-#include <vmdirserver.h>
 #include <schema.h>
+#include <vmdirserver.h>
+
+#ifdef REST_ENABLED
 
 #include <copenapi/copenapi.h>
 #include <curl/curl.h>
@@ -62,6 +65,8 @@
 #include <oidc.h>
 
 #include "defines.h"
-#include "externs.h"
 #include "structs.h"
+#include "externs.h"
 #include "prototypes.h"
+
+#endif

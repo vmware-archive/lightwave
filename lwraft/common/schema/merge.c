@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -66,7 +66,7 @@ VmDirLdapAtMerge(
         if (pOldAt->usage != pNewAt->usage)
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s usage mismatch (%s) (%s).",
+                    "%s: %s usage mismatch (%d) (%d).",
                     __FUNCTION__, pOldAt->pszName,
                     pOldAt->usage, pNewAt->usage);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;

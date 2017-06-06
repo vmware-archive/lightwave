@@ -12,8 +12,7 @@
  * under the License.
  */
 
-// REST ENGINE CONFIG VALUES
-// TRIDENT
+// C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC               VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdir-rest.json"
 #define VMDIR_REST_DEBUGLOGFILE     "/tmp/vmdir-rest.log"
 //#define VMDIR_REST_DEBUGLOGFILE     VMDIR_LOG_DIR    VMDIR_PATH_SEPARATOR_STR "vmdir-rest.log"    TODO use this when lightwave-first is complete
@@ -27,6 +26,10 @@
 #define VMDIR_REST_OIDC_PORT                443
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_vmdir"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
+
+// HTTP headers
+#define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
+#define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 
 // HTTP STATUS CODES
 // 1xx Informational

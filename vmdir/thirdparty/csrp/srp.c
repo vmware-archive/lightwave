@@ -525,6 +525,7 @@ static void init_random()
     HCRYPTPROV wctx;
 #else
     FILE   *fp   = 0;
+    size_t lread = 0;
 #endif
 
     if (g_initialized)
@@ -546,7 +547,7 @@ static void init_random()
         
         if (fp)
         {
-            fread(buff, sizeof(buff), 1, fp);
+            lread = fread(buff, sizeof(buff), 1, fp);
             fclose(fp);
             g_initialized = 1;
         }

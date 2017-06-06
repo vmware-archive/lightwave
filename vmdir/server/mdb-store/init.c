@@ -1081,7 +1081,7 @@ _VmDirOpenDbEnv()
     if(dwError != 0)
     {
         //Snapshot database not found, open the default database file.
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirOpenDbEnv: snapshot database not exist; use default databsae file.");
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirOpenDbEnv: snapshot database not exist; use default database file.");
         goto open_default;
     }
 

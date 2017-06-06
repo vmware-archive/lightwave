@@ -18,6 +18,7 @@
 typedef struct OIDC_CLIENT
 {
     PSTRING pszServer;
+    PSTRING pszClientID;
     PSTRING pszTokenEndpointUrl;
     PSTRING pszSigningCertificatePEM;
     PSSO_CDC pClientDCCache;

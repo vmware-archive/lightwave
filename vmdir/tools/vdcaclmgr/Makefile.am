@@ -17,7 +17,9 @@ vdcaclmgr_CPPFLAGS = \
 vdcaclmgr_LDADD = \
     $(top_builddir)/client/libvmdirclient.la \
     $(top_builddir)/common/libcommon.la \
+    @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWREG_LIBS@ \
@@ -25,7 +27,10 @@ vdcaclmgr_LDADD = \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @PTHREAD_LIBS@ \
+    @UUID_LIBS@ \
+    @LBER_LIBS@
 
 vdcaclmgr_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

@@ -2,7 +2,8 @@ bin_PROGRAMS = lwraftclienttest
 
 lwraftclienttest_SOURCES = \
     main.c \
-    saslclient.c
+    saslclient.c \
+    testldapcontrol.c
 
 lwraftclienttest_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -21,13 +22,16 @@ lwraftclienttest_LDADD = \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
+    @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @SASL_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @PTHREAD_LIBS@
 
 lwraftclienttest_LDFLAGS = \
     @DCERPC_LDFLAGS@ \

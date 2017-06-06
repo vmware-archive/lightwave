@@ -1,0 +1,65 @@
+Source: lightwave
+Section: network
+Priority: optional
+Maintainer: Suresh Chellappan <schellappan@vmware.com>
+Build-Depends: dpkg-dev (>= 1.16.1~), 
+               debhelper (>= 9), 
+               autoconf (>= 2.59), 
+               libtool (>= 1.5.2), 
+               automake, 
+               autotools-dev, 
+               dh-autoreconf,
+               heimdal-multidev,
+               krb5-multidev,
+               libdb-dev,
+               libkrb5-dev,
+               libldap2-dev,
+               libsqlite3-dev,
+               libssl-dev,
+               libboost-all-dev,
+               openjdk-8-jre
+Homepage: http://github.com/vmware/lightwave/
+Standards-Version: 1.3.0
+
+Package: lightwave-client
+Section: libs
+Architecture: any
+Depends:  coreutils (>= 8.22), 
+          libssl1.0.0 (>= 1.0.2), 
+          libkrb5-3 (>= 1.14),
+          libsasl2-2 (>= 2.1), 
+          likewise-open (>= 6.2.9), 
+          openjdk-8-jre (>= 1.8.0.45),
+          libboost-dev
+${misc:Depends}
+Description: Client libraries and Authentication services
+
+Package: lightwave-server
+Section: network
+Architecture: any
+Depends:  ${misc:Depends}, 
+          openjdk-8-jre,
+          tomcat8,
+          lightwave-client (= ${binary:Version})
+Description: lightwave server
+
+Package: lightwave-dev
+Section: libdevel
+Architecture: any
+Depends:  ${misc:Depends}
+Description: lightwave developer library
+
+Package: lightwave-raft
+Section: libdevel
+Architecture: any
+Depends:  ${misc:Depends}, 
+          lightwave-client (= ${binary:Version})
+Description: lightwave raft service
+
+Package: lightwave-dbg
+Section: debug
+Architecture: any
+Priority: extra
+Depends: ${misc:Depends}
+Multi-Arch: foreign
+Description: lightwave debugging symbols

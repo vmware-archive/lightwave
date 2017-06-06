@@ -31,7 +31,8 @@ OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
-    PCSTRING pszTenant)
+    PCSTRING pszTenant,
+    PCSTRING pszClientID /* OPT */)
 {
     SSOERROR e = SSOERROR_NONE;
     POIDC_CLIENT p = NULL;
@@ -58,6 +59,12 @@ OidcClientBuild(
     else
     {
         e = SSOStringAllocate(pszServer, &p->pszServer);
+        BAIL_ON_ERROR(e);
+    }
+
+    if (pszClientID != NULL)
+    {
+        e = SSOStringAllocate(pszClientID, &p->pszClientID);
         BAIL_ON_ERROR(e);
     }
 
@@ -91,6 +98,7 @@ OidcClientDelete(
     if (p != NULL)
     {
         SSOStringFree(p->pszServer);
+        SSOStringFree(p->pszClientID);
         SSOStringFree(p->pszTokenEndpointUrl);
         SSOStringFree(p->pszSigningCertificatePEM);
         SSOCdcDelete(p->pClientDCCache);
@@ -274,7 +282,7 @@ OidcClientAcquireTokensByPassword(
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_KEY_VALUE_PAIR* ppPairs = NULL;
-    const int parameterCount = 4;
+    int parameterCount = 4;
 
     BAIL_ON_NULL_ARGUMENT(p);
     BAIL_ON_NULL_ARGUMENT(pszUsername);
@@ -282,6 +290,11 @@ OidcClientAcquireTokensByPassword(
     BAIL_ON_NULL_ARGUMENT(pszScope);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenSuccessResponse);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenErrorResponse);
+
+    if (p->pszClientID != NULL)
+    {
+        parameterCount++;
+    }
 
     e = SSOMemoryAllocateArray(parameterCount, sizeof(PSSO_KEY_VALUE_PAIR), (void**) &ppPairs);
     BAIL_ON_ERROR(e);
@@ -293,6 +306,11 @@ OidcClientAcquireTokensByPassword(
     BAIL_ON_ERROR(e);
     e = SSOKeyValuePairNew(&ppPairs[3], "scope", pszScope);
     BAIL_ON_ERROR(e);
+    if (p->pszClientID != NULL)
+    {
+        e = SSOKeyValuePairNew(&ppPairs[4], "client_id", p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
 
     e = OidcClientAcquireTokens(p, ppPairs, parameterCount, ppOutTokenSuccessResponse, ppOutTokenErrorResponse);
     BAIL_ON_ERROR(e);
@@ -311,12 +329,17 @@ OidcClientAcquireTokensByRefreshToken(
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_KEY_VALUE_PAIR* ppPairs = NULL;
-    const int parameterCount = 2;
+    int parameterCount = 2;
 
     BAIL_ON_NULL_ARGUMENT(p);
     BAIL_ON_NULL_ARGUMENT(pszRefreshToken);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenSuccessResponse);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenErrorResponse);
+
+    if (p->pszClientID != NULL)
+    {
+        parameterCount++;
+    }
 
     e = SSOMemoryAllocateArray(parameterCount, sizeof(PSSO_KEY_VALUE_PAIR), (void**) &ppPairs);
     BAIL_ON_ERROR(e);
@@ -324,6 +347,11 @@ OidcClientAcquireTokensByRefreshToken(
     BAIL_ON_ERROR(e);
     e = SSOKeyValuePairNew(&ppPairs[1], "refresh_token", pszRefreshToken);
     BAIL_ON_ERROR(e);
+    if (p->pszClientID != NULL)
+    {
+        e = SSOKeyValuePairNew(&ppPairs[2], "client_id", p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
 
     e = OidcClientAcquireTokens(p, ppPairs, parameterCount, ppOutTokenSuccessResponse, ppOutTokenErrorResponse);
     BAIL_ON_ERROR(e);
@@ -344,7 +372,7 @@ OidcClientAcquireTokensBySolutionUserCredentials(
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_KEY_VALUE_PAIR* ppPairs = NULL;
-    const int parameterCount = 3;
+    int parameterCount = 3;
     PSTRING pszAssertionPayload = NULL;
     PSTRING pszAssertionJwtString = NULL;
 
@@ -354,6 +382,11 @@ OidcClientAcquireTokensBySolutionUserCredentials(
     BAIL_ON_NULL_ARGUMENT(pszScope);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenSuccessResponse);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenErrorResponse);
+
+    if (p->pszClientID != NULL)
+    {
+        parameterCount++;
+    }
 
     e = OidcClientBuildSolutionUserAssertionPayload(p, pszCertificateSubjectDN, &pszAssertionPayload);
     BAIL_ON_ERROR(e);
@@ -369,6 +402,11 @@ OidcClientAcquireTokensBySolutionUserCredentials(
     BAIL_ON_ERROR(e);
     e = SSOKeyValuePairNew(&ppPairs[2], "scope", pszScope);
     BAIL_ON_ERROR(e);
+    if (p->pszClientID != NULL)
+    {
+        e = SSOKeyValuePairNew(&ppPairs[3], "client_id", p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
 
     e = OidcClientAcquireTokens(p, ppPairs, parameterCount, ppOutTokenSuccessResponse, ppOutTokenErrorResponse);
     BAIL_ON_ERROR(e);
