@@ -64,7 +64,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.hStopServiceEvent, 0),
 #endif
         VMDIR_SF_INIT(.bRegisterTcpEndpoint, TRUE),
-        VMDIR_SF_INIT(.gpVmDirSrvSD, 0),
         VMDIR_SF_INIT(.replAgrsMutex, NULL),
         VMDIR_SF_INIT(.replAgrsCondition, NULL),
         VMDIR_SF_INIT(.replCycleDoneMutex, NULL),

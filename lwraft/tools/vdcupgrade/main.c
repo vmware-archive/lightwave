@@ -502,7 +502,7 @@ UpdateDCAccountSRPSecret(
     dwError = VmDirRegReadDCAccount( &pszDCAccount );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "sAMAccountName=%s",
                                              pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -520,7 +520,7 @@ UpdateDCAccountSRPSecret(
         dwError = VmDirGetDomainName( "localhost", &pszDomain );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszUPN,
+        dwError = VmDirAllocateStringPrintf( &pszUPN,
                                                  "%s@%s",
                                                  pszDCAccount,
                                                  pszDomain);
@@ -575,7 +575,7 @@ UpdateEntriesACL(
     int         totalCnt = 0;
     int         failedCnt = 0;
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "%s=%s",
                                              ATTR_KRB_UPN,
                                              pszAdminUPN);
@@ -591,7 +591,7 @@ UpdateEntriesACL(
 
 
     VMDIR_SAFE_FREE_MEMORY(pszFilter);
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "%s=*",
                                              ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -604,7 +604,7 @@ UpdateEntriesACL(
                                         &pszDomainDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pAclString,
+    dwError = VmDirAllocateStringPrintf(&pAclString,
                 "O:%sG:BAD:(A;;RPWP;;;%s)(A;;GXNRNWGXCCDCRPWP;;;BA)(A;;GXNRNWGXCCDCRPWP;;;%s)",
                                             pAdminSid,
                                             VMDIR_SELF_SID,
@@ -612,7 +612,7 @@ UpdateEntriesACL(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszFilter);
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "%s=*",
                                              ATTR_OBJECT_SECURITY_DESCRIPTOR);
     BAIL_ON_VMDIR_ERROR(dwError);

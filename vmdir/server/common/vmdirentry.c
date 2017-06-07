@@ -996,7 +996,6 @@ VmDirCreateTransientSecurityDescriptor(
                                         &pszUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-
     //
     // Create default security descriptor for internally-created entries.
     //
@@ -1024,6 +1023,7 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszDomainClientsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszUsersGroupSid);
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -1043,27 +1043,18 @@ VmDirAttrListToNewEntry(
 
     assert(pSchemaCtx && pszDN && ppszAttrList && ppEntry);
 
-    dwError = VmDirAllocateMemory(
-        sizeof(VDIR_ENTRY),
-        (PVOID*)&pEntry);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = AttrListToEntry(
-        pSchemaCtx,
-        pszDN,
-        ppszAttrList,
-        pEntry);
+    dwError = AttrListToEntry(pSchemaCtx, pszDN, ppszAttrList, pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateTransientSecurityDescriptor(
-                bAllowAnonymousRead,
-                &vsd);
+            bAllowAnonymousRead, &vsd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirEntryCacheSecurityDescriptor(
-                pEntry,
-                vsd.pSecDesc,
-                vsd.ulSecDesc);
+            pEntry, vsd.pSecDesc, vsd.ulSecDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppEntry = pEntry;
@@ -1073,12 +1064,7 @@ cleanup:
     return dwError;
 
 error:
-
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
+    VmDirFreeEntry(pEntry);
     goto cleanup;
 }
 

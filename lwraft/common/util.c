@@ -2010,9 +2010,9 @@ VmDirCertificateFileNameFromHostName(
     }
     else
     {
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
+        dwError = VmDirAllocateStringPrintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalRsaServerCertFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalRsaServerCertFileName) failed" );
 
         pszSlash = VmDirStringRChrA(pszLocalRsaServerCertFileName, VMDIR_PATH_SEPARATOR_STR[0]);
 
@@ -2026,9 +2026,9 @@ VmDirCertificateFileNameFromHostName(
 
         *(pszSlash + 1) = '\0';
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
+        dwError = VmDirAllocateStringPrintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalFileName) failed" );
     }
 
     *ppszFileName = pszLocalFileName;
@@ -3302,7 +3302,7 @@ VmDirGetDCDNList(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszDCDN,
+    dwError = VmDirAllocateStringPrintf(&pszDCDN,
                                             "%s=%s,%s",
                                             ATTR_OU,
                                             VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,

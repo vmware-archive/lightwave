@@ -59,7 +59,6 @@ texinfo.tex
 # Linker output
 *.ilk
 *.map
-*.exp
 
 # Precompiled Headers
 *.gch

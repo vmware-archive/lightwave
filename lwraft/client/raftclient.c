@@ -77,8 +77,14 @@ VmDirRaftServerExists(
     dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszRaftDN, "%s=%s,%s=%s,%s", ATTR_CN, pszRaftHostName,
-                                             ATTR_OU, VMDIR_DOMAIN_CONTROLLERS_RDN_VAL, pszDomainDN);
+    dwError = VmDirAllocateStringPrintf(
+            &pszRaftDN,
+            "%s=%s,%s=%s,%s",
+            ATTR_CN,
+            pszRaftHostName,
+            ATTR_OU,
+            VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
+            pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     bRaftServerExists = VmDirIfDNExist(pLd, pszRaftDN);
@@ -347,7 +353,11 @@ VmDirRaftLeaveCluster(
                 &pLd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszLeaveNodeUPN, "%s@%s", pszLeaveNode, pszDomainName);
+    dwError = VmDirAllocateStringPrintf(
+            &pszLeaveNodeUPN,
+            "%s@%s",
+            pszLeaveNode,
+            pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirConvertUPNToDN(pLd, pszLeaveNodeUPN, &pszLeaveNodeDN);
@@ -430,17 +440,21 @@ _VmDirConnectToRaft(
     {
         if ( VmDirIsIPV6AddrFormat( pszServerName ) )
         {
-            dwError = VmDirAllocateStringAVsnprintf( &pszLocalHostURI, "%s://[%s]:%d",
-                                                     VMDIR_LDAP_PROTOCOL,
-                                                     pszServerName,
-                                                     DEFAULT_LDAP_PORT_NUM);
+            dwError = VmDirAllocateStringPrintf(
+                    &pszLocalHostURI,
+                    "%s://[%s]:%d",
+                    VMDIR_LDAP_PROTOCOL,
+                    pszServerName,
+                    DEFAULT_LDAP_PORT_NUM);
         }
         else
         {
-            dwError = VmDirAllocateStringAVsnprintf( &pszLocalHostURI, "%s://%s:%d",
-                                                     VMDIR_LDAP_PROTOCOL,
-                                                     pszServerName,
-                                                     DEFAULT_LDAP_PORT_NUM);
+            dwError = VmDirAllocateStringPrintf(
+                    &pszLocalHostURI,
+                    "%s://%s:%d",
+                    VMDIR_LDAP_PROTOCOL,
+                    pszServerName,
+                    DEFAULT_LDAP_PORT_NUM);
         }
         BAIL_ON_VMDIR_ERROR(dwError);
 

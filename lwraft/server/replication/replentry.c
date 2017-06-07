@@ -369,7 +369,7 @@ VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_O
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirGetParentDN(&raftEntry.dn, &raftEntry.pdn );
+    dwError = VmDirGetParentDN(&raftEntry.dn, &raftEntry.pdn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirUuidGenerate (&guid);
@@ -384,8 +384,11 @@ VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_O
     dwError = VmDirEntryAddBervArrayAttribute(&raftEntry, ATTR_RAFT_LOG_ENTRIES, &pLogEntry->packRaftLog, 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirComputeObjectSecurityDescriptor(NULL, &raftEntry, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     raftEntry.eId = VmDirRaftLogEntryId(pLogEntry->index);
-    dwError = pOp->pBEIF->pfnBEEntryAdd( pOp->pBECtx, &raftEntry);
+    dwError = pOp->pBEIF->pfnBEEntryAdd(pOp->pBECtx, &raftEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCloneStackOperation(pOp, &modOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);

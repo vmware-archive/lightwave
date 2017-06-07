@@ -2617,7 +2617,7 @@ VmDirRaftGetLeader(PSTR *ppszLeader)
         gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER &&
         gRaftState.leader.lberbv_len > 0)
     {
-       dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
+       dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
        BAIL_ON_VMDIR_ERROR(dwError);
     }
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
@@ -2828,13 +2828,13 @@ VmDirRaftGetLeaderString(PSTR *ppszLeader)
     if (gRaftState.clusterSize < 2 && gRaftState.hostname.lberbv_len > 0)
     {
         //Standalone server, show self as the leader.
-        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
     } else if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0 )
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
     } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER && gRaftState.hostname.lberbv_len > 0)
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2868,7 +2868,7 @@ VmDirRaftGetFollowers(PDEQUE pFollowers)
 
     if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.hostname.lberbv_len > 0)
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pFollower, "%s", gRaftState.hostname.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pFollower, "%s", gRaftState.hostname.lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = dequePush(pFollowers, pFollower);
@@ -2883,7 +2883,7 @@ VmDirRaftGetFollowers(PDEQUE pFollowers)
                 continue;
             }
             // list active followers only
-            dwError = VmDirAllocateStringAVsnprintf(&pFollower, "%s", pPeerProxy->raftPeerHostname);
+            dwError = VmDirAllocateStringPrintf(&pFollower, "%s", pPeerProxy->raftPeerHostname);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = dequePush(pFollowers, pFollower);
@@ -2920,14 +2920,14 @@ VmDirRaftGetState(PDEQUE pStateQueue)
         goto cleanup;
     }
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "node: %s", gRaftState.hostname.lberbv_val);
+    dwError = VmDirAllocateStringPrintf(&pNode, "node: %s", gRaftState.hostname.lberbv_val);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "role: %s",
+    dwError = VmDirAllocateStringPrintf(&pNode, "role: %s",
                 (gRaftState.clusterSize < 2 || gRaftState.role==VDIR_RAFT_ROLE_LEADER)?"leader":
                 (gRaftState.role==VDIR_RAFT_ROLE_FOLLOWER?"follower":"candidate"));
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2936,21 +2936,21 @@ VmDirRaftGetState(PDEQUE pStateQueue)
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "lastIndex: %llu", gRaftState.lastLogIndex);
+    dwError = VmDirAllocateStringPrintf(&pNode, "lastIndex: %llu", gRaftState.lastLogIndex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "lastAppliedIndex: %llu", gRaftState.lastApplied);
+    dwError = VmDirAllocateStringPrintf(&pNode, "lastAppliedIndex: %llu", gRaftState.lastApplied);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "term: %u", gRaftState.currentTerm);
+    dwError = VmDirAllocateStringPrintf(&pNode, "term: %u", gRaftState.currentTerm);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
@@ -2959,7 +2959,7 @@ VmDirRaftGetState(PDEQUE pStateQueue)
 
     if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0)
     {
-       dwError = VmDirAllocateStringAVsnprintf(&pNode, "leader: %s", gRaftState.leader.lberbv_val);
+       dwError = VmDirAllocateStringPrintf(&pNode, "leader: %s", gRaftState.leader.lberbv_val);
        BAIL_ON_VMDIR_ERROR(dwError);
 
        dwError = dequePush(pStateQueue, pNode);
@@ -2973,7 +2973,7 @@ VmDirRaftGetState(PDEQUE pStateQueue)
             {
                 continue;
             }
-            dwError = VmDirAllocateStringAVsnprintf(&pNode, "follower: %s %s", pPeerProxy->raftPeerHostname,
+            dwError = VmDirAllocateStringPrintf(&pNode, "follower: %s %s", pPeerProxy->raftPeerHostname,
                         pPeerProxy->proxy_state==RPC_DISCONN?"disconnected":"active");
             BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -3070,7 +3070,7 @@ _VmdirDeleteLog(unsigned long long logIndex, BOOLEAN bCompactLog)
     ldapOp.pBEIF = VmDirBackendSelect(NULL);
     assert(ldapOp.pBEIF);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pDn, "%s=%llu,%s", ATTR_CN, logIndex, RAFT_LOGS_CONTAINER_DN);
+    dwError = VmDirAllocateStringPrintf(&pDn, "%s=%llu,%s", ATTR_CN, logIndex, RAFT_LOGS_CONTAINER_DN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     ldapOp.reqDn.lberbv.bv_val = pDn;

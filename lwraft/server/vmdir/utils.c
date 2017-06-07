@@ -500,6 +500,7 @@ VmDirServerStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        SERVER_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -575,17 +576,17 @@ VmDirReplicationStatusEntry(
 
     maxOriginatingUSN = backendCtx.pBE->pfnBEGetMaxOriginatingUSN( &backendCtx );
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszPartnerVisibleUSN,
+    dwError = VmDirAllocateStringPrintf( &pszPartnerVisibleUSN,
                                              "%u",
                                              maxPartnerVisibleUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszCycleCount,
+    dwError = VmDirAllocateStringPrintf( &pszCycleCount,
                                              "%u",
                                              VmDirGetReplCycleCounter());
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszMaxOriginatingUSN,
+    dwError = VmDirAllocateStringPrintf( &pszMaxOriginatingUSN,
                                              "%u",
                                              maxOriginatingUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -620,7 +621,7 @@ VmDirReplicationStatusEntry(
             dwError = VmDirAllocateStringA( ppszArray[dwCnt*3], &ppszAttrList[dwIndex++]);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirAllocateStringAVsnprintf( &(ppszAttrList[dwIndex++]),
+            dwError = VmDirAllocateStringPrintf( &(ppszAttrList[dwIndex++]),
                                                      "%s%s",
                                                      ppszArray[dwCnt*3+1] ? ppszArray[dwCnt*3+1] : "" ,
                                                      ppszArray[dwCnt*3+2] ? ppszArray[dwCnt*3+2] : "Unknown" );
@@ -634,6 +635,7 @@ VmDirReplicationStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        REPLICATION_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -732,7 +734,7 @@ VmDirRaftStateEntry(
 
         if (dwError==0)
         {
-            dwError = VmDirAllocateStringAVsnprintf(&pNode, "-");
+            dwError = VmDirAllocateStringPrintf(&pNode, "-");
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = dequePush(&membersState, pNode);
@@ -750,7 +752,7 @@ VmDirRaftStateEntry(
 
     {
         PSTR ppStateEntry[] = {ATTR_CN, "raftstate", ATTR_OBJECT_CLASS, OC_CLASS_RAFT_STATE, NULL};
-        dwError = VmDirAttrListToNewEntry(pSchemaCtx, RAFT_STATE_DN, ppStateEntry, &pEntry);
+        dwError = VmDirAttrListToNewEntry(pSchemaCtx, RAFT_STATE_DN, ppStateEntry, FALSE, &pEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -865,7 +867,7 @@ VmDirGetBootStrapSchemaFilePath(
     {
        dwError = VmDirAppendStringToEnvVar(
                         TEXT("PROGRAMDATA"),
-                        TEXT("\\VMware\\CIS\\cfg\\lwraftd\\vmdirschema.ldif"),
+                        TEXT("\\VMware\\CIS\\cfg\\lwraftd\\lwraftschema.ldif"),
                         pBootStrapSchemaFile
                         );
     }

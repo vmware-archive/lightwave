@@ -695,15 +695,17 @@ VmDirBackendRemoveOutstandingUSN(
     );
 
 DWORD
-VmDirBackendAddOriginatingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
+VmDirBackendUniqKeyGetValue(
+    PCSTR       pKey,
+    PSTR*       ppValue
     );
 
-VOID
-VmDirBackendRemoveOriginatingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
+DWORD
+VmDirBackendUniqKeySetValue(
+    PCSTR       pKey,
+    PCSTR       pValue,
+    BOOLEAN     bForce
     );
-
 
 // util.c
 DWORD

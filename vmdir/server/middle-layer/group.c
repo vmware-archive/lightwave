@@ -168,6 +168,7 @@ VmDirPluginGroupMemberPreModApplyDelete(
 {
     DWORD dwError = 0;
     DWORD i = 0;
+    BOOLEAN bHasParent = FALSE;
     PVDIR_BERVALUE pMemberDN = NULL;
     VDIR_BERVALUE bvParentDN = VDIR_BERVALUE_INIT;
     PVDIR_BERVALUE pGroupDN = NULL;
@@ -180,18 +181,20 @@ VmDirPluginGroupMemberPreModApplyDelete(
     dwError = VmDirSimpleDNToEntry(pMemberDN->lberbv.bv_val, &pTargetEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirGetParentDN(pMemberDN, &bvParentDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bHasParent = bvParentDN.lberbv.bv_len > 0;
+
     dwError = VmDirSrvAccessCheck(
                     pOperation,
                     &pOperation->conn->AccessInfo,
                     pTargetEntry,
                     VMDIR_RIGHT_DS_DELETE_OBJECT);
-    if (dwError != ERROR_SUCCESS)
+    if (dwError && bHasParent)
     {
         VmDirFreeEntry(pTargetEntry);
         pTargetEntry = NULL;
-
-        dwError = VmDirGetParentDN(pMemberDN, &bvParentDN);
-        BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSimpleDNToEntry(bvParentDN.lberbv.bv_val, &pTargetEntry);
         BAIL_ON_VMDIR_ERROR(dwError);

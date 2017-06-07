@@ -933,44 +933,112 @@ VmDirFreeBervalContent(
     return;
 }
 
+static
+DWORD
+_VmDirCreateTransientSecurityDescriptor(
+    BOOL bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR pvsd
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDomainDN = NULL;
+    PSTR pszAdminsGroupSid = NULL;
+    PSTR pszDomainAdminsGroupSid = NULL;
+    PSTR pszDomainClientsGroupSid = NULL;
+    PSTR pszUsersGroupSid = NULL;
+    VMDIR_SECURITY_DESCRIPTOR SecDesc = {0};
+
+    pszDomainDN = BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+                                        &pszAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ADMINS_RID,
+                                        &pszDomainAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_CLIENTS_RID,
+                                        &pszDomainClientsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ALIAS_RID_USERS,
+                                        &pszUsersGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //
+    // Create default security descriptor for internally-created entries.
+    //
+    dwError = VmDirSrvCreateSecurityDescriptor(
+                VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD_BUT_DELETE_OBJECT,
+                BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN),
+                pszAdminsGroupSid,
+                pszDomainAdminsGroupSid,
+                pszDomainClientsGroupSid,
+                pszUsersGroupSid,
+                FALSE,
+                bAllowAnonymousRead,
+                FALSE,
+                FALSE,
+                &SecDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pvsd->pSecDesc = SecDesc.pSecDesc;
+    pvsd->ulSecDesc = SecDesc.ulSecDesc;
+    pvsd->SecInfo = SecDesc.SecInfo;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszAdminsGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainAdminsGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainClientsGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszUsersGroupSid);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 DWORD
 VmDirAttrListToNewEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     PSTR                pszDN,
     PSTR*               ppszAttrList,
+    BOOLEAN             bAllowAnonymousRead,
     PVDIR_ENTRY*        ppEntry
     )
 {
     DWORD   dwError = 0;
     PVDIR_ENTRY  pEntry = NULL;
+    VMDIR_SECURITY_DESCRIPTOR vsd = {0};
 
     assert(pSchemaCtx && pszDN && ppszAttrList && ppEntry);
 
-    dwError = VmDirAllocateMemory(
-        sizeof(VDIR_ENTRY),
-        (PVOID*)&pEntry);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = AttrListToEntry(
-        pSchemaCtx,
-        pszDN,
-        ppszAttrList,
-        pEntry);
+    dwError = AttrListToEntry(pSchemaCtx, pszDN, ppszAttrList, pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirCreateTransientSecurityDescriptor(
+            bAllowAnonymousRead, &vsd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirEntryCacheSecurityDescriptor(
+            pEntry, vsd.pSecDesc, vsd.ulSecDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppEntry = pEntry;
 
 cleanup:
-
+    VMDIR_SAFE_FREE_MEMORY(vsd.pSecDesc);
     return dwError;
 
 error:
-
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
+    VmDirFreeEntry(pEntry);
     goto cleanup;
 }
 
@@ -1124,6 +1192,88 @@ VmDirEntryIsObjectclass(
     return bResult;
 }
 
+DWORD
+VmDirEntryIsAttrAllowed(
+    PVDIR_ENTRY pEntry,
+    PSTR        pszAttrName,
+    PBOOLEAN    pbMust,
+    PBOOLEAN    pbMay
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PVDIR_ATTRIBUTE         pAttrOC = NULL;
+    PVDIR_SCHEMA_OC_DESC    pOCDesc = NULL;
+    PLW_HASHMAP pAllMustAttrMap = NULL;
+    PLW_HASHMAP pAllMayAttrMap = NULL;
+
+    if (!pEntry || IsNullOrEmptyString(pszAttrName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = LwRtlCreateHashMap(&pAllMustAttrMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwRtlCreateHashMap(&pAllMayAttrMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAttrOC = VmDirFindAttrByName(pEntry, ATTR_OBJECT_CLASS);
+
+    for (i = 0; pAttrOC && i < pAttrOC->numVals; i++)
+    {
+        dwError = VmDirSchemaOCNameToDescriptor(
+                pEntry->pSchemaCtx, pAttrOC->vals[i].lberbv.bv_val, &pOCDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaClassGetAllMustAttrs(
+                pEntry->pSchemaCtx, pOCDesc, pAllMustAttrMap);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaClassGetAllMayAttrs(
+                pEntry->pSchemaCtx, pOCDesc, pAllMayAttrMap);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pbMust)
+    {
+        *pbMust = FALSE;
+        if (LwRtlHashMapFindKey(pAllMustAttrMap, NULL, pszAttrName) == 0)
+        {
+            *pbMust = TRUE;
+        }
+    }
+
+    if (pbMay)
+    {
+        *pbMay = FALSE;
+        if (LwRtlHashMapFindKey(pAllMayAttrMap, NULL, pszAttrName) == 0)
+        {
+            *pbMay = TRUE;
+        }
+    }
+
+cleanup:
+    LwRtlHashMapClear(pAllMustAttrMap, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pAllMustAttrMap);
+    LwRtlHashMapClear(pAllMayAttrMap, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pAllMayAttrMap);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
 /* *************************************************************
  * if success, pAttr takes ownership of pBervs and its contents
  * *************************************************************
@@ -1260,5 +1410,35 @@ error:
     VmDirFreeEntryContent(pEntry);
     memset(pEntry, 0, sizeof(*pEntry));
 
+    goto cleanup;
+}
+
+DWORD
+VmDirDeleteEntry(
+    PVDIR_ENTRY pEntry
+    )
+{
+    DWORD dwError = 0;
+    VDIR_OPERATION op = {0};
+    DeleteReq *dr = NULL;
+
+    dwError = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    op.pBEIF = VmDirBackendSelect(NULL);
+    op.reqDn.lberbv_val = pEntry->dn.lberbv.bv_val;
+    op.reqDn.lberbv_len = pEntry->dn.lberbv.bv_len;
+
+    dr = &op.request.deleteReq;
+    dr->dn.lberbv.bv_val = op.reqDn.lberbv.bv_val;
+    dr->dn.lberbv.bv_len = op.reqDn.lberbv.bv_len;
+
+    dwError = VmDirInternalDeleteEntry(&op);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperationContent(&op);
+    return dwError;
+error:
     goto cleanup;
 }

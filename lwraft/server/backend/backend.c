@@ -375,6 +375,114 @@ VmDirBackendRemoveOutstandingUSN(
     return;
 }
 
+DWORD
+VmDirBackendUniqKeyGetValue(
+    PCSTR       pKey,
+    PSTR*       ppValue
+    )
+{
+    DWORD               dwError = 0;
+    VDIR_BACKEND_CTX    beCtx = {0};
+    BOOLEAN             bHasTxn = FALSE;
+    PSTR                pValue = NULL;
+
+    if (!pKey || !ppValue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    beCtx.pBE = VmDirBackendSelect(NULL);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_READ);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = TRUE;
+
+    dwError = beCtx.pBE->pfnBEUniqKeyGetValue(
+                            &beCtx, pKey, &pValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppValue = pValue;
+    pValue = NULL;
+
+cleanup:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnCommit(&beCtx);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pValue);
+    VmDirBackendCtxContentFree(&beCtx);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
+                    "%s error (%d)", __FUNCTION__, dwError );
+    goto cleanup;
+}
+
+DWORD
+VmDirBackendUniqKeySetValue(
+    PCSTR       pKey,
+    PCSTR       pValue,
+    BOOLEAN     bForce
+    )
+{
+    DWORD               dwError = 0;
+    VDIR_BACKEND_CTX    beCtx = {0};
+    BOOLEAN             bHasTxn = FALSE;
+    PSTR                pLocalValue = NULL;
+
+    if (!pKey || !pValue)
+    {
+        dwError = VMDIR_ERROR_GENERIC;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    beCtx.pBE = VmDirBackendSelect(NULL);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = TRUE;
+
+    if (!bForce)
+    {
+        // Maybe MDB has option to force set already?
+        // for now, query to see if key exists.
+        dwError = beCtx.pBE->pfnBEUniqKeyGetValue(
+                                &beCtx, pKey, &pLocalValue);
+        if (dwError == 0)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_TYPE_OR_VALUE_EXISTS);
+        }
+
+        if (dwError == VMDIR_ERROR_NOT_FOUND)
+        {
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = beCtx.pBE->pfnBEUniqKeySetValue(
+                            &beCtx, pKey, pValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    beCtx.pBE->pfnBETxnCommit(&beCtx);
+    bHasTxn = FALSE;
+
+cleanup:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pLocalValue);
+    VmDirBackendCtxContentFree(&beCtx);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
+                    "%s error (%d)", __FUNCTION__, dwError );
+    goto cleanup;
+}
+
 /*
  * Least outstanding USN change number.
  * Replication is safe to search USN below this number

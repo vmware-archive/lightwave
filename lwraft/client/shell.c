@@ -64,7 +64,7 @@ VmDirCleanupData(
                                         MAX_PATH );
     BAIL_ON_VMDIR_ERROR( dwError );
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszCmd, "del /q \"%s\"", pszPath );
+    dwError = VmDirAllocateStringPrintf( &pszCmd, "del /q \"%s\"", pszPath );
     BAIL_ON_VMDIR_ERROR(dwError)
 
     dwError = VmDirRun( pszCmd );

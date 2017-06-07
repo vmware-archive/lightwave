@@ -286,13 +286,6 @@ VmDirVsnprintf(
     va_list  args
     );
 
-DWORD
-VmDirAllocateStringAVsnprintf(
-    PSTR*    ppszOut,
-    PCSTR    pszFormat,
-    ...
-    );
-
 ULONG
 VmDirLengthRequiredSid(
     IN UCHAR SubAuthorityCount
@@ -680,13 +673,6 @@ VmKdcGenerateRandomPassword(
     PSTR *ppRandPwd);
 
 // cmd line args parsing helpers
-
-typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
-typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_NO_PARAM)(PVOID pContext);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_STRING_PARAM)(PVOID pContext, PCSTR Parameter);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_INTEGER_PARAM)(PVOID pContext, DWORD Parameter);
-
 typedef enum
 {
     CL_NO_PARAMETER,
@@ -696,36 +682,39 @@ typedef enum
 
 typedef struct
 {
-    char Switch; // e.g., 's', for "-s".
-    const char *LongSwitch; // e.g., "silent", for "--silent".
-    VMDIR_COMMAND_LINE_PARAMETER_TYPE Type; // If this flag takes a parameter (and, if so, what kind).
-    PVOID Callback; // The function we call when this flag is seen.
+    char                                Switch; // e.g., 's', for "-s".
+    const char*                         LongSwitch; // e.g., "silent", for "--silent".
+    VMDIR_COMMAND_LINE_PARAMETER_TYPE   Type; // If this flag takes a parameter (and, if so, what kind).
+    PVOID                               Ptr; // Ptr to store parameter value
 } VMDIR_COMMAND_LINE_OPTION, *PVMDIR_COMMAND_LINE_OPTION;
+
+typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
+typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
 
 typedef struct
 {
     //
-    // We call this if the app should print its usage to the command line (i.e., the
-    // user gave incorrect parameters to the command).
-    //
-    USAGE_FUNCTION ShowUsage;
-
-    //
     // This is called after all parameters have been parsed and allows for the client
     // to do cross-parameter validation.
     //
-    POST_VALIDATION_CALLBACK ValidationRoutine;
+    POST_VALIDATION_CALLBACK    ValidationRoutine;
 
     //
-    // The command line options that this client supports.
+    // We call this if the app should print its usage to the command line (i.e., the
+    // user gave incorrect parameters to the command).
     //
-    VMDIR_COMMAND_LINE_OPTION Options[];
-} VMDIR_COMMAND_LINE_OPTIONS, *PVMDIR_COMMAND_LINE_OPTIONS;
+    USAGE_FUNCTION              ShowUsage;
+
+    //
+    // Argument context for callback functions
+    //
+    PVOID                       pvContext;
+} VMDIR_PARSE_ARG_CALLBACKS, *PVMDIR_PARSE_ARG_CALLBACKS;
 
 DWORD
 VmDirParseArguments(
-    PVMDIR_COMMAND_LINE_OPTIONS Options,
-    PVOID pvContext,
+    VMDIR_COMMAND_LINE_OPTION Options[],
+    PVMDIR_PARSE_ARG_CALLBACKS Callbacks,
     int argc,
     PSTR *argv
     );
@@ -1076,18 +1065,18 @@ VmDirCreateThread(
     BOOLEAN bJoinThr,
     PVMDIR_START_ROUTINE pStartRoutine,
     PVOID pArgs
-);
+    );
 
 DWORD
 VmDirThreadJoin(
     PVMDIR_THREAD pThread,
     PDWORD pRetVal
-);
+    );
 
 VOID
 VmDirFreeVmDirThread(
     PVMDIR_THREAD pThread
-);
+    );
 
 DWORD
 VmDirAllocateSyncCounter(

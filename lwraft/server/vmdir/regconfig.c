@@ -113,7 +113,7 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.bAllowInsecureAuth = pEntry->dwValue ? TRUE : FALSE;
         }
-        if (!VmDirStringCompareA(
+        else if (!VmDirStringCompareA(
                      pEntry->pszName,
                      VMDIR_REG_KEY_DISABLE_VECS,
                      TRUE))
@@ -255,29 +255,30 @@ VmDirSrvUpdateConfig(
                     pEntry->pszName,
                     VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL,
                     TRUE))
-       {
-           gVmdirGlobals.dwEnableRaftReferral = pEntry->dwValue;
-       }
-       else if (!VmDirStringCompareA(
+        {
+            gVmdirGlobals.dwEnableRaftReferral = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_RAFT_PING_INTERVAL,
                     TRUE))
-       {
-           gVmdirGlobals.dwRaftPingIntervalMS = pEntry->dwValue;
-       }
-       else if (!VmDirStringCompareA(
+        {
+            gVmdirGlobals.dwRaftPingIntervalMS = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT,
                     TRUE))
-       {
-           gVmdirGlobals.dwRaftElectionTimeoutMS = pEntry->dwValue;
-       } else if (!VmDirStringCompareA(
+        {
+            gVmdirGlobals.dwRaftElectionTimeoutMS = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_RAFT_KEEP_LOGS,
                     TRUE))
-       {
-           gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue;
-       }
+        {
+            gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue;
+        }
     }
 
 cleanup:

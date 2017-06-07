@@ -29,7 +29,8 @@ VmDirLocalAPIHandler(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
 
-    if (dwRequestSize < sizeof (UINT32)){
+    if (dwRequestSize < sizeof(UINT32))
+    {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
@@ -111,14 +112,14 @@ VmDirLocalAPIHandler(
         break;
 
       case VMDIR_IPC_GET_SERVER_STATE:
-	dwError = VmDirIpcGetServerState(
+        dwError = VmDirIpcGetServerState(
                         pSecurityContext,
                         pRequest,
                         dwRequestSize,
                         &pResponse,
                         &dwResponseSize
                         );
-	break;
+        break;
 
       default:
 

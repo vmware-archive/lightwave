@@ -76,8 +76,8 @@ VmDirIpcInitializeHost(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -176,8 +176,8 @@ VmDirIpcInitializeTenant(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -271,8 +271,8 @@ VmDirIpcForceResetPassword(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -306,7 +306,7 @@ VmDirIpcForceResetPassword(
 
     output_spec[0].data.pUint32 = &uResult;
     output_spec[1].data.pUint32 = &dwContainerLength;
-    output_spec[2].data.pByte = (PBYTE) pContainerBlob;
+    output_spec[2].data.pByte = pContainerBlob;
 
     dwError = VmDirMarshalResponse (
                     apiType,
@@ -379,7 +379,7 @@ VmDirIpcGeneratePassword(
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                         apiType,
                         VER1_INPUT,
@@ -418,7 +418,7 @@ VmDirIpcGeneratePassword(
 
     output_spec[0].data.pUint32 = &uResult;
     output_spec[1].data.pUint32 = &dwContainerLength;
-    output_spec[2].data.pByte = (PBYTE) pContainerBlob;
+    output_spec[2].data.pByte = pContainerBlob;
 
     dwError = VmDirMarshalResponse (
                     apiType,
@@ -494,8 +494,8 @@ VmDirIpcSetSRPSecret(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -584,7 +584,7 @@ VmDirIpcGetServerState(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
 
     dwError = VmDirUnMarshal (
                     apiType,

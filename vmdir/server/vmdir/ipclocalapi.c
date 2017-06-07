@@ -669,6 +669,7 @@ VmDirIpcForceResetPassword(
         dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR (dwError);
     }
+
     //
     // Unmarshall the request buffer to the format
     // that the API actually has

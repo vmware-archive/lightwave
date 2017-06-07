@@ -783,7 +783,7 @@ VmDirGetServersInfoOnSite(
 
     if (pszSiteName == NULL)
     {
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                       &pszSearchBaseDN,
                       "cn=Sites,cn=Configuration,%s",
                       pszDomainDN
@@ -791,7 +791,7 @@ VmDirGetServersInfoOnSite(
         searchLevel = LDAP_SCOPE_SUBTREE;
     } else
     {
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                       &pszSearchBaseDN,
                       "cn=Servers,cn=%s,cn=Sites,cn=Configuration,%s",
                       pszSiteName,
@@ -973,7 +973,7 @@ _VmDirIsHostAPartner(
        {
            *pIsParter = TRUE;
            pszPartnerRaDn = ldap_get_dn(pLd, pEntry);
-           dwError = VmDirAllocateStringAVsnprintf(ppszPartnerRaDn, "%s", pszPartnerRaDn);
+           dwError = VmDirAllocateStringPrintf(ppszPartnerRaDn, "%s", pszPartnerRaDn);
            BAIL_ON_VMDIR_ERROR(dwError);
            goto cleanup;
        }

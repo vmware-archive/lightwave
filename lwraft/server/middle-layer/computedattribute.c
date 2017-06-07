@@ -392,7 +392,7 @@ _VmDirBuildRefAttribute(
         goto cleanup;
     }
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszRef, "%s://%s/", "ldap", pszLeader);
+    dwError = VmDirAllocateStringPrintf(&pszRef, "%s://%s/", "ldap", pszLeader);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAttributeAllocate( ATTR_REF, 1, pOperation->pSchemaCtx, &pRefAttr);

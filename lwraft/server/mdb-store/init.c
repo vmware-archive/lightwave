@@ -421,7 +421,7 @@ MDBToBackendError(
         pBECtx->dwBEErrorCode = dwMdbError;
         VMDIR_SAFE_FREE_MEMORY(pBECtx->pszBEErrorMsg);
         // ignore error
-        VmDirAllocateStringAVsnprintf(    &pBECtx->pszBEErrorMsg,
+        VmDirAllocateStringPrintf(    &pBECtx->pszBEErrorMsg,
                                           "(%s)(%s)",
                                           mdb_strerror(dwMdbError),
                                           VDIR_SAFE_STRING(pszErrorContext));

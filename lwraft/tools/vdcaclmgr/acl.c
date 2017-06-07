@@ -400,7 +400,7 @@ _VdcGetObjectSecurityDescriptor(
     PSTR pszSecurityDescriptor = NULL;
     PSTR pszFilter = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VdcLdapGetAttributeValue(pLd,
@@ -432,7 +432,7 @@ _VdcAddAceToSecurityDescriptor(
     DWORD dwError = 0;
     PSTR pszNewSecurityDescriptor = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszNewSecurityDescriptor, "%s(A;;%s;;;%s)", pszObjectSD, pszPermission, pszUserSid);
+    dwError = VmDirAllocateStringPrintf(&pszNewSecurityDescriptor, "%s(A;;%s;;;%s)", pszObjectSD, pszPermission, pszUserSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszNewSecurityDescriptor = pszNewSecurityDescriptor;
@@ -682,7 +682,7 @@ VdcGrantPermissionToUser(
 
     printf("Updated SD ==> %s\n", pszNewSecurityDescriptor);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VdcLdapReplaceAttrOnEntries(pLd,
@@ -729,7 +729,7 @@ VdcRemovePermissionFromUser(
 
     printf("Updated SD ==> %s\n", pszNewSecurityDescriptor);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VdcLdapReplaceAttrOnEntries(pLd,

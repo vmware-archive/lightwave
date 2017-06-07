@@ -265,7 +265,7 @@ VmDirUPNToAccountDN(
     dwError = VmDirFQDNToDN(pszRealm+1, &pszLocalDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                     &pszLocalAccountDN,
                     "%s=%s,%s,%s",
                     pszAccountRDNAttr,
@@ -317,7 +317,7 @@ VmDirResetPassword(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
+    VMDIR_SAFE_FREE_STRINGA(pszDN);
     VmDirFreeBervalContent(&bvPassword);
 
     return dwError;

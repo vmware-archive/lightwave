@@ -30,10 +30,8 @@ VmDirRESTAuth(
 
     if (IsNullOrEmptyString(pRestOp->pszAuth))
     {
-        /*
         dwError = VmDirMLSetupAnonymousAccessInfo(&pRestOp->pConn->AccessInfo);
         BAIL_ON_VMDIR_ERROR(dwError);
-        */
 
         pRestOp->pConn->bIsAnonymousBind = TRUE;
         goto cleanup;

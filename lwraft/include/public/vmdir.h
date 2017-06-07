@@ -242,6 +242,10 @@ extern "C" {
 
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR       "nTSecurityDescriptor"
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR_LEN   sizeof(ATTR_OBJECT_SECURITY_DESCRIPTOR)-1
+
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR      "defaultSecurityDescriptor"
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR_LEN  sizeof(ATTR_DEFAULT_SECURITY_DESCRIPTOR)-1
+
 #define ATTR_ORG_LIST_DESC                    "vmwAttrOrganizationList"
 #define VDIR_ATTRIBUTE_SEQUENCE_RID           "vmwRidSequenceNumber"
 

@@ -863,16 +863,6 @@ VmDirBackendRemoveOutstandingUSN(
     );
 
 DWORD
-VmDirBackendAddOriginatingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
-    );
-
-VOID
-VmDirBackendRemoveOriginatingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
-    );
-
-DWORD
 VmDirBackendUniqKeyGetValue(
     PCSTR       pKey,
     PSTR*       ppValue

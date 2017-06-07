@@ -2304,10 +2304,13 @@ objectClasses: (
     NAME 'computer'
     SUP user
     STRUCTURAL
+    MUST ( objectSid
+         )
     MAY ( cn
         $ siteGUID
         $ vmwMachineGUID
         $ vmwPlatformServicesControllerVersion
+        $ sAMAccountName
         )
     )
 
@@ -2365,6 +2368,7 @@ objectClasses: (
     SUP top
     STRUCTURAL
     MUST ( groupType
+         $ objectSid
          )
     MAY ( member
         $ sAMAccountName
@@ -2376,6 +2380,8 @@ objectClasses: (
     NAME 'user'
     SUP organizationalPerson
     STRUCTURAL
+    MUST ( objectSid
+         )
     MAY ( o
         $ userCertificate
         $ givenName
@@ -2398,6 +2404,8 @@ objectClasses: (
     NAME 'inetOrgPerson'
     SUP user
     STRUCTURAL
+    MUST ( objectSid
+         )
     MAY ( o
         $ userCertificate
         $ givenName
@@ -2434,9 +2442,9 @@ objectClasses: (
     MUST ( objectClass
          )
     MAY ( cn
-         $ nTSecurityDescriptor
-         $ instanceType
-         $ objectCategory
+        $ nTSecurityDescriptor
+        $ instanceType
+        $ objectCategory
         $ description
         $ distinguishedName
         $ whenCreated
@@ -2639,6 +2647,8 @@ objectClasses: (
     NAME 'builtinDomain'
     SUP top
     STRUCTURAL
+    MAY ( objectSid
+        )
     )
 
 ############################################################
@@ -2672,6 +2682,8 @@ dITContentRules:  (
     1.2.840.113556.1.5.67
     NAME  'domainDNS'
     AUX ( dcObject
+        )
+    MAY ( objectSid
         )
     )
 

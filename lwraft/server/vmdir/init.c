@@ -72,12 +72,6 @@ static
 DWORD
 _VmDirSrvCreatePersistedDSERoot(VOID);
 
-static
-DWORD _VmDirGetHostsInternal(
-    PSTR**  ppServerInfo,
-    size_t* pdwInfoCount
-    );
-
 /*
  * no krb function needed in lwraft, but we use gVmdirKrbGlobals.pszRealm in various places.
  */
@@ -278,9 +272,6 @@ VmDirInit(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = ConstructSDForVmDirServ(&gVmdirGlobals.gpVmDirSrvSD);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirOpensslInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -462,10 +453,11 @@ error:
 //    So partners will pick up new changes from me.
 // 4. Advance RID sequence number.
 //    So there will be no ObjectSid conflict with entries created after backup.
-
 static
 DWORD
-_VmDirRestoreInstance(VOID)
+_VmDirRestoreInstance(
+    VOID
+    )
 {
     DWORD                   dwError = LDAP_SUCCESS;
     size_t                  i = 0;
@@ -477,7 +469,7 @@ _VmDirRestoreInstance(VOID)
     char                    nextUsnStr[VMDIR_MAX_USN_STR_LEN] = {0};
     PSTR                    pszLocalErrMsg = NULL;
     PSTR                    pszDCAccount = NULL;
-    PSTR*                   pServerInfo = NULL;
+    PSTR*                   ppszServerInfo = NULL;
     size_t                  dwInfoCount = 0;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Restore Lotus Instance.");
@@ -485,7 +477,7 @@ _VmDirRestoreInstance(VOID)
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirGetHostsInternal(&pServerInfo, &dwInfoCount);
+    dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
     if (dwError != 0)
     {
         printf("_VmDirRestoreInstance: fail to get hosts from topology: %d\n", dwError );
@@ -508,19 +500,19 @@ _VmDirRestoreInstance(VOID)
      */
     for (i=0; i<dwInfoCount; i++)
     {
-        if (VmDirStringCompareA(pServerInfo[i], pszDCAccount, FALSE) == 0)
+        if (VmDirStringCompareA(ppszServerInfo[i], pszDCAccount, FALSE) == 0)
         {
             //Don't try to query self for the uptodate topology.
             continue;
         }
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Trying to get topology from host %s ...", pServerInfo[i]);
-        printf("Trying to get topology from host %s ...\n", pServerInfo[i]);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Trying to get topology from host %s ...", ppszServerInfo[i]);
+        printf("Trying to get topology from host %s ...\n", ppszServerInfo[i]);
 
-        dwError = VmDirGetUsnFromPartners(pServerInfo[i], &restoredUsn);
+        dwError = VmDirGetUsnFromPartners(ppszServerInfo[i], &restoredUsn);
         if (dwError == 0)
         {
-             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Got topology from host %s", pServerInfo[i]);
-             printf("Topology obtained from host %s.\n", pServerInfo[i]);
+             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Got topology from host %s", ppszServerInfo[i]);
+             printf("Topology obtained from host %s.\n", ppszServerInfo[i]);
              break;
         }
     }
@@ -578,12 +570,12 @@ _VmDirRestoreInstance(VOID)
                 VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
 
     // <existing up-to-date vector>,<old invocation ID>:<local USN>,
-    dwError = VmDirAllocateStringAVsnprintf( &(newUtdVector.lberbv.bv_val), "%s%s:%s,",
+    dwError = VmDirAllocateStringPrintf( &(newUtdVector.lberbv.bv_val), "%s%s:%s,",
                                             gVmdirServerGlobals.utdVector.lberbv.bv_val,
                                             gVmdirServerGlobals.invocationId.lberbv.bv_val,
                                             nextUsnStr);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAllocateStringAVsnprintf failed with error code: %d", dwError,
+                "_VmDirRestoreInstance: VmDirAllocateStringPrintf failed with error code: %d", dwError,
                 VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
 
     newUtdVector.bOwnBvVal = TRUE;
@@ -638,6 +630,7 @@ _VmDirRestoreInstance(VOID)
     printf("Lotus instance restore succeeded.\n");
 
 cleanup:
+    VmDirFreeStrArray(ppszServerInfo);
     VmDirFreeBervalContent(&newUtdVector);
     VmDirFreeOperationContent(&op);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -1091,7 +1084,6 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Domain Functional Level (%d)",
                     gVmdirServerGlobals.dwDomainFunctionalLevel);
 
-
 cleanup:
 
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);
@@ -1341,55 +1333,61 @@ error:
  * Lookup servers topology internally first. Then one of the servers
  * will be used to query uptoupdate servers topology
  */
-static
-DWORD _VmDirGetHostsInternal(
-    PSTR**  ppServerInfo,
+DWORD
+VmDirGetHostsInternal(
+    PSTR**  pppszServerInfo,
     size_t* pdwInfoCount
     )
 {
-    DWORD               dwError = 0;
-    DWORD               i = 0;
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszSearchBaseDN = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
-    PSTR                pszSearchBaseDN = NULL;
     PVDIR_ATTRIBUTE     pAttr = NULL;
-    PSTR*  pServerInfo = NULL;
+    PSTR*   ppszServerInfo = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(
-                &pszSearchBaseDN,
-                "cn=Sites,cn=Configuration,%s",
-                gVmdirServerGlobals.systemDomainDN.bvnorm_val
-                );
-
-    dwError = VmDirSimpleEqualFilterInternalSearch(
-                    pszSearchBaseDN,
-                    LDAP_SCOPE_SUBTREE,
-                    ATTR_OBJECT_CLASS,
-                    OC_DIR_SERVER,
-                    &entryArray);
+    dwError = VmDirAllocateStringPrintf(
+            &pszSearchBaseDN,
+            "cn=Sites,cn=Configuration,%s",
+            gVmdirServerGlobals.systemDomainDN.bvnorm_val);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (entryArray.iSize == 0 )
+    dwError = VmDirSimpleEqualFilterInternalSearch(
+            pszSearchBaseDN,
+            LDAP_SCOPE_SUBTREE,
+            ATTR_OBJECT_CLASS,
+            OC_DIR_SERVER,
+            &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize == 0)
     {
         dwError = LDAP_NO_SUCH_OBJECT;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory( entryArray.iSize*sizeof(PSTR), (PVOID*)&pServerInfo);
+    dwError = VmDirAllocateMemory(
+            sizeof(PSTR) * (entryArray.iSize+1),
+            (PVOID*)&ppszServerInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i=0; i<entryArray.iSize; i++)
     {
-         pAttr =  VmDirEntryFindAttribute(ATTR_CN, entryArray.pEntry+i);
-         dwError = VmDirAllocateStringA( pAttr->vals[0].lberbv.bv_val, &pServerInfo[i]);
+         pAttr = VmDirEntryFindAttribute(ATTR_CN, entryArray.pEntry+i);
+         dwError = VmDirAllocateStringA(pAttr->vals[0].lberbv.bv_val, &ppszServerInfo[i]);
          BAIL_ON_VMDIR_ERROR(dwError);
     }
-    *ppServerInfo = pServerInfo;
+
+    *pppszServerInfo = ppszServerInfo;
     *pdwInfoCount = entryArray.iSize;
 
 cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszSearchBaseDN);
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
+
 error:
+    VmDirFreeStrArray(ppszServerInfo);
     goto cleanup;
 }
 

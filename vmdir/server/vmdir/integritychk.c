@@ -686,7 +686,7 @@ _VmDirIntegrityCheckingThreadFun(
 
 cleanup:
     _VmDirIntegrityCheckFreeJobResource(pJob);
-    VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeStrArray(ppszServerInfo);
     VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
     VMDIR_SAFE_FREE_MEMORY(pszDCPasswd);
     VMDIR_SAFE_FREE_MEMORY(pszDCUPN);

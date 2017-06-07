@@ -304,7 +304,7 @@ VmDirSrvCreateDN(
     DWORD dwError = 0;
     PSTR  pszContainerDN = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszContainerDN, "cn=%s,%s", pszContainerName, pszDomainDN);
+    dwError = VmDirAllocateStringPrintf(&pszContainerDN, "cn=%s,%s", pszContainerName, pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszContainerDN = pszContainerDN;
@@ -322,6 +322,7 @@ VmDirSrvCreateContainerWithEID(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
     PCSTR            pszContainerName,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc, // OPTIONAL
     ENTRYID          eID
     )
 {
@@ -336,6 +337,12 @@ VmDirSrvCreateContainerWithEID(
 
     dwError = VmDirSimpleEntryCreate(pSchemaCtx, ppszAttributes, (PSTR)pszContainerDN, eID);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pSecDesc != NULL)
+    {
+        dwError = VmDirSetSecurityDescriptorForDn(pszContainerDN, pSecDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     return dwError;
@@ -354,7 +361,7 @@ VmDirSrvCreateContainer(
 {
     DWORD dwError = 0;
 
-    dwError = VmDirSrvCreateContainerWithEID(pSchemaCtx, pszContainerDN, pszContainerName, 0);
+    dwError = VmDirSrvCreateContainerWithEID(pSchemaCtx, pszContainerDN, pszContainerName, NULL, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
@@ -899,8 +906,9 @@ VmDirSrvGetDomainFunctionalLevel(
 
     if ( entryArray.iSize == 1)
     {
-        pAttrDomainLevel = VmDirEntryFindAttribute(ATTR_DOMAIN_FUNCTIONAL_LEVEL,
-&entryArray.pEntry[0]);
+        pAttrDomainLevel = VmDirEntryFindAttribute(
+                                ATTR_DOMAIN_FUNCTIONAL_LEVEL,
+                                &entryArray.pEntry[0]);
         if (!pAttrDomainLevel)
         {
             dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;

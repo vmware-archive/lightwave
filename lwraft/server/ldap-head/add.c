@@ -324,7 +324,7 @@ VmDirPerformAdd(
         (gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_ENABLE_UPDATE_REFERRAL) &&
         VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
     {
-       retVal = VmDirAllocateStringAVsnprintf(&pszRefStr, "%s",
+       retVal = VmDirAllocateStringPrintf(&pszRefStr, "%s",
                    pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"");
        BAIL_ON_VMDIR_ERROR(retVal);
 

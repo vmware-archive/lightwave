@@ -73,7 +73,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
             "%s error (%d)", __FUNCTION__, dwError );
 
     VMDIR_SAFE_FREE_MEMORY(pValue);
@@ -120,7 +120,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
             "%s error (%d)", __FUNCTION__, dwError );
 
     goto cleanup;
@@ -159,9 +159,10 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
             "%s error (%d)", __FUNCTION__, dwError );
 
+    dwError = MDBToBackendError(dwError, MDB_NOTFOUND, VMDIR_ERROR_NOT_FOUND, pBECtx, NULL);
     VMDIR_SAFE_FREE_MEMORY(pszValue);
     goto cleanup;
 }
@@ -192,7 +193,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
             "%s error (%d)", __FUNCTION__, dwError );
 
     goto cleanup;
