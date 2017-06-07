@@ -350,7 +350,7 @@ VmDirGetAllLdapPortsCount(
     );
 
 DWORD
-VmDirBindPort(
+VmDirCheckPortAvailability(
     DWORD   dwPort
     );
 
