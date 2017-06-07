@@ -1958,6 +1958,10 @@ VmAfSrvSetDNSRecords(
             BAIL_ON_VMAFD_ERROR(dwError);
         }
     }
+    else
+    {
+        dwError = 0;
+    }
 
     /* add A records for this hostname */
     for (i = 0; i < dwNumV4Address; i++)
