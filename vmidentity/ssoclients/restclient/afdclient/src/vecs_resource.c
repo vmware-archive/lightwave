@@ -51,6 +51,7 @@ AfdVecsGetSSLCertificates(
         REST_HTTP_METHOD_TYPE_GET,
         (JsonToDataObjectFunc) RestJsonToCertificateArrayData,
         (void**) &pCertificateArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

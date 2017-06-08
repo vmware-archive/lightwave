@@ -44,8 +44,8 @@ IdmTenantCreateTest()
     PCSTRING key = "test_tenant_key";
     PCSTRING guid = "test_tenant_guid";
     PCSTRING issuer = "test_tenant_issuer";
-    PCSTRING username = "administrator@vsphere.local";
-    PCSTRING password = "Admin!23";
+    PCSTRING username = "administrator@lw-testdom.com";
+    PCSTRING password = "Ca$hc0w1";
 
     // create private key
     e = IdmPrivateKeyDataNew(&pPrivateKey, privateKeyEncoded, privateKeyAlgorithm);
@@ -360,7 +360,7 @@ IdmTenantSearchTest()
 
     REST_SERVER_ERROR* pServerError = NULL;
 
-    PCSTRING domain = "test_tenant_name";
+    PCSTRING domain = "my-test-tenant.com";
     PCSTRING query = "Administrator";
     IDM_MEMBER_TYPE memberType = IDM_MEMBER_TYPE_ALL;
     IDM_SEARCH_TYPE searchBy = IDM_SEARCH_TYPE_NAME;

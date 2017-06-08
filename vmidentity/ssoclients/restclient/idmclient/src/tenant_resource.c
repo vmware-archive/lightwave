@@ -78,6 +78,7 @@ IdmTenantCreate(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToTenantData,
         (void**) &pTenantReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -140,6 +141,7 @@ IdmTenantGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToTenantData,
         (void**) &pTenantReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -199,6 +201,7 @@ IdmTenantDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -265,6 +268,7 @@ IdmTenantGetConfig(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToTenantConfigurationData,
         (void**) &pTenantConfigurationReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -328,6 +332,7 @@ IdmTenantUpdateConfig(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) IdmJsonToTenantConfigurationData,
         (void**) &pTenantConfigurationReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -413,6 +418,7 @@ IdmTenantSearch(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToSearchResultData,
         (void**) &pSearchResultReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

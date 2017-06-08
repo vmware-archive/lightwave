@@ -160,6 +160,7 @@ RestBuildAndExecuteHttp(
     REST_HTTP_METHOD_TYPE httpMethodType,
     JsonToDataObjectFunc fJsonToDataObject,
     void** ppDataObjectReturn,
+    PCSTRING tlsCAPath,
     REST_SERVER_ERROR** ppError)
 {
     SSOERROR e = SSOERROR_NONE;
@@ -198,7 +199,7 @@ RestBuildAndExecuteHttp(
     e = RestBuildPostEntity(pAccessToken, httpMethodType, pJson, httpFormattedDate, resourceUri, &post);
     BAIL_ON_ERROR(e);
 
-    e = SSOHttpClientNew(&pHttpClient, NULL /* skip TLS validation for now */);
+    e = SSOHttpClientNew(&pHttpClient, tlsCAPath);
     BAIL_ON_ERROR(e);
 
     if (httpMethodType == REST_HTTP_METHOD_TYPE_POST)

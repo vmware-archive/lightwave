@@ -86,6 +86,7 @@ RestClientGlobalInit();
 void
 RestClientGlobalCleanup();
 
+// tlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 RestClientNew(
     PREST_CLIENT* ppClient,
@@ -93,6 +94,7 @@ RestClientNew(
     bool highAvailabilityEnabled,
     size_t serverPort,
     REST_SCHEME_TYPE schemeType,
+    PCSTRING tlsCAPath, // optional, see comment above
     PCREST_ACCESS_TOKEN pAccessToken);
 
 void

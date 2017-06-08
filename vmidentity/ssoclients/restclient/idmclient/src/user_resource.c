@@ -55,6 +55,7 @@ IdmExternalUserCreate(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) RestJsonToBooleanData,
         (void**) &pCreated,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -123,6 +124,7 @@ IdmUserGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToUserData,
         (void**) &pUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -196,6 +198,7 @@ IdmUserGetGroups(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToGroupArrayData,
         (void**) &pGroupArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -263,6 +266,7 @@ IdmExternalUserDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
