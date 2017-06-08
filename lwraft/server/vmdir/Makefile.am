@@ -38,11 +38,9 @@ lwraftd_SOURCES = \
     vmdirurgentrepl_sstub.c \
     vmdirraft_sstub.c
 
-if HAVE_MDB_STORE
 VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
 VMDIRD_BACKEND_STORE= $(top_builddir)/server/mdb-store/libmdb-store.la
-endif
 
 lwraftd_CPPFLAGS = \
     -I$(top_srcdir)/include \

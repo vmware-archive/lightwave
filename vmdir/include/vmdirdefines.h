@@ -36,7 +36,6 @@ extern "C" {
 #define VMDIR_PCSTR_UNKNOWN "unknown"
 
 #ifdef _WIN32
-    #define HAVE_LMDB_H
     #define PCVOID const PVOID
     #define ssize_t SSIZE_T
 
