@@ -104,3 +104,8 @@ VmDirSetMode
 VmDirRaftRequestVote
 VmDirRaftAppendEntries
 VmDirAppendRaftState
+VmDirRaftLeader
+VmDirRaftListCluster
+VmDirRaftShowClusterState
+VmDirRaftLeaveCluster
+VmDirFreeRaftCluster

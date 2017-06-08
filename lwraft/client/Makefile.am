@@ -17,6 +17,7 @@ liblwraftclient_la_SOURCES = \
     krb5login.c \
     ldaputil.c \
     libmain.c \
+    raftclient.c \
     registry.c \
     repadmin.c \
     replication.c \

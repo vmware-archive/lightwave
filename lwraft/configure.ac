@@ -686,6 +686,7 @@ AC_CONFIG_FILES([Makefile
                  testing/kerberos/Makefile
                  tools/Makefile
                  tools/lwraftpromo/Makefile
+                 tools/lwraft-cli/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
                  tools/vdcschema/Makefile
