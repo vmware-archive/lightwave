@@ -8,6 +8,7 @@ include $(MAKEROOT)/makedefs.mk
 
 SUBDIRS = \
         vmevent \
+        vmidentity/ssoclients \
         lwraft \
         vmdir \
         vmdns \
