@@ -68,13 +68,6 @@ VmDirCreateAccessToken(
     PTOKEN_DEFAULT_DACL     DefaultDacl
     );
 
-DWORD
-VmDirIsBindDnMemberOfSystemDomainAdmins(
-    PVDIR_BACKEND_CTX   pBECtx,
-    PVDIR_ACCESS_INFO   pAccessInfo,
-    PBOOLEAN            pbIsMemberOfAdmins
-    );
-
 // legacy_checks.c
 DWORD
 VmDirLegacyAccessCheck(

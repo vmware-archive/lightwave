@@ -919,7 +919,7 @@ _VmDirPluginDflValidatePreModify(
 
                     if (pAttrMaxDfl)
                     {
-                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrVer->vals[0]));
+                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrMaxDfl->vals[0]));
                     }
                     else if (pAttrVer)
                     {

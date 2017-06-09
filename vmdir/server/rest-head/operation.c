@@ -64,6 +64,7 @@ error:
 DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
     )
@@ -78,7 +79,7 @@ VmDirRESTOperationReadRequest(
     PSTR    pszInput = NULL;
     size_t  len = 0;
 
-    if (!pRestOp || !pRestReq)
+    if (!pRestOp || !pRESTHandle || !pRestReq)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -133,7 +134,7 @@ VmDirRESTOperationReadRequest(
                 len + MAX_REST_PAYLOAD_LENGTH);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmRESTGetData(pRestReq, pszInput + len, &done);
+        dwError = VmRESTGetData(pRESTHandle, pRestReq, pszInput + len, &done);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         len = strlen(pszInput);
@@ -165,6 +166,7 @@ error:
 DWORD
 VmDirRESTOperationWriteResponse(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_RESPONSE*         ppResponse
     )
 {
@@ -177,7 +179,7 @@ VmDirRESTOperationWriteResponse(
     size_t  bodyLen = 0;
     size_t  sentLen = 0;
 
-    if (!pRestOp || !ppResponse)
+    if (!pRestOp || !pRESTHandle || !ppResponse)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -215,20 +217,22 @@ VmDirRESTOperationWriteResponse(
             ppResponse, bodyLen > MAX_REST_PAYLOAD_LENGTH ? NULL : pszBodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (pszBody && !done)
+    while (!done)
     {
         size_t chunkLen = bodyLen > MAX_REST_PAYLOAD_LENGTH ?
                 MAX_REST_PAYLOAD_LENGTH : bodyLen;
 
-        dwError = VmRESTSetData(ppResponse, pszBody + sentLen, chunkLen, &done);
+        dwError = VmRESTSetData(
+                pRESTHandle,
+                ppResponse,
+                VDIR_SAFE_STRING(pszBody) + sentLen,
+                chunkLen,
+                &done);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         sentLen += chunkLen;
         bodyLen -= chunkLen;
     }
-
-    dwError = VmRESTSetHttpPayload(ppResponse, "", 0, &done);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);

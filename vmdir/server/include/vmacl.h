@@ -265,6 +265,13 @@ VmDirGetObjectSidFromEntry(
     PSID* ppSid /* Optional */
     );
 
+DWORD
+VmDirIsBindDnMemberOfSystemDomainAdmins(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PBOOLEAN            pbIsMemberOfAdmins
+    );
+
 // security.c
 
 DWORD

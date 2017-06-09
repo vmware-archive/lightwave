@@ -69,8 +69,9 @@ extern "C" {
 #define RAFT_CONTEXT_DN                         "cn=raftcontext"
 #define RAFT_LOGS_CONTAINER_DN                  "cn=logs,cn=raftcontext"
 #define RAFT_PERSIST_STATE_DN                   "cn=persiststate,cn=raftcontext"
+#define RAFT_STATE_DN                           "cn=raftstate"
 
-#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
+#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Raft Clusters"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
@@ -354,6 +355,10 @@ extern "C" {
 #define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
 #define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"
 #define ATTR_REF                            "ref"
+#define ATTR_RAFT_LEADER                    "vmwRaftLeader"
+#define ATTR_RAFT_FOLLOWERS                 "vmwRaftActiveFollower"
+#define ATTR_RAFT_MEMBERS                   "vmwRaftMember"
+#define ATTR_RAFT_STATE                     "vmwRaftState"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -406,6 +411,7 @@ extern "C" {
 #define OC_CLASS_SCHEMA_LEN             sizeof(OC_CLASS_SCHEMA)-1
 #define OC_CLASS_RAFT_PERSIST_STATE     "vmwraftpersiststate"
 #define OC_CLASS_RAFT_LOG_ENTRY         "vmwraftlogentry"
+#define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
 
 #define CM_COMPONENTMANAGER             "ComponentManager"
@@ -474,13 +480,13 @@ extern "C" {
 #define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
 
 #ifndef _WIN32
-#define VMDIR_NCALRPC_END_POINT "lwraftsvc"
+#define LWRAFT_NCALRPC_END_POINT "lwraftsvc"
 #else
 // note: keep in sync with /vmdir/main/idl/vmdir.idl
-#define VMDIR_NCALRPC_END_POINT "LightwaveRaftService"
+#define LWRAFT_NCALRPC_END_POINT "LightwaveRaftService"
 #endif
 
-#define VMDIR_RPC_TCP_END_POINT "2012"
+#define LWRAFT_RPC_TCP_END_POINT "2011"
 #define VMDIR_MAX_SERVER_ID     255
 
 #define NSECS_PER_SEC       1000000000

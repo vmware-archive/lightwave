@@ -36,7 +36,6 @@ import com.vmware.directory.rest.common.data.MemberType;
 import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
-import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.PasswordGrant;
 import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
@@ -86,7 +85,7 @@ public class OIDCClientITBase {
         domainControllerPort = Integer.parseInt(properties.getProperty("oidc.op.port"));
         domainControllerFQDN = System.getProperty("host");
         if (domainControllerFQDN == null || domainControllerFQDN.length() == 0) {
-            throw new IllegalStateException("missing host argument, invoke with mvn verify -P integration-test -Dhost=<host>");
+            throw new IllegalStateException("missing host argument, invoke with mvn verify -DskipIntegrationTests=false -Dhost=<host>");
         }
 
         // create admin client with STS token

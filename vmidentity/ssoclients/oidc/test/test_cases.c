@@ -86,7 +86,12 @@ TestPasswordGrantSuccessResponse()
     pIDToken = OidcTokenSuccessResponseGetIDToken(pTokenSuccessResponse);
     TEST_ASSERT_TRUE(OidcIDTokenGetIssuer(pIDToken) != NULL);
     TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcIDTokenGetSubject(pIDToken));
-    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcIDTokenGetAudience(pIDToken));
+
+    OidcIDTokenGetAudience(pIDToken, &ppszAudience, &audienceSize);
+    TEST_ASSERT_TRUE(ppszAudience != NULL);
+    TEST_ASSERT_TRUE(audienceSize == 1);
+    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, ppszAudience[0]);
+
     TEST_ASSERT_TRUE(OidcIDTokenGetIssueTime(pIDToken) > 0);
     TEST_ASSERT_TRUE(OidcIDTokenGetExpirationTime(pIDToken) > 0);
 

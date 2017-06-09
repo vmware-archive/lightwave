@@ -115,8 +115,8 @@ VmDirRegisterRpcServer(
     ULONG ulError = 0;
     VMDIR_RPC_ENDPOINT endpoints[] =
         {
-            {"ncalrpc",      VMDIR_NCALRPC_END_POINT},
-            {"ncacn_ip_tcp", VMDIR_RPC_TCP_END_POINT}
+            {"ncalrpc",      LWRAFT_NCALRPC_END_POINT},
+            {"ncacn_ip_tcp", LWRAFT_RPC_TCP_END_POINT}
         };
     DWORD dwEpCount = sizeof(endpoints)/sizeof(endpoints[0]);
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;

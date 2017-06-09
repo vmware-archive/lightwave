@@ -337,6 +337,8 @@ public class IdentityManager implements IIdentityManager {
     public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION = "Well-known configuration users' group which contains all configuration users as members.";
     public static final String WELLKNOWN_ACT_AS_USERS_GROUP_NAME = "ActAsUsers";
     public static final String WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION = "Well-known act-as users' group which contains all solution users that are allowed to act on behalf of person users.";
+    public static final String WELLKNOWN_TRUSTED_USERS_GROUP_NAME = "TrustedUsers";
+    public static final String WELLKNOWN_TRUSTED_USERS_GROUP_DESCRIPTION = "Well-known trusted users' group which contains all users with privileges just below administrator.";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =  "ExternalIDPUsers";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION = "Well-known external IDP users' group, which registers external IDP users as guests.";
     public static final String WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS = "ServicePrincipals";
@@ -449,6 +451,9 @@ public class IdentityManager implements IIdentityManager {
 
         ensureWellKnownGroupExists(tenantName, WELLKNOWN_ACT_AS_USERS_GROUP_NAME,
                 WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION);
+
+        ensureWellKnownGroupExists(tenantName, WELLKNOWN_TRUSTED_USERS_GROUP_NAME,
+                WELLKNOWN_TRUSTED_USERS_GROUP_DESCRIPTION);
 
         // Make sure we create ServicePrincipal containers to place solution users
         ensureContainerExists(tenantName, WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS);

@@ -15,6 +15,8 @@ BuildRequires: openssl-devel >= 1.0.2
 %description
 C Client libraries to communicate with VMware Secure Token Service
 
+%debug_package
+
 %build
 
 cd build

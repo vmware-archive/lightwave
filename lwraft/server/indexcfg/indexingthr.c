@@ -30,7 +30,7 @@ InitializeIndexingThread(
 
     dwError = VmDirCreateThread(
             &gVdirIndexGlobals.pThrInfo->tid,
-            FALSE,
+            gVdirIndexGlobals.pThrInfo->bJoinThr,
             VmDirIndexingThreadFun,
             gVdirIndexGlobals.pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);

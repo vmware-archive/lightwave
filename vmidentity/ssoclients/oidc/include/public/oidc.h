@@ -99,6 +99,10 @@ void
 OidcIDTokenDelete(
     POIDC_ID_TOKEN p);
 
+OIDC_TOKEN_TYPE
+OidcIDTokenGetTokenType(
+    PCOIDC_ID_TOKEN p);
+
 PCSTRING
 OidcIDTokenGetIssuer(
     PCOIDC_ID_TOKEN p);
@@ -107,9 +111,11 @@ PCSTRING
 OidcIDTokenGetSubject(
     PCOIDC_ID_TOKEN p);
 
-PCSTRING
+void
 OidcIDTokenGetAudience(
-    PCOIDC_ID_TOKEN p);
+    PCOIDC_ID_TOKEN p,
+    const PSTRING** pppszAudience,
+    size_t* pAudienceSize);
 
 SSO_LONG
 OidcIDTokenGetIssueTime(
@@ -128,6 +134,10 @@ OidcIDTokenGetGroups(
     PCOIDC_ID_TOKEN p,
     const PSTRING** pppszGroups,
     size_t* pGroupsSize);
+
+PCSTRING
+OidcIDTokenGetTenant(
+    PCOIDC_ID_TOKEN p);
 
 SSOERROR
 OidcIDTokenGetStringClaim(
@@ -149,6 +159,10 @@ OidcAccessTokenBuild(
 void
 OidcAccessTokenDelete(
     POIDC_ACCESS_TOKEN p);
+
+OIDC_TOKEN_TYPE
+OidcAccessTokenGetTokenType(
+    PCOIDC_ACCESS_TOKEN p);
 
 PCSTRING
 OidcAccessTokenGetIssuer(
@@ -181,6 +195,10 @@ OidcAccessTokenGetGroups(
     PCOIDC_ACCESS_TOKEN p,
     const PSTRING** pppszGroups,
     size_t* pGroupsSize);
+
+PCSTRING
+OidcAccessTokenGetTenant(
+    PCOIDC_ACCESS_TOKEN p);
 
 SSOERROR
 OidcAccessTokenGetStringClaim(

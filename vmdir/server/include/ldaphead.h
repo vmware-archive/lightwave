@@ -112,10 +112,22 @@ WritePagedSearchDoneControl(
 int
 WriteSyncStateControl(
    VDIR_OPERATION *   op,
-   VDIR_ATTRIBUTE *   pAttr,
+   VDIR_ENTRY *       pEntry,
    BerElement *       ber,
    PSTR*              ppszErrorMsg
    );
+
+int
+VmDirCreateDigestControlContent(
+    PCSTR           pszDigest,
+    DWORD           dwDigestLen,
+    LDAPControl*    pDigestCtrl
+    );
+
+VOID
+VmDirDeleteDigestControlContent(
+    LDAPControl*    pDigestCtrl
+    );
 
 // delete.c
 int
@@ -272,5 +284,12 @@ VmDirOPStatistic(
 PCSTR
 VmDirGetOperationStringFromTag(
     ber_tag_t opTag);
+
+// vecs.c
+DWORD
+VmDirGetVecsMachineCert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
 
 #endif /* LH_H_ */

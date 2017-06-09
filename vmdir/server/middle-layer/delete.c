@@ -98,6 +98,13 @@ VmDirInternalDeleteEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode" );
     }
 
+    // make sure we have minimum DN length
+    if (delReq->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", delReq->dn.lberbv_len);
+    }
+
     // Normalize DN
     retVal = VmDirNormalizeDN( &(delReq->dn), pOperation->pSchemaCtx );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
@@ -230,7 +237,7 @@ txnretry:
             retVal = VmDirSrvAccessCheck(
                         pOperation,
                         &pOperation->conn->AccessInfo,
-                        pEntry,
+                        pEntry->pParentEntry,
                         VMDIR_RIGHT_DS_DELETE_CHILD);
         }
         BAIL_ON_VMDIR_ERROR_WITH_MSG(

@@ -134,7 +134,6 @@ VmDirSrvSetupHostInstance(
     PCSTR pszDomainName,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszSiteName,
     PCSTR pszReplURI,
     UINT32  firstReplicationCycleMode
     );

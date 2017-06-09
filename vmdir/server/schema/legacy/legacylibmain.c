@@ -80,9 +80,6 @@ VmDirSchemaLibLoadSubSchemaSubEntry(
     dwError = VmDirLdapSchemaLoadSubSchemaSubEntry(pTmpLdapSchema, pSchemaEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaRemoveNoopData(pTmpLdapSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirLdapSchemaMerge(
             pCurLdapSchema, pTmpLdapSchema, &pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);

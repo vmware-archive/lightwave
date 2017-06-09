@@ -122,6 +122,18 @@ VmDirAllocateBerValueAVsnprintf(
     ...
     );
 
+DWORD
+VmDirGetHostsInternal(
+    PSTR **pppszServerInfo,
+    size_t *pdwInfoCount
+    );
+
+VOID
+VmDirFreeCountedStringArray(
+    PSTR *ppszStrings,
+    size_t iCount
+    );
+
 // instance.c
 
 DWORD
@@ -601,6 +613,7 @@ VmDirCreateHeartbeatThread(
 VOID
 VmDirKillHeartbeatThread(
     );
+
 #ifdef __cplusplus
 }
 #endif

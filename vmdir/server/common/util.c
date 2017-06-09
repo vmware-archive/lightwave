@@ -1278,3 +1278,104 @@ VmDirOperationTypeToName(
 
     return pszName;
 }
+
+/*
+ * Compare Attribute lberbv value only, no attribute normalization is done.
+ * Used in replication conflict resolution to suppress benign warning log.
+ *
+ * Should NOT be used as attribute semantics comparison.
+ */
+BOOLEAN
+VmDirIsSameConsumerSupplierEntryAttr(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSrcEntry,
+    PVDIR_ENTRY     pDstEntry
+    )
+{
+    BOOLEAN         bIsSameAttr = TRUE;
+    DWORD           dwError = 0;
+    PVDIR_ATTRIBUTE pSrcAttr = NULL;
+    PVDIR_ATTRIBUTE pDstAttr = NULL;
+    unsigned        i = 0;
+    unsigned        j = 0;
+
+    if (!pAttr || !pSrcEntry || !pDstEntry)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pSrcAttr = VmDirFindAttrByName(pSrcEntry, pAttr->type.lberbv_val);
+    pDstAttr = VmDirFindAttrByName(pDstEntry, pAttr->type.lberbv_val);
+
+    if (pSrcAttr && pDstAttr && pSrcAttr->numVals == pDstAttr->numVals)
+    {
+        for (i=0; bIsSameAttr && i < pSrcAttr->numVals; i++)
+        {
+             for (j = 0; j < pDstAttr->numVals; j++)
+             {
+                 if (pSrcAttr->vals[i].lberbv_len == pDstAttr->vals[j].lberbv_len &&
+                     memcmp( pSrcAttr->vals[i].lberbv_val, pDstAttr->vals[j].lberbv_val, pSrcAttr->vals[i].lberbv_len) == 0
+                    )
+                 {
+                     break;
+                 }
+             }
+
+             if (j == pDstAttr->numVals)
+             {
+                 bIsSameAttr = FALSE;
+             }
+        }
+    }
+    else
+    {
+        bIsSameAttr = FALSE;
+    }
+
+error:
+    return bIsSameAttr && dwError==0;
+}
+
+/*
+ * Sort function -
+ * Array of PVDIR_BERVALUE
+ */
+int
+VmDirPVdirBValCmp(
+    const void *p1,
+    const void *p2
+    )
+{
+
+    PVDIR_BERVALUE* ppBV1 = (PVDIR_BERVALUE*) p1;
+    PVDIR_BERVALUE* ppBV2 = (PVDIR_BERVALUE*) p2;
+
+    if ((ppBV1 == NULL || *ppBV1 == NULL) &&
+        (ppBV2 == NULL || *ppBV2 == NULL))
+    {
+        return 0;
+    }
+
+    if (ppBV1 == NULL || *ppBV1 == NULL)
+    {
+        return -1;
+    }
+
+    if (ppBV2 == NULL || *ppBV2 == NULL)
+    {
+        return 1;
+    }
+
+    if ( (*ppBV1)->lberbv_len > (*ppBV2)->lberbv_len )
+    {
+        return -1;
+    }
+    else if ( (*ppBV1)->lberbv_len < (*ppBV2)->lberbv_len )
+    {
+        return 1;
+    }
+    else
+    {
+        return memcmp((*ppBV1)->lberbv_val, (*ppBV2)->lberbv_val, (*ppBV1)->lberbv_len);
+    }
+}

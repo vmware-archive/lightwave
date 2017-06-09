@@ -188,12 +188,3 @@ typedef struct _VDIR_RAFT_STAT
     UINT32 votedForTerm;
     VDIR_BERVALUE votedFor;
 } VDIR_RAFT_STATE, *PVDIR_RAFT_STATE;
-
-//Timeout while waiting for (majority) of peers to be ready (in idle state).
-#define WAIT_PEERS_READY_MS 3000
-
-//Wait time in sec for majority of requestVote, appendEntries or ping to be received from peers.
-#define WAIT_CONSENSUS_TIMEOUT_MS 8000
-
-//Wait relection minimum value in MS  when split votes occurred
-#define WAIT_REELECTION_MIN_MS 150

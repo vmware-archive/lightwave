@@ -25,6 +25,10 @@ REST_MODULE _ldap_rest_module[] =
         "/v1/lwraft/ldap",
         {VmDirRESTLdapSearch, VmDirRESTLdapAdd, NULL, VmDirRESTLdapDelete, VmDirRESTLdapModify}
     },
+    {
+        "/v1/lwraft/object/*",
+        {VmDirRESTLdapSearch, VmDirRESTLdapAdd, NULL, VmDirRESTLdapDelete, VmDirRESTLdapModify}
+    },
     {0}
 };
 
@@ -65,7 +69,7 @@ VmDirRESTLdapAdd(
             NULL, -1, LDAP_REQ_ADD, pRestOp->pConn, &pAddOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTDecodeEntry(pRestOp->pjInput, &pEntry);
+    dwError = VmDirRESTDecodeEntry(pRestOp, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirResetAddRequestEntry(pAddOp, pEntry);
@@ -136,6 +140,7 @@ VmDirRESTLdapSearch(
 
     // set operation result
     dwError = VmDirRESTEncodeEntryArray(
+            pRestOp,
             &pSearchOp->internalSearchEntryArray,
             pSearchOp->request.searchReq.attrs,
             &pjResult);
@@ -207,8 +212,20 @@ VmDirRESTLdapModify(
             NULL, -1, LDAP_REQ_MODIFY, pRestOp->pConn, &pModifyOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    switch (pRestOp->pResource->rscType)
+    {
+        case VDIR_REST_RSC_LDAP:
+                dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
+                BAIL_ON_VMDIR_ERROR(dwError)
+                break;
+
+        case VDIR_REST_RSC_OBJECT:
+                dwError = VmDirRESTEndpointToDN(pRestOp, &pszDN);
+                BAIL_ON_VMDIR_ERROR(dwError)
+                break;
+
+        default: BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
 
     dwError = VmDirStringToBervalContent(pszDN, &pModifyOp->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -263,8 +280,20 @@ VmDirRESTLdapDelete(
             NULL, -1, LDAP_REQ_DELETE, pRestOp->pConn, &pDeleteOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    switch (pRestOp->pResource->rscType)
+    {
+        case VDIR_REST_RSC_LDAP:
+                dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        case VDIR_REST_RSC_OBJECT:
+                dwError = VmDirRESTEndpointToDN(pRestOp, &pszDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+
+        default: BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+    }
 
     dwError = VmDirStringToBervalContent(pszDN, &pDeleteOp->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);

@@ -36,6 +36,9 @@
     <ClCompile Include="..\instance.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\integritychk.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\ipcapihandler.c">
       <Filter>Source Files</Filter>
     </ClCompile>

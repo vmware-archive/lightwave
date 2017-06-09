@@ -1152,21 +1152,31 @@ VmDirConditionBroadcast2003(
 DWORD
 VmDirCreateThread(
     PVMDIR_THREAD pThread,
-    BOOLEAN bDetached,
+    BOOLEAN bJoinThr,
     PVMDIR_START_ROUTINE pStartRoutine,
     PVOID pArgs
-);
+    );
 
 DWORD
 VmDirThreadJoin(
     PVMDIR_THREAD pThread,
     PDWORD pRetVal
-);
+    );
 
 VOID
 VmDirFreeVmDirThread(
     PVMDIR_THREAD pThread
-);
+    );
+
+VOID
+VmDirRaiseThreadPriority(
+    int iDelta
+    );
+
+VOID
+VmDirDropThreadPriority(
+    int iDelta
+    );
 
 DWORD
 VmDirAllocateSyncCounter(

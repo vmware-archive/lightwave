@@ -1,17 +1,17 @@
-bin_PROGRAMS = vdcpromo
+bin_PROGRAMS = vdcvmdirpromo
 
-vdcpromo_SOURCES = \
+vdcvmdirpromo_SOURCES = \
     parseargs.c \
     main.c
 
-vdcpromo_CPPFLAGS = \
+vdcvmdirpromo_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-vdcpromo_LDADD = \
+vdcvmdirpromo_LDADD = \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
@@ -26,7 +26,7 @@ vdcpromo_LDADD = \
     @LDAP_LIBS@ \
     @PTHREAD_LIBS@
 
-vdcpromo_LDFLAGS = \
+vdcvmdirpromo_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

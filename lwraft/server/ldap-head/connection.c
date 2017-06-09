@@ -200,7 +200,7 @@ VmDirInitConnAcceptThread(
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 vmdirConnAcceptThrFunc,
                 (PVOID)pdwPort);  // New thread owns pdwPort
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -227,7 +227,7 @@ VmDirInitConnAcceptThread(
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 vmdirSSLConnAcceptThrFunc,
                 (PVOID)pdwPort);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -772,7 +772,7 @@ ProcessAConnection(
          case LDAP_REQ_COMPARE:
          case LDAP_REQ_ABANDON:
          case LDAP_REQ_EXTENDED:
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: Operation is not yet implemented.." );
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: %d Operation is not yet implemented..", tag);
             pOperation->ldapResult.errCode = retVal = LDAP_UNWILLING_TO_PERFORM;
             // ignore following VmDirAllocateStringA error.
             VmDirAllocateStringA( "Operation is not yet implemented.", &pOperation->ldapResult.pszErrMsg);
@@ -913,6 +913,7 @@ vmdirConnAccept(
         goto cleanup;
     }
 
+    gVmdirGlobals.bIsLDAPPortOpen = TRUE;
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Connection accept thread: listening on LDAP port (%u).", dwPort);
 
     iLocalLogMask = VmDirLogGetMask();
@@ -1024,7 +1025,7 @@ vmdirConnAccept(
         newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
 
-        retVal = VmDirCreateThread(&threadId, TRUE, ProcessAConnection, (PVOID)pConnCtx);
+        retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: VmDirCreateThread() (port) failed with errno: %d",

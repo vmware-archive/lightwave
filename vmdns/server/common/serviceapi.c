@@ -684,6 +684,7 @@ VmDnsSrvListRecords(
     *ppRecordList = pRecordList;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszZone);
     return dwError;
 
 error:

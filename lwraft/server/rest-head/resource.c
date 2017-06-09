@@ -17,12 +17,14 @@
 static VDIR_REST_RESOURCE_ENDPOINT rsourceEndpoints[] =
 {
     {VDIR_REST_RSC_LDAP,    "/v1/lwraft/ldap"},
+    {VDIR_REST_RSC_OBJECT,  "/v1/lwraft/object"},
     {VDIR_REST_RSC_UNKNOWN, NULL}
 };
 
 static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
 {
     {VDIR_REST_RSC_LDAP,    VmDirRESTLdapSetResult,     VmDirRESTLdapGetHttpError,      "error-code",   "error-message"},
+    {VDIR_REST_RSC_OBJECT,  VmDirRESTLdapSetResult,     VmDirRESTLdapGetHttpError,      "error-code",   "error-message"},
     {VDIR_REST_RSC_UNKNOWN, VmDirRESTUnknownSetResult,  VmDirRESTUnknownGetHttpError,   NULL,           NULL}
 };
 
@@ -35,8 +37,8 @@ VmDirRESTGetEndpointRscType(
 
     for (i = 0; rsourceEndpoints[i].pszEndpoint; i++)
     {
-        if (VmDirStringCompareA(
-                rsourceEndpoints[i].pszEndpoint, pszEndpoint, FALSE) == 0)
+        if (VmDirStringNCompareA(
+                rsourceEndpoints[i].pszEndpoint, pszEndpoint, VmDirStringLenA(rsourceEndpoints[i].pszEndpoint), FALSE) == 0)
         {
             break;
         }
@@ -56,6 +58,19 @@ VmDirRESTGetResource(
     }
 
     return &resources[rscType];
+}
+
+PCSTR
+VmDirRESTGetRscEndpoint(
+    VDIR_REST_RESOURCE_TYPE rscType
+    )
+{
+    if (rscType > VDIR_REST_RSC_UNKNOWN)
+    {
+        return rsourceEndpoints[VDIR_REST_RSC_UNKNOWN].pszEndpoint;
+    }
+
+    return rsourceEndpoints[rscType].pszEndpoint;
 }
 
 DWORD

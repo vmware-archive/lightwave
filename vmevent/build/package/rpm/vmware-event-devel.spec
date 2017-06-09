@@ -13,6 +13,8 @@ BuildRequires:  coreutils >= 8.22
 %description
 VMware Event Service Software Development Kit
 
+%debug_package
+
 %build
 cd build
 autoreconf -mif ..

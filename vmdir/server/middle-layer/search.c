@@ -189,7 +189,7 @@ VmDirInternalSearch(
 
     if (VmDirHandleSpecialSearch( pOperation, pResult )) // TODO, add &pszLocalErrMsg
     {
-        retVal = pResult->errCode;
+        retVal = pResult->errCode ? pResult->errCode : pResult->vmdirErrCode;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Special search failed - (%u)", retVal);
 
         goto cleanup;  // done special search
@@ -1110,30 +1110,54 @@ ProcessCandidateList(
 
             if (CheckIfEntryPassesFilter(pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
             {
+                BOOLEAN bSendEntry = TRUE;
+                CHAR    sha1Digest[SHA_DIGEST_LENGTH] = {0};
+
                 retVal = VmDirBuildComputedAttribute( pOperation, pSrEntry );
                 BAIL_ON_VMDIR_ERROR( retVal );
 
-                retVal = VmDirSendSearchEntry( pOperation, pSrEntry );
-                if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
+                if (pOperation->digestCtrl)
                 {
-                    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                            "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)\n",
-                            __FILE__,
-                            __LINE__,
-                            pOperation->conn->AccessInfo.pszBindedDn,
-                            pSrEntry->dn.lberbv.bv_val);
-                    // make sure search continues
-                    retVal = 0;
-                }
-                BAIL_ON_VMDIR_ERROR( retVal );
+                    retVal = VmDirEntrySHA1Digest(pSrEntry, sha1Digest);
+                    BAIL_ON_VMDIR_ERROR(retVal);
 
-                if (pSrEntry->bSearchEntrySent)
-                {
-                    numSentEntries++;
-                    if (bInternalSearch || bStoreRsltInMem)
+                    if (memcmp(sha1Digest, pOperation->digestCtrl->value.digestCtrlVal.sha1Digest, SHA_DIGEST_LENGTH) == 0)
                     {
-                        pOperation->internalSearchEntryArray.iSize++;
-                        pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+                        bSendEntry = FALSE;
+                        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,"%s digest match %s",
+                                           __FUNCTION__, pSrEntry->dn.lberbv.bv_val);
+                    }
+                    else
+                    {
+                        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,"%s digest mismatch %s",
+                                           __FUNCTION__, pSrEntry->dn.lberbv.bv_val);
+                    }
+                }
+
+                if (bSendEntry)
+                {
+                    retVal = VmDirSendSearchEntry( pOperation, pSrEntry );
+                    if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
+                    {
+                        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                                "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)\n",
+                                __FILE__,
+                                __LINE__,
+                                pOperation->conn->AccessInfo.pszBindedDn,
+                                pSrEntry->dn.lberbv.bv_val);
+                        // make sure search continues
+                        retVal = 0;
+                    }
+                    BAIL_ON_VMDIR_ERROR( retVal );
+
+                    if (pSrEntry->bSearchEntrySent)
+                    {
+                        numSentEntries++;
+                        if (bInternalSearch || bStoreRsltInMem)
+                        {
+                            pOperation->internalSearchEntryArray.iSize++;
+                            pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+                        }
                     }
                 }
             }

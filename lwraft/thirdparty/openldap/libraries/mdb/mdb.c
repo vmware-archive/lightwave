@@ -1150,7 +1150,9 @@ struct MDB_env {
 #endif
 	void		*me_userctx;	 /**< User-settable context */
 	MDB_assert_func *me_assert_func; /**< Callback for assertion failures */
-        MDB_commit_hook_func *me_commit_hook_func; /** Commit hook function used for Raft committing a log **/
+        MDB_raft_prepare_commit_func *me_raft_prepare_commit_func; /** Commit hook function used for Raft committing a log **/
+        MDB_raft_post_commit_func *me_raft_post_commit_func; /** callback that sets raft state for the logIndex **/
+        MDB_raft_commit_fail_func *me_raft_commit_fail_func; /** callback that sets raft state if fail to write WAL or meta page  **/
 	MDB_walstate	me_walstate;	/** WAL (write ahead logging) state **/
 };
 
@@ -2534,6 +2536,8 @@ mdb_txn_commit(MDB_txn *txn)
 	int		rc;
 	unsigned int i;
 	MDB_env	*env;
+        unsigned long long raft_logindex = 0;
+        unsigned int raft_logterm = 0;
 
 	if (txn == NULL || txn->mt_env == NULL)
 		return EINVAL;
@@ -2679,21 +2683,30 @@ mdb_txn_commit(MDB_txn *txn)
 	mdb_audit(txn);
 #endif
 
-	if ((rc = mdb_page_flush(txn)) ||
-            (env->me_commit_hook_func && (rc = env->me_commit_hook_func())))
-    {
-		goto fail;
-    }
+	if ((rc = mdb_page_flush(txn)))
+        {
+                goto fail;
+        }
 
-    if((rc = mdb_env_write_meta(txn)))
-    {
+        if ((env->me_raft_prepare_commit_func && (rc = env->me_raft_prepare_commit_func(&raft_logindex, &raft_logterm))) ||
+            (rc = mdb_env_write_meta(txn)))
+        {
+                if (env->me_raft_commit_fail_func && raft_logindex > 0)
+                {
+                    env->me_raft_commit_fail_func();
+                }
 		goto fail;
-    }
+        }
 
 done:
 	env->me_pglast = 0;
 	env->me_txn = NULL;
 	mdb_dbis_update(txn, 1);
+
+        if (env->me_raft_post_commit_func && raft_logindex > 0)
+        {
+            env->me_raft_post_commit_func(raft_logindex, raft_logterm);
+        }
 
 	if (env->me_txns)
 		UNLOCK_MUTEX_W(env);
@@ -8776,8 +8789,23 @@ mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, u
 
 /** @brief Set commit hook func for Raft
  */
-void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func)
+void mdb_set_raft_prepare_commit_func(MDB_env *env, MDB_raft_prepare_commit_func *raft_prepare_commit_func)
 {
-    env->me_commit_hook_func = commit_hook_func;
+    env->me_raft_prepare_commit_func = raft_prepare_commit_func;
+}
+
+/** @brief callback for raft post commit - set raft volatle state with logIndex argument when commit succeeded
+ */
+void mdb_set_raft_post_commit_func(MDB_env *env, MDB_raft_post_commit_func  *raft_post_commit_func)
+{
+    env->me_raft_post_commit_func = raft_post_commit_func;
+}
+
+/** @brief callback for raft commit fail to write WAL or meta page (due to disk full/failure). The callback
+ *  would set the server to Raft Follower role to avoid reusing the logIndex/logTerm for new client requests.
+ */
+void mdb_set_raft_commit_fail_func(MDB_env *env, MDB_raft_commit_fail_func  *raft_commit_fail_func)
+{
+    env->me_raft_commit_fail_func = raft_commit_fail_func;
 }
 /** @} */

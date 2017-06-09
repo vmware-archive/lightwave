@@ -153,3 +153,10 @@ VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
         VMDIR_SF_INIT(.pCond, NULL),
         VMDIR_SF_INIT(.pTSStack, NULL)
     };
+
+VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.pJob, NULL)
+    };

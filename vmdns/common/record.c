@@ -63,6 +63,10 @@ VmDnsClearRecord(
         {
             gRecordMethods[idx].pfnClear(pRecord);
         }
+        else
+        {
+            VMDNS_SAFE_FREE_MEMORY(pRecord->pszName);
+        }
     }
 }
 
@@ -79,6 +83,10 @@ VmDnsRpcClearRecord(
         if(!dwError)
         {
             gRecordMethods[idx].pfnRpcClear(pRecord);
+        }
+        else
+        {
+            VmDnsRpcFreeMemory(pRecord->pszName);
         }
     }
 }
@@ -1070,9 +1078,9 @@ VmDnsReadDomainNameFromBuffer(
            }
         }
 
-        pszTempStringCursor = &pszTempStringCursor[dwLabelLength];
-        VMDNS_SAFE_FREE_STRINGA(pszLabels);
+        pszTempStringCursor += dwLabelLength;
         dwTotalStringLength += dwLabelLength;
+        VMDNS_SAFE_FREE_STRINGA(pszLabels);
 
         if (dwTotalStringLength > VMDNS_NAME_LENGTH_MAX)
         {

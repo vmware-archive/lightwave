@@ -135,7 +135,7 @@ public class UserResource extends BaseSubResource {
         try {
             PersonUser idmPersonUser = getIDMClient().findPersonUser(tenant, id);
             if (idmPersonUser == null) {
-                throw new InvalidPrincipalException(String.format("User '%s' does not exist in tenant '%s'", name, tenant));
+                throw new InvalidPrincipalException(String.format("User '%s' does not exist in tenant '%s'", name, tenant), name);
             }
             return UserMapper.getUserDTO(idmPersonUser, includePasswordDetails(name));
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {

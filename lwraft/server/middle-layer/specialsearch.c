@@ -22,6 +22,12 @@ _VmDirIsSearchForServerStatus(
     PVDIR_OPERATION     pOp
     );
 
+static
+BOOLEAN
+_VmDirIsSearchForRaftState(
+    PVDIR_OPERATION     pOp
+    );
+
 /*
  * Return TRUE if search request require special handling.
  * If TRUE, the request will be served within this function.
@@ -80,6 +86,13 @@ VmDirHandleSpecialSearch(
         entryType = SPECIAL_SEARCH_ENTRY_TYPE_SERVER_STATUS;
 
         dwError = VmDirServerStatusEntry(&pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
+                "%s Entry search failed.", pszEntryType[entryType]);
+    } else if (_VmDirIsSearchForRaftState(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_RAFT_STATUS;
+
+        dwError = VmDirRaftStateEntry(&pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                 "%s Entry search failed.", pszEntryType[entryType]);
     }
@@ -241,4 +254,39 @@ _VmDirIsSearchForServerStatus(
 
     return bRetVal;
 
+}
+
+/*
+ * For raft state in cluster scope
+ * The search pattern is :
+ * BASE:    cn=raftstate
+ * SCOPE:   BASE
+ * FILTER:  (objectclass=*)
+ */
+static
+BOOLEAN
+_VmDirIsSearchForRaftState(
+    PVDIR_OPERATION     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = NULL;
+    PVDIR_FILTER    pFilter = NULL;
+
+    pSearchReq = &(pOp->request.searchReq);
+    pFilter = pSearchReq->filter;
+
+    assert( pFilter != NULL );
+
+    if (pSearchReq->scope == LDAP_SCOPE_BASE &&
+        (pOp->reqDn.lberbv.bv_val != NULL && VmDirStringCompareA(pOp->reqDn.lberbv.bv_val, RAFT_STATE_DN, FALSE) == 0) &&
+        (pFilter->choice == LDAP_FILTER_PRESENT &&
+         pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN &&
+         pFilter->filtComp.present.lberbv.bv_val != NULL &&
+         VmDirStringNCompareA( ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0))
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
 }

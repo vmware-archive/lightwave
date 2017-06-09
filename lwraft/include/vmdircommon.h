@@ -1066,7 +1066,7 @@ VmDirConditionBroadcast2003(
 DWORD
 VmDirCreateThread(
     PVMDIR_THREAD pThread,
-    BOOLEAN bDetached,
+    BOOLEAN bJoinThr,
     PVMDIR_START_ROUTINE pStartRoutine,
     PVOID pArgs
 );
@@ -1235,6 +1235,10 @@ dequeGetSize(
 
 BOOLEAN
 dequeIsEmpty(
+    PDEQUE pDeque
+    );
+VOID
+dequeFreeStringContents(
     PDEQUE pDeque
     );
 
@@ -1668,6 +1672,13 @@ VmDirUPNToNameAndDomain(
     PCSTR   pszUPN,
     PSTR*   ppszName,
     PSTR*   ppszDomain
+    );
+
+DWORD
+VmDirDNToRDNList(
+    PCSTR               pszDN,
+    int                 iNotypes,
+    PVMDIR_STRING_LIST* ppRDNStrList
     );
 
 //IPC
@@ -2129,6 +2140,12 @@ VmDirStrToNameAndNumber(
 VOID
 VmDirFreeReplVector(
     PVMDIR_REPL_UTDVECTOR  pVector
+    );
+
+DWORD
+VmDirAppendRaftState(
+    PDEQUE pRaftState,
+    PCSTR hostName
     );
 
 #ifdef __cplusplus

@@ -21,3 +21,8 @@ DWORD
 TestTombstone(
     PVMDIR_TEST_STATE pState
     );
+
+DWORD
+TestGroupMembership(
+    PVMDIR_TEST_STATE pState
+    );

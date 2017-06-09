@@ -1,6 +1,6 @@
-bin_PROGRAMS = vdcschema
+bin_PROGRAMS = lwraftschema
 
-vdcschema_SOURCES = \
+lwraftschema_SOURCES = \
     conn.c \
     main.c \
     operations.c \
@@ -8,7 +8,7 @@ vdcschema_SOURCES = \
     syntax.c \
     util.c
 
-vdcschema_CPPFLAGS = \
+lwraftschema_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/tools/include \
@@ -17,7 +17,7 @@ vdcschema_CPPFLAGS = \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-vdcschema_LDADD = \
+lwraftschema_LDADD = \
     $(top_builddir)/client/liblwraftclient.la \
     $(top_builddir)/common/libcommon.la \
     @LWIO_LIBS@ \
@@ -30,6 +30,6 @@ vdcschema_LDADD = \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@
 
-vdcschema_LDFLAGS = \
+lwraftschema_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

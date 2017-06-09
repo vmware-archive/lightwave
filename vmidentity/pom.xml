@@ -208,6 +208,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${maven.failsafe.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-junit47</artifactId>
+            <version>${maven.failsafe.plugin.version}</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <skipTests>${skipIntegrationTests}</skipTests>
           <groups>${test.integration.group}</groups>

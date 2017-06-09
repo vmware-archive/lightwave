@@ -118,7 +118,6 @@ VmDirSrvInitializeHost(
                     pszDomainName,
                     pszSystemDomainAdminName,
                     pszPassword,
-                    pszSiteName,
                     pszReplURI,
                     firstReplCycleMode );
     BAIL_ON_VMDIR_ERROR(dwError);

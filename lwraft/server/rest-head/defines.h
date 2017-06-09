@@ -14,8 +14,8 @@
 
 // REST ENGINE CONFIG VALUES
 // TRIDENT
-#define VMDIR_REST_SSLCERT          LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdircert.pem"
-#define VMDIR_REST_SSLKEY           LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdirkey.pem"
+#define VMDIR_REST_SSLCERT          LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraftcert.pem"
+#define VMDIR_REST_SSLKEY           LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraftkey.pem"
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraft-rest.json"
 #define VMDIR_REST_DEBUGLOGFILE     "/tmp/lwraft-rest.log"
 //#define VMDIR_REST_DEBUGLOGFILE     VMDIR_LOG_DIR    VMDIR_PATH_SEPARATOR_STR "lwraft-rest.log"    TODO use this when lightwave-first is complete
@@ -23,6 +23,9 @@
 #define VMDIR_REST_WORKERTHCNT      "5"
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
+
+#define VMDIR_REST_DN_STR           "dn"
+#define VMDIR_REST_OBJECTPATH_STR   "objectpath"
 
 // OIDC
 #define VMDIR_REST_OIDC_SERVER              "localhost"

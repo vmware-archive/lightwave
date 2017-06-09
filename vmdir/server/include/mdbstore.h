@@ -284,7 +284,6 @@ VmDirMDBIndexIteratorFree(
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator
     );
 
-// iterate.c
 DWORD
 VmDirMDBParentIdIndexIteratorInit(
     ENTRYID                                 parentId,
@@ -300,6 +299,23 @@ VmDirMDBParentIdIndexIterate(
 VOID
 VmDirMDBParentIdIndexIteratorFree(
     PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR  pIterator
+    );
+
+DWORD
+VmDirMDBEntryBlobIteratorInit(
+    ENTRYID                                 EId,
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR*       ppIterator
+    );
+
+DWORD
+VmDirMDBEntryBlobIterate(
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR    pIterator,
+    ENTRYID*                            pEntryId
+    );
+
+VOID
+VmDirMDBEntryBlobIteratorFree(
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR  pIterator
     );
 
 // config.c

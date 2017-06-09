@@ -387,7 +387,7 @@ VmDnsCacheFindZoneByQName(
 {
     DWORD dwError = 0;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
-    BOOL bLocked = TRUE;
+    BOOL bLocked = FALSE;
 
     if (!pContext || IsNullOrEmptyString(szQName) || !ppZoneObject)
     {

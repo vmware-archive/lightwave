@@ -291,6 +291,12 @@ VmDnsLruRefreshNameEntry(
     );
 
 DWORD
+VmDnsLruClearEntries(
+    PVMDNS_LRU_LIST pLruList,
+    DWORD dwCount
+    );
+
+DWORD
 VmDnsLruTrimEntries(
     PVMDNS_LRU_LIST pLruList,
     DWORD dwCount

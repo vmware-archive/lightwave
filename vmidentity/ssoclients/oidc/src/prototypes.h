@@ -15,6 +15,28 @@
 #ifndef _PROTOTYPES_H_
 #define _PROTOTYPES_H_
 
+// OIDC_TOKEN
+
+SSOERROR
+OidcTokenBuild(
+    POIDC_TOKEN* pp,
+    PCSTRING psz,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName, /* OPT */
+    SSO_LONG clockToleranceInSeconds,
+    PCSTRING pszExpectedTokenClass);
+
+SSOERROR
+OidcTokenParse(
+    POIDC_TOKEN* pp,
+    PCSTRING psz,
+    PCSTRING pszExpectedTokenClass);
+
+void
+OidcTokenDelete(
+    POIDC_TOKEN p);
+
 // OIDC_ID_TOKEN
 
 SSOERROR

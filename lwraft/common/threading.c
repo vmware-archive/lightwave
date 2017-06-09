@@ -20,7 +20,7 @@
 DWORD
 VmDirAllocateMutex(
     PVMDIR_MUTEX* ppMutex
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     PVMDIR_MUTEX pVmDirMutex = NULL;
@@ -50,7 +50,7 @@ error:
 DWORD
 VmDirInitializeMutexContent(
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
 
@@ -75,7 +75,7 @@ error:
 VOID
 VmDirFreeMutex(
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     VmDirFreeMutexContent(pMutex);
     VMDIR_SAFE_FREE_MEMORY( pMutex );
@@ -84,7 +84,7 @@ VmDirFreeMutex(
 VOID
 VmDirFreeMutexContent(
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     if ( ( pMutex != NULL ) &&  ( pMutex->bInitialized != FALSE ) )
     {
@@ -97,7 +97,7 @@ VmDirFreeMutexContent(
 DWORD
 VmDirLockMutex(
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
 
@@ -122,7 +122,7 @@ error:
 DWORD
 VmDirUnLockMutex(
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
 
@@ -147,7 +147,7 @@ error:
 BOOLEAN
 VmDirIsMutexInitialized(
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     return ( pMutex != NULL ) &&
            ( pMutex->bInitialized != FALSE );
@@ -156,7 +156,7 @@ VmDirIsMutexInitialized(
 DWORD
 VmDirAllocateCondition(
     PVMDIR_COND* ppCondition
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     PVMDIR_COND pVmDirCond = NULL;
@@ -186,7 +186,7 @@ error:
 DWORD
 VmDirInitializeConditionContent(
     PVMDIR_COND pCondition
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
 
@@ -210,7 +210,7 @@ error:
 VOID
 VmDirFreeCondition(
     PVMDIR_COND pCondition
-)
+    )
 {
     VmDirFreeConditionContent( pCondition );
     VMDIR_SAFE_FREE_MEMORY( pCondition );
@@ -219,7 +219,7 @@ VmDirFreeCondition(
 VOID
 VmDirFreeConditionContent(
     PVMDIR_COND pCondition
-)
+    )
 {
     if ( ( pCondition != NULL ) &&  ( pCondition->bInitialized != FALSE ) )
     {
@@ -232,7 +232,7 @@ DWORD
 VmDirConditionWait(
     PVMDIR_COND pCondition,
     PVMDIR_MUTEX pMutex
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
 
@@ -265,7 +265,7 @@ VmDirConditionTimedWait(
     PVMDIR_COND pCondition,
     PVMDIR_MUTEX pMutex,
     DWORD dwMilliseconds
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     struct timespec ts = {0};
@@ -304,7 +304,7 @@ error:
 DWORD
 VmDirConditionSignal(
     PVMDIR_COND pCondition
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
 
@@ -350,8 +350,8 @@ error:
 static
 PVOID
 ThreadFunction(
-  PVOID pArgs
-)
+    PVOID pArgs
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     PVMDIR_START_ROUTINE pThreadStart = NULL;
@@ -394,10 +394,10 @@ error:
 DWORD
 VmDirCreateThread(
     PVMDIR_THREAD pThread,
-    BOOLEAN bDetached,
+    BOOLEAN bJoinThr,
     VmDirStartRoutine* pStartRoutine,
     PVOID pArgs
-)
+    )
 {
     DWORD                       dwError = ERROR_SUCCESS;
     PVMDIR_THREAD_START_INFO    pThreadStartInfo = NULL;
@@ -405,13 +405,13 @@ VmDirCreateThread(
     BOOLEAN                     bThreadAttrInited = FALSE;
     int                         iRetryCnt = 0;
 
-    if ( ( pThread == NULL ) || ( pStartRoutine == NULL ) )
+    if (!pThread || !pStartRoutine)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if( bDetached != FALSE )
+    if (!bJoinThr)
     {
         pthread_attr_init(&thrAttr);
         bThreadAttrInited = TRUE;
@@ -431,11 +431,11 @@ VmDirCreateThread(
     {
         dwError = pthread_create(
                         pThread,
-                        ((bDetached == FALSE) ? NULL : &thrAttr),
+                        (bJoinThr ? NULL : &thrAttr),
                         ThreadFunction,
                         pThreadStartInfo
                         );
-        if ( dwError == EAGAIN )    // no resources, retry after 1 second pause
+        if (dwError == EAGAIN)  // no resources, retry after 1 second pause
         {
             iRetryCnt++ ;
             VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "pthread_create EAGAIN, retry (%d)", iRetryCnt );
@@ -445,7 +445,7 @@ VmDirCreateThread(
         {
             iRetryCnt = VMDIR_MAX_EAGAIN_RETRY;
         }
-    } while ( iRetryCnt < VMDIR_MAX_EAGAIN_RETRY );
+    } while (iRetryCnt < VMDIR_MAX_EAGAIN_RETRY);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // we started successfully -> pThreadStartInfo is now owned by
@@ -453,14 +453,11 @@ VmDirCreateThread(
     pThreadStartInfo = NULL;
 
 error:
-
-    if(bThreadAttrInited != FALSE)
+    if (bThreadAttrInited)
     {
         pthread_attr_destroy(&thrAttr);
     }
-
-    VMDIR_SAFE_FREE_MEMORY( pThreadStartInfo );
-
+    VMDIR_SAFE_FREE_MEMORY(pThreadStartInfo);
     return dwError;
 }
 
@@ -468,7 +465,7 @@ DWORD
 VmDirThreadJoin(
     PVMDIR_THREAD pThread,
     PDWORD pRetVal
-)
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     union
@@ -505,9 +502,9 @@ error:
 VOID
 VmDirFreeVmDirThread(
     PVMDIR_THREAD pThread
-)
+    )
 {
-    if ( pThread != NULL )
+    if (pThread)
     {
         // on linux nothing to free really
         memset(pThread, 0, sizeof(*pThread));
