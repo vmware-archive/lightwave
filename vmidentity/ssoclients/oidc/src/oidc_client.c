@@ -269,7 +269,7 @@ OidcClientAcquireTokens(
     if (pOutTokenErrorResponse != NULL)
     {
         // if server return error response, we translate that into an SSOERROR code
-        e = OidcErrorResponseGetSSOErrorCode(pOutTokenErrorResponse);
+        e = OidcErrorResponseGetErrorCode(pOutTokenErrorResponse);
     }
 
 error:

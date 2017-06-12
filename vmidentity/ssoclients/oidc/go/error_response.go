@@ -33,6 +33,10 @@ func (this *ErrorResponse) Close() error {
     return nil
 }
 
+func (this *ErrorResponse) GetError() string {
+    return cStringToGoString(C.OidcErrorResponseGetError(this.p))
+}
+
 func (this *ErrorResponse) GetErrorDescription() string {
     return cStringToGoString(C.OidcErrorResponseGetErrorDescription(this.p))
 }

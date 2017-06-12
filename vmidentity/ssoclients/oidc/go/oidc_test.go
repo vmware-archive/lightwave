@@ -3,6 +3,7 @@ package oidc
 import "testing"
 import "os"
 import "fmt"
+import "errors"
 
 func TestOidc(t *testing.T) {
     var server string = os.Getenv("LW_SERVER")
@@ -32,29 +33,38 @@ func test(
     exitOnError(t, err)
     defer client.Close()
 
-    successResponse, errorResponse, err := client.AcquireTokensByPassword(
+    var successResponse *TokenSuccessResponse = nil
+    var errorResponse *ErrorResponse = nil
+
+    successResponse, errorResponse, err = client.AcquireTokensByPassword(
         username,
         password,
         "openid offline_access id_groups at_groups rs_admin_server")
-    if errorResponse != nil {
-        t.Error(errorResponse.GetErrorDescription())
-        errorResponse.Close()
-    }
-    exitOnError(t, err)
+    assert(t, successResponse != nil, "successResponse != nil")
+    assert(t, errorResponse == nil, "errorResponse == nil")
+    assert(t, err == nil, "err == nil")
     validateIDToken(t, successResponse.GetIDToken(), serverMetadata.GetSigningCertificatePEM())
     validateAccessToken(t, successResponse.GetAccessToken(), serverMetadata.GetSigningCertificatePEM())
     var refreshToken string = successResponse.GetRefreshToken()
     successResponse.Close()
 
-    successResponse2, errorResponse2, err := client.AcquireTokensByRefreshToken(refreshToken)
-    if errorResponse2 != nil {
-        t.Error(errorResponse2.GetErrorDescription())
-        errorResponse2.Close()
-    }
-    exitOnError(t, err)
-    validateIDToken(t, successResponse2.GetIDToken(), serverMetadata.GetSigningCertificatePEM())
-    validateAccessToken(t, successResponse2.GetAccessToken(), serverMetadata.GetSigningCertificatePEM())
-    successResponse2.Close()
+    successResponse, errorResponse, err = client.AcquireTokensByRefreshToken(refreshToken)
+    assert(t, successResponse != nil, "successResponse != nil")
+    assert(t, errorResponse == nil, "errorResponse == nil")
+    assert(t, err == nil, "err == nil")
+    validateIDToken(t, successResponse.GetIDToken(), serverMetadata.GetSigningCertificatePEM())
+    validateAccessToken(t, successResponse.GetAccessToken(), serverMetadata.GetSigningCertificatePEM())
+    successResponse.Close()
+
+    // test wrong password
+    successResponse, errorResponse, err = client.AcquireTokensByPassword(username, password + "_nonmatching", "openid")
+    assert(t, successResponse == nil, "successResponse == nil")
+    assert(t, errorResponse != nil, "errorResponse != nil")
+    assert(t, err != nil, "err != nil")
+    assertEqual(t, "invalid_grant", errorResponse.GetError())
+    assertEqual(t, "incorrect username or password", errorResponse.GetErrorDescription())
+    assertEqual(t, "SSOERROR_OIDC_SERVER_INVALID_GRANT", err.Error())
+    errorResponse.Close()
 }
 
 func validateIDToken(t *testing.T, jwt string, pem string) {
@@ -93,5 +103,17 @@ func validateAccessToken(t *testing.T, jwt string, pem string) {
 func exitOnError(t *testing.T, err error) {
     if err != nil {
         t.Fatal(err.Error())
+    }
+}
+
+func assert(t *testing.T, expression bool, message string) {
+    if !expression {
+        t.Fatal(errors.New(message))
+    }
+}
+
+func assertEqual(t *testing.T, expected string, actual string) {
+    if expected != actual {
+        t.Fatal(errors.New(fmt.Sprintf("expected: [%s], actual: [%s]", expected, actual)))
     }
 }

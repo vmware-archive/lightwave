@@ -111,6 +111,7 @@ OidcTokenParse(
 
     ASSERT_NOT_NULL(pp);
     ASSERT_NOT_NULL(psz);
+    ASSERT_NOT_NULL(pszExpectedTokenClass);
 
     e = SSOMemoryAllocate(sizeof(OIDC_TOKEN), (void**) &p);
     BAIL_ON_ERROR(e);

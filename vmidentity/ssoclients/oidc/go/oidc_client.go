@@ -98,17 +98,16 @@ func (this *OidcClient) AcquireTokensByPassword(
         scopeCStr,
         &oidcTokenSuccessResponse,
         &oidcErrorResponse)
-    if e != 0 {
-        err = cErrorToGoError(e)
-        return
-    }
-
     if oidcTokenSuccessResponse != nil {
         successResponse = tokenSuccessResponseNew(oidcTokenSuccessResponse)
     }
     if oidcErrorResponse != nil {
         errorResponse = errorResponseNew(oidcErrorResponse)
     }
+    if e != 0 {
+        err = cErrorToGoError(e)
+    }
+
     return
 }
 
@@ -124,17 +123,16 @@ func (this *OidcClient) AcquireTokensByRefreshToken(
         refreshTokenCStr,
         &oidcTokenSuccessResponse,
         &oidcErrorResponse)
-    if e != 0 {
-        err = cErrorToGoError(e)
-        return
-    }
-
     if oidcTokenSuccessResponse != nil {
         successResponse = tokenSuccessResponseNew(oidcTokenSuccessResponse)
     }
     if oidcErrorResponse != nil {
         errorResponse = errorResponseNew(oidcErrorResponse)
     }
+    if e != 0 {
+        err = cErrorToGoError(e)
+    }
+
     return
 }
 
@@ -159,17 +157,16 @@ func (this *OidcClient) AcquireTokensBySolutionUserCredentials(
         scopeCStr,
         &oidcTokenSuccessResponse,
         &oidcErrorResponse)
-    if e != 0 {
-        err = cErrorToGoError(e)
-        return
-    }
-
     if oidcTokenSuccessResponse != nil {
         successResponse = tokenSuccessResponseNew(oidcTokenSuccessResponse)
     }
     if oidcErrorResponse != nil {
         errorResponse = errorResponseNew(oidcErrorResponse)
     }
+    if e != 0 {
+        err = cErrorToGoError(e)
+    }
+
     return
 }
 

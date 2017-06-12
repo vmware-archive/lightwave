@@ -271,6 +271,10 @@ OidcErrorResponseDelete(
     POIDC_ERROR_RESPONSE p);
 
 PCSTRING
+OidcErrorResponseGetError(
+    PCOIDC_ERROR_RESPONSE p);
+
+PCSTRING
 OidcErrorResponseGetErrorDescription(
     PCOIDC_ERROR_RESPONSE p);
 
