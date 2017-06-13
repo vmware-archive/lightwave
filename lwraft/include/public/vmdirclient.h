@@ -276,6 +276,13 @@ VmDirGetKrbUPNKey(
     );
 
 DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
+
+DWORD
 VmDirSetSRPSecret(
     PCSTR       pszUPN,
     PCSTR       pszSecret

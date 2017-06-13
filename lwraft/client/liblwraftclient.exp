@@ -47,6 +47,7 @@ VmDirGetLogLevelH
 VmDirSetLogMask
 VmDirSetLogMaskH
 VmDirGetLogMaskH
+VmDirLocalGetSRPSecret
 VmDirSetSRPSecret
 VmDirGetSiteGuid
 VmDirConnectionOpen

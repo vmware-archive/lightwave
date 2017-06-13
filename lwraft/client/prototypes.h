@@ -587,6 +587,13 @@ VmDirLocalGeneratePassword(
 );
 
 DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
+
+DWORD
 VmDirLocalSetSRPSecret(
     PCWSTR      pwszUPN,
     PCWSTR      pwszSecret

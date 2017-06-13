@@ -614,6 +614,15 @@ VOID
 VmDirKillHeartbeatThread(
     );
 
+DWORD
+VmDirIpcGetSRPSecret(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 #ifdef __cplusplus
 }
 #endif
