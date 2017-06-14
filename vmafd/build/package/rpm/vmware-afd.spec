@@ -80,6 +80,7 @@ autoreconf -mif .. &&
             --with-ant=%{_anthome} \
             --with-maven=%{_mavendir} \
             --with-boost=/usr \
+            --enable-notify-vmdir-provider=yes \
             --enable-krb5-default=yes
 
 %install
