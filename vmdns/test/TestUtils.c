@@ -127,7 +127,6 @@ void TestReverseZoneName(CuTest* tc)
 {
     DWORD dwError = 0;
     DWORD idx = 0;
-    int family = AF_INET;
     PSTR pszPtrName = NULL;
     PCSTR pszNetworkIds[] = {
         "192.168.1.1",
@@ -141,7 +140,7 @@ void TestReverseZoneName(CuTest* tc)
 
     for (; idx < sizeof(pszNetworkIds)/sizeof(PCSTR); ++idx)
     {
-        dwError = VmDnsGeneratePtrNameFromIp(pszNetworkIds[idx], &family, &pszPtrName);
+        dwError = VmDnsGeneratePtrNameFromIp(pszNetworkIds[idx], &pszPtrName);
         CuAssert(tc, "Generating PTR name from ip address should succeed.", !dwError);
     }
 }
@@ -192,7 +191,6 @@ CuSuite* CuGetUtilSuite(void)
 	CuSuite* suite = CuSuiteNew();
 
 	SUITE_ADD_TEST(suite, TestTrimDomainName);
-    SUITE_ADD_TEST(suite, TestPtrName);
     SUITE_ADD_TEST(suite, TestReverseZoneName);
 	SUITE_ADD_TEST(suite, VmDnsTestTrimString);
 

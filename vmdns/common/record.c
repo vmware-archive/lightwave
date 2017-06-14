@@ -1243,6 +1243,7 @@ VmDnsIsSupportedRecordType(
         dwRecordType == VMDNS_RR_TYPE_NS    ||
         dwRecordType == VMDNS_RR_TYPE_SOA   ||
         dwRecordType == VMDNS_RR_TYPE_SRV   ||
+        dwRecordType == VMDNS_RR_TYPE_PTR   ||
         dwRecordType == VMDNS_RR_QTYPE_ANY;
 }
 

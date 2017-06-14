@@ -569,6 +569,21 @@ VmDnsCliDelRecord(
             pszTargetFQDN = NULL;
         }
     }
+    if (pContext->record.dwType == VMDNS_RR_TYPE_PTR)
+    {
+        dwError = VmDnsMakeFQDN(
+                pContext->record.pszName,
+                pContext->pszZone,
+                &pszTargetFQDN);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        if (pszTargetFQDN)
+        {
+            VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+            pContext->record.pszName = pszTargetFQDN;
+            pszTargetFQDN = NULL;
+        }
+    }
     else
     {
         VmDnsTrimDomainNameSuffix(pContext->record.pszName, pContext->pszZone);

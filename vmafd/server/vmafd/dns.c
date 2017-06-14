@@ -38,6 +38,13 @@ VmAfdAppendDomain(
     PSTR*   pszServerFQDN
     );
 
+static
+DWORD
+VmAfdReverseZoneInitialize(
+        PVMDNS_SERVER_CONTEXT pServerContext,
+        PVMDNS_INIT_INFO pInitInfo
+    );
+
 DWORD
 VmAfSrvConfigureDNSW(
     PCWSTR pwszServerName,
@@ -175,6 +182,9 @@ VmAfSrvConfigureDNSA(
     VmAfdLog( VMAFD_DEBUG_ERROR, "%s DnsInitialize : Error:%d,ServerName : %s", __FUNCTION__,dwError,pszServerFQDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdReverseZoneInitialize(pServerContext, &initInfo);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
 cleanup:
 
     if (pServerContext)
@@ -193,6 +203,122 @@ error:
         VMAFD_DEBUG_ANY,
         "Failed to initialize DNS. Error(%u)",
         dwError);
+    goto cleanup;
+}
+
+DWORD
+VmAfdReverseZoneInitialize(
+    PVMDNS_SERVER_CONTEXT pServerContext,
+    PVMDNS_INIT_INFO pInitInfo
+    )
+{
+    DWORD dwError=0;
+    VMDNS_ZONE_INFO revzoneInfo = {
+            .pszName                = "in-addr.arpa.",
+            .pszPrimaryDnsSrvName   = pInitInfo->pszDcSrvName,
+            .pszRName               = "",
+            .serial                 = 0,
+            .refreshInterval        = VMAFD_DEFAULT_REFRESH_INTERVAL,
+            .retryInterval          = VMAFD_DEFAULT_RETRY_INTERVAL,
+            .expire                 = VMAFD_DEFAULT_EXPIRE,
+            .minimum                = VMAFD_DEFAULT_TTL,
+            .dwZoneType             = VMAFD_ZONE_TYPE_REVERSE
+    };
+
+    VMDNS_ZONE_INFO revzoneInfo6 = {
+            .pszName                = "ip6.arpa.",
+            .pszPrimaryDnsSrvName   = pInitInfo->pszDcSrvName,
+            .pszRName               = "",
+            .serial                 = 0,
+            .refreshInterval        = VMAFD_DEFAULT_REFRESH_INTERVAL,
+            .retryInterval          = VMAFD_DEFAULT_RETRY_INTERVAL,
+            .expire                 = VMAFD_DEFAULT_EXPIRE,
+            .minimum                = VMAFD_DEFAULT_TTL,
+            .dwZoneType             = VMAFD_ZONE_TYPE_REVERSE
+    };
+
+    VMDNS_RECORD revRecord =
+            {
+                    .pszName = NULL,
+                    .dwType = VMDNS_RR_TYPE_PTR,
+                    .iClass = VMDNS_CLASS_IN,
+                    .dwTtl = VMAFD_DEFAULT_TTL,
+                    .Data.PTR.pNameHost = pInitInfo->pszDcSrvName
+            };
+
+    VMDNS_RECORD revRecord6 =
+            {
+                    .pszName = NULL,
+                    .dwType = VMDNS_RR_TYPE_PTR,
+                    .iClass = VMDNS_CLASS_IN,
+                    .dwTtl = VMAFD_DEFAULT_TTL,
+                    .Data.PTR.pNameHost = pInitInfo->pszDcSrvName
+            };
+
+    VMDNS_IP4_ADDRESS ip4 = 0;
+    CHAR  szAddr[INET_ADDRSTRLEN] = {0};
+
+    dwError = VmDnsCreateZoneA(pServerContext, &revzoneInfo);
+    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDnsCreateZoneA(pServerContext, &revzoneInfo6);
+    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    ip4 = htonl(pInitInfo->IpV4Addrs.Addrs[0]);
+    if(!(inet_ntop(AF_INET, &ip4, szAddr, sizeof(szAddr))))
+    {
+        VmAfdLog(VMAFD_DEBUG_DEBUG,"Error converting Ip address to text format");
+        dwError = ERROR_BAD_FORMAT;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdGeneratePtrNameFromIp(
+                szAddr,
+                &revRecord.pszName
+                );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDnsAddRecordA(
+               pServerContext,
+               "in-addr.arpa.",
+               &revRecord
+              );
+    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if(pInitInfo->IpV6Addrs.dwCount != 0)
+    {
+        CHAR  szAddr6[INET6_ADDRSTRLEN] = {0};
+        if(!(inet_ntop(AF_INET6, &(pInitInfo->IpV6Addrs.Addrs[0].IP6Byte), szAddr6, sizeof(szAddr6))))
+        {
+            VmAfdLog(VMAFD_DEBUG_DEBUG,"Error converting Ip address to text format");
+            dwError = ERROR_BAD_FORMAT;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        dwError = VmAfdGeneratePtrNameFromIp(
+                   szAddr6,
+                   &revRecord6.pszName
+                  );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmDnsAddRecordA(
+                   pServerContext,
+                   "ip6.arpa.",
+                   &revRecord6
+                  );
+        dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_STRINGA(revRecord.pszName);
+    VMAFD_SAFE_FREE_STRINGA(revRecord6.pszName);
+    return dwError;
+
+error:
     goto cleanup;
 }
 

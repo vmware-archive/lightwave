@@ -647,18 +647,10 @@ ParseArgsAddZone(
         }
     }
 
+
     if (pContext->dwZoneType == VMDNS_ZONE_TYPE_REVERSE)
     {
-        dwError = VmDnsGenerateReversZoneNameFromNetworkId(
-                    pContext->pszZone,
-                    &pContext->pszZone);
-        if (dwError)
-        {
-            fprintf(
-                stdout,
-                "Failed to generate reverse zone name, %u.\n",
-                dwError);
-        }
+        dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
@@ -1227,7 +1219,6 @@ ParseArgsAddRecord(
 
                 dwError = VmDnsGeneratePtrNameFromIp(
                                 pszArg,
-                                NULL,
                                 &pContext->record.pszName);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -1236,10 +1227,11 @@ ParseArgsAddRecord(
                 break;
 
             case PARSE_MODE_ADD_RECORD_PTR_HOSTNAME:
-
+                /*
                 dwError = VmDnsAllocateStringA(
                                 pszArg,
-                                &pContext->record.Data.PTR.pNameHost);
+                                &pContext->record.Data.PTR.pNameHost);*/
+                dwError = VmDnsAllocateStringPrintfA(&pContext->record.Data.PTR.pNameHost,"%s.",pszArg);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_ADD_RECORD_OPEN;
@@ -1689,7 +1681,6 @@ ParseArgsDelRecord(
 
                 dwError = VmDnsGeneratePtrNameFromIp(
                                 pszArg,
-                                NULL,
                                 &pContext->record.pszName);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -1698,10 +1689,11 @@ ParseArgsDelRecord(
                 break;
 
             case PARSE_MODE_DEL_RECORD_PTR_HOSTNAME:
-
+                /*
                 dwError = VmDnsAllocateStringA(
                                 pszArg,
-                                &pContext->record.Data.PTR.pNameHost);
+                                &pContext->record.Data.PTR.pNameHost);*/
+                dwError = VmDnsAllocateStringPrintfA(&pContext->record.Data.PTR.pNameHost,"%s.",pszArg);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_DEL_RECORD_OPEN;
@@ -1803,6 +1795,7 @@ ParseArgsQueryRecords(
         PARSE_MODE_QUERY_RECORD_DOMAIN,
         PARSE_MODE_QUERY_RECORD_PASSWORD,
         PARSE_MODE_QUERY_RECORD_SERVER,
+        PARSE_MODE_QUERY_RECORD_IP,
 
     } PARSE_MODE_QUERY_RECORD;
     PARSE_MODE_QUERY_RECORD parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
@@ -1852,6 +1845,10 @@ ParseArgsQueryRecords(
                 else if (!strcmp(pszArg, "--server"))
                 {
                     parseMode = PARSE_MODE_QUERY_RECORD_SERVER;
+                }
+                else if (!strcmp(pszArg, "--ip"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_IP;
                 }
 
                 break;
@@ -1913,6 +1910,17 @@ ParseArgsQueryRecords(
             case PARSE_MODE_QUERY_RECORD_DOMAIN:
 
                 dwError = VmDnsCopyStringArg(pszArg, ppszDomain);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_IP:
+
+                dwError = VmDnsGeneratePtrNameFromIp(
+                           pszArg,
+                           &pContext->record.pszName);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_QUERY_RECORD_OPEN;

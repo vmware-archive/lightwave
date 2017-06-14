@@ -647,6 +647,12 @@ VmAfdCheckDomainFunctionalLevel(
     int nMinMinor
     );
 
+DWORD
+VmAfdGeneratePtrNameFromIp(
+        PCSTR pszIPAddress,
+        PSTR* ppszPtrName
+    );
+
 /* krbconfig.c */
 
 DWORD

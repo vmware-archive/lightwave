@@ -245,8 +245,13 @@ VmDnsGenerateReversZoneNameFromNetworkId(
 
     length = atoi(pLength);
 
-    dwError = VmDnsGeneratePtrNameFromIp(pszNetworkId, &family, &pszPtrName);
+    dwError = VmDnsGeneratePtrNameFromIp(pszNetworkId, &pszPtrName);
     BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (VmDnsStringChrA(pszNetworkId, ':'))
+    {
+        family = AF_INET6;
+    }
 
     if (family != AF_INET && family != AF_INET6)
     {
@@ -302,7 +307,6 @@ error:
 DWORD
 VmDnsGeneratePtrNameFromIp(
     PCSTR pszIPAddress,
-    int*  pnFamily,
     PSTR* ppszPtrName
     )
 {
@@ -310,7 +314,7 @@ VmDnsGeneratePtrNameFromIp(
     DWORD dwAddr = 0;
     PSTR pszPtrName = NULL;
     BYTE* pByte = NULL;
-    int ret = 0;
+    DWORD ret = 0;
     int af = AF_INET;
     unsigned char buf[sizeof(struct in6_addr)];
 
@@ -338,7 +342,7 @@ VmDnsGeneratePtrNameFromIp(
         // Example: 11.1.193.128.in-addr.arpa
         dwError = VmDnsAllocateStringPrintfA(
                     &pszPtrName,
-                    "%d.%d.%d.%d%s",
+                    "%d.%d.%d.%d%s.",
                     (dwAddr & 0xFF000000) >> 24,
                     (dwAddr & 0xFF0000) >> 16,
                     (dwAddr & 0xFF00) >> 8,
@@ -362,7 +366,7 @@ VmDnsGeneratePtrNameFromIp(
                     &pszPtrName,
                     "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x."
                     "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x"
-                    "%s",
+                    "%s.",
                     LOW_HEX(pByte[15]), HIGH_HEX(pByte[15]),
                     LOW_HEX(pByte[14]), HIGH_HEX(pByte[14]),
                     LOW_HEX(pByte[13]), HIGH_HEX(pByte[13]),
@@ -385,10 +389,6 @@ VmDnsGeneratePtrNameFromIp(
     }
 
     *ppszPtrName = pszPtrName;
-    if (pnFamily)
-    {
-        *pnFamily = af;
-    }
 
 cleanup:
     return dwError;
@@ -405,12 +405,12 @@ VmDnsIsReverseZoneName(
 {
     BOOL result = FALSE;
     DWORD idx = 0;
-    ULONG ulNameLength = 0, ulSuffixLength = 0;
-    PCSTR pszTail = NULL;
+    ULONG ulSuffixLength = 0;
+    //PCSTR pszTail = NULL;
     PCSTR suffix[] =
     {
-        PTR_NAME_SUFFIX_IP4,
-        PTR_NAME_SUFFIX_IP6
+        "in-addr.arpa.",
+        "ip6.arpa."
     };
 
     if (!pszZoneName || !pszZoneName[0])
@@ -418,22 +418,16 @@ VmDnsIsReverseZoneName(
         return FALSE;
     }
 
-    ulNameLength = VmDnsStringLenA(pszZoneName);
-
     for (; idx < sizeof(suffix)/sizeof(PCSTR); ++idx)
     {
         ulSuffixLength = VmDnsStringLenA(suffix[idx]);
-        if (ulSuffixLength < ulNameLength)
+        if (VmDnsStringCompareA(
+                pszZoneName,
+                suffix[idx],
+                FALSE) == 0)
         {
-            pszTail = pszZoneName + ulNameLength - ulSuffixLength;
-            if (VmDnsStringCompareA(
-                                pszTail,
-                                suffix[idx],
-                                FALSE) == 0)
-            {
-                result = TRUE;
-                break;
-            }
+            result = TRUE;
+            break;
         }
     }
 

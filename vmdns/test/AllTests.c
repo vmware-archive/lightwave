@@ -48,6 +48,7 @@ int  vmdns_debug = 0;
 CuSuite* CuGetUtilSuite();
 CuSuite* CuGetLruSuite();
 CuSuite* CuGetRecordListSuite();
+CuSuite* CuGetPtrSuite();
 
 void RunAllTests(void)
 {
@@ -69,6 +70,10 @@ void RunAllTests(void)
     CuSuite* lruSuite = CuGetLruSuite();
     CuSuiteAddSuite(suite, lruSuite);
     CuSuiteDelete(lruSuite);
+
+    CuSuite* ptrSuite = CuGetPtrSuite();
+    CuSuiteAddSuite(suite, ptrSuite);
+    CuSuiteDelete(ptrSuite);
 
     CuSuiteRun(suite);
     CuSuiteSummary(suite, output);
