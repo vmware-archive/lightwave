@@ -167,14 +167,17 @@ VMDNS_API
 VOID
 VmDnsCloseServer(PVMDNS_SERVER_CONTEXT pServerContext)
 {
-    if (pServerContext->hBinding)
-    {
-        DWORD dwError = 0;
-        rpc_binding_free(&pServerContext->hBinding, &dwError);
-        pServerContext->hBinding = NULL;
-    }
+	if(pServerContext)
+	{
+		if (pServerContext->hBinding)
+		{
+			DWORD dwError = 0;
+			rpc_binding_free(&pServerContext->hBinding, &dwError);
+			pServerContext->hBinding = NULL;
+		}
 
-    VMDNS_SAFE_FREE_MEMORY(pServerContext);
+		VMDNS_SAFE_FREE_MEMORY(pServerContext);
+	}
 }
 
 VMDNS_API
