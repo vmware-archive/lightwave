@@ -2026,9 +2026,11 @@ VmDirLdapSetupComputerAccount(
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Computer account (%s) created (recycle %s)", pszComputerDN, bAcctExists ? "T":"F");
 
+#ifndef LIGHTWAVE_BUILD
     // add Computer Account into DCClients group
     dwError = _VmDirLdapSetupAccountMembership( pLd, pszDomainDN, VMDIR_DCCLIENT_GROUP_NAME, pszComputerDN );
     BAIL_ON_VMDIR_ERROR(dwError);
+#endif
 
     if (bStoreInRegistry)
     {
