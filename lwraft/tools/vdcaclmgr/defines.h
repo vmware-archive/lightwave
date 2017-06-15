@@ -14,3 +14,9 @@
 
 #define DEFAULT_ACE_LIST_SIZE 5
 #define DEFAULT_PERMISSION_LIST_SIZE 10
+
+//
+// Permissions (e.g., "CC" for the "Create Child" permission) are always two
+// letters long in SDDL.
+//
+#define SDDL_PERMISSION_LENGTH 2

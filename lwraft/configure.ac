@@ -697,6 +697,7 @@ AC_CONFIG_FILES([Makefile
                  tools/Makefile
                  tools/lwraftpromo/Makefile
                  tools/lwraft-cli/Makefile
+                 tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
                  tools/vdcschema/Makefile

@@ -107,25 +107,92 @@ error:
 }
 
 DWORD
-VdcLdapGetObjectList(
+VdcLdapEnumerateObjects(
     LDAP *pLd,
-    PCSTR pBase,
+    PCSTR pszBase,
     int ldapScope,
+    PVMDIR_STRING_LIST *ppObjectDNs
+    )
+{
+    DWORD dwError = 0;
+    PCSTR ppszAttrs[] = {NULL};
+    LDAPMessage *pResult = NULL;
+    LDAPMessage* pEntry = NULL;
+    PSTR pszObjectDN = NULL;
+    DWORD iEntryCount = 0;
+    PVMDIR_STRING_LIST pObjectDNs = NULL;
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszBase,
+                ldapScope,
+                "(objectClass=*)",
+                (PSTR*)ppszAttrs,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                -1,
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    iEntryCount = ldap_count_entries(pLd, pResult);
+    if (iEntryCount > 0)
+    {
+        dwError = VmDirStringListInitialize(&pObjectDNs, iEntryCount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pEntry = ldap_first_entry(pLd, pResult);
+        for (; pEntry != NULL; pEntry = ldap_next_entry(pLd, pEntry))
+        {
+            assert(pObjectDNs->dwCount < iEntryCount);
+
+            dwError = VmDirAllocateStringA(ldap_get_dn(pLd, pEntry), &pszObjectDN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringListAdd(pObjectDNs, pszObjectDN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pszObjectDN = NULL;
+        }
+    }
+
+    *ppObjectDNs = pObjectDNs;
+    pObjectDNs = NULL;
+
+cleanup:
+    VmDirStringListFree(pObjectDNs);
+    VMDIR_SAFE_FREE_STRINGA(pszObjectDN);
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VdcLdapGetObjectSidMappings(
+    LDAP *pLd,
+    PCSTR pszBase,
     PCSTR pszFilter,
-    PLW_HASHMAP pUserToSidHashMap,
-    PLW_HASHMAP pSidToUserHashMap
+    PLW_HASHMAP pObjectToSidMapping,
+    PLW_HASHMAP pSidToObjectMapping
     )
 {
     DWORD dwError = 0;
     PCSTR ppszAttrs[3] = {ATTR_CN, ATTR_OBJECT_SID, NULL};
     LDAPMessage *pResult = NULL;
-    PSTR pszUserCN = NULL;
-    PSTR pszUserSid = NULL;
+    PSTR pszObjectCN = NULL;
+    PSTR pszObjectSid = NULL;
 
     dwError = ldap_search_ext_s(
                 pLd,
-                pBase,
-                ldapScope,
+                pszBase,
+                LDAP_SCOPE_SUBTREE,
                 pszFilter ? pszFilter : "",
                 (PSTR*)ppszAttrs,
                 0,
@@ -134,6 +201,7 @@ VdcLdapGetObjectList(
                 NULL,
                 -1,
                 &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (ldap_count_entries(pLd, pResult) > 0)
     {
@@ -141,17 +209,20 @@ VdcLdapGetObjectList(
 
         for (; pEntry != NULL; pEntry = ldap_next_entry(pLd, pEntry))
         {
-            dwError = _VdcGetAttributeFromEntry(pLd, pEntry, ATTR_CN, &pszUserCN);
+            dwError = _VdcGetAttributeFromEntry(pLd, pEntry, ATTR_CN, &pszObjectCN);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = _VdcGetAttributeFromEntry(pLd, pEntry, ATTR_OBJECT_SID, &pszUserSid);
+            dwError = _VdcGetAttributeFromEntry(pLd, pEntry, ATTR_OBJECT_SID, &pszObjectSid);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = _VdcAddCopiesToHashTable(pUserToSidHashMap, pszUserCN, pszUserSid);
+            dwError = _VdcAddCopiesToHashTable(pObjectToSidMapping, pszObjectCN, pszObjectSid);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = _VdcAddCopiesToHashTable(pSidToUserHashMap, pszUserSid, pszUserCN);
+            dwError = _VdcAddCopiesToHashTable(pSidToObjectMapping, pszObjectSid, pszObjectCN);
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            VMDIR_SAFE_FREE_STRINGA(pszObjectSid);
+            VMDIR_SAFE_FREE_STRINGA(pszObjectCN);
         }
     }
 
@@ -161,8 +232,8 @@ cleanup:
         ldap_msgfree(pResult);
     }
 
-    VMDIR_SAFE_FREE_STRINGA(pszUserSid);
-    VMDIR_SAFE_FREE_STRINGA(pszUserCN);
+    VMDIR_SAFE_FREE_STRINGA(pszObjectSid);
+    VMDIR_SAFE_FREE_STRINGA(pszObjectCN);
 
     return dwError;
 
@@ -173,9 +244,7 @@ error:
 DWORD
 VdcLdapGetAttributeValue(
     LDAP *pLd,
-    PCSTR pBase,
-    int ldapScope,
-    PCSTR pszFilter,
+    PCSTR pszObjectDN,
     PCSTR pszAttribute,
     PSTR *ppszAttributeValue
     )
@@ -189,9 +258,9 @@ VdcLdapGetAttributeValue(
     ppszAttrs[0] = pszAttribute;
     dwError = ldap_search_ext_s(
                 pLd,
-                pBase,
-                ldapScope,
-                pszFilter ? pszFilter : "",
+                pszObjectDN,
+                LDAP_SCOPE_BASE,
+                "(objectClass=*)",
                 (PSTR*)ppszAttrs,
                 0,
                 NULL,
@@ -343,7 +412,7 @@ error:
 DWORD
 VdcLdapReplaceAttrOnEntries(
     LDAP *pLd,
-    PCSTR pBase,
+    PCSTR pszBase,
     int ldapScope,
     PCSTR pszFilter,
     PCSTR pAttrName,
@@ -370,7 +439,7 @@ VdcLdapReplaceAttrOnEntries(
 
     dwError = ldap_search_ext_s(
                 pLd,
-                pBase,
+                pszBase,
                 ldapScope,
                 pszFilter ? pszFilter : "",
                 (PSTR*)ppszAttrs,
@@ -398,8 +467,6 @@ VdcLdapReplaceAttrOnEntries(
             VMDIR_SAFE_FREE_STRINGA(oldAttrVal);
             dwError = VdcLdapGetAttributeValue( pLd,
                                         pszDn,
-                                        LDAP_SCOPE_BASE,
-                                        "objectClass=*",
                                         pAttrName,
                                         &oldAttrVal);
             if (dwError == LDAP_SUCCESS && VmDirStringCompareA(oldAttrVal, pAttrVal, FALSE)==0)
