@@ -898,6 +898,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
+#define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"

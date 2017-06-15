@@ -370,7 +370,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 50,                               \
         /*.dwMax          = */ 10000,                            \
-        /*.dwDefault      = */ 100,                                \
+        /*.dwDefault      = */ 500,                              \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
