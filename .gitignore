@@ -18,6 +18,11 @@ autom4te.cache
 autoscan.log
 autoscan-*.log
 aclocal.m4
+libtool.m4
+ltoptions.m4
+ltsugar.m4
+ltversion.m4
+lt~obsolete.m4
 compile
 config.guess
 config.h.in
@@ -553,60 +558,17 @@ __pycache__/
 # End of https://www.gitignore.io/api/c,c++,java,linux,macos,windows,eclipse,autotools,executable,visualstudio
 
 
-# lightwave common files
+# lightwave files
 
-*.reg
-*.ver
-*/build/**/*.c
-*/build/**/*.h
-*/build/**/*.sh
-*/build/**/*.service
-.dirstamp
-build.properties
-debugfiles.list
-debuglinks.list
-debugsources.list
-libtool
-stage/
-**/rpmbuild/
+build/confdefs.h
+build/libtool
+build/stage/
+build/config/
+build/lwraft/
+build/vmafd/
+build/vmca/
+build/vmdir/
+build/vmdns/
+build/vmevent/
+build/vmidentity/
 
-# lightwave/config
-
-config/build/scripts/
-config/build/tools/
-
-# lightwave/lwraft
-
-lwraft/build/gssapi-plugins/
-lwraft/build/server/
-lwraft/build/testing/
-lwraft/build/tools/
-
-# lightwave/vmafd
-
-vmafd/build/server/
-vmafd/build/tools/
-vmafd/build/vmevent/
-
-# lightwave/vmca
-
-vmca/build/certool/
-vmca/build/service/
-
-# lightwave/vmdir
-
-vmdir/build/gssapi-plugins/
-vmdir/build/server/
-vmdir/build/testing/
-vmdir/build/tools/
-
-# lightwave/vmdns
-
-vmdns/build/server/
-vmdns/build/test/
-vmdns/build/tools/
-
-# lightwave/vmidentity
-
-vmidentity/build/interop/
-vmidentity/build/ssoclients/

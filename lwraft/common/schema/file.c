@@ -59,15 +59,19 @@ _VmDirReadOneDefFromFile(
         }
         else
         {
-            VmdDirNormalizeString(pDescBuf);
-            dwError = VmDirAllocateStringA(pDescBuf, &pOut);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirStringListAdd(pStrList, pOut);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            pOut = NULL;
             break;
         }
+    }
+
+    if (pDescBuf[0] != '\0')
+    {
+        VmdDirNormalizeString(pDescBuf);
+        dwError = VmDirAllocateStringA(pDescBuf, &pOut);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringListAdd(pStrList, pOut);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pOut = NULL;
     }
 
 cleanup:

@@ -334,8 +334,8 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_sbindir}/*
 %{_bindir}/lwraftpromo
 %{_bindir}/lwraftadmintool
-%{_bindir}/lwraftleavefed
 %{_bindir}/lwraftschema
+%{_bindir}/lwraft-cli
 %{_bindir}/unix_srp
 %{_lib64dir}/sasl2/libsasllwraftdb.so*
 %{_lib64dir}/libkrb5crypto.so*
@@ -353,11 +353,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 
 %files client-devel
 %defattr(-,root,root)
-%{_includedir}/vmdir.h
-%{_includedir}/vmdirauth.h
-%{_includedir}/vmdirclient.h
-%{_includedir}/vmdirerrors.h
-%{_includedir}/vmdirtypes.h
 %{_lib64dir}/liblwraftclient.a
 %{_lib64dir}/liblwraftclient.la
 

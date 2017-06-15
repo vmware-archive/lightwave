@@ -684,18 +684,9 @@ _GetAllContentRuleDiffs(
 
         if (pCrDiff && !pOcDiff)
         {
-            if (pOldCr)
-            {
-                dwError = VmDirLinkedListInsertTail(
-                        pSchemaDiff->classToModify, pCrDiff, NULL);
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else
-            {
-                dwError = VmDirLinkedListInsertTail(
-                        pSchemaDiff->classToAdd, pCrDiff, NULL);
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
+            dwError = VmDirLinkedListInsertTail(
+                    pSchemaDiff->classToModify, pCrDiff, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 

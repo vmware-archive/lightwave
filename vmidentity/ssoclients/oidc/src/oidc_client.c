@@ -26,13 +26,15 @@ OidcClientGlobalCleanup()
     SSOHttpClientGlobalCleanup();
 }
 
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
     PCSTRING pszTenant,
-    PCSTRING pszClientID /* OPT */)
+    PCSTRING pszClientID /* OPT */,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */)
 {
     SSOERROR e = SSOERROR_NONE;
     POIDC_CLIENT p = NULL;
@@ -68,7 +70,13 @@ OidcClientBuild(
         BAIL_ON_ERROR(e);
     }
 
-    e = OidcServerMetadataAcquire(&pServerMetadata, p->pszServer, portNumber, pszTenant);
+    if (pszTlsCAPath != NULL)
+    {
+        e = SSOStringAllocate(pszTlsCAPath, &p->pszTlsCAPath);
+        BAIL_ON_ERROR(e);
+    }
+
+    e = OidcServerMetadataAcquire(&pServerMetadata, p->pszServer, portNumber, pszTenant, p->pszTlsCAPath);
     BAIL_ON_ERROR(e);
 
     e = SSOStringAllocate(OidcServerMetadataGetTokenEndpointUrl(pServerMetadata), &p->pszTokenEndpointUrl);
@@ -99,6 +107,7 @@ OidcClientDelete(
     {
         SSOStringFree(p->pszServer);
         SSOStringFree(p->pszClientID);
+        SSOStringFree(p->pszTlsCAPath);
         SSOStringFree(p->pszTokenEndpointUrl);
         SSOStringFree(p->pszSigningCertificatePEM);
         SSOCdcDelete(p->pClientDCCache);
@@ -231,7 +240,7 @@ OidcClientAcquireTokens(
         }
     }
 
-    e = SSOHttpClientNew(&pHttpClient);
+    e = SSOHttpClientNew(&pHttpClient, p->pszTlsCAPath);
     BAIL_ON_ERROR(e);
     e = SSOHttpClientSendPostForm(
         pHttpClient,

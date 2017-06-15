@@ -106,7 +106,7 @@ RestTestBearerTokenClientNew(
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant, NULL /* pszClientID */);
+    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant, NULL /* pszClientID */, tlsCAPath);
     BAIL_ON_ERROR(e);
 
     e = OidcClientAcquireTokensByPassword(
@@ -123,7 +123,7 @@ RestTestBearerTokenClientNew(
     BAIL_ON_ERROR(e);
 
     // create bearer token client
-    e = RestClientNew(&pRestBearerTokenClient, pscHost, useHA, pscPort, REST_SCHEME_TYPE_HTTPS, pBearerAccessToken);
+    e = RestClientNew(&pRestBearerTokenClient, pscHost, useHA, pscPort, REST_SCHEME_TYPE_HTTPS, tlsCAPath, pBearerAccessToken);
     BAIL_ON_ERROR(e);
 
     *ppRestBearerTokenClient = pRestBearerTokenClient;
@@ -186,7 +186,7 @@ RestTestHOKTokenClientNew(
 
     PSTRING pMemberArray[] =
     {
-        "oidc-client-test-723693c9-bff6-4bce-ad25-e654179f7448@test_tenant_name"
+        "oidc-client-test-723693c9-bff6-4bce-ad25-e654179f7448@my-test-tenant.com"
     };
     VMDIR_STRING_ARRAY_DATA* pMembers = NULL;
     VMDIR_MEMBER_TYPE memberType = VMDIR_MEMBER_TYPE_SOLUTIONUSER;
@@ -196,7 +196,7 @@ RestTestHOKTokenClientNew(
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant, NULL /* pszClientID */);
+    e = OidcClientBuild(&pOIDCClient, pscHost, pscPort, tenant, NULL /* pszClientID */, tlsCAPath);
     BAIL_ON_ERROR(e);
 
     e = OidcClientAcquireTokensByPassword(
@@ -213,7 +213,7 @@ RestTestHOKTokenClientNew(
     BAIL_ON_ERROR(e);
 
     // create bearer token client
-    e = RestClientNew(&pRestBearerTokenClient, pscHost, useHA, pscPort, REST_SCHEME_TYPE_HTTPS, pBearerAccessToken);
+    e = RestClientNew(&pRestBearerTokenClient, pscHost, useHA, pscPort, REST_SCHEME_TYPE_HTTPS, tlsCAPath, pBearerAccessToken);
     BAIL_ON_ERROR(e);
 
     // create solution user which is used to obtain HOK token
@@ -251,7 +251,7 @@ RestTestHOKTokenClientNew(
     BAIL_ON_ERROR(e);
 
     // create HOK token client
-    e = RestClientNew(&pRestHOKTokenClient, pscHost, useHA, pscPort, REST_SCHEME_TYPE_HTTPS, pHOKAccessToken);
+    e = RestClientNew(&pRestHOKTokenClient, pscHost, useHA, pscPort, REST_SCHEME_TYPE_HTTPS, tlsCAPath, pHOKAccessToken);
     BAIL_ON_ERROR(e);
 
     *ppRestHOKTokenClient = pRestHOKTokenClient;

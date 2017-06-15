@@ -924,7 +924,6 @@ VmDirJoin(
     PCSTR   pszTopDomain = NULL;
     PSTR    pszPartnerServerName = NULL;
     PSTR    pszLotusServerNameCanon = NULL;
-    PSTR    pszCurrentServerObjectDN = NULL;
     PSTR    pszErrMsg = NULL;
     LDAP*   pLd = NULL;
     PVMDIR_REPL_STATE pReplState = NULL;
@@ -966,23 +965,17 @@ VmDirJoin(
         pszTopDomain = pszDomainName;
     }
 
-    // make sure there is NO server object with same name in the federation
-    dwError = VmDirGetServerObjectDN(
-                                pszPartnerServerName,
-                                pszDomainName,
-                                pszUserName,
-                                pszPassword,
-                                pszLotusServerNameCanon,
-                                &pszCurrentServerObjectDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    if ( pszCurrentServerObjectDN )
+    if (VmDirRaftServerExists(
+                pszPartnerServerName,
+                pszDomainName,
+                pszUserName,
+                pszPassword,
+                pszLotusServerNameCanon) == TRUE)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s, server object (%s) exists already, DN (%s).",
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s, raft server (%s) exists already.",
                                              __FUNCTION__,
-                                             VDIR_SAFE_STRING(pszLotusServerNameCanon),
-                                             pszCurrentServerObjectDN );
-        dwError = VMDIR_ERROR_ENTRY_ALREADY_EXIST;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                                             VDIR_SAFE_STRING(pszLotusServerNameCanon));
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ALREADY_PROMOTED);
     }
 
     // Make sure we can join the partner
@@ -1034,7 +1027,6 @@ VmDirJoin(
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
-    VMDIR_SAFE_FREE_MEMORY(pszCurrentServerObjectDN);
     VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
     if (pLd)
     {

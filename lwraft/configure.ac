@@ -160,17 +160,6 @@ AC_ARG_ENABLE([server],
     ])
 
 AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
-AM_CONDITIONAL([HAVE_MDB_STORE], [test x"$LWRAFTD_DATASTORE" = x"mdb"])
-
-# mdb component
-
-saved_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I../thirdparty/openldap/libraries/mdb"
-if test x"$LWRAFTD_DATASTORE" = x"mdb"
-then
-AC_CHECK_HEADERS(lmdb.h)
-fi
-CPPFLAGS="$saved_CPPFLAGS"
 
 # openssl component
 
@@ -697,6 +686,7 @@ AC_CONFIG_FILES([Makefile
                  testing/kerberos/Makefile
                  tools/Makefile
                  tools/lwraftpromo/Makefile
+                 tools/lwraft-cli/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
                  tools/vdcschema/Makefile

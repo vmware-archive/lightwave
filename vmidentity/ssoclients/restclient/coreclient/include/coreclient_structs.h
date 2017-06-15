@@ -29,6 +29,7 @@ typedef struct REST_CLIENT
     PSSO_CDC pCdc;
     size_t serverPort;
     REST_SCHEME_TYPE schemeType;
+    PSTRING tlsCAPath;
     REST_ACCESS_TOKEN* pAccessToken;
 } REST_CLIENT;
 

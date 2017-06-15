@@ -23,13 +23,15 @@ OidcClientGlobalInit();
 void
 OidcClientGlobalCleanup();
 
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
     PCSTRING pszTenant,
-    PCSTRING pszClientID /* OPT */);
+    PCSTRING pszClientID /* OPT */,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */);
 
 void
 OidcClientDelete(
@@ -66,12 +68,14 @@ OidcClientGetSigningCertificatePEM(
 
 // OIDC_SERVER_METADATA
 
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcServerMetadataAcquire(
     POIDC_SERVER_METADATA* pp,
     PCSTRING pszServer,
     int portNumber,
-    PCSTRING pszTenant);
+    PCSTRING pszTenant,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */);
 
 void
 OidcServerMetadataDelete(

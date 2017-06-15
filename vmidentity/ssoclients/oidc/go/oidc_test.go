@@ -24,11 +24,11 @@ func test(
     OidcClientGlobalInit()
     defer OidcClientGlobalCleanup()
 
-    serverMetadata, err := ServerMetadataAcquire(server, 443, tenant)
+    serverMetadata, err := ServerMetadataAcquire(server, 443, tenant, "" /* skip tls validation */)
     exitOnError(t, err)
     defer serverMetadata.Close()
 
-    client, err := OidcClientBuild(server, 443, tenant, clientID)
+    client, err := OidcClientBuild(server, 443, tenant, clientID, "" /* skip tls validation */)
     exitOnError(t, err)
     defer client.Close()
 

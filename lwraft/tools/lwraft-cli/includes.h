@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -12,17 +12,17 @@
  * under the License.
  */
 
-#ifndef _SSOCOMMON_H_
-#define _SSOCOMMON_H_
+#include <config.h>
 
-extern const PCSTRING LIGHTWAVE_TLS_CA_PATH;
+#include <vmdirsys.h>
+#include <ldap.h>
+#include <lber.h>
 
-void
-SSOStringFree(
-    PSTRING psz /* OPT */);
-
-PCSTRING
-SSOErrorToString(
-    SSOERROR code);
-
-#endif
+#include <vmdir.h>
+#include <vmdirtypes.h>
+#include <vmdirdefines.h>
+#include <vmdirerrors.h>
+#include <vmdircommon.h>
+#include <vmdirclient.h>
+#include "prototypes.h"
+#include "defines.h"

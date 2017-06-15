@@ -69,6 +69,7 @@ IdmCertificateGet(
         REST_HTTP_METHOD_TYPE_GET,
         (JsonToDataObjectFunc) IdmJsonToCertificateChainArrayData,
         (void**) &pCertificateChainArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -133,6 +134,7 @@ IdmCertificateDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -186,6 +188,7 @@ IdmCertificateGetPrivateKey(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToPrivateKeyData,
         (void**) &pPrivateKeyReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -247,6 +250,7 @@ IdmCertificateSetCredentials(
         REST_HTTP_METHOD_TYPE_POST,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

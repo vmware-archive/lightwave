@@ -60,6 +60,32 @@ typedef EntryId               ENTRYID;
 #define VMDIR_MAX_UPN_LEN       512
 #endif
 
+typedef enum
+{
+    VMDIRD_RAFT_ROLE_CANDIDATE = 0,
+    VMDIRD_RAFT_ROLE_LEADER,
+    VMDIRD_RAFT_ROLE_FOLLOWER
+} VMDIR_RAFT_ROLE;
+
+typedef struct _VMDIR_RAFT_NODE
+{
+    PSTR            pszName;
+    VMDIR_RAFT_ROLE role;
+    USN             iRaftTerm;
+    USN             iLastLogIndex;
+    USN             iLastAppliedIndex;
+    BOOLEAN         bActive;
+    struct _VMDIR_RAFT_NODE*    pNext;
+} VMDIR_RAFT_NODE, *PVMDIR_RAFT_NODE;
+
+typedef struct _VMDIR_RAFT_CLUSTER
+{
+    PSTR            pszLeader;
+    DWORD           dwNumMmember;
+    DWORD           dwNumActiveFollower;
+    PVMDIR_RAFT_NODE    pNode;
+} VMDIR_RAFT_CLUSTER, *PVMDIR_RAFT_CLUSTER;
+
 typedef struct _VMDIR_REPL_PARTNER_INFO
 {
     CHAR*       pszURI;

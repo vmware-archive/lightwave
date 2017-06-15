@@ -28,8 +28,8 @@ IdmResourceServerRegisterTest()
 
     PSTRING pGroupFilterArray[] =
     {
-        "test_tenant_name\\group1",
-        "test_tenant_name\\group2"
+        "my-test-tenant.com\\group1",
+        "my-test-tenant.com\\group2"
     };
     IDM_STRING_ARRAY_DATA* pGroupFilter = NULL;
 
@@ -121,8 +121,8 @@ IdmResourceServerUpdateTest()
 
     PSTRING pGroupFilterArray[] =
     {
-        "test_tenant_name\\group3",
-        "test_tenant_name\\group4"
+        "my-test-tenant.com\\group3",
+        "my-test-tenant.com\\group4"
     };
     IDM_STRING_ARRAY_DATA* pGroupFilter = NULL;
 

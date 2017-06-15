@@ -45,15 +45,16 @@ main(
     PCSTRING pszPassword = NULL;
     PCSTRING pszClientID = NULL;
     bool highAvailabilityEnabled = false;
+    bool validateTls = false;
     SSOERROR e = SSOERROR_NONE;
     bool allSucceeded = true;
     size_t i = 0;
     size_t numTestCases = 0;
     bool success = false;
 
-    if (argc != 6 && argc != 7)
+    if (argc != 7 && argc != 8)
     {
-        printf("usage: >oidctest server tenant username password enableHA [client_id]\n");
+        printf("usage: >oidctest server tenant username password enableHA validateTls [client_id]\n");
         return -1;
     }
 
@@ -62,12 +63,13 @@ main(
     pszUsername = argv[3];
     pszPassword = argv[4];
     highAvailabilityEnabled = SSOStringEqual(argv[5], "true");
-    if (argc == 7)
+    validateTls = SSOStringEqual(argv[6], "true");
+    if (argc == 8)
     {
-        pszClientID = argv[6];
+        pszClientID = argv[7];
     }
 
-    e = TestInit(pszServer, pszTenant, pszUsername, pszPassword, pszClientID, highAvailabilityEnabled);
+    e = TestInit(pszServer, pszTenant, pszUsername, pszPassword, pszClientID, highAvailabilityEnabled, validateTls);
     if (e != SSOERROR_NONE)
     {
         printf("failed with %s\n", SSOErrorToString(e));

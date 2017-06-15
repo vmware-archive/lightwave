@@ -77,6 +77,17 @@ VmDirLocalAPIHandler(
                         );
         break;
 
+      case VMDIR_IPC_GET_SRP_SECRET:
+
+        dwError = VmDirIpcGetSRPSecret(
+                        pSecurityContext,
+                        pRequest,
+                        dwRequestSize,
+                        &pResponse,
+                        &dwResponseSize
+                        );
+        break;
+
       case VMDIR_IPC_SET_SRP_SECRET:
 
         dwError = VmDirIpcSetSRPSecret(

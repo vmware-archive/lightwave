@@ -26,6 +26,7 @@ RestClientGlobalCleanup()
     SSOHttpClientGlobalCleanup();
 }
 
+// tlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 RestClientNew(
     PREST_CLIENT* ppClient,
@@ -33,6 +34,7 @@ RestClientNew(
     bool highAvailabilityEnabled,
     size_t serverPort,
     REST_SCHEME_TYPE schemeType,
+    PCSTRING tlsCAPath, // optional, see comment above
     PCREST_ACCESS_TOKEN pAccessToken)
 {
     SSOERROR e = SSOERROR_NONE;
@@ -65,6 +67,12 @@ RestClientNew(
 
     pClient->schemeType = schemeType;
 
+    if (tlsCAPath != NULL)
+    {
+        e = RestStringDataNew(&(pClient->tlsCAPath), tlsCAPath);
+        BAIL_ON_ERROR(e);
+    }
+
     if (pAccessToken != NULL)
     {
         e = RestAccessTokenNew(
@@ -94,6 +102,7 @@ RestClientDelete(
     if (pClient != NULL)
     {
         RestStringDataDelete(pClient->serverHost);
+        RestStringDataDelete(pClient->tlsCAPath);
         SSOCdcDelete(pClient->pCdc);
         RestAccessTokenDelete(pClient->pAccessToken);
         SSOMemoryFree(pClient, sizeof(REST_CLIENT));

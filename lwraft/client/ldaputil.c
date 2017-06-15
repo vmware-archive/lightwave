@@ -2623,9 +2623,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-_VmDirGetDSERootAttribute(
+VmDirGetDSERootAttribute(
     PCSTR pszHostName,
     PCSTR pszAttrName,
     PSTR* ppszAttrValue)
@@ -2706,7 +2705,7 @@ VmDirGetDomainDN(
     PCSTR pszHostName,
     PSTR* ppszDomainDN)
 {
-    return _VmDirGetDSERootAttribute(
+    return VmDirGetDSERootAttribute(
                             pszHostName,
                             ATTR_ROOT_DOMAIN_NAMING_CONTEXT,
                             ppszDomainDN);
@@ -2718,7 +2717,7 @@ VmDirGetServerDN(
     PSTR* ppszServerDN
     )
 {
-    return _VmDirGetDSERootAttribute(
+    return VmDirGetDSERootAttribute(
                             pszHostName,
                             ATTR_SERVER_NAME,
                             ppszServerDN);
@@ -2759,7 +2758,7 @@ VmDirGetPartnerSiteName(
     PSTR* ppszSiteName
     )
 {
-    return _VmDirGetDSERootAttribute(
+    return VmDirGetDSERootAttribute(
                             pszHostName,
                             ATTR_SITE_NAME,
                             ppszSiteName);
@@ -2770,7 +2769,7 @@ VmDirGetAdminDN(
     PCSTR pszHostName,
     PSTR* ppszAdminDN)
 {
-    return _VmDirGetDSERootAttribute(
+    return VmDirGetDSERootAttribute(
                             pszHostName,
                             ATTR_DEFAULT_ADMIN_DN,
                             ppszAdminDN);

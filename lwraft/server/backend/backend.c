@@ -69,17 +69,7 @@ VmDirBackendConfig(
     gVdirBEGlobals.usnFirstNext = USN_SEQ_INITIAL_VALUE;
     gVdirBEGlobals.pBE = NULL;
 
-#ifdef HAVE_DB_H
-    gVdirBEGlobals.pBE = BdbBEInterface();
-#endif
-
-#ifdef HAVE_TCBDB_H
-    gVdirBEGlobals.pBE = VmDirTCBEInterface();
-#endif
-
-#ifdef HAVE_LMDB_H
     gVdirBEGlobals.pBE = VmDirMDBBEInterface();
-#endif
 
     gVdirBEGlobals.pBE->pfnBEGetLeastOutstandingUSN = VmDirBackendLeastOutstandingUSN;
 

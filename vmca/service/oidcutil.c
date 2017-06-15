@@ -113,7 +113,8 @@ VMCAGetTenantSigningCert(
                                 &pMetadata,
                                 pszServer,
                                 nPortNumber,
-                                pszTenant);
+                                pszTenant,
+                                NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
     BAIL_ON_VMCA_ERROR(dwError);
 
     pszSigningCertPEM = OidcServerMetadataGetSigningCertificatePEM(pMetadata);

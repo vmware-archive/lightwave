@@ -36,14 +36,13 @@ configure-stamp:
 		--with-afd=$(DESTDIR)/opt/vmware \
 		--with-vmca=$(DESTDIR)/opt/vmware \
 		--with-sts=$(DESTDIR)/opt/vmware \
+		--with-oidc=$(DESTDIR)/opt/vmware \
 		--with-likewise=/opt/likewise \
 		--with-logdir=/var/log/lightwave \
 		--with-ssl=/usr \
 		--with-sqlite=/usr \
 		--with-jansson=/usr \
 		--with-copenapi=/usr \
-		--with-oidc=/opt/vmware \
-		--with-trident=/opt/vmware \
 		--with-java=/usr/lib/jvm/default-java \
 		--with-maven=/usr/share/maven \
 		--with-ant=/usr/share/ant \

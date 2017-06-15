@@ -587,6 +587,13 @@ VmDirLocalGeneratePassword(
 );
 
 DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
+
+DWORD
 VmDirLocalSetSRPSecret(
     PCWSTR      pwszUPN,
     PCWSTR      pwszSecret
@@ -713,3 +720,20 @@ VmDirLdapGetHighWatermark(
     USN*       pLastLocalUsn
     );
 
+/* raftclient.c */
+BOOLEAN
+VmDirRaftServerExists(
+    PCSTR       pszHostName,
+    PCSTR       pszDomainName,
+    PCSTR       pszUserName,
+    PCSTR       pszPassword,
+    PCSTR       pszRaftHostName
+    );
+
+/* ldaputil.c */
+DWORD
+VmDirGetDSERootAttribute(
+    PCSTR pszHostName,
+    PCSTR pszAttrName,
+    PSTR* ppszAttrValue
+    );

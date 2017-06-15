@@ -16,6 +16,7 @@ libcommon_la_SOURCES = \
     krbutil.c \
     ldapbind.c \
     ldapcontrol.c \
+    ldaputil.c \
     linkedlist.c \
     logging.c \
     marshalutil.c \

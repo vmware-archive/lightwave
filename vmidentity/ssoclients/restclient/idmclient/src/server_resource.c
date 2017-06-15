@@ -62,6 +62,7 @@ IdmServerGetComputers(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToServerDetailsArrayData,
         (void**) &pServerDetailsArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

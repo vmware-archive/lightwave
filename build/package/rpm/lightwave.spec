@@ -74,10 +74,6 @@ VMware Lightwave Server
 %define _vmevent_prefix /opt/vmware
 %endif
 
-%if 0%{?_trident_prefix:1} == 0
-%define _trident_prefix /opt/vmware
-%endif
-
 %if 0%{?_jansson_prefix:1} == 0
 %define _jansson_prefix /usr
 %endif
@@ -88,10 +84,6 @@ VMware Lightwave Server
 
 %if 0%{?_oidc_prefix:1} == 0
 %define _oidc_prefix /opt/vmware
-%endif
-
-%if 0%{?_ssocommon_prefix:1} == 0
-%define _ssocommon_prefix /opt/vmware
 %endif
 
 %define _sasl2dir %{_sasl_prefix}/lib64/sasl2

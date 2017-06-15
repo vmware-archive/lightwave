@@ -54,6 +54,7 @@ IdmSolutionUserGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToSolutionUserData,
         (void**) &pSolutionUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
