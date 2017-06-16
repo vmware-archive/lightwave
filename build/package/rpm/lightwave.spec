@@ -359,8 +359,6 @@ then
     %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         # add key if not exist
-        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software]"
-        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware]"
         %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
     fi
 
