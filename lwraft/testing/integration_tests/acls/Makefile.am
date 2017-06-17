@@ -11,6 +11,7 @@ libsecuritydescriptortests_la_SOURCES = \
     administratorrights.c \
     administratorsrights.c \
     bad_parameters.c \
+    custom_groups.c \
     domainadminsrights.c \
     domainclientsrights.c \
     inheritance.c \

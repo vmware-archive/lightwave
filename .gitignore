@@ -4,6 +4,7 @@
 ### Autotools ###
 # http://www.gnu.org/software/automake
 
+.autotools
 Makefile
 Makefile.in
 ar-lib

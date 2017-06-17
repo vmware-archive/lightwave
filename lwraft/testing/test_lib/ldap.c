@@ -67,7 +67,7 @@ VmDirTestGetAttributeValueString(
                 pLd,
                 pBase,
                 ldapScope,
-                pszFilter ? pszFilter : "",
+                pszFilter,
                 (PSTR*)ppszAttrs,
                 0,
                 NULL,
@@ -348,29 +348,26 @@ error:
 }
 
 DWORD
-VmDirTestDeleteContainer(
+VmDirTestDeleteContainerByDn(
     LDAP *pLd,
     PCSTR pszContainerDn
     )
 {
     DWORD dwError = 0;
     DWORD dwIndex = 0;
-    PVMDIR_STRING_LIST pObjectList;
+    PVMDIR_STRING_LIST pObjectList = NULL;
 
-    dwError = VmDirTestGetObjectList(
-                pLd,
-                pszContainerDn,
-                &pObjectList);
+    dwError = VmDirTestGetObjectList(pLd, pszContainerDn, &pObjectList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwIndex = 0; dwIndex < pObjectList->dwCount; ++dwIndex)
     {
-        dwError = ldap_delete_ext_s(pLd, pObjectList->pStringList[dwIndex], NULL, NULL);
+        dwError = ldap_delete_ext_s(
+                pLd, pObjectList->pStringList[dwIndex], NULL, NULL);
         if (dwError == LDAP_NOT_ALLOWED_ON_NONLEAF)
         {
-            dwError = VmDirTestDeleteContainer(
-                        pLd,
-                        pObjectList->pStringList[dwIndex]);
+            dwError = VmDirTestDeleteContainerByDn(
+                    pLd, pObjectList->pStringList[dwIndex]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -379,7 +376,9 @@ VmDirTestDeleteContainer(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VmDirStringListFree(pObjectList);
     return dwError;
+
 error:
     goto cleanup;
 }

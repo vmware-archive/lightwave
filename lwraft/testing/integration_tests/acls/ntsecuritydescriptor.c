@@ -682,7 +682,7 @@ TestDomainAdminPrivileges(
 #endif
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
-    dwError = VmDirTestAddUserToGroup(pState->pLd, pszUserDn, pszGroupDn);
+    dwError = VmDirTestAddUserToGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     TestAssert(dwError == 0);
 
     dwError = _VdcConnectionFromUser(pState, pszUserName, &pLd); // TODO -- Why are we re-opening this connection?
@@ -692,7 +692,7 @@ TestDomainAdminPrivileges(
     TestAssert(dwError == 0);
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
-    dwError = VmDirTestRemoveUserFromGroup(pState->pLd, pszUserDn, pszGroupDn);
+    dwError = VmDirTestRemoveUserFromGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     TestAssert(dwError == 0);
 
 cleanup:

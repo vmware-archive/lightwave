@@ -86,30 +86,6 @@ error:
 }
 
 DWORD
-_TestInfrastructureCleanupContainer(
-    PVMDIR_TEST_STATE pState
-    )
-{
-    PSTR pszContainerDn = NULL;
-    DWORD dwError = 0;
-
-    dwError = VmDirAllocateStringPrintf(
-                &pszContainerDn,
-                "cn=testcontainer,%s",
-                pState->pszBaseDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirTestDeleteContainer(pState->pLd, pszContainerDn);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirFreeStringA(pszContainerDn);
-    return dwError;
-error:
-    goto cleanup;
-}
-
-DWORD
 TestInfrastructureCleanup(
     PVMDIR_TEST_STATE pState
     )
@@ -124,17 +100,17 @@ TestInfrastructureCleanup(
     dwError = VmDirTestDeleteUser(pState, NULL, VmDirTestGetInternalUserCn(pState));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _TestInfrastructureCleanupContainer(pState);
+    dwError = VmDirTestDeleteContainer(pState, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
-
 
 cleanup:
     VmDirFreeStringA((PSTR)pState->pszBaseDN);
-    VmDirTestLdapUnbind(pState->pLdAnonymous);
     VmDirTestLdapUnbind(pState->pLd);
     VmDirTestLdapUnbind(pState->pLdLimited);
-
+    VmDirTestLdapUnbind(pState->pLdAnonymous);
+    VmDirTestLdapUnbind(pState->pLdCustom);
     return 0;
+
 error:
     printf("Test cleanup failed with error %d\n", dwError);
     goto cleanup;
@@ -269,7 +245,7 @@ TestInfrastructureInitialize(
     //
     // Cleanup any leftover state from a previous run.
     //
-    (VOID)_TestInfrastructureCleanupContainer(pState);
+    (VOID)VmDirTestDeleteContainer(pState, NULL);
 
     dwError = VmDirTestCreateAnonymousConnection(
                 pState->pszServerName,

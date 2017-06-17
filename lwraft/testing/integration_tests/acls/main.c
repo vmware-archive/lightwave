@@ -60,6 +60,8 @@ TestRunner(
     dwError = TestProtectedEntries(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = TestCustomGroups(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 #if 0 // TODO
     dwError = TestStandardRightsForAdminUser(pState);

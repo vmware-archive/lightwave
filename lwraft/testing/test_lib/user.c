@@ -116,12 +116,12 @@ VmDirTestCreateUserWithLimitedAccount(
     )
 {
     DWORD dwError = 0;
-    PCSTR valsAcl[] = {NULL, NULL};
+    PCSTR valsAcl[] = {pszAcl, NULL};
     PCSTR valsCn[] = {pszUserName, NULL};
     PCSTR valssAMActName[] = {pszUserName, NULL};
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
     PCSTR valsPNE[] = {"TRUE", NULL};
-    PCSTR valsPN[] = {NULL, NULL};
+    PCSTR valsUPN[] = {NULL, NULL};
     PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
     PSTR pszDN = NULL;
@@ -130,7 +130,7 @@ VmDirTestCreateUserWithLimitedAccount(
         {LDAP_MOD_ADD, ATTR_SAM_ACCOUNT_NAME, {(PSTR*)valssAMActName}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
         {LDAP_MOD_ADD, ATTR_PASSWORD_NEVER_EXPIRES, {(PSTR*)valsPNE}},
-        {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsPN}},
+        {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsUPN}},
         {LDAP_MOD_ADD, ATTR_USER_PASSWORD, {(PSTR*)valsPass}},
         {LDAP_MOD_ADD, ATTR_SN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_ACL_STRING, {(PSTR*)valsAcl}},
@@ -140,30 +140,22 @@ VmDirTestCreateUserWithLimitedAccount(
     dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszUserName, pState->pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    valsPN[0] = pszUPN;
-    if (pszAcl != NULL)
-    {
-        valsAcl[0] = pszAcl;
-    }
-    else
+    valsUPN[0] = pszUPN;
+
+    if (IsNullOrEmptyString(pszAcl))
     {
         attrs[7] = NULL;
     }
 
     dwError = VmDirAllocateStringPrintf(
-                &pszDN,
-                "cn=%s,cn=%s,%s",
-                pszUserName,
-                pszContainer ? pszContainer : "Users",
-                pState->pszBaseDN);
+            &pszDN,
+            "cn=%s,cn=%s,%s",
+            pszUserName,
+            pszContainer ? pszContainer : "Users",
+            pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldap_add_ext_s(
-                pState->pLdLimited,
-                pszDN,
-                attrs,
-                NULL,
-                NULL);
+    dwError = ldap_add_ext_s(pState->pLdLimited, pszDN, attrs, NULL, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -184,12 +176,12 @@ VmDirTestCreateUser(
     )
 {
     DWORD dwError = 0;
-    PCSTR valsAcl[] = {NULL, NULL};
+    PCSTR valsAcl[] = {pszAcl, NULL};
     PCSTR valsCn[] = {pszUserName, NULL};
     PCSTR valssAMActName[] = {pszUserName, NULL};
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
     PCSTR valsPNE[] = {"TRUE", NULL};
-    PCSTR valsPN[] = {NULL, NULL};
+    PCSTR valsUPN[] = {NULL, NULL};
     PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
     PSTR pszDN = NULL;
@@ -198,7 +190,7 @@ VmDirTestCreateUser(
         {LDAP_MOD_ADD, ATTR_SAM_ACCOUNT_NAME, {(PSTR*)valssAMActName}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
         {LDAP_MOD_ADD, ATTR_PASSWORD_NEVER_EXPIRES, {(PSTR*)valsPNE}},
-        {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsPN}},
+        {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsUPN}},
         {LDAP_MOD_ADD, ATTR_USER_PASSWORD, {(PSTR*)valsPass}},
         {LDAP_MOD_ADD, ATTR_SN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_ACL_STRING, {(PSTR*)valsAcl}},
@@ -208,30 +200,22 @@ VmDirTestCreateUser(
     dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszUserName, pState->pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    valsPN[0] = pszUPN;
-    if (pszAcl != NULL)
-    {
-        valsAcl[0] = pszAcl;
-    }
-    else
+    valsUPN[0] = pszUPN;
+
+    if (IsNullOrEmptyString(pszAcl))
     {
         attrs[7] = NULL;
     }
 
     dwError = VmDirAllocateStringPrintf(
-                &pszDN,
-                "cn=%s,cn=%s,%s",
-                pszUserName,
-                pszContainer ? pszContainer : "Users",
-                pState->pszBaseDN);
+            &pszDN,
+            "cn=%s,cn=%s,%s",
+            pszUserName,
+            pszContainer ? pszContainer : "Users",
+            pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldap_add_ext_s(
-                pState->pLd,
-                pszDN,
-                attrs,
-                NULL,
-                NULL);
+    dwError = ldap_add_ext_s(pState->pLd, pszDN, attrs, NULL, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -286,19 +270,14 @@ VmDirTestCreateUserWithSecurityDescriptor(
     mod[7].mod_vals.modv_bvals = pbvSecurityDescriptors;
 
     dwError = VmDirAllocateStringPrintf(
-                &pszDN,
-                "cn=%s,cn=%s,%s",
-                pszUserName,
-                pszContainer ? pszContainer : "Users",
-                pState->pszBaseDN);
+            &pszDN,
+            "cn=%s,cn=%s,%s",
+            pszUserName,
+            pszContainer ? pszContainer : "Users",
+            pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldap_add_ext_s(
-                pState->pLd,
-                pszDN,
-                attrs,
-                NULL,
-                NULL);
+    dwError = ldap_add_ext_s(pState->pLd, pszDN, attrs, NULL, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -311,7 +290,7 @@ error:
 }
 
 DWORD
-VmDirTestAddUserToGroup(
+VmDirTestAddUserToGroupByDn(
     LDAP *pLd,
     PCSTR pszUserDn,
     PCSTR pszGroupDn
@@ -339,7 +318,48 @@ error:
 }
 
 DWORD
-VmDirTestRemoveUserFromGroup(
+VmDirTestAddUserToGroup(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszUserName,
+    PCSTR               pszUserContainer, // optional
+    PCSTR               pszGroupName,
+    PCSTR               pszGroupContainer // optional
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUserDN = NULL;
+    PSTR    pszGroupDN = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszUserDN,
+            "cn=%s,cn=%s,%s",
+            pszUserName,
+            pszUserContainer ? pszUserContainer : "Users",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszGroupDN,
+            "cn=%s,cn=%s,%s",
+            pszGroupName,
+            pszGroupContainer ? pszGroupContainer : "Builtin",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestAddUserToGroupByDn(pState->pLd, pszUserDN, pszGroupDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserDN);
+    VMDIR_SAFE_FREE_STRINGA(pszGroupDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestRemoveUserFromGroupByDn(
     LDAP *pLd,
     PCSTR pszUserDn,
     PCSTR pszGroupDn
@@ -362,6 +382,47 @@ VmDirTestRemoveUserFromGroup(
 
 cleanup:
     return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestRemoveUserFromGroup(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszUserName,
+    PCSTR               pszUserContainer, // optional
+    PCSTR               pszGroupName,
+    PCSTR               pszGroupContainer // optional
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUserDN = NULL;
+    PSTR    pszGroupDN = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszUserDN,
+            "cn=%s,cn=%s,%s",
+            pszUserName,
+            pszUserContainer ? pszUserContainer : "Users",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszGroupDN,
+            "cn=%s,cn=%s,%s",
+            pszGroupName,
+            pszGroupContainer ? pszGroupContainer : "Builtin",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestRemoveUserFromGroupByDn(pState->pLd, pszUserDN, pszGroupDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserDN);
+    VMDIR_SAFE_FREE_STRINGA(pszGroupDN);
+    return dwError;
+
 error:
     goto cleanup;
 }
@@ -508,7 +569,7 @@ VmDirTestCreateGroup(
 {
     DWORD dwError = 0;
     PSTR pszDN = NULL;
-    PCSTR valsAcl[] = {NULL, NULL};
+    PCSTR valsAcl[] = {pszAcl, NULL};
     PCSTR valsCn[] = {pszGroupName, NULL};
     PCSTR valssAMActName[] = {pszGroupName, NULL};
     PCSTR valsClass[] = {OC_GROUP, OC_TOP, NULL};
@@ -520,14 +581,40 @@ VmDirTestCreateGroup(
     };
     LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], NULL};
 
-    if (pszAcl != NULL)
-    {
-        valsAcl[0] = pszAcl;
-    }
-    else
+    if (IsNullOrEmptyString(pszAcl))
     {
         attrs[3] = NULL;
     }
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszDN,
+            "cn=%s,cn=%s,%s",
+            pszGroupName,
+            pszContainer ? pszContainer : "Builtin",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_add_ext_s(pState->pLd, pszDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestDeleteGroupEx(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszGroupName,
+    BOOLEAN bUseLimitedAccount
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDN = NULL;
 
     dwError = VmDirAllocateStringPrintf(
                 &pszDN,
@@ -537,18 +624,69 @@ VmDirTestCreateGroup(
                 pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldap_add_ext_s(
-                pState->pLd,
-                pszDN,
-                attrs,
-                NULL,
-                NULL);
+    if (bUseLimitedAccount)
+    {
+        dwError = ldap_delete_ext_s(pState->pLdLimited, pszDN, NULL, NULL);
+    }
+    else
+    {
+        dwError = ldap_delete_ext_s(pState->pLd, pszDN, NULL, NULL);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszDN);
     return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestDeleteGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszGroupName
+    )
+{
+    return VmDirTestDeleteGroupEx(pState, pszContainer, pszGroupName, FALSE);
+}
+
+DWORD
+VmDirTestGetGroupSid(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszGroupName,
+    PCSTR pszContainer, // optional
+    PSTR *ppszGroupSid
+    )
+{
+    DWORD   dwError;
+    PSTR    pszGroupDn = NULL;
+    PSTR    pszGroupSid = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszGroupDn,
+            "cn=%s,cn=%s,%s",
+            pszGroupName,
+            pszContainer ? pszContainer : "Builtin",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestGetAttributeValueString(
+            pState->pLd,
+            pszGroupDn,
+            LDAP_SCOPE_BASE,
+            NULL,
+            "objectSid",
+            &pszGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszGroupSid = pszGroupSid;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszGroupDn);
+    return dwError;
 
 error:
+    VMDIR_SAFE_FREE_STRINGA(pszGroupSid);
     goto cleanup;
 }

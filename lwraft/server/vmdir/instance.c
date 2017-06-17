@@ -100,6 +100,21 @@ _VmDirAclServerObjects(
 {
     DWORD dwError = 0;
 
+    dwError = VmDirSetRecursiveSecurityDescriptorForDn(
+                RAFT_LOGS_CONTAINER_DN,
+                pSecDescFullAccess);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetSecurityDescriptorForDn(
+                RAFT_PERSIST_STATE_DN,
+                pSecDescNoDelete);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetSecurityDescriptorForDn(
+                RAFT_CONTEXT_DN,
+                pSecDescNoDelete);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirSetSecurityDescriptorForDn(
                 PERSISTED_DSE_ROOT_DN,
                 pSecDescAnonymousRead);
@@ -113,21 +128,6 @@ _VmDirAclServerObjects(
     dwError = VmDirSetSecurityDescriptorForDn(
                 CFG_ROOT_DN,
                 pSecDescNoDelete);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSetSecurityDescriptorForDn(
-                RAFT_CONTEXT_DN,
-                pSecDescNoDelete);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSetSecurityDescriptorForDn(
-                RAFT_PERSIST_STATE_DN,
-                pSecDescNoDelete);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSetRecursiveSecurityDescriptorForDn(
-                RAFT_LOGS_CONTAINER_DN,
-                pSecDescFullAccess);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

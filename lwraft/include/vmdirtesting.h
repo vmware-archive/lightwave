@@ -35,6 +35,11 @@ typedef struct _VMDIR_TEST_STATE
     LDAP *pLdAnonymous;
 
     //
+    // Customizable connection to the server.
+    //
+    LDAP *pLdCustom;
+
+    //
     // The test runner's cleanup callback. We'll call this when an assertion
     // fails and we're going to exit() the process.
     //
@@ -183,7 +188,14 @@ VmDirTestGetInternalUserDn(
 DWORD
 VmDirTestCreateContainer(
     PVMDIR_TEST_STATE pState,
-    PCSTR pszName
+    PCSTR pszName,
+    PCSTR pszAcl /* OPTIONAL */
+    );
+
+DWORD
+VmDirTestDeleteContainer(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer
     );
 
 DWORD
@@ -195,7 +207,23 @@ VmDirTestCreateUser(
     );
 
 DWORD
+VmDirTestAddUserToGroupByDn(
+    LDAP *pLd,
+    PCSTR pszUserDn,
+    PCSTR pszGroupDn
+    );
+
+DWORD
 VmDirTestAddUserToGroup(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszUserName,
+    PCSTR               pszUserContainer, // optional
+    PCSTR               pszGroupName,
+    PCSTR               pszGroupContainer // optional
+    );
+
+DWORD
+VmDirTestRemoveUserFromGroupByDn(
     LDAP *pLd,
     PCSTR pszUserDn,
     PCSTR pszGroupDn
@@ -203,9 +231,11 @@ VmDirTestAddUserToGroup(
 
 DWORD
 VmDirTestRemoveUserFromGroup(
-    LDAP *pLd,
-    PCSTR pszUserDn,
-    PCSTR pszGroupDn
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszUserName,
+    PCSTR               pszUserContainer, // optional
+    PCSTR               pszGroupName,
+    PCSTR               pszGroupContainer // optional
     );
 
 DWORD
@@ -270,6 +300,29 @@ VmDirTestCreateGroup(
     );
 
 DWORD
+VmDirTestDeleteGroupEx(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszGroup,
+    BOOLEAN bUseLimitedAccount
+    );
+
+DWORD
+VmDirTestDeleteGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszUserName
+    );
+
+DWORD
+VmDirTestGetGroupSid(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszGroupName,
+    PCSTR pszContainer, // optional
+    PSTR *ppszGroupSid
+    );
+
+DWORD
 VmDirTestListUsersGroups(
     LDAP *pLd,
     PCSTR pszUserDn,
@@ -298,7 +351,7 @@ VmDirTestCreateObject(
     );
 
 DWORD
-VmDirTestDeleteContainer(
+VmDirTestDeleteContainerByDn(
     LDAP *pLd,
     PCSTR pszContainerDn
     );
