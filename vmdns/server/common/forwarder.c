@@ -694,29 +694,36 @@ VmDnsPeekResponseCode(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    //PVMDNS_MESSAGE pDnsMessage = NULL;
-    //PVMDNS_UPDATE_MESSAGE pUpdateDnsMessage = NULL;
+    PVMDNS_HEADER pDnsHeader = NULL;
+    PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
 
     if (!pdwResponseCode)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+    dwError = VmDnsGetDnsMessageBuffer(
+                        pResponseBytes,
+                        dwResponseSize,
+                        &pDnsMessageBuffer
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
 
-    //dwError = VmDnsGetDnsMessage(
-    //                      pResponseBytes,
-    //                      dwResponseSize,
-    //                      &pDnsMessage,
-    //                      &pUpdateDnsMessage
-    //                      );
-    //BAIL_ON_VMDNS_ERROR(dwError);
+    dwError = VmDnsReadDnsHeaderFromBuffer(
+                        pDnsMessageBuffer,
+                        &pDnsHeader
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
 
-    //*pdwResponseCode = pDnsMessage->pHeader->codes.RCODE;
+    *pdwResponseCode =  pDnsHeader->codes.RCODE;
 
 cleanup:
 
-    //VmDnsFreeDnsMessage(pDnsMessage);
-    //VmDnsFreeDnsUpdateMessage(pUpdateDnsMessage);
+    if (pDnsMessageBuffer)
+    {
+       VmDnsFreeBufferStream(pDnsMessageBuffer);
+    }
+    VMDNS_SAFE_FREE_MEMORY(pDnsHeader);
 
     return dwError;
 
