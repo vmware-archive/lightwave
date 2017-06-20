@@ -26,6 +26,7 @@ OidcClientGlobalCleanup()
     SSOHttpClientGlobalCleanup();
 }
 
+// on success, pp will be non-null, when done, OidcClientDelete it
 // psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
@@ -280,6 +281,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByPassword(
     PCOIDC_CLIENT p,
@@ -329,6 +333,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByRefreshToken(
     PCOIDC_CLIENT p,
@@ -370,6 +377,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensBySolutionUserCredentials(
     PCOIDC_CLIENT p,

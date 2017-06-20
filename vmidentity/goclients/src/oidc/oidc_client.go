@@ -30,6 +30,7 @@ func OidcClientGlobalCleanup() {
     C.OidcClientGlobalCleanup()
 }
 
+// on success, result will be non-null, Close it when done
 // tlsCAPath: empty means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 func OidcClientBuild(
         server string,
@@ -77,6 +78,9 @@ func (this *OidcClient) Close() error {
     return nil
 }
 
+// on success, successResponse will be non-null
+// on error, errorResponse might be non-null (it will carry error info returned by the server if any)
+// Close both when done, whether invocation is successful or not
 func (this *OidcClient) AcquireTokensByPassword(
         username string,
         password string,
@@ -111,6 +115,9 @@ func (this *OidcClient) AcquireTokensByPassword(
     return
 }
 
+// on success, successResponse will be non-null
+// on error, errorResponse might be non-null (it will carry error info returned by the server if any)
+// Close both when done, whether invocation is successful or not
 func (this *OidcClient) AcquireTokensByRefreshToken(
         refreshToken string) (successResponse *TokenSuccessResponse, errorResponse *ErrorResponse, err error) {
     refreshTokenCStr := goStringToCString(refreshToken)
@@ -136,6 +143,9 @@ func (this *OidcClient) AcquireTokensByRefreshToken(
     return
 }
 
+// on success, successResponse will be non-null
+// on error, errorResponse might be non-null (it will carry error info returned by the server if any)
+// Close both when done, whether invocation is successful or not
 func (this *OidcClient) AcquireTokensBySolutionUserCredentials(
         certificateSubjectDN string,
         privateKeyPEM string,

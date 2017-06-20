@@ -16,6 +16,7 @@ type IDToken struct {
     p C.POIDC_ID_TOKEN
 }
 
+// on success, result will be non-null, Close it when done
 func IDTokenBuild(
         jwt string,
         signingCertificatePEM string,

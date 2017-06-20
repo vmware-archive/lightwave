@@ -14,6 +14,7 @@
 
 #include "includes.h"
 
+// on success, pp will be non-null, when done, OidcIDTokenDelete it
 SSOERROR
 OidcIDTokenBuild(
     POIDC_ID_TOKEN* pp,

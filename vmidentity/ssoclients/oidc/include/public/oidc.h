@@ -23,6 +23,7 @@ OidcClientGlobalInit();
 void
 OidcClientGlobalCleanup();
 
+// on success, pp will be non-null, when done, OidcClientDelete it
 // psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
@@ -37,6 +38,9 @@ void
 OidcClientDelete(
     POIDC_CLIENT p);
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByPassword(
     PCOIDC_CLIENT p,
@@ -46,6 +50,9 @@ OidcClientAcquireTokensByPassword(
     POIDC_TOKEN_SUCCESS_RESPONSE* ppOutTokenSuccessResponse, /* OUT */
     POIDC_ERROR_RESPONSE* ppOutTokenErrorResponse /* OUT */);
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByRefreshToken(
     PCOIDC_CLIENT p,
@@ -53,6 +60,9 @@ OidcClientAcquireTokensByRefreshToken(
     POIDC_TOKEN_SUCCESS_RESPONSE* ppOutTokenSuccessResponse, /* OUT */
     POIDC_ERROR_RESPONSE* ppOutTokenErrorResponse /* OUT */);
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensBySolutionUserCredentials(
     PCOIDC_CLIENT p,
@@ -68,6 +78,7 @@ OidcClientGetSigningCertificatePEM(
 
 // OIDC_SERVER_METADATA
 
+// on success, pp will be non-null, when done, OidcServerMetadataDelete it
 // psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcServerMetadataAcquire(
@@ -91,6 +102,7 @@ OidcServerMetadataGetSigningCertificatePEM(
 
 // OIDC_ID_TOKEN
 
+// on success, pp will be non-null, when done, OidcIDTokenDelete it
 SSOERROR
 OidcIDTokenBuild(
     POIDC_ID_TOKEN* pp,
@@ -169,6 +181,7 @@ OidcIDTokenGetStringClaim(
 
 // OIDC_ACCESS_TOKEN
 
+// on success, pp will be non-null, when done, OidcAccessTokenDelete it
 SSOERROR
 OidcAccessTokenBuild(
     POIDC_ACCESS_TOKEN* pp,

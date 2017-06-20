@@ -16,6 +16,7 @@ type AccessToken struct {
     p C.POIDC_ACCESS_TOKEN
 }
 
+// on success, result will be non-null, Close it when done
 func AccessTokenBuild(
         jwt string,
         signingCertificatePEM string,
