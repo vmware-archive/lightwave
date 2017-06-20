@@ -11,6 +11,9 @@ if VMDIR_ENABLE_PAC
     PAC_SRC = krb.c vmdir_pac_cstub.c
     BUILT_SOURCES_PAC = vmdir_pac_h.h
     CLEAN_PAC = vmdir_pac_h.h vmdir_pac_cstub.c
+    VMDIR_ENABLE_PAC_DEFINE=-DVMDIR_ENABLE_PAC
+else
+    PAC_SRC = krb.c
 endif
 endif
 
@@ -68,6 +71,7 @@ vmdird_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmevent/include/public \
     -I$(top_srcdir)/vmmetrics/include/public \
+    $(VMDIR_ENABLE_PAC_DEFINE) \
     $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
@@ -163,6 +167,6 @@ ms_pac_cstub.c ms_pac_h.h: $(idl_srcdir)/ms_pac.idl $(idl_srcdir)/ms_pac.acf $(i
 else
 if VMDIR_ENABLE_PAC
 vmdir_pac_cstub.c vmdir_pac_h.h: $(idl_srcdir)/vmdir_pac.idl $(idl_srcdir)/vmdir_pac.acf $(idl_srcdir)/vmdir_pac_type.h
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -DVMDIR_ENABLE_PAC -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
 endif
 endif
