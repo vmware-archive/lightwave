@@ -59,7 +59,7 @@ VmKdcDecodeAuthzInfo(
     long bufsiz,
     void *buf,
 #ifdef WINJOIN_CHECK_ENABLED
-    KERB_VALIDATION_INFO *pac
+    KERB_VALIDATION_INFO **pac
 #else
     VMDIR_AUTHZ_INFO **pac
 #endif

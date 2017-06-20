@@ -279,7 +279,6 @@ VmDirKrbRealmNameNormalize(
     PSTR*       ppszNormalizeName
     );
 
-#ifdef VMDIR_ENABLE_PAC
 /*
  * Incomplete types needed for below prototypes
  */

@@ -13,6 +13,7 @@ idl_srcdir=$(top_srcdir)/vmdir/idl
 
 PAC_SOURCES =
 
+# Build with vmdir PAC support
 if VMDIR_ENABLE_PAC
 PAC_SOURCES += vmdir_pac_cstub.c
 PAC_SOURCES += pacops.c
@@ -29,6 +30,25 @@ CLEANFILES = \
 
 vmdir_pac_cstub.c vmdir_pac_h.h: $(idl_srcdir)/vmdir_pac.idl $(idl_srcdir)/vmdir_pac.acf
 	$(IDL) $(IDLFLAGS) -DVMDIR_ENABLE_PAC -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
+endif
+
+# Build with MS PAC support
+if MSPAC_SUPPORT
+PAC_SOURCES += ms_pac_cstub.c
+PAC_SOURCES += pacops.c
+
+BUILT_SOURCES = ms_pac_h.h
+
+# Required because the vmdir_pac_cstub.c is not going to pick up the definition from config.h
+#VMDIR_ENABLE_PAC_DEFINE=-DWINJOIN_CHECK_ENABLED
+
+CLEANFILES = \
+    ms_pac_h.h \
+    ms_pac_cstub.c \
+    ms_pac_sstub.c
+
+ms_pac_cstub.c ms_pac_h.h: $(idl_srcdir)/ms_pac.idl $(idl_srcdir)/ms_pac.acf
+	$(IDL) $(IDLFLAGS) -DWINJOIN_CHECK_ENABLED -keep c_source -header ms_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
 endif
 
 libkdcsrvcommon_la_SOURCES = \

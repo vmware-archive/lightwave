@@ -56,3 +56,6 @@
 #ifdef VMDIR_ENABLE_PAC
 #include "vmdir_pac_h.h"
 #endif
+#ifdef WINJOIN_CHECK_ENABLED
+#include "ms_pac_h.h"
+#endif

@@ -83,7 +83,9 @@
 #ifdef WINJOIN_CHECK_ENABLED
 #include "ms_pac_h.h"
 #else
+#ifdef VMDIR_ENABLE_PAC
 #include "vmdir_pac_h.h"
+#endif
 #endif
 
 #include "prototypes.h"

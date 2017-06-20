@@ -7,9 +7,11 @@ if MSPAC_SUPPORT
     BUILT_SOURCES_PAC = ms_pac_h.h
     CLEAN_PAC = ms_pac_h.h ms_pac_cstub.c
 else
+if VMDIR_ENABLE_PAC
     PAC_SRC = krb.c vmdir_pac_cstub.c
     BUILT_SOURCES_PAC = vmdir_pac_h.h
     CLEAN_PAC = vmdir_pac_h.h vmdir_pac_cstub.c
+endif
 endif
 
 vmdird_SOURCES = \
@@ -157,8 +159,10 @@ vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
 
 if MSPAC_SUPPORT
 ms_pac_cstub.c ms_pac_h.h: $(idl_srcdir)/ms_pac.idl $(idl_srcdir)/ms_pac.acf $(idl_srcdir)/ms_pac_type.h
-	$(IDL) $(IDLFLAGS) -keep c_source -header ms_pac_h.h -I$(idl_srcdir) $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header ms_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
 else
+if VMDIR_ENABLE_PAC
 vmdir_pac_cstub.c vmdir_pac_h.h: $(idl_srcdir)/vmdir_pac.idl $(idl_srcdir)/vmdir_pac.acf $(idl_srcdir)/vmdir_pac_type.h
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+endif
 endif
