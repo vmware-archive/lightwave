@@ -57,7 +57,16 @@
     </exec>
   </target>
 
-  <target name="build" depends="install.vmware-dependencies">
+  <target name="goclients">
+    <exec executable="go" failonerror="true">
+      <env key="GOPATH" value="${MAINSRCROOT}/goclients" />
+      <env key="CGO_CFLAGS" value="-I${MAINSRCROOT}/ssoclients/common/include/public -I${MAINSRCROOT}/ssoclients/oidc/include/public" />
+      <env key="CGO_LDFLAGS" value="-L${build_dir}/ssoclients/common/src/.libs -L${build_dir}/ssoclients/oidc/src/.libs -lssocommon -lssooidc" />
+      <arg line="build oidc" />
+    </exec>
+  </target>
+
+  <target name="build" depends="install.vmware-dependencies, goclients">
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}"/>
       <env key="JAVA_HOME" value="${jre.home}"/>
