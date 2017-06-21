@@ -116,7 +116,7 @@
         {                                                               \
             pResource = ((PVDIR_REST_OPERATION)pRestOp)->pResource;     \
             pRestRslt = ((PVDIR_REST_OPERATION)pRestOp)->pResult;       \
-            (pResource)->pfnSetResult(                                   \
+            (pResource)->pfnSetResult(                                  \
                     pRestRslt, pLdapRslt, dwError, pszErrMsg);          \
         }                                                               \
     } while (0)

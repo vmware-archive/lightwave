@@ -37,6 +37,7 @@ STAGEDIR=$PWD/stage
     --enable-server=yes \
     --enable-krb5-default=yes \
     --enable-lightwave-build=yes \
+    --enable-notify-vmdir-provider \
     ac_cv_header_vmevent=yes \
     ac_cv_header_vmdirclient_h=yes \
     ac_cv_lib_vmdirclient_VmDirSetupHostInstance=yes \

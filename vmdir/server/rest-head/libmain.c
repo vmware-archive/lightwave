@@ -76,7 +76,8 @@ VmDirRESTServerInit(
     if (dwError)
     {
         // soft fail - will not listen on REST port.
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
                 "VmRESTStart failed with error %d, not going to listen on REST port",
                 dwError);
         dwError = 0;
@@ -86,8 +87,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -176,8 +181,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto response;
 }
 

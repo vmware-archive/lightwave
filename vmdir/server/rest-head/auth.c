@@ -20,7 +20,6 @@ VmDirRESTAuth(
     )
 {
     DWORD   dwError = 0;
-    PVDIR_OPERATION pBindOp = NULL;
 
     if (!pRestOp)
     {
@@ -37,32 +36,29 @@ VmDirRESTAuth(
         goto cleanup;
     }
 
-    dwError = VmDirExternalOperationCreate(
-            NULL, -1, LDAP_REQ_BIND, pRestOp->pConn, &pBindOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTAuthBasic(pRestOp, pBindOp);
-    dwError = dwError ? VmDirRESTAuthToken(pRestOp, pBindOp) : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInternalBindEntry(pBindOp);
+    dwError = VmDirRESTAuthViaToken(pRestOp);
+    if (dwError && dwError == VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED)
+    {
+        dwError = VmDirRESTAuthViaBasic(pRestOp);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SET_REST_RESULT(pRestOp, pBindOp, dwError, NULL);
-    VmDirFreeOperation(pBindOp);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
 DWORD
-VmDirRESTAuthBasic(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaBasic(
+    PVDIR_REST_OPERATION    pRestOp
     )
 {
     DWORD   dwError = 0;
@@ -73,12 +69,17 @@ VmDirRESTAuthBasic(
     PSTR    pszDecode = NULL;
     PSTR    pszBindDN = NULL;
     PSTR    pszPasswd = NULL;
+    PVDIR_OPERATION pBindOp = NULL;
 
-    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth) || !pBindOp)
+    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    // unset previously set error
+    dwError = VmDirRESTResultUnsetError(pRestOp->pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pszBasic = strstr(pRestOp->pszAuth, "Basic ");
     if (IsNullOrEmptyString(pszBasic))
@@ -111,6 +112,10 @@ VmDirRESTAuthBasic(
     dwError = VmDirUPNToDN(pszDecode, &pszBindDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirExternalOperationCreate(
+            NULL, -1, LDAP_REQ_BIND, pRestOp->pConn, &pBindOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirStringToBervalContent(pszBindDN, &pBindOp->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -119,9 +124,14 @@ VmDirRESTAuthBasic(
 
     pBindOp->request.bindReq.method = LDAP_AUTH_SIMPLE;
 
+    dwError = VmDirInternalBindEntry(pBindOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
+    VMDIR_SET_REST_RESULT(pRestOp, pBindOp, dwError, NULL);
     VMDIR_SECURE_FREE_STRINGA(pszDecode);
     VMDIR_SAFE_FREE_STRINGA(pszBindDN);
+    VmDirFreeOperation(pBindOp);
     return dwError;
 
 error:
@@ -132,35 +142,42 @@ error:
  * Do Authentication based on received Token
  */
 DWORD
-VmDirRESTAuthToken(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaToken(
+    PVDIR_REST_OPERATION    pRestOp
     )
 {
     DWORD   dwError = 0;
     PSTR    pszBindDN = NULL;
-    PVDIR_REST_ACCESS_TOKEN pAccessToken = NULL;
+    PVDIR_REST_AUTH_TOKEN   pAuthToken = NULL;
+    PVDIR_OPERATION pBindOp = NULL;
 
-    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth) || !pBindOp)
+    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirRESTAccessTokenInit(&pAccessToken);
+    // unset previously set error
+    dwError = VmDirRESTResultUnsetError(pRestOp->pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTAccessTokenParse(pAccessToken, pRestOp->pszAuth);
+    dwError = VmDirRESTAuthTokenInit(&pAuthToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // TODO VDIR_REST_ACCESS_TOKEN_HOTK
-    if (pAccessToken->tokenType != VDIR_REST_ACCESS_TOKEN_BEARER)
+    dwError = VmDirRESTAuthTokenParse(pAuthToken, pRestOp->pszAuth);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pAuthToken->tokenType == VDIR_REST_AUTH_TOKEN_HOTK)
     {
-        dwError = VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        // TODO Validate the proof of possession
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
     }
 
-    dwError = VmDirUPNToDN(pAccessToken->pszBindUPN, &pszBindDN);
+    dwError = VmDirUPNToDN(pAuthToken->pszBindUPN, &pszBindDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirExternalOperationCreate(
+            NULL, -1, LDAP_REQ_BIND, pRestOp->pConn, &pBindOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirStringToBervalContent(pszBindDN, &pBindOp->reqDn);
@@ -168,9 +185,14 @@ VmDirRESTAuthToken(
 
     pBindOp->request.bindReq.method = LDAP_AUTH_NONE;
 
+    dwError = VmDirInternalBindEntry(pBindOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
-    VmDirFreeRESTAccessToken(pAccessToken);
+    VMDIR_SET_REST_RESULT(pRestOp, pBindOp, dwError, NULL);
+    VmDirFreeRESTAuthToken(pAuthToken);
     VMDIR_SAFE_FREE_STRINGA(pszBindDN);
+    VmDirFreeOperation(pBindOp);
     return dwError;
 
 error:

@@ -20,7 +20,6 @@ VmDirRESTAuth(
     )
 {
     DWORD   dwError = 0;
-    PVDIR_OPERATION pBindOp = NULL;
 
     if (!pRestOp)
     {
@@ -37,32 +36,32 @@ VmDirRESTAuth(
         goto cleanup;
     }
 
-    dwError = VmDirExternalOperationCreate(
-            NULL, -1, LDAP_REQ_BIND, pRestOp->pConn, &pBindOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTAuthBasic(pRestOp, pBindOp);
-    dwError = dwError ? VmDirRESTAuthToken(pRestOp, pBindOp) : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInternalBindEntry(pBindOp);
+    dwError = VmDirRESTAuthViaToken(pRestOp);
+    if (dwError && dwError == VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED)
+    {
+        dwError = VmDirRESTAuthViaBasic(pRestOp);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SET_REST_RESULT(pRestOp, pBindOp, dwError, NULL);
-    VmDirFreeOperation(pBindOp);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
+/*
+ * Note: In lwraft, basic auth is for lwraft accounts only
+ */
 DWORD
-VmDirRESTAuthBasic(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaBasic(
+    PVDIR_REST_OPERATION    pRestOp
     )
 {
     DWORD   dwError = 0;
@@ -73,12 +72,17 @@ VmDirRESTAuthBasic(
     PSTR    pszDecode = NULL;
     PSTR    pszBindDN = NULL;
     PSTR    pszPasswd = NULL;
+    PVDIR_OPERATION pBindOp = NULL;
 
-    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth) || !pBindOp)
+    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    // unset previously set error
+    dwError = VmDirRESTResultUnsetError(pRestOp->pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pszBasic = strstr(pRestOp->pszAuth, "Basic ");
     if (IsNullOrEmptyString(pszBasic))
@@ -111,6 +115,10 @@ VmDirRESTAuthBasic(
     dwError = VmDirUPNToDN(pszDecode, &pszBindDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirExternalOperationCreate(
+            NULL, -1, LDAP_REQ_BIND, pRestOp->pConn, &pBindOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirStringToBervalContent(pszBindDN, &pBindOp->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -119,9 +127,14 @@ VmDirRESTAuthBasic(
 
     pBindOp->request.bindReq.method = LDAP_AUTH_SIMPLE;
 
+    dwError = VmDirInternalBindEntry(pBindOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
+    VMDIR_SET_REST_RESULT(pRestOp, pBindOp, dwError, NULL);
     VMDIR_SECURE_FREE_STRINGA(pszDecode);
     VMDIR_SAFE_FREE_STRINGA(pszBindDN);
+    VmDirFreeOperation(pBindOp);
     return dwError;
 
 error:
@@ -130,47 +143,111 @@ error:
 
 /*
  * Do Authentication based on received Token
+ *
+ * Note: In lwraft, token auth is for lightwave accounts only
  */
 DWORD
-VmDirRESTAuthToken(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaToken(
+    PVDIR_REST_OPERATION    pRestOp
     )
 {
     DWORD   dwError = 0;
-    PSTR    pszBindDN = NULL;
-    PVDIR_REST_ACCESS_TOKEN pAccessToken = NULL;
+    ULONG   ulBufLen = 0;
+    PVDIR_REST_AUTH_TOKEN   pAuthToken = NULL;
+    PACCESS_TOKEN           pAccessToken = NULL;
+    PTOKEN_USER             pUser  = NULL;
+    PSTR                    pszUserSid = NULL;
+    PLW_MAP_SECURITY_CONTEXT    pMapSecurityContext = NULL;
+    VDIR_BERVALUE   berval = VDIR_BERVALUE_INIT;
 
-    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth) || !pBindOp)
+    if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirRESTAccessTokenInit(&pAccessToken);
+    // unset previously set error
+    dwError = VmDirRESTResultUnsetError(pRestOp->pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTAccessTokenParse(pAccessToken, pRestOp->pszAuth);
+    dwError = VmDirRESTAuthTokenInit(&pAuthToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // TODO VDIR_REST_ACCESS_TOKEN_HOTK
-    if (pAccessToken->tokenType != VDIR_REST_ACCESS_TOKEN_BEARER)
+    dwError = VmDirRESTAuthTokenParse(pAuthToken, pRestOp->pszAuth);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pAuthToken->tokenType == VDIR_REST_AUTH_TOKEN_HOTK)
     {
-        dwError = VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        // TODO Validate the proof of possession
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
     }
 
-    dwError = VmDirUPNToDN(pAccessToken->pszBindUPN, &pszBindDN);
+    // retrieve security information of the UPN
+    dwError = LwMapSecurityCreateContext(&pMapSecurityContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToBervalContent(pszBindDN, &pBindOp->reqDn);
+    dwError = LwMapSecurityCreateAccessTokenFromCStringUsername(
+            pMapSecurityContext, &pAccessToken, pAuthToken->pszBindUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pBindOp->request.bindReq.method = LDAP_AUTH_NONE;
+    dwError = VmDirQueryAccessTokenInformation(
+            pAccessToken, TokenUser, NULL, 0, &ulBufLen);
+    BAIL_ON_VMDIR_ERROR(dwError != ERROR_INSUFFICIENT_BUFFER);
+
+    dwError = VmDirAllocateMemory(ulBufLen, (PVOID*)&pUser);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirQueryAccessTokenInformation(
+            pAccessToken, TokenUser, pUser, ulBufLen, &ulBufLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateCStringFromSid(&pszUserSid, pUser->User.Sid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // populate connection access info
+    pRestOp->pConn->AccessInfo.pszBindedObjectSid = pszUserSid;
+    pszUserSid = NULL;
+
+    pRestOp->pConn->AccessInfo.pAccessToken = pAccessToken;
+    pAccessToken = NULL;
+
+    // Note: copied from anonymous bind
+    // Set these flags so that the worker routines don't try to look up our
+    // info (since we don't have a real user to search against). Since we're
+    // anonymous we know we're not in any of these groups.
+    pRestOp->pConn->AccessInfo.accessRoleBitmap =
+            VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO |
+            VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO |
+            VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO;
+
+    // build imaginary binded DN in format of "cn=<UPN>,<DOMAIN_DN>"
+    dwError = VmDirAllocateStringPrintf(
+            &berval.lberbv.bv_val,
+            "cn=%s,%s",
+            pAuthToken->pszBindUPN,
+            gVmdirServerGlobals.systemDomainDN.lberbv.bv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    berval.bOwnBvVal = TRUE;
+
+    dwError = VmDirNormalizeDNWrapper(&berval);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            berval.lberbv.bv_val, &pRestOp->pConn->AccessInfo.pszBindedDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            berval.bvnorm_val, &pRestOp->pConn->AccessInfo.pszNormBindedDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VmDirFreeRESTAccessToken(pAccessToken);
-    VMDIR_SAFE_FREE_STRINGA(pszBindDN);
+    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
+    LwMapSecurityFreeContext(&pMapSecurityContext);
+    RtlReleaseAccessToken(&pAccessToken);
+    VmDirFreeRESTAuthToken(pAuthToken);
+    VmDirFreeBervalContent(&berval);
+    VMDIR_SAFE_FREE_MEMORY(pszUserSid);
+    VMDIR_SAFE_FREE_MEMORY(pUser);
     return dwError;
 
 error:

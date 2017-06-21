@@ -7,8 +7,8 @@ librest_head_la_SOURCES = \
 if REST_ENABLED
 
 librest_head_la_SOURCES += \
-    accesstoken.c \
     auth.c \
+    authtoken.c \
     decode.c \
     encode.c \
     globals.c \
