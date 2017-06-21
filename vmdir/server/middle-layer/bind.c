@@ -85,8 +85,14 @@ VmDirMLBind(
                     bSendResult = FALSE;
                 }
                 else if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
-                {   
-#ifdef WINJOIN_CHECK_ENABLED /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
+#ifndef WINJOIN_CHECK_ENABLED
+                {   // if SASL negotiation completes successfully, it sets pOpeartion->reqDn.
+                    dwError = VmDirInternalBindEntry(pOperation);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+#else
+                /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
+                {
                     if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val, 
                         "GSS-SPNEGO", 
                          pOperation->request.bindReq.bvMechanism.lberbv.bv_len) == 0)
@@ -113,8 +119,8 @@ if (pOperation->conn->pSaslInfo->pszBindUserName)
                         dwError = VmDirInternalBindEntry(pOperation);
                         BAIL_ON_VMDIR_ERROR(dwError);
                     }
-#endif
                 }
+#endif
 
                 break;
 
