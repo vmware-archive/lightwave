@@ -657,6 +657,7 @@ AC_CONFIG_FILES([Makefile
                  config/Makefile
                  config/vmafd.reg
                  common/Makefile
+                 vmnetevent/Makefile
                  vmafcfg/Makefile
                  vmafcfg/api/Makefile
                  vmafcfg/posix/Makefile

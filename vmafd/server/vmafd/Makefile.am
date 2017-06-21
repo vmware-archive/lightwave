@@ -15,7 +15,6 @@ vmafdd_SOURCES = \
     cdcupdate.c \
     dcfinder.c    \
     ddns.c	\
-    ddnspackets.c \
     dns.c         \
     globals.c     \
     heartbeat.c     \
@@ -64,6 +63,7 @@ vmafdd_LDADD = \
     $(top_builddir)/client/libvmafdclient.la \
     $(top_builddir)/vmevent/server/libvmeventserver.la \
     $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmnetevent/libvmnetevent.la \
     @VMDIR_LIBS@ \
     @VMDNS_LIBS@ \
     @DCERPC_LIBS@ \

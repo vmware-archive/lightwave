@@ -128,6 +128,12 @@ VmAfdInit(
     dwError = VmAfdSuperLoggingInit(&(gVmafdGlobals.pLogger));
     BAIL_ON_VMAFD_ERROR (dwError);
 
+    if (gVmafdGlobals.bEnableDDNS)
+    {
+        dwError = VmAfdDDNSInit(&gVmafdGlobals.pDdnsHandle);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
 error:
 
     return dwError;

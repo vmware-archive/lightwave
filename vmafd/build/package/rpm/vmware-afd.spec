@@ -81,7 +81,8 @@ autoreconf -mif .. &&
             --with-maven=%{_mavendir} \
             --with-boost=/usr \
             --enable-notify-vmdir-provider=yes \
-            --enable-krb5-default=yes
+            --enable-krb5-default=yes \
+            --enable-debug=yes
 
 %install
 
