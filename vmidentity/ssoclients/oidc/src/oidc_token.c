@@ -106,6 +106,7 @@ OidcTokenParse(
     PSTRING pszTokenType = NULL;
     PSTRING pszHolderOfKeyJWKS = NULL;
     PSSO_JWK pJwk = NULL;
+    bool hasAudienceArrayClaim = false;
     bool hasHokJwksClaim = false;
     bool hasGroupsClaim = false;
 
@@ -149,8 +150,14 @@ OidcTokenParse(
     BAIL_ON_ERROR(e);
 
     // aud claim might be a string or an array of strings
-    e = SSOJwtGetStringArrayClaim(p->pJwt, "aud", &p->ppszAudience, &p->audienceSize);
-    if (e != SSOERROR_NONE)
+    e = SSOJwtHasArrayClaim(p->pJwt, "aud", &hasAudienceArrayClaim);
+    BAIL_ON_ERROR(e);
+    if (hasAudienceArrayClaim)
+    {
+        e = SSOJwtGetStringArrayClaim(p->pJwt, "aud", &p->ppszAudience, &p->audienceSize);
+        BAIL_ON_ERROR(e);
+    }
+    else
     {
         e = SSOMemoryAllocateArray(1, sizeof(PSTRING), (void**) &p->ppszAudience);
         BAIL_ON_ERROR(e);

@@ -259,6 +259,11 @@ SSOJsonIsObject(
     bool* pBool);
 
 SSOERROR
+SSOJsonIsArray(
+    PCSSO_JSON pJson,
+    bool* pBool);
+
+SSOERROR
 SSOJsonObjectSize(
     PCSSO_JSON pJson,
     size_t* pSize);
@@ -400,6 +405,12 @@ SSOJwtGetJsonClaim(
 
 SSOERROR
 SSOJwtHasClaim(
+    PCSSO_JWT p,
+    PCSTRING pszKey,
+    bool* pHasClaim);
+
+SSOERROR
+SSOJwtHasArrayClaim(
     PCSSO_JWT p,
     PCSTRING pszKey,
     bool* pHasClaim);
