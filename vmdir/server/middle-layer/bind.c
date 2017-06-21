@@ -86,7 +86,7 @@ VmDirMLBind(
                 }
                 else if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
                 {   
-#if 1 /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
+#ifdef WINJOIN_CHECK_ENABLED /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
                     if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val, 
                         "GSS-SPNEGO", 
                          pOperation->request.bindReq.bvMechanism.lberbv.bv_len) == 0)

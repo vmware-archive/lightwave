@@ -255,6 +255,7 @@ VmDirSASLSessionStart(
         pSaslBindInfo->saslStatus = SASL_STATUS_DONE;
 
 #if 1 /* TBD:Adam-Return response blob on success if one exists */
+      /* Check with Sung if this is safe in the general case */
         if (iRespLen > 0)
         {
             dwError = VmDirAllocateAndCopyMemory((PVOID)pszRespBlob, iRespLen, &pOutBlob);
@@ -488,7 +489,7 @@ _VmDirSASLGetCtxProps(
     }
 
     VMDIR_SAFE_FREE_MEMORY( pSaslBindInfo->pszBindUserName );
-#if 1 /*TBD:Adam- Look for @ and assume full UPN was providied if found */
+#ifdef WINJOIN_CHECK_ENABLED /*TBD:Adam- Look for @ and assume full UPN was providied if found */
     if (strchr(pszBindUPN, '@'))
     {
         dwError = VmDirAllocateStringPrintf(&pSaslBindInfo->pszBindUserName,
