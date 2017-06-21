@@ -128,17 +128,20 @@ VmDnsRpcCopyZoneInfoArray(
                                      (PVOID*)&pZoneInfoArrayTemp);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsRpcAllocateMemory(sizeof(VMDNS_ZONE_INFO)*pZoneInfoArray->dwCount,
+    if (pZoneInfoArray->dwCount)
+    {
+       dwError = VmDnsRpcAllocateMemory(sizeof(VMDNS_ZONE_INFO)*pZoneInfoArray->dwCount,
                                      (PVOID*)&pZoneInfoArrayTemp->ZoneInfos);
-    BAIL_ON_VMDNS_ERROR(dwError);
+       BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     for (; idx < pZoneInfoArray->dwCount; ++idx)
     {
         dwError = VmDnsRpcCopyZoneInfo(&pZoneInfoArray->ZoneInfos[idx],
                                         &pZoneInfoArrayTemp->ZoneInfos[idx]);
+        pZoneInfoArrayTemp->dwCount++;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-    pZoneInfoArrayTemp->dwCount = pZoneInfoArray->dwCount;
 
     *ppZoneInfoArray = pZoneInfoArrayTemp;
 

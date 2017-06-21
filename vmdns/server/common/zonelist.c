@@ -286,10 +286,13 @@ VmDnsZoneListGetZones(
                         (void**)&pZoneArray);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsAllocateMemory(
+    if (dwCount)
+    {
+       dwError = VmDnsAllocateMemory(
                         sizeof(VMDNS_ZONE_INFO)*dwCount,
                         (void**)&pZoneArray->ZoneInfos);
-    BAIL_ON_VMDNS_ERROR(dwError);
+       BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     for (i = 0; i < VMDNS_MAX_ZONES; ++i)
     {
