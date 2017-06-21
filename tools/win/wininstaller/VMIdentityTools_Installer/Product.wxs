@@ -67,6 +67,11 @@
                   Description="MMC console for Lightwave Directory"
                   Target="[APPLICATIONFOLDER]Lightwave Directory.msc"
                   WorkingDirectory="TARGETDIR"/>
+	<Shortcut Id="LWRaftShortcut"
+                  Name="Lightwave RAFT Browser"
+                  Description="MMC console for Lightwave RAFT Browser"
+                  Target="[APPLICATIONFOLDER]Lightwave Raft.msc"
+                  WorkingDirectory="TARGETDIR"/>
         <Shortcut Id="VMPSCHAShortcut"
                   Name="Lightwave PSC Site Management"
                   Description="MMC console to monitor the health of PSC sites and nodes."
@@ -108,6 +113,9 @@
       
       <ComponentGroupRef Id="VMPscHighAvailability_comp_group"/>
       <ComponentGroupRef Id="VMPscHighAvailability_reg_comp_group"/>
+
+      <ComponentGroupRef Id="LWRaft_comp_group"/>
+      <ComponentGroupRef Id="LWRaft_reg_comp_group"/>
 
     </Feature>
 

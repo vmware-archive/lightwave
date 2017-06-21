@@ -22,6 +22,7 @@ namespace VMIdentity.CommonUtils{    public static class CommonConstants
         public const string CA_ROOT = "caRoot";
         public const string CS_ROOT = "csRoot";
         public const string DIR_ROOT = "dirRoot";
+        public const string RAFT_ROOT = "raftRoot";
         public const string PSC_ROOT = "pscRoot";
         public const string SSO_ROOT = "ssoRoot";
         public const string DNS_ROOT = "dnsRoot";

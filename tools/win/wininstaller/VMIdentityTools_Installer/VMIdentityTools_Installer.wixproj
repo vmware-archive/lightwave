@@ -38,6 +38,7 @@
     <Compile Include="VMCertStore.wxs" />
     <Compile Include="VMDir.wxs" />
     <Compile Include="VMPSCHA.wxs" />
+    <Compile Include="LWRaft.wxs"/>
   </ItemGroup>
   <ItemGroup>
     <WixExtension Include="WixUtilExtension">
