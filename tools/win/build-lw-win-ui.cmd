@@ -31,6 +31,7 @@ CALL :buildWithMSBUILD4 VMDirSchemaSnapIn\VMDirSchemaSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMCASnapIn\VMCASnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMRestSsoAdminSnapIn\RestSsoAdminSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMPscHighAvailabilitySnapIn\VMPscHighAvailabilitySnapIn.sln Debug
+CALL :buildWithMSBUILD4 LWRaftSnapIn\LWRaftSnapIn.sln Debug
 CALL :buildWithMSBUILD4 wininstaller\wininstaller.sln Debug
 
 echo ------------ Release ---------------
@@ -43,6 +44,7 @@ CALL :buildWithMSBUILD4 VMDirSchemaSnapIn\VMDirSchemaSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMCASnapIn\VMCASnapIn.sln Release
 CALL :buildWithMSBUILD4 VMRestSsoAdminSnapIn\RestSsoAdminSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMPscHighAvailabilitySnapIn\VMPscHighAvailabilitySnapIn.sln Release
+CALL :buildWithMSBUILD4 LWRaftSnapIn\LWRaftSnapIn.sln Release
 CALL :buildWithMSBUILD4 wininstaller\wininstaller.sln Release
 
 goto end
