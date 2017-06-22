@@ -76,6 +76,8 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"
 
+#define VMDIR_ANONYMOUS_BIND_TIMEOUT 2 /* Anonymous bind timeout - used for getting Raft status */
+
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
@@ -1565,6 +1567,13 @@ DWORD
 VmDirAnonymousLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszLdapURI
+    );
+
+DWORD
+VmDirAnonymousLDAPBindWithTimeout(
+    LDAP**      ppLd,
+    PCSTR       pszLdapURI,
+    int         timeout
     );
 
 int

@@ -615,6 +615,7 @@ main(int argc, char **argv)
   int t_bigdata = 0;
   if (argc != 2)
     show_usage(argv[0]);
+  unsigned int env_flags = 0;
 
   if (strcmp(argv[1], "-w1")==0)
     t_modify=1;
@@ -674,7 +675,7 @@ main(int argc, char **argv)
 
   if (t_bigdata == 1)
   {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>4, 1);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4, 1);
     cout << "Making a backup of mdb into backupdb"<<endl;
     mtp->backup_db();
     mtp->provision(3000);
@@ -702,7 +703,7 @@ main(int argc, char **argv)
   if (t_bigdata == 2)
   {
     mtp->restore_db();
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>4, 1);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4, 1);
     printf("search big data again after retore...\n");
     mtp->test_provision_search(100);
     mtp->test_mod_search(1);
@@ -719,7 +720,7 @@ main(int argc, char **argv)
   if (t_bigdata == 3)
   {
     // search again
-    mtp = new MdbTester(0);
+    mtp = new MdbTester(env_flags);
     mtp->test_provision_search(100);
     mtp->test_mod_search(1);
     mtp->test_mod_search(2);
@@ -734,7 +735,7 @@ main(int argc, char **argv)
 
   if (t_bigdata == 4)
   {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>4);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4);
     cout << "Making a backup of mdb into backupdb"<<endl;
     mtp->backup_db();
     //mtp->txn_begin();
@@ -750,7 +751,7 @@ main(int argc, char **argv)
 
   if (t_bigdata == 5)
   {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>4, 1);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4, 1);
     cout << "Making a backup of mdb into backupdb"<<endl;
     mtp->backup_db();
     //mtp->txn_begin();
@@ -765,7 +766,7 @@ main(int argc, char **argv)
   }
 
   if (t_db_shrink == 1) {
-    mtp = new MdbTester(0);
+    mtp = new MdbTester(env_flags);
     rc = mtp->test_mod_search(1);
     rc = mtp->shrink_db(DB_DEFAULT_SIZE/2);
     rc = mtp->test_mod_search(1);
@@ -776,7 +777,7 @@ main(int argc, char **argv)
   }
 
   if (t_modify == 1) {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE);
     mtp->provision(32000);
 
     rc = mtp->test_modify(1);
@@ -801,7 +802,7 @@ main(int argc, char **argv)
   }
 
   if (t_modify == 2) {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE);
     mtp->txn_begin();
     mtp->provision(160000);
     printf ("search data inside transaction...\n");
@@ -845,7 +846,7 @@ main(int argc, char **argv)
   }
 
   if (t_modify == 3) {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>4);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4);
     mtp->txn_begin();
     mtp->provision(8000);
     printf ("search data inside transaction...\n");
@@ -862,7 +863,7 @@ main(int argc, char **argv)
   }
 
   if (t_modify == 4) {
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>4);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4);
     mtp->provision(1000);
 
     mtp->txn_begin();
@@ -897,7 +898,7 @@ main(int argc, char **argv)
 
   if (t_modify == 5) {
    /* test map full case */
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>5);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>5);
     mtp->txn_begin();
     mtp->provision(80000);
     printf ("search data inside transaction...\n");
@@ -921,7 +922,7 @@ main(int argc, char **argv)
     char cmd[1024];
 	char db_path[128];
     // Test xlogs rollforward case - skip xlogs that have been applied.
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE>>1, 1);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>1, 1);
     mtp->provision(50000, 0); // idx 0 ~ 49999
     mtp->backup_db(); //backup database with 50K items in the database
     mdb_env_set_state(mtp->get_dbenv(), MDB_STATE_KEEPXLOGS, &current_xlog_num, &dbSizeMb, &dbMapSizeMb, db_path, sizeof(db_path));
@@ -942,7 +943,7 @@ main(int argc, char **argv)
 
   if (t_delete == 1) {
     /* test map full case in a transaction for each mdb_put  */
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE);
 
     cout << "Making a backup of mdb into backupdb"<<endl;
     mtp->backup_db();
@@ -978,7 +979,7 @@ main(int argc, char **argv)
 
   if (t_delete == 2) {
     mtp->restore_db();
-    mtp = new MdbTester(0, DB_DEFAULT_SIZE);
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE);
 
     mtp->test_provision_search(100);
     mtp->test_provision_search(2000);
@@ -1007,18 +1008,18 @@ main(int argc, char **argv)
   }
 
   if (t_search == 1) {
-    mtp = new MdbTester(0, 0);
+    mtp = new MdbTester(env_flags, 0);
     rc = mtp->test_mod_search(1);
     delete mtp;
   }
   if (t_search == 2) {
-    mtp = new MdbTester(0, 0);
+    mtp = new MdbTester(env_flags, 0);
     mtp->test_provision_search(100);
     mtp->test_provision_search(701);
     delete mtp;
   }
   if (t_search == 3) {
-    mtp = new MdbTester(0, 0);
+    mtp = new MdbTester(env_flags, 0);
     mtp->test_provision_search(100);
     mtp->test_provision_search(201);
     delete mtp;
@@ -1027,7 +1028,7 @@ main(int argc, char **argv)
   if (t_search == 4) {
     // used to test with t_modify == 6
     mtp->restore_db();
-    mtp = new MdbTester(0, 0, 0);
+    mtp = new MdbTester(env_flags, 0, 0);
     mtp->test_provision_search(0);
     mtp->test_provision_search(49999);
     mtp->test_provision_search(50000);

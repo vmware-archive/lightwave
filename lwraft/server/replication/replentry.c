@@ -31,7 +31,6 @@ _VmDirCompareLogIdx(
  * One MDB transaction only has one Raft log, which might include multiple
  * LDAP transaction (if user defined transaction feature to be implemented)
  */
-static
 ENTRYID
 VmDirRaftLogEntryId(unsigned long long LogIndex)
 {
@@ -145,14 +144,6 @@ _VmDirLoadRaftState(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "no entry found; dn %s", RAFT_PERSIST_STATE_DN);
     }
 
-    pAttr =  VmDirEntryFindAttribute(ATTR_RAFT_TERM, entryArray.pEntry);
-    if (pAttr == NULL)
-    {
-        dwError = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "cannot find attr %s", ATTR_RAFT_TERM);
-    }
-    gRaftState.currentTerm = VmDirStringToIA((PCSTR)pAttr->vals[0].lberbv.bv_val);
-
     pAttr =  VmDirEntryFindAttribute(ATTR_RAFT_LAST_APPLIED, entryArray.pEntry);
     if (pAttr == NULL)
     {
@@ -169,27 +160,6 @@ _VmDirLoadRaftState(
     }
     gRaftState.firstLogIndex = VmDirStringToLA(pAttr->vals[0].lberbv.bv_val, NULL, 10);
 
-    pAttr =  VmDirEntryFindAttribute(ATTR_RAFT_VOTEDFOR_TERM, entryArray.pEntry);
-    if (pAttr == NULL)
-    {
-        dwError = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "cannot find attr %s", ATTR_RAFT_VOTEDFOR_TERM);
-    }
-    gRaftState.votedForTerm = VmDirStringToIA((PCSTR)pAttr->vals[0].lberbv.bv_val);
-
-    if (gRaftState.votedForTerm > 0)
-    {
-        pAttr =  VmDirEntryFindAttribute(ATTR_RAFT_VOTEDFOR, entryArray.pEntry);
-        if (pAttr == NULL)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "cannot find attr %s", ATTR_RAFT_VOTEDFOR);
-        } else
-        {
-            dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.votedFor, "%s", pAttr->vals[0].lberbv.bv_val);
-            BAIL_ON_VMDIR_ERROR(dwError)
-        }
-    }
-
     dwError = _VmDirFetchLogEntry(gRaftState.lastApplied, &logEntry, __LINE__);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -203,6 +173,7 @@ _VmDirLoadRaftState(
     dwError = _VmDirGetLastIndex(&gRaftState.lastLogIndex, &gRaftState.lastLogTerm);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    gRaftState.currentTerm = gRaftState.lastLogTerm;
     gRaftState.initialized = TRUE;
 
 cleanup:
@@ -216,120 +187,15 @@ cleanup:
 
     if (dwError==0)
     {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirLoadRaftState: completed; currentTerm %d commitIndex %llu lastApplied %llu",
-                   gRaftState.currentTerm, gRaftState.commitIndex, gRaftState.lastApplied);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+          "_VmDirLoadRaftState: term %d commitIdx %llu lastLogIdx %llu lastLogTerm %d lastApplied %llu",
+          gRaftState.currentTerm, gRaftState.commitIndex, gRaftState.lastLogIndex,
+          gRaftState.lastLogTerm, gRaftState.lastApplied);
     }
     return dwError;
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLoadRaftState: error %d; %s", dwError, VDIR_SAFE_STRING(pszLocalErrorMsg) );
-    goto cleanup;
-}
-
-DWORD
-_VmDirUpdateRaftPsState(
-    int term,
-    BOOLEAN updateVotedForTerm,
-    UINT32 votedForTerm,
-    PVDIR_BERVALUE pVotedFor,
-    UINT64 lastApplied,
-    UINT64 firstLog
-    )
-{
-    DWORD dwError = 0;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    CHAR pszTerm[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
-    CHAR pszLastApplied[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
-    CHAR pszFirstLog[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
-    VDIR_BERVALUE berTerm = VDIR_BERVALUE_INIT;
-    VDIR_BERVALUE berLastApplied = VDIR_BERVALUE_INIT;
-    VDIR_BERVALUE berFirstLog = VDIR_BERVALUE_INIT;
-    VDIR_OPERATION ldapOp = {0};
-    PSTR pszLocalErrorMsg = NULL;
-
-    dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirInitStackOperation");
-
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
-    assert(ldapOp.pBEIF);
-
-    if (term > 0)
-    {
-        dwError = VmDirStringPrintFA(pszTerm , sizeof(pszTerm), "%d", term );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        berTerm.lberbv.bv_val = pszTerm;
-        berTerm.lberbv.bv_len = VmDirStringLenA(pszTerm);
-
-        dwError = VmDirAddModSingleAttributeReplace(&ldapOp, RAFT_PERSIST_STATE_DN, ATTR_RAFT_TERM, &berTerm);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddModSingleAttributeReplace term");
-    }
-
-    if (updateVotedForTerm)
-    {
-        dwError = VmDirStringPrintFA(pszTerm , sizeof(pszTerm), "%d", votedForTerm );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        berTerm.lberbv.bv_val = pszTerm;
-        berTerm.lberbv.bv_len = VmDirStringLenA(pszTerm);
-
-        dwError = VmDirAddModSingleAttributeReplace(&ldapOp, RAFT_PERSIST_STATE_DN, ATTR_RAFT_VOTEDFOR_TERM, &berTerm);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddModSingleAttributeReplace updateVotedForTerm");
-    }
-
-    if (pVotedFor && pVotedFor->lberbv.bv_len > 0)
-    {
-        dwError = VmDirAddModSingleAttributeReplace(&ldapOp, RAFT_PERSIST_STATE_DN, ATTR_RAFT_VOTEDFOR, pVotedFor);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddModSingleAttributeReplace pVotedFor");
-    }
-
-    if (lastApplied > 0)
-    {
-        dwError = VmDirStringPrintFA(pszLastApplied , sizeof(pszLastApplied), "%llu", lastApplied);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        berLastApplied.lberbv.bv_val = pszLastApplied;
-        berLastApplied.lberbv.bv_len = VmDirStringLenA(pszLastApplied);
-
-        dwError = VmDirAddModSingleAttributeReplace(&ldapOp, RAFT_PERSIST_STATE_DN, ATTR_RAFT_LAST_APPLIED, &berLastApplied);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddModSingleAttributeReplace lastApplied");
-    }
-
-    if (firstLog > 0)
-    {
-        dwError = VmDirStringPrintFA(pszFirstLog , sizeof(pszFirstLog), "%llu", firstLog);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        berFirstLog.lberbv.bv_val = pszFirstLog;
-        berFirstLog.lberbv.bv_len = VmDirStringLenA(pszFirstLog);
-
-        dwError = VmDirAddModSingleAttributeReplace(&ldapOp, RAFT_PERSIST_STATE_DN, ATTR_RAFT_FIRST_LOGINDEX, &berFirstLog);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddModSingleAttributeReplace firstLogIndex");
-    }
-
-    ldapOp.bSuppressLogInfo = TRUE;
-    dwError = VmDirInternalModifyEntry(&ldapOp);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirInternalModifyEntry");
-
-cleanup:
-    VmDirFreeOperationContent(&ldapOp);
-
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    assert(dwError==0); //Raft cannot garantee safety if persist state cannot be updated.
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirUpdateRaftPsState: %s error %d term %d PsState.currentTerm %d; server role %d",
-                    VDIR_SAFE_STRING(pszLocalErrorMsg), dwError, term, gRaftState.currentTerm, gRaftState.role);
     goto cleanup;
 }
 
@@ -416,6 +282,10 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+      "VmDirAddRaftEntry: log(%llu, %d, %d) term %d lastLogIndex %llu commitIndex %llu error %d",
+      pLogEntry->index, pLogEntry->term, pLogEntry->requestCode, gRaftState.currentTerm,
+      gRaftState.lastLogIndex, gRaftState.commitIndex, dwError);
     goto cleanup;
 }
 
@@ -519,7 +389,7 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
     {
         if (pLogIdxArray[i] <= gRaftState.lastApplied)
         {
-             /* This shouldn't occur. If it does, then there would be a bug, and the consistency might be 
+             /* This shouldn't occur. If it does, then there would be a bug, and the consistency might be
               * compromised. We should investigate the sequence of events on how to get here.
               */
              VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
@@ -967,6 +837,12 @@ _VmDirGetLastIndex(UINT64 *index, UINT32 *term)
     dwError = _VmDirFetchLogEntry(lastLogIndex, &logEntry, __LINE__);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (logEntry.index == 0)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *index = lastLogIndex;
     *term = logEntry.term;
 
@@ -976,7 +852,8 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirGetLastIndex: error %d", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+      "_VmDirGetLastIndex: lastLogIndex %llu, error %d", lastLogIndex, dwError);
     goto cleanup;
 }
 

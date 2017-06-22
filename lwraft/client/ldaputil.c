@@ -4402,7 +4402,7 @@ VmDirAppendRaftState(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAnonymousLDAPBind( &pLd, pszLocalHostURI);
+    dwError = VmDirAnonymousLDAPBindWithTimeout( &pLd, pszLocalHostURI, VMDIR_ANONYMOUS_BIND_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirLdapGetAttributeValues( pLd, "", ATTR_RAFT_STATE, NULL, &ppBerValues);

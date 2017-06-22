@@ -350,10 +350,22 @@ error:
  *
  * Thus, NO credentials would ever go over clear text channel.
  */
+
 DWORD
 VmDirAnonymousLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszLdapURI
+    )
+{
+    return VmDirAnonymousLDAPBindWithTimeout(ppLd, pszLdapURI, 0);
+}
+
+
+DWORD
+VmDirAnonymousLDAPBindWithTimeout(
+    LDAP**      ppLd,
+    PCSTR       pszLdapURI,
+    int         timeout
     )
 {
     DWORD       dwError = 0;
@@ -361,6 +373,7 @@ VmDirAnonymousLDAPBind(
     const int   ldapVer = LDAP_VERSION3;
     BerValue    ldapBindPwd = {0};
     LDAP*       pLocalLd = NULL;
+    struct timeval nettimeout = {0};
 
 
     if (ppLd == NULL || pszLdapURI == NULL)
@@ -374,6 +387,13 @@ VmDirAnonymousLDAPBind(
 
     retVal = ldap_set_option( pLocalLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    if (timeout > 0)
+    {
+        nettimeout.tv_sec = timeout;
+        retVal = ldap_set_option( pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&nettimeout);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
 
     ldapBindPwd.bv_val = NULL;
     ldapBindPwd.bv_len = 0;

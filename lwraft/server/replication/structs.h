@@ -82,11 +82,8 @@ typedef struct _VDIR_RAFT_LOG
     UINT64 index;
     UINT32 term;
     UINT64 entryId;           //For entryId to be add/modified/deleted.
-    UINT32 requestCode;       //LDAP_REQ_ADD, LDAP_REQ_DELETE or LDAP_REQ_MODIFY
+    UINT32 requestCode;       //LDAP_REQ_ADD, LDAP_REQ_DELETE, LDAP_REQ_MODIFY or 0 for nonop (used for raft leader change)
     VDIR_BERVALUE chglog;     //packed entry (LDAP_REQ_ADD), mods(LDAP_REQ_MODIFY) or empty value (LDAP_REQ_DELETE)
-#define CHGLOG_ADD_PACKED 'a' //Internally packed for LDAP ADD
-#define CHGLOG_MOD_PACKED  'm' //Internally packed LDAP MODIFY
-#define CHGLOG_DEL_EID     'd' //entryId is the  entry id to delete.
     VDIR_BERVALUE packRaftLog; //packed for MDB persist or RPC transport in format below
                                //encoded log index(8 bytes), term(4 bytes), entryid(8 bytes),
                                // and requestCode(4 bytes), followed by chglog.
@@ -166,8 +163,7 @@ typedef struct _VDIR_RAFT_STAT
     int clusterSize; //number of servers in raft clust, updated initially and when adding/removing nodes
     UINT32 voteConsensusCnt; //number of positive ballots collected from peers, plus 1 for self.
     UINT32 voteDeniedCnt; //number of negative ballots collected from peers
-    UINT32 voteConsenusuTerm; //term associated with above voteConsensusCnt
-    BOOLEAN rpcSent;    //at least one RPC sent to peers
+    UINT32 voteConsensusTerm; //term associated with above voteConsensusCnt
     BOOLEAN initialized;//Whether the stat is loaded from the persistent store after server start.
     UINT64 lastPingRecvTime; //time stamp of the last ping or appendEntries received from leader
     UINT64 commitIndex; //the highest log entry index known to be commited
@@ -178,7 +174,7 @@ typedef struct _VDIR_RAFT_STAT
     int opCounts; //number of logs created, as a Raft leader, since last logs compaction.
     UINT32 lastLogTerm;  //the term associated with lastLogIndex
     VDIR_BERVALUE leader; //leader's hostname for referal
-    BOOLEAN disallowUpdates; //disallow external LDAP add/modify/delete; momently for newly elected leader.
+    BOOLEAN disallowUpdates; //disallow external LDAP add/modify/delete; momently for newly elected leader
     PVMDIR_PEER_PROXY proxies;   //A list of elements, each for a peer proxy
     //Below are persistent variables, i.e. must be writen to entry cn=persiststate,cn=raftcontext once changed
     UINT64 lastApplied; //Index of highest log entry that have been applied to directory entry.
