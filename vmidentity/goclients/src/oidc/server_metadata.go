@@ -15,6 +15,7 @@ type ServerMetadata struct {
     p C.POIDC_SERVER_METADATA
 }
 
+// make sure you call OidcClientGlobalInit once per process before calling this
 // on success, result will be non-null, Close it when done
 // tlsCAPath: empty means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 func ServerMetadataAcquire(

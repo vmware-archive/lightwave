@@ -18,6 +18,15 @@ type OidcClient struct {
     p C.POIDC_CLIENT
 }
 
+/*
+ * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * This is a wrapper for curl_global_init, from its documentation:
+ * This function is not thread safe.
+ * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
+ * This doesn't just mean no other thread that is using libcurl.
+ * Because curl_global_init calls functions of other libraries that are similarly thread unsafe,
+ * it could conflict with any other thread that uses these other libraries.
+ */
 func OidcClientGlobalInit() (err error) {
     var e C.SSOERROR = C.OidcClientGlobalInit()
     if e != 0 {
@@ -26,10 +35,12 @@ func OidcClientGlobalInit() (err error) {
     return err
 }
 
+// this function is not thread safe. Call it right before process exit
 func OidcClientGlobalCleanup() {
     C.OidcClientGlobalCleanup()
 }
 
+// make sure you call OidcClientGlobalInit once per process before calling this
 // on success, result will be non-null, Close it when done
 // tlsCAPath: empty means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 func OidcClientBuild(

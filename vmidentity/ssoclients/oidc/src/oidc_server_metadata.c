@@ -171,6 +171,7 @@ error:
     return e;
 }
 
+// make sure you call OidcClientGlobalInit once per process before calling this
 // on success, pp will be non-null, when done, OidcServerMetadataDelete it
 // psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR

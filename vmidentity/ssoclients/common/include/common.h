@@ -17,12 +17,23 @@
 
 // SSO_HTTP_CLIENT
 
+/*
+ * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * This is a wrapper for curl_global_init, from its documentation:
+ * This function is not thread safe.
+ * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
+ * This doesn't just mean no other thread that is using libcurl.
+ * Because curl_global_init calls functions of other libraries that are similarly thread unsafe,
+ * it could conflict with any other thread that uses these other libraries.
+ */
 SSOERROR
 SSOHttpClientGlobalInit();
 
+// this function is not thread safe. Call it right before process exit
 void
 SSOHttpClientGlobalCleanup();
 
+// make sure you call SSOHttpClientGlobalInit once per process before calling this
 SSOERROR
 SSOHttpClientNew(
     PSSO_HTTP_CLIENT* pp,
