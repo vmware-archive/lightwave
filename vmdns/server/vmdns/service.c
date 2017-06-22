@@ -104,6 +104,7 @@ VmDnsRegisterRpcServer(
 
     VmDnsLog(VMDNS_LOG_LEVEL_INFO, "VMware dns Service bound successfully.");
 
+#if 0
 #ifndef _WIN32
     dwError = VmDnsRpcEpRegister(
                         pServerBinding,
@@ -114,6 +115,7 @@ VmDnsRegisterRpcServer(
     {
         VmDnsLog(VMDNS_LOG_LEVEL_INFO, "RPC Endpoint registered successfully.");
     }
+#endif
 #endif
 
 #ifndef _WIN32

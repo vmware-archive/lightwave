@@ -149,6 +149,7 @@ VmDirRegisterRpcServer(
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service bound successfully.");
 
+#if 0
 #if !defined(HAVE_DCERPC_WIN32)
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "VMware Directory Service");
     if (ulError)
@@ -172,6 +173,7 @@ VmDirRegisterRpcServer(
     {
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "RPC Endpoints registered successfully.");
     }
+#endif
 #endif
 
     ulError = VmDirRpcServerRegisterAuthInfo();

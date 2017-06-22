@@ -157,6 +157,7 @@ VmDirRegisterRpcServer(
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service bound successfully.");
 
+#if 0
 #if !defined(HAVE_DCERPC_WIN32)
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "Lightwave Raft Service");
     if (ulError)
@@ -192,6 +193,7 @@ VmDirRegisterRpcServer(
     {
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "RPC Endpoints registered successfully.");
     }
+#endif
 #endif
 
     ulError = VmDirRpcServerRegisterAuthInfo();

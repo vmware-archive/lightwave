@@ -201,6 +201,10 @@ VmKdcRpcEpRegister(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
+#if 1
+    /* Do not register with dcerpc; all services use fixed endpoints */
+    return dwError;
+#else
     error_status_t rpcStatus = rpc_s_ok;
 
     rpc_ep_register(
@@ -213,6 +217,7 @@ VmKdcRpcEpRegister(
     dwError = rpcStatus;
 
     return dwError;
+#endif
 }
 
 DWORD
