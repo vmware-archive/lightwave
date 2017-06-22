@@ -114,7 +114,7 @@ namespace LWRaftSnapIn.UI
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(100, 23);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Directory Server:";
+            this.label1.Text = "Lightwave Raft Server:";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // txtDirectoryServer
