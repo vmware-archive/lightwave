@@ -70,52 +70,67 @@ The source code is developed and tested against following environment:
 * Wix v3.8 (stable)
 
 
-## Source code
+## Download and Install GIT
+
+Inorder to checkout source code (from github), Install git client from https://git-scm.com/
+ 
+## Checkout Source code
+
 ```
 git clone https://github.com/vmware/lightwave.git
-windows source files are under lightwave/tools/win
+```
+The source code for windows tools are under lightwave/tools/win
+
+## Download and Install .NET Framework
+
+1. Download .NET from https://www.microsoft.com/en-in/download/details.aspx?id=30653 
+2. Confirm installation by following steps at https://msdn.microsoft.com/en-in/library/hh925568(v=vs.110).aspx#net_b 
+
+ Note : .NET Framework 3.5+ is recommended 
+
+## Download, Install and Configure WIX 
+
+1. Download WIX binary from http://wixtoolset.org/  
+   (Downloaded file : wix38-binaries.zip from http://wixtoolset.org/releases/v3.8/stable)
+2. Extract wix38-binaries.zip (Downloaded from above step #1)
+3. Configure environmental variable 'WIXPATH' set to value <downloaded_wix_38_path>/wix38-binaries
+
+ Note : WIX 38 is recommended and ensured working.
+
+## Download and Copy Pre-requisites for Build
+
+1. Download pre-requisite binaries from https://vmware.bintray.com/lightwave_ui/v1.0/rc/for_developers/win/
+2. Copy the above downloaded pre-requisites to lightwave/tools/interop/client_msi folder. [Please create folder structure if doesn't exist]
+
+## Build 
+
+We can build the LIGHTWAVE UI tools via two methods :
+
+1. via CLI (Command Line Interface)
+2. via Visual Studio IDE (Integrated Dev Environment)
+
+### via CLI 
+
+The process of building via CLI uses a pre-existing script(build-lw-win-ui.cmd) in source code. 
+
+```
+1. cd lightwave/tools/win [Navigate to windows tools folder]
+2. build-lw-win-ui.cmd [Invoke build command]
 ```
 
+If the above command succeeds, It should generate the following files:
 
+* VMIdentityTools_Installer.msi - Contain Lightwave-MMC tools + Pre-requisite client libraries
+* VMIdentityTools_Prerequisite.exe - Contain only Pre-requisite client libraries
+* VMIdentityTools_Standalone.exe - Contain Lightwave-MMC + Pre-requisite client libraries
 
-## Build
+#### Troubleshooting/Common Issues:
+The installer logs can be found at lightwave\tools\win\logs folder.
 
-The code can be build either using the build script or manually using Visual Studio.
+WIX related errors :
+On wix related errors e.g. light.exe error, then delete all obj folders from wininstaller projects and run script again.
 
-###Pre-requisite client binaries
-Download client pre-built binaries (from the link below) and copy them to tools/interop/client_msi folder (create if it does not exists) to satisfy dependencies before attempting to build.:
-
-https://vmware.bintray.com/lightwave_ui/v1.0/rc/for_developers/win/
-
-####Using build script
-```
-Perform following steps to build the Lightwave UI installer for windows using the build script:
-
-* Download and install .net framework 4.5 (in case it is not present on your machine) from https://www.microsoft.com/en-in/download/details.aspx?id=30653. To confirm whether .net framework 4.5 is installed in your machine please use  this link https://msdn.microsoft.com/en-in/library/hh925568(v=vs.110).aspx#net_b .
-* Download and install git client from https://git-scm.com/
-* Open git bash shell and run the command: git clone https://github.com/vmware/lightwave.git
-* Download wix38-binaries.zip from http://wixtoolset.org/. Do not download any wix installer binaries.
-* Right click wix38-binaries.zip and open properties panel and click unblock button present at bottom.
-* Now, extract wix38-binaries.zip binaries.
-* Create WIXPATH environment variable with value <path to folder where wix binaries are extracted>\wix38-binaries
-* Go to lightwave windows folder using command prompt: cd lightwave\tools\win
-* Run the windows build script: build-lw-win-ui.cmd
-
-```
- 
-This will generate following three files in tools\win\x64\Debug and tools\win\x64\Release folders.
-
-1) VMIdentityTools_Installer.msi - contains only Lightwave MMC tools and requires pre-requisite client libraries to be already installed on machine. 
-
-2) VMIdentityTools_Prerequisite.exe - does not contains Lightwave MMC tools and used to install pre-requisite client libraries on machine
-
-3) VMIdentityTools_Standalone.exe - contains both pre-requisite libs + Lightwave MMC tools
-
-You can find installer log in win\logs folder.
-
-If you get any wix related errors e.g. light.exe error, then delete all obj folders from wininstaller projects and run script again.
-
-####Using Visual Studio
+### via Visual Studio
 
 To build the tools indiviudally using Visual Studio, you need to build the pre-requisite interops first.
 
