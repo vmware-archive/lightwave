@@ -127,7 +127,9 @@ VmDirRegisterRpcServer(
     VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirRaftInterfaceSpec = vmdirraft_v1_0_s_ifspec;
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
+#if 0
     BOOLEAN bEndpointsRegistered = TRUE;
+#endif
 
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
