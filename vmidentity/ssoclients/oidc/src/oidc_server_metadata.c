@@ -85,6 +85,7 @@ OidcServerMetadataAcquireEndpoints(
     PSSO_JSON pJson = NULL;
     PSSO_JSON pJsonTokenEndpoint = NULL;
     PSSO_JSON pJsonJwksEndpoint = NULL;
+    POIDC_ERROR_RESPONSE pErrorResponse = NULL;
 
     e = SSOHttpClientSendGet(
         pHttpClient,
@@ -94,6 +95,15 @@ OidcServerMetadataAcquireEndpoints(
         &pszResponse,
         &httpStatusCode);
     BAIL_ON_ERROR(e);
+
+    if (httpStatusCode != 200)
+    {
+        e = OidcErrorResponseParse(&pErrorResponse, pszResponse);
+        BAIL_ON_ERROR(e);
+
+        e = OidcErrorResponseGetErrorCode(pErrorResponse);
+        goto error; // do not use BAIL_ON_ERROR because it will log a misleading error message
+    }
 
     e = SSOJsonParse(&pJson, pszResponse);
     BAIL_ON_ERROR(e);
@@ -123,6 +133,7 @@ error:
     SSOJsonDelete(pJson);
     SSOJsonDelete(pJsonTokenEndpoint);
     SSOJsonDelete(pJsonJwksEndpoint);
+    OidcErrorResponseDelete(pErrorResponse);
 
     return e;
 }
@@ -140,6 +151,7 @@ OidcServerMetadataAcquireSigningCertificatePEM(
     PSSO_JWK pJwk = NULL;
     PSTRING pszResponse = NULL;
     long httpStatusCode = 0;
+    POIDC_ERROR_RESPONSE pErrorResponse = NULL;
 
     e = SSOHttpClientSendGet(
         pHttpClient,
@@ -149,6 +161,15 @@ OidcServerMetadataAcquireSigningCertificatePEM(
         &pszResponse,
         &httpStatusCode);
     BAIL_ON_ERROR(e);
+
+    if (httpStatusCode != 200)
+    {
+        e = OidcErrorResponseParse(&pErrorResponse, pszResponse);
+        BAIL_ON_ERROR(e);
+
+        e = OidcErrorResponseGetErrorCode(pErrorResponse);
+        goto error; // do not use BAIL_ON_ERROR because it will log a misleading error message
+    }
 
     e = SSOJwkParseFromSet(&pJwk, pszResponse);
     BAIL_ON_ERROR(e);
@@ -167,6 +188,7 @@ error:
 
     SSOJwkDelete(pJwk);
     SSOStringFree(pszResponse);
+    OidcErrorResponseDelete(pErrorResponse);
 
     return e;
 }
