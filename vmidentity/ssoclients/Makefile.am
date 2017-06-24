@@ -11,6 +11,7 @@ stage:
             $(MAKE) -C $$subdir $(AM_MAKEFLAGS) DESTDIR=$(STAGEDIR) install; \
           done; \
           sed -i~ -e "s;/opt/vmware/lib64;$(STAGEDIR)/opt/vmware/lib64;" $(STAGEDIR)/opt/vmware/lib64/libssooidc.la; \
+          sed -i~ -e "s;/opt/vmware/lib64;$(STAGEDIR)/opt/vmware/lib64;" $(STAGEDIR)/opt/vmware/lib64/libssocommon.la; \
         fi
 
 all-local: stage

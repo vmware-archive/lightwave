@@ -16,6 +16,10 @@
         {
             "name": "ldap",
             "description": "LDAP(Lightweight Directory Access Protocol) protocol implemented in RESTful interface"
+        },
+        {
+            "name": "metrics",
+            "description": "Metrics module for publishing metrics data"
         }
     ],
     "paths": {
@@ -168,6 +172,26 @@
                     "ldap"
                 ]
             }
+        },
+        "/vmdir/metrics/ldap": {
+            "get": {
+                "summary": "Get metrics data",
+                "description": "Get metrics data",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metrics LDAP response",
+                        "schema": {
+                            "$ref": "#/definitions/MetricsLdapResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "metrics"
+                ]
+            }
         }
     },
     "definitions": {
@@ -244,6 +268,59 @@
                     "items": {
                         "$ref": "#/definitions/LDAPEntry"
                     }
+                }
+            }
+        },
+        "MetricsLdapResponse": {
+            "type": "object",
+            "properties": {
+                "ldap_bind_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_bind_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_search_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_search_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_add_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_add_average": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_unbind_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_unbind_average": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_modify_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_modify_average": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_delete_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "ldap_delete_average": {
+                    "type": "integer",
+                    "format": "int32"
                 }
             }
         }

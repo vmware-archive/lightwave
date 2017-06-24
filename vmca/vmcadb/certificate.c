@@ -726,7 +726,7 @@ error:
 static
 PCSTR VMCAGetDbEnumQuery(DWORD dwStatus)
 {
-    PCSTR szQuery;
+    PCSTR szQuery = NULL;
     if (dwStatus == VMCA_DB_CERTIFICATE_STATUS_ALL)
     {
         szQuery=

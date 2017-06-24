@@ -775,8 +775,8 @@ ProcessAConnection(
              break;
 
          case LDAP_REQ_MODDN:
-              retVal = VmDirPerformRename(pOperation);
-            break;
+             retVal = VmDirPerformRename(pOperation);
+             break;
 
          case LDAP_REQ_COMPARE:
          case LDAP_REQ_ABANDON:
@@ -795,6 +795,7 @@ ProcessAConnection(
       }
 
       pConn->SuperLogRec.iEndTime = VmDirGetTimeInMilliSec();
+
       VmDirOPStatisticUpdate(tag, pConn->SuperLogRec.iEndTime - pConn->SuperLogRec.iStartTime);
 
       if (tag != LDAP_REQ_BIND)

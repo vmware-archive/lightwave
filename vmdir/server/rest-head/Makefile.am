@@ -14,6 +14,7 @@ librest_head_la_SOURCES += \
     globals.c \
     httperror.c \
     ldapapi.c \
+    metricsapi.c \
     operation.c \
     param.c \
     resource.c \

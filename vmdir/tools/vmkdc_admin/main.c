@@ -108,7 +108,8 @@ parseArgs(
 }
 
 typedef enum {
-    VMKDC_ADMIN_COMMAND_ADDPRINC=1,
+    VMKDC_ADMIN_COMMAND_NONE,
+    VMKDC_ADMIN_COMMAND_ADDPRINC,
     VMKDC_ADMIN_COMMAND_KTADD,
 } VMKDC_ADMIN_COMMANDS;
 
@@ -194,7 +195,7 @@ int _tmain(int argc, TCHAR *targv[])
     DWORD   dwError = 0;
     PROG_ARGS args = {0};
     int params = 0;
-    VMKDC_ADMIN_COMMANDS cmd;
+    VMKDC_ADMIN_COMMANDS cmd = VMKDC_ADMIN_COMMAND_NONE;
 
 #ifdef _WIN32
 

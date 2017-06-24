@@ -154,6 +154,18 @@ VmDirRESTRequestHandler(
     uint32_t        paramsCount
     );
 
+// metricsapi.c
+DWORD
+VmDirRESTGetMetricsModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTMetricsLdapGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
 // operation.c
 DWORD
 VmDirRESTOperationCreate(
