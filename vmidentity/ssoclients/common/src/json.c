@@ -291,6 +291,26 @@ SSOJsonIsObject(
 }
 
 SSOERROR
+SSOJsonIsArray(
+    PCSSO_JSON pJson,
+    bool* pBool)
+{
+    SSOERROR e = SSOERROR_NONE;
+
+    if (pJson == NULL || pBool == NULL)
+    {
+        e = SSOERROR_INVALID_ARGUMENT;
+        BAIL_ON_ERROR(e);
+    }
+
+    *pBool = json_is_array(pJson->pJson_t) != 0;
+
+    error:
+
+    return e;
+}
+
+SSOERROR
 SSOJsonObjectSize(
     PCSSO_JSON pJson,
     size_t* pSize)

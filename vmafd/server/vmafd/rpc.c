@@ -619,7 +619,10 @@ VmAfdRpcEpRegister(
     )
 {
     DWORD dwError = 0;
-
+#if 1
+    /* Do not register with dcerpc; all services use fixed endpoints */
+    return dwError;
+#else
     DCETHREAD_TRY
     {
        rpc_ep_register(
@@ -643,6 +646,7 @@ VmAfdRpcEpRegister(
     DCETHREAD_ENDTRY;
 
     return dwError;
+#endif
 }
 
 DWORD

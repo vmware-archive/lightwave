@@ -159,8 +159,6 @@ typedef struct _VMDIR_GLOBALS
 
     BOOLEAN                         bRegisterTcpEndpoint;
 
-    PSECURITY_DESCRIPTOR_ABSOLUTE   gpVmDirSrvSD;
-
     // To synchronize creation and use of replication agreements.
     PVMDIR_MUTEX                    replAgrsMutex;
     PVMDIR_COND                     replAgrsCondition;

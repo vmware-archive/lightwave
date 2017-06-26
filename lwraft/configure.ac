@@ -472,7 +472,6 @@ AC_CHECK_FUNCS(strerror)
 
 AC_CHECK_LIB([dl], [dlopen], [DL_LIBS="-ldl"])
 AC_CHECK_LIB([pthread], [pthread_self], [PTHREAD_LIBS="-lpthread"])
-AC_CHECK_LIB([mdb],[mdb_strerror],[MDB_LIBS="-lmdb"],[],[])
 AC_CHECK_LIB([z],[inflate],[ZLIB_LIBS="-lz"],[],[$ZLIB_LDFLAGS])
 AC_CHECK_LIB([bz2],[BZ2_bzdopen],[BZIP_LIBS="-lbz2"],[],[$BZIP_LDFLAGS])
 AC_CHECK_LIB([uuid],[uuid_copy], [UUID_LIBS="-luuid"], [], [$LW_LDFLAGS -luuid])
@@ -629,11 +628,16 @@ AC_DEFINE_UNQUOTED(LWRAFT_LIB_DIR, "$LWRAFT_LIB_DIR", [Lib directory])
 
 lwraftsasldir=$lwraftlibdir/sasl2
 AC_SUBST(lwraftsasldir)
-AS_AC_EXPAND(LWRAFT_LOG_DIR, $lwraftlogdir)
-AC_DEFINE_UNQUOTED(LWRAFT_LOG_DIR, "$LWRAFT_LOG_DIR", [Log directory])
 
 lwraftlogdir=/var/log/vmware/lwraft
+AC_ARG_WITH([logdir],
+   [AC_HELP_STRING([--with-logdir], [set the logging directory for lwraft])],
+   [
+        lwraftlogdir="$withval"
+   ])
 AC_SUBST(lwraftlogdir)
+AS_AC_EXPAND(LWRAFT_LOG_DIR, $lwraftlogdir)
+AC_DEFINE_UNQUOTED(LWRAFT_LOG_DIR, "$LWRAFT_LOG_DIR", [Log directory])
 
 lwraft_version=1.0
 AC_ARG_WITH([version],
@@ -684,18 +688,20 @@ AC_CONFIG_FILES([Makefile
                  testing/Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile
+                 testing/test_lib/Makefile
+                 testing/test_runner/Makefile
+                 testing/integration_tests/Makefile
+                 testing/integration_tests/acls/Makefile
+                 testing/unittests/Makefile
+                 testing/unittests/libcommon/Makefile
                  tools/Makefile
                  tools/lwraftpromo/Makefile
                  tools/lwraft-cli/Makefile
+                 tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
                  tools/vdcschema/Makefile
                  tools/test/Makefile
-                 tools/test/circularbuffer/Makefile
-                 tools/test/dequetest/Makefile
-                 tools/test/parseargs/Makefile
-                 tools/test/registry/Makefile
-                 tools/test/string/Makefile
                  tools/test/vmdirclienttest/Makefile
                  thirdparty/Makefile
                  thirdparty/openldap/Makefile

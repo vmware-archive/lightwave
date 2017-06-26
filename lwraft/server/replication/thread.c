@@ -51,6 +51,7 @@ static VOID _VmDirWaitPeerThreadsShutdown();
 static DWORD _VmDirDeleteRaftProxy(char *dn_norm);
 static VOID _VmDirRemovePeerInLock(PCSTR pHostname);
 static VOID _VmDirWaitLogCommitDone();
+static DWORD _VmDirGetRaftQuorumOverride(BOOLEAN bForceKeyRead);
 
 PVMDIR_MUTEX gRaftStateMutex = NULL;
 PVMDIR_MUTEX gRaftRpcReplyMutex = NULL;
@@ -67,6 +68,7 @@ PVDIR_RAFT_LOG gEntries = NULL;
 VDIR_RAFT_LOG gLogEntry = {0};
 
 static char gNewPartner[VMDIR_MAX_LDAP_URI_LEN] = {0};
+static DWORD gQuorumOverride = 0;
 
 VOID VmDirNewPartner(PCSTR *hostname)
 {
@@ -710,6 +712,8 @@ _VmDirReplicationThrFun(
 
     dwError = _VmDirLoadRaftState();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    _VmDirGetRaftQuorumOverride(TRUE);
 
     dwError = _VmDirStartProxies();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1650,6 +1654,7 @@ int VmDirRaftPrepareCommit(unsigned long long *pLogIndex, unsigned int *pLogTerm
 {
     int dwError = 0;
     BOOLEAN bLock = FALSE;
+    int getConsensusRetry = 0;
 
     if (gLogEntry.index == 0)
     {
@@ -1664,9 +1669,9 @@ int VmDirRaftPrepareCommit(unsigned long long *pLogIndex, unsigned int *pLogTerm
     }
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (gRaftState.clusterSize < 2)
+    if (_VmDirGetRaftQuorumOverride(FALSE) || gRaftState.clusterSize < 2)
     {
-        //This is a standalone server
+        //This is a standalone server or QuorumOverride is set
         goto raft_commit_done;
     }
 
@@ -1686,6 +1691,18 @@ get_consensus_begin:
 
         if (_VmDirPeersIdleInLock() < (gRaftState.clusterSize/2))
         {
+            //Fewer than half of peer threads are idle
+             if (getConsensusRetry >= 2)
+             {
+                /* Cannot get half of peer threads to service in twice of election timeout.
+                 * Switch to follower to prevent reusing raft the same logindex/term
+                 */
+                gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
+                dwError = LDAP_OPERATIONS_ERROR;
+                BAIL_ON_VMDIR_ERROR(dwError);
+             }
+             getConsensusRetry++;
+
              //Wait if not enough peer threads are Ready to accept RPC request.
              dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, gVmdirGlobals.dwRaftPingIntervalMS);
         }
@@ -1727,6 +1744,17 @@ get_consensus_begin:
     if (_VmDirGetAppendEntriesConsensusCountInLock() < (gRaftState.clusterSize/2 + 1))
     {
         //Check ConsensusCount again
+        if (getConsensusRetry >= 2)
+        {
+            /* Cannot get consensus in twice of election timeout.
+             * Switch to follower to prevent reusing raft the same logindex/term
+             */
+            gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
+            dwError = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        getConsensusRetry++;
+
         VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "VmDirRaftPrepareCommit: no consensus reached on log entry: logIndex %lu role %d term %d, will retry",
                        gLogEntry.index, gRaftState.role, gRaftState.currentTerm);
         goto get_consensus_begin;
@@ -1808,7 +1836,11 @@ DWORD VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp)
     }
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (gRaftState.clusterSize >= 2 && gRaftState.role != VDIR_RAFT_ROLE_LEADER)
+    if (_VmDirGetRaftQuorumOverride(FALSE))
+    {
+        ;
+    }
+    else if (gRaftState.clusterSize >= 2 && gRaftState.role != VDIR_RAFT_ROLE_LEADER)
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1862,7 +1894,11 @@ DWORD VmDirModifyRaftPreCommit(
     }
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (gRaftState.clusterSize >= 2 && gRaftState.role != VDIR_RAFT_ROLE_LEADER)
+    if (_VmDirGetRaftQuorumOverride(FALSE))
+    {
+        ;
+    }
+    else if (gRaftState.clusterSize >= 2 && gRaftState.role != VDIR_RAFT_ROLE_LEADER)
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1918,7 +1954,11 @@ DWORD VmDirDeleteRaftPreCommit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (gRaftState.clusterSize >= 2 && gRaftState.role != VDIR_RAFT_ROLE_LEADER)
+    if (_VmDirGetRaftQuorumOverride(FALSE))
+    {
+        ;
+    }
+    else if (gRaftState.clusterSize >= 2 && gRaftState.role != VDIR_RAFT_ROLE_LEADER)
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2617,7 +2657,7 @@ VmDirRaftGetLeader(PSTR *ppszLeader)
         gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER &&
         gRaftState.leader.lberbv_len > 0)
     {
-       dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
+       dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
        BAIL_ON_VMDIR_ERROR(dwError);
     }
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
@@ -2828,13 +2868,13 @@ VmDirRaftGetLeaderString(PSTR *ppszLeader)
     if (gRaftState.clusterSize < 2 && gRaftState.hostname.lberbv_len > 0)
     {
         //Standalone server, show self as the leader.
-        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
     } else if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0 )
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
     } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER && gRaftState.hostname.lberbv_len > 0)
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.hostname.lberbv_val);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2868,7 +2908,7 @@ VmDirRaftGetFollowers(PDEQUE pFollowers)
 
     if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.hostname.lberbv_len > 0)
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pFollower, "%s", gRaftState.hostname.lberbv_val);
+        dwError = VmDirAllocateStringPrintf(&pFollower, "%s", gRaftState.hostname.lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = dequePush(pFollowers, pFollower);
@@ -2883,7 +2923,7 @@ VmDirRaftGetFollowers(PDEQUE pFollowers)
                 continue;
             }
             // list active followers only
-            dwError = VmDirAllocateStringAVsnprintf(&pFollower, "%s", pPeerProxy->raftPeerHostname);
+            dwError = VmDirAllocateStringPrintf(&pFollower, "%s", pPeerProxy->raftPeerHostname);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = dequePush(pFollowers, pFollower);
@@ -2920,14 +2960,14 @@ VmDirRaftGetState(PDEQUE pStateQueue)
         goto cleanup;
     }
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "node: %s", gRaftState.hostname.lberbv_val);
+    dwError = VmDirAllocateStringPrintf(&pNode, "node: %s", gRaftState.hostname.lberbv_val);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "role: %s",
+    dwError = VmDirAllocateStringPrintf(&pNode, "role: %s",
                 (gRaftState.clusterSize < 2 || gRaftState.role==VDIR_RAFT_ROLE_LEADER)?"leader":
                 (gRaftState.role==VDIR_RAFT_ROLE_FOLLOWER?"follower":"candidate"));
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2936,21 +2976,21 @@ VmDirRaftGetState(PDEQUE pStateQueue)
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "lastIndex: %llu", gRaftState.lastLogIndex);
+    dwError = VmDirAllocateStringPrintf(&pNode, "lastIndex: %llu", gRaftState.lastLogIndex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "lastAppliedIndex: %llu", gRaftState.lastApplied);
+    dwError = VmDirAllocateStringPrintf(&pNode, "lastAppliedIndex: %llu", gRaftState.lastApplied);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNode = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pNode, "term: %u", gRaftState.currentTerm);
+    dwError = VmDirAllocateStringPrintf(&pNode, "term: %u", gRaftState.currentTerm);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
@@ -2959,7 +2999,7 @@ VmDirRaftGetState(PDEQUE pStateQueue)
 
     if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0)
     {
-       dwError = VmDirAllocateStringAVsnprintf(&pNode, "leader: %s", gRaftState.leader.lberbv_val);
+       dwError = VmDirAllocateStringPrintf(&pNode, "leader: %s", gRaftState.leader.lberbv_val);
        BAIL_ON_VMDIR_ERROR(dwError);
 
        dwError = dequePush(pStateQueue, pNode);
@@ -2973,7 +3013,7 @@ VmDirRaftGetState(PDEQUE pStateQueue)
             {
                 continue;
             }
-            dwError = VmDirAllocateStringAVsnprintf(&pNode, "follower: %s %s", pPeerProxy->raftPeerHostname,
+            dwError = VmDirAllocateStringPrintf(&pNode, "follower: %s %s", pPeerProxy->raftPeerHostname,
                         pPeerProxy->proxy_state==RPC_DISCONN?"disconnected":"active");
             BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -3070,7 +3110,7 @@ _VmdirDeleteLog(unsigned long long logIndex, BOOLEAN bCompactLog)
     ldapOp.pBEIF = VmDirBackendSelect(NULL);
     assert(ldapOp.pBEIF);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pDn, "%s=%llu,%s", ATTR_CN, logIndex, RAFT_LOGS_CONTAINER_DN);
+    dwError = VmDirAllocateStringPrintf(&pDn, "%s=%llu,%s", ATTR_CN, logIndex, RAFT_LOGS_CONTAINER_DN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     ldapOp.reqDn.lberbv.bv_val = pDn;
@@ -3128,4 +3168,37 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmdirDeleteLog: entry %s error %d", pDn,  dwError);
     goto cleanup;
+}
+
+/*
+ * Server restart is needed to enable VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE.
+ * Once the key is set, every transaction commit will read the key until it is reset.
+ * There is no need to restart server when the key is cleared;
+ */
+static
+DWORD
+_VmDirGetRaftQuorumOverride(BOOLEAN bForceKeyRead)
+{
+    DWORD dwQuorumOverride = 0;
+
+    if (!bForceKeyRead && !gQuorumOverride)
+    {
+        goto done;
+    }
+
+    (VOID)VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+        VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE,
+        &dwQuorumOverride, 0);
+
+    gQuorumOverride = dwQuorumOverride;
+
+    if (gQuorumOverride)
+    {
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+          "_VmDirGetRaftQuorumOverride: QuorumOverride is set - no Raft consensus attempted for transaction commit.");
+    }
+
+done:
+    return gQuorumOverride;
 }

@@ -49,7 +49,7 @@ VmDirMLSearch(
     pOperation->pBEIF = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
     assert(pOperation->pBEIF);
 
-    retVal = VmDirInternalSearch( pOperation);
+    retVal = VmDirInternalSearch(pOperation);
     BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:

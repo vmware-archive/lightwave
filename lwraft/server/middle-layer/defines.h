@@ -56,7 +56,7 @@
     {                                                               \
         if (pszErrMsg == NULL)                                      \
         {                                                           \
-            VmDirAllocateStringAVsnprintf(                          \
+            VmDirAllocateStringPrintf(                              \
                             &(pszErrMsg),                           \
                             Format,                                 \
                             ##__VA_ARGS__);                         \

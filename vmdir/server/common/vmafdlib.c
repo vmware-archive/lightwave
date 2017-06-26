@@ -12,27 +12,7 @@
  * under the License.
  */
 
-/*
- * Module Name: Directory ldap head
- *
- * Filename: vesc.c
- *
- * Abstract:
- *
- * VECS integration to get SSL cert
- *
- */
-
 #include "includes.h"
-
-#ifndef _WIN32
-#include <dlfcn.h>
-#endif
-
-// WARNING, WARNING, WARNING. It is awkward to get VECS headers via source tree structure.
-#include "../../../vmafd/include/public/vmafdtypes.h"
-#include "../../../vmafd/include/public/vmafd.h"
-#include "../../../vmafd/include/public/vecsclient.h"
 
 #ifdef _WIN32
 

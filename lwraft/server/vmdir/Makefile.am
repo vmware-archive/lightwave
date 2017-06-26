@@ -9,32 +9,33 @@ lwraftd_SOURCES = \
     index.c \
     init.c \
     instance.c \
-    ipcserver.c \
-    ipclocalapi.c \
     ipcapihandler.c \
-    parseargs.c \
+    ipclocalapi.c \
+    ipcserver.c \
+    krb.c \
     main.c \
+    parseargs.c \
     regconfig.c \
+    rpc.c \
     rpcserv.c \
     rpcsrpserv.c \
     rpcstring.c \
-    rpc.c \
     schema.c \
     service.c \
     shutdown.c \
     signal.c \
     srvthr.c \
     superlogging.c \
+    tenantmgmt.c \
+    tracklastlogin.c \
+    urgentrepl.c \
     utils.c \
-    krb.c \
+    vmevent.c \
     vmdir_sstub.c \
     vmdirftp_sstub.c \
     vmdirdbcp_sstub.c \
     srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
-    vmevent.c \
-    urgentrepl.c \
-    tracklastlogin.c \
     vmdirurgentrepl_sstub.c \
     vmdirraft_sstub.c
 

@@ -1121,7 +1121,7 @@ _VmDirQueryReplStateUSN(
     LDAPMessage *pResult = NULL;
     LDAPMessage *pEntry = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "usnchanged>=%u",
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "usnchanged>=%u",
                                             VMDIR_MAX( currentUSN-MAX_REPL_STATE_USN_SEARCH, 0));
     BAIL_ON_VMDIR_ERROR(dwError);
 

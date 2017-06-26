@@ -808,8 +808,27 @@ WriteAttributes(
                     {
                         if (VmDirStringCompareA( sr->attrs[i].lberbv.bv_val, pAttr->type.lberbv.bv_val, FALSE) == 0)
                         {
-                           bSendAttribute = TRUE;
-                           break;
+                            //
+                            // Access checks for a search request requires the
+                            // caller to have VMDIR_RIGHT_DS_READ_PROP access
+                            // to the entry. This will allow them to "see" the
+                            // entry and any attributes EXCEPT for the entry's
+                            // security descriptor. The SD is goverened by a
+                            // separate permission, VMDIR_ENTRY_READ_ACL. So,
+                            // if the caller requested that attribute we have
+                            // to make sure they have the permission required.
+                            //
+                            if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_ACL_STRING, FALSE) == 0 ||
+                                VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+                            {
+                                bSendAttribute = (VmDirSrvAccessCheck(op, &op->conn->AccessInfo, pEntry, VMDIR_ENTRY_READ_ACL) == 0);
+                            }
+                            else
+                            {
+                                bSendAttribute = TRUE;
+                            }
+
+                            break;
                         }
                     }
                 }
@@ -1211,7 +1230,7 @@ VmDirSendLdapReferralResult(
        }
    }
 
-   dwError = VmDirAllocateStringAVsnprintf(&pszRef, "%s://%s/%s", bIsLdaps?"ldaps":"ldap", pszLeader, pszRefSuffix);
+   dwError = VmDirAllocateStringPrintf(&pszRef, "%s://%s/%s", bIsLdaps?"ldaps":"ldap", pszLeader, pszRefSuffix);
    BAIL_ON_VMDIR_ERROR(dwError);
 
    op->ldapResult.errCode = 0;

@@ -536,28 +536,6 @@ error:
     goto cleanup;
 }
 
-VOID
-VmDirFreeCountedStringArray(
-    PSTR *ppszStrings,
-    size_t iCount
-    )
-{
-    size_t iIndex = 0;
-
-    if (ppszStrings == NULL)
-    {
-        return;
-    }
-
-    for (iIndex = 0; iIndex < iCount; iIndex++)
-    {
-        VmDirFreeStringA(ppszStrings[iIndex]);
-    }
-
-    VmDirFreeMemory(ppszStrings);
-}
-
-
 // _VmDirRestoreInstance():
 // 1. Get new invocation ID.
 //    So I can rejoin the federation with a fresh ID.
@@ -766,7 +744,7 @@ _VmDirRestoreInstance(
     printf("Lotus instance restore succeeded.\n");
 
 cleanup:
-    VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeStrArray(ppszServerInfo);
     VmDirFreeBervalContent(&newUtdVector);
     VmDirFreeOperationContent(&op);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -904,7 +882,7 @@ cleanup:
         VmDirLdapUnbind(&pPartnerLd);
     }
 
-    VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeStrArray(ppszServerInfo);
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     return dwError;
 
@@ -1606,38 +1584,40 @@ error:
  */
 DWORD
 VmDirGetHostsInternal(
-    PSTR **pppszServerInfo,
-    size_t *pdwInfoCount
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
     )
 {
-    DWORD               dwError = 0;
-    DWORD               i = 0;
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszSearchBaseDN = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
-    PSTR                pszSearchBaseDN = NULL;
     PVDIR_ATTRIBUTE     pAttr = NULL;
-    PSTR *ppszServerInfo = NULL;
+    PSTR*   ppszServerInfo = NULL;
 
     dwError = VmDirAllocateStringPrintf(
-                &pszSearchBaseDN,
-                "cn=Sites,cn=Configuration,%s",
-                gVmdirServerGlobals.systemDomainDN.bvnorm_val);
+            &pszSearchBaseDN,
+            "cn=Sites,cn=Configuration,%s",
+            gVmdirServerGlobals.systemDomainDN.bvnorm_val);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSimpleEqualFilterInternalSearch(
-                    pszSearchBaseDN,
-                    LDAP_SCOPE_SUBTREE,
-                    ATTR_OBJECT_CLASS,
-                    OC_DIR_SERVER,
-                    &entryArray);
+            pszSearchBaseDN,
+            LDAP_SCOPE_SUBTREE,
+            ATTR_OBJECT_CLASS,
+            OC_DIR_SERVER,
+            &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (entryArray.iSize == 0 )
+    if (entryArray.iSize == 0)
     {
         dwError = LDAP_NO_SUCH_OBJECT;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(entryArray.iSize*sizeof(PSTR), (PVOID*)&ppszServerInfo);
+    dwError = VmDirAllocateMemory(
+            sizeof(PSTR) * (entryArray.iSize+1),
+            (PVOID*)&ppszServerInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i=0; i<entryArray.iSize; i++)
@@ -1646,6 +1626,7 @@ VmDirGetHostsInternal(
          dwError = VmDirAllocateStringA(pAttr->vals[0].lberbv.bv_val, &ppszServerInfo[i]);
          BAIL_ON_VMDIR_ERROR(dwError);
     }
+
     *pppszServerInfo = ppszServerInfo;
     *pdwInfoCount = entryArray.iSize;
 
@@ -1653,8 +1634,9 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszSearchBaseDN);
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
+
 error:
-    VmDirFreeCountedStringArray(ppszServerInfo, entryArray.iSize);
+    VmDirFreeStrArray(ppszServerInfo);
     goto cleanup;
 }
 

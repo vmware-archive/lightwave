@@ -494,7 +494,12 @@ VmDnsTrimDomainNameSuffix(
 DWORD
 VmDnsGeneratePtrNameFromIp(
     PCSTR pszIPAddress,
-    int*  pnFamily,
+    PSTR* ppszPtrName
+    );
+
+DWORD
+VmDnsGeneratePtrNameFromIpQuery(
+    PCSTR pszIPAddress,
     PSTR* ppszPtrName
     );
 

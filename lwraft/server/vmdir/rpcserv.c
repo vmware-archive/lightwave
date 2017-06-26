@@ -149,62 +149,6 @@ error:
 }
 
 DWORD
-VmDirSrvInitializeTenant(
-    PWSTR    pwszDomainName,
-    PWSTR    pwszUsername,
-    PWSTR    pwszPassword
-    )
-{
-    DWORD dwError = 0;
-    PSTR  pszDomainName = NULL;
-    PSTR  pszUsername = NULL;
-    PSTR  pszPassword = NULL;
-
-    if (IsNullOrEmptyString(pwszDomainName) ||
-        IsNullOrEmptyString(pwszUsername) ||
-        IsNullOrEmptyString(pwszPassword))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAFromW(pwszDomainName, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszUsername, &pszUsername);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszPassword, &pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvSetupTenantInstance(
-                    pszDomainName,
-                    pszUsername,
-                    pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeTenant (%u)(%s)(%s)",
-                                       dwError,
-                                       VDIR_SAFE_STRING(pszDomainName),
-                                       VDIR_SAFE_STRING(pszUsername));
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszUsername);
-    VMDIR_SAFE_FREE_MEMORY(pszPassword);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeTenant failed (%u)(%s)(%s)",
-                                      dwError,
-                                      VDIR_SAFE_STRING(pszDomainName),
-                                      VDIR_SAFE_STRING(pszUsername));
-    goto cleanup;
-}
-
-DWORD
 VmDirSrvForceResetPassword(
     PWSTR                   pwszTargetUPN,  // [in] UPN
     VMDIR_DATA_CONTAINER*   pContainer      // [out]

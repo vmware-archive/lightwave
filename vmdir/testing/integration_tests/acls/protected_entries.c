@@ -27,7 +27,6 @@ TestEntriesProtectedByEid(
         "cn=attributeMetaData,cn=schemacontext",
         "cn=config",
         "cn=organization,cn=config",
-        "cn=Deleted Objects,%s",
         "cn=Administrator,cn=Users,%s"
     };
 
@@ -143,7 +142,8 @@ TestBuiltinContainerDeletion(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestDeleteUser(pState, "builtin", pszUserName);
-    TestAssertEquals(dwError, 0);
+    TestAssertEquals(dwError, LDAP_INSUFFICIENT_ACCESS);
+    dwError = 0;
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszUserName);

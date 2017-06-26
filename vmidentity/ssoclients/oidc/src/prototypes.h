@@ -66,7 +66,7 @@ OidcErrorResponseParse(
     PCSTRING pszJsonResponse);
 
 SSOERROR
-OidcErrorResponseGetSSOErrorCode(
+OidcErrorResponseGetErrorCode(
     PCOIDC_ERROR_RESPONSE p);
 
 #endif

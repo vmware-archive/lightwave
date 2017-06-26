@@ -206,7 +206,7 @@ DWORD _VmDirFindUserDN(
     PSTR pszUserDN = NULL;
     PSTR pszDN = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                 &pszSearchFilter,
                 "(%s=%s)",
                 ATTR_KRB_UPN,

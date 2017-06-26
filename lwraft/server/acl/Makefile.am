@@ -2,13 +2,15 @@
 noinst_LTLIBRARIES = libvmacl.la
 
 libvmacl_la_SOURCES = \
+    acl.c \
     globals.c \
     libmain.c \
     objectsid.c \
-    sidstate.c \
-    acl.c \
     ridsyncthr.c \
-    security.c
+    sdcalc.c \
+    security.c \
+    sidstate.c \
+    token.c
 
 libvmacl_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

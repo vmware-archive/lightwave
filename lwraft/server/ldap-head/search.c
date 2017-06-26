@@ -184,6 +184,15 @@ VmDirPerformSearch(
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
    BOOLEAN             bRefSent = FALSE;
    PSTR                pszRefStr = NULL;
+   BOOLEAN             bSetAccessInfo = FALSE;
+
+   if (pOperation->conn->AccessInfo.pszBindedObjectSid == NULL)
+   {
+       retVal = VmDirMLSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       bSetAccessInfo = TRUE;
+   }
 
    // Parse base object, scope, deref alias, sizeLimit, timeLimit and typesOnly search parameters.
    if ( ber_scanf( pOperation->ber, "{miiiib", &(pOperation->reqDn.lberbv), &sr->scope, &sr->derefAlias, &sr->sizeLimit,
@@ -271,7 +280,7 @@ VmDirPerformSearch(
        VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
    {
        //Utilize ManageDsaIT Control (RFC 3297) to send local entry instead of a referral
-       retVal = VmDirAllocateStringAVsnprintf(&pszRefStr, "%s??%s",
+       retVal = VmDirAllocateStringPrintf(&pszRefStr, "%s??%s",
                    pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"",
                    sr->scope==0?"base":sr->scope==1?"one":"sub");
        BAIL_ON_VMDIR_ERROR(retVal);
@@ -294,6 +303,10 @@ cleanup:
     if (retVal != LDAP_NOTICE_OF_DISCONNECT && bRefSent == FALSE)
     {
         VmDirSendLdapResult( pOperation );
+    }
+    if (bSetAccessInfo)
+    {
+        VmDirFreeAccessInfo(&pOperation->conn->AccessInfo);
     }
     VMDIR_SAFE_FREE_MEMORY(pLberBerv);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);

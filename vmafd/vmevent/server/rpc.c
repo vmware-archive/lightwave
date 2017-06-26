@@ -209,7 +209,10 @@ EventLogEpRegister(
       rpc_binding_vector_p_t pServerBinding)
 {
     DWORD dwError = 0;
-
+#if 1
+    /* Do not register with dcerpc; all services use fixed endpoints */
+    return dwError;
+#else
     DCETHREAD_TRY
     {
        rpc_ep_register(
@@ -233,6 +236,7 @@ EventLogEpRegister(
     DCETHREAD_ENDTRY;
 
     return dwError;
+#endif
 }
 
 static

@@ -74,7 +74,7 @@ StartService()
     if [ $rc -ne 0 ]; then
         echo "Failed to start STS service. Error code : $rc"
     else 
-	echo "STS(Secure Tokebn service) started successfully!"
+	echo "STS(Secure Token service) started successfully!"
     fi
       
     return $rc

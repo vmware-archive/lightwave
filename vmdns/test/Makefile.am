@@ -10,7 +10,8 @@ dnstest_SOURCES =       \
     LruListTest.c       \
     test-nameentry.c    \
     test-recordlist.c   \
-    TestUtils.c
+    TestUtils.c         \
+    TestPtr.c
 
 dnstest_CPPFLAGS = \
     -I$(top_srcdir)/include \

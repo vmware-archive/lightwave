@@ -12,8 +12,6 @@
  * under the License.
  */
 
-
-
 #include "includes.h"
 
 DWORD

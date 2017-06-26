@@ -650,6 +650,16 @@ typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
     struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT   *next;
 } VMDIR_STRONG_WRITE_PARTNER_CONTENT, *PVMDIR_STRONG_WRITE_PARTNER_CONTENT;
 
+//
+// Wrapper for a relative security descriptor and some of its related info.
+//
+typedef struct _VMDIR_SECURITY_DESCRIPTOR
+{
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc;
+    ULONG ulSecDesc;
+    SECURITY_INFORMATION SecInfo;
+} VMDIR_SECURITY_DESCRIPTOR, *PVMDIR_SECURITY_DESCRIPTOR;
+
 DWORD
 VmDirInitBackend();
 
@@ -810,6 +820,14 @@ VmDirEntryIsObjectclass(
     PCSTR           pszOCName
     );
 
+DWORD
+VmDirEntryIsAttrAllowed(
+    PVDIR_ENTRY pEntry,
+    PSTR        pszAttrName,
+    PBOOLEAN    pbMust,
+    PBOOLEAN    pbMay
+    );
+
 /*
  * free a heap allocated bervalue, bervalue.bv_val and bervalue.bvnorm_val
  */
@@ -836,6 +854,7 @@ VmDirAttrListToNewEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     PSTR                pszDN,
     PSTR*               ppszAttrList,
+    BOOLEAN             bAllowAnonymousRead,
     PVDIR_ENTRY*        ppEntry
     );
 
@@ -849,6 +868,11 @@ DWORD
 VmDirEntryReplaceAttribute(
     PVDIR_ENTRY     pEntry,
     PVDIR_ATTRIBUTE pNewAttr
+    );
+
+DWORD
+VmDirDeleteEntry(
+    PVDIR_ENTRY pEntry
     );
 
 // util.c
@@ -914,6 +938,7 @@ VmDirSrvCreateContainerWithEID(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
     PCSTR            pszContainerName,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc, // OPTIONAL
     ENTRYID          eID);
 
 DWORD
@@ -1178,7 +1203,23 @@ VmDirCreateAcl(
     );
 
 DWORD
+VmDirGetAce(
+    PACL pAcl,
+    ULONG dwIndex,
+    PACE_HEADER *ppAce
+    );
+
+DWORD
 VmDirAddAccessAllowedAceEx(
+    PACL Acl,
+    ULONG AceRevision,
+    ULONG AceFlags,
+    ACCESS_MASK AccessMask,
+    PSID Sid
+    );
+
+DWORD
+VmDirAddAccessDeniedAceEx(
     PACL Acl,
     ULONG AceRevision,
     ULONG AceFlags,
@@ -1289,8 +1330,7 @@ VmDirSetSecurityDescriptorInfo(
 
 DWORD
 VmDirCreateSecurityDescriptorAbsolute(
-    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
-    ULONG Revision
+    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecurityDescriptor
     );
 
 VOID
@@ -1335,6 +1375,13 @@ VmDirAllocateSddlCStringFromSecurityDescriptor(
     SECURITY_INFORMATION securityInformation,
     PSTR* ppStringSecurityDescriptor
 );
+
+DWORD
+VmDirSetSecurityDescriptorControl(
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecurityDescriptor,
+    SECURITY_DESCRIPTOR_CONTROL BitsToChange,
+    SECURITY_DESCRIPTOR_CONTROL BitsToSet
+    );
 
 // srp.c
 DWORD

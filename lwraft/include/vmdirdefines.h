@@ -310,7 +310,7 @@ extern "C" {
     {                                                                       \
         if (pszErrMsg == NULL)                                              \
         {                                                                   \
-            VmDirAllocateStringAVsnprintf(                                  \
+            VmDirAllocateStringPrintf(                                      \
                             &(pszErrMsg),                                   \
                             Format,                                         \
                             ##__VA_ARGS__);                                 \
@@ -362,7 +362,7 @@ extern "C" {
         {                                                           \
             if (ldapErrMsg == NULL)                                 \
             {                                                       \
-                VmDirAllocateStringAVsnprintf(                      \
+                VmDirAllocateStringPrintf(                          \
                                 &(ldapErrMsg),                      \
                                 Format,                             \
                                 ##__VA_ARGS__);                     \
@@ -419,7 +419,7 @@ extern "C" {
             else                                                \
             {                                                   \
                 PSTR    pszTmp = pszOrgErrMsg;                  \
-                VmDirAllocateStringAVsnprintf(                  \
+                VmDirAllocateStringPrintf(                      \
                                 &(pszOrgErrMsg),                \
                                 "%s %s",                        \
                                 pszTmp, pszNewErrMsg);          \

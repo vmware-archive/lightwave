@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     dwError = VmDirQueryParseArgs(argc, argv, &pArgs);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                     &pszLdapURL,
                     "ldap://%s",
                     pArgs->pszHostname);

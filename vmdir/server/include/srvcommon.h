@@ -1495,7 +1495,7 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pSecretResult
     );
 
-//vmafdlib.c
+// vmafdlib.c
 DWORD
 VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle

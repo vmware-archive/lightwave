@@ -18,34 +18,34 @@ static
 DWORD
 VmDirBuildDefaultDaclForEntry(
     ACCESS_MASK amAccess,
-    PSID    pOwnerSid,
-    PCSTR   pszAdminsGroupSid,
-    PCSTR   pszDomainAdminsGroupSid,
-    PCSTR   pszDomainClientsGroupSid,
-    PCSTR   pszUsersGroupSid,
-    BOOLEAN bAnonymousRead,
-    BOOLEAN bServicesDacl,
-    BOOLEAN bTenantDomain,
-    PACL *  ppDacl
+    PSID        pOwnerSid,
+    PCSTR       pszAdminsGroupSid,
+    PCSTR       pszDomainAdminsGroupSid,
+    PCSTR       pszDomainClientsGroupSid,
+    PCSTR       pszUsersGroupSid,
+    BOOLEAN     bAnonymousRead,
+    BOOLEAN     bServicesDacl,
+    BOOLEAN     bTenantDomain,
+    PACL*       ppDacl
     );
 
 static
 DWORD
 VmDirSrvAccessCheckSelf(
-    PCSTR        pszNormBindedDn,
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
-    ACCESS_MASK accessDesired,
-    ACCESS_MASK *psamGranted
+    PCSTR                           pszNormBindedDn,
+    PVDIR_ENTRY                     pEntry,
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs,
+    ACCESS_MASK                     accessDesired,
+    ACCESS_MASK*                    psamGranted
     );
 
 static
 DWORD
 VmDirSrvAccessCheckEntry(
-    PACCESS_TOKEN   pToken,
-    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
-    ACCESS_MASK     accessDesired,
-    ACCESS_MASK *   psamGranted
+    PACCESS_TOKEN                   pToken,
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs,
+    ACCESS_MASK                     accessDesired,
+    ACCESS_MASK *                   psamGranted
     );
 
 static
@@ -111,22 +111,23 @@ _VmDirLogFailedAccessCheck(
     PSTR pszAclString = NULL;
     DWORD dwError = 0;
 
-   dwError = LwNtStatusToWin32Error(RtlAllocateSddlCStringFromSecurityDescriptor(
-                                        &pszAclString,
-                                        pEntry->pAclCtx->pSecurityDescriptor,
-                                        SDDL_REVISION_1,
-                                        OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION));
+    dwError = LwNtStatusToWin32Error(
+            RtlAllocateSddlCStringFromSecurityDescriptor(
+                    &pszAclString,
+                    pEntry->pAclCtx->pSecurityDescriptor,
+                    SDDL_REVISION_1,
+                    OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_WARNING(
-        VMDIR_LOG_MASK_ALL,
-        "Caller (%s/%s) failed to get 0x%x permission to %s. Legacy mode is %s. Object's SD: %s",
-        pAccessInfo->pszNormBindedDn,
-        pAccessInfo->pszBindedObjectSid,
-        accessDesired,
-        BERVAL_NORM_VAL(pEntry->dn),
-        bLegacySecurityDescriptorsNeeded ? "on" : "off",
-        pszAclString);
+            VMDIR_LOG_MASK_ALL,
+            "Caller (%s/%s) failed to get 0x%x permission to %s. Legacy mode is %s. Object's SD: %s",
+            pAccessInfo->pszNormBindedDn,
+            pAccessInfo->pszBindedObjectSid,
+            accessDesired,
+            BERVAL_NORM_VAL(pEntry->dn),
+            bLegacySecurityDescriptorsNeeded ? "on" : "off",
+            pszAclString);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszAclString);
@@ -143,11 +144,10 @@ VmDirSrvAccessCheck(
     ACCESS_MASK         accessDesired
     )
 {
-    DWORD       dwError = 0;
+    DWORD   dwError = 0;
+    BOOLEAN bIsMember = FALSE;
     ACCESS_MASK samGranted = 0;
     PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
-    PVDIR_ENTRY pTargetEntry = pEntry;
-    BOOLEAN bIsMember = FALSE;
 
     assert(pOperation);
     assert(accessDesired != 0);
@@ -184,7 +184,7 @@ VmDirSrvAccessCheck(
 
     if (VmDirIsLegacySecurityDescriptor())
     {
-        dwError = VmDirLegacyAccessCheck(pOperation, pAccessInfo, pTargetEntry, accessDesired);
+        dwError = VmDirLegacyAccessCheck(pOperation, pAccessInfo, pEntry, accessDesired);
         BAIL_ON_VMDIR_ERROR(dwError);
         goto cleanup; // Access Allowed
     }
@@ -229,7 +229,6 @@ VmDirSrvAccessCheck(
 
 cleanup:
     VmDirFreeAbsoluteSecurityDescriptor(&pSecDescAbs);
-
     return dwError;
 
 error:
@@ -251,17 +250,17 @@ error:
 static
 DWORD
 VmDirSrvAccessCheckSelf(
-    PCSTR           pszNormBindedDn,
-    PVDIR_ENTRY     pEntry,
-    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
-    ACCESS_MASK     accessDesired,
-    ACCESS_MASK *   psamGranted
+    PCSTR                           pszNormBindedDn,
+    PVDIR_ENTRY                     pEntry,
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs,
+    ACCESS_MASK                     accessDesired,
+    ACCESS_MASK*                    psamGranted
     )
 {
     DWORD           dwError = ERROR_SUCCESS;
     PACCESS_TOKEN   pWellKnownToken = NULL;
 
-    if (pszNormBindedDn == NULL)
+    if (IsNullOrEmptyString(pszNormBindedDn))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
     }
@@ -303,10 +302,10 @@ error:
 static
 DWORD
 VmDirSrvAccessCheckEntry(
-    PACCESS_TOKEN   pToken,
-    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
-    ACCESS_MASK     accessDesired,
-    ACCESS_MASK *   psamGranted
+    PACCESS_TOKEN                   pToken,
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs,
+    ACCESS_MASK                     accessDesired,
+    ACCESS_MASK *                   psamGranted
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -331,18 +330,16 @@ VmDirSrvAccessCheckEntry(
 
 cleanup:
     *psamGranted = AccessMask;
-
     return dwError;
 
 error:
     AccessMask = 0;
-
     goto cleanup;
 }
 
 VOID
 VmDirFreeAbsoluteSecurityDescriptor(
-    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecDesc
+    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppSecDesc
     )
 {
     PSID                            pOwner = NULL;
@@ -375,17 +372,17 @@ VmDirFreeAbsoluteSecurityDescriptor(
 
 DWORD
 VmDirSrvCreateSecurityDescriptor(
-    ACCESS_MASK amAccess,
-    PCSTR pszDomainAdminDn,
-    PCSTR pszAdminsGroupSid,
-    PCSTR pszDomainAdminsGroupSid,
-    PCSTR pszDomainClientsGroupSid,
-    PCSTR pszUsersGroupSid,
-    BOOLEAN bProtectedDacl,
-    BOOLEAN bAnonymousRead,
-    BOOLEAN bServicesDacl,
-    BOOLEAN bTenantDomain,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    ACCESS_MASK                 amAccess,
+    PCSTR                       pszDomainAdminDn,
+    PCSTR                       pszAdminsGroupSid,
+    PCSTR                       pszDomainAdminsGroupSid,
+    PCSTR                       pszDomainClientsGroupSid,
+    PCSTR                       pszUsersGroupSid,
+    BOOLEAN                     bProtectedDacl,
+    BOOLEAN                     bAnonymousRead,
+    BOOLEAN                     bServicesDacl,
+    BOOLEAN                     bTenantDomain,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     )
 {
     DWORD                           dwError = ERROR_SUCCESS;
@@ -476,14 +473,11 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pDacl);
     VMDIR_SAFE_FREE_MEMORY(pOwnerSid);
     VMDIR_SAFE_FREE_MEMORY(pGroupSid);
-
     VmDirFreeAbsoluteSecurityDescriptor(&pSecDescAbs);
-
     return dwError;
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pSecDescRel);
-
     goto cleanup;
 }
 
@@ -546,7 +540,7 @@ error:
 
 VOID
 VmDirAclCtxContentFree(
-    PVDIR_ACL_CTX pAclCtx
+    PVDIR_ACL_CTX   pAclCtx
     )
 {
     if (pAclCtx)
@@ -559,15 +553,15 @@ static
 DWORD
 VmDirBuildDefaultDaclForEntry(
     ACCESS_MASK amAccess,
-    PSID    pOwnerSid, // system Administrator SID, at least in our context
-    PCSTR   pszAdminsGroupSid,
-    PCSTR   pszDomainAdminsGroupSid,
-    PCSTR   pszDomainClientsGroupSid,
-    PCSTR   pszUsersGroupSid,
-    BOOLEAN bAnonymousRead,
-    BOOLEAN bServicesDacl,
-    BOOLEAN bTenantDomain,
-    PACL *  ppDacl
+    PSID        pOwnerSid, // system Administrator SID, at least in our context
+    PCSTR       pszAdminsGroupSid,
+    PCSTR       pszDomainAdminsGroupSid,
+    PCSTR       pszDomainClientsGroupSid,
+    PCSTR       pszUsersGroupSid,
+    BOOLEAN     bAnonymousRead,
+    BOOLEAN     bServicesDacl,
+    BOOLEAN     bTenantDomain,
+    PACL *      ppDacl
     )
 {
     DWORD   dwError = ERROR_SUCCESS;
@@ -779,6 +773,7 @@ _VmDirCopyAces(
 
 cleanup:
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -930,6 +925,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pSecDescAbs);
     VmDirFreeAbsoluteSecurityDescriptor(&pNewSecDescAbs);
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -1017,7 +1013,7 @@ error:
  * (i.e.: resulted by doing a successful bind in an operation) */
 BOOLEAN
 VmDirIsFailedAccessInfo(
-    PVDIR_ACCESS_INFO pAccessInfo
+    PVDIR_ACCESS_INFO   pAccessInfo
     )
 {
 

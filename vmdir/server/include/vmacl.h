@@ -199,42 +199,42 @@ VmDirRegisterACLMode(
 
 DWORD
 VmDirSrvCreateAccessTokenWithEntry(
-    PVDIR_ENTRY pEntry,
-    PACCESS_TOKEN* ppToken,
-    PSTR* ppszObjectSid /* Optional */
+    PVDIR_ENTRY     pEntry,
+    PACCESS_TOKEN*  ppToken,
+    PSTR*           ppszObjectSid /* Optional */
     );
 
 DWORD
 VmDirSrvAccessCheck(
-    PVDIR_OPERATION pOperation,
-    PVDIR_ACCESS_INFO pAccessInfo,
-    PVDIR_ENTRY pEntry,
-    ACCESS_MASK AccessDesired
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PVDIR_ENTRY         pEntry,
+    ACCESS_MASK         accessDesired
     );
 
 VOID
 VmDirAclCtxContentFree(
-    PVDIR_ACL_CTX pAclCtx
+    PVDIR_ACL_CTX   pAclCtx
     );
 
 DWORD
 VmDirSrvCreateSecurityDescriptor(
-    ACCESS_MASK amAccess,
-    PCSTR pszSystemAdministratorDn,
-    PCSTR pszAdminsGroupSid,
-    PCSTR pszDomainAdminsGroupSid,
-    PCSTR pszDomainClientsGroupSid,
-    PCSTR pszUsersGroupSid,
-    BOOLEAN bProtectedDacl,
-    BOOLEAN bAnonymousRead,
-    BOOLEAN bServicesDacl,
-    BOOLEAN bTenantDomain,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    ACCESS_MASK                 amAccess,
+    PCSTR                       pszDomainAdminDn,
+    PCSTR                       pszAdminsGroupSid,
+    PCSTR                       pszDomainAdminsGroupSid,
+    PCSTR                       pszDomainClientsGroupSid,
+    PCSTR                       pszUsersGroupSid,
+    BOOLEAN                     bProtectedDacl,
+    BOOLEAN                     bAnonymousRead,
+    BOOLEAN                     bServicesDacl,
+    BOOLEAN                     bTenantDomain,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 VOID
 VmDirFreeAbsoluteSecurityDescriptor(
-    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecDesc
+    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppSecDesc
     );
 
 DWORD
@@ -247,7 +247,7 @@ VmDirSrvAccessCheckIsAdminRole(
 
 BOOLEAN
 VmDirIsFailedAccessInfo(
-    PVDIR_ACCESS_INFO pAccessInfo
+    PVDIR_ACCESS_INFO   pAccessInfo
     );
 
 DWORD
@@ -284,8 +284,8 @@ VmDirGetSecurityDescriptorForEntry(
 
 DWORD
 VmDirSetSecurityDescriptorForDn(
-    PCSTR pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 DWORD
@@ -297,8 +297,8 @@ VmDirEntryCacheSecurityDescriptor(
 
 DWORD
 VmDirSetRecursiveSecurityDescriptorForDn(
-    PCSTR pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 DWORD
@@ -312,16 +312,16 @@ VmDirSetSecurityDescriptorForEntry(
 // sdcalc.c
 DWORD
 VmDirComputeObjectSecurityDescriptor(
-    PVDIR_ACCESS_INFO pAccessInfo,
-    PVDIR_ENTRY pEntry,
-    PVDIR_ENTRY pParentEntry
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PVDIR_ENTRY         pEntry,
+    PVDIR_ENTRY         pParentEntry
     );
 
 // token.c
 DWORD
 VmDirSrvCreateAccessTokenForWellKnowObject(
-    PACCESS_TOKEN *ppToken,
-    PCSTR pszWellknownObjectSid
+    PACCESS_TOKEN*  ppToken,
+    PCSTR           pszWellknownObjectSid
     );
 
 VOID

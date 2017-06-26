@@ -49,18 +49,7 @@ VmDirMLSearch(
     pOperation->pBEIF = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
     assert(pOperation->pBEIF);
 
-    if (pOperation->conn->bIsAnonymousBind &&
-            !(VmDirIsSearchForDseRootEntry(pOperation) ||
-              VmDirIsSearchForSchemaEntry(pOperation)))
-    {
-        retVal = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Not bind/authenticate yet" );
-    }
-
-    // AnonymousBind is handled when retrieving search candidate result
-    // DSE_ROOT_DN and PERSISTED_DSE_ROOT_DN, SCHEMA_NAMING_CONTEXT_DN
-    // SUB_SCHEMA_SUB_ENTRY_DN should allow anonymous bind READ
-    retVal = VmDirInternalSearch( pOperation);
+    retVal = VmDirInternalSearch(pOperation);
     BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
@@ -80,12 +69,12 @@ ProcessPreValidatedEntries(
     ENTRYID *pValidatedEntries
     )
 {
-    DWORD i = 0;
-    DWORD dwError = 0;
-    DWORD dwSentEntries = 0;
+    DWORD   i = 0;
+    DWORD   dwError = 0;
+    DWORD   dwSentEntries = 0;
     BOOLEAN bInternalSearch = FALSE;
     BOOLEAN bStoreRsltInMem = FALSE;
-    VDIR_ENTRY srEntry = {0};
+    VDIR_ENTRY  srEntry = {0};
     PVDIR_ENTRY pSrEntry = NULL;
 
     if (dwEntryCount == 0)
@@ -200,7 +189,7 @@ VmDirInternalSearch(
 
     if (VmDirHandleSpecialSearch( pOperation, pResult )) // TODO, add &pszLocalErrMsg
     {
-        retVal = pResult->errCode;
+        retVal = pResult->errCode ? pResult->errCode : pResult->vmdirErrCode;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Special search failed - (%u)", retVal);
 
         goto cleanup;  // done special search
@@ -273,7 +262,6 @@ txnretry:
 
     retVal = AppendDNFilter( pOperation );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Appending DN filter failed.");
-
 
     if (gVmdirGlobals.bPagedSearchReadAhead)
     {
@@ -585,7 +573,7 @@ VmDirIsDirectMemberOf(
     VDIR_ENTRY_ARRAY    entryResultArray = {0};
     PSTR                pszGroupDN = NULL;
 
-    if ( !pszBindDN || !pbIsMemberOf || !pAccessRoleBitmap )
+    if (!pbIsMemberOf || !pAccessRoleBitmap)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -599,7 +587,8 @@ VmDirIsDirectMemberOf(
              goto cleanup;
          }
          pszGroupDN = gVmdirServerGlobals.bvDCGroupDN.lberbv_val;
-    } else if (getAccessInfo == VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO)
+    }
+    else if (getAccessInfo == VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO)
     {
         if (*pAccessRoleBitmap & VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO)
         {
@@ -607,13 +596,14 @@ VmDirIsDirectMemberOf(
             goto cleanup;
         }
         pszGroupDN = gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val;
-    } else
+    }
+    else
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pszGroupDN == NULL)
+    if (pszGroupDN == NULL || pszBindDN == NULL)
     {
         *pbIsMemberOf = FALSE;
         goto cleanup;
@@ -641,7 +631,8 @@ VmDirIsDirectMemberOf(
         {
              *pAccessRoleBitmap |= VDIR_ACCESS_IS_DCGROUP_MEMBER;
         }
-    } else
+    }
+    else
     {
         *pAccessRoleBitmap |= VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO;
         if (bIsMemberOf)
@@ -1132,7 +1123,7 @@ ProcessCandidateList(
                 continue;
             }
 
-            if (CheckIfEntryPassesFilter( pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
+            if (CheckIfEntryPassesFilter(pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
             {
                 retVal = VmDirBuildComputedAttribute( pOperation, pSrEntry );
                 BAIL_ON_VMDIR_ERROR( retVal );

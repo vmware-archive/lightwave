@@ -1118,7 +1118,7 @@ CheckIfAnAttrValAlreadyExists(
     int retVal = LDAP_SUCCESS;
     unsigned int i = 0;
     unsigned int j = 0;
-    PSTR         pszLocalErrorMsg = NULL;
+    PSTR    pszLocalErrorMsg = NULL;
 
     for (i=0; i < eAttr->numVals; i++)
     {
@@ -1174,7 +1174,6 @@ error:
  * Assumption: This function assumes/asserts that the modAttr does exist in the entry.
  *
  */
-
 static
 int
 DelAttrValsFromEntryStruct(
@@ -1515,8 +1514,7 @@ GenerateNewParent(
     retVal = VmDirGetParentDN(&pDnAttr->vals[0], &NewParent);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val,
-FALSE) != 0)
+    if (VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val, FALSE) != 0)
     {
         retVal = VmDirBervalContentDup(&NewParent, &pEntry->newpdn);
         BAIL_ON_VMDIR_ERROR(retVal);
@@ -1525,6 +1523,7 @@ FALSE) != 0)
 cleanup:
     VmDirFreeBervalContent(&NewParent);
     return retVal;
+
 error:
     goto cleanup;
 }

@@ -124,14 +124,8 @@ VmDirAllocateBerValueAVsnprintf(
 
 DWORD
 VmDirGetHostsInternal(
-    PSTR **pppszServerInfo,
-    size_t *pdwInfoCount
-    );
-
-VOID
-VmDirFreeCountedStringArray(
-    PSTR *ppszStrings,
-    size_t iCount
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
     );
 
 // instance.c
@@ -145,9 +139,9 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousRead, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescDeletedObjectsOut // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut,         // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut,    // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescNoDeleteOut          // OPTIONAL
     );
 
 DWORD

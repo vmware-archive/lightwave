@@ -52,16 +52,20 @@ VmDirGetObjectSidFromDn(
     );
 
 DWORD
-VmDirGetObjectSidFromEntry(
-    PVDIR_ENTRY pEntry,
-    PSTR* ppszObjectSid, /* Optional */
-    PSID* ppSid /* Optional */
-    );
-
-DWORD
 VmDirSrvCreateAccessTokenWithDn(
     PCSTR pszObjectDn,
     PACCESS_TOKEN* ppToken
+    );
+
+DWORD
+VmDirCreateAccessToken(
+    PACCESS_TOKEN*          AccessToken,
+    PTOKEN_USER             User,
+    PTOKEN_GROUPS           Groups,
+    PTOKEN_PRIVILEGES       Privileges,
+    PTOKEN_OWNER            Owner,
+    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
+    PTOKEN_DEFAULT_DACL     DefaultDacl
     );
 
 // security.c

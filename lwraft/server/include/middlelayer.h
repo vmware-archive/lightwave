@@ -48,6 +48,12 @@ VmDirMLAdd(
    PVDIR_OPERATION pOperation
    );
 
+int
+VmDirEntryAttrValueNormalize(
+    PVDIR_ENTRY    pEntry,
+    BOOLEAN   bIndexAttributeOnly
+    );
+
 // delete.c
 
 int
@@ -114,6 +120,11 @@ VmDirMLBind(
 int
 VmDirInternalBindEntry(
     PVDIR_OPERATION  pOperation
+    );
+
+DWORD
+VmDirMLSetupAnonymousAccessInfo(
+    PVDIR_ACCESS_INFO   pAccessInfo
     );
 
 // dn.c

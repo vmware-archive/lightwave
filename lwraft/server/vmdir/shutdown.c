@@ -222,8 +222,6 @@ VmDirCleanupGlobals(
     // Free vmdir plugin global 'gVmdirPluginGlobals'
     VmDirPluginShutdown();
 
-    VmDirFreeAbsoluteSecurityDescriptor(&gVmdirGlobals.gpVmDirSrvSD);
-
     VMDIR_SAFE_FREE_MUTEX( gVmdirKrbGlobals.pmutex );
     VMDIR_SAFE_FREE_CONDITION(gVmdirKrbGlobals.pcond);
 

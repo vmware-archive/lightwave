@@ -4,6 +4,7 @@
 ### Autotools ###
 # http://www.gnu.org/software/automake
 
+.autotools
 Makefile
 Makefile.in
 ar-lib
@@ -59,7 +60,6 @@ texinfo.tex
 # Linker output
 *.ilk
 *.map
-*.exp
 
 # Precompiled Headers
 *.gch

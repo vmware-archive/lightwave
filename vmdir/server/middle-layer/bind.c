@@ -117,8 +117,8 @@ cleanup:
             {
                 // install sasl encode/decode sockbuf i/o
                 pOperation->ldapResult.errCode = VmDirSASLSockbufInstall(
-                                                    pOperation->conn->sb,
-                                                    pOperation->conn->pSaslInfo);
+                        pOperation->conn->sb,
+                        pOperation->conn->pSaslInfo);
                 // do not bail in cleanup section.  we return ldapResult.errCode directly.
             }
 
@@ -187,7 +187,7 @@ txnretry:
     if (deadLockRetries > MAX_DEADLOCK_RETRIES)
     {
         retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
     else
     {
@@ -234,10 +234,10 @@ txnretry:
     // transaction retry loop end.
     // ************************************************************************************
 
-    retVal = _VmDirBindSetupAccessInfo( &pOperation->conn->AccessInfo, pEntry );
-    BAIL_ON_VMDIR_ERROR(retVal );
+    retVal = _VmDirBindSetupAccessInfo(&pOperation->conn->AccessInfo, pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = _VmDirBindHandleFailedPassword( pOperation, pEntry );
+    retVal = _VmDirBindHandleFailedPassword(pOperation, pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // deny access if login is blocked.

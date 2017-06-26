@@ -98,13 +98,13 @@ VdcadminTestSASLClient(
 
     printf("\n");
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszLDAPURI,
+    dwError = VmDirAllocateStringPrintf( &pszLDAPURI,
                                              "ldap://%s:%s",
                                              pszServerHost[0] != '\0' ? pszServerHost : "localhost",
                                              pszServerPort);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszLDAPSURI,
+    dwError = VmDirAllocateStringPrintf( &pszLDAPSURI,
                                              "ldaps://%s:%s",
                                              pszServerHost[0] != '\0' ? pszServerHost : "localhost",
                                              pszServerSSLPort);

@@ -122,7 +122,7 @@ VmDirTestCreateUserWithLimitedAccount(
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
     PCSTR valsPNE[] = {"TRUE", NULL};
     PCSTR valsPN[] = {NULL, NULL};
-    PCSTR valsPass[] = {"Admin!23", NULL};
+    PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
     PSTR pszDN = NULL;
     LDAPMod mod[]={
@@ -190,7 +190,7 @@ VmDirTestCreateUser(
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
     PCSTR valsPNE[] = {"TRUE", NULL};
     PCSTR valsPN[] = {NULL, NULL};
-    PCSTR valsPass[] = {"Admin!23", NULL};
+    PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
     PSTR pszDN = NULL;
     LDAPMod mod[]={
@@ -258,7 +258,7 @@ VmDirTestCreateUserWithSecurityDescriptor(
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
     PCSTR valsPNE[] = {"TRUE", NULL};
     PCSTR valsPN[] = {NULL, NULL};
-    PCSTR valsPass[] = {"Admin!23", NULL};
+    PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
     PSTR pszDN = NULL;
     LDAPMod mod[]={

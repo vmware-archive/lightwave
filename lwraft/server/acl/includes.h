@@ -83,6 +83,8 @@
 #include <lber-int.h>
 
 #define LW_STRICT_NAMESPACE
+#include <lw/ntstatus.h>
+#include <lw/rtlmemory.h>
 #include <lw/types.h>
 #include <lw/hash.h>
 #include <lw/security-types.h>

@@ -14,18 +14,30 @@
 
 #include "includes.h"
 
+/*
+ * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * This is a wrapper for curl_global_init, from its documentation:
+ * This function is not thread safe.
+ * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
+ * This doesn't just mean no other thread that is using libcurl.
+ * Because curl_global_init calls functions of other libraries that are similarly thread unsafe,
+ * it could conflict with any other thread that uses these other libraries.
+ */
 SSOERROR
 OidcClientGlobalInit()
 {
     return SSOHttpClientGlobalInit();
 }
 
+// this function is not thread safe. Call it right before process exit
 void
 OidcClientGlobalCleanup()
 {
     SSOHttpClientGlobalCleanup();
 }
 
+// make sure you call OidcClientGlobalInit once per process before calling this
+// on success, pp will be non-null, when done, OidcClientDelete it
 // psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
@@ -269,7 +281,7 @@ OidcClientAcquireTokens(
     if (pOutTokenErrorResponse != NULL)
     {
         // if server return error response, we translate that into an SSOERROR code
-        e = OidcErrorResponseGetSSOErrorCode(pOutTokenErrorResponse);
+        e = OidcErrorResponseGetErrorCode(pOutTokenErrorResponse);
     }
 
 error:
@@ -280,6 +292,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByPassword(
     PCOIDC_CLIENT p,
@@ -329,6 +344,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByRefreshToken(
     PCOIDC_CLIENT p,
@@ -370,6 +388,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensBySolutionUserCredentials(
     PCOIDC_CLIENT p,

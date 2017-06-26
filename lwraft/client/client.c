@@ -178,7 +178,7 @@ VmDirRefreshActPassword(
     dwError = VmDirSrvCreateDomainDN( pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszPolicyDN,
+    dwError = VmDirAllocateStringPrintf( &pszPolicyDN,
                                              "cn=%s,%s",
                                              PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
                                              pszDomainDN);
@@ -319,7 +319,7 @@ VmDirResetMachineActCred(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateStringAVsnprintf(&pszUPN,
+        dwError = VmDirAllocateStringPrintf(&pszUPN,
                                                 "%s@%s",
                                                 pszUserName,
                                                 pszDomain);
@@ -708,13 +708,13 @@ VmDirSetupHostInstanceEx(
 
         if ( VmDirIsIPV6AddrFormat( pszPartnerHostName ) )
         {
-            dwError = VmDirAllocateStringAVsnprintf( &pszReplURI, "%s://[%s]",
+            dwError = VmDirAllocateStringPrintf( &pszReplURI, "%s://[%s]",
                                                      VMDIR_LDAP_PROTOCOL,
                                                      pszPartnerHostName);
         }
         else
         {
-            dwError = VmDirAllocateStringAVsnprintf( &pszReplURI, "%s://%s",
+            dwError = VmDirAllocateStringPrintf( &pszReplURI, "%s://%s",
                                                      VMDIR_LDAP_PROTOCOL,
                                                      pszPartnerHostName);
         }
@@ -2512,7 +2512,7 @@ VmdirGetSiteDCInfo(
                     &ppDC[*pIdxDC]->pszSiteName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirAllocateStringPrintf(
+        dwError = VmDirAllocateStringPrintf(
                     &pszServerDNPrefix,
                     "cn=%s,%s",
                     ppszServers[idxServer],
@@ -3801,11 +3801,11 @@ goto cleanup; // To cleanup
     dwError = VmDirKeyTabOpen(pszKeyTabFileName, "w", &pKeyTabHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszMachineAccountUPN, "%s@%s", pszLowerCaseHostName, pszUpperCaseDomainName );
+    dwError = VmDirAllocateStringPrintf( &pszMachineAccountUPN, "%s@%s", pszLowerCaseHostName, pszUpperCaseDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszSRPUPN, "%s@%s", pszUserName, pszDomainName );
+    dwError = VmDirAllocateStringPrintf( &pszSRPUPN, "%s@%s", pszUserName, pszDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirGetKeyTabRecBlob(pszServerName,
@@ -3842,7 +3842,7 @@ goto cleanup; // To cleanup
         VMDIR_SAFE_FREE_MEMORY(pLocalByte);
         dwByteSize = 0;
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszServiceAccountUPN, "%s/%s@%s", pszServiceTable[iCnt], pszLowerCaseHostName, pszUpperCaseDomainName );
+        dwError = VmDirAllocateStringPrintf( &pszServiceAccountUPN, "%s/%s@%s", pszServiceTable[iCnt], pszLowerCaseHostName, pszUpperCaseDomainName );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _VmDirGetKeyTabRecBlob(pszServerName,
@@ -3917,7 +3917,7 @@ _VmDirLdapCheckVmDirStatus(
         dwTimeout = -1; //infinite minutes for 2nd Ldu, because we could be copying really big DB from partner.
     }
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszLocalServerReplURI, "%s://localhost:%d",
+    dwError = VmDirAllocateStringPrintf( &pszLocalServerReplURI, "%s://localhost:%d",
                                              VMDIR_LDAP_PROTOCOL, DEFAULT_LDAP_PORT_NUM );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -4398,7 +4398,7 @@ _VmDirCreateServerPLD(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszUPN, "%s@%s", pszUserName, pszDomain );
+    dwError = VmDirAllocateStringPrintf( &pszUPN, "%s@%s", pszUserName, pszDomain );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBind( &pLD,
@@ -4470,7 +4470,7 @@ _VmDirRemoveComputer(
     dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                     &pszComputerDN,
                     "%s=%s,%s=%s,%s",
                     ATTR_CN,

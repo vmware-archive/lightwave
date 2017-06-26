@@ -221,9 +221,9 @@ VmDirSrvSetupHostInstance(
     PSTR    pszLowerCaseHostName = NULL;
     PSTR    pszDefaultAdminDN = NULL;
 
-    PVDIR_SCHEMA_CTX     pSchemaCtx = NULL;
-    char                 pszHostName[VMDIR_MAX_HOSTNAME_LEN];
-    VDIR_BERVALUE        bv = VDIR_BERVALUE_INIT;
+    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
+    char                pszHostName[VMDIR_MAX_HOSTNAME_LEN];
+    VDIR_BERVALUE       bv = VDIR_BERVALUE_INIT;
 
     BOOLEAN                       bInLockReplCycle = FALSE;
     PVMDIR_REPLICATION_AGREEMENT  pReplAgr = NULL;
@@ -233,7 +233,7 @@ VmDirSrvSetupHostInstance(
     PSTR                          pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
     VMDIR_SECURITY_DESCRIPTOR SecDescServices = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescAnonymousRead = {0};
-    VMDIR_SECURITY_DESCRIPTOR SecDescDeletedItems = {0};
+    VMDIR_SECURITY_DESCRIPTOR SecDescNoDelete = {0};
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
                    "Setting up a host instance (%s).",
@@ -457,32 +457,29 @@ VmDirSrvSetupHostInstance(
         gVmdirServerGlobals.serverId = 1;
 
         dwError = VmDirSrvSetupDomainInstance(
-                    pSchemaCtx,
-                    TRUE,
-                    TRUE,
-                    pszFQDomainName,
-                    pszDomainDN,
-                    pszUsername,
-                    pszPassword,
-                    &SecDescServices,
-                    &SecDescAnonymousRead,
-                    &SecDescDeletedItems
-                    );
+                pSchemaCtx,
+                TRUE,
+                TRUE,
+                pszFQDomainName,
+                pszDomainDN,
+                pszUsername,
+                pszPassword,
+                &SecDescServices,
+                &SecDescAnonymousRead,
+                &SecDescNoDelete);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Deleted Objects container
         dwError = VmDirSrvCreateContainerWithEID(
-                    pSchemaCtx,
-                    pszDelObjsContainerDN,
-                    pszDelObjsContainerName,
-                    &SecDescDeletedItems,
-                    DEL_ENTRY_CONTAINER_ENTRY_ID);
+                pSchemaCtx,
+                pszDelObjsContainerDN,
+                pszDelObjsContainerName,
+                &SecDescNoDelete,
+                DEL_ENTRY_CONTAINER_ENTRY_ID);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        //
         // Go back and ACL objects that were created early.
-        //
-        dwError = _VmDirAclServerObjects(&SecDescAnonymousRead, &SecDescDeletedItems);
+        dwError = _VmDirAclServerObjects(&SecDescAnonymousRead, &SecDescNoDelete);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Domain Controllers container
@@ -515,11 +512,11 @@ VmDirSrvSetupHostInstance(
         BAIL_ON_VMDIR_ERROR(dwError);
 
          dwError = VmDirSrvCreateContainerWithEID(
-                        pSchemaCtx,
-                        gVmdirServerGlobals.bvServicesRootDN.lberbv.bv_val,
-                        VMDIR_SERVICES_CONTAINER_NAME,
-                        &SecDescServices,
-                        0);
+                 pSchemaCtx,
+                 gVmdirServerGlobals.bvServicesRootDN.lberbv.bv_val,
+                 VMDIR_SERVICES_CONTAINER_NAME,
+                 &SecDescServices,
+                 0);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Replication Agreements container
@@ -552,12 +549,7 @@ VmDirSrvSetupHostInstance(
     }
 
 cleanup:
-
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
+    VmDirSchemaCtxRelease(pSchemaCtx);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszDelObjsContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszConfigContainerDN);
@@ -581,10 +573,8 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLowerCaseHostName);
     VMDIR_SAFE_FREE_MEMORY(SecDescAnonymousRead.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescServices.pSecDesc);
-    VMDIR_SAFE_FREE_MEMORY(SecDescDeletedItems.pSecDesc);
-
+    VMDIR_SAFE_FREE_MEMORY(SecDescNoDelete.pSecDesc);
     VmDirFreeBervalContent(&bv);
-
     return dwError;
 
 error:
@@ -697,9 +687,9 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescDeletedObjectsOut // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut,         // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut,    // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescNoDeleteOut          // OPTIONAL
     )
 {
     DWORD dwError = 0;
@@ -840,9 +830,7 @@ VmDirSrvSetupDomainInstance(
                                         &pszBuiltInUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //
     // Create the user group for tenant setup or for first host setup.
-    //
     if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
     {
         dwError = VmDirSrvCreateBuiltInUsersGroup( pSchemaCtx, pszBuiltInUsersGroupName,
@@ -1043,32 +1031,25 @@ VmDirSrvSetupDomainInstance(
     dwError = VmDirSetSecurityDescriptorForDn(pszUserDN, &SecDescNoDelete);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //
     // Set SD for Users container
-    //
     dwError = VmDirSetSecurityDescriptorForDn(pszUsersContainerDN, &SecDescNoDeleteChild);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //
     // Set SD for Builtin container
-    //
     dwError = VmDirSetSecurityDescriptorForDn(pszBuiltInContainerDN, &SecDescNoDelete);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set SD for ForeignSecurityPrincipals container
-
     dwError = VmDirSetSecurityDescriptorForDn(pszFSPsContainerDN, &SecDescFullAccess);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
     {
         // Set SD for BuiltInUsers group
-
         dwError = VmDirSetSecurityDescriptorForDn(pszBuiltInUsersGroupDN, &SecDescNoDelete);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Set SD for BuiltInAdministrators group
-
         dwError = VmDirSetSecurityDescriptorForDn(pszBuiltInAdministratorsGroupDN, &SecDescNoDelete);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1118,9 +1099,9 @@ VmDirSrvSetupDomainInstance(
         SecDescAnonymousRead.pSecDesc = NULL;
     }
 
-    if (pSecDescDeletedObjectsOut != NULL)
+    if (pSecDescNoDeleteOut != NULL)
     {
-        *pSecDescDeletedObjectsOut = SecDescNoDelete;
+        *pSecDescNoDeleteOut = SecDescNoDelete;
         SecDescNoDelete.pSecDesc = NULL;
     }
 
