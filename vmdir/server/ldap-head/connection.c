@@ -980,10 +980,11 @@ ProcessUdpConnection(
      * data obtained from vmdird.
      */
 #endif
-    char *forest = "lightwave.local";
-    char DomainName[] = "lightwave.local";
-    char HostName[] = "photon-psc-adam";
-    char *user = "photon-psc-adam";    /* TBD: Adam-End name in '$'?? */
+    char *DomainName = (char *) gVmdirKrbGlobals.pszRealm;
+    char *forest = DomainName; /* "lightwave.local"; */
+    char HostName[128] = {0};
+    char *ptr = NULL;
+    char *user = HostName; /* "photon-psc-adam"; TBD: Adam-End name in '$'?? */
     char *site = "Default-First-Site-Name";
     unsigned char GUID[] = {
         0x81, 0x2d, 0xe7, 0xdf, 0x97, 0x57, 0x4b, 0x40, 
@@ -993,6 +994,14 @@ ProcessUdpConnection(
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection called");
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
+
+    gethostname(HostName, sizeof(HostName)-1);
+    ptr = strchr(HostName, '.');
+    if (ptr)
+    {
+        *ptr = '\0';
+    }
+
 
     in_ber_val.bv_val = pConnCtx->udp_buf;
     in_ber_val.bv_len = (ber_len_t) pConnCtx->udp_len;
