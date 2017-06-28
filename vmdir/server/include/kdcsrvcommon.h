@@ -87,7 +87,7 @@ VOID
 VmKdcSleep(
     DWORD dwMilliseconds);
 
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
 /* pacops.c */
 
 typedef struct _KERB_VALIDATION_INFO KERB_VALIDATION_INFO, *PKERB_VALIDATION_INFO; /* ms-pac */
@@ -109,7 +109,7 @@ VmKdcDecodeAuthzInfo(
     long bufsiz,
     void *buf,
 #ifdef WINJOIN_CHECK_ENABLED
-    KERB_VALIDATION_INFO *pac
+    KERB_VALIDATION_INFO **pac
 #else
     VMDIR_AUTHZ_INFO **pac
 #endif

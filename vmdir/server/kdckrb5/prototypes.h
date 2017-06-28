@@ -34,7 +34,7 @@
 #include "key_p.h"
 #include "encdata_p.h"
 #include "keyset_p.h"
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
 #include "authzdata_p.h"
 #endif
 #include "ticket_p.h"

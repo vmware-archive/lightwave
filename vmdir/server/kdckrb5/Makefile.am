@@ -4,6 +4,9 @@ PACSOURCES =
 if VMDIR_ENABLE_PAC
 PACSOURCES += authzdata.c
 endif
+if MSPAC_SUPPORT
+PACSOURCES += authzdata.c
+endif
 
 libvmkrb5_la_SOURCES = \
     authenticator.c    \

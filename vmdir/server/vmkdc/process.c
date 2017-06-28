@@ -52,7 +52,7 @@ error:
     return dwError;
 }
 
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
 static
 DWORD
 VmKdcCreateAuthzData(
@@ -243,7 +243,7 @@ VmKdcProcessAsReq(
     BOOLEAN renewable_ok = 0;
     VMKDC_ENCTYPE etype = 0;
     unsigned int i = 0;
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
     PVMKDC_AUTHZDATA pAuthzData = NULL;
 #else
     PVOID pAuthzData = NULL;
@@ -582,7 +582,7 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszClientName);
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
     VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
 #endif
     return dwError;
@@ -624,7 +624,7 @@ VmKdcProcessTgsReq(
     BOOLEAN renew = FALSE;
     VMKDC_ENCTYPE etype = 0;
     unsigned int i = 0;
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
     PVMKDC_KEY pKrbtgtKey = NULL;
     PVMKDC_DIRECTORY_ENTRY pKrbtgtEntry = NULL;
     PVMKDC_AUTHZDATA pAuthzData = NULL;
@@ -836,7 +836,7 @@ VmKdcProcessTgsReq(
         VMKDC_FLAG_SET(flags, VMKDC_TF_PROXIABLE);
     }
 
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
     /*
      * Get the krbtgt key
      */
@@ -999,7 +999,7 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszServerName);
-#ifdef VMDIR_ENABLE_PAC
+#if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
     VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
     VMKDC_SAFE_FREE_DIRECTORY_ENTRY(pKrbtgtEntry);
 #endif
