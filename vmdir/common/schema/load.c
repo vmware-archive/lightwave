@@ -26,6 +26,19 @@ VmDirLdapSchemaLoadStrLists(
     DWORD   i = 0, j = 0;
     BOOLEAN bEmpty = FALSE;
 
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pOldAt = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pNewAt = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  pNewAtList = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pMergedAt = NULL;
+
+    PVDIR_LDAP_OBJECT_CLASS pOldOc = NULL;
+    PVDIR_LDAP_OBJECT_CLASS pNewOc = NULL;
+    PVDIR_LDAP_OBJECT_CLASS pMergedOc = NULL;
+
+    PVDIR_LDAP_CONTENT_RULE pOldCr = NULL;
+    PVDIR_LDAP_CONTENT_RULE pNewCr = NULL;
+    PVDIR_LDAP_CONTENT_RULE pMergedCr = NULL;
+
     if (!pSchema || !pAtStrList || !pOcStrList || !pCrStrList)
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -36,57 +49,84 @@ VmDirLdapSchemaLoadStrLists(
 
     for (i = 0; i < pAtStrList->dwCount; i++)
     {
-        PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
-        PVDIR_LDAP_ATTRIBUTE_TYPE*  pAtList = NULL;
-
-        dwError = VmDirLdapAtParseStr(pAtStrList->pStringList[i], &pAt);
+        dwError = VmDirLdapAtParseStr(pAtStrList->pStringList[i], &pNewAt);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // inherit sup syntax if available (PR 1868307)
         if (!bEmpty)
         {
-            (VOID)VmDirLdapAtResolveSup(pSchema, pAt);
+            (VOID)VmDirLdapAtResolveSup(pSchema, pNewAt);
             // cast VOID because this might not succeed
             // if sup isn't already added in pSchema
         }
 
-        dwError = VmDirLdapAtResolveAliases(pAt, &pAtList);
+        dwError = VmDirLdapAtResolveAliases(pNewAt, &pNewAtList);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirFreeLdapAt(pAt);
+        VmDirFreeLdapAt(pNewAt);
+        pNewAt = NULL;
 
-        for (j = 0; pAtList && pAtList[j]; j++)
+        for (j = 0; pNewAtList && pNewAtList[j]; j++)
         {
-            dwError = VmDirLdapSchemaAddAt(pSchema, pAtList[j]);
+            pOldAt = NULL;
+            LwRtlHashMapFindKey(pSchema->attributeTypes,
+                    (PVOID*)&pOldAt, pNewAtList[j]->pszName);
+
+            dwError = VmDirLdapAtMerge(pOldAt, pNewAtList[j], &pMergedAt);
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            VmDirFreeLdapAt(pNewAtList[j]);
+            pNewAtList[j] = NULL;
+
+            dwError = VmDirLdapSchemaAddAt(pSchema, pMergedAt);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pMergedAt = NULL;
         }
-        VMDIR_SAFE_FREE_MEMORY(pAtList);
+        VMDIR_SAFE_FREE_MEMORY(pNewAtList);
     }
 
     for (i = 0; i < pOcStrList->dwCount; i++)
     {
-        PVDIR_LDAP_OBJECT_CLASS pOc = NULL;
-
-        dwError = VmDirLdapOcParseStr(pOcStrList->pStringList[i], &pOc);
+        dwError = VmDirLdapOcParseStr(pOcStrList->pStringList[i], &pNewOc);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // class sup defaults to 'top' (PR 1853569)
-        dwError = VmDirLdapOcResolveSup(pSchema, pOc);
+        dwError = VmDirLdapOcResolveSup(pSchema, pNewOc);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirLdapSchemaAddOc(pSchema, pOc);
+        pOldOc = NULL;
+        LwRtlHashMapFindKey(pSchema->objectClasses,
+                (PVOID*)&pOldOc, pNewOc->pszName);
+
+        dwError = VmDirLdapOcMerge(pOldOc, pNewOc, &pMergedOc);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirFreeLdapOc(pNewOc);
+        pNewOc = NULL;
+
+        dwError = VmDirLdapSchemaAddOc(pSchema, pMergedOc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pMergedOc = NULL;
     }
 
     for (i = 0; i < pCrStrList->dwCount; i++)
     {
-        PVDIR_LDAP_CONTENT_RULE pCr = NULL;
-
-        dwError = VmDirLdapCrParseStr(pCrStrList->pStringList[i], &pCr);
+        dwError = VmDirLdapCrParseStr(pCrStrList->pStringList[i], &pNewCr);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirLdapSchemaAddCr(pSchema, pCr);
+        pOldCr = NULL;
+        LwRtlHashMapFindKey(pSchema->contentRules,
+                (PVOID*)&pOldCr, pNewCr->pszName);
+
+        dwError = VmDirLdapCrMerge(pOldCr, pNewCr, &pMergedCr);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirFreeLdapCr(pNewCr);
+        pNewCr = NULL;
+
+        dwError = VmDirLdapSchemaAddCr(pSchema, pMergedCr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pMergedCr = NULL;
     }
 
     dwError = VmDirLdapSchemaResolveAndVerifyAll(pSchema);
@@ -102,6 +142,17 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
+    for (; pNewAtList && pNewAtList[j]; j++)
+    {
+        VmDirFreeLdapAt(pNewAtList[j]);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pNewAtList);
+    VmDirFreeLdapAt(pMergedAt);
+    VmDirFreeLdapOc(pMergedOc);
+    VmDirFreeLdapCr(pMergedCr);
+    VmDirFreeLdapAt(pNewAt);
+    VmDirFreeLdapOc(pNewOc);
+    VmDirFreeLdapCr(pNewCr);
     goto cleanup;
 }
 
