@@ -1,5 +1,5 @@
-﻿/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+/*
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -13,20 +13,32 @@
  */
 
 using System;
+using Foundation;
 
-namespace VMPSCHighAvailability.Nodes
+namespace LWRaftSnapIn.UI
 {
-	public class InfrastucturesGroupNode : ScopeNode, ISiteNameFetcher
-	{	
-		public InfrastucturesGroupNode ()
+	public partial class VmdirSplitView : AppKit.NSView
+	{
+		#region Constructors
+
+		// Called when created from unmanaged code
+		public VmdirSplitView(IntPtr handle) : base(handle)
 		{
-			DisplayName = "Lightwave Domain Controllers";
+			Initialize();
 		}
 
-		public string GetSiteName()
+		// Called when created directly from a XIB file
+		[Export("initWithCoder:")]
+		public VmdirSplitView(NSCoder coder) : base(coder)
 		{
-			return (this.Parent as ScopeNode).DisplayName;
+			Initialize();
 		}
+
+		// Shared initialization code
+		void Initialize()
+		{
+		}
+
+		#endregion
 	}
 }
-

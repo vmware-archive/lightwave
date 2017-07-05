@@ -1,5 +1,5 @@
-﻿/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+/*
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,21 +12,21 @@
  * under the License.
  */
 
-using System;
+using VMDir.Common.DTO;
 
-namespace VMPSCHighAvailability.Nodes
+namespace LWRaftSnapIn.Nodes
 {
-	public class InfrastucturesGroupNode : ScopeNode, ISiteNameFetcher
-	{	
-		public InfrastucturesGroupNode ()
+	public class ChildScopeNode : ScopeNode
+	{
+		public VMDirServerDTO ServerDTO { get; protected set; }
+
+		public ChildScopeNode()
 		{
-			DisplayName = "Lightwave Domain Controllers";
 		}
 
-		public string GetSiteName()
+		public ChildScopeNode(VMDirServerDTO dto)
 		{
-			return (this.Parent as ScopeNode).DisplayName;
+			this.ServerDTO = dto;
 		}
 	}
 }
-

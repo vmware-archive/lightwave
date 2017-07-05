@@ -1,5 +1,5 @@
-﻿/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+/*
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,21 +12,25 @@
  * under the License.
  */
 
-using System;
+// WARNING
+//
+// This file has been generated automatically by Xamarin Studio to store outlets and
+// actions made in the UI designer. If it is removed, they will be lost.
+// Manual changes to this file may not be handled correctly.
+//
+using Foundation;
+using System.CodeDom.Compiler;
 
-namespace VMPSCHighAvailability.Nodes
+namespace LWRaftSnapIn.UI
 {
-	public class InfrastucturesGroupNode : ScopeNode, ISiteNameFetcher
-	{	
-		public InfrastucturesGroupNode ()
+	[Register ("WelcomeScreenController")]
+	partial class WelcomeScreenController
+	{
+		[Action ("OnConnect:")]
+		partial void OnConnect (Foundation.NSObject sender);
+		
+		void ReleaseDesignerOutlets ()
 		{
-			DisplayName = "Lightwave Domain Controllers";
-		}
-
-		public string GetSiteName()
-		{
-			return (this.Parent as ScopeNode).DisplayName;
 		}
 	}
 }
-

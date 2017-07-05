@@ -1,5 +1,5 @@
-﻿/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+/*
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -11,22 +11,26 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 using System;
+using Foundation;
+using AppKit;
 
-namespace VMPSCHighAvailability.Nodes
+namespace LWRaftSnapIn.UI
 {
-	public class InfrastucturesGroupNode : ScopeNode, ISiteNameFetcher
-	{	
-		public InfrastucturesGroupNode ()
+	public partial class ModSubmitStatus : NSWindow
+	{
+		public ModSubmitStatus(IntPtr handle) : base(handle)
 		{
-			DisplayName = "Lightwave Domain Controllers";
 		}
 
-		public string GetSiteName()
+		[Export("initWithCoder:")]
+		public ModSubmitStatus(NSCoder coder) : base(coder)
 		{
-			return (this.Parent as ScopeNode).DisplayName;
+		}
+
+		public override void AwakeFromNib()
+		{
+			base.AwakeFromNib();
 		}
 	}
 }
-

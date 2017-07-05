@@ -1,5 +1,5 @@
-﻿/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+/*
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,21 +12,10 @@
  * under the License.
  */
 
-using System;
-
-namespace VMPSCHighAvailability.Nodes
+namespace LWRaftSnapIn.UI
 {
-	public class InfrastucturesGroupNode : ScopeNode, ISiteNameFetcher
-	{	
-		public InfrastucturesGroupNode ()
-		{
-			DisplayName = "Lightwave Domain Controllers";
-		}
-
-		public string GetSiteName()
-		{
-			return (this.Parent as ScopeNode).DisplayName;
-		}
-	}
+    [global::Foundation.Register ("WelcomeScreen")]
+    public partial class WelcomeScreen
+    {
+    }
 }
-
