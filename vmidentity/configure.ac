@@ -192,7 +192,7 @@ AC_ARG_WITH([commons-daemon],
     [AC_HELP_STRING([--with-commons-daemon=<dir>], [use Commons daemon binaries rooted at prefix <dir> ])],
     [
         COMMONS_DAEMON_HOME="$withval"
-        JSVC=$COMMONS_DAEMON_HOME/bin/jsvc
+        JSVC=/usr/bin/jsvc
     ])
 
 AC_SUBST(COMMONS_DAEMON_HOME)

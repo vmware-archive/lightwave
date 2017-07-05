@@ -3,7 +3,7 @@
 # entry into container
 
 JSVC_BIN=/var/opt/commons-daemon-1.0.15/bin/jsvc
-JAVA_HOME=/var/opt/OpenJDK-1.8.0.112-bin
+JAVA_HOME=/etc/alternatives/jre/../
 
 function stop_idmd {
     local SERVICE_NAME=vmware-idmd

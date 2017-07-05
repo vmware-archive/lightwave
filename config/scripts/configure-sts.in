@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Set up for Secure Token Service Installer
+JAVA_HOME=/etc/alternatives/jre
+JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
+JAVA=/etc/alternatives/java
+VMWARE_DIR=/opt/vmware
+CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
+
+# Lotus Defaults
+LOTUS_DOMAIN_DEFAULT=lightwave.local
+LOTUS_ADMIN_DEFAULT=Administrator
+LOTUS_ADMIN_PASSWORD_DEFAULT=
+LOTUS_HOSTNAME=
+LOTUS_ADMIN_PASSWORD_DEFAULT=
+LOTUS_SSL_SUBJECT_ALT_NAME=
+
+USAGE="configure-sts --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--ssl-subject-alt-name <SSL Subject Alternative name]"
+
+_exit(){
+    if [ $RUN_LWSM ]; then
+        $LW_BIN_DIR/lwsm shutdown
+
+        while [ `pidof lwsmd` ];  do
+            sleep 1
+        done
+    fi
+
+    exit $1
+}
+
+# Read passed parameters.
+if [ $# -gt 0 ]; then
+
+   MODE="open"
+
+   for arg in "$@"
+   do
+        case "$MODE" in
+            "open")
+                case "$arg" in
+                    "--domain")
+                      MODE="domain"
+                      ;;
+                    "--password")
+                      MODE="password"
+                      ;;
+                    "--server")
+                      LOTUS_DEPLOYMENT=partner
+                      MODE="server"
+                      ;;
+                    "--site")
+                      MODE="site"
+                      ;;
+                    "--hostname")
+                      MODE="hostname"
+                      ;;
+                    "--ssl-subject-alt-name")
+                      MODE="ssl-subject-alt-name"
+                      ;;
+                    *)
+                      echo "Invalid parameter : $arg"
+                      echo $USAGE
+                      exit 1
+                      ;;
+                esac
+                ;;
+             "domain")
+                LOTUS_DOMAIN_DEFAULT=$arg
+                MODE=open
+                ;;
+             "password")
+                LOTUS_ADMIN_PASSWORD_DEFAULT=$arg
+                MODE=open
+                ;;
+             "server")
+                LOTUS_PARTNER_HOSTNAME=$arg
+                MODE=open
+                ;;
+             "site")
+                LOTUS_SITE_NAME=$arg
+                MODE=open
+                ;;
+             "hostname")
+                LOTUS_HOSTNAME=$arg
+                MODE=open
+                ;;
+             "ssl-subject-alt-name")
+                LOTUS_SSL_SUBJECT_ALT_NAME=$arg
+                MODE=open
+                ;;
+             *)
+                echo "Invalid mode : $MODE"
+                echo $USAGE
+                exit 1
+                ;;
+        esac
+   done
+else
+   echo $USAGE
+   exit 1
+fi
+
+if [ -z "$LOTUS_HOSTNAME" ]; then
+    LOTUS_HOSTNAME=`hostname -f`
+fi
+
+$JAVA -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+                    -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
+--hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
+
+if [ $? -ne 0 ]; then
+        echo  "Failed to start Secure Token Service."
+        _exit 1
+fi
+
+echo "Secure Token Service was installed Successfully ! "
+

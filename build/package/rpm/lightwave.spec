@@ -820,6 +820,7 @@ fi
 %{_bindir}/ic-promote
 %{_bindir}/ic-join
 %{_bindir}/configure-lightwave-server
+%{_bindir}/configure-sts
 %{_bindir}/configure-identity-server
 %{_bindir}/test-ldapbind
 %{_bindir}/test-logon

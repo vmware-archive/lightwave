@@ -481,6 +481,7 @@ AC_CONFIG_FILES([Makefile
                  scripts/Makefile
                  scripts/configure-lightwave-server
                  scripts/configure-identity-server
+                 scripts/configure-sts
                 ])
 AC_OUTPUT
 
