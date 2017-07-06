@@ -198,7 +198,9 @@ fi
 %{_jarsdir}/jna-4.2.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
 %{_jarsdir}/slf4j-api-1.7.10.jar
+%{_jarsdir}/log4j-slf4j-impl-2.2.jar
 %{_jarsdir}/log4j-api-2.2.jar
+%{_jarsdir}/log4j-core-2.2.jar
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 %{_datadir}/config/idm/*

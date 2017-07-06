@@ -35,7 +35,9 @@ vmstsjars_DATA= \
     @top_builddir@/vmware-sts/packages/lib/commons-logging-1.1.1.jar \
     @top_builddir@/vmware-sts/packages/lib/httpclient-4.5.1.jar \
     @top_builddir@/vmware-sts/packages/lib/slf4j-api-1.7.10.jar \
-    @top_builddir@/vmware-sts/packages/lib/log4j-api-2.2.jar
+    @top_builddir@/vmware-sts/packages/lib/log4j-api-2.2.jar \
+    @top_builddir@/vmware-sts/packages/lib/log4j-slf4j-impl-2.2.jar \
+    @top_builddir@/vmware-sts/packages/lib/log4j-core-2.2.jar
 
 vmstswebapps_DATA= \
     @top_builddir@/vmware-sts/packages/openidconnect-sample-rp.war \
