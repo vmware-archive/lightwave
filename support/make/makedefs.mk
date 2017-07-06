@@ -213,6 +213,6 @@ DOCKER_CLIENT_IMAGE=$(LIGHTWAVE_STAGE_DIR)/vmware-lightwave-client.tar
 JAVA_HOME?=/etc/alternatives/jre/../
 COMMONS_DAEMON?=/usr/share/java/
 ANT_HOME?=/var/opt/apache-ant
-TOMCAT_HOME?=/var/opt/apache-tomcat-8.5.8
+TOMCAT_HOME?=/var/opt/apache-tomcat
 JAXWS_HOME?=/opt/jaxws-ri-2.2.10
 MAVEN_HOME?=/var/opt/apache-maven
