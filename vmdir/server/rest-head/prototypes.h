@@ -161,7 +161,7 @@ VmDirRESTGetMetricsModule(
     );
 
 DWORD
-VmDirRESTMetricsLdapGet(
+VmDirRESTMetricsGet(
     void*   pIn,
     void**  ppOut
     );

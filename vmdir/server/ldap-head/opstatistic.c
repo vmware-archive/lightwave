@@ -185,6 +185,28 @@ VmDirOPStatisticGetAvgTime(
 }
 
 uint64_t
+VmDirOPStatisticGetTotalTime(
+        ber_tag_t opTag
+)
+{
+    BOOLEAN     bInLock = FALSE;
+    uint64_t    iCurrentTotalTimeInMSec = 0;
+    PVMDIR_OPERATION_STATISTIC pStatistic;
+
+    pStatistic = _VmDirGetStatisticFromTag(opTag);
+    if (pStatistic != NULL)
+    {
+        VMDIR_LOCK_MUTEX(bInLock, pStatistic->pmutex);
+
+        iCurrentTotalTimeInMSec = pStatistic->iTimeInMilliSec;
+
+        VMDIR_UNLOCK_MUTEX(bInLock, pStatistic->pmutex);
+    }
+
+    return iCurrentTotalTimeInMSec;
+}
+
+uint64_t
 VmDirOPStatisticGetCount(
     ber_tag_t opTag
     )

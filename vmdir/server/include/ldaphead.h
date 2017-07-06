@@ -278,6 +278,11 @@ VmDirOPStatisticGetAvgTime(
     );
 
 uint64_t
+VmDirOPStatisticGetTotalTime(
+    ber_tag_t opTag
+    );
+
+uint64_t
 VmDirOPStatisticGetCount(
     ber_tag_t opTag
     );
