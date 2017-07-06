@@ -235,6 +235,9 @@ VmDnsCacheLoadZoneFromStore(
     VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsConditionSignal(pContext->pRefreshEvent);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
 cleanup:
     if (bLocked)
     {

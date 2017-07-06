@@ -798,30 +798,6 @@ VmDnsSrvInitDomain(
         .minimum                = VMDNS_DEFAULT_TTL
     };
 
-    VMDNS_ZONE_INFO revzoneInfo = {
-            .pszName                = "in-addr.arpa.",
-            .pszPrimaryDnsSrvName   = pInitInfo->pszDcSrvName,
-            .pszRName               = "",
-            .serial                 = 0,
-            .refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL,
-            .retryInterval          = VMDNS_DEFAULT_RETRY_INTERVAL,
-            .expire                 = VMDNS_DEFAULT_EXPIRE,
-            .minimum                = VMDNS_DEFAULT_TTL,
-            .dwZoneType             = VMDNS_ZONE_TYPE_REVERSE
-    };
-
-    VMDNS_ZONE_INFO revzoneInfo6 = {
-            .pszName                = "ip6.arpa.",
-            .pszPrimaryDnsSrvName   = pInitInfo->pszDcSrvName,
-            .pszRName               = "",
-            .serial                 = 0,
-            .refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL,
-            .retryInterval          = VMDNS_DEFAULT_RETRY_INTERVAL,
-            .expire                 = VMDNS_DEFAULT_EXPIRE,
-            .minimum                = VMDNS_DEFAULT_TTL,
-            .dwZoneType             = VMDNS_ZONE_TYPE_REVERSE
-    };
-
     VMDNS_RECORD nsRecord = {
         .pszName                = pInitInfo->pszDomain,
         .Data.NS.pNameHost      = pInitInfo->pszDcSrvName,
@@ -928,36 +904,7 @@ VmDnsSrvInitDomain(
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    VMDNS_RECORD revRecord =
-            {
-                    .pszName = NULL,
-                    .dwType = VMDNS_RR_TYPE_PTR,
-                    .iClass = VMDNS_CLASS_IN,
-                    .dwTtl = VMDNS_DEFAULT_TTL,
-                    .Data.PTR.pNameHost = pInitInfo->pszDcSrvName
-            };
-
-    VMDNS_IP4_ADDRESS ip4 = 0;
-    CHAR  szAddr[INET_ADDRSTRLEN] = {0};
-
-    VMDNS_RECORD revRecord6 =
-            {
-                    .pszName = NULL,
-                    .dwType = VMDNS_RR_TYPE_PTR,
-                    .iClass = VMDNS_CLASS_IN,
-                    .dwTtl = VMDNS_DEFAULT_TTL,
-                    .Data.PTR.pNameHost = pInitInfo->pszDcSrvName
-            };
-
     dwError = VmDnsStoreCreateZone(&zoneInfo);
-    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsStoreCreateZone(&revzoneInfo);
-    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsStoreCreateZone(&revzoneInfo6);
     dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -999,51 +946,6 @@ VmDnsSrvInitDomain(
                         );
     dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
     BAIL_ON_VMDNS_ERROR(dwError);
-
-    ip4 = htonl(pInitInfo->IpV4Addrs.Addrs[0]);
-    if(!(inet_ntop(AF_INET, &ip4, szAddr, sizeof(szAddr))))
-    {
-        VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "Error converting Ip address to text format");
-        dwError = ERROR_BAD_FORMAT;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    dwError = VmDnsGeneratePtrNameFromIp(
-               szAddr,
-               &revRecord.pszName
-              );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsStoreAddZoneRecord(
-               "in-addr.arpa.",
-               &revRecord
-    	      );
-    dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    if(pInitInfo->IpV6Addrs.dwCount != 0)
-    {
-        CHAR  szAddr6[INET6_ADDRSTRLEN] = {0};
-        if(!(inet_ntop(AF_INET6, &(pInitInfo->IpV6Addrs.Addrs[0].IP6Byte), szAddr6, sizeof(szAddr6))))
-        {
-            VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "Error converting Ip address to text format");
-            dwError = ERROR_BAD_FORMAT;
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
-
-        dwError = VmDnsGeneratePtrNameFromIp(
-                   szAddr6,
-                   &revRecord6.pszName
-		  );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsStoreAddZoneRecord(
-                   "ip6.arpa.",
-                   &revRecord6
-        	  );
-        dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
 
     if (!VmDnsCheckIfIPV4AddressA(pInitInfo->pszDcSrvName) &&
         !VmDnsCheckIfIPV6AddressA(pInitInfo->pszDcSrvName))
@@ -1115,8 +1017,6 @@ cleanup:
     VMDNS_SAFE_FREE_STRINGA(pszKrbRecordName);
     VMDNS_SAFE_FREE_STRINGA(pszLdapDcRecordName);
     VMDNS_SAFE_FREE_STRINGA(pszKrbDcRecordName);
-    VMDNS_SAFE_FREE_STRINGA(revRecord.pszName);
-    VMDNS_SAFE_FREE_STRINGA(revRecord6.pszName);
     return dwError;
 
 error:

@@ -647,13 +647,6 @@ ParseArgsAddZone(
         }
     }
 
-
-    if (pContext->dwZoneType == VMDNS_ZONE_TYPE_REVERSE)
-    {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
 error:
 
     return dwError;
@@ -2229,7 +2222,7 @@ ShowUsage(
         "\t\t--ns-host <hostname>\n"
         "\t\t--ns-ip <ip address>\n"
         "\t\t[--admin-email <admin-email>]\n"
-        "\t\t[--type <forward>]\n"
+        "\t\t[--type <forward | reverse>]\n"
         /*"\t\t[--type <forward|reverse>]\n"*/
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
@@ -2277,9 +2270,9 @@ ShowUsage(
         "\t\t<key> <value> pair for NS:\n"
         "\t\t\t--ns-domain   <domain>\n"
         "\t\t\t--hostname <hostname>\n"
-/*      "\t\t<key> <value> pair for PTR:\n"
-        "\t\t\t--<ip|ip6> <address>\n"
-        "\t\t\t--hostname <hostname>\n" */
+        "\t\t<key> <value> pair for PTR:\n"
+        "\t\t\t--ip <address>\n"
+        "\t\t\t--hostname <hostname>\n"
         "\t\t<key> <value> pair for CNAME:\n"
         "\t\t\t--<name> <name>\n"
         "\t\t\t--hostname <hostname>\n"
@@ -2305,9 +2298,9 @@ ShowUsage(
         "\t\t<key> <value> pair for NS:\n"
         "\t\t\t--ns-domain <domain>\n"
         "\t\t\t--hostname <hostname>\n"
-/*        "\t\t<key> <value> pair for PTR:\n"
-        "\t\t\t--<ip|ip6> <address>\n"
-        "\t\t\t--hostname <hostname>\n" */
+        "\t\t<key> <value> pair for PTR:\n"
+        "\t\t\t--ip <address>\n"
+        "\t\t\t--hostname <hostname>\n"
         "\t\t<key> <value> pair for CNAME:\n"
         "\t\t\t--name <name>\n"
         "\t\t\t--hostname <hostname>\n"
@@ -2319,6 +2312,8 @@ ShowUsage(
         "\tquery-record --zone <zone name>\n"
         "\t\t--type <record type>\n"
         "\t\t--name <record name>\n"
+        "\t\tFor PTR records use:\n"
+        "\t\t\t--ip <address> instead of --name <record name>\n"
         "\t\t<key> <value>\n"
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
