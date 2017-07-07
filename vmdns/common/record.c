@@ -1248,16 +1248,6 @@ VmDnsIsSupportedRecordType(
 }
 
 BOOL
-VmDnsIsUpdatePermitted(
-    VMDNS_RR_TYPE   dwRecordType
-    )
-{
-    return
-        dwRecordType == VMDNS_RR_TYPE_SOA   ||
-        dwRecordType == VMDNS_RR_TYPE_CNAME;
-}
-
-BOOL
 VmDnsIsRecordRType(
     VMDNS_RR_TYPE   dwRecordType
     )

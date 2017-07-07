@@ -304,6 +304,23 @@ VmDnsSrvQueryRecords(
     );
 
 DWORD
+VmDnsSrvGetRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PCSTR               pszName,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    );
+
+DWORD
+VmDnsGetLinkedRecords(
+    DWORD               dwRecursionIndex,
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD       pRecord,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    );
+
+DWORD
 VmDnsSrvListRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PVMDNS_RECORD_LIST *ppRecordList
@@ -375,6 +392,12 @@ DWORD
 VmDnsRecordListAdd(
     PVMDNS_RECORD_LIST      pList,
     PVMDNS_RECORD_OBJECT    pRecord
+    );
+
+DWORD
+VmDnsRecordListAddList(
+    PVMDNS_RECORD_LIST      pDestList,
+    PVMDNS_RECORD_LIST      pSrcList
     );
 
 DWORD

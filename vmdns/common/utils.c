@@ -423,6 +423,7 @@ VmDnsIsReverseZoneName(
     {
         ulSuffixLength = VmDnsStringLenA(suffix[idx]);
         pszTail = pszZoneName + ulNameLength - ulSuffixLength;
+
         if (VmDnsStringCompareA(
                 pszTail,
                 suffix[idx],

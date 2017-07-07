@@ -299,13 +299,13 @@ VmDnsCliCreateZone(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (!IsNullOrEmptyString(pContext->pszNSHost)&&
+    if (!IsNullOrEmptyString(pContext->pszNSHost) &&
         !IsNullOrEmptyString(pContext->pszNSIp) &&
         pContext->dwZoneType == VMDNS_ZONE_TYPE_REVERSE)
     {
-        addrRecord.iClass = VMDNS_CLASS_IN;
+        addrRecord.iClass   = VMDNS_CLASS_IN;
         addrRecord.dwType   = VMDNS_RR_TYPE_PTR;
-        addrRecord.dwTtl    = pContext->record.dwTtl;
+        addrRecord.dwTtl    = VMDNS_DEFAULT_TTL;
         addrRecord.Data.PTR.pNameHost = pszTargetFQDN;
 
         dwError = VmDnsGeneratePtrNameFromIp(pContext->pszNSIp,&addrRecord.pszName);

@@ -903,11 +903,6 @@ VmDnsIsSupportedRecordType(
     );
 
 BOOL
-VmDnsIsUpdatePermitted(
-    VMDNS_RR_TYPE   dwRecordType
-    );
-
-BOOL
 VmDnsIsSupportedRecordType(
     VMDNS_RR_TYPE   dwRecordType
     );

@@ -680,7 +680,6 @@ VmDnsCacheRefreshThread(
 
 cleanup:
     pCacheContext->bRunning = FALSE;
-
     return dwError;
 
 error:
