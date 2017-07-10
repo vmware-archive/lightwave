@@ -303,6 +303,8 @@ VmDirSafeLDAPBind(
 
     LDAP*       pLd = NULL;
     char        ldapURI[VMDIR_MAX_LDAP_URI_LEN + 1] = {0};
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (ppLd == NULL || pszHost == NULL || pszUPN == NULL || pszPassword == NULL)
     {
@@ -310,15 +312,24 @@ VmDirSafeLDAPBind(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
     if ( VmDirIsIPV6AddrFormat( pszHost ) )
     {
         dwError = VmDirStringPrintFA( ldapURI, sizeof(ldapURI)-1,  "%s://[%s]:%d",
-                                      VMDIR_LDAP_PROTOCOL, pszHost, DEFAULT_LDAP_PORT_NUM);
+                                      VMDIR_LDAP_PROTOCOL, pszHost, dwLdapPort);
     }
     else
     {
         dwError = VmDirStringPrintFA( ldapURI, sizeof(ldapURI)-1,  "%s://%s:%d",
-                                      VMDIR_LDAP_PROTOCOL, pszHost, DEFAULT_LDAP_PORT_NUM);
+                                      VMDIR_LDAP_PROTOCOL, pszHost, dwLdapPort);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 

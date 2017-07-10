@@ -3910,6 +3910,8 @@ _VmDirLdapCheckVmDirStatus(
     BOOLEAN     bFirst = TRUE;
     DWORD       dwTimeout = 15; //wait 2.5 minutes for 1st Ldu
     VDIR_SERVER_STATE vmdirState = VMDIRD_STATE_UNDEFINED;
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
     {
@@ -3917,8 +3919,17 @@ _VmDirLdapCheckVmDirStatus(
         dwTimeout = -1; //infinite minutes for 2nd Ldu, because we could be copying really big DB from partner.
     }
 
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
     dwError = VmDirAllocateStringPrintf( &pszLocalServerReplURI, "%s://localhost:%d",
-                                             VMDIR_LDAP_PROTOCOL, DEFAULT_LDAP_PORT_NUM );
+                                             VMDIR_LDAP_PROTOCOL, dwLdapPort );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bFirst)

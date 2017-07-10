@@ -302,52 +302,20 @@ VmDirdGetAllowInsecureAuth(
     return gVmdirGlobals.bAllowInsecureAuth;
 }
 
-VOID
-VmDirGetLdapListenPorts(
-    PDWORD* ppdwLdapListenPorts,
-    PDWORD  pdwLdapListenPorts
-    )
-{
-    *ppdwLdapListenPorts = gVmdirGlobals.pdwLdapListenPorts;
-    *pdwLdapListenPorts = gVmdirGlobals.dwLdapListenPorts;
-}
-
-VOID
-VmDirGetLdapsListenPorts(
-    PDWORD* ppdwLdapsListenPorts,
-    PDWORD  pdwLdapsListenPorts
-    )
-{
-    *ppdwLdapsListenPorts = gVmdirGlobals.pdwLdapsListenPorts;
-    *pdwLdapsListenPorts = gVmdirGlobals.dwLdapsListenPorts;
-}
-
-VOID
-VmDirGetLdapConnectPorts(
-    PDWORD* ppdwLdapConnectPorts,
-    PDWORD  pdwLdapConnectPorts
-    )
-{
-    *ppdwLdapConnectPorts = gVmdirGlobals.pdwLdapConnectPorts;
-    *pdwLdapConnectPorts = gVmdirGlobals.dwLdapConnectPorts;
-}
-
-VOID
-VmDirGetLdapsConnectPorts(
-    PDWORD* ppdwLdapsConnectPorts,
-    PDWORD  pdwLdapsConnectPorts
-    )
-{
-    *ppdwLdapsConnectPorts = gVmdirGlobals.pdwLdapsConnectPorts;
-    *pdwLdapsConnectPorts = gVmdirGlobals.dwLdapsConnectPorts;
-}
-
 DWORD
-VmDirGetAllLdapPortsCount(
+VmDirGetLdapPort(
     VOID
     )
 {
-    return gVmdirGlobals.dwLdapConnectPorts + gVmdirGlobals.dwLdapsConnectPorts;
+    return gVmdirGlobals.dwLdapPort;
+}
+
+DWORD
+VmDirGetLdapsPort(
+    VOID
+    )
+{
+    return gVmdirGlobals.dwLdapsPort;
 }
 
 DWORD

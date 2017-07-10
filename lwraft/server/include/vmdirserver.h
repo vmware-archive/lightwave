@@ -132,14 +132,8 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
 
-    PDWORD                          pdwLdapListenPorts;
-    DWORD                           dwLdapListenPorts;
-    PDWORD                          pdwLdapsListenPorts;
-    DWORD                           dwLdapsListenPorts;
-    PDWORD                          pdwLdapConnectPorts;
-    DWORD                           dwLdapConnectPorts;
-    PDWORD                          pdwLdapsConnectPorts;
-    DWORD                           dwLdapsConnectPorts;
+    DWORD                           dwLdapPort;
+    DWORD                           dwLdapsPort;
     PSTR                            pszRestListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
     BOOLEAN                         bIsLDAPPortOpen;
@@ -318,32 +312,13 @@ VmDirdGetAllowInsecureAuth(
     VOID
     );
 
-VOID
-VmDirGetLdapListenPorts(
-    PDWORD* ppdwLdapListenPorts,
-    PDWORD  pdwLdapListenPorts
-    );
-
-VOID
-VmDirGetLdapsListenPorts(
-    PDWORD* ppdwLdapsListenPorts,
-    PDWORD  pdwLdapsListenPorts
-    );
-
-VOID
-VmDirGetLdapConnectPorts(
-    PDWORD* ppdwLdapConnectPorts,
-    PDWORD  pdwLdapConnectPorts
-    );
-
-VOID
-VmDirGetLdapsConnectPorts(
-    PDWORD* ppdwLdapsConnectPorts,
-    PDWORD  pdwLdapsConnectPorts
+DWORD
+VmDirGetLdapPort(
+    VOID
     );
 
 DWORD
-VmDirGetAllLdapPortsCount(
+VmDirGetLdapsPort(
     VOID
     );
 

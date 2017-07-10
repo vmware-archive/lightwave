@@ -1392,6 +1392,8 @@ VmDirGetServerName(
     LDAP*       pLd = NULL;
     PSTR        pszServerName = NULL;
     BerValue**  ppBerValues = NULL;
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (IsNullOrEmptyString(pszHostName) || ppszServerName == NULL)
     {
@@ -1399,19 +1401,28 @@ VmDirGetServerName(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
     if ( VmDirIsIPV6AddrFormat( pszHostName ) )
     {
         dwError = VmDirAllocateStringPrintf( &pszHostURI, "%s://[%s]:%d",
                                                  VMDIR_LDAP_PROTOCOL,
                                                  pszHostName,
-                                                 DEFAULT_LDAP_PORT_NUM);
+                                                 dwLdapPort);
     }
     else
     {
         dwError = VmDirAllocateStringPrintf( &pszHostURI, "%s://%s:%d",
                                                  VMDIR_LDAP_PROTOCOL,
                                                  pszHostName,
-                                                 DEFAULT_LDAP_PORT_NUM);
+                                                 dwLdapPort);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2634,6 +2645,8 @@ VmDirGetDSERootAttribute(
     LDAP*       pLd = NULL;
     PSTR        pszLocalAttrValue = NULL;
     BerValue**  ppBerValues = NULL;
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (IsNullOrEmptyString(pszHostName) || IsNullOrEmptyString(pszAttrName) || ppszAttrValue == NULL)
     {
@@ -2641,19 +2654,28 @@ VmDirGetDSERootAttribute(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
     if ( VmDirIsIPV6AddrFormat( pszHostName ) )
     {
         dwError = VmDirAllocateStringPrintf( &pszLocalHostURI, "%s://[%s]:%d",
                                                  VMDIR_LDAP_PROTOCOL,
                                                  pszHostName,
-                                                 DEFAULT_LDAP_PORT_NUM);
+                                                 dwLdapPort);
     }
     else
     {
         dwError = VmDirAllocateStringPrintf( &pszLocalHostURI, "%s://%s:%d",
                                                  VMDIR_LDAP_PROTOCOL,
                                                  pszHostName,
-                                                 DEFAULT_LDAP_PORT_NUM);
+                                                 dwLdapPort);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -4383,6 +4405,8 @@ VmDirAppendRaftState(
     BerValue** ppBerValues = NULL;
     PSTR pNode = NULL;
     int i = 0;
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (IsNullOrEmptyString(pHostName) || pRaftState == NULL)
     {
@@ -4390,15 +4414,24 @@ VmDirAppendRaftState(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
     if ( VmDirIsIPV6AddrFormat( pHostName ) )
     {
         dwError = VmDirAllocateStringPrintf( &pszLocalHostURI, "%s://[%s]:%d", VMDIR_LDAP_PROTOCOL,
-                                                 pHostName, DEFAULT_LDAP_PORT_NUM);
+                                                 pHostName, dwLdapPort);
     }
     else
     {
         dwError = VmDirAllocateStringPrintf( &pszLocalHostURI, "%s://%s:%d",
-                                                 VMDIR_LDAP_PROTOCOL, pHostName, DEFAULT_LDAP_PORT_NUM);
+                                                 VMDIR_LDAP_PROTOCOL, pHostName, dwLdapPort);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 

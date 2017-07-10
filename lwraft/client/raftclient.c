@@ -425,6 +425,7 @@ _VmDirConnectToRaft(
     DWORD   dwError = 0;
     PSTR    pszLocalHostURI = NULL;
     LDAP*   pLd = NULL;
+    DWORD   dwLdapPort = DEFAULT_LDAP_PORT_NUM;
 
     if (pszUserName && pszPassword)
     {
@@ -438,6 +439,13 @@ _VmDirConnectToRaft(
     }
     else
     {
+        // ignore error
+        VmDirGetRegKeyValueDword(
+                    VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                    VMDIR_REG_KEY_LDAP_PORT,
+                    &dwLdapPort,
+                    DEFAULT_LDAP_PORT_NUM);
+
         if ( VmDirIsIPV6AddrFormat( pszServerName ) )
         {
             dwError = VmDirAllocateStringPrintf(
@@ -445,7 +453,7 @@ _VmDirConnectToRaft(
                     "%s://[%s]:%d",
                     VMDIR_LDAP_PROTOCOL,
                     pszServerName,
-                    DEFAULT_LDAP_PORT_NUM);
+                    dwLdapPort);
         }
         else
         {
@@ -454,7 +462,7 @@ _VmDirConnectToRaft(
                     "%s://%s:%d",
                     VMDIR_LDAP_PROTOCOL,
                     pszServerName,
-                    DEFAULT_LDAP_PORT_NUM);
+                    dwLdapPort);
         }
         BAIL_ON_VMDIR_ERROR(dwError);
 

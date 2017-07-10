@@ -1194,10 +1194,7 @@ VmDirSendLdapReferralResult(
    PSTR             pszLeader = NULL;
    PSTR             pszRef = NULL;
    PVDIR_BERVALUE   pBerv = NULL;
-   DWORD            dwLdapsPorts = 0;
-   PDWORD           pdwLdapsPorts = NULL;
    BOOLEAN          bIsLdaps = FALSE;
-   int              i = 0;
 
    *pbRefSent = FALSE;
    (void) memset( (char *)&berbuf, '\0', sizeof( BerElementBuffer ));
@@ -1220,17 +1217,15 @@ VmDirSendLdapReferralResult(
        goto done;
    }
 
-   VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
-   for (i = 0; i < dwLdapsPorts; i++)
+   if (op->conn->dwServerPort == VmDirGetLdapsPort())
    {
-       if (pdwLdapsPorts[i] == op->conn->dwServerPort)
-       {
-           bIsLdaps = TRUE;
-           break;
-       }
+       bIsLdaps = TRUE;
    }
 
-   dwError = VmDirAllocateStringPrintf(&pszRef, "%s://%s/%s", bIsLdaps?"ldaps":"ldap", pszLeader, pszRefSuffix);
+   dwError = VmDirAllocateStringPrintf(&pszRef, "%s://%s/%s",
+               bIsLdaps ? "ldaps":"ldap",
+               pszLeader,
+               pszRefSuffix );
    BAIL_ON_VMDIR_ERROR(dwError);
 
    op->ldapResult.errCode = 0;
