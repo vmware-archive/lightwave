@@ -54,7 +54,6 @@ autoreconf -mif .. &&
              --with-commons-daemon=%{_commons_daemondir} \
              --with-ant=%{_antdir} \
              --with-tomcat=%{_tomcatdir} \
-             --with-jax-ws=%{_jaxwsdir} \
              --with-maven=%{_mavendir}
 make
 

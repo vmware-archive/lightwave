@@ -131,7 +131,6 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_javahome ${JAVA_HOME}" \
               --define "_antdir ${ANT_HOME}" \
               --define "_tomcatdir ${TOMCAT_HOME}" \
-              --define "_jaxwsdir ${JAXWS_HOME}" \
               --define "_mavendir ${MAVEN_HOME}" \
               --define "_version $(VMSTS_MAJOR_VER).$(VMSTS_MINOR_VER).$(VMSTS_RELEASE_VER)" \
               --define "_patch $(VMSTS_PATCH_VER)" \
