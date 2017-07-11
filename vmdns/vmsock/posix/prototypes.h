@@ -25,7 +25,7 @@
  * @return 0 on success
  */
 DWORD
-VmSockPosixOpenClient(
+VmDnsSockPosixOpenClient(
     PCSTR                pszHost,
     USHORT               usPort,
     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -46,7 +46,7 @@ VmSockPosixOpenClient(
  * @return 0 on success
  */
 DWORD
-VmSockPosixOpenServer(
+VmDnsSockPosixOpenServer(
     USHORT               usPort,
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -64,7 +64,7 @@ VmSockPosixOpenServer(
  * @return 0 on success
  */
 DWORD
-VmSockPosixCreateEventQueue(
+VmDnsSockPosixCreateEventQueue(
     int                   iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE* ppQueue
     );
@@ -78,7 +78,7 @@ VmSockPosixCreateEventQueue(
  * @return 0 on success
  */
 DWORD
-VmSockPosixEventQueueAdd(
+VmDnsSockPosixEventQueueAdd(
     PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
     );
@@ -96,7 +96,7 @@ VmSockPosixEventQueueAdd(
  * @return 0 on success
  */
 DWORD
-VmSockPosixWaitForEvent(
+VmDnsSockPosixWaitForEvent(
     PVM_SOCK_EVENT_QUEUE pQueue,
     int                  iTimeoutMS,
     PVM_SOCKET*          ppSocket,
@@ -113,7 +113,7 @@ VmSockPosixWaitForEvent(
  */
 
 VOID
-VmSockPosixCloseEventQueue(
+VmDnsSockPosixCloseEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     );
 
@@ -126,7 +126,7 @@ VmSockPosixCloseEventQueue(
  */
 
 DWORD
-VmSockPosixSetNonBlocking(
+VmDnsSockPosixSetNonBlocking(
     PVM_SOCKET           pSocket
     );
 
@@ -140,7 +140,7 @@ VmSockPosixSetNonBlocking(
  */
 
 DWORD
-VmSockPosixSetTimeOut(
+VmDnsSockPosixSetTimeOut(
     PVM_SOCKET           pSocket,
     DWORD                dwTimeOut
     );
@@ -154,7 +154,7 @@ VmSockPosixSetTimeOut(
  *                            This will be one of { SOCK_STREAM, SOCK_DGRAM... }
  */
 DWORD
-VmSockPosixGetProtocol(
+VmDnsSockPosixGetProtocol(
     PVM_SOCKET           pSocket,
     PDWORD               pdwProtocol
     );
@@ -169,7 +169,7 @@ VmSockPosixGetProtocol(
  * @return 0 on success
  */
 DWORD
-VmSockPosixSetData(
+VmDnsSockPosixSetData(
     PVM_SOCKET           pSocket,
     PVOID                pData,
     PVOID*               ppOldData
@@ -184,7 +184,7 @@ VmSockPosixSetData(
  * @return Pointer to current data associated with the socket
  */
 DWORD
-VmSockPosixGetData(
+VmDnsSockPosixGetData(
     PVM_SOCKET          pSocket,
     PVOID*              ppData
     );
@@ -202,7 +202,7 @@ VmSockPosixGetData(
  * @return 0 on success
  */
 DWORD
-VmSockPosixRead(
+VmDnsSockPosixRead(
     PVM_SOCKET          pSocket,
     PVM_SOCK_IO_BUFFER  pIoBuffer
     );
@@ -223,7 +223,7 @@ VmSockPosixRead(
  * @return 0 on success
  */
 DWORD
-VmSockPosixWrite(
+VmDnsSockPosixWrite(
     PVM_SOCKET          pSocket,
     const struct sockaddr*    pClientAddress,
     socklen_t           addrLength,
@@ -237,7 +237,7 @@ VmSockPosixWrite(
  */
 
 PVM_SOCKET
-VmSockPosixAcquireSocket(
+VmDnsSockPosixAcquireSocket(
     PVM_SOCKET           pSocket
     );
 
@@ -246,7 +246,7 @@ VmSockPosixAcquireSocket(
  *
  */
 VOID
-VmSockPosixReleaseSocket(
+VmDnsSockPosixReleaseSocket(
     PVM_SOCKET           pSocket
     );
 
@@ -255,25 +255,25 @@ VmSockPosixReleaseSocket(
  *        This call does not release the reference to the socket or free it.
  */
 DWORD
-VmSockPosixCloseSocket(
+VmDnsSockPosixCloseSocket(
     PVM_SOCKET           pSocket
     );
 
 DWORD
-VmSockPosixGetAddress(
+VmDnsSockPosixGetAddress(
     PVM_SOCKET                  pSocket,
     struct sockaddr_storage*    pAddress,
     socklen_t*                  pAddresLen
     );
 
 DWORD
-VmSockPosixAllocateIoBuffer(
+VmDnsSockPosixAllocateIoBuffer(
     VM_SOCK_EVENT_TYPE      eventType,
     DWORD                   dwSize,
     PVM_SOCK_IO_BUFFER*     ppIoBuffer
     );
 
 VOID
-VmSockPosixFreeIoBuffer(
+VmDnsSockPosixFreeIoBuffer(
     PVM_SOCK_IO_BUFFER     pIoBuffer
     );

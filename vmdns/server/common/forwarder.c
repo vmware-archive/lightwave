@@ -540,26 +540,26 @@ VmDnsForwardRequest(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmwSockOpenClient(
+    dwError = VmDnsSockOpenClient(
                     pszForwarder,
                     VMW_DNS_PORT,
                     falgs,
                     &pSocket);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmwSockSetTimeOut(
+    dwError = VmDnsSockSetTimeOut(
                     pSocket,
                     VMDNS_FORWARDER_TIMEOUT
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmwSockGetAddress(
+    dwError = VmDnsSockGetAddress(
                     pSocket,
                     &address,
                     &addLenth);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmwSockAllocateIoBuffer(
+    dwError = VmDnsSockAllocateIoBuffer(
                     VM_SOCK_EVENT_TYPE_UNKNOWN,
                     dwQuerySize,
                     &pIoRequest);
@@ -572,7 +572,7 @@ VmDnsForwardRequest(
                     dwQuerySize);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmwSockWrite(
+    dwError = VmDnsSockWrite(
                     pSocket,
                     (struct sockaddr*)&address,
                     addLenth,
@@ -581,7 +581,7 @@ VmDnsForwardRequest(
 
     if (bUseUDP)
     {
-        dwError = VmwSockAllocateIoBuffer(
+        dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UNKNOWN,
                         VMDNS_UDP_PACKET_SIZE,
                         &pIoDataResponse);
@@ -597,33 +597,33 @@ VmDnsForwardRequest(
 
         pIoDataResponse->addrLen = addLenth;
 
-        dwError = VmwSockRead(
+        dwError = VmDnsSockRead(
                         pSocket,
                         pIoDataResponse);
        BAIL_ON_VMDNS_ERROR(dwError);
     }
     else
     {
-        dwError = VmwSockAllocateIoBuffer(
+        dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UNKNOWN,
                         sizeof(UINT16),
                         &pIoSizeResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        dwError = VmwSockRead(
+        dwError = VmDnsSockRead(
                         pSocket,
                         pIoSizeResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
 
         usExpectedSize = htons(*((UINT*)pIoSizeResponse->pData));
 
-        dwError = VmwSockAllocateIoBuffer(
+        dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UNKNOWN,
                         usExpectedSize,
                         &pIoDataResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        dwError = VmwSockRead(
+        dwError = VmDnsSockRead(
                         pSocket,
                         pIoDataResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -648,19 +648,19 @@ cleanup:
 
     if (pSocket)
     {
-        VmwSockRelease(pSocket);
+        VmDnsSockRelease(pSocket);
     }
     if (pIoRequest)
     {
-        VmwSockReleaseIoBuffer(pIoRequest);
+        VmDnsSockReleaseIoBuffer(pIoRequest);
     }
     if (pIoSizeResponse)
     {
-        VmwSockReleaseIoBuffer(pIoSizeResponse);
+        VmDnsSockReleaseIoBuffer(pIoSizeResponse);
     }
     if (pIoDataResponse)
     {
-        VmwSockReleaseIoBuffer(pIoDataResponse);
+        VmDnsSockReleaseIoBuffer(pIoDataResponse);
     }
 
     return dwError;

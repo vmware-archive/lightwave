@@ -17,28 +17,28 @@
 
 // For now only client socket part is portable
 
-VM_SOCK_PACKAGE gVmSockWinPackage =
+VM_SOCK_PACKAGE gVmDnsSockWinPackage =
 {
-    .pfnOpenClientSocket = &VmSockWinOpenClient,
-    .pfnOpenServerSocket = &VmSockWinOpenServer,
-    .pfnCreateEventQueue = &VmSockWinCreateEventQueue,
-    .pfnAddEventQueue = &VmSockWinEventQueueAdd,
-    .pfnWaitForEvent = &VmSockWinWaitForEvent,
-    .pfnStartListening = &VmSockWinStartListening,
-    .pfnCloseEventQueue = &VmSockWinCloseEventQueue,
-    .pfnSetNonBlocking = &VmSockWinSetNonBlocking,
-    .pfnSetTimeOut = &VmSockWinSetTimeOut,
-    .pfnGetProtocol = &VmSockWinGetProtocol,
-    .pfnSetData = &VmSockWinSetData,
-    .pfnGetData = &VmSockWinGetData,
-    .pfnRead = &VmSockWinRead,
-    .pfnWrite = &VmSockWinWrite,
-    .pfnAcquireSocket = &VmSockWinAcquire,
-    .pfnReleaseSocket = &VmSockWinRelease,
-    .pfnCloseSocket = &VmSockWinClose,
-    .pfnGetAddress = &VmSockWinGetAddress,
-    .pfnAllocateIoBuffer = &VmSockWinAllocateIoBuffer,
-    .pfnReleaseIoBuffer = &VmSockWinFreeIoBuffer
+    .pfnOpenClientSocket = &VmDnsSockWinOpenClient,
+    .pfnOpenServerSocket = &VmDnsSockWinOpenServer,
+    .pfnCreateEventQueue = &VmDnsSockWinCreateEventQueue,
+    .pfnAddEventQueue = &VmDnsSockWinEventQueueAdd,
+    .pfnWaitForEvent = &VmDnsSockWinWaitForEvent,
+    .pfnStartListening = &VmDnsSockWinStartListening,
+    .pfnCloseEventQueue = &VmDnsSockWinCloseEventQueue,
+    .pfnSetNonBlocking = &VmDnsSockWinSetNonBlocking,
+    .pfnSetTimeOut = &VmDnsSockWinSetTimeOut,
+    .pfnGetProtocol = &VmDnsSockWinGetProtocol,
+    .pfnSetData = &VmDnsSockWinSetData,
+    .pfnGetData = &VmDnsSockWinGetData,
+    .pfnRead = &VmDnsSockWinRead,
+    .pfnWrite = &VmDnsSockWinWrite,
+    .pfnAcquireSocket = &VmDnsSockWinAcquire,
+    .pfnReleaseSocket = &VmDnsSockWinRelease,
+    .pfnCloseSocket = &VmDnsSockWinClose,
+    .pfnGetAddress = &VmDnsSockWinGetAddress,
+    .pfnAllocateIoBuffer = &VmDnsSockWinAllocateIoBuffer,
+    .pfnReleaseIoBuffer = &VmDnsSockWinFreeIoBuffer
 };
 
-PVM_SOCK_PACKAGE gpVmWinSockPackage = &gVmSockWinPackage;
+PVM_SOCK_PACKAGE gpVmWinSockPackage = &gVmDnsSockWinPackage;

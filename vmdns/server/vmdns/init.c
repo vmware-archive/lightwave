@@ -48,7 +48,7 @@ VmDnsInit()
     dwError = VmDnsSrvInitialize(TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmwSockInitialize();
+    dwError = VmDnsSockInitialize();
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsRpcServerInit();

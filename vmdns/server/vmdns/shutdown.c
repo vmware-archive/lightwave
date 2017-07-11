@@ -39,7 +39,7 @@ VmDnsShutdown(
     VmDnsRpcServerShutdown();
     VmDnsShutdownProtocolServer();
     VmDnsSrvCleanup();
-    VmwSockShutdown();
+    VmDnsSockShutdown();
     VmDnsCleanupGlobals();
 }
 
