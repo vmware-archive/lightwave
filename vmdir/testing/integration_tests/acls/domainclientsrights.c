@@ -260,7 +260,7 @@ DomainClientsShouldBeAbleToListChildObjects(
                 pState->pszBaseDN);
     TestAssertEquals(dwError, 0);
 
-    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL);
+    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL, NULL);
     TestAssertEquals(dwError, 0);
     return dwError;
 }

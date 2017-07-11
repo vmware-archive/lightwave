@@ -50,6 +50,19 @@ VmDirGetObjectSidFromDn(
     PSID* ppSid
     );
 
+DWORD
+VmDirCopyAces(
+    PACL    pSrcDacl,
+    PACL    pDestDacl
+    );
+
+DWORD
+VmDirMergeAces(
+    PACL    pDaclA,
+    PACL    pDaclB,
+    PACL*   ppMergedDacl
+    );
+
 // legacy_checks.c
 DWORD
 VmDirLegacyAccessCheck(
@@ -74,9 +87,17 @@ VmDirSetSecurityDescriptorForEntry(
     );
 
 DWORD
+VmDirAppendSecurityDescriptorForEntry(
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            securityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel,
+    ULONG                           ulSecDescRel
+    );
+
+DWORD
 VmDirSecurityAclSelfRelativeToAbsoluteSD(
-    PSECURITY_DESCRIPTOR_ABSOLUTE *ppAbsolute,
-    PSECURITY_DESCRIPTOR_RELATIVE pRelative
+    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppAbsolute,
+    PSECURITY_DESCRIPTOR_RELATIVE   pRelative
     );
 
 // objectSid.c
@@ -91,6 +112,11 @@ VmDirGetSidGenStateIfDomain_inlock(
     PCSTR                       pszObjectDN,
     PCSTR                       pszGuid, /* optional Guid used to generate sid */
     PVDIR_DOMAIN_SID_GEN_STATE* ppDomainState
+    );
+
+PCSTR
+VmDirFindDomainSid(
+    PCSTR   pszObjectDN
     );
 
 // ridsyncthr.c
@@ -109,6 +135,14 @@ VmDirCreateAccessToken(
     PTOKEN_OWNER            Owner,
     PTOKEN_PRIMARY_GROUP    PrimaryGroup,
     PTOKEN_DEFAULT_DACL     DefaultDacl
+    );
+
+// TODO:
+// this is temporary to avoid build error
+// remove once likewise-open is updated
+USHORT
+RtlGetAclSize(
+    IN PACL Acl
     );
 
 #ifdef __cplusplus

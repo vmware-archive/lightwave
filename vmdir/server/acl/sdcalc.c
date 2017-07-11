@@ -68,40 +68,47 @@ _VmDirSrvCreateAccessTokenForAdmin(
     PSTR pszBuiltinUsersGroupSid = NULL;
 
     dwError = _VmDirGenerateWellKnownBinarySid(
-                VMDIR_DOMAIN_USER_RID_ADMIN,
-                &user.User.Sid);
+            VMDIR_DOMAIN_USER_RID_ADMIN,
+            &user.User.Sid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     owner.Owner = user.User.Sid;
 
-    dwError = VmDirAllocateMemory(sizeof(TOKEN_GROUPS) + sizeof(SID_AND_ATTRIBUTES),
-                                  (PVOID*)&pGroups);
+    dwError = VmDirAllocateMemory(
+            sizeof(TOKEN_GROUPS) + sizeof(SID_AND_ATTRIBUTES),
+            (PVOID*)&pGroups);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pGroups->GroupCount = 1;
 
     dwError = _VmDirGenerateWellKnownBinarySid(
-                VMDIR_DOMAIN_ALIAS_RID_ADMINS,
-                &pGroups->Groups[0].Sid);
+            VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+            &pGroups->Groups[0].Sid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // SJ-TBD: should be set on the basis of status of the group??
     pGroups->Groups[0].Attributes = SE_GROUP_ENABLED;
 
-    dwError = VmDirGenerateWellknownSid(gVmdirServerGlobals.systemDomainDN.lberbv.bv_val, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBuiltinUsersGroupSid);
+    dwError = VmDirGenerateWellknownSid(
+            gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
+            VMDIR_DOMAIN_ALIAS_RID_USERS,
+            &pszBuiltinUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Primary groups should be built-in\Users not admins
-    dwError = VmDirAllocateSidFromCString(pszBuiltinUsersGroupSid, &primaryGroup.PrimaryGroup);
+    dwError = VmDirAllocateSidFromCString(
+            pszBuiltinUsersGroupSid,
+            &primaryGroup.PrimaryGroup);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateAccessToken(&pToken,
-                                     &user,
-                                     pGroups,
-                                     &privileges,
-                                     &owner,
-                                     &primaryGroup,
-                                     &dacl);
+    dwError = VmDirCreateAccessToken(
+            &pToken,
+            &user,
+            pGroups,
+            &privileges,
+            &owner,
+            &primaryGroup,
+            &dacl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppToken = pToken;
@@ -224,26 +231,36 @@ error:
 static
 DWORD
 _VmDirGetSchemaDefaultSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE *ppSecDesc,
-    PULONG pulLength
+    PVDIR_ENTRY                     pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE   pParentSecDesc,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulLength
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
+    BOOLEAN bTmp = FALSE;
+    ULONG   ulLength = 0;
+    PCSTR   pszDomainSid = NULL;
+    PSTR    pszClassDn = NULL;
+    PSTR    pszDacl = NULL;
+    PSTR    pszOwnerSid = NULL;
+    PSTR    pszGroupSid = NULL;
+    PSTR    pszSecDesc = NULL;
+    PSID    pParentOwnerSid = NULL;
+    PSID    pParentGroupSid = NULL;
+    PVDIR_SCHEMA_OC_DESC    pOCDesc = NULL;
+    PVDIR_ENTRY     pOCEntry = NULL;
     PVDIR_ATTRIBUTE pAttr = NULL;
-    PVDIR_SCHEMA_OC_DESC pOCDesc = NULL;
-    PVDIR_ENTRY pOCEntry = NULL;
-    PSTR pszClassDn = NULL;
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc = NULL;
-    ULONG ulLength = 0;
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pParentSecDescAbs = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDesc = NULL;
 
     dwError = VmDirSchemaGetEntryStructureOCDesc(pEntry, &pOCDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
-                &pszClassDn,
-                "cn=%s,cn=schemacontext",
-                pOCDesc->pszName);
+            &pszClassDn,
+            "cn=%s,cn=schemacontext",
+            pOCDesc->pszName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSimpleDNToEntry(pszClassDn, &pOCEntry);
@@ -260,20 +277,95 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
     pAttr = VmDirFindAttrByName(pOCEntry, ATTR_DEFAULT_SECURITY_DESCRIPTOR);
     if (pAttr)
     {
+        pszDomainSid = VmDirFindDomainSid(pEntry->dn.lberbv.bv_val);
+        if (IsNullOrEmptyString(pszDomainSid))
+        {
+            // special object such as schema, config, etc
+            // no need to fill in domain SID template
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv.bv_val,
+                    &pszDacl);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirStringReplaceAll(
+                    pAttr->vals[0].lberbv.bv_val,
+                    VMDIR_NULL_SID_TEMPLATE,
+                    pszDomainSid,
+                    &pszDacl);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pParentSecDesc)
+        {
+            // take parent's owner and group
+            dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
+                    &pParentSecDescAbs, pParentSecDesc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirGetOwnerSecurityDescriptor(
+                    pParentSecDescAbs, &pParentOwnerSid, &bTmp);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirGetGroupSecurityDescriptor(
+                    pParentSecDescAbs, &pParentGroupSid, &bTmp);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateCStringFromSid(
+                    &pszOwnerSid, pParentOwnerSid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateCStringFromSid(
+                    &pszGroupSid, pParentGroupSid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            // use system domain administrator as default owner
+            // and system domain builtin admins group as default group
+            dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
+                    VMDIR_DOMAIN_USER_RID_ADMIN,
+                    &pszOwnerSid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
+                    VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+                    &pszGroupSid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwError = VmDirAllocateStringPrintf(
+                &pszSecDesc,
+                "O:%sG:%s%s",
+                pszOwnerSid,
+                pszGroupSid,
+                pszDacl);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         dwError = LwNtStatusToWin32Error(
-                    RtlAllocateSecurityDescriptorFromSddlCString(
+                RtlAllocateSecurityDescriptorFromSddlCString(
                         &pSecDesc,
                         &ulLength,
-                        pAttr->vals[0].lberbv.bv_val,
+                        pszSecDesc,
                         SDDL_REVISION_1));
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     *ppSecDesc = pSecDesc;
+
 cleanup:
+    VmDirFreeAbsoluteSecurityDescriptor(&pParentSecDescAbs);
     VMDIR_SAFE_FREE_STRINGA(pszClassDn);
+    VMDIR_SAFE_FREE_STRINGA(pszDacl);
+    VMDIR_SAFE_FREE_STRINGA(pszOwnerSid);
+    VMDIR_SAFE_FREE_STRINGA(pszGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
     VmDirFreeEntry(pOCEntry);
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -312,14 +404,20 @@ _VmDirLogSecurityDescriptor(
     PSTR pszAclString = NULL;
     DWORD dwError = 0;
 
-    dwError = LwNtStatusToWin32Error(RtlAllocateSddlCStringFromSecurityDescriptor(
-                                        &pszAclString,
-                                        pSecDesc,
-                                        SDDL_REVISION_1,
-                                        OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION));
+    dwError = LwNtStatusToWin32Error(
+            RtlAllocateSddlCStringFromSecurityDescriptor(
+                    &pszAclString,
+                    pSecDesc,
+                    SDDL_REVISION_1,
+                    OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION));
     if (dwError == 0)
     {
-        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Calculated SD %s for entry %s\n", pszAclString, pEntry->dn.lberbv.bv_val);
+        VMDIR_LOG_VERBOSE(
+                VMDIR_LOG_MASK_ALL,
+                "Calculated SD %s for entry %s",
+                pszAclString,
+                pEntry->dn.lberbv.bv_val);
+
         VMDIR_SAFE_FREE_STRINGA(pszAclString);
     }
 }
@@ -329,8 +427,7 @@ _VmDirLogSecurityDescriptor(
  * or ATTR_OBJECT_SECURITY_DESCRIPTOR attribute) then we'll use that. If one
  * isn't specified, then we'll use the defaultSecurityDescriptor from the
  * object's class's schema. If that doesn't exist then we'd normally use the SD
- * from the creator's access token (this is what AD does) but that will always
- * be NULL in our system (for now).
+ * from the creator's access token (this is what AD does).
  *
  * Whatever DACL we get from the step above we then combine with any
  * inheritable ACEs from the parent.
@@ -342,70 +439,93 @@ VmDirComputeObjectSecurityDescriptor(
     PVDIR_ENTRY         pParentEntry
     )
 {
-    DWORD           dwError = 0;
+    DWORD   dwError = 0;
+    ULONG   ulLength = 0;
+    BOOLEAN bInternalEntry = FALSE;
+    PACCESS_TOKEN   pAccessToken = NULL;
+    PACCESS_TOKEN   pAdminAccessToken = NULL;
     PVDIR_ATTRIBUTE pObjectSdAttr = NULL;
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc = NULL;
-    PSECURITY_DESCRIPTOR_RELATIVE pParentSecDesc = NULL;
-    PSECURITY_DESCRIPTOR_RELATIVE pComputedSecDesc = NULL;
-    ULONG ulLength = 0;
-    PACCESS_TOKEN pAccessToken = NULL;
-    PACCESS_TOKEN pAdminAccessToken = NULL;
-    SECURITY_INFORMATION SecInfoAll = (OWNER_SECURITY_INFORMATION |
-                                       GROUP_SECURITY_INFORMATION |
-                                       DACL_SECURITY_INFORMATION |
-                                       SACL_SECURITY_INFORMATION);
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDesc = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pParentSecDesc = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pComputedSecDesc = NULL;
 
-    dwError = _VmDirGetSecurityDescriptorAttribute(pEntry, &pSecDesc, &ulLength);
+    SECURITY_INFORMATION    SecInfoAll =
+            OWNER_SECURITY_INFORMATION |
+            GROUP_SECURITY_INFORMATION |
+            DACL_SECURITY_INFORMATION |
+            SACL_SECURITY_INFORMATION;
+
+    // get access token
+    pAccessToken = pAccessInfo ? pAccessInfo->pAccessToken : NULL;
+
+    // if not provided, this entry is being internally created
+    bInternalEntry = pAccessToken ? FALSE : TRUE;
+
+    // get user provided SD
+    dwError = _VmDirGetSecurityDescriptorAttribute(
+            pEntry, &pSecDesc, &ulLength);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pSecDesc == NULL)
-    {
-        dwError = _VmDirGetSchemaDefaultSecurityDescriptor(
-                    pEntry,
-                    &pSecDesc,
-                    &ulLength);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
+    // get parent entry SD if parent exists
     if (pParentEntry)
     {
         dwError = VmDirGetSecurityDescriptorForEntry(
-                    pParentEntry,
-                    SecInfoAll,
-                    &pParentSecDesc,
-                    &ulLength);
+                pParentEntry, SecInfoAll, &pParentSecDesc, &ulLength);
+
+        // parent entry may not have SD if it's also internally created
+        if (bInternalEntry && dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
+        {
+            dwError = 0;
+        }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pParentSecDesc == NULL && pSecDesc == NULL)
+    // get class default SD if user didn't provide SD
+    if (!pSecDesc)
     {
-        //
-        // This particular error code is handled specially. We might want to
-        // change this to return success.
-        //
+        dwError = _VmDirGetSchemaDefaultSecurityDescriptor(
+                pEntry, pParentSecDesc, &pSecDesc, &ulLength);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // check if it doens't have SD to set
+    if (!pParentSecDesc && !pSecDesc)
+    {
+        // if internal entry, log warning and exit gracefully
+        if (bInternalEntry)
+        {
+            VMDIR_LOG_WARNING(
+                    LDAP_DEBUG_ACL,
+                    "%s: entry (%s) has no SD to set ",
+                    __FUNCTION__,
+                    VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
+
+            goto cleanup;
+        }
+
+        // otherwise, return appropriate error code
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SECURITY_DESCRIPTOR);
     }
 
-    if (!pAccessInfo || !pAccessInfo->pAccessToken)
+    // use admin access token for internal entry
+    if (bInternalEntry)
     {
         dwError = _VmDirSrvCreateAccessTokenForAdmin(&pAdminAccessToken);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pAccessToken = pAdminAccessToken;
     }
-    else
-    {
-        pAccessToken = pAccessInfo->pAccessToken;
-    }
 
-    if (pParentSecDesc != NULL && VmDirIsLegacySecurityDescriptor())
+    // handle legacy SD
+    if (VmDirIsLegacySecurityDescriptor())
     {
-        if (pSecDesc == NULL)
+        if (pParentSecDesc && !pSecDesc)
         {
             dwError = VmDirAllocateMemory(ulLength, (PVOID*)&pComputedSecDesc);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirCopyMemory(pComputedSecDesc, ulLength, pParentSecDesc, ulLength);
+            dwError = VmDirCopyMemory(
+                    pComputedSecDesc, ulLength, pParentSecDesc, ulLength);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else
@@ -414,6 +534,7 @@ VmDirComputeObjectSecurityDescriptor(
             pSecDesc = NULL;
         }
     }
+    // handle regular SD
     else
     {
         dwError = LwNtStatusToWin32Error(
@@ -430,75 +551,54 @@ VmDirComputeObjectSecurityDescriptor(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    // log final SD
     _VmDirLogSecurityDescriptor(pEntry, pComputedSecDesc);
 
+    // add the final SD to the entry
     dwError = VmDirAttributeAllocate(
-                    ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                    1,
-                    pEntry->pSchemaCtx,
-                    &pObjectSdAttr);
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            1,
+            pEntry->pSchemaCtx,
+            &pObjectSdAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pObjectSdAttr->vals[0].lberbv.bv_val = (PSTR)pComputedSecDesc;
     pObjectSdAttr->vals[0].lberbv.bv_len = ulLength;
+    pObjectSdAttr->vals[0].bOwnBvVal = TRUE;
     pComputedSecDesc = NULL;
 
-    //
-    // Add a terminating NULL as some code assumes that these values are
-    // NULL-terminated, even though this value isn't a string.
-    //
+    // add a terminating NULL as some code assumes that these values are
+    // NULL-terminated, even though this value isn't a string
     dwError = VmDirReallocateMemoryWithInit(
-                    (PVOID)pObjectSdAttr->vals[0].lberbv.bv_val,
-                    (PVOID *)(&pObjectSdAttr->vals[0].lberbv.bv_val),
-                    pObjectSdAttr->vals[0].lberbv.bv_len+1,
-                    pObjectSdAttr->vals[0].lberbv.bv_len);
+            (PVOID)pObjectSdAttr->vals[0].lberbv.bv_val,
+            (PVOID *)(&pObjectSdAttr->vals[0].lberbv.bv_val),
+            pObjectSdAttr->vals[0].lberbv.bv_len+1,
+            pObjectSdAttr->vals[0].lberbv.bv_len);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    pObjectSdAttr->vals[0].bOwnBvVal = TRUE;
 
     dwError = VmDirEntryAddAttribute(pEntry, pObjectSdAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
     pObjectSdAttr = NULL;
 
-    dwError = VmDirGenerateAttrMetaData(pEntry,
-                                        ATTR_OBJECT_SECURITY_DESCRIPTOR);
+    dwError = VmDirGenerateAttrMetaData(
+            pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    if (pComputedSecDesc != NULL)
-    {
-        LwRtlMemoryFree(pComputedSecDesc);
-    }
+    VmDirReleaseAccessToken(&pAdminAccessToken);
+    VMDIR_SAFE_FREE_MEMORY(pComputedSecDesc);
     VMDIR_SAFE_FREE_MEMORY(pParentSecDesc);
     VMDIR_SAFE_FREE_MEMORY(pSecDesc);
-    VmDirReleaseAccessToken(&pAdminAccessToken);
+    VmDirFreeAttribute(pObjectSdAttr);
     return dwError;
 
 error:
-    if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
-    {
-        // Some initial objects created during startup/vdcpromo do not have SD. Their SD is setup after cn=Administrator,...
-        // object is created
-        VMDIR_LOG_WARNING( LDAP_DEBUG_ACL, "%s failed for (%s), error code (%d)",
-                __FUNCTION__, VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
-    }
-    else
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed for (%s), error code (%d)",
-                __FUNCTION__, VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
-    }
-
-    if (pObjectSdAttr)
-    {
-        VmDirFreeAttribute(pObjectSdAttr);
-    }
-
-    // ignore if cannot find a SD from parentEntry (during instance set up
-    // parent does not have SD, until an admin can be created to generate SD
-    if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
-    {
-        dwError = 0;
-    }
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed for (%s), error code (%d)",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val),
+            dwError);
 
     goto cleanup;
 }

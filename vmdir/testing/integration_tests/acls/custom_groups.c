@@ -191,7 +191,7 @@ ListCustomObjects(
             pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pState->pLdCustom, pszDN, &pObjects);
+    dwError = VmDirTestGetObjectList(pState->pLdCustom, pszDN, NULL, &pObjects);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pdwCount = pObjects->dwCount;

@@ -122,7 +122,7 @@ _VmDirLogFailedAccessCheck(
     // Make sure we still log even if the SD translation fails for some reason.
     pszAclString = dwError ? NULL : pszAclString;
 
-    VMDIR_LOG_ERROR(
+    VMDIR_LOG_WARNING(
             VMDIR_LOG_MASK_ALL,
             "Caller (%s/%s) failed to get 0x%x permission to %s (dwError = %d). Legacy mode is %s. Object's SD: %s",
             pAccessInfo->pszNormBindedDn,
@@ -749,9 +749,9 @@ error:
 // Copy existing ACEs from a src DACL to a destination DACL.
 //
 DWORD
-_VmDirCopyAces(
-    PACL pSrcDacl,
-    PACL pDestDacl
+VmDirCopyAces(
+    PACL    pSrcDacl,
+    PACL    pDestDacl
     )
 {
     DWORD dwError = 0;
@@ -804,6 +804,44 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+//
+// Merge existing ACEs from pDaclA and pDaclB
+//
+DWORD
+VmDirMergeAces(
+    PACL    pDaclA,
+    PACL    pDaclB,
+    PACL*   ppMergedDacl
+    )
+{
+    DWORD   dwError = 0;
+    ULONG   ulMergedDacl = 0;
+    PACL    pMergedDacl = NULL;
+
+    ulMergedDacl = RtlGetAclSize(pDaclA) + RtlGetAclSize(pDaclB);
+
+    dwError = VmDirAllocateMemory(ulMergedDacl, (PVOID*)&pMergedDacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateAcl(pMergedDacl, ulMergedDacl, ACL_REVISION);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyAces(pDaclA, pMergedDacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyAces(pDaclB, pMergedDacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppMergedDacl = pMergedDacl;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pMergedDacl);
     goto cleanup;
 }
 
@@ -896,7 +934,7 @@ VmDirAddAceToSecurityDescriptor(
     dwError = VmDirCreateAcl(pNewDacl, ulDaclLength, ACL_REVISION);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirCopyAces(pDacl, pNewDacl);
+    dwError = VmDirCopyAces(pDacl, pNewDacl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAddAccessAllowedAceEx(pNewDacl,

@@ -544,6 +544,14 @@ VmDirStringNPrintFA(
     ...
 );
 
+DWORD
+VmDirStringReplaceAll(
+    PCSTR   pszSrc,
+    PCSTR   pszPatn,
+    PCSTR   pszRplc,
+    PSTR*   ppszDst
+    );
+
 VOID
 VmdDirNormalizeString(
     PSTR    pszString

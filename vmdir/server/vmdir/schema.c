@@ -102,8 +102,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -113,7 +116,7 @@ error:
  * Should be called if InitializeSchema() results pbWriteSchemaEntry = TRUE
  */
 DWORD
-InitializeSchemaEntries(
+VmDirSchemaInitializeSubtree(
     PVDIR_SCHEMA_CTX    pSchemaCtx
     )
 {
@@ -136,8 +139,63 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaSetSystemDefaultSecurityDescriptors(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszBUSidTemplate = NULL;
+    PSTR    pszDaclTemplate = NULL;
+
+    PCSTR   pszClasses[] =
+    {
+            OC_COMPUTER,
+            OC_GROUP,
+            OC_VMW_CERTIFICATION_AUTHORITY,
+            NULL
+    };
+
+    // create builtin users group SID template
+    dwError = VmDirGenerateWellknownSid(
+            NULL, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBUSidTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // build SD template which will grant read property & control permission
+    dwError = VmDirAllocateStringPrintf(
+            &pszDaclTemplate, "D:(A;;RCRP;;;%s)", pszBUSidTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // set the template as default security descriptors for predefined classes
+    for (i = 0; pszClasses[i]; i++)
+    {
+        dwError = VmDirSetDefaultSecurityDescriptorForClass(
+                pszClasses[i], pszDaclTemplate);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszBUSidTemplate);
+    VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -184,8 +242,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -222,8 +283,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -283,5 +347,11 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }

@@ -682,17 +682,17 @@ TestDomainAdminPrivileges(
 #endif
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
-    dwError = VmDirTestAddUserToGroup(pState->pLd, pszUserDn, pszGroupDn);
+    dwError = VmDirTestAddUserToGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     TestAssert(dwError == 0);
 
     dwError = _VdcConnectionFromUser(pState, pszUserName, &pLd); // TODO -- Why are we re-opening this connection?
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pLd, pState->pszBaseDN, NULL);
+    dwError = VmDirTestGetObjectList(pLd, pState->pszBaseDN, NULL, NULL);
     TestAssert(dwError == 0);
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
-    dwError = VmDirTestRemoveUserFromGroup(pState->pLd, pszUserDn, pszGroupDn);
+    dwError = VmDirTestRemoveUserFromGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     TestAssert(dwError == 0);
 
 cleanup:

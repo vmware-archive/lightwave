@@ -11,6 +11,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 #include "includes.h"
 
 DWORD
@@ -60,6 +61,11 @@ TestRunner(
     dwError = TestProtectedEntries(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = TestCustomGroups(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestDefaultSecurityDescriptor(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 #if 0 // TODO
     dwError = TestStandardRightsForAdminUser(pState);
