@@ -550,6 +550,20 @@ VmDirKrbGetKerbValidationInfo(
                               &pGroupSid);
             BAIL_ON_VMDIR_ERROR(dwError);
 
+#if 1 /* TBD: Adam-Debug */
+
+{
+PSTR sidstr = NULL;
+ntStatus = RtlAllocateCStringFromSid(&sidstr, pGroupSid);
+if (ntStatus == 0)
+{
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DEBUG: VmDirKrbGetKerbValidationInfo: pGroupSid=%s", sidstr);
+    RTL_FREE(&sidstr);
+
+}
+}
+#endif /* if 1 */
+
             if (RtlIsPrefixSid(pDomainSid, pGroupSid))
             {
                 dwGroupIds++;

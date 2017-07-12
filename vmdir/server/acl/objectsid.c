@@ -758,7 +758,13 @@ VmDirGenerateDomainGuidSid_inlock(
     PSTR*   ppszDomainSid
     )
 {
-    // S-1-7-21-sub1-sub2-sub3-sub4 --> organizationSid  (vmwobjectSid)
+    /*
+     * When WINJOIN_CHECK_ENABLED is defined, conform to Microsoft PAC format:
+     *   S-1-5-21-sub1-sub2-sub3      --> organizationSid  (msftobjectSid)
+     *
+     * Otherwise use "vmobjectSid" format:
+     *   S-1-7-21-sub1-sub2-sub3-sub4 --> organizationSid  (vmwobjectSid)
+     */
     DWORD                       dwError = 0;
     uuid_t                      OrgGuid = {0};
     uuid_t*                     pOrgGuid = NULL;
@@ -766,7 +772,6 @@ VmDirGenerateDomainGuidSid_inlock(
     PSID                        pOrgSid = NULL;
     ULONG                       ulOrgSidLength = 0;
     SID_IDENTIFIER_AUTHORITY    IdAuthority = { SECURITY_VMWARE_AUTHORITY };
-
 
     dwError = _VmDirGenerateDomainGuid(pszGuid, &OrgGuid);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -789,9 +794,11 @@ VmDirGenerateDomainGuidSid_inlock(
                                 ORGANIZATION_SUB_AUTHORITY_NUMBER);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+#ifndef WINJOIN_CHECK_ENABLED
     // SECURITY_SUBAUTHORITY_ORGANIZATION-sub1-sub2-sub3-sub4 (total 5 parts)
     dwError = VmDirSetSidSubAuthority( pOrgSid, 4, *((PULONG)pOrgGuid) );
     BAIL_ON_VMDIR_ERROR(dwError);
+#endif
 
     dwError = VmDirSetSidSubAuthority( pOrgSid, 3, *((PULONG)pOrgGuid + 1) );
     BAIL_ON_VMDIR_ERROR(dwError);

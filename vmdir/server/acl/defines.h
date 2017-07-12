@@ -31,9 +31,21 @@
 #define MAX_COUNT_PRIOR_WRITE 100
 #define VMDIR_DOMAIN_SID_GEN_HASH_TABLE_SIZE 1000
 
+#ifdef WINJOIN_CHECK_ENABLED
+
+/*
+ * Conform to Microsoft SID identifier authority format
+ * Ref: https://en.wikipedia.org/wiki/Security_Identifier
+ */
+#define ORGANIZATION_SUB_AUTHORITY_NUMBER 4
+
+#define SECURITY_VMWARE_AUTHORITY { 0, 0, 0, 0, 5 }
+
+#else
 #define ORGANIZATION_SUB_AUTHORITY_NUMBER 5
 
 #define SECURITY_VMWARE_AUTHORITY { 0, 0, 0, 0, 0, 7 }
+#endif /* WINJOIN_CHECK_ENABLED */
 #define SECURITY_SUBAUTHORITY_ORGANIZATION 21
 
 /*
