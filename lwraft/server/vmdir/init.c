@@ -245,6 +245,7 @@ VmDirInit(
     BOOLEAN bWaitTimeOut = FALSE;
     VMDIR_RUNMODE runMode = VmDirdGetRunMode();
     BOOLEAN bDirtyShutdown = FALSE;
+    DWORD   dwLdapPort = VmDirGetLdapPort();
 
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -312,8 +313,8 @@ VmDirInit(
         }
 
         // Check default LDAP port availability - If it fails, then it means
-        // another vmdird process is running in normal mode.
-        dwError = VmDirCheckPortAvailability(DEFAULT_LDAP_PORT_NUM);
+        // another lwraftd process is running in normal mode.
+        dwError = VmDirCheckPortAvailability(dwLdapPort);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
@@ -360,9 +361,9 @@ VmDirInit(
     }
 
     //Will not free gVmdirGlobals.pPortListenSyncCounter since it maybe accessed when
-    //  timeout occured (e.g. waiting for promote) though there is a onetime memory leak.
+    //  timeout occurred (e.g. waiting for promote) though there is a one time memory leak.
     dwError = VmDirAllocateSyncCounter( &gVmdirGlobals.pPortListenSyncCounter,
-                                        VmDirGetAllLdapPortsCount(),
+                                        2,      // ldap and ldaps - two ports
                                         SYNC_SIGNAL,
                                         5000);  // wait time 5 seconds
     BAIL_ON_VMDIR_ERROR(dwError);

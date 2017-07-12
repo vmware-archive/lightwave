@@ -76,6 +76,8 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"
 
+#define VMDIR_ANONYMOUS_BIND_TIMEOUT 2 /* Anonymous bind timeout - used for getting Raft status */
+
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
@@ -875,10 +877,8 @@ typedef enum
 #define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
 #define VMDIR_REG_KEY_ALLOW_INSECURE_AUTH     "AllowInsecureAuthentication"
 #define VMDIR_REG_KEY_ADMIN_PASSWD            "AdministratorPassword"
-#define VMDIR_REG_KEY_LDAP_LISTEN_PORTS       "LdapListenPorts"
-#define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
-#define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
-#define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
+#define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
+#define VMDIR_REG_KEY_LDAPS_PORT              "LdapsPort"
 #define VMDIR_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
@@ -1565,6 +1565,13 @@ DWORD
 VmDirAnonymousLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszLdapURI
+    );
+
+DWORD
+VmDirAnonymousLDAPBindWithTimeout(
+    LDAP**      ppLd,
+    PCSTR       pszLdapURI,
+    int         timeout
     );
 
 int

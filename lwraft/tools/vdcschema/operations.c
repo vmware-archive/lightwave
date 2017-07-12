@@ -74,7 +74,6 @@ VdcSchemaOpPatchSchemaDefs(
 {
     DWORD   dwError = 0;
     PVDIR_LDAP_SCHEMA   pCurSchema = NULL;
-    PVDIR_LDAP_SCHEMA   pTmpSchema = NULL;
     PVDIR_LDAP_SCHEMA   pNewSchema = NULL;
     PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff = NULL;
 
@@ -92,13 +91,10 @@ VdcSchemaOpPatchSchemaDefs(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // try loading file
-    dwError = VmDirLdapSchemaDeepCopy(pCurSchema, &pTmpSchema);
+    dwError = VmDirLdapSchemaCopy(pCurSchema, &pNewSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaLoadFile(pTmpSchema, pOpParam->pszFileName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapSchemaMerge(pCurSchema, pTmpSchema, &pNewSchema);
+    dwError = VmDirLdapSchemaLoadFile(pNewSchema, pOpParam->pszFileName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // compute diff
@@ -123,7 +119,6 @@ VdcSchemaOpPatchSchemaDefs(
 
 cleanup:
     VmDirFreeLdapSchema(pCurSchema);
-    VmDirFreeLdapSchema(pTmpSchema);
     VmDirFreeLdapSchema(pNewSchema);
     VmDirFreeLdapSchemaDiff(pSchemaDiff);
     return dwError;

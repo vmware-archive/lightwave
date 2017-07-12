@@ -225,3 +225,8 @@ Add entry for all the nodes in the hosts file
 
 For linux, hosts file is located under: /etc/hosts
 For windows, hosts file is located under: C:\Windows\System32\drivers\etc\hosts
+
+Modify DNS Server Settings
+
+Open Network and Preferences (In Control Panel) → Network Icon→Network Settings→Change Adapter Options→Right click on Ethernet→Properties→Double click IPv4→Add the IP of Lightwave Instance.
+Make sure you add secondary DNS server too (8.8.8.8 or 8.8.4.4 i.e google public DNS) to reach other www

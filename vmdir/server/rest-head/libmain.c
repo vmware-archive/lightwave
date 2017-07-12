@@ -38,6 +38,7 @@ VmDirRESTServerInit(
     MODULE_REG_MAP stRegMap[] =
     {
         {"ldap", VmDirRESTGetLdapModule},
+        {"metrics", VmDirRESTGetMetricsModule},
         {NULL, NULL}
     };
 

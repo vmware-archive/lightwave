@@ -820,6 +820,7 @@ fi
 %{_bindir}/ic-promote
 %{_bindir}/ic-join
 %{_bindir}/configure-lightwave-server
+%{_bindir}/configure-sts
 %{_bindir}/configure-identity-server
 %{_bindir}/test-ldapbind
 %{_bindir}/test-logon
@@ -880,6 +881,8 @@ fi
 %{_jarsdir}/httpclient-4.5.1.jar
 %{_jarsdir}/slf4j-api-1.7.10.jar
 %{_jarsdir}/log4j-api-2.2.jar
+%{_jarsdir}/log4j-slf4j-impl-2.2.jar
+%{_jarsdir}/log4j-core-2.2.jar
 
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war

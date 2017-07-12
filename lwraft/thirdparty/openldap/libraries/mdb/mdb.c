@@ -2538,6 +2538,7 @@ mdb_txn_commit(MDB_txn *txn)
 	MDB_env	*env;
         unsigned long long raft_logindex = 0;
         unsigned int raft_logterm = 0;
+        unsigned int raft_op = 0;
 
 	if (txn == NULL || txn->mt_env == NULL)
 		return EINVAL;
@@ -2688,7 +2689,8 @@ mdb_txn_commit(MDB_txn *txn)
                 goto fail;
         }
 
-        if ((env->me_raft_prepare_commit_func && (rc = env->me_raft_prepare_commit_func(&raft_logindex, &raft_logterm))) ||
+        if ((env->me_raft_prepare_commit_func &&
+             (rc = env->me_raft_prepare_commit_func(&raft_logindex, &raft_logterm, &raft_op))) ||
             (rc = mdb_env_write_meta(txn)))
         {
                 if (env->me_raft_commit_fail_func && raft_logindex > 0)
@@ -2705,7 +2707,7 @@ done:
 
         if (env->me_raft_post_commit_func && raft_logindex > 0)
         {
-            env->me_raft_post_commit_func(raft_logindex, raft_logterm);
+            env->me_raft_post_commit_func(raft_logindex, raft_logterm, raft_op);
         }
 
 	if (env->me_txns)
@@ -5581,62 +5583,11 @@ current:
 		if (F_ISSET(leaf->mn_flags, F_BIGDATA)) {
 			MDB_page *omp;
 			pgno_t pg;
-			int level, ovpages, dpages = OVPAGES((int) data->mv_size, env->me_psize);
+			int level;
 
 			memcpy(&pg, olddata.mv_data, sizeof(pg));
 			if ((rc2 = mdb_page_get(mc->mc_txn, pg, &omp, &level)) != 0)
 				return rc2;
-			ovpages = omp->mp_pages;
-
-			/* Is the ov page large enough? */
-			if (ovpages >= dpages) {
-			  if (!(omp->mp_flags & P_DIRTY))
-			  {
-				omp->mp_flags |= P_DIRTY;
-				level = 0;		/* dirty in this txn or clean */
-                                mdb_page_dirty(mc->mc_txn, omp);
-			  }
-			  /* Is it dirty? */
-			  if (omp->mp_flags & P_DIRTY) {
-				/* yes, overwrite it. Note in this case we don't
-				 * bother to try shrinking the page if the new data
-				 * is smaller than the overflow threshold.
-				 */
-				if (level > 1) {
-					/* It is writable only in a parent txn */
-                                        /*
-                                         * With WAL, level is set to 0 by mdb_page_get(),
-                                         * so the flow will not reach here
-                                         */
-					size_t sz = (size_t) env->me_psize * ovpages, off;
-					MDB_page *np = mdb_page_malloc(mc->mc_txn, ovpages);
-					MDB_ID2 id2;
-					if (!np)
-						return ENOMEM;
-					id2.mid = pg;
-					id2.mptr = np;
-					rc = mdb_mid2l_insert(mc->mc_txn->mt_u.dirty_list, &id2);
-					mdb_cassert(mc, rc == 0);
-					if (!(flags & MDB_RESERVE)) {
-						/* Copy end of page, adjusting alignment so
-						 * compiler may copy words instead of bytes.
-						 */
-						off = (PAGEHDRSZ + data->mv_size) & - ((int)sizeof(size_t));
-						memcpy((size_t *)((char *)np + off),
-							(size_t *)((char *)omp + off), sz - off);
-						sz = PAGEHDRSZ;
-					}
-					memcpy(np, omp, sz); /* Copy beginning of page */
-					omp = np;
-				}
-				SETDSZ(leaf, data->mv_size);
-				if (F_ISSET(flags, MDB_RESERVE))
-					data->mv_data = METADATA(omp);
-				else
-					memcpy(METADATA(omp), data->mv_data, data->mv_size);
-				goto done;
-			  }
-			}
 			if ((rc2 = mdb_ovpage_free(mc, omp)) != MDB_SUCCESS)
 				return rc2;
 		} else if (data->mv_size == olddata.mv_size) {
@@ -8743,7 +8694,7 @@ mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, u
     int ret = 0;
 
     if (env == NULL)
-        return EINVAL; 
+        return EINVAL;
 
     *last_xlog_num = 0;
     LOCK_MUTEX_W(env);

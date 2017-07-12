@@ -15,4 +15,4 @@
 
 #include "includes.h"
 
-PVM_SOCK_PACKAGE gpVmSockPackage = NULL;
+PVM_SOCK_PACKAGE gpVmDnsSockPackage = NULL;

@@ -303,6 +303,7 @@ VmDirLdapOcGetDiff(
 {
     DWORD   dwError = 0;
     PSTR*   ppszNewMay = NULL;
+    PSTR*   ppszRemovedMust = NULL;
     PVDIR_LDAP_SCHEMA_OBJECT_DIFF   pOcDiff = NULL;
 
     static PSTR ppszClassType[3] = { "1", "2", "3" };
@@ -376,13 +377,25 @@ VmDirLdapOcGetDiff(
                 &ppszNewMay, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirGetStrArrayDiffs(
+                pOldOc->ppszMust, pNewOc->ppszMust,
+                NULL, &ppszRemovedMust);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         if (ppszNewMay)
         {
             dwError = _LdapSchemaObjectDiffAddMod(pOcDiff, MOD_OP_ADD,
                     ATTR_SYSTEMMAYCONTAIN,
                     NULL, ppszNewMay);
             BAIL_ON_VMDIR_ERROR(dwError);
-            VmDirFreeStrArray(ppszNewMay);
+        }
+
+        if (ppszRemovedMust)
+        {
+            dwError = _LdapSchemaObjectDiffAddMod(pOcDiff, MOD_OP_DELETE,
+                    ATTR_SYSTEMMUSTCONTAIN,
+                    NULL, ppszRemovedMust);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
 
         if (pNewOc->pszDesc)
@@ -414,10 +427,11 @@ VmDirLdapOcGetDiff(
     *ppOcDiff = pOcDiff;
 
 cleanup:
+    VmDirFreeStrArray(ppszNewMay);
+    VmDirFreeStrArray(ppszRemovedMust);
     return dwError;
 
 error:
-    VmDirFreeStrArray(ppszNewMay);
     VmDirFreeLdapSchemaObjectDiff(pOcDiff);
     goto cleanup;
 
@@ -434,6 +448,7 @@ VmDirLdapCrGetDiff(
     DWORD   dwError = 0;
     PSTR*   ppszNewMay = NULL;
     PSTR*   ppszNewAux = NULL;
+    PSTR*   ppszRemovedMust = NULL;
     PVDIR_LDAP_SCHEMA_OBJECT_DIFF   pCrDiff = NULL;
 
     if (!pNewCr || !ppCrDiff)
@@ -492,13 +507,17 @@ VmDirLdapCrGetDiff(
                 &ppszNewAux, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirGetStrArrayDiffs(
+                pOldCr->ppszMust, pNewCr->ppszMust,
+                NULL, &ppszRemovedMust);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         if (ppszNewMay)
         {
             dwError = _LdapSchemaObjectDiffAddMod(pCrDiff, MOD_OP_ADD,
                     ATTR_MAYCONTAIN,
                     NULL, ppszNewMay);
             BAIL_ON_VMDIR_ERROR(dwError);
-            VmDirFreeStrArray(ppszNewMay);
         }
 
         if (ppszNewAux)
@@ -507,7 +526,14 @@ VmDirLdapCrGetDiff(
                     ATTR_AUXILIARY_CLASS,
                     NULL, ppszNewAux);
             BAIL_ON_VMDIR_ERROR(dwError);
-            VmDirFreeStrArray(ppszNewAux);
+        }
+
+        if (ppszRemovedMust)
+        {
+            dwError = _LdapSchemaObjectDiffAddMod(pCrDiff, MOD_OP_DELETE,
+                    ATTR_MUSTCONTAIN,
+                    NULL, ppszRemovedMust);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
@@ -520,11 +546,12 @@ VmDirLdapCrGetDiff(
     *ppCrDiff = pCrDiff;
 
 cleanup:
+    VmDirFreeStrArray(ppszNewMay);
+    VmDirFreeStrArray(ppszNewAux);
+    VmDirFreeStrArray(ppszRemovedMust);
     return dwError;
 
 error:
-    VmDirFreeStrArray(ppszNewMay);
-    VmDirFreeStrArray(ppszNewAux);
     VmDirFreeLdapSchemaObjectDiff(pOcDiff ? NULL : pCrDiff);
     goto cleanup;
 }

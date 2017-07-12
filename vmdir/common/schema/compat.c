@@ -14,20 +14,6 @@
 
 #include "includes.h"
 
-// both NULL || both have same string
-#define VMDIR_TWO_STRING_COMPATIBLE( pszNewString, pszOldString )                                               \
-    ( ( !pszNewString && !pszOldString )  ||                                                                    \
-      ( ( pszNewString && pszOldString ) && (VmDirStringCompareA( pszNewString, pszOldString, FALSE) == 0) )    \
-    )
-
-// e.g. single value tag from TRUE to FALSE
-#define VMDIR_TWO_BOOL_COMPATILBE_T2F( bONE, bTWO )     \
-    ( (bTWO == bONE) || ( bTWO == TRUE && bONE == FALSE ) )
-
-// e.g. obsolete tag from FALSE to TRUE
-#define VMDIR_TWO_BOOL_COMPATILBE_F2T( bONE, bTWO )     \
-    ( (bONE == bTWO) || ( bONE == TRUE && bTWO == FALSE ) )
-
 DWORD
 VmDirLdapAtAreCompat(
     PVDIR_LDAP_ATTRIBUTE_TYPE   pPrevAt,
@@ -42,18 +28,58 @@ VmDirLdapAtAreCompat(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (!VMDIR_TWO_STRING_COMPATIBLE(
-            pNewAt->pszName, pPrevAt->pszName) ||
-        !VMDIR_TWO_STRING_COMPATIBLE(
-            pNewAt->pszSyntaxOid, pPrevAt->pszSyntaxOid) ||
-        !VMDIR_TWO_BOOL_COMPATILBE_T2F(
-            pNewAt->bSingleValue, pPrevAt->bSingleValue) ||
-        pNewAt->bNoUserMod != pPrevAt->bNoUserMod ||
-        (pPrevAt->usage && pNewAt->usage != pPrevAt->usage))
+    if (VmDirStringCompareA(pPrevAt->pszName, pNewAt->pszName, FALSE))
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                "%s: cannot accept backward incompatible defn (%s).",
-                __FUNCTION__, pPrevAt->pszName);
+                "%s: cannot change attribute type name (current: %s, new: %s).",
+                __FUNCTION__,
+                pPrevAt->pszName,
+                pNewAt->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (VmDirStringCompareA(pPrevAt->pszSyntaxOid, pNewAt->pszSyntaxOid, FALSE))
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot change attribute type syntax (current: %s, new: %s) (name: %s).",
+                __FUNCTION__,
+                pPrevAt->pszSyntaxOid,
+                pNewAt->pszSyntaxOid,
+                pNewAt->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!pPrevAt->bSingleValue && pNewAt->bSingleValue)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot convert multi-value attribute type to single-value (name: %s).",
+                __FUNCTION__, pNewAt->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pPrevAt->bNoUserMod != pNewAt->bNoUserMod)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot change attribute type user mod permission (current: %s, new: %s) (name: %s).",
+                __FUNCTION__,
+                pPrevAt->bNoUserMod ? "TRUE" : "FALSE",
+                pNewAt->bNoUserMod ? "TRUE" : "FALSE",
+                pNewAt->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pPrevAt->usage && pPrevAt->usage != pNewAt->usage)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot change attribute type usage (current: %d, new: %d) (%s).",
+                __FUNCTION__,
+                pPrevAt->usage,
+                pNewAt->usage,
+                pNewAt->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -78,15 +104,37 @@ VmDirLdapOcAreCompat(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (!VMDIR_TWO_STRING_COMPATIBLE(
-            pNewOc->pszName, pPrevOc->pszName) ||
-        !VMDIR_TWO_STRING_COMPATIBLE(
-            pNewOc->pszSup, pPrevOc->pszSup) ||
-        pNewOc->type != pPrevOc->type)
+    if (VmDirStringCompareA(pPrevOc->pszName, pNewOc->pszName, FALSE))
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                "%s: cannot accept backward incompatible defn (%s).",
-                __FUNCTION__, pPrevOc->pszName);
+                "%s: cannot change object class name (current: %s, new: %s).",
+                __FUNCTION__,
+                pPrevOc->pszName,
+                pNewOc->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (VmDirStringCompareA(pPrevOc->pszSup, pNewOc->pszSup, FALSE))
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot change object class sup (current: %s, new: %s) (name: %s).",
+                __FUNCTION__,
+                pPrevOc->pszSup,
+                pNewOc->pszSup,
+                pNewOc->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pPrevOc->type != pNewOc->type)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot change object class type (current: %d, new: %d) (name: %s).",
+                __FUNCTION__,
+                pPrevOc->type,
+                pNewOc->type,
+                pNewOc->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -96,7 +144,7 @@ VmDirLdapOcAreCompat(
         if (!VmDirIsStrArraySuperSet(pNewOc->ppszMay, pPrevOc->ppszMay))
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: cannot remove maycontain attribute types (%s).",
+                    "%s: cannot remove maycontain attribute types (name: %s).",
                     __FUNCTION__, pPrevOc->pszName);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -115,7 +163,7 @@ VmDirLdapOcAreCompat(
         if (!VmDirIsStrArraySuperSet(pNewOc->ppszMay, ppszMinimumMay))
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: cannot remove must contain attribute types (%s).",
+                    "%s: cannot remove must contain attribute types (name: %s).",
                     __FUNCTION__, pPrevOc->pszName);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -124,7 +172,7 @@ VmDirLdapOcAreCompat(
     else
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                "%s: cannot add must contain attribute types (%s).",
+                "%s: cannot add must contain attribute types (name: %s).",
                 __FUNCTION__, pPrevOc->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -152,13 +200,21 @@ VmDirLdapCrAreCompat(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (!VMDIR_TWO_STRING_COMPATIBLE(
-            pNewCr->pszName, pPrevCr->pszName) ||
-        !VmDirIsStrArraySuperSet(
-            pNewCr->ppszAux, pPrevCr->ppszAux))
+    if (VmDirStringCompareA(pPrevCr->pszName, pNewCr->pszName, FALSE))
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                "%s: cannot accept backward incompatible defn (%s).",
+                "%s: cannot change content rule name (current: %s, new: %s).",
+                __FUNCTION__,
+                pPrevCr->pszName,
+                pNewCr->pszName);
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!VmDirIsStrArraySuperSet(pNewCr->ppszAux, pPrevCr->ppszAux))
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "%s: cannot remove auxiliary class(es) (name: %s).",
                 __FUNCTION__, pPrevCr->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -169,7 +225,7 @@ VmDirLdapCrAreCompat(
         if (!VmDirIsStrArraySuperSet(pNewCr->ppszMay, pPrevCr->ppszMay))
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: cannot remove maycontain attribute (%s).",
+                    "%s: cannot remove maycontain attribute (name: %s).",
                     __FUNCTION__, pPrevCr->pszName);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -188,7 +244,7 @@ VmDirLdapCrAreCompat(
         if (!VmDirIsStrArraySuperSet(pNewCr->ppszMay, ppszMinimumMay))
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: cannot remove must contain attribute (%s).",
+                    "%s: cannot remove must contain attribute (name: %s).",
                     __FUNCTION__, pPrevCr->pszName);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -197,7 +253,7 @@ VmDirLdapCrAreCompat(
     else
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                "%s: cannot add must contain attribute (%s).",
+                "%s: cannot add must contain attribute (name: %s).",
                 __FUNCTION__, pPrevCr->pszName);
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);

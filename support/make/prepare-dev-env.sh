@@ -21,5 +21,4 @@ tdnf install -y openjdk
 tdnf install -y apache-maven
 tdnf install -y apache-ant
 tdnf install -y ant-contrib
-tdnf install -y jaxws-ri
 tdnf install -y likewise-open-6.2.2

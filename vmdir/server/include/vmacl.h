@@ -140,9 +140,14 @@ extern "C" {
 //
 #define VMDIR_ANONYMOUS_LOGON_SID "S-1-5-7"
 
+//
+// Well-known SID for a user that has authenticated, irrespective of their domain.
+// If you want to ACL something for an arbitrary logged-in user for a given
+// domain you should use <domain SID>-VMDIR_DOMAIN_ALIAS_RID_USERS.
+//
+#define VMDIR_AUTHENTICATED_USER_SID "S-1-5-11"
 
 // objectSid.c
-
 DWORD
 VmDirAdvanceDomainRID(
     DWORD   dwCnt
@@ -179,7 +184,6 @@ VmDirGenerateWellknownSid(
     );
 
 // libmain.c
-
 DWORD
 VmDirVmAclInit(
     VOID
@@ -195,13 +199,17 @@ VmDirRegisterACLMode(
     VOID
     );
 
-// acl.c
+VOID
+VmDirSetACLMode(
+    VOID
+    );
 
+// acl.c
 DWORD
 VmDirSrvCreateAccessTokenWithEntry(
     PVDIR_ENTRY     pEntry,
     PACCESS_TOKEN*  ppToken,
-    PSTR*           ppszObjectSid /* Optional */
+    PSTR*           ppszObjectSid
     );
 
 DWORD
@@ -224,9 +232,9 @@ VmDirSrvCreateSecurityDescriptor(
     PCSTR                       pszAdminsGroupSid,
     PCSTR                       pszDomainAdminsGroupSid,
     PCSTR                       pszDomainClientsGroupSid,
-    PCSTR                       pszUsersGroupSid,
     BOOLEAN                     bProtectedDacl,
     BOOLEAN                     bAnonymousRead,
+    BOOLEAN                     bAuthenticatedRead,
     BOOLEAN                     bServicesDacl,
     BOOLEAN                     bTenantDomain,
     PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
@@ -273,7 +281,6 @@ VmDirIsBindDnMemberOfSystemDomainAdmins(
     );
 
 // security.c
-
 DWORD
 VmDirGetSecurityDescriptorForEntry(
     PVDIR_ENTRY pEntry,
@@ -322,11 +329,6 @@ DWORD
 VmDirSrvCreateAccessTokenForWellKnowObject(
     PACCESS_TOKEN*  ppToken,
     PCSTR           pszWellknownObjectSid
-    );
-
-VOID
-VmDirSetACLMode(
-    VOID
     );
 
 #ifdef __cplusplus

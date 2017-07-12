@@ -16,7 +16,7 @@
 #include "includes.h"
 
 DWORD
-VmwSockOpenClient(
+VmDnsSockOpenClient(
     PCSTR                pszHost,
     USHORT               usPort,
     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -31,7 +31,7 @@ VmwSockOpenClient(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnOpenClientSocket(
+    dwError = gpVmDnsSockPackage->pfnOpenClientSocket(
                                     pszHost,
                                     usPort,
                                     dwFlags,
@@ -43,7 +43,7 @@ error:
 }
 
 DWORD
-VmwSockOpenServer(
+VmDnsSockOpenServer(
     USHORT               usPort,
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -58,7 +58,7 @@ VmwSockOpenServer(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnOpenServerSocket(
+    dwError = gpVmDnsSockPackage->pfnOpenServerSocket(
                                     usPort,
                                     iListenQueueSize,
                                     dwFlags,
@@ -69,7 +69,7 @@ error:
 }
 
 DWORD
-VmwSockCreateEventQueue(
+VmDnsSockCreateEventQueue(
     int                   iEventQueueSize,  /*         OPTIONAL */
     PVM_SOCK_EVENT_QUEUE* ppQueue           /*     OUT          */
     )
@@ -82,7 +82,7 @@ VmwSockCreateEventQueue(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnCreateEventQueue(iEventQueueSize, ppQueue);
+    dwError = gpVmDnsSockPackage->pfnCreateEventQueue(iEventQueueSize, ppQueue);
 
 error:
 
@@ -90,7 +90,7 @@ error:
 }
 
 DWORD
-VmwSockEventQueueAdd(
+VmDnsSockEventQueueAdd(
     PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
     )
@@ -103,7 +103,7 @@ VmwSockEventQueueAdd(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnAddEventQueue(pQueue, pSocket);
+    dwError = gpVmDnsSockPackage->pfnAddEventQueue(pQueue, pSocket);
 
 error:
 
@@ -111,7 +111,7 @@ error:
 }
 
 DWORD
-VmwSockWaitForEvent(
+VmDnsSockWaitForEvent(
     PVM_SOCK_EVENT_QUEUE pQueue,
     int                  iTimeoutMS,
     PVM_SOCKET*          ppSocket,
@@ -127,7 +127,7 @@ VmwSockWaitForEvent(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnWaitForEvent(
+    dwError = gpVmDnsSockPackage->pfnWaitForEvent(
                                     pQueue,
                                     iTimeoutMS,
                                     ppSocket,
@@ -141,18 +141,18 @@ error:
 }
 
 VOID
-VmwSockCloseEventQueue(
+VmDnsSockCloseEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     )
 {
     if (pQueue)
     {
-        gpVmSockPackage->pfnCloseEventQueue(pQueue);
+        gpVmDnsSockPackage->pfnCloseEventQueue(pQueue);
     }
 }
 
 DWORD
-VmwSockSetNonBlocking(
+VmDnsSockSetNonBlocking(
     PVM_SOCKET pSocket
     )
 {
@@ -164,7 +164,7 @@ VmwSockSetNonBlocking(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnSetNonBlocking(pSocket);
+    dwError = gpVmDnsSockPackage->pfnSetNonBlocking(pSocket);
 
 error:
 
@@ -172,7 +172,7 @@ error:
 }
 
 DWORD
-VmwSockSetTimeOut(
+VmDnsSockSetTimeOut(
     PVM_SOCKET pSocket,
     DWORD      dwTimeOut
     )
@@ -187,7 +187,7 @@ VmwSockSetTimeOut(
 
     if (dwTimeOut)
     {
-        dwError = gpVmSockPackage->pfnSetTimeOut(pSocket, dwTimeOut);
+        dwError = gpVmDnsSockPackage->pfnSetTimeOut(pSocket, dwTimeOut);
     }
 
 error:
@@ -197,7 +197,7 @@ error:
 
 
 DWORD
-VmwSockGetProtocol(
+VmDnsSockGetProtocol(
     PVM_SOCKET           pSocket,
     PDWORD               pdwProtocol
     )
@@ -210,7 +210,7 @@ VmwSockGetProtocol(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnGetProtocol(pSocket, pdwProtocol);
+    dwError = gpVmDnsSockPackage->pfnGetProtocol(pSocket, pdwProtocol);
 
 error:
 
@@ -218,7 +218,7 @@ error:
 }
 
 DWORD
-VmwSockSetData(
+VmDnsSockSetData(
     PVM_SOCKET           pSocket,
     PVOID                pData,
     PVOID*               ppOldData
@@ -232,7 +232,7 @@ VmwSockSetData(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnSetData(pSocket, pData, ppOldData);
+    dwError = gpVmDnsSockPackage->pfnSetData(pSocket, pData, ppOldData);
 
 error:
 
@@ -240,7 +240,7 @@ error:
 }
 
 DWORD
-VmwSockGetData(
+VmDnsSockGetData(
     PVM_SOCKET          pSocket,
     PVOID*              ppData
     )
@@ -253,7 +253,7 @@ VmwSockGetData(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnGetData(pSocket, ppData);
+    dwError = gpVmDnsSockPackage->pfnGetData(pSocket, ppData);
 
 error:
 
@@ -261,7 +261,7 @@ error:
 }
 
 DWORD
-VmwSockRead(
+VmDnsSockRead(
     PVM_SOCKET          pSocket,
     PVM_SOCK_IO_BUFFER  pIoBuffer
     )
@@ -274,7 +274,7 @@ VmwSockRead(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnRead(
+    dwError = gpVmDnsSockPackage->pfnRead(
                             pSocket,
                             pIoBuffer);
 
@@ -284,7 +284,7 @@ error:
 }
 
 DWORD
-VmwSockWrite(
+VmDnsSockWrite(
     PVM_SOCKET              pSocket,
     const struct sockaddr*  pClientAddress,
     socklen_t               addrLength,
@@ -299,7 +299,7 @@ VmwSockWrite(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnWrite(
+    dwError = gpVmDnsSockPackage->pfnWrite(
                             pSocket,
                             pClientAddress,
                             addrLength,
@@ -312,26 +312,26 @@ error:
 }
 
 PVM_SOCKET
-VmwSockAcquire(
+VmDnsSockAcquire(
     PVM_SOCKET           pSocket
     )
 {
-    return pSocket ? gpVmSockPackage->pfnAcquireSocket(pSocket) : NULL;
+    return pSocket ? gpVmDnsSockPackage->pfnAcquireSocket(pSocket) : NULL;
 }
 
 VOID
-VmwSockRelease(
+VmDnsSockRelease(
     PVM_SOCKET           pSocket
     )
 {
     if (pSocket)
     {
-        gpVmSockPackage->pfnReleaseSocket(pSocket);
+        gpVmDnsSockPackage->pfnReleaseSocket(pSocket);
     }
 }
 
 DWORD
-VmwSockClose(
+VmDnsSockClose(
     PVM_SOCKET pSocket
     )
 {
@@ -343,7 +343,7 @@ VmwSockClose(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnCloseSocket(pSocket);
+    dwError = gpVmDnsSockPackage->pfnCloseSocket(pSocket);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -352,7 +352,7 @@ error:
 }
 
 BOOLEAN
-VmwSockIsValidIPAddress(
+VmDnsSockIsValidIPAddress(
     PCSTR pszAddress
     )
 {
@@ -379,7 +379,7 @@ VmwSockIsValidIPAddress(
 
 
 DWORD
-VmwSockGetAddress(
+VmDnsSockGetAddress(
     PVM_SOCKET                  pSocket,
     struct sockaddr_storage*    pAddress,
     socklen_t*                  addresLen
@@ -393,7 +393,7 @@ VmwSockGetAddress(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnGetAddress(pSocket, pAddress, addresLen);
+    dwError = gpVmDnsSockPackage->pfnGetAddress(pSocket, pAddress, addresLen);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -402,7 +402,7 @@ error:
 }
 
 DWORD
-VmwSockStartListening(
+VmDnsSockStartListening(
     PVM_SOCKET           pSocket,
     int                  iListenQueueSize
     )
@@ -415,7 +415,7 @@ VmwSockStartListening(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnStartListening(pSocket, iListenQueueSize);
+    dwError = gpVmDnsSockPackage->pfnStartListening(pSocket, iListenQueueSize);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -424,7 +424,7 @@ error:
 }
 
 DWORD
-VmwSockAllocateIoBuffer(
+VmDnsSockAllocateIoBuffer(
     VM_SOCK_EVENT_TYPE      eventType,
     DWORD                   dwSize,
     PVM_SOCK_IO_BUFFER*     ppIoBuffer
@@ -438,7 +438,7 @@ VmwSockAllocateIoBuffer(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnAllocateIoBuffer(eventType, dwSize, ppIoBuffer);
+    dwError = gpVmDnsSockPackage->pfnAllocateIoBuffer(eventType, dwSize, ppIoBuffer);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -447,7 +447,7 @@ error:
 }
 
 DWORD
-VmwSockReleaseIoBuffer(
+VmDnsSockReleaseIoBuffer(
     PVM_SOCK_IO_BUFFER  pIoBuffer
     )
 {
@@ -459,7 +459,7 @@ VmwSockReleaseIoBuffer(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    gpVmSockPackage->pfnReleaseIoBuffer(pIoBuffer);
+    gpVmDnsSockPackage->pfnReleaseIoBuffer(pIoBuffer);
 
 error:
 

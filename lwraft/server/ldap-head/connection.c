@@ -147,13 +147,8 @@ VmDirInitConnAcceptThread(
     )
 {
     DWORD               dwError = 0;
-    PDWORD              pdwLdapPorts = NULL;
-    DWORD               dwLdapPorts = 0;
-    PDWORD              pdwLdapsPorts = NULL;
-    DWORD               dwLdapsPorts = 0;
-    PVDIR_THREAD_INFO   pThrInfo = NULL;
-    PDWORD              pdwPort = NULL;
-    DWORD               i = 0;
+    PVDIR_THREAD_INFO   pLdapThrInfo = NULL;
+    PVDIR_THREAD_INFO   pLdapsThrInfo = NULL;
     BOOLEAN             isIPV6AddressPresent = FALSE;
     BOOLEAN             isIPV4AddressPresent = FALSE;
 
@@ -168,63 +163,39 @@ VmDirInitConnAcceptThread(
        gVmdirServerGlobals.isIPV6AddressPresent = TRUE;
     }
 
-    VmDirGetLdapListenPorts(&pdwLdapPorts, &dwLdapPorts);
-    VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
+    dwError = VmDirSrvThrInit(
+                &pLdapThrInfo,
+                gVmdirGlobals.replCycleDoneMutex,
+                gVmdirGlobals.replCycleDoneCondition,
+                TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (i = 0; i < dwLdapPorts; i++)
-    {
-        dwError = VmDirAllocateMemory(
-                sizeof(DWORD),
-                (PVOID)&pdwPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirCreateThread(
+            &pLdapThrInfo->tid,
+            pLdapThrInfo->bJoinThr,
+            vmdirConnAcceptThrFunc,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        *pdwPort = pdwLdapPorts[i];
+    VmDirSrvThrAdd(pLdapThrInfo);
+    pLdapThrInfo = NULL;
 
-        dwError = VmDirSrvThrInit(
-                    &pThrInfo,
-                    gVmdirGlobals.replCycleDoneMutex,
-                    gVmdirGlobals.replCycleDoneCondition,
-                    TRUE);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirSrvThrInit(
+                &pLdapsThrInfo,
+                gVmdirGlobals.replCycleDoneMutex,
+                gVmdirGlobals.replCycleDoneCondition,
+                TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirCreateThread(
-                &pThrInfo->tid,
-                pThrInfo->bJoinThr,
-                vmdirConnAcceptThrFunc,
-                (PVOID)pdwPort);  // New thread owns pdwPort
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirCreateThread(
+            &pLdapsThrInfo->tid,
+            pLdapsThrInfo->bJoinThr,
+            vmdirSSLConnAcceptThrFunc,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirSrvThrAdd(pThrInfo);
-        pThrInfo = NULL;
-        pdwPort = NULL;
-    }
-
-    for (i = 0; gVmdirOpensslGlobals.bSSLInitialized && i < dwLdapsPorts; i++)
-    {
-        dwError = VmDirAllocateMemory(
-                sizeof(DWORD),
-                (PVOID)&pdwPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        *pdwPort = pdwLdapsPorts[i];
-
-        VmDirSrvThrInit(
-                &pThrInfo,
-                gVmdirGlobals.replCycleDoneMutex,     // alternative mutex
-                gVmdirGlobals.replCycleDoneCondition, // alternative cond
-                TRUE);  // join by main thr
-
-        dwError = VmDirCreateThread(
-                &pThrInfo->tid,
-                pThrInfo->bJoinThr,
-                vmdirSSLConnAcceptThrFunc,
-                (PVOID)pdwPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VmDirSrvThrAdd(pThrInfo);
-        pThrInfo = NULL;
-        pdwPort = NULL;
-    }
+    VmDirSrvThrAdd(pLdapsThrInfo);
+    pLdapsThrInfo = NULL;
 
 cleanup:
 
@@ -232,9 +203,8 @@ cleanup:
 
 error:
 
-    VmDirSrvThrFree(pThrInfo);
-
-    VMDIR_SAFE_FREE_MEMORY(pdwPort);
+    VmDirSrvThrFree(pLdapThrInfo);
+    VmDirSrvThrFree(pLdapsThrInfo);
 
     goto cleanup;
 }
@@ -244,24 +214,11 @@ VmDirShutdownConnAcceptThread(
     VOID
     )
 {
-    PDWORD  pdwLdapPorts = NULL;
-    DWORD   dwLdapPorts = 0;
-    PDWORD  pdwLdapsPorts = NULL;
-    DWORD   dwLdapsPorts = 0;
-    DWORD   i = 0;
+    DWORD   dwLdapPort = VmDirGetLdapPort();
+    DWORD   dwLdapsPort = VmDirGetLdapsPort();
 
-    VmDirGetLdapListenPorts(&pdwLdapPorts, &dwLdapPorts);
-    VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
-
-    for (i = 0; i < dwLdapPorts; i++)
-    {
-        _VmDirPingAcceptThr(pdwLdapPorts[i]);
-    }
-
-    for (i = 0; gVmdirOpensslGlobals.bSSLInitialized && i < dwLdapsPorts; i++)
-    {
-        _VmDirPingAcceptThr(pdwLdapsPorts[i]);
-    }
+    _VmDirPingAcceptThr(dwLdapPort);
+    _VmDirPingAcceptThr(dwLdapsPort);
 
     return;
 }
@@ -839,8 +796,8 @@ vmdirConnAcceptThrFunc(
     PVOID pArg
     )
 {
-    DWORD port = *((PDWORD)pArg);
-    VMDIR_SAFE_FREE_MEMORY(pArg);
+    DWORD   port = VmDirGetLdapPort();
+
     return vmdirConnAccept(&ber_sockbuf_io_tcp, port, FALSE);
 }
 
@@ -853,8 +810,8 @@ vmdirSSLConnAcceptThrFunc(
     PVOID pArg
     )
 {
-    DWORD port = *((PDWORD)pArg);
-    VMDIR_SAFE_FREE_MEMORY(pArg);
+    DWORD   port = VmDirGetLdapsPort();
+
     return vmdirConnAccept(gpVdirBerSockbufIOOpenssl, port, TRUE);
 }
 

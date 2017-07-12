@@ -381,26 +381,5 @@ VmDirHaveLegacy(
     VOID
     )
 {
-    DWORD    i = 0;
-    PDWORD pdwPorts = NULL;
-    DWORD  dwPorts = 0;
-
-    VmDirGetLdapListenPorts(&pdwPorts, &dwPorts);
-    for ( i = 0; i < dwPorts; i++)
-    {
-        if (pdwPorts[i] == LEGACY_DEFAULT_LDAP_PORT_NUM)
-        {
-            return TRUE;
-        }
-    }
-
-    VmDirGetLdapsListenPorts(&pdwPorts, &dwPorts);
-    for ( i = 0; i < dwPorts; i++)
-    {
-        if (pdwPorts[i] == LEGACY_DEFAULT_LDAPS_PORT_NUM)
-        {
-            return TRUE;
-        }
-    }
     return FALSE;
 }

@@ -44,28 +44,10 @@ VmDirSyncRIDSeqToDB(
     );
 
 // acl.c
-
 DWORD
 VmDirGetObjectSidFromDn(
     PCSTR pszObjectDn,
     PSID* ppSid
-    );
-
-DWORD
-VmDirSrvCreateAccessTokenWithDn(
-    PCSTR pszObjectDn,
-    PACCESS_TOKEN* ppToken
-    );
-
-DWORD
-VmDirCreateAccessToken(
-    PACCESS_TOKEN*          AccessToken,
-    PTOKEN_USER             User,
-    PTOKEN_GROUPS           Groups,
-    PTOKEN_PRIVILEGES       Privileges,
-    PTOKEN_OWNER            Owner,
-    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
-    PTOKEN_DEFAULT_DACL     DefaultDacl
     );
 
 // legacy_checks.c
@@ -83,7 +65,6 @@ VmDirIsLegacySecurityDescriptor(
     );
 
 // security.c
-
 DWORD
 VmDirSetSecurityDescriptorForEntry(
     PVDIR_ENTRY pEntry,
@@ -99,7 +80,6 @@ VmDirSecurityAclSelfRelativeToAbsoluteSD(
     );
 
 // objectSid.c
-
 void
 VmDirFindDomainRidSequenceWithDN(
     PCSTR pszDomainDN,
@@ -117,6 +97,18 @@ VmDirGetSidGenStateIfDomain_inlock(
 DWORD
 VmDirInitRidSynchThr(
     PVDIR_THREAD_INFO* ppThrInfo
+    );
+
+// token.c
+DWORD
+VmDirCreateAccessToken(
+    PACCESS_TOKEN*          AccessToken,
+    PTOKEN_USER             User,
+    PTOKEN_GROUPS           Groups,
+    PTOKEN_PRIVILEGES       Privileges,
+    PTOKEN_OWNER            Owner,
+    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
+    PTOKEN_DEFAULT_DACL     DefaultDacl
     );
 
 #ifdef __cplusplus

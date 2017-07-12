@@ -157,47 +157,25 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAP_LISTEN_PORTS,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_PORT,          \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 99999,                            \
+        /*.dwDefault      = */ 38900,                            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_LISTEN_PORTS, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_PORT,         \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 99999,                            \
+        /*.dwDefault      = */ 63600,                            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAP_CONNECT_PORTS, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_CONNECT_PORTS,\
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \

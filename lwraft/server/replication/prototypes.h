@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -78,16 +78,6 @@ VmDirInitRaftPsState(
 DWORD
 _VmDirLoadRaftState(
     VOID
-    );
-
-DWORD
-_VmDirUpdateRaftPsState(
-    int term,
-    BOOLEAN updateVotedForTerm,
-    UINT32 votedForTerm,
-    PVDIR_BERVALUE pVotedFor,
-    UINT64 lastApplied,
-    UINT64 firstLog
     );
 
 DWORD
@@ -211,6 +201,11 @@ _VmDirGetLogTerm(
 DWORD
 _VmDirRaftLoadGlobals(
     PSTR *
+    );
+
+ENTRYID
+VmDirRaftLogEntryId(
+    unsigned long long LogIndex
     );
 
 #ifdef __cplusplus

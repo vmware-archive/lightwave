@@ -72,14 +72,6 @@ VmDirRegConfigTableFreeContents(
 
 static
 DWORD
-VmDirRegConfigMultiStringToDwords(
-    PCSTR   pszValues,
-    PDWORD* ppdwValues,
-    DWORD*  pdwValues
-    );
-
-static
-DWORD
 VmDirRegConfigMultiStringToStrList(
     PCSTR               pszValues,
     PVMDIR_STRING_LIST* ppStrList
@@ -122,57 +114,17 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_LDAP_LISTEN_PORTS,
+                    VMDIR_REG_KEY_LDAP_PORT,
                     TRUE))
         {
-            dwError = VmDirRegConfigMultiStringToDwords(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pdwLdapListenPorts,
-                        &gVmdirGlobals.dwLdapListenPorts);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            gVmdirGlobals.dwLdapPort = pEntry->dwValue;
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_LDAPS_LISTEN_PORTS,
+                    VMDIR_REG_KEY_LDAPS_PORT,
                     TRUE))
         {
-            dwError = VmDirRegConfigMultiStringToDwords(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pdwLdapsListenPorts,
-                        &gVmdirGlobals.dwLdapsListenPorts);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_LDAP_CONNECT_PORTS,
-                    TRUE))
-        {
-            dwError = VmDirRegConfigMultiStringToDwords(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pdwLdapConnectPorts,
-                        &gVmdirGlobals.dwLdapConnectPorts);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_LDAPS_CONNECT_PORTS,
-                    TRUE))
-        {
-            dwError = VmDirRegConfigMultiStringToDwords(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pdwLdapsConnectPorts,
-                        &gVmdirGlobals.dwLdapsConnectPorts);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_REST_LISTEN_PORT,
-                    TRUE))
-        {
-            dwError = VmDirAllocateStringA(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pszRestListenPort);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            gVmdirGlobals.dwLdapsPort = pEntry->dwValue;
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
@@ -299,17 +251,8 @@ VmDirSrvFreeConfig(
     VOID
     )
 {
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pdwLdapListenPorts);
-    gVmdirGlobals.dwLdapListenPorts = 0;
-
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pdwLdapsListenPorts);
-    gVmdirGlobals.dwLdapsListenPorts = 0;
-
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pdwLdapConnectPorts);
-    gVmdirGlobals.dwLdapConnectPorts = 0;
-
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pdwLdapsConnectPorts);
-    gVmdirGlobals.dwLdapsConnectPorts = 0;
+    gVmdirGlobals.dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    gVmdirGlobals.dwLdapsPort = DEFAULT_LDAPS_PORT_NUM;
 }
 
 DWORD
@@ -752,56 +695,6 @@ VmDirRegConfigTableFreeContents(
             VMDIR_SAFE_FREE_MEMORY(pEntry->pszValue);
         }
     }
-}
-
-static
-DWORD
-VmDirRegConfigMultiStringToDwords(
-    PCSTR   pszValues,
-    PDWORD* ppdwValues,
-    DWORD*  pdwValuesLen
-    )
-{
-    DWORD dwError = 0;
-    PDWORD pdwValues = NULL;
-    DWORD dwValuesLen = 0;
-    DWORD dwCount = 0;
-    PCSTR pszIter = NULL;
-
-    if (pszValues)
-    {
-        pszIter = pszValues;
-        while (pszIter != NULL && *pszIter != '\0')
-        {
-            dwValuesLen++;
-
-            pszIter += VmDirStringLenA(pszIter) + 1;
-        }
-
-        /* Allocate space for one even if no space is really needed,
-         * that way we have a valid pointer.
-         */
-        dwError = VmDirAllocateMemory(sizeof(DWORD) * (dwValuesLen == 0 ? 1 : dwValuesLen), (PVOID)&pdwValues);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pszIter = pszValues;
-        while (pszIter != NULL && *pszIter != '\0')
-        {
-            DWORD dwVal = atoi(pszIter);
-            pdwValues[dwCount++] = dwVal;
-            pszIter += VmDirStringLenA(pszIter) + 1;
-        }
-    }
-
-    *ppdwValues = pdwValues;
-    *pdwValuesLen = dwValuesLen;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pdwValues);
-    goto cleanup;
 }
 
 static

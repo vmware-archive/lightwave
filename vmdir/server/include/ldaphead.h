@@ -274,7 +274,12 @@ VmDirInitOPStatisticGlobals(
 
 uint16_t
 VmDirOPStatisticGetAvgTime(
-    PVMDIR_OPERATION_STATISTIC   pStatistic
+    ber_tag_t opTag
+    );
+
+uint64_t
+VmDirOPStatisticGetTotalTime(
+    ber_tag_t opTag
     );
 
 uint64_t

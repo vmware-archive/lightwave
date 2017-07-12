@@ -46,7 +46,7 @@ VmWinSockShutdown(
  * @return 0 on success
  */
 DWORD
-VmSockWinOpenClient(
+VmDnsSockWinOpenClient(
     PCSTR                   pszHost,
     USHORT                  usPort,
     VM_SOCK_CREATE_FLAGS    dwFlags,
@@ -67,7 +67,7 @@ VmSockWinOpenClient(
  * @return 0 on success
  */
 DWORD
-VmSockWinOpenServer(
+VmDnsSockWinOpenServer(
     USHORT               usPort,
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -83,7 +83,7 @@ VmSockWinOpenServer(
  * @return 0 on success
  */
 DWORD
-VmSockWinStartListening(
+VmDnsSockWinStartListening(
     PVM_SOCKET           pSocket,
     int                  iListenQueueSize
     );
@@ -99,7 +99,7 @@ VmSockWinStartListening(
  * @return 0 on success
  */
 DWORD
-VmSockWinCreateEventQueue(
+VmDnsSockWinCreateEventQueue(
     int                     iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*   ppQueue
     );
@@ -113,7 +113,7 @@ VmSockWinCreateEventQueue(
  * @return 0 on success
  */
 DWORD
-VmSockWinEventQueueAdd(
+VmDnsSockWinEventQueueAdd(
     PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
     );
@@ -131,7 +131,7 @@ VmSockWinEventQueueAdd(
  * @return 0 on success
  */
 DWORD
-VmSockWinWaitForEvent(
+VmDnsSockWinWaitForEvent(
     PVM_SOCK_EVENT_QUEUE pQueue,
     int                  iTimeoutMS,
     PVM_SOCKET*          ppSocket,
@@ -148,7 +148,7 @@ VmSockWinWaitForEvent(
  */
 
 VOID
-VmSockWinCloseEventQueue(
+VmDnsSockWinCloseEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     );
 
@@ -161,7 +161,7 @@ VmSockWinCloseEventQueue(
  */
 
 DWORD
-VmSockWinSetNonBlocking(
+VmDnsSockWinSetNonBlocking(
     PVM_SOCKET           pSocket
     );
 
@@ -175,7 +175,7 @@ VmSockWinSetNonBlocking(
  */
 
 DWORD
-VmSockWinSetTimeOut(
+VmDnsSockWinSetTimeOut(
     PVM_SOCKET           pSocket,
     DWORD                dwTimeOut
     );
@@ -188,7 +188,7 @@ VmSockWinSetTimeOut(
  *                            This will be one of { SOCK_STREAM, SOCK_DGRAM... }
  */
 DWORD
-VmSockWinGetProtocol(
+VmDnsSockWinGetProtocol(
     PVM_SOCKET           pSocket,
     PDWORD               pdwProtocol
     );
@@ -203,7 +203,7 @@ VmSockWinGetProtocol(
  * @return 0 on success
  */
 DWORD
-VmSockWinSetData(
+VmDnsSockWinSetData(
     PVM_SOCKET           pSocket,
     PVOID                pData,
     PVOID*               ppOldData
@@ -218,7 +218,7 @@ VmSockWinSetData(
  * @return 0 on success
  */
 DWORD
-VmSockWinGetData(
+VmDnsSockWinGetData(
     PVM_SOCKET          pSocket,
     PVOID*              ppData
     );
@@ -236,7 +236,7 @@ VmSockWinGetData(
  * @return 0 on success
  */
 DWORD
-VmSockWinRead(
+VmDnsSockWinRead(
     PVM_SOCKET          pSocket,
     PVM_SOCK_IO_BUFFER  pIoBuffer
     );
@@ -257,7 +257,7 @@ VmSockWinRead(
  * @return 0 on success
  */
 DWORD
-VmSockWinWrite(
+VmDnsSockWinWrite(
     PVM_SOCKET          pSocket,
     struct sockaddr*    pClientAddress,
     socklen_t           addrLength,
@@ -271,7 +271,7 @@ VmSockWinWrite(
  */
 
 PVM_SOCKET
-VmSockWinAcquire(
+VmDnsSockWinAcquire(
     PVM_SOCKET          pSocket
     );
 
@@ -280,7 +280,7 @@ VmSockWinAcquire(
  *
  */
 VOID
-VmSockWinRelease(
+VmDnsSockWinRelease(
     PVM_SOCKET          pSocket
     );
 
@@ -289,7 +289,7 @@ VmSockWinRelease(
  *        This call does not release the reference to the socket or free it.
  */
 DWORD
-VmSockWinClose(
+VmDnsSockWinClose(
     PVM_SOCKET          pSocket
     );
 
@@ -299,12 +299,12 @@ VmSockWinClose(
  * @return TRUE(1) if the string is a valid IP Address, 0 otherwise.
  */
 BOOLEAN
-VmSockWinIsValidIPAddress(
+VmDnsSockWinIsValidIPAddress(
     PCSTR               pszAddress
     );
 
 /**
- * @brief  VmwSockGetAddress
+ * @brief  VmDnsSockGetAddress
  *
  * @param[in] pSocket
  * @param[in] pAddress
@@ -313,14 +313,14 @@ VmSockWinIsValidIPAddress(
  * @return DWORD - 0 on success
  */
 DWORD
-VmSockWinGetAddress(
+VmDnsSockWinGetAddress(
     PVM_SOCKET                  pSocket,
     struct sockaddr_storage*    pAddress,
     socklen_t*                  pAddresLen
     );
 
 DWORD
-VmSockWinAllocateIoBuffer(
+VmDnsSockWinAllocateIoBuffer(
     VM_SOCK_EVENT_TYPE      eventType,
     DWORD                   dwSize,
     PVM_SOCK_IO_BUFFER*     ppIoContext
@@ -334,7 +334,7 @@ VmSockWinAllocateIoBuffer(
  * @return VOID - 0 on success
  */
 VOID
-VmSockWinFreeIoBuffer(
+VmDnsSockWinFreeIoBuffer(
     PVM_SOCK_IO_BUFFER  pIoBuffer
     );
 

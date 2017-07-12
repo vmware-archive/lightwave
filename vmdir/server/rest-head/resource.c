@@ -26,6 +26,15 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         "error-message"
     },
     {
+        VDIR_REST_RSC_METRICS,
+        "/v1/vmdir/metrics/ldap",
+        FALSE,
+        VmDirRESTUnknownSetResult,
+        VmDirRESTUnknownGetHttpError,
+        "error-code",
+        "error-message"
+    },
+    {
         VDIR_REST_RSC_UNKNOWN,
         NULL,
         FALSE,

@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.10, vmware-directory = %{version}, vmware-afd = %{version}, vmware-ca = %{version}, openjre >= 1.8.0.112, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8, %{name}-client = %{version}
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, vmware-ca-client-devel = %{version}, openjdk = 1.8.0.112, apache-ant >= 1.9.4
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.11, vmware-directory = %{version}, vmware-afd = %{version}, vmware-ca = %{version}, openjre >= 1.8.0.131, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8, %{name}-client = %{version}
+BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.11, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, vmware-ca-client-devel = %{version}, openjdk >= 1.8.0.131, apache-ant >= 1.9.4
 
 %define _dbdir %_localstatedir/lib/vmware/vmsts
 %define _jarsdir %_prefix/jars
@@ -54,7 +54,6 @@ autoreconf -mif .. &&
              --with-commons-daemon=%{_commons_daemondir} \
              --with-ant=%{_antdir} \
              --with-tomcat=%{_tomcatdir} \
-             --with-jax-ws=%{_jaxwsdir} \
              --with-maven=%{_mavendir}
 make
 
@@ -198,7 +197,9 @@ fi
 %{_jarsdir}/jna-4.2.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
 %{_jarsdir}/slf4j-api-1.7.10.jar
+%{_jarsdir}/log4j-slf4j-impl-2.2.jar
 %{_jarsdir}/log4j-api-2.2.jar
+%{_jarsdir}/log4j-core-2.2.jar
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 %{_datadir}/config/idm/*

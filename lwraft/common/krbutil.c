@@ -184,23 +184,23 @@ VmDirKeyTabRead(
     PVMDIR_KEYTAB_ENTRY *ppRetData)
 {
     DWORD dwError = 0;
-    int16_t size_16;
-    int32_t size_32;
-    uint8_t size_8;
-    int entrySize;
-    int princSize;
-    int princType;
-    int nameCompCnt;
-    int kvno;
-    int keyType;
-    int keyLength;
-    int timeStamp;
+    int16_t size_16 = 0;
+    int32_t size_32 = 0;
+    uint8_t size_8 = 0;
+    int entrySize = 0;
+    int princSize = 0;
+    int princType = 0;
+    int nameCompCnt = 0;
+    int kvno = 0;
+    int keyType = 0;
+    int keyLength = 0;
+    int timeStamp = 0;
     unsigned char *key = NULL;
     char **nameComponents = NULL;
     char *realm = NULL;
     char *nameComponent = NULL;
-    ssize_t sts;
-    int i;
+    ssize_t sts = 0;
+    int i = 0;
     PVMDIR_KEYTAB_ENTRY pKtEntry = NULL;
     PVMDIR_KRBKEY pKey = NULL;
 

@@ -82,7 +82,8 @@ LOTUS_HOSTNAME=
 LOTUS_DNS_FORWARDERS=
 LOTUS_SSL_SUBJECT_ALT_NAME=
 DISABLE_DNS=0
-USAGE="configure-lightwave-server --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--config-file <configuration file>]"
+DISABLE_STS=0
+USAGE="configure-lightwave-server --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--disable-sts] [--config-file <configuration file>]"
 export SUPPORT_RHTTP_PROXY=0
 
 # Read passed parameters.
@@ -122,6 +123,9 @@ if [ $# -gt 0 ]; then
                       ;;
                     "--disable-dns")
                       DISABLE_DNS=1
+                      ;;
+                    "--disable-sts")
+                      DISABLE_STS=1
                       ;;
                     *)
                       echo "Invalid parameter : $arg"
@@ -185,6 +189,7 @@ if [ -f "$LOTUS_CONFIG_FILE" ]; then
     LOTUS_DNS_FORWARDERS=$(grep "^dns-forwarders=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_SSL_SUBJECT_ALT_NAME=$(grep "^ssl-subject-alt-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     DISABLE_DNS=$(grep "^disable-dns=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    DISABLE_STS=$(grep "^disable-sts=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
 fi
 
 if [ -z "$LOTUS_HOSTNAME" ]; then
@@ -261,7 +266,7 @@ if [[ ! -f /.dockerenv ]]; then
 fi
 
 # Setup vmafd, vmdir and SSO STS server.
-JAVA_HOME=${JAVA_HOME:-@JAVA_HOME@}
+JAVA_HOME=/etc/alternatives/jre
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 VMWARE_DIR=/opt/vmware
 CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
@@ -381,19 +386,21 @@ else
             ;;
     esac
 
-    # configure vmidentity if we are not running in a container
-    if [ ! -f /.dockerenv ]; then
-           $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
-                    -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
-                    --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
-    fi
+case $DISABLE_STS in
+    0)
+        echo "Secure Token Service Installation - Started"
+	$BIN_DIR/configure-sts --domain $LOTUS_DOMAIN_DEFAULT  --password "$LOTUS_ADMIN_PASSWORD_DEFAULT"        
+        if [ $? -ne 0 ]; then
+            echo "Secure Token Service Installation - Failed"
+            _exit 1
+        fi
+        ;;
+    *)
+        ;;
+esac
 
-    if [ $? -ne 0 ]; then
-        echo  "PSC Installation failed."
-        _exit 1
-    fi
 
-    # Set installed version on installation success.
+  # Set installed version on installation success.
     _set_installed_version
 
     echo "Setup complete."

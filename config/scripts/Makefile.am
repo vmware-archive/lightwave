@@ -1,6 +1,7 @@
 bin_SCRIPTS = \
     @top_builddir@/scripts/configure-lightwave-server \
     @top_builddir@/scripts/configure-identity-server \
+    @top_builddir@/scripts/configure-sts \
     @top_srcdir@/scripts/domainjoin.sh 
 
 scriptsconf_SCRIPTS = \

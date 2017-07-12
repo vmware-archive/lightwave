@@ -256,6 +256,7 @@ cleanup:
     VmDirFreeEntry(pTargetEntry);
     VmDirFreeEntryArrayContent(&entryArray);
     VmDirFreeOperationContent(&groupOp);
+    VmDirFreeBervalContent(&bvParentDN);
     return dwError;
 
 error:
