@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -14,14 +14,6 @@
 
 #include "includes.h"
 
-#define OPSTATISTIC_DNS_QUERY_COUNT_INIT     {"dns_query_count",   0}
-#define OPSTATISTIC_FORWARDER_QUERY_COUNT_INIT     {"forwarder_query_count",   0}
+PREST_API_DEF gpVdnsRestApiDef = NULL;
 
-VMDNS_OP_STATISTIC_GLOBALS gVmdnsOPStatisticGlobals =
-    {
-        VMDNS_SF_INIT(.dns_query_count, OPSTATISTIC_DNS_QUERY_COUNT_INIT),
-        VMDNS_SF_INIT(.forwarder_query_count, OPSTATISTIC_FORWARDER_QUERY_COUNT_INIT)
-    };
-
-VMW_DNS_DRIVER_GLOBALS gDNSDriverGlobals;
-PVMW_DNS_DRIVER_GLOBALS gpSrvContext = &gDNSDriverGlobals;
+PVMREST_HANDLE gpVdnsRESTHandle = NULL;

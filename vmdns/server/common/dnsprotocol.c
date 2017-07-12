@@ -200,6 +200,7 @@ VmDnsProcessRequest(
 
         dwError = 0;
     }
+    VmDnsOPStatisticUpdate(DNS_QUERY_COUNT);
 
 cleanup:
 

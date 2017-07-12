@@ -29,6 +29,7 @@ vmdnsd_CPPFLAGS = \
 
 vmdnsd_LDADD = \
     $(top_builddir)/server/common/libsrvcommon.la \
+    $(top_builddir)/server/rest-head/librest-head.la \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/vmsock/api/libvmsock.la \
     @VMDIR_LIBS@ \
@@ -43,12 +44,20 @@ vmdnsd_LDADD = \
     @CRYPTO_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @JANSSON_LIBS@ \
+    @COPENAPI_LIBS@ \
+    @CRESTENGINE_LIBS@ \
+    @OIDC_LIBS@
 
 vmdnsd_LDFLAGS = \
     @VMDIR_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
-    @LW_LDFLAGS@
+    @LW_LDFLAGS@ \
+    @JANSSON_LDFLAGS@ \
+    @COPENAPI_LDFLAGS@ \
+    @CRESTENGINE_LDFLAGS@ \
+    @OIDC_LDFLAGS@
 
 CLEANFILES = \
     vmdns_h.h \

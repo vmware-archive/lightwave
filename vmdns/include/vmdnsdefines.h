@@ -90,7 +90,7 @@ extern "C" {
     do {                                  \
         if ((bInLock))                    \
         {                                 \
-            VmDnsUnLockMutex(mutex);      \
+            VmDnsUnlockMutex(mutex);      \
             (bInLock) = FALSE;            \
         }                                 \
     } while (0)

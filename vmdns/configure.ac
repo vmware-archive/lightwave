@@ -82,6 +82,88 @@ AC_SUBST(OPENSSL_BASE_PATH)
 AC_SUBST(OPENSSL_INCLUDES)
 AC_SUBST(OPENSSL_LDFLAGS)
 
+# rest head flag
+
+REST_ENABLED=true
+AC_ARG_ENABLE([rest],
+    [AC_HELP_STRING([--enable-rest], [enable rest heads (default: enabled)])],
+    [
+        if test x"$enableval" = x"no"
+        then
+            REST_ENABLED=false
+        fi
+    ])
+
+if $REST_ENABLED
+then
+    AC_DEFINE_UNQUOTED(REST_ENABLED, 1, [ Enable rest heads ])
+fi
+
+AM_CONDITIONAL(REST_ENABLED, [$REST_ENABLED])
+
+# Jansson
+
+AC_ARG_WITH([jansson],
+    [AC_HELP_STRING([--with-jansson=<dir>], [use jansson binaries rooted at prefix <dir> ])],
+    [
+        JANSSON_BASE_PATH="$withval"
+        JANSSON_INCLUDES="-I$withval/include"
+        JANSSON_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_CHECK_HEADERS(jansson.h)
+AC_SUBST(JANSSON_BASE_PATH)
+AC_SUBST(JANSSON_INCLUDES)
+AC_SUBST(JANSSON_LDFLAGS)
+
+# Copenapi
+
+AC_ARG_WITH([copenapi],
+    [AC_HELP_STRING([--with-copenapi=<dir>], [use copenapi binaries rooted at prefix <dir> ])],
+    [
+        COPENAPI_BASE_PATH="$withval"
+        COPENAPI_INCLUDES="-I$withval/include"
+        COPENAPI_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_CHECK_HEADERS(copenapi/copenapi.h)
+AC_SUBST(COPENAPI_BASE_PATH)
+AC_SUBST(COPENAPI_INCLUDES)
+AC_SUBST(COPENAPI_LDFLAGS)
+
+# C rest engine
+
+AC_ARG_WITH([c-rest-engine],
+    [AC_HELP_STRING([--with-c-rest-engine=<dir>], [use c-rest-engine server binaries rooted at prefix <dir> ])],
+    [
+        CRESTENGINE_BASE_PATH="$withval"
+        CRESTENGINE_INCLUDES="-I$withval/include"
+        CRESTENGINE_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(CRESTENGINE_BASE_PATH)
+AC_SUBST(CRESTENGINE_INCLUDES)
+AC_SUBST(CRESTENGINE_LDFLAGS)
+
+# OIDC
+
+AC_ARG_WITH([oidc],
+    [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
+    [
+        OIDC_BASE_PATH="$withval"
+        OIDC_INCLUDES="-I$withval/include"
+        OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+AC_CHECK_HEADERS(oidc.h)
+AC_CHECK_HEADERS(oidc_types.h)
+AC_CHECK_HEADERS(common_types.h)
+AC_SUBST(OIDC_BASE_PATH)
+AC_SUBST(OIDC_INCLUDES)
+AC_SUBST(OIDC_LDFLAGS)
+
+
 # Likewise components
 
 case "${host_os}:${host_cpu}" in
@@ -175,6 +257,7 @@ CPPFLAGS="$CPPFLAGS $LW_INCLUDES"
 AC_CHECK_HEADERS(lw/base.h lw/types.h uuid/uuid.h)
 AC_CHECK_HEADERS(openssl/crypto.h openssl/ssl.h openssl/err.h)
 CPPFLAGS="$saved_CPPFLAGS"
+
 
 # VMDIR component
 VMDIR_DEFAULT_PATH=/usr/lib/vmware-vmdir/lib64
@@ -314,6 +397,31 @@ AC_CHECK_LIB(
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 AC_CHECK_LIB([crypt], [crypt_r], [CRYPT_LIBS="-lcrypt"])
 
+AC_CHECK_LIB(
+    [jansson],
+    [json_object],
+    [JANSSON_LIBS="-ljansson"],
+    [],
+    [$JANSSON_LDFLAGS])
+AC_CHECK_LIB(
+    [copenapi],
+    [coapi_load_from_file],
+    [COPENAPI_LIBS="-lcopenapi"]
+    [],
+    [$COPENAPI_LDFLAGS])
+AC_CHECK_LIB(
+    [restengine],
+    [VmRESTInit],
+    [CRESTENGINE_LIBS="-lrestengine"],
+    [],
+    [$CRESTENGINE_LDFLAGS])
+AC_CHECK_LIB(
+    [ssooidc],
+    [OidcAccessTokenBuild],
+    [OIDC_LIBS="-lssocommon -lssooidc"],
+    [],
+    [$OIDC_LDFLAGS])
+
 AC_SUBST(DL_LIBS)
 AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(GSSAPI_LIBS)
@@ -331,6 +439,12 @@ AC_SUBST(CRYPT_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(LBER_LIBS)
 AC_SUBST(VMDIR_LIBS)
+# rest-head
+AC_SUBST(JANSSON_LIBS)
+AC_SUBST(COPENAPI_LIBS)
+AC_SUBST(CRESTENGINE_LIBS)
+AC_SUBST(SSOCOMMON_LIBS)
+AC_SUBST(OIDC_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
@@ -368,6 +482,7 @@ AC_CONFIG_FILES([Makefile
                  vmsock/api/Makefile
                  server/Makefile
                  server/common/Makefile
+                 server/rest-head/Makefile
                  server/vmdns/Makefile
                  client/Makefile
                  tools/Makefile

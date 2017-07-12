@@ -35,3 +35,8 @@
     value   = dword:00000001
     doc = "Set to '1' to allow DNS Protocol Listener"
 }
+"RestListenPort" = {
+    default = "7677p"
+    value   = "7677p"
+    doc = "Set 7677 as Rest Listener Port"
+}

@@ -28,7 +28,8 @@ libsrvcommon_la_SOURCES = \
     store.c               \
     util.c                \
     zone.c                \
-    zonelist.c
+    zonelist.c            \
+    opstatistic.c
 
 libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

@@ -117,6 +117,38 @@ VmDnsAllocateStringPrintfVA(
     return ulError;
 }
 
+BOOLEAN
+VmDnsStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bStartsWith = FALSE;
+
+    if (IsNullOrEmptyString(pszPrefix))
+    {
+        bStartsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        size_t strlen = VmDnsStringLenA(pszStr);
+        size_t prefixlen = VmDnsStringLenA(pszPrefix);
+
+        if (strlen >= prefixlen)
+        {
+            if (VmDnsStringNCompareA(
+                    pszStr, pszPrefix, prefixlen, bIsCaseSensitive) == 0)
+            {
+                bStartsWith = TRUE;
+            }
+        }
+    }
+
+    return bStartsWith;
+}
+
+
 ULONG
 VmDnsAllocateStringPrintfA(
     OUT PSTR* ppszString,

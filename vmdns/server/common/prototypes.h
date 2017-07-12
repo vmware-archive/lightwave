@@ -878,6 +878,12 @@ VmDnsSecIsRRTypeSec(
     DWORD dwRecordType
     );
 
+//opstatistic.c
+VOID
+VmDnsOPStatisticUpdate(
+    UINT16 opTag
+    );
+
 // Zone
 #ifdef	__cplusplus
 }
