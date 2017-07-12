@@ -440,6 +440,13 @@ VmDnsRecordListRelease(
     );
 
 DWORD
+VmDnsRecordListRoundRobin(
+    PVMDNS_RECORD_LIST      pList,
+    DWORD                   dwIndex,
+    PVMDNS_RECORD_LIST      *ppList
+    );
+
+DWORD
 VmDnsRecordObjectCreate(
     PVMDNS_RECORD   pRecord,
     PVMDNS_RECORD_OBJECT    *ppRecordObj

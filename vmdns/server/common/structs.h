@@ -271,6 +271,8 @@ typedef struct _VMDNS_NAME_ENTRY
     LIST_ENTRY          LruList;
     PSTR                pszName;
     PVMDNS_RECORD_LIST  pRecords;
+    DWORD               dwRoundRobinIndex;
+    VMDNS_RR_TYPE       dwRoundRobinType;
 } VMDNS_NAME_ENTRY;
 
 typedef struct _VMDNS_RECORD_OBJECT
