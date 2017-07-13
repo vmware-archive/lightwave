@@ -945,7 +945,6 @@ _VmDirCreateTransientSecurityDescriptor(
     PSTR pszAdminsGroupSid = NULL;
     PSTR pszDomainAdminsGroupSid = NULL;
     PSTR pszDomainClientsGroupSid = NULL;
-    PSTR pszUsersGroupSid = NULL;
     VMDIR_SECURITY_DESCRIPTOR SecDesc = {0};
 
     pszDomainDN = BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN);
@@ -965,11 +964,6 @@ _VmDirCreateTransientSecurityDescriptor(
                                         &pszDomainClientsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGenerateWellknownSid(pszDomainDN,
-                                        VMDIR_DOMAIN_ALIAS_RID_USERS,
-                                        &pszUsersGroupSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     //
     // Create default security descriptor for internally-created entries.
     //
@@ -979,8 +973,8 @@ _VmDirCreateTransientSecurityDescriptor(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
                 FALSE,
+                bAllowAnonymousRead,
                 bAllowAnonymousRead,
                 FALSE,
                 FALSE,
@@ -995,7 +989,6 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszAdminsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszDomainAdminsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszDomainClientsGroupSid);
-    VMDIR_SAFE_FREE_STRINGA(pszUsersGroupSid);
     return dwError;
 
 error:

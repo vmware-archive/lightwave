@@ -8,10 +8,20 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-#Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, openjre >= 1.8.0.112, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8
-#BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, krb5-devel >= 1.14, likewise-open-devel >= 6.2.10, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.112, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, apache-maven >= 3.3.9, boost-devel = 1.60.0 
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, java-1.8.0-openjdk >= 1.8.0.112, apache-commons-daemon >= 1.0.15, tomcat >= 8.5.8, lightwave-client = %{_version}
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, krb5-devel >= 1.14, likewise-open-devel >= 6.2.10, sqlite-devel >= 3.14, python2-devel >= 2.7.8, java-1.8.0-openjdk-devel > 1.8.0.112, ant-lib >= 1.9.4, ant-contrib >= 1.0, maven >= 3.3.9, boost-devel = 1.60.0 
+Requires: pkgconfig(openssl) >= 1.0.2, pkgconfig(krb5) >= 1.14, pkgconfig(sqlite3) >= 3.14, pkgconfig(libsasl2) >= 2.1, coreutils >= 8.22, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, apache-commons-daemon >= 1.0.15, tomcat >= 8.5.8, lightwave-client = %{_version}
+%if 0%{?fedora} >= 21
+Requires: java-1.8.0-openjdk >= 1.8.0.112
+%else
+Requires: openjdk >= 1.8.0.112
+%endif
+
+BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.10, python2-devel >= 2.7.8, boost-devel = 1.60.0
+%if 0%{?fedora} >= 21
+BuildRequires: java-1.8.0-openjdk >= 1.8.0.112, ant >= 1.9.4, maven >= 3.3.9
+%else
+BuildRequires: openjdk >= 1.8.0.112, apache-ant >= 1.9.4, apache-maven >= 3.3.9
+%endif
+
 %description
 VMware Lightwave Server
 
@@ -105,7 +115,7 @@ VMware Lightwave Server
 
 %package client
 Summary: Lightwave Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5-libs >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, java-1.8.0-openjdk >= 1.8.0.45
+Requires: pkgconfig(openssl) >= 1.0.2, pkgconfig(krb5) >= 1.14, pkgconfig(libsasl2) >= 2.1, coreutils >= 8.22, likewise-open >= 6.2.9, openjdk >= 1.8.0.112
 %description client
 Client libraries to communicate with Lightwave Services
 

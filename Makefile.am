@@ -49,6 +49,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
 	$(RPMBUILD) \
               -v \
               --bb \
+              --noclean \
               --define "_topdir $(RPMBUILD_ROOT)" \
               --define "_prefix /opt/vmware" \
               --define "_bindir /opt/vmware/bin" \

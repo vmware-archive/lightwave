@@ -474,7 +474,6 @@ VmDirSrvSetupDomainInstance(
     PSTR pszAdminsGroupSid = NULL;
     PSTR pszDomainAdminsGroupSid = NULL;
     PSTR pszDomainClientsGroupSid = NULL;
-    PSTR pszUsersGroupSid = NULL;
     PSTR pszAdminUserKrbUPN = NULL;
 
     // Create host/tenant domain
@@ -569,11 +568,6 @@ VmDirSrvSetupDomainInstance(
                                         &pszDomainClientsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGenerateWellknownSid(pszDomainDN,
-                                        VMDIR_DOMAIN_ALIAS_RID_USERS,
-                                        &pszUsersGroupSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     //
     // Create the admin group for tenant setup or for first host setup.
     //
@@ -614,7 +608,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
+                FALSE,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -634,8 +628,8 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
                 TRUE,
+                FALSE,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -655,7 +649,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
+                FALSE,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -669,9 +663,9 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
                 FALSE,
                 TRUE,
+                FALSE,
                 FALSE,
                 FALSE,
                 &SecDescAnonymousRead);
@@ -683,7 +677,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
+                FALSE,
                 FALSE,
                 FALSE,
                 TRUE,
@@ -697,8 +691,8 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
-                pszUsersGroupSid,
                 TRUE,
+                FALSE,
                 FALSE,
                 FALSE,
                 !bSetupHost,
@@ -734,25 +728,25 @@ VmDirSrvSetupDomainInstance(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pSecDescServicesOut != NULL)
+    if (pSecDescServicesOut)
     {
         *pSecDescServicesOut = SecDescServices;
         SecDescServices.pSecDesc = NULL;
     }
 
-    if (pSecDescAnonymousReadOut != NULL)
+    if (pSecDescAnonymousReadOut)
     {
         *pSecDescAnonymousReadOut = SecDescAnonymousRead;
         SecDescAnonymousRead.pSecDesc = NULL;
     }
 
-    if (pSecDescNoDeleteOut != NULL)
+    if (pSecDescNoDeleteOut)
     {
         *pSecDescNoDeleteOut = SecDescNoDelete;
         SecDescNoDelete.pSecDesc = NULL;
     }
 
-    if (pSecDescFullAccessOut != NULL)
+    if (pSecDescFullAccessOut)
     {
         *pSecDescFullAccessOut = SecDescFullAccess;
         SecDescFullAccess.pSecDesc = NULL;
@@ -778,7 +772,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszAdminsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDomainAdminsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
-    VMDIR_SAFE_FREE_MEMORY(pszUsersGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszAdminUserKrbUPN);
 
     return dwError;
