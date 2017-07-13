@@ -128,6 +128,16 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
+                    VMDIR_REG_KEY_REST_LISTEN_PORT,
+                    TRUE))
+        {
+            dwError = VmDirAllocateStringA(
+                        pEntry->pszValue,
+                        &gVmdirGlobals.pszRestListenPort);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
                     VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,
                     TRUE))
         {
