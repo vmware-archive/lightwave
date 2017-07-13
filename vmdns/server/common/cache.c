@@ -235,9 +235,6 @@ VmDnsCacheLoadZoneFromStore(
     VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsConditionSignal(pContext->pRefreshEvent);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
 cleanup:
     if (bLocked)
     {
@@ -623,13 +620,16 @@ VmDnsCacheRefreshThread(
             dwError = VmDnsCacheLoadInitialData(pCacheContext);
             if (dwError)
             {
-                VMDNS_LOG_ERROR("Loading intial data failed with %u.", dwError);
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread loading intial data failed with %u.", dwError);
+                continue;
             }
             else
             {
+                VMDNS_LOG_INFO("DnsCacheRefreshThread loaded initial data, setting VMDNS state to READY.");
                 VmDnsSrvSetState(VMDNS_READY);
             }
         }
+
         newUSN = 0;
         VmDnsStoreGetReplicationStatus(&newUSN);
         if (pCacheContext->dwLastUSN != 0)
@@ -640,19 +640,27 @@ VmDnsCacheRefreshThread(
                             newUSN,
                             pCacheContext
                             );
-            BAIL_ON_VMDNS_ERROR(dwError)
+            if (dwError)
+            {
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread zone synchronization failed with %u.", dwError);
+            }
         }
         else
         {
-            VMDNS_LOG_ERROR("Failed to get replication status %u.", dwError);
+            VMDNS_LOG_ERROR("DnsCacheRefreshThread failed to get replication status %u.", dwError);
         }
+
         if (newUSN != 0)
         {
             pCacheContext->dwLastUSN = newUSN;
 
             dwError = VmDnsCachePurgeLRU(pCacheContext);
-            BAIL_ON_VMDNS_ERROR(dwError);
+            if (dwError)
+            {
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread failed to purge LRU cache with %u.", dwError);
+            }
         }
+
         if (!pCacheContext->bShutdown)
         {
             dwError = VmDnsConditionTimedWait(
@@ -664,6 +672,7 @@ VmDnsCacheRefreshThread(
                 dwError != WSAETIMEDOUT &&
                 dwError != ERROR_SUCCESS)
             {
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread failed to wait with %u. Thread DIEING.", dwError);
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
         }

@@ -114,7 +114,6 @@ VmAfSrvConfigureDNSA(
     VMDNS_INIT_INFO         initInfo = {0};
     CHAR                    szDomainFQDN[260] = {0};
     PSTR                    pszServerFQDN = NULL;
-    DWORD                   k = 0;
 
     if (IsNullOrEmptyString(pszDomainName) || strlen(pszDomainName) > 255)
     {
@@ -180,18 +179,15 @@ VmAfSrvConfigureDNSA(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmDnsInitializeA(pServerContext, &initInfo);
-    VmAfdLog( VMAFD_DEBUG_ERROR, "%s DnsInitialize : Error:%d,ServerName : %s", __FUNCTION__,dwError,pszServerFQDN);
+    VmAfdLog(
+        VMAFD_DEBUG_ERROR,
+        "%s DnsInitialize : Error:%d,ServerName : %s",
+        __FUNCTION__,
+        dwError,
+        pszServerFQDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    for (; k < 3; k++)
-    {
-        dwError = VmAfdReverseZoneInitialize(pServerContext, &initInfo);
-
-        if (dwError == ERROR_SUCCESS)
-            break;
-
-        sleep(5);
-    }
+    dwError = VmAfdReverseZoneInitialize(pServerContext, &initInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:

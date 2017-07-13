@@ -1005,6 +1005,28 @@ VmDnsSrvInitDomain(
             }
         }
     }
+
+    for (idx = 0; idx < 5 || VmDnsSrvGetState() != VMDNS_READY; idx++)
+    {
+        dwError = VmDnsConditionSignal(gpSrvContext->pCacheContext->pRefreshEvent);
+        if (dwError)
+        {
+            VMDNS_LOG_ERROR("Failed to signal cache refresh thread with %u.", dwError);
+        }
+        BAIL_ON_VMDNS_ERROR(dwError);
+        sleep(5);
+    }
+
+    if (VmDnsSrvGetState() != VMDNS_READY)
+    {
+        dwError = ERROR_INVALID_STATE;
+        VMDNS_LOG_ERROR("Failed to populate cache and VMDNS state is not ready: %u.", dwError);
+    }
+    else
+    {
+        VMDNS_LOG_INFO("Succesfully populated cache and VMDNS state is ready: %u.", dwError);
+    }
+
     dwError = VmDnsCacheLoadZoneFromStore(
                             gpSrvContext->pCacheContext,
                             pInitInfo->pszDomain
