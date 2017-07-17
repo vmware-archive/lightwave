@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -2489,6 +2490,33 @@ public class IdentityManager implements IIdentityManager {
 
             throw ex;
         }
+   }
+
+    /**
+     * Retrieves an identity provider from the tenant's configuration based on a domain name
+     *
+     * @param tenantName Name of the tenant to search
+     * @param domain The domain to find a provider for
+     * @return the provider that a domain belongs to or {@code null} if it is not present
+     * @throws Exception if an error occurs during retrieval
+     */
+   private IIdentityStoreData getProviderByDomain(String tenantName, String domain) throws Exception {
+        IIdentityStoreData data = null;
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotEmpty(domain, "domain");
+
+            TenantInformation tenantInfo = getTenantInfo(tenantName);
+            IIdentityProvider provider = tenantInfo.findProviderByDomain(domain);
+            if (provider != null) {
+                data = _configStore.getProvider(tenantName, provider.getName(), false);
+            }
+        } catch (Exception ex) {
+            logger.error("Failed to find identity provider for domain [{}]", domain, ex);
+            throw ex;
+        }
+
+        return data;
    }
 
     /**
@@ -9523,6 +9551,15 @@ public class IdentityManager implements IIdentityManager {
             {
                 throw ServerUtils.getRemoteException(ex);
             }
+        }
+    }
+
+    @Override
+    public IIdentityStoreData getProviderByDomain(String tenantName, String domain, IIdmServiceContext serviceContext) throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProviderByDomain")){
+            return this.getProviderByDomain(tenantName, domain);
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
         }
     }
 

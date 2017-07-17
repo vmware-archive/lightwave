@@ -848,6 +848,18 @@ public class CasIdmClient
         return getService().getProvider(tenantName, ProviderName, this.getServiceContext());
     }
 
+    /**
+     * Retrieves an identity provider from the tenant's configuration based on a domain name
+     *
+     * @param tenantName Name of the tenant to search
+     * @param domain The domain to find a provider for
+     * @return the provider that a domain belongs to or {@code null} if it is not present
+     * @throws Exception if an error occurs during retrieval
+     */
+    public IIdentityStoreData getProviderByDomain(String tenantName, String domain) throws Exception {
+        return getService().getProviderByDomain(tenantName, domain, this.getServiceContext());
+    }
+
     public
     IIdentityStoreData getProviderWithInternalInfo(String tenantName, String ProviderName) throws Exception
     {

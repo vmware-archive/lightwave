@@ -296,6 +296,8 @@ public interface IIdentityManager
 
     public IIdentityStoreData getProvider(String tenantName, String ProviderName, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public IIdentityStoreData getProviderByDomain(String tenantName, String domain, IIdmServiceContext serviceContext) throws IDMException;
+
     public IIdentityStoreData getProviderWithInternalInfo(String tenantName, String providerName, IIdmServiceContext serviceContext) throws  IDMException;
 
     public void setProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws  IDMException;

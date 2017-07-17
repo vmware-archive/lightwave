@@ -226,6 +226,25 @@ public class TenantInformation
         return this.getAdProvider();
     }
 
+    public IIdentityProvider findProviderByDomain(String domainName) throws Exception {
+        if (_providers != null && !_providers.isEmpty()) {
+            for (IIdentityProvider provider : _providers) {
+                try {
+                    if (provider.getDomains().stream().anyMatch(
+                            sec -> domainName.equalsIgnoreCase(sec.getName()) ||
+                                    domainName.equalsIgnoreCase(sec.getAlias())) ||
+                            matchUpnSuffixes(provider, domainName)) {
+                        return provider;
+                    }
+                } catch (UnsupportedOperationException e) {
+                    // Do nothing - just for GSSAuthProvider because we don't want to implement #getProviders() for it...
+                }
+            }
+        }
+
+        return null;
+    }
+
     public
     IIdentityProvider findProviderByName(String name) throws Exception
     {
