@@ -309,7 +309,7 @@ if (bLocked) \
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMCA_HEARTBEAT_ENTRY_W,\
       WEBSSO_ENTRY_W, \
-      STS_HEARTBEAT_ENTRY_W
+      STS_HEARTBEAT_ENTRY_W \
 }
 
 #define VMAFD_HEARTBEAT_ENTRY_PORTS \
@@ -317,7 +317,7 @@ if (bLocked) \
       VMDIR_HEARTBEAT_ENTRY_PORT,\
       VMCA_HEARTBEAT_ENTRY_PORT, \
       WEBSSO_ENTRY_PORT, \
-      STS_HEARTBEAT_ENTRY_PORT
+      STS_HEARTBEAT_ENTRY_PORT \
 }
 
 
@@ -342,5 +342,5 @@ if (bLocked) \
       STS_HEARTBEAT_ENTRY_W,\
       STS_HEARTBEAT_ENTRY_PORT,\
       0\
-  }
+  }\
 }
