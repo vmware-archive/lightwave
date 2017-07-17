@@ -18,6 +18,8 @@ package com.vmware.identity.idm.server.provider;
 import java.util.List;
 import java.util.Set;
 
+import com.unboundid.scim.sdk.SCIMFilter;
+import com.vmware.identity.idm.Approval;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.GroupDetail;
 import com.vmware.identity.idm.LockoutPolicy;
@@ -159,4 +161,12 @@ public interface ISystemDomainIdentityProvider extends IIdentityProvider
     List<Group> findGroupObjectsForFsps(List<String> fspIds) throws Exception;
 
     List<VmHostData> getComputers(boolean getDCOnly) throws Exception;
+
+    Approval addApproval(Approval approval) throws Exception;
+
+    Set<Approval> revokeApprovals(SCIMFilter filter) throws Exception;
+
+    Set<Approval> getApprovals(SCIMFilter filter) throws Exception;
+
+    Approval updateApproval(Approval approval) throws Exception;
 }

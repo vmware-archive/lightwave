@@ -295,6 +295,18 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         return result;
     }
 
+    protected static long getLongValue(LdapValue[] values) {
+        if (values == null || values.length <= 0) {
+            throw new InvalidParameterException("Null or empty values");
+        }
+
+        if (values.length != 1) {
+            throw new IllegalStateException("It expects one value only");
+        }
+
+        return values[0].getLong();
+    }
+
     protected long getOptionalLongValue(LdapValue[] values, long defaultVal)
     {
         long result = defaultVal;

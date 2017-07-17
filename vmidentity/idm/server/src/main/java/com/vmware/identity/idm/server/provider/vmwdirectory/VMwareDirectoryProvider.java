@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -53,6 +54,8 @@ import com.unboundid.scim.sdk.SCIMFilter;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.Approval;
+import com.vmware.identity.idm.ApprovalAlreadyExistsException;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.AuthenticationType;
@@ -249,6 +252,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final String GROUP_DIRECT_MEMBER_QUERY =
             "(&(objectClass=group)(member=%s))";
 
+    private static final String APPROVAL_ALL_QUERY = "(objectClass=vmwUaaApproval)";
+
     private static final String ATTR_NAME_OBJECTCLASS = "objectclass";
     private static final String ATTR_NAME_USER = "user";
     private static final String ATTR_NAME_JIT_USER = "vmwExternalIdpUser";
@@ -307,6 +312,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final String ATTR_NAME_OBJECTSID = "objectSid";
     private static final String ATTR_NAME_PASSWORD_SCHEMA =
             "passwordHashScheme";
+    private static final String ATTR_NAME_APPROVAL = "vmwUaaApproval";
+    private static final String ATTR_NAME_APPROVAL_USER_ID = "vmwUaaUserId";
+    private static final String ATTR_NAME_APPROVAL_CLIENT_ID = "vmwUaaClientId";
+    private static final String ATTR_NAME_APPROVAL_SCOPE = "vmwUaaScope";
+    private static final String ATTR_NAME_APPROVAL_STATUS = "vmwUaaApprovalStatus";
+    private static final String ATTR_NAME_APPROVAL_EXPIRES_AT = "vmwUaaExpiry";
+    private static final String ATTR_NAME_APPROVAL_LAST_UPDATED = "vmwUaaLastUpdated";
 
     static final String SPECIAL_NAME_TO_REQUEST_USERPASSWORD = "-";
     static final String ATTR_NAME_USERPASSWORD = "userPassword";
@@ -6107,6 +6119,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         return String.format("CN=ServicePrincipals,%s", getDomainDN(domain));
     }
 
+    protected static String getApprovalsDN(String domain)
+    {
+        return String.format("CN=%s,%s", IdentityManager.WELLKNOWN_CONTAINER_APPROVALS, getDomainDN(domain));
+    }
+
     protected static String getDomainDN(String domain)
     {
         return ServerUtils.getDomainDN(domain);
@@ -6232,6 +6249,183 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
        }
 
        return systems;
+    }
+
+    @Override
+    public Approval addApproval(Approval approval) throws Exception {
+        String cn = getIdentifier(approval);
+        String dn = String.format("CN=%s,%s", cn, getApprovalsDN(getDomain()));
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+
+            ArrayList<LdapMod> attributeList = new ArrayList<>();
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
+                            new LdapValue[] { LdapValue.fromString(ATTR_NAME_APPROVAL) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_CN,
+                            new LdapValue[] { LdapValue.fromString(cn) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_USER_ID,
+                            new LdapValue[] { LdapValue.fromString(approval.getUserId()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_CLIENT_ID,
+                            new LdapValue[] { LdapValue.fromString(approval.getClientId()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_SCOPE,
+                            new LdapValue[] { LdapValue.fromString(approval.getScope()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_STATUS,
+                            new LdapValue[] { LdapValue.fromString(approval.getStatus().toString()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_EXPIRES_AT,
+                            new LdapValue[] { LdapValue.fromLong(approval.getExpiresAt().getTime()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_LAST_UPDATED,
+                            new LdapValue[] { LdapValue.fromLong(approval.getLastUpdatedAt().getTime()) })
+            );
+
+            connection.addObject(dn, attributeList);
+
+            return approval;
+        } catch (AlreadyExistsLdapException ex) {
+            logger.error("An approval with the identifier '{}' already exists", cn, ex);
+            throw new ApprovalAlreadyExistsException("An approval with the identifier '" + cn + "' already exists");
+        }
+    }
+
+    @Override
+    public Set<Approval> revokeApprovals(SCIMFilter filter) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+            Set<Approval> deleted = getApprovalsInternal(filter, connection);
+            String approvalsDn = getApprovalsDN(getDomain());
+
+            for (Approval approval : deleted) {
+                String dn = String.format("CN=%s,%s", getIdentifier(approval), approvalsDn);
+                connection.deleteObject(dn);
+            }
+
+            return deleted;
+        }
+    }
+
+    @Override
+    public Set<Approval> getApprovals(SCIMFilter filter) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            return getApprovalsInternal(filter, pooledConnection.getConnection());
+        } catch (ConversionException e) {
+            // Do nothing - we'll just return the empty results since we'd be querying on an attribute that doesn't exist
+            logger.warn("Unable to convert SCIM to LDAP query", e);
+            return Collections.emptySet();
+        }
+    }
+
+    private Set<Approval> getApprovalsInternal(SCIMFilter filter, ILdapConnectionEx connection) throws Exception {
+        Set<Approval> approvals = new HashSet<>();
+
+        String[] attrNames = {
+                ATTR_NAME_APPROVAL_USER_ID,
+                ATTR_NAME_APPROVAL_CLIENT_ID,
+                ATTR_NAME_APPROVAL_SCOPE,
+                ATTR_NAME_APPROVAL_STATUS,
+                ATTR_NAME_APPROVAL_EXPIRES_AT,
+                ATTR_NAME_APPROVAL_LAST_UPDATED
+        };
+
+        String searchBaseDn = getApprovalsDN(getDomain());
+        ProcessedFilter processedFilter = getApprovalsSearchQueryConverter().convert(filter);
+        String ldapFilter = "(&" +
+                APPROVAL_ALL_QUERY +
+                processedFilter.getConvertedFilter() +
+                ")";
+
+        logger.debug("Finding approvals with SCIM filter: '{}'. LDAP: '{}'", filter, ldapFilter);
+
+        ILdapMessage message = connection.search(
+                searchBaseDn,
+                LdapScope.SCOPE_SUBTREE,
+                ldapFilter,
+                attrNames,
+                false);
+
+        try {
+            ILdapEntry[] entries = message.getEntries();
+
+            if (entries == null || entries.length == 0) {
+                return approvals;
+            }
+
+            for (ILdapEntry entry : entries) {
+                Approval approval = new Approval(
+                        getStringValue(entry.getAttributeValues(ATTR_NAME_APPROVAL_USER_ID)),
+                        getStringValue(entry.getAttributeValues(ATTR_NAME_APPROVAL_CLIENT_ID)),
+                        getStringValue(entry.getAttributeValues(ATTR_NAME_APPROVAL_SCOPE)),
+                        Approval.ApprovalStatus.valueOf(getStringValue(entry.getAttributeValues(ATTR_NAME_APPROVAL_STATUS))),
+                        new Date(getLongValue(entry.getAttributeValues(ATTR_NAME_APPROVAL_EXPIRES_AT))),
+                        new Date(getLongValue(entry.getAttributeValues(ATTR_NAME_APPROVAL_LAST_UPDATED)))
+                );
+
+                approvals.add(approval);
+            }
+        } finally {
+            message.close();
+        }
+
+        return approvals;
+    }
+
+    @Override
+    public Approval updateApproval(Approval approval) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+            String dn = String.format("CN=%s,%s", getIdentifier(approval), getApprovalsDN(getDomain()));
+
+            ArrayList<LdapMod> attributeList = new ArrayList<>();
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_STATUS,
+                            new LdapValue[] { LdapValue.fromString(approval.getStatus().toString()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_EXPIRES_AT,
+                            new LdapValue[] { LdapValue.fromLong(approval.getExpiresAt().getTime()) })
+            );
+
+            attributeList.add(
+                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_APPROVAL_LAST_UPDATED,
+                            new LdapValue[] { LdapValue.fromLong(approval.getLastUpdatedAt().getTime()) })
+            );
+
+            connection.modifyObject(dn, attributeList);
+
+            return approval;
+        } catch (Exception ex) {
+            // TODO Add a proper exception for this
+            throw ex;
+        }
+    }
+
+    private static String getIdentifier(Approval approval) {
+        return String.format("%s-%s-%s", approval.getUserId(), approval.getClientId(), approval.getScope());
     }
 
     @Override
@@ -6527,6 +6721,17 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         converter.setMapping("externalid", ATTR_NAME_EXTERNAL_OBJECT_ID);
         converter.setMapping("displayname", ATTR_NAME_GROUP_NAME);
         converter.setMapping("members", ATTR_NAME_MEMBER);
+        return converter;
+    }
+
+    private LdapSearchQueryConverter getApprovalsSearchQueryConverter() {
+        LdapSearchQueryConverter converter = new LdapSearchQueryConverter();
+        converter.setMapping("user_id", ATTR_NAME_APPROVAL_USER_ID);
+        converter.setMapping("client_id", ATTR_NAME_APPROVAL_CLIENT_ID);
+        converter.setMapping("scope", ATTR_NAME_APPROVAL_SCOPE);
+        converter.setMapping("status", ATTR_NAME_APPROVAL_STATUS);
+        converter.setMapping("expiresAt", ATTR_NAME_APPROVAL_EXPIRES_AT);
+        converter.setMapping("lastUpdatedAt", ATTR_NAME_APPROVAL_LAST_UPDATED);
         return converter;
     }
 

@@ -40,7 +40,7 @@
 
     <beans profile="default">
         <bean class="org.cloudfoundry.identity.uaa.client.ClientAdminBootstrap">
-            <constructor-arg ref="bcryptPasswordEncoder"/>
+            <constructor-arg ref="passthroughPasswordEncoder"/>
             <property name="clientRegistrationService" ref="vmidentityClientDetailsService" />
             <property name="clientMetadataProvisioning" ref="vmidentityClientMetadataProvisioning" />
             <property name="clients">

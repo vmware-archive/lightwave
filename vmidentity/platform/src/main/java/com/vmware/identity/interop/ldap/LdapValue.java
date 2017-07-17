@@ -63,6 +63,10 @@ public class LdapValue
         return new LdapValue(value);
     }
 
+    public static LdapValue fromLong(long value) {
+        return new LdapValue(value);
+    }
+
     @Override
     public String toString()
     {

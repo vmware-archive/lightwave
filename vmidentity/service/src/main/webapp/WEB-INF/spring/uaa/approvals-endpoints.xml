@@ -22,10 +22,8 @@
 
     <sec:global-method-security pre-post-annotations="enabled" />
 
-    <bean id="approvalStore" class="org.cloudfoundry.identity.uaa.approval.JdbcApprovalStore">
-        <constructor-arg ref="jdbcTemplate" />
-        <constructor-arg ref="jdbcPagingListFactory" />
-        <constructor-arg ref="scimUserQueryConverter"/>
+    <bean id="approvalStore" class="org.cloudfoundry.identity.uaa.approval.VmidentityApprovalStore">
+        <constructor-arg ref="idmClient" />
     </bean>
 
     <bean id="approvalsEndpoints" class="org.cloudfoundry.identity.uaa.approval.ApprovalsAdminEndpoints">

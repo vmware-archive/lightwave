@@ -261,6 +261,17 @@ public interface IIdentityManager
             IIdmServiceContext serviceContext) throws  IDMException;
 
     /*
+     * Approvals
+     */
+    public Approval addApproval(String tenantName, Approval approval, IIdmServiceContext serviceContext) throws IDMException;
+
+    public Collection<Approval> revokeApprovals(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException;
+
+    public Collection<Approval> getApprovals(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException;
+
+    public Approval updateApproval(String tenantName, Approval approval, IIdmServiceContext serviceContext) throws IDMException;
+
+    /*
      *  ResourceServer
      */
     public void addResourceServer(

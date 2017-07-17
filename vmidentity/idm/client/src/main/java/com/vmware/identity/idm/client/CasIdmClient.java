@@ -34,55 +34,32 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
-import org.w3c.dom.Document;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.ADIDSAlreadyExistException;
 import com.vmware.identity.idm.ActiveDirectoryJoinInfo;
+import com.vmware.identity.idm.Approval;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.AuthenticationType;
 import com.vmware.identity.idm.AuthnPolicy;
-import com.vmware.identity.idm.CertificateInUseException;
 import com.vmware.identity.idm.CertificateType;
-import com.vmware.identity.idm.DomainManagerException;
 import com.vmware.identity.idm.DomainTrustsInfo;
 import com.vmware.identity.idm.DomainType;
-import com.vmware.identity.idm.DuplicateCertificateException;
-import com.vmware.identity.idm.DuplicateProviderException;
-import com.vmware.identity.idm.DuplicateTenantException;
 import com.vmware.identity.idm.ExternalIDPCertChainInvalidTrustedPathException;
 import com.vmware.identity.idm.ExternalIDPExtraneousCertsInCertChainException;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.GroupDetail;
-import com.vmware.identity.idm.HostNotJoinedRequiredDomainException;
 import com.vmware.identity.idm.IDMException;
-import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityManager;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdmServiceContext;
-import com.vmware.identity.idm.IdmADDomainAccessDeniedException;
-import com.vmware.identity.idm.IdmADDomainException;
-import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPrincipalException;
-import com.vmware.identity.idm.InvalidProviderException;
 import com.vmware.identity.idm.LockoutPolicy;
-import com.vmware.identity.idm.MemberAlreadyExistException;
-import com.vmware.identity.idm.NoSuchCertificateException;
-import com.vmware.identity.idm.NoSuchExternalIdpConfigException;
 import com.vmware.identity.idm.NoSuchIdpException;
-import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
 import com.vmware.identity.idm.PasswordExpiration;
-import com.vmware.identity.idm.PasswordExpiredException;
 import com.vmware.identity.idm.PasswordPolicy;
-import com.vmware.identity.idm.PasswordPolicyViolationException;
 import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.Principal;
@@ -99,9 +76,14 @@ import com.vmware.identity.idm.SolutionDetail;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.SsoHealthStatsData;
 import com.vmware.identity.idm.Tenant;
-import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.VmHostData;
+import org.w3c.dom.Document;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.server.IdentityManager;
 import com.vmware.identity.performanceSupport.IIdmAuthStat;
 import com.vmware.identity.performanceSupport.IIdmAuthStatus;
@@ -486,6 +468,67 @@ public class CasIdmClient
      */
     public void addOIDCClient(String tenantName, OIDCClient oidcClient) throws Exception {
         getService().addOIDCClient(tenantName, oidcClient, this.getServiceContext());
+    }
+
+    /**
+     * <p>Adds an approval to the tenant.</p>
+     *
+     * @param tenantName Name of the tenant to add the approval for
+     * @param approval the approval to add.
+     * @return the newly-created approval
+     * @throws Exception
+     */
+    public Approval addApproval(String tenantName, Approval approval) throws Exception {
+        return getService().addApproval(tenantName, approval, this.getServiceContext());
+    }
+
+    /**
+     * <p>Revoke approvals according to a SCIM filter.</p>
+     *
+     * <p>Approvals are uniquely identified by the combination of {@link Approval#getUserId()},
+     *  {@link Approval#getClientId()}, and {@link Approval#getScope()} - in order to delete a single
+     *  approval, the filter can explicitly declare all three as equivalences. For example:</p>
+     *  <p><code>
+     *      user_id eq "Administrator@lw-testdom.com" and client_id eq "uaa_client" and scope eq "Administrator"
+     *  </code></p>
+     * @param tenantName Name of the tenant to revoke approvals from
+     * @param filter a SCIM filter declaring which approvals to revoke
+     * @return a collection of the revoked approvals
+     * @throws Exception
+     */
+    public Collection<Approval> revokeApprovals(String tenantName, String filter) throws Exception {
+        return getService().revokeApprovals(tenantName, filter, this.getServiceContext());
+    }
+
+    /**
+     * <p>Get approvals according to a SCIM filter.</p>
+     *
+     * <p>Approvals are uniquely identified by the combination of {@link Approval#getUserId()},
+     *  {@link Approval#getClientId()}, and {@link Approval#getScope()} - in order to delete a single
+     *  approval, the filter can explicitly declare all three as equivalences. For example:</p>
+     *  <p><code>
+     *      user_id eq "Administrator@lw-testdom.com" and client_id eq "uaa_client" and scope eq "Administrator"
+     *  </code></p>
+     * @param tenantName Name of the tenant to get approvals from
+     * @param filter a SCIM filter declaring which approvals to get
+     * @return a collection of the retrieved approvals
+     * @throws Exception
+     */
+    public Collection<Approval> getApprovals(String tenantName, String filter) throws Exception {
+        return getService().getApprovals(tenantName, filter, this.getServiceContext());
+    }
+
+    /**
+     * <p>Update an existing approval. Only updates {@link Approval#getStatus()}, {@link Approval#getExpiresAt()}
+     * and {@link Approval#getLastUpdatedAt()}.</p>
+     *
+     * @param tenantName Name of the tenant to update the approval in
+     * @param approval the approval to update
+     * @return the updated approval
+     * @throws Exception
+     */
+    public Approval updateApproval(String tenantName, Approval approval) throws Exception {
+        return getService().updateApproval(tenantName, approval, this.getServiceContext());
     }
 
     /**

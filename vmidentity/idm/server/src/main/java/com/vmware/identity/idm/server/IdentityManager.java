@@ -40,7 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -80,6 +79,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.diagnostics.VmEvent;
 import com.vmware.identity.idm.ADIDSAlreadyExistException;
 import com.vmware.identity.idm.ActiveDirectoryJoinInfo;
+import com.vmware.identity.idm.Approval;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.AuthenticationType;
@@ -92,7 +92,6 @@ import com.vmware.identity.idm.ContainerAlreadyExistsException;
 import com.vmware.identity.idm.DomainManagerException;
 import com.vmware.identity.idm.DomainTrustsInfo;
 import com.vmware.identity.idm.DomainType;
-import com.vmware.identity.idm.DuplicateProviderException;
 import com.vmware.identity.idm.DuplicateTenantException;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.Group;
@@ -115,9 +114,7 @@ import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.InvalidProviderException;
-import com.vmware.identity.idm.LocalISRegistrationException;
 import com.vmware.identity.idm.LockoutPolicy;
-import com.vmware.identity.idm.MemberAlreadyExistException;
 import com.vmware.identity.idm.NoSuchExternalIdpConfigException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
@@ -204,6 +201,7 @@ import com.vmware.identity.performanceSupport.IdmAuthStatus;
 import com.vmware.identity.performanceSupport.PerfBucketKey;
 import com.vmware.identity.performanceSupport.PerfDataSinkFactory;
 import com.vmware.identity.performanceSupport.PerfMeasurementPoint;
+
 /**
  * User: snambakam
  * Date: 12/23/11
@@ -342,6 +340,7 @@ public class IdentityManager implements IIdentityManager {
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =  "ExternalIDPUsers";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION = "Well-known external IDP users' group, which registers external IDP users as guests.";
     public static final String WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS = "ServicePrincipals";
+    public static final String WELLKNOWN_CONTAINER_APPROVALS = "Approvals";
 
     /**
      * A singleton IDM instance intend to be used across all other webapps.
@@ -454,6 +453,8 @@ public class IdentityManager implements IIdentityManager {
 
         // Make sure we create ServicePrincipal containers to place solution users
         ensureContainerExists(tenantName, WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS);
+
+        ensureContainerExists(tenantName, WELLKNOWN_CONTAINER_APPROVALS);
     }
 
     private
@@ -2123,6 +2124,82 @@ public class IdentityManager implements IIdentityManager {
             logger.error(String.format("Failed to get OIDC clients for tenant [%s]", tenantName));
 
             throw ex;
+        }
+    }
+
+    private Approval addApproval(String tenantName, Approval approval) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotNull(approval, "approval");
+            ValidateUtil.validateNotEmpty(approval.getUserId(), "approval.userId");
+            ValidateUtil.validateNotEmpty(approval.getClientId(), "approval.clientId");
+
+            findUser(tenantName, approval.getUserId()); // Throws exception if we can't find it
+            getOIDCClient(tenantName, approval.getClientId()); // Throws exception if we can't find it
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            ISystemDomainIdentityProvider provider = tenantInfo.findSystemProvider();
+            ServerUtils.validateNotNullSystemIdp(provider, tenantName);
+
+            return provider.addApproval(approval);
+        } catch (Exception e) {
+            logger.error("Error adding approval [{}] for tenant [{}]", approval, tenantName, e);
+            throw e;
+        }
+    }
+
+    private Collection<Approval> revokeApprovals(String tenantName, String filter) throws Exception {
+        SCIMFilter scimFilter = SCIMFilter.parse(filter);
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            ISystemDomainIdentityProvider provider = tenantInfo.findSystemProvider();
+            ServerUtils.validateNotNullSystemIdp(provider, tenantName);
+
+            return provider.revokeApprovals(scimFilter);
+        } catch (Exception e) {
+            logger.error("Failed to revoke approvals by filter [{}] in tenant [{}]", filter, tenantName, e);
+            throw e;
+        }
+    }
+
+    private Collection<Approval> getApprovals(String tenantName, String filter) throws Exception {
+        SCIMFilter scimFilter = SCIMFilter.parse(filter);
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            ISystemDomainIdentityProvider provider = tenantInfo.findSystemProvider();
+            ServerUtils.validateNotNullSystemIdp(provider, tenantName);
+
+            return provider.getApprovals(scimFilter);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve approvals by filter [{}] in tenant [{}]", filter, tenantName, e);
+            throw e;
+        }
+    }
+
+    private Approval updateApproval(String tenantName, Approval approval) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            ISystemDomainIdentityProvider provider = tenantInfo.findSystemProvider();
+            ServerUtils.validateNotNullSystemIdp(provider, tenantName);
+
+            return provider.updateApproval(approval);
+        } catch (Exception e) {
+            logger.error("Failed to update approval [{}] in tenant [{}]", approval, tenantName, e);
+            throw e;
         }
     }
 
@@ -9419,6 +9496,50 @@ public class IdentityManager implements IIdentityManager {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOIDCClients")) {
             try {
                 return this.getOIDCClients(tenantName, filter);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Approval addApproval(String tenantName, Approval approval, IIdmServiceContext serviceContext) throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addApproval")) {
+            try {
+                return this.addApproval(tenantName, approval);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Collection<Approval> revokeApprovals(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "revokeApprovals")) {
+            try {
+                return this.revokeApprovals(tenantName, filter);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Collection<Approval> getApprovals(String tenantName, String filter, IIdmServiceContext serviceContext) throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getApprovals")) {
+            try {
+                return this.getApprovals(tenantName, filter);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Approval updateApproval(String tenantName, Approval approval, IIdmServiceContext serviceContext) throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "updateApproval")) {
+            try {
+                return this.updateApproval(tenantName, approval);
             } catch (Exception ex) {
                 throw ServerUtils.getRemoteException(ex);
             }

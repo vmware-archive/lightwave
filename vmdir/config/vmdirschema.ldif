@@ -19922,6 +19922,72 @@ objectClasses: (
     )
 
 ############################################################
+# VMware UAA Services
+############################################################
+
+attributeTypes: (
+    VMWare.UAA.attribute.1
+    NAME 'vmwUaaUserId'
+    DESC 'The user that granted the approval'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.UAA.attribute.2
+    NAME 'vmwUaaClientId'
+    DESC 'The client that was granted an approval'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.UAA.attribute.3
+    NAME 'vmwUaaScope'
+    DESC 'The scope with which the approval is granted'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.UAA.attribute.4
+    NAME 'vmwUaaApprovalStatus'
+    DESC 'The status of the approval'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.UAA.attribute.5
+    NAME 'vmwUaaExpiry'
+    DESC 'The timestamp of the expiration date (ms past the epoch)'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.UAA.attribute.6
+    NAME 'vmwUaaLastUpdated'
+    DESC 'The timestamp of the last update (ms past the epoch)'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+objectClasses: (
+    VMWare.UAA.objectclass.1
+    NAME 'vmwUaaApproval'
+    DESC 'Approvals granted by a user to a client'
+    STRUCTURAL
+    MUST ( vmwUaaUserId
+         $ vmwUaaClientId
+         $ vmwUaaScope
+         $ vmwUaaApprovalStatus
+         $ vmwUaaExpiry
+         $ vmwUaaLastUpdated
+         )
+    )
+
+############################################################
 # VMware Lookup Service
 ############################################################
 
