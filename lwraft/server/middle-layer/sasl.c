@@ -145,7 +145,7 @@ VmDirSASLInit(
                     _VmDirSASLMutexUnlock,
                     _VmDirSASLMutexDispose);
 
-    dwError = sasl_server_init( saslServerCB, "lwraftd");
+    dwError = sasl_server_init( saslServerCB, "postd");
     BAIL_ON_SASL_ERROR(dwError);
 
 cleanup:

@@ -1,15 +1,15 @@
-lib_LTLIBRARIES = liblwraftclient.la
+lib_LTLIBRARIES = libpostclient.la
 
 idl_srcdir=$(top_srcdir)/idl
 
-liblwraftclient_la_CPPFLAGS = \
+libpostclient_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
-liblwraftclient_la_SOURCES = \
+libpostclient_la_SOURCES = \
     binding.c \
     client.c \
     globals.c \
@@ -36,7 +36,7 @@ liblwraftclient_la_SOURCES = \
     vmdirurgentrepl_cstub.c \
     vmdirraft_cstub.c
 
-liblwraftclient_la_LIBADD = \
+libpostclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
@@ -52,7 +52,7 @@ liblwraftclient_la_LIBADD = \
     @CRYPTO_LIBS@ \
     @PTHREAD_LIBS@
 
-liblwraftclient_la_LDFLAGS = \
+libpostclient_la_LDFLAGS = \
     -export-symbols @top_srcdir@/client/liblwraftclient.exp \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \

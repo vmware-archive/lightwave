@@ -152,40 +152,40 @@ VmDirRegisterRpcServer(
     ulError = VmDirRpcServerRegisterIf(pVmDirRaftInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service registered successfully.");
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Persistent Objectstore Service registered successfully.");
 
     ulError = VmDirBindServer( &pServerBinding, endpoints, VmDirRegisterForTcpEndpoint() ? dwEpCount : dwEpCount - 1);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service bound successfully.");
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Persistent Objectstore Service bound successfully.");
 
 #if 0
 #if !defined(HAVE_DCERPC_WIN32)
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "Lightwave Raft Service");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "Persistent Objectstore Service");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirFtpInterfaceSpec, "Lightwave Raft Service FTP");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirFtpInterfaceSpec, "Persistent Objectstore Service FTP");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "Lightwave Raft Service dbcp");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "Persistent Objectstore Service dbcp");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirUrgentReplInterfaceSpec, "Lightwave Raft Service Urgent Repl");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirUrgentReplInterfaceSpec, "Persistent Objectstore Service Urgent Repl");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirRaftInterfaceSpec, "Lightwave Raft Service Raft");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirRaftInterfaceSpec, "Persistent Objectstore Service Raft");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
@@ -247,7 +247,7 @@ VmDirUnRegisterRpcServer(
     ulError = VmDirRpcServerUnRegisterIf(pVmDirRaftInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service unregistered successfully.");
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Persistent Objectstore Service unregistered successfully.");
 
 error:
 

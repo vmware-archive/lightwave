@@ -17,7 +17,7 @@ lwraftclienttest_CPPFLAGS = \
 
 lwraftclienttest_LDADD = \
     $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

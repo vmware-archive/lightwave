@@ -22,7 +22,7 @@
 REST_MODULE _ldap_rest_module[] =
 {
     {
-        "/v1/lwraft/ldap",
+        VMDIR_V1_LDAP_RESOURCE,
         {VmDirRESTLdapSearch, VmDirRESTLdapAdd, NULL, VmDirRESTLdapDelete, VmDirRESTLdapModify}
     }
 };

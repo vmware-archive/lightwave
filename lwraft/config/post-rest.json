@@ -23,7 +23,7 @@
         }
     ],
     "paths": {
-        "/lwraft/ldap": {
+        "/post/ldap": {
             "put": {
                 "summary": "Add an LDAP entry",
                 "description": "Add an LDAP entry",
@@ -179,7 +179,7 @@
                 ]
             }
         },
-        "/lwraft/object/{objectpath}": {
+        "/post/object/{objectpath}": {
             "put": {
                 "summary": "Add a lwraft object",
                 "description": "Add a lwraft object",

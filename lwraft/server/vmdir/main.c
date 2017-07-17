@@ -74,11 +74,11 @@ main(
     dwError = VmDirAllocateStringA(pszStateDir, &gVmdirGlobals.pszBDBHome);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLogInitialize( logFileName, bEnableSysLog, "lwraftd", VMDIR_LOG_INFO, iLocalLogMask);
+    dwError = VmDirLogInitialize( logFileName, bEnableSysLog, "postd", VMDIR_LOG_INFO, iLocalLogMask);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lightwave lwraftd: starting...");
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Persistent Objectstore postd: starting...");
 
     VmDirBlockSelectedSignals();
 
@@ -97,7 +97,7 @@ main(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VmDirdStateSet( VMDIRD_STATE_NORMAL );
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Ligthtwave lwraftd: running..., run mode = %s",
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Persistent Objectstore postd: running..., run mode = %s",
               (VmDirdGetRunMode() == VMDIR_RUNMODE_RESTORE) ? VMDIR_RUN_MODE_RESTORE :
               ((VmDirdGetRunMode() == VMDIR_RUNMODE_STANDALONE) ? VMDIR_RUN_MODE_STANDALONE : "normal" ) );
 
@@ -106,7 +106,7 @@ main(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Ligthtwave lwraftd: exiting..." );
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Persistent Objectstore postd: exiting..." );
 
 cleanup:
 

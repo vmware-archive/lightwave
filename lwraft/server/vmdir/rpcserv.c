@@ -900,7 +900,7 @@ Srv_RpcVmDirSetState(
 
     VmDirdStateSet(dwState);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: Set lwraftd state to: %u", dwState );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: Set postd state to: %u", dwState );
 
 cleanup:
     if (pAccessToken)
@@ -1863,7 +1863,7 @@ Srv_RpcVmDirSetMode(
 
     VmDirdSetRunMode(dwMode);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set lwraftd runmode to: %u", __FUNCTION__, dwMode );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set postd runmode to: %u", __FUNCTION__, dwMode );
 
 cleanup:
     if (pAccessToken)

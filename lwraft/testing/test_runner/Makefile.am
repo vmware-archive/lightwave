@@ -11,7 +11,7 @@ vmdir_test_runner_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 vmdir_test_runner_LDADD = \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     $(top_builddir)/common/libcommon.la \
     ../test_lib/liblwrafttesting.la \
     @LWIO_LIBS@ \

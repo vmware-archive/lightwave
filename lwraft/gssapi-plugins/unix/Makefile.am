@@ -52,10 +52,10 @@ libgssapi_unix_la_SOURCES = \
         unix_crypt.c
 
 libgssapi_unix_la_LIBADD = \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/thirdparty/csrp/libcsrp.la \
-    $(top_builddir)/client/liblwraftclient_la-srp_verifier_cstub.lo \
+    $(top_builddir)/client/libpostclient_la-srp_verifier_cstub.lo \
     @DCERPC_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \

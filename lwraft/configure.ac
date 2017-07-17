@@ -605,9 +605,9 @@ AC_SUBST(OIDC_LIBS)
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
 if test x"$localstatedir" = x"/var"; then
-    lwraftdbdir="$localstatedir/lib/vmware/lwraft"
+    lwraftdbdir="$localstatedir/lib/vmware/post"
 else
-    lwraftdbdir="$localstatedir/lwraft"
+    lwraftdbdir="$localstatedir/post"
 fi
 AC_SUBST(lwraftdbdir)
 AS_AC_EXPAND(LWRAFT_DB_DIR, $lwraftdbdir)
@@ -626,10 +626,10 @@ AC_SUBST(lwraftlibdir)
 AS_AC_EXPAND(LWRAFT_LIB_DIR, $lwraftlibdir)
 AC_DEFINE_UNQUOTED(LWRAFT_LIB_DIR, "$LWRAFT_LIB_DIR", [Lib directory])
 
-lwraftsasldir=$lwraftlibdir/sasl2
-AC_SUBST(lwraftsasldir)
+postsasldir=$lwraftlibdir/sasl2
+AC_SUBST(postsasldir)
 
-lwraftlogdir=/var/log/vmware/lwraft
+lwraftlogdir=/var/log/vmware/post
 AC_ARG_WITH([logdir],
    [AC_HELP_STRING([--with-logdir], [set the logging directory for lwraft])],
    [
@@ -684,7 +684,7 @@ AC_CONFIG_FILES([Makefile
                  server/saslvmdirdb/Makefile
                  server/vmdir/Makefile
                  client/Makefile
-                 config/lwraft.reg
+                 config/post.reg
                  testing/Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile

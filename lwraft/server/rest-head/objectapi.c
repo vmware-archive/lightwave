@@ -30,7 +30,7 @@ _VmDirRESTCreateCondWriteCtrl(
 REST_MODULE _object_rest_module[] =
 {
     {
-        "/v1/lwraft/object/*",
+        VMDIR_V1_OBJ_RESOURCE_ALL,
         {VmDirRESTObjectGet, VmDirRESTObjectPut, NULL, VmDirRESTObjectDelete, VmDirRESTObjectPatch}
     }
 };

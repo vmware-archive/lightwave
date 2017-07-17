@@ -489,10 +489,10 @@ extern "C" {
 #define LDAP_CONTROL_CONDITIONAL_WRITE          "1.3.6.1.4.1.6876.40.10.3"
 
 #ifndef _WIN32
-#define LWRAFT_NCALRPC_END_POINT "lwraftsvc"
+#define LWRAFT_NCALRPC_END_POINT "postsvc"
 #else
 // note: keep in sync with /vmdir/main/idl/vmdir.idl
-#define LWRAFT_NCALRPC_END_POINT "LightwaveRaftService"
+#define LWRAFT_NCALRPC_END_POINT "PostService"
 #endif
 
 #define LWRAFT_RPC_TCP_END_POINT "2011"

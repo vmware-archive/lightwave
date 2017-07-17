@@ -1,5 +1,5 @@
-Name:    vmware-lightwave-raft
-Summary: VMware Lightwave Raft
+Name:    vmware-objectstore
+Summary: VMware Objectstore
 Version: %{_version}
 Release: %{_patch}
 Group:   Applications/System
@@ -7,10 +7,10 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires: vmware-lightwave-clients = %{version}, lightwave-raft = %{version}, lightwave-raft-client = %{version}
+Requires: vmware-lightwave-clients = %{version}, vmware-post = %{version}, vmware-post-client = %{version}
 
 %description
-VMware Infrastructure LWRaft
+VMware Objectstore
 
 %build
 

@@ -36,3 +36,6 @@
 #define NAMEFORM_TAG_LEN            sizeof(NAMEFORM_TAG) - 1
 #define IS_NAMEFORM_TAG(tag)        \
     (VmDirStringNCompareA(tag, NAMEFORM_TAG, NAMEFORM_TAG_LEN, FALSE) == 0)
+
+
+#define VMDIR_DEFAULT_SCHEMA_FILE   "postschema.ldif"

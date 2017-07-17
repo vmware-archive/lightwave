@@ -25,7 +25,7 @@ libgssapi_ntlm_la_SOURCES = \
     ntlm_util.c
 
 libgssapi_ntlm_la_LIBADD = \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     $(top_builddir)/thirdparty/csrp/libcsrp.la \
     @DCERPC_LIBS@ \
     @GSSAPI_LIBS@ \

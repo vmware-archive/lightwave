@@ -18,7 +18,7 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
 {
     {
         VDIR_REST_RSC_LDAP,
-        "/v1/lwraft/ldap",
+        VMDIR_V1_LDAP_RESOURCE,
         FALSE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
@@ -27,7 +27,7 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
     },
     {
         VDIR_REST_RSC_OBJECT,
-        "/v1/lwraft/object",
+        VMDIR_V1_OBJ_RESOURCE,
         TRUE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,

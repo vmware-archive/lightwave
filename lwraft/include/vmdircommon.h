@@ -817,7 +817,7 @@ typedef enum
 
 } VMDIR_SYNC_MECHANISM;
 
-#define VMDIR_NAME                          "lwraft"
+#define VMDIR_NAME                          "post"
 #define VMAFD_NAME                          "vmafd"
 
 #ifndef _WIN32
@@ -829,8 +829,8 @@ typedef enum
 #endif
 
 #ifndef _WIN32
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Lwraft"
-#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Lwraft\\Parameters"
+#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Post"
+#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Post\\Parameters"
 #define VMDIR_LINUX_DB_PATH                 LWRAFT_DB_DIR "/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\LightwaveRaftService"

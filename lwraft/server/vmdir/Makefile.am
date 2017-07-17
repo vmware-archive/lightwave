@@ -1,8 +1,8 @@
-sbin_PROGRAMS = lwraftd
+sbin_PROGRAMS = postd
 
 idl_srcdir=$(top_srcdir)/idl
 
-lwraftd_SOURCES = \
+postd_SOURCES = \
     accountmgmt.c \
     auth.c \
     globals.c \
@@ -43,7 +43,7 @@ VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
 VMDIRD_BACKEND_STORE= $(top_builddir)/server/mdb-store/libmdb-store.la
 
-lwraftd_CPPFLAGS = \
+postd_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/thirdparty/openldap/include \
@@ -57,7 +57,7 @@ lwraftd_CPPFLAGS = \
     @OPENSSL_INCLUDES@ \
     @VMEVENT_INCLUDES@
 
-lwraftd_LDADD = \
+postd_LDADD = \
     $(top_builddir)/server/vmkdc/libvmkdcserv.la \
     $(top_builddir)/server/ldap-head/libldap-head.la \
     $(top_builddir)/server/rest-head/librest-head.la \
@@ -68,7 +68,7 @@ lwraftd_LDADD = \
     $(top_builddir)/server/backend/libbackend.la \
     $(VMDIRD_BACKEND_STORE) \
     $(top_builddir)/server/replication/libreplication.la \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     $(top_builddir)/server/common/libsrvcommon.la \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/thirdparty/heimdal/krb5-crypto/libkrb5crypto.la \
@@ -95,7 +95,7 @@ lwraftd_LDADD = \
     @CRESTENGINE_LIBS@ \
     @OIDC_LIBS@
 
-lwraftd_LDFLAGS = \
+postd_LDFLAGS = \
     -rdynamic -ldl \
     $(VMDIRD_BACKEND_LD_FLAGS) \
     @OPENSSL_LDFLAGS@ \

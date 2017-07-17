@@ -1,10 +1,10 @@
-bin_PROGRAMS = lwraft-cli
+bin_PROGRAMS = post-cli
 
-lwraft_cli_SOURCES = \
+post_cli_SOURCES = \
     clinode.c  \
     main.c
 
-lwraft_cli_CPPFLAGS = \
+post_cli_CPPFLAGS = \
     -DLDAP_DEPRECATED \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
@@ -12,9 +12,9 @@ lwraft_cli_CPPFLAGS = \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-lwraft_cli_LDADD = \
+post_cli_LDADD = \
     $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -29,7 +29,7 @@ lwraft_cli_LDADD = \
     @LDAP_LIBS@ \
     @PTHREAD_LIBS@
 
-lwraft_cli_LDFLAGS = \
+post_cli_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@
