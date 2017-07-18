@@ -7,7 +7,7 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, jansson >= 2.9, copenapi >= 0.0.1, c-rest-engine >= 1.0.1, vmware-sts-c-client = %{version}, lightwave-raft-client = %{version} vmware-directory-client = %{version}
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, jansson >= 2.9, copenapi >= 0.0.1, c-rest-engine >= 1.0.1, vmware-sts-c-client = %{version}, vmware-post-client = %{version} vmware-directory-client = %{version}
 BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, jansson-devel >= 2.9, copenapi-devel >= 0.0.1, c-rest-engine-devel >= 1.0.1, vmware-sts-c-client = %{version}, vmware-event-devel >= %{_vmevent_ver}
 
 %if 0%{?_sasl_prefix:1} == 0
