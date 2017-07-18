@@ -49,6 +49,9 @@ VmDirRESTServerInit(
     config.pClientCount = VMDIR_REST_CLIENTCNT;
     config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
 
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmRESTInit(&config, NULL, &gpVdirRESTHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -68,10 +71,6 @@ VmDirRESTServerInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-
-    // TODO uncomment
-//    dwError = OidcClientGlobalInit();
-//    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VmRESTStart(gpVdirRESTHandle);
     if (dwError)
@@ -118,8 +117,7 @@ VmDirRESTServerShutdown(
         VmRESTShutdown(gpVdirRESTHandle);
     }
 
-    // TODO uncomment
-//    OidcClientGlobalCleanup();
+    OidcClientGlobalCleanup();
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 
