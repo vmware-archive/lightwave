@@ -15,10 +15,9 @@
 
 #ifdef _WIN32
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters"
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\LightwaveRaftService"
 #else
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\lwraft"
+#define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\post"
 #endif
 
 #define VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE "VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE"

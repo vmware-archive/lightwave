@@ -6,4 +6,4 @@ lwraftconf_DATA = \
     saslpostd.conf \
     post-rest.json
 
-bin_SCRIPTS = lwraft_upgrade.sh
+bin_SCRIPTS = 

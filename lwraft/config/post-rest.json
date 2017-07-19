@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "Lightwave Raft API",
+        "title": "Lightwave POST API",
         "version": "1.3.0"
     },
     "schemes": [
@@ -15,7 +15,7 @@
     "tags": [
         {
             "name": "object",
-            "description": "Lightwave Raft data store object API implemented in RESTful interface"
+            "description": "Lightwave Post data store object API implemented in RESTful interface"
         },
         {
             "name": "ldap",
@@ -181,8 +181,8 @@
         },
         "/post/object/{objectpath}": {
             "put": {
-                "summary": "Add a lwraft object",
-                "description": "Add a lwraft object",
+                "summary": "Add a post object",
+                "description": "Add a post object",
                 "consumes": [
                     "application/json"
                 ],
@@ -204,13 +204,13 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectAttributes"
+                            "$ref": "#/definitions/PostObjectAttributes"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Generic LWRAFT object response",
+                        "description": "Generic POST object response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
                         }
@@ -221,8 +221,8 @@
                 ]
             },
             "get": {
-                "summary": "Search for lwraft objects",
-                "description": "Search for lwraft objects",
+                "summary": "Search for post objects",
+                "description": "Search for post objects",
                 "produces": [
                     "application/json"
                 ],
@@ -281,9 +281,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "LWRaft objects search response ( how to treat blob attribute ?? base64 encode it or not ?? )",
+                        "description": "Post objects search response",
                         "schema": {
-                            "$ref": "#/definitions/LWRaftObjectGetResponse"
+                            "$ref": "#/definitions/PostObjectGetResponse"
                         }
                     }
                 },
@@ -292,8 +292,8 @@
                 ]
             },
             "patch": {
-                "summary": "Modify a lwraft object",
-                "description": "Modify a lwraft object",
+                "summary": "Modify a post object",
+                "description": "Modify a post object",
                 "consumes": [
                     "application/json"
                 ],
@@ -330,7 +330,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Generic LWRAFT response",
+                        "description": "Generic POST response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
                         }
@@ -341,8 +341,8 @@
                 ]
             },
             "delete": {
-                "summary": "Delete a lwraft object",
-                "description": "Delete a lwraft object",
+                "summary": "Delete a post object",
+                "description": "Delete a post object",
                 "parameters": [
                     {
                         "name": "objectpath",
@@ -365,7 +365,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Generic LWRAFT response",
+                        "description": "Generic POST response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
                         }
@@ -460,7 +460,7 @@
                 }
             }
         },
-        "LWRaftObjectAttributes": {
+        "PostObjectAttributes": {
             "type": "object",
             "properties": {
                 "attributes": {
@@ -471,7 +471,7 @@
                 }
             }
         },
-        "LWRaftObject": {
+        "PostObject": {
             "type": "object",
             "properties": {
                 "objectpath": {
@@ -486,7 +486,7 @@
                 }
             }
         },
-        "LWRaftObjectGetResponse": {
+        "PostObjectGetResponse": {
             "type": "object",
             "properties": {
                 "error_code": {
@@ -506,7 +506,7 @@
                 "result": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/LWRaftObject"
+                        "$ref": "#/definitions/PostObject"
                     }
                 }
             }

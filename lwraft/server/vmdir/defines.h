@@ -36,8 +36,8 @@
 
 
 #define VMDIR_MAX_CONFIG_VALUE_LENGTH   2048
-#define VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH "Services\\lwraft\\Parameters"
-#define VMDIR_CONFIG_CREDS_KEY_PATH     "Services\\lwraft\\Parameters\\Credentials"
+#define VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH "Services\\post\\Parameters"
+#define VMDIR_CONFIG_CREDS_KEY_PATH     "Services\\post\\Parameters\\Credentials"
 
 #define VMDIR_ADDR_INFO_NEXT( ifa ) ifa->ifa_next
 #define VMDIR_ADDR_INFO_FLAGS( ifa ) ifa->ifa_flags
