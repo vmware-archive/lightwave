@@ -779,3 +779,37 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+VmDirGetMdbWalEnable(
+    BOOLEAN *pbMdbEnableWal
+    )
+{
+    DWORD keyValue = 1;
+    DWORD dwError = 0;
+
+    *pbMdbEnableWal = TRUE;
+
+    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
+
+    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigGetDword(
+                            pCfgHandle,
+                            VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+                            VMDIR_REG_KEY_MDB_ENABLE_WAL,
+                            &keyValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pbMdbEnableWal = keyValue==1;
+
+cleanup:
+    if (pCfgHandle)
+    {
+        VmDirRegConfigHandleClose(pCfgHandle);
+    }
+    return dwError;
+error:
+    goto cleanup;
+}

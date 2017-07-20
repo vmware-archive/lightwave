@@ -898,6 +898,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
 #define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
+#define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1380,6 +1381,11 @@ VmDirGetRegKeyValueQword(
     PCSTR   pszConfigParamKeyPath,
     PCSTR   pszKey,
     PINT64  pi64Value
+    );
+
+DWORD
+VmDirGetMdbWalEnable(
+    BOOLEAN *pbMdbEnableWal
     );
 
 DWORD
