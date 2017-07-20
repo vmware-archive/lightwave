@@ -93,7 +93,6 @@ autoreconf -mif ..
     --with-c-rest-engine=%{_c_rest_engine_prefix} \
     --with-oidc=%{_oidc_prefix} \
     --enable-server=yes \
-    --enable-debug=yes \
     --with-version=%{_version} \
     --enable-lightwave-build=yes \
     --enable-rest=%{_enable-rest}

@@ -18,7 +18,6 @@ libsrvcommon_la_SOURCES = \
     srp.c \
     util.c \
     vmdirentry.c \
-    urgentrepl.c \
     vmafdlib.c \
     vmdirtoldaperror.c
 

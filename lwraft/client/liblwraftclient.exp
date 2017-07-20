@@ -35,7 +35,6 @@ VmDirCreateService
 VmDirCreateGroup
 VmDirGroupAddMember
 VmDirGroupRemoveMember
-VmDirReplNow
 VmDirLogInitialize
 VmDirLogTerminate
 VmDirLog
@@ -98,8 +97,6 @@ VmDirFreeReplicationState
 VmDirGetAttributeMetadata
 VmDirFreeMetadata
 VmDirFreeMetadataList
-VmDirUrgentReplicationRequest
-VmDirUrgentReplicationResponse
 VmDirGetMode
 VmDirSetMode
 VmDirRaftRequestVote

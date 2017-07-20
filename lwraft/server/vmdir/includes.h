@@ -75,11 +75,9 @@
 #include "structs.h"
 
 #include "vmdir_h.h"
-#include "vmdirftp_h.h"
 #include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
 #include "vmdirraft_h.h"
 #include "prototypes.h"
 
@@ -150,11 +148,9 @@
 #include "structs.h"
 
 #include "vmdir_h.h"
-#include "vmdirftp_h.h"
 #include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
 #include "prototypes.h"
 
 #include "externs.h"

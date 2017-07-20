@@ -133,18 +133,6 @@ VmDirGetVmDirLogPath(
 #ifndef _WIN32
     dwError = VmDirStringCpyA(pszPath, MAX_PATH, LWRAFT_LOG_DIR);
     BAIL_ON_VMDIR_ERROR(dwError);
-#else
-    _TCHAR* programDataPath           = NULL;
-
-    if ((dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_SOFTWARE_KEY_PATH, VMDIR_REG_KEY_LOG_PATH, pszPath,
-                                        MAX_PATH )) != 0)
-    {
-       dwError = VmDirGetProgramDataEnvVar((_TCHAR *)"PROGRAMDATA", &programDataPath);
-       BAIL_ON_VMDIR_ERROR(dwError);
-
-       dwError = VmDirStringPrintFA(pszPath, MAX_PATH, "%s%s", programDataPath, "\\vmware\\cis\\logs\\lwraftd\\");
-       BAIL_ON_VMDIR_ERROR(dwError);
-    }
 #endif
 
     dwError = VmDirStringCatA(pszPath, MAX_PATH, pszLogFile);

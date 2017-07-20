@@ -838,15 +838,6 @@ VmDirSetupHostInstance(
                         pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirUpdateKeytabFile(
-                        pszLotusServerNameCanon,
-                        pszDomainName,
-                        pszLotusServerNameCanon,
-                        pszUserName,
-                        pszPassword,
-                        TRUE );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 	VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSetupHostInstance (%s)(%s)(%s) passed",
                                         VDIR_SAFE_STRING(pszDomainName),
                                         VDIR_SAFE_STRING(pszSiteName),
@@ -1009,15 +1000,6 @@ VmDirJoin(
                                  firstReplCycleMode );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirUpdateKeytabFile(
-                                pszLotusServerNameCanon,
-                                pszDomainName,
-                                pszLotusServerNameCanon,
-                                pszUserName,
-                                pszPassword,
-                                TRUE );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "VmDirJoin (%s)(%s)(%s) passed",
                     VDIR_SAFE_STRING(pszPartnerHostName),
@@ -1077,34 +1059,6 @@ VmDirClientJoin(
                       pszUserName,
                       pszPassword,
                       pszMachineName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-/*
-    for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
-    {
-        dwError = VmDirLdapSetupServiceAccount(
-                                        pszDomainName,
-                                        pszServerName,
-                                        pszUserName,
-                                        pszPassword,
-                                        pszServiceTable[iCnt],
-                                        pszMachineName );
-        if (dwError == LDAP_ALREADY_EXISTS)
-        {
-            dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
-                                                   pszServiceTable[iCnt] );
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-*/
-    dwError = _VmDirUpdateKeytabFile(
-                      pszServerName,
-                      pszDomainName,
-                      pszMachineName,
-                      pszUserName,
-                      pszPassword,
-                      FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s (%s)(%s)(%s) passed",
@@ -1419,181 +1373,6 @@ error:
     goto cleanup;
 }
 
-static
-DWORD
-_VmDirGetKeyTabRecBlob(
-    PCSTR       pszServerName,
-    PCSTR       pszSRPUPN,
-    PCSTR       pszSRPPassword,
-    PCSTR       pszUPN,
-    PBYTE*      ppByte,
-    DWORD*      pSize
-    )
-{
-    DWORD                   dwError = 0;
-    PCSTR                   pszServerEndpoint = NULL;
-    PWSTR                   pwszUPN = NULL;
-    handle_t                hBinding = NULL;
-    VMDIR_DATA_CONTAINER    dataContainer = {0};
-    PBYTE                   pLocalByte = NULL;
-
-    if (IsNullOrEmptyString(pszUPN) || !ppByte || !pSize)
-    {
-        dwError =  ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirCreateBindingHandleAuthA(
-                    pszServerName,
-                    pszServerEndpoint,
-                    pszSRPUPN,
-                    NULL,
-                    pszSRPPassword,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(
-                        pszUPN,
-                        &pwszUPN
-                        );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirGetKeyTabRecBlob(
-                        hBinding,
-                        pwszUPN,
-                        &dataContainer
-                        );
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMemory(
-                    dataContainer.dwCount,
-                    (PVOID*)&pLocalByte
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory (
-                    pLocalByte,
-                    dataContainer.dwCount,
-                    dataContainer.data,
-                    dataContainer.dwCount
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppByte     = pLocalByte;
-    *pSize      = dataContainer.dwCount;
-    pLocalByte  = NULL;
-
-cleanup:
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle( &hBinding);
-    }
-
-    VMDIR_SAFE_FREE_MEMORY(pwszUPN);
-    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
-    VMDIR_RPC_FREE_MEMORY( dataContainer.data );
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetKeyTabRecBlob (UPN=%s) failed (%u)",
-                     VDIR_SAFE_STRING(pszUPN), dwError );
-    goto cleanup;
-}
-
-DWORD
-VmDirGetKrbMasterKey(
-    PSTR        pszDomainName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    )
-{
-    DWORD       dwError = 0;
-    PCSTR       pszServerName = "localhost";
-    PCSTR       pszServerEndpoint = NULL;
-    PWSTR       pwszDomainname = NULL;
-    handle_t    hBinding = NULL;
-    PBYTE       pLocalByte = NULL;
-    VMDIR_DATA_CONTAINER    dataContainer = {0};
-
-    if (IsNullOrEmptyString(pszDomainName)  || !ppKeyBlob || !pSize )
-    {
-        dwError =  ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszServerName,
-                    pszServerEndpoint,
-                    &hBinding
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(
-                        pszDomainName,
-                        &pwszDomainname
-                        );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirGetKrbMasterKey(
-                        hBinding,
-                        pwszDomainname,
-                        &dataContainer
-                        );
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMemory(dataContainer.dwCount, (PVOID*)&pLocalByte );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory( pLocalByte,
-                               dataContainer.dwCount,
-                               dataContainer.data,
-                               dataContainer.dwCount);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppKeyBlob = pLocalByte;
-    *pSize     = dataContainer.dwCount;
-    pLocalByte = NULL;
-
-cleanup:
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle( &hBinding);
-    }
-
-    VMDIR_SAFE_FREE_MEMORY(pwszDomainname);
-    VMDIR_RPC_FREE_MEMORY(dataContainer.data);
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetKrbMasterKey failed (%u)", dwError );
-
-    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
-
-    goto cleanup;
-}
-
 /*
  * IPC call, needs root privileges.
  */
@@ -1638,91 +1417,6 @@ error:
                      dwError, VDIR_SAFE_STRING(pszUPN) );
 
     goto cleanup;
-}
-
-DWORD
-VmDirGetKrbUPNKey(
-    PSTR        pszUpnName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    )
-{
-    DWORD       dwError = 0;
-    PCSTR       pszServerName = "localhost";
-    PCSTR       pszServerEndpoint = NULL;
-    PWSTR       pwszUpnname = NULL;
-    handle_t    hBinding = NULL;
-    PBYTE       pLocalByte = NULL;
-    VMDIR_DATA_CONTAINER    dataContainer = {0};
-
-    if (IsNullOrEmptyString(pszUpnName) || !ppKeyBlob || !pSize )
-    {
-        dwError =  ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszServerName,
-                    pszServerEndpoint,
-                    &hBinding
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(
-                    pszUpnName,
-                    &pwszUpnname
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirGetKrbUPNKey(
-                        hBinding,
-                        pwszUpnname,
-                        &dataContainer
-                        );
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMemory(dataContainer.dwCount, (PVOID*)&pLocalByte );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory( pLocalByte,
-                               dataContainer.dwCount,
-                               dataContainer.data,
-                               dataContainer.dwCount);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppKeyBlob = pLocalByte;
-    *pSize     = dataContainer.dwCount;
-    pLocalByte = NULL;
-
-cleanup:
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle( &hBinding);
-    }
-
-    VMDIR_SAFE_FREE_MEMORY(pwszUpnname);
-    VMDIR_RPC_FREE_MEMORY(dataContainer.data);
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetKrbUPNKey (UPN=%s) failed (%u)",
-                     VDIR_SAFE_STRING(pszUpnName), dwError );
-
-    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
-
-    goto cleanup;
-
 }
 
 DWORD
@@ -2732,51 +2426,6 @@ VmDirFreeDCInfoArray(
 }
 
 DWORD
-VmDirReplNow(
-    PCSTR pszServerName)
-{
-    DWORD       dwError = 0;
-    PCSTR       pszServerEndpoint = NULL;
-    handle_t    hBinding = NULL;
-
-    // parameter check
-    if (pszServerName == NULL)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszServerName,
-                    pszServerEndpoint,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirReplNow(hBinding);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle( &hBinding);
-    }
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirReplNow failed. Error[%d]\n", dwError );
-    goto cleanup;
-}
-
-DWORD
 VmDirSetLogLevelH(
     PVMDIR_SERVER_CONTEXT    hInBinding,
     PCSTR       pszLogLevel
@@ -3749,150 +3398,6 @@ cleanup:
 
 error:
     VmDirFreeSuperLogEntryLdapOperationArray(pDstEntries);
-    goto cleanup;
-}
-
-
-// Write UPN keys for the machine and service accounts to the keytab file.
-
-
-DWORD
-_VmDirUpdateKeytabFile(
-    PCSTR pszServerName,
-    PCSTR pszDomainName,
-    PCSTR pszHostName,
-    PCSTR pszUserName,
-    PCSTR pszPassword,
-    BOOLEAN bIsServer)
-{
-    DWORD                   dwError = 0;
-    PVMDIR_KEYTAB_HANDLE    pKeyTabHandle = NULL;
-    PSTR                    pszUpperCaseDomainName = NULL;
-    CHAR                    pszKeyTabFileName[VMDIR_MAX_FILE_NAME_LEN] = {0};
-    PSTR                    pszSRPUPN = NULL;
-    PSTR                    pszMachineAccountUPN = NULL;
-    PSTR                    pszServiceAccountUPN = NULL;
-    PCSTR                   pszServerServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
-    PCSTR                   pszClientServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
-    PCSTR                  *pszServiceTable = NULL;
-    int                     iServiceTableLen = 0;
-    int                     iCnt = 0;
-    PBYTE                   pLocalByte = NULL;
-    DWORD                   dwByteSize = 0;
-    DWORD                   dwWriteLen = 0;
-    PSTR                    pszLowerCaseHostName = NULL;
-
-goto cleanup; // To cleanup
-
-    dwError = VmDirAllocASCIILowerToUpper( pszDomainName, &pszUpperCaseDomainName );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocASCIIUpperToLower( pszHostName, &pszLowerCaseHostName );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Locate and open keytab file
-    dwError = VmDirGetRegKeyTabFile(pszKeyTabFileName);
-    if (dwError)
-    {
-        dwError = ERROR_SUCCESS;    // For none kerberos configuration, pass through.
-        goto cleanup;
-    }
-
-    dwError = VmDirKeyTabOpen(pszKeyTabFileName, "w", &pKeyTabHandle);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf( &pszMachineAccountUPN, "%s@%s", pszLowerCaseHostName, pszUpperCaseDomainName );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-
-    dwError = VmDirAllocateStringPrintf( &pszSRPUPN, "%s@%s", pszUserName, pszDomainName );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirGetKeyTabRecBlob(pszServerName,
-                                     pszSRPUPN,
-                                     pszPassword,
-                                     pszMachineAccountUPN,
-                                     &pLocalByte,
-                                     &dwByteSize );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    dwWriteLen = (DWORD) fwrite(pLocalByte, 1, dwByteSize, pKeyTabHandle->ktfp);
-    if ( dwWriteLen != dwByteSize)
-    {
-        /* I/O Error */
-        dwError = ERROR_IO;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (bIsServer)
-    {
-        pszServiceTable = pszServerServiceTable;
-        iServiceTableLen = sizeof(pszServerServiceTable)/sizeof(pszServerServiceTable[0]);
-    }
-    else
-    {
-        pszServiceTable = pszClientServiceTable;
-        iServiceTableLen = sizeof(pszClientServiceTable)/sizeof(pszClientServiceTable[0]);
-    }
-
-    // Get UPN keys for the service accounts and write to keytab file
-    for (iCnt = 0; iCnt < iServiceTableLen; iCnt++)
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszServiceAccountUPN);
-        VMDIR_SAFE_FREE_MEMORY(pLocalByte);
-        dwByteSize = 0;
-
-        dwError = VmDirAllocateStringPrintf( &pszServiceAccountUPN, "%s/%s@%s", pszServiceTable[iCnt], pszLowerCaseHostName, pszUpperCaseDomainName );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _VmDirGetKeyTabRecBlob(pszServerName,
-                                         pszSRPUPN,
-                                         pszPassword,
-                                         pszServiceAccountUPN,
-                                         &pLocalByte,
-                                         &dwByteSize );
-        BAIL_ON_VMDIR_ERROR( dwError );
-
-        dwWriteLen = (DWORD) fwrite(pLocalByte, 1, dwByteSize, pKeyTabHandle->ktfp);
-        if ( dwWriteLen != dwByteSize)
-        {
-            /* I/O Error */
-            dwError = ERROR_IO;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Keytab file (%s) created", VDIR_SAFE_STRING(pszKeyTabFileName));
-
-cleanup:
-    if (pKeyTabHandle)
-    {
-        VmDirKeyTabClose(pKeyTabHandle);
-    }
-
-    VMDIR_SAFE_FREE_MEMORY(pszMachineAccountUPN);
-    VMDIR_SAFE_FREE_MEMORY(pszServiceAccountUPN);
-    VMDIR_SAFE_FREE_MEMORY(pszUpperCaseDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszLowerCaseHostName);
-    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
-    VMDIR_SAFE_FREE_MEMORY(pszSRPUPN);
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirUpdateKeytabFile (%s) for host(%s) domain(%s) failed (%u)",
-                                         VDIR_SAFE_STRING(pszKeyTabFileName),
-                                         VDIR_SAFE_STRING(pszLowerCaseHostName),
-                                         VDIR_SAFE_STRING(pszUpperCaseDomainName),
-                                         dwError);
-
-    // for 2013 release, we should continue even if keytab setup fail
-    // as naming and DNS config may not meet our requirements.
-    // (i.e. at least forward lookup must be there.  For krb to work,
-    //       we need reverse lookup as well.)
-    dwError = 0;
-
     goto cleanup;
 }
 
@@ -5019,7 +4524,7 @@ VmDirOpenDatabaseFile(
         dwError = RpcVmDirOpenDatabaseFile(
                           hBinding->hBinding,
                           pwszDBFileName,
-                          (vmdir_ftp_handle_t *) ppFileHandle );
+                          (vmdir_dbcp_handle_t *) ppFileHandle );
     }
     VMDIR_RPC_CATCH
     {
@@ -5112,7 +4617,7 @@ VmDirCloseDatabaseFile(
     {
         dwError = RpcVmDirCloseDatabaseFile(
                           hBinding->hBinding,
-                          (vmdir_ftp_handle_t *) ppFileHandle );
+                          (vmdir_dbcp_handle_t *) ppFileHandle );
         *ppFileHandle = NULL;
     }
     VMDIR_RPC_CATCH
@@ -5267,130 +4772,6 @@ error:
 }
 
 DWORD
-VmDirUrgentReplicationRequest(
-    PCSTR pszRemoteServerName
-    )
-{
-    DWORD       dwError = 0;
-    PCSTR       pszRemoteServerEndpoint = NULL;
-    handle_t    hBinding = NULL;
-    PWSTR       pwszSrcHostName = NULL;
-    char        pszSrcHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
-
-    if (IsNullOrEmptyString(pszRemoteServerName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirGetHostName(pszSrcHostName, sizeof(pszSrcHostName)-1);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(pszSrcHostName, &pwszSrcHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszRemoteServerName,
-                    pszRemoteServerEndpoint,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirUrgentReplicationRequest(hBinding, pwszSrcHostName);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pwszSrcHostName);
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle(&hBinding);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirUrgentReplicationRequest failed. Error[%d]\n", dwError);
-    goto cleanup;
-}
-
-/*
- * VmDirUrgentReplicationResponse will be invoked at the end of replication cycle
- * (if initiated by urgent replication request). This function updates the orginator
- *  with the UTD vector.
- */
-DWORD
-VmDirUrgentReplicationResponse(
-    PCSTR    pszRemoteServerName,
-    PCSTR    pszUtdVector,
-    PCSTR    pszInvocationId,
-    PCSTR    pszHostName
-    )
-{
-    PWSTR       pwszUtdVector = NULL;
-    PCSTR       pszRemoteServerEndpoint = NULL;
-    handle_t    hBinding = NULL;
-    DWORD       dwError = 0;
-    PWSTR       pwszInvocationId = NULL;
-    PWSTR       pwszHostName = NULL;
-
-    if (IsNullOrEmptyString(pszRemoteServerName) ||
-        IsNullOrEmptyString(pszUtdVector) ||
-        IsNullOrEmptyString(pszInvocationId))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringWFromA(pszUtdVector, &pwszUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(pszInvocationId, &pwszInvocationId);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(pszHostName, &pwszHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateBindingHandleMachineAccountA(
-                    pszRemoteServerName,
-                    pszRemoteServerEndpoint,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-        dwError = RpcVmDirUrgentReplicationResponse(hBinding, pwszInvocationId, pwszUtdVector, pwszHostName);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-   VMDIR_SAFE_FREE_MEMORY(pwszUtdVector);
-   VMDIR_SAFE_FREE_MEMORY(pwszInvocationId);
-   VMDIR_SAFE_FREE_MEMORY(pwszHostName);
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle(&hBinding);
-    }
-   return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirUrgentReplicationResponse failed status: %d", dwError);
-    goto cleanup;
-}
-
-DWORD
 VmDirGetMode(
     PVMDIR_SERVER_CONTEXT hInBinding,
     UINT32*               pdwMode)
@@ -5448,7 +4829,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed. Error[%d]\n", __FUNCTION__, dwError );
     goto cleanup;
 }
-
 
 DWORD
 VmDirSetMode(

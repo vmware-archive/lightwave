@@ -254,28 +254,6 @@ VmDirForceResetPassword(
     );
 
 DWORD
-VmDirGetKeyTabeRecBlob(
-    PCSTR       pszServerName,
-    PCSTR       pszUPN,
-    PBYTE*      ppByte,
-    DWORD*      pSize
-    );
-
-DWORD
-VmDirGetKrbMasterKey(
-    PSTR        pszDomainName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    );
-
-DWORD
-VmDirGetKrbUPNKey(
-    PSTR        pszUpnName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    );
-
-DWORD
 VmDirLocalGetSRPSecret(
     PCSTR       pszUPN,
     PBYTE*      ppSecretBlob,
@@ -418,10 +396,6 @@ VmDirGetState(
 DWORD
 VmDirGetLocalState(
     UINT32* pdwState);
-
-DWORD
-VmDirReplNow(
-    PCSTR   pszServerName);
 
 VOID
 VmDirFreeMemory(
@@ -724,19 +698,6 @@ VmDirCloseDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hBinding,
     FILE **                 ppFileHandle
 );
-
-DWORD
-VmDirUrgentReplicationRequest(
-    PCSTR pszRemoteServerName
-    );
-
-DWORD
-VmDirUrgentReplicationResponse(
-    PCSTR    pszRemoteServerName,
-    PCSTR    pszUtdVector,
-    PCSTR    pszInvocationId,
-    PCSTR    pszHostName
-    );
 
 DWORD
 VmDirGetMode(

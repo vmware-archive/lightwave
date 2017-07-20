@@ -633,12 +633,6 @@ typedef struct _VMDIR_OPERATION_STATISTIC
 
 extern VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
 
-typedef struct _VMDIR_URGENT_REPL_SERVER_LIST
-{
-    PSTR    pInitiatorServerName;
-    struct _VMDIR_URGENT_REPL_SERVER_LIST *next;
-} VMDIR_URGENT_REPL_SERVER_LIST, *PVMDIR_URGENT_REPL_SERVER_LIST;
-
 typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
 {
     PSTR     pInvocationId;

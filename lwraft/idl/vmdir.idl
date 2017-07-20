@@ -94,27 +94,6 @@ cpp_quote("#endif")
     );
 
     UINT32
-    RpcVmDirGetKeyTabRecBlob(
-        [in]                 handle_t     hBinding,
-        [in, string, unique] PWSTR        pszUPN,
-        [in, out]            VMDIR_DATA_CONTAINER* pKeyTabRecContainer
-    );
-
-    UINT32
-    RpcVmDirGetKrbMasterKey(
-        [in]                 handle_t     hBinding,
-        [in, string, unique] PWSTR        pszDomainName,
-        [in, out]            VMDIR_DATA_CONTAINER* pKrbMasterKeyContainer
-    );
-
-    UINT32
-    RpcVmDirGetKrbUPNKey(
-        [in]                 handle_t     hBinding,
-        [in, string, unique] PWSTR        pszUpnName,
-        [in, out]            VMDIR_DATA_CONTAINER* pKrbUpnKeyContainer
-    );
-
-    UINT32
     RpcVmDirCreateUser(
         [in]                 handle_t    hBinding,
         [in, string, unique] PWSTR psUserName,
@@ -127,11 +106,6 @@ cpp_quote("#endif")
     RpcVmDirCreateUserEx(
         [in] handle_t                      hBinding,
         [in] PVMDIR_USER_CREATE_PARAMS_RPC pCreateParams
-        );
-
-    UINT32
-    RpcVmDirReplNow(
-	[in]				handle_t	hBinding
         );
 
     UINT32
