@@ -383,6 +383,28 @@ _FreeDefMapPair(
     }
 }
 
+BOOLEAN
+VmDirLdapSchemaIsEmpty(
+    PVDIR_LDAP_SCHEMA   pSchema
+    )
+{
+    BOOLEAN bEmpty = TRUE;
+
+    if (pSchema)
+    {
+        if (LwRtlHashMapGetCount(pSchema->attributeTypes) ||
+            LwRtlHashMapGetCount(pSchema->objectClasses) ||
+            LwRtlHashMapGetCount(pSchema->contentRules) ||
+            LwRtlHashMapGetCount(pSchema->structureRules) ||
+            LwRtlHashMapGetCount(pSchema->nameForms))
+        {
+            bEmpty = FALSE;
+        }
+    }
+
+    return bEmpty;
+}
+
 VOID
 VmDirFreeLdapSchema(
     PVDIR_LDAP_SCHEMA   pSchema

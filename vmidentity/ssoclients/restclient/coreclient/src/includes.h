@@ -32,6 +32,7 @@
 #include "common_types.h"
 #include "common.h"
 #include "ssoerrors.h"
+#include "ssocommon.h"
 
 // project headers
 #include "ssocoreclient.h"

@@ -37,6 +37,7 @@
 #include "common_types.h"
 #include "common.h"
 #include "ssoerrors.h"
+#include "ssocommon.h"
 
 // headers from components the current component depends on
 

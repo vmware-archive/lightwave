@@ -5471,14 +5471,7 @@ VmAfdIpcTriggerRootCertsRefresh(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    if (!gVmafdGlobals.pCertUpdateThr)
-    {
-        uResult = ERROR_INVALID_STATE;
-    }
-    else
-    {
-        uResult = VmAfdRootFetchTask(TRUE);
-    }
+    uResult = VmAfdRootFetchTask(TRUE);
     LOG_URESULT_ERROR(uResult);
 
     // Allocate a buffer, marshall the response

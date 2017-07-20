@@ -40,13 +40,13 @@ extern "C" {
 
 #define SUPPORTED_LDAP_VERSION          "3"
 
-#define DEFAULT_LDAP_PORT_NUM           389
-#define DEFAULT_LDAP_PORT_STR           "389"
-#define DEFAULT_LDAPS_PORT_NUM          636
-#define DEFAULT_LDAPS_PORT_STR          "636"
+#define DEFAULT_LDAP_PORT_NUM           38900
+#define DEFAULT_LDAP_PORT_STR           "38900"
+#define DEFAULT_LDAPS_PORT_NUM          63600
+#define DEFAULT_LDAPS_PORT_STR          "63600"
 
 #define DEFAULT_REST_PORT_NUM           7577
-#define DEFAULT_REST_PORT_STR           "7577"
+#define DEFAULT_REST_PORT_STR           "7577p" // TODO remove p
 
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
@@ -69,8 +69,9 @@ extern "C" {
 #define RAFT_CONTEXT_DN                         "cn=raftcontext"
 #define RAFT_LOGS_CONTAINER_DN                  "cn=logs,cn=raftcontext"
 #define RAFT_PERSIST_STATE_DN                   "cn=persiststate,cn=raftcontext"
+#define RAFT_STATE_DN                           "cn=raftstate"
 
-#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
+#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Raft Clusters"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
@@ -241,6 +242,10 @@ extern "C" {
 
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR       "nTSecurityDescriptor"
 #define ATTR_OBJECT_SECURITY_DESCRIPTOR_LEN   sizeof(ATTR_OBJECT_SECURITY_DESCRIPTOR)-1
+
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR      "defaultSecurityDescriptor"
+#define ATTR_DEFAULT_SECURITY_DESCRIPTOR_LEN  sizeof(ATTR_DEFAULT_SECURITY_DESCRIPTOR)-1
+
 #define ATTR_ORG_LIST_DESC                    "vmwAttrOrganizationList"
 #define VDIR_ATTRIBUTE_SEQUENCE_RID           "vmwRidSequenceNumber"
 
@@ -354,6 +359,11 @@ extern "C" {
 #define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
 #define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"
 #define ATTR_REF                            "ref"
+#define ATTR_RAFT_LEADER                    "vmwRaftLeader"
+#define ATTR_RAFT_FOLLOWERS                 "vmwRaftActiveFollower"
+#define ATTR_RAFT_MEMBERS                   "vmwRaftMember"
+#define ATTR_RAFT_STATE                     "vmwRaftState"
+#define ATTR_RAFT_LOG_CHANGED               "vmwRaftLogChanged"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -406,6 +416,7 @@ extern "C" {
 #define OC_CLASS_SCHEMA_LEN             sizeof(OC_CLASS_SCHEMA)-1
 #define OC_CLASS_RAFT_PERSIST_STATE     "vmwraftpersiststate"
 #define OC_CLASS_RAFT_LOG_ENTRY         "vmwraftlogentry"
+#define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
 
 #define CM_COMPONENTMANAGER             "ComponentManager"
@@ -470,17 +481,21 @@ extern "C" {
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 
-// vmw OID for Strong Consistency Write Control
+// vmw OID for Strong Consistency Write Control (obsoleted)
 #define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
+// vmw OID for Integrity Check Control Search
+#define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
+// vmw OID for Conditional Write
+#define LDAP_CONTROL_CONDITIONAL_WRITE          "1.3.6.1.4.1.6876.40.10.3"
 
 #ifndef _WIN32
-#define VMDIR_NCALRPC_END_POINT "lwraftsvc"
+#define LWRAFT_NCALRPC_END_POINT "postsvc"
 #else
 // note: keep in sync with /vmdir/main/idl/vmdir.idl
-#define VMDIR_NCALRPC_END_POINT "LightwaveRaftService"
+#define LWRAFT_NCALRPC_END_POINT "PostService"
 #endif
 
-#define VMDIR_RPC_TCP_END_POINT "2012"
+#define LWRAFT_RPC_TCP_END_POINT "2011"
 #define VMDIR_MAX_SERVER_ID     255
 
 #define NSECS_PER_SEC       1000000000

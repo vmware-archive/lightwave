@@ -33,4 +33,9 @@ typedef const struct OIDC_ID_TOKEN* PCOIDC_ID_TOKEN;
 typedef       struct OIDC_ACCESS_TOKEN*  POIDC_ACCESS_TOKEN;
 typedef const struct OIDC_ACCESS_TOKEN* PCOIDC_ACCESS_TOKEN;
 
+typedef enum OIDC_TOKEN_TYPE {
+    OIDC_TOKEN_TYPE_BEARER,
+    OIDC_TOKEN_TYPE_HOK
+} OIDC_TOKEN_TYPE;
+
 #endif

@@ -36,6 +36,12 @@ VmDirBuildComputedAttribute(
     );
 
 // password.c
+
+VOID
+VmDirGetDefaultPasswdLockoutPolicy(
+    PVDIR_PASSWD_LOCKOUT_POLICY     pPolicy
+    );
+
 DWORD
 VdirPasswordHash(
     PVDIR_PASSWORD_HASH_SCHEME  pHashScheme,

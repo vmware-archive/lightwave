@@ -142,7 +142,6 @@ VmDirMDBInitializeDB(
     mdb_mode_t      oflags;
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
-    extern int      VmDirRaftCommitHook(VOID);
 
     // TODO: fix the hard coded Database dir path
 #ifndef _WIN32
@@ -202,7 +201,11 @@ VmDirMDBInitializeDB(
      dwError = mdb_env_set_maxdbs ( gVdirMdbGlobals.mdbEnv, BE_MDB_ENV_MAX_DBS );
      BAIL_ON_VMDIR_ERROR( dwError );
 
-     mdb_set_commit_hook_func(gVdirMdbGlobals.mdbEnv, VmDirRaftCommitHook);
+     mdb_set_raft_prepare_commit_func(gVdirMdbGlobals.mdbEnv, VmDirRaftPrepareCommit);
+
+     mdb_set_raft_post_commit_func(gVdirMdbGlobals.mdbEnv, VmDirRaftPostCommit);
+
+     mdb_set_raft_commit_fail_func(gVdirMdbGlobals.mdbEnv, VmDirRaftCommitFail);
 
 #ifdef MDB_NOTLS
      envFlags = MDB_NOTLS; // Required for versions of mdb which have this flag
@@ -418,7 +421,7 @@ MDBToBackendError(
         pBECtx->dwBEErrorCode = dwMdbError;
         VMDIR_SAFE_FREE_MEMORY(pBECtx->pszBEErrorMsg);
         // ignore error
-        VmDirAllocateStringAVsnprintf(    &pBECtx->pszBEErrorMsg,
+        VmDirAllocateStringPrintf(    &pBECtx->pszBEErrorMsg,
                                           "(%s)(%s)",
                                           mdb_strerror(dwMdbError),
                                           VDIR_SAFE_STRING(pszErrorContext));

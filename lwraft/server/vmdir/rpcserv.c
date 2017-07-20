@@ -118,7 +118,6 @@ VmDirSrvInitializeHost(
                     pszDomainName,
                     pszSystemDomainAdminName,
                     pszPassword,
-                    pszSiteName,
                     pszReplURI,
                     firstReplCycleMode );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -146,62 +145,6 @@ error:
                                      VDIR_SAFE_STRING(pszSiteName),
                                      VDIR_SAFE_STRING(pszReplURI),
                                      firstReplCycleMode);
-    goto cleanup;
-}
-
-DWORD
-VmDirSrvInitializeTenant(
-    PWSTR    pwszDomainName,
-    PWSTR    pwszUsername,
-    PWSTR    pwszPassword
-    )
-{
-    DWORD dwError = 0;
-    PSTR  pszDomainName = NULL;
-    PSTR  pszUsername = NULL;
-    PSTR  pszPassword = NULL;
-
-    if (IsNullOrEmptyString(pwszDomainName) ||
-        IsNullOrEmptyString(pwszUsername) ||
-        IsNullOrEmptyString(pwszPassword))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAFromW(pwszDomainName, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszUsername, &pszUsername);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(pwszPassword, &pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvSetupTenantInstance(
-                    pszDomainName,
-                    pszUsername,
-                    pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeTenant (%u)(%s)(%s)",
-                                       dwError,
-                                       VDIR_SAFE_STRING(pszDomainName),
-                                       VDIR_SAFE_STRING(pszUsername));
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszUsername);
-    VMDIR_SAFE_FREE_MEMORY(pszPassword);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeTenant failed (%u)(%s)(%s)",
-                                      dwError,
-                                      VDIR_SAFE_STRING(pszDomainName),
-                                      VDIR_SAFE_STRING(pszUsername));
     goto cleanup;
 }
 
@@ -957,7 +900,7 @@ Srv_RpcVmDirSetState(
 
     VmDirdStateSet(dwState);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: Set lwraftd state to: %u", dwState );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: Set postd state to: %u", dwState );
 
 cleanup:
     if (pAccessToken)
@@ -1920,7 +1863,7 @@ Srv_RpcVmDirSetMode(
 
     VmDirdSetRunMode(dwMode);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set lwraftd runmode to: %u", __FUNCTION__, dwMode );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set postd runmode to: %u", __FUNCTION__, dwMode );
 
 cleanup:
     if (pAccessToken)

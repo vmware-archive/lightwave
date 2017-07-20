@@ -80,12 +80,24 @@ void
 RestAccessTokenDelete(
     PREST_ACCESS_TOKEN pAccessToken);
 
+/*
+ * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * This is a wrapper for curl_global_init, from its documentation:
+ * This function is not thread safe.
+ * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
+ * This doesn't just mean no other thread that is using libcurl.
+ * Because curl_global_init calls functions of other libraries that are similarly thread unsafe,
+ * it could conflict with any other thread that uses these other libraries.
+ */
 SSOERROR
 RestClientGlobalInit();
 
+// this function is not thread safe. Call it right before process exit
 void
 RestClientGlobalCleanup();
 
+// make sure you call RestClientGlobalInit once per process before calling this
+// tlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 RestClientNew(
     PREST_CLIENT* ppClient,
@@ -93,6 +105,7 @@ RestClientNew(
     bool highAvailabilityEnabled,
     size_t serverPort,
     REST_SCHEME_TYPE schemeType,
+    PCSTRING tlsCAPath, // optional, see comment above
     PCREST_ACCESS_TOKEN pAccessToken);
 
 void

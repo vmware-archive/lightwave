@@ -26,6 +26,22 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _likewise_open_bindir %{_likewise_open_prefix}/bin
 %define _likewise_open_sbindir %{_likewise_open_prefix}/sbin
 
+%if 0%{?_jansson_prefix:1} == 0
+%define _jansson_prefix /usr
+%endif
+
+%if 0%{?_copenapi_prefix:1} == 0
+%define _copenapi_prefix /usr
+%endif
+
+%if 0%{?_c_rest_engine_prefix:1} == 0
+%define _c_rest_engine_prefix /usr
+%endif
+
+%if 0%{?_oidc_prefix:1} == 0
+%define _oidc_prefix /opt/vmware
+%endif
+
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
 %define _logdir /var/log/lightwave
@@ -33,6 +49,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 
 %description
 VMware DNS Service
+
+%debug_package
 
 %package client
 Summary: VMware DNS Client
@@ -53,10 +71,15 @@ autoreconf -mif ..
 ../configure \
     --prefix=%{_prefix} \
     --libdir=%{_lib64dir} \
-    --localstatedir=%{_localstatedir}/lib/vmware/vmdir \
+    --localstatedir=%{_localstatedir}/lib/vmware \
     --with-vmdir=%{_prefix} \
     --with-likewise=%{_likewise_open_prefix} \
-    --with-ssl=/usr 
+    --with-ssl=/usr \
+    --with-jansson=%{_jansson_prefix} \
+    --with-copenapi=%{_copenapi_prefix} \
+    --with-c-rest-engine=%{_c_rest_engine_prefix} \
+    --with-oidc=%{_oidc_prefix} \
+    --enable-rest=%{_enable-rest}
 make
 
 %install
@@ -138,7 +161,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     wait
                 fi
             fi
-            ;;         
+            ;;
         2)
             try_starting_lwregd_svc=true
 
@@ -206,7 +229,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     wait
                 fi
             fi
-            ;;         
+            ;;
         2)
             try_starting_lwregd_svc=true
 
@@ -283,6 +306,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_sbindir}/vmdnsd
 %{_datadir}/config/vmdns.reg
 %{_datadir}/config/vmdnsd-syslog-ng.conf
+%{_datadir}/config/vmdns-rest.json
 
 %files client
 %defattr(-,root,root)

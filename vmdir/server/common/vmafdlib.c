@@ -12,33 +12,19 @@
  * under the License.
  */
 
-/*
- * Module Name: Directory ldap head
- *
- * Filename: vesc.c
- *
- * Abstract:
- *
- * VECS integration to get SSL cert
- *
- */
-
 #include "includes.h"
-
-#ifndef _WIN32
-#include <dlfcn.h>
-#endif
-
-// WARNING, WARNING, WARNING. It is awkward to get VECS headers via source tree structure.
-#include "../../../vmafd/include/public/vmafdtypes.h"
-#include "../../../vmafd/include/public/vmafd.h"
-#include "../../../vmafd/include/public/vecsclient.h"
 
 #ifdef _WIN32
 
 #define VMAFD_VECS_CLIENT_LIBRARY   "\\libvmafdclient.dll"
 #define VMAFD_KEY_ROOT              VMAFD_CONFIG_SOFTWARE_KEY_PATH
 #define VMAFD_LIB_KEY               VMDIR_REG_KEY_INSTALL_PATH
+
+#elif LIGHTWAVE_BUILD
+
+#define VMAFD_VECS_CLIENT_LIBRARY   "/libvmafdclient.so"
+#define VMAFD_KEY_ROOT              VMAFD_CONFIG_KEY_ROOT
+#define VMAFD_LIB_KEY               VMAFD_REG_KEY_PATH
 
 #else
 
@@ -54,37 +40,53 @@ VmDirOpenVmAfdClientLib(
     )
 {
     DWORD   dwError = 0;
-    VMDIR_LIB_HANDLE plibHandle = NULL;
-#ifdef _WIN32
-    CHAR    pszRegLibPath[VMDIR_MAX_PATH_LEN] = WIN_SYSTEM32_PATH;
-#else
     CHAR    pszRegLibPath[VMDIR_MAX_PATH_LEN] = {0};
-#endif
-    PSTR    pszVmafdName = NULL;
     PSTR    pszVmafdLibPath = NULL;
+    VMDIR_LIB_HANDLE    plibHandle = NULL;
 
-#ifndef _WIN32
-    dwError = VmDirGetRegKeyValue( VMAFD_KEY_ROOT,
-                                   VMAFD_LIB_KEY,
-                                   pszRegLibPath,
-                                   sizeof(pszRegLibPath)-1);
+#ifdef _WIN32
+
+    dwError = VmDirStringCpyA(
+            pszRegLibPath,
+            VMDIR_MAX_PATH_LEN,
+            WIN_SYSTEM32_PATH);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+#elif LIGHTWAVE_BUILD
+
+    dwError = VmDirStringCpyA(
+            pszRegLibPath,
+            VMDIR_MAX_PATH_LEN,
+            VMDIR_LIB_DIR);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+#else
+
+    PSTR pszVmafdName = NULL;
+
+    dwError = VmDirGetRegKeyValue(
+            VMAFD_KEY_ROOT,
+            VMAFD_LIB_KEY,
+            pszRegLibPath,
+            sizeof(pszRegLibPath) - 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // find the first vmafd in path key "/usr/lib/vmware-vmafd/...."
     pszVmafdName = strstr(pszRegLibPath, VMAFD_NAME);
-    if (pszVmafdName == NULL)
-    {
-        dwError = VMDIR_ERROR_NO_SUCH_FILE_OR_DIRECTORY;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        pszVmafdName[strlen(VMAFD_NAME)] = '\0';
-    }
+
+    dwError = pszVmafdName ? 0 : VMDIR_ERROR_NO_SUCH_FILE_OR_DIRECTORY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszVmafdName[strlen(VMAFD_NAME)] = '\0';
+
 #endif
 
     // construct full path to libvmafdclient
-    dwError = VmDirAllocateStringPrintf( &pszVmafdLibPath, "%s%s",pszRegLibPath, VMAFD_VECS_CLIENT_LIBRARY);
+    dwError = VmDirAllocateStringPrintf(
+            &pszVmafdLibPath,
+            "%s%s",
+            pszRegLibPath,
+            VMAFD_VECS_CLIENT_LIBRARY);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirLoadLibrary(pszVmafdLibPath, &plibHandle);
@@ -94,7 +96,6 @@ VmDirOpenVmAfdClientLib(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszVmafdLibPath);
-
     return dwError;
 
 error:

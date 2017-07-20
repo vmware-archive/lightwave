@@ -55,6 +55,7 @@ VmdirUserCreate(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToUserData,
         (void**) &pUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -123,6 +124,7 @@ VmdirUserGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToUserData,
         (void**) &pUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -196,6 +198,7 @@ VmdirUserGetGroups(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToGroupArrayData,
         (void**) &pGroupArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -267,6 +270,7 @@ VmdirUserUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) VmdirJsonToUserData,
         (void**) &pUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -343,6 +347,7 @@ VmdirUserUpdatePasswordInternal(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) VmdirJsonToUserData,
         (void**) &pUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -486,6 +491,7 @@ VmdirUserDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

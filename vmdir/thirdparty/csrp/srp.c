@@ -444,6 +444,7 @@ static BIGNUM * calculate_x( SRP_HashAlgorithm alg, const BIGNUM * salt, const c
     hash_update( alg, &ctx, password, password_len );
     
     hash_final( alg, &ctx, ucp_hash, &len );
+    EVP_MD_CTX_cleanup(&ctx.mdctx);
         
     return H_ns( alg, salt, ucp_hash, len );
 }
@@ -501,6 +502,7 @@ static void calculate_M( SRP_HashAlgorithm alg, NGConstant *ng, unsigned char * 
     hash_update( alg, &ctx, K, hash_len );
     
     hash_final( alg, &ctx, dest, &len );
+    EVP_MD_CTX_cleanup(&ctx.mdctx);
 }
 
 static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const BIGNUM * A, const unsigned char * M, const unsigned char * K )
@@ -515,6 +517,7 @@ static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const B
     hash_update( alg, &ctx, K, len );
     
     hash_final( alg, &ctx, dest, &len );
+    EVP_MD_CTX_cleanup(&ctx.mdctx);
 }
 
 
@@ -525,6 +528,7 @@ static void init_random()
     HCRYPTPROV wctx;
 #else
     FILE   *fp   = 0;
+    size_t lread = 0;
 #endif
 
     if (g_initialized)
@@ -546,7 +550,7 @@ static void init_random()
         
         if (fp)
         {
-            fread(buff, sizeof(buff), 1, fp);
+            lread = fread(buff, sizeof(buff), 1, fp);
             fclose(fp);
             g_initialized = 1;
         }
@@ -1039,6 +1043,7 @@ void srp_hash(int argc, char *argv[])
         hash_update( SRP_SHA1, &hctx, argv[i], strlen(argv[i]));
     }
     hash_final( SRP_SHA1, &hctx, md_value, &md_len);
+    EVP_MD_CTX_cleanup(&hctx.mdctx);
 
     printf("Digest is: ");
     for(i = 0; i < md_len; i++) printf("%02x", md_value[i]);

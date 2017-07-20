@@ -223,7 +223,7 @@ VmDirRESTResultToResponseBody(
 
     if (json_object_size(pjBody))
     {
-        pszBody = json_dumps(pjBody, JSON_INDENT(4));
+        pszBody = json_dumps(pjBody, JSON_COMPACT);
         *ppszBody = pszBody;
     }
 

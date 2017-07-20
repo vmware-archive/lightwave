@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -126,6 +126,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pStringList);
     return dwError;
 
@@ -168,7 +169,7 @@ VmDirSchemaAttrIdMapUpdateDB(
 
     while (LwRtlHashMapIterate(pAttrIdMap->pNewIds, &iter, &pair))
     {
-        dwError = VmDirAllocateStringAVsnprintf(&pszMapStr, "%d%s%s",
+        dwError = VmDirAllocateStringPrintf(&pszMapStr, "%d%s%s",
                 (USHORT)(uintptr_t)pair.pValue,
                 SCHEMA_ATTR_ID_MAP_SEP,
                 (PSTR)pair.pKey);
@@ -206,6 +207,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pMapStrList);
     return dwError;
 

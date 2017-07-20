@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -53,22 +53,6 @@ typedef struct _VDIR_SCHEMA_AT_COLLECION
     PLW_HASHMAP byId;
 
 } VDIR_SCHEMA_AT_COLLECTION, *PVDIR_SCHEMA_AT_COLLECTION;
-
-typedef struct _VDIR_SCHEMA_OC_DESC
-{
-    PVDIR_LDAP_OBJECT_CLASS pLdapOc;
-
-    PSTR        pszName;
-    PSTR        pszOid;
-    PSTR        pszSup;
-    PSTR*       ppszMustATs;    // ends with NULL PSTR
-    PSTR*       ppszMayATs;     // ends with NULL PSTR
-
-    BOOLEAN     bObsolete;
-
-    VDIR_LDAP_OBJECT_CLASS_TYPE type;
-
-} VDIR_SCHEMA_OC_DESC;
 
 typedef struct _VDIR_SCHEMA_OC_COLLECTION
 {

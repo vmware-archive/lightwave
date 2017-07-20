@@ -40,6 +40,15 @@ _ParseSyncStateControlVal(
     USN*        pPartnerUSN     // Output
     );
 
+static
+int
+_ParseDigestControlVal(
+    VDIR_OPERATION *                    op,
+    BerValue *                          controlValue,       // Input: control value encoded as ber
+    VDIR_DIGEST_CONTROL_VALUE *         digestCtrlVal,      // Output
+    VDIR_LDAP_RESULT *                  lr                  // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -184,6 +193,20 @@ ParseRequestControls(
                                                   "ParseRequestControls: _ParsePagedResultControlVal failed.");
                 }
                 op->showPagedResultsCtrl = *control;
+            }
+
+            if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_DIGEST_SEARCH, TRUE ) == 0)
+            {
+                retVal = _ParseDigestControlVal( op,
+                                                &lberBervCtlValue,
+                                                &((*control)->value.digestCtrlVal),
+                                                lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParseDigestControlVal failed.");
+                }
+                op->digestCtrl = *control;
             }
 
             if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
@@ -395,7 +418,7 @@ error:
 int
 WriteSyncStateControl(
    VDIR_OPERATION *   op,
-   VDIR_ATTRIBUTE *   pAttr,
+   VDIR_ENTRY *       pEntry,
    BerElement *       ber,
    PSTR*              ppszErrorMsg
    )
@@ -410,6 +433,10 @@ WriteSyncStateControl(
     PVDIR_BERVALUE      pbvUSN = NULL;
     PSTR                pszLocalErrorMsg = NULL;
     BOOLEAN             bHasFinalSyncState = FALSE;
+    CHAR                pszIDBuf[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
+    PSTR                pszEID = NULL;
+    PSTR                pszUSNCreated = NULL;
+    VDIR_ATTRIBUTE *    pAttr = NULL;
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: Begin" );
 
@@ -425,7 +452,7 @@ WriteSyncStateControl(
      *  => may lead to various conflict resolution scenarios.
      */
 
-    for ( ; pAttr != NULL; pAttr = pAttr->next)
+    for (pAttr = pEntry->attrs ; pAttr != NULL; pAttr = pAttr->next)
     {
         if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
         {
@@ -448,6 +475,23 @@ WriteSyncStateControl(
             {
                 entryState = LDAP_SYNC_ADD;
                 bHasFinalSyncState = TRUE;
+
+                assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
+
+                if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszUSNCreated, pszIDBuf) != 0)
+                {
+                    retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+
+                    retVal = VmDirAllocateStringA(pAttr->vals[0].lberbv_val, &pszUSNCreated);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+
+                    retVal = LwRtlHashMapInsert(op->conn->ReplConnState.phmSyncStateOneMap, pszEID, pszUSNCreated, NULL);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                    pszEID = NULL; pszUSNCreated = NULL; // map takes over
+
+                    VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "entry sync stat ADD %s at USNCreated %llu", pEntry->dn.lberbv_val, pszUSNCreated );
+                }
             }
         }
     }
@@ -512,6 +556,9 @@ cleanup:
     {
         VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     }
+
+    VMDIR_SAFE_FREE_MEMORY(pszEID);
+    VMDIR_SAFE_FREE_MEMORY(pszUSNCreated);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: End" );
 
@@ -683,6 +730,20 @@ ParseSyncRequestControlVal(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
                                         "UpdateSyncDoneUtdVectorEntry: LwRtlCreateHashTable failed");
 
+    }
+
+    if (op->conn->ReplConnState.phmSyncStateOneMap == NULL)
+    {   // replication request, create connection level map for SyncStateControl adjustment (ADD -> MODIFY)
+        if (LwRtlCreateHashMap(
+                &op->conn->ReplConnState.phmSyncStateOneMap,
+                LwRtlHashDigestPstrCaseless,
+                LwRtlHashEqualPstrCaseless,
+                NULL) != 0
+           )
+        {
+            lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
     }
 
     tag = ber_peek_tag( ber, &len );
@@ -900,4 +961,130 @@ cleanup:
 error:
     VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
+}
+
+static
+int
+_ParseDigestControlVal(
+    VDIR_OPERATION *                    op,
+    BerValue *                          controlValue,       // Input: control value encoded as ber
+    VDIR_DIGEST_CONTROL_VALUE *         digestCtrlVal,      // Output
+    VDIR_LDAP_RESULT *                  lr                  // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf;
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    BerValue            localBV = {0};
+
+    if (!op)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, controlValue, LBER_USE_DER );
+
+    /*
+     *
+     * The DigestControlValue is an OCTET STRING wrapping the BER-encoded version of the following SEQUENCE:
+     *
+     * realSearchControlValue ::= SEQUENCE {
+     *        digest            OCTET STRING
+     *  }
+     */
+
+    if ((ber_scanf(ber, "{m}", &localBV) == LBER_ERROR)
+        ||
+        localBV.bv_len != SHA_DIGEST_LENGTH
+       )
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing digest control value", __FUNCTION__);
+        lr->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading digest control digest value");
+    }
+
+    memcpy(digestCtrlVal->sha1Digest, localBV.bv_val, SHA_DIGEST_LENGTH);
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
+    goto cleanup;
+}
+
+int
+VmDirCreateDigestControlContent(
+    PCSTR           pszDigest,
+    DWORD           dwDigestLen,
+    LDAPControl*    pDigestCtrl
+    )
+{
+    int             retVal = LDAP_SUCCESS;
+    BerElement*     pBer = NULL;
+    BerValue        localBV = {0};
+
+    if (!pszDigest || !pDigestCtrl)
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+    localBV.bv_val = (char*)pszDigest;
+    localBV.bv_len = dwDigestLen;
+
+    if ( ber_printf( pBer, "{O}", &localBV) == -1)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_printf failed.", __FUNCTION__ );
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR( retVal );
+    }
+
+    memset( pDigestCtrl, 0, sizeof( LDAPControl ));
+    pDigestCtrl->ldctl_oid = LDAP_CONTROL_DIGEST_SEARCH;
+    pDigestCtrl->ldctl_iscritical = '1';
+    if (ber_flatten2(pBer, &pDigestCtrl->ldctl_value, 1))
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+cleanup:
+
+    if (pBer)
+    {
+        ber_free(pBer, 1);
+    }
+    return retVal;
+
+ldaperror:
+    VmDirDeleteDigestControlContent(pDigestCtrl);
+    goto cleanup;
+}
+
+VOID
+VmDirDeleteDigestControlContent(
+    LDAPControl*    pDigestCtrl
+    )
+{
+    if (pDigestCtrl)
+    {
+        if (pDigestCtrl->ldctl_value.bv_val)
+        {
+            ber_memfree(pDigestCtrl->ldctl_value.bv_val);
+        }
+        memset(pDigestCtrl, 0, sizeof(LDAPControl));
+    }
 }

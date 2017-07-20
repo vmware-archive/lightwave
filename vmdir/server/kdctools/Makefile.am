@@ -6,6 +6,7 @@ libvmkdctools_la_SOURCES = \
     parsekt.c
 
 libvmkdctools_la_CPPFLAGS = \
+    -DOPENSSL_NO_KRB5 \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/server \

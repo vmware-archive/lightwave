@@ -55,6 +55,7 @@ IdmResourceServerRegister(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToResourceServerData,
         (void**) &pResourceServerReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -117,6 +118,7 @@ IdmResourceServerGetAll(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToResourceServerArrayData,
         (void**) &pResourceServerArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -180,6 +182,7 @@ IdmResourceServerGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToResourceServerData,
         (void**) &pResourceServerReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -244,6 +247,7 @@ IdmResourceServerUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) IdmJsonToResourceServerData,
         (void**) &pResourceServerReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -305,6 +309,7 @@ IdmResourceServerDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

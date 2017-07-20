@@ -19,6 +19,7 @@ package com.vmware.identity.rest.core.server.authorization;
  * <ul>
  *  <li>{@link Role.ADMINISTRATOR} => tenantDomain</li>
  *  <li>{@link Role.CONFIGURATION_USER} => systemTenantDomain</li>
+ *  <li>{@link Role.TRUSTED_USER} => tenantDomain</li>
  *  <li>{@link Role.REGULAR_USER} => tenantDomain</li>
  *  <li>{@link Role.GUEST_USER} => tenantDomain</li>
  * </ul>
@@ -47,6 +48,8 @@ public class RoleMapper {
             return new RoleGroup(role, "Administrators", tenantDomain);
         case CONFIGURATION_USER:
             return new RoleGroup(role, "SystemConfiguration.Administrators", systemTenantDomain);
+        case TRUSTED_USER:
+            return new RoleGroup(role, "TrustedUsers", tenantDomain);
         case REGULAR_USER:
             return new RoleGroup(role, "Users", tenantDomain);
         case GUEST_USER:

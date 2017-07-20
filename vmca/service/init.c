@@ -56,6 +56,9 @@ VMCAInitialize(
     // Don't bail on Error , this just sets up the current state
     dwError = VMCASrvInitCA();
 
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_VMCA_ERROR(dwError);
+
     dwError = VMCASrvDirSyncInit();
     BAIL_ON_VMCA_ERROR(dwError);
 
@@ -77,6 +80,7 @@ VMCAShutdown(
     VMCASrvDirSyncShutdown();
     VMCATerminateLogging();
     VMCASrvCleanupGlobalState();
+    OidcClientGlobalCleanup();
     VMCACommonShutdown();
 }
 
@@ -96,8 +100,8 @@ InitializeDatabase(
     BAIL_ON_VMCA_ERROR(dwError);
 
     VMCA_LOG_INFO(
-    	"Initializing database: [%s]",
-    	VMCA_SAFE_LOG_STRING(pszCertDBPath));
+            "Initializing database: [%s]",
+            VMCA_SAFE_STRING(pszCertDBPath));
 
     dwError = VmcaDbInitialize(pszCertDBPath);
     BAIL_ON_VMCA_ERROR(dwError);

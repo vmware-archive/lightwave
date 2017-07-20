@@ -29,7 +29,7 @@ SRCROOT=..
 CLEAN_OBJECTS = \
     rpmbuild
 
-PKG_SPEC=vmware-lightwave-raft.spec
+PKG_SPEC=vmware-objectstore.spec
 
 .PHONY: all package
 

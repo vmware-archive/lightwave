@@ -31,12 +31,6 @@ GenerateDeleteAttrsMods(
     VDIR_ENTRY *    pEntry
     );
 
-static
-BOOLEAN
-VmDirIsProtectedEntry(
-    PVDIR_ENTRY pEntry
-    );
-
 int
 VmDirMLDelete(
     PVDIR_OPERATION    pOperation
@@ -107,6 +101,13 @@ VmDirInternalDeleteEntry(
     {
         retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode" );
+    }
+
+    // make sure we have minimum DN length
+    if (delReq->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", delReq->dn.lberbv_len);
     }
 
     // Normalize DN
@@ -219,22 +220,30 @@ txnretry:
             pParentEntry = NULL;
         }
 
-        // SJ-TBD: Once ACLs are enabled, following check should go in ACLs logic.
-        if (VmDirIsInternalEntry( pEntry ) || VmDirIsProtectedEntry(pEntry))
+        //
+        // The delete will succeed if the caller either has the explicit right
+        // to delete this object or if they have the right to delete children
+        // of this object's parent.
+        //
+        retVal = VmDirSrvAccessCheck(
+                    pOperation,
+                    &pOperation->conn->AccessInfo,
+                    pEntry,
+                    VMDIR_RIGHT_DS_DELETE_OBJECT);
+        if (retVal != ERROR_SUCCESS && pEntry->pParentEntry)
         {
-            retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "An internal entry (%s) can NOT be deleted.",
-                                          pEntry->dn.lberbv_val );
+            retVal = VmDirSrvAccessCheck(
+                        pOperation,
+                        &pOperation->conn->AccessInfo,
+                        pEntry->pParentEntry,
+                        VMDIR_RIGHT_DS_DELETE_CHILD);
         }
-
-        // only when there is parent Entry, ACL check is done
-        if (pEntry->pParentEntry)
-        {
-            retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pEntry->pParentEntry,
-                                          VMDIR_RIGHT_DS_DELETE_CHILD);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "VmDirSrvAccessCheck failed - (%u)(%s)",
-                                          retVal, VMDIR_ACCESS_DENIED_ERROR_MSG);
-        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrMsg,
+                "VmDirSrvAccessCheck failed - (%u)(%s)",
+                retVal,
+                VMDIR_ACCESS_DENIED_ERROR_MSG);
 
         // Make sure it is a leaf node
         retVal = pOperation->pBEIF->pfnBEChkIsLeafEntry(
@@ -295,7 +304,6 @@ txnretry:
                     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryDelete (%u)(%s)",
                                                   retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
             }
-
         }
 
         // Use normalized DN value
@@ -507,18 +515,18 @@ GenerateDeleteAttrsMods(
     int                 retVal = 0;
     VDIR_MODIFICATION * delMod = NULL;
     VDIR_ATTRIBUTE *    attr = NULL;
-    VDIR_BERVALUE       deletedObjDN = VDIR_BERVALUE_INIT;
     ModifyReq *         modReq = &(pOperation->request.modifyReq);
 
-    for ( attr = pEntry->attrs; attr != NULL; attr = attr->next )
+    for (attr = pEntry->attrs; attr != NULL; attr = attr->next)
     {
         if (VmDirStringCompareA(attr->type.lberbv.bv_val, ATTR_DN, FALSE) == 0)
         {
             continue;
         }
 
-        retVal = VmDirAllocateMemory( sizeof( VDIR_MODIFICATION ), (PVOID *)&(delMod) );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = VmDirAllocateMemory(
+                sizeof(VDIR_MODIFICATION), (PVOID*)&delMod);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         delMod->operation = MOD_OP_DELETE;
 
@@ -532,85 +540,19 @@ GenerateDeleteAttrsMods(
         modReq->mods = delMod;
         modReq->numMods++;
     }
-    retVal = VmDirAppendAMod( pOperation, MOD_OP_DELETE, ATTR_DN, ATTR_DN_LEN,
-                              pOperation->request.deleteReq.dn.lberbv.bv_val,
-                              pOperation->request.deleteReq.dn.lberbv.bv_len);
+
+    retVal = VmDirAppendAMod(
+            pOperation,
+            MOD_OP_DELETE,
+            ATTR_DN,
+            ATTR_DN_LEN,
+            pOperation->request.deleteReq.dn.lberbv.bv_val,
+            pOperation->request.deleteReq.dn.lberbv.bv_len);
     BAIL_ON_VMDIR_ERROR( retVal );
 
 cleanup:
-    VmDirFreeMemory( deletedObjDN.lberbv.bv_val );
-
     return retVal;
 
 error:
     goto cleanup;
 }
-
-BOOLEAN
-VmDirIsProtectedEntry(
-    PVDIR_ENTRY pEntry
-    )
-{
-    BOOLEAN bResult = FALSE;
-    PCSTR pszDomainDn = NULL;
-    PCSTR pszEntryDn = NULL;
-    size_t domainDnLen = 0;
-    size_t entryDnLen = 0;
-
-    const CHAR szAdministrators[] = "cn=Administrators,cn=Builtin";
-    const CHAR szCertGroup[] =      "cn=CAAdmins,cn=Builtin";
-    const CHAR szDCAdminsGroup[] =  "cn=DCAdmins,cn=Builtin";
-    const CHAR szUsersGroup[] =     "cn=Users,cn=Builtin";
-    const CHAR szAdministrator[] =  "cn=Administrator,cn=Users";
-    const CHAR szDCClientsGroup[] = "cn=DCClients,cn=Builtin";
-
-    if (pEntry == NULL)
-    {
-        goto error;
-    }
-
-    pszDomainDn = gVmdirServerGlobals.systemDomainDN.lberbv.bv_val;
-    if (pszDomainDn == NULL)
-    {
-        goto error;
-    }
-
-    pszEntryDn = pEntry->dn.lberbv.bv_val;
-    if (pszEntryDn == NULL)
-    {
-        goto error;
-    }
-
-    entryDnLen = strlen(pszEntryDn);
-    domainDnLen = strlen(pszDomainDn);
-
-    if (entryDnLen <= domainDnLen)
-    {
-        goto error;
-    }
-
-    if (pszEntryDn[(entryDnLen - domainDnLen) - 1] != ',')
-    {
-        goto error;
-    }
-
-    // Make sure system DN matches
-    if (VmDirStringCompareA(&pszEntryDn[entryDnLen - domainDnLen], pszDomainDn, FALSE))
-    {
-        goto error;
-    }
-
-    if (!VmDirStringNCompareA(pszEntryDn, szAdministrators, sizeof(szAdministrators) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szCertGroup, sizeof(szCertGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szDCAdminsGroup, sizeof(szDCAdminsGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szUsersGroup, sizeof(szUsersGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szDCClientsGroup, sizeof(szDCClientsGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szAdministrator, sizeof(szAdministrator) - 1, FALSE))
-    {
-        bResult = TRUE;
-    }
-
-error:
-    return bResult;
-}
-

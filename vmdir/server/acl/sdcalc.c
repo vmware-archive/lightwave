@@ -244,10 +244,10 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
                 &pszClassDn,
                 "cn=%s,cn=schemacontext",
                 pOCDesc->pszName);
-    BAIL_ON_VMDIR_ERROR(dwError)
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSimpleDNToEntry(pszClassDn, &pOCEntry);
-    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND);
+    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
     {
         //
         // This is being called for the class object itself, so there's
@@ -337,9 +337,9 @@ _VmDirLogSecurityDescriptor(
  */
 DWORD
 VmDirComputeObjectSecurityDescriptor(
-    PVDIR_ACCESS_INFO pAccessInfo,
-    PVDIR_ENTRY      pEntry,
-    PVDIR_ENTRY      pParentEntry
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PVDIR_ENTRY         pEntry,
+    PVDIR_ENTRY         pParentEntry
     )
 {
     DWORD           dwError = 0;
@@ -349,6 +349,7 @@ VmDirComputeObjectSecurityDescriptor(
     PSECURITY_DESCRIPTOR_RELATIVE pComputedSecDesc = NULL;
     ULONG ulLength = 0;
     PACCESS_TOKEN pAccessToken = NULL;
+    PACCESS_TOKEN pAdminAccessToken = NULL;
     SECURITY_INFORMATION SecInfoAll = (OWNER_SECURITY_INFORMATION |
                                        GROUP_SECURITY_INFORMATION |
                                        DACL_SECURITY_INFORMATION |
@@ -385,10 +386,12 @@ VmDirComputeObjectSecurityDescriptor(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SECURITY_DESCRIPTOR);
     }
 
-    if (pAccessInfo->pAccessToken == NULL)
+    if (!pAccessInfo || !pAccessInfo->pAccessToken)
     {
-        dwError = _VmDirSrvCreateAccessTokenForAdmin(&pAccessToken);
+        dwError = _VmDirSrvCreateAccessTokenForAdmin(&pAdminAccessToken);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        pAccessToken = pAdminAccessToken;
     }
     else
     {
@@ -413,16 +416,17 @@ VmDirComputeObjectSecurityDescriptor(
     }
     else
     {
-        dwError = LwNtStatusToWin32Error( RtlCreatePrivateObjectSecurityEx(
-                                            pParentSecDesc,
-                                            pSecDesc,
-                                            &pComputedSecDesc,
-                                            &ulLength,
-                                            NULL,
-                                            _VmDirIsContainer(pEntry),
-                                            SEF_DACL_AUTO_INHERIT | SEF_DEFAULT_OWNER_FROM_PARENT | SEF_DEFAULT_GROUP_FROM_PARENT,
-                                            pAccessToken,
-                                            &gVmDirEntryGenericMapping));
+        dwError = LwNtStatusToWin32Error(
+                RtlCreatePrivateObjectSecurityEx(
+                        pParentSecDesc,
+                        pSecDesc,
+                        &pComputedSecDesc,
+                        &ulLength,
+                        NULL,
+                        _VmDirIsContainer(pEntry),
+                        SEF_DACL_AUTO_INHERIT | SEF_DEFAULT_OWNER_FROM_PARENT | SEF_DEFAULT_GROUP_FROM_PARENT,
+                        pAccessToken,
+                        &gVmDirEntryGenericMapping));
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -467,12 +471,7 @@ cleanup:
     }
     VMDIR_SAFE_FREE_MEMORY(pParentSecDesc);
     VMDIR_SAFE_FREE_MEMORY(pSecDesc);
-
-    if (pAccessToken != pAccessInfo->pAccessToken)
-    {
-        VmDirReleaseAccessToken(&pAccessToken);
-    }
-
+    VmDirReleaseAccessToken(&pAdminAccessToken);
     return dwError;
 
 error:
@@ -480,13 +479,13 @@ error:
     {
         // Some initial objects created during startup/vdcpromo do not have SD. Their SD is setup after cn=Administrator,...
         // object is created
-        VMDIR_LOG_WARNING( LDAP_DEBUG_ACL, "VmDirComputeObjectSecurityDescriptor failed for (%s), error code (%d)",
-                           VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
+        VMDIR_LOG_WARNING( LDAP_DEBUG_ACL, "%s failed for (%s), error code (%d)",
+                __FUNCTION__, VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
     }
     else
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirComputeObjectSecurityDescriptor failed for (%s), error code (%d)",
-                         VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed for (%s), error code (%d)",
+                __FUNCTION__, VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
     }
 
     if (pObjectSdAttr)

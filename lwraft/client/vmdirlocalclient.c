@@ -297,6 +297,71 @@ error:
 }
 
 DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMDIR_IPC_GET_SRP_SECRET;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    DWORD dwBlobSize = 0;
+    VMDIR_IPC_DATA_CONTAINER *pContainer = NULL;
+    VMW_TYPE_SPEC input_spec[] = GET_SRP_SECRET_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = GET_SRP_SECRET_OUTPUT_PARAMS;
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    if (IsNullOrEmptyString(pszUPN) ||
+        !ppSecretBlob || !pSize)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    input_spec[0].data.pString = (PSTR) pszUPN;
+
+    dwError = VmDirLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwBlobSize = *(output_spec[1].data.pUint32);
+
+    dwError = VmDirUnMarshalContainer(
+                             dwBlobSize,
+                             output_spec[2].data.pByte,
+                             &pContainer);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    *ppSecretBlob = (PBYTE)pContainer->data;
+    *pSize = pContainer->dwCount;
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pContainer);
+
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLocalGetSRPSecret failed (%u)",
+                     dwError );
+
+    goto cleanup;
+}
+
+DWORD
 VmDirLocalSetSRPSecret(
     PCWSTR      pwszUPN,
     PCWSTR      pwszSecret

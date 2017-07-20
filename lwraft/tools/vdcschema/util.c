@@ -70,6 +70,7 @@ VmDirSchemaPrintDiff(
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
     DWORD   i = 0;
+    BOOLEAN bDiv = FALSE;
 
     static PCSTR ppszModOp[4] = { "add", "delete", "replace", NULL };
 
@@ -103,16 +104,18 @@ VmDirSchemaPrintDiff(
         printf("dn: %s\n", pDiff->pszDN);
         printf("changetype: modify\n");
 
+        bDiv = FALSE;
         LwRtlHashMapResetIter(&iter);
         while (LwRtlHashMapIterate(pDiff->mods, &iter, &pair))
         {
+            printf("%s", bDiv ? "-\n" : "");
             pMod = (PVDIR_LDAP_MOD)pair.pValue;
             printf("%s: %s\n", ppszModOp[pMod->op], pMod->pszType);
             for (i = 0; pMod->pVals->pStringList[i]; i++)
             {
                 printf("%s: %s\n", pMod->pszType, pMod->pVals->pStringList[i]);
             }
-            printf("%s", iter.Inner.pNext ? "-\n" : "");
+            bDiv = TRUE;
         }
         pNode = pNode->pPrev;
     }
@@ -145,16 +148,18 @@ VmDirSchemaPrintDiff(
         printf("dn: %s\n", pDiff->pszDN);
         printf("changetype: modify\n");
 
+        bDiv = FALSE;
         LwRtlHashMapResetIter(&iter);
         while (LwRtlHashMapIterate(pDiff->mods, &iter, &pair))
         {
+            printf("%s", bDiv ? "-\n" : "");
             pMod = (PVDIR_LDAP_MOD)pair.pValue;
             printf("%s: %s\n", ppszModOp[pMod->op], pMod->pszType);
             for (i = 0; pMod->pVals->pStringList[i]; i++)
             {
                 printf("%s: %s\n", pMod->pszType, pMod->pVals->pStringList[i]);
             }
-            printf("%s", iter.Inner.pNext ? "-\n" : "");
+            bDiv = TRUE;
         }
         pNode = pNode->pPrev;
     }

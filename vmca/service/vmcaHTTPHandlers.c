@@ -18,51 +18,44 @@
 
 DWORD
 VMCARESTGetPayload(
-    PREST_REQUEST pRESTRequest,
-    VMCA_HTTP_REQ_OBJ* pVMCARequest
+    PVMREST_HANDLE      pRESTHandle,
+    PREST_REQUEST       pRESTRequest,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest
     )
 {
-    DWORD dwError = 0;
-    int buffersize = 4096;
-    int currentsize = 1;
-    char buffer[buffersize];
-    DWORD dwDoneWithPayload = 0;
+    DWORD   dwError = 0;
+    DWORD   bytesRead = 0;
+    size_t  len = 0;
+    PSTR    pszPayload = NULL;
 
-    HANDLE_NULL_PARAM(pVMCARequest, dwError);
+    do
+    {
+        dwError = VMCAReallocateMemory(
+                (PVOID)pszPayload,
+                (PVOID*)&pszPayload,
+                len + VMCARESTMAXPAYLOADLENGTH);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        dwError = VmRESTGetData(
+                pRESTHandle,
+                pRESTRequest,
+                pszPayload + len,
+                &bytesRead);
+
+        len += bytesRead;
+    }
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    memset(buffer, '\0', buffersize);
-
-    while(dwDoneWithPayload != 1)
-    {
-        dwError = VmRESTGetHttpPayload(
-                                pRESTRequest,
-                                buffer,
-                                &dwDoneWithPayload
-                                );
-        BAIL_ON_VMREST_ERROR(dwError);
-        if (strlen(buffer) > 0)
-        {
-            currentsize += strlen(buffer);
-            dwError = VMCAReallocateMemory(
-                                    (PVOID) *pVMCARequest->pszPayload,
-                                    (PVOID*) pVMCARequest->pszPayload,
-                                    currentsize
-                                    );
-            BAIL_ON_VMREST_ERROR(dwError);
-            strcat(*pVMCARequest->pszPayload, buffer);
-        }
-        memset(buffer, '\0', buffersize);
-    }
+    pVMCARequest->pszPayload = pszPayload;
+    pszPayload = NULL;
 
 cleanup:
-
+    VMCA_SAFE_FREE_MEMORY(pszPayload);
     return dwError;
 
 error:
-
     goto cleanup;
-
 }
 
 DWORD
@@ -522,68 +515,50 @@ error:
 
 DWORD
 VMCARESTSetResponsePayload(
+    PVMREST_HANDLE  pRESTHandle,
     PREST_RESPONSE* ppResponse,
-    PSTR pszResponsePayload
+    PSTR            pszRespPayload
     )
 {
-    DWORD dwError = 0;
-    DWORD temp = 0;
-    int nBuffersize = 4096;
-    int nSizeSent = 0;
-    int nSizeRemaining = 0;
-    int nToSend = 0;
+    DWORD   dwError = 0;
+    DWORD   bytesWritten = 0;
+    PSTR    pszPyldLen = NULL;
+    size_t  pyldLen = 0;
+    size_t  sentLen = 0;
 
-    dwError = VmRESTSetHttpHeader(
-                            ppResponse,
-                            "Transfer-Encoding",
-                            "chunked"
-                            );
+    pyldLen = VMCAStringLenA(VMCA_SAFE_STRING(pszRespPayload));
+
+    dwError = VMCAAllocateStringPrintfA(&pszPyldLen, "%ld", pyldLen);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (strlen(pszResponsePayload) < nBuffersize)
-    {
-        dwError = VmRESTSetHttpPayload(
-                                ppResponse,
-                                pszResponsePayload,
-                                strlen(pszResponsePayload),
-                                &temp
-                                );
-        BAIL_ON_VMREST_ERROR(dwError);
-    } else
-    {
-        nSizeRemaining = strlen(pszResponsePayload);
-        while (nSizeRemaining > 0)
-        {
-            nSizeSent = strlen(pszResponsePayload) - nSizeRemaining;
-            nToSend = (nSizeRemaining < nBuffersize) ? nSizeRemaining : nBuffersize;
-            dwError = VmRESTSetHttpPayload(
-                                    ppResponse,
-                                    pszResponsePayload + nSizeSent,
-                                    nToSend,
-                                    &temp
-                                    );
-            BAIL_ON_VMREST_ERROR(dwError);
-            nSizeRemaining -= nToSend;
-        }
+    dwError = VmRESTSetDataLength(
+            ppResponse,
+            pyldLen > VMCARESTMAXPAYLOADLENGTH ? NULL : pszPyldLen);
+    BAIL_ON_VMREST_ERROR(dwError);
 
+    do
+    {
+        size_t chunkLen = pyldLen > VMCARESTMAXPAYLOADLENGTH ?
+                VMCARESTMAXPAYLOADLENGTH : pyldLen;
+
+        dwError = VmRESTSetData(
+                pRESTHandle,
+                ppResponse,
+                VMCA_SAFE_STRING(pszRespPayload) + sentLen,
+                chunkLen,
+                &bytesWritten);
+
+        sentLen += bytesWritten;
+        pyldLen -= bytesWritten;
     }
-    dwError = VmRESTSetHttpPayload(
-                            ppResponse,
-                            "\n\n",
-                            2,
-                            &temp
-                            );
+    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMREST_ERROR(dwError);
-    dwError = VmRESTSetHttpPayload(ppResponse, "0",0, &temp );
-    BAIL_ON_VMREST_ERROR(dwError);
-
 
 cleanup:
-
+    VMCA_SAFE_FREE_MEMORY(pszPyldLen);
     return dwError;
 
 error:
-
     goto cleanup;
 }
 
@@ -596,9 +571,10 @@ Content-Length: 20
 
 uint32_t
 VMCARESTRequestNegotiateAuth(
-    PREST_REQUEST pRequest,
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
-    const char* pszToken
+    const char*     pszToken
     )
 {
     uint32_t dwError = 0;
@@ -611,16 +587,17 @@ VMCARESTRequestNegotiateAuth(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     dwError = VmRESTSetHttpHeader(ppResponse, "Content-Length", "0");
     dwError = VmRESTSetHttpHeader(ppResponse, "WWW-Authenticate", (char *)pszNegotiate);
-    dwError = VmRESTSetHttpPayload(ppResponse,"", 0, &temp );
+    dwError = VmRESTSetData(pRESTHandle, ppResponse, "", 0, &temp);
     dwError = EACCES;
     return dwError;
 }
 
 DWORD
 VMCAHandleHttpRequest(
-    PREST_REQUEST pRESTRequest,
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
-    uint32_t paramsCount
+    uint32_t        paramsCount
     )
 {
     DWORD dwError = 0;
@@ -628,20 +605,14 @@ VMCAHandleHttpRequest(
     PSTR pszResponsePayload = NULL;
     VMCA_HTTP_REQ_OBJ* pVMCARequest = NULL;
 
-    dwError = VMCARESTParseHttpHeader(pRESTRequest, &pVMCARequest);
+    dwError = VMCARESTParseHttpHeader(pRequest, &pVMCARequest);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VMCAAllocateMemory(
-                            sizeof(char*),
-                            (PVOID*) &pVMCARequest->pszPayload
-                            );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VMCARESTGetPayload(pRESTRequest, pVMCARequest);
+    dwError = VMCARESTGetPayload(pRESTHandle, pRequest, pVMCARequest);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VMCARESTExecuteHttpURI(
-                                pRESTRequest,
+                                pRequest,
                                 pVMCARequest,
                                 &pszStatusCode,
                                 &pszResponsePayload
@@ -651,7 +622,8 @@ VMCAHandleHttpRequest(
     dwError = VMCARESTSetResponseHeaders(ppResponse, pszStatusCode);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VMCARESTSetResponsePayload(ppResponse, pszResponsePayload);
+    dwError = VMCARESTSetResponsePayload(
+            pRESTHandle, ppResponse, pszResponsePayload);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -668,7 +640,8 @@ cleanup:
 error:
     if (dwError == EACCES)
     {
-        dwError = VMCARESTRequestNegotiateAuth(pRESTRequest, ppResponse, NULL);
+        dwError = VMCARESTRequestNegotiateAuth(
+                pRESTHandle, pRequest, ppResponse, NULL);
     }
 
     goto cleanup;

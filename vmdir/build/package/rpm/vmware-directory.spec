@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, vmware-directory-client = %{version}
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.11, vmware-event-devel >= %{_vmevent_ver}
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, jansson >= 2.9, copenapi >= 0.0.1, c-rest-engine >= 1.0.1, vmware-sts-c-client = %{version}, vmware-directory-client = %{version}
+BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.11, jansson-devel >= 2.9, copenapi-devel >= 0.0.1, c-rest-engine-devel >= 1.0.1, vmware-sts-c-client = %{version}, vmware-event-devel >= %{_vmevent_ver}
 
 %if 0%{?_sasl_prefix:1} == 0
 %define _sasl_prefix /usr
@@ -29,10 +29,6 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _vmevent_prefix /opt/vmware
 %endif
 
-%if 0%{?_trident_prefix:1} == 0
-%define _trident_prefix /opt/vmware
-%endif
-
 %if 0%{?_jansson_prefix:1} == 0
 %define _jansson_prefix /usr
 %endif
@@ -41,12 +37,12 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _copenapi_prefix /usr
 %endif
 
-%if 0%{?_oidc_prefix:1} == 0
-%define _oidc_prefix /opt/vmware
+%if 0%{?_c_rest_engine_prefix:1} == 0
+%define _c_rest_engine_prefix /usr
 %endif
 
-%if 0%{?_ssocommon_prefix:1} == 0
-%define _ssocommon_prefix /opt/vmware
+%if 0%{?_oidc_prefix:1} == 0
+%define _oidc_prefix /opt/vmware
 %endif
 
 %define _dbdir %{_localstatedir}/lib/vmware/vmdir
@@ -57,6 +53,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 
 %description
 VMware Directory Service
+
+%debug_package
 
 %package client
 Summary: VMware Directory Client
@@ -77,21 +75,21 @@ autoreconf -mif ..
 ../configure \
     --prefix=%{_prefix} \
     --libdir=%{_lib64dir} \
-    --localstatedir=%{_localstatedir}/lib/vmware/vmdir \
+    --localstatedir=%{_localstatedir}/lib/vmware \
     --with-likewise=%{_likewise_open_prefix} \
     --with-ssl=/usr \
     --with-sasl=%{_sasl_prefix} \
     --with-datastore=mdb \
     --with-vmevent=%{_vmevent_prefix} \
-    --with-trident=%{_trident_prefix} \
     --with-jansson=%{_jansson_prefix} \
     --with-copenapi=%{_copenapi_prefix} \
+    --with-c-rest-engine=%{_c_rest_engine_prefix} \
     --with-oidc=%{_oidc_prefix} \
-    --with-ssocommon=%{_ssocommon_prefix} \
     --enable-server=yes \
     --with-logdir=%{_logdir} \
     --with-version=%{_version} \
-    --enable-lightwave-build=yes
+    --enable-lightwave-build=yes \
+    --enable-rest=%{_enable-rest}
 
 make
 
@@ -177,7 +175,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     wait
                 fi
             fi
-            ;;         
+            ;;
         2)
             try_starting_lwregd_svc=true
 
@@ -267,7 +265,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     wait
                 fi
             fi
-            ;;         
+            ;;
         2)
             try_starting_lwregd_svc=true
 
@@ -420,7 +418,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_lib64dir}/libgssapi_unix.a
 %{_lib64dir}/libgssapi_unix.la
 
-%exclude %{_bindir}/vdcpromo
+%exclude %{_bindir}/vdcvmdirpromo
 %exclude %{_bindir}/vmdirclienttest
 %exclude %{_lib64dir}/libcommonunittests.a
 %exclude %{_lib64dir}/libcommonunittests.la

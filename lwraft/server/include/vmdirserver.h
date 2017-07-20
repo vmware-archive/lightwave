@@ -88,9 +88,9 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        invocationId;
     VDIR_BERVALUE        bvDefaultAdminDN;
     VDIR_BERVALUE        systemDomainDN;
-    VDIR_BERVALUE        delObjsContainerDN;
+    VDIR_BERVALUE        delObjsContainerDN;    //TODO, delete this
     VDIR_BERVALUE        bvDCGroupDN;
-    VDIR_BERVALUE        bvDCClientGroupDN;
+    VDIR_BERVALUE        bvDCClientGroupDN;     //TODO, delete this
     VDIR_BERVALUE        bvServicesRootDN;
     VDIR_BERVALUE        serverObjDN;
     VDIR_BERVALUE        dcAccountDN;   // Domain controller account DN
@@ -98,7 +98,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     int                  replInterval;
     int                  replPageSize;
     VDIR_BERVALUE        utdVector; // In string format, it is stored as: <serverId1>:<origUsn1>;<serverId2>:<origUsn2>;...
-    PSTR                 pszSiteName;
+    PSTR                 pszSiteName;           //TODO, delete this
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
     USN                  initialNextUSN; // used for server restore only
@@ -132,16 +132,11 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
 
-    PDWORD                          pdwLdapListenPorts;
-    DWORD                           dwLdapListenPorts;
-    PDWORD                          pdwLdapsListenPorts;
-    DWORD                           dwLdapsListenPorts;
-    PDWORD                          pdwLdapConnectPorts;
-    DWORD                           dwLdapConnectPorts;
-    PDWORD                          pdwLdapsConnectPorts;
-    DWORD                           dwLdapsConnectPorts;
+    DWORD                           dwLdapPort;
+    DWORD                           dwLdapsPort;
     PSTR                            pszRestListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
+    BOOLEAN                         bIsLDAPPortOpen;
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
     VDIR_SERVER_STATE               vmdirdState;
@@ -157,8 +152,6 @@ typedef struct _VMDIR_GLOBALS
 #endif
 
     BOOLEAN                         bRegisterTcpEndpoint;
-
-    PSECURITY_DESCRIPTOR_ABSOLUTE   gpVmDirSrvSD;
 
     // To synchronize creation and use of replication agreements.
     PVMDIR_MUTEX                    replAgrsMutex;
@@ -319,34 +312,20 @@ VmDirdGetAllowInsecureAuth(
     VOID
     );
 
-VOID
-VmDirGetLdapListenPorts(
-    PDWORD* ppdwLdapListenPorts,
-    PDWORD  pdwLdapListenPorts
-    );
-
-VOID
-VmDirGetLdapsListenPorts(
-    PDWORD* ppdwLdapsListenPorts,
-    PDWORD  pdwLdapsListenPorts
-    );
-
-VOID
-VmDirGetLdapConnectPorts(
-    PDWORD* ppdwLdapConnectPorts,
-    PDWORD  pdwLdapConnectPorts
-    );
-
-VOID
-VmDirGetLdapsConnectPorts(
-    PDWORD* ppdwLdapsConnectPorts,
-    PDWORD  pdwLdapsConnectPorts
+DWORD
+VmDirGetLdapPort(
+    VOID
     );
 
 DWORD
-VmDirGetAllLdapPortsCount(
+VmDirGetLdapsPort(
     VOID
-);
+    );
+
+DWORD
+VmDirCheckPortAvailability(
+    DWORD   dwPort
+    );
 
 VOID
 VmDirdSetReplNow(
@@ -370,6 +349,11 @@ VmDirdGetLimitLocalUsnToBeSupplied(
 
 DWORD
 VmDirServerStatusEntry(
+    PVDIR_ENTRY*    ppEntry
+    );
+
+DWORD
+VmDirRaftStateEntry(
     PVDIR_ENTRY*    ppEntry
     );
 

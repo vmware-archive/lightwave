@@ -19,9 +19,11 @@ vdcresetMachineActCred_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWREG_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
+    @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@
 

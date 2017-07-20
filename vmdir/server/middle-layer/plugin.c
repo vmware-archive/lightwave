@@ -919,7 +919,7 @@ _VmDirPluginDflValidatePreModify(
 
                     if (pAttrMaxDfl)
                     {
-                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrVer->vals[0]));
+                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrMaxDfl->vals[0]));
                     }
                     else if (pAttrVer)
                     {
@@ -1129,13 +1129,12 @@ error:
     goto cleanup;
 }
 
-
 /*
-* Only users and groups ("security principals") require a real SID. Domain
-* objects need the domain-specific SID we store there (to construct SIDs for
-* real security principals). Rather than hard-code the classes that get a
-* SID here we just let the schema definition drive the logic.
-*/
+ * Only users and groups ("security principals") require a real SID. Domain
+ * objects need the domain-specific SID we store there (to construct SIDs for
+ * real security principals). Rather than hard-code the classes that get a
+ * SID here we just let the schema definition drive the logic.
+ */
 DWORD
 _VmDirNeedsSid(
     PVDIR_ENTRY pEntry,
@@ -2355,12 +2354,12 @@ _VmDirPluginVerifyAclAccess(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-         //
-         // In general a caller can modify an entry if they have
-         // VMDIR_RIGHT_DS_WRITEPROP access. However, the entry's security
-         // descriptor is special-cased and requires a separate permission
-         // (VMDIR_ENTRY_WRITE_ACL). This is the same behavior as AD.
-         //
+        //
+        // In general a caller can modify an entry if they have
+        // VMDIR_RIGHT_DS_WRITEPROP access. However, the entry's security
+        // descriptor is special-cased and requires a separate permission
+        // (VMDIR_ENTRY_WRITE_ACL). This is the same behavior as AD.
+        //
         if (VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_ACL_STRING, FALSE) == 0 ||
             VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
         {
@@ -2375,6 +2374,7 @@ _VmDirPluginVerifyAclAccess(
 cleanup:
     VmDirFreeEntry(pCurrentEntry);
     return dwPriorResult ? dwPriorResult : dwError;
+
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirPluginVerifyAclAccess failed with error %d", dwError);
     goto cleanup;

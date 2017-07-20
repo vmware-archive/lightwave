@@ -16,7 +16,6 @@
 
 #define VMDIR_RPC_FREE_MEMORY VmDirRpcClientFreeMemory
 
-static
 DWORD
 _VmDirUpdateKeytabFile(
     PCSTR pszServerName,
@@ -179,7 +178,7 @@ VmDirRefreshActPassword(
     dwError = VmDirSrvCreateDomainDN( pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszPolicyDN,
+    dwError = VmDirAllocateStringPrintf( &pszPolicyDN,
                                              "cn=%s,%s",
                                              PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
                                              pszDomainDN);
@@ -320,7 +319,7 @@ VmDirResetMachineActCred(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateStringAVsnprintf(&pszUPN,
+        dwError = VmDirAllocateStringPrintf(&pszUPN,
                                                 "%s@%s",
                                                 pszUserName,
                                                 pszDomain);
@@ -709,13 +708,13 @@ VmDirSetupHostInstanceEx(
 
         if ( VmDirIsIPV6AddrFormat( pszPartnerHostName ) )
         {
-            dwError = VmDirAllocateStringAVsnprintf( &pszReplURI, "%s://[%s]",
+            dwError = VmDirAllocateStringPrintf( &pszReplURI, "%s://[%s]",
                                                      VMDIR_LDAP_PROTOCOL,
                                                      pszPartnerHostName);
         }
         else
         {
-            dwError = VmDirAllocateStringAVsnprintf( &pszReplURI, "%s://%s",
+            dwError = VmDirAllocateStringPrintf( &pszReplURI, "%s://%s",
                                                      VMDIR_LDAP_PROTOCOL,
                                                      pszPartnerHostName);
         }
@@ -925,7 +924,6 @@ VmDirJoin(
     PCSTR   pszTopDomain = NULL;
     PSTR    pszPartnerServerName = NULL;
     PSTR    pszLotusServerNameCanon = NULL;
-    PSTR    pszCurrentServerObjectDN = NULL;
     PSTR    pszErrMsg = NULL;
     LDAP*   pLd = NULL;
     PVMDIR_REPL_STATE pReplState = NULL;
@@ -967,23 +965,17 @@ VmDirJoin(
         pszTopDomain = pszDomainName;
     }
 
-    // make sure there is NO server object with same name in the federation
-    dwError = VmDirGetServerObjectDN(
-                                pszPartnerServerName,
-                                pszDomainName,
-                                pszUserName,
-                                pszPassword,
-                                pszLotusServerNameCanon,
-                                &pszCurrentServerObjectDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    if ( pszCurrentServerObjectDN )
+    if (VmDirRaftServerExists(
+                pszPartnerServerName,
+                pszDomainName,
+                pszUserName,
+                pszPassword,
+                pszLotusServerNameCanon) == TRUE)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s, server object (%s) exists already, DN (%s).",
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s, raft server (%s) exists already.",
                                              __FUNCTION__,
-                                             VDIR_SAFE_STRING(pszLotusServerNameCanon),
-                                             pszCurrentServerObjectDN );
-        dwError = VMDIR_ERROR_ENTRY_ALREADY_EXIST;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                                             VDIR_SAFE_STRING(pszLotusServerNameCanon));
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ALREADY_PROMOTED);
     }
 
     // Make sure we can join the partner
@@ -1035,7 +1027,6 @@ VmDirJoin(
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
-    VMDIR_SAFE_FREE_MEMORY(pszCurrentServerObjectDN);
     VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
     if (pLd)
     {
@@ -1065,8 +1056,8 @@ VmDirClientJoin(
 {
     DWORD   dwError = 0;
     PSTR    pszDomainName = NULL;
-    PCSTR   pszServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
-    int     iCnt = 0;
+//    PCSTR   pszServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
+//    int     iCnt = 0;
 
     if (IsNullOrEmptyString(pszServerName) ||
         IsNullOrEmptyString(pszUserName) ||
@@ -1088,6 +1079,7 @@ VmDirClientJoin(
                       pszMachineName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+/*
     for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
     {
         dwError = VmDirLdapSetupServiceAccount(
@@ -1105,7 +1097,7 @@ VmDirClientJoin(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
+*/
     dwError = _VmDirUpdateKeytabFile(
                       pszServerName,
                       pszDomainName,
@@ -2520,7 +2512,7 @@ VmdirGetSiteDCInfo(
                     &ppDC[*pIdxDC]->pszSiteName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirAllocateStringPrintf(
+        dwError = VmDirAllocateStringPrintf(
                     &pszServerDNPrefix,
                     "cn=%s,%s",
                     ppszServers[idxServer],
@@ -3763,7 +3755,7 @@ error:
 
 // Write UPN keys for the machine and service accounts to the keytab file.
 
-static
+
 DWORD
 _VmDirUpdateKeytabFile(
     PCSTR pszServerName,
@@ -3790,6 +3782,8 @@ _VmDirUpdateKeytabFile(
     DWORD                   dwWriteLen = 0;
     PSTR                    pszLowerCaseHostName = NULL;
 
+goto cleanup; // To cleanup
+
     dwError = VmDirAllocASCIILowerToUpper( pszDomainName, &pszUpperCaseDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -3807,11 +3801,11 @@ _VmDirUpdateKeytabFile(
     dwError = VmDirKeyTabOpen(pszKeyTabFileName, "w", &pKeyTabHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszMachineAccountUPN, "%s@%s", pszLowerCaseHostName, pszUpperCaseDomainName );
+    dwError = VmDirAllocateStringPrintf( &pszMachineAccountUPN, "%s@%s", pszLowerCaseHostName, pszUpperCaseDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszSRPUPN, "%s@%s", pszUserName, pszDomainName );
+    dwError = VmDirAllocateStringPrintf( &pszSRPUPN, "%s@%s", pszUserName, pszDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirGetKeyTabRecBlob(pszServerName,
@@ -3848,7 +3842,7 @@ _VmDirUpdateKeytabFile(
         VMDIR_SAFE_FREE_MEMORY(pLocalByte);
         dwByteSize = 0;
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszServiceAccountUPN, "%s/%s@%s", pszServiceTable[iCnt], pszLowerCaseHostName, pszUpperCaseDomainName );
+        dwError = VmDirAllocateStringPrintf( &pszServiceAccountUPN, "%s/%s@%s", pszServiceTable[iCnt], pszLowerCaseHostName, pszUpperCaseDomainName );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _VmDirGetKeyTabRecBlob(pszServerName,
@@ -3916,6 +3910,8 @@ _VmDirLdapCheckVmDirStatus(
     BOOLEAN     bFirst = TRUE;
     DWORD       dwTimeout = 15; //wait 2.5 minutes for 1st Ldu
     VDIR_SERVER_STATE vmdirState = VMDIRD_STATE_UNDEFINED;
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
     {
@@ -3923,8 +3919,17 @@ _VmDirLdapCheckVmDirStatus(
         dwTimeout = -1; //infinite minutes for 2nd Ldu, because we could be copying really big DB from partner.
     }
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszLocalServerReplURI, "%s://localhost:%d",
-                                             VMDIR_LDAP_PROTOCOL, DEFAULT_LDAP_PORT_NUM );
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
+    dwError = VmDirAllocateStringPrintf( &pszLocalServerReplURI, "%s://localhost:%d",
+                                             VMDIR_LDAP_PROTOCOL, dwLdapPort );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bFirst)
@@ -4004,8 +4009,8 @@ _VmDirSetupDefaultAccount(
     )
 {
     DWORD   dwError = 0;
-    PCSTR   pszServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
-    int     iCnt = 0;
+//    PCSTR   pszServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
+//    int     iCnt = 0;
 
     dwError = VmDirLdapSetupDCAccountOnPartner(
                                     pszDomainName,
@@ -4015,6 +4020,7 @@ _VmDirSetupDefaultAccount(
                                     pszLdapHostName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+/*
     for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
     {
         dwError = VmDirLdapSetupServiceAccount(
@@ -4032,6 +4038,7 @@ _VmDirSetupDefaultAccount(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+*/
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirSetupKrbAccount (%s)(%s) passed",
                                         VDIR_SAFE_STRING(pszDomainName),
@@ -4402,7 +4409,7 @@ _VmDirCreateServerPLD(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszUPN, "%s@%s", pszUserName, pszDomain );
+    dwError = VmDirAllocateStringPrintf( &pszUPN, "%s@%s", pszUserName, pszDomain );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBind( &pLD,
@@ -4474,7 +4481,7 @@ _VmDirRemoveComputer(
     dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                     &pszComputerDN,
                     "%s=%s,%s=%s,%s",
                     ATTR_CN,
@@ -5212,14 +5219,10 @@ _VmDirJoinPreCondition(
     )
 {
     DWORD   dwError = 0;
-    PSTR    pszVersion = NULL;
     PSTR    pszSchemaFile = NULL;
     PVMDIR_CONNECTION   pConnection = NULL;
     PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
     PSTR    pszErrMsg = NULL;
-#ifndef LIGHTWAVE_BUILD
-    int     iVerCmp65 = 0;
-#endif
 
     // open connection to remote node
     dwError = VmDirConnectionOpenByHost(
@@ -5240,43 +5243,13 @@ _VmDirJoinPreCondition(
     dwError = VmDirLdapSchemaLoadFile(pFileSchema, pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // get PSC version of remote node
-    dwError = VmDirGetPSCVersionInternal(pConnection->pLd, &pszVersion);
+    dwError = VmDirPatchRemoteSchemaObjects(
+            pConnection->pLd, pFileSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-#ifndef LIGHTWAVE_BUILD
-    // For PSC build 6.5 and before.
-    // patch remote node so its schema is union of itself and file
-    iVerCmp65 = VmDirCompareVersion(pszVersion, "6.5");
-    if (iVerCmp65 < 0)
-    {
-        dwError = VmDirAllocateStringAVsnprintf(&pszErrMsg,
-                "Partner version %s < 6.5.0. "
-                "Join time schema upgrade is not supported",
-                pszVersion);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (iVerCmp65 == 0)
-    {
-        dwError = VmDirPatchRemoteSubSchemaSubEntry(
-                pConnection->pLd, pFileSchema);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-#endif
-    {   // Lightwave or PSC(>=6.6) with new schema object model to support down an up version join
-        dwError = VmDirPatchRemoteSchemaObjects(
-                pConnection->pLd, pFileSchema);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
 cleanup:
     VmDirConnectionClose(pConnection);
     VMDIR_SAFE_FREE_MEMORY(pszSchemaFile);
-    VMDIR_SAFE_FREE_MEMORY(pszVersion);
     VmDirFreeLdapSchema(pFileSchema);
     return dwError;
 

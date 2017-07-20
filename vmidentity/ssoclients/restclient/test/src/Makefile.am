@@ -29,7 +29,9 @@ ssorestclienttest_CPPFLAGS = \
     -I$(top_srcdir)/ssoclients/oidc/include/public/
 
 ssorestclienttest_LDADD = \
+    @top_builddir@/ssoclients/common/src/libssocommon.la \
     @top_builddir@/ssoclients/restclient/idmclient/src/libssoidmclient.la \
     @top_builddir@/ssoclients/restclient/vmdirclient/src/libssovmdirclient.la \
     @top_builddir@/ssoclients/restclient/afdclient/src/libssoafdclient.la \
+    @top_builddir@/ssoclients/restclient/coreclient/src/libssocoreclient.la \
     @top_builddir@/ssoclients/oidc/src/libssooidc.la

@@ -60,7 +60,7 @@ _VmDirSRPGetIdentityData(
 ///////////////////////////////////////////////////////////////////////////////////////
 static
 int
-lwraftdb_auxprop_lookup (
+postdb_auxprop_lookup (
     void*                   glob_context,
     sasl_server_params_t*   pSrvParams,
     unsigned                flags,
@@ -113,19 +113,19 @@ lwraftdb_auxprop_lookup (
 
 static
 sasl_auxprop_plug_t
-lwraftdb_auxprop_plugin =
+postdb_auxprop_plugin =
 {
     0,
     0,
     NULL,
     NULL,
-    lwraftdb_auxprop_lookup,
-    "lwraftdb",
+    postdb_auxprop_lookup,
+    "postdb",
     NULL
 };
 
 int
-lwraftdb_auxprop_plug_init (
+postdb_auxprop_plug_init (
     const sasl_utils_t *     utils,
     int                      max_version,
     int *                    out_version,
@@ -135,7 +135,7 @@ lwraftdb_auxprop_plug_init (
 {
 
     *out_version = SASL_AUXPROP_PLUG_VERSION;
-    *plug = &lwraftdb_auxprop_plugin;
+    *plug = &postdb_auxprop_plugin;
 
     return SASL_OK;
 }

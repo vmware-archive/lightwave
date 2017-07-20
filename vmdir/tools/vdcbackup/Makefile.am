@@ -12,7 +12,13 @@ vdcbackup_CPPFLAGS = \
 
 vdcbackup_LDADD = \
     $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libvmdirclient.la
+    $(top_builddir)/client/libvmdirclient.la \
+    @LWRSUTILS_LIBS@ \
+    @LWBASE_LIBS@ \
+    @LWREG_LIBS@ \
+    @CRYPTO_LIBS@ \
+    @LDAP_LIBS@ \
+    @UUID_LIBS@
 
 vdcbackup_LDFLAGS = \
     @LW_LDFLAGS@

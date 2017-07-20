@@ -25,7 +25,6 @@ libvmcaclient_la_LIBADD = \
     @PTHREAD_LIBS@ 
 
 libvmcaclient_la_LDFLAGS = \
-    @VMAFD_LDFLAGS@ \
     @DCERPC_LDFLAGS@ \
     @LW_LDFLAGS@ \
     @OPENSSL_LDFLAGS@

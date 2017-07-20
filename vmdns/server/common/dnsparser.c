@@ -133,7 +133,6 @@ VmDnsReadDnsHeaderFromBuffer(
 
     *ppHeader = pHeader;
 
-
 cleanup:
 
     return dwError;
@@ -478,18 +477,23 @@ VmDnsWriteQueryMessageToBuffer(
 {
     DWORD dwError = 0;
 
-    if (!pDnsMessage || !pMessageBuffer)
+    if (!pDnsMessage ||
+        !pDnsMessage->pHeader ||
+        !pMessageBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     // Write question section
-    dwError = VmDnsWriteQuestionToBuffer(
-                        pDnsMessage->pQuestions[0],
-                        pMessageBuffer
-                        );
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (pDnsMessage->pHeader->usQDCount != 0)
+    {
+        dwError = VmDnsWriteQuestionToBuffer(
+                            pDnsMessage->pQuestions[0],
+                            pMessageBuffer
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     // Write answers section
     dwError = VmDnsWriteRecordsToBuffer(

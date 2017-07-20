@@ -17,11 +17,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -38,7 +35,6 @@ import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
-import com.vmware.identity.idm.PasswordPolicyViolationException;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.rest.core.server.authorization.Role;
@@ -48,12 +44,9 @@ import com.vmware.identity.rest.core.server.exception.client.BadRequestException
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
-import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.GroupDTO;
-import com.vmware.identity.rest.idm.data.PrincipalDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
-import com.vmware.identity.rest.idm.server.mapper.PrincipalMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
@@ -72,60 +65,6 @@ public class UserResource extends BaseSubResource {
 
     public UserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
-    }
-
-    /**
-     * Creates FSP(Foreign Security Principal) or external IDP user for a provided tenant
-     * @param externalUser Details of the FSP user to be created.
-     * @return true On successfull creation of external user.
-     *         false On failure
-     */
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role=Role.ADMINISTRATOR)
-    public Boolean createExternalUser(PrincipalDTO externalUser) {
-        Boolean registrationStatus = false;
-        try {
-            PrincipalId externalUserId = PrincipalMapper.getPrincipal(externalUser);
-            registrationStatus = getIDMClient().registerThirdPartyIDPUser(getTenant(), externalUserId);
-            return registrationStatus;
-        } catch (NoSuchTenantException e) {
-            log.debug("Failed to create external IDP user(FSP) '{}'", externalUser.getName(), e);
-            throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (PasswordPolicyViolationException | DTOMapperException | InvalidArgumentException | InvalidPrincipalException | NoSuchIdpException e) {
-            log.debug("Failed to create external IDP user(FSP) '{}' on tenant '{}' due to a client side error", externalUser.getName(), tenant, e);
-            throw new BadRequestException(sm.getString("res.user.create.failed", externalUser.getName(), tenant), e);
-        } catch (Exception e) {
-            log.error("Failed to create external IDP user(FSP) '{}' on tenant '{}' due to a server side error", externalUser.getName(), tenant, e);
-            throw new InternalServerErrorException(sm.getString("ec.500"), e);
-        }
-    }
-
-    /**
-     * Deletes FSP(Foreign Security Principal) or external IDP user for a given tenant
-     *
-     * @param name Username of third party user to be deleted.
-     * @return
-     *      Return 200 (OK) if update operation succeeds.
-     *      Return 500 (Internal Server Error) if update operation fails.
-     */
-    @DELETE @Path("/{userName}")
-    @RequiresRole(role=Role.ADMINISTRATOR)
-    public void delete(@PathParam("userName") String name) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
-        try {
-            getIDMClient().removeThirdPartyIDPUser(getTenant(), id);
-        } catch (NoSuchTenantException | InvalidPrincipalException e) {
-            log.debug("Failed to delete external IDP user (FSP) '{}' from tenant '{}'", name, tenant, e);
-            throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (InvalidArgumentException e) {
-            log.debug("Failed to delete external IDP user (FSP) '{}' from tenant '{}' due to a client side error", name, tenant, e);
-            throw new BadRequestException(sm.getString("res.user.delete.failed", name, tenant), e);
-        } catch (Exception e) {
-            log.error("Failed to delete external IDP user (FSP) '{}' from tenant '{}' due to a server side error", name, tenant, e);
-            throw new InternalServerErrorException(sm.getString("ec.500"), e);
-        }
     }
 
     /**

@@ -91,6 +91,14 @@ OidcErrorResponseDelete(
 }
 
 PCSTRING
+OidcErrorResponseGetError(
+    PCOIDC_ERROR_RESPONSE p)
+{
+    ASSERT_NOT_NULL(p);
+    return p->pszError;
+}
+
+PCSTRING
 OidcErrorResponseGetErrorDescription(
     PCOIDC_ERROR_RESPONSE p)
 {
@@ -99,7 +107,7 @@ OidcErrorResponseGetErrorDescription(
 }
 
 SSOERROR
-OidcErrorResponseGetSSOErrorCode(
+OidcErrorResponseGetErrorCode(
     PCOIDC_ERROR_RESPONSE p)
 {
     SSOERROR result = SSOERROR_OIDC_SERVER;

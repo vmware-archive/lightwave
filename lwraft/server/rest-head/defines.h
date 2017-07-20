@@ -12,23 +12,27 @@
  * under the License.
  */
 
-// REST ENGINE CONFIG VALUES
-// TRIDENT
-#define VMDIR_REST_SSLCERT          LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdircert.pem"
-#define VMDIR_REST_SSLKEY           LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdirkey.pem"
-#define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraft-rest.json"
-#define VMDIR_REST_DEBUGLOGFILE     "/tmp/lwraft-rest.log"
-//#define VMDIR_REST_DEBUGLOGFILE     VMDIR_LOG_DIR    VMDIR_PATH_SEPARATOR_STR "lwraft-rest.log"    TODO use this when lightwave-first is complete
+// C REST ENGINE CONFIG VALUES
+#define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
+#define VMDIR_REST_DEBUGLOGFILE     "/tmp/post-rest.log"
+
 #define VMDIR_REST_CLIENTCNT        "5"
 #define VMDIR_REST_WORKERTHCNT      "5"
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
+#define VMDIR_V1_LDAP_RESOURCE      "/v1/post/ldap"
+#define VMDIR_V1_OBJ_RESOURCE       "/v1/post/object"
+#define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
+
 // OIDC
-#define VMDIR_REST_OIDC_SERVER              "localhost"
 #define VMDIR_REST_OIDC_PORT                443
-#define VMDIR_REST_DEFAULT_SCOPE            "rs_lwraft"
+#define VMDIR_REST_DEFAULT_SCOPE            "rs_post"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
+
+// HTTP headers
+#define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
+#define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 
 // HTTP STATUS CODES
 // 1xx Informational

@@ -135,8 +135,8 @@ error:
 
 DWORD
 VmDirSetSecurityDescriptorForDn(
-    PCSTR pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -145,15 +145,15 @@ VmDirSetSecurityDescriptorForDn(
     dwError = VmDirSimpleDNToEntry(pszObjectDn, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSetSecurityDescriptorForEntry(pEntry,
-                                                 pSecDesc->SecInfo,
-                                                 pSecDesc->pSecDesc,
-                                                 pSecDesc->ulSecDesc);
+    dwError = VmDirSetSecurityDescriptorForEntry(
+            pEntry,
+            pSecDesc->SecInfo,
+            pSecDesc->pSecDesc,
+            pSecDesc->ulSecDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VmDirFreeEntry(pEntry);
-
     return dwError;
 
 error:
@@ -166,8 +166,8 @@ error:
 //
 DWORD
 VmDirSetRecursiveSecurityDescriptorForDn(
-    PCSTR pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     )
 {
     DWORD dwError = 0;
@@ -201,6 +201,7 @@ cleanup:
     dwError = pBE->pfnBEConfigureFsync(TRUE);
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -390,6 +391,46 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirEntryCacheSecurityDescriptor(
+    PVDIR_ENTRY pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
+    ULONG ulSecDescToSetLen
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+
+    if (!pEntry->pAclCtx)
+    {
+        dwError = VmDirAllocateMemory(sizeof(*pEntry->pAclCtx), (PVOID*)&pEntry->pAclCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        VmDirAclCtxContentFree(pEntry->pAclCtx);
+    }
+
+    dwError = VmDirAllocateMemory(ulSecDescToSetLen, (PVOID*)&pEntry->pAclCtx->pSecurityDescriptor);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyMemory(
+            pEntry->pAclCtx->pSecurityDescriptor,
+            ulSecDescToSetLen,
+            pSecDescRelToSet,
+            ulSecDescToSetLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pEntry->pAclCtx->ulSecDescLength = ulSecDescToSetLen;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirAclCtxContentFree(pEntry->pAclCtx);
+    VMDIR_SAFE_FREE_MEMORY(pEntry->pAclCtx);
+    goto cleanup;
+}
+
 // Grab SD information from back-end
 static
 DWORD
@@ -509,44 +550,5 @@ cleanup:
     return dwError;
 
 error:
-    goto cleanup;
-}
-
-DWORD
-VmDirEntryCacheSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
-    ULONG ulSecDescToSetLen
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-
-    if (!pEntry->pAclCtx)
-    {
-        dwError = VmDirAllocateMemory(sizeof(*pEntry->pAclCtx), (PVOID*)&pEntry->pAclCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        VmDirAclCtxContentFree(pEntry->pAclCtx);
-    }
-
-    dwError = VmDirAllocateMemory(ulSecDescToSetLen, (PVOID*)&pEntry->pAclCtx->pSecurityDescriptor);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory(
-                pEntry->pAclCtx->pSecurityDescriptor,
-                ulSecDescToSetLen,
-                pSecDescRelToSet,
-                ulSecDescToSetLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pEntry->pAclCtx->ulSecDescLength = ulSecDescToSetLen;
-
-cleanup:
-    return dwError;
-error:
-    VmDirAclCtxContentFree(pEntry->pAclCtx);
-    VMDIR_SAFE_FREE_MEMORY(pEntry->pAclCtx);
     goto cleanup;
 }

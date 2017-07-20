@@ -1,0 +1,173 @@
+#!/bin/sh
+# postinst script for lightwave
+#
+# see: dh_installdeb(1)
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see https://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+/sbin/ldconfig
+
+SERVICE_DIR=/lib/systemd/system
+SASL2_PLUGIN_DIR=/usr/lib/x86_64-linux-gnu/sasl2
+DATA_DIR=/opt/vmware/share
+LOG_DIR=/var/log/lightwave
+LOG_CONF_DIR=/etc/syslog-ng/lightwave.conf.d
+VMCA_DB_DIR=/var/lib/vmware/vmca
+VMDIR_DB_DIR=/var/lib/vmware/vmdir
+LIKEWISE_BIN_DIR=/opt/likewise/bin
+
+
+# config
+
+/bin/systemctl enable firewall.service >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    /bin/ln -s lib/systemd/system/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
+fi
+
+/bin/systemctl >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    /bin/systemctl daemon-reload
+fi
+/bin/systemctl start firewall.service
+
+# vmdir
+
+/bin/mkdir -m 700 -p $VMDIR_DB_DIR
+
+if [ -e $SASL2_PLUGIN_DIR/vmdird.conf ]; then
+    /bin/rm $SASL2_PLUGIN_DIR/vmdird.conf
+fi
+
+# add vmdird.conf to sasl2 directory
+/bin/ln -s $DATA_DIR/config/saslvmdird.conf $SASL2_PLUGIN_DIR/vmdird.conf
+
+/bin/mkdir -m 755 -p $LOG_CONF_DIR
+if [ -e $LOG_CONF_DIR/vmdird-syslog-ng.conf ]; then
+    /bin/rm $LOG_CONF_DIR/vmdird-syslog-ng.conf
+fi
+/bin/ln -s $DATA_DIR/config/vmdird-syslog-ng.conf $LOG_CONF_DIR/vmdird-syslog-ng.conf
+
+# vmdns
+
+/bin/mkdir -m 755 -p $LOG_DIR
+/bin/mkdir -m 755 -p $LOG_CONF_DIR
+if [ -e $LOG_CONF_DIR/vmdnsd-syslog-ng.conf ]; then
+    /bin/rm $LOG_CONF_DIR/vmdnsd-syslog-ng.conf
+fi
+/bin/ln -s $DATA_DIR/config/vmdnsd-syslog-ng.conf $LOG_CONF_DIR/vmdnsd-syslog-ng.conf
+
+# vmca
+
+/bin/mkdir -m 700 -p $VMCA_DB_DIR
+/bin/mkdir -m 755 -p $LOG_DIR
+/bin/mkdir -m 755 -p $LOG_CONF_DIR
+if [ -e $LOG_CONF_DIR/vmcad-syslog-ng.conf ]; then
+    /bin/rm $LOG_CONF_DIR/vmcad-syslog-ng.conf
+fi
+/bin/ln -s $DATA_DIR/config/vmcad-syslog-ng.conf $LOG_CONF_DIR/vmcad-syslog-ng.conf
+
+case "$1" in
+    configure)
+
+            #
+            # New Installation
+            #
+            try_starting_lwregd_svc=true
+
+            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            if [ $try_starting_lwregd_svc = true ]; then
+                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdir.reg
+                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdns.reg
+                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmca.reg
+                $LIKEWISE_BIN_DIR/lwsm -q refresh
+                sleep 2
+            else
+                started_lwregd=false
+                if [ -z "`pidof lwregd`" ]; then
+                    echo "Starting lwregd"
+                    /opt/likewise/sbin/lwregd &
+                    started_lwregd=true
+                    sleep 5
+                fi
+                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdir.reg
+                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdns.reg
+                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmca.reg
+                if [ $started_lwregd = true ]; then
+                    kill -TERM `pidof lwregd`
+                    wait
+                fi
+            fi
+
+        /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
+        fi
+        /bin/systemctl >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            /bin/systemctl daemon-reload
+        fi
+
+
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+if [ -x $LIKEWISE_BIN_DIR/lwregshell ]
+then
+    $LIKEWISE_BIN_DIR/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add key if not exist
+        $LIKEWISE_BIN_DIR/lwregshell add_key "[HKEY_THIS_MACHINE\Software]"
+        $LIKEWISE_BIN_DIR/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware]"
+        $LIKEWISE_BIN_DIR/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
+    fi
+
+    $LIKEWISE_BIN_DIR/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Release" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add value if not exist
+        $LIKEWISE_BIN_DIR/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Release" REG_SZ "Lightwave"
+    fi
+
+    $LIKEWISE_BIN_DIR/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Version" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add value if not exist
+        $LIKEWISE_BIN_DIR/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" REG_SZ "1.3.0"
+    else
+        # set value if exists
+        $LIKEWISE_BIN_DIR/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "1.3.0"
+    fi
+fi
+
+echo "Lightwave server installed.."
+
+# dh_installdeb will replace this with shell code automatically
+# generated by other debhelper scripts.
+
+#DEBHELPER#
+
+exit 0

@@ -330,3 +330,11 @@ typedef struct _VMDNS_DRIVER_GLOBALS
     VMDNS_STATE                 state;
     BOOL                        bUseDirectoryStore;
 } VMW_DNS_DRIVER_GLOBALS, *PVMW_DNS_DRIVER_GLOBALS;
+
+/*Dns Statistics*/
+typedef struct _VMDNS_OP_STATISTIC_GLOBALS
+{
+    VMDNS_OPERATION_STATISTIC    dns_query_count;
+    VMDNS_OPERATION_STATISTIC    forwarder_query_count;
+
+} VMDNS_OP_STATISTIC_GLOBALS, *PVMDNS_OP_STATISTIC_GLOBALS;

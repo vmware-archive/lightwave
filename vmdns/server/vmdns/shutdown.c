@@ -39,8 +39,9 @@ VmDnsShutdown(
     VmDnsRpcServerShutdown();
     VmDnsShutdownProtocolServer();
     VmDnsSrvCleanup();
-    VmwSockShutdown();
+    VmDnsSockShutdown();
     VmDnsCleanupGlobals();
+    VmDnsRESTServerShutdown();
 }
 
 static
@@ -51,4 +52,5 @@ VmDnsCleanupGlobals(
 {
     VMDNS_SAFE_FREE_MEMORY(gVmdnsGlobals.pszLogFile);
     VmDnsFreeMutex( gVmdnsGlobals.pMutex);
+    VMDNS_SAFE_FREE_MEMORY(gVmdnsGlobals.pszRestListenPort);
 }

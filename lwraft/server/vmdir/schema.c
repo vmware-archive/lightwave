@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -31,60 +31,49 @@ _MarkDefaultIndices(
  * Examines the following options in order and use the first detected source
  * to initialize schema:
  *
- * 1. Individual schema entries (7.0)
- * 2. Subschema subentry (6.x)
- * 3. Schema file
+ * 1. Schema entries
+ * 2. Schema file
  *
  * OUTPUT:
- * pbWriteSchemaEntry will be TRUE if option 3 was used
- * pbLegacyDataLoaded will be TRUE if option 2 was used
+ * pbWriteSchemaEntry will be TRUE if option 2 was used
  */
 DWORD
 VmDirLoadSchema(
-    PBOOLEAN    pbWriteSchemaEntry,
-    PBOOLEAN    pbLegacyDataLoaded
+    PBOOLEAN    pbWriteSchemaEntry
     )
 {
     DWORD               dwError = 0;
     PVDIR_ENTRY_ARRAY   pAtEntries = NULL;
     PVDIR_ENTRY_ARRAY   pOcEntries = NULL;
-    PVDIR_ENTRY         pSchemaEntry = NULL;
 
-    assert(pbWriteSchemaEntry && pbLegacyDataLoaded);
+    assert(pbWriteSchemaEntry);
 
-    dwError = VmDirReadSchemaObjects(&pAtEntries, &pOcEntries);
+    dwError = VmDirReadAttributeSchemaObjects(&pAtEntries);
     if (dwError == 0)
     {
-        dwError = VmDirSchemaLibPrepareUpdateViaEntries(pAtEntries, pOcEntries);
+        dwError = VmDirSchemaLibLoadAttributeSchemaEntries(pAtEntries);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSchemaLibUpdate(0);
+        dwError = VmDirReadClassSchemaObjects(&pOcEntries);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaLibLoadClassSchemaEntries(pOcEntries);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
     {
-        dwError = VmDirReadSubSchemaSubEntry(&pSchemaEntry);
-        if (dwError == 0)
+        PSTR pszSchemaFilePath = gVmdirGlobals.pszBootStrapSchemaFile;
+        if (!pszSchemaFilePath)
         {
-            dwError = VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(pSchemaEntry);
+            dwError = ERROR_NO_SCHEMA;
             BAIL_ON_VMDIR_ERROR(dwError);
-
-            *pbLegacyDataLoaded = TRUE;
         }
-        else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
-        {
-            PSTR pszSchemaFilePath = gVmdirGlobals.pszBootStrapSchemaFile;
-            if (!pszSchemaFilePath)
-            {
-                dwError = ERROR_NO_SCHEMA;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
 
-            dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
-            BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-            *pbWriteSchemaEntry = TRUE;
-        }
+        *pbWriteSchemaEntry = TRUE;
+
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSchemaLibUpdate(0);
@@ -98,7 +87,6 @@ VmDirLoadSchema(
 cleanup:
     VmDirFreeEntryArray(pAtEntries);
     VmDirFreeEntryArray(pOcEntries);
-    VmDirFreeEntry(pSchemaEntry);
     return dwError;
 
 error:
@@ -142,7 +130,7 @@ error:
 }
 
 /*
- * During upgrade 7.0 or later, we can patch schema via this function.
+ * During upgrade, we can patch schema via this function.
  *
  * INPUT:
  * new version of Lotus schema file
@@ -159,7 +147,7 @@ VmDirSchemaPatchViaFile(
     dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
+    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaLibUpdate(0);
@@ -174,42 +162,6 @@ VmDirSchemaPatchViaFile(
 cleanup:
     VmDirSchemaCtxRelease(pOldSchemaCtx);
     VmDirSchemaCtxRelease(pNewSchemaCtx);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
-
-    goto cleanup;
-}
-
-/*
- * During upgrade 6.x, we can patch schema via this function.
- * Should be called if InitializeSchema() results pbLegacyDataLoaded = TRUE
- *
- * INPUT:
- * new version of Lotus schema file
- */
-DWORD
-VmDirSchemaPatchLegacyViaFile(
-    PCSTR       pszSchemaFilePath
-    )
-{
-    DWORD    dwError = 0;
-
-    dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirPatchLocalSubSchemaSubEntry();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirWriteSchemaObjects();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
     return dwError;
 
 error:

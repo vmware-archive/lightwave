@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -37,10 +37,24 @@ extern "C" {
 extern VDIR_RAFT_STATE gRaftState;
 
 extern DWORD
-VmDirSchemaEntryPreAdd(
-    PVDIR_OPERATION,
-    PVDIR_ENTRY
-    );
+VmDirReplSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
+
+extern DWORD
+VmDirReplSchemaEntryPostAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
+
+extern DWORD
+VmDirReplSchemaEntryPreMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
+
+extern DWORD
+VmDirReplSchemaEntryPostMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry);
 
 DWORD
 InitializeReplicationThread(
@@ -67,16 +81,6 @@ _VmDirLoadRaftState(
     );
 
 DWORD
-_VmDirUpdateRaftPsState(
-    int term,
-    BOOLEAN updateVotedForTerm,
-    UINT32 votedForTerm,
-    PVDIR_BERVALUE pVotedFor,
-    UINT64 lastApplied,
-    UINT64 firstLog
-    );
-
-DWORD
 VmDirAddRaftEntry(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PVDIR_RAFT_LOG pLogEntry,
@@ -93,7 +97,8 @@ _VmDirLogLookup(
 
 DWORD
 _VmDirDeleteAllLogs(
-    unsigned long long startLogIndex
+    unsigned long long startLogIndex,
+    BOOLEAN *pbFatalError
     );
 
 DWORD
@@ -110,7 +115,8 @@ _VmDirFetchLogEntry(
 
 DWORD
 _VmdirDeleteLog(
-    PSTR pDn
+    unsigned long long logIndex,
+    BOOLEAN bCompactLog
     );
 
 DWORD
@@ -195,6 +201,11 @@ _VmDirGetLogTerm(
 DWORD
 _VmDirRaftLoadGlobals(
     PSTR *
+    );
+
+ENTRYID
+VmDirRaftLogEntryId(
+    unsigned long long LogIndex
     );
 
 #ifdef __cplusplus

@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "Lightwave VmDir API",
-        "version": "1.0.0"
+        "version": "1.3.0"
     },
     "schemes": [
         "http"
@@ -16,6 +16,10 @@
         {
             "name": "ldap",
             "description": "LDAP(Lightweight Directory Access Protocol) protocol implemented in RESTful interface"
+        },
+        {
+            "name": "metrics",
+            "description": "Metrics module for publishing metrics data"
         }
     ],
     "paths": {
@@ -168,6 +172,26 @@
                     "ldap"
                 ]
             }
+        },
+        "/vmdir/metrics/ldap": {
+            "get": {
+                "summary": "Get metrics data",
+                "description": "Get metrics data",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metrics LDAP response",
+                        "schema": {
+                            "$ref": "#/definitions/MetricsLdapResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "metrics"
+                ]
+            }
         }
     },
     "definitions": {
@@ -243,6 +267,75 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/LDAPEntry"
+                    }
+                }
+            }
+        },
+        "MetricsLdapResponse": {
+            "type": "object",
+            "properties": {
+                "vmdir": {
+                    "ldap": {
+                        "bind": {
+                            "count": {
+                                "type": "integer",
+                                "format": "int32"
+                             },
+                            "average": {
+                                "type": "integer",
+                                "format": "int32"
+                             }
+                        },
+                        "search": {
+                            "count": {
+                                "type": "integer",
+                                "format": "int32"
+                             },
+                            "average": {
+                                "type": "integer",
+                                "format": "int32"
+                             }
+                        },
+                        "add": {
+                            "count": {
+                                "type": "integer",
+                                "format": "int32"
+                             },
+                            "average": {
+                                "type": "integer",
+                                "format": "int32"
+                             }
+                        },
+                        "unbind": {
+                            "count": {
+                                "type": "integer",
+                                "format": "int32"
+                             },
+                            "average": {
+                                "type": "integer",
+                                "format": "int32"
+                             }
+                        },
+                        "modify": {
+                            "count": {
+                                "type": "integer",
+                                "format": "int32"
+                             },
+                            "average": {
+                                "type": "integer",
+                                "format": "int32"
+                             }
+                        },
+                        "delete": {
+                            "count": {
+                                "type": "integer",
+                                "format": "int32"
+                             },
+                            "average": {
+                                "type": "integer",
+                                "format": "int32"
+                             }
+                        }
                     }
                 }
             }

@@ -224,6 +224,11 @@ typedef struct _VDIR_SUPERLOG_RECORD
     VDIR_SUPERLOG_RECORD_OPERATION_INFO opInfo;
 } VDIR_SUPERLOG_RECORD, *PVDIR_SUPERLOG_RECORD;
 
+typedef struct _VDIR_CONN_REPL_SUPP_STATE
+{
+    PLW_HASHMAP     phmSyncStateOneMap;
+} VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
+
 typedef struct _VDIR_CONNECTION
 {
     Sockbuf *               sb;
@@ -238,6 +243,7 @@ typedef struct _VDIR_CONNECTION
     char                    szClientIP[INET6_ADDRSTRLEN];
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
+    VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -551,11 +557,17 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
+typedef struct _VDIR_DIGEST_CONTROL_VALUE
+{
+    CHAR                    sha1Digest[SHA_DIGEST_LENGTH+1];
+} VDIR_DIGEST_CONTROL_VALUE, *PVDIR_DIGEST_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
     SyncRequestControlValue            syncReqCtrlVal;
     SyncDoneControlValue               syncDoneCtrlVal;
     VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
+    VDIR_DIGEST_CONTROL_VALUE          digestCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -590,6 +602,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
+    VDIR_LDAP_CONTROL *       digestCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
@@ -1085,6 +1098,19 @@ VmDirOperationTypeToName(
     VDIR_OPERATION_TYPE opType
     );
 
+BOOLEAN
+VmDirIsSameConsumerSupplierEntryAttr(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSrcEntry,
+    PVDIR_ENTRY     pDstEntry
+    );
+
+int
+VmDirPVdirBValCmp(
+    const void *p1,
+    const void *p2
+    );
+
 // candidates.c
 void
 AndFilterResults(
@@ -1115,6 +1141,11 @@ void
 OrFilterResults(
     VDIR_FILTER * src,
     VDIR_FILTER * dst);
+
+VOID
+VmDirSortCandidateList(
+    VDIR_CANDIDATES *  pCl
+    );
 
 // entryencodedecode.c
 DWORD
@@ -1464,7 +1495,7 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pSecretResult
     );
 
-//vmafdlib.c
+// vmafdlib.c
 DWORD
 VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle

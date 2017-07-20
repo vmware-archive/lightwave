@@ -63,6 +63,7 @@ VmdirGroupCreate(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToGroupData,
         (void**) &pGroupReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -131,6 +132,7 @@ VmdirGroupGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToGroupData,
         (void**) &pGroupReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -202,6 +204,7 @@ VmdirGroupUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) VmdirJsonToGroupData,
         (void**) &pGroupReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -269,6 +272,7 @@ VmdirGroupDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -339,6 +343,7 @@ VmdirGroupAddMembers(
         REST_HTTP_METHOD_TYPE_PUT,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -411,6 +416,7 @@ VmdirGroupGetMembers(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToSearchResultData,
         (void**) &pSearchResultReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -491,6 +497,7 @@ VmdirGroupRemoveMembers(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -551,6 +558,7 @@ VmdirGroupGetParents(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToGroupArrayData,
         (void**) &pGroupArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

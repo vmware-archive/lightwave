@@ -63,6 +63,10 @@ VmDnsClearRecord(
         {
             gRecordMethods[idx].pfnClear(pRecord);
         }
+        else
+        {
+            VMDNS_SAFE_FREE_MEMORY(pRecord->pszName);
+        }
     }
 }
 
@@ -79,6 +83,10 @@ VmDnsRpcClearRecord(
         if(!dwError)
         {
             gRecordMethods[idx].pfnRpcClear(pRecord);
+        }
+        else
+        {
+            VmDnsRpcFreeMemory(pRecord->pszName);
         }
     }
 }
@@ -1027,7 +1035,7 @@ VmDnsReadDomainNameFromBuffer(
     }
 
     dwError = VmDnsAllocateMemory(
-                        VMDNS_NAME_LENGTH_MAX + 1,
+                        VMDNS_NAME_LENGTH_MAX + 2,
                         (PVOID *)&pszTempString
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -1062,22 +1070,17 @@ VmDnsReadDomainNameFromBuffer(
 
             if (!bEndOfString)
             {
-                // check if this a valid IPAddress
-                if (!VmDnsCheckIfIPV4AddressA(pszTempString)
-                    && !VmDnsCheckIfIPV6AddressA(pszTempString))
+                if (pszTempStringCursor[dwLabelLength - 1] != '.')
                 {
-                    if (pszTempStringCursor[dwLabelLength - 1] != '.')
-                    {
-                        pszTempStringCursor[dwLabelLength]='.';
-                        dwLabelLength++;
-                    }
+                    pszTempStringCursor[dwLabelLength]='.';
+                    dwLabelLength++;
                 }
            }
         }
 
-        pszTempStringCursor = &pszTempStringCursor[dwLabelLength];
-        VMDNS_SAFE_FREE_STRINGA(pszLabels);
+        pszTempStringCursor += dwLabelLength;
         dwTotalStringLength += dwLabelLength;
+        VMDNS_SAFE_FREE_STRINGA(pszLabels);
 
         if (dwTotalStringLength > VMDNS_NAME_LENGTH_MAX)
         {
@@ -1240,17 +1243,8 @@ VmDnsIsSupportedRecordType(
         dwRecordType == VMDNS_RR_TYPE_NS    ||
         dwRecordType == VMDNS_RR_TYPE_SOA   ||
         dwRecordType == VMDNS_RR_TYPE_SRV   ||
+        dwRecordType == VMDNS_RR_TYPE_PTR   ||
         dwRecordType == VMDNS_RR_QTYPE_ANY;
-}
-
-BOOL
-VmDnsIsUpdatePermitted(
-    VMDNS_RR_TYPE   dwRecordType
-    )
-{
-    return
-        dwRecordType == VMDNS_RR_TYPE_SOA   ||
-        dwRecordType == VMDNS_RR_TYPE_CNAME;
 }
 
 BOOL

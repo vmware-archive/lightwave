@@ -303,6 +303,8 @@ VmDirSafeLDAPBind(
 
     LDAP*       pLd = NULL;
     char        ldapURI[VMDIR_MAX_LDAP_URI_LEN + 1] = {0};
+    DWORD       dwLdapPort = DEFAULT_LDAP_PORT_NUM;
+    DWORD       dwTmpLdapPort = 0;
 
     if (ppLd == NULL || pszHost == NULL || pszUPN == NULL || pszPassword == NULL)
     {
@@ -310,15 +312,24 @@ VmDirSafeLDAPBind(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_LDAP_PORT,
+                &dwTmpLdapPort,
+                DEFAULT_LDAP_PORT_NUM) == ERROR_SUCCESS)
+    {
+        dwLdapPort = dwTmpLdapPort;
+    }
+
     if ( VmDirIsIPV6AddrFormat( pszHost ) )
     {
         dwError = VmDirStringPrintFA( ldapURI, sizeof(ldapURI)-1,  "%s://[%s]:%d",
-                                      VMDIR_LDAP_PROTOCOL, pszHost, DEFAULT_LDAP_PORT_NUM);
+                                      VMDIR_LDAP_PROTOCOL, pszHost, dwLdapPort);
     }
     else
     {
         dwError = VmDirStringPrintFA( ldapURI, sizeof(ldapURI)-1,  "%s://%s:%d",
-                                      VMDIR_LDAP_PROTOCOL, pszHost, DEFAULT_LDAP_PORT_NUM);
+                                      VMDIR_LDAP_PROTOCOL, pszHost, dwLdapPort);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -350,10 +361,22 @@ error:
  *
  * Thus, NO credentials would ever go over clear text channel.
  */
+
 DWORD
 VmDirAnonymousLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszLdapURI
+    )
+{
+    return VmDirAnonymousLDAPBindWithTimeout(ppLd, pszLdapURI, 0);
+}
+
+
+DWORD
+VmDirAnonymousLDAPBindWithTimeout(
+    LDAP**      ppLd,
+    PCSTR       pszLdapURI,
+    int         timeout
     )
 {
     DWORD       dwError = 0;
@@ -361,6 +384,7 @@ VmDirAnonymousLDAPBind(
     const int   ldapVer = LDAP_VERSION3;
     BerValue    ldapBindPwd = {0};
     LDAP*       pLocalLd = NULL;
+    struct timeval nettimeout = {0};
 
 
     if (ppLd == NULL || pszLdapURI == NULL)
@@ -374,6 +398,13 @@ VmDirAnonymousLDAPBind(
 
     retVal = ldap_set_option( pLocalLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    if (timeout > 0)
+    {
+        nettimeout.tv_sec = timeout;
+        retVal = ldap_set_option( pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&nettimeout);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
 
     ldapBindPwd.bv_val = NULL;
     ldapBindPwd.bv_len = 0;

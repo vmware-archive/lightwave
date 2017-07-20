@@ -13,3 +13,7 @@
  */
 
 extern PREST_API_DEF gpVdirRestApiDef;
+
+extern PVMREST_HANDLE gpVdirRESTHandle;
+
+extern PVDIR_VMAFD_API gpVdirVmAfdAPI;

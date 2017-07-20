@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -82,6 +82,12 @@
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPreModApplyModify), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_OPERATION_TYPE_EXTERNAL),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginVerifyAclAccess),       \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
 }
@@ -234,12 +240,7 @@
 // NOTE: order of fields MUST stay in sync with struct definition...
 #define VDIR_PRE_MODAPPLY_DELETE_PLUGIN_INITIALIZER                 \
 {                                                                   \
-    {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreModApplyDelete), \
-    VMDIR_SF_INIT(.pNext, NULL )                                    \
-    },                                                              \
+                                                                    \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
@@ -384,6 +385,14 @@ _VmDIrPluginPasswordPreModApplyModify(
 
 static
 DWORD
+_VmDirPluginVerifyAclAccess(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+static
+DWORD
 _VmDirPluginReplaceOpAttrsPreModApplyModify(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
@@ -412,13 +421,6 @@ _VmDirPluginMapAclStringAttributePreModApplyModify(
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult
     );
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePreModApplyDelete(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
 
 static
 DWORD
@@ -726,7 +728,7 @@ _VmDirPluginSchemaLibUpdatePreModify(
     DWORD dwRtn = 0;
     PVDIR_MODIFICATION pMod = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         pMod = pOperation->request.modifyReq.mods;
         for (; pMod; pMod = pMod->next)
@@ -790,8 +792,8 @@ _VmDirPluginGenericPreAdd(
         BOOLEAN bReturn = FALSE;
 
         bReturn = VmDirValidRelativeSecurityDescriptor(
-                    (PSECURITY_DESCRIPTOR_RELATIVE)pAttrSD->vals[0].bvnorm_val,
-                    (ULONG)pAttrSD->vals[0].bvnorm_len,
+                    (PSECURITY_DESCRIPTOR_RELATIVE)pAttrSD->vals[0].lberbv_val,
+                    (ULONG)pAttrSD->vals[0].lberbv_len,
                     OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION);
         if (!bReturn)
         {
@@ -858,11 +860,6 @@ _VmDirPluginPasswordHashPreAdd(
         {
             PVDIR_PASSWORD_HASH_SCHEME pPasswdScheme = VdirDefaultPasswordScheme();
 
-            // handle krb password logic first.
-            pszErrorContext = "Krb password add";
-            dwError = VmDirKrbUPNKeySet( pOperation, pEntry, &(pAttrPasswd->vals[0]) );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             // handle srp password logic.
             pszErrorContext = "srp password add";
             dwError = VmDirSRPSetSecret( pOperation, pEntry, &(pAttrPasswd->vals[0]) );
@@ -920,6 +917,37 @@ error:
     goto cleanup;
 }
 
+/*
+ * Only users and groups ("security principals") require a real SID. Domain
+ * objects need the domain-specific SID we store there (to construct SIDs for
+ * real security principals). Rather than hard-code the classes that get a
+ * SID here we just let the schema definition drive the logic.
+ */
+DWORD
+_VmDirNeedsSid(
+    PVDIR_ENTRY pEntry,
+    BOOLEAN *pbNeedsSid
+    )
+{
+    BOOLEAN bMustHaveAttr = FALSE;
+    BOOLEAN bMayHaveAttr = FALSE;
+    DWORD dwError = 0;
+
+    dwError = VmDirEntryIsAttrAllowed(
+                pEntry,
+                ATTR_OBJECT_SID,
+                &bMustHaveAttr,
+                &bMayHaveAttr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pbNeedsSid = bMustHaveAttr || bMayHaveAttr;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirPluginGenerateSidPreAdd(
@@ -930,6 +958,7 @@ _VmDirPluginGenerateSidPreAdd(
 {
     DWORD           dwError = 0;
     PSTR            pszObjectSid = NULL;
+    BOOLEAN         bNeedsSid = FALSE;
     PVDIR_ATTRIBUTE pObjectSidAttrExist = NULL;
 
     PVDIR_ATTRIBUTE pObjectSidAttr = NULL;
@@ -944,6 +973,13 @@ _VmDirPluginGenerateSidPreAdd(
                              ATTR_OBJECT_SID,
                              pEntry);
     if (pObjectSidAttrExist)
+    {
+        goto cleanup;
+    }
+
+    dwError = _VmDirNeedsSid(pEntry, &bNeedsSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!bNeedsSid)
     {
         goto cleanup;
     }
@@ -1153,7 +1189,7 @@ _VmDirPluginSchemaEntryPreAdd(
     PVDIR_ATTRIBUTE pCnAttr = NULL;
     PSTR    pszSchemaIdGuid = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         // lDAPDisplayName attribute takes cn as default
         if (!VmDirFindAttrByName(pEntry, ATTR_LDAP_DISPLAYNAME))
@@ -1185,7 +1221,7 @@ _VmDirPluginSchemaEntryPreAdd(
             BAIL_ON_VMDIR_ERROR(dwRtn);
         }
 
-        if (VmDirIsEntryWithObjectclass(pEntry, OC_CLASS_SCHEMA))
+        if (VmDirEntryIsObjectclass(pEntry, OC_CLASS_SCHEMA))
         {
             // defaultObjectCategory attribute takes dn as default
             if (!VmDirFindAttrByName(pEntry, ATTR_DEFAULT_OBJECT_CATEGORY))
@@ -1204,26 +1240,6 @@ error:
     return dwPriorResult ? dwPriorResult : dwRtn;
 }
 
-DWORD
-VmDirSchemaEntryPreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry)
-{
-    DWORD dwError = 0;
-
-    dwError = VmDirSchemaModMutexAcquire(pOperation);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError =  _VmDirPluginSchemaLibUpdatePreAdd(pOperation, pEntry, 0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
 static
 DWORD
 _VmDirPluginSchemaLibUpdatePreAdd(
@@ -1233,7 +1249,7 @@ _VmDirPluginSchemaLibUpdatePreAdd(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR(dwRtn);
@@ -1418,27 +1434,6 @@ error:
 
 static
 DWORD
-_VmDirPluginSchemaLibUpdatePreModApplyDelete(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    // reject delete if it's a schema entry
-    DWORD   dwError = 0;
-    PSTR    pszDN = BERVAL_NORM_VAL(pOperation->request.deleteReq.dn);
-
-    if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE))
-    {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-error:
-    return dwError;
-}
-
-static
-DWORD
 _VmDirPluginSchemaLibUpdatePostModifyCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
@@ -1446,7 +1441,7 @@ _VmDirPluginSchemaLibUpdatePostModifyCommit(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaLibUpdate(dwPriorResult);
     }
@@ -1558,7 +1553,7 @@ _VmDirConstructFSPDN(
         assert( pszDomainDN );
 
         // FSP DN looks like: objectIdd=<a SID or entryUUID or etc...>,cn=ForeignSecurityPrincipals,<domain DN>
-        dwError = VmDirAllocateStringAVsnprintf( &pszFSPDN, "%s,%s=%s,%s", pSpecialDn->lberbv.bv_val,
+        dwError = VmDirAllocateStringPrintf( &pszFSPDN, "%s,%s=%s,%s", pSpecialDn->lberbv.bv_val,
                                                  FSP_CONTAINER_RDN_ATTR, FSP_CONTAINER_RDN_ATTR_VALUE,
                                                  pszDomainDN );
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1929,4 +1924,153 @@ error:
     goto cleanup;
 }
 
+/* The following functions (prefixed with VmDirRepl) perform pre/post operations (plugins)
+ * at a Raft follower. Those plugins are much simpler than those executed at Raft leader because:
+ *  1. All prechecks and validations are not neeed at the follower (have done at raft leader).
+ *  2. All derived attributes (through plugin at Raft leader) are included in the Raft log,
+ *     and have applied to the entry structure before posted to the backend.
+ * However some functions in pre-plugin are still needed, such as Attribute Reindexing Schedule,
+ * Rollback schema unique scope if the existing entries have violated the uniqueness.
+ *
+ * Fixme: Any other post plugin functions need to be included?
+ */
+DWORD
+VmDirReplSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
 
+    if (!pOperation->dwSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibPrepareUpdateViaModify(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirReplSchemaEntryPostAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    if (!pOperation->dwSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibUpdate(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirPluginIndexEntryPostAdd(pOperation, pEntry, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirReplSchemaEntryPreMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    if (!pOperation->dwSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibPrepareUpdateViaModify(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirPluginIndexEntryPreModify(pOperation, pEntry, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirReplSchemaEntryPostMoidify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    if (!pOperation->dwSchemaWriteOp)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirSchemaLibUpdate(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirPluginVerifyAclAccess(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    )
+{
+    DWORD               dwError = 0;
+    PVDIR_MODIFICATION  pModReq  = pOperation->request.modifyReq.mods;
+    PVDIR_MODIFICATION  pMod = NULL;
+    PVDIR_ENTRY         pCurrentEntry = NULL;
+
+    for (pMod = pModReq; pMod != NULL; pMod = pMod->next)
+    {
+        if (pMod->attr.type.lberbv.bv_val == NULL)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        //
+        // In general a caller can modify an entry if they have
+        // VMDIR_RIGHT_DS_WRITEPROP access. However, the entry's security
+        // descriptor is special-cased and requires a separate permission
+        // (VMDIR_ENTRY_WRITE_ACL). This is the same behavior as AD.
+        //
+        if (VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_ACL_STRING, FALSE) == 0 ||
+            VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+        {
+            dwError = VmDirSimpleDNToEntry(pOperation->request.modifyReq.dn.lberbv_val, &pCurrentEntry);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirSrvAccessCheck(pOperation, &pOperation->conn->AccessInfo, pCurrentEntry, VMDIR_ENTRY_WRITE_ACL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    VmDirFreeEntry(pCurrentEntry);
+    return dwPriorResult ? dwPriorResult : dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirPluginVerifyAclAccess failed with error %d", dwError);
+    goto cleanup;
+}

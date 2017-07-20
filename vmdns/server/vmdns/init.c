@@ -48,10 +48,13 @@ VmDnsInit()
     dwError = VmDnsSrvInitialize(TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmwSockInitialize();
+    dwError = VmDnsSockInitialize();
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsRpcServerInit();
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsRESTServerInit();
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsConfigGetDword(VMDNS_KEY_VALUE_ENABLE_PROTOCOL, &dwEnableDNS);

@@ -98,6 +98,13 @@ VmDirInternalDeleteEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode" );
     }
 
+    // make sure we have minimum DN length
+    if (delReq->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", delReq->dn.lberbv_len);
+    }
+
     // Normalize DN
     retVal = VmDirNormalizeDN( &(delReq->dn), pOperation->pSchemaCtx );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
@@ -230,15 +237,15 @@ txnretry:
             retVal = VmDirSrvAccessCheck(
                         pOperation,
                         &pOperation->conn->AccessInfo,
-                        pEntry,
+                        pEntry->pParentEntry,
                         VMDIR_RIGHT_DS_DELETE_CHILD);
         }
         BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal,
-            pszLocalErrMsg,
-            "VmDirSrvAccessCheck failed - (%u)(%s)",
-            retVal,
-            VMDIR_ACCESS_DENIED_ERROR_MSG);
+                retVal,
+                pszLocalErrMsg,
+                "VmDirSrvAccessCheck failed - (%u)(%s)",
+                retVal,
+                VMDIR_ACCESS_DENIED_ERROR_MSG);
 
         // age off tombstone entry?
         if  (pEntry->pParentEntry &&
@@ -517,17 +524,19 @@ GenerateDeleteAttrsMods(
     VDIR_BERVALUE       deletedObjDN = VDIR_BERVALUE_INIT;
     ModifyReq *         modReq = &(pOperation->request.modifyReq);
 
-    for ( attr = pEntry->attrs; attr != NULL; attr = attr->next )
+    for (attr = pEntry->attrs; attr != NULL; attr = attr->next)
     {
         // Retain the following kind of attributes
         if (attr->pATDesc->usage != VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE ||
-            VmDirStringCompareA( attr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE ) == 0 ||
-            VmDirStringCompareA( attr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE ) == 0)
+            VmDirStringCompareA(attr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE ) == 0 ||
+            VmDirStringCompareA(attr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE ) == 0)
         {
             continue;
         }
-        retVal = VmDirAllocateMemory( sizeof( VDIR_MODIFICATION ), (PVOID *)&(delMod) );
-        BAIL_ON_VMDIR_ERROR( retVal );
+
+        retVal = VmDirAllocateMemory(
+                sizeof(VDIR_MODIFICATION), (PVOID*)&delMod);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         delMod->operation = MOD_OP_DELETE;
 
@@ -544,23 +553,31 @@ GenerateDeleteAttrsMods(
 
     // Add mod to set new DN.
     objectGuidAttr = VmDirEntryFindAttribute(ATTR_OBJECT_GUID, pEntry);
-    assert( objectGuidAttr );
+    assert(objectGuidAttr);
 
-    retVal = constructDeletedObjDN( &pOperation->request.deleteReq.dn, objectGuidAttr->vals[0].lberbv.bv_val, &deletedObjDN );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = constructDeletedObjDN(
+            &pOperation->request.deleteReq.dn,
+            objectGuidAttr->vals[0].lberbv.bv_val,
+            &deletedObjDN);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirAppendAMod( pOperation, MOD_OP_REPLACE, ATTR_DN, ATTR_DN_LEN,
-                               deletedObjDN.lberbv.bv_val, deletedObjDN.lberbv.bv_len );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirAppendAMod(
+            pOperation,
+            MOD_OP_REPLACE,
+            ATTR_DN,
+            ATTR_DN_LEN,
+            deletedObjDN.lberbv.bv_val,
+            deletedObjDN.lberbv.bv_len);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-    VmDirFreeMemory( deletedObjDN.lberbv.bv_val );
-
+    VmDirFreeMemory(deletedObjDN.lberbv.bv_val);
     return retVal;
 
 error:
     goto cleanup;
 }
+
 static
 BOOLEAN
 _VmDirIsDeletedContainer(

@@ -2,6 +2,11 @@
 noinst_LTLIBRARIES = librest-head.la
 
 librest_head_la_SOURCES = \
+    libmain.c
+
+if REST_ENABLED
+
+librest_head_la_SOURCES += \
     accesstoken.c \
     auth.c \
     decode.c \
@@ -9,11 +14,15 @@ librest_head_la_SOURCES = \
     globals.c \
     httperror.c \
     ldapapi.c \
-    libmain.c \
+    ldapcontrol.c \
+    objectapi.c \
     operation.c \
     param.c \
     resource.c \
-    result.c
+    result.c \
+    vmafd.c
+
+endif
 
 librest_head_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -24,10 +33,9 @@ librest_head_la_CPPFLAGS = \
     -I$(top_srcdir)/server/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
-    @TRIDENT_INCLUDES@ \
     @JANSSON_INCLUDES@ \
     @COPENAPI_INCLUDES@ \
-    @SSOCOMMON_INCLUDES@ \
+    @CRESTENGINE_INCLUDES@ \
     @OIDC_INCLUDES@
 
 librest_head_la_LDFLAGS = \

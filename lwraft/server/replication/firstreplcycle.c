@@ -443,7 +443,6 @@ _VmDirSwapDB(
     char                    dbNewName[VMDIR_MAX_FILE_NAME_LEN] = {0};
     PSTR                    pszLocalErrorMsg = NULL;
     int                     errorCode = 0;
-    BOOLEAN                 bLegacyDataLoaded = FALSE;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
@@ -530,7 +529,7 @@ _VmDirSwapDB(
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);
 
-    retVal = VmDirInitBackend(&bLegacyDataLoaded);
+    retVal = VmDirInitBackend();
     BAIL_ON_VMDIR_ERROR(retVal);
 
     VmDirdStateSet(VMDIRD_STATE_NORMAL);

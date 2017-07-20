@@ -19,7 +19,7 @@
     version(1.4),
     pointer_default(unique)
 #if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
-    , endpoint("ncalrpc:[LightwaveRaftService]") 
+    , endpoint("ncalrpc:[PostService]") 
 #endif // #ifdef _WIN32
 ]
 

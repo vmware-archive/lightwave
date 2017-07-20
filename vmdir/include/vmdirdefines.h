@@ -36,7 +36,6 @@ extern "C" {
 #define VMDIR_PCSTR_UNKNOWN "unknown"
 
 #ifdef _WIN32
-    #define HAVE_LMDB_H
     #define PCVOID const PVOID
     #define ssize_t SSIZE_T
 
@@ -732,7 +731,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_INITIALIZE_HOST      0
 #define VMDIR_IPC_INITIALIZE_TENANT    1
 #define VMDIR_IPC_FORCE_RESET_PASSWORD 2
-//#define VMDIR_IPC_GET_SRP_SECRET       3
+#define VMDIR_IPC_GET_SRP_SECRET       3
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
 #define VMDIR_IPC_GET_SERVER_STATE     6

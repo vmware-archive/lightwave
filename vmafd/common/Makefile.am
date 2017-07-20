@@ -29,6 +29,7 @@ libcommon_la_SOURCES = \
     utils.c
 
 libcommon_la_CPPFLAGS = \
+    -Wno-error=deprecated-declarations \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     @LW_INCLUDES@ \

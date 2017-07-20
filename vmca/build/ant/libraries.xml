@@ -5,18 +5,18 @@
    <!-- - - - - - Ant Task Libraries - - - - - -->
 
    <property name="libs.ant-contrib-home"
-             location="/var/opt/ant-contrib" />
+             location="${ant.home}" />
 
-   <fileset id="jar-set.jna" dir="${MAINSRCROOT}/build/depends">
+   <fileset id="jar-set.jna" dir="${build_dir}/depends">
         <include name="jna.jar"/>
         <include name="platform.jar"/>
    </fileset>
 
-   <fileset id="jar-set.commons-codec" dir="${MAINSRCROOT}/build/depends">
+   <fileset id="jar-set.commons-codec" dir="${build_dir}/depends">
         <include name="commons-codec-1.4.jar" />
    </fileset>
 
-   <fileset id="jar-set.junit" dir="${MAINSRCROOT}/build/depends">
+   <fileset id="jar-set.junit" dir="${build_dir}/depends">
       <include name="junit-4.4.jar" />
    </fileset>
 

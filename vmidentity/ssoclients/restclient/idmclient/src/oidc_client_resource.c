@@ -55,6 +55,7 @@ IdmOidcClientRegister(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToOidcClientData,
         (void**) &pOidcClientReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -117,6 +118,7 @@ IdmOidcClientGetAll(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToOidcClientArrayData,
         (void**) &pOidcClientArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -180,6 +182,7 @@ IdmOidcClientGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToOidcClientData,
         (void**) &pOidcClientReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -244,6 +247,7 @@ IdmOidcClientUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) IdmJsonToOidcClientData,
         (void**) &pOidcClientReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -305,6 +309,7 @@ IdmOidcClientDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

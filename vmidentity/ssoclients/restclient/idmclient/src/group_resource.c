@@ -67,6 +67,7 @@ IdmGroupGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToGroupData,
         (void**) &pGroupReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -148,6 +149,7 @@ IdmGroupGetMembers(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToSearchResultData,
         (void**) &pSearchResultReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -218,6 +220,7 @@ IdmGroupGetParents(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToGroupArrayData,
         (void**) &pGroupArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

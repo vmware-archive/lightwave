@@ -13,15 +13,17 @@ lwraftpromo_CPPFLAGS = \
 
 lwraftpromo_LDADD = \
     $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
+    @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \
     @PTHREAD_LIBS@

@@ -27,9 +27,10 @@ import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
-import com.vmware.identity.rest.idm.data.ResourceServerDTO;
+import com.vmware.identity.rest.idm.data.PrincipalDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
+import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
@@ -103,6 +104,14 @@ public class TestGenerator {
 
     public static UserDTO generateUser(String name, String domain, String description) {
         return UserGenerator.generateUser(name, domain, description);
+    }
+
+    public static PrincipalDTO generatePrincipal(String name, String domain) {
+        return new PrincipalDTO(name, domain);
+    }
+
+    public static com.vmware.directory.rest.common.data.UserDTO generateVmdirUser(String name, String domain, String description) {
+        return UserGenerator.generateVmdirUser(name, domain, description);
     }
 
     private static TenantCredentialsDTO generateTenantCredentials() throws GeneralSecurityException, IOException {

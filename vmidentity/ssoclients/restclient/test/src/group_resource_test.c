@@ -248,7 +248,7 @@ VmdirGroupAddMembersTest()
 
     PSTRING pMemberArray[] =
     {
-        "Administrator@test_tenant_name"
+        "Administrator@my-test-tenant.com"
     };
     VMDIR_STRING_ARRAY_DATA* pMembers = NULL;
 
@@ -313,7 +313,7 @@ VmdirGroupRemoveMembersTest()
 
     PSTRING pMemberArray[] =
     {
-        "Administrator@test_tenant_name"
+        "Administrator@my-test-tenant.com"
     };
     VMDIR_STRING_ARRAY_DATA* pMembers = NULL;
 

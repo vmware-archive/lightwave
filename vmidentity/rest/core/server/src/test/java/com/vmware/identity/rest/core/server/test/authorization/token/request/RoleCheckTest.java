@@ -62,30 +62,66 @@ public class RoleCheckTest {
         ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, null);
 
         request.validateRole(Role.ADMINISTRATOR);
+        request.validateRole(Role.CONFIGURATION_USER);
+        request.validateRole(Role.REGULAR_USER);
+    }
+
+    public void testRoleField_WrongRole() throws Exception {
+        SignedJWT jwt = new JWTBuilder(privateKey)
+            .subject("configuration_user")
+            .issuer("OAUTH")
+            .audience(Config.RESOURCE_SERVER_AUDIENCE)
+            .role(Role.CONFIGURATION_USER.getRoleName())
+            .build();
+
+        AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+
+        ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, null);
+
+        request.validateRole(Role.ADMINISTRATOR);
     }
 
     @Test
     public void testGroupsField() throws Exception {
-        try {
-            RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local");
+        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local");
 
-            List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.ADMINISTRATOR).getGroupNetbios() } );
+        List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.ADMINISTRATOR).getGroupNetbios() } );
 
-            SignedJWT jwt = new JWTBuilder(privateKey)
-                .subject("administrator")
-                .issuer("OAUTH")
-                .audience(Config.RESOURCE_SERVER_AUDIENCE)
-                .groups(groups)
-                .build();
+        SignedJWT jwt = new JWTBuilder(privateKey)
+            .subject("administrator")
+            .issuer("OAUTH")
+            .audience(Config.RESOURCE_SERVER_AUDIENCE)
+            .groups(groups)
+            .build();
 
-            AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+        AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
 
-            ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
+        ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
 
-            request.validateRole(Role.ADMINISTRATOR);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        request.validateRole(Role.ADMINISTRATOR);
+        request.validateRole(Role.CONFIGURATION_USER);
+        request.validateRole(Role.REGULAR_USER);
+        request.validateRole(Role.GUEST_USER);
+    }
+
+    @Test(expected = InsufficientRoleException.class)
+    public void testGroupsField_WrongRole() throws Exception {
+        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local");
+
+        List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.CONFIGURATION_USER).getGroupNetbios() } );
+
+        SignedJWT jwt = new JWTBuilder(privateKey)
+            .subject("administrator")
+            .issuer("OAUTH")
+            .audience(Config.RESOURCE_SERVER_AUDIENCE)
+            .groups(groups)
+            .build();
+
+        AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+
+        ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
+
+        request.validateRole(Role.ADMINISTRATOR);
     }
 
     @Test

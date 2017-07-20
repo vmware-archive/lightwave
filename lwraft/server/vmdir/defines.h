@@ -36,8 +36,8 @@
 
 
 #define VMDIR_MAX_CONFIG_VALUE_LENGTH   2048
-#define VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH "Services\\lwraft\\Parameters"
-#define VMDIR_CONFIG_CREDS_KEY_PATH     "Services\\lwraft\\Parameters\\Credentials"
+#define VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH "Services\\post\\Parameters"
+#define VMDIR_CONFIG_CREDS_KEY_PATH     "Services\\post\\Parameters\\Credentials"
 
 #define VMDIR_ADDR_INFO_NEXT( ifa ) ifa->ifa_next
 #define VMDIR_ADDR_INFO_FLAGS( ifa ) ifa->ifa_flags
@@ -157,47 +157,25 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAP_LISTEN_PORTS,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_PORT,          \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 99999,                            \
+        /*.dwDefault      = */ 38900,                            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_LISTEN_PORTS, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_PORT,         \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 99999,                            \
+        /*.dwDefault      = */ 63600,                            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAP_CONNECT_PORTS, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_CONNECT_PORTS,\
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -348,7 +326,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 200,                              \
         /*.dwMax          = */ 90000,                            \
-        /*.dwDefault      = */ 20000,                             \
+        /*.dwDefault      = */ 10000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -359,7 +337,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 100,                              \
         /*.dwMax          = */ 30000,                            \
-        /*.dwDefault      = */ 7000,                                \
+        /*.dwDefault      = */ 3000,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -370,7 +348,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 50,                               \
         /*.dwMax          = */ 10000,                            \
-        /*.dwDefault      = */ 100,                                \
+        /*.dwDefault      = */ 500,                              \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

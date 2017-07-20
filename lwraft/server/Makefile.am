@@ -7,11 +7,7 @@
 #         Sriram Nambakam (snambakam@vmware.com)
 #
 
-STOREDIRS =
-
-if HAVE_MDB_STORE
-    STOREDIRS += mdb-store
-endif
+STOREDIRS = mdb-store
 
 SUBDIRS = \
     kdcsrvcommon \
@@ -22,6 +18,7 @@ SUBDIRS = \
     $(STOREDIRS) \
     indexcfg \
     ldap-head \
+    rest-head \
     middle-layer \
     replication \
     saslvmdirdb \

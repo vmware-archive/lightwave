@@ -52,8 +52,11 @@ VmDirRESTAccessTokenParse(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwAFDError = 0;
+    DWORD   dwOIDCError = 0;
     PSTR    pszTokenType = NULL;
     PSTR    pszAccessToken = NULL;
+    PSTR    pszDCName = NULL;
     PSTR    pszDomainName = NULL;
     POIDC_SERVER_METADATA   pOidcMetadata = NULL;
     POIDC_ACCESS_TOKEN      pOidcAccessToken = NULL;
@@ -82,25 +85,31 @@ VmDirRESTAccessTokenParse(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirDomainDNToName(
-            BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN),
-            &pszDomainName);
+    dwAFDError = gpVdirVmAfdAPI->pfnGetDCName(NULL, &pszDCName);
+    dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = OidcServerMetadataAcquire(
+    dwAFDError = gpVdirVmAfdAPI->pfnGetDomainName(NULL, &pszDomainName);
+    dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwOIDCError = OidcServerMetadataAcquire(
             &pOidcMetadata,
-            VMDIR_REST_OIDC_SERVER,
+            pszDCName,
             VMDIR_REST_OIDC_PORT,
-            pszDomainName);
+            pszDomainName,
+            NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
+    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = OidcAccessTokenBuild(
+    dwOIDCError = OidcAccessTokenBuild(
             &pOidcAccessToken,
             pszAccessToken,
             OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
             NULL,
             VMDIR_REST_DEFAULT_SCOPE,
             VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
+    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(
@@ -109,6 +118,7 @@ VmDirRESTAccessTokenParse(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDCName);
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     OidcServerMetadataDelete(pOidcMetadata);
     OidcAccessTokenDelete(pOidcAccessToken);
@@ -116,7 +126,8 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+            "%s failed, error (%d) AFD error (%d) OIDC error (%d)",
+            __FUNCTION__, dwError, dwAFDError, dwOIDCError );
     goto cleanup;
 }
 

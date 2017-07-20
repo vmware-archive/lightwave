@@ -38,4 +38,9 @@ VmDirLdapGetMasterKey(
     DWORD* pLen
     );
 
+DWORD
+TestVmDirCondWriteControl(
+    PVMDIRCLIENT_TEST_CONTEXT    pCtx
+    );
+
 #endif

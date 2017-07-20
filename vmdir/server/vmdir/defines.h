@@ -119,6 +119,16 @@
 #define TOMBSTONE_REAPING_THROTTLE_SLEEP (1 * 1000)
 #define VDIR_REAP_EXPIRED_ENTRIES_BATCH 2000
 
+#define VDIR_INTEGRITY_CHECK_BATCH     1000
+
+#ifdef LIGHTWAVE_BUILD
+#define ACTIVE_LDAP_PORT_STR   DEFAULT_LDAP_PORT_STR "\000"
+#define ACTIVE_LDAPS_PORT_STR  DEFAULT_LDAPS_PORT_STR "\000"
+#else
+#define ACTIVE_LDAP_PORT_STR   DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000"
+#define ACTIVE_LDAPS_PORT_STR  DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000"
+#endif
+
 /*
  * Table to define and initialize VMDIR configuration data.
  *
@@ -165,7 +175,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAP_PORT_STR,             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -176,7 +186,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAPS_PORT_STR,            \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -187,7 +197,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAP_PORT_STR,             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -198,7 +208,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAPS_PORT_STR,            \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \

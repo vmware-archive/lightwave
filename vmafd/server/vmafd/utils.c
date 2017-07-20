@@ -17,6 +17,11 @@
 #include "includes.h"
 #include "cdcclient.h"
 
+#define PTR_NAME_SUFFIX_IP4 ".in-addr.arpa"
+#define PTR_NAME_SUFFIX_IP6 ".ip6.arpa"
+#define LOW_HEX(byte) ((byte) & 0xF)
+#define HIGH_HEX(byte) (((byte) & 0xF0) >> 4)
+
 VOID
 VmAfdSrvSetStatus(
     VMAFD_STATUS state
@@ -66,7 +71,7 @@ VmAfdGetMachineInfo(
     if (domainState == VMAFD_DOMAIN_STATE_NONE)
     {
         dwError = ERROR_NOT_JOINED;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     dwError = VmAfSrvGetMachineAccountInfo(
@@ -569,5 +574,99 @@ cleanup:
     return dwError;
 error:
 
+    goto cleanup;
+}
+
+DWORD
+VmAfdGeneratePtrNameFromIp(
+        PCSTR pszIPAddress,
+        PSTR* ppszPtrName
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwAddr = 0;
+    PSTR pszPtrName = NULL;
+    BYTE* pByte = NULL;
+    DWORD ret = 0;
+    int af = AF_INET;
+    unsigned char buf[sizeof(struct in6_addr)];
+
+    BAIL_ON_VMAFD_EMPTY_STRING(pszIPAddress, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(ppszPtrName, dwError);
+
+    if (VmAfdStringChrA(pszIPAddress, ':'))
+    {
+        af = AF_INET6;
+    }
+
+    ret = inet_pton(af, pszIPAddress, buf);
+    if (ret <= 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (af == AF_INET)
+    {
+        dwAddr = ((struct in_addr*)buf)->s_addr;
+
+        // See RFC 1035 for name format
+        // In short, record name is octets in reverse order appened with "in-addr.arpa".
+        // Example: 11.1.193.128.in-addr.arpa
+        dwError = VmAfdAllocateStringPrintf(
+                    &pszPtrName,
+                    "%d.%d.%d.%d%s.",
+                    (dwAddr & 0xFF000000) >> 24,
+                    (dwAddr & 0xFF0000) >> 16,
+                    (dwAddr & 0xFF00) >> 8,
+                    (dwAddr & 0xFF),
+                    PTR_NAME_SUFFIX_IP4
+                    );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+#ifdef _WIN32
+        pByte = ((struct in6_addr*)buf)->u.Byte;
+#else
+        pByte = ((struct in6_addr*)buf)->s6_addr;
+#endif
+        // See RFC 1886 for ipv6 ptr name format
+        // In short, record name is address presented in nibbles separated by dots,
+        // in reverse order appened with "ip6.arpa".
+        // Example: 4.1.2.2.0.3.e.f.f.f.6.5.0.5.2.0.7.9.0.0.8.1.1.0.0.1.0.0.0.0.c.f.ip6.arpa
+        dwError = VmAfdAllocateStringPrintf(
+                    &pszPtrName,
+                    "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x."
+                    "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x"
+                    "%s.",
+                    LOW_HEX(pByte[15]), HIGH_HEX(pByte[15]),
+                    LOW_HEX(pByte[14]), HIGH_HEX(pByte[14]),
+                    LOW_HEX(pByte[13]), HIGH_HEX(pByte[13]),
+                    LOW_HEX(pByte[12]), HIGH_HEX(pByte[12]),
+                    LOW_HEX(pByte[11]), HIGH_HEX(pByte[11]),
+                    LOW_HEX(pByte[10]), HIGH_HEX(pByte[10]),
+                    LOW_HEX(pByte[9]),  HIGH_HEX(pByte[9]),
+                    LOW_HEX(pByte[8]),  HIGH_HEX(pByte[8]),
+                    LOW_HEX(pByte[7]),  HIGH_HEX(pByte[7]),
+                    LOW_HEX(pByte[6]),  HIGH_HEX(pByte[6]),
+                    LOW_HEX(pByte[5]),  HIGH_HEX(pByte[5]),
+                    LOW_HEX(pByte[4]),  HIGH_HEX(pByte[4]),
+                    LOW_HEX(pByte[3]),  HIGH_HEX(pByte[3]),
+                    LOW_HEX(pByte[2]),  HIGH_HEX(pByte[2]),
+                    LOW_HEX(pByte[1]),  HIGH_HEX(pByte[1]),
+                    LOW_HEX(pByte[0]),  HIGH_HEX(pByte[0]),
+                    PTR_NAME_SUFFIX_IP6
+                    );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    *ppszPtrName = pszPtrName;
+
+cleanup:
+    return dwError;
+
+error:
+    VMAFD_SAFE_FREE_STRINGA(pszPtrName);
     goto cleanup;
 }

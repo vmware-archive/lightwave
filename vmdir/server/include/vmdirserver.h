@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-#define REPL_THREAD_SCHED_PRIORITY 10
+#define DEFAULT_THREAD_PRIORITY_DELTA 10
 
 /*
  * Plugin logic has four hook points per LDAP operation -
@@ -237,6 +237,37 @@ typedef struct _VMDIR_TRACK_LAST_LOGIN_TIME
 
 extern VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime;
 
+typedef struct _VMDIR_INTEGRITY_JOB *PVMDIR_INTEGRITY_JOB;
+
+typedef struct _VMDIR_INTEGRITY_CHECK_GLOBALS
+{
+    PVMDIR_MUTEX            pMutex;
+    PVMDIR_INTEGRITY_JOB    pJob;
+
+} VMDIR_INTEGRITY_CHECK_GLOBALS, *PVMDIR_INTEGRITY_CHECK_GLOBALS;
+
+extern VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck;
+
+typedef enum
+{
+    INTEGRITY_CHECK_JOB_NONE = 0,
+    INTEGRITY_CHECK_JOB_START,
+    INTEGRITY_CHECK_JOB_STOP,
+    INTEGRITY_CHECK_JOB_FINISH,
+    INTEGRITY_CHECK_JOB_RECHECK,
+    INTEGRITY_CHECK_JOB_INVALID,
+    INTEGRITY_CHECK_JOB_SHOW_SUMMARY
+} VMDIR_INTEGRITY_CHECK_JOB_STATE, *PVMDIR_INTEGRITY_CHECK_JOB_STATE;
+
+typedef enum
+{
+    INTEGRITY_CHECK_JOBCXT_NONE = 0,
+    INTEGRITY_CHECK_JOBCTX_VALID,
+    INTEGRITY_CHECK_JOBCTX_INVALID,
+    INTEGRITY_CHECK_JOBCTX_SKIP,
+    INTEGRITY_CHECK_JOBCTX_ABORT
+} VMDIR_INTEGRITY_CHECK_JOBCTX_STATE, *PVMDIR_INTEGRITY_CHECK_JOBCTX_STATE;
+
 // krb.c
 DWORD
 VmDirKrbRealmNameNormalize(
@@ -320,7 +351,12 @@ VmDirGetLdapsConnectPorts(
 DWORD
 VmDirGetAllLdapPortsCount(
     VOID
-);
+    );
+
+DWORD
+VmDirCheckPortAvailability(
+    DWORD   dwPort
+    );
 
 VOID
 VmDirdSetReplNow(
@@ -396,6 +432,28 @@ VmDirShutdown(
 VOID
 VmDirAddTrackLastLoginItem(
     PCSTR   pszDN
+    );
+
+// integritycheck.c
+DWORD
+VmDirEntrySHA1Digest(
+    PVDIR_ENTRY pEntry,
+    PSTR        pOutSH1DigestBuf
+    );
+
+DWORD
+VmDirIntegrityCheckStart(
+    VMDIR_INTEGRITY_CHECK_JOB_STATE jobState
+    );
+
+VOID
+VmDirIntegrityCheckStop(
+    VOID
+    );
+
+DWORD
+VmDirIntegrityCheckShowStatus(
+    PVDIR_ENTRY*    ppEntry
     );
 
 #ifdef __cplusplus

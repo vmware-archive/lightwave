@@ -8,7 +8,7 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client = %{_version}, vmware-afd-client = %{version}, vmware-dns-client = %{version}
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.112, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel = %{version}, apache-maven >= 3.3.9, boost = 1.60.0
+BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.131, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel = %{version}, apache-maven >= 3.3.9, boost = 1.60.0
 
 %define _dbdir %_localstatedir/lib/vmware/vmafd
 %define _vecsdir %{_dbdir}/vecs
@@ -42,6 +42,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %description
 VMware Authentication Framework
 
+%debug_package
+
 %package client
 Summary: VMware Authentication Framework Client
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client >= %{version}
@@ -67,17 +69,18 @@ cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
             --libdir=%{_lib64dir} \
-            --localstatedir=/var/lib/vmware/vmafd \
+            --localstatedir=/var/lib/vmware \
             --with-vmdir=%{_vmdir_prefix} \
             --with-vmdns=%{_vmdns_prefix} \
             --with-likewise=%{_likewise_open_prefix} \
             --with-ssl=/usr \
             --with-sqlite=/usr \
             --with-python=/usr \
-            --with-jdk=%{_javahome} \
+            --with-java=%{_javahome} \
             --with-ant=%{_anthome} \
             --with-maven=%{_mavendir} \
             --with-boost=/usr \
+            --enable-notify-vmdir-provider=yes \
             --enable-krb5-default=yes
 
 %install
@@ -242,7 +245,7 @@ cd build && make install DESTDIR=%{buildroot}
 %{_lib64dir}/libvmafdclient.so*
 %{_lib64dir}/libvmeventclient.so*
 
-%files client-python 
+%files client-python
 %defattr(-,root,root)
 %{_pymodulesdir}/vmafd.*
 %{_pymodulesdir}/*.py

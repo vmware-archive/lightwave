@@ -15,13 +15,15 @@ BuildRequires: openssl-devel >= 1.0.2
 %description
 C Client libraries to communicate with VMware Secure Token Service
 
+%debug_package
+
 %build
 
 cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
              --libdir=%{_lib64dir} \
-             --localstatedir=%{_dbdir} \
+             --localstatedir=%{_localstatedir}/lib/vmware \
              --with-afd=%{_prefix} \
              --with-likewise=%{_likewise_open_prefix} \
              --with-jansson=%{_janssondir} \
@@ -31,7 +33,6 @@ autoreconf -mif .. &&
              --with-commons-daemon=%{_commons_daemondir} \
              --with-ant=%{_antdir} \
              --with-tomcat=%{_tomcatdir} \
-             --with-jax-ws=%{_jaxwsdir} \
              --with-maven=%{_mavendir}
 
 cd ssoclients

@@ -444,9 +444,22 @@ VmDirLdapSchemaRemoveNoopData(
     PVDIR_LDAP_SCHEMA   pSchema
     );
 
+BOOLEAN
+VmDirLdapSchemaIsEmpty(
+    PVDIR_LDAP_SCHEMA   pSchema
+    );
+
 VOID
 VmDirFreeLdapSchema(
     PVDIR_LDAP_SCHEMA   pSchema
+    );
+
+// util.c
+DWORD
+VmDirLdapSearchSubSchemaSubEntry(
+    LDAP*           pLd,
+    LDAPMessage**   ppResult,
+    LDAPMessage**   ppEntry
     );
 
 // verify.c
@@ -465,87 +478,6 @@ DWORD
 VmDirLdapCrVerify(
     PVDIR_LDAP_SCHEMA       pSchema,
     PVDIR_LDAP_CONTENT_RULE pCRDesc
-    );
-
-//////////////////////////////////////
-// Legacy support structs/functions //
-//////////////////////////////////////
-
-typedef struct _VDIR_LEGACY_SCHEMA
-{
-    PLW_HASHMAP pAtDefStrMap;
-    PLW_HASHMAP pOcDefStrMap;
-    PLW_HASHMAP pCrDefStrMap;
-    PVDIR_LDAP_SCHEMA   pSchema;
-
-} VDIR_LEGACY_SCHEMA, *PVDIR_LEGACY_SCHEMA;
-
-typedef struct _VDIR_LEGACY_SCHEMA_MOD
-{
-    PVMDIR_STRING_LIST  pDelAt;
-    PVMDIR_STRING_LIST  pAddAt;
-    PVMDIR_STRING_LIST  pDelOc;
-    PVMDIR_STRING_LIST  pAddOc;
-    PVMDIR_STRING_LIST  pDelCr;
-    PVMDIR_STRING_LIST  pAddCr;
-
-} VDIR_LEGACY_SCHEMA_MOD, *PVDIR_LEGACY_SCHEMA_MOD;
-
-// legacy/legacyload.c
-DWORD
-VmDirLegacySchemaLoadRemoteSchema(
-    PVDIR_LEGACY_SCHEMA pLegacySchema,
-    LDAP*               pLd
-    );
-
-// legacy/legacypatch.c
-DWORD
-VmDirPatchRemoteSubSchemaSubEntry(
-    LDAP*               pLd,
-    PVDIR_LDAP_SCHEMA   pNewSchema
-    );
-
-// legacy/legacyschema.c
-DWORD
-VmDirLegacySchemaInit(
-    PVDIR_LEGACY_SCHEMA*    ppLegacySchema
-    );
-
-VOID
-VmDirFreeLegacySchema(
-    PVDIR_LEGACY_SCHEMA pLegacySchema
-    );
-
-// legacy/legacyschemamod.c
-DWORD
-VmDirLegacySchemaModInit(
-    PVDIR_LEGACY_SCHEMA_MOD*    ppLegacySchemaMod
-    );
-
-DWORD
-VmDirLegacySchemaModPopulate(
-    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod,
-    PVDIR_LEGACY_SCHEMA     pLegacySchema,
-    PVDIR_LDAP_SCHEMA       pNewSchema
-    );
-
-VOID
-VmDirFreeLegacySchemaMod(
-    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod
-    );
-
-// legacy/legacyutil.c
-DWORD
-VmDirLdapSearchSubSchemaSubEntry(
-    LDAP*           pLd,
-    LDAPMessage**   ppResult,
-    LDAPMessage**   ppEntry
-    );
-
-DWORD
-VmDirFixLegacySchemaDefSyntaxErr(
-    PSTR    pszDef,
-    PSTR*   ppszFixedDef
     );
 
 #ifdef __cplusplus

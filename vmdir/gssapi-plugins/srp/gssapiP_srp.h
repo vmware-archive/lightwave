@@ -160,6 +160,7 @@ typedef struct {
         unsigned char     *srp_session_key;
         int               srp_session_key_len;
         void              *hServer;
+        int               bUseCSRP;      /* Call CSRP library directly */
 } srp_gss_ctx_id_rec, *srp_gss_ctx_id_t;
 
 

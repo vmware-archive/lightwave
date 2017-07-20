@@ -284,7 +284,7 @@ _VmDirBuildEIDAttribute(
     dwError = VmDirAttributeAllocate( ATTR_EID_SEQUENCE_NUMBER, 1, pOperation->pSchemaCtx, &pEIDAttr );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf( &pszLocalEID,  "%u",  pEntry->eId);
+    dwError = VmDirAllocateStringPrintf( &pszLocalEID,  "%llu",  pEntry->eId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pEIDAttr->vals[0].lberbv_val = pszLocalEID;

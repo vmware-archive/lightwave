@@ -15,11 +15,11 @@ libcfgutils_la_SOURCES = \
 
 libcfgutils_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
-    @LW_INCLUDES@ \
     @VMCA_INCLUDES@ \
     @VMAFD_INCLUDES@ \
     @VMDIR_INCLUDES@ \
-    @VMDNS_INCLUDES@
+    @VMDNS_INCLUDES@ \
+    @LW_INCLUDES@
 
 libcfgutils_la_LIBADD = \
     @VMDNS_LIBS@ \
@@ -27,7 +27,13 @@ libcfgutils_la_LIBADD = \
     @VMAFD_LIBS@ \
     @VMDIR_LIBS@ \
     @LWSM_LIBS@ \
+    @LWADVAPI_LIBS@ \
     @DCERPC_LIBS@ \
+    @LWIO_LIBS@ \
+    @SCHANNEL_LIBS@ \
+    @LWMSG_LIBS@ \
+    @LWREG_LIBS@ \
+    @LWBASE_LIBS@ \
     @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @CRYPTO_LIBS@

@@ -21,6 +21,7 @@
   <?define CertStore_desc="Manage certificate store, private keys and secret keys." ?>
   <?define DirSchema_desc="Manage directory schema, federation and compare replication metadata." ?>
   <?define Dir_desc=" Directory objects search and management." ?>
+  <?define LWRaft_desc=" Lightwave RAFT Browser" ?>
   <?define DNS_desc="Administer zones, DNS records and configure forwarders." ?>
   <?define PSCHA_desc="Manage site affinity for management node, monitor health of infrastructure node, global view of HA topology etc." ?>
   <?define ResourcesForOtherProject="../VMIdentityTools_Installer/resources" ?>

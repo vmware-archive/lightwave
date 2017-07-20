@@ -2877,82 +2877,86 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
                        // Search from Users by default
                        String solutionSearchBaseDn = val.toString();
-                       if (solutionSearchBaseDn.startsWith(ATTR_NAME_EXTERNAL_OBJECT_ID)) {
-                           // skip external group members
-                           continue;
-                       }
-                       solutionMessage =
-                               connection.search(solutionSearchBaseDn,
-                                       LdapScope.SCOPE_BASE, solutionFilter,
-                                       solutionAttrNames, false);
+                       try {
+                           solutionMessage =
+                                   connection.search(solutionSearchBaseDn,
+                                           LdapScope.SCOPE_BASE, solutionFilter,
+                                           solutionAttrNames, false);
 
-                       ILdapEntry[] solutionEntries = solutionMessage.getEntries();
+                           ILdapEntry[] solutionEntries = solutionMessage.getEntries();
 
-                       if (solutionEntries == null || solutionEntries.length == 0)
-                       {
-                           // This isn't a solution user
-                           continue;
-                       } else if (solutionEntries.length != 1)
-                       {
-                           throw new IllegalStateException(
-                                   "More than one solution user found");
-                       }
-
-                       boolean isExternal = true;
-                       // check whether this member solution user lives in ldu, only then it is internal
-                       if (servicePrincipalsDN != null && !servicePrincipalsDN.isEmpty() &&
-                           solutionSearchBaseDn.toLowerCase().contains(servicePrincipalsDN.toLowerCase()))
-                       {
-                           isExternal= false;
-                       }
-
-                       String accountName =
-                               getStringValue(solutionEntries[0]
-                                       .getAttributeValues(ATTR_NAME_ACCOUNT));
-
-                       String upn =
-                               getOptionalStringValue(solutionEntries[0]
-                                       .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
-
-                       String description =
-                               getOptionalStringValue(solutionEntries[0]
-                                       .getAttributeValues(ATTR_SVC_DESCRIPTION));
-
-                       if (containsSearchString(accountName, searchString) ||
-                           containsSearchString(upn, searchString) ||
-                           containsSearchString(description, searchString))
-                       {
-                           PrincipalId principal = null;
-
-                           principal =
-                                   this.getPrincipalId(upn, accountName, domainName);
-
-                           LdapValue[] certValue =
-                                   solutionEntries[0]
-                                           .getAttributeValues(ATTR_NAME_CERT);
-
-                           if (certValue == null || certValue[0] == null)
+                           if (solutionEntries == null || solutionEntries.length == 0)
+                           {
+                               // This isn't a solution user
+                               continue;
+                           } else if (solutionEntries.length != 1)
                            {
                                throw new IllegalStateException(
-                                           "Certificate content should exist.");
+                                       "More than one solution user found");
                            }
 
-                           X509Certificate cert = ServerUtils.getCertificateValue(certValue);
+                           boolean isExternal = true;
+                           // check whether this member solution user lives in ldu, only then it is internal
+                           if (servicePrincipalsDN != null && !servicePrincipalsDN.isEmpty() &&
+                               solutionSearchBaseDn.toLowerCase().contains(servicePrincipalsDN.toLowerCase()))
+                           {
+                               isExternal= false;
+                           }
 
-                           SolutionDetail detail = new SolutionDetail(cert, description);
+                           String accountName =
+                                   getStringValue(solutionEntries[0]
+                                           .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                           int flag = getOptionalIntegerValue(
-                                               entries[0].getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS),
-                                               0);
+                           String upn =
+                                   getOptionalStringValue(solutionEntries[0]
+                                           .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
 
-                           boolean disabled =
-                                       ((flag & USER_ACCT_DISABLED_FLAG) != 0);
+                           String description =
+                                   getOptionalStringValue(solutionEntries[0]
+                                           .getAttributeValues(ATTR_SVC_DESCRIPTION));
 
-                           SolutionUser solution =
-                                       new SolutionUser(principal, this.getPrincipalAliasId(accountName), null,
-                                               detail, disabled, isExternal);
+                           if (containsSearchString(accountName, searchString) ||
+                               containsSearchString(upn, searchString) ||
+                               containsSearchString(description, searchString))
+                           {
+                               PrincipalId principal = null;
 
-                           solutions.add(solution);
+                               principal = this.getPrincipalId(upn, accountName, domainName);
+
+                               LdapValue[] certValue =
+                                       solutionEntries[0]
+                                               .getAttributeValues(ATTR_NAME_CERT);
+
+                               if (certValue == null || certValue[0] == null)
+                               {
+                                   throw new IllegalStateException(
+                                               "Certificate content should exist.");
+                               }
+
+                               X509Certificate cert = ServerUtils.getCertificateValue(certValue);
+
+                               SolutionDetail detail = new SolutionDetail(cert, description);
+
+                               int flag = getOptionalIntegerValue(
+                                                   entries[0].getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS),
+                                                   0);
+
+                               boolean disabled = ((flag & USER_ACCT_DISABLED_FLAG) != 0);
+
+                               SolutionUser solution =
+                                           new SolutionUser(principal, this.getPrincipalAliasId(accountName), null,
+                                                   detail, disabled, isExternal);
+
+                               solutions.add(solution);
+                           }
+                       } catch (com.vmware.identity.interop.ldap.NoSuchObjectLdapException ne) {
+                           logger.warn(String.format("Group member with attribute [%s] does not exist.", solutionSearchBaseDn), ne);
+                           continue; // skip deleted or external members
+                       } finally {
+                           if (null != solutionMessage)
+                           {
+                               solutionMessage.close();
+                           }
                        }
                    }
                 }
@@ -2962,11 +2966,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             if (null != message)
             {
                 message.close();
-            }
-
-            if (null != solutionMessage)
-            {
-                solutionMessage.close();
             }
         }
 

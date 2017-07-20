@@ -211,6 +211,12 @@ VmDirSetupTenantInstance(
     );
 
 DWORD
+VmDirRaftLeader(
+    PCSTR   pszServerName,
+    PSTR*   ppszLeader
+    );
+
+DWORD
 VmDirGetDomainDN(
     PCSTR pszHostName,
     PSTR* ppszDomainDN
@@ -268,6 +274,13 @@ VmDirGetKrbUPNKey(
     PBYTE*      ppKeyBlob,
     DWORD*      pSize
     );
+
+DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
 
 DWORD
 VmDirSetSRPSecret(
@@ -734,6 +747,40 @@ DWORD
 VmDirSetMode(
     PVMDIR_SERVER_CONTEXT hInBinding,
     UINT32                dwMode);
+
+DWORD
+VmDirRaftListCluster(
+    PCSTR                   pszServerName,
+    PVMDIR_RAFT_CLUSTER*    ppRaftCluster
+    );
+
+DWORD
+VmDirRaftShowClusterState(
+    PCSTR                   pszServerName,
+    PCSTR                   pszDomainName,
+    PCSTR                   pszUserName,
+    PCSTR                   pszPassword,
+    PVMDIR_RAFT_CLUSTER*    ppRaftCluster
+    );
+
+DWORD
+VmDirRaftLeaveCluster(
+    PCSTR                   pszServerName,
+    PCSTR                   pszDomainName,
+    PCSTR                   pszUserName,
+    PCSTR                   pszPassword,
+    PCSTR                   pszLeaveNode
+    );
+
+VOID
+VmDirFreeRaftNode(
+    PVMDIR_RAFT_NODE        pRaftNode
+    );
+
+VOID
+VmDirFreeRaftCluster(
+    PVMDIR_RAFT_CLUSTER     pRaftCluster
+    );
 
 #ifdef __cplusplus
 }

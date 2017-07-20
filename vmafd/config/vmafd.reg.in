@@ -75,4 +75,7 @@
     default = dword:0000000A
     doc     = "Set the heartbeat interval frequency"
 }
-
+"CAPath" = {
+    default = "/etc/ssl/certs"
+    doc     = "CA Certs Path"
+}

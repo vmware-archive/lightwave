@@ -145,7 +145,7 @@ VmDirSASLInit(
                     _VmDirSASLMutexUnlock,
                     _VmDirSASLMutexDispose);
 
-    dwError = sasl_server_init( saslServerCB, "lwraftd");
+    dwError = sasl_server_init( saslServerCB, "postd");
     BAIL_ON_SASL_ERROR(dwError);
 
 cleanup:
@@ -464,7 +464,7 @@ _VmDirSASLGetCtxProps(
     }
 
     VMDIR_SAFE_FREE_MEMORY( pSaslBindInfo->pszBindUserName );
-    dwError = VmDirAllocateStringAVsnprintf(    &pSaslBindInfo->pszBindUserName,
+    dwError = VmDirAllocateStringPrintf(    &pSaslBindInfo->pszBindUserName,
                                                 "%s%s%s",
                                                 VDIR_SAFE_STRING(pszBindUPN),
                                                 pszBindRealm ? "@" : "",
@@ -708,11 +708,11 @@ VmDirSASL2PATH(
                                     MAX_PATH );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszLocalPath, "%s;%s\\sasl2",
+    dwError = VmDirAllocateStringPrintf( &pszLocalPath, "%s;%s\\sasl2",
                                              sasl2SearchPathBuf,
                                              vmdirInstallPathBuf);
 #else
-    dwError = VmDirAllocateStringAVsnprintf( &pszLocalPath, "%s:%s/sasl2",
+    dwError = VmDirAllocateStringPrintf( &pszLocalPath, "%s:%s/sasl2",
                                              VMDIR_CONFIG_SASL2_LIB_PATH,
                                              LWRAFT_LIB_DIR);
 #endif

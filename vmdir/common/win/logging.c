@@ -264,7 +264,7 @@ VmDirLogInternalInitialize(
             BAIL_ON_VMDIR_LOG_ERROR(dwError);
 
             dwError = VmDirCreateThread(_gpVmDirLogCtx->pThread,
-                            FALSE,
+                            TRUE,
                             _VmDirLogThread,
                             NULL);
             BAIL_ON_VMDIR_LOG_ERROR(dwError);

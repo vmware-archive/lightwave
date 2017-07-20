@@ -13,3 +13,5 @@
  */
 
 extern PVMW_DNS_DRIVER_GLOBALS gpSrvContext;
+
+extern VMDNS_OP_STATISTIC_GLOBALS gVmdnsOPStatisticGlobals;

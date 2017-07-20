@@ -327,7 +327,8 @@ public class VMIdentityController {
             }
             finally
             {
-                connection.close();
+                if(connection != null)
+                   connection.close();
             }
         } catch(Exception ex){
             throw new ServiceCheckException("Failed to check directory service. Cannot configure IDM or STS.", ex);

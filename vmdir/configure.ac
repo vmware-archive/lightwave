@@ -108,6 +108,25 @@ then
 AC_DEFINE_UNQUOTED(SEAACL_CHECK_DISABLED, "1", [ Disable ACL checks on search ])
 fi
 
+# rest head flag
+
+REST_ENABLED=true
+AC_ARG_ENABLE([rest],
+    [AC_HELP_STRING([--enable-rest], [enable rest heads (default: enabled)])],
+    [
+        if test x"$enableval" = x"no"
+        then
+            REST_ENABLED=false
+        fi
+    ])
+
+if $REST_ENABLED
+then
+AC_DEFINE_UNQUOTED(REST_ENABLED, 1, [ Enable rest heads ])
+fi
+
+AM_CONDITIONAL(REST_ENABLED, [$REST_ENABLED])
+
 # datastore flag
 
 AC_ARG_WITH([datastore],
@@ -115,6 +134,8 @@ AC_ARG_WITH([datastore],
     [
         VMDIRD_DATASTORE="$withval"
     ])
+
+# lightwave build flag
 
 ENABLE_LIGHTWAVE_BUILD=no
 AC_ARG_ENABLE([lightwave-build],
@@ -125,7 +146,6 @@ AC_ARG_ENABLE([lightwave-build],
             AC_DEFINE_UNQUOTED(LIGHTWAVE_BUILD, 1, [ enable lightwave specific build ])
         fi
     ])
-
 
 # client only build
 
@@ -162,14 +182,14 @@ AC_ARG_WITH([ssl],
     [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
     [
         OPENSSL_BASE_PATH="$withval"
-        OPENSSL_INCLUDES="-I$withval/include"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval/include"
         OPENSSL_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$OPEN_SSL_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([ssl-includes],
     [AC_HELP_STRING([--with-ssl-includes=<dir>], [use SSL headers located in prefix <dir> ])],
     [
-        OPENSSL_INCLUDES="-I$withval"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval"
     ])
 
 AC_ARG_WITH([ssl-libs],
@@ -263,10 +283,10 @@ AC_ARG_WITH([sasl-includes],
         SASL_INCLUDES="-I$withval"
     ])
 
-AC_ARG_WITH([sasl-libs],
+AC_ARG_WITH([],
     [AC_HELP_STRING([--with-sasl-libs=<dir>], [use SASL libraries located in prefix <dir> ])],
     [
-        SASL_LIBPATH="$withval/lib64"
+        SASL_LIBPATH="$withval"
         SASL_LDFLAGS="-L$withval"
     ])
 
@@ -282,22 +302,6 @@ AC_SUBST(SASL_LDFLAGS)
 
 AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_PLUGINSPATH", [SASL2 Library path])
 
-# Trident
-
-AC_ARG_WITH([trident],
-    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
-    [
-        TRIDENT_BASE_PATH="$withval"
-        TRIDENT_INCLUDES="-I$withval/include"
-        TRIDENT_LDFLAGS="-L$withval/lib64"
-    ])
-
-TRIDENT_LIBS="-lrestengine"
-AC_CHECK_HEADERS(vmrest.h)
-AC_SUBST(TRIDENT_BASE_PATH)
-AC_SUBST(TRIDENT_INCLUDES)
-AC_SUBST(TRIDENT_LDFLAGS)
-
 # Jansson
 
 AC_ARG_WITH([jansson],
@@ -308,7 +312,6 @@ AC_ARG_WITH([jansson],
         JANSSON_LDFLAGS="-L$withval/lib"
     ])
 
-JANSSON_LIBS="-ljansson"
 AC_CHECK_HEADERS(jansson.h)
 AC_SUBST(JANSSON_BASE_PATH)
 AC_SUBST(JANSSON_INCLUDES)
@@ -324,26 +327,27 @@ AC_ARG_WITH([copenapi],
         COPENAPI_LDFLAGS="-L$withval/lib"
     ])
 
-COPENAPI_LIBS="-lcopenapi"
 AC_CHECK_HEADERS(copenapi/copenapi.h)
 AC_SUBST(COPENAPI_BASE_PATH)
 AC_SUBST(COPENAPI_INCLUDES)
 AC_SUBST(COPENAPI_LDFLAGS)
 
-# OIDC
+# C rest engine
 
-AC_ARG_WITH([ssocommon],
-    [AC_HELP_STRING([--with-ssocommon=<dir>], [use ssocommon binaries rooted at prefix <dir> ])],
+AC_ARG_WITH([c-rest-engine],
+    [AC_HELP_STRING([--with-c-rest-engine=<dir>], [use c-rest-engine server binaries rooted at prefix <dir> ])],
     [
-        SSOCOMMON_BASE_PATH="$withval"
-        SSOCOMMON_INCLUDES="-I$withval/include"
-        SSOCOMMON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+        CRESTENGINE_BASE_PATH="$withval"
+        CRESTENGINE_INCLUDES="-I$withval/include"
+        CRESTENGINE_LDFLAGS="-L$withval/lib"
     ])
 
-SSOCOMMON_LIBS="-lssocommon"
-AC_SUBST(SSOCOMMON_BASE_PATH)
-AC_SUBST(SSOCOMMON_INCLUDES)
-AC_SUBST(SSOCOMMON_LDFLAGS)
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(CRESTENGINE_BASE_PATH)
+AC_SUBST(CRESTENGINE_INCLUDES)
+AC_SUBST(CRESTENGINE_LDFLAGS)
+
+# OIDC
 
 AC_ARG_WITH([oidc],
     [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
@@ -353,7 +357,6 @@ AC_ARG_WITH([oidc],
         OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
     ])
 
-OIDC_LIBS="-lssooidc"
 AC_CHECK_HEADERS(oidc.h)
 AC_CHECK_HEADERS(oidc_types.h)
 AC_CHECK_HEADERS(common_types.h)
@@ -548,6 +551,30 @@ AC_CHECK_LIB(
     [$DCERPC_LDFLAGS $OPENSSL_LDFLAGS $GSSAPI_LIBS $SCHANNEL_LIBS $CRYPTO_LIBS $LWIO_LIBS
      $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS
     ])
+AC_CHECK_LIB(
+    [jansson],
+    [json_object],
+    [JANSSON_LIBS="-ljansson"],
+    [],
+    [$JANSSON_LDFLAGS])
+AC_CHECK_LIB(
+    [copenapi],
+    [coapi_load_from_file],
+    [COPENAPI_LIBS="-lcopenapi"]
+    [],
+    [$COPENAPI_LDFLAGS])
+AC_CHECK_LIB(
+    [restengine],
+    [VmRESTInit],
+    [CRESTENGINE_LIBS="-lrestengine"],
+    [],
+    [$CRESTENGINE_LDFLAGS])
+AC_CHECK_LIB(
+    [ssooidc],
+    [OidcAccessTokenBuild],
+    [OIDC_LIBS="-lssocommon -lssooidc"],
+    [],
+    [$OIDC_LDFLAGS])
 
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 
@@ -578,9 +605,9 @@ AC_SUBST(LBER_LIBS)
 AC_SUBST(SHADOW_LIBS)
 AC_SUBST(CRYPT_LIBS)
 AC_SUBST(SASL_LIBS)
-AC_SUBST(TRIDENT_LIBS)
 AC_SUBST(JANSSON_LIBS)
 AC_SUBST(COPENAPI_LIBS)
+AC_SUBST(CRESTENGINE_LIBS)
 AC_SUBST(SSOCOMMON_LIBS)
 AC_SUBST(OIDC_LIBS)
 
@@ -589,7 +616,7 @@ AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 if test x"$localstatedir" = x"/var"; then
     vmdirdbdir="$localstatedir/lib/vmware/vmdir"
 else
-    vmdirdbdir="$localstatedir"
+    vmdirdbdir="$localstatedir/vmdir"
 fi
 AC_SUBST(vmdirdbdir)
 AS_AC_EXPAND(VMDIR_DB_DIR, $vmdirdbdir)
@@ -660,6 +687,7 @@ AC_CONFIG_FILES([Makefile
                  server/schema/Makefile
                  server/acl/Makefile
                  server/ldap-head/Makefile
+                 server/rest-head/Makefile
                  server/replication/Makefile
                  server/saslvmdirdb/Makefile
                  server/vmdir/Makefile
@@ -694,11 +722,6 @@ AC_CONFIG_FILES([Makefile
                  tools/vdcmetric/Makefile
                  tools/vdcschema/Makefile
                  tools/test/Makefile
-                 tools/test/circularbuffer/Makefile
-                 tools/test/dequetest/Makefile
-                 tools/test/parseargs/Makefile
-                 tools/test/registry/Makefile
-                 tools/test/string/Makefile
                  tools/test/vmdirclienttest/Makefile
                  thirdparty/Makefile
                  thirdparty/openldap/Makefile

@@ -49,13 +49,25 @@ VmDirRESTAuthToken(
 
 // decode.c
 DWORD
+VmDirRESTDecodeAttributeNoAlloc(
+    json_t*         pjInput,
+    PVDIR_ATTRIBUTE pAttr
+    );
+
+DWORD
+VmDirRESTDecodeAttribute(
+    json_t*             pjInput,
+    PVDIR_ATTRIBUTE*    ppAttr
+    );
+
+DWORD
 VmDirRESTDecodeEntry(
     json_t*         pjInput,
     PVDIR_ENTRY*    ppEntry
     );
 
 DWORD
-VmDirRESTDecodeMods(
+VmDirRESTDecodeEntryMods(
     json_t*             pjInput,
     PVDIR_MODIFICATION* ppMods,
     DWORD*              pdwNumMods
@@ -136,9 +148,22 @@ VmDirRESTLdapGetHttpError(
 // libmain.c
 DWORD
 VmDirRESTRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
+    );
+
+// metricsapi.c
+DWORD
+VmDirRESTGetMetricsModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTMetricsGet(
+    void*   pIn,
+    void**  ppOut
     );
 
 // operation.c
@@ -150,6 +175,7 @@ VmDirRESTOperationCreate(
 DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
     );
@@ -157,6 +183,7 @@ VmDirRESTOperationReadRequest(
 DWORD
 VmDirRESTOperationWriteResponse(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_RESPONSE*         ppResponse
     );
 
@@ -169,7 +196,7 @@ VmDirFreeRESTOperation(
 DWORD
 VmDirRESTGetStrParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     PSTR*                   ppszVal,
     BOOLEAN                 bRequired
     );
@@ -177,15 +204,23 @@ VmDirRESTGetStrParam(
 DWORD
 VmDirRESTGetIntParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     int*                    piVal,
+    BOOLEAN                 bRequired
+    );
+
+DWORD
+VmDirRESTGetBoolParam(
+    PVDIR_REST_OPERATION    pRestOp,
+    PCSTR                   pszKey,
+    BOOLEAN*                pbVal,
     BOOLEAN                 bRequired
     );
 
 DWORD
 VmDirRESTGetStrListParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     PVMDIR_STRING_LIST*     ppValList,
     BOOLEAN                 bRequired
     );
@@ -193,22 +228,23 @@ VmDirRESTGetStrListParam(
 DWORD
 VmDirRESTGetLdapSearchParams(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR*                   ppszDN,
     int*                    piScope,
     PVDIR_FILTER*           ppFilter,
     PVDIR_BERVALUE*         ppbvAttrs,
     PVDIR_LDAP_CONTROL*     ppPagedResultsCtrl
     );
 
-// resource.c
-VDIR_REST_RESOURCE_TYPE
-VmDirRESTGetEndpointRscType(
-    PSTR    pszEndpoint
+DWORD
+VmDirRESTRenameParamKey(
+    PVDIR_REST_OPERATION    pRestOp,
+    PCSTR                   pszOldKey,
+    PCSTR                   pszNewKey
     );
 
+// resource.c
 PVDIR_REST_RESOURCE
 VmDirRESTGetResource(
-    VDIR_REST_RESOURCE_TYPE rscType
+    PSTR    pszPath
     );
 
 DWORD

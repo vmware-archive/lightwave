@@ -55,12 +55,10 @@ namespace VmDirInterop.Schema
             }
 
             entryFetchers = new Dictionary<String, IEntryFetcher>();
-
-            DseRootEntry dseRootEntry = baseEntryFetcher.GetDseRootEntry();
-            ServerEntry serverEntry = baseEntryFetcher.GetServerEntry(dseRootEntry.serverDn);
-            baseServerName = serverEntry.serverName;
-
-            RefreshSchemaConnection(upn, passwd);
+           // DseRootEntry dseRootEntry = baseEntryFetcher.GetDseRootEntry();
+           // ServerEntry serverEntry = baseEntryFetcher.GetServerEntry(dseRootEntry.serverDn);
+           //baseServerName = serverEntry.serverName;
+           // RefreshSchemaConnection(upn, passwd);
         }
 
         public String GetBaseServerName()

@@ -62,7 +62,7 @@ error:
     return dwError;
 }
 
-#if 0
+#ifdef REST_ENABLED
 
 REST_PROCESSOR sVmcaHttpHandlers =
 {
@@ -94,39 +94,46 @@ VMCAHttpServiceStartup()
     pConfig->pClientCount = VMCARESTCLIENTCNT;
     pConfig->pMaxWorkerThread = VMCARESTWORKERTHCNT;
 
-    dwError = VmRESTInit(pConfig, NULL);
+    dwError = VmRESTInit(pConfig, NULL, &gpVMCARESTHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTRegisterHandler(
-                "/vmca/certificates",
-                pHandlers,
-                NULL
-                );
+            gpVMCARESTHandle,
+            "/vmca/certificates",
+            pHandlers,
+            NULL);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTRegisterHandler(
-                "/vmca/root",
-                pHandlers,
-                NULL
-                );
+            gpVMCARESTHandle,
+            "/vmca/root",
+            pHandlers,
+            NULL);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTRegisterHandler(
-                "/vmca/crl",
-                pHandlers,
-                NULL
-                );
+            gpVMCARESTHandle,
+            "/vmca/crl",
+            pHandlers,
+            NULL);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTRegisterHandler(
-                "/vmca",
-                pHandlers,
-                NULL
-                );
+            gpVMCARESTHandle,
+            "/vmca",
+            pHandlers,
+            NULL);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTStart();
-    BAIL_ON_VMREST_ERROR(dwError);
+    dwError = VmRESTStart(gpVMCARESTHandle);
+    if (dwError)
+    {
+        // soft fail - will not listen on REST port.
+        VMCA_LOG_WARNING(
+                "VmRESTStart failed with error %d, not going to listen on REST port",
+                dwError);
+        dwError = 0;
+    }
 
 cleanup:
 
@@ -141,8 +148,11 @@ error:
 void
 VMCAHttpServiceShutdown()
 {
-    VmRESTStop();
-    VmRESTShutdown();
+    if (gpVMCARESTHandle)
+    {
+        VmRESTStop(gpVMCARESTHandle);
+        VmRESTShutdown(gpVMCARESTHandle);
+    }
 }
 #endif
 
@@ -186,13 +196,15 @@ main(
     BAIL_ON_VMCA_ERROR(dwError);
 
     VMCA_LOG_INFO("VM Certificate Service started.");
-#if 0
+
+#ifdef REST_ENABLED
 #ifndef _WIN32
     dwError = VMCAHttpServiceStartup();
     BAIL_ON_VMCA_ERROR(dwError);
     VMCA_LOG_INFO("VM Certificate ReST Protocol started.");
 #endif
 #endif
+
     PrintCurrentState();
 
     // interact with likewise service manager (start/stop control)
@@ -227,7 +239,7 @@ main(
 cleanup:
 
     VMCAShutdown();
-#if 0
+#ifdef REST_ENABLED
 #ifndef _WIN32
     VMCAHttpServiceShutdown();
 #endif

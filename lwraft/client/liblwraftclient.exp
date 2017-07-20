@@ -47,6 +47,7 @@ VmDirGetLogLevelH
 VmDirSetLogMask
 VmDirSetLogMaskH
 VmDirGetLogMaskH
+VmDirLocalGetSRPSecret
 VmDirSetSRPSecret
 VmDirGetSiteGuid
 VmDirConnectionOpen
@@ -103,3 +104,9 @@ VmDirGetMode
 VmDirSetMode
 VmDirRaftRequestVote
 VmDirRaftAppendEntries
+VmDirAppendRaftState
+VmDirRaftLeader
+VmDirRaftListCluster
+VmDirRaftShowClusterState
+VmDirRaftLeaveCluster
+VmDirFreeRaftCluster

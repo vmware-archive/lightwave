@@ -15,6 +15,8 @@ libcommon_la_SOURCES = \
     krbmisc.c \
     krbutil.c \
     ldapbind.c \
+    ldapcontrol.c \
+    ldaputil.c \
     linkedlist.c \
     logging.c \
     marshalutil.c \
@@ -46,12 +48,8 @@ libcommon_la_SOURCES = \
     schema/patch.c \
     schema/resolve.c \
     schema/schema.c \
-    schema/verify.c \
-    schema/legacy/legacyload.c \
-    schema/legacy/legacypatch.c \
-    schema/legacy/legacyschema.c \
-    schema/legacy/legacyschemamod.c \
-    schema/legacy/legacyutil.c
+    schema/util.c \
+    schema/verify.c
 
 libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -59,6 +57,7 @@ libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/thirdparty/heimdal \
     -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
     -I$(top_srcdir)/thirdparty/heimdal/asn1 \
+    -DLDAP_DEPRECATED \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 

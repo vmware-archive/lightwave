@@ -71,6 +71,17 @@ VmDirGetReplCycleCounter(
     VOID
     );
 
+DWORD
+VmDirAddRaftProxy(
+    PVDIR_ENTRY pEntry
+    );
+
+DWORD
+VmDirUpdateRaftLogChangedAttr(
+    PVDIR_OPERATION pOperation,
+    PVDIR_ENTRY     pEntry
+    );
+
 #ifdef __cplusplus
 }
 #endif

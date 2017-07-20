@@ -144,6 +144,8 @@ VmDnsProcessRequest(
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
 
+        pDnsHeader = NULL;
+
         dwError = VmDnsProcessQuery(
                         pDnsMessage,
                         &pDnsResponse,
@@ -160,6 +162,8 @@ VmDnsProcessRequest(
                         &pDnsUpdateMessage
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        pDnsHeader = NULL;
 
         dwError = VmDnsProcessUpdate(
                         pDnsUpdateMessage,
@@ -196,6 +200,7 @@ VmDnsProcessRequest(
 
         dwError = 0;
     }
+    VmDnsOPStatisticUpdate(DNS_QUERY_COUNT);
 
 cleanup:
 
@@ -213,6 +218,7 @@ cleanup:
     }
 
     VMDNS_SAFE_FREE_MEMORY(pForwarderResponse);
+    VMDNS_SAFE_FREE_MEMORY(pDnsHeader);
 
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;

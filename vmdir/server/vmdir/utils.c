@@ -335,9 +335,104 @@ VmDirGetLdapsConnectPorts(
 DWORD
 VmDirGetAllLdapPortsCount(
     VOID
-)
+    )
 {
     return gVmdirGlobals.dwLdapConnectPorts + gVmdirGlobals.dwLdapsConnectPorts;
+}
+
+DWORD
+VmDirCheckPortAvailability(
+    DWORD   dwPort
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bIPV4Addr = FALSE;
+    BOOLEAN bIPV6Addr = FALSE;
+    int     ip4_fd = -1;
+    int     ip6_fd = -1;
+    int     level = 0;
+    int     optname = 0;
+    int     on = 1;
+    struct sockaddr_in  serv_4addr = {0};
+    struct sockaddr_in6 serv_6addr = {0};
+
+#ifdef _WIN32
+    level = IPPROTO_IPV6;
+    optname = SO_EXCLUSIVEADDRUSE;
+#else
+    level = SOL_IPV6;
+    optname = SO_REUSEADDR;
+#endif
+
+    dwError = VmDirWhichAddressPresent(&bIPV4Addr, &bIPV6Addr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bIPV4Addr)
+    {
+        if ((ip4_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        bzero((char *) &serv_4addr, sizeof(serv_4addr));
+        serv_4addr.sin_family = AF_INET;
+        serv_4addr.sin_addr.s_addr = INADDR_ANY;
+        serv_4addr.sin_port = htons(dwPort);
+
+        if (setsockopt(ip4_fd, SOL_SOCKET, optname, (const char *)(&on), sizeof(on)) < 0 ||
+            bind(ip4_fd, (struct sockaddr *)&serv_4addr, sizeof(serv_4addr)) < 0)
+        {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s failed to bind to (IPV4) port %d with errno %d",
+                    __FUNCTION__, dwPort, errno );
+
+            dwError = VMDIR_ERROR_INVALID_STATE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    if (bIPV6Addr)
+    {
+        if ((ip6_fd = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        memset((char *) &serv_6addr, 0, sizeof(serv_6addr));
+        serv_6addr.sin6_family = AF_INET6;
+        serv_6addr.sin6_port = htons(dwPort);
+
+        if (setsockopt(ip6_fd, SOL_SOCKET, optname, (const char *)(&on), sizeof(on)) < 0 ||
+            setsockopt(ip6_fd, level, IPV6_V6ONLY, (const char *)(&on), sizeof(on)) < 0 ||
+            bind(ip6_fd, (struct sockaddr *)&serv_6addr, sizeof(serv_6addr)) < 0)
+        {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s failed to bind to (IPV6) port %d with errno %d",
+                    __FUNCTION__, dwPort, errno );
+
+            dwError = VMDIR_ERROR_INVALID_STATE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    if (ip4_fd >= 0)
+    {
+        tcp_close(ip4_fd);
+    }
+    if (ip6_fd >= 0)
+    {
+        tcp_close(ip6_fd);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+
+    goto cleanup;
 }
 
 DWORD

@@ -283,8 +283,8 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 #define IsNullOrEmptyString(str) (!(str) || !*(str))
 #endif
 
-#ifndef VMCA_SAFE_LOG_STRING
-#define VMCA_SAFE_LOG_STRING(str) ((str) ? (str) : "")
+#ifndef VMCA_SAFE_STRING
+#define VMCA_SAFE_STRING(str) ((str) ? (str) : "")
 #endif
 
 #define VMCA_REG_KEY_VMCADBPATH              "DbPath"
@@ -1002,14 +1002,6 @@ VMCAVerifyExtensions(
 );
 
 DWORD
-VMCACopyExtensions(
-    X509 *pCertificate,
-    X509 *pCACertificate,
-    X509_REQ *pRequest
-);
-
-
-DWORD
 VMCAVerifyCertificateName(
     X509 *pCertificate
 );
@@ -1019,15 +1011,6 @@ VMCAVerifySubjectAltNames(
     X509 *pCertificate
 );
 
-
-DWORD
-VMCASignedRequestPrivate(
-    PVMCA_X509_CA pCA,
-    PSTR pszPKCS10Request,
-    PSTR *ppszCertificate,
-    time_t tmNotBefore,
-    time_t tmNotAfter
-);
 
 DWORD
 VMCAWIntegerToASN1Integer(

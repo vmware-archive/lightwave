@@ -44,7 +44,6 @@ typedef struct _VDIR_INDEX_GLOBALS
 
     // fields used to determine index status during bootstrap
     BOOLEAN             bFirstboot;
-    BOOLEAN             bLegacyDB;
 
     // current indexing offset
     ENTRYID             offset;

@@ -22,10 +22,9 @@
 REST_MODULE _ldap_rest_module[] =
 {
     {
-        "/v1/lwraft/ldap",
+        VMDIR_V1_LDAP_RESOURCE,
         {VmDirRESTLdapSearch, VmDirRESTLdapAdd, NULL, VmDirRESTLdapDelete, VmDirRESTLdapModify}
-    },
-    {0}
+    }
 };
 
 DWORD
@@ -116,9 +115,11 @@ VmDirRESTLdapSearch(
             NULL, -1, LDAP_REQ_SEARCH, pRestOp->pConn, &pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError)
+
     dwError = VmDirRESTGetLdapSearchParams(
             pRestOp,
-            &pszDN,
             &pSearchOp->request.searchReq.scope,
             &pSearchOp->request.searchReq.filter,
             &pSearchOp->request.searchReq.attrs,
@@ -208,7 +209,7 @@ VmDirRESTLdapModify(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR(dwError)
 
     dwError = VmDirStringToBervalContent(pszDN, &pModifyOp->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -216,11 +217,19 @@ VmDirRESTLdapModify(
     dwError = VmDirStringToBervalContent(pszDN, &pModifyOp->request.modifyReq.dn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTDecodeMods(
+    dwError = VmDirRESTDecodeEntryMods(
             pRestOp->pjInput,
             &pModifyOp->request.modifyReq.mods,
             &pModifyOp->request.modifyReq.numMods);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pRestOp->pszHeaderIfMatch)
+    {
+        dwError = VmDirAddCondWriteCtrl(
+                    pModifyOp,
+                    pRestOp->pszHeaderIfMatch);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirMLModify(pModifyOp);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -394,6 +403,10 @@ VmDirRESTLdapGetHttpError(
 
     case LDAP_SIZELIMIT_EXCEEDED:
         httpStatus = HTTP_PAYLOAD_TOO_LARGE;
+        break;
+
+    case VMDIR_LDAP_ERROR_PRE_CONDITION:
+        httpStatus = HTTP_PRECONDITION_FAILED;
         break;
 
     default:

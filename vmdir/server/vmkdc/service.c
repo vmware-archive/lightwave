@@ -96,6 +96,7 @@ VmKdcRegisterRpcServer(
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
         "VMware Kdc Service bound successfully.");
 
+#if 0
 #ifndef _WIN32
     dwError = VmKdcRpcEpRegister(
         pServerBinding,
@@ -107,6 +108,7 @@ VmKdcRegisterRpcServer(
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
         "RPC Endpoints registered successfully.");
+#endif
 
 #ifndef _WIN32
 /*

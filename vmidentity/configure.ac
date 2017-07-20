@@ -2,7 +2,7 @@ AC_PREREQ(2.59)
 
 AC_INIT([vmsts], [6.0.0], [support@vmware.com])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 m4_pattern_allow([AM_PROG_AR])
@@ -192,7 +192,7 @@ AC_ARG_WITH([commons-daemon],
     [AC_HELP_STRING([--with-commons-daemon=<dir>], [use Commons daemon binaries rooted at prefix <dir> ])],
     [
         COMMONS_DAEMON_HOME="$withval"
-        JSVC=$COMMONS_DAEMON_HOME/bin/jsvc
+        JSVC=/usr/bin/jsvc
     ])
 
 AC_SUBST(COMMONS_DAEMON_HOME)
@@ -457,7 +457,7 @@ fi
 if test x"$localstatedir" = x"/var"; then
     vmstsdbdir="$localstatedir/lib/vmware/vmsts"
 else
-    vmstsdbdir="$localstatedir"
+    vmstsdbdir="$localstatedir/vmsts"
 fi
 AC_SUBST(vmstsdbdir)
 AS_AC_EXPAND(VMSTS_DB_DIR, $vmstsdbdir)

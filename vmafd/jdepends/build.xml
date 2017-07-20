@@ -5,9 +5,9 @@
 <project name="vmware-vmafd-depends" default="build" basedir=".">
 
    <property name="MAINSRCROOT" value="${basedir}/.." />
-   <property file="../product.properties" />
-   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
-   <property name="depends" value="${MAINSRCROOT}/build/depends" />
+   <property file="${MAINSRCROOT}/interop/java/product.properties" />
+   <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
+   <property name="depends" value="${build_dir}/depends" />
 
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
@@ -29,6 +29,7 @@
 
           <!-- TEST DEPENDENCIES -->
            <url url="http://central.maven.org/maven2/org/powermock/powermock-easymock-release-full/1.6.2/powermock-easymock-release-full-1.6.2-full.jar" />
+           <url url="http://central.maven.org/maven2/ant-contrib/ant-contrib/1.0b3/ant-contrib-1.0b3.jar" />
 
          </resources>
      </copy>

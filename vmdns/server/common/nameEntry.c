@@ -147,7 +147,8 @@ VmDnsNameEntryGetRecords(
     for (i = 0; i < dwSize; ++i)
     {
         pRecordObj = VmDnsRecordListGetRecord(pNameEntry->pRecords, i);
-        if (pRecordObj->pRecord->dwType == rrType || rrType == VMDNS_RR_QTYPE_ANY)
+        if (pRecordObj->pRecord->dwType == rrType || rrType == VMDNS_RR_QTYPE_ANY
+            || pRecordObj->pRecord->dwType == VMDNS_RR_TYPE_CNAME)
         {
             dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
             BAIL_ON_VMDNS_ERROR(dwError);

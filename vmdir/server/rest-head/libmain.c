@@ -14,6 +14,8 @@
 
 #include "includes.h"
 
+#ifdef REST_ENABLED
+
 REST_PROCESSOR sVmDirRESTHandlers =
 {
     .pfnHandleCreate = &VmDirRESTRequestHandler,
@@ -36,17 +38,21 @@ VmDirRESTServerInit(
     MODULE_REG_MAP stRegMap[] =
     {
         {"ldap", VmDirRESTGetLdapModule},
+        {"metrics", VmDirRESTGetMetricsModule},
         {NULL, NULL}
     };
 
-    config.pSSLCertificate = VMDIR_REST_SSLCERT;
-    config.pSSLKey = VMDIR_REST_SSLKEY;
+    config.pSSLCertificate = RSA_SERVER_CERT;
+    config.pSSLKey = RSA_SERVER_KEY;
     config.pServerPort = gVmdirGlobals.pszRestListenPort;
     config.pDebugLogFile = VMDIR_REST_DEBUGLOGFILE;
     config.pClientCount = VMDIR_REST_CLIENTCNT;
     config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
 
-    dwError = VmRESTInit(&config, NULL);
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTInit(&config, NULL, &gpVdirRESTHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdirRestApiDef);
@@ -60,17 +66,21 @@ VmDirRESTServerInit(
         PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
-            dwError = VmRESTRegisterHandler(pEndPoint->pszName, pHandlers, NULL);
+            dwError = VmRESTRegisterHandler(
+                    gpVdirRESTHandle, pEndPoint->pszName, pHandlers, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
-    // TODO uncomment
-//    dwError = OidcClientGlobalInit();
-//    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRESTStart();
-    BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmRESTStart(gpVdirRESTHandle);
+    if (dwError)
+    {
+        // soft fail - will not listen on REST port.
+        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                "VmRESTStart failed with error %d, not going to listen on REST port",
+                dwError);
+        dwError = 0;
+    }
 
 cleanup:
     return dwError;
@@ -88,28 +98,32 @@ VmDirRESTServerShutdown(
 {
     PREST_API_MODULE    pModule = NULL;
 
-    VmRESTStop();
-    if (gpVdirRestApiDef)
+    if (gpVdirRESTHandle)
     {
-        pModule = gpVdirRestApiDef->pModules;
-        for (; pModule; pModule = pModule->pNext)
+        VmRESTStop(gpVdirRESTHandle);
+        if (gpVdirRestApiDef)
         {
-            PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
-            for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+            pModule = gpVdirRestApiDef->pModules;
+            for (; pModule; pModule = pModule->pNext)
             {
-                (VOID)VmRESTUnRegisterHandler(pEndPoint->pszName);
+                PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
+                for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+                {
+                    (VOID)VmRESTUnRegisterHandler(
+                            gpVdirRESTHandle, pEndPoint->pszName);
+                }
             }
         }
+        VmRESTShutdown(gpVdirRESTHandle);
     }
-    VmRESTShutdown();
 
-    // TODO uncomment
-//    OidcClientGlobalCleanup();
+    OidcClientGlobalCleanup();
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 
 DWORD
 VmDirRESTRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
@@ -119,7 +133,7 @@ VmDirRESTRequestHandler(
     PVDIR_REST_OPERATION    pRestOp = NULL;
     PREST_API_METHOD    pMethod = NULL;
 
-    if (!pRequest || !ppResponse)
+    if (!pRESTHandle || !pRequest || !ppResponse)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -133,7 +147,8 @@ VmDirRESTRequestHandler(
     dwError = VmDirRESTOperationCreate(&pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTOperationReadRequest(pRestOp, pRequest, paramsCount);
+    dwError = VmDirRESTOperationReadRequest(
+            pRestOp, pRESTHandle, pRequest, paramsCount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTAuth(pRestOp);
@@ -141,7 +156,7 @@ VmDirRESTRequestHandler(
 
     dwError = coapi_find_handler(
             gpVdirRestApiDef,
-            pRestOp->pszEndpoint,
+            pRestOp->pszPath,
             pRestOp->pszMethod,
             &pMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -152,7 +167,8 @@ VmDirRESTRequestHandler(
 response:
     VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
     // Nothing can be done if failed to send response
-    dwError = VmDirRESTOperationWriteResponse(pRestOp, ppResponse);
+    dwError = VmDirRESTOperationWriteResponse(
+            pRestOp, pRESTHandle, ppResponse);
     goto cleanup;
 
 cleanup:
@@ -164,3 +180,23 @@ error:
             "%s failed, error (%d)", __FUNCTION__, dwError );
     goto response;
 }
+
+#else
+
+DWORD
+VmDirRESTServerInit(
+    VOID
+    )
+{
+    return 0;
+}
+
+VOID
+VmDirRESTServerShutdown(
+    VOID
+    )
+{
+    return;
+}
+
+#endif

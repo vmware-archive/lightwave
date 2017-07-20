@@ -16,3 +16,5 @@
 #ifndef _VMDIR_CLIENT_TEST_DEFINES_H_
 #define _VMDIR_CLIENT_TEST_DEFINES_H_
 #endif
+
+#define SIZE_256    256

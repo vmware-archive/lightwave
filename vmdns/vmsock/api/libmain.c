@@ -16,18 +16,18 @@
 #include "includes.h"
 
 DWORD
-VmwSockInitialize(
+VmDnsSockInitialize(
     VOID
     )
 {
     DWORD dwError = 0;
 
-    if (!gpVmSockPackage)
+    if (!gpVmDnsSockPackage)
     {
 #ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
+        dwError = VmWinSockInitialize(&gpVmDnsSockPackage);
 #else
-        dwError = VmSockPosixInitialize(&gpVmSockPackage);
+        dwError = VmDnsSockPosixInitialize(&gpVmDnsSockPackage);
 #endif
     }
 
@@ -35,16 +35,16 @@ VmwSockInitialize(
 }
 
 VOID
-VmwSockShutdown(
+VmDnsSockShutdown(
     VOID
     )
 {
-    if (gpVmSockPackage)
+    if (gpVmDnsSockPackage)
     {
 #ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
+        VmWinSockShutdown(gpVmDnsSockPackage);
 #else
-        VmSockPosixShutdown(gpVmSockPackage);
+        VmDnsSockPosixShutdown(gpVmDnsSockPackage);
 #endif
     }
 }

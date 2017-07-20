@@ -1,9 +1,9 @@
 lwraftconf_DATA = \
-    lwraftschema.ldif \
-    lwraft.reg        \
-    lwraft-client.reg \
-    lwraftd-syslog-ng.conf \
-    sasllwraftd.conf \
-    lwraft-rest.json
+    postschema.ldif \
+    post.reg        \
+    post-client.reg \
+    postd-syslog-ng.conf \
+    saslpostd.conf \
+    post-rest.json
 
-bin_SCRIPTS = lwraft_upgrade.sh
+bin_SCRIPTS = 

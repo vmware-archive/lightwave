@@ -14,25 +14,39 @@
 
 #include "includes.h"
 
+/*
+ * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * This is a wrapper for curl_global_init, from its documentation:
+ * This function is not thread safe.
+ * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
+ * This doesn't just mean no other thread that is using libcurl.
+ * Because curl_global_init calls functions of other libraries that are similarly thread unsafe,
+ * it could conflict with any other thread that uses these other libraries.
+ */
 SSOERROR
 OidcClientGlobalInit()
 {
     return SSOHttpClientGlobalInit();
 }
 
+// this function is not thread safe. Call it right before process exit
 void
 OidcClientGlobalCleanup()
 {
     SSOHttpClientGlobalCleanup();
 }
 
+// make sure you call OidcClientGlobalInit once per process before calling this
+// on success, pp will be non-null, when done, OidcClientDelete it
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
     PCSTRING pszTenant,
-    SSO_LONG clockToleranceInSeconds)
+    PCSTRING pszClientID /* OPT */,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */)
 {
     SSOERROR e = SSOERROR_NONE;
     POIDC_CLIENT p = NULL;
@@ -43,8 +57,6 @@ OidcClientBuild(
 
     e = SSOMemoryAllocate(sizeof(OIDC_CLIENT), (void**) &p);
     BAIL_ON_ERROR(e);
-
-    p->clockToleranceInSeconds = clockToleranceInSeconds;
 
     if (NULL == pszServer)
     {
@@ -64,7 +76,19 @@ OidcClientBuild(
         BAIL_ON_ERROR(e);
     }
 
-    e = OidcServerMetadataAcquire(&pServerMetadata, p->pszServer, portNumber, pszTenant);
+    if (pszClientID != NULL)
+    {
+        e = SSOStringAllocate(pszClientID, &p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
+
+    if (pszTlsCAPath != NULL)
+    {
+        e = SSOStringAllocate(pszTlsCAPath, &p->pszTlsCAPath);
+        BAIL_ON_ERROR(e);
+    }
+
+    e = OidcServerMetadataAcquire(&pServerMetadata, p->pszServer, portNumber, pszTenant, p->pszTlsCAPath);
     BAIL_ON_ERROR(e);
 
     e = SSOStringAllocate(OidcServerMetadataGetTokenEndpointUrl(pServerMetadata), &p->pszTokenEndpointUrl);
@@ -94,6 +118,8 @@ OidcClientDelete(
     if (p != NULL)
     {
         SSOStringFree(p->pszServer);
+        SSOStringFree(p->pszClientID);
+        SSOStringFree(p->pszTlsCAPath);
         SSOStringFree(p->pszTokenEndpointUrl);
         SSOStringFree(p->pszSigningCertificatePEM);
         SSOCdcDelete(p->pClientDCCache);
@@ -226,7 +252,7 @@ OidcClientAcquireTokens(
         }
     }
 
-    e = SSOHttpClientNew(&pHttpClient);
+    e = SSOHttpClientNew(&pHttpClient, p->pszTlsCAPath);
     BAIL_ON_ERROR(e);
     e = SSOHttpClientSendPostForm(
         pHttpClient,
@@ -241,7 +267,7 @@ OidcClientAcquireTokens(
 
     if (200 == httpStatusCode)
     {
-        e = OidcTokenSuccessResponseParse(&pOutTokenSuccessResponse, pszJsonResponse, p->pszSigningCertificatePEM, p->clockToleranceInSeconds);
+        e = OidcTokenSuccessResponseParse(&pOutTokenSuccessResponse, pszJsonResponse);
         BAIL_ON_ERROR(e);
     }
     else
@@ -255,7 +281,7 @@ OidcClientAcquireTokens(
     if (pOutTokenErrorResponse != NULL)
     {
         // if server return error response, we translate that into an SSOERROR code
-        e = OidcErrorResponseGetSSOErrorCode(pOutTokenErrorResponse);
+        e = OidcErrorResponseGetErrorCode(pOutTokenErrorResponse);
     }
 
 error:
@@ -266,6 +292,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByPassword(
     PCOIDC_CLIENT p,
@@ -277,7 +306,7 @@ OidcClientAcquireTokensByPassword(
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_KEY_VALUE_PAIR* ppPairs = NULL;
-    const int parameterCount = 4;
+    int parameterCount = 4;
 
     BAIL_ON_NULL_ARGUMENT(p);
     BAIL_ON_NULL_ARGUMENT(pszUsername);
@@ -285,6 +314,11 @@ OidcClientAcquireTokensByPassword(
     BAIL_ON_NULL_ARGUMENT(pszScope);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenSuccessResponse);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenErrorResponse);
+
+    if (p->pszClientID != NULL)
+    {
+        parameterCount++;
+    }
 
     e = SSOMemoryAllocateArray(parameterCount, sizeof(PSSO_KEY_VALUE_PAIR), (void**) &ppPairs);
     BAIL_ON_ERROR(e);
@@ -296,6 +330,11 @@ OidcClientAcquireTokensByPassword(
     BAIL_ON_ERROR(e);
     e = SSOKeyValuePairNew(&ppPairs[3], "scope", pszScope);
     BAIL_ON_ERROR(e);
+    if (p->pszClientID != NULL)
+    {
+        e = SSOKeyValuePairNew(&ppPairs[4], "client_id", p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
 
     e = OidcClientAcquireTokens(p, ppPairs, parameterCount, ppOutTokenSuccessResponse, ppOutTokenErrorResponse);
     BAIL_ON_ERROR(e);
@@ -305,6 +344,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByRefreshToken(
     PCOIDC_CLIENT p,
@@ -314,12 +356,17 @@ OidcClientAcquireTokensByRefreshToken(
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_KEY_VALUE_PAIR* ppPairs = NULL;
-    const int parameterCount = 2;
+    int parameterCount = 2;
 
     BAIL_ON_NULL_ARGUMENT(p);
     BAIL_ON_NULL_ARGUMENT(pszRefreshToken);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenSuccessResponse);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenErrorResponse);
+
+    if (p->pszClientID != NULL)
+    {
+        parameterCount++;
+    }
 
     e = SSOMemoryAllocateArray(parameterCount, sizeof(PSSO_KEY_VALUE_PAIR), (void**) &ppPairs);
     BAIL_ON_ERROR(e);
@@ -327,6 +374,11 @@ OidcClientAcquireTokensByRefreshToken(
     BAIL_ON_ERROR(e);
     e = SSOKeyValuePairNew(&ppPairs[1], "refresh_token", pszRefreshToken);
     BAIL_ON_ERROR(e);
+    if (p->pszClientID != NULL)
+    {
+        e = SSOKeyValuePairNew(&ppPairs[2], "client_id", p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
 
     e = OidcClientAcquireTokens(p, ppPairs, parameterCount, ppOutTokenSuccessResponse, ppOutTokenErrorResponse);
     BAIL_ON_ERROR(e);
@@ -336,6 +388,9 @@ error:
     return e;
 }
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensBySolutionUserCredentials(
     PCOIDC_CLIENT p,
@@ -347,7 +402,7 @@ OidcClientAcquireTokensBySolutionUserCredentials(
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_KEY_VALUE_PAIR* ppPairs = NULL;
-    const int parameterCount = 3;
+    int parameterCount = 3;
     PSTRING pszAssertionPayload = NULL;
     PSTRING pszAssertionJwtString = NULL;
 
@@ -357,6 +412,11 @@ OidcClientAcquireTokensBySolutionUserCredentials(
     BAIL_ON_NULL_ARGUMENT(pszScope);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenSuccessResponse);
     BAIL_ON_NULL_ARGUMENT(ppOutTokenErrorResponse);
+
+    if (p->pszClientID != NULL)
+    {
+        parameterCount++;
+    }
 
     e = OidcClientBuildSolutionUserAssertionPayload(p, pszCertificateSubjectDN, &pszAssertionPayload);
     BAIL_ON_ERROR(e);
@@ -372,6 +432,11 @@ OidcClientAcquireTokensBySolutionUserCredentials(
     BAIL_ON_ERROR(e);
     e = SSOKeyValuePairNew(&ppPairs[2], "scope", pszScope);
     BAIL_ON_ERROR(e);
+    if (p->pszClientID != NULL)
+    {
+        e = SSOKeyValuePairNew(&ppPairs[3], "client_id", p->pszClientID);
+        BAIL_ON_ERROR(e);
+    }
 
     e = OidcClientAcquireTokens(p, ppPairs, parameterCount, ppOutTokenSuccessResponse, ppOutTokenErrorResponse);
     BAIL_ON_ERROR(e);

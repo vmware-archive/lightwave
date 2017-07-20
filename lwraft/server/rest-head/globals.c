@@ -15,3 +15,7 @@
 #include "includes.h"
 
 PREST_API_DEF gpVdirRestApiDef = NULL;
+
+PVMREST_HANDLE gpVdirRESTHandle = NULL;
+
+PVDIR_VMAFD_API gpVdirVmAfdAPI = NULL;

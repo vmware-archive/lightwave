@@ -34,7 +34,6 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-    #define HAVE_LMDB_H
     #define PCVOID const PVOID
     #define ssize_t SSIZE_T
 
@@ -311,7 +310,7 @@ extern "C" {
     {                                                                       \
         if (pszErrMsg == NULL)                                              \
         {                                                                   \
-            VmDirAllocateStringAVsnprintf(                                  \
+            VmDirAllocateStringPrintf(                                      \
                             &(pszErrMsg),                                   \
                             Format,                                         \
                             ##__VA_ARGS__);                                 \
@@ -363,7 +362,7 @@ extern "C" {
         {                                                           \
             if (ldapErrMsg == NULL)                                 \
             {                                                       \
-                VmDirAllocateStringAVsnprintf(                      \
+                VmDirAllocateStringPrintf(                          \
                                 &(ldapErrMsg),                      \
                                 Format,                             \
                                 ##__VA_ARGS__);                     \
@@ -420,7 +419,7 @@ extern "C" {
             else                                                \
             {                                                   \
                 PSTR    pszTmp = pszOrgErrMsg;                  \
-                VmDirAllocateStringAVsnprintf(                  \
+                VmDirAllocateStringPrintf(                      \
                                 &(pszOrgErrMsg),                \
                                 "%s %s",                        \
                                 pszTmp, pszNewErrMsg);          \
@@ -626,7 +625,11 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_MAX_LDAP_URI_LEN         256 /* e.g. ldap://192.168.122.65 */
 #define VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED       "0"
 
+#define VMDIR_URL_PATH_DELIMITER_STR    "/"
+
 #define VMDIR_UPN_REALM_SEPARATOR       '@'
+
+#define VMDIR_FQDN_SEPARATOR            '.'
 
 #define VMDIR_KDC_RANDOM_PWD_LEN        20
 #define VMDIR_MAX_REALM_LEN             256
@@ -677,7 +680,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_INITIALIZE_HOST      0
 #define VMDIR_IPC_INITIALIZE_TENANT    1
 #define VMDIR_IPC_FORCE_RESET_PASSWORD 2
-//#define VMDIR_IPC_GET_SRP_SECRET       3
+#define VMDIR_IPC_GET_SRP_SECRET       3
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
 #define VMDIR_IPC_GET_SERVER_STATE     6

@@ -55,6 +55,7 @@ VmdirSolutionUserCreate(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToSolutionUserData,
         (void**) &pSolutionUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -118,6 +119,7 @@ VmdirSolutionUserGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) VmdirJsonToSolutionUserData,
         (void**) &pSolutionUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -182,6 +184,7 @@ VmdirSolutionUserUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) VmdirJsonToSolutionUserData,
         (void**) &pSolutionUserReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -243,6 +246,7 @@ VmdirSolutionUserDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

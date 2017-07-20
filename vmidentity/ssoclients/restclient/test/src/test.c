@@ -22,9 +22,10 @@ size_t pscPort;
 PSTRING systemTenant;
 PSTRING systemTenantUsername;
 PSTRING systemTenantPassword;
-PCSTRING testTenant = "test_tenant_name";
-PCSTRING testTenantUsername = "Administrator@test_tenant_name";
-PCSTRING testTenantPassword = "Admin!23";
+PCSTRING testTenant = "my-test-tenant.com";
+PCSTRING testTenantUsername = "Administrator@my-test-tenant.com";
+PCSTRING testTenantPassword = "Ca$hc0w1";
+PCSTRING tlsCAPath;
 
 static
 PCSTRING
@@ -137,7 +138,7 @@ main(
     SSOERROR e = SSOERROR_NONE;
     PCSTRING ret = NULL;
 
-    if (argc == 6)
+    if (argc == 7)
     {
         e = SSOStringAllocate(argv[1], &pscHost);
         BAIL_ON_ERROR(e)
@@ -152,6 +153,8 @@ main(
 
         e = SSOStringAllocate(argv[5], &systemTenantPassword);
         BAIL_ON_ERROR(e)
+
+        tlsCAPath = SSOStringEqual(argv[6], "true") ? LIGHTWAVE_TLS_CA_PATH : NULL;
 
         ret = run_all_tests();
 
@@ -168,8 +171,8 @@ main(
     }
     else
     {
-        fprintf(stdout, "%s\n", "Command to run test: ssorestclienttest ip port systemTenant systemTenantAdminUsername systemTenantAdminPassword");
-        fprintf(stdout, "%s\n", "        for example: ssorestclienttest 1.2.3.4 7444 coke admin@coke cokeword");
+        fprintf(stdout, "%s\n", "Command to run test: ssorestclienttest ip port systemTenant systemTenantAdminUsername systemTenantAdminPassword validateTls");
+        fprintf(stdout, "%s\n", "        for example: ssorestclienttest 1.2.3.4 7444 coke admin@coke cokeword false");
     }
 
     error:

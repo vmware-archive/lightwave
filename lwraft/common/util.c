@@ -2010,9 +2010,9 @@ VmDirCertificateFileNameFromHostName(
     }
     else
     {
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
+        dwError = VmDirAllocateStringPrintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalRsaServerCertFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalRsaServerCertFileName) failed" );
 
         pszSlash = VmDirStringRChrA(pszLocalRsaServerCertFileName, VMDIR_PATH_SEPARATOR_STR[0]);
 
@@ -2026,9 +2026,9 @@ VmDirCertificateFileNameFromHostName(
 
         *(pszSlash + 1) = '\0';
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
+        dwError = VmDirAllocateStringPrintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalFileName) failed" );
     }
 
     *ppszFileName = pszLocalFileName;
@@ -3302,7 +3302,7 @@ VmDirGetDCDNList(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszDCDN,
+    dwError = VmDirAllocateStringPrintf(&pszDCDN,
                                             "%s=%s,%s",
                                             ATTR_OU,
                                             VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
@@ -3569,5 +3569,159 @@ VmDirCompareVersion(
     }
 
     return 0;
+}
+
+/*
+ * convert DN to a list of RDN.
+ *
+ * say dc=lwraft,dc=local
+ * if iNotypes == 0, {"dc=lwraft", "dc=local"} is returned;
+ * otherwise {"lwraft", "local"} is returned.
+ */
+DWORD
+VmDirDNToRDNList(
+    PCSTR               pszDN,
+    int                 iNotypes,
+    PVMDIR_STRING_LIST* ppRDNStrList
+    )
+{
+    DWORD               dwError = 0;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+    PSTR*               ppRDN = NULL;
+    PSTR*               ppTmp = NULL;
+
+    if (!pszDN || !ppRDNStrList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    ppRDN = ldap_explode_dn(pszDN, iNotypes);
+    if (!ppRDN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_DN);
+    }
+
+    dwError = VmDirStringListInitialize(&pStrList, 10);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (ppTmp = ppRDN; *ppTmp; ppTmp++)
+    {
+        dwError = VmDirStringListAddStrClone(*ppTmp, pStrList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppRDNStrList = pStrList;
+    pStrList = NULL;
+
+cleanup:
+    if (ppRDN)
+    {
+        ldap_value_free(ppRDN);
+    }
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pStrList);
+
+    goto cleanup;
+}
+
+/*
+ * Note: based on http://en.wikipedia.org/wiki/FQDN, a valid FQDN
+ * always contains a trailing dot "." at the end of the string.
+ * However, in our code, we will handle cases where the trailing dot is
+ * omitted. I.e., we treat all of the following examples as valid FQDN:
+ * "com.", "vmware.com.", "eng.vmware.com."
+ * "com",  "vmware.com",  "eng.vmware.com"
+ */
+DWORD
+VmDirFQDNToDNSize(
+    PCSTR pszFQDN,
+    UINT32 *sizeOfDN
+)
+{
+    DWORD dwError  = 0;
+    int    numElem = 1;
+    int    numDots = 0;
+    UINT32 sizeRet = 0;
+    int len = (int)VmDirStringLenA(pszFQDN);
+    int i;
+    for ( i=0; i<=len; i++ )
+    {
+        if (pszFQDN[i] == VMDIR_FQDN_SEPARATOR )
+        {
+            numDots++;
+            if ( i>0 && i<len-1 )
+            {
+                 numElem++;
+            }
+        }
+    }
+    sizeRet = len - numDots;
+    // "dc=," for each elements except the last one does NOT has a ","
+    sizeRet += 4 * numElem - 1;
+    *sizeOfDN = sizeRet;
+    return dwError;
+}
+
+/*
+ * in: pszFQDN = "csp.com"
+ * out: *ppszDN = "dc=csp,dc=com"
+ */
+DWORD
+VmDirFQDNToDN(
+    PCSTR pszFQDN,
+    PSTR* ppszDN
+)
+{
+    int len = (int)VmDirStringLenA(pszFQDN);
+    int iStart = 0;
+    int iStop = iStart + 1 ;
+    int iDest = 0;
+    int i;
+    PSTR        pszDN = NULL;
+    UINT32      dnSize = 0;
+
+    // Calculate size needed to store DN
+    DWORD dwError = VmDirFQDNToDNSize(pszFQDN, &dnSize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Allocate memory needed to store DN
+    dwError = VmDirAllocateMemory(dnSize + 1, (PVOID*)&pszDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( ; iStop < len; iStop++ )
+    {
+        if (pszFQDN[iStop] == VMDIR_FQDN_SEPARATOR)
+        {
+            (pszDN)[iDest++] = 'd';
+            (pszDN)[iDest++] = 'c';
+            (pszDN)[iDest++] = '=';
+            for ( i= iStart; i<iStop; i++)
+            {
+                (pszDN)[iDest++] = pszFQDN[i];
+            }
+            (pszDN)[iDest++] = ',';
+            iStart = iStop + 1;
+            iStop = iStart;
+        }
+    }
+    (pszDN)[iDest++] = 'd';
+    (pszDN)[iDest++] = 'c';
+    (pszDN)[iDest++] = '=';
+    for ( i= iStart; i<iStop; i++)
+    {
+        (pszDN)[iDest++] = pszFQDN[i];
+    }
+    (pszDN)[iDest] = '\0';
+    *ppszDN = pszDN;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszDN);
+    goto cleanup;
 }
 

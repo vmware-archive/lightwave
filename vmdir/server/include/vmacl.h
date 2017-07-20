@@ -140,9 +140,14 @@ extern "C" {
 //
 #define VMDIR_ANONYMOUS_LOGON_SID "S-1-5-7"
 
+//
+// Well-known SID for a user that has authenticated, irrespective of their domain.
+// If you want to ACL something for an arbitrary logged-in user for a given
+// domain you should use <domain SID>-VMDIR_DOMAIN_ALIAS_RID_USERS.
+//
+#define VMDIR_AUTHENTICATED_USER_SID "S-1-5-11"
 
 // objectSid.c
-
 DWORD
 VmDirAdvanceDomainRID(
     DWORD   dwCnt
@@ -179,7 +184,6 @@ VmDirGenerateWellknownSid(
     );
 
 // libmain.c
-
 DWORD
 VmDirVmAclInit(
     VOID
@@ -195,46 +199,50 @@ VmDirRegisterACLMode(
     VOID
     );
 
-// acl.c
+VOID
+VmDirSetACLMode(
+    VOID
+    );
 
+// acl.c
 DWORD
 VmDirSrvCreateAccessTokenWithEntry(
-    PVDIR_ENTRY pEntry,
-    PACCESS_TOKEN* ppToken,
-    PSTR* ppszObjectSid /* Optional */
+    PVDIR_ENTRY     pEntry,
+    PACCESS_TOKEN*  ppToken,
+    PSTR*           ppszObjectSid
     );
 
 DWORD
 VmDirSrvAccessCheck(
-    PVDIR_OPERATION pOperation,
-    PVDIR_ACCESS_INFO pAccessInfo,
-    PVDIR_ENTRY pEntry,
-    ACCESS_MASK AccessDesired
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PVDIR_ENTRY         pEntry,
+    ACCESS_MASK         accessDesired
     );
 
 VOID
 VmDirAclCtxContentFree(
-    PVDIR_ACL_CTX pAclCtx
+    PVDIR_ACL_CTX   pAclCtx
     );
 
 DWORD
 VmDirSrvCreateSecurityDescriptor(
-    ACCESS_MASK amAccess,
-    PCSTR pszSystemAdministratorDn,
-    PCSTR pszAdminsGroupSid,
-    PCSTR pszDomainAdminsGroupSid,
-    PCSTR pszDomainClientsGroupSid,
-    PCSTR pszUsersGroupSid,
-    BOOLEAN bProtectedDacl,
-    BOOLEAN bAnonymousRead,
-    BOOLEAN bServicesDacl,
-    BOOLEAN bTenantDomain,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    ACCESS_MASK                 amAccess,
+    PCSTR                       pszDomainAdminDn,
+    PCSTR                       pszAdminsGroupSid,
+    PCSTR                       pszDomainAdminsGroupSid,
+    PCSTR                       pszDomainClientsGroupSid,
+    BOOLEAN                     bProtectedDacl,
+    BOOLEAN                     bAnonymousRead,
+    BOOLEAN                     bAuthenticatedRead,
+    BOOLEAN                     bServicesDacl,
+    BOOLEAN                     bTenantDomain,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 VOID
 VmDirFreeAbsoluteSecurityDescriptor(
-    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecDesc
+    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppSecDesc
     );
 
 DWORD
@@ -247,7 +255,7 @@ VmDirSrvAccessCheckIsAdminRole(
 
 BOOLEAN
 VmDirIsFailedAccessInfo(
-    PVDIR_ACCESS_INFO pAccessInfo
+    PVDIR_ACCESS_INFO   pAccessInfo
     );
 
 DWORD
@@ -265,8 +273,14 @@ VmDirGetObjectSidFromEntry(
     PSID* ppSid /* Optional */
     );
 
-// security.c
+DWORD
+VmDirIsBindDnMemberOfSystemDomainAdmins(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PBOOLEAN            pbIsMemberOfAdmins
+    );
 
+// security.c
 DWORD
 VmDirGetSecurityDescriptorForEntry(
     PVDIR_ENTRY pEntry,
@@ -277,8 +291,8 @@ VmDirGetSecurityDescriptorForEntry(
 
 DWORD
 VmDirSetSecurityDescriptorForDn(
-    PCSTR pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 DWORD
@@ -290,8 +304,8 @@ VmDirEntryCacheSecurityDescriptor(
 
 DWORD
 VmDirSetRecursiveSecurityDescriptorForDn(
-    PCSTR pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 DWORD
@@ -305,21 +319,16 @@ VmDirSetSecurityDescriptorForEntry(
 // sdcalc.c
 DWORD
 VmDirComputeObjectSecurityDescriptor(
-    PVDIR_ACCESS_INFO pAccessInfo,
-    PVDIR_ENTRY pEntry,
-    PVDIR_ENTRY pParentEntry
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PVDIR_ENTRY         pEntry,
+    PVDIR_ENTRY         pParentEntry
     );
 
 // token.c
 DWORD
 VmDirSrvCreateAccessTokenForWellKnowObject(
-    PACCESS_TOKEN *ppToken,
-    PCSTR pszWellknownObjectSid
-    );
-
-VOID
-VmDirSetACLMode(
-    VOID
+    PACCESS_TOKEN*  ppToken,
+    PCSTR           pszWellknownObjectSid
     );
 
 #ifdef __cplusplus

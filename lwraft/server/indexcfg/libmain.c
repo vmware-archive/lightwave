@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -16,7 +16,7 @@
 
 DWORD
 VmDirIndexLibInit(
-    VOID
+    PVMDIR_MUTEX    pModMutex
     )
 {
     static VDIR_DEFAULT_INDEX_CFG defIdx[] = VDIR_INDEX_INITIALIZER;
@@ -24,13 +24,19 @@ VmDirIndexLibInit(
     DWORD   dwError = 0;
     DWORD   i = 0;
     PSTR    pszLastOffset = NULL;
-    ENTRYID maxEId = 0;
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
 
-    dwError = VmDirAllocateMutex(&gVdirIndexGlobals.mutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pModMutex)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // pModMutex refers to gVdirSchemaGlobals.cacheModMutex,
+    // so do not free it during shutdown
+    gVdirIndexGlobals.mutex = pModMutex;
 
     dwError = VmDirAllocateCondition(&gVdirIndexGlobals.cond);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -53,17 +59,7 @@ VmDirIndexLibInit(
             &beCtx, INDEX_LAST_OFFSET_KEY, &pszLastOffset);
     if (dwError)
     {
-        dwError = beCtx.pBE->pfnBEMaxEntryId(&maxEId);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (maxEId == ENTRY_ID_SEQ_INITIAL_VALUE)
-        {
-            gVdirIndexGlobals.bFirstboot = TRUE;
-        }
-        else
-        {
-            gVdirIndexGlobals.bLegacyDB = TRUE;
-        }
+        gVdirIndexGlobals.bFirstboot = TRUE;
 
         // set index_last_offset = -1 to indicate indexing has started
         gVdirIndexGlobals.offset = -1;
@@ -91,10 +87,6 @@ VmDirIndexLibInit(
         pIndexCfg = NULL;
     }
 
-    // VMIT support
-    dwError = VmDirIndexLibInitVMIT();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = InitializeIndexingThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -103,6 +95,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszLastOffset);
     return dwError;
 
@@ -186,9 +179,6 @@ VmDirIndexLibShutdown(
     VMDIR_SAFE_FREE_CONDITION(gVdirIndexGlobals.cond);
     gVdirIndexGlobals.cond = NULL;
 
-    VMDIR_SAFE_FREE_MUTEX(gVdirIndexGlobals.mutex);
     gVdirIndexGlobals.mutex = NULL;
-
     gVdirIndexGlobals.bFirstboot = FALSE;
-    gVdirIndexGlobals.bLegacyDB = FALSE;
 }

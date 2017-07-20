@@ -131,7 +131,7 @@ VmDirPagedSearchCreateThread(
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
-                FALSE,
+                pThrInfo->bJoinThr,
                 _VmDirPagedSearchWorkerThread,
                 pSearchRecord);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -632,6 +632,8 @@ _VmDirPagedSearchWorkerThread(
     DWORD dwError = 0;
     PVDIR_PAGED_SEARCH_ENTRY_LIST pEntryIdList = NULL;
     VDIR_OPERATION searchOp = {0};
+
+    VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
 
     dwError = VmDirInitStackOperation(
                 &searchOp,

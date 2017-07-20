@@ -10,7 +10,8 @@ dnstest_SOURCES =       \
     LruListTest.c       \
     test-nameentry.c    \
     test-recordlist.c   \
-    TestUtils.c
+    TestUtils.c         \
+    TestPtr.c
 
 dnstest_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -27,6 +28,7 @@ dnstest_LDADD = \
     $(top_builddir)/common/libcommon.la \
     @SCHANNEL_LIBS@ \
     @VMDIR_LIBS@ \
+    @DCERPC_LIBS@ \
     @LDAP_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \

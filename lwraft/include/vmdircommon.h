@@ -76,6 +76,8 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"
 
+#define VMDIR_ANONYMOUS_BIND_TIMEOUT 2 /* Anonymous bind timeout - used for getting Raft status */
+
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
@@ -286,13 +288,6 @@ VmDirVsnprintf(
     va_list  args
     );
 
-DWORD
-VmDirAllocateStringAVsnprintf(
-    PSTR*    ppszOut,
-    PCSTR    pszFormat,
-    ...
-    );
-
 ULONG
 VmDirLengthRequiredSid(
     IN UCHAR SubAuthorityCount
@@ -399,6 +394,13 @@ VmDirStringNCompareA(
     PCSTR pszStr1,
     PCSTR pszStr2,
     size_t n,
+    BOOLEAN bIsCaseSensitive
+    );
+
+BOOLEAN
+VmDirStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
     BOOLEAN bIsCaseSensitive
     );
 
@@ -673,13 +675,6 @@ VmKdcGenerateRandomPassword(
     PSTR *ppRandPwd);
 
 // cmd line args parsing helpers
-
-typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
-typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_NO_PARAM)(PVOID pContext);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_STRING_PARAM)(PVOID pContext, PCSTR Parameter);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_INTEGER_PARAM)(PVOID pContext, DWORD Parameter);
-
 typedef enum
 {
     CL_NO_PARAMETER,
@@ -689,36 +684,39 @@ typedef enum
 
 typedef struct
 {
-    char Switch; // e.g., 's', for "-s".
-    const char *LongSwitch; // e.g., "silent", for "--silent".
-    VMDIR_COMMAND_LINE_PARAMETER_TYPE Type; // If this flag takes a parameter (and, if so, what kind).
-    PVOID Callback; // The function we call when this flag is seen.
+    char                                Switch; // e.g., 's', for "-s".
+    const char*                         LongSwitch; // e.g., "silent", for "--silent".
+    VMDIR_COMMAND_LINE_PARAMETER_TYPE   Type; // If this flag takes a parameter (and, if so, what kind).
+    PVOID                               Ptr; // Ptr to store parameter value
 } VMDIR_COMMAND_LINE_OPTION, *PVMDIR_COMMAND_LINE_OPTION;
+
+typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
+typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
 
 typedef struct
 {
     //
-    // We call this if the app should print its usage to the command line (i.e., the
-    // user gave incorrect parameters to the command).
-    //
-    USAGE_FUNCTION ShowUsage;
-
-    //
     // This is called after all parameters have been parsed and allows for the client
     // to do cross-parameter validation.
     //
-    POST_VALIDATION_CALLBACK ValidationRoutine;
+    POST_VALIDATION_CALLBACK    ValidationRoutine;
 
     //
-    // The command line options that this client supports.
+    // We call this if the app should print its usage to the command line (i.e., the
+    // user gave incorrect parameters to the command).
     //
-    VMDIR_COMMAND_LINE_OPTION Options[];
-} VMDIR_COMMAND_LINE_OPTIONS, *PVMDIR_COMMAND_LINE_OPTIONS;
+    USAGE_FUNCTION              ShowUsage;
+
+    //
+    // Argument context for callback functions
+    //
+    PVOID                       pvContext;
+} VMDIR_PARSE_ARG_CALLBACKS, *PVMDIR_PARSE_ARG_CALLBACKS;
 
 DWORD
 VmDirParseArguments(
-    PVMDIR_COMMAND_LINE_OPTIONS Options,
-    PVOID pvContext,
+    VMDIR_COMMAND_LINE_OPTION Options[],
+    PVMDIR_PARSE_ARG_CALLBACKS Callbacks,
     int argc,
     PSTR *argv
     );
@@ -819,7 +817,7 @@ typedef enum
 
 } VMDIR_SYNC_MECHANISM;
 
-#define VMDIR_NAME                          "lwraft"
+#define VMDIR_NAME                          "post"
 #define VMAFD_NAME                          "vmafd"
 
 #ifndef _WIN32
@@ -831,8 +829,8 @@ typedef enum
 #endif
 
 #ifndef _WIN32
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Lwraft"
-#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Lwraft\\Parameters"
+#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Post"
+#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Post\\Parameters"
 #define VMDIR_LINUX_DB_PATH                 LWRAFT_DB_DIR "/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\LightwaveRaftService"
@@ -879,10 +877,8 @@ typedef enum
 #define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
 #define VMDIR_REG_KEY_ALLOW_INSECURE_AUTH     "AllowInsecureAuthentication"
 #define VMDIR_REG_KEY_ADMIN_PASSWD            "AdministratorPassword"
-#define VMDIR_REG_KEY_LDAP_LISTEN_PORTS       "LdapListenPorts"
-#define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
-#define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
-#define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
+#define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
+#define VMDIR_REG_KEY_LDAPS_PORT              "LdapsPort"
 #define VMDIR_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
@@ -902,6 +898,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
+#define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1066,21 +1063,21 @@ VmDirConditionBroadcast2003(
 DWORD
 VmDirCreateThread(
     PVMDIR_THREAD pThread,
-    BOOLEAN bDetached,
+    BOOLEAN bJoinThr,
     PVMDIR_START_ROUTINE pStartRoutine,
     PVOID pArgs
-);
+    );
 
 DWORD
 VmDirThreadJoin(
     PVMDIR_THREAD pThread,
     PDWORD pRetVal
-);
+    );
 
 VOID
 VmDirFreeVmDirThread(
     PVMDIR_THREAD pThread
-);
+    );
 
 DWORD
 VmDirAllocateSyncCounter(
@@ -1235,6 +1232,10 @@ dequeGetSize(
 
 BOOLEAN
 dequeIsEmpty(
+    PDEQUE pDeque
+    );
+VOID
+dequeFreeStringContents(
     PDEQUE pDeque
     );
 
@@ -1566,6 +1567,13 @@ VmDirAnonymousLDAPBind(
     PCSTR       pszLdapURI
     );
 
+DWORD
+VmDirAnonymousLDAPBindWithTimeout(
+    LDAP**      ppLd,
+    PCSTR       pszLdapURI,
+    int         timeout
+    );
+
 int
 VmDirCreateSyncRequestControl(
     PCSTR pszInvocationId,
@@ -1583,6 +1591,26 @@ DWORD
 VmDirMapLdapError(
     int ldapErrorCode
     );
+
+// common/ldapcontrol.c
+int
+VmDirCreateCondWriteCtrlContent(
+    PCSTR           pszFilter,
+    LDAPControl*    pCondWriteCtrl
+    );
+
+VOID
+VmDirFreeCtrlContent(
+    LDAPControl*    pCtrl
+    );
+
+// common/ldaputil.c
+DWORD
+VmDirConvertUPNToDN(
+     LDAP*      pLd,
+     PCSTR      pszUPN,
+     PSTR*      ppszOutDN
+     );
 
 // common/tsstack.c
 VOID
@@ -1668,6 +1696,25 @@ VmDirUPNToNameAndDomain(
     PCSTR   pszUPN,
     PSTR*   ppszName,
     PSTR*   ppszDomain
+    );
+
+DWORD
+VmDirDNToRDNList(
+    PCSTR               pszDN,
+    int                 iNotypes,
+    PVMDIR_STRING_LIST* ppRDNStrList
+    );
+
+DWORD
+VmDirFQDNToDNSize(
+    PCSTR pszFQDN,
+    UINT32 *sizeOfDN
+    );
+
+DWORD
+VmDirFQDNToDN(
+    PCSTR pszFQDN,
+    PSTR* ppszDN
     );
 
 //IPC
@@ -2129,6 +2176,12 @@ VmDirStrToNameAndNumber(
 VOID
 VmDirFreeReplVector(
     PVMDIR_REPL_UTDVECTOR  pVector
+    );
+
+DWORD
+VmDirAppendRaftState(
+    PDEQUE pRaftState,
+    PCSTR hostName
     );
 
 #ifdef __cplusplus

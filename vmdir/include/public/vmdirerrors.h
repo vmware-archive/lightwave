@@ -30,10 +30,11 @@
 
 #define VMDIR_ERROR_BASE            9000
 
-#define VMDIR_SYSTEM_ERROR_BASE     0
-#define VMDIR_GENERIC_ERROR_BASE    100
-#define VMDIR_SCHEMA_ERROR_BASE     600
-#define VMDIR_BACKEND_ERROR_BASE    700
+#define VMDIR_SYSTEM_ERROR_BASE           0
+#define VMDIR_GENERIC_ERROR_BASE          100
+#define VMDIR_CUSTOMIZED_LDAP_ERROR_BASE  300
+#define VMDIR_SCHEMA_ERROR_BASE           600
+#define VMDIR_BACKEND_ERROR_BASE          700
 
 #define VMDIR_SUCCESS   0
 
@@ -93,6 +94,8 @@
 #define VMDIR_ERROR_INCOMPLETE_MAX_DFL                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 30)      // 9130
 #define VMDIR_ERROR_RESTORE_ERROR                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 31)      // 9131
 #define VMDIR_ERROR_AUTH_BAD_DATA                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 32)      // 9132
+#define VMDIR_ERROR_AFD_UNAVAILABLE                   (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 33)      // 9133
+#define VMDIR_ERROR_OIDC_UNAVAILABLE                  (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 34)      // 9134
 
 // SID/ACL 9200 ~9229
 #define VMDIR_ERROR_RID_LIMIT_EXCEEDED                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 100 )    // 9200
@@ -127,6 +130,14 @@
 #define VMDIR_ERROR_VDCREPADMIN_GENERAL               (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 173 )    // 9273
 #define VMDIR_ERROR_VDCREPADMIN_TOO_FEW_REPLICATION_PARTNERS  (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 174 )    // 9274
 #define VMDIR_ERROR_RESTORE_PARTNERS_UNAVAILABLE      (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 175 )    // 9275
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// customized LDAP return code (range 9300 - 9399)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+#define IS_CUSTOMIZED_VMDIR_LDAP_ERROR_SPACE(n) \
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 99) )
+
+#define VMDIR_LDAP_ERROR_PRE_CONDITION                (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 0) // 9300
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)

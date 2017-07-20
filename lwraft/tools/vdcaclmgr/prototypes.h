@@ -44,21 +44,26 @@ VdcLdapReplaceAttributeValues(
     );
 
 DWORD
-VdcLdapGetObjectList(
+VdcLdapGetObjectSidMappings(
     LDAP *pLd,
-    PCSTR pBase,
-    int ldapScope,
+    PCSTR pszBase,
     PCSTR pszFilter,
-    PLW_HASHMAP pUserToSidMapping,
-    PLW_HASHMAP pSidToUserMapping
+    PLW_HASHMAP pObjectToSidMapping,
+    PLW_HASHMAP pSidToObjectMapping
+    );
+
+DWORD
+VdcLdapEnumerateObjects(
+    LDAP *pLd,
+    PCSTR pszBase,
+    int ldapScope,
+    PVMDIR_STRING_LIST *ppObjectDNs
     );
 
 DWORD
 VdcLdapGetAttributeValue(
     LDAP *pLd,
-    PCSTR pBase,
-    int ldapScope,
-    PCSTR pszFilter,
+    PCSTR pszObjectDN,
     PCSTR pszAttribute,
     PSTR *ppszAttributeValue
     );
@@ -101,7 +106,7 @@ VdcLdapConnectSRP(
 DWORD
 VdcLdapReplaceAttrOnEntries(
     LDAP *pLd,
-    PCSTR pBase,
+    PCSTR pszBase,
     int ldapScope,
     PCSTR pszFilter,
     PCSTR pAttrName,
@@ -111,38 +116,6 @@ VdcLdapReplaceAttrOnEntries(
 VOID
 VdcLdapUnbind(
     LDAP *pLd
-    );
-
-//
-// StringList routines
-//
-DWORD
-VdcStringListInitialize(
-    PSTRING_LIST *ppStringList,
-    DWORD dwInitialCount
-    );
-
-VOID
-VdcStringListFree(
-    PSTRING_LIST pStringList
-    );
-
-DWORD
-VdcStringListAdd(
-    PSTRING_LIST pStringList,
-    PCSTR pszString
-    );
-
-DWORD
-VdcStringListRemove(
-    PSTRING_LIST pStringList,
-    PCSTR pszString
-    );
-
-BOOLEAN
-VdcStringListContains(
-    PSTRING_LIST pStringList,
-    PCSTR pszString
     );
 
 //

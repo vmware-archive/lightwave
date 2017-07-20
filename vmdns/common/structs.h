@@ -38,8 +38,6 @@ typedef struct _VMDNS_COND
 
 typedef struct _VMDNS_RWLOCK
 {
-    pthread_key_t       readKey;
-    pthread_key_t       writeKey;
     pthread_rwlock_t    rwLock;
 } VMDNS_RWLOCK;
 

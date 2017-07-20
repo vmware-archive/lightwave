@@ -14,48 +14,71 @@
 
 #include "includes.h"
 
-static VDIR_REST_RESOURCE_ENDPOINT rsourceEndpoints[] =
-{
-    {VDIR_REST_RSC_LDAP,    "/v1/lwraft/ldap"},
-    {VDIR_REST_RSC_UNKNOWN, NULL}
-};
-
 static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
 {
-    {VDIR_REST_RSC_LDAP,    VmDirRESTLdapSetResult,     VmDirRESTLdapGetHttpError,      "error-code",   "error-message"},
-    {VDIR_REST_RSC_UNKNOWN, VmDirRESTUnknownSetResult,  VmDirRESTUnknownGetHttpError,   NULL,           NULL}
-};
-
-VDIR_REST_RESOURCE_TYPE
-VmDirRESTGetEndpointRscType(
-    PSTR    pszEndpoint
-    )
-{
-    DWORD i = 0;
-
-    for (i = 0; rsourceEndpoints[i].pszEndpoint; i++)
     {
-        if (VmDirStringCompareA(
-                rsourceEndpoints[i].pszEndpoint, pszEndpoint, FALSE) == 0)
-        {
-            break;
-        }
+        VDIR_REST_RSC_LDAP,
+        VMDIR_V1_LDAP_RESOURCE,
+        FALSE,
+        VmDirRESTLdapSetResult,
+        VmDirRESTLdapGetHttpError,
+        "error-code",
+        "error-message"
+    },
+    {
+        VDIR_REST_RSC_OBJECT,
+        VMDIR_V1_OBJ_RESOURCE,
+        TRUE,
+        VmDirRESTLdapSetResult,
+        VmDirRESTLdapGetHttpError,
+        "error-code",
+        "error-message"
+    },
+    {
+        VDIR_REST_RSC_UNKNOWN,
+        NULL,
+        FALSE,
+        VmDirRESTUnknownSetResult,
+        VmDirRESTUnknownGetHttpError,
+        NULL,
+        NULL
     }
-
-    return rsourceEndpoints[i].rscType;
-}
+};
 
 PVDIR_REST_RESOURCE
 VmDirRESTGetResource(
-    VDIR_REST_RESOURCE_TYPE rscType
+    PSTR    pszPath
     )
 {
-    if (rscType > VDIR_REST_RSC_UNKNOWN)
+    DWORD   i = 0;
+    BOOLEAN bValidPath = FALSE;
+
+    bValidPath = !IsNullOrEmptyString(pszPath);
+
+    for (i = 0; resources[i].pszEndpoint; i++)
     {
-        return &resources[VDIR_REST_RSC_UNKNOWN];
+        if (bValidPath)
+        {
+            if (resources[i].bIsEndpointPrefix)
+            {
+                if (VmDirStringStartsWith(
+                        pszPath, resources[i].pszEndpoint, FALSE))
+                {
+                    break;
+                }
+            }
+            else
+            {
+                if (VmDirStringCompareA(
+                        pszPath, resources[i].pszEndpoint, FALSE) == 0)
+                {
+                    break;
+                }
+            }
+        }
     }
 
-    return &resources[rscType];
+    return &resources[i];
 }
 
 DWORD

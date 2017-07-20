@@ -108,6 +108,25 @@ then
 AC_DEFINE_UNQUOTED(SEAACL_CHECK_DISABLED, "1", [ Disable ACL checks on search ])
 fi
 
+# rest head flag
+
+REST_ENABLED=true
+AC_ARG_ENABLE([rest],
+    [AC_HELP_STRING([--enable-rest], [enable rest heads (default: enabled)])],
+    [
+        if test x"$enableval" = x"no"
+        then
+            REST_ENABLED=false
+        fi
+    ])
+
+if $REST_ENABLED
+then
+AC_DEFINE_UNQUOTED(REST_ENABLED, 1, [ Enable rest heads ])
+fi
+
+AM_CONDITIONAL(REST_ENABLED, [$REST_ENABLED])
+
 # datastore flag
 
 AC_ARG_WITH([datastore],
@@ -115,6 +134,8 @@ AC_ARG_WITH([datastore],
     [
         LWRAFTD_DATASTORE="$withval"
     ])
+
+# lightwave build flag
 
 ENABLE_LIGHTWAVE_BUILD=no
 AC_ARG_ENABLE([lightwave-build],
@@ -139,17 +160,6 @@ AC_ARG_ENABLE([server],
     ])
 
 AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
-AM_CONDITIONAL([HAVE_MDB_STORE], [test x"$LWRAFTD_DATASTORE" = x"mdb"])
-
-# mdb component
-
-saved_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I../thirdparty/openldap/libraries/mdb"
-if test x"$LWRAFTD_DATASTORE" = x"mdb"
-then
-AC_CHECK_HEADERS(lmdb.h)
-fi
-CPPFLAGS="$saved_CPPFLAGS"
 
 # openssl component
 
@@ -172,14 +182,14 @@ AC_ARG_WITH([ssl],
     [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
     [
         OPENSSL_BASE_PATH="$withval"
-        OPENSSL_INCLUDES="-I$withval/include"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval/include"
         OPENSSL_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$OPEN_SSL_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([ssl-includes],
     [AC_HELP_STRING([--with-ssl-includes=<dir>], [use SSL headers located in prefix <dir> ])],
     [
-        OPENSSL_INCLUDES="-I$withval"
+        OPENSSL_INCLUDES="-DOPENSSL_NO_KRB5 -I$withval/include"
     ])
 
 AC_ARG_WITH([ssl-libs],
@@ -292,22 +302,6 @@ AC_SUBST(SASL_LDFLAGS)
 
 AC_DEFINE_UNQUOTED(LWRAFT_CONFIG_SASL2_LIB_PATH, "$SASL_PLUGINSPATH", [SASL2 Library path])
 
-# Trident
-
-AC_ARG_WITH([trident],
-    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
-    [
-        TRIDENT_BASE_PATH="$withval"
-        TRIDENT_INCLUDES="-I$withval/include"
-        TRIDENT_LDFLAGS="-L$withval/lib64"
-    ])
-
-TRIDENT_LIBS="-lrestengine"
-AC_CHECK_HEADERS(vmrest.h)
-AC_SUBST(TRIDENT_BASE_PATH)
-AC_SUBST(TRIDENT_INCLUDES)
-AC_SUBST(TRIDENT_LDFLAGS)
-
 # Jansson
 
 AC_ARG_WITH([jansson],
@@ -318,7 +312,6 @@ AC_ARG_WITH([jansson],
         JANSSON_LDFLAGS="-L$withval/lib"
     ])
 
-JANSSON_LIBS="-ljansson"
 AC_CHECK_HEADERS(jansson.h)
 AC_SUBST(JANSSON_BASE_PATH)
 AC_SUBST(JANSSON_INCLUDES)
@@ -334,26 +327,27 @@ AC_ARG_WITH([copenapi],
         COPENAPI_LDFLAGS="-L$withval/lib"
     ])
 
-COPENAPI_LIBS="-lcopenapi"
 AC_CHECK_HEADERS(copenapi/copenapi.h)
 AC_SUBST(COPENAPI_BASE_PATH)
 AC_SUBST(COPENAPI_INCLUDES)
 AC_SUBST(COPENAPI_LDFLAGS)
 
-# OIDC
+# C rest engine
 
-AC_ARG_WITH([ssocommon],
-    [AC_HELP_STRING([--with-ssocommon=<dir>], [use ssocommon binaries rooted at prefix <dir> ])],
+AC_ARG_WITH([c-rest-engine],
+    [AC_HELP_STRING([--with-c-rest-engine=<dir>], [use c-rest-engine server binaries rooted at prefix <dir> ])],
     [
-        SSOCOMMON_BASE_PATH="$withval"
-        SSOCOMMON_INCLUDES="-I$withval/include"
-        SSOCOMMON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+        CRESTENGINE_BASE_PATH="$withval"
+        CRESTENGINE_INCLUDES="-I$withval/include"
+        CRESTENGINE_LDFLAGS="-L$withval/lib"
     ])
 
-SSOCOMMON_LIBS="-lssocommon"
-AC_SUBST(SSOCOMMON_BASE_PATH)
-AC_SUBST(SSOCOMMON_INCLUDES)
-AC_SUBST(SSOCOMMON_LDFLAGS)
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(CRESTENGINE_BASE_PATH)
+AC_SUBST(CRESTENGINE_INCLUDES)
+AC_SUBST(CRESTENGINE_LDFLAGS)
+
+# OIDC
 
 AC_ARG_WITH([oidc],
     [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
@@ -363,7 +357,6 @@ AC_ARG_WITH([oidc],
         OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
     ])
 
-OIDC_LIBS="-lssooidc"
 AC_CHECK_HEADERS(oidc.h)
 AC_CHECK_HEADERS(oidc_types.h)
 AC_CHECK_HEADERS(common_types.h)
@@ -479,7 +472,6 @@ AC_CHECK_FUNCS(strerror)
 
 AC_CHECK_LIB([dl], [dlopen], [DL_LIBS="-ldl"])
 AC_CHECK_LIB([pthread], [pthread_self], [PTHREAD_LIBS="-lpthread"])
-AC_CHECK_LIB([mdb],[mdb_strerror],[MDB_LIBS="-lmdb"],[],[])
 AC_CHECK_LIB([z],[inflate],[ZLIB_LIBS="-lz"],[],[$ZLIB_LDFLAGS])
 AC_CHECK_LIB([bz2],[BZ2_bzdopen],[BZIP_LIBS="-lbz2"],[],[$BZIP_LDFLAGS])
 AC_CHECK_LIB([uuid],[uuid_copy], [UUID_LIBS="-luuid"], [], [$LW_LDFLAGS -luuid])
@@ -550,6 +542,30 @@ AC_CHECK_LIB(
     [$DCERPC_LDFLAGS $OPENSSL_LDFLAGS $GSSAPI_LIBS $SCHANNEL_LIBS $CRYPTO_LIBS $LWIO_LIBS
      $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS
     ])
+AC_CHECK_LIB(
+    [jansson],
+    [json_object],
+    [JANSSON_LIBS="-ljansson"],
+    [],
+    [$JANSSON_LDFLAGS])
+AC_CHECK_LIB(
+    [copenapi],
+    [coapi_load_from_file],
+    [COPENAPI_LIBS="-lcopenapi"]
+    [],
+    [$COPENAPI_LDFLAGS])
+AC_CHECK_LIB(
+    [restengine],
+    [VmRESTInit],
+    [CRESTENGINE_LIBS="-lrestengine"],
+    [],
+    [$CRESTENGINE_LDFLAGS])
+AC_CHECK_LIB(
+    [ssooidc],
+    [OidcAccessTokenBuild],
+    [OIDC_LIBS="-lssocommon -lssooidc"],
+    [],
+    [$OIDC_LDFLAGS])
 
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 
@@ -580,18 +596,18 @@ AC_SUBST(LBER_LIBS)
 AC_SUBST(SHADOW_LIBS)
 AC_SUBST(CRYPT_LIBS)
 AC_SUBST(SASL_LIBS)
-AC_SUBST(TRIDENT_LIBS)
 AC_SUBST(JANSSON_LIBS)
 AC_SUBST(COPENAPI_LIBS)
+AC_SUBST(CRESTENGINE_LIBS)
 AC_SUBST(SSOCOMMON_LIBS)
 AC_SUBST(OIDC_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
 if test x"$localstatedir" = x"/var"; then
-    lwraftdbdir="$localstatedir/lib/vmware/lwraft"
+    lwraftdbdir="$localstatedir/lib/vmware/post"
 else
-    lwraftdbdir="$localstatedir"
+    lwraftdbdir="$localstatedir/post"
 fi
 AC_SUBST(lwraftdbdir)
 AS_AC_EXPAND(LWRAFT_DB_DIR, $lwraftdbdir)
@@ -610,13 +626,18 @@ AC_SUBST(lwraftlibdir)
 AS_AC_EXPAND(LWRAFT_LIB_DIR, $lwraftlibdir)
 AC_DEFINE_UNQUOTED(LWRAFT_LIB_DIR, "$LWRAFT_LIB_DIR", [Lib directory])
 
-lwraftsasldir=$lwraftlibdir/sasl2
-AC_SUBST(lwraftsasldir)
+postsasldir=$lwraftlibdir/sasl2
+AC_SUBST(postsasldir)
+
+lwraftlogdir=/var/log/vmware/post
+AC_ARG_WITH([logdir],
+   [AC_HELP_STRING([--with-logdir], [set the logging directory for lwraft])],
+   [
+        lwraftlogdir="$withval"
+   ])
+AC_SUBST(lwraftlogdir)
 AS_AC_EXPAND(LWRAFT_LOG_DIR, $lwraftlogdir)
 AC_DEFINE_UNQUOTED(LWRAFT_LOG_DIR, "$LWRAFT_LOG_DIR", [Log directory])
-
-lwraftlogdir=/var/log/vmware/lwraft
-AC_SUBST(lwraftlogdir)
 
 lwraft_version=1.0
 AC_ARG_WITH([version],
@@ -658,24 +679,29 @@ AC_CONFIG_FILES([Makefile
                  server/schema/Makefile
                  server/acl/Makefile
                  server/ldap-head/Makefile
+                 server/rest-head/Makefile
                  server/replication/Makefile
                  server/saslvmdirdb/Makefile
                  server/vmdir/Makefile
                  client/Makefile
-                 config/lwraft.reg
+                 config/post.reg
                  testing/Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile
+                 testing/test_lib/Makefile
+                 testing/test_runner/Makefile
+                 testing/integration_tests/Makefile
+                 testing/integration_tests/acls/Makefile
+                 testing/unittests/Makefile
+                 testing/unittests/libcommon/Makefile
                  tools/Makefile
                  tools/lwraftpromo/Makefile
+                 tools/lwraft-cli/Makefile
+                 tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
+                 tools/vdcschema/Makefile
                  tools/test/Makefile
-                 tools/test/circularbuffer/Makefile
-                 tools/test/dequetest/Makefile
-                 tools/test/parseargs/Makefile
-                 tools/test/registry/Makefile
-                 tools/test/string/Makefile
                  tools/test/vmdirclienttest/Makefile
                  thirdparty/Makefile
                  thirdparty/openldap/Makefile

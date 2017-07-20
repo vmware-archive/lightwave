@@ -21,6 +21,7 @@ extern "C" {
 
 #ifndef _WIN32
 
+#include <config.h>
 #include <vmcasys.h>
 #include <vmafdclient.h>
 #include <vmafdtypes.h>
@@ -52,12 +53,14 @@ extern "C" {
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
 
-#if 0
+#ifdef REST_ENABLED
+
 #include <vmrest.h>
 #include <jansson.h>
-#include <common_types.h>
+#include <ssotypes.h>
 #include <oidc_types.h>
 #include <oidc.h>
+
 #endif
 
 #include "defines.h"

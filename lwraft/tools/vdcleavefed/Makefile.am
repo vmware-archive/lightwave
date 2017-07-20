@@ -12,15 +12,17 @@ lwraftleavefed_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 lwraftleavefed_LDADD = \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/client/libpostclient.la \
     $(top_builddir)/common/libcommon.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWREG_LIBS@ \
+    @LWRSUTILS_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
+    @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@
 

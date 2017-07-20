@@ -448,7 +448,10 @@ public class TokenRequestProcessor {
         Date now = new Date();
         Date notBefore = new Date(refreshToken.getIssueTime().getTime() - this.tenantInfo.getClockToleranceMs());
         Date notAfter = new Date(refreshToken.getExpirationTime().getTime() + this.tenantInfo.getClockToleranceMs());
-        if (now.before(notBefore) || now.after(notAfter)) {
+        if (now.before(notBefore)) {
+            throw new ServerException(ErrorObject.invalidGrant("refresh_token is not yet valid"));
+        }
+        if (now.after(notAfter)) {
             throw new ServerException(ErrorObject.invalidGrant("refresh_token has expired"));
         }
     }

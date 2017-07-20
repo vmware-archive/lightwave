@@ -2,53 +2,76 @@
 <project name="vmidentity" default="build" basedir=".">
 
   <!-- Configuration set up -->
-  <property file="product.properties" />
   <property name="MAINSRCROOT" value="${basedir}" />
-  <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
-  <property name="PACKAGE_BASE" value="${buildRoot}/packages" />
-  <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />
-  <property name="VMCA_PACKAGE_BASE" value="${MAINSRCROOT}/../vmca/build/packages" />
+  <property file="${MAINSRCROOT}/product.properties" />
+  <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
+
+  <condition property="afd_build_dir"
+             value="${MAINSRCROOT}/../vmafd/build"
+             else="${build_dir}/../vmafd">
+    <equals arg1="${MAINSRCROOT}/build/rpmbuild/BUILD/build" arg2="${build_dir}" />
+  </condition>
+
+  <condition property="vmca_build_dir"
+             value="${MAINSRCROOT}/../vmca/build"
+             else="${build_dir}/../vmca">
+    <equals arg1="${MAINSRCROOT}/build/rpmbuild/BUILD/build" arg2="${build_dir}" />
+  </condition>
+
+  <property name="PACKAGE_BASE" value="${build_dir}/vmware-sts/packages" />
+  <property name="AFD_PACKAGE_BASE" value="${afd_build_dir}/authentication-framework/packages" />
+  <property name="VMCA_PACKAGE_BASE" value="${vmca_build_dir}/certificate-authority/packages" />
 
   <property name="AFD_GROUP_BASE" value="com.vmware.vmafd" />
   <property name="VMCA_GROUP_BASE" value="com.vmware.vmca" />
 
   <!-- Artifacts of VMIDENTITY related Projects -->
-  <property name="VERSION" value="1.2.0-SNAPSHOT" />
+  <property name="VERSION" value="1.3.0-SNAPSHOT" />
   <property name="maven" value="${maven.home}/bin/mvn" />
 
+  <!-- Install the dependencies that VMAFD and VMCA do not -->
   <target name="install.vmware-dependencies">
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" -s settings.xml install:install-file -Dfile=${AFD_PACKAGE_BASE}/client-domain-controller-cache.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/client-domain-controller-cache.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" -s settings.xml install:install-file -Dfile=${AFD_PACKAGE_BASE}/authentication-framework.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=authentication-framework -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/authentication-framework.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=authentication-framework -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" -s settings.xml install:install-file -Dfile=${AFD_PACKAGE_BASE}/afd-heartbeat-service.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/afd-heartbeat-service.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line="-s settings.xml install:install-file -Dfile=${VMCA_PACKAGE_BASE}/vmware-vmca-client.jar -DgroupId=${VMCA_GROUP_BASE} -DartifactId=vmware-vmca-client -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dfile=${VMCA_PACKAGE_BASE}/vmware-vmca-client.jar -DgroupId=${VMCA_GROUP_BASE} -DartifactId=vmware-vmca-client -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}" />
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line="install:install-file -Dfile=${AFD_PACKAGE_BASE}/vmware-endpoint-certificate-store.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${VERSION} -Dpackaging=jar" />
+      <arg line=" install:install-file -Dfile=${AFD_PACKAGE_BASE}/vmware-endpoint-certificate-store.jar -DgroupId=${AFD_GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${VERSION} -Dpackaging=jar" />
     </exec>
   </target>
 
-  <target name="build" depends="install.vmware-dependencies">
+  <target name="goclients">
+    <exec executable="go" failonerror="true">
+      <env key="GOPATH" value="${MAINSRCROOT}/goclients" />
+      <env key="CGO_CFLAGS" value="-I${MAINSRCROOT}/ssoclients/common/include/public -I${MAINSRCROOT}/ssoclients/oidc/include/public" />
+      <env key="CGO_LDFLAGS" value="-L${build_dir}/ssoclients/common/src/.libs -L${build_dir}/ssoclients/oidc/src/.libs -lssocommon -lssooidc" />
+      <arg line="build oidc" />
+    </exec>
+  </target>
+
+  <target name="build" depends="install.vmware-dependencies, goclients">
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${maven.home}"/>
       <env key="JAVA_HOME" value="${jre.home}"/>
-      <arg line=" -s settings.xml versions:set -DskipTests=true -Dmaven.javadoc.skip=true clean install" />
+      <arg line=" versions:set -DnewVersion=${VERSION} -DgenerateBackupPoms=false -DskipTests=true -Dmaven.javadoc.skip=true -Dbuild_dir=${build_dir} -DbuildDir=${build_dir}/${PRODUCT_NAME} clean install" />
     </exec>
     <antcall target="copy.uaa"/>
   </target>
@@ -58,5 +81,6 @@
     <copy file="uaa/samples/app/build/libs/cloudfoundry-identity-app-3.9.3.war" tofile="${PACKAGE_BASE}/uaa-app.war"/>
     <copy file="uaa/samples/api/build/libs/cloudfoundry-identity-api-3.9.3.war" tofile="${PACKAGE_BASE}/uaa-api.war"/>
   </target>
+
 
 </project>

@@ -361,6 +361,35 @@ error:
 }
 
 SSOERROR
+SSOJwtHasArrayClaim(
+    PCSSO_JWT p,
+    PCSTRING pszKey,
+    bool* pHasClaim)
+{
+    SSOERROR e = SSOERROR_NONE;
+    bool isArray = false;
+    PSSO_JSON pJsonValue = NULL;
+
+    ASSERT_NOT_NULL(p);
+    ASSERT_NOT_NULL(pszKey);
+    ASSERT_NOT_NULL(pHasClaim);
+
+    e = SSOJsonObjectGet(p->pJsonPayload, pszKey, &pJsonValue);
+    BAIL_ON_ERROR(e);
+
+    e = SSOJsonIsArray(pJsonValue, &isArray);
+    BAIL_ON_ERROR(e);
+
+    *pHasClaim = isArray;
+
+error:
+
+    SSOJsonDelete(pJsonValue);
+
+    return e;
+}
+
+SSOERROR
 SSOJwtVerifySignature(
     PCSSO_JWT p,
     PCSTRING pszCertificatePEM,

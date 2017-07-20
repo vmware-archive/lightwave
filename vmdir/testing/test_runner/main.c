@@ -302,7 +302,8 @@ _VmDirExecuteTestModule(
     PTEST_CLEANUP_CALLBACK pfnTestCleanup = NULL;
     DWORD dwError = 0;
 
-    printf("executing test module: %s ...\n", pszModule);
+    printf("Executing test module: %s ...\n", pszModule);
+
     // Need to make sure that there's a slash in the name
     pDllHandle = dlopen(pszModule, RTLD_NOW | RTLD_LOCAL);
     if (pDllHandle == NULL)

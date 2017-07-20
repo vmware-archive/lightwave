@@ -72,12 +72,6 @@ NewConnection(
     Sockbuf_IO      *pSockbuf_IO
     );
 
-static DWORD
-VmDirWhichAddressPresent(
-    BOOLEAN *pIPV4AddressPresent,
-    BOOLEAN *pIPV6AddressPresent
-);
-
 static
 BOOLEAN
 _VmDirFlowCtrlThrEnter(
@@ -153,13 +147,8 @@ VmDirInitConnAcceptThread(
     )
 {
     DWORD               dwError = 0;
-    PDWORD              pdwLdapPorts = NULL;
-    DWORD               dwLdapPorts = 0;
-    PDWORD              pdwLdapsPorts = NULL;
-    DWORD               dwLdapsPorts = 0;
-    PVDIR_THREAD_INFO   pThrInfo = NULL;
-    PDWORD              pdwPort = NULL;
-    DWORD               i = 0;
+    PVDIR_THREAD_INFO   pLdapThrInfo = NULL;
+    PVDIR_THREAD_INFO   pLdapsThrInfo = NULL;
     BOOLEAN             isIPV6AddressPresent = FALSE;
     BOOLEAN             isIPV4AddressPresent = FALSE;
 
@@ -174,68 +163,39 @@ VmDirInitConnAcceptThread(
        gVmdirServerGlobals.isIPV6AddressPresent = TRUE;
     }
 
-    VmDirGetLdapListenPorts(&pdwLdapPorts, &dwLdapPorts);
-    VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
+    dwError = VmDirSrvThrInit(
+                &pLdapThrInfo,
+                gVmdirGlobals.replCycleDoneMutex,
+                gVmdirGlobals.replCycleDoneCondition,
+                TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (i = 0; i < dwLdapPorts; i++)
-    {
-        dwError = VmDirAllocateMemory(
-                sizeof(*pThrInfo),
-                (PVOID*)&pThrInfo);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirCreateThread(
+            &pLdapThrInfo->tid,
+            pLdapThrInfo->bJoinThr,
+            vmdirConnAcceptThrFunc,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateMemory(
-                sizeof(DWORD),
-                (PVOID)&pdwPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    VmDirSrvThrAdd(pLdapThrInfo);
+    pLdapThrInfo = NULL;
 
-        *pdwPort = pdwLdapPorts[i];
+    dwError = VmDirSrvThrInit(
+                &pLdapsThrInfo,
+                gVmdirGlobals.replCycleDoneMutex,
+                gVmdirGlobals.replCycleDoneCondition,
+                TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSrvThrInit(
-                    &pThrInfo,
-                    gVmdirGlobals.replCycleDoneMutex,
-                    gVmdirGlobals.replCycleDoneCondition,
-                    TRUE);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirCreateThread(
+            &pLdapsThrInfo->tid,
+            pLdapsThrInfo->bJoinThr,
+            vmdirSSLConnAcceptThrFunc,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirCreateThread(
-                &pThrInfo->tid,
-                FALSE,
-                vmdirConnAcceptThrFunc,
-                (PVOID)pdwPort);  // New thread owns pdwPort
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VmDirSrvThrAdd(pThrInfo);
-        pThrInfo = NULL;
-        pdwPort = NULL;
-    }
-
-    for (i = 0; gVmdirOpensslGlobals.bSSLInitialized && i < dwLdapsPorts; i++)
-    {
-        dwError = VmDirAllocateMemory(
-                sizeof(DWORD),
-                (PVOID)&pdwPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        *pdwPort = pdwLdapsPorts[i];
-
-        VmDirSrvThrInit(
-                &pThrInfo,
-                gVmdirGlobals.replCycleDoneMutex,     // alternative mutex
-                gVmdirGlobals.replCycleDoneCondition, // alternative cond
-                TRUE);  // join by main thr
-
-        dwError = VmDirCreateThread(
-                &pThrInfo->tid,
-                FALSE,
-                vmdirSSLConnAcceptThrFunc,
-                (PVOID)pdwPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VmDirSrvThrAdd(pThrInfo);
-        pThrInfo = NULL;
-        pdwPort = NULL;
-    }
+    VmDirSrvThrAdd(pLdapsThrInfo);
+    pLdapsThrInfo = NULL;
 
 cleanup:
 
@@ -243,9 +203,8 @@ cleanup:
 
 error:
 
-    VmDirSrvThrFree(pThrInfo);
-
-    VMDIR_SAFE_FREE_MEMORY(pdwPort);
+    VmDirSrvThrFree(pLdapThrInfo);
+    VmDirSrvThrFree(pLdapsThrInfo);
 
     goto cleanup;
 }
@@ -255,24 +214,11 @@ VmDirShutdownConnAcceptThread(
     VOID
     )
 {
-    PDWORD  pdwLdapPorts = NULL;
-    DWORD   dwLdapPorts = 0;
-    PDWORD  pdwLdapsPorts = NULL;
-    DWORD   dwLdapsPorts = 0;
-    DWORD   i = 0;
+    DWORD   dwLdapPort = VmDirGetLdapPort();
+    DWORD   dwLdapsPort = VmDirGetLdapsPort();
 
-    VmDirGetLdapListenPorts(&pdwLdapPorts, &dwLdapPorts);
-    VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
-
-    for (i = 0; i < dwLdapPorts; i++)
-    {
-        _VmDirPingAcceptThr(pdwLdapPorts[i]);
-    }
-
-    for (i = 0; gVmdirOpensslGlobals.bSSLInitialized && i < dwLdapsPorts; i++)
-    {
-        _VmDirPingAcceptThr(pdwLdapsPorts[i]);
-    }
+    _VmDirPingAcceptThr(dwLdapPort);
+    _VmDirPingAcceptThr(dwLdapsPort);
 
     return;
 }
@@ -772,7 +718,7 @@ ProcessAConnection(
          case LDAP_REQ_COMPARE:
          case LDAP_REQ_ABANDON:
          case LDAP_REQ_EXTENDED:
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: Operation is not yet implemented.." );
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: %d Operation is not yet implemented..", tag);
             pOperation->ldapResult.errCode = retVal = LDAP_UNWILLING_TO_PERFORM;
             // ignore following VmDirAllocateStringA error.
             VmDirAllocateStringA( "Operation is not yet implemented.", &pOperation->ldapResult.pszErrMsg);
@@ -850,8 +796,8 @@ vmdirConnAcceptThrFunc(
     PVOID pArg
     )
 {
-    DWORD port = *((PDWORD)pArg);
-    VMDIR_SAFE_FREE_MEMORY(pArg);
+    DWORD   port = VmDirGetLdapPort();
+
     return vmdirConnAccept(&ber_sockbuf_io_tcp, port, FALSE);
 }
 
@@ -864,8 +810,8 @@ vmdirSSLConnAcceptThrFunc(
     PVOID pArg
     )
 {
-    DWORD port = *((PDWORD)pArg);
-    VMDIR_SAFE_FREE_MEMORY(pArg);
+    DWORD   port = VmDirGetLdapsPort();
+
     return vmdirConnAccept(gpVdirBerSockbufIOOpenssl, port, TRUE);
 }
 
@@ -913,6 +859,7 @@ vmdirConnAccept(
         goto cleanup;
     }
 
+    gVmdirGlobals.bIsLDAPPortOpen = TRUE;
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Connection accept thread: listening on LDAP port (%u).", dwPort);
 
     iLocalLogMask = VmDirLogGetMask();
@@ -1024,7 +971,7 @@ vmdirConnAccept(
         newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
 
-        retVal = VmDirCreateThread(&threadId, TRUE, ProcessAConnection, (PVOID)pConnCtx);
+        retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: VmDirCreateThread() (port) failed with errno: %d",
@@ -1074,11 +1021,11 @@ error:
  VmDirWhichAddressPresent: Check if ipv4 or ipv6 addresses exist
  */
 
-static DWORD
+DWORD
 VmDirWhichAddressPresent(
     BOOLEAN *pIPV4AddressPresent,
     BOOLEAN *pIPV6AddressPresent
-)
+    )
 {
     int                 retVal = 0;
 #ifndef _WIN32
