@@ -16,12 +16,12 @@ libssocommon_la_SOURCES = \
     errors.c
 
 libssocommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmafd/include/public \
     @JANSSON_INCLUDES@ \
     @CURL_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
-    @VMAFD_INCLUDES@ \
     @LW_INCLUDES@
 
 libssocommon_la_LIBADD = \

@@ -16,8 +16,8 @@ libvmnetevent_la_SOURCES = \
 
 libvmnetevent_la_CPPFLAGS = \
     -Wno-error=deprecated-declarations \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
     @LW_INCLUDES@
 
 libvmnetevent_la_LDFLAGS = \

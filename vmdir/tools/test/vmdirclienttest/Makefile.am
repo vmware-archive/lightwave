@@ -5,18 +5,18 @@ vmdirclienttest_SOURCES = \
     saslclient.c
 
 vmdirclienttest_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/tools/include \
-    -I$(top_srcdir)/client \
-    -I$(top_builddir)/client \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/tools/include \
+    -I$(top_srcdir)/vmdir/client \
+    -I$(top_builddir)/vmdir/client \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vmdirclienttest_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/common/libcommon.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

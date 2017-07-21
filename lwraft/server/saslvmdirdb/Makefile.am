@@ -1,8 +1,8 @@
 postsasl_LTLIBRARIES = libsaslpostdb.la
 
 libsaslpostdb_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -11,7 +11,7 @@ libsaslpostdb_la_SOURCES = \
     vmdirdb.c
 
 libsaslpostdb_la_LIBADD = \
-    $(top_builddir)/client/libpostclient.la \
+    $(top_builddir)/lwraft/client/libpostclient.la \
     @CRYPTO_LIBS@ \
     @PTHREAD_LIBS@
 

@@ -41,9 +41,9 @@ libkrb5crypto_la_SOURCES = \
 libkrb5crypto_la_CPPFLAGS = \
     -DHEIMDAL_SMALLER \
     @OPENSSL_INCLUDES@ \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/server/tools
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/vmdir/server/tools
 
 libkrb5crypto_la_LDFLAGS = \
-    -export-symbols $(top_srcdir)/thirdparty/heimdal/krb5-crypto/krb5-crypto.exp
+    -export-symbols $(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto/krb5-crypto.exp

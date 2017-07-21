@@ -5,15 +5,15 @@ vdcvmdirpromo_SOURCES = \
     main.c
 
 vdcvmdirpromo_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vdcvmdirpromo_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/common/libcommon.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

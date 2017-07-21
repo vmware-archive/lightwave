@@ -6,14 +6,14 @@ vecs_cli_SOURCES = \
     utils.c
     
 vecs_cli_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
     
 vecs_cli_LDADD = \
-    $(top_builddir)/client/libvmafdclient.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -28,4 +28,3 @@ vecs_cli_LDADD = \
 vecs_cli_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@
-

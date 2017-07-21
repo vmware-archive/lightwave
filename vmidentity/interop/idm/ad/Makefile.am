@@ -8,14 +8,14 @@ libidm_la_SOURCES = \
     sidcache.c
 
 libidm_la_CPPFLAGS = \
-    -I$(top_srcdir)/interop/include \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/interop/idm/include \
+    -I$(top_srcdir)/vmidentity/interop/include \
+    -I$(top_srcdir)/vmidentity/include \
+    -I$(top_srcdir)/vmidentity/interop/idm/include \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
 libidm_la_LIBADD = \
-    @top_builddir@/interop/idm/common/libidmcommon.la \
+    @top_builddir@/vmidentity/interop/idm/common/libidmcommon.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @LWADVAPI_LIBS@ \

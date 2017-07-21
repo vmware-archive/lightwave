@@ -6,7 +6,7 @@
 # Author: Sanjay Jain (sanjain@vmware.com)
 #         Sriram Nambakam (snambakam@vmware.com)
 #
-#    -L$(top_srcdir)/thirdparty/openldap/libraries/libmdb
+#    -L$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libmdb
 #    -lmdb
 
 noinst_LTLIBRARIES = libmdb-store.la
@@ -26,17 +26,17 @@ libmdb_store_la_SOURCES = \
     txn.c
 
 libmdb_store_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/mdb \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/mdb \
+    -I$(top_srcdir)/vmdir/server/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 libmdb_store_la_LDFLAGS = \
     -static \
-    $(top_builddir)/thirdparty/openldap/libraries/mdb/libvmdirmdb.la \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/mdb/libvmdirmdb.la \
     @LW_LDFLAGS@

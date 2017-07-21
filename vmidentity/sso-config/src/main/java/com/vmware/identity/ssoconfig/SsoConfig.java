@@ -760,15 +760,16 @@ public final class SsoConfig {
                 : tomcatConfLocation;
     }
 
-    // Decision factor : The RPM name is vmware-sts in lightwave and vmware-identity-sts in Vsphere.
+    // Decision factor : The RPM name is lightwave in lightwave and vmware-identity-sts in Vsphere.
     // TODO : Add the product release in registry entry.
+    // TODO : Add support for non-RPM package Linux distributions
     private static boolean isLightwave() {
 
         boolean lightwave = true;
         String rpmInfo = null;
         Process p = null;
         try{
-            p = Runtime.getRuntime().exec("rpm -qa vmware-sts");
+            p = Runtime.getRuntime().exec("rpm -qa lightwave");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                     p.getInputStream()))) {
                 rpmInfo = reader.readLine();

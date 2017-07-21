@@ -1,11 +1,11 @@
 
 lib_LTLIBRARIES = libvmafdclient.la
 
-idl_srcdir=$(top_srcdir)/idl
+idl_srcdir=$(top_srcdir)/vmafd/idl
 
 libvmafdclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -27,7 +27,7 @@ libvmafdclient_la_SOURCES = \
     vecslocalclient.c
 
 libvmafdclient_la_LIBADD = \
-    @top_builddir@/common/libcommon.la \
+    @top_builddir@/vmafd/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \
@@ -49,7 +49,7 @@ BUILT_SOURCES = vmafd_h.h \
                 vmafdsuperlog_h.h
 
 vmafd_h.h vmafd_cstub.c: $(idl_srcdir)/vmafd.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmafd_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmafd_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/vmafd/include/public $<
 
 vmafdsuperlog_h.h vmafdsuperlog_cstub.c: $(idl_srcdir)/vmafdsuperlog.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmafdsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmafdsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/vmafd/include/public $<

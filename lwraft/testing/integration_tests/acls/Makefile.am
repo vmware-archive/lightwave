@@ -1,8 +1,8 @@
 lib_LTLIBRARIES = libsecuritydescriptortests.la
 
 libsecuritydescriptortests_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
@@ -25,7 +25,7 @@ libsecuritydescriptortests_la_SOURCES = \
     wellknownsids.c
 
 libsecuritydescriptortests_la_LIBADD = \
-    @top_builddir@/testing/test_lib/liblwrafttesting.la \
+    @top_builddir@/lwraft/testing/test_lib/liblwrafttesting.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -41,7 +41,7 @@ libsecuritydescriptortests_la_LIBADD = \
     @PTHREAD_LIBS@
 
 libsecuritydescriptortests_la_LDFLAGS = \
-    -export-symbols @top_srcdir@/testing/integration_tests/acls/libsecuritydescriptortests.exp \
+    -export-symbols @top_srcdir@/lwraft/testing/integration_tests/acls/libsecuritydescriptortests.exp \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

@@ -5,11 +5,11 @@ libheimntlm_la_SOURCES = \
 
 libheimntlm_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@ \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     -DHAVE_OPENSSL \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto
 
 libheimntlm_la_LDFLAGS = \
     -static

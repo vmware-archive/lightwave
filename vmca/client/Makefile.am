@@ -1,11 +1,11 @@
 
 lib_LTLIBRARIES = libvmcaclient.la
 
-idl_srcdir=$(top_srcdir)/idl
+idl_srcdir=$(top_srcdir)/vmca/idl
 
 libvmcaclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmca/include \
+    -I$(top_srcdir)/vmca/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -18,7 +18,7 @@ libvmcaclient_la_SOURCES = \
     vmcaclient.c
 
 libvmcaclient_la_LIBADD = \
-    @top_builddir@/common/libcommon.la \
+    @top_builddir@/vmca/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \
@@ -38,5 +38,3 @@ BUILT_SOURCES = vmca_h.h
 
 vmca_h.h vmca_cstub.c: $(idl_srcdir)/vmca.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmca_h.h -I$(idl_srcdir) $<
-
-

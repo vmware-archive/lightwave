@@ -1,10 +1,10 @@
 noinst_LTLIBRARIES = libvmeventserver.la
 
-idl_srcdir=$(top_srcdir)/vmevent/idl
+idl_srcdir=$(top_srcdir)/vmafd/vmevent/idl
 
 libvmeventserver_la_CPPFLAGS = \
-    -I$(top_srcdir)/vmevent/include \
-    -I$(top_srcdir)/vmevent/include/public \
+    -I$(top_srcdir)/vmafd/vmevent/include \
+    -I$(top_srcdir)/vmafd/vmevent/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -24,8 +24,8 @@ libvmeventserver_la_SOURCES = \
     vmevent_sstub.c
 
 libvmeventserver_la_LIBADD = \
-    @top_builddir@/vmevent/common/libvmeventcommon.la \
-    @top_builddir@/vmevent/db/libvmeventdb.la \
+    @top_builddir@/vmafd/vmevent/common/libvmeventcommon.la \
+    @top_builddir@/vmafd/vmevent/db/libvmeventdb.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @PTHREAD_LIBS@
@@ -43,6 +43,6 @@ CLEANFILES = \
 BUILT_SOURCES = vmevent_h.h
 
 vmevent_h.h vmevent_sstub.c: $(idl_srcdir)/vmevent.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmevent_h.h -I$(idl_srcdir) -I$(top_srcdir)/vmevent/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmevent_h.h -I$(idl_srcdir) -I$(top_srcdir)/vmafd/vmevent/include/public $<
 
 

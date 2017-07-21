@@ -17,8 +17,8 @@ libvmeventcommon_la_SOURCES = \
     utils.c
 
 libvmeventcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/vmevent/include \
-    -I$(top_srcdir)/vmevent/include/public \
+    -I$(top_srcdir)/vmafd/vmevent/include \
+    -I$(top_srcdir)/vmafd/vmevent/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

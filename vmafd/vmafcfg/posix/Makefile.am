@@ -5,14 +5,14 @@
 noinst_LTLIBRARIES = libvmafposixcfg.la
 
 libvmafposixcfg_la_SOURCES = \
-    config.c   \
-    globals.c  \
+    config.c \
+    globals.c \
     libmain.c
 
 libvmafposixcfg_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/vmafcfg/include \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmafd/vmafcfg/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

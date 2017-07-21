@@ -1,8 +1,8 @@
 bin_SCRIPTS = \
-    @top_builddir@/scripts/configure-lightwave-server \
-    @top_builddir@/scripts/configure-identity-server \
-    @top_builddir@/scripts/configure-sts \
-    @top_srcdir@/scripts/domainjoin.sh 
+    @top_builddir@/config/scripts/configure-lightwave-server \
+    @top_builddir@/config/scripts/configure-identity-server \
+    @top_builddir@/config/scripts/configure-sts \
+    @top_srcdir@/config/scripts/domainjoin.sh
 
 scriptsconf_SCRIPTS = \
     setfirewallrules.py \

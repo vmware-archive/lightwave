@@ -7,11 +7,11 @@ libssoafdclient_la_SOURCES = \
     vecs_resource.c
 
 libssoafdclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/afdclient/include/public/
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/afdclient/include/public/
 
 libssoafdclient_la_LIBADD = \
-    @top_builddir@/ssoclients/restclient/coreclient/src/libssocoreclient.la
+    @top_builddir@/vmidentity/ssoclients/restclient/coreclient/src/libssocoreclient.la

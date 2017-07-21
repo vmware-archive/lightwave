@@ -5,11 +5,11 @@ ssooidctest_SOURCES = \
     test_cases.c
 
 ssooidctest_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public/ \
-    -I$(top_srcdir)/ssoclients/oidc/include/public/ \
-    -I$(top_srcdir)/ssoclients/oidc/src/
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/src/
 
 ssooidctest_LDADD = \
-    @top_builddir@/ssoclients/common/src/libssocommon.la \
-    @top_builddir@/ssoclients/oidc/src/libssooidc.la
+    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
+    @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la

@@ -34,21 +34,10 @@
 #include <ldap.h>
 #endif
 
-#ifdef HAVE_VMDIRCLIENT_H
 #include <vmdirclient.h>
-#endif
-
-#ifdef HAVE_VMCA_H
 #include <vmca.h>
-#endif
-
-#ifdef HAVE_VMDNS_H
 #include <vmdns.h>
-#endif
-
-#ifdef HAVE_VMAFDCLIENT_H
 #include <vmafdclient.h>
-#endif
 
 #include <cfgdefs.h>
 

@@ -22,16 +22,16 @@ libsrvcommon_la_SOURCES = \
     vmdirtoldaperror.c
 
 libsrvcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/thirdparty/heimdal \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
-    -I$(top_srcdir)/thirdparty \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/lwraft/thirdparty \
+    -I$(top_srcdir)/lwraft/server/include \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@

@@ -1,6 +1,6 @@
 sbin_PROGRAMS = postd
 
-idl_srcdir=$(top_srcdir)/idl
+idl_srcdir=$(top_srcdir)/lwraft/idl
 
 postd_SOURCES = \
     accountmgmt.c \
@@ -36,39 +36,43 @@ postd_SOURCES = \
 
 VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
-VMDIRD_BACKEND_STORE= $(top_builddir)/server/mdb-store/libmdb-store.la
+VMDIRD_BACKEND_STORE= $(top_builddir)/lwraft/server/mdb-store/libmdb-store.la
 
 postd_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/thirdparty \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/lwraft/thirdparty \
+    -I$(top_srcdir)/lwraft/server/include \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmevent/include/public \
     $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@ \
-    @VMEVENT_INCLUDES@
+    @OPENSSL_INCLUDES@
 
 postd_LDADD = \
-    $(top_builddir)/server/ldap-head/libldap-head.la \
-    $(top_builddir)/server/rest-head/librest-head.la \
-    $(top_builddir)/server/indexcfg/libindexcfg.la \
-    $(top_builddir)/server/middle-layer/libmiddle-layer.la \
-    $(top_builddir)/server/schema/libschema.la \
-    $(top_builddir)/server/acl/libvmacl.la \
-    $(top_builddir)/server/backend/libbackend.la \
+    $(top_builddir)/lwraft/server/ldap-head/libldap-head.la \
+    $(top_builddir)/lwraft/server/rest-head/librest-head.la \
+    $(top_builddir)/lwraft/server/indexcfg/libindexcfg.la \
+    $(top_builddir)/lwraft/server/middle-layer/libmiddle-layer.la \
+    $(top_builddir)/lwraft/server/schema/libschema.la \
+    $(top_builddir)/lwraft/server/acl/libvmacl.la \
+    $(top_builddir)/lwraft/server/backend/libbackend.la \
     $(VMDIRD_BACKEND_STORE) \
-    $(top_builddir)/server/replication/libreplication.la \
-    $(top_builddir)/client/libpostclient.la \
-    $(top_builddir)/server/common/libsrvcommon.la \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/thirdparty/heimdal/krb5-crypto/libkrb5crypto.la \
-    $(top_builddir)/thirdparty/heimdal/asn1/libasn1db.la \
-    $(top_builddir)/thirdparty/heimdal/asn1/libasn1.la \
-    $(top_builddir)/thirdparty/csrp/libcsrp.la \
+    $(top_builddir)/lwraft/server/replication/libreplication.la \
+    $(top_builddir)/lwraft/client/libpostclient.la \
+    $(top_builddir)/lwraft/server/common/libsrvcommon.la \
+    $(top_builddir)/lwraft/common/libcommon.la \
+    $(top_builddir)/lwraft/thirdparty/heimdal/krb5-crypto/libkrb5crypto.la \
+    $(top_builddir)/lwraft/thirdparty/heimdal/asn1/libasn1db.la \
+    $(top_builddir)/lwraft/thirdparty/heimdal/asn1/libasn1.la \
+    $(top_builddir)/lwraft/thirdparty/csrp/libcsrp.la \
+    $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
+    $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -86,8 +90,7 @@ postd_LDADD = \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
     @COPENAPI_LIBS@ \
-    @CRESTENGINE_LIBS@ \
-    @OIDC_LIBS@
+    @CRESTENGINE_LIBS@
 
 postd_LDFLAGS = \
     -rdynamic -ldl \
@@ -96,8 +99,7 @@ postd_LDFLAGS = \
     @LW_LDFLAGS@ \
     @JANSSON_LDFLAGS@ \
     @COPENAPI_LDFLAGS@ \
-    @CRESTENGINE_LDFLAGS@ \
-    @OIDC_LDFLAGS@
+    @CRESTENGINE_LDFLAGS@
 
 CLEANFILES = \
     vmdir_h.h \
@@ -122,7 +124,7 @@ vmdirdbcp_h.h vmdirdbcp_sstub.c: $(idl_srcdir)/vmdirdbcp.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirdbcp_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
 
 vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/lwraft/include/public $<
 
 vmdirraft_h.h vmdirraft_sstub.c: $(idl_srcdir)/vmdirraft.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirraft_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<

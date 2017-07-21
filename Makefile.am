@@ -3,6 +3,8 @@
 #
 
 SRCROOT = @top_srcdir@
+BUILDROOT = @abs_top_builddir@
+STAGEDIR = $(BUILDROOT)/stage
 MAKEROOT=$(SRCROOT)/support/make
 include $(MAKEROOT)/makedefs.mk
 
@@ -41,10 +43,12 @@ RPMBUILD_DIRS= \
 
 PKG_SPEC=lightwave.spec
 
-.PHONY: package
+.PHONY: package stage
 
+stage:
+	make -C $(BUILDROOT) DESTDIR=$(STAGEDIR) install
 
-package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
+package: stage $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
 	cd $(RPMBUILD_ROOT) && \
 	$(RPMBUILD) \
               -v \
@@ -97,5 +101,3 @@ $(RPMBUILD_TMP):
 
 $(RPMBUILD_ROOT):
 	@$(MKDIR) -p $@
-
-export STAGEDIR

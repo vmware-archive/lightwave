@@ -6,21 +6,20 @@ certool_SOURCES = \
     utility.cpp
 
 certool_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/idl \
-    -I$(top_srcdir)/common \
-    -I$(top_srcdir)/certool \
+    -I$(top_srcdir)/vmca/include \
+    -I$(top_srcdir)/vmca/include/public \
+    -I$(top_srcdir)/vmca/idl \
+    -I$(top_srcdir)/vmca/common \
+    -I$(top_srcdir)/vmca/certool \
+    -I$(top_srcdir)/vmafd/include/public \
     @BOOST_INCLUDES@ \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@ \
-    @VMAFD_INCLUDES@
-
+    @OPENSSL_INCLUDES@
 
 certool_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libvmcaclient.la \
-    @VMAFD_LIBS@ \
+    $(top_builddir)/vmca/common/libcommon.la \
+    $(top_builddir)/vmca/client/libvmcaclient.la \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
     @DL_LIBS@  \
     @BOOST_LIBS@ \
     @PTHREAD_LIBS@ \
@@ -40,11 +39,5 @@ certool_LDADD = \
 
 certool_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
-    @VMAFD_LDFLAGS@ \
     @BOOST_LDFLAGS@ \
     @LW_LDFLAGS@
-
-
-
-
-

@@ -6,15 +6,15 @@ post_cli_SOURCES = \
 
 post_cli_CPPFLAGS = \
     -DLDAP_DEPRECATED \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 post_cli_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libpostclient.la \
+    $(top_builddir)/lwraft/common/libcommon.la \
+    $(top_builddir)/lwraft/client/libpostclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

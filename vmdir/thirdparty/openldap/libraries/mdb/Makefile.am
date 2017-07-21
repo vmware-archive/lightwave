@@ -5,9 +5,9 @@ libvmdirmdb_la_SOURCES = \
     midl.c
 
 libvmdirmdb_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/public \
-    -I$(top_srcdir)/thirdparty/openldap/include
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/include
 
 libvmdirmdb_la_LDFLAGS = \
     -static

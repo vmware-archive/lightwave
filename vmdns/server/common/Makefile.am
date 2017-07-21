@@ -32,14 +32,14 @@ libsrvcommon_la_SOURCES = \
     opstatistic.c
 
 libsrvcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdns/include \
+    -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmdns/server/include \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
 libsrvcommon_la_LIBADD = \
-		$(top_builddir)/vmsock/api/libvmsock.la
+    $(top_builddir)/vmdns/vmsock/api/libvmsock.la
 
 libsrvcommon_la_LDFLAGS = \
     -static
