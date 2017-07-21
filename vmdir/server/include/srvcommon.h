@@ -919,6 +919,12 @@ VmDirDeleteEntry(
     PVDIR_ENTRY pEntry
     );
 
+DWORD
+VmDirSimpleEntryDeleteAttribute(
+    PCSTR   pszDN,
+    PCSTR   pszAttr
+    );
+
 // util.c
 DWORD
 VmDirToLDAPError(

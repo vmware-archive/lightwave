@@ -36,10 +36,10 @@ VmDirInternalUpdateObjectSD(
 
 DWORD
 VmDirGetSecurityDescriptorForEntry(
-    PVDIR_ENTRY pEntry,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE* ppSecDesc,
-    PULONG pulSecDescLength
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulSecDescLength
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -315,7 +315,8 @@ error:
 DWORD
 VmDirAppendSecurityDescriptorForDn(
     PCSTR                       pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc,
+    BOOLEAN                     bReplaceOwnerAndGroup
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -328,7 +329,8 @@ VmDirAppendSecurityDescriptorForDn(
             pEntry,
             pSecDesc->SecInfo,
             pSecDesc->pSecDesc,
-            pSecDesc->ulSecDesc);
+            pSecDesc->ulSecDesc,
+            bReplaceOwnerAndGroup);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -347,14 +349,13 @@ error:
 
 // This function is only used internally to extend SD for a given entry
 // during instance bootstrap
-//
-// Note: this won't change owner SID and group SID in the existing SD
 DWORD
 VmDirAppendSecurityDescriptorForEntry(
     PVDIR_ENTRY                     pEntry,
     SECURITY_INFORMATION            securityInformation,
     PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel,
-    ULONG                           ulSecDescRel
+    ULONG                           ulSecDescRel,
+    BOOLEAN                         bReplaceOwnerAndGroup
     )
 {
     DWORD   dwError = 0;
@@ -362,8 +363,8 @@ VmDirAppendSecurityDescriptorForEntry(
     ULONG   ulTmpSecDescRel = 0;
     PACL    pInDacl = NULL;
     PACL    pCurDacl = NULL;
-    PSID    pCurOwnerSid = NULL;
-    PSID    pCurGroupSid = NULL;
+    PSID    pOwnerSid = NULL;
+    PSID    pGroupSid = NULL;
     PACL    pNewDacl = NULL;
     PSID    pNewOwnerSid = NULL;
     PSID    pNewGroupSid = NULL;
@@ -413,22 +414,35 @@ VmDirAppendSecurityDescriptorForEntry(
                 pCurSecDescAbs, &bTmp, &pCurDacl, &bTmp);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirGetOwnerSecurityDescriptor(
-                pCurSecDescAbs, &pCurOwnerSid, &bTmp);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirGetGroupSecurityDescriptor(
-                pCurSecDescAbs, &pCurGroupSid, &bTmp);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
         // construct new absolute SD
         dwError = VmDirCreateSecurityDescriptorAbsolute(&pNewSecDescAbs);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = RtlDuplicateSid(&pNewOwnerSid, pCurOwnerSid);
+        if (bReplaceOwnerAndGroup)
+        {
+            dwError = VmDirGetOwnerSecurityDescriptor(
+                    pInSecDescAbs, &pOwnerSid, &bTmp);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirGetGroupSecurityDescriptor(
+                    pInSecDescAbs, &pGroupSid, &bTmp);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirGetOwnerSecurityDescriptor(
+                    pCurSecDescAbs, &pOwnerSid, &bTmp);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirGetGroupSecurityDescriptor(
+                    pCurSecDescAbs, &pGroupSid, &bTmp);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwError = RtlDuplicateSid(&pNewOwnerSid, pOwnerSid);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = RtlDuplicateSid(&pNewGroupSid, pCurGroupSid);
+        dwError = RtlDuplicateSid(&pNewGroupSid, pGroupSid);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirMergeAces(pCurDacl, pInDacl, &pNewDacl);
@@ -491,6 +505,149 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pTmpSecDescRel);
     VMDIR_SAFE_FREE_MEMORY(pNewOwnerSid);
     VMDIR_SAFE_FREE_MEMORY(pNewGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pNewDacl);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+DWORD
+VmDirAppendAllowAceForDn(
+    PCSTR       pszObjectDn,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PVDIR_ENTRY pEntry = NULL;
+
+    dwError = VmDirSimpleDNToEntry(pszObjectDn, &pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAppendAllowAceForEntry(pEntry, pszTrusteeDN, accessMask);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeEntry(pEntry);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+// This function is only used internally to extend SD for a given entry
+// during instance bootstrap
+DWORD
+VmDirAppendAllowAceForEntry(
+    PVDIR_ENTRY pEntry,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bTmp = FALSE;
+    ULONG   ulTmpLen = 0;
+    ULONG   ulNewDaclLen = 0;
+    ULONG   ulNewSecDescLen = 0;
+    PSID    pTrusteeSid = NULL;
+    PACL    pCurDacl = NULL;
+    PACL    pNewDacl = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pCurSecDescRel = NULL;
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pNewSecDescAbs = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pNewSecDescRel = NULL;
+
+    SECURITY_INFORMATION    SecInfoAll =
+            OWNER_SECURITY_INFORMATION |
+            GROUP_SECURITY_INFORMATION |
+            DACL_SECURITY_INFORMATION |
+            SACL_SECURITY_INFORMATION;
+
+    if (!pEntry || IsNullOrEmptyString(pszTrusteeDN))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    // get trustee SID
+    dwError = VmDirGetObjectSidFromDn(pszTrusteeDN, &pTrusteeSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // get current SD and DACL
+    dwError = VmDirGetSecurityDescriptorForEntry(
+            pEntry, SecInfoAll, &pCurSecDescRel, &ulTmpLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
+            &pNewSecDescAbs, pCurSecDescRel);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetDaclSecurityDescriptor(
+            pNewSecDescAbs, &bTmp, &pCurDacl, &bTmp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // build new DACL and replace old DACL
+    ulNewDaclLen = RtlGetAclSize(pCurDacl) +
+            sizeof(ACCESS_ALLOWED_ACE) + VmDirLengthSid(pTrusteeSid);
+
+    dwError = VmDirAllocateMemory(ulNewDaclLen, (PVOID*)&pNewDacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateAcl(pNewDacl, ulNewDaclLen, ACL_REVISION);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyAces(pCurDacl, pNewDacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAddAccessAllowedAceEx(
+            pNewDacl, ACL_REVISION, 0, accessMask, pTrusteeSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDaclSecurityDescriptor(
+            pNewSecDescAbs, TRUE, pNewDacl, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pCurDacl);
+    pNewDacl = NULL;
+
+    // convert new absolute SD to relative SD
+    dwError = VmDirAbsoluteToSelfRelativeSD(
+            pNewSecDescAbs, NULL, &ulNewSecDescLen);
+    BAIL_ON_VMDIR_ERROR(dwError != ERROR_INSUFFICIENT_BUFFER);
+
+    dwError = VmDirAllocateMemory(
+            ulNewSecDescLen, (PVOID*)&pNewSecDescRel);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAbsoluteToSelfRelativeSD(
+            pNewSecDescAbs, pNewSecDescRel, &ulNewSecDescLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // modify entry's SD
+    dwError = VmDirInternalUpdateObjectSD(
+            pEntry, TRUE, pNewSecDescRel, ulNewSecDescLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // update pEntry SD cache
+    dwError = VmDirEntryCacheSecurityDescriptor(
+            pEntry, pNewSecDescRel, ulNewSecDescLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeAbsoluteSecurityDescriptor(&pNewSecDescAbs);
+    VMDIR_SAFE_FREE_MEMORY(pNewSecDescRel);
+    VMDIR_SAFE_FREE_MEMORY(pCurSecDescRel);
+    VMDIR_SAFE_FREE_MEMORY(pTrusteeSid);
     VMDIR_SAFE_FREE_MEMORY(pNewDacl);
     return dwError;
 

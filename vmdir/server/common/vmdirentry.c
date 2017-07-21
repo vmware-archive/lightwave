@@ -1450,3 +1450,51 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+VmDirSimpleEntryDeleteAttribute(
+    PCSTR   pszDN,
+    PCSTR   pszAttr
+    )
+{
+    DWORD   dwError = 0;
+    size_t  dnlen = 0;
+    size_t  attrlen = 0;
+    VDIR_OPERATION  ldapOp = {0};
+
+    if (IsNullOrEmptyString(pszDN) || IsNullOrEmptyString(pszAttr))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirInitStackOperation(
+            &ldapOp,
+            VDIR_OPERATION_TYPE_INTERNAL,
+            LDAP_REQ_MODIFY,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dnlen = VmDirStringLenA(pszDN);
+    attrlen = VmDirStringLenA(pszAttr);
+
+    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.reqDn.lberbv_val = (PSTR)pszDN;
+    ldapOp.reqDn.lberbv_len = dnlen;
+
+    ldapOp.request.modifyReq.dn.lberbv_val = ldapOp.reqDn.lberbv_val;
+    ldapOp.request.modifyReq.dn.lberbv_len = ldapOp.reqDn.lberbv_len;
+
+    dwError = VmDirAppendAMod(
+            &ldapOp, MOD_OP_DELETE, pszAttr, attrlen, NULL, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInternalModifyEntry(&ldapOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperationContent(&ldapOp);
+    return dwError;
+
+error:
+    goto cleanup;
+}

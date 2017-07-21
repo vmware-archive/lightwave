@@ -68,33 +68,6 @@ error:
     goto cleanup;
 }
 
-//
-// This routine verifies that the tenant domain is at most two levels deep
-// (e.g., vsphere.local is OK, vsphere.foo.local is not).
-//
-DWORD
-_VmDirSrvCheckDomainDepth(
-    PCSTR pszDomainName
-    )
-{
-    PCSTR pszFirstDot = NULL;
-    PCSTR pszLastDot = NULL;
-    DWORD dwError = 0;
-
-    pszFirstDot = VmDirStringChrA(pszDomainName, '.');
-    pszLastDot = VmDirStringRChrA(pszDomainName, '.');
-
-    if (pszFirstDot != pszLastDot)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
 DWORD
 VmDirSrvCreateTenant(
     PCSTR pszFQDomainName,
@@ -109,9 +82,6 @@ VmDirSrvCreateTenant(
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
                    "Setting up a tenant instance (%s).",
                    VDIR_SAFE_STRING(pszFQDomainName));
-
-    dwError = _VmDirSrvCheckDomainDepth(pszFQDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSrvCreateDomainDN(pszFQDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);

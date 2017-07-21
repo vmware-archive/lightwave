@@ -657,51 +657,6 @@ error:
     goto cleanup;
 }
 
-DWORD
-_VmDirAclRootDomainObject(
-    PCSTR pszDn,
-    PCSTR pszUserDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
-    )
-{
-    DWORD dwError = 0;
-    PVDIR_ENTRY pEntry = NULL;
-    PSECURITY_DESCRIPTOR_RELATIVE pCurrentSecDesc = NULL;
-    ULONG ulLength = 0;
-
-    dwError = VmDirSimpleDNToEntry(pszDn, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetSecurityDescriptorForEntry(
-                pEntry,
-                OWNER_SECURITY_INFORMATION |
-                    GROUP_SECURITY_INFORMATION |
-                    DACL_SECURITY_INFORMATION |
-                    SACL_SECURITY_INFORMATION,
-                    &pCurrentSecDesc,
-                    &ulLength);
-    if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
-    {
-        dwError = VmDirSetSecurityDescriptorForDn(pszDn, pSecDesc);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (dwError == ERROR_SUCCESS)
-    {
-        dwError = VmDirAddAceToSecurityDescriptor(pEntry, pCurrentSecDesc, pszUserDn, VMDIR_RIGHT_DS_READ_PROP | VMDIR_RIGHT_DS_DELETE_OBJECT);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pCurrentSecDesc);
-    VmDirFreeEntry(pEntry);
-    return dwError;
-error:
-    goto cleanup;
-}
-
 //
 // Takes a DN of the form "dc=foo,dc=bar" and the respective admin DN (e.g.,
 // "cn=Administrator,cn=users,dc=foo,dc=bar") and gives that admin user read
@@ -714,42 +669,70 @@ error:
 //
 DWORD
 _VmDirAclDomainObjects(
-    PCSTR pszDomainDN,
-    PCSTR pszAdminUserDn, // DN of the admin user for the domain being created.
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
+    PCSTR                       pszLeafDomainDN,
+    PCSTR                       pszAdminUserDn, // DN of the admin user for the domain being created.
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     )
 {
-    DWORD dwError = 0;
-    int i = 0;
-    int startOfRdnInd = 0;
-    BOOLEAN bAcledRootObject = FALSE; // Have we already ACL'ed the root domain object?
+    DWORD   dwError = 0;
+    int     i = 0, j = 0;
+    ULONG   ulLength = 0;
+    PCSTR   pszDomainDN = NULL;
+    PVDIR_ENTRY pDomainEntry = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pCurSecDesc = NULL;
 
-    for (i = (int)VmDirStringLenA(pszDomainDN) - 1; i >= 0; --i)
+    SECURITY_INFORMATION    SecInfoAll =
+            OWNER_SECURITY_INFORMATION |
+            GROUP_SECURITY_INFORMATION |
+            DACL_SECURITY_INFORMATION |
+            SACL_SECURITY_INFORMATION;
+
+    for (i = (int)VmDirStringLenA(pszLeafDomainDN) - 1; i >= 0; --i)
     {
-        if (i == 0 || pszDomainDN[i] == RDN_SEPARATOR_CHAR)
+        if (i == 0 || pszLeafDomainDN[i] == RDN_SEPARATOR_CHAR)
         {
-            startOfRdnInd = (i == 0) ? 0 : i + 1 /* for , */;
-            if (!bAcledRootObject)
-            {
-                dwError = _VmDirAclRootDomainObject(
-                            pszDomainDN + startOfRdnInd,
-                            pszAdminUserDn,
-                            pSecDesc);
-                BAIL_ON_VMDIR_ERROR(dwError);
+            j = (i == 0) ? 0 : i + 1 /* for , */;
+            pszDomainDN = pszLeafDomainDN + j;
 
-                bAcledRootObject = TRUE;
-            }
-            else
+            VmDirFreeEntry(pDomainEntry);
+            dwError = VmDirSimpleDNToEntry(pszDomainDN, &pDomainEntry);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            VMDIR_SAFE_FREE_MEMORY(pCurSecDesc);
+            dwError = VmDirGetSecurityDescriptorForEntry(
+                    pDomainEntry, SecInfoAll, &pCurSecDesc, &ulLength);
+
+            if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
             {
-                dwError = VmDirSetSecurityDescriptorForDn(pszDomainDN + startOfRdnInd, pSecDesc);
+                // if it does not exist, set new SD
+                dwError = VmDirSetSecurityDescriptorForDn(pszDomainDN, pSecDesc);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else if (dwError == 0)
+            {
+                // if it already exists, update SD with ace for the new admin
+                dwError = VmDirAppendAllowAceForDn(
+                        pszDomainDN,
+                        pszAdminUserDn,
+                        VMDIR_RIGHT_DS_READ_PROP | VMDIR_RIGHT_DS_DELETE_OBJECT);
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pCurSecDesc);
+    VmDirFreeEntry(pDomainEntry);
     return dwError;
+
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1114,34 +1097,35 @@ VmDirSrvSetupDomainInstance(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set SD for the administrator object
-    dwError = VmDirAppendSecurityDescriptorForDn(pszUserDN, &SecDescNoDelete);
+    dwError = VmDirAppendSecurityDescriptorForDn(
+            pszUserDN, &SecDescNoDelete, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set SD for Users container
     dwError = VmDirAppendSecurityDescriptorForDn(
-            pszUsersContainerDN, &SecDescNoDeleteChild);
+            pszUsersContainerDN, &SecDescNoDeleteChild, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set SD for Builtin container
     dwError = VmDirAppendSecurityDescriptorForDn(
-            pszBuiltInContainerDN, &SecDescNoDelete);
+            pszBuiltInContainerDN, &SecDescNoDelete, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set SD for ForeignSecurityPrincipals container
     dwError = VmDirAppendSecurityDescriptorForDn(
-            pszFSPsContainerDN, &SecDescFullAccess);
+            pszFSPsContainerDN, &SecDescFullAccess, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
     {
         // Set SD for BuiltInUsers group
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszBuiltInUsersGroupDN, &SecDescNoDelete);
+                pszBuiltInUsersGroupDN, &SecDescNoDelete, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Set SD for BuiltInAdministrators group
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszBuiltInAdministratorsGroupDN, &SecDescNoDelete);
+                pszBuiltInAdministratorsGroupDN, &SecDescNoDelete, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1149,26 +1133,26 @@ VmDirSrvSetupDomainInstance(
     {
         // Set SD for BuiltIn DC group
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszDCGroupDN, &SecDescNoDelete);
+                pszDCGroupDN, &SecDescNoDelete, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Set SD for BuiltIn DCClients group
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszDCClientGroupDN, &SecDescNoDelete);
+                pszDCClientGroupDN, &SecDescNoDelete, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Set SD for BuiltIn Cert group
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszCertGroupDN, &SecDescNoDelete);
+                pszCertGroupDN, &SecDescNoDelete, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Set SD for kerberos users
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszTgtDN, &SecDescFullAccess);
+                pszTgtDN, &SecDescFullAccess, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirAppendSecurityDescriptorForDn(
-                pszKMDN, &SecDescFullAccess);
+                pszKMDN, &SecDescFullAccess, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1184,7 +1168,7 @@ VmDirSrvSetupDomainInstance(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set SD for Password lockout policy object
-    dwError = VmDirAppendSecurityDescriptorForDn(
+    dwError = VmDirSetSecurityDescriptorForDn(
             pszDefaultPasswdLockoutPolicyDN, &SecDescFullAccess);
     BAIL_ON_VMDIR_ERROR(dwError);
 

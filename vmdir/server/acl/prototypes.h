@@ -80,10 +80,10 @@ VmDirIsLegacySecurityDescriptor(
 // security.c
 DWORD
 VmDirSetSecurityDescriptorForEntry(
-    PVDIR_ENTRY pEntry,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRel,
-    ULONG ulSecDescRel
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel,
+    ULONG                           ulSecDescRel
     );
 
 DWORD
@@ -91,7 +91,15 @@ VmDirAppendSecurityDescriptorForEntry(
     PVDIR_ENTRY                     pEntry,
     SECURITY_INFORMATION            securityInformation,
     PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel,
-    ULONG                           ulSecDescRel
+    ULONG                           ulSecDescRel,
+    BOOLEAN                         bReplaceOwnerAndGroup
+    );
+
+DWORD
+VmDirAppendAllowAceForEntry(
+    PVDIR_ENTRY pEntry,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
     );
 
 DWORD

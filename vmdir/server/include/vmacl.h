@@ -265,18 +265,10 @@ VmDirIsFailedAccessInfo(
     );
 
 DWORD
-VmDirAddAceToSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc,
-    PCSTR pszAdminUserDn,
-    ACCESS_MASK amAccess
-    );
-
-DWORD
 VmDirGetObjectSidFromEntry(
     PVDIR_ENTRY pEntry,
-    PSTR* ppszObjectSid, /* Optional */
-    PSID* ppSid /* Optional */
+    PSTR*       ppszObjectSid, /* Optional */
+    PSID*       ppSid /* Optional */
     );
 
 DWORD
@@ -289,10 +281,10 @@ VmDirIsBindDnMemberOfSystemDomainAdmins(
 // security.c
 DWORD
 VmDirGetSecurityDescriptorForEntry(
-    PVDIR_ENTRY pEntry,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE* ppSecDesc,
-    PULONG pulSecDescLength
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulSecDescLength
     );
 
 DWORD
@@ -310,14 +302,22 @@ VmDirSetRecursiveSecurityDescriptorForDn(
 DWORD
 VmDirAppendSecurityDescriptorForDn(
     PCSTR                       pszObjectDn,
-    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc,
+    BOOLEAN                     bReplaceOwnerAndGroup
+    );
+
+DWORD
+VmDirAppendAllowAceForDn(
+    PCSTR       pszObjectDn,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
     );
 
 DWORD
 VmDirEntryCacheSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
-    ULONG ulSecDescToSetLen
+    PVDIR_ENTRY                     pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRelToSet,
+    ULONG                           ulSecDescToSetLen
     );
 
 DWORD
