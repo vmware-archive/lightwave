@@ -16,8 +16,8 @@
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
 #define VMDIR_REST_DEBUGLOGFILE     "/tmp/post-rest.log"
 
-#define VMDIR_REST_CLIENTCNT        "5"
-#define VMDIR_REST_WORKERTHCNT      "5"
+#define VMDIR_REST_CLIENTCNT        "64"
+#define VMDIR_REST_WORKERTHCNT      "64"
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
