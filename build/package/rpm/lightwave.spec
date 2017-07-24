@@ -199,6 +199,43 @@ Lightwave POST service
 
     case "$1" in
         1)
+            # Configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Add libgssapi_srp.so to GSSAPI plugin directory
+            if [ ! -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                /bin/ln -s %{_lib64dir}/libgssapi_srp.so %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Add libgssapi_unix.so to GSSAPI plugin directory
+            if [ ! -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                /bin/ln -s %{_lib64dir}/libgssapi_unix.so %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Add GSSAPI SRP plugin configuration to GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$SRP_MECH_OID" "/etc/gss/mech"` -lt 1 ]; then
+                    echo "srp  $SRP_MECH_OID libgssapi_srp.so" >> "/etc/gss/mech"
+                fi
+            fi
+
+            # Add GSSAPI UNIX plugin configuration to GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" "/etc/gss/mech"` -lt 1 ]; then
+                    echo "#unix  $UNIX_MECH_OID libgssapi_unix.so" >> "/etc/gss/mech"
+                fi
+            fi
+
+            # Restore commented out NTLM mech oid if found
+            if [ `grep -c  "#ntlm " "/etc/gss/mech"` -ge 1 ]; then
+              mv /etc/gss/mech /etc/gss/mech-$$
+              cat /etc/gss/mech-$$ | sed 's|^#ntlm|ntlm|' > /etc/gss/mech
+              if [ -s /etc/gss/mech ]; then
+                rm /etc/gss/mech-$$
+              fi
+            fi
+
             #
             # New Installation
             #
@@ -319,6 +356,9 @@ Lightwave POST service
         /bin/rm %{_logconfdir}/vmdird-syslog-ng.conf
     fi
     /bin/ln -s %{_datadir}/config/vmdird-syslog-ng.conf %{_logconfdir}/vmdird-syslog-ng.conf
+
+
+
 
 # vmdns
 
@@ -823,6 +863,41 @@ Lightwave POST service
                     %{_lwisbindir}/lwregshell delete_tree "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
                 fi
             fi
+
+            # Un-configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Cleanup GSSAPI SRP symlink
+            if [ -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Cleanup GSSAPI UNIX symlink
+            if [ -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Remove GSSAPI SRP plugin configuration from GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$SRP_MECH_OID" "/etc/gss/mech"` -gt 0 ]; then
+                    cat "/etc/gss/mech" | sed "/$SRP_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" "/etc/gss/mech"
+                    fi
+                fi
+            fi
+
+            # Remove GSSAPI UNIX plugin configuration from GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" "/etc/gss/mech"` -gt 0 ]; then
+                    cat "/etc/gss/mech" | sed "/$UNIX_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" "/etc/gss/mech"
+                    fi
+                fi
+            fi
+
             ;;
 
         1)
