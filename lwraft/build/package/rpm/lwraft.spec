@@ -7,7 +7,7 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, jansson >= 2.9, copenapi >= 0.0.1, c-rest-engine >= 1.0.1, vmware-sts-c-client = %{version}, vmware-post-client = %{version} vmware-directory-client = %{version}
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, jansson >= 2.9, copenapi >= 0.0.1, c-rest-engine >= 1.0.1, vmware-sts-c-client = %{version}, vmware-post-client = %{version}, vmware-directory-client = %{version} 
 BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, jansson-devel >= 2.9, copenapi-devel >= 0.0.1, c-rest-engine-devel >= 1.0.1, vmware-sts-c-client = %{version}, vmware-event-devel >= %{_vmevent_ver}
 
 %if 0%{?_sasl_prefix:1} == 0
@@ -151,9 +151,9 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
     # TO REMOVE, temporary link to avoid breaking existing scripts
     rm -f %{_bindir}/lwraft-cli
     /bin/ln -s %{_bindir}/post-cli %{_bindir}/lwraft-cli
-    rm -f %{_bindir}/lwraftschema
-    /bin/ln -s %{_bindir}/postschema %{_bindir}/lwraftschema
-    rm -f %{_bindir}/lwraftadmintool
+    rm -f %{_bindir}/postschema
+    /bin/ln -s %{_bindir}/postschema %{_bindir}/postschema
+    rm -f %{_bindir}/postadmintool
     /bin/ln -s %{_bindir}/postsadmintool %{_bindir}/lwraftadmintool
 
     # First argument is 1 => New Installation
@@ -344,8 +344,16 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_bindir}/postschema
 %{_bindir}/post-cli
 %{_lib64dir}/sasl2/libsaslpostdb.so*
-%{_lib64dir}/libkrb5crypto.so*
-%{_lib64dir}/libvmkdcserv.so*
+%{_datadir}/config/saslpostd.conf
+%{_datadir}/config/post.reg
+%{_datadir}/config/postschema.ldif
+%{_datadir}/config/postd-syslog-ng.conf
+%{_datadir}/config/post-rest.json
+%{_bindir}/lwraftpromo
+%{_bindir}/postadmintool
+%{_bindir}/postschema
+%{_bindir}/post-cli
+%{_lib64dir}/sasl2/libsaslpostdb.so*
 %{_datadir}/config/saslpostd.conf
 %{_datadir}/config/post.reg
 %{_datadir}/config/postschema.ldif
@@ -354,6 +362,11 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 
 %files client
 %defattr(-,root,root)
+%{_datadir}/config/post-client.reg
+%{_lib64dir}/libpostclient.so*
+%{_bindir}/post-cli
+%{_bindir}/postschema
+%{_bindir}/postadmintool
 %{_datadir}/config/post-client.reg
 %{_lib64dir}/libpostclient.so*
 
@@ -368,8 +381,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %exclude %{_bindir}/parseargstest
 %exclude %{_bindir}/registrytest
 %exclude %{_bindir}/stringtest
-%exclude %{_lib64dir}/libkrb5crypto.a
-%exclude %{_lib64dir}/libkrb5crypto.la
 %exclude %{_lib64dir}/sasl2/libsaslpostdb.a
 %exclude %{_lib64dir}/sasl2/libsaslpostdb.la
 %exclude %{_lib64dir}/libvmkdcserv.a

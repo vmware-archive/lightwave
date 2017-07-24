@@ -8,7 +8,7 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-Requires: pkgconfig(openssl) >= 1.0.2, pkgconfig(krb5) >= 1.14, pkgconfig(sqlite3) >= 3.14, pkgconfig(libsasl2) >= 2.1, coreutils >= 8.22, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, apache-commons-daemon >= 1.0.15, tomcat >= 8.5.8, lightwave-client = %{_version}
+Requires: pkgconfig(openssl) >= 1.0.2, pkgconfig(krb5) >= 1.14, pkgconfig(sqlite3) >= 3.14, pkgconfig(libsasl2) >= 2.1, coreutils >= 8.22, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, commons-daemon >= 1.0.15, apache-tomcat >= 8.5.8, lightwave-client = %{_version}
 %if 0%{?fedora} >= 21
 Requires: java-1.8.0-openjdk >= 1.8.0.112
 %else
@@ -104,7 +104,7 @@ VMware Lightwave Server
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
 
-%define _lwraft_dbdir %{_localstatedir}/lwraft
+%define _post_dbdir %{_localstatedir}/post
 %define _vmca_dbdir   %{_localstatedir}/vmca
 %define _vmdir_dbdir  %{_localstatedir}/vmdir
 %define _vmafd_dbdir  %{_localstatedir}/vmafd
@@ -125,10 +125,10 @@ Requires: lightwave-client = %{_version}
 %description devel
 Development Libraries to communicate with Lightwave Services
 
-%package raft
+%package post
 Summary: Lightwave Raft Service
 Requires: lightwave-client = %{_version}
-%description raft
+%description post
 Lightwave Raft Service
 
 %pre
@@ -141,6 +141,43 @@ Lightwave Raft Service
             #
             # New Installation
             #
+
+            # Configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Add libgssapi_srp.so to GSSAPI plugin directory
+            if [ ! -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                /bin/ln -s %{_lib64dir}/libgssapi_srp.so %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Add libgssapi_unix.so to GSSAPI plugin directory
+            if [ ! -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                /bin/ln -s %{_lib64dir}/libgssapi_unix.so %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Add GSSAPI SRP plugin configuration to GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$SRP_MECH_OID" "/etc/gss/mech"` -lt 1 ]; then
+                    echo "srp  $SRP_MECH_OID libgssapi_srp.so" >> "/etc/gss/mech"
+                fi
+            fi
+
+            # Add GSSAPI UNIX plugin configuration to GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" "/etc/gss/mech"` -lt 1 ]; then
+                    echo "#unix  $UNIX_MECH_OID libgssapi_unix.so" >> "/etc/gss/mech"
+                fi
+            fi
+
+            # Restore commented out NTLM mech oid if found
+            if [ `grep -c  "#ntlm " "/etc/gss/mech"` -ge 1 ]; then
+              mv /etc/gss/mech /etc/gss/mech-$$
+              cat /etc/gss/mech-$$ | sed 's|^#ntlm|ntlm|' > /etc/gss/mech
+              if [ -s /etc/gss/mech ]; then
+                rm /etc/gss/mech-$$
+              fi
+            fi
             if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
                 # Not in chroot
                 if [ -z "`pidof lwsmd`" ]; then
@@ -172,6 +209,43 @@ Lightwave Raft Service
 
     case "$1" in
         1)
+            # Configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Add libgssapi_srp.so to GSSAPI plugin directory
+            if [ ! -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                /bin/ln -s %{_lib64dir}/libgssapi_srp.so %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Add libgssapi_unix.so to GSSAPI plugin directory
+            if [ ! -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                /bin/ln -s %{_lib64dir}/libgssapi_unix.so %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Add GSSAPI SRP plugin configuration to GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$SRP_MECH_OID" "/etc/gss/mech"` -lt 1 ]; then
+                    echo "srp  $SRP_MECH_OID libgssapi_srp.so" >> "/etc/gss/mech"
+                fi
+            fi
+
+            # Add GSSAPI UNIX plugin configuration to GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" "/etc/gss/mech"` -lt 1 ]; then
+                    echo "#unix  $UNIX_MECH_OID libgssapi_unix.so" >> "/etc/gss/mech"
+                fi
+            fi
+
+            # Restore commented out NTLM mech oid if found
+            if [ `grep -c  "#ntlm " "/etc/gss/mech"` -ge 1 ]; then
+              mv /etc/gss/mech /etc/gss/mech-$$
+              cat /etc/gss/mech-$$ | sed 's|^#ntlm|ntlm|' > /etc/gss/mech
+              if [ -s /etc/gss/mech ]; then
+                rm /etc/gss/mech-$$
+              fi
+            fi
+
             #
             # New Installation
             #
@@ -190,7 +264,7 @@ Lightwave Raft Service
             ;;
     esac
 
-%pre raft
+%pre post
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -251,6 +325,9 @@ Lightwave Raft Service
         /bin/rm %{_logconfdir}/vmdird-syslog-ng.conf
     fi
     /bin/ln -s %{_datadir}/config/vmdird-syslog-ng.conf %{_logconfdir}/vmdird-syslog-ng.conf
+
+
+
 
 # vmdns
 
@@ -396,17 +473,6 @@ fi
 
     /bin/mkdir -m 755 -p %{_logdir}
 
-    # add libgssapi_srp.so to GSSAPI plugin directory
-    if [ ! -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
-        /bin/ln -s %{_lib64dir}/libgssapi_srp.so %{_krb5_lib_dir}/gss/libgssapi_srp.so
-    fi
-
-    # Add GSSAPI SRP plugin configuration to GSS mech file
-    if [ -f %{_krb5_gss_conf_dir}/mech ]; then
-        if [ `grep -c  "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -lt 1 ]; then
-            echo "srp  1.2.840.113554.1.2.10 libgssapi_srp.so" >> %{_krb5_gss_conf_dir}/mech
-        fi
-    fi
 
     # Restore commented out NTLM mech oid if found
     if [ `grep -c  "#ntlm " %{_krb5_gss_conf_dir}/mech` -ge 1 ]; then
@@ -503,23 +569,23 @@ fi
             ;;
     esac
 
-%post raft
+%post post
 
-    /bin/mkdir -m 700 -p %{_lwraft_dbdir}
+    /bin/mkdir -m 700 -p %{_post_dbdir}
 
-    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
-        /bin/rm %{_sasl2dir}/lwraftd.conf
+    if [ -a %{_sasl2dir}/postd.conf ]; then
+        /bin/rm %{_sasl2dir}/postd.conf
     fi
 
-    # add lwraftd.conf to sasl2 directory
-    /bin/ln -s %{_datadir}/config/sasllwraftd.conf %{_sasl2dir}/lwraftd.conf
+    # add postd.conf to sasl2 directory
+    /bin/ln -s %{_datadir}/config/saslpostd.conf %{_sasl2dir}/postd.conf
 
     /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
-    if [ -a %{_logconfdir}/lwraftd-syslog-ng.conf ]; then
-        /bin/rm %{_logconfdir}/lwraftd-syslog-ng.conf
+    if [ -a %{_logconfdir}/postd-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/postd-syslog-ng.conf
     fi
-    /bin/ln -s %{_datadir}/config/lwraftd-syslog-ng.conf %{_logconfdir}/lwraftd-syslog-ng.conf
+    /bin/ln -s %{_datadir}/config/postd-syslog-ng.conf %{_logconfdir}/postd-syslog-ng.conf
 
     case "$1" in
         1)
@@ -538,7 +604,7 @@ fi
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
                 sleep 2
             else
@@ -549,7 +615,7 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -573,7 +639,7 @@ fi
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
                 sleep 2
             else
@@ -584,7 +650,7 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -687,21 +753,6 @@ fi
                 %{_likewise_open_bindir}/lwsm autostart
             fi
 
-            # Cleanup GSSAPI SRP symlink
-            if [ -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
-                /bin/rm -f %{_krb5_lib_dir}/gss/libgssapi_srp.so
-            fi
-
-            # Remove GSSAPI SRP Plugin configuration from GSS mech file
-            if [ -f %{_krb5_gss_conf_dir}/mech ]; then
-                if [ `grep -c "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -gt 0 ]; then
-                    /bin/cat %{_krb5_gss_conf_dir}/mech | sed '/1.2.840.113554.1.2.10/d' > "/tmp/mech-$$"
-                    if [ -s /tmp/mech-$$ ]; then
-                        /bin/mv "/tmp/mech-$$" %{_krb5_gss_conf_dir}/mech
-                    fi
-                fi
-            fi
-
             if [ -h %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
                 /bin/rm -f %{_logconfdir}/vmafdd-syslog-ng.conf
             fi
@@ -714,7 +765,7 @@ fi
             ;;
     esac
 
-%preun raft
+%preun post
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
@@ -724,10 +775,10 @@ fi
             #
             # Uninstall
             #
-            %{_likewise_open_bindir}/lwsm info lwraft > /dev/null 2>&1
+            %{_likewise_open_bindir}/lwsm info post > /dev/null 2>&1
             if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop lwraft
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\lwraft'
+                %{_likewise_open_bindir}/lwsm stop post
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\post'
                 /bin/systemctl restart lwsmd
                 %{_likewise_open_bindir}/lwsm autostart
             fi
@@ -762,6 +813,41 @@ fi
                     %{_lwisbindir}/lwregshell delete_tree "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
                 fi
             fi
+
+            # Un-configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Cleanup GSSAPI SRP symlink
+            if [ -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Cleanup GSSAPI UNIX symlink
+            if [ -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Remove GSSAPI SRP plugin configuration from GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$SRP_MECH_OID" "/etc/gss/mech"` -gt 0 ]; then
+                    cat "/etc/gss/mech" | sed "/$SRP_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" "/etc/gss/mech"
+                    fi
+                fi
+            fi
+
+            # Remove GSSAPI UNIX plugin configuration from GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" "/etc/gss/mech"` -gt 0 ]; then
+                    cat "/etc/gss/mech" | sed "/$UNIX_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" "/etc/gss/mech"
+                    fi
+                fi
+            fi
+
             ;;
 
         1)
@@ -787,6 +873,41 @@ fi
             #
             # Uninstall
             #
+
+            # Un-configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Cleanup GSSAPI SRP symlink
+            if [ -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Cleanup GSSAPI UNIX symlink
+            if [ -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Remove GSSAPI SRP plugin configuration from GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$SRP_MECH_OID" "/etc/gss/mech"` -gt 0 ]; then
+                    cat "/etc/gss/mech" | sed "/$SRP_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" "/etc/gss/mech"
+                    fi
+                fi
+            fi
+
+            # Remove GSSAPI UNIX plugin configuration from GSS mech file
+            if [ -f "/etc/gss/mech" ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" "/etc/gss/mech"` -gt 0 ]; then
+                    cat "/etc/gss/mech" | sed "/$UNIX_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" "/etc/gss/mech"
+                    fi
+                fi
+            fi
+
             echo "Existing VECS files kept under [%{_vmafd_dbdir}]"
             ;;
 
@@ -797,7 +918,7 @@ fi
             ;;
     esac
 
-%postun raft
+%postun post
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
@@ -809,7 +930,7 @@ fi
             #
             # Uninstall
             #
-            echo "Existing database files kept at [%{_lwraft_dbdir}]."
+            echo "Existing database files kept at [%{_post_dbdir}]."
             ;;
 
         1)
@@ -819,8 +940,8 @@ fi
             ;;
     esac
 
-    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
-        /bin/rm %{_sasl2dir}/lwraftd.conf
+    if [ -a %{_sasl2dir}/postd.conf ]; then
+        /bin/rm %{_sasl2dir}/postd.conf
     fi
 
 %files
@@ -866,6 +987,7 @@ fi
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
 %{_datadir}/config/vmdir-rest.json
+%{_datadir}/config/vmdns-rest.json
 %{_datadir}/config/vmdns.reg
 %{_datadir}/config/vmdnsd-syslog-ng.conf
 %{_datadir}/config/idm/*
@@ -929,6 +1051,8 @@ fi
 %{_bindir}/vdcaclmgr
 %{_bindir}/vdcpromo
 %{_bindir}/vecs-cli
+%{_lib64dir}/libkrb5crypto.so*
+%{_lib64dir}/libcsrp.so*
 
 %{_sbindir}/vmafdd
 
@@ -940,16 +1064,14 @@ fi
 %{_lib64dir}/libvmeventclient.so*
 %{_lib64dir}/libvmcaclient.so*
 %{_lib64dir}/libvmdirclient.so*
-%{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/libvmkdcserv.so*
-%{_lib64dir}/libcsrp.so*
 %{_lib64dir}/libgssapi_ntlm.so*
 %{_lib64dir}/libgssapi_srp.so*
 %{_lib64dir}/libgssapi_unix.so*
 %{_lib64dir}/libvmdnsclient.so*
 %{_lib64dir}/libcfgutils.so*
 %{_lib64dir}/libidm.so*
-%{_lib64dir}/liblwraftclient.so*
+%{_lib64dir}/libpostclient.so*
 %{_lib64dir}/libssoafdclient.so*
 %{_lib64dir}/libssocommon.so*
 %{_lib64dir}/libssocoreclient.so*
@@ -991,26 +1113,29 @@ fi
 
 %{_sysconfdir}/vmware/java/vmware-override-java.security
 
-%files raft
+%files post
 
 %defattr(-,root,root)
 
-%{_sbindir}/lwraftd
+%{_sbindir}/postd
 
-%{_bindir}/lwraft_upgrade.sh
-%{_bindir}/lwraftadmintool
+%{_bindir}/postadmintool
 %{_bindir}/lwraftleavefed
 %{_bindir}/lwraftpromo
-%{_bindir}/lwraftschema
+%{_bindir}/postschema
+%{_bindir}/post-cli
+%{_bindir}/postschema
+%{_bindir}/postadmintool
 
-%{_lib64dir}/sasl2/libsasllwraftdb.so*
 
-%{_datadir}/config/sasllwraftd.conf
-%{_datadir}/config/lwraftschema.ldif
-%{_datadir}/config/lwraft-rest.json
-%{_datadir}/config/lwraft.reg
-%{_datadir}/config/lwraftd-syslog-ng.conf
-%{_datadir}/config/lwraft-client.reg
+%{_lib64dir}/sasl2/libsaslpostdb.so*
+
+%{_datadir}/config/saslpostd.conf
+%{_datadir}/config/postschema.ldif
+%{_datadir}/config/post-rest.json
+%{_datadir}/config/post.reg
+%{_datadir}/config/postd-syslog-ng.conf
+%{_datadir}/config/post-client.reg
 
 %files devel
 
@@ -1048,14 +1173,6 @@ fi
 %{_lib64dir}/libvmcaclient.la
 %{_lib64dir}/libvmdirclient.a
 %{_lib64dir}/libvmdirclient.la
-%{_lib64dir}/libcsrp.a
-%{_lib64dir}/libcsrp.la
-%{_lib64dir}/libgssapi_ntlm.a
-%{_lib64dir}/libgssapi_ntlm.la
-%{_lib64dir}/libgssapi_srp.a
-%{_lib64dir}/libgssapi_srp.la
-%{_lib64dir}/libgssapi_unix.a
-%{_lib64dir}/libgssapi_unix.la
 %{_lib64dir}/libvmdnsclient.a
 %{_lib64dir}/libvmdnsclient.la
 

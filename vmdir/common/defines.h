@@ -26,7 +26,8 @@
 }
 
 #ifndef _WIN32
-#define SOCKET_FILE_PATH "/var/run/vmdir_socket"
+#define SOCKET_FILE_PATH "/var/run/vmdir_socket"   /* vmdir IPC UDS socket */
+#define SOCKET_FILE_PATH_POST "/tmp/vmdir_socket"  /* raft server IPC UDS socket */
 #define EVERYONE_UID -1
 #endif
 #if defined _WIN32

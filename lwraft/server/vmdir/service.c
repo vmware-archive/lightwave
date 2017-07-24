@@ -120,7 +120,6 @@ VmDirRegisterRpcServer(
         };
     DWORD dwEpCount = sizeof(endpoints)/sizeof(endpoints[0]);
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
-    VMDIR_IF_HANDLE_T pSrpVerifierInterfaceSpec = rpc_srp_verifier_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirRaftInterfaceSpec = vmdirraft_v1_0_s_ifspec;
@@ -130,9 +129,6 @@ VmDirRegisterRpcServer(
 #endif
 
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerRegisterIf(pSrpVerifierInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerRegisterIf(pSuperLogInterfaceSpec);

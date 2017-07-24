@@ -669,8 +669,6 @@ AC_CONFIG_FILES([Makefile
                  server/kdcsrvcommon/Makefile
                  server/kdckrb5/Makefile
                  server/kdctools/Makefile
-                 server/vmkdc_mit_tools/Makefile
-                 server/vmkdc/Makefile
                  server/common/Makefile
                  server/backend/Makefile
                  server/mdb-store/Makefile
@@ -711,10 +709,6 @@ AC_CONFIG_FILES([Makefile
                  thirdparty/heimdal/asn1/Makefile
                  thirdparty/heimdal/krb5-crypto/Makefile
                  thirdparty/heimdal/ntlm/Makefile
-                 gssapi-plugins/Makefile
-                 gssapi-plugins/ntlm/Makefile
-                 gssapi-plugins/srp/Makefile
-                 gssapi-plugins/unix/Makefile
                  thirdparty/csrp/Makefile
                 ])
 AC_OUTPUT

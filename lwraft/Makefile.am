@@ -5,8 +5,7 @@ SUBDIRS = \
     thirdparty \
     kdccommon \
     common \
-    client \
-    gssapi-plugins
+    client
 
 if ENABLE_SERVER
 

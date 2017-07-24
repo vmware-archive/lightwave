@@ -18,7 +18,6 @@ postd_SOURCES = \
     regconfig.c \
     rpc.c \
     rpcserv.c \
-    rpcsrpserv.c \
     rpcstring.c \
     schema.c \
     service.c \
@@ -32,7 +31,6 @@ postd_SOURCES = \
     vmevent.c \
     vmdir_sstub.c \
     vmdirdbcp_sstub.c \
-    srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
     vmdirraft_sstub.c
 
@@ -55,7 +53,6 @@ postd_CPPFLAGS = \
     @VMEVENT_INCLUDES@
 
 postd_LDADD = \
-    $(top_builddir)/server/vmkdc/libvmkdcserv.la \
     $(top_builddir)/server/ldap-head/libldap-head.la \
     $(top_builddir)/server/rest-head/librest-head.la \
     $(top_builddir)/server/indexcfg/libindexcfg.la \
@@ -109,9 +106,6 @@ CLEANFILES = \
     vmdirdbcp_h.h \
     vmdirdbcp_cstub.c \
     vmdirdbcp_sstub.c \
-    srp_verifier_h.h \
-    srp_verifier_cstub.c \
-    srp_verifier_sstub.c \
     vmdirsuperlog_h.h \
     vmdirsuperlog_cstub.c \
     vmdirsuperlog_sstrub.c \
@@ -119,16 +113,13 @@ CLEANFILES = \
     vmdirraft_cstub.c \
     vmdirraft_sstub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h vmdirraft_h.h
+BUILT_SOURCES = vmdir_h.h vmdirdbcp_h.h vmdirsuperlog_h.h vmdirraft_h.h
 
 vmdir_h.h vmdir_sstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
 
 vmdirdbcp_h.h vmdirdbcp_sstub.c: $(idl_srcdir)/vmdirdbcp.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirdbcp_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
-
-srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
 
 vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<

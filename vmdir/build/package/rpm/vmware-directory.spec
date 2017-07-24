@@ -381,7 +381,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_bindir}/vdcschema
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
-%{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
 %{_lib64dir}/libvmkdcserv.so*
 %{_datadir}/config/saslvmdird.conf
@@ -399,6 +398,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_lib64dir}/libgssapi_ntlm.so*
 %{_lib64dir}/libgssapi_srp.so*
 %{_lib64dir}/libgssapi_unix.so*
+%{_lib64dir}/libkrb5crypto.so*
 
 %files client-devel
 %defattr(-,root,root)
