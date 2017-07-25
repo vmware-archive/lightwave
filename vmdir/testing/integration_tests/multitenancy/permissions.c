@@ -24,7 +24,7 @@ _VmDirTestRecursiveDeleteContainer(
     DWORD dwIndex = 0;
     PVMDIR_STRING_LIST pObjectList;
 
-    dwError = VmDirTestGetObjectList(pLd, pszContainerDn, NULL, &pObjectList);
+    dwError = VmDirTestGetObjectList(pLd, pszContainerDn, NULL, NULL, &pObjectList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwIndex = 0; dwIndex < pObjectList->dwCount; ++dwIndex)

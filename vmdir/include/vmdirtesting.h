@@ -128,6 +128,7 @@ VmDirTestGetObjectList(
     LDAP*               pLd,
     PCSTR               pszDn,
     PCSTR               pszFilter,      /* OPTIONAL */
+    PCSTR               pszAttr,        /* OPTIONAL */
     PVMDIR_STRING_LIST* ppObjectList    /* OPTIONAL */
     );
 

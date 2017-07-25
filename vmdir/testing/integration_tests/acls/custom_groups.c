@@ -191,7 +191,7 @@ ListCustomObjects(
             pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pState->pLdCustom, pszDN, NULL, &pObjects);
+    dwError = VmDirTestGetObjectList(pState->pLdCustom, pszDN, NULL, NULL, &pObjects);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pdwCount = pObjects->dwCount;
@@ -426,9 +426,9 @@ TestCustomClientRights(
     dwError = WriteCustomObjectProperties(pState, "co-2");
     TestAssertEquals(dwError, LDAP_INSUFFICIENT_ACCESS);
 
-    // should NOT be able to read SD
+    // should be able to read SD
     dwError = ReadCustomObjectSD(pState, "co-2");
-    TestAssertEquals(dwError, ERROR_INVALID_STATE);
+    TestAssertEquals(dwError, 0);
 
     // should NOT be able to write SD
     dwError = WriteCustomObjectSD(pState, "co-2");
@@ -475,9 +475,9 @@ TestNonMemberRights(
     dwError = WriteCustomObjectProperties(pState, "co-2");
     TestAssertEquals(dwError, LDAP_INSUFFICIENT_ACCESS);
 
-    // should NOT be able to read SD
+    // should be able to read SD
     dwError = ReadCustomObjectSD(pState, "co-2");
-    TestAssertEquals(dwError, ERROR_INVALID_STATE);
+    TestAssertEquals(dwError, 0);
 
     // should NOT be able to write SD
     dwError = WriteCustomObjectSD(pState, "co-2");

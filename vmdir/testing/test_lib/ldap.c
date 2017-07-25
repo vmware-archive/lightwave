@@ -254,11 +254,13 @@ VmDirTestGetObjectList(
     LDAP*               pLd,
     PCSTR               pszDn,
     PCSTR               pszFilter,      /* OPTIONAL */
+    PCSTR               pszAttr,        /* OPTIONAL */
     PVMDIR_STRING_LIST* ppObjectList    /* OPTIONAL */
     )
 {
-    DWORD dwError = 0;
-    DWORD dwObjectCount = 0;
+    DWORD   dwError = 0;
+    DWORD   dwObjectCount = 0;
+    PSTR    pszAttrs[] = { (PSTR)pszAttr, NULL };
     LDAPMessage *pResult = NULL;
     PVMDIR_STRING_LIST pObjectList = NULL;
 
@@ -267,7 +269,7 @@ VmDirTestGetObjectList(
                 pszDn,
                 LDAP_SCOPE_SUBTREE,
                 pszFilter,
-                NULL,
+                pszAttrs,
                 0,
                 NULL,
                 NULL,
@@ -358,7 +360,7 @@ VmDirTestDeleteContainerByDn(
     DWORD dwIndex = 0;
     PVMDIR_STRING_LIST pObjectList = NULL;
 
-    dwError = VmDirTestGetObjectList(pLd, pszContainerDn, NULL, &pObjectList);
+    dwError = VmDirTestGetObjectList(pLd, pszContainerDn, NULL, NULL, &pObjectList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwIndex = 0; dwIndex < pObjectList->dwCount; ++dwIndex)

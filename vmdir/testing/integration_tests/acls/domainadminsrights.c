@@ -260,7 +260,7 @@ DomainAdminShouldBeAbleToListChildObjects(
                 pState->pszBaseDN);
     TestAssertEquals(dwError, 0);
 
-    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL, NULL);
+    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL, NULL, NULL);
     TestAssertEquals(dwError, 0);
     return dwError;
 }

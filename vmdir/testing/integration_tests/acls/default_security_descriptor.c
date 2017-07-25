@@ -67,7 +67,8 @@ InitializeDefaultSecurityDescriptorTestData(
 
     pState->pfnCleanupCallback = CleanupDefaultSecurityDescriptorTestData;
 
-    // set default SD for residentialperson - read prop only
+    // set default SD for residentialperson
+    // - grant READ_PROP permission to authenticated users
     dwError = VmDirTestReplaceAttributeValues(
             pState->pLd,
             "cn=residentialperson,cn=schemacontext",
@@ -117,44 +118,23 @@ error:
 
 DWORD
 ReadDefaultSecurityDescriptors(
-    LDAP*   pLd
+    LDAP*   pLd,
+    PDWORD  pdwCnt
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PCSTR   pszDN = NULL;
     PVMDIR_STRING_LIST  pClasses = NULL;
 
+    // read default security descriptor
     dwError = VmDirTestGetObjectList(
             pLd,
             "cn=schemacontext",
             "(defaultsecuritydescriptor=*)",
+            ATTR_DEFAULT_SECURITY_DESCRIPTOR,
             &pClasses);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // expecting 4 classes
-    dwError = pClasses->dwCount == 0 ? VMDIR_ERROR_INSUFFICIENT_ACCESS : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = pClasses->dwCount != 4 ? VMDIR_ERROR_INVALID_STATE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // cn=group,cn=schemacontext
-    // cn=computer,cn=schemacontext
-    // cn=vmwcertificationauthority,cn=schemacontext
-    // cn=residentialperson,cn=schemacontext (custom)
-    for (i = 0; i < pClasses->dwCount; i++)
-    {
-        pszDN = pClasses->pStringList[i];
-        if (!VmDirStringStartsWith(pszDN, "cn=group,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=computer,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=vmwcertificationauthority,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=residentialperson,", FALSE))
-        {
-            dwError = VMDIR_ERROR_INVALID_STATE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
+    *pdwCnt = pClasses->dwCount;
 
 cleanup:
     VmDirStringListFree(pClasses);
@@ -167,62 +147,40 @@ error:
 DWORD
 ReadGroupEntries(
     PVMDIR_TEST_STATE   pState,
-    LDAP*               pLd
+    LDAP*               pLd,
+    PDWORD              pdwCntProp,
+    PDWORD              pdwCntCtrl
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PCSTR   pszDN = NULL;
-    PSTR    pszSecDesc = NULL;
-    PVMDIR_STRING_LIST  pEntries = NULL;
+    PVMDIR_STRING_LIST  pEntriesByProp = NULL;
+    PVMDIR_STRING_LIST  pEntriesByCtrl = NULL;
 
+    // read property
     dwError = VmDirTestGetObjectList(
             pLd,
             pState->pszBaseDN,
             "(objectclass=group)",
-            &pEntries);
+            ATTR_OBJECT_CLASS,
+            &pEntriesByProp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // expecting 5 entries
-    dwError = pEntries->dwCount == 0 ? VMDIR_ERROR_INSUFFICIENT_ACCESS : 0;
+    *pdwCntProp = pEntriesByProp->dwCount;
+
+    // read control
+    dwError = VmDirTestGetObjectList(
+            pLd,
+            pState->pszBaseDN,
+            "(objectclass=group)",
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            &pEntriesByCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pEntries->dwCount != 5 ? VMDIR_ERROR_INVALID_STATE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // cn=Users,cn=Builtin,...
-    // cn=Administrators,cn=Builtin,...
-    // cn=DCAdmins,cn=Builtin,...
-    // cn=DCClients,cn=Builtin,...
-    // cn=CAAdmins,cn=Builtin,...
-    for (i = 0; i < pEntries->dwCount; i++)
-    {
-        pszDN = pEntries->pStringList[i];
-        if (!VmDirStringStartsWith(pszDN, "cn=Users,cn=Builtin,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=Administrators,cn=Builtin,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=DCAdmins,cn=Builtin,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=DCClients,cn=Builtin,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=CAAdmins,cn=Builtin,", FALSE))
-        {
-            dwError = VMDIR_ERROR_INVALID_STATE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        // read security descriptor
-        VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-        dwError = VmDirTestGetAttributeValueString(
-                pLd,
-                pszDN,
-                LDAP_SCOPE_BASE,
-                NULL,
-                ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                &pszSecDesc);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    *pdwCntCtrl = pEntriesByCtrl->dwCount;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-    VmDirStringListFree(pEntries);
+    VmDirStringListFree(pEntriesByProp);
+    VmDirStringListFree(pEntriesByCtrl);
     return dwError;
 
 error:
@@ -232,67 +190,42 @@ error:
 DWORD
 ReadComputerEntries(
     PVMDIR_TEST_STATE   pState,
-    LDAP*               pLd
+    LDAP*               pLd,
+    PDWORD              pdwCntProp,
+    PDWORD              pdwCntCtrl
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PCSTR   pszDN = NULL;
-    PSTR    pszDCContainer = NULL;
-    PSTR    pszSecDesc = NULL;
-    PVMDIR_STRING_LIST  pEntries = NULL;
+    PVMDIR_STRING_LIST  pEntriesByProp = NULL;
+    PVMDIR_STRING_LIST  pEntriesByCtrl = NULL;
 
+    // read property
     dwError = VmDirTestGetObjectList(
             pLd,
             pState->pszBaseDN,
             // ignore msDS-ManagedServiceAccount objects
             "(&(objectclass=computer)(!(objectclass=msDS-ManagedServiceAccount)))",
-            &pEntries);
+            ATTR_OBJECT_CLASS,
+            &pEntriesByProp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // expecting 3 entries
-    dwError = pEntries->dwCount == 0 ? VMDIR_ERROR_INSUFFICIENT_ACCESS : 0;
+    *pdwCntProp = pEntriesByProp->dwCount;
+
+    // read control
+    dwError = VmDirTestGetObjectList(
+            pLd,
+            pState->pszBaseDN,
+            // ignore msDS-ManagedServiceAccount objects
+            "(&(objectclass=computer)(!(objectclass=msDS-ManagedServiceAccount)))",
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            &pEntriesByCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pEntries->dwCount != 3 ? VMDIR_ERROR_INVALID_STATE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf(
-            &pszDCContainer,
-            "ou=Domain Controllers,%s",
-            pState->pszBaseDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // ...,ou=Domain Controllers,...
-    // cn=testcomputer001,ou=Computers,...
-    // cn=testcomputer002,ou=Computers,...
-    for (i = 0; i < pEntries->dwCount; i++)
-    {
-        pszDN = pEntries->pStringList[i];
-        if (!VmDirStringEndsWith(pszDN, pszDCContainer, FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=testcomputer001,ou=Computers,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=testcomputer002,ou=Computers,", FALSE))
-        {
-            dwError = VMDIR_ERROR_INVALID_STATE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        // read security descriptor
-        VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-        dwError = VmDirTestGetAttributeValueString(
-                pLd,
-                pszDN,
-                LDAP_SCOPE_BASE,
-                NULL,
-                ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                &pszSecDesc);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    *pdwCntCtrl = pEntriesByCtrl->dwCount;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszDCContainer);
-    VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-    VmDirStringListFree(pEntries);
+    VmDirStringListFree(pEntriesByProp);
+    VmDirStringListFree(pEntriesByCtrl);
     return dwError;
 
 error:
@@ -302,56 +235,40 @@ error:
 DWORD
 ReadCertAuthEntries(
     PVMDIR_TEST_STATE   pState,
-    LDAP*               pLd
+    LDAP*               pLd,
+    PDWORD              pdwCntProp,
+    PDWORD              pdwCntCtrl
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PCSTR   pszDN = NULL;
-    PSTR    pszSecDesc = NULL;
-    PVMDIR_STRING_LIST  pEntries = NULL;
+    PVMDIR_STRING_LIST  pEntriesByProp = NULL;
+    PVMDIR_STRING_LIST  pEntriesByCtrl = NULL;
 
+    // read property
     dwError = VmDirTestGetObjectList(
             pLd,
             pState->pszBaseDN,
             "(objectclass=vmwcertificationauthority)",
-            &pEntries);
+            ATTR_OBJECT_CLASS,
+            &pEntriesByProp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // expecting 2 entry
-    dwError = pEntries->dwCount == 0 ? VMDIR_ERROR_INSUFFICIENT_ACCESS : 0;
+    *pdwCntProp = pEntriesByProp->dwCount;
+
+    // read control
+    dwError = VmDirTestGetObjectList(
+            pLd,
+            pState->pszBaseDN,
+            "(objectclass=vmwcertificationauthority)",
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            &pEntriesByCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pEntries->dwCount != 2 ? VMDIR_ERROR_INVALID_STATE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // cn=testcert001,cn=Certificate-Authorities,cn=Configuration,...
-    // cn=testcert002,cn=Certificate-Authorities,cn=Configuration,...
-    for (i = 0; i < pEntries->dwCount; i++)
-    {
-        pszDN = pEntries->pStringList[i];
-        if (!VmDirStringStartsWith(pszDN, "cn=testcert001,cn=Certificate-Authorities,cn=Configuration,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=testcert002,cn=Certificate-Authorities,cn=Configuration,", FALSE))
-        {
-            dwError = VMDIR_ERROR_INVALID_STATE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        // read security descriptor
-        VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-        dwError = VmDirTestGetAttributeValueString(
-                pLd,
-                pszDN,
-                LDAP_SCOPE_BASE,
-                NULL,
-                ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                &pszSecDesc);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    *pdwCntCtrl = pEntriesByCtrl->dwCount;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-    VmDirStringListFree(pEntries);
+    VmDirStringListFree(pEntriesByProp);
+    VmDirStringListFree(pEntriesByCtrl);
     return dwError;
 
 error:
@@ -361,68 +278,42 @@ error:
 DWORD
 ReadUserEntries(
     PVMDIR_TEST_STATE   pState,
-    LDAP*               pLd
+    LDAP*               pLd,
+    PDWORD              pdwCntProp,
+    PDWORD              pdwCntCtrl
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PCSTR   pszDN = NULL;
-    PSTR    pszFilter = NULL;
-    PSTR    pszSecDesc = NULL;
-    PVMDIR_STRING_LIST  pEntries = NULL;
+    PVMDIR_STRING_LIST  pEntriesByProp = NULL;
+    PVMDIR_STRING_LIST  pEntriesByCtrl = NULL;
 
-    // exclude test internal user and computers from search
-    dwError = VmDirAllocateStringPrintf(
-            &pszFilter,
-            "(&(&(objectclass=user)(!(objectclass=computer)))(!(cn=%s)))",
-            VmDirTestGetInternalUserCn(pState));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
+    // read property
     dwError = VmDirTestGetObjectList(
-            pLd, pState->pszBaseDN, pszFilter, &pEntries);
+            pLd,
+            pState->pszBaseDN,
+            // ignore computer objects
+            "(&(&(objectclass=user)(!(objectclass=computer))))",
+            ATTR_OBJECT_CLASS,
+            &pEntriesByProp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // expecting 5 entry
-    dwError = pEntries->dwCount == 0 ? VMDIR_ERROR_INSUFFICIENT_ACCESS : 0;
+    *pdwCntProp = pEntriesByProp->dwCount;
+
+    // read control
+    dwError = VmDirTestGetObjectList(
+            pLd,
+            pState->pszBaseDN,
+            // ignore computer objects
+            "(&(&(objectclass=user)(!(objectclass=computer))))",
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            &pEntriesByCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pEntries->dwCount != 5 ? VMDIR_ERROR_INVALID_STATE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // cn=Administrator,cn=users,...
-    // cn=krbtgt/VMWARE.COM,cn=users,...
-    // cn=K/M,cn=users,...
-    // cn=testuser001,cn=users,...
-    // cn=testuser002,cn=users,...
-    for (i = 0; i < pEntries->dwCount; i++)
-    {
-        pszDN = pEntries->pStringList[i];
-        if (!VmDirStringStartsWith(pszDN, "cn=Administrator,cn=users,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=krbtgt/VMWARE.COM,cn=users,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=K/M,cn=users,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=testuser001,cn=users,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=testuser002,cn=users,", FALSE))
-        {
-            dwError = VMDIR_ERROR_INVALID_STATE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        // read security descriptor
-        VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-        dwError = VmDirTestGetAttributeValueString(
-                pLd,
-                pszDN,
-                LDAP_SCOPE_BASE,
-                NULL,
-                ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                &pszSecDesc);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    *pdwCntCtrl = pEntriesByCtrl->dwCount;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-    VMDIR_SAFE_FREE_STRINGA(pszFilter);
-    VmDirStringListFree(pEntries);
+    VmDirStringListFree(pEntriesByProp);
+    VmDirStringListFree(pEntriesByCtrl);
     return dwError;
 
 error:
@@ -432,56 +323,40 @@ error:
 DWORD
 ReadResidentialPersonEntries(
     PVMDIR_TEST_STATE   pState,
-    LDAP*               pLd
+    LDAP*               pLd,
+    PDWORD              pdwCntProp,
+    PDWORD              pdwCntCtrl
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PCSTR   pszDN = NULL;
-    PSTR    pszSecDesc = NULL;
-    PVMDIR_STRING_LIST  pEntries = NULL;
+    PVMDIR_STRING_LIST  pEntriesByProp = NULL;
+    PVMDIR_STRING_LIST  pEntriesByCtrl = NULL;
 
+    // read property
     dwError = VmDirTestGetObjectList(
             pLd,
             pState->pszBaseDN,
             "(objectclass=residentialperson)",
-            &pEntries);
+            ATTR_OBJECT_CLASS,
+            &pEntriesByProp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // expecting 2 entry
-    dwError = pEntries->dwCount == 0 ? VMDIR_ERROR_INSUFFICIENT_ACCESS : 0;
+    *pdwCntProp = pEntriesByProp->dwCount;
+
+    // read control
+    dwError = VmDirTestGetObjectList(
+            pLd,
+            pState->pszBaseDN,
+            "(objectclass=residentialperson)",
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            &pEntriesByCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pEntries->dwCount != 2 ? VMDIR_ERROR_INVALID_STATE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // cn=residentialperson001,cn=users,...
-    // cn=residentialperson002,cn=users,...
-    for (i = 0; i < pEntries->dwCount; i++)
-    {
-        pszDN = pEntries->pStringList[i];
-        if (!VmDirStringStartsWith(pszDN, "cn=residentialperson001,cn=users,", FALSE) &&
-            !VmDirStringStartsWith(pszDN, "cn=residentialperson002,cn=users,", FALSE))
-        {
-            dwError = VMDIR_ERROR_INVALID_STATE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        // read security descriptor - should fail for non-admin
-        VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-        dwError = VmDirTestGetAttributeValueString(
-                pLd,
-                pszDN,
-                LDAP_SCOPE_BASE,
-                NULL,
-                ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                &pszSecDesc);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    *pdwCntCtrl = pEntriesByCtrl->dwCount;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszSecDesc);
-    VmDirStringListFree(pEntries);
+    VmDirStringListFree(pEntriesByProp);
+    VmDirStringListFree(pEntriesByCtrl);
     return dwError;
 
 error:
@@ -494,18 +369,22 @@ TestSystemDefaultSecurityDescriptors(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
 
     // default security descriptors should be readable by administrator
-    dwError = ReadDefaultSecurityDescriptors(pState->pLd);
+    dwError = ReadDefaultSecurityDescriptors(pState->pLd, &dwCnt);
     TestAssertEquals(dwError, 0);
+    TestAssertEquals(dwCnt, 5);
 
     // default security descriptors should be readable by authenticated users
-    dwError = ReadDefaultSecurityDescriptors(pState->pLdLimited);
+    dwError = ReadDefaultSecurityDescriptors(pState->pLdLimited, &dwCnt);
     TestAssertEquals(dwError, 0);
+    TestAssertEquals(dwCnt, 5);
 
     // default security descriptors should be readable by anonymous users
-    dwError = ReadDefaultSecurityDescriptors(pState->pLdAnonymous);
+    dwError = ReadDefaultSecurityDescriptors(pState->pLdAnonymous, &dwCnt);
     TestAssertEquals(dwError, 0);
+    TestAssertEquals(dwCnt, 5);
 
     // pass all tests, return 0
     return 0;
@@ -517,18 +396,29 @@ TestGroupEntriesSD(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwCntProp = 0;
+    DWORD   dwCntCtrl = 0;
 
-    // group entries should be readable by administrator
-    dwError = ReadGroupEntries(pState, pState->pLd);
+    dwError = ReadGroupEntries(pState, pState->pLd, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // group property should be readable by administrator
+    TestAssertEquals(dwCntProp, 5);
+    // group control should be readable by administrator
+    TestAssertEquals(dwCntCtrl, 5);
 
-    // group entries should be readable by authenticated users
-    dwError = ReadGroupEntries(pState, pState->pLdLimited);
+    dwError = ReadGroupEntries(pState, pState->pLdLimited, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // group property should be readable by authenticated users
+    TestAssertEquals(dwCntProp, 5);
+    // group control should be readable by authenticated users
+    TestAssertEquals(dwCntCtrl, 5);
 
-    // group entries should be NOT readable by anonymous users
-    dwError = ReadGroupEntries(pState, pState->pLdAnonymous);
-    TestAssertEquals(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    dwError = ReadGroupEntries(pState, pState->pLdAnonymous, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // group property should be NOT readable by anonymous users
+    TestAssertEquals(dwCntProp, 0);
+    // group control should be NOT readable by anonymous users
+    TestAssertEquals(dwCntCtrl, 0);
 
     // pass all tests, return 0
     return 0;
@@ -540,18 +430,29 @@ TestComputerEntriesSD(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwCntProp = 0;
+    DWORD   dwCntCtrl = 0;
 
-    // computer entries should be readable by administrator
-    dwError = ReadComputerEntries(pState, pState->pLd);
+    dwError = ReadComputerEntries(pState, pState->pLd, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // computer property should be readable by administrator
+    TestAssertEquals(dwCntProp, 3);
+    // computer control should be readable by administrator
+    TestAssertEquals(dwCntCtrl, 3);
 
-    // computer entries should be readable by authenticated users
-    dwError = ReadComputerEntries(pState, pState->pLdLimited);
+    dwError = ReadComputerEntries(pState, pState->pLdLimited, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // computer property should be readable by authenticated users
+    TestAssertEquals(dwCntProp, 3);
+    // computer control should be readable by authenticated users
+    TestAssertEquals(dwCntCtrl, 3);
 
-    // computer entries should be NOT readable by anonymous users
-    dwError = ReadComputerEntries(pState, pState->pLdAnonymous);
-    TestAssertEquals(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    dwError = ReadComputerEntries(pState, pState->pLdAnonymous, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // computer property should be NOT readable by anonymous users
+    TestAssertEquals(dwCntProp, 0);
+    // computer control should be NOT readable by anonymous users
+    TestAssertEquals(dwCntCtrl, 0);
 
     // pass all tests, return 0
     return 0;
@@ -563,18 +464,29 @@ TestCertAuthEntriesSD(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwCntProp = 0;
+    DWORD   dwCntCtrl = 0;
 
-    // cert auth entries should be readable by administrator
-    dwError = ReadCertAuthEntries(pState, pState->pLd);
+    dwError = ReadCertAuthEntries(pState, pState->pLd, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // cert auth property should be readable by administrator
+    TestAssertEquals(dwCntProp, 2);
+    // cert auth control should be readable by administrator
+    TestAssertEquals(dwCntCtrl, 2);
 
-    // cert auth entries should be readable by authenticated users
-    dwError = ReadCertAuthEntries(pState, pState->pLdLimited);
+    dwError = ReadCertAuthEntries(pState, pState->pLdLimited, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // cert auth property should be readable by authenticated users
+    TestAssertEquals(dwCntProp, 2);
+    // cert auth control should be readable by authenticated users
+    TestAssertEquals(dwCntCtrl, 2);
 
-    // cert auth entries should be NOT readable by anonymous users
-    dwError = ReadCertAuthEntries(pState, pState->pLdAnonymous);
-    TestAssertEquals(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    dwError = ReadCertAuthEntries(pState, pState->pLdAnonymous, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // cert auth property should be NOT readable by anonymous users
+    TestAssertEquals(dwCntProp, 0);
+    // cert auth control should be NOT readable by anonymous users
+    TestAssertEquals(dwCntCtrl, 0);
 
     // pass all tests, return 0
     return 0;
@@ -586,18 +498,29 @@ TestUserEntriesSD(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwCntProp = 0;
+    DWORD   dwCntCtrl = 0;
 
-    // user entries should be readable by administrator
-    dwError = ReadUserEntries(pState, pState->pLd);
+    dwError = ReadUserEntries(pState, pState->pLd, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // user property should be readable by administrator
+    TestAssertEquals(dwCntProp, 6);
+    // user control should be readable by administrator
+    TestAssertEquals(dwCntCtrl, 6);
 
-    // user entries should be NOT readable by authenticated users
-    dwError = ReadUserEntries(pState, pState->pLdLimited);
-    TestAssertEquals(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    dwError = ReadUserEntries(pState, pState->pLdLimited, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // user property should be NOT readable by authenticated users (except self)
+    TestAssertEquals(dwCntProp, 1);
+    // user control should be readable by authenticated users
+    TestAssertEquals(dwCntCtrl, 6);
 
-    // user entries should be NOT readable by anonymous users
-    dwError = ReadUserEntries(pState, pState->pLdAnonymous);
-    TestAssertEquals(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    dwError = ReadUserEntries(pState, pState->pLdAnonymous, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // user property should be NOT readable by anonymous users
+    TestAssertEquals(dwCntProp, 0);
+    // user control should be NOT readable by anonymous users
+    TestAssertEquals(dwCntCtrl, 0);
 
     // pass all tests, return 0
     return 0;
@@ -609,18 +532,29 @@ TestResidentialPersonEntriesSD(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwCntProp = 0;
+    DWORD   dwCntCtrl = 0;
 
-    // residential person entries should be readable by administrator
-    dwError = ReadResidentialPersonEntries(pState, pState->pLd);
+    dwError = ReadResidentialPersonEntries(pState, pState->pLd, &dwCntProp, &dwCntCtrl);
     TestAssertEquals(dwError, 0);
+    // residential person property should be readable by administrator
+    TestAssertEquals(dwCntProp, 2);
+    // residential person control should be readable by administrator
+    TestAssertEquals(dwCntCtrl, 2);
 
-    // residential person entries should be readable by authenticated users, but NOT SD
-    dwError = ReadResidentialPersonEntries(pState, pState->pLdLimited);
-    TestAssertEquals(dwError, ERROR_INVALID_STATE);
+    dwError = ReadResidentialPersonEntries(pState, pState->pLdLimited, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // residential person property should be readable by authenticated users
+    TestAssertEquals(dwCntProp, 2);
+    // residential person control should NOT be readable by authenticated users
+    TestAssertEquals(dwCntCtrl, 0);
 
-    // residential person entries should NOT be readable by anonymous users
-    dwError = ReadResidentialPersonEntries(pState, pState->pLdAnonymous);
-    TestAssertEquals(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    dwError = ReadResidentialPersonEntries(pState, pState->pLdAnonymous, &dwCntProp, &dwCntCtrl);
+    TestAssertEquals(dwError, 0);
+    // residential person property should NOT be readable by anonymous users
+    TestAssertEquals(dwCntProp, 0);
+    // residential person control should NOT be readable by anonymous users
+    TestAssertEquals(dwCntCtrl, 0);
 
     // pass all tests, return 0
     return 0;

@@ -688,7 +688,7 @@ TestDomainAdminPrivileges(
     dwError = _VdcConnectionFromUser(pState, pszUserName, &pLd); // TODO -- Why are we re-opening this connection?
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pLd, pState->pszBaseDN, NULL, NULL);
+    dwError = VmDirTestGetObjectList(pLd, pState->pszBaseDN, NULL, NULL, NULL);
     TestAssert(dwError == 0);
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
