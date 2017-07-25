@@ -9,6 +9,7 @@ MAKEROOT=$(SRCROOT)/support/make
 include $(MAKEROOT)/makedefs.mk
 
 SUBDIRS = \
+        vmmetrics \
         vmevent \
         vmidentity/ssoclients \
         lwraft \

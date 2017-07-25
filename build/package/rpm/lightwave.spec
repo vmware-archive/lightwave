@@ -1068,6 +1068,7 @@ Lightwave POST service
 %{_lib64dir}/libssooidc.so*
 %{_lib64dir}/libssovmdirclient.so*
 %{_lib64dir}/libvmdirauth.so*
+%{_lib64dir}/libvmmetrics.so*
 
 %{_datadir}/config/java.security.linux
 %{_datadir}/config/certool.cfg
@@ -1143,6 +1144,7 @@ Lightwave POST service
 %{_includedir}/vmdirtypes.h
 %{_includedir}/vmdns.h
 %{_includedir}/vmdnstypes.h
+%{_includedir}/vmmetrics.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la
@@ -1162,6 +1164,8 @@ Lightwave POST service
 %{_lib64dir}/libvmdirclient.la
 %{_lib64dir}/libvmdnsclient.a
 %{_lib64dir}/libvmdnsclient.la
+%{_lib64dir}/libvmmetrics.a
+%{_lib64dir}/libvmmetrics.la
 
 %{_includedir}/oidc.h
 %{_includedir}/oidc_types.h

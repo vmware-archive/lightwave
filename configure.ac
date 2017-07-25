@@ -1472,6 +1472,10 @@ AC_SUBST(pscsetupjarsdir)
 #--------------------------------------------------------------------
 
 AC_CONFIG_FILES([Makefile
+                 vmmetrics/Makefile
+                 vmmetrics/include/Makefile
+                 vmmetrics/include/public/Makefile
+                 vmmetrics/testing/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile
                  vmevent/include/public/Makefile
