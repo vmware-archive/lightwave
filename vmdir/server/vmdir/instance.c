@@ -231,7 +231,6 @@ VmDirSrvSetupHostInstance(
     PSTR                          pszUserDN = NULL;
     PCSTR                         pszUsersContainerName    = "Users";
     PSTR                          pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
-    VMDIR_SECURITY_DESCRIPTOR SecDescServices = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescAnonymousRead = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescNoDelete = {0};
 
@@ -525,7 +524,6 @@ VmDirSrvSetupHostInstance(
                 pszDomainDN,
                 pszUsername,
                 pszPassword,
-                &SecDescServices,
                 &SecDescAnonymousRead,
                 &SecDescNoDelete);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -578,12 +576,10 @@ VmDirSrvSetupHostInstance(
         dwError = VmDirSrvCreateServerObj(pSchemaCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-         dwError = VmDirSrvCreateContainerWithEID(
-                 pSchemaCtx,
-                 gVmdirServerGlobals.bvServicesRootDN.lberbv.bv_val,
-                 VMDIR_SERVICES_CONTAINER_NAME,
-                 &SecDescServices,
-                 0);
+        dwError = VmDirSrvCreateContainer(
+                pSchemaCtx,
+                gVmdirServerGlobals.bvServicesRootDN.lberbv.bv_val,
+                VMDIR_SERVICES_CONTAINER_NAME);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Replication Agreements container
@@ -648,7 +644,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDefaultAdminDN);
     VMDIR_SAFE_FREE_MEMORY(pszLowerCaseHostName);
     VMDIR_SAFE_FREE_MEMORY(SecDescAnonymousRead.pSecDesc);
-    VMDIR_SAFE_FREE_MEMORY(SecDescServices.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescNoDelete.pSecDesc);
     VmDirFreeBervalContent(&bv);
     return dwError;
@@ -767,7 +762,6 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut,         // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut,    // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescNoDeleteOut          // OPTIONAL
     )
@@ -797,7 +791,6 @@ VmDirSrvSetupDomainInstance(
     VMDIR_SECURITY_DESCRIPTOR SecDescNoDelete = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescNoDeleteChild = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescAnonymousRead = {0};
-    VMDIR_SECURITY_DESCRIPTOR SecDescServices = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescDomain = {0};
     PSTR pszAdminSid = NULL;
     PSTR pszBuiltInUsersGroupSid = NULL;
@@ -1044,7 +1037,6 @@ VmDirSrvSetupDomainInstance(
                 pszUserDN,
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -1064,7 +1056,6 @@ VmDirSrvSetupDomainInstance(
                 pszUserDN,
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
                 TRUE,
                 FALSE,
                 FALSE,
@@ -1085,7 +1076,6 @@ VmDirSrvSetupDomainInstance(
                 pszUserDN,
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -1099,7 +1089,6 @@ VmDirSrvSetupDomainInstance(
                 pszUserDN,
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
                 FALSE,
                 TRUE,
                 TRUE,
@@ -1113,21 +1102,6 @@ VmDirSrvSetupDomainInstance(
                 pszUserDN,
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
-                FALSE,
-                FALSE,
-                FALSE,
-                TRUE,
-                FALSE,
-                &SecDescServices);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateSecurityDescriptor(
-                VMDIR_ENTRY_ALL_ACCESS,
-                pszUserDN,
-                pszAdminsGroupSid,
-                pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
                 TRUE,
                 FALSE,
                 FALSE,
@@ -1214,12 +1188,6 @@ VmDirSrvSetupDomainInstance(
             pszDefaultPasswdLockoutPolicyDN, &SecDescFullAccess);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pSecDescServicesOut)
-    {
-        *pSecDescServicesOut = SecDescServices;
-        SecDescServices.pSecDesc = NULL;
-    }
-
     if (pSecDescAnonymousReadOut)
     {
         *pSecDescAnonymousReadOut = SecDescAnonymousRead;
@@ -1250,7 +1218,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(SecDescNoDelete.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescNoDeleteChild.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescAnonymousRead.pSecDesc);
-    VMDIR_SAFE_FREE_MEMORY(SecDescServices.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescDomain.pSecDesc);
 
     VMDIR_SAFE_FREE_MEMORY(pszAdminSid);

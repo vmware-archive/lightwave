@@ -238,7 +238,6 @@ VmDirSrvCreateSecurityDescriptor(
     PCSTR                       pszDomainAdminDn,
     PCSTR                       pszAdminsGroupSid,
     PCSTR                       pszDomainAdminsGroupSid,
-    PCSTR                       pszDomainClientsGroupSid,
     BOOLEAN                     bProtectedDacl,
     BOOLEAN                     bAnonymousRead,
     BOOLEAN                     bAuthenticatedRead,

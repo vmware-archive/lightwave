@@ -21,7 +21,6 @@ VmDirBuildDefaultDaclForEntry(
     PSID        pOwnerSid,
     PCSTR       pszAdminsGroupSid,
     PCSTR       pszDomainAdminsGroupSid,
-    PCSTR       pszDomainClientsGroupSid,
     BOOLEAN     bAnonymousRead,
     BOOLEAN     bAuthenticatedRead,
     BOOLEAN     bServicesDacl,
@@ -386,7 +385,6 @@ VmDirSrvCreateSecurityDescriptor(
     PCSTR                       pszDomainAdminDn,
     PCSTR                       pszAdminsGroupSid,
     PCSTR                       pszDomainAdminsGroupSid,
-    PCSTR                       pszDomainClientsGroupSid,
     BOOLEAN                     bProtectedDacl,
     BOOLEAN                     bAnonymousRead,
     BOOLEAN                     bAuthenticatedRead,
@@ -395,13 +393,13 @@ VmDirSrvCreateSecurityDescriptor(
     PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     )
 {
-    DWORD                           dwError = ERROR_SUCCESS;
+    DWORD   dwError = ERROR_SUCCESS;
+    PACL    pDacl = NULL;
+    PSID    pOwnerSid = NULL;
+    PSID    pGroupSid = NULL;
+    ULONG   ulSecDescLen = 0;
     PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs = NULL;
-    PACL                            pDacl = NULL;
-    PSID                            pOwnerSid = NULL;
-    PSID                            pGroupSid = NULL;
     PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel = NULL;
-    ULONG                           ulSecDescLen = 0;
 
     // Owner: Administrators
     // Get administrator's PSID
@@ -414,70 +412,58 @@ VmDirSrvCreateSecurityDescriptor(
     if (bProtectedDacl)
     {
         dwError = LwNtStatusToWin32Error(
-                    RtlSetSecurityDescriptorControl(
+                RtlSetSecurityDescriptorControl(
                         pSecDescAbs,
                         SE_DACL_PROTECTED,
                         SE_DACL_PROTECTED));
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSetOwnerSecurityDescriptor(
-                 pSecDescAbs,
-                 pOwnerSid,
-                 FALSE);
+    dwError = VmDirSetOwnerSecurityDescriptor(pSecDescAbs, pOwnerSid, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // BUILD-IN Group Administrators
     dwError = VmDirAllocateSidFromCString(pszAdminsGroupSid, &pGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSetGroupSecurityDescriptor(
-                 pSecDescAbs,
-                 pGroupSid,
-                 FALSE);
+    dwError = VmDirSetGroupSecurityDescriptor(pSecDescAbs, pGroupSid, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
     pGroupSid = NULL;
 
     // DACL
-    dwError = VmDirBuildDefaultDaclForEntry(amAccess,
-                                            pOwnerSid,
-                                            pszAdminsGroupSid,
-                                            pszDomainAdminsGroupSid,
-                                            pszDomainClientsGroupSid,
-                                            bAnonymousRead,
-                                            bAuthenticatedRead,
-                                            bServicesDacl,
-                                            bTenantDomain,
-                                            &pDacl);
+    dwError = VmDirBuildDefaultDaclForEntry(
+            amAccess,
+            pOwnerSid,
+            pszAdminsGroupSid,
+            pszDomainAdminsGroupSid,
+            bAnonymousRead,
+            bAuthenticatedRead,
+            bServicesDacl,
+            bTenantDomain,
+            &pDacl);
     BAIL_ON_VMDIR_ERROR(dwError);
     pOwnerSid = NULL;
 
-    dwError = VmDirSetDaclSecurityDescriptor(pSecDescAbs,
-                                             TRUE,
-                                             pDacl,
-                                             FALSE);
+    dwError = VmDirSetDaclSecurityDescriptor(pSecDescAbs, TRUE, pDacl, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
     pDacl = NULL;
 
-    dwError = VmDirAbsoluteToSelfRelativeSD(pSecDescAbs,
-                                            NULL,
-                                            &ulSecDescLen);
-    if (dwError == ERROR_INSUFFICIENT_BUFFER)
-    {
-        dwError = VmDirAllocateMemory(ulSecDescLen, (PVOID*)&pSecDescRel);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirAbsoluteToSelfRelativeSD(pSecDescAbs, NULL, &ulSecDescLen);
+    BAIL_ON_VMDIR_ERROR(dwError != ERROR_INSUFFICIENT_BUFFER);
 
-        dwError = VmDirAbsoluteToSelfRelativeSD(pSecDescAbs,
-                                                pSecDescRel,
-                                                &ulSecDescLen);
-    }
+    dwError = VmDirAllocateMemory(ulSecDescLen, (PVOID*)&pSecDescRel);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAbsoluteToSelfRelativeSD(
+            pSecDescAbs, pSecDescRel, &ulSecDescLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pSecDesc->pSecDesc = pSecDescRel;
     pSecDesc->ulSecDesc = ulSecDescLen;
-    pSecDesc->SecInfo = OWNER_SECURITY_INFORMATION |
-                        GROUP_SECURITY_INFORMATION |
-                        DACL_SECURITY_INFORMATION;
+    pSecDesc->SecInfo =
+            OWNER_SECURITY_INFORMATION |
+            GROUP_SECURITY_INFORMATION |
+            DACL_SECURITY_INFORMATION;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pDacl);
@@ -566,7 +552,6 @@ VmDirBuildDefaultDaclForEntry(
     PSID        pOwnerSid, // system Administrator SID, at least in our context
     PCSTR       pszAdminsGroupSid,
     PCSTR       pszDomainAdminsGroupSid,
-    PCSTR       pszDomainClientsGroupSid,
     BOOLEAN     bAnonymousRead,
     BOOLEAN     bAuthenticatedRead,
     BOOLEAN     bServicesDacl,
@@ -578,7 +563,6 @@ VmDirBuildDefaultDaclForEntry(
     DWORD   dwSizeDacl = 0;
     PSID    pBuiltInAdmins = NULL;
     PSID    pDomainAdmins = NULL;
-    PSID    pDomainClients = NULL;
     PSID    pSelfSid = NULL;
     PSID    pAnonymousSid = NULL;
     PSID    pAuthenticatedUsersSid = NULL;
@@ -632,11 +616,6 @@ VmDirBuildDefaultDaclForEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
     dwSidCount++;
 
-    dwError = VmDirAllocateSidFromCString(
-            pszDomainClientsGroupSid, &pDomainClients);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    dwSidCount++;
-
     dwSizeDacl = ACL_HEADER_SIZE +
             dwSidCount * sizeof(ACCESS_ALLOWED_ACE) +
             VmDirLengthSid(pOwnerSid) +
@@ -645,8 +624,7 @@ VmDirBuildDefaultDaclForEntry(
             (bAuthenticatedRead ? VmDirLengthSid(pAuthenticatedUsersSid) : 0) +
             (bTenantDomain ? VmDirLengthSid(pPrimaryDomainAdminSid) : 0) +
             VmDirLengthSid(pBuiltInAdmins) +
-            VmDirLengthSid(pDomainAdmins) +
-            VmDirLengthSid(pDomainClients) -
+            VmDirLengthSid(pDomainAdmins) -
             dwSidCount * sizeof(ULONG);
 
     dwError = VmDirAllocateMemory(dwSizeDacl, (PVOID*)&pDacl);
@@ -677,14 +655,6 @@ VmDirBuildDefaultDaclForEntry(
             OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
             amAccess,
             pDomainAdmins);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAddAccessAllowedAceEx(
-            pDacl,
-            ACL_REVISION,
-            OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
-            VMDIR_RIGHT_DS_READ_PROP | (bServicesDacl ? VMDIR_DCCLIENTS_FULL_ACCESS : 0),
-            pDomainClients);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAddAccessAllowedAceEx(
@@ -735,7 +705,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pAnonymousSid);
     VMDIR_SAFE_FREE_MEMORY(pAuthenticatedUsersSid);
     VMDIR_SAFE_FREE_MEMORY(pDomainAdmins);
-    VMDIR_SAFE_FREE_MEMORY(pDomainClients);
     VMDIR_SAFE_FREE_MEMORY(pBuiltInAdmins);
     VMDIR_SAFE_FREE_MEMORY(pPrimaryDomainAdminSid);
     return dwError;

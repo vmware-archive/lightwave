@@ -128,7 +128,6 @@ VmDirSrvCreateTenant(
                     pszUsername,
                     pszPassword,
                     NULL,
-                    NULL,
                     NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 

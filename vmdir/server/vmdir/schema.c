@@ -154,38 +154,56 @@ VmDirSchemaSetSystemDefaultSecurityDescriptors(
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    PSTR    pszBUSidTemplate = NULL;
+    PSTR    pszBuiltInUsersGroupSid = NULL;
+    PSTR    pszDomainClientsGroupSid = NULL;
     PSTR    pszDaclTemplate = NULL;
 
-    PCSTR   pszClasses[] =
-    {
-            OC_COMPUTER,
-            OC_GROUP,
-            OC_VMW_CERTIFICATION_AUTHORITY,
-            NULL
-    };
-
-    // create builtin users group SID template
+    // create builtin users group and domain clients group SID templates
     dwError = VmDirGenerateWellknownSid(
-            NULL, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBUSidTemplate);
+            NULL, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBuiltInUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // build SD template which will grant read property & control permission
+    dwError = VmDirGenerateWellknownSid(
+            NULL, VMDIR_DOMAIN_CLIENTS_RID, &pszDomainClientsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // grant built-in users group rights to read control & property of
+    // any group/computer/certificates object
     dwError = VmDirAllocateStringPrintf(
-            &pszDaclTemplate, "D:(A;;RCRP;;;%s)", pszBUSidTemplate);
+            &pszDaclTemplate,
+            "D:(A;;RCRP;;;%s)",
+            pszBuiltInUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // set the template as default security descriptors for predefined classes
-    for (i = 0; pszClasses[i]; i++)
-    {
-        dwError = VmDirSetDefaultSecurityDescriptorForClass(
-                pszClasses[i], pszDaclTemplate);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_GROUP, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_COMPUTER, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_VMW_CERTIFICATION_AUTHORITY, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // grant built-in users group to read control of any user object
+    // grant domain clients group to read property of any user object
+    VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
+    dwError = VmDirAllocateStringPrintf(
+            &pszDaclTemplate,
+            "D:(A;;RC;;;%s)(A;;RP;;;%s)",
+            pszBuiltInUsersGroupSid,
+            pszDomainClientsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_USER, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszBUSidTemplate);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInUsersGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
     return dwError;
 

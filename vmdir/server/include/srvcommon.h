@@ -888,8 +888,8 @@ VmDirBervalContentDup(
 
 DWORD
 VmDirCreateTransientSecurityDescriptor(
-    BOOL bAllowAnonymousRead,
-    PVMDIR_SECURITY_DESCRIPTOR pvsd
+    BOOLEAN                     bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR  pvsd
     );
 
 DWORD
