@@ -151,10 +151,10 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
     # TO REMOVE, temporary link to avoid breaking existing scripts
     rm -f %{_bindir}/lwraft-cli
     /bin/ln -s %{_bindir}/post-cli %{_bindir}/lwraft-cli
-    rm -f %{_bindir}/postschema
-    /bin/ln -s %{_bindir}/postschema %{_bindir}/postschema
-    rm -f %{_bindir}/postadmintool
-    /bin/ln -s %{_bindir}/postsadmintool %{_bindir}/lwraftadmintool
+    rm -f %{_bindir}/lwraftschema
+    /bin/ln -s %{_bindir}/postschema %{_bindir}/lwraftschema
+    rm -f %{_bindir}/lwraftadmintool
+    /bin/ln -s %{_bindir}/postadmintool %{_bindir}/lwraftadmintool
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
