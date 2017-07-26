@@ -252,6 +252,14 @@ extern "C" {
         }                                 \
     } while(0)
 
+#define VMDIR_SAFE_FREE_RWLOCK(lock)      \
+    do {                                  \
+        if ((lock)) {                     \
+            VmDirFreeRWLock(lock);        \
+            (lock) = NULL;                \
+        }                                 \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_CONDITION(cond)   \
     do {                                  \
         if ((cond)) {                     \
@@ -288,6 +296,39 @@ extern "C" {
                 (bInLock) = FALSE;              \
             }                                   \
         }                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_READLOCK(bInLock, lock, dwMilliSec)        \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmDirRWLockReadLock(lock, dwMilliSec) == 0)     \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_WRITELOCK(bInLock, lock, dwMilliSec)       \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmDirRWLockWriteLock(lock, dwMilliSec) == 0)    \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_UNLOCK(bInLock, lock)          \
+    do {                                            \
+        if ((bInLock))                              \
+        {                                           \
+            if (VmDirRWLockUnlock(lock) == 0)       \
+            {                                       \
+                (bInLock) = FALSE;                  \
+            }                                       \
+        }                                           \
     } while (0)
 
 #define BAIL_WITH_VMDIR_ERROR(dwError, ERROR_CODE)                          \

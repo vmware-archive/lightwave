@@ -14,6 +14,8 @@
 
 extern PREST_API_DEF gpVdirRestApiDef;
 
-extern PVMREST_HANDLE gpVdirRESTHandle;
+extern PVMREST_HANDLE gpVdirRestHandle;
 
-extern PVDIR_VMAFD_API gpVdirVmAfdAPI;
+extern PVDIR_VMAFD_API gpVdirVmAfdApi;
+
+extern PVDIR_REST_HEAD_CACHE gpVdirRestCache;

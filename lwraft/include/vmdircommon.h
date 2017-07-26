@@ -80,6 +80,7 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
+typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
 typedef struct _VM_DIR_SECURITY_CONTEXT_ *PVM_DIR_SECURITY_CONTEXT;
 
@@ -931,7 +932,47 @@ VmDirIsMutexInitialized(
     PVMDIR_MUTEX pMutex
 );
 
+DWORD
+VmDirAllocateRWLock(
+    PVMDIR_RWLOCK*  ppLock
+    );
 
+DWORD
+VmDirInitializeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    );
+
+VOID
+VmDirFreeRWLock(
+    PVMDIR_RWLOCK   pLock
+    );
+
+VOID
+VmDirFreeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    );
+
+DWORD
+VmDirRWLockReadLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    );
+
+DWORD
+VmDirRWLockWriteLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    );
+
+DWORD
+VmDirRWLockUnlock(
+    PVMDIR_RWLOCK   pLock
+    );
+
+BOOLEAN
+VmDirIsRWLockInitialized(
+    PVMDIR_RWLOCK   pLock
+    );
 
 DWORD
 VmDirAllocateCondition(

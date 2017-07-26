@@ -55,14 +55,12 @@ VmDirRESTAuthTokenParse(
     )
 {
     DWORD   dwError = 0;
-    DWORD   dwAFDError = 0;
     DWORD   dwOIDCError = 0;
+    BOOLEAN bCacheRefreshed = FALSE;
     PSTR    pszAuthDataCp = NULL;
     PSTR    pszTokenType = NULL;
     PSTR    pszAccessToken = NULL;
-    PSTR    pszDCName = NULL;
-    PSTR    pszDomainName = NULL;
-    POIDC_SERVER_METADATA   pOidcMetadata = NULL;
+    PSTR    pszOIDCSigningCertPEM = NULL;
     POIDC_ACCESS_TOKEN      pOidcAccessToken = NULL;
 
     if (!pAuthToken || IsNullOrEmptyString(pszAuthData))
@@ -96,30 +94,30 @@ VmDirRESTAuthTokenParse(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwAFDError = gpVdirVmAfdAPI->pfnGetDCName(NULL, &pszDCName);
-    dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwAFDError = gpVdirVmAfdAPI->pfnGetDomainName(NULL, &pszDomainName);
-    dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwOIDCError = OidcServerMetadataAcquire(
-            &pOidcMetadata,
-            pszDCName,
-            VMDIR_REST_OIDC_PORT,
-            pszDomainName,
-            NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
-    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
+retry:
+    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
+    dwError = VmDirRESTCacheGetOIDCSigningCertPEM(
+            gpVdirRestCache, &pszOIDCSigningCertPEM);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwOIDCError = OidcAccessTokenBuild(
             &pOidcAccessToken,
             pszAccessToken,
-            OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
+            pszOIDCSigningCertPEM,
             NULL,
             VMDIR_REST_DEFAULT_SCOPE,
             VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
+
+    // TODO should not retry for genuine token validation error
+    if (dwOIDCError && !bCacheRefreshed)
+    {
+        dwError = VmDirRESTCacheRefresh(gpVdirRestCache);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        bCacheRefreshed = TRUE;
+
+        goto retry;
+    }
+
     dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -130,9 +128,7 @@ VmDirRESTAuthTokenParse(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszAuthDataCp);
-    VMDIR_SAFE_FREE_MEMORY(pszDCName);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    OidcServerMetadataDelete(pOidcMetadata);
+    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
     OidcAccessTokenDelete(pOidcAccessToken);
     return dwError;
 
@@ -143,10 +139,9 @@ error:
     {
         VMDIR_LOG_ERROR(
                 VMDIR_LOG_MASK_ALL,
-                "%s failed, error (%d) AFD error (%d) OIDC error (%d)",
+                "%s failed, error (%d) OIDC error (%d)",
                 __FUNCTION__,
                 dwError,
-                dwAFDError,
                 dwOIDCError);
     }
     goto cleanup;

@@ -25,6 +25,9 @@ REST_PROCESSOR sVmDirRESTHandlers =
     .pfnHandleOthers = &VmDirRESTRequestHandler
 };
 
+// TODO
+// should we call this only if promoted? or we need rest-head
+// to return unwilling to perform in unpromoted state.
 DWORD
 VmDirRESTServerInit(
     VOID
@@ -42,9 +45,6 @@ VmDirRESTServerInit(
         {NULL, NULL}
     };
 
-    dwError = VmDirRESTLoadVmAfdAPI(&gpVdirVmAfdAPI);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     config.pSSLCertificate = RSA_SERVER_CERT;
     config.pSSLKey = RSA_SERVER_KEY;
     config.pServerPort = gVmdirGlobals.pszRestListenPort;
@@ -55,7 +55,13 @@ VmDirRESTServerInit(
     dwError = OidcClientGlobalInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTInit(&config, NULL, &gpVdirRESTHandle);
+    dwError = VmDirRESTLoadVmAfdAPI(&gpVdirVmAfdApi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTCacheInit(&gpVdirRestCache);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTInit(&config, NULL, &gpVdirRestHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdirRestApiDef);
@@ -70,33 +76,26 @@ VmDirRESTServerInit(
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
             dwError = VmRESTRegisterHandler(
-                    gpVdirRESTHandle, pEndPoint->pszName, pHandlers, NULL);
+                    gpVdirRestHandle, pEndPoint->pszName, pHandlers, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
-// TODO should we call this only if promoted?  or we need to rest head to return unwilling to perform in unpromoted state.
-    dwError = VmRESTStart(gpVdirRESTHandle);
-    if (dwError)
-    {
-        // soft fail - will not listen on REST port.
-        VMDIR_LOG_WARNING(
-                VMDIR_LOG_MASK_ALL,
-                "VmRESTStart failed with error %d, not going to listen on REST port",
-                dwError);
-        dwError = 0;
-    }
+    dwError = VmRESTStart(gpVdirRestHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
+    // soft fail - will not listen on REST port.
+    VMDIR_LOG_WARNING(
             VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
+            "%s failed with error %d, not going to listen on REST port",
             __FUNCTION__,
             dwError);
 
+    dwError = 0;
     goto cleanup;
 }
 
@@ -107,9 +106,9 @@ VmDirRESTServerShutdown(
 {
     PREST_API_MODULE    pModule = NULL;
 
-    if (gpVdirRESTHandle)
+    if (gpVdirRestHandle)
     {
-        VmRESTStop(gpVdirRESTHandle);
+        VmRESTStop(gpVdirRestHandle);
         if (gpVdirRestApiDef)
         {
             pModule = gpVdirRestApiDef->pModules;
@@ -119,16 +118,17 @@ VmDirRESTServerShutdown(
                 for (; pEndPoint; pEndPoint = pEndPoint->pNext)
                 {
                     (VOID)VmRESTUnRegisterHandler(
-                            gpVdirRESTHandle, pEndPoint->pszName);
+                            gpVdirRestHandle, pEndPoint->pszName);
                 }
             }
         }
-        VmRESTShutdown(gpVdirRESTHandle);
+        VmRESTShutdown(gpVdirRestHandle);
     }
 
     OidcClientGlobalCleanup();
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
-    VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdAPI);
+    VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdApi);
+    VmDirFreeRESTCache(gpVdirRestCache);
 }
 
 DWORD

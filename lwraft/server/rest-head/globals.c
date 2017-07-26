@@ -16,6 +16,8 @@
 
 PREST_API_DEF gpVdirRestApiDef = NULL;
 
-PVMREST_HANDLE gpVdirRESTHandle = NULL;
+PVMREST_HANDLE gpVdirRestHandle = NULL;
 
-PVDIR_VMAFD_API gpVdirVmAfdAPI = NULL;
+PVDIR_VMAFD_API gpVdirVmAfdApi = NULL;
+
+PVDIR_REST_HEAD_CACHE gpVdirRestCache = NULL;

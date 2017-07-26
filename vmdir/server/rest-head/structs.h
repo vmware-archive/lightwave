@@ -70,7 +70,7 @@ typedef struct _VDIR_REST_OPERATION
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
-// accesstoken.c
+// authtoken.c
 typedef enum
 {
     VDIR_REST_AUTH_TOKEN_BEARER,

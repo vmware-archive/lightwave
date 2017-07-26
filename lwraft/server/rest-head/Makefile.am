@@ -9,6 +9,7 @@ if REST_ENABLED
 librest_head_la_SOURCES += \
     auth.c \
     authtoken.c \
+    cache.c \
     decode.c \
     encode.c \
     globals.c \

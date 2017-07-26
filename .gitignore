@@ -562,6 +562,7 @@ __pycache__/
 
 build/confdefs.h
 build/libtool
+build/include/
 build/stage/
 build/config/
 build/lwraft/

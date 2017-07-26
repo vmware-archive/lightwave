@@ -52,7 +52,7 @@ VmDirRESTServerInit(
     dwError = OidcClientGlobalInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTInit(&config, NULL, &gpVdirRESTHandle);
+    dwError = VmRESTInit(&config, NULL, &gpVdirRestHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdirRestApiDef);
@@ -67,12 +67,12 @@ VmDirRESTServerInit(
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
             dwError = VmRESTRegisterHandler(
-                    gpVdirRESTHandle, pEndPoint->pszName, pHandlers, NULL);
+                    gpVdirRestHandle, pEndPoint->pszName, pHandlers, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
-    dwError = VmRESTStart(gpVdirRESTHandle);
+    dwError = VmRESTStart(gpVdirRestHandle);
     if (dwError)
     {
         // soft fail - will not listen on REST port.
@@ -103,9 +103,9 @@ VmDirRESTServerShutdown(
 {
     PREST_API_MODULE    pModule = NULL;
 
-    if (gpVdirRESTHandle)
+    if (gpVdirRestHandle)
     {
-        VmRESTStop(gpVdirRESTHandle);
+        VmRESTStop(gpVdirRestHandle);
         if (gpVdirRestApiDef)
         {
             pModule = gpVdirRestApiDef->pModules;
@@ -115,11 +115,11 @@ VmDirRESTServerShutdown(
                 for (; pEndPoint; pEndPoint = pEndPoint->pNext)
                 {
                     (VOID)VmRESTUnRegisterHandler(
-                            gpVdirRESTHandle, pEndPoint->pszName);
+                            gpVdirRestHandle, pEndPoint->pszName);
                 }
             }
         }
-        VmRESTShutdown(gpVdirRESTHandle);
+        VmRESTShutdown(gpVdirRestHandle);
     }
 
     OidcClientGlobalCleanup();

@@ -70,7 +70,7 @@ typedef struct _VDIR_REST_OPERATION
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
-// accesstoken.c
+// authtoken.c
 typedef enum
 {
     VDIR_REST_AUTH_TOKEN_BEARER,
@@ -112,3 +112,13 @@ typedef struct _VDIR_VMAFD_API
     PFN_VMAFD_GET_DOMAIN_NAME   pfnGetDomainName;
 
 } VDIR_VMAFD_API, *PVDIR_VMAFD_API;
+
+// cache.c
+typedef struct _VDIR_REST_HEAD_CACHE
+{
+    PSTR            pszDCName;
+    PSTR            pszDomainName;
+    PSTR            pszOIDCSigningCertificatePEM;
+    PVMDIR_RWLOCK   pRWLock;
+
+} VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;
