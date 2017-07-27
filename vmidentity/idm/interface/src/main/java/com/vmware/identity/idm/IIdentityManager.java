@@ -67,6 +67,8 @@ public interface IIdentityManager
 
     public void setTenantCredentials(String tenantName, Collection<Certificate> tenantCertificate, PrivateKey tenantPrivateKey, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public void setTenantCredentials(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
+
     public PrivateKey getTenantPrivateKey(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     public long getClockTolerance(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
