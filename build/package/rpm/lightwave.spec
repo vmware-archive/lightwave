@@ -981,7 +981,6 @@ Lightwave POST service
 %defattr(-,root,root,0755)
 
 %{_bindir}/ic-promote
-%{_bindir}/ic-join
 %{_bindir}/configure-lightwave-server
 %{_bindir}/test-ldapbind
 %{_bindir}/test-logon
@@ -1028,6 +1027,7 @@ Lightwave POST service
 
 %defattr(-,root,root)
 
+%{_bindir}/ic-join
 %{_bindir}/cdc-cli
 %{_bindir}/certool
 %{_bindir}/dir-cli
