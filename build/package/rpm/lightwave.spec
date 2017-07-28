@@ -101,7 +101,7 @@ VMware Lightwave Server
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
 
-%define _post_dbdir %{_localstatedir}/post
+%define _post_dbdir   %{_localstatedir}/post
 %define _vmca_dbdir   %{_localstatedir}/vmca
 %define _vmdir_dbdir  %{_localstatedir}/vmdir
 %define _vmafd_dbdir  %{_localstatedir}/vmafd
@@ -553,7 +553,7 @@ Lightwave POST service
 
 %post post
 
-    /bin/mkdir -m 700 -p %{_lwraft_dbdir}
+    /bin/mkdir -m 700 -p %{_post_dbdir}
 
     if [ -a %{_sasl2dir}/postd.conf ]; then
         /bin/rm %{_sasl2dir}/postd.conf
