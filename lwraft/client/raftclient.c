@@ -74,7 +74,7 @@ VmDirRaftServerExists(
     dwError = _VmDirConnectToRaft(pszHostName, pszDomainName, pszUserName, pszPassword, &pLd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(

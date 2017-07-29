@@ -604,18 +604,19 @@ VmDirLogGetMask(
 
 PCSTR
 VmDirSearchDomainDN(
-    PCSTR pszNormObjectDN
+    PCSTR   pszNormObjectDN
     );
 
 DWORD
 VmDirDomainDNToName(
-    PCSTR pszDomainDN,
-    PSTR* ppszDomainName);
+    PCSTR   pszDomainDN,
+    PSTR*   ppszDomainName
+    );
 
 DWORD
-VmDirSrvCreateDomainDN(
-    PCSTR pszFQDomainName,
-    PSTR* ppszDomainDN
+VmDirDomainNameToDN(
+    PCSTR   pszDomainName,
+    PSTR*   ppszDomainDN
     );
 
 #if defined(HAVE_DCERPC_WIN32)
@@ -1605,6 +1606,15 @@ VmDirSafeLDAPBind(
     PCSTR       pszHost,
     PCSTR       pszUPN,         // opt, if exists, will try SRP mech
     PCSTR       pszPassword     // opt, if exists, will try SRP mech
+    );
+
+DWORD
+VmDirSafeLDAPBindToPort(
+    LDAP**      ppLd,
+    PCSTR       pszHost,
+    DWORD       dwPort,
+    PCSTR       pszUPN,
+    PCSTR       pszPassword
     );
 
 DWORD

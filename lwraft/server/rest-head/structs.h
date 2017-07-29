@@ -105,20 +105,26 @@ typedef DWORD (*PFN_VMAFD_GET_DOMAIN_NAME)(
         PSTR*
         );
 
+typedef DWORD (*PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO)(
+        PCSTR,
+        PSTR*,
+        PSTR*
+        );
+
 typedef struct _VDIR_VMAFD_API
 {
-    VMDIR_LIB_HANDLE            pVmAfdLib;
-    PFN_VMAFD_GET_DC_NAME       pfnGetDCName;
-    PFN_VMAFD_GET_DOMAIN_NAME   pfnGetDomainName;
+    VMDIR_LIB_HANDLE                    pVmAfdLib;
+    PFN_VMAFD_GET_DC_NAME               pfnGetDCName;
+    PFN_VMAFD_GET_DOMAIN_NAME           pfnGetDomainName;
+    PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO  pfnGetMachineAccountInfo;
 
 } VDIR_VMAFD_API, *PVDIR_VMAFD_API;
 
 // cache.c
 typedef struct _VDIR_REST_HEAD_CACHE
 {
-    PSTR            pszDCName;
-    PSTR            pszDomainName;
-    PSTR            pszOIDCSigningCertificatePEM;
     PVMDIR_RWLOCK   pRWLock;
+    PSTR            pszOIDCSigningCertPEM;
+    PSID            pBuiltInAdminsGroupSid;
 
 } VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;

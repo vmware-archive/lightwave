@@ -250,7 +250,7 @@ VmDirSrvSetupHostInstance(
     // Construct important DNs and create the persisted DSE Root entry
 
     // Domain DN
-    dwError = VmDirSrvCreateDomainDN(pszFQDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszFQDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Deleted objects container DN

@@ -373,7 +373,7 @@ VmDirRESTDecodeObjectPathToDN(
 
     if (!IsNullOrEmptyString(pszTenant))
     {
-        dwError = VmDirSrvCreateDomainDN(pszTenant, &pszTenantDN);
+        dwError = VmDirDomainNameToDN(pszTenant, &pszTenantDN);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 

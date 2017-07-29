@@ -175,7 +175,7 @@ VmDirRefreshActPassword(
                                  pszActPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN( pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN( pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszPolicyDN,
@@ -703,7 +703,7 @@ VmDirSetupHostInstanceEx(
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
     {
-        dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+        dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         if ( VmDirIsIPV6AddrFormat( pszPartnerHostName ) )
@@ -3983,7 +3983,7 @@ _VmDirRemoveComputer(
                     &pszLowerCaseComputerHostName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(

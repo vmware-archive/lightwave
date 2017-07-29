@@ -34,14 +34,22 @@ VmDirRESTLoadVmAfdAPI(
     dwError = VmDirOpenVmAfdClientLib(&pVmAfdApi->pVmAfdLib);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pVmAfdApi->pfnGetDCName = (PFN_VMAFD_GET_DC_NAME)VmDirGetLibSym(
-            pVmAfdApi->pVmAfdLib, "VmAfdGetDCNameA");
+    pVmAfdApi->pfnGetDCName =
+            (PFN_VMAFD_GET_DC_NAME)VmDirGetLibSym(
+                    pVmAfdApi->pVmAfdLib, "VmAfdGetDCNameA");
     dwError = pVmAfdApi->pfnGetDCName ? 0 : VMDIR_ERROR_NOT_FOUND;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pVmAfdApi->pfnGetDomainName = (PFN_VMAFD_GET_DOMAIN_NAME)VmDirGetLibSym(
-            pVmAfdApi->pVmAfdLib, "VmAfdGetDomainNameA");
+    pVmAfdApi->pfnGetDomainName =
+            (PFN_VMAFD_GET_DOMAIN_NAME)VmDirGetLibSym(
+                    pVmAfdApi->pVmAfdLib, "VmAfdGetDomainNameA");
     dwError = pVmAfdApi->pfnGetDomainName ? 0 : VMDIR_ERROR_NOT_FOUND;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pVmAfdApi->pfnGetMachineAccountInfo =
+            (PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO)VmDirGetLibSym(
+                    pVmAfdApi->pVmAfdLib, "VmAfdGetMachineAccountInfoA");
+    dwError = pVmAfdApi->pfnGetMachineAccountInfo ? 0 : VMDIR_ERROR_NOT_FOUND;
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppVmAfdApi = pVmAfdApi;

@@ -60,12 +60,11 @@ VmDirRESTCacheRefresh(
 {
     DWORD   dwError = 0;
     DWORD   dwAFDError = 0;
-    DWORD   dwOIDCError = 0;
     BOOLEAN bInLock = FALSE;
     PSTR    pszDCName = NULL;
     PSTR    pszDomainName = NULL;
-    PSTR    pszOIDCSigningCertificatePEM = NULL;
-    POIDC_SERVER_METADATA   pOidcMetadata = NULL;
+    PSTR    pszOIDCSigningCertPEM = NULL;
+    PSID    pBuiltInAdminsGroupSid = NULL;
 
     if (!pRestCache)
     {
@@ -80,122 +79,40 @@ VmDirRESTCacheRefresh(
     dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwOIDCError = OidcServerMetadataAcquire(
-            &pOidcMetadata,
-            pszDCName,
-            VMDIR_REST_OIDC_PORT,
-            pszDomainName,
-            NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
-    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
+    // OIDC signing certificate PEM
+    dwError = VmDirRESTGetLightwaveOIDCSigningCertPEM(
+            pszDCName, pszDomainName, &pszOIDCSigningCertPEM);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringA(
-            OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
-            &pszOIDCSigningCertificatePEM);
+    // built-in administrators group sid
+    dwError = VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
+            pszDCName, pszDomainName, &pBuiltInAdminsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_RWLOCK_WRITELOCK(bInLock, pRestCache->pRWLock, 0);
 
-    VMDIR_SAFE_FREE_MEMORY(pRestCache->pszDCName);
-    pRestCache->pszDCName = pszDCName;
+    VMDIR_SAFE_FREE_MEMORY(pRestCache->pszOIDCSigningCertPEM);
+    pRestCache->pszOIDCSigningCertPEM = pszOIDCSigningCertPEM;
 
-    VMDIR_SAFE_FREE_MEMORY(pRestCache->pszDomainName);
-    pRestCache->pszDomainName = pszDomainName;
-
-    VMDIR_SAFE_FREE_MEMORY(pRestCache->pszOIDCSigningCertificatePEM);
-    pRestCache->pszOIDCSigningCertificatePEM = pszOIDCSigningCertificatePEM;
+    VMDIR_SAFE_FREE_MEMORY(pRestCache->pBuiltInAdminsGroupSid);
+    pRestCache->pBuiltInAdminsGroupSid = pBuiltInAdminsGroupSid;
 
 cleanup:
     VMDIR_RWLOCK_UNLOCK(bInLock, pRestCache->pRWLock);
-    OidcServerMetadataDelete(pOidcMetadata);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pszDCName);
     return dwError;
 
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d) AFD error (%d)  OIDC error (%d)",
+            "%s failed, error (%d) AFD error (%d)",
             __FUNCTION__,
             dwError,
-            dwAFDError,
-            dwOIDCError);
+            dwAFDError);
 
-    VMDIR_SAFE_FREE_MEMORY(pszDCName);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertificatePEM);
-    goto cleanup;
-}
-
-DWORD
-VmDirRESTCacheGetDCName(
-    PVDIR_REST_HEAD_CACHE   pRestCache,
-    PSTR*                   ppszDCName
-    )
-{
-    DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
-    PSTR    pszDCName = NULL;
-
-    if (!pRestCache || !ppszDCName)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    VMDIR_RWLOCK_READLOCK(bInLock, gpVdirRestCache->pRWLock, 0);
-
-    dwError = VmDirAllocateStringA(pRestCache->pszDCName, &pszDCName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszDCName = pszDCName;
-
-cleanup:
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpVdirRestCache->pRWLock);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
-    VMDIR_SAFE_FREE_MEMORY(pszDCName);
-    goto cleanup;
-}
-
-DWORD
-VmDirRESTCacheGetDomainName(
-    PVDIR_REST_HEAD_CACHE   pRestCache,
-    PSTR*                   ppszDomainName
-    )
-{
-    DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
-    PSTR    pszDomainName = NULL;
-
-    if (!pRestCache || !ppszDomainName)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    VMDIR_RWLOCK_READLOCK(bInLock, gpVdirRestCache->pRWLock, 0);
-
-    dwError = VmDirAllocateStringA(pRestCache->pszDomainName, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszDomainName = pszDomainName;
-
-cleanup:
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpVdirRestCache->pRWLock);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pBuiltInAdminsGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
     goto cleanup;
 }
 
@@ -207,7 +124,7 @@ VmDirRESTCacheGetOIDCSigningCertPEM(
 {
     DWORD   dwError = 0;
     BOOLEAN bInLock = FALSE;
-    PSTR    pszOIDCSigningCertificatePEM = NULL;
+    PSTR    pszOIDCSigningCertPEM = NULL;
 
     if (!pRestCache || !ppszOIDCSigningCertPEM)
     {
@@ -217,11 +134,10 @@ VmDirRESTCacheGetOIDCSigningCertPEM(
     VMDIR_RWLOCK_READLOCK(bInLock, gpVdirRestCache->pRWLock, 0);
 
     dwError = VmDirAllocateStringA(
-            pRestCache->pszOIDCSigningCertificatePEM,
-            &pszOIDCSigningCertificatePEM);
+            pRestCache->pszOIDCSigningCertPEM, &pszOIDCSigningCertPEM);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    *ppszOIDCSigningCertPEM = pszOIDCSigningCertificatePEM;
+    *ppszOIDCSigningCertPEM = pszOIDCSigningCertPEM;
 
 cleanup:
     VMDIR_RWLOCK_UNLOCK(bInLock, gpVdirRestCache->pRWLock);
@@ -234,7 +150,50 @@ error:
             __FUNCTION__,
             dwError);
 
-    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertificatePEM);
+    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTCacheGetBuiltInAdminsGroupSid(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PSID*                   ppBuiltInAdminsGroupSid
+    )
+{
+    DWORD   dwError = 0;
+    ULONG   ulSidLen = 0;
+    BOOLEAN bInLock = FALSE;
+    PSID    pSid = NULL;
+
+    if (!pRestCache || !ppBuiltInAdminsGroupSid)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_RWLOCK_READLOCK(bInLock, gpVdirRestCache->pRWLock, 0);
+
+    ulSidLen = RtlLengthSid(pRestCache->pBuiltInAdminsGroupSid);
+
+    dwError = VmDirAllocateMemory(ulSidLen, (PVOID*)&pSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = RtlCopySid(ulSidLen, pSid, pRestCache->pBuiltInAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppBuiltInAdminsGroupSid = pSid;
+
+cleanup:
+    VMDIR_RWLOCK_UNLOCK(bInLock, gpVdirRestCache->pRWLock);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pSid);
     goto cleanup;
 }
 
@@ -249,9 +208,8 @@ VmDirFreeRESTCache(
     {
         VMDIR_RWLOCK_WRITELOCK(bInLock, pRestCache->pRWLock, 0);
 
-        VMDIR_SAFE_FREE_MEMORY(pRestCache->pszDCName);
-        VMDIR_SAFE_FREE_MEMORY(pRestCache->pszDomainName);
-        VMDIR_SAFE_FREE_MEMORY(pRestCache->pszOIDCSigningCertificatePEM);
+        VMDIR_SAFE_FREE_MEMORY(pRestCache->pBuiltInAdminsGroupSid);
+        VMDIR_SAFE_FREE_MEMORY(pRestCache->pszOIDCSigningCertPEM);
 
         VMDIR_RWLOCK_UNLOCK(bInLock, pRestCache->pRWLock);
 

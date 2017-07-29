@@ -83,7 +83,7 @@ VmDirSrvCreateTenant(
                    "Setting up a tenant instance (%s).",
                    VDIR_SAFE_STRING(pszFQDomainName));
 
-    dwError = VmDirSrvCreateDomainDN(pszFQDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszFQDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);

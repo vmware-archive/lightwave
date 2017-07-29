@@ -681,7 +681,7 @@ _VmDirDummyDomainWrite(
     dwError =  VmDirUPNToNameAndDomain(pszUserName, &pszName, &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBind(&pLd, pszHostName, pszUserName, pszPassword);

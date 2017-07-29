@@ -152,11 +152,14 @@ VmDirRESTAuthViaToken(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
     ULONG   ulBufLen = 0;
     PVDIR_REST_AUTH_TOKEN   pAuthToken = NULL;
     PACCESS_TOKEN           pAccessToken = NULL;
     PTOKEN_USER             pUser  = NULL;
+    PTOKEN_GROUPS           pGroups = NULL;
     PSTR                    pszUserSid = NULL;
+    PSID                    pBuiltInAdminsGroupSid = NULL;
     PLW_MAP_SECURITY_CONTEXT    pMapSecurityContext = NULL;
     VDIR_BERVALUE   berval = VDIR_BERVALUE_INIT;
 
@@ -190,6 +193,7 @@ VmDirRESTAuthViaToken(
             pMapSecurityContext, &pAccessToken, pAuthToken->pszBindUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // get user sid
     dwError = VmDirQueryAccessTokenInformation(
             pAccessToken, TokenUser, NULL, 0, &ulBufLen);
     BAIL_ON_VMDIR_ERROR(dwError != ERROR_INSUFFICIENT_BUFFER);
@@ -203,6 +207,35 @@ VmDirRESTAuthViaToken(
 
     dwError = VmDirAllocateCStringFromSid(&pszUserSid, pUser->User.Sid);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // grant full access to members of admin group of joined lightwave domain
+    dwError = VmDirQueryAccessTokenInformation(
+            pAccessToken, TokenGroups, NULL, 0, &ulBufLen);
+    BAIL_ON_VMDIR_ERROR(dwError != ERROR_INSUFFICIENT_BUFFER);
+
+    dwError = VmDirAllocateMemory(ulBufLen, (PVOID*)&pGroups);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirQueryAccessTokenInformation(
+            pAccessToken, TokenGroups, pGroups, ulBufLen, &ulBufLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTCacheGetBuiltInAdminsGroupSid(
+            gpVdirRestCache, &pBuiltInAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < pGroups->GroupCount; i++)
+    {
+        if (RtlEqualSid(pGroups->Groups[i].Sid, pBuiltInAdminsGroupSid))
+        {
+            RtlReleaseAccessToken(&pAccessToken);
+            pAccessToken = NULL;
+
+            dwError = VmDirSrvCreateAccessTokenForAdmin(&pAccessToken);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            break;
+        }
+    }
 
     // populate connection access info
     pRestOp->pConn->AccessInfo.pszBindedObjectSid = pszUserSid;
@@ -246,7 +279,9 @@ cleanup:
     RtlReleaseAccessToken(&pAccessToken);
     VmDirFreeRESTAuthToken(pAuthToken);
     VmDirFreeBervalContent(&berval);
+    VMDIR_SAFE_FREE_MEMORY(pBuiltInAdminsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszUserSid);
+    VMDIR_SAFE_FREE_MEMORY(pGroups);
     VMDIR_SAFE_FREE_MEMORY(pUser);
     return dwError;
 

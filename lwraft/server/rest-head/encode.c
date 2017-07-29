@@ -302,7 +302,7 @@ VmDirRESTEncodeDNToObjectPath(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszTenant, &pszTenantDN);
+    dwError = VmDirDomainNameToDN(pszTenant, &pszTenantDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // DN must be under the target tenant

@@ -370,7 +370,7 @@ AddComputersContainer(
                   &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(
+    dwError = VmDirDomainNameToDN(
                   pszDomainName,
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -446,7 +446,7 @@ AddCAContainer(
                   &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(
+    dwError = VmDirDomainNameToDN(
                   pszDomainName,
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -520,7 +520,7 @@ AddBuiltinDCClientsGroup(
                   &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(
+    dwError = VmDirDomainNameToDN(
                   pszDomainName,
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -595,7 +595,7 @@ AddBuiltinCAAdminsGroup(
                   &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(
+    dwError = VmDirDomainNameToDN(
                   pszDomainName,
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);

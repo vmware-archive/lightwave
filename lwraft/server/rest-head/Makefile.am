@@ -16,6 +16,7 @@ librest_head_la_SOURCES += \
     httperror.c \
     ldapapi.c \
     ldapcontrol.c \
+    lightwave.c \
     objectapi.c \
     operation.c \
     param.c \

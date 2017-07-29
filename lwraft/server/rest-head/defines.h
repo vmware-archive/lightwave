@@ -25,7 +25,10 @@
 #define VMDIR_V1_OBJ_RESOURCE       "/v1/post/object"
 #define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
 
-// OIDC
+// Lightwave
+#define VMDIR_REST_LIGHTWAVE_LDAP_PORT      389
+
+// Lightwave OIDC
 #define VMDIR_REST_OIDC_PORT                443
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_post"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0

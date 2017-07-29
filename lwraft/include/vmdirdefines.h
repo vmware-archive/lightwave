@@ -433,6 +433,36 @@ extern "C" {
                             errMsg);                \
     } while (0)
 
+#define VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppVals)       \
+    do                                              \
+    {                                               \
+        if (ppVals)                                 \
+        {                                           \
+            ldap_value_free_len(ppVals);            \
+            (ppVals) = NULL;                        \
+        }                                           \
+    } while(0)
+
+#define VDIR_SAFE_LDAP_MSGFREE(pResult)             \
+    do                                              \
+    {                                               \
+        if (pResult)                                \
+        {                                           \
+            ldap_msgfree(pResult);                  \
+            (pResult) = NULL;                       \
+        }                                           \
+    } while(0)
+
+#define VDIR_SAFE_LDAP_UNBIND_EXT_S(pLd)            \
+    do                                              \
+    {                                               \
+        if (pLd)                                    \
+        {                                           \
+            ldap_unbind_ext_s(pLd, NULL, NULL);     \
+            (pLd) = NULL;                           \
+        }                                           \
+    } while(0)
+
 // LBER call return -1 if error
 #define BAIL_ON_LBER_ERROR(dwError) \
     do                                                                          \

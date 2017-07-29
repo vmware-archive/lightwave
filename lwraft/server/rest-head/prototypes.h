@@ -57,21 +57,15 @@ VmDirRESTCacheRefresh(
     );
 
 DWORD
-VmDirRESTCacheGetDCName(
-    PVDIR_REST_HEAD_CACHE   pRestCache,
-    PSTR*                   ppszDCName
-    );
-
-DWORD
-VmDirRESTCacheGetDomainName(
-    PVDIR_REST_HEAD_CACHE   pRestCache,
-    PSTR*                   ppszDomainName
-    );
-
-DWORD
 VmDirRESTCacheGetOIDCSigningCertPEM(
     PVDIR_REST_HEAD_CACHE   pRestCache,
     PSTR*                   ppszOIDCSigningCertPEM
+    );
+
+DWORD
+VmDirRESTCacheGetBuiltInAdminsGroupSid(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PSID*                   ppBuiltInAdminsGroupSid
     );
 
 VOID
@@ -251,6 +245,29 @@ VmDirRESTRequestHandler(
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
+    );
+
+// lightwave.c
+DWORD
+VmDirRESTGetLightwaveOIDCSigningCertPEM(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PSTR*   ppszOIDCSigningCertPEM
+    );
+
+DWORD
+VmDirRESTGetLightwaveObjectSid(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszDN,
+    PSID*   ppSid
+    );
+
+DWORD
+VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PSID*   ppBuiltInAdminsGroupSid
     );
 
 // objectapi.c
