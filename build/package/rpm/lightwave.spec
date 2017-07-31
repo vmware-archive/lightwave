@@ -8,15 +8,15 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, lightwave-server = %{_version}, lightwave-client = %{_version}
-BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.10, python2-devel >= 2.7.8, boost-devel = 1.60.0
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0, lightwave-server = %{_version}, lightwave-client = %{_version}
+BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, boost-devel = 1.60.0
 
 %if 0%{?fedora} >= 21
-Requires: krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15
-BuildRequires: ant >= 1.9.4, maven >= 3.3.9
+Requires: java-1.8.0-openjdk >= 1.8.0.131, krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15
+BuildRequires: java-1.8.0-openjdk >= 1.8.0.131, ant >= 1.9.4, maven >= 3.3.9
 %else
-Requires: krb5 >= 1.14, sqlite-autoconf >= 3.14, apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
-BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
+Requires: openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14, apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
+BuildRequires: openjdk >= 1.8.0.131, apache-ant >= 1.9.4, apache-maven >= 3.3.9
 %endif
 
 %description
@@ -112,7 +112,7 @@ VMware Lightwave Server
 
 %package client
 Summary: Lightwave Client
-Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0
 %if 0%{?fedora} >= 21
 Requires: krb5-libs >= 1.14, sqlite >= 3.14
 %else
