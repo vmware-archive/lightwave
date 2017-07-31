@@ -18,7 +18,7 @@
    </fileset>
 
    <fileset id="jar-set.tomcat-coyote" dir="${build_dir}/depends">
-        <include name="tomcat-coyote-7.0.26.jar"/>
+        <include name="tomcat-coyote-8.5.19.jar"/>
    </fileset>
 
    <fileset id="jar-set.tomcat-catalina" dir="${build_dir}/depends">
@@ -88,7 +88,7 @@
    </fileset>
 
    <fileset id="jar-set.esapi" dir="${build_dir}/depends">
-       <include name="esapi-2.0.1.jar" />
+       <include name="esapi-2.1.0.1.jar" />
    </fileset>
 
    <fileset id="jar-set.opensaml" dir="${build_dir}/depends">
@@ -177,37 +177,37 @@
    </fileset>
 
    <fileset id="jar-set.log4j" dir="${build_dir}/depends">
-      <include name="log4j-1.2.16.jar" />
+      <include name="log4j-1.2.17.jar" />
    </fileset>
 
    <fileset id="jar-set.LOG4J2" dir="${build_dir}/depends">
-        <include name="log4j-1.2-api-2.0.2.jar"/>
-        <include name="log4j-api-2.2.jar"/>
-        <include name="log4j-core-2.2.jar"/>
-        <include name="log4j-slf4j-impl-2.2.jar"/>
-        <include name="slf4j-api-1.7.10.jar"/>
-        <include name="jcl-over-slf4j-1.7.10.jar"/>
+        <include name="log4j-1.2-api-2.8.2.jar"/>
+        <include name="log4j-api-2.8.2.jar"/>
+        <include name="log4j-core-2.8.2.jar"/>
+        <include name="log4j-slf4j-impl-2.8.2.jar"/>
+        <include name="slf4j-api-1.7.25.jar"/>
+        <include name="jcl-over-slf4j-1.7.25.jar"/>
    </fileset>
-   
+
    <fileset id="jar-set.jstl-1.2" dir="${build_dir}/depends" >
         <include name="jstl-api-1.2.jar" />
         <include name="jstl-impl-1.2.jar" />
    </fileset>
 
-   <fileset id="jar-set.spring-framework-4.0.6" dir="${build_dir}/depends"> 
-       <include name="spring-aop-4.0.6.RELEASE.jar" />
-       <include name="spring-beans-4.0.6.RELEASE.jar" />
-       <include name="spring-context-4.0.6.RELEASE.jar" />
-       <include name="spring-core-4.0.6.RELEASE.jar" />
-       <include name="spring-expression-4.0.6.RELEASE.jar" />
-       <include name="spring-test-4.0.6.RELEASE.jar" />
-       <include name="spring-web-4.0.6.RELEASE.jar" />
-       <include name="spring-webmvc-4.0.6.RELEASE.jar" />
+   <fileset id="jar-set.spring-framework-4.3.4" dir="${build_dir}/depends">
+       <include name="spring-aop-4.3.4.RELEASE.jar" />
+       <include name="spring-beans-4.3.4.RELEASE.jar" />
+       <include name="spring-context-4.3.4.RELEASE.jar" />
+       <include name="spring-core-4.3.4.RELEASE.jar" />
+       <include name="spring-expression-4.3.4.RELEASE.jar" />
+       <include name="spring-test-4.3.4.RELEASE.jar" />
+       <include name="spring-web-4.3.4.RELEASE.jar" />
+       <include name="spring-webmvc-4.3.4.RELEASE.jar" />
    </fileset>
 
    <fileset id="jar-set.opensaml.endorsed" dir="${build_dir}/depends">
-      <include name="serializer-2.7.1.jar"/>
-      <include name="xalan-2.7.1.jar"/>
+      <include name="serializer-2.7.2.jar"/>
+      <include name="xalan-2.7.2.jar"/>
       <include name="xercesImpl-2.10.0.jar"/>
       <include name="xml-apis-1.4.01.jar"/>
       <include name="xml-resolver-1.2.jar"/>
