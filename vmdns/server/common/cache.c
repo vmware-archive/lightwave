@@ -620,8 +620,8 @@ VmDnsCacheRefreshThread(
             dwError = VmDnsCacheLoadInitialData(pCacheContext);
             if (dwError)
             {
-                VMDNS_LOG_ERROR("DnsCacheRefreshThread loading intial data failed with %u.", dwError);
-                continue;
+                VMDNS_LOG_DEBUG("DnsCacheRefreshThread loading initial data failed with %u...Retrying", dwError);
+                goto wait;
             }
             else
             {
@@ -661,6 +661,7 @@ VmDnsCacheRefreshThread(
             }
         }
 
+wait:
         if (!pCacheContext->bShutdown)
         {
             dwError = VmDnsConditionTimedWait(
