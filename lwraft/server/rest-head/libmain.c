@@ -42,6 +42,7 @@ VmDirRESTServerInit(
     {
         {"ldap", VmDirRESTGetLdapModule},
         {"object", VmDirRESTGetObjectModule},
+        {"etcd", VmDirRESTGetEtcdModule},
         {NULL, NULL}
     };
 

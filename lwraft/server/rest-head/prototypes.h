@@ -180,6 +180,30 @@ VmDirRESTEncodeObjectArray(
     size_t*             pSkipped
     );
 
+// etcdapi.c
+DWORD
+VmDirRESTGetEtcdModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTEtcdPut(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTEtcdGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTEtcdDelete(
+    void*   pIn,
+    void**  ppOut
+    );
+
 // httperror.c
 PVDIR_HTTP_ERROR
 VmDirRESTGetHttpError(
