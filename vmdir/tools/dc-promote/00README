@@ -1,0 +1,14 @@
+Scripts to promote Lightwave to a Domain Controller. 
+vmdird built with --enable-winjoin just be installed.
+
+Result: Windows clients can domain join to
+        this promoted Lightwave Domain Controller
+
+
+Usage: lightwave-promote-dc.sh [[IP_PSC]  [Admin PWD]]
+IP_PSC    : IP of Photon Instance to promote as a Domain Controller
+Admin PWD : Administrator password
+
+Both of these values can be set as variables:
+    LIGHTWAVE_AD
+    ADMIN_PASSWORD
