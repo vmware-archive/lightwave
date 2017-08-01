@@ -268,7 +268,7 @@ fi
 # Setup vmafd, vmdir and SSO STS server.
 JAVA_HOME=/etc/alternatives/jre
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
-VMWARE_DIR=/opt/vmware
+VMWARE_DIR=${prefix:-@prefix@}
 CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
 BIN_DIR=$VMWARE_DIR/bin
 SBIN_DIR=$VMWARE_DIR/sbin
@@ -366,25 +366,17 @@ else
 
     case "$LOTUS_DEPLOYMENT" in
         "standalone")
-            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
-                                com.vmware.pscsetup.PlatformServicesControllerDeploy \
-                                --mode "standalone" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-                                --site $LOTUS_SITE_NAME \
-                                --hostname $LOTUS_HOSTNAME \
-                                $LOTUS_DNS_FORWARDERS_ARG \
-                                $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
+            $BIN_DIR/ic-promote --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" --site $LOTUS_SITE_NAME
             ;;
         "partner")
-            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
-                                com.vmware.pscsetup.PlatformServicesControllerDeploy \
-                                --mode "partner" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-                                --site $LOTUS_SITE_NAME \
-                                --server $LOTUS_PARTNER_HOSTNAME \
-                                --hostname $LOTUS_HOSTNAME \
-                                $LOTUS_DNS_FORWARDERS_ARG \
-                                $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
+            $BIN_DIR/ic-promote --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" --site $LOTUS_SITE_NAME --partner $LOTUS_PARTNER_HOSTNAME
             ;;
     esac
+
+    if [ $? -ne 0 ]; then
+        echo  "PSC Installation failed."
+        _exit 1
+    fi
 
 case $DISABLE_STS in
     0)

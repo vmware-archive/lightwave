@@ -429,7 +429,7 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_SITE          "Site"
 #define VMAFD_REG_VALUE_LAST_PING     "LastPing"
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
-#define VMAFD_REG_KEY_ENABLE_DNS      "EnableDnsUpdates"
+#define VMAFD_REG_KEY_ENABLE_DDNS      "EnableDnsUpdates"
 #define VMAFD_REG_KEY_HEARTBEAT       "HeartbeatInterval"
 
 //domainJoinFlag

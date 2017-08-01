@@ -22,7 +22,7 @@
 REST_MODULE _ldap_rest_module[] =
 {
     {
-        "/v1/lwraft/ldap",
+        VMDIR_V1_LDAP_RESOURCE,
         {VmDirRESTLdapSearch, VmDirRESTLdapAdd, NULL, VmDirRESTLdapDelete, VmDirRESTLdapModify}
     }
 };
@@ -81,8 +81,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -172,8 +176,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjResult)
     {
@@ -241,8 +248,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -291,8 +302,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -342,8 +357,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -423,7 +442,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }

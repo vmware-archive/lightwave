@@ -27,7 +27,7 @@ _VmDirIsIPV4AddrFormat(
  */
 PCSTR
 VmDirSearchDomainDN(
-    PCSTR pszNormObjectDN
+    PCSTR   pszNormObjectDN
     )
 {
     PSTR pszDomainDn = VmDirStringCaseStrA(pszNormObjectDN, "dc=");
@@ -42,8 +42,9 @@ VmDirSearchDomainDN(
 
 DWORD
 VmDirDomainDNToName(
-    PCSTR pszDomainDN,
-    PSTR* ppszDomainName)
+    PCSTR   pszDomainDN,
+    PSTR*   ppszDomainName
+    )
 {
     DWORD   dwError = 0;
     PSTR    pszDomainName = NULL;
@@ -94,14 +95,14 @@ error:
 }
 
 DWORD
-VmDirSrvCreateDomainDN(
-    PCSTR pszFQDomainName,
-    PSTR* ppszDomainDN
+VmDirDomainNameToDN(
+    PCSTR   pszDomainName,
+    PSTR*   ppszDomainDN
     )
 {
     DWORD   dwError = 0;
     PSTR    pszDomainDN = NULL;
-    int     fqDomainNameLen = (int) VmDirStringLenA(pszFQDomainName);
+    int     fqDomainNameLen = (int) VmDirStringLenA(pszDomainName);
     int     domainDNBufLen = 0;
     PSTR    pszTmpFQDomainName = NULL;
     int     numDomainComps = 1;
@@ -116,7 +117,7 @@ VmDirSrvCreateDomainDN(
     dwError = VmDirAllocateMemory( fqDomainNameLen + 1 /* \0 */, (PVOID *) &pszTmpFQDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringCpyA( pszTmpFQDomainName, fqDomainNameLen + 1, pszFQDomainName );
+    dwError = VmDirStringCpyA( pszTmpFQDomainName, fqDomainNameLen + 1, pszDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Count number of domain components
@@ -3633,7 +3634,7 @@ VmDirGetDomainFuncLvlInternal(
     }
 
     // Get the domain DN from the domain name.
-    dwError = VmDirSrvCreateDomainDN(
+    dwError = VmDirDomainNameToDN(
                   pszDomain,
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -3713,7 +3714,7 @@ VmDirGetServerAccountDN(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(

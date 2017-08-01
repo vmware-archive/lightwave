@@ -4,12 +4,12 @@ libgssapi_srp_la_CPPFLAGS = \
    -D_MIT_KRB5_1_11 \
    -D_MIT_KRB5_1_12 \
    -I. \
-   -I$(top_srcdir)/gssapi-plugins/srp \
-   -I$(top_srcdir)/include \
-   -I$(top_srcdir) \
-   -I$(top_srcdir)/include/public \
-   -I$(top_srcdir)/thirdparty \
-   -I$(top_builddir)/client \
+   -I$(top_srcdir)/vmdir/gssapi-plugins/srp \
+   -I$(top_srcdir)/vmdir/include \
+   -I$(top_srcdir)/vmdir \
+   -I$(top_srcdir)/vmdir/include/public \
+   -I$(top_srcdir)/vmdir/thirdparty \
+   -I$(top_builddir)/vmdir/client \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -32,9 +32,9 @@ libgssapi_srp_la_SOURCES = \
         srprpc.c
 
 libgssapi_srp_la_LIBADD = \
-    $(top_builddir)/client/libvmdirclient.la \
-    $(top_builddir)/thirdparty/csrp/libcsrp.la \
-    $(top_builddir)/client/libvmdirclient_la-srp_verifier_cstub.lo \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
+    $(top_builddir)/vmdir/client/libvmdirclient_la-srp_verifier_cstub.lo \
     @DCERPC_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \

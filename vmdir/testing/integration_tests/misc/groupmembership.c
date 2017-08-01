@@ -199,7 +199,7 @@ TestAddingUserToGroups(
 
     for (dwIndex = 0; dwIndex < pvslGroupDNs->dwCount; ++dwIndex)
     {
-        dwError = VmDirTestAddUserToGroup(
+        dwError = VmDirTestAddUserToGroupByDn(
                     pState->pLd,
                     pszUserDN,
                     pvslGroupDNs->pStringList[dwIndex]);
@@ -238,7 +238,7 @@ TestExplicitlyRemovingUserFromGroups(
         dwError = TestModifyUserAcl(pState, pvslGroupDNs->pStringList[dwIndex], "WP");
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError  = VmDirTestRemoveUserFromGroup(
+        dwError  = VmDirTestRemoveUserFromGroupByDn(
                     pState->pLdLimited,
                     pszUserDN,
                     pvslGroupDNs->pStringList[dwIndex]);

@@ -5,16 +5,16 @@ vdcresetMachineActCred_SOURCES = \
     main.c
 
 vdcresetMachineActCred_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/include \
-    -I$(top_srcdir)/tools/include \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/server/include \
+    -I$(top_srcdir)/lwraft/tools/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vdcresetMachineActCred_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/liblwraftclient.la \
+    $(top_builddir)/lwraft/common/libcommon.la \
+    $(top_builddir)/lwraft/client/liblwraftclient.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \

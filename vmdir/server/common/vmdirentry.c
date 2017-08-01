@@ -962,49 +962,38 @@ VmDirFreeBervalContent(
 
 DWORD
 VmDirCreateTransientSecurityDescriptor(
-    BOOL bAllowAnonymousRead,
-    PVMDIR_SECURITY_DESCRIPTOR pvsd
+    BOOLEAN                     bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR  pvsd
     )
 {
-    DWORD dwError = 0;
-    PSTR pszDomainDN = NULL;
-    PSTR pszAdminsGroupSid = NULL;
-    PSTR pszDomainAdminsGroupSid = NULL;
-    PSTR pszDomainClientsGroupSid = NULL;
-    VMDIR_SECURITY_DESCRIPTOR SecDesc = {0};
+    DWORD   dwError = 0;
+    PSTR    pszDomainDN = NULL;
+    PSTR    pszAdminsGroupSid = NULL;
+    PSTR    pszDomainAdminsGroupSid = NULL;
+    VMDIR_SECURITY_DESCRIPTOR   SecDesc = {0};
 
     pszDomainDN = BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN);
 
-    dwError = VmDirGenerateWellknownSid(pszDomainDN,
-                                        VMDIR_DOMAIN_ALIAS_RID_ADMINS,
-                                        &pszAdminsGroupSid);
+    dwError = VmDirGenerateWellknownSid(
+            pszDomainDN, VMDIR_DOMAIN_ALIAS_RID_ADMINS, &pszAdminsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGenerateWellknownSid(pszDomainDN,
-                                        VMDIR_DOMAIN_ADMINS_RID,
-                                        &pszDomainAdminsGroupSid);
+    dwError = VmDirGenerateWellknownSid(
+            pszDomainDN, VMDIR_DOMAIN_ADMINS_RID, &pszDomainAdminsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGenerateWellknownSid(pszDomainDN,
-                                        VMDIR_DOMAIN_CLIENTS_RID,
-                                        &pszDomainClientsGroupSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //
     // Create default security descriptor for internally-created entries.
-    //
     dwError = VmDirSrvCreateSecurityDescriptor(
-                VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD_BUT_DELETE_OBJECT,
-                BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN),
-                pszAdminsGroupSid,
-                pszDomainAdminsGroupSid,
-                pszDomainClientsGroupSid,
-                FALSE,
-                bAllowAnonymousRead,
-                bAllowAnonymousRead,
-                FALSE,
-                FALSE,
-                &SecDesc);
+            VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD_BUT_DELETE_OBJECT,
+            BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN),
+            pszAdminsGroupSid,
+            pszDomainAdminsGroupSid,
+            FALSE,
+            bAllowAnonymousRead,
+            bAllowAnonymousRead,
+            FALSE,
+            FALSE,
+            &SecDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pvsd->pSecDesc = SecDesc.pSecDesc;
@@ -1014,7 +1003,6 @@ VmDirCreateTransientSecurityDescriptor(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszAdminsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszDomainAdminsGroupSid);
-    VMDIR_SAFE_FREE_STRINGA(pszDomainClientsGroupSid);
     return dwError;
 
 error:
@@ -1459,6 +1447,54 @@ VmDirDeleteEntry(
 cleanup:
     VmDirFreeOperationContent(&op);
     return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirSimpleEntryDeleteAttribute(
+    PCSTR   pszDN,
+    PCSTR   pszAttr
+    )
+{
+    DWORD   dwError = 0;
+    size_t  dnlen = 0;
+    size_t  attrlen = 0;
+    VDIR_OPERATION  ldapOp = {0};
+
+    if (IsNullOrEmptyString(pszDN) || IsNullOrEmptyString(pszAttr))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirInitStackOperation(
+            &ldapOp,
+            VDIR_OPERATION_TYPE_INTERNAL,
+            LDAP_REQ_MODIFY,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dnlen = VmDirStringLenA(pszDN);
+    attrlen = VmDirStringLenA(pszAttr);
+
+    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.reqDn.lberbv_val = (PSTR)pszDN;
+    ldapOp.reqDn.lberbv_len = dnlen;
+
+    ldapOp.request.modifyReq.dn.lberbv_val = ldapOp.reqDn.lberbv_val;
+    ldapOp.request.modifyReq.dn.lberbv_len = ldapOp.reqDn.lberbv_len;
+
+    dwError = VmDirAppendAMod(
+            &ldapOp, MOD_OP_DELETE, pszAttr, attrlen, NULL, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInternalModifyEntry(&ldapOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperationContent(&ldapOp);
+    return dwError;
+
 error:
     goto cleanup;
 }

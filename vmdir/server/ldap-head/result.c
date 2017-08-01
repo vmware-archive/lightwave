@@ -286,10 +286,8 @@ VmDirSendSearchEntry(
     // generating a final result to send back
     SetSpecialReturnChar(&pOperation->request.searchReq, &iSearchReqSpecialChars);
 
-    if ( pSrEntry->eId == DSE_ROOT_ENTRY_ID
-         &&
-         pOperation->request.searchReq.attrs == NULL
-       )
+    if (pSrEntry->eId == DSE_ROOT_ENTRY_ID &&
+        pOperation->request.searchReq.attrs == NULL)
     {
         //  For ADSI, if no specific attributes requested of DSE ROOT search,
         //  return ALL (include operational) attributes.
@@ -297,17 +295,21 @@ VmDirSendSearchEntry(
     }
 
     // ACL check before processing/sending the current srEntry back
-    retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pSrEntry, VMDIR_RIGHT_DS_READ_PROP );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirSrvAccessCheck(
+            pOperation,
+            &pOperation->conn->AccessInfo,
+            pSrEntry,
+            pOperation->request.searchReq.accessRequired);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    if ( pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL )
+    if (pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL)
     {
         // This is an internal search operation.
         // Set bSearchEntrySent = TRUE to indicate that ACL
         // check passed and should be included in the result.
         pSrEntry->bSearchEntrySent = TRUE;
     }
-    else if ( sr->bStoreRsltInMem )
+    else if (sr->bStoreRsltInMem)
     {
         // This is an external search operation but wants to
         // store the result in memory instead of sending.

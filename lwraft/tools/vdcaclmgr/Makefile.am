@@ -6,17 +6,17 @@ lwraftaclmgr_SOURCES = \
     main.c
 
 lwraftaclmgr_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/tools/include \
-    -I$(top_srcdir)/client \
-    -I$(top_builddir)/client \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/tools/include \
+    -I$(top_srcdir)/lwraft/client \
+    -I$(top_builddir)/lwraft/client \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 lwraftaclmgr_LDADD = \
-    $(top_builddir)/client/liblwraftclient.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/lwraft/client/libpostclient.la \
+    $(top_builddir)/lwraft/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @LWRSUTILS_LIBS@ \

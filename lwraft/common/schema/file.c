@@ -92,7 +92,7 @@ VmDirGetDefaultSchemaFile(
 #ifdef _WIN32
     PSTR    pszCfgPath = NULL;
 #else
-    PCSTR   pszLinuxFile = LWRAFT_CONFIG_DIR "/lwraftschema.ldif";
+    PCSTR   pszLinuxFile = LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR VMDIR_DEFAULT_SCHEMA_FILE ;
 #endif
 
     if ( ppszSchemaFile==NULL)
@@ -105,7 +105,7 @@ VmDirGetDefaultSchemaFile(
     dwError = VmDirGetCfgPath(&pszCfgPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(&pszSchemaFile,"%s\\lwraftschema.ldif", pszCfgPath);
+    dwError = VmDirAllocateStringPrintf(&pszSchemaFile,"%s\\%s", pszCfgPath, VMDIR_DEFAULT_SCHEMA_FILE);
     BAIL_ON_VMDIR_ERROR(dwError);
 #else
     dwError = VmDirAllocateStringA(pszLinuxFile, &pszSchemaFile);

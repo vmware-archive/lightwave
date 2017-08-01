@@ -5,9 +5,9 @@ liblwraftmdb_la_SOURCES = \
     midl.c
 
 liblwraftmdb_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/public \
-    -I$(top_srcdir)/thirdparty/openldap/include
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/public \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/include
 
 liblwraftmdb_la_LDFLAGS = \
     -static

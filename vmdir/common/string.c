@@ -536,6 +536,92 @@ error:
 }
 
 DWORD
+VmDirStringReplaceAll(
+    PCSTR   pszSrc,
+    PCSTR   pszPatn,
+    PCSTR   pszRplc,
+    PSTR*   ppszDst
+    )
+{
+    DWORD   dwError = 0;
+    size_t  patnlen = 0;
+    size_t  rplclen = 0;
+    size_t  toklen = 0;
+    size_t  curlen = 0;
+    PSTR    pszCur = NULL;
+    PSTR    pszNxt = NULL;
+    PSTR    pszDst = NULL;
+
+    if (IsNullOrEmptyString(pszSrc) ||
+        IsNullOrEmptyString(pszPatn) ||
+        IsNullOrEmptyString(pszRplc) ||
+        !ppszDst)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    patnlen = VmDirStringLenA(pszPatn);
+    rplclen = VmDirStringLenA(pszRplc);
+    pszCur = (PSTR)pszSrc;
+
+    while (pszCur)
+    {
+        pszNxt = VmDirStringStrA(pszCur, pszPatn);
+
+        if (pszNxt)
+        {
+            toklen = pszNxt - pszCur;
+            pszNxt += patnlen;
+
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pszDst,
+                    (PVOID*)&pszDst,
+                    curlen + toklen + rplclen + 1,
+                    curlen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringNCpyA(
+                    pszDst + curlen, toklen + 1, pszCur, toklen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            curlen += toklen;
+
+            dwError = VmDirStringNCpyA(
+                    pszDst + curlen, rplclen + 1, pszRplc, rplclen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            curlen += rplclen;
+        }
+        else
+        {
+            toklen = VmDirStringLenA(pszCur);
+
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pszDst,
+                    (PVOID*)&pszDst,
+                    curlen + toklen + 1,
+                    curlen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringNCpyA(
+                    pszDst + curlen, toklen + 1, pszCur, toklen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            curlen += toklen;
+        }
+
+        pszCur = pszNxt;
+    }
+
+    *ppszDst = pszDst;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszDst);
+    goto cleanup;
+}
+
+DWORD
 VmDirStringToTokenList(
     PCSTR pszStr,
     PCSTR pszDelimiter,

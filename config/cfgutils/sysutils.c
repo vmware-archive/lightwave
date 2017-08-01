@@ -21,27 +21,61 @@ VmwDeployGetHostname(
     PSTR* ppszHostname
     )
 {
-    DWORD dwError = 0;
-    CHAR  szHostname[HOST_NAME_MAX + 1] = "";
-    PSTR  pszHostname = NULL;
+    DWORD  dwError = 0;
+    struct addrinfo* pHostInfo = NULL;
+    PSTR   pszHostname = NULL;
+    struct addrinfo hints = {0};
+    CHAR  szName[HOST_NAME_MAX + 1] = "";
+    PSTR pszName = NULL;
+    int sts = 0;
 
-    if (gethostname(szHostname, sizeof(szHostname)-1) < 0)
+    sts = gethostname(szName, sizeof(szName)-1);
+    if (sts < 0)
     {
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwDeployAllocateStringA(szHostname, &pszHostname);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = 0;
+    hints.ai_protocol = 0;
+    hints.ai_flags = AI_CANONNAME;
+
+    sts = getaddrinfo(szName,
+                      NULL,
+                      &hints,
+                      &pHostInfo);
+    if (sts < 0 || !pHostInfo->ai_canonname || !*pHostInfo->ai_canonname)
+    {
+        pszName = szName;
+    }
+    else
+    {
+        pszName = pHostInfo->ai_canonname;
+    }
+
+    dwError = VmwDeployAllocateStringA(
+                pszName,
+                &pszHostname);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     *ppszHostname = pszHostname;
 
 cleanup:
 
+    if (pHostInfo)
+    {
+        freeaddrinfo(pHostInfo);
+    }
+
     return dwError;
 
 error:
 
+    if (pszHostname)
+    {
+        VmwDeployFreeMemory(pszHostname);
+    }
     *ppszHostname = NULL;
 
     goto cleanup;

@@ -102,20 +102,15 @@ VmDirTestCreateObject(
     LDAPMod *attrs[] = {&mod[0], &mod[1], NULL};
 
     dwError = VmDirAllocateStringPrintf(
-                &pszDN,
-                "cn=%s,cn=%s,cn=%s,%s",
-                pszClassName,
-                pszContainer,
-                VmDirTestGetTestContainerCn(pState),
-                pState->pszBaseDN);
+            &pszDN,
+            "cn=%s,cn=%s,cn=%s,%s",
+            pszClassName,
+            pszContainer,
+            VmDirTestGetTestContainerCn(pState),
+            pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldap_add_ext_s(
-                pState->pLd,
-                pszDN,
-                attrs,
-                NULL,
-                NULL);
+    dwError = ldap_add_ext_s(pState->pLd, pszDN, attrs, NULL, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -127,35 +122,158 @@ error:
 }
 
 DWORD
+VmDirTestCreateObjectByDNPrefix(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszDNPrefix,
+    PCSTR               pszClassName
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszCN = NULL;
+    PSTR    pszDN = NULL;
+    PSTR    valsCn[] = { NULL, NULL };
+    PSTR    valsClass[] = { NULL, NULL };
+    LDAPMod mod[]=
+    {
+            { LDAP_MOD_ADD, ATTR_CN, { valsCn } },
+            { LDAP_MOD_ADD, ATTR_OBJECT_CLASS, { valsClass } },
+    };
+    LDAPMod *attrs[] = {&mod[0], &mod[1], NULL};
+
+    dwError = VmDirDnLastRDNToCn(pszDNPrefix, &pszCN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszDN, "%s,%s", pszDNPrefix, pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    valsCn[0] = pszCN;
+    valsClass[0] = (PSTR)pszClassName;
+
+    dwError = ldap_add_ext_s(pState->pLd, pszDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszCN);
+    VMDIR_SAFE_FREE_STRINGA(pszDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmDirTestCreateContainer(
     PVMDIR_TEST_STATE pState,
-    PCSTR pszName
+    PCSTR pszContainer,
+    PCSTR pszAcl /* OPTIONAL */
     )
 {
     DWORD dwError = 0;
-    PCSTR valsCn[] = {pszName, NULL};
+    PCSTR valsCn[] = {pszContainer, NULL};
     PCSTR valsClass[] = {"top", "container", NULL};
+    PCSTR valsAcl[] = {pszAcl, NULL};
     PSTR pszDN = NULL;
     LDAPMod mod[]={
         {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
+        {LDAP_MOD_ADD, ATTR_ACL_STRING, {(PSTR*)valsAcl}},
     };
-    LDAPMod *attrs[] = {&mod[0], &mod[1], NULL};
+    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], NULL};
 
-    dwError = VmDirAllocateStringPrintf(
+    if (IsNullOrEmptyString(pszContainer))
+    {
+        valsCn[0] = VmDirTestGetTestContainerCn(pState);
+
+        dwError = VmDirAllocateStringPrintf(
                 &pszDN,
-                "cn=%s,cn=%s,%s",
-                pszName,
+                "cn=%s,%s",
                 VmDirTestGetTestContainerCn(pState),
                 pState->pszBaseDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                &pszDN,
+                "cn=%s,cn=%s,%s",
+                pszContainer,
+                VmDirTestGetTestContainerCn(pState),
+                pState->pszBaseDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (IsNullOrEmptyString(pszAcl))
+    {
+        attrs[2] = NULL;
+    }
 
     dwError = ldap_add_ext_s(
-                pState->pLd,
-                pszDN,
-                attrs,
-                NULL,
-                NULL);
+            pState->pLd, pszDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestDeleteObjectByDNPrefix(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszDNPrefix
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDN = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszDN, "%s,%s", pszDNPrefix, pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_delete_ext_s(pState->pLd, pszDN, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestDeleteContainer(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDN = NULL;
+
+    if (IsNullOrEmptyString(pszContainer))
+    {
+        dwError = VmDirAllocateStringPrintf(
+                &pszDN,
+                "cn=%s,%s",
+                VmDirTestGetTestContainerCn(pState),
+                pState->pszBaseDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                &pszDN,
+                "cn=%s,cn=%s,%s",
+                pszContainer,
+                VmDirTestGetTestContainerCn(pState),
+                pState->pszBaseDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirTestDeleteContainerByDn(pState->pLd, pszDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

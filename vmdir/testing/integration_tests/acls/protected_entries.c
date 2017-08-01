@@ -132,18 +132,29 @@ TestBuiltinContainerDeletion(
     PVMDIR_TEST_STATE pState
     )
 {
-    DWORD dwError = 0;
-    PSTR pszUserName = NULL;
+    DWORD   dwError = 0;
+    PSTR    pszUserName = NULL;
+    PSTR    pszDomainSid = NULL;
+    PSTR    pszSD = NULL;
 
     dwError = VmDirTestGetGuid(&pszUserName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestCreateUser(pState, "builtin", pszUserName, NULL);
+    // TODO
+    // By default, we do not allow deleting object under builtin container.
+    // Validate and update (or remove) this test case
+    dwError = VmDirTestGetDomainSid(pState, pState->pszBaseDN, &pszDomainSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszSD, "O:BAG:BAD:(A;;RCRPWPWDSD;;;%s-500)", pszDomainSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestCreateUser(pState, "builtin", pszUserName, pszSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestDeleteUser(pState, "builtin", pszUserName);
-    TestAssertEquals(dwError, LDAP_INSUFFICIENT_ACCESS);
-    dwError = 0;
+    TestAssertEquals(dwError, 0);
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszUserName);
@@ -171,12 +182,10 @@ TestProtectedEntries(
     dwError = TestBuiltinContainerDeletion(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf("Protected entries tests succceeded!\n");
-
 cleanup:
+    printf("%s %s (%d)\n", __FUNCTION__, dwError ? "failed" : "succeeded", dwError);
     return dwError;
 
 error:
-    printf("Security Descriptor tests failed with error 0n%d\n", dwError);
     goto cleanup;
 }

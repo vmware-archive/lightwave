@@ -49,7 +49,10 @@ VmDirRESTServerInit(
     config.pClientCount = VMDIR_REST_CLIENTCNT;
     config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
 
-    dwError = VmRESTInit(&config, NULL, &gpVdirRESTHandle);
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTInit(&config, NULL, &gpVdirRestHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdirRestApiDef);
@@ -64,20 +67,17 @@ VmDirRESTServerInit(
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
             dwError = VmRESTRegisterHandler(
-                    gpVdirRESTHandle, pEndPoint->pszName, pHandlers, NULL);
+                    gpVdirRestHandle, pEndPoint->pszName, pHandlers, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
-    // TODO uncomment
-//    dwError = OidcClientGlobalInit();
-//    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRESTStart(gpVdirRESTHandle);
+    dwError = VmRESTStart(gpVdirRestHandle);
     if (dwError)
     {
         // soft fail - will not listen on REST port.
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
                 "VmRESTStart failed with error %d, not going to listen on REST port",
                 dwError);
         dwError = 0;
@@ -87,8 +87,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -99,9 +103,9 @@ VmDirRESTServerShutdown(
 {
     PREST_API_MODULE    pModule = NULL;
 
-    if (gpVdirRESTHandle)
+    if (gpVdirRestHandle)
     {
-        VmRESTStop(gpVdirRESTHandle);
+        VmRESTStop(gpVdirRestHandle);
         if (gpVdirRestApiDef)
         {
             pModule = gpVdirRestApiDef->pModules;
@@ -111,15 +115,14 @@ VmDirRESTServerShutdown(
                 for (; pEndPoint; pEndPoint = pEndPoint->pNext)
                 {
                     (VOID)VmRESTUnRegisterHandler(
-                            gpVdirRESTHandle, pEndPoint->pszName);
+                            gpVdirRestHandle, pEndPoint->pszName);
                 }
             }
         }
-        VmRESTShutdown(gpVdirRESTHandle);
+        VmRESTShutdown(gpVdirRestHandle);
     }
 
-    // TODO uncomment
-//    OidcClientGlobalCleanup();
+    OidcClientGlobalCleanup();
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 
@@ -178,8 +181,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto response;
 }
 

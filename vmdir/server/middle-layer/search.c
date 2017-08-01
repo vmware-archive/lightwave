@@ -17,6 +17,12 @@
 #include "includes.h"
 
 static
+VOID
+ComputeRequiredAccess(
+    SearchReq*  pSearchReq
+    );
+
+static
 int
 BuildCandidateList(
     PVDIR_OPERATION    pOperation,
@@ -169,18 +175,21 @@ VmDirInternalSearch(
     PVDIR_OPERATION pOperation
     )
 {
-    int        retVal = LDAP_SUCCESS;
-    ENTRYID    eId = 0;
-    int        deadLockRetries = 0;
-    BOOLEAN    bHasTxn = FALSE;
-    PSTR       pszLocalErrMsg = NULL;
-    PVDIR_LDAP_RESULT  pResult = &(pOperation->ldapResult);
-    ENTRYID eStartingId = 0;
-    ENTRYID *pValidatedEntries = NULL;
-    DWORD dwEntryCount = 0;
+    int     retVal = LDAP_SUCCESS;
+    int     deadLockRetries = 0;
+    DWORD   dwEntryCount = 0;
+    BOOLEAN bHasTxn = FALSE;
     BOOLEAN bUseOldSearch = TRUE;
+    PSTR    pszLocalErrMsg = NULL;
+    ENTRYID     eId = 0;
+    ENTRYID     eStartingId = 0;
+    ENTRYID*    pValidatedEntries = NULL;
+    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
 
     assert(pOperation && pOperation->pBEIF);
+
+    // compute required access for this search
+    ComputeRequiredAccess(&pOperation->request.searchReq);
 
     // Normalize (base) DN
     retVal = VmDirNormalizeDN( &(pOperation->reqDn), pOperation->pSchemaCtx );
@@ -639,6 +648,48 @@ error:
     *pbIsMemberOf = FALSE;
 
     goto cleanup;
+}
+
+static
+VOID
+ComputeRequiredAccess(
+    SearchReq*  pSearchReq
+    )
+{
+    DWORD   i = 0, j = 0;
+    BOOLEAN bSDAttr = FALSE;
+    PSTR    pszAttr = NULL;
+
+    PCSTR   pszSDAttrs[] = { ATTR_OBJECT_SECURITY_DESCRIPTOR, ATTR_ACL_STRING };
+
+    pSearchReq->accessRequired = VMDIR_RIGHT_DS_READ_PROP;
+
+    for (i = 0; pSearchReq->attrs && pSearchReq->attrs[i].lberbv.bv_val; i++)
+    {
+        bSDAttr = FALSE;
+        pszAttr = pSearchReq->attrs[i].lberbv.bv_val;
+
+        for (j = 0; j < VMDIR_ARRAY_SIZE(pszSDAttrs); j++)
+        {
+            if (VmDirStringCompareA(pszAttr, pszSDAttrs[j], FALSE) == 0)
+            {
+                bSDAttr = TRUE;
+                break;
+            }
+        }
+
+        if (bSDAttr)
+        {
+            // SD attributes require only READ_CONTROL
+            pSearchReq->accessRequired = VMDIR_ENTRY_READ_ACL;
+        }
+        else
+        {
+            // any other attributes require READ_PROP
+            pSearchReq->accessRequired = VMDIR_RIGHT_DS_READ_PROP;
+            break;  // no need to continue
+        }
+    }
 }
 
 static

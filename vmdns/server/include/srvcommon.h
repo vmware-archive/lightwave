@@ -12,7 +12,6 @@
  * under the License.
  */
 
-
 #ifndef _SRV_COMMON_H_
 #define _SRV_COMMON_H_
 
@@ -37,6 +36,18 @@ extern "C" {
 #define VMDNS_KERBEROS_SRV_NAME "_kerberos._tcp"
 #define VMDNS_LDAP_DC_SRV_NAME "_ldap._tcp.dc._msdcs"
 #define VMDNS_KERBEROS_DC_SRV_NAME "_kerberos._tcp.dc._msdcs"
+
+//Dns Statistics
+#define DNS_QUERY_COUNT            ((UINT16) 0x60U)
+#define FORWARDER_QUERY_COUNT      ((UINT16) 0x63U)
+
+/*Statistics*/
+typedef struct _VMDNS_OPERATION_STATISTIC
+{
+    PCSTR           pszOPName;
+    LONG            iCount;
+
+} VMDNS_OPERATION_STATISTIC, *PVMDNS_OPERATION_STATISTIC;
 
 /*hash table*/
 
@@ -293,6 +304,23 @@ VmDnsSrvQueryRecords(
     );
 
 DWORD
+VmDnsSrvGetRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PCSTR               pszName,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    );
+
+DWORD
+VmDnsGetLinkedRecords(
+    DWORD               dwRecursionIndex,
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD       pRecord,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    );
+
+DWORD
 VmDnsSrvListRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PVMDNS_RECORD_LIST *ppRecordList
@@ -367,6 +395,12 @@ VmDnsRecordListAdd(
     );
 
 DWORD
+VmDnsRecordListAddList(
+    PVMDNS_RECORD_LIST      pDestList,
+    PVMDNS_RECORD_LIST      pSrcList
+    );
+
+DWORD
 VmDnsRecordListRemove(
     PVMDNS_RECORD_LIST      pList,
     PVMDNS_RECORD_OBJECT    pRecord
@@ -403,6 +437,13 @@ VmDnsRecordListAddRef(
 VOID
 VmDnsRecordListRelease(
     PVMDNS_RECORD_LIST      pRecordList
+    );
+
+DWORD
+VmDnsRecordListRoundRobin(
+    PVMDNS_RECORD_LIST      pList,
+    DWORD                   dwIndex,
+    PVMDNS_RECORD_LIST      *ppList
     );
 
 DWORD
@@ -456,6 +497,13 @@ VmDnsGetDefaultDomainName(
 VOID
 VmDnsDirClose(
     PVMDNS_DIR_CONTEXT pDirContext
+    );
+
+// opstatistic.c
+
+LONG
+VmDnsOPStatisticGetCount(
+    UINT16 opTag
     );
 
 #ifdef __cplusplus

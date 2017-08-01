@@ -290,6 +290,13 @@ VmDnsAllocateStringPrintfVA(
     va_list argList
     );
 
+BOOLEAN
+VmDnsStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    );
+
 ULONG
 VmDnsAllocateStringPrintfA(
     OUT PSTR* ppszString,
@@ -892,11 +899,6 @@ VmDnsIsShortNameRecordType(
 
 BOOL
 VmDnsIsSupportedRecordType(
-    VMDNS_RR_TYPE   dwRecordType
-    );
-
-BOOL
-VmDnsIsUpdatePermitted(
     VMDNS_RR_TYPE   dwRecordType
     );
 

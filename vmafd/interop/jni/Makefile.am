@@ -1,13 +1,12 @@
-
 CLASSNAME = com.vmware.identity.vecs.VecsAdapter
-JARDIR=$(top_builddir)/authentication-framework/packages
+JARDIR=$(top_builddir)/vmafd/authentication-framework/packages
 JAR=$(JARDIR)/vmware-endpoint-certificate-store.jar
 
 lib_LTLIBRARIES = libvecsjni.la
 
 libvecsjni_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
     @JDK_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -16,7 +15,7 @@ libvecsjni_la_SOURCES = \
     vecsjni.c
 
 libvecsjni_la_LIBADD = \
-    @top_builddir@/client/libvmafdclient.la
+    @top_builddir@/vmafd/client/libvmafdclient.la
 
 libvecsjni_la_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
@@ -32,5 +31,4 @@ vecsjni.h:
 	$(JAVAH) -o $@ -classpath $(JAR) $(CLASSNAME)
     
 jreext_DATA= \
-    @top_builddir@/authentication-framework/packages/vmware-endpoint-certificate-store.jar    
-
+    @top_builddir@/vmafd/authentication-framework/packages/vmware-endpoint-certificate-store.jar

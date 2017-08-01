@@ -1,22 +1,14 @@
-all: libmdb_nowal.so libmdb_wal.so mdb_wal_test.cpp
-	gcc -g -o mdb_wal_test_linux mdb_wal_test.cpp -lpthread -L . -lmdb -lstdc++
+all: mdb_wal_test
 
-libmdb_nowal.so:
+mdb_wal_test:
 	cp ../lmdb.h lmdb.h
 	cp ../midl.h midl.h
 	cp ../midl.c midl.c
-	gcc -g -shared -o libmdb_nowal.so -fpic mdb_nowal.c midl.c
-	ln -s libmdb_nowal.so libmdb.so
-
-libmdb_wal.so:
-	cp ../lmdb.h lmdb.h
-	cp ../midl.h midl.h
-	cp ../midl.c midl.c
-	cp ../mdb.c mdb_wal.c
-	gcc -g -shared -o libmdb_wal.so -fpic mdb_wal.c midl.c
+	cp ../mdb.c mdb.c
+	gcc -g -DMDB_USE_PWRITEV -o mdb_wal_test -fpic mdb_wal_test.cpp mdb.c midl.c -lpthread -lstdc++
 
 clean:
-	rm -rf mdb_wal.c midl.c lmdb.h midl.h *.o *.so mdb_wal_test_linux backupdb testdb
+	rm -rf mdb.c midl.c lmdb.h mdb.c midl.h *.o mdb_wal_test backupdb testdb
 
 cleandbs:
 	rm -rf backupdb testdb

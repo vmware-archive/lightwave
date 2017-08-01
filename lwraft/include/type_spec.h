@@ -162,7 +162,7 @@ typedef struct _VMW_TYPE_SPEC_
 {\
     {\
         "UPN",\
-        VMW_IPC_TYPE_WSTRING,\
+        VMW_IPC_TYPE_STRING,\
         {NULL}\
     },\
 }

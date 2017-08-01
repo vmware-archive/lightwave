@@ -15,15 +15,14 @@ libbackend_la_SOURCES = \
     util.c
 
 libbackend_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/vmdir/server/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 libbackend_la_LDFLAGS = \
     -static
-

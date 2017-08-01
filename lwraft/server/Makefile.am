@@ -24,6 +24,4 @@ SUBDIRS = \
     saslvmdirdb \
     schema \
     acl \
-    vmkdc \
-    vmdir \
-    vmkdc_mit_tools
+    vmdir

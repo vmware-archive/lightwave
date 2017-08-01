@@ -68,6 +68,7 @@ StartService()
             -Dvmware.log.dir=$STSD_LOG_DIR \
             -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true \
             -Djava.io.tmpdir="$CATALINA_BASE/temp" \
+            -Djavax.xml.transform.TransformerFactory=com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl \
             $DAEMON_CLASS start
 
     rc=$?

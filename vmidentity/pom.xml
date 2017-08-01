@@ -334,7 +334,7 @@
     <!-- Dependency Versions -->
     <FastInfoset.version>1.2.8</FastInfoset.version>
     <activation.version>1.1.1</activation.version>
-    <apache.log4j.version>2.2</apache.log4j.version>
+    <apache.log4j.version>2.8.2</apache.log4j.version>
     <args4j.version>2.33</args4j.version>
     <asm.version>3.3.1</asm.version>
     <aspect.version>1.6.9</aspect.version>
@@ -352,7 +352,7 @@
     <commons.logging.version>1.1.1</commons.logging.version>
     <commons.pool2.version>2.4.2</commons.pool2.version>
     <easymock.version>3.2</easymock.version>
-    <esapi.version>2.0.1</esapi.version>
+    <esapi.version>2.1.0.1</esapi.version>
     <gmbal-api-only.version>3.1.0-b001</gmbal-api-only.version>
     <ha-api.version>3.1.9</ha-api.version>
     <httpclient.version>4.5.1</httpclient.version>
@@ -375,8 +375,8 @@
     <jsr250-api.version>1.0</jsr250-api.version>
     <jstl.version>1.2</jstl.version>
     <junit.version>4.12</junit.version>
-    <log4j.12.api.version>2.0.2</log4j.12.api.version>
-    <log4j.version>1.2.16</log4j.version>
+    <log4j.12.api.version>2.8.2</log4j.12.api.version>
+    <log4j.version>1.2.17</log4j.version>
     <management-api.version>3.1.0-b001</management-api.version>
     <mimepull.version>1.9.3</mimepull.version>
     <net.dev.jna>4.2.1</net.dev.jna>
@@ -389,15 +389,15 @@
     <reflections.version>0.9.10</reflections.version>
     <saaj-api.version>1.3.5</saaj-api.version>
     <saaj-impl.version>1.3</saaj-impl.version>
-    <serializer.version>2.7.1</serializer.version>
-    <slf4j.version>1.7.10</slf4j.version> 
-    <spring.release.version>4.0.6.RELEASE</spring.release.version>
+    <serializer.version>2.7.2</serializer.version>
+    <slf4j.version>1.7.25</slf4j.version>
+    <spring.release.version>4.3.4.RELEASE</spring.release.version>
     <stax-ex.version>1.7.7</stax-ex.version>
     <streambuffer.version>1.5.3</streambuffer.version>
-    <tomat.coyote.version>8.5.5</tomat.coyote.version>
+    <tomat.coyote.version>8.5.19</tomat.coyote.version>
     <tomcat.catalina.version>8.5.8</tomcat.catalina.version>
     <velocity.version>1.5</velocity.version>
-    <xalan.version>2.7.1</xalan.version>
+    <xalan.version>2.7.2</xalan.version>
     <xerces.impl.version>2.10.0</xerces.impl.version>
     <xml.api.version>1.4.01</xml.api.version>
     <xml.resolver.version>1.2</xml.resolver.version>

@@ -1,23 +1,23 @@
-bin_PROGRAMS = lwraftadmintool
+bin_PROGRAMS = postadmintool
 
-lwraftadmintool_SOURCES = \
+postadmintool_SOURCES = \
     main.c \
     ldapbindclient.c \
     util.c
 
-lwraftadmintool_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/tools/include \
-    -I$(top_srcdir)/client \
-    -I$(top_builddir)/client \
+postadmintool_CPPFLAGS = \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/tools/include \
+    -I$(top_srcdir)/lwraft/client \
+    -I$(top_builddir)/lwraft/client \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-lwraftadmintool_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/liblwraftclient.la \
+postadmintool_LDADD = \
+    $(top_builddir)/lwraft/common/libcommon.la \
+    $(top_builddir)/lwraft/client/libpostclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -32,6 +32,6 @@ lwraftadmintool_LDADD = \
     @SASL_LIBS@ \
     @LDAP_LIBS@
 
-lwraftadmintool_LDFLAGS = \
+postadmintool_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
     @LW_LDFLAGS@

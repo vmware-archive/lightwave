@@ -22,11 +22,6 @@ VdcadminTestSASLClient(
     );
 
 VOID
-VdcadminReplNow(
-    VOID
-    );
-
-VOID
 VdcadminForceResetPassword(
     VOID
     );
@@ -53,11 +48,6 @@ VdcadminGetVmdirState(
 
 VOID
 VdcadminSetSRPAuthData(
-    VOID
-    );
-
-VOID
-VdcadminUrgentReplicationRequest(
     VOID
     );
 

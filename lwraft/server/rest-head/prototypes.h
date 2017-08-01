@@ -12,23 +12,6 @@
  * under the License.
  */
 
-// accesstoken.c
-DWORD
-VmDirRESTAccessTokenInit(
-    PVDIR_REST_ACCESS_TOKEN*    ppAccessToken
-    );
-
-DWORD
-VmDirRESTAccessTokenParse(
-    PVDIR_REST_ACCESS_TOKEN pAccessToken,
-    PSTR                    pszAuthData
-    );
-
-VOID
-VmDirFreeRESTAccessToken(
-    PVDIR_REST_ACCESS_TOKEN pAccessToken
-    );
-
 // auth.c
 DWORD
 VmDirRESTAuth(
@@ -36,15 +19,58 @@ VmDirRESTAuth(
     );
 
 DWORD
-VmDirRESTAuthBasic(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaBasic(
+    PVDIR_REST_OPERATION    pRestOp
     );
 
 DWORD
-VmDirRESTAuthToken(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaToken(
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
+// authtoken.c
+DWORD
+VmDirRESTAuthTokenInit(
+    PVDIR_REST_AUTH_TOKEN*  ppAuthToken
+    );
+
+DWORD
+VmDirRESTAuthTokenParse(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken,
+    PCSTR                   pszAuthData
+    );
+
+VOID
+VmDirFreeRESTAuthToken(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
+    );
+
+// cache.c
+DWORD
+VmDirRESTCacheInit(
+    PVDIR_REST_HEAD_CACHE*  ppRestCache
+    );
+
+DWORD
+VmDirRESTCacheRefresh(
+    PVDIR_REST_HEAD_CACHE   pRestCache
+    );
+
+DWORD
+VmDirRESTCacheGetOIDCSigningCertPEM(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PSTR*                   ppszOIDCSigningCertPEM
+    );
+
+DWORD
+VmDirRESTCacheGetBuiltInAdminsGroupSid(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PSID*                   ppBuiltInAdminsGroupSid
+    );
+
+VOID
+VmDirFreeRESTCache(
+    PVDIR_REST_HEAD_CACHE   pRestCache
     );
 
 // decode.c
@@ -221,6 +247,29 @@ VmDirRESTRequestHandler(
     uint32_t        paramsCount
     );
 
+// lightwave.c
+DWORD
+VmDirRESTGetLightwaveOIDCSigningCertPEM(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PSTR*   ppszOIDCSigningCertPEM
+    );
+
+DWORD
+VmDirRESTGetLightwaveObjectSid(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszDN,
+    PSID*   ppSid
+    );
+
+DWORD
+VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PSID*   ppBuiltInAdminsGroupSid
+    );
+
 // objectapi.c
 DWORD
 VmDirRESTGetObjectModule(
@@ -381,6 +430,11 @@ VmDirRESTResultSetError(
     PVDIR_REST_RESULT   pRestRslt,
     int                 errCode,
     PSTR                pszErrMsg
+    );
+
+DWORD
+VmDirRESTResultUnsetError(
+    PVDIR_REST_RESULT   pRestRslt
     );
 
 DWORD

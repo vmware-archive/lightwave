@@ -79,15 +79,15 @@ error:
             break;
         case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
             retCode = 21;
-            pszErrorMsg = "Could not connect to the local Lightwave Raft Service.";
+            pszErrorMsg = "Could not connect to the local Persistent Objectstore Service.";
             break;
         case VMDIR_ERROR_SERVER_DOWN:
             retCode = 23;
-            pszErrorMsg = "Could not connect to Lightwave Raft Service.";
+            pszErrorMsg = "Could not connect to Persistent Objectstore Service.";
             break;
         case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
             retCode = 24;
-            pszErrorMsg = "Authentication to Lightwave Raft Service failed.";
+            pszErrorMsg = "Authentication to Persistent Objectstore Service failed.";
             break;
         case VMDIR_ERROR_ACCESS_DENIED:
             retCode = 25;
@@ -534,12 +534,12 @@ RaftCliExecNodePrincipalRequest(
             dwError = RaftCliDemoteA(pszServerName, pszLogin, pszPassword, pszDemoteName);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            printf("Lightwave Raft Service instance %s is removed from cluster successfully.\n", pszDemoteName);
+            printf("Persistent Objectstore Service instance %s is removed from cluster successfully.\n", pszDemoteName);
             break;
 
         case LWRAFT_DIR_COMMAND_NODE_PROMOTE:
 
-            printf("Initializing Lightwave Raft Service instance ... \n");
+            printf("Initializing Persistent Objectstore Service instance ... \n");
 
             if (pszDomain)
             {
@@ -552,7 +552,7 @@ RaftCliExecNodePrincipalRequest(
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
 
-            printf("Lightwave Raft Service instance created successfully\n");
+            printf("Persistent Objectstore Service instance created successfully\n");
             break;
 
         default:

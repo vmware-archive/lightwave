@@ -142,6 +142,7 @@ VmDirMDBInitializeDB(
     mdb_mode_t      oflags;
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
+    BOOLEAN         bMdbWalEnable = TRUE;
 
     // TODO: fix the hard coded Database dir path
 #ifndef _WIN32
@@ -224,6 +225,14 @@ VmDirMDBInitializeDB(
 #else
     oflags = GENERIC_READ|GENERIC_WRITE;
 #endif
+
+    //MDB WAL is the default mode and can be turned off with reg key MdbEnableWal set to 0
+    VmDirGetMdbWalEnable(&bMdbWalEnable);
+    if (bMdbWalEnable)
+    {
+        envFlags |= MDB_WAL;
+    }
+
     dwError = mdb_env_open ( gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, oflags );
 //TODO, what if open failed?  how to recover??
     BAIL_ON_VMDIR_ERROR( dwError );

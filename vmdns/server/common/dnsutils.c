@@ -485,3 +485,51 @@ VmDnsFreeBufferContext(
     }
     VmDnsFreeMemory(pMessage);
 }
+
+DWORD
+VmDnsIsUpdatePermitted(
+    VMDNS_RR_TYPE   dwRecordType,
+    PVMDNS_RECORD_LIST pRecordList
+    )
+{
+    DWORD dwSize = 0;
+    DWORD i = 0;
+    DWORD dwError = 0;
+    PVMDNS_RECORD_OBJECT pRecordObj = NULL;
+
+    if (!pRecordList)
+    {
+        return dwError;
+    }
+
+    dwSize = VmDnsRecordListGetSize(pRecordList);
+
+    if (dwRecordType == VMDNS_RR_TYPE_SOA ||
+        dwRecordType == VMDNS_RR_TYPE_CNAME)
+    {
+        if (pRecordList && pRecordList->dwCurrentSize != 0)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+    }
+
+    else
+    {
+        for (; i < dwSize; i++)
+        {
+            pRecordObj = VmDnsRecordListGetRecord(pRecordList, i);
+            if (pRecordObj->pRecord->dwType == VMDNS_RR_TYPE_CNAME)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}

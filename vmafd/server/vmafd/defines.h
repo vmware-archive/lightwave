@@ -309,9 +309,7 @@ if (bLocked) \
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMCA_HEARTBEAT_ENTRY_W,\
       WEBSSO_ENTRY_W, \
-      LOOKUP_SERVICE_ENTRY_W, \
-      STS_HEARTBEAT_ENTRY_W, \
-      LICENSING_ENTRY_W \
+      STS_HEARTBEAT_ENTRY_W \
 }
 
 #define VMAFD_HEARTBEAT_ENTRY_PORTS \
@@ -319,9 +317,7 @@ if (bLocked) \
       VMDIR_HEARTBEAT_ENTRY_PORT,\
       VMCA_HEARTBEAT_ENTRY_PORT, \
       WEBSSO_ENTRY_PORT, \
-      LOOKUP_SERVICE_ENTRY_PORT, \
-      STS_HEARTBEAT_ENTRY_PORT, \
-       LICENSING_ENTRY_PORT \
+      STS_HEARTBEAT_ENTRY_PORT \
 }
 
 
@@ -343,18 +339,8 @@ if (bLocked) \
       0\
   },\
   {\
-      LOOKUP_SERVICE_ENTRY_W,\
-      LOOKUP_SERVICE_ENTRY_PORT, \
-      0\
-  },\
-  {\
       STS_HEARTBEAT_ENTRY_W,\
       STS_HEARTBEAT_ENTRY_PORT,\
       0\
-  },\
-  {\
-      LICENSING_ENTRY_W,\
-      LICENSING_ENTRY_PORT, \
-      0\
-  },\
+  }\
 }

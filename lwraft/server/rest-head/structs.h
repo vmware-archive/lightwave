@@ -70,20 +70,20 @@ typedef struct _VDIR_REST_OPERATION
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
-// accesstoken.c
+// authtoken.c
 typedef enum
 {
-    VDIR_REST_ACCESS_TOKEN_BEARER,
-    VDIR_REST_ACCESS_TOKEN_HOTK
+    VDIR_REST_AUTH_TOKEN_BEARER,
+    VDIR_REST_AUTH_TOKEN_HOTK
 
-} VDIR_REST_ACCESS_TOKEN_TYPE;
+} VDIR_REST_AUTH_TOKEN_TYPE;
 
-typedef struct _VDIR_REST_ACCESS_TOKEN
+typedef struct _VDIR_REST_AUTH_TOKEN
 {
-    VDIR_REST_ACCESS_TOKEN_TYPE tokenType;
+    VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
     PSTR                        pszBindUPN;
 
-} VDIR_REST_ACCESS_TOKEN, *PVDIR_REST_ACCESS_TOKEN;
+} VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
 
 // httperror.c
 typedef struct _VDIR_HTTP_ERROR
@@ -105,10 +105,26 @@ typedef DWORD (*PFN_VMAFD_GET_DOMAIN_NAME)(
         PSTR*
         );
 
+typedef DWORD (*PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO)(
+        PCSTR,
+        PSTR*,
+        PSTR*
+        );
+
 typedef struct _VDIR_VMAFD_API
 {
-    VMDIR_LIB_HANDLE            pVmAfdLib;
-    PFN_VMAFD_GET_DC_NAME       pfnGetDCName;
-    PFN_VMAFD_GET_DOMAIN_NAME   pfnGetDomainName;
+    VMDIR_LIB_HANDLE                    pVmAfdLib;
+    PFN_VMAFD_GET_DC_NAME               pfnGetDCName;
+    PFN_VMAFD_GET_DOMAIN_NAME           pfnGetDomainName;
+    PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO  pfnGetMachineAccountInfo;
 
 } VDIR_VMAFD_API, *PVDIR_VMAFD_API;
+
+// cache.c
+typedef struct _VDIR_REST_HEAD_CACHE
+{
+    PVMDIR_RWLOCK   pRWLock;
+    PSTR            pszOIDCSigningCertPEM;
+    PSID            pBuiltInAdminsGroupSid;
+
+} VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;

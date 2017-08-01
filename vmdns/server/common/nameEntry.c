@@ -31,6 +31,9 @@ VmDnsNameEntryCreate(
 
     pNameEntry->lRefCount = 1;
 
+    pNameEntry->dwRoundRobinIndex = 0;
+    pNameEntry->dwRoundRobinType = 0;
+
     dwError = VmDnsAllocateStringA(pszName, &pNameEntry->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -136,20 +139,27 @@ VmDnsNameEntryGetRecords(
     PVMDNS_RECORD_LIST      *ppRecordList
     )
 {
-    DWORD dwError = 0, i = 0;
+    DWORD dwError = 0, i = 0, dwListSize = 0;
     PVMDNS_RECORD_OBJECT pRecordObj = NULL;
     DWORD dwSize = VmDnsRecordListGetSize(pNameEntry->pRecords);
-    PVMDNS_RECORD_LIST pRecordList = NULL;
+    PVMDNS_RECORD_LIST pRecordList = NULL, pTempRecordList = NULL;
+    DWORD dwRoundRobinIndex = 0;
 
-    dwError = VmDnsRecordListCreate(&pRecordList);
+    if (pNameEntry->dwRoundRobinType == rrType)
+    {
+        dwRoundRobinIndex = pNameEntry->dwRoundRobinIndex;
+    }
+
+    dwError = VmDnsRecordListCreate(&pTempRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     for (i = 0; i < dwSize; ++i)
     {
         pRecordObj = VmDnsRecordListGetRecord(pNameEntry->pRecords, i);
-        if (pRecordObj->pRecord->dwType == rrType || rrType == VMDNS_RR_QTYPE_ANY)
+        if (pRecordObj->pRecord->dwType == rrType || rrType == VMDNS_RR_QTYPE_ANY
+            || pRecordObj->pRecord->dwType == VMDNS_RR_TYPE_CNAME)
         {
-            dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
+            dwError = VmDnsRecordListAdd(pTempRecordList, pRecordObj);
             BAIL_ON_VMDNS_ERROR(dwError);
         }
 
@@ -157,10 +167,27 @@ VmDnsNameEntryGetRecords(
         pRecordObj = NULL;
     }
 
+    dwError = VmDnsRecordListRoundRobin(pTempRecordList, dwRoundRobinIndex, &pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwListSize = VmDnsRecordListGetSize(pRecordList);
+    if (dwListSize)
+    {
+        dwRoundRobinIndex = (dwRoundRobinIndex + 1) % dwListSize;
+    }
+
+    pNameEntry->dwRoundRobinIndex = dwRoundRobinIndex;
+
+    if (pNameEntry->dwRoundRobinType != rrType)
+    {
+        pNameEntry->dwRoundRobinType = rrType;
+    }
+
     *ppRecordList = pRecordList;
 
 cleanup:
     VmDnsRecordObjectRelease(pRecordObj);
+    VmDnsRecordListRelease(pTempRecordList);
     return dwError;
 
 error:

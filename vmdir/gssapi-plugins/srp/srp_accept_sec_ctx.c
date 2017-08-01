@@ -506,12 +506,14 @@ _srp_gss_auth_init(
                        &ber_state, &gss_srp_version_maj, &gss_srp_version_min);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_scanf(t{ii): failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
     berror = ber_scanf(ber, "OO}", &ber_upn, &ber_bytes_A);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_scanf(OO): failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -539,6 +541,7 @@ _srp_gss_auth_init(
                           &srp_context_handle->gss_upn_name);
     if (maj)
     {
+        srp_debug_printf("_srp_gss_auth_init() gss_import_name failed maj=%d\n", maj);
         goto error;
     }
 
@@ -548,11 +551,12 @@ _srp_gss_auth_init(
                            &disp_name_OID);
     if (maj)
     {
+        srp_debug_printf("_srp_gss_auth_init() gss_display_name failed maj=%d\n", maj);
         goto error;
     }
 
     disp_name = &disp_name_buf;
-    srp_debug_printf("srp_gss_accept_sec_context: UPN name=%.*s\n",
+    srp_debug_printf("_srp_gss_auth_init() srp_gss_accept_sec_context: UPN name=%.*s\n",
                      (int) disp_name_buf.length, (char *) disp_name_buf.value);
 
     srp_upn_name = calloc(disp_name_buf.length + 1, sizeof(char));
@@ -575,6 +579,7 @@ _srp_gss_auth_init(
               &hServer);
     if (maj)
     {
+        srp_debug_printf("_srp_gss_auth_init() _srp_gss_auth_create_machine_acct_binding failed maj=%d\n", maj);
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -594,6 +599,7 @@ _srp_gss_auth_init(
                 &hSrp);
         if (sts)
         {
+            srp_debug_printf("_srp_gss_auth_init() cli_rpc_srp_verifier_new: failed sts=%d\n", sts);
             maj = GSS_S_FAILURE;
             min = sts;
             goto error;
@@ -607,6 +613,7 @@ _srp_gss_auth_init(
                   &srp_data);
         if (sts)
         {
+            srp_debug_printf("_srp_gss_auth_init() _get_srp_secret_decoded: failed sts=%d\n", sts);
             maj = GSS_S_FAILURE;
             min = sts;
             goto error;
@@ -633,6 +640,7 @@ _srp_gss_auth_init(
                                 NULL, NULL);
         if (!ver)
         {
+            srp_debug_printf("_srp_gss_auth_init() srp_verifier_new: failed sts=%d\n", sts);
             maj = GSS_S_FAILURE;
             goto error;
         }
@@ -643,7 +651,7 @@ _srp_gss_auth_init(
 
     if (!srp_bytes_B)
     {
-        srp_debug_printf("srp_verifier_new: failed!\n");
+        srp_debug_printf("_srp_gss_auth_init() srp_verifier_new: failed!\n");
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -682,6 +690,7 @@ _srp_gss_auth_init(
                  &ber_B);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_printf: failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -689,6 +698,7 @@ _srp_gss_auth_init(
     berror = ber_flatten(ber_resp, &flatten);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_flatten: failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }

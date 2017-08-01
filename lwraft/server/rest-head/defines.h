@@ -13,17 +13,24 @@
  */
 
 // C REST ENGINE CONFIG VALUES
-#define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "lwraft-rest.json"
-#define VMDIR_REST_DEBUGLOGFILE     "/tmp/lwraft-rest.log"
-//#define VMDIR_REST_DEBUGLOGFILE     VMDIR_LOG_DIR    VMDIR_PATH_SEPARATOR_STR "lwraft-rest.log"    TODO use this when lightwave-first is complete
-#define VMDIR_REST_CLIENTCNT        "5"
-#define VMDIR_REST_WORKERTHCNT      "5"
+#define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
+#define VMDIR_REST_DEBUGLOGFILE     "/tmp/post-rest.log"
+
+#define VMDIR_REST_CLIENTCNT        "64"
+#define VMDIR_REST_WORKERTHCNT      "64"
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
-// OIDC
+#define VMDIR_V1_LDAP_RESOURCE      "/v1/post/ldap"
+#define VMDIR_V1_OBJ_RESOURCE       "/v1/post/object"
+#define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
+
+// Lightwave
+#define VMDIR_REST_LIGHTWAVE_LDAP_PORT      389
+
+// Lightwave OIDC
 #define VMDIR_REST_OIDC_PORT                443
-#define VMDIR_REST_DEFAULT_SCOPE            "rs_lwraft"
+#define VMDIR_REST_DEFAULT_SCOPE            "rs_post"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
 
 // HTTP headers
@@ -115,7 +122,7 @@
         {                                                               \
             pResource = ((PVDIR_REST_OPERATION)pRestOp)->pResource;     \
             pRestRslt = ((PVDIR_REST_OPERATION)pRestOp)->pResult;       \
-            (pResource)->pfnSetResult(                                   \
+            (pResource)->pfnSetResult(                                  \
                     pRestRslt, pLdapRslt, dwError, pszErrMsg);          \
         }                                                               \
     } while (0)

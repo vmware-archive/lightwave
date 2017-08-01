@@ -1,5 +1,5 @@
-thirdparty_srcdir = $(top_srcdir)/thirdparty
-thirdparty_builddir = $(top_builddir)/thirdparty
+thirdparty_srcdir = $(top_srcdir)/vmdir/thirdparty
+thirdparty_builddir = $(top_builddir)/vmdir/thirdparty
 
 noinst_PROGRAMS = \
     parsedb \
@@ -13,28 +13,28 @@ noinst_PROGRAMS = \
 #    krb5keys-test
 
 MIT_TOOLS_INCLUDES = \
-    -I$(top_srcdir)/server/vmkdc \
-    -I$(top_srcdir)/server/kdctools \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server \
-    -I$(top_srcdir)/server/tools \
-    -I$(top_srcdir)/server/include \
-    -I$(top_srcdir)/server/vmkrb5 \
+    -I$(top_srcdir)/vmdir/server/vmkdc \
+    -I$(top_srcdir)/vmdir/server/kdctools \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/server \
+    -I$(top_srcdir)/vmdir/server/tools \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmdir/server/vmkrb5 \
     -I$(thirdparty_srcdir)/heimdal \
     -I$(thirdparty_srcdir)/heimdal/krb5-crypto \
     -I$(thirdparty_srcdir)/heimdal/asn1 \
-    -I$(top_srcdir)/server/vmkdc \
+    -I$(top_srcdir)/vmdir/server/vmkdc \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 MIT_TOOLS_LDADD = \
-    $(top_builddir)/server/common/libsrvcommon.la \
-    $(top_builddir)/kdccommon/libkdccommon.la \
-    $(top_builddir)/server/kdctools/libvmkdctools.la \
-    $(top_builddir)/server/kdckrb5/libvmkrb5.la \
-    $(top_builddir)/kdccommon/libkdccommon.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmdir/server/common/libsrvcommon.la \
+    $(top_builddir)/vmdir/kdccommon/libkdccommon.la \
+    $(top_builddir)/vmdir/server/kdctools/libvmkdctools.la \
+    $(top_builddir)/vmdir/server/kdckrb5/libvmkrb5.la \
+    $(top_builddir)/vmdir/kdccommon/libkdccommon.la \
+    $(top_builddir)/vmdir/common/libcommon.la \
     $(thirdparty_builddir)/heimdal/krb5-crypto/libkrb5crypto.la \
     $(thirdparty_builddir)/heimdal/asn1/libasn1db.la \
     $(thirdparty_builddir)/heimdal/asn1/libasn1.la \

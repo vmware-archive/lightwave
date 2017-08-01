@@ -119,8 +119,8 @@ CreateCustomObject(
 {
     DWORD   dwError = 0;
     PSTR    pszDN = NULL;
-    PCSTR   valsCn[] = {pszName, NULL};
-    PCSTR   valsClass[] = {"computer", NULL};
+    PCSTR   valsCn[] = { pszName, NULL };
+    PCSTR   valsClass[] = { "user", NULL };
     LDAPMod mod[]={
         {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
@@ -341,7 +341,7 @@ error:
 
 DWORD
 TestCustomAdminRights(
-    PVMDIR_TEST_STATE pState
+    PVMDIR_TEST_STATE   pState
     )
 {
     DWORD   dwError = 0;
@@ -396,7 +396,7 @@ error:
 
 DWORD
 TestCustomClientRights(
-    PVMDIR_TEST_STATE pState
+    PVMDIR_TEST_STATE   pState
     )
 {
     DWORD   dwError = 0;
@@ -445,7 +445,7 @@ error:
 
 DWORD
 TestNonMemberRights(
-    PVMDIR_TEST_STATE pState
+    PVMDIR_TEST_STATE   pState
     )
 {
     DWORD   dwError = 0;
@@ -494,7 +494,7 @@ error:
 
 DWORD
 TestCustomGroups(
-    PVMDIR_TEST_STATE pState
+    PVMDIR_TEST_STATE   pState
     )
 {
     DWORD   dwError = 0;

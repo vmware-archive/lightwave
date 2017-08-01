@@ -197,5 +197,3 @@ VMCASrvCleanupGlobalState(
     VMCA_UNLOCK_MUTEX(bLocked, &gVMCAServerGlobals.mutex);
 }
 
-
-

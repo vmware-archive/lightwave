@@ -1,13 +1,13 @@
 
 CLASSNAME = com.vmware.identity.heartbeat.VmAfdHeartbeatAdapter
-JARDIR=$(top_builddir)/authentication-framework/packages
+JARDIR=$(top_builddir)/vmafd/authentication-framework/packages
 JAR=$(JARDIR)/afd-heartbeat-service.jar
 
 lib_LTLIBRARIES = libheartbeatjni.la
 
 libheartbeatjni_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
     @JDK_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -16,7 +16,7 @@ libheartbeatjni_la_SOURCES = \
 		heartbeatjni.c
 
 libheartbeatjni_la_LIBADD = \
-    @top_builddir@/client/libvmafdclient.la
+    @top_builddir@/vmafd/client/libvmafdclient.la
 
 libheartbeatjni_la_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
@@ -32,4 +32,4 @@ heartbeatjni.h:
 	$(JAVAH) -o $@ -classpath $(JAR) $(CLASSNAME)
 
 jreext_DATA= \
-    @top_builddir@/authentication-framework/packages/afd-heartbeat-service.jar
+    @top_builddir@/vmafd/authentication-framework/packages/afd-heartbeat-service.jar

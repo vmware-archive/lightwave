@@ -284,7 +284,7 @@ TryToListChildObjects(
                 pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL);
+    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL, NULL, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

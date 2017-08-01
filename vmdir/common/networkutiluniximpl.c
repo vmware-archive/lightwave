@@ -112,7 +112,19 @@ VmDirOpenClientConnectionImpl(
 	}
 	memset (&address, 0, sizeof(struct sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH);
+        if (getenv("VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE"))
+        {
+            /*
+             * Use the lwraft (postd) UDS socket when env override is set.
+             * This environment variable is synonymous with "raft protocol"
+             * is in use, so bind to the raft server socket.
+             */
+	    snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH_POST);
+        }
+        else
+        {
+	    snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH);
+        }
 
 	if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) <0)
     {

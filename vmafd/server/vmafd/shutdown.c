@@ -66,7 +66,14 @@ VmAfdServerShutdown(
         gVmafdGlobals.pCdcContext= NULL;
     }
 
+    if (gVmafdGlobals.bEnableDDNS && gVmafdGlobals.pDdnsHandle)
+    {
+        VmAfdDDNSShutDown(gVmafdGlobals.pDdnsHandle);
+        gVmafdGlobals.pDdnsHandle = NULL;
+    }
+
 #if 0
+
 //TODO: Comment out DDNS client code for now
     if (gVmafdGlobals.pDdnsContext)
     {

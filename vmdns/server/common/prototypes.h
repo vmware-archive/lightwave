@@ -157,6 +157,12 @@ VmDnsFreeDnsUpdateMessage(
     PVMDNS_UPDATE_MESSAGE pVmDnsMessage
     );
 
+DWORD
+VmDnsIsUpdatePermitted(
+    VMDNS_RR_TYPE   dwRecordType,
+    PVMDNS_RECORD_LIST pRecordList
+    );
+
 /* cache.c */
 
 DWORD
@@ -876,6 +882,12 @@ VmDnsSecVerifyUpdateMessage(
 BOOL
 VmDnsSecIsRRTypeSec(
     DWORD dwRecordType
+    );
+
+//opstatistic.c
+VOID
+VmDnsOPStatisticUpdate(
+    UINT16 opTag
     );
 
 // Zone

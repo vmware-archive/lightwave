@@ -5,14 +5,14 @@ vmdir_test_runner_SOURCES = \
     testinfrastructure.c
 
 vmdir_test_runner_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vmdir_test_runner_LDADD = \
-    $(top_builddir)/client/liblwraftclient.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/lwraft/client/libpostclient.la \
+    $(top_builddir)/lwraft/common/libcommon.la \
     ../test_lib/liblwrafttesting.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

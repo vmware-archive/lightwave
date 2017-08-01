@@ -480,6 +480,7 @@ WriteSyncStateControl(
 
                 if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszUSNCreated, pszIDBuf) != 0)
                 {
+#if 0
                     retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
                     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -491,6 +492,7 @@ WriteSyncStateControl(
                     pszEID = NULL; pszUSNCreated = NULL; // map takes over
 
                     VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "entry sync stat ADD %s at USNCreated %llu", pEntry->dn.lberbv_val, pszUSNCreated );
+#endif
                 }
             }
         }

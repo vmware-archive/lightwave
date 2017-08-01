@@ -5,16 +5,16 @@ vdcrepadmin_SOURCES = \
     main.c
 
 vdcrepadmin_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/include \
-    -I$(top_srcdir)/tools/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmdir/tools/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vdcrepadmin_LDADD = \
-    $(top_builddir)/client/libvmdirclient.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

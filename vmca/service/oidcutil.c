@@ -47,9 +47,6 @@ VMCAVerifyOIDC(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = OidcClientGlobalInit();
-    BAIL_ON_VMCA_ERROR(dwError);
-
     dwError = VMCAGetTenantSigningCert(&pszSigningCertificatePEM);
     BAIL_ON_VMCA_ERROR(dwError);
 

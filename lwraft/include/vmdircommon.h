@@ -80,6 +80,7 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
+typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
 typedef struct _VM_DIR_SECURITY_CONTEXT_ *PVM_DIR_SECURITY_CONTEXT;
 
@@ -603,18 +604,19 @@ VmDirLogGetMask(
 
 PCSTR
 VmDirSearchDomainDN(
-    PCSTR pszNormObjectDN
+    PCSTR   pszNormObjectDN
     );
 
 DWORD
 VmDirDomainDNToName(
-    PCSTR pszDomainDN,
-    PSTR* ppszDomainName);
+    PCSTR   pszDomainDN,
+    PSTR*   ppszDomainName
+    );
 
 DWORD
-VmDirSrvCreateDomainDN(
-    PCSTR pszFQDomainName,
-    PSTR* ppszDomainDN
+VmDirDomainNameToDN(
+    PCSTR   pszDomainName,
+    PSTR*   ppszDomainDN
     );
 
 #if defined(HAVE_DCERPC_WIN32)
@@ -817,7 +819,7 @@ typedef enum
 
 } VMDIR_SYNC_MECHANISM;
 
-#define VMDIR_NAME                          "lwraft"
+#define VMDIR_NAME                          "post"
 #define VMAFD_NAME                          "vmafd"
 
 #ifndef _WIN32
@@ -829,8 +831,8 @@ typedef enum
 #endif
 
 #ifndef _WIN32
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Lwraft"
-#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Lwraft\\Parameters"
+#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Post"
+#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Post\\Parameters"
 #define VMDIR_LINUX_DB_PATH                 LWRAFT_DB_DIR "/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\LightwaveRaftService"
@@ -891,7 +893,6 @@ typedef enum
 #define VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC "LdapSearchTimeoutSec"
 #define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
 #define VMDIR_REG_KEY_SUPPRES_TRACK_LLT       "SuppressTrackLLTContainer"
-#define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
@@ -899,6 +900,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
 #define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
+#define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -931,7 +933,47 @@ VmDirIsMutexInitialized(
     PVMDIR_MUTEX pMutex
 );
 
+DWORD
+VmDirAllocateRWLock(
+    PVMDIR_RWLOCK*  ppLock
+    );
 
+DWORD
+VmDirInitializeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    );
+
+VOID
+VmDirFreeRWLock(
+    PVMDIR_RWLOCK   pLock
+    );
+
+VOID
+VmDirFreeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    );
+
+DWORD
+VmDirRWLockReadLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    );
+
+DWORD
+VmDirRWLockWriteLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    );
+
+DWORD
+VmDirRWLockUnlock(
+    PVMDIR_RWLOCK   pLock
+    );
+
+BOOLEAN
+VmDirIsRWLockInitialized(
+    PVMDIR_RWLOCK   pLock
+    );
 
 DWORD
 VmDirAllocateCondition(
@@ -1384,6 +1426,11 @@ VmDirGetRegKeyValueQword(
     );
 
 DWORD
+VmDirGetMdbWalEnable(
+    BOOLEAN *pbMdbEnableWal
+    );
+
+DWORD
 VmDirLoadLibrary(
     PCSTR           pszLibPath,
     VMDIR_LIB_HANDLE* ppLibHandle
@@ -1559,6 +1606,15 @@ VmDirSafeLDAPBind(
     PCSTR       pszHost,
     PCSTR       pszUPN,         // opt, if exists, will try SRP mech
     PCSTR       pszPassword     // opt, if exists, will try SRP mech
+    );
+
+DWORD
+VmDirSafeLDAPBindToPort(
+    LDAP**      ppLd,
+    PCSTR       pszHost,
+    DWORD       dwPort,
+    PCSTR       pszUPN,
+    PCSTR       pszPassword
     );
 
 DWORD

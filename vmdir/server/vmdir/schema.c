@@ -102,8 +102,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -113,7 +116,7 @@ error:
  * Should be called if InitializeSchema() results pbWriteSchemaEntry = TRUE
  */
 DWORD
-InitializeSchemaEntries(
+VmDirSchemaInitializeSubtree(
     PVDIR_SCHEMA_CTX    pSchemaCtx
     )
 {
@@ -136,8 +139,81 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaSetSystemDefaultSecurityDescriptors(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszBuiltInUsersGroupSid = NULL;
+    PSTR    pszDomainClientsGroupSid = NULL;
+    PSTR    pszDaclTemplate = NULL;
+
+    // create builtin users group and domain clients group SID templates
+    dwError = VmDirGenerateWellknownSid(
+            NULL, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBuiltInUsersGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(
+            NULL, VMDIR_DOMAIN_CLIENTS_RID, &pszDomainClientsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // grant built-in users group rights to read control & property of
+    // any group/computer/certificates object
+    dwError = VmDirAllocateStringPrintf(
+            &pszDaclTemplate,
+            "D:(A;;RCRP;;;%s)",
+            pszBuiltInUsersGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_GROUP, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_COMPUTER, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_VMW_CERTIFICATION_AUTHORITY, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // grant built-in users group to read control of any user object
+    // grant domain clients group to read property of any user object
+    VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
+    dwError = VmDirAllocateStringPrintf(
+            &pszDaclTemplate,
+            "D:(A;;RC;;;%s)(A;;RP;;;%s)",
+            pszBuiltInUsersGroupSid,
+            pszDomainClientsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetDefaultSecurityDescriptorForClass(
+            OC_USER, pszDaclTemplate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInUsersGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -184,8 +260,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -222,8 +301,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -283,5 +365,11 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }

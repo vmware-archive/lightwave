@@ -83,8 +83,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjVals)
     {
@@ -198,8 +201,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjAttr)
     {
@@ -255,8 +261,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjEntry)
     {
@@ -293,7 +302,7 @@ VmDirRESTEncodeDNToObjectPath(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszTenant, &pszTenantDN);
+    dwError = VmDirDomainNameToDN(pszTenant, &pszTenantDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // DN must be under the target tenant
@@ -351,8 +360,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszObjPath);
     goto cleanup;
@@ -402,8 +414,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjObjAttr)
     {
@@ -521,8 +536,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjObjAttr)
     {
@@ -593,8 +611,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjObj)
     {

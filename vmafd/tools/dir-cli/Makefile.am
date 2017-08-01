@@ -8,17 +8,17 @@ dir_cli_SOURCES = \
 
 dir_cli_CPPFLAGS = \
     -DLDAP_DEPRECATED \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    @VMDIR_INCLUDES@ \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 dir_cli_LDADD = \
-    $(top_builddir)/client/libvmafdclient.la \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/vmafcfg/api/libvmafcfgapi.la \
-    @VMDIR_LIBS@ \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/common/libcommon.la \
+    $(top_builddir)/vmafd/vmafcfg/api/libvmafcfgapi.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -32,7 +32,5 @@ dir_cli_LDADD = \
     @PTHREAD_LIBS@
 
 dir_cli_LDFLAGS = \
-    @VMDIR_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@
- 

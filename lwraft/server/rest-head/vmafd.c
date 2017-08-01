@@ -16,54 +16,66 @@
 
 DWORD
 VmDirRESTLoadVmAfdAPI(
-    PVDIR_VMAFD_API*    ppVmAfdAPI
+    PVDIR_VMAFD_API*    ppVmAfdApi
     )
 {
     DWORD   dwError = 0;
-    PVDIR_VMAFD_API pVmAfdAPI = NULL;
+    PVDIR_VMAFD_API pVmAfdApi = NULL;
 
-    if (!ppVmAfdAPI)
+    if (!ppVmAfdApi)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(sizeof(VDIR_VMAFD_API), (PVOID*)&pVmAfdAPI);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_VMAFD_API), (PVOID*)&pVmAfdApi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirOpenVmAfdClientLib(&pVmAfdAPI->pVmAfdLib);
+    dwError = VmDirOpenVmAfdClientLib(&pVmAfdApi->pVmAfdLib);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pVmAfdAPI->pfnGetDCName = (PFN_VMAFD_GET_DC_NAME)VmDirGetLibSym(
-            pVmAfdAPI->pVmAfdLib, "VmAfdGetDCNameA");
-    dwError = pVmAfdAPI->pfnGetDCName ? 0 : VMDIR_ERROR_NOT_FOUND;
+    pVmAfdApi->pfnGetDCName =
+            (PFN_VMAFD_GET_DC_NAME)VmDirGetLibSym(
+                    pVmAfdApi->pVmAfdLib, "VmAfdGetDCNameA");
+    dwError = pVmAfdApi->pfnGetDCName ? 0 : VMDIR_ERROR_NOT_FOUND;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pVmAfdAPI->pfnGetDomainName = (PFN_VMAFD_GET_DOMAIN_NAME)VmDirGetLibSym(
-            pVmAfdAPI->pVmAfdLib, "VmAfdGetDomainNameA");
-    dwError = pVmAfdAPI->pfnGetDomainName ? 0 : VMDIR_ERROR_NOT_FOUND;
+    pVmAfdApi->pfnGetDomainName =
+            (PFN_VMAFD_GET_DOMAIN_NAME)VmDirGetLibSym(
+                    pVmAfdApi->pVmAfdLib, "VmAfdGetDomainNameA");
+    dwError = pVmAfdApi->pfnGetDomainName ? 0 : VMDIR_ERROR_NOT_FOUND;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    *ppVmAfdAPI = pVmAfdAPI;
+    pVmAfdApi->pfnGetMachineAccountInfo =
+            (PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO)VmDirGetLibSym(
+                    pVmAfdApi->pVmAfdLib, "VmAfdGetMachineAccountInfoA");
+    dwError = pVmAfdApi->pfnGetMachineAccountInfo ? 0 : VMDIR_ERROR_NOT_FOUND;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppVmAfdApi = pVmAfdApi;
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
-    VmDirRESTUnloadVmAfdAPI(pVmAfdAPI);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    VmDirRESTUnloadVmAfdAPI(pVmAfdApi);
     goto cleanup;
 }
 
 VOID
 VmDirRESTUnloadVmAfdAPI(
-    PVDIR_VMAFD_API pVmAfdAPI
+    PVDIR_VMAFD_API pVmAfdApi
     )
 {
-    if (pVmAfdAPI)
+    if (pVmAfdApi)
     {
-        VmDirCloseLibrary(pVmAfdAPI->pVmAfdLib);
-        VMDIR_SAFE_FREE_MEMORY(pVmAfdAPI);
+        VmDirCloseLibrary(pVmAfdApi->pVmAfdLib);
+        VMDIR_SAFE_FREE_MEMORY(pVmAfdApi);
     }
 }

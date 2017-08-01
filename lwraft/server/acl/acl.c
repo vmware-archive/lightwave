@@ -122,7 +122,7 @@ _VmDirLogFailedAccessCheck(
     // Make sure we still log even if the SD translation fails for some reason.
     pszAclString = dwError ? NULL : pszAclString;
 
-    VMDIR_LOG_ERROR(
+    VMDIR_LOG_WARNING(
             VMDIR_LOG_MASK_ALL,
             "Caller (%s/%s) failed to get 0x%x permission to %s (dwError = %d). Object's SD: %s",
             pAccessInfo->pszNormBindedDn,

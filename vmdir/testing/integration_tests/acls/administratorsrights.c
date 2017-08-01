@@ -264,7 +264,7 @@ AdminGroupShouldBeAbleToListChildObjects(
                 pState->pszBaseDN);
     TestAssertEquals(dwError, 0);
 
-    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL);
+    dwError = VmDirTestGetObjectList(pState->pLd, pszContainerDn, NULL, NULL, NULL);
     TestAssertEquals(dwError, 0);
     return dwError;
 }
@@ -305,7 +305,7 @@ TestStandardRightsForAdminGroup(
                 pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestAddUserToGroup(pState->pLd, pszUserDn, pszGroupDn);
+    dwError = VmDirTestAddUserToGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestConnectionFromUser(pState, pszUserName, &pLdNewUser);

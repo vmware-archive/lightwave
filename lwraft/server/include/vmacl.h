@@ -326,6 +326,11 @@ VmDirSrvCreateAccessTokenForWellKnowObject(
     PCSTR           pszWellknownObjectSid
     );
 
+DWORD
+VmDirSrvCreateAccessTokenForAdmin(
+    PACCESS_TOKEN*  ppToken
+    );
+
 #ifdef __cplusplus
 }
 #endif

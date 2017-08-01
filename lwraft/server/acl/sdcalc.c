@@ -22,109 +22,6 @@ VmDirGenerateAttrMetaData(
     PSTR           pszAttributeName
     );
 
-
-static
-DWORD
-_VmDirGenerateWellKnownBinarySid(
-    DWORD dwWellKnownRid,
-    PSID *ppSid
-    )
-{
-    PSTR pszSid = NULL;
-    DWORD dwError = 0;
-    PSID pSid = NULL;
-
-    dwError = VmDirGenerateWellknownSid(gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
-                                        dwWellKnownRid,
-                                        &pszSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateSidFromCString(pszSid, &pSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppSid = pSid;
-
-cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszSid);
-    return dwError;
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirSrvCreateAccessTokenForAdmin(
-    PACCESS_TOKEN * ppToken
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-    PACCESS_TOKEN pToken = NULL;
-    TOKEN_USER user = {{0}};
-    TOKEN_OWNER owner = {0};
-    PTOKEN_GROUPS pGroups = NULL;
-    TOKEN_PRIVILEGES privileges = {0};
-    TOKEN_PRIMARY_GROUP primaryGroup = {0};
-    TOKEN_DEFAULT_DACL dacl = {0};
-    PSTR pszBuiltinUsersGroupSid = NULL;
-
-    dwError = _VmDirGenerateWellKnownBinarySid(
-                VMDIR_DOMAIN_USER_RID_ADMIN,
-                &user.User.Sid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    owner.Owner = user.User.Sid;
-
-    dwError = VmDirAllocateMemory(sizeof(TOKEN_GROUPS) + sizeof(SID_AND_ATTRIBUTES),
-                                  (PVOID*)&pGroups);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pGroups->GroupCount = 1;
-
-    dwError = _VmDirGenerateWellKnownBinarySid(
-                VMDIR_DOMAIN_ALIAS_RID_ADMINS,
-                &pGroups->Groups[0].Sid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // SJ-TBD: should be set on the basis of status of the group??
-    pGroups->Groups[0].Attributes = SE_GROUP_ENABLED;
-
-    dwError = VmDirGenerateWellknownSid(gVmdirServerGlobals.systemDomainDN.lberbv.bv_val, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBuiltinUsersGroupSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Primary groups should be built-in\Users not admins
-    dwError = VmDirAllocateSidFromCString(pszBuiltinUsersGroupSid, &primaryGroup.PrimaryGroup);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateAccessToken(&pToken,
-                                     &user,
-                                     pGroups,
-                                     &privileges,
-                                     &owner,
-                                     &primaryGroup,
-                                     &dacl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppToken = pToken;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pGroups->Groups[0].Sid);
-    VMDIR_SAFE_FREE_MEMORY(pGroups);
-    VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
-    VMDIR_SAFE_FREE_MEMORY(pszBuiltinUsersGroupSid);
-    VMDIR_SAFE_FREE_MEMORY(primaryGroup.PrimaryGroup);
-
-    return dwError;
-
-error:
-    if (pToken)
-    {
-        VmDirReleaseAccessToken(&pToken);
-    }
-
-    goto cleanup;
-}
-
-
 //
 // Takes an entry with a ATTR_ACL_STRING (which is an SDDL/text-based
 // security descriptor) and convert that string into a binary security
@@ -388,7 +285,7 @@ VmDirComputeObjectSecurityDescriptor(
 
     if (!pAccessInfo || !pAccessInfo->pAccessToken)
     {
-        dwError = _VmDirSrvCreateAccessTokenForAdmin(&pAdminAccessToken);
+        dwError = VmDirSrvCreateAccessTokenForAdmin(&pAdminAccessToken);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pAccessToken = pAdminAccessToken;

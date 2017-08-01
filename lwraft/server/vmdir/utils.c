@@ -240,34 +240,6 @@ VmDirdSetRunMode(
 }
 
 VOID
-VmDirdSetReplNow(
-    BOOLEAN bReplNow)
-{
-    BOOLEAN             bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    gVmdirGlobals.bReplNow = bReplNow;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    return;
-}
-
-BOOLEAN
-VmDirdGetReplNow(
-    VOID
-    )
-{
-    BOOLEAN     bReplNow = FALSE;
-    BOOLEAN     bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    bReplNow = gVmdirGlobals.bReplNow;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    return bReplNow;
-}
-
-VOID
 VmDirdSetLimitLocalUsnToBeSupplied(
     USN usn
     )

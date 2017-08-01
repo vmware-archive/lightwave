@@ -120,11 +120,8 @@ VmDirRegisterRpcServer(
         };
     DWORD dwEpCount = sizeof(endpoints)/sizeof(endpoints[0]);
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
-    VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pSrpVerifierInterfaceSpec = rpc_srp_verifier_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirRaftInterfaceSpec = vmdirraft_v1_0_s_ifspec;
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
 #if 0
@@ -134,58 +131,37 @@ VmDirRegisterRpcServer(
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    ulError = VmDirRpcServerRegisterIf(pVmDirFtpInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerRegisterIf(pSrpVerifierInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
     ulError = VmDirRpcServerRegisterIf(pSuperLogInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerRegisterIf(pVmDirDbcpInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    ulError = VmDirRpcServerRegisterIf(pVmDirUrgentReplInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
     ulError = VmDirRpcServerRegisterIf(pVmDirRaftInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service registered successfully.");
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Persistent Objectstore Service registered successfully.");
 
     ulError = VmDirBindServer( &pServerBinding, endpoints, VmDirRegisterForTcpEndpoint() ? dwEpCount : dwEpCount - 1);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service bound successfully.");
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Persistent Objectstore Service bound successfully.");
 
 #if 0
 #if !defined(HAVE_DCERPC_WIN32)
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "Lightwave Raft Service");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "Persistent Objectstore Service");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirFtpInterfaceSpec, "Lightwave Raft Service FTP");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "Persistent Objectstore Service dbcp");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "Lightwave Raft Service dbcp");
-    if (ulError)
-    {
-        bEndpointsRegistered = FALSE;
-    }
-
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirUrgentReplInterfaceSpec, "Lightwave Raft Service Urgent Repl");
-    if (ulError)
-    {
-        bEndpointsRegistered = FALSE;
-    }
-
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirRaftInterfaceSpec, "Lightwave Raft Service Raft");
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirRaftInterfaceSpec, "Persistent Objectstore Service Raft");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
@@ -223,16 +199,11 @@ VmDirUnRegisterRpcServer(
 {
     ULONG ulError = 0;
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
-    VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirRaftInterfaceSpec = vmdirraft_v1_0_s_ifspec;
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerUnRegisterIf(pVmDirFtpInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirSuperLogInterfaceSpec);
@@ -241,13 +212,10 @@ VmDirUnRegisterRpcServer(
     ulError = VmDirRpcServerUnRegisterIf(pVmDirDbcpInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    ulError = VmDirRpcServerUnRegisterIf(pVmDirUrgentReplInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
     ulError = VmDirRpcServerUnRegisterIf(pVmDirRaftInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Lightwave Raft Service unregistered successfully.");
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Persistent Objectstore Service unregistered successfully.");
 
 error:
 

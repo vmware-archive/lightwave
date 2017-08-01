@@ -308,6 +308,8 @@ typedef void  (MDB_raft_commit_fail_func)(void);
 #define MDB_NOMEMINIT	0x1000000
         /** keep WAL files after checkpoint -- this version of MDB doesn't support WAL, and the flag is for forward-compatability*/
 #define MDB_KEEPXLOGS   0x2000000
+        /** Enable WAL (Write Ahead Logging) feature */
+#define MDB_WAL   0x4000000
 /** @} */
 
 /**	@defgroup	mdb_dbi_open	Database Flags

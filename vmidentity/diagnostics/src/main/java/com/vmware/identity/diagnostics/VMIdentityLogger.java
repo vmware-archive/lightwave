@@ -19,8 +19,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.ThreadContext;
+import org.apache.logging.log4j.message.EntryMessage;
 import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.message.MessageFactory;
+import org.apache.logging.log4j.util.MessageSupplier;
+import org.apache.logging.log4j.util.Supplier;
 
 class VMIdentityLogger extends IDiagnosticsLogger{
     private final Logger _logger;
@@ -1332,6 +1335,1566 @@ class VMIdentityLogger extends IDiagnosticsLogger{
     public boolean isEnabled(Level arg0, Marker arg1, String arg2,
             Object... arg3) {
         return this._logger.isEnabled(arg0);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public boolean isEnabled(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        return this._logger.isEnabled(level, marker);
+    }
+
+    @Override
+    public void debug(Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message);
+    }
+
+    @Override
+    public void debug(Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, t);
+    }
+
+    @Override
+    public void debug(CharSequence message) {
+        // dispatch to this._logger
+        this._logger.debug(message);
+    }
+
+    @Override
+    public void debug(CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.debug(message, t);
+    }
+
+    @Override
+    public void debug(Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.debug(msgSupplier);
+    }
+
+    @Override
+    public void debug(Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.debug(msgSupplier, t);
+    }
+
+    @Override
+    public void debug(Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.debug(marker, msgSupplier);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void debug(Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.debug(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void debug(String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.debug(message, paramSuppliers);
+    }
+
+    @Override
+    public void debug(Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.debug(marker, msgSupplier);
+    }
+
+    @Override
+    public void debug(Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.debug(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void debug(MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.debug(msgSupplier);
+    }
+
+    @Override
+    public void debug(MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.debug(msgSupplier, t);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void debug(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.debug(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void debug(String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void debug(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.debug(message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void error(Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.error(marker, message);
+    }
+
+    @Override
+    public void error(Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, t);
+    }
+
+    @Override
+    public void error(CharSequence message) {
+        // dispatch to this._logger
+        this._logger.error(message);
+    }
+
+    @Override
+    public void error(CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.error(message, t);
+    }
+
+    @Override
+    public void error(Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.error(msgSupplier);
+    }
+
+    @Override
+    public void error(Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.error(msgSupplier, t);
+    }
+
+    @Override
+    public void error(Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.error(marker, msgSupplier);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void error(Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.error(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void error(String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.error(message, paramSuppliers);
+    }
+
+    @Override
+    public void error(Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.error(marker, msgSupplier);
+    }
+
+    @Override
+    public void error(Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.error(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void error(MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.error(msgSupplier);
+    }
+
+    @Override
+    public void error(MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.error(msgSupplier, t);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void error(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.error(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void error(String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.error(message, p0);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void error(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.error(message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void fatal(Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message);
+    }
+
+    @Override
+    public void fatal(Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, t);
+    }
+
+    @Override
+    public void fatal(CharSequence message) {
+        // dispatch to this._logger
+        this._logger.fatal(message);
+    }
+
+    @Override
+    public void fatal(CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.fatal(message, t);
+    }
+
+    @Override
+    public void fatal(Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.fatal(msgSupplier);
+    }
+
+    @Override
+    public void fatal(Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.fatal(msgSupplier, t);
+    }
+
+    @Override
+    public void fatal(Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, msgSupplier);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void fatal(Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void fatal(String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.fatal(message, paramSuppliers);
+    }
+
+    @Override
+    public void fatal(Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, msgSupplier);
+    }
+
+    @Override
+    public void fatal(Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void fatal(MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.fatal(msgSupplier);
+    }
+
+    @Override
+    public void fatal(MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.fatal(msgSupplier, t);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void fatal(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.fatal(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void fatal(String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void fatal(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.fatal(message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void info(Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.info(marker, message);
+    }
+
+    @Override
+    public void info(Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, t);
+    }
+
+    @Override
+    public void info(CharSequence message) {
+        // dispatch to this._logger
+        this._logger.info(message);
+    }
+
+    @Override
+    public void info(CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.info(message, t);
+    }
+
+    @Override
+    public void info(Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.info(msgSupplier);
+    }
+
+    @Override
+    public void info(Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.info(msgSupplier, t);
+    }
+
+    @Override
+    public void info(Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.info(marker, msgSupplier);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void info(Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.info(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void info(String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.info(message, paramSuppliers);
+    }
+
+    @Override
+    public void info(Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.info(marker, msgSupplier);
+    }
+
+    @Override
+    public void info(Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.info(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void info(MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.info(msgSupplier);
+    }
+
+    @Override
+    public void info(MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.info(msgSupplier, t);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void info(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.info(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void info(String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.info(message, p0);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void info(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.info(message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, t);
+    }
+
+    @Override
+    public void log(Level level, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.log(level, message);
+    }
+
+    @Override
+    public void log(Level level, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.log(level, message, t);
+    }
+
+    @Override
+    public void log(Level level, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.log(level, msgSupplier);
+    }
+
+    @Override
+    public void log(Level level, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.log(level, msgSupplier, t);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, msgSupplier);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, msgSupplier, t);
+    }
+
+    @Override
+    public void log(Level level, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.log(level, message, paramSuppliers);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, msgSupplier);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, msgSupplier, t);
+    }
+
+    @Override
+    public void log(Level level, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.log(level, msgSupplier);
+    }
+
+    @Override
+    public void log(Level level, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.log(level, msgSupplier, t);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void log(Level level, Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.log(level, marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void log(Level level, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.log(level, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void trace(Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message);
+    }
+
+    @Override
+    public void trace(Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, t);
+    }
+
+    @Override
+    public void trace(CharSequence message) {
+        // dispatch to this._logger
+        this._logger.trace(message);
+    }
+
+    @Override
+    public void trace(CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.trace(message, t);
+    }
+
+    @Override
+    public void trace(Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.trace(msgSupplier);
+    }
+
+    @Override
+    public void trace(Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.trace(msgSupplier, t);
+    }
+
+    @Override
+    public void trace(Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.trace(marker, msgSupplier);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void trace(Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.trace(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void trace(String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.trace(message, paramSuppliers);
+    }
+
+    @Override
+    public void trace(Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.trace(marker, msgSupplier);
+    }
+
+    @Override
+    public void trace(Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.trace(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void trace(MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.trace(msgSupplier);
+    }
+
+    @Override
+    public void trace(MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.trace(msgSupplier, t);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void trace(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.trace(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void trace(String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void trace(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.trace(message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public EntryMessage traceEntry() {
+        // dispatch to this._logger
+        return this._logger.traceEntry();
+    }
+
+    @Override
+    public EntryMessage traceEntry(String format, Object... params) {
+        // dispatch to this._logger
+        return this._logger.traceEntry(format, params);
+    }
+
+    @Override
+    public EntryMessage traceEntry(Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        return this._logger.traceEntry(paramSuppliers);
+    }
+
+    @Override
+    public EntryMessage traceEntry(String format, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        return this._logger.traceEntry(format, paramSuppliers);
+    }
+
+    @Override
+    public EntryMessage traceEntry(Message message) {
+        // dispatch to this._logger
+        return this._logger.traceEntry(message);
+    }
+
+    @Override
+    public void traceExit() {
+        // dispatch to this._logger
+        this._logger.traceExit();
+    }
+
+    @Override
+    public <R> R traceExit(R result) {
+        // dispatch to this._logger
+        return this._logger.traceExit(result);
+    }
+
+    @Override
+    public <R> R traceExit(String format, R result) {
+        // dispatch to this._logger
+        return this._logger.traceExit(format, result);
+    }
+
+    @Override
+    public void traceExit(EntryMessage message) {
+        // dispatch to this._logger
+        this._logger.traceExit(message);
+    }
+
+    @Override
+    public <R> R traceExit(EntryMessage message, R result) {
+        // dispatch to this._logger
+        return this._logger.traceExit(message, result);
+    }
+
+    @Override
+    public <R> R traceExit(Message message, R result) {
+        // dispatch to this._logger
+        return this._logger.traceExit(message, result);
+    }
+
+    @Override
+    public void warn(Marker marker, CharSequence message) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message);
+    }
+
+    @Override
+    public void warn(Marker marker, CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, t);
+    }
+
+    @Override
+    public void warn(CharSequence message) {
+        // dispatch to this._logger
+        this._logger.warn(message);
+    }
+
+    @Override
+    public void warn(CharSequence message, Throwable t) {
+        // dispatch to this._logger
+        this._logger.warn(message, t);
+    }
+
+    @Override
+    public void warn(Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.warn(msgSupplier);
+    }
+
+    @Override
+    public void warn(Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.warn(msgSupplier, t);
+    }
+
+    @Override
+    public void warn(Marker marker, Supplier<?> msgSupplier) {
+        // dispatch to this._logger
+        this._logger.warn(marker, msgSupplier);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, paramSuppliers);
+    }
+
+    @Override
+    public void warn(Marker marker, Supplier<?> msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.warn(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void warn(String message, Supplier<?>... paramSuppliers) {
+        // dispatch to this._logger
+        this._logger.warn(message, paramSuppliers);
+    }
+
+    @Override
+    public void warn(Marker marker, MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.warn(marker, msgSupplier);
+    }
+
+    @Override
+    public void warn(Marker marker, MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.warn(marker, msgSupplier, t);
+    }
+
+    @Override
+    public void warn(MessageSupplier msgSupplier) {
+        // dispatch to this._logger
+        this._logger.warn(msgSupplier);
+    }
+
+    @Override
+    public void warn(MessageSupplier msgSupplier, Throwable t) {
+        // dispatch to this._logger
+        this._logger.warn(msgSupplier, t);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void warn(Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.warn(marker, message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+    }
+
+    @Override
+    public void warn(String message, Object p0) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3, p4);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3, p4, p5);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3, p4, p5, p6);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+    }
+
+    @Override
+    public void warn(String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
+        // dispatch to this._logger
+        this._logger.warn(message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
     }
 
 }

@@ -544,6 +544,14 @@ VmDirStringNPrintFA(
     ...
 );
 
+DWORD
+VmDirStringReplaceAll(
+    PCSTR   pszSrc,
+    PCSTR   pszPatn,
+    PCSTR   pszRplc,
+    PSTR*   ppszDst
+    );
+
 VOID
 VmdDirNormalizeString(
     PSTR    pszString
@@ -629,18 +637,19 @@ VmDirLogGetMask(
 
 PCSTR
 VmDirSearchDomainDN(
-    PCSTR pszNormObjectDN
+    PCSTR   pszNormObjectDN
     );
 
 DWORD
 VmDirDomainDNToName(
-    PCSTR pszDomainDN,
-    PSTR* ppszDomainName);
+    PCSTR   pszDomainDN,
+    PSTR*   ppszDomainName
+    );
 
 DWORD
-VmDirSrvCreateDomainDN(
-    PCSTR pszFQDomainName,
-    PSTR* ppszDomainDN
+VmDirDomainNameToDN(
+    PCSTR   pszDomainName,
+    PSTR*   ppszDomainDN
     );
 
 DWORD

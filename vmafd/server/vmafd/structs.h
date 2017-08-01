@@ -245,7 +245,9 @@ typedef struct _VMAFD_GLOBALS
     PVMAFD_THREAD                   pPassRefreshThr;
     PCDC_CONTEXT                    pCdcContext;
 
-    PDDNS_CONTEXT                   pDdnsContext;
+
+    BOOLEAN                         bEnableDDNS;
+    PVMNETEVENT_HANDLE              pDdnsHandle;
     PSOURCE_IP_CONTEXT              pSourceIpContext;
 
     // following fields are protected by mutex

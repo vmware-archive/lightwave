@@ -405,13 +405,14 @@ VmDnsIsReverseZoneName(
 {
     BOOL result = FALSE;
     DWORD idx = 0;
-    ULONG ulSuffixLength = 0;
-    //PCSTR pszTail = NULL;
+    ULONG ulNameLength = 0, ulSuffixLength = 0;
+    PCSTR pszTail = NULL;
     PCSTR suffix[] =
     {
         "in-addr.arpa.",
         "ip6.arpa."
     };
+    ulNameLength = VmDnsStringLenA(pszZoneName);
 
     if (!pszZoneName || !pszZoneName[0])
     {
@@ -421,8 +422,10 @@ VmDnsIsReverseZoneName(
     for (; idx < sizeof(suffix)/sizeof(PCSTR); ++idx)
     {
         ulSuffixLength = VmDnsStringLenA(suffix[idx]);
+        pszTail = pszZoneName + ulNameLength - ulSuffixLength;
+
         if (VmDnsStringCompareA(
-                pszZoneName,
+                pszTail,
                 suffix[idx],
                 FALSE) == 0)
         {

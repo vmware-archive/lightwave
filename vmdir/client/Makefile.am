@@ -1,10 +1,10 @@
 lib_LTLIBRARIES = libvmdirclient.la
 
-idl_srcdir=$(top_srcdir)/idl
+idl_srcdir=$(top_srcdir)/vmdir/idl
 
 libvmdirclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
@@ -35,7 +35,7 @@ libvmdirclient_la_SOURCES = \
     vmdirsuperlog_cstub.c
 
 libvmdirclient_la_LIBADD = \
-    @top_builddir@/common/libcommon.la \
+    @top_builddir@/vmdir/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -51,7 +51,7 @@ libvmdirclient_la_LIBADD = \
     @PTHREAD_LIBS@
 
 libvmdirclient_la_LDFLAGS = \
-    -export-symbols @top_srcdir@/client/libvmdirclient.exp \
+    -export-symbols @top_srcdir@/vmdir/client/libvmdirclient.exp \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@
@@ -88,4 +88,4 @@ srp_verifier_h.h srp_verifier_cstub.c: $(idl_srcdir)/srp_verifier.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
 
 vmdirsuperlog_h.h vmdirsuperlog_cstub.c: $(idl_srcdir)/vmdirsuperlog.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<

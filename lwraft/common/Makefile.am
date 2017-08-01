@@ -52,11 +52,11 @@ libcommon_la_SOURCES = \
     schema/verify.c
 
 libcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/heimdal \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1 \
     -DLDAP_DEPRECATED \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@

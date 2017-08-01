@@ -597,14 +597,14 @@ VmDirSrvCreateDomain(
     )
 {
     DWORD   dwError = 0;
-    char    pszDomainCompName[MAX_DOMAIN_COMPONENT_VALUE_LEN];
+    char    pszObjDC[MAX_DOMAIN_COMPONENT_VALUE_LEN];
     PSTR    ppszDomainAttrs[] =
     {
         ATTR_OBJECT_CLASS,              OC_TOP,
         ATTR_OBJECT_CLASS,              OC_DC_OBJECT,
         ATTR_OBJECT_CLASS,              OC_DOMAIN,
         ATTR_OBJECT_CLASS,              OC_DOMAIN_DNS,
-        ATTR_DOMAIN_COMPONENT,          (PSTR)pszDomainCompName,
+        ATTR_DOMAIN_COMPONENT,          (PSTR)pszObjDC,
         ATTR_DOMAIN_FUNCTIONAL_LEVEL,   VDIR_DOMAIN_FUNCTIONAL_LEVEL,
         NULL
     };
@@ -614,26 +614,42 @@ VmDirSrvCreateDomain(
     int     startOfRdnValInd = 0;
     int     endOfRdnValInd = 0;
     int     rdnValLen = 0;
+    PSTR    pszObjDN = 0;
 
-    for (i = endOfRdnValInd = domainDNLen - 1; i >= 0; i-- )
+    for (i = endOfRdnValInd = domainDNLen - 1; i >= 0; i--)
     {
         if (i == 0 || pszDomainDN[i] == RDN_SEPARATOR_CHAR)
         {
             startOfRdnInd = (i == 0) ? 0 : i + 1 /* for , */;
             startOfRdnValInd = startOfRdnInd + ATTR_DOMAIN_COMPONENT_LEN + 1 /* for = */;
             rdnValLen = endOfRdnValInd - startOfRdnValInd + 1;
+            pszObjDN = (PSTR)pszDomainDN + startOfRdnInd;
 
-            dwError = VmDirStringNCpyA( pszDomainCompName, MAX_DOMAIN_COMPONENT_VALUE_LEN,
-                                        pszDomainDN + startOfRdnValInd, rdnValLen );
+            dwError = VmDirStringNCpyA(
+                    pszObjDC,
+                    MAX_DOMAIN_COMPONENT_VALUE_LEN,
+                    pszObjDN,
+                    rdnValLen);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            pszDomainCompName[rdnValLen] = '\0';
+            pszObjDC[rdnValLen] = '\0';
 
-            dwError = VmDirSimpleEntryCreate( pSchemaCtx, ppszDomainAttrs, (PSTR)pszDomainDN + startOfRdnInd, 0 );
+            dwError = VmDirSimpleEntryCreate(
+                    pSchemaCtx, ppszDomainAttrs, pszObjDN, 0);
+
             if (dwError == VMDIR_ERROR_BACKEND_ENTRY_EXISTS ||
                 dwError == VMDIR_ERROR_ENTRY_ALREADY_EXIST)
-            {   // pass through if parent exists
+            {
+                // pass through if parent exists
                 dwError = VMDIR_SUCCESS;
+            }
+            else if (dwError == 0)
+            {
+                // remove SD for new domain objects - its should be set
+                // properly after the whole domain tree is created
+                dwError = VmDirSimpleEntryDeleteAttribute(
+                        pszObjDN, ATTR_OBJECT_SECURITY_DESCRIPTOR);
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
             BAIL_ON_VMDIR_ERROR(dwError);
 

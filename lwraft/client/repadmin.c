@@ -778,7 +778,7 @@ VmDirGetServersInfoOnSite(
     int                 searchLevel = LDAP_SCOPE_ONELEVEL;
     PSTR                pFilter = NULL;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pszSiteName == NULL)

@@ -345,29 +345,6 @@ ShowUsage(
     PSTR pName
     );
 
-/* krb.c */
-DWORD
-VmDirGetKrbMasterKey(
-    PSTR        pszDomainName, // [in] FQDN
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    );
-
-DWORD
-VmDirGetKrbUPNKey(
-    PSTR       pszUpnName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    );
-
-
-DWORD
-VmDirGetKeyTabRecBlob(
-    PSTR      pszUpnName,
-    PBYTE*    ppBYTE,
-    DWORD*    pSize
-    );
-
 /* accountmgmt.c */
 DWORD
 VmDirResetPassword(

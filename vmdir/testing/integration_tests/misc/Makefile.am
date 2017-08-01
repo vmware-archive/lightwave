@@ -1,8 +1,8 @@
 lib_LTLIBRARIES = libmisctests.la
 
 libmisctests_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
@@ -14,7 +14,7 @@ libmisctests_la_SOURCES = \
     tombstone.c
 
 libmisctests_la_LIBADD = \
-    @top_builddir@/testing/test_lib/libvmdirtesting.la \
+    @top_builddir@/vmdir/testing/test_lib/libvmdirtesting.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -30,7 +30,7 @@ libmisctests_la_LIBADD = \
     @PTHREAD_LIBS@
 
 libmisctests_la_LDFLAGS = \
-    -export-symbols @top_srcdir@/testing/integration_tests/misc/libmisctests.exp \
+    -export-symbols @top_srcdir@/vmdir/testing/integration_tests/misc/libmisctests.exp \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

@@ -374,6 +374,7 @@ extern "C" {
 #define OC_VMW_SERVICEPRINCIPAL          "vmwServicePrincipal"
 
 #define OC_VMW_CONTAINER                 "vmwContainer"
+#define OC_VMW_CERTIFICATION_AUTHORITY   "vmwCertificationAuthority"
 
 #define OC_CONTAINER                     "container"
 #define OC_SERVER_STATUS                 "vmwDirServerStatus"

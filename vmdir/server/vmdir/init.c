@@ -926,7 +926,10 @@ InitializeVmdirdSystemEntries(
     iError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
-    iError = InitializeSchemaEntries(pSchemaCtx);
+    iError = VmDirSchemaInitializeSubtree(pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(iError);
+
+    iError = VmDirSchemaSetSystemDefaultSecurityDescriptors();
     BAIL_ON_VMDIR_ERROR(iError);
 
     iError = InitializeCFGEntries(pSchemaCtx);
