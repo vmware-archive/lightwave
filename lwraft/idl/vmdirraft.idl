@@ -59,7 +59,7 @@ typedef [context_handle] void *vmdir_raft_handle_t;
            [in]                     unsigned hyper leaderCommit,
            [in]                     chglog_container *entries,
            [out]                    UINT32 * currentTerm,
-           [out]                    UINT32 * status
+           [out]                    unsigned hyper *status
       );
 
       UINT32

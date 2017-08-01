@@ -2985,9 +2985,7 @@ mdb_txn_commit(MDB_txn *txn)
 	int		rc;
 	unsigned int i;
 	MDB_env	*env;
-        unsigned long long raft_logindex = 0;
-        unsigned int raft_logterm = 0;
-        unsigned int raft_op = 0;
+        void *raft_commit_ctx = NULL;
 
 	if (txn == NULL || txn->mt_env == NULL)
 		return EINVAL;
@@ -3177,7 +3175,7 @@ mdb_txn_commit(MDB_txn *txn)
         }
 
         if ((env->me_raft_prepare_commit_func &&
-             (rc = env->me_raft_prepare_commit_func(&raft_logindex, &raft_logterm, &raft_op))) ||
+             (rc = env->me_raft_prepare_commit_func(&raft_commit_ctx))) ||
             (rc = mdb_env_write_meta(txn)))
         {
                 goto fail;
@@ -3188,9 +3186,9 @@ done:
 	env->me_txn = NULL;
 	mdb_dbis_update(txn, 1);
 
-        if (env->me_raft_post_commit_func && raft_logindex > 0)
+        if (env->me_raft_post_commit_func)
         {
-            env->me_raft_post_commit_func(raft_logindex, raft_logterm, raft_op);
+            env->me_raft_post_commit_func(raft_commit_ctx);
         }
 
 	if (env->me_txns)
@@ -3200,9 +3198,9 @@ done:
 	return MDB_SUCCESS;
 
 fail:
-        if (env->me_raft_commit_fail_func && raft_logindex > 0)
+        if (env->me_raft_commit_fail_func)
         {
-            env->me_raft_commit_fail_func();
+            env->me_raft_commit_fail_func(raft_commit_ctx);
         }
 	mdb_txn_abort(txn);
 	return rc;

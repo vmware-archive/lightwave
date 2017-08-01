@@ -134,7 +134,7 @@ VmDirRaftAppendEntries(
                              int entriesSize,
     /* [in] */               unsigned char *entries,
     /* [out] */              UINT32 * currentTerm,
-    /* [out] */              UINT32 * status
+    /* [out] */              unsigned long long *status
     );
 
 /*
@@ -4891,18 +4891,18 @@ VmDirRaftAppendEntries(
                              int entriesSize,
     /* [in] */               unsigned char *entries,
     /* [out] */              UINT32 * currentTerm,
-    /* [out] */              UINT32 * status
+    /* [out] */              unsigned long long *status
     )
 {
     DWORD dwError = 0;
     UINT32 iCurrentTerm = 0;
-    UINT32 iStatus = 0;
+    idl_uhyper_int iStatus = 0;
     chglog_container chglogEntries = {0};
     chglogEntries.chglog_size = entriesSize;
     chglogEntries.chglog_bytes = entries;
 
     *currentTerm = 0;
-    *status = 1;
+    *status = 0;
 
     VMDIR_RPC_TRY
     {
