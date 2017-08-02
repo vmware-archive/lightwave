@@ -72,8 +72,7 @@ typedef struct _VMDIR_REPLICATON_CONNECTION
 
 typedef struct _VMDIR_REPLICATION_CONTEXT
 {
-    PVDIR_SCHEMA_CTX pSchemaCtx;
-    BOOLEAN bFirstReplicationCycle;
-    time_t stLastTimeTriedToFillHoleInDirectory;
-    PSTR pszKrb5ErrorMsg;
+    PVDIR_SCHEMA_CTX    pSchemaCtx;
+    time_t              stLastTimeTriedToFillHoleInDirectory;
+    PSTR                pszKrb5ErrorMsg;
 } VMDIR_REPLICATION_CONTEXT, *PVMDIR_REPLICATION_CONTEXT;

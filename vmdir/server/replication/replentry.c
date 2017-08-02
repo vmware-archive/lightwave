@@ -62,12 +62,6 @@ _VmDirPatchData(
     );
 
 static
-DWORD
-_VmDirAssignEntryIdIfSpecialInternalEntry(
-    PVDIR_ENTRY pEntry
-    );
-
-static
 int
 ReplFixUpEntryDn(
     PVDIR_ENTRY pEntry
@@ -125,65 +119,13 @@ _VmDirIsBenignReplConflict(
     PVDIR_ENTRY     pConsumerEntry
     );
 
-/*
- * _VmDirAssignEntryIdIfSpecialInternalEntry()
- *
- * Internal entries from vmdir.h:
- *
- * #define DSE_ROOT_ENTRY_ID              1
- * #define SCHEMA_NAMING_CONTEXT_ID       2
- * #define SUB_SCEHMA_SUB_ENTRY_ID        3
- * #define CFG_ROOT_ENTRY_ID              4
- * #define CFG_INDEX_ENTRY_ID             5
- * #define CFG_ORGANIZATION_ENTRY_ID      6
- * #define DEL_ENTRY_CONTAINER_ENTRY_ID   7
- * #define DEFAULT_ADMINISTRATOR_ENTRY_ID 8
- *
- * Except System administrator and deleted objects container entries, rest are created at the initialization time of
- * all replicas => getting expected entry Ids.
- *
- */
-static DWORD
-_VmDirAssignEntryIdIfSpecialInternalEntry(
-    PVDIR_ENTRY pEntry )
-{
-    DWORD       dwError = 0;
-    PSTR        pszLocalErrMsg = NULL;
-
-    dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                  "_VmDirAssignEntryIdIfSpecialInternalEntry: DN normalization failed - (%u)(%s)",
-                                  dwError, pEntry->dn.lberbv.bv_val );
-
-    if (VmDirStringCompareA( BERVAL_NORM_VAL(pEntry->dn),
-                             BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN), TRUE) == 0)
-    {
-        pEntry->eId = DEFAULT_ADMINISTRATOR_ENTRY_ID;
-    }
-    else if (VmDirStringCompareA( BERVAL_NORM_VAL(pEntry->dn),
-                                  BERVAL_NORM_VAL(gVmdirServerGlobals.delObjsContainerDN), TRUE) == 0)
-    {
-        pEntry->eId = DEL_ENTRY_CONTAINER_ENTRY_ID;
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, pszLocalErrMsg );
-    goto cleanup;
-}
-
-
 // Replicate Add Entry operation
 
 int
 ReplAddEntry(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx,
-    BOOLEAN                         bFirstReplicationCycle)
+    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx)
 {
     int                 retVal = LDAP_SUCCESS;
     VDIR_OPERATION      op = {0};
@@ -281,12 +223,6 @@ ReplAddEntry(
 
     retVal = _VmDirPatchData( &op );
     BAIL_ON_VMDIR_ERROR( retVal );
-
-    if (bFirstReplicationCycle)
-    {
-        retVal =  _VmDirAssignEntryIdIfSpecialInternalEntry( pEntry );
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
 
     op.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
