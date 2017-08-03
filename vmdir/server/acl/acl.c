@@ -146,7 +146,6 @@ VmDirSrvAccessCheck(
     DWORD       dwError = 0;
     ACCESS_MASK samGranted = 0;
     PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
-    PVDIR_ENTRY pTargetEntry = pEntry;
     BOOLEAN bIsMember = FALSE;
 
     assert(pOperation);
@@ -184,9 +183,12 @@ VmDirSrvAccessCheck(
 
     if (VmDirIsLegacySecurityDescriptor())
     {
-        dwError = VmDirLegacyAccessCheck(pOperation, pAccessInfo, pTargetEntry, accessDesired);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        goto cleanup; // Access Allowed
+        dwError = VmDirLegacyAccessCheck(pOperation, pAccessInfo, pEntry, accessDesired);
+        if (!dwError)
+        {
+            goto cleanup; // Access Allowed
+        }
+        // otherwise, continue to SELF check below
     }
     else
     {
