@@ -745,6 +745,7 @@ VmDirUpdateKeytabFile(
 /*
  * HA Topolgy Management APIs
  */
+
 DWORD
 VmDirGetIntraSiteTopology(
     PCSTR   pszUserName,
@@ -791,9 +792,43 @@ VOID
 VmDirFreeHAChanges(
     PVMDIR_HA_TOPOLOGY_CHANGES  pChanges
     );
-
-
 /*
  * HA Topology Management APIs end here
  */
+
+DWORD
+VmDirLdapRemoveRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    LDAP* pHostLd
+    );
+
+DWORD
+VmDirLdapSetupRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark,
+    LDAP* pLocalLd,
+    LDAP* pPartnerLd
+    );
+
+DWORD
+VmDirLdapGetHighWatermarkByPLd(
+    LDAP*      pLocalLd,
+    LDAP*      pPartnerLd,
+    PCSTR      pszLocalHost,
+    PCSTR      pszPartnerHost,
+    USN*       pLastLocalUsn
+    );
+
+DWORD
+VmDirGetReplicationPartnersByPLd(
+    PCSTR               pszServerName,
+    PCSTR               pszDomainName,
+    LDAP*               pLd,
+    PVMDIR_REPL_PARTNER_INFO*  ppReplPartnerInfo,   // output
+    DWORD*              pdwNumReplPartner    // output
+);
 

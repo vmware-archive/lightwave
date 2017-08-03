@@ -474,8 +474,55 @@ VmDirLdapGetHighWatermark(
     )
 {
     DWORD   dwError = 0;
-    USN     partnerVisibleUSN = 0;
     LDAP    *pPartnerLd = NULL;
+
+    if (pLocalLd == NULL || pLastLocalUsn == NULL || IsNullOrEmptyString(pszPartnerHost) ||
+        IsNullOrEmptyString(pszDomainName) || IsNullOrEmptyString(pszUsername) ||
+        IsNullOrEmptyString(pszPassword) || IsNullOrEmptyString(pszLocalHost))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Get partner's replication state to discover its latest USN.
+    dwError = VmDirConnectLDAPServer(
+                        &pPartnerLd,
+                        pszPartnerHost,
+                        pszDomainName,
+                        pszUsername,
+                        pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapGetHighWatermarkByPLd(
+                                pLocalLd,
+                                pPartnerLd,
+                                pszLocalHost,
+                                pszPartnerHost,
+                                pLastLocalUsn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirLdapUnbind( &pPartnerLd );
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed with error (%u)",
+                    __FUNCTION__, dwError);
+    goto cleanup;
+
+}
+
+DWORD
+VmDirLdapGetHighWatermarkByPLd(
+    LDAP*      pLocalLd,
+    LDAP*      pPartnerLd,
+    PCSTR      pszLocalHost,
+    PCSTR      pszPartnerHost,
+    USN*       pLastLocalUsn
+    )
+{
+    DWORD   dwError = 0;
+    USN     partnerVisibleUSN = 0;
     PVMDIR_REPL_STATE pPartnerReplState = NULL;
     PVMDIR_REPL_STATE pLocalReplState = NULL;
     PCSTR   pszUSNChanged = ATTR_USN_CHANGED;
@@ -497,21 +544,11 @@ VmDirLdapGetHighWatermark(
     PVMDIR_METADATA pMetadata = NULL;
 
     if (pLocalLd == NULL || pLastLocalUsn == NULL || IsNullOrEmptyString(pszPartnerHost) ||
-        IsNullOrEmptyString(pszDomainName) || IsNullOrEmptyString(pszUsername) ||
-        IsNullOrEmptyString(pszPassword) || IsNullOrEmptyString(pszLocalHost))
+        pPartnerLd == NULL || IsNullOrEmptyString(pszLocalHost))
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    // Get partner's replication state to discover its latest USN.
-    dwError = VmDirConnectLDAPServer(
-                        &pPartnerLd,
-                        pszPartnerHost,
-                        pszDomainName,
-                        pszUsername,
-                        pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetReplicationStateInternal(pPartnerLd, &pPartnerReplState);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -620,7 +657,7 @@ VmDirLdapGetHighWatermark(
                                     *pLastLocalUsn = (DWORD)VMDIR_MAX(consumableUsn - HIGHWATER_USN_REPL_BUFFER, 0);
 
                                     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
-                                                    "VmDirLdapGetHighWatermark Host (%s), Partner (%s), Setting high watermark to (%u)",
+                                                    "VmDirLdapGetHighWatermarkByPLd Host (%s), Partner (%s), Setting high watermark to (%u)",
                                                     pszLocalHost,
                                                     pszPartnerHost,
                                                     *pLastLocalUsn);
@@ -643,7 +680,7 @@ VmDirLdapGetHighWatermark(
     *pLastLocalUsn = 0;
 
     VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                       "VmDirLdapGetHighWatermark Host (%s), Partner (%s), High watermark not found, setting to (%u)",
+                       "VmDirLdapGetHighWatermarkByPLd Host (%s), Partner (%s), High watermark not found, setting to (%u)",
                        pszLocalHost,
                        pszPartnerHost,
                        *pLastLocalUsn);
@@ -651,7 +688,6 @@ VmDirLdapGetHighWatermark(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA( pszFilter );
     VmDirFreeMetadata( pMetadata );
-    VmDirLdapUnbind( &pPartnerLd );
     if (ppUSNValues)
     {
         ldap_value_free_len(ppUSNValues);

@@ -2504,13 +2504,9 @@ VmDirGetReplicationPartners(
     DWORD*              pdwNumReplPartner    // output
 )
 {
-    DWORD       dwError                 = 0;
-    DWORD       i                       = 0;
+    DWORD   dwError = 0;
+    LDAP*   pLd     = NULL;
     PSTR        pszDomain               = NULL;
-    LDAP*       pLd                     = NULL;
-    DWORD       dwInfoCount             = 0;
-    PREPLICATION_INFO pReplicationInfo  = NULL;
-    PVMDIR_REPL_PARTNER_INFO pReplPartnerInfo = NULL;
     PSTR        pszServerName = NULL;
 
     // parameter check
@@ -2545,11 +2541,60 @@ VmDirGetReplicationPartners(
                             pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirGetReplicationPartnersByPLd(
+                        pszServerName,
+                        pszDomain,
+                        pLd,
+                        ppReplPartnerInfo,
+                        pdwNumReplPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+    VmDirLdapUnbind(&pLd);
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "VmDirGetReplicationPartners failed, Error[%d]\n",
+            dwError
+            );
+    goto cleanup;
+}
+DWORD
+VmDirGetReplicationPartnersByPLd(
+    PCSTR               pszServerName,
+    PCSTR               pszDomainName,
+    LDAP*               pLd,
+    PVMDIR_REPL_PARTNER_INFO*  ppReplPartnerInfo,   // output
+    DWORD*              pdwNumReplPartner    // output
+)
+{
+    DWORD       dwError                 = 0;
+    DWORD       i                       = 0;
+    DWORD       dwInfoCount             = 0;
+    PREPLICATION_INFO pReplicationInfo  = NULL;
+    PVMDIR_REPL_PARTNER_INFO pReplPartnerInfo = NULL;
+
+    // parameter check
+    if (
+            IsNullOrEmptyString (pszServerName) ||
+            IsNullOrEmptyString (pszDomainName) ||
+            pLd                 == NULL         ||
+            pdwNumReplPartner   == NULL         ||
+            ppReplPartnerInfo   == NULL
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     //get replication agreement info for replication LDUs
     dwError = VmDirGetReplicationInfo(
                             pLd,
                             pszServerName,
-                            pszDomain,
+                            pszDomainName,
                             &pReplicationInfo,
                             &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2581,22 +2626,14 @@ VmDirGetReplicationPartners(
     *ppReplPartnerInfo = pReplPartnerInfo;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszDomain);
-    VMDIR_SAFE_FREE_MEMORY(pszServerName);
     VMDIR_SAFE_FREE_MEMORY(pReplicationInfo);
-
-    // unbind
-    if (pLd)
-    {
-        ldap_unbind_ext_s(pLd, NULL, NULL);
-    }
 
     return dwError;
 
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "VmDirGetReplicationPartners failed, Error[%d]\n",
+            "VmDirGetReplicationPartnersByPLd failed, Error[%d]\n",
             dwError
             );
 
