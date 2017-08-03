@@ -23,8 +23,7 @@ VmDirRESTAuth(
 
     if (!pRestOp)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (IsNullOrEmptyString(pRestOp->pszAuth))
@@ -37,7 +36,7 @@ VmDirRESTAuth(
     }
 
     dwError = VmDirRESTAuthViaToken(pRestOp);
-    if (dwError && dwError == VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED)
+    if (dwError && pRestOp->authMthd == VDIR_REST_AUTH_METHOD_UNDEF)
     {
         dwError = VmDirRESTAuthViaBasic(pRestOp);
     }
@@ -76,8 +75,7 @@ VmDirRESTAuthViaBasic(
 
     if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     // unset previously set error
@@ -90,6 +88,7 @@ VmDirRESTAuthViaBasic(
         dwError = VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+    pRestOp->authMthd = VDIR_REST_AUTH_METHOD_BASIC;
 
     pszData = pszBasic + strlen("Basic ");
 
@@ -165,8 +164,7 @@ VmDirRESTAuthViaToken(
 
     if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     // unset previously set error
@@ -179,10 +177,15 @@ VmDirRESTAuthViaToken(
     dwError = VmDirRESTAuthTokenParse(pAuthToken, pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    pRestOp->authMthd = VDIR_REST_AUTH_METHOD_TOKEN;
+
+    dwError = VmDirRESTAuthTokenValidate(pAuthToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (pAuthToken->tokenType == VDIR_REST_AUTH_TOKEN_HOTK)
     {
         // TODO Validate the proof of possession
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED);
     }
 
     // retrieve security information of the UPN

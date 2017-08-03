@@ -133,6 +133,11 @@ VmDirRESTCacheGetOIDCSigningCertPEM(
 
     VMDIR_RWLOCK_READLOCK(bInLock, gpVdirRestCache->pRWLock, 0);
 
+    if (IsNullOrEmptyString(pRestCache->pszOIDCSigningCertPEM))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+    }
+
     dwError = VmDirAllocateStringA(
             pRestCache->pszOIDCSigningCertPEM, &pszOIDCSigningCertPEM);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -171,6 +176,11 @@ VmDirRESTCacheGetBuiltInAdminsGroupSid(
     }
 
     VMDIR_RWLOCK_READLOCK(bInLock, gpVdirRestCache->pRWLock, 0);
+
+    if (!RtlValidSid(pRestCache->pBuiltInAdminsGroupSid))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+    }
 
     ulSidLen = RtlLengthSid(pRestCache->pBuiltInAdminsGroupSid);
 

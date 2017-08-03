@@ -572,4 +572,5 @@ build/vmdir/
 build/vmdns/
 build/vmevent/
 build/vmidentity/
+build/vmmetrics/
 

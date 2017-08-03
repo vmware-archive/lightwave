@@ -40,6 +40,11 @@ VmDirRESTAuthTokenParse(
     PCSTR                   pszAuthData
     );
 
+DWORD
+VmDirRESTAuthTokenValidate(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
+    );
+
 VOID
 VmDirFreeRESTAuthToken(
     PVDIR_REST_AUTH_TOKEN   pAuthToken

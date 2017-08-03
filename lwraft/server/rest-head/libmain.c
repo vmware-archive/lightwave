@@ -59,8 +59,9 @@ VmDirRESTServerInit(
     dwError = VmDirRESTLoadVmAfdAPI(&gpVdirVmAfdApi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTCacheInit(&gpVdirRestCache);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    // cache is only required for token auth
+    // post should still handle simple auth
+    (VOID)VmDirRESTCacheInit(&gpVdirRestCache);
 
     dwError = VmRESTInit(&config, NULL, &gpVdirRestHandle);
     BAIL_ON_VMDIR_ERROR(dwError);

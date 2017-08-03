@@ -61,6 +61,7 @@
 #include <vmrest.h>
 
 #include <ssotypes.h>
+#include <ssoerrors.h>
 #include <oidc_types.h>
 #include <oidc.h>
 
