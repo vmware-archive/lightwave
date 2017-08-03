@@ -275,13 +275,9 @@ VmDirLegacyAccessCheck(
     ACCESS_MASK accessDesired
     )
 {
-    DWORD dwError = 0;
+    DWORD dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
 
-    if (_VmDirAllowOperationBasedOnGroupMembership(pOperation, pAccessInfo, accessDesired))
-    {
-        goto cleanup;
-    }
-
+    // Protect important entries from deletion, even for system administrators
     if (accessDesired == VMDIR_RIGHT_DS_DELETE_CHILD)
     {
         if (_VmDirIsInternalEntry(pEntry) ||
@@ -290,6 +286,11 @@ VmDirLegacyAccessCheck(
         {
             BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
         }
+    }
+
+    if (_VmDirAllowOperationBasedOnGroupMembership(pOperation, pAccessInfo, accessDesired))
+    {
+       dwError = 0; // grant access based on legacy group based ACL
     }
 
 cleanup:

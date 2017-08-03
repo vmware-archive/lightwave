@@ -184,8 +184,11 @@ VmDirSrvAccessCheck(
     if (VmDirIsLegacySecurityDescriptor())
     {
         dwError = VmDirLegacyAccessCheck(pOperation, pAccessInfo, pEntry, accessDesired);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        goto cleanup; // Access Allowed
+        if (!dwError)
+        {
+            goto cleanup; // Access Allowed
+        }
+        // otherwise, continue to SELF check below
     }
     else
     {
