@@ -154,22 +154,9 @@
       <artifactId>spring-webmvc</artifactId>
       <version>${spring.release.version}</version>
     </dependency>
-
-
-    <dependency>
-      <groupId>javax.servlet.jsp.jstl</groupId>
-      <artifactId>jstl-api</artifactId>
-      <version>${jstl.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <dependency>
       <groupId>org.glassfish.web</groupId>
-      <artifactId>jstl-impl</artifactId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
       <version>${jstl.version}</version>
       <exclusions>
         <exclusion>
