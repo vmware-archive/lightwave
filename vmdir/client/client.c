@@ -5963,3 +5963,259 @@ VmDirUrgentReplicationResponse(
 {
    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
+
+/*
+ * API Exposed for HA Topology Management
+ */
+
+DWORD
+VmDirGetCurrentTopologyAtSite(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszHostName,
+    PCSTR   pszSiteName,
+    PBOOLEAN    pbConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszSiteName) ||
+        !pbConsiderOfflineNodes ||
+        !ppCurTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+    VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "SiteName is %s",pszSiteName);
+
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    printf( "SiteName is %s \n", pszSiteName); // For Debugging till final check-in
+
+    dwError = VmDirGetIntraSiteTopology(
+                        pszUserName,
+                        pszPassword,
+                        pszHostName,
+                        pszSiteName,
+                        pbConsiderOfflineNodes,
+                        &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppCurTopology = pTopology;
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyData(pTopology);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetCurrentGlobalTopology(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszHostName,
+    PBOOLEAN    pbConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszHostName) ||
+        !pbConsiderOfflineNodes ||
+        !ppCurTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirGetInterSiteTopology(
+                        pszUserName,
+                        pszPassword,
+                        pszHostName,
+                        pbConsiderOfflineNodes,
+                        &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppCurTopology = pTopology;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyData(pTopology);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetProposedTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology // Output
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
+
+    if (!pCurTopology ||
+        !ppNewTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirGetNewTopology(
+                    pCurTopology,
+                    &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppNewTopology = pTopology;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyData(pTopology);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetChangesInTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES* ppTopologyChanges //Output
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_HA_TOPOLOGY_CHANGES  pChanges = NULL;
+
+    if (!pCurTopology ||
+        !pNewTopology ||
+        !ppTopologyChanges)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirGetTopologyChanges(
+                    pCurTopology,
+                    pNewTopology,
+                    &pChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppTopologyChanges = pChanges;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyChanges(pChanges);
+
+    goto cleanup;
+
+}
+
+DWORD
+VmDirApplyTopologyChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pTopologyChanges)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirModifyLinks(pTopologyChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+
+    goto cleanup;
+}
+
+VOID
+VmDirFreeHATopologyData(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
+    )
+{
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    VmDirFreeHATopology(pTopology);
+}
+
+VOID
+VmDirFreeHAServerInfo(
+    PVMDIR_HA_SERVER_INFO   pServer
+    )
+{
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    VmDirFreeHAServer(pServer);
+}
+
+VOID
+VmDirFreeHATopologyChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    )
+{
+    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    VmDirFreeHAChanges(pTopologyChanges);
+}
+
+/*
+ * APIs for HA Topology Management ends here
+ */

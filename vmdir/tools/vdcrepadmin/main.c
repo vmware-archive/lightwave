@@ -884,6 +884,9 @@ VmDirMain(int argc, char* argv[])
     DWORD                       dwReplPartnerInfoCount = 0;
     DWORD                       dwReplPartnerStatusCount = 0;
     DWORD                       dwServerInfoCount      = 0;
+    BOOLEAN bNoInteraction  = FALSE;
+    BOOLEAN bIncludeOffline = FALSE;
+    PSTR    pszSiteName     = NULL;
 
     CHAR        pszPath[MAX_PATH];
 
@@ -916,7 +919,10 @@ VmDirMain(int argc, char* argv[])
                     &pszTgtPort,
                     &pszEntryDn,
                     &pszAttribute,
-                    &bVerbose
+                    &pszSiteName,
+                    &bVerbose,
+                    &bNoInteraction,
+                    &bIncludeOffline
                     );
 
     if (bVerbose)
@@ -1070,7 +1076,7 @@ VmDirMain(int argc, char* argv[])
     else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_ATTRIBUTE_METADATA,
                                   pszFeatureSet,
                                   TRUE) == 0 )
-       {
+    {
            dwError = _VmDirGetAttributeMetadata(
                                 pszSrcHostName,
                                 pszSrcUserName,
@@ -1080,7 +1086,22 @@ VmDirMain(int argc, char* argv[])
                                 );
            BAIL_ON_VMDIR_ERROR(dwError);
 
-       }
+    }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_ENABLE_REDUNDANT_TOPOLOGY,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+            dwError = VmDirEnableRedundantTopology(
+                                    bNoInteraction,
+                                    bIncludeOffline,
+                                    pszSrcHostName,
+                                    pszSrcPort,
+                                    pszSrcUserName,
+                                    pszSrcPassword,
+                                    pszSiteName
+                                    );
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     // Free internal memory used

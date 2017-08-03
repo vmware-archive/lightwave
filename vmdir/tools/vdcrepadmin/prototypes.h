@@ -30,7 +30,10 @@ VmDirParseArgs(
     PSTR*    ppszTgtPort,
     PSTR*    ppszEntryDn,
     PSTR*    ppszAttribute,
-    PBOOLEAN pbVerbose
+    PSTR*    ppszSiteName,
+    PBOOLEAN pbVerbose,
+    PBOOLEAN pbNoInteraction,
+    PBOOLEAN pIncludeOffline
     );
 
 VOID
@@ -38,3 +41,13 @@ ShowUsage(
     VOID
     );
 
+DWORD
+VmDirEnableRedundantTopology(
+    BOOLEAN             bNoInteraction,
+    BOOLEAN             bIncludeOffline,
+    PCSTR               pszSrcHostName,
+    PCSTR               pszSrcPort,
+    PCSTR               pszSrcUserName,
+    PCSTR               pszSrcPassword,
+    PCSTR               pszSiteName
+    );
