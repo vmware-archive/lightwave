@@ -10,7 +10,8 @@
     "host": "IPADDRESS_MARKER:7477",
     "basePath": "/v1",
     "produces": [
-        "application/json"
+        "application/json",
+        "text/plain"
     ],
     "tags": [
         {
@@ -173,18 +174,18 @@
                 ]
             }
         },
-        "/vmdir/metrics/ldap": {
+        "/vmdir/metrics": {
             "get": {
                 "summary": "Get metrics data",
-                "description": "Get metrics data",
+                "description": "Get metrics data in Prometheus format",
                 "produces": [
-                    "application/json"
+                    "text/plain"
                 ],
                 "responses": {
                     "200": {
-                        "description": "Metrics LDAP response",
+                        "description": "Metrics Response",
                         "schema": {
-                            "$ref": "#/definitions/MetricsLdapResponse"
+                            "$ref": "#/definitions/MetricsResponse"
                         }
                     }
                 },
@@ -271,73 +272,9 @@
                 }
             }
         },
-        "MetricsLdapResponse": {
+        "MetricsResponse": {
             "type": "object",
             "properties": {
-                "vmdir": {
-                    "ldap": {
-                        "bind": {
-                            "count": {
-                                "type": "integer",
-                                "format": "int32"
-                             },
-                            "average": {
-                                "type": "integer",
-                                "format": "int32"
-                             }
-                        },
-                        "search": {
-                            "count": {
-                                "type": "integer",
-                                "format": "int32"
-                             },
-                            "average": {
-                                "type": "integer",
-                                "format": "int32"
-                             }
-                        },
-                        "add": {
-                            "count": {
-                                "type": "integer",
-                                "format": "int32"
-                             },
-                            "average": {
-                                "type": "integer",
-                                "format": "int32"
-                             }
-                        },
-                        "unbind": {
-                            "count": {
-                                "type": "integer",
-                                "format": "int32"
-                             },
-                            "average": {
-                                "type": "integer",
-                                "format": "int32"
-                             }
-                        },
-                        "modify": {
-                            "count": {
-                                "type": "integer",
-                                "format": "int32"
-                             },
-                            "average": {
-                                "type": "integer",
-                                "format": "int32"
-                             }
-                        },
-                        "delete": {
-                            "count": {
-                                "type": "integer",
-                                "format": "int32"
-                             },
-                            "average": {
-                                "type": "integer",
-                                "format": "int32"
-                             }
-                        }
-                    }
-                }
             }
         }
     }

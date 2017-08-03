@@ -70,6 +70,7 @@
 #include <ldaphead.h>
 #include <resthead.h>
 #include <vmevent.h>
+#include <metricscommon.h>
 
 #include "defines.h"
 #include "structs.h"
@@ -137,6 +138,7 @@
 #include <vmdirserver.h>
 #include <ldaphead.h>
 #include <vmevent.h>
+#include <metricscommon.h>
 
 #include "defines.h"
 #include "structs.h"

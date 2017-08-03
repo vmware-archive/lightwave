@@ -40,6 +40,7 @@ VmDirRESTResultCreate(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pRestRslt->bErrSet = FALSE;
+    pRestRslt->dwDataLen = 0;
 
     *ppRestRslt = pRestRslt;
 
@@ -318,6 +319,7 @@ VmDirFreeRESTResult(
         VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);
+        VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszData);
         VMDIR_SAFE_FREE_MEMORY(pRestRslt);
     }
 }

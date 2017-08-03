@@ -26,6 +26,8 @@ typedef struct _VDIR_REST_RESULT
     int         errCode;
     PSTR        pszErrMsg;
     PLW_HASHMAP pDataMap;
+    PSTR        pszData;
+    DWORD       dwDataLen;
     BOOLEAN     bErrSet;
 
 } VDIR_REST_RESULT, *PVDIR_REST_RESULT;

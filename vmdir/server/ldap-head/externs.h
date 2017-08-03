@@ -31,3 +31,7 @@ extern Sockbuf_IO* gpVdirBerSockbufIOOpenssl;
 extern VMDIR_OP_STATISTIC_GLOBALS gVmdirOPStatisticGlobals;
 
 extern VMDIR_OPENSSL_GLOBALS gVmdirOpensslGlobals;
+
+extern PVM_METRICS_HISTOGRAM pLdapRequestDuration[];
+
+extern PVM_METRICS_COUNTER pLdapErrorCount[];

@@ -621,6 +621,12 @@ VmDirIpcGetSRPSecret(
     PDWORD pdwResponseSize
     );
 
+// metricsinit.c
+DWORD
+VmDirMetricsInitialize(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

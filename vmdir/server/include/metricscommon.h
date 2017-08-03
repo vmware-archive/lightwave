@@ -12,17 +12,11 @@
  * under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <errno.h>
+#ifndef METRICS_COMMON_H_
+#define METRICS_COMMON_H_
 
-#include <lw/types.h>
-#include <lw/hash.h>
+#include <vmmetrics.h>
 
-#include "memory.h"
-#include "defines.h"
-#include "errorcode.h"
-#include "structs.h"
-#include "vmmetrics.h"
+extern PVM_METRICS_CONTEXT pmContext;
+
+#endif /* METRICS_COMMON_H_ */

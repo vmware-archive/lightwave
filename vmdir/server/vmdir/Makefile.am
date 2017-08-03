@@ -14,8 +14,10 @@ vmdird_SOURCES = \
     ipcserver.c \
     ipclocalapi.c \
     ipcapihandler.c \
-    parseargs.c \
+    krb.c \
     main.c \
+    metricsinit.c \
+    parseargs.c \
     regconfig.c \
     rpcserv.c \
     rpcsrpserv.c \
@@ -25,19 +27,18 @@ vmdird_SOURCES = \
     service.c \
     shutdown.c \
     signal.c \
+    srp_verifier_sstub.c \
     srvthr.c \
     superlogging.c \
+    tenantmgmt.c \
+    tombstone.c \
+    tracklastlogin.c \
     utils.c \
-    krb.c \
     vmdir_sstub.c \
     vmdirftp_sstub.c \
     vmdirdbcp_sstub.c \
-    srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
-    vmevent.c \
-    tenantmgmt.c \
-    tombstone.c \
-    tracklastlogin.c
+    vmevent.c
 
 VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
@@ -53,6 +54,7 @@ vmdird_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmevent/include/public \
+    -I$(top_srcdir)/vmmetrics/include/public \
     $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
@@ -78,6 +80,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    $(top_builddir)/vmmetrics/libvmmetrics.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

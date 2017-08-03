@@ -27,7 +27,7 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
     },
     {
         VDIR_REST_RSC_METRICS,
-        "/v1/vmdir/metrics/ldap",
+        "/v1/vmdir/metrics",
         FALSE,
         VmDirRESTUnknownSetResult,
         VmDirRESTUnknownGetHttpError,

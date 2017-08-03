@@ -12,17 +12,28 @@
  * under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <errno.h>
+#include "includes.h"
 
-#include <lw/types.h>
-#include <lw/hash.h>
+PVM_METRICS_CONTEXT pmContext = NULL;
 
-#include "memory.h"
-#include "defines.h"
-#include "errorcode.h"
-#include "structs.h"
-#include "vmmetrics.h"
+DWORD
+VmDirMetricsInitialize(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmMetricsInit(&pmContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapMetricsInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirMetricsInitialize failed (%d)", dwError);
+
+    goto cleanup;
+}
