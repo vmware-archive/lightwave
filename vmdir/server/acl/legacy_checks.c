@@ -24,6 +24,20 @@
 
 static
 BOOLEAN
+_VmDirIsSpecialAllowedSearchEntry(
+    PVDIR_ENTRY pSrEntry
+    )
+{
+    // everyone can read
+    // DSE_ROOT_DN and PERSISTED_DSE_ROOT_DN, SCHEMA_NAMING_CONTEXT_DN, SUB_SCHEMA_SUB_ENTRY_DN
+    return (!VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, DSE_ROOT_DN, FALSE)
+         || !VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, PERSISTED_DSE_ROOT_DN, FALSE)
+         || !VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, SCHEMA_NAMING_CONTEXT_DN, FALSE)
+         || !VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, SUB_SCHEMA_SUB_ENTRY_DN, FALSE));
+}
+
+static
+BOOLEAN
 _VmDirIsProtectedEntry(
     PVDIR_ENTRY pEntry
     )
@@ -267,6 +281,7 @@ _VmDirIsSchemaEntry(
 //     to anything under "cn=services,dc=<domain>"
 // (3) Anything under cn=schemacontext shouldn't be deletable.
 // (4) Built-in/internal objects shouldn't be deletable.
+// (5) Special entries such as DSE Root can read by everyone.
 DWORD
 VmDirLegacyAccessCheck(
     PVDIR_OPERATION pOperation,
@@ -291,6 +306,13 @@ VmDirLegacyAccessCheck(
     if (_VmDirAllowOperationBasedOnGroupMembership(pOperation, pAccessInfo, accessDesired))
     {
        dwError = 0; // grant access based on legacy group based ACL
+       goto cleanup;
+    }
+
+    if (accessDesired == VMDIR_RIGHT_DS_READ_PROP && _VmDirIsSpecialAllowedSearchEntry(pEntry))
+    {
+       dwError = 0; // grant read access to special entries to everyone, include anonymous user.
+       goto cleanup;
     }
 
 cleanup:
