@@ -19,7 +19,7 @@
     }
   ],
   "paths": {
-    "/vmdns/metrics": {
+    "/dns/metrics": {
       "get": {
         "summary": "Get metrics data",
         "description": "Get metrics data",
@@ -44,13 +44,9 @@
     "MetricsResponse": {
       "type": "object",
       "properties": {
-        "dns_query_count": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "forwarder_query_count": {
-          "type": "integer",
-          "format": "int32"
+        "dns_metrics_data": {
+          "type": "string",
+          "format": "text/plain"
         }
       }
     }

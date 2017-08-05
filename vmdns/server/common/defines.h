@@ -146,6 +146,13 @@ typedef enum
     VM_DNS_QUERY_OP_RESPONSE = 1
 } VM_DNS_QUERY_OP;
 
+typedef enum
+{
+    CACHE_PURGE_REPLICATION,
+    CACHE_PURGE_MODIFICATION,
+
+} VM_DNS_CACHE_PURGE_TYPE;
+
 
 #ifndef PopEntryList
 #define PopEntryList(ListHead) \

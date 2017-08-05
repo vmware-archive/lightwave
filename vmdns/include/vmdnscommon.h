@@ -57,10 +57,10 @@ typedef enum
 
 DWORD
 VmDnsLogInitialize(
-	PCSTR   pszLogFileName,
-	DWORD   dwMaximumOldFiles,
-	DWORD   dwMaxLogSizeBytes
-	);
+    PCSTR   pszLogFileName,
+    DWORD   dwMaximumOldFiles,
+    DWORD   dwMaxLogSizeBytes
+    );
 
 void
 VmDnsLogTerminate();
@@ -926,6 +926,11 @@ DWORD
 VmDnsStringToLower (
     PCSTR pszSrcStr,
     PSTR *pszDstStr
+    );
+
+UINT64
+VmDnsGetTimeInMilliSec(
+    VOID
     );
 
 #define VMDNS_FREE_RECORD(pRecord) \

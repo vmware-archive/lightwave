@@ -164,6 +164,10 @@ VmDnsRpcAddRecord(
 {
     DWORD dwError = ERROR_SUCCESS;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
 
     if (IsNullOrEmptyString(pszZone) || !pRecord)
     {
@@ -182,6 +186,13 @@ VmDnsRpcAddRecord(
 
 cleanup:
     VmDnsZoneObjectRelease(pZoneObject);
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[RPC_UPDATE_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
+
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
@@ -197,6 +208,11 @@ VmDnsRpcDeleteRecord(
 {
     DWORD dwError = ERROR_SUCCESS;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
+
 
     if (IsNullOrEmptyString(pszZone) || !pRecord)
     {
@@ -215,6 +231,13 @@ VmDnsRpcDeleteRecord(
 
 cleanup:
     VmDnsZoneObjectRelease(pZoneObject);
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[RPC_UPDATE_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
+
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
@@ -235,6 +258,10 @@ VmDnsRpcQueryRecords(
     PVMDNS_RECORD_LIST pRecordList = NULL;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
 
     BAIL_ON_VMDNS_INVALID_POINTER(ppRecordArray, dwError);
     *ppRecordArray = NULL;
@@ -263,6 +290,13 @@ VmDnsRpcQueryRecords(
 cleanup:
     VmDnsZoneObjectRelease(pZoneObject);
     VmDnsRecordListRelease(pRecordList);
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[RPC_QUERY_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
+
     return dwError;
 error:
     if (pRecordArray)

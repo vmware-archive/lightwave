@@ -14,14 +14,10 @@
 
 #include "includes.h"
 
-#define OPSTATISTIC_DNS_QUERY_COUNT_INIT     {"dns_query_count",   0}
-#define OPSTATISTIC_FORWARDER_QUERY_COUNT_INIT     {"forwarder_query_count",   0}
-
-VMDNS_OP_STATISTIC_GLOBALS gVmdnsOPStatisticGlobals =
-    {
-        VMDNS_SF_INIT(.dns_query_count, OPSTATISTIC_DNS_QUERY_COUNT_INIT),
-        VMDNS_SF_INIT(.forwarder_query_count, OPSTATISTIC_FORWARDER_QUERY_COUNT_INIT)
-    };
-
 VMW_DNS_DRIVER_GLOBALS gDNSDriverGlobals;
 PVMW_DNS_DRIVER_GLOBALS gpSrvContext = &gDNSDriverGlobals;
+
+PVM_METRICS_COUNTER gVmDnsCounterMetrics[VDNS_COUNTER_COUNT];
+PVM_METRICS_HISTOGRAM gVmDnsHistogramMetrics[VDNS_HISTOGRAM_COUNT];
+PVM_METRICS_GAUGE gVmDnsGaugeMetrics[VDNS_GAUGE_COUNT];
+PVM_METRICS_CONTEXT gVmDnsMetricsContext = NULL;

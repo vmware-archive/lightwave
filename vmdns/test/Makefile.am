@@ -20,6 +20,7 @@ dnstest_CPPFLAGS = \
     -I$(top_srcdir)/vmdns/server/common \
     -I$(top_srcdir)/vmdns/build/server/service \
     -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -27,6 +28,7 @@ dnstest_LDADD = \
     $(top_builddir)/vmdns/server/common/libsrvcommon.la \
     $(top_builddir)/vmdns/common/libcommon.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmmetrics/libvmmetrics.la \
     @SCHANNEL_LIBS@ \
     @DCERPC_LIBS@ \
     @LDAP_LIBS@ \

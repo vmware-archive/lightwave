@@ -18,12 +18,21 @@ static VDNS_REST_RESOURCE resources[VDNS_REST_RSC_COUNT] =
 {
     {
         VDNS_REST_RSC_METRICS,
-        "/v1/vmdns/metrics",
+        "/v1/dns/metrics",
         FALSE,
         VmDnsRESTUnknownSetResult,
         VmDnsRESTUnknownGetHttpError,
         "error-code",
         "error-message"
+    },
+    {
+       VDNS_REST_RSC_UNKNOWN,
+       NULL,
+       FALSE,
+       VmDnsRESTUnknownSetResult,
+       VmDnsRESTUnknownGetHttpError,
+       NULL,
+       NULL
     }
 };
 

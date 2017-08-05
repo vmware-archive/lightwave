@@ -331,7 +331,7 @@ VmDnsSrvAddRecord(
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCachePurgeRecord(pZoneObject, pRecord->pszName);
+    dwError = VmDnsCachePurgeRecord(pZoneObject, pRecord->pszName, CACHE_PURGE_MODIFICATION);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -540,6 +540,7 @@ VmDnsSrvGetRecords(
 
     if (!pRecordList || VmDnsRecordListGetSize(pRecordList) == 0)
     {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_CACHE_MISS]);
         dwError = VmDnsStoreGetRecords(
                     pszZone,
                     szNameQuery,

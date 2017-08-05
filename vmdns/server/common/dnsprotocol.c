@@ -93,6 +93,11 @@ VmDnsGetUpdateResponse(
     PDWORD                  pdwDnsResponseSize
     );
 
+static
+VOID
+VmDnsMetricsRcodeUpdate(
+ UCHAR rCode
+ );
 
 DWORD
 VmDnsProcessRequest(
@@ -200,7 +205,6 @@ VmDnsProcessRequest(
 
         dwError = 0;
     }
-    VmDnsOPStatisticUpdate(DNS_QUERY_COUNT);
 
 cleanup:
 
@@ -223,6 +227,8 @@ cleanup:
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;
     *pRCode = rCode;
+
+    VmDnsMetricsRcodeUpdate(rCode);
 
     return dwError;
 
@@ -249,6 +255,10 @@ VmDnsProcessQuery(
     PVMDNS_RECORD_LIST pAnswerList = NULL;
     PBYTE pDnsResponse = NULL;
     DWORD dwDnsResponseSize = 0;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
 
     BAIL_ON_VMDNS_INVALID_POINTER(pDnsMessage, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppDnsResponse, dwError);
@@ -365,6 +375,12 @@ response:
 
     VmDnsCleanupDnsMessage(&ResponseMessage);
 
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[DNS_QUERY_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
+
     return dwError;
 
 error:
@@ -394,6 +410,10 @@ VmDnsProcessUpdate(
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
     PBYTE pDnsResponse = NULL;
     DWORD dwDnsResponseSize = 0;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
 
     BAIL_ON_VMDNS_INVALID_POINTER(pDnsUpdateMessage, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppDnsResponse, dwError);
@@ -552,6 +572,12 @@ response:
     VmDnsZoneObjectRelease(pZoneObject);
 
     VmDnsCleanupDnsUpdateMessage(&ResponseMessage);
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[DNS_UPDATE_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
 
     return dwError;
 
@@ -1537,4 +1563,28 @@ error:
     VMDNS_SAFE_FREE_MEMORY(pDnsResponse);
 
     goto cleanup;
+}
+
+static
+VOID
+VmDnsMetricsRcodeUpdate(
+ UCHAR rCode
+ )
+{
+    if (rCode ==  VM_DNS_RCODE_NAME_ERROR)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_NXDOMAIN_ERR_COUNT]);
+    }
+    else if (rCode == VM_DNS_RCODE_NOT_IMPLEMENTED)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_NOT_IMPLEMENTED_COUNT]);
+    }
+    else if (rCode == VM_DNS_RCODE_SERVER_FAILURE)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_UNKNOWN_COUNT]);
+    }
+    else if (rCode == VM_DNS_RCODE_NOERROR)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_NO_ERROR]);
+    }
 }

@@ -37,18 +37,6 @@ extern "C" {
 #define VMDNS_LDAP_DC_SRV_NAME "_ldap._tcp.dc._msdcs"
 #define VMDNS_KERBEROS_DC_SRV_NAME "_kerberos._tcp.dc._msdcs"
 
-//Dns Statistics
-#define DNS_QUERY_COUNT            ((UINT16) 0x60U)
-#define FORWARDER_QUERY_COUNT      ((UINT16) 0x63U)
-
-/*Statistics*/
-typedef struct _VMDNS_OPERATION_STATISTIC
-{
-    PCSTR           pszOPName;
-    LONG            iCount;
-
-} VMDNS_OPERATION_STATISTIC, *PVMDNS_OPERATION_STATISTIC;
-
 /*hash table*/
 
 typedef struct _VMDNS_HASHTABLE *PVMDNS_HASHTABLE;
@@ -497,13 +485,6 @@ VmDnsGetDefaultDomainName(
 VOID
 VmDnsDirClose(
     PVMDNS_DIR_CONTEXT pDirContext
-    );
-
-// opstatistic.c
-
-LONG
-VmDnsOPStatisticGetCount(
-    UINT16 opTag
     );
 
 #ifdef __cplusplus

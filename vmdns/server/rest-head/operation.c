@@ -211,17 +211,39 @@ VmDnsRESTOperationWriteResponse(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
-    BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsRESTResultToResponseBody(
-                       pRestOp->pResult,
-                       pRestOp->pResource,
-                       &pszBody
-                       );
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (pRestOp->pResult->pszData)
+    {
+       dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "text/plain");
+       BAIL_ON_VMDNS_ERROR(dwError);
 
-    bodyLen = VmDnsStringLenA(VDNS_SAFE_STRING(pszBody));
+       bodyLen = pRestOp->pResult->dwDataLen;
+
+       dwError = VmDnsAllocateMemory(
+                    bodyLen + 1,
+                    (PVOID*)&pszBody);
+       BAIL_ON_VMDNS_ERROR(dwError);
+
+       dwError = VmDnsCopyMemory(
+                    (PVOID)pszBody,
+                    bodyLen + 1,
+                    (PVOID)pRestOp->pResult->pszData,
+                    bodyLen
+                    );
+       BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+       dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
+       BAIL_ON_VMDNS_ERROR(dwError);
+       dwError = VmDnsRESTResultToResponseBody(
+                                       pRestOp->pResult,
+                                       pRestOp->pResource,
+                                       &pszBody
+                                       );
+       BAIL_ON_VMDNS_ERROR(dwError);
+       bodyLen = VmDnsStringLenA(VDNS_SAFE_STRING(pszBody));
+    }
 
     dwError = VmDnsAllocateStringPrintfA(&pszBodyLen, "%ld", bodyLen);
     BAIL_ON_VMDNS_ERROR(dwError);

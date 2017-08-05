@@ -412,6 +412,8 @@ cleanup:
         VmDnsUnlockRead(pContext->pLock);
     }
 
+    VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_ZONE_LOOKUP]);
+
     return dwError;
 
 error:
@@ -422,11 +424,22 @@ error:
 DWORD
 VmDnsCachePurgeRecord(
     PVMDNS_ZONE_OBJECT pZoneObject,
-    PCSTR              pszRecord
+    PCSTR              pszRecord,
+    DWORD              dwCachePurgeEvent
     )
 {
     PVMDNS_RECORD_LIST pList = NULL;
     DWORD dwError = 0;
+    DWORD dwOpCode;
+
+    if (dwCachePurgeEvent == CACHE_PURGE_MODIFICATION)
+    {
+       dwOpCode = CACHE_MODIFY_PURGE_COUNT;
+    }
+    else if (dwCachePurgeEvent == CACHE_PURGE_REPLICATION)
+    {
+       dwOpCode = CACHE_NOTIFY_PURGE_COUNT;
+    }
 
     if (VmDnsStringCompareA(pZoneObject->pszName, pszRecord, FALSE) == 0)
     {
@@ -468,6 +481,7 @@ VmDnsCachePurgeRecord(
         }
         else
         {
+            VmMetricsCounterIncrement(gVmDnsCounterMetrics[dwOpCode]);
             VmDnsLog(
                 VMDNS_LOG_LEVEL_DEBUG,
                 "Succesfully Purged (%s) from Cache",
@@ -506,7 +520,7 @@ VmDnsCachePurgeRecordProc(
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCachePurgeRecord(pZoneObject, pszNode);
+    dwError = VmDnsCachePurgeRecord(pZoneObject, pszNode, CACHE_PURGE_REPLICATION);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
