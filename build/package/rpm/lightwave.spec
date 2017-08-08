@@ -416,9 +416,9 @@ Lightwave POST service
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -496,6 +496,7 @@ Lightwave POST service
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -533,6 +534,9 @@ Lightwave POST service
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
+                sleep 5
+            else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
                     echo "Starting lwregd"
@@ -540,9 +544,9 @@ Lightwave POST service
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
                 if [ $started_lwregd = true ]; then
                     kill `pidof lwregd`
                     wait
@@ -623,7 +627,7 @@ Lightwave POST service
             if [ $try_starting_lwregd_svc = true ]; then
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 2
+                sleep 5
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -632,7 +636,7 @@ Lightwave POST service
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
