@@ -957,7 +957,7 @@ Lightwave POST service
 %{_jarsdir}/openidconnect-protocol.jar
 %{_jarsdir}/openidconnect-server.jar
 %{_jarsdir}/commons-lang-2.6.jar
-%{_jarsdir}/commons-logging-1.1.1.jar
+%{_jarsdir}/commons-logging-1.2.jar
 %{_jarsdir}/jna-4.2.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
 %{_jarsdir}/slf4j-api-1.7.25.jar
