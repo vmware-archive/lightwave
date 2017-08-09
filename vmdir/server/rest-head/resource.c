@@ -22,17 +22,17 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         FALSE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
-        "error-code",
-        "error-message"
+        "error_code",
+        "error_message"
     },
     {
         VDIR_REST_RSC_METRICS,
-        "/v1/vmdir/metrics/ldap",
+        "/v1/vmdir/metrics",
         FALSE,
         VmDirRESTUnknownSetResult,
         VmDirRESTUnknownGetHttpError,
-        "error-code",
-        "error-message"
+        "error_code",
+        "error_message"
     },
     {
         VDIR_REST_RSC_UNKNOWN,

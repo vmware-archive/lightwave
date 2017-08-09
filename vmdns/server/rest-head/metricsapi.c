@@ -22,7 +22,7 @@
 REST_MODULE gMetricsRestModule[] =
 {
     {
-        "/v1/vmdns/metrics",
+        "/v1/dns/metrics",
         {VmDnsRESTMetricsGet, NULL, NULL, NULL, NULL}
     }
 };
@@ -47,7 +47,6 @@ VmDnsRESTMetricsGet(
 {
     DWORD   dwError = 0;
     PVDNS_REST_OPERATION pRestOp = NULL;
-    UINT16 iCount = 0;
 
     if (!pIn)
     {
@@ -57,18 +56,11 @@ VmDnsRESTMetricsGet(
 
     pRestOp = (PVDNS_REST_OPERATION)pIn;
 
-    iCount = VmDnsOPStatisticGetCount(DNS_QUERY_COUNT);
-    dwError = VmDnsRESTResultSetIntData(
-                      pRestOp->pResult,
-                      "dns_query_count",
-                      iCount);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    iCount = VmDnsOPStatisticGetCount(FORWARDER_QUERY_COUNT);
-    dwError = VmDnsRESTResultSetIntData(
-                          pRestOp->pResult,
-                          "forwarder_query_count",
-                          iCount);
+    VmMetricsGetPrometheusData(
+            gVmDnsMetricsContext,
+            &pRestOp->pResult->pszData,
+            &pRestOp->pResult->dwDataLen
+            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:

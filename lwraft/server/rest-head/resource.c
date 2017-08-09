@@ -22,8 +22,8 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         FALSE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
-        "error-code",
-        "error-message"
+        "error_code",
+        "error_message"
     },
     {
         VDIR_REST_RSC_OBJECT,
@@ -31,8 +31,17 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         TRUE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
-        "error-code",
-        "error-message"
+        "error_code",
+        "error_message"
+    },
+    {
+        VDIR_REST_RSC_ETCD,
+        "/v1/post/etcd",
+        TRUE,
+        VmDirRESTLdapSetResult,
+        VmDirRESTLdapGetHttpError,
+        "code",
+        "error"
     },
     {
         VDIR_REST_RSC_UNKNOWN,

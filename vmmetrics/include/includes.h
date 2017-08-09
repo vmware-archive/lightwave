@@ -19,6 +19,7 @@
 #include <errno.h>
 
 #include <lw/types.h>
+#include <lw/hash.h>
 
 #include "memory.h"
 #include "defines.h"

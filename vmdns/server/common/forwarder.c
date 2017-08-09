@@ -643,7 +643,6 @@ VmDnsForwardRequest(
 
     *ppResponse = pResponse;
     *pdwResponseSize = pIoDataResponse->dwCurrentSize;
-    VmDnsOPStatisticUpdate(FORWARDER_QUERY_COUNT);
 
 cleanup:
 

@@ -137,6 +137,11 @@
     </dependency>
     <!-- common and opensaml dependencies -->
     <dependency>
+      <groupId>commons-beanutils</groupId>
+      <artifactId>commons-beanutils</artifactId>
+      <version>${commons.beanutils.version}</version>
+    </dependency>
+    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>${commons.codec.version}</version>
@@ -145,6 +150,11 @@
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
       <version>${commons.collection.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>${commons.fileupload.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-httpclient</groupId>
@@ -160,6 +170,12 @@
       <groupId>org.owasp.esapi</groupId>
       <artifactId>esapi</artifactId>
       <version>${esapi.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>net.jcip</groupId>
@@ -359,7 +375,7 @@
       <version>${cglib.version}</version>
     </dependency>
     <dependency>
-      <groupId>asm</groupId>
+      <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>
       <scope>provided</scope>

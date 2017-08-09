@@ -2,6 +2,7 @@ bin_PROGRAMS = vdcrepadmin
 
 vdcrepadmin_SOURCES = \
     parseargs.c \
+    redundancy.c \
     main.c
 
 vdcrepadmin_CPPFLAGS = \

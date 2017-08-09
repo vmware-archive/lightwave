@@ -114,6 +114,8 @@ VmDirShutdown(
 
     VmDirCleanupGlobals();
 
+    VmMetricsDestroy(pmContext);
+
     (VOID)VmDirSetRegKeyValueDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,

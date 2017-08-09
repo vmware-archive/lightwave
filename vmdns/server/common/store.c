@@ -112,7 +112,18 @@ VmDnsStoreAddZoneRecord(
     )
 {
     DWORD dwError = 0;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
+
     dwError = VmDnsDirAddZoneRecord(pszZoneName, pRecord);
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[STORE_UPDATE_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
 
     return dwError;
 }
@@ -124,7 +135,19 @@ VmDnsStoreDeleteZoneRecord(
     )
 {
     DWORD dwError = 0;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
+
     dwError = VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[STORE_UPDATE_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
+
     return dwError;
 }
 
@@ -136,6 +159,11 @@ VmDnsStoreGetRecords(
     )
 {
     DWORD dwError = 0;
+    UINT64 startTime = 0;
+    UINT64 endTime = 0;
+
+    startTime = VmDnsGetTimeInMilliSec();
+
     dwError = VmDnsDirGetRecords(
                         pszZone,
                         pszName,
@@ -143,6 +171,12 @@ VmDnsStoreGetRecords(
 
     /* Translating LDAP error code to MS error code for use in serviceapi */
     dwError = (dwError == LDAP_NO_SUCH_OBJECT) ? ERROR_NOT_FOUND : dwError;
+
+    endTime = VmDnsGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(
+            gVmDnsHistogramMetrics[STORE_QUERY_DURATION],
+            VDNS_RESPONSE_TIME(endTime - startTime)
+            );
 
     return dwError;
 }

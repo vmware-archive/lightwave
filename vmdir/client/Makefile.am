@@ -18,6 +18,7 @@ libvmdirclient_la_SOURCES = \
     ldaputil.c \
     libmain.c \
     pnid.c \
+    redundancy.c\
     registry.c \
     repadmin.c \
     replication.c \

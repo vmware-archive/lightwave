@@ -741,3 +741,94 @@ VmDirUpdateKeytabFile(
     PCSTR pszPassword,
     BOOLEAN bIsServer
     );
+
+/*
+ * HA Topolgy Management APIs
+ */
+
+DWORD
+VmDirGetIntraSiteTopology(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszHostName,
+    PCSTR   pszSiteName,
+    PBOOLEAN    pbConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    );
+
+DWORD
+VmDirGetInterSiteTopology(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszHostName,
+    PBOOLEAN    pbConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    );
+
+DWORD
+VmDirGetNewTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology // Output
+    );
+
+DWORD
+VmDirGetTopologyChanges(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES* ppTopologyChanges //Output
+    );
+
+DWORD
+VmDirModifyLinks(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    );
+
+VOID
+VmDirFreeHAServer(
+    PVMDIR_HA_SERVER_INFO   pServer
+    );
+
+VOID
+VmDirFreeHAChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pChanges
+    );
+/*
+ * HA Topology Management APIs end here
+ */
+
+DWORD
+VmDirLdapRemoveRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    LDAP* pHostLd
+    );
+
+DWORD
+VmDirLdapSetupRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark,
+    LDAP* pLocalLd,
+    LDAP* pPartnerLd
+    );
+
+DWORD
+VmDirLdapGetHighWatermarkByPLd(
+    LDAP*      pLocalLd,
+    LDAP*      pPartnerLd,
+    PCSTR      pszLocalHost,
+    PCSTR      pszPartnerHost,
+    USN*       pLastLocalUsn
+    );
+
+DWORD
+VmDirGetReplicationPartnersByPLd(
+    PCSTR               pszServerName,
+    PCSTR               pszDomainName,
+    LDAP*               pLd,
+    PVMDIR_REPL_PARTNER_INFO*  ppReplPartnerInfo,   // output
+    DWORD*              pdwNumReplPartner    // output
+);
+

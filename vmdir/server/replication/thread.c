@@ -69,12 +69,11 @@ _VmDirReplicationDisconnect(
 static
 DWORD
 _VmDirWaitForReplicationAgreement(
-    PBOOLEAN pbFirstReplicationCycle,
     PBOOLEAN pbExitReplicationThread
     );
 
 static
-int
+VOID
 _VmDirConsumePartner(
     PVMDIR_REPLICATION_CONTEXT pContext,
     PVMDIR_REPLICATION_AGREEMENT replAgr,
@@ -225,8 +224,7 @@ vdirReplicationThrFun(
      */
     VmDirRaiseThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
 
-    retVal = _VmDirWaitForReplicationAgreement(
-                &sContext.bFirstReplicationCycle, &bExitThread);
+    retVal = _VmDirWaitForReplicationAgreement(&bExitThread);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     if (bExitThread)
@@ -302,26 +300,11 @@ vdirReplicationThrFun(
             retVal = _VmDirReplicationConnect(&sContext, replAgr, &sCreds, &sConnection);
             if (retVal || sConnection.pLd == NULL)
             {
-                // Bail on first cycle only
-                if ( sContext.bFirstReplicationCycle )
-                {
-                    if( !retVal )
-                    {
-                        retVal = VMDIR_ERROR_UNAVAILABLE;
-                    }
-
-                    BAIL_ON_VMDIR_ERROR( retVal );
-                }
-
                 continue;
             }
 
-            retVal = _VmDirConsumePartner(&sContext, replAgr, &sConnection);
-            // Bail on first cycle only
-            if ( sContext.bFirstReplicationCycle )
-            {
-                BAIL_ON_VMDIR_ERROR( retVal );
-            }
+            _VmDirConsumePartner(&sContext, replAgr, &sConnection);
+
             _VmDirReplicationDisconnect(&sConnection);
         }
         VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Done executing the replication cycle.");
@@ -1176,7 +1159,6 @@ _VmDirReplicationFreeCredentialsContents(
 
 DWORD
 _VmDirWaitForReplicationAgreement(
-    PBOOLEAN pbFirstReplicationCycle,
     PBOOLEAN pbExitReplicationThread
     )
 {
@@ -1185,7 +1167,6 @@ _VmDirWaitForReplicationAgreement(
     int retVal = 0;
     PSTR pszPartnerHostName = NULL;
 
-    assert(pbFirstReplicationCycle != NULL);
     assert(pbExitReplicationThread != NULL);
 
     VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
@@ -1231,14 +1212,15 @@ _VmDirWaitForReplicationAgreement(
                     *pbExitReplicationThread = TRUE;
                     dwError = LDAP_OPERATIONS_ERROR;
                     BAIL_ON_VMDIR_ERROR( dwError );
-                } else
+                }
+                else
                 {
                     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirFirstReplicationCycle() SUCCEEDED." );
                 }
-            } else
+            }
+            else
             {
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: performing normal replication logic." );
-                *pbFirstReplicationCycle = TRUE;
+                assert(0);  // Lightwave server always use DB copy to bootstrap partner node.
             }
         }
         VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
@@ -1253,7 +1235,7 @@ error:
 }
 
 static
-int
+VOID
 _VmDirConsumePartner(
     PVMDIR_REPLICATION_CONTEXT pContext,
     PVMDIR_REPLICATION_AGREEMENT replAgr,
@@ -1403,20 +1385,18 @@ replcycledone:
                 "Replication supplier %s USN range (%llu,%s) processed.",
                 replAgr->ldapURI, initUsn, replAgr->lastLocalUsnProcessed.lberbv_val);
         }
-        pContext->bFirstReplicationCycle = FALSE;
-    }
-    else if (pContext->bFirstReplicationCycle)
-    {
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
 cleanup:
     VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
     _VmDirFreeReplicationPage(pPage);
-    return retVal;
+
+    return;
 
 ldaperror:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error code (%d)", __FUNCTION__,retVal);
+
     goto cleanup;
 }
 
@@ -1698,8 +1678,7 @@ _VmDirProcessReplicationPage(
 
         if (entryState == LDAP_SYNC_ADD)
         {
-            errVal = ReplAddEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx,
-                    pContext->bFirstReplicationCycle );
+            errVal = ReplAddEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
             pContext->pSchemaCtx = pSchemaCtx ;
 
             if (errVal == LDAP_NO_SUCH_OBJECT)

@@ -18,7 +18,7 @@ static
 DWORD
 VmMetricsMakeLabel(
     PVM_METRICS_LABEL pLabel,
-    DWORD iLabelCount,
+    DWORD dwLabelCount,
     PSTR* pszLabelOut
     );
 
@@ -27,8 +27,9 @@ DWORD
 VmMetricsGetCounterData(
     PVM_METRICS_COUNTER pCounter,
     PSTR pszData,
-    DWORD dataLen,
-    DWORD bufLen
+    DWORD dwDataLen,
+    DWORD dwBufLen,
+    BOOLEAN bNameUsed
     );
 
 static
@@ -36,8 +37,9 @@ DWORD
 VmMetricsGetGaugeData(
     PVM_METRICS_GAUGE pGauge,
     PSTR pszData,
-    DWORD dataLen,
-    DWORD bufLen
+    DWORD dwDataLen,
+    DWORD dwBufLen,
+    BOOLEAN bNameUsed
     );
 
 static
@@ -45,8 +47,16 @@ DWORD
 VmMetricsGetHistogramData(
     PVM_METRICS_HISTOGRAM pHistogram,
     PSTR pszData,
-    DWORD dataLen,
-    DWORD bufLen
+    DWORD dwDataLen,
+    DWORD dwBufLen,
+    BOOLEAN bNameUsed
+    );
+
+static
+VOID
+VmMetricsNoopHashMapPairFree(
+    PLW_HASHMAP_PAIR pPair,
+    LW_PVOID pUnused
     );
 
 /*
@@ -503,6 +513,8 @@ VmMetricsGetPrometheusData(
     DWORD dwError = 0;
     DWORD bufLen = 0;
     BOOLEAN realloc = FALSE;
+    BOOLEAN bNameUsed = FALSE;
+    PLW_HASHMAP pNamesMap = NULL;
 
     PVM_METRICS_LIST_ENTRY pEntry = NULL;
     PVM_METRICS_COUNTER pCounter = NULL;
@@ -512,6 +524,12 @@ VmMetricsGetPrometheusData(
     PSTR pszData = NULL;
     DWORD allocatedSize = BUFFER_SIZE;
     DWORD dataLen = 0;
+
+    dwError = LwRtlCreateHashMap(&pNamesMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VM_METRICS_ERROR(dwError);
 
     dwError = VmMetricsAllocateMemory(
             BUFFER_SIZE,
@@ -528,7 +546,17 @@ VmMetricsGetPrometheusData(
             {
                 pCounter = (PVM_METRICS_COUNTER)pEntry->pData;
 
-                bufLen = VmMetricsGetCounterData(pCounter, NULL, 0, 0);
+                if (LwRtlHashMapFindKey(pNamesMap, NULL, pCounter->pszName) == 0)
+                {
+                    bNameUsed = TRUE;
+                }
+                else
+                {
+                    dwError = LwRtlHashMapInsert(pNamesMap, pCounter->pszName, 0, NULL);
+                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                }
+
+                bufLen = VmMetricsGetCounterData(pCounter, NULL, 0, 0, bNameUsed);
 
                 while (dataLen + bufLen > allocatedSize)
                 {
@@ -545,8 +573,9 @@ VmMetricsGetPrometheusData(
                     realloc = FALSE;
                 }
 
-                dataLen += VmMetricsGetCounterData(pCounter, pszData, dataLen, bufLen);
+                dataLen += VmMetricsGetCounterData(pCounter, pszData, dataLen, bufLen, bNameUsed);
                 dataLen--;
+                bNameUsed = FALSE;
 
                 break;
             }
@@ -555,7 +584,17 @@ VmMetricsGetPrometheusData(
             {
                 pGauge = (PVM_METRICS_GAUGE)pEntry->pData;
 
-                bufLen = VmMetricsGetGaugeData(pGauge, NULL, 0, 0);
+                if (LwRtlHashMapFindKey(pNamesMap, NULL, pGauge->pszName) == 0)
+                {
+                    bNameUsed = TRUE;
+                }
+                else
+                {
+                    dwError = LwRtlHashMapInsert(pNamesMap, pGauge->pszName, 0, NULL);
+                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                }
+
+                bufLen = VmMetricsGetGaugeData(pGauge, NULL, 0, 0, bNameUsed);
 
                 while (dataLen + bufLen > allocatedSize)
                 {
@@ -572,8 +611,9 @@ VmMetricsGetPrometheusData(
                     realloc = FALSE;
                 }
 
-                dataLen += VmMetricsGetGaugeData(pGauge, pszData, dataLen, bufLen);
+                dataLen += VmMetricsGetGaugeData(pGauge, pszData, dataLen, bufLen, bNameUsed);
                 dataLen--;
+                bNameUsed = FALSE;
 
                 break;
             }
@@ -582,7 +622,17 @@ VmMetricsGetPrometheusData(
             {
                 pHistogram = (PVM_METRICS_HISTOGRAM)pEntry->pData;
 
-                bufLen = VmMetricsGetHistogramData(pHistogram, NULL, 0, 0);
+                if (LwRtlHashMapFindKey(pNamesMap, NULL, pHistogram->pszName) == 0)
+                {
+                    bNameUsed = TRUE;
+                }
+                else
+                {
+                    dwError = LwRtlHashMapInsert(pNamesMap, pHistogram->pszName, 0, NULL);
+                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                }
+
+                bufLen = VmMetricsGetHistogramData(pHistogram, NULL, 0, 0, bNameUsed);
 
                 while (dataLen + bufLen > allocatedSize)
                 {
@@ -599,8 +649,9 @@ VmMetricsGetPrometheusData(
                     realloc = FALSE;
                 }
 
-                dataLen += VmMetricsGetHistogramData(pHistogram, pszData, dataLen, bufLen);
+                dataLen += VmMetricsGetHistogramData(pHistogram, pszData, dataLen, bufLen, bNameUsed);
                 dataLen--;
+                bNameUsed = FALSE;
 
                 break;
             }
@@ -613,12 +664,12 @@ VmMetricsGetPrometheusData(
     }
     pthread_rwlock_unlock(&pContext->rwLock);
 
-    dataLen++;
-
     *ppszData = pszData;
     *pDataLen = dataLen;
 
 cleanup:
+    LwRtlHashMapClear(pNamesMap, VmMetricsNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pNamesMap);
     return dwError;
 
 error:
@@ -710,41 +761,34 @@ static
 DWORD
 VmMetricsMakeLabel(
     PVM_METRICS_LABEL pLabel,
-    DWORD iLabelCount,
+    DWORD dwLabelCount,
     PSTR* pszLabelOut
     )
 {
     PSTR pszLabel = NULL;
     DWORD dwError = 0;
     DWORD len = 0;
+    DWORD extraLen = 0;
+    PSTR appendExtra = "";  // Null or comma character
 
-    if (!pLabel->pszKey || !pLabel->pszValue)
-    {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
-    }
-
-    len = strlen(pLabel->pszKey) + strlen(pLabel->pszValue) + 4;
-    dwError = VmMetricsAllocateMemory(
-            len,
-            (PVOID*)&pszLabel);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
-
-    snprintf( pszLabel, len, "%s=\"%s\"",
-                pLabel->pszKey,
-                pLabel->pszValue);
-
-    pLabel++;
-    iLabelCount--;
-
-    while (iLabelCount)
+    while (dwLabelCount)
     {
         if (!pLabel->pszKey || !pLabel->pszValue)
         {
             dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
             BAIL_ON_VM_METRICS_ERROR(dwError);
         }
-        len = len + strlen(pLabel->pszKey) + strlen(pLabel->pszValue) + 5;
+        if (!appendExtra)
+        {
+            // +4 in below line is for the characters '=' and 2 quotes '"' and '\0'
+            len = strlen(pLabel->pszKey) + strlen(pLabel->pszValue) + 4;
+        }
+        else
+        {
+            // +5 in below line is for the characters appendExtra ',' and '=' and 2 quotes '"' and '\0'
+            extraLen = strlen(pLabel->pszKey) + strlen(pLabel->pszValue) + 5;
+        }
+        len = len + extraLen;
 
         dwError = VmMetricsReallocateMemory(
                 (PVOID)pszLabel,
@@ -752,12 +796,14 @@ VmMetricsMakeLabel(
                 len);
         BAIL_ON_VM_METRICS_ERROR(dwError);
 
-        snprintf( pszLabel+strlen(pszLabel), len, ",%s=\"%s\"",
+        snprintf( pszLabel+strlen(pszLabel), extraLen, "%s%s=\"%s\"",
+                    appendExtra,
                     pLabel->pszKey,
                     pLabel->pszValue);
 
+        appendExtra = ",";
         pLabel++;
-        iLabelCount--;
+        dwLabelCount--;
     }
 
     *pszLabelOut = pszLabel;
@@ -775,27 +821,31 @@ DWORD
 VmMetricsGetCounterData(
     PVM_METRICS_COUNTER pCounter,
     PSTR pszData,
-    DWORD dataLen,
-    DWORD bufLen
+    DWORD dwDataLen,
+    DWORD dwBufLen,
+    BOOLEAN bNameUsed
     )
 {
     DWORD len = 0;
 
-    len += snprintf( pszData+dataLen, bufLen, "# HELP %s %s\n# TYPE %s counter\n",
-                pCounter->pszName,
-                pCounter->pszDescription,
-                pCounter->pszName);
+    if (!bNameUsed)
+    {
+        len += snprintf( pszData+dwDataLen, dwBufLen, "# HELP %s %s\n# TYPE %s counter\n",
+                    pCounter->pszName,
+                    pCounter->pszDescription,
+                    pCounter->pszName);
+    }
 
     if (pCounter->pszLabel)
     {
-        len += snprintf( pszData+dataLen+len, bufLen, "%s{%s} %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s{%s} %" PRIu64 "\n",
                     pCounter->pszName,
                     pCounter->pszLabel,
                     pCounter->value);
     }
     else
     {
-        len += snprintf( pszData+dataLen+len, bufLen, "%s %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s %" PRIu64 "\n",
                     pCounter->pszName,
                     pCounter->value);
     }
@@ -808,27 +858,31 @@ DWORD
 VmMetricsGetGaugeData(
     PVM_METRICS_GAUGE pGauge,
     PSTR pszData,
-    DWORD dataLen,
-    DWORD bufLen
+    DWORD dwDataLen,
+    DWORD dwBufLen,
+    BOOLEAN bNameUsed
     )
 {
     DWORD len = 0;
 
-    len += snprintf( pszData+dataLen, bufLen, "# HELP %s %s\n# TYPE %s gauge\n",
-                pGauge->pszName,
-                pGauge->pszDescription,
-                pGauge->pszName);
+    if (!bNameUsed)
+    {
+        len += snprintf( pszData+dwDataLen, dwBufLen, "# HELP %s %s\n# TYPE %s gauge\n",
+                    pGauge->pszName,
+                    pGauge->pszDescription,
+                    pGauge->pszName);
+    }
 
     if (pGauge->pszLabel)
     {
-        len += snprintf( pszData+dataLen+len, bufLen, "%s{%s} %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s{%s} %" PRIu64 "\n",
                     pGauge->pszName,
                     pGauge->pszLabel,
                     pGauge->value);
     }
     else
     {
-        len += snprintf( pszData+dataLen+len, bufLen, "%s %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s %" PRIu64 "\n",
                     pGauge->pszName,
                     pGauge->value);
     }
@@ -841,23 +895,27 @@ DWORD
 VmMetricsGetHistogramData(
     PVM_METRICS_HISTOGRAM pHistogram,
     PSTR pszData,
-    DWORD dataLen,
-    DWORD bufLen
+    DWORD dwDataLen,
+    DWORD dwBufLen,
+    BOOLEAN bNameUsed
     )
 {
     DWORD len = 0;
-    DWORD i = 0;
+    int i = 0;
 
-    len += snprintf( pszData+dataLen, bufLen, "# HELP %s %s\n# TYPE %s histogram\n",
-                pHistogram->pszName,
-                pHistogram->pszDescription,
-                pHistogram->pszName);
+    if (!bNameUsed)
+    {
+        len += snprintf( pszData+dwDataLen, dwBufLen, "# HELP %s %s\n# TYPE %s histogram\n",
+                    pHistogram->pszName,
+                    pHistogram->pszDescription,
+                    pHistogram->pszName);
+    }
 
     for (i=0; i<pHistogram->bucketSize; i++)
     {
         if (pHistogram->pszLabel)
         {
-            len += snprintf( pszData+dataLen+len, bufLen, "%s_bucket{le=\"%" PRIu64 "\",%s} %" PRIu64 "\n",
+            len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_bucket{le=\"%" PRIu64 "\",%s} %" PRIu64 "\n",
                         pHistogram->pszName,
                         pHistogram->pBucketKeys[i],
                         pHistogram->pszLabel,
@@ -865,7 +923,7 @@ VmMetricsGetHistogramData(
         }
         else
         {
-            len +=snprintf( pszData+dataLen+len, bufLen, "%s_bucket{le=\"%" PRIu64 "\"} %" PRIu64 "\n",
+            len +=snprintf( pszData+dwDataLen+len, dwBufLen, "%s_bucket{le=\"%" PRIu64 "\"} %" PRIu64 "\n",
                         pHistogram->pszName,
                         pHistogram->pBucketKeys[i],
                         pHistogram->pBucketValues[i]);
@@ -874,31 +932,41 @@ VmMetricsGetHistogramData(
 
     if (pHistogram->pszLabel)
     {
-        len += snprintf( pszData+dataLen+len, bufLen, "%s_bucket{le=\"+Inf\",%s} %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_bucket{le=\"+Inf\",%s} %" PRIu64 "\n",
                     pHistogram->pszName,
                     pHistogram->pszLabel,
                     pHistogram->count);
-        len += snprintf( pszData+dataLen+len, bufLen, "%s_count{%s} %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_count{%s} %" PRIu64 "\n",
                     pHistogram->pszName,
                     pHistogram->pszLabel,
                     pHistogram->count);
-        len += snprintf( pszData+dataLen+len, bufLen, "%s_sum{%s} %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_sum{%s} %" PRIu64 "\n",
                     pHistogram->pszName,
                     pHistogram->pszLabel,
                     pHistogram->sum);
     }
     else
     {
-        len += snprintf( pszData+dataLen+len, bufLen, "%s_bucket{le=\"+Inf\"} %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_bucket{le=\"+Inf\"} %" PRIu64 "\n",
                     pHistogram->pszName,
                     pHistogram->count);
-        len += snprintf( pszData+dataLen+len, bufLen, "%s_count %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_count %" PRIu64 "\n",
                     pHistogram->pszName,
                     pHistogram->count);
-        len += snprintf( pszData+dataLen+len, bufLen, "%s_sum %" PRIu64 "\n",
+        len += snprintf( pszData+dwDataLen+len, dwBufLen, "%s_sum %" PRIu64 "\n",
                     pHistogram->pszName,
                     pHistogram->sum);
     }
 
     return len+1;
+}
+
+static
+VOID
+VmMetricsNoopHashMapPairFree(
+    PLW_HASHMAP_PAIR pPair,
+    LW_PVOID pUnused
+    )
+{
+    return;
 }

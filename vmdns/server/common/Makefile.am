@@ -28,18 +28,19 @@ libsrvcommon_la_SOURCES = \
     store.c               \
     util.c                \
     zone.c                \
-    zonelist.c            \
-    opstatistic.c
+    zonelist.c
 
 libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdns/include \
     -I$(top_srcdir)/vmdns/include/public \
     -I$(top_srcdir)/vmdns/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
 libsrvcommon_la_LIBADD = \
-    $(top_builddir)/vmdns/vmsock/api/libvmsock.la
+    $(top_builddir)/vmdns/vmsock/api/libvmsock.la \
+    $(top_builddir)/vmmetrics/libvmmetrics.la
 
 libsrvcommon_la_LDFLAGS = \
     -static

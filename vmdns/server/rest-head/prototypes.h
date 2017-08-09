@@ -35,8 +35,8 @@ VmDnsRESTGetMetricsModule(
 
 DWORD
 VmDnsRESTMetricsGet(
-    void*   pIn,
-    void**  ppOut
+    PVOID           pIn,
+    PVOID*          ppOut
     );
 
 // operation.c

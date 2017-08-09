@@ -32,7 +32,7 @@ vmstsjars_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/sts.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang-2.6.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jna-4.2.1.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-logging-1.1.1.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-logging-1.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/httpclient-4.5.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/slf4j-api-1.7.25.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-api-2.8.2.jar \

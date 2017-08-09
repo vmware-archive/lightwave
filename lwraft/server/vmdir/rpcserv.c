@@ -46,7 +46,7 @@ _VmDirRequestVoteGetReply(
     );
 
 DWORD
-_VmDirAppendEntriesGetReply(
+VmDirAppendEntriesGetReply(
     UINT32 term,
     char *leader,
     unsigned long long preLogIndex,
@@ -55,7 +55,7 @@ _VmDirAppendEntriesGetReply(
     int entrySize,
     char *entries,
     UINT32 *currentTerm,
-    UINT32 *status
+    unsigned long long *status
     );
 
 DWORD
@@ -1653,15 +1653,15 @@ UINT32 Srv_RpcVmDirRaftAppendEntries(
     /* [in] */ idl_uhyper_int leaderCommit,
     /* [in] */  chglog_container *entries,
     /* [out] */ UINT32 *currentTerm,
-    /* [out] */ UINT32 *status
+    /* [out] */ idl_uhyper_int *status
 )
 {
     DWORD  dwError = 0;
     UINT32 iCurrentTerm = 0;
-    UINT32 iStatus = 0;
+    unsigned long long iStatus = 0;
 
     *currentTerm = 0;
-    *status = 1;
+    *status = 0;
 
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
@@ -1673,7 +1673,7 @@ UINT32 Srv_RpcVmDirRaftAppendEntries(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirAppendEntriesGetReply(term, (char *)leader, preLogIndex, prevLogTerm,
+    dwError = VmDirAppendEntriesGetReply(term, (char *)leader, preLogIndex, prevLogTerm,
                                           leaderCommit, entries->chglog_size, entries->chglog_bytes, &iCurrentTerm, &iStatus);
     BAIL_ON_VMDIR_ERROR(dwError);
 

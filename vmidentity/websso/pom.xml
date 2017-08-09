@@ -127,21 +127,9 @@
       <artifactId>spring-webmvc</artifactId>
       <version>${spring.release.version}</version>
     </dependency>
-
-    <dependency>
-      <groupId>javax.servlet.jsp.jstl</groupId>
-      <artifactId>jstl-api</artifactId>
-      <version>${jstl.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <dependency>
       <groupId>org.glassfish.web</groupId>
-      <artifactId>jstl-impl</artifactId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
       <version>${jstl.version}</version>
       <exclusions>
         <exclusion>
@@ -205,6 +193,11 @@
 
     <!-- Opensaml dependencies -->
     <dependency>
+      <groupId>commons-beanutils</groupId>
+      <artifactId>commons-beanutils</artifactId>
+      <version>${commons.beanutils.version}</version>
+    </dependency>
+    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>${commons.codec.version}</version>
@@ -213,6 +206,11 @@
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
       <version>${commons.collection.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>${commons.fileupload.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-httpclient</groupId>
@@ -228,6 +226,12 @@
       <groupId>org.owasp.esapi</groupId>
       <artifactId>esapi</artifactId>
       <version>${esapi.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>net.jcip</groupId>
@@ -315,7 +319,7 @@
       <version>${cglib.version}</version>
     </dependency>
     <dependency>
-      <groupId>asm</groupId>
+      <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>
     </dependency>

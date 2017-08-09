@@ -315,6 +315,9 @@ VmDirInit(
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirMetricsInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 #ifndef _WIN32
     dwError = InitializeResouceLimit();
     BAIL_ON_VMDIR_ERROR(dwError);

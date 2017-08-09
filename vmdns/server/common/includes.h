@@ -59,6 +59,7 @@
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_ext.h>
 #include <time.h>
+#include <vmdnsmetrics.h>
 
 #include "structs.h"
 #include "externs.h"

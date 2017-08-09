@@ -42,6 +42,7 @@ VmDnsShutdown(
     VmDnsSockShutdown();
     VmDnsCleanupGlobals();
     VmDnsRESTServerShutdown();
+    VmMetricsDestroy(gVmDnsMetricsContext);
 }
 
 static

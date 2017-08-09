@@ -1321,12 +1321,81 @@ VmDirLdapSetupRemoteHostRA(
     )
 {
     DWORD       dwError = 0;
+    LDAP*       pLocalLd = NULL;
+    LDAP*       pPartnerLd = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        pszPassword == NULL ||
+        IsNullOrEmptyString(pszReplHostName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirConnectLDAPServer(
+                            &pLocalLd,
+                            pszHostName,
+                            pszDomainName,
+                            pszUsername,
+                            pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwHighWatermark == 0)
+    {
+        dwError = VmDirConnectLDAPServer(
+                            &pPartnerLd,
+                            pszReplHostName,
+                            pszDomainName,
+                            pszUsername,
+                            pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirLdapSetupRemoteHostRAByPLd(
+                    pszDomainName,
+                    pszHostName,
+                    pszReplHostName,
+                    dwHighWatermark,
+                    pLocalLd,
+                    pPartnerLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+cleanup:
+   VmDirLdapUnbind(&pLocalLd);
+   VmDirLdapUnbind(&pPartnerLd);
+
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapSetupRemoteHostRA failed with error (%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapSetupRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark,
+    LDAP* pLocalLd,
+    LDAP* pPartnerLd
+    )
+{
+    DWORD       dwError = 0;
     PSTR        pszReplURI = NULL;
     PSTR        pszReplHostNameDN = NULL;
     PSTR        pszReplAgrDN = NULL;
     PSTR        pszLastLocalUsn = NULL;
-    LDAP*       pLd = NULL;
     PSTR        pszDomainDN = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        pLocalLd == NULL ||
+        IsNullOrEmptyString(pszReplHostName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirIsIPV6AddrFormat( pszReplHostName ) )
     {
@@ -1341,15 +1410,7 @@ VmDirLdapSetupRemoteHostRA(
     dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirConnectLDAPServer(
-                            &pLd,
-                            pszHostName,
-                            pszDomainName,
-                            pszUsername,
-                            pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLd, pszHostName);
+    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLocalLd, pszHostName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -1389,13 +1450,11 @@ VmDirLdapSetupRemoteHostRA(
 
         if (dwHighWatermark == 0)
         {
-            dwError = VmDirLdapGetHighWatermark(
-                                        pLd,
+            dwError = VmDirLdapGetHighWatermarkByPLd(
+                                        pLocalLd,
+                                        pPartnerLd,
                                         pszHostName,
                                         pszReplHostName,
-                                        pszDomainName,
-                                        pszUsername,
-                                        pszPassword,
                                         &lastLocalUsn);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -1417,7 +1476,7 @@ VmDirLdapSetupRemoteHostRA(
         replUSN.mod_values = modv_usn;
 
         // and the ldap_add_ext_s is a synchronous call
-        dwError = ldap_add_ext_s(pLd, pszReplAgrDN, &pReplAgrObjAttrs[0], NULL, NULL);
+        dwError = ldap_add_ext_s(pLocalLd, pszReplAgrDN, &pReplAgrObjAttrs[0], NULL, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1428,12 +1487,10 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszLastLocalUsn);
 
-    VmDirLdapUnbind(&pLd);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapSetupRemoteHostRA failed with error (%u)", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapSetupRemoteHostRAByPLd failed with error (%u)", dwError);
     goto cleanup;
 }
 
@@ -1450,12 +1507,66 @@ VmDirLdapRemoveRemoteHostRA(
     )
 {
     DWORD       dwError = 0;
+    LDAP*       pLd = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        pszPassword == NULL ||
+        IsNullOrEmptyString(pszReplHostName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirConnectLDAPServer(
+                            &pLd,
+                            pszHostName,
+                            pszDomainName,
+                            pszUsername,
+                            pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapRemoveRemoteHostRAByPLd(
+                                pszDomainName,
+                                pszHostName,
+                                pszReplHostName,
+                                pLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirLdapUnbind(&pLd);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapRemoveRemoteHostRA failed with error (%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapRemoveRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    LDAP* pHostLd
+    )
+{
+    DWORD       dwError = 0;
     PSTR        pszReplURI = NULL;
     PSTR        pszReplHostNameDN = NULL;
     PSTR        pszReplAgrDN = NULL;
 
-    LDAP*       pLd = NULL;
     PSTR        pszDomainDN = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszReplHostName) ||
+        !pHostLd)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirIsIPV6AddrFormat( pszReplHostName ) )
     {
@@ -1470,15 +1581,7 @@ VmDirLdapRemoveRemoteHostRA(
     dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirConnectLDAPServer(
-                            &pLd,
-                            pszHostName,
-                            pszDomainName,
-                            pszUsername,
-                            pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLd, pszHostName);
+    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pHostLd, pszHostName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -1491,7 +1594,7 @@ VmDirLdapRemoveRemoteHostRA(
 
     // the ldap_delete_ext_s is a synchronous call
     dwError = ldap_delete_ext_s(
-                    pLd,
+                    pHostLd,
                     pszReplAgrDN,
                     NULL,
                     NULL
@@ -1504,12 +1607,10 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszReplAgrDN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
 
-    VmDirLdapUnbind(&pLd);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapRemoveRemoteHostRA failed with error (%u)", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapRemoveRemoteHostRAByPld failed with error (%u)", dwError);
     goto cleanup;
 }
 

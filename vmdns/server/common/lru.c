@@ -128,6 +128,7 @@ VmDnsLruAddNameEntry(
     VmDnsNameEntryAddRef(pNameEntry);
 
     ++pLruList->dwCurrentCount;
+    VmMetricsGaugeIncrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
 
 cleanup:
 
@@ -162,6 +163,7 @@ VmDnsLruRemoveNameEntry(
 
     RemoveEntryList(&pNameEntry->LruList);
     --pLruList->dwCurrentCount;
+    VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
     VmDnsNameEntryRelease(pNameEntry);
 
 cleanup:
@@ -231,6 +233,8 @@ VmDnsLruClearEntries(
 
         RemoveEntryList(&pNameEntry->LruList);
         --pLruList->dwCurrentCount;
+        VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_LRU_PURGE_COUNT]);
 
         dwError = pLruList->pPurgeEntryProc(pNameEntry, pLruList->pZoneObject);
         BAIL_ON_VMDNS_ERROR(dwError && dwError != ERROR_INVALID_PARAMETER);
@@ -344,6 +348,7 @@ VmDnsLruClearList(PVMDNS_LRU_LIST pLruList)
     {
         RemoveEntryList((&pLruList->LruListHead)->Flink)
         pLruList->dwCurrentCount--;
+        VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
     }
 
 cleanup:

@@ -667,20 +667,6 @@ VmwDeploySetupClient(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
-                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
-
-    VMW_DEPLOY_LOG_INFO(
-            "Validating Domain credentials for user [%s@%s]",
-            VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
-            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
-
-    dwError = VmAfdJoinValidateDomainCredentialsA(
-                    pParams->pszDomainName,
-                    pszUsername,
-                    pParams->pszPassword);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
     if (pParams->bDisableAfdListener)
     {
         VMW_DEPLOY_LOG_INFO("Disabling AFD Listener");
@@ -703,6 +689,20 @@ VmwDeploySetupClient(
         dwError = VmwDeployStartService(pszService);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
+
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
+    VMW_DEPLOY_LOG_INFO(
+            "Validating Domain credentials for user [%s@%s]",
+            VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
+            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
+
+    dwError = VmAfdJoinValidateDomainCredentialsA(
+                    pParams->pszDomainName,
+                    pszUsername,
+                    pParams->pszPassword);
+    BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Setting configuration values");
 

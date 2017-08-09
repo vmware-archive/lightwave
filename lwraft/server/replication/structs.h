@@ -141,7 +141,7 @@ typedef struct _APPEND_ENTRIES_ARGS
     /* [in] */ int  entriesSize;
     /* [in] */ char *entries;
     /* [out] */ UINT32 currentTerm;
-    /* [out] */ UINT32 status;
+    /* [out] */ unsigned long long status;
 } APPEND_ENTRIES_ARGS;
 
 typedef struct _VMDIR_PEER_PROXY
@@ -182,3 +182,10 @@ typedef struct _VDIR_RAFT_STAT
     UINT32 votedForTerm;
     VDIR_BERVALUE votedFor;
 } VDIR_RAFT_STATE, *PVDIR_RAFT_STATE;
+
+typedef struct _VDIR_RAFT_COMMIT_CTX
+{
+    unsigned long long logIndex;
+    int logTerm;
+    int logRequestCode;
+} VDIR_RAFT_COMMIT_CTX, *PVDIR_RAFT_COMMIT_CTX;

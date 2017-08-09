@@ -105,3 +105,11 @@ VmDirChangePNID
 VmDirCreateTenant
 VmDirDeleteTenant
 VmDirEnumerateTenants
+VmDirGetCurrentTopologyAtSite
+VmDirGetCurrentGlobalTopology
+VmDirGetProposedTopology
+VmDirGetChangesInTopology
+VmDirApplyTopologyChanges
+VmDirFreeHATopologyData
+VmDirFreeHAServerInfo
+VmDirFreeHATopologyChanges

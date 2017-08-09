@@ -61,8 +61,7 @@ int
 ReplAddEntry(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx,
-    BOOLEAN                         bFirstReplicationCycle
+    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
     );
 
 int

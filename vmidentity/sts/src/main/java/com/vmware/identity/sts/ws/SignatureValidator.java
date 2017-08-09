@@ -198,7 +198,7 @@ public final class SignatureValidator {
               }
 
               if( !foundTimestampElement || !foundBodyOrWSTrustElement ){
-                  String id = org.jcp.xml.dsig.internal.dom.Utils.parseIdFromSameDocumentURI(reference.getURI());
+                  String id = org.apache.jcp.xml.dsig.internal.dom.Utils.parseIdFromSameDocumentURI(reference.getURI());
                   Node referencedNode = document.getElementById(id);
                   foundTimestampElement = (foundTimestampElement) || ( timestampNode.isSameNode(referencedNode) );
                   foundBodyOrWSTrustElement = ( foundBodyOrWSTrustElement ) ||
@@ -248,7 +248,7 @@ public final class SignatureValidator {
    private void validateReferenceUri(Reference reference) throws XMLSignatureException {
       assert reference != null;
 
-      if (!org.jcp.xml.dsig.internal.dom.Utils.sameDocumentURI(reference.getURI()) ){
+      if (!org.apache.jcp.xml.dsig.internal.dom.Utils.sameDocumentURI(reference.getURI()) ){
           throw new XMLSignatureException(
               String.format("Invalid reference '%s'. Only a same-document references are aupported.", reference.getURI() ) 
           );

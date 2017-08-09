@@ -248,6 +248,7 @@ VmDnsZoneListFindZoneByQName(
     }
     else
     {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_ZONE_MISS]);
         dwError = ERROR_NOT_FOUND;
         BAIL_ON_VMDNS_ERROR(dwError);
     }

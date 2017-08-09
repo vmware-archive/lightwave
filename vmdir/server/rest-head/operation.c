@@ -230,14 +230,30 @@ VmDirRESTOperationWriteResponse(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pRestOp->pResult->pszData)
+    {
+        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "text/plain");
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTResultToResponseBody(
-            pRestOp->pResult, pRestOp->pResource, &pszBody);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirAllocateAndCopyMemory(
+                        (PVOID)pRestOp->pResult->pszData,
+                        pRestOp->pResult->dwDataLen,
+                        (PVOID*)&pszBody);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
+        bodyLen = pRestOp->pResult->dwDataLen;
+    }
+    else
+    {
+        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirRESTResultToResponseBody(
+                pRestOp->pResult, pRestOp->pResource, &pszBody);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
+    }
 
     dwError = VmDirAllocateStringPrintf(&pszBodyLen, "%ld", bodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);

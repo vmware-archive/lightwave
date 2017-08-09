@@ -397,6 +397,8 @@ VmDnsSockWorkerThreadProc(
             pSocket = pSockContext->pListenerUDP;
         }
 
+        VmMetricsGaugeIncrement(gVmDnsGaugeMetrics[DNS_ACTIVE_SERVICE_THREADS]);
+
         dwError = VmDnsHandleSocketEvent(
                         pSocket,
                         eventType,
@@ -424,6 +426,8 @@ VmDnsSockWorkerThreadProc(
             pIoBuffer = NULL;
             dwError = 0;
         }
+
+        VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[DNS_ACTIVE_SERVICE_THREADS]);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
@@ -488,6 +492,7 @@ VmDnsOnTcpNewConnection(
     )
 {
     DWORD dwError = 0;
+    VmMetricsGaugeIncrement(gVmDnsGaugeMetrics[DNS_OUTSTANDING_REQUEST_COUNT]);
 
     if (!pSocket)
     {
@@ -500,7 +505,7 @@ VmDnsOnTcpNewConnection(
     BAIL_ON_VMDNS_ERROR(dwError);
 #endif
 cleanup:
-
+    VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[DNS_OUTSTANDING_REQUEST_COUNT]);
     return dwError;
 
 error:
@@ -737,6 +742,7 @@ VmDnsUdpReceiveNewData(
 {
     DWORD dwError = 0;
     PVM_SOCK_IO_BUFFER  pIoBuffer = NULL;
+    VmMetricsGaugeIncrement(gVmDnsGaugeMetrics[DNS_OUTSTANDING_REQUEST_COUNT]);
 
     dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UDP_REQUEST_DATA_READ,
@@ -770,6 +776,7 @@ cleanup:
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
+    VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[DNS_OUTSTANDING_REQUEST_COUNT]);
     return dwError;
 
 error:

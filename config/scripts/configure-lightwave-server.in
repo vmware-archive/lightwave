@@ -2,12 +2,12 @@
 
 LW_BIN_DIR=/opt/likewise/bin
 LW_SBIN_DIR=/opt/likewise/sbin
-LW_DEFAULT_VERSION="1.2.0"
+LW_DEFAULT_VERSION="1.3.0"
 LW_KEY="[HKEY_THIS_MACHINE\\Services\\lw-server]"
 
 _get_lw_version(){
 
-    LW_VERSION=`rpm -qid vmware-lightwave-server | grep -i Version | cut -d ':' -f2 | tr -d '[[:space:]]'`
+    LW_VERSION=`rpm -qid lightwave-server | grep -i Version | cut -d ':' -f2 | tr -d '[[:space:]]'`
 
     if [ -z $LW_VERSION ]; then
         LW_VERSION=$LW_DEFAULT_VERSION
@@ -366,10 +366,19 @@ else
 
     case "$LOTUS_DEPLOYMENT" in
         "standalone")
-            $BIN_DIR/ic-promote --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" --site $LOTUS_SITE_NAME
+            $BIN_DIR/ic-promote \
+                --domain $LOTUS_DOMAIN_DEFAULT \
+                --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                --site $LOTUS_SITE_NAME \
+                $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
             ;;
         "partner")
-            $BIN_DIR/ic-promote --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" --site $LOTUS_SITE_NAME --partner $LOTUS_PARTNER_HOSTNAME
+            $BIN_DIR/ic-promote \
+                --domain $LOTUS_DOMAIN_DEFAULT \
+                --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                --site $LOTUS_SITE_NAME \
+                --partner $LOTUS_PARTNER_HOSTNAME \
+                $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
             ;;
     esac
 
@@ -381,7 +390,7 @@ else
 case $DISABLE_STS in
     0)
         echo "Secure Token Service Installation - Started"
-	$BIN_DIR/configure-sts --domain $LOTUS_DOMAIN_DEFAULT  --password "$LOTUS_ADMIN_PASSWORD_DEFAULT"        
+	$BIN_DIR/configure-sts --domain $LOTUS_DOMAIN_DEFAULT  --password "$LOTUS_ADMIN_PASSWORD_DEFAULT"
         if [ $? -ne 0 ]; then
             echo "Secure Token Service Installation - Failed"
             _exit 1

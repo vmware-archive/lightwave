@@ -228,7 +228,8 @@ VmDnsCacheFindZoneByQName(
 DWORD
 VmDnsCachePurgeRecord(
     PVMDNS_ZONE_OBJECT pZoneObject,
-    PCSTR              pszRecord
+    PCSTR              pszRecord,
+    DWORD              dwCachePurgeEvent
     );
 
 DWORD
@@ -882,12 +883,6 @@ VmDnsSecVerifyUpdateMessage(
 BOOL
 VmDnsSecIsRRTypeSec(
     DWORD dwRecordType
-    );
-
-//opstatistic.c
-VOID
-VmDnsOPStatisticUpdate(
-    UINT16 opTag
     );
 
 // Zone
