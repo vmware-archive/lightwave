@@ -32,17 +32,6 @@ _VmDirIsHostAPartner(
     PSTR *ppszPartnerRaDn
     );
 
-static
-DWORD
-VmDirGetServersInfoOnSite(
-    LDAP* pLd,
-    PCSTR pszSiteName,
-    PCSTR pszHost,
-    PCSTR pszDomain,
-    PINTERNAL_SERVER_INFO* ppInternalServerInfo,
-    DWORD* pdwInfoCount
-    );
-
 /*
  * Get all vmdir server info from pLd
  */
@@ -744,28 +733,28 @@ _VmDirIsClassReplicable(
  * Provide a site name to get
  * all vmdir server info from pLd.
  */
-static
 DWORD
 VmDirGetServersInfoOnSite(
-    LDAP* pLd,
-    PCSTR pszSiteName,
-    PCSTR pszHost,
-    PCSTR pszDomain,
-    PINTERNAL_SERVER_INFO* ppInternalServerInfo,
-    DWORD* pdwInfoCount
+    LDAP*                   pLd,
+    PCSTR                   pszSiteName,
+    PCSTR                   pszHost,
+    PCSTR                   pszDomain,
+    PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
+    DWORD*                  pdwInfoCount
     )
 {
-    DWORD               dwError = 0;
-    PSTR                pszSearchBaseDN = NULL;
-    LDAPMessage*        pMessages = NULL;
-    LDAPMessage*        pMessage = NULL;
+    DWORD           dwError         = 0;
+    PSTR            pszSearchBaseDN = NULL;
+    LDAPMessage*    pMessages       = NULL;
+    LDAPMessage*    pMessage        = NULL;
+    int             i               = 0;
+    DWORD           dwInfoCount     = 0;
+    PSTR            pszDomainDN     = NULL;
+    PSTR            pszServerDN     = NULL;
+    int             searchLevel     = LDAP_SCOPE_ONELEVEL;
+    PSTR            pFilter         = NULL;
+
     PINTERNAL_SERVER_INFO   pInternalServerInfo = NULL;
-    int                 i = 0;
-    DWORD               dwInfoCount = 0;
-    PSTR                pszDomainDN = NULL;
-    PSTR                pszServerDN = NULL;
-    int                 searchLevel = LDAP_SCOPE_ONELEVEL;
-    PSTR                pFilter = NULL;
 
     dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);

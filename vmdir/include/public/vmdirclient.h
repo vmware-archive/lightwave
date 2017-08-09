@@ -41,20 +41,20 @@ extern "C" {
  */
 DWORD
 VmDirGetCurrentTopologyAtSite(
-    PCSTR   pszUserName,
-    PCSTR   pszPassword,
-    PCSTR   pszHostName,
-    PCSTR   pszSiteName,
-    PBOOLEAN    pbConsiderOfflineNodes,
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    PCSTR                           pszSiteName,
+    BOOLEAN                         bConsiderOfflineNodes,
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     );
 
 DWORD
 VmDirGetCurrentGlobalTopology(
-    PCSTR   pszUserName,
-    PCSTR   pszPassword,
-    PCSTR   pszHostName,
-    PBOOLEAN    pbConsiderOfflineNodes,
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    BOOLEAN                         bConsiderOfflineNodes,
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     );
 
@@ -68,7 +68,7 @@ DWORD
 VmDirGetChangesInTopology(
     PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
     PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
-    PVMDIR_HA_TOPOLOGY_CHANGES* ppTopologyChanges //Output
+    PVMDIR_HA_TOPOLOGY_CHANGES*     ppTopologyChanges //Output
     );
 
 DWORD

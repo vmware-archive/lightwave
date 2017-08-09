@@ -752,7 +752,7 @@ VmDirGetIntraSiteTopology(
     PCSTR   pszPassword,
     PCSTR   pszHostName,
     PCSTR   pszSiteName,
-    PBOOLEAN    pbConsiderOfflineNodes,
+    BOOLEAN bConsiderOfflineNodes,
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     );
 
@@ -761,7 +761,7 @@ VmDirGetInterSiteTopology(
     PCSTR   pszUserName,
     PCSTR   pszPassword,
     PCSTR   pszHostName,
-    PBOOLEAN    pbConsiderOfflineNodes,
+    BOOLEAN bConsiderOfflineNodes,
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     );
 
@@ -832,3 +832,21 @@ VmDirGetReplicationPartnersByPLd(
     DWORD*              pdwNumReplPartner    // output
 );
 
+DWORD
+VmDirFindAllReplPartnerHostByPLd(
+    PCSTR    pszServerName,
+    PCSTR    pszDomainName,
+    LDAP*    pLd,
+    PSTR**   pppszPartnerHost,
+    DWORD*   pdwSize
+    );
+
+DWORD
+VmDirGetServersInfoOnSite(
+    LDAP*                   pLd,
+    PCSTR                   pszSiteName,
+    PCSTR                   pszHost,
+    PCSTR                   pszDomain,
+    PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
+    DWORD*                  pdwInfoCount
+    );

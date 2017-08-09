@@ -4687,6 +4687,62 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirFindAllReplPartnerHostByPLd(
+    PCSTR   pszServerName,
+    PCSTR   pszDomainName,
+    LDAP*   pLd,
+    PSTR**  pppszPartnerHost,
+    DWORD*  pdwSize
+    )
+{
+    DWORD   dwError = 0;
+    PSTR*   ppszPartnerHost = NULL;
+    DWORD   dwNumReplPartner=0;
+    DWORD   dwCnt=0;
+
+    PVMDIR_REPL_PARTNER_INFO    pReplPartnerInfo = NULL;
+
+    dwError = VmDirGetReplicationPartnersByPLd(
+                                pszServerName,
+                                pszDomainName,
+                                pLd,
+                                &pReplPartnerInfo,
+                                &dwNumReplPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwNumReplPartner > 0)
+    {
+        dwError = VmDirAllocateMemory(dwNumReplPartner * sizeof(PSTR), (PVOID)&ppszPartnerHost);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++)
+        {
+            dwError = VmDirReplURIToHostname(pReplPartnerInfo[dwCnt].pszURI, &(ppszPartnerHost[dwCnt]));
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    *pppszPartnerHost = ppszPartnerHost;
+    *pdwSize = dwNumReplPartner;
+    ppszPartnerHost = NULL;
+
+cleanup:
+    for (dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo[dwCnt].pszURI);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
+    VmDirFreeStringArray(ppszPartnerHost, dwNumReplPartner);
+
+    goto cleanup;
+}
+
 /*
  *  Delete all replication agreements that has pszHost as partner
  */
@@ -6007,22 +6063,22 @@ VmDirUrgentReplicationResponse(
 
 DWORD
 VmDirGetCurrentTopologyAtSite(
-    PCSTR   pszUserName,
-    PCSTR   pszPassword,
-    PCSTR   pszHostName,
-    PCSTR   pszSiteName,
-    PBOOLEAN    pbConsiderOfflineNodes,
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    PCSTR                           pszSiteName,
+    BOOLEAN                         bConsiderOfflineNodes,
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     )
 {
     DWORD   dwError = 0;
+
     PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
         IsNullOrEmptyString(pszHostName) ||
         IsNullOrEmptyString(pszSiteName) ||
-        !pbConsiderOfflineNodes ||
         !ppCurTopology)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
@@ -6031,15 +6087,15 @@ VmDirGetCurrentTopologyAtSite(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
     VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "SiteName is %s",pszSiteName);
 
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
-    printf( "SiteName is %s \n", pszSiteName); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "SiteName is %s \n", pszSiteName); // For Debugging till final check-in
 
     dwError = VmDirGetIntraSiteTopology(
                         pszUserName,
                         pszPassword,
                         pszHostName,
                         pszSiteName,
-                        pbConsiderOfflineNodes,
+                        bConsiderOfflineNodes,
                         &pTopology);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -6061,20 +6117,20 @@ error:
 
 DWORD
 VmDirGetCurrentGlobalTopology(
-    PCSTR   pszUserName,
-    PCSTR   pszPassword,
-    PCSTR   pszHostName,
-    PBOOLEAN    pbConsiderOfflineNodes,
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    BOOLEAN                         bConsiderOfflineNodes,
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     )
 {
     DWORD   dwError = 0;
+
     PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
         IsNullOrEmptyString(pszHostName) ||
-        !pbConsiderOfflineNodes ||
         !ppCurTopology)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
@@ -6088,7 +6144,7 @@ VmDirGetCurrentGlobalTopology(
                         pszUserName,
                         pszPassword,
                         pszHostName,
-                        pbConsiderOfflineNodes,
+                        bConsiderOfflineNodes,
                         &pTopology);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -6231,7 +6287,7 @@ VmDirFreeHATopologyData(
     PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
     )
 {
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
     VmDirFreeHATopology(pTopology);
 }
 
@@ -6240,7 +6296,7 @@ VmDirFreeHAServerInfo(
     PVMDIR_HA_SERVER_INFO   pServer
     )
 {
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
     VmDirFreeHAServer(pServer);
 }
 

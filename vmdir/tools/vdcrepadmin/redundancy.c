@@ -34,6 +34,7 @@ _PrintOptionSelected(
     PCSTR   pszSiteName
     )
 {
+    printf("\t\t--------------------Configuration--------------------\n\n");
     if (bNoInteraction)
     {
         printf("\tRunning the tool in No Interaction Mode\n\n");
@@ -52,6 +53,7 @@ _PrintOptionSelected(
     {
         printf("\tTool is fixing Inter-Site Region\n\n");
     }
+    printf("\t\t-----------------------------------------------------\n\n");
 }
 
 DWORD
@@ -62,6 +64,7 @@ _PrintHAServerList(
 {
     DWORD   dwError = 0;
     DWORD   dwCnt   = 0;
+    DWORD   dwPCnt  = 0;
 
     if (!ppList || !dwCount)
     {
@@ -77,7 +80,19 @@ _PrintHAServerList(
             dwError = VMDIR_ERROR_INVALID_RESULT;
             break;
         }
-        printf("\t\t%s\n",ppList[dwCnt]->pszHostName);
+        printf("\t\t%s\n\n",ppList[dwCnt]->pszHostName);
+        if (ppList[dwCnt]->dwPartnerCnt)
+        {
+            printf("\t\t\tPartner of Server are as follow:\n");
+            for (dwPCnt=0; dwPCnt<ppList[dwCnt]->dwPartnerCnt; dwPCnt++)
+            {
+                printf("\t\t\t\t%s\n",ppList[dwCnt]->ppPartnerList[dwPCnt]->pszHostName);
+            }
+        }
+        else
+        {
+            printf("\t\t\tNo Partners of this server were found.\n");
+        }
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -100,17 +115,17 @@ _PrintTopologyServers(
 
     if (!pTopology)
     {
-        printf("\tSomething Terribly is wrong! Received NULL Topology pointer\n\n");
+        printf("\n\tSomething Terribly is wrong! Received NULL Topology pointer\n\n");
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     if (!(pTopology->ppConsiderList) || !(pTopology->dwConsiderListCnt))
     {
-        printf("\tNo Appropriate Servers Found\n");
+        printf("\n\tNo Appropriate Servers Found\n\n");
     }
     else
     {
-        printf("\tConsidered Servers are as follow:\n");
+        printf("\n\tConsidered Servers are as follow:\n\n");
         dwError = _PrintHAServerList(
                         pTopology->ppConsiderList,
                         pTopology->dwConsiderListCnt);
@@ -118,11 +133,11 @@ _PrintTopologyServers(
     }
     if (!(pTopology->ppOnlineList) || !(pTopology->dwOnlineListCnt))
     {
-        printf("\tNo Online Servers Found\n");
+        printf("\n\tNo Online Servers Found\n\n");
     }
     else
     {
-        printf("\tOnline Servers are as follow:\n");
+        printf("\n\tOnline Servers are as follow:\n\n");
         dwError = _PrintHAServerList(
                         pTopology->ppOnlineList,
                         pTopology->dwOnlineListCnt);
@@ -130,11 +145,11 @@ _PrintTopologyServers(
     }
     if (!(pTopology->ppOfflineList) || !(pTopology->dwOfflineListCnt))
     {
-        printf("\tNo Offline Servers Found\n");
+        printf("\n\tNo Offline Servers Found\n\n");
     }
     else
     {
-        printf("\tOffline Servers are as follow:\n");
+        printf("\n\tOffline Servers are as follow:\n\n");
         dwError = _PrintHAServerList(
                         pTopology->ppOfflineList,
                         pTopology->dwOfflineListCnt);
@@ -160,17 +175,17 @@ _PrintTopologyChanges(
 
     if (!pChanges)
     {
-        printf("\tSomething Terribly is wrong! Received NULL pointer\n\n");
+        printf("\n\tSomething Terribly is wrong! Received NULL pointer\n\n");
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     if (!(pChanges->ppAddLinkList) || !(pChanges->dwAddListCnt))
     {
-        printf("\tNo Links to be Added\n");
+        printf("\n\tNo Links to be Added\n\n");
     }
     else
     {
-        printf("\tLinks to be added are as follow:\n");
+        printf("\n\tLinks to be added are as follow:\n\n");
         dwError = _PrintHAServerList(
                         pChanges->ppAddLinkList,
                         pChanges->dwAddListCnt);
@@ -178,11 +193,11 @@ _PrintTopologyChanges(
     }
     if (!(pChanges->ppDelLinkList) || !(pChanges->dwDelListCnt))
     {
-        printf("\tNo Links to be Deleted\n");
+        printf("\n\tNo Links to be Deleted\n\n");
     }
     else
     {
-        printf("\tLinks to be deleted are as follow:\n");
+        printf("\n\tLinks to be deleted are as follow:\n\n");
         dwError = _PrintHAServerList(
                         pChanges->ppDelLinkList,
                         pChanges->dwDelListCnt);
@@ -263,7 +278,7 @@ VmDirEnableRedundantTopology(
                             pszSrcPassword,
                             pszSrcHostName,
                             pszSiteName,
-                            &bIncludeOffline,
+                            bIncludeOffline,
                             &pCurTopology);
     }
     else
@@ -272,13 +287,15 @@ VmDirEnableRedundantTopology(
                             pszSrcUserName,
                             pszSrcPassword,
                             pszSrcHostName,
-                            &bIncludeOffline,
+                            bIncludeOffline,
                             &pCurTopology);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // dwError = _PrintTopologyServers(pCurTopology); // Uncomment after Implementing respective API
-    // BAIL_ON_VMDIR_ERROR(dwError);
+    printf("\t\t----------------------Current Topology-----------------\n");
+    dwError = _PrintTopologyServers(pCurTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    printf("\t\t-------------------------------------------------------\n");
 
     if (!bNoInteraction)
     {
@@ -294,8 +311,10 @@ VmDirEnableRedundantTopology(
                     &pNewTopology);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    printf("\t\t----------------------New Topology-----------------\n");
     // dwError = _PrintTopologyServers(pNewTopology); // Uncomment after Implementing respective API
     // BAIL_ON_VMDIR_ERROR(dwError);
+    printf("\t\t---------------------------------------------------\n");
 
     if (!bNoInteraction)
     {
@@ -313,8 +332,10 @@ VmDirEnableRedundantTopology(
                         &pTopologyChanges);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    printf("\t\t----------------------Proposed Topology Changes-----------------\n");
     // dwError = _PrintTopologyChanges(pTopologyChanges);// Uncomment after Implementing respective API
     // BAIL_ON_VMDIR_ERROR(dwError);
+    printf("\t\t----------------------------------------------------------------\n");
 
     if (!bNoInteraction)
     {
