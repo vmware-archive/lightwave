@@ -81,7 +81,7 @@ VmDnsRESTUnknownSetResult(
 {
     DWORD   dwError = 0;
 
-    if (!pRestRslt || IsNullOrEmptyString(pszErrMsg))
+    if (!pRestRslt)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
