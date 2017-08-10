@@ -39,7 +39,6 @@
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
 #include <srvcommon.h>
-#include <metricscommon.h>
 
 #include <backend.h>
 #include <middlelayer.h>

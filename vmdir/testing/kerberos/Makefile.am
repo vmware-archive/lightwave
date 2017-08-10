@@ -11,6 +11,7 @@ krb5keys_test_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/server/tools \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

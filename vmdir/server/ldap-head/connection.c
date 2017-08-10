@@ -623,7 +623,6 @@ ProcessAConnection(
    int            metricsTag = -1;
    uint64_t       iStartTime = 0;
    uint64_t       iEndTime = 0;
-   uint64_t       iReqDuration = 0;
 
    // increment operation thread counter
    retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
@@ -815,8 +814,7 @@ ProcessAConnection(
       iEndTime = VmDirGetTimeInMilliSec();
       if (metricsTag >= 0)
       {
-            iReqDuration = iEndTime-iStartTime == 0 ? 1 : iEndTime-iStartTime;
-            VmMetricsHistogramUpdate(pLdapRequestDuration[metricsTag], iReqDuration);
+            VmMetricsHistogramUpdate(pLdapRequestDuration[metricsTag], VMDIR_RESPONSE_TIME(iEndTime-iStartTime));
       }
 
       pConn->SuperLogRec.iEndTime = VmDirGetTimeInMilliSec();
@@ -1505,6 +1503,10 @@ _VmDirUpdateErrorCount(
 
         case LDAP_SIZELIMIT_EXCEEDED:
             VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SIZELIMIT_EXCEEDED]);
+            break;
+
+        case LDAP_NO_SUCH_OBJECT:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NO_SUCH_OBJECT]);
             break;
 
         default:

@@ -29,6 +29,9 @@ VmDirMetricsInitialize(
     dwError = VmDirLdapMetricsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirReplMetricsInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
     return dwError;
 

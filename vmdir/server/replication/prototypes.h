@@ -77,6 +77,21 @@ ReplModifyEntry(
     PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
     );
 
+DWORD
+VmDirReplMetricsInit(
+    VOID
+    );
+
+DWORD
+VmDirReplNewPartnerMetricsInit(
+    PVMDIR_REPLICATION_AGREEMENT pReplAgr
+    );
+
+DWORD
+VmDirReplPartnerMetricsDelete(
+    PVMDIR_REPLICATION_AGREEMENT pReplAgr
+    );
+
 #ifdef __cplusplus
 }
 #endif

@@ -17,6 +17,11 @@
 #ifndef COMMON_INTERFACE_H_
 #define COMMON_INTERFACE_H_
 
+#include <vmmetrics.h>
+extern PVM_METRICS_CONTEXT pmContext;
+
+#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -659,14 +664,27 @@ typedef struct _VDIR_THREAD_INFO
 
 } REPO_THREAD_INFO, *PVDIR_THREAD_INFO;
 
+typedef struct _VMDIR_REPLICATION_METRICS
+{
+    PVM_METRICS_HISTOGRAM       pReplConnectDuration;
+    PVM_METRICS_COUNTER         pReplConnectFailures;
+    PVM_METRICS_COUNTER         pReplUnfinished;
+    PVM_METRICS_GAUGE           pReplUsn;
+    PVM_METRICS_COUNTER         pReplChanges;
+    PVM_METRICS_HISTOGRAM       pReplSyncDuration;
+
+} VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;
+
 typedef struct _VMDIR_REPLICATION_AGREEMENT
 {
-    VDIR_BERVALUE       dn;
-    char                ldapURI[VMDIR_MAX_LDAP_URI_LEN];
-    VDIR_BERVALUE       lastLocalUsnProcessed;
-    BOOLEAN             isDeleted;
-    time_t              oldPasswordFailTime;
-    time_t              newPasswordFailTime;
+    VDIR_BERVALUE               dn;
+    char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
+    VDIR_BERVALUE               lastLocalUsnProcessed;
+    BOOLEAN                     isDeleted;
+    time_t                      oldPasswordFailTime;
+    time_t                      newPasswordFailTime;
+    VMDIR_REPLICATION_METRICS   ReplMetrics;
+
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
 
 } VMDIR_REPLICATION_AGREEMENT, *PVMDIR_REPLICATION_AGREEMENT;

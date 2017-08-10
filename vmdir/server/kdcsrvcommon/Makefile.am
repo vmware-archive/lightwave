@@ -41,6 +41,7 @@ libkdcsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     -I. \
     -I$(top_builddir)/vmdir/server/kdcsrvcommon \
     @DCERPC_INCLUDES@ \
