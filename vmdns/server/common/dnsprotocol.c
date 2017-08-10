@@ -112,13 +112,11 @@ VmDnsProcessRequest(
     PBYTE pDnsResponse = NULL;
     DWORD dwDnsResponseSize = 0;
     PBYTE pForwarderResponse = NULL;
-    DWORD dwForwarderResponseSize = 0;
     PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
     PVMDNS_HEADER pDnsHeader = NULL;
     PVMDNS_MESSAGE pDnsMessage = NULL;
     PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage = NULL;
     UCHAR rCode = 0;
-    UCHAR rCodeFwder = 0;
 
     if (!pDnsRequest || !ppDnsResponse ||
         !pdwDnsResponseSize || !dwDnsRequestSize || !pRCode)
@@ -179,32 +177,7 @@ VmDnsProcessRequest(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (rCode != 0)
-    {
-        dwError = VmDnsForwarderResolveRequest(
-                        gpSrvContext->pForwarderContext,
-                        TRUE,
-                        FALSE,
-                        dwDnsRequestSize,
-                        pDnsRequest,
-                        &dwForwarderResponseSize,
-                        &pForwarderResponse,
-                        &rCodeFwder
-                        );
-
-        if (dwError == 0 &&
-            (dwForwarderResponseSize > 0 || pForwarderResponse))
-        {
-            VMDNS_SAFE_FREE_MEMORY(pDnsResponse);
-            pDnsResponse = pForwarderResponse;
-            dwDnsResponseSize = dwForwarderResponseSize;
-            rCode = rCodeFwder;
-
-            pForwarderResponse = NULL;
-        }
-
-        dwError = 0;
-    }
+    //VmDnsOPStatisticUpdate(DNS_QUERY_COUNT);
 
 cleanup:
 

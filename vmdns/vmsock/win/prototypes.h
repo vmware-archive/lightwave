@@ -322,6 +322,8 @@ VmDnsSockWinGetAddress(
 DWORD
 VmDnsSockWinAllocateIoBuffer(
     VM_SOCK_EVENT_TYPE      eventType,
+    PVM_SOCK_EVENT_CONTEXT      pEventContext,
+    PFN_SOCK_EVENT_CONTEXT_FREE pfnEventContextFree,
     DWORD                   dwSize,
     PVM_SOCK_IO_BUFFER*     ppIoContext
     );
