@@ -36,6 +36,8 @@ typedef struct _VM_SOCK_IO_BUFFER
     socklen_t                addrLen;
 } VM_SOCK_IO_BUFFER, *PVM_SOCK_IO_BUFFER;
 
+typedef PBYTE PVM_SOCK_EVENT_CONTEXT;
+
 typedef enum
 {
     VM_SOCK_EVENT_TYPE_UNKNOWN = 0,
@@ -359,9 +361,23 @@ VmDnsSockGetAddress(
 
 DWORD
 VmDnsSockAllocateIoBuffer(
-    VM_SOCK_EVENT_TYPE      eventType,
-    DWORD                   dwSize,
-    PVM_SOCK_IO_BUFFER*     ppIoContext
+    VM_SOCK_EVENT_TYPE          eventType,
+    PVM_SOCK_EVENT_CONTEXT      pEventContext,
+    DWORD                       dwSize,
+    PVM_SOCK_IO_BUFFER*         ppIoContext
+    );
+
+DWORD
+VmDnsSockSetEventContext(
+    PVM_SOCK_IO_BUFFER      pIoBuffer,
+    PVM_SOCK_EVENT_CONTEXT  pEventContext,
+    PVM_SOCK_EVENT_CONTEXT* ppOldEventContext
+    );
+
+DWORD
+VmDnsSockGetEventContext(
+    PVM_SOCK_IO_BUFFER      pIoBuffer,
+    PVM_SOCK_EVENT_CONTEXT* ppEventContext
     );
 
 /**

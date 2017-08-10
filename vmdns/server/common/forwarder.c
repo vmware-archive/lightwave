@@ -52,14 +52,9 @@ VmDnsForwarderRemoveAt(
     );
 
 static
-DWORD
-VmDnsForwardRequest(
-    PCSTR       pszForwarder,
-    BOOL        bUseUDP,
-    DWORD       dwQuerySize,
-    PBYTE       pQueryBuffer,
-    PDWORD      pdwResponseSize,
-    PBYTE*      ppResopnse
+VOID
+VmDnsFreeForwarderPacketContext(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
     );
 
 static
@@ -86,14 +81,6 @@ static
 DWORD
 VmDnsForwarderMetricsInit(
     PVMDNS_FORWARDER_ENTRY   pForwarder
-    );
-
-static
-VOID
-VmDnsForwarderMetricsUpdate(
-    PVMDNS_FORWARDER_ENTRY    pForwarderEntry,
-    UINT64                    duration,
-    DWORD                     opCode
     );
 
 static
@@ -196,6 +183,52 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDnsGetForwarderAtIndex(
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
+    DWORD                       dwIndex,
+    PSTR*                       ppszForwarder
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszForwarder = NULL;
+    BOOL  bLocked = FALSE;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(pForwarder, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(ppszForwarder, dwError);
+
+    VMDNS_LOCKREAD(pForwarder->pLock);
+    bLocked = TRUE;
+
+    if (dwIndex >= pForwarder->dwCount)
+    {
+        dwError = ERROR_INVALID_INDEX;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateStringA(
+                            pForwarder->pForwarderEntries[dwIndex]->pszForwarder,
+                            &pszForwarder
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppszForwarder = pszForwarder;
+cleanup:
+
+    if (bLocked)
+    {
+        VMDNS_UNLOCKREAD(pForwarder->pLock);
+    }
+    return dwError;
+error:
+
+    if (ppszForwarder)
+    {
+        *ppszForwarder = NULL;
+    }
+    VMDNS_SAFE_FREE_STRINGA(pszForwarder);
+    goto cleanup;
+}
 
 DWORD
 VmDnsSetForwarders(
@@ -535,158 +568,115 @@ error:
 }
 
 DWORD
-VmDnsForwarderResolveRequest(
-    PVMDNS_FORWARDER_CONTEXT    pForwarder,
-    BOOL                        bUseUDP,
-    BOOL                        bRecusive,
-    DWORD                       dwQuerySize,
-    PBYTE                       pQueryBuffer,
-    PDWORD                      pdwResponseSize,
-    PBYTE*                      ppResopnse,
-    PUCHAR                      prCode
-    )
+VmDnsAllocateForwarderPacketContext(
+   PVM_SOCKET  pClientSocket,
+   PVMDNS_FORWARDER_PACKET_CONTEXT* ppForwarderContext
+   )
 {
     DWORD dwError = 0;
-    DWORD index = 0;
-    DWORD dwResponseSize = 0;
-    PBYTE pResponse = NULL;
-    DWORD dwResponseCode = 0;
-    PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
-    PVMDNS_HEADER pDnsHeader = NULL;
-    UINT64 startTime = 0;
-    UINT64 endTime = 0;
 
-    startTime = VmDnsGetTimeInMilliSec();
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext = NULL;
 
-    if ((bUseUDP && dwQuerySize > VMDNS_UDP_PACKET_SIZE) ||
-        !pQueryBuffer ||
-        !pdwResponseSize ||
-        !ppResopnse)
+    if (!ppForwarderContext)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsGetDnsMessageBuffer(
-                                    pQueryBuffer,
-                                    dwQuerySize,
-                                    &pDnsMessageBuffer);
+    dwError = VmDnsAllocateMemory(
+                          sizeof(VMDNS_FORWARDER_PACKET_CONTEXT),
+                          (PVOID*)&pForwarderContext
+                          );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsReadDnsHeaderFromBuffer(
-                                    pDnsMessageBuffer,
-                                    &pDnsHeader);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    pForwarderContext->pClientSocket = VmDnsSockAcquire(pClientSocket);
+    pForwarderContext->dwRefCount = 1;
 
-    for (; index < pForwarder->dwCount; ++index)
-    {
-        startTime = VmDnsGetTimeInMilliSec();
-
-        if (pResponse)
-        {
-            VmDnsFreeMemory(pResponse);
-            pResponse = NULL;
-        }
-
-        dwError = VmDnsForwardRequest(
-                        pForwarder->pForwarderEntries[index]->pszForwarder,
-                        bUseUDP,
-                        dwQuerySize,
-                        pQueryBuffer,
-                        &dwResponseSize,
-                        &pResponse);
-        if (dwError != ERROR_SUCCESS)
-        {
-            endTime = VmDnsGetTimeInMilliSec();
-            VmDnsForwarderMetricsUpdate(
-                          pForwarder->pForwarderEntries[index],
-                          endTime-startTime,
-                          pDnsHeader->codes.opcode);
-            continue;
-        }
-
-        if (dwResponseSize > 0 && pResponse)
-        {
-            dwError = VmDnsPeekResponseCode(
-                            dwResponseSize,
-                            pResponse,
-                            &dwResponseCode);
-
-            if (dwError != ERROR_SUCCESS ||
-                dwResponseCode != VM_DNS_RCODE_NOERROR)
-            {
-                endTime = VmDnsGetTimeInMilliSec();
-                VmDnsForwarderMetricsUpdate(
-                              pForwarder->pForwarderEntries[index],
-                              endTime-startTime,
-                              pDnsHeader->codes.opcode);
-                continue;
-            }
-            else
-            {
-                endTime = VmDnsGetTimeInMilliSec();
-                VmDnsForwarderMetricsUpdate(
-                              pForwarder->pForwarderEntries[index],
-                              endTime-startTime,
-                              pDnsHeader->codes.opcode);
-                break;
-            }
-        }
-    }
-
-    *ppResopnse = pResponse;
-    *pdwResponseSize = dwResponseSize;
-    *prCode = (UCHAR)dwResponseCode;
-
+    *ppForwarderContext = pForwarderContext;
 cleanup:
 
     return dwError;
+error:
 
-error :
-
-    if (pResponse)
+    if (ppForwarderContext)
     {
-        VmDnsFreeMemory(pResponse);
+        *ppForwarderContext = NULL;
     }
-
+    if (pForwarderContext)
+    {
+        VmDnsFreeForwarderPacketContext(pForwarderContext);
+    }
     goto cleanup;
 }
 
+PVMDNS_FORWARDER_PACKET_CONTEXT
+VmDnsAcquireForwarderPacketContext(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
+    )
+{
+    if (pForwarderContext)
+    {
+        InterlockedIncrement(&pForwarderContext->dwRefCount);
+    }
+
+    return pForwarderContext;
+}
+
+VOID
+VmDnsReleaseForwarderPacketContext(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
+    )
+{
+    if (pForwarderContext)
+    {
+        if (InterlockedDecrement(&pForwarderContext->dwRefCount) == 0)
+        {
+            VmDnsFreeForwarderPacketContext(pForwarderContext);
+        }
+    }
+}
+
+
+
 DWORD
 VmDnsForwardRequest(
-    PCSTR       pszForwarder,
-    BOOL        bUseUDP,
-    DWORD       dwQuerySize,
-    PBYTE       pQueryBuffer,
-    PDWORD      pdwResponseSize,
-    PBYTE*      ppResponse
+    PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
+    BOOL                                 bUseUDP,
+    DWORD                                dwQuerySize,
+    PBYTE                                pQueryBuffer
     )
 {
     DWORD dwError = 0;
-    PBYTE pResponse = NULL;
-    VM_SOCK_CREATE_FLAGS falgs = (bUseUDP) ? VM_SOCK_CREATE_FLAGS_UDP : VM_SOCK_CREATE_FLAGS_TCP;
+    PSTR  pszForwarder = NULL;
+    VM_SOCK_CREATE_FLAGS flags = (bUseUDP) ? VM_SOCK_CREATE_FLAGS_UDP : VM_SOCK_CREATE_FLAGS_TCP;
     PVM_SOCKET pSocket = NULL;
-    UINT16 usExpectedSize = 0;
     struct sockaddr_storage address;
     socklen_t addLenth = sizeof address;
     PVM_SOCK_IO_BUFFER pIoRequest = NULL;
-    PVM_SOCK_IO_BUFFER pIoSizeResponse = NULL;
-    PVM_SOCK_IO_BUFFER pIoDataResponse = NULL;
+    PVM_SOCK_IO_BUFFER pOldRequest = NULL;
+    PVMDNS_FORWARDER_PACKET_CONTEXT pCurrentContext = NULL;
 
     if ((bUseUDP && dwQuerySize > VMDNS_UDP_PACKET_SIZE)||
-        !pszForwarder ||
         !pQueryBuffer ||
-        !pdwResponseSize ||
-        !ppResponse)
+        !pForwarderPacketContext)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
+    pCurrentContext = VmDnsAcquireForwarderPacketContext(pForwarderPacketContext);
+
+    dwError = VmDnsGetForwarderAtIndex(
+                                gpSrvContext->pForwarderContext,
+                                pForwarderPacketContext->dwCurrentIndex++,
+                                &pszForwarder
+                                );
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSockOpenClient(
                     pszForwarder,
                     VMW_DNS_PORT,
-                    falgs,
+                    flags,
                     &pSocket);
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -696,6 +686,9 @@ VmDnsForwardRequest(
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsSockSetNonBlocking(pSocket);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     dwError = VmDnsSockGetAddress(
                     pSocket,
                     &address,
@@ -703,7 +696,10 @@ VmDnsForwardRequest(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSockAllocateIoBuffer(
-                    VM_SOCK_EVENT_TYPE_UNKNOWN,
+                    bUseUDP?
+                    VM_SOCK_EVENT_TYPE_UDP_FWD_RESPONSE_DATA_READ:
+                    VM_SOCK_EVENT_TYPE_TCP_FWD_RESPONSE_DATA_READ,
+                    (PVM_SOCK_EVENT_CONTEXT)pForwarderPacketContext,
                     dwQuerySize,
                     &pIoRequest);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -715,6 +711,13 @@ VmDnsForwardRequest(
                     dwQuerySize);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsSockSetData(
+                            pSocket,
+                            pIoRequest,
+                            (PVOID*)&pOldRequest
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     dwError = VmDnsSockWrite(
                     pSocket,
                     (struct sockaddr*)&address,
@@ -722,23 +725,73 @@ VmDnsForwardRequest(
                     pIoRequest);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsSockEventQueueAdd(
+                                gpSrvContext->pSockContext->pEventQueue,
+                                pSocket
+                                );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+//    VmDnsOPStatisticUpdate(FORWARDER_QUERY_COUNT);
+
+cleanup:
+
+    if (pOldRequest)
+    {
+        VmDnsSockReleaseIoBuffer(pOldRequest);
+    }
+
+    return dwError;
+error:
+
+    if (pSocket)
+    {
+        VmDnsSockRelease(pSocket);
+    }
+    if (pCurrentContext)
+    {
+        VmDnsReleaseForwarderPacketContext(pCurrentContext);
+    }
+    if (pIoRequest)
+    {
+        VmDnsSockReleaseIoBuffer(pIoRequest);
+    }
+    goto cleanup;
+}
+
+DWORD
+VmDnsForwardResponse(
+    BOOL        bUseUDP,
+    PVM_SOCKET  pSocket,
+    PBYTE*      ppResponse,
+    PDWORD      pdwResponseSize,
+    PDWORD      pdwRCode
+    )
+{
+    DWORD dwError = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseCode = 0;
+    UINT16 usExpectedSize = 0;
+    PVM_SOCK_IO_BUFFER pIoSizeResponse = NULL;
+    PVM_SOCK_IO_BUFFER pIoDataResponse = NULL;
+
+    if (!pSocket ||
+        !ppResponse ||
+        !pdwResponseSize ||
+        !pdwRCode
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
     if (bUseUDP)
     {
         dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UNKNOWN,
+                        NULL,
                         VMDNS_UDP_PACKET_SIZE,
                         &pIoDataResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
-
-
-        dwError = VmDnsCopyMemory(
-                          &pIoDataResponse->clientAddr,
-                          sizeof pIoDataResponse->clientAddr,
-                          &address,
-                          addLenth);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        pIoDataResponse->addrLen = addLenth;
 
         dwError = VmDnsSockRead(
                         pSocket,
@@ -749,6 +802,7 @@ VmDnsForwardRequest(
     {
         dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UNKNOWN,
+                        NULL,
                         sizeof(UINT16),
                         &pIoSizeResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -762,6 +816,7 @@ VmDnsForwardRequest(
 
         dwError = VmDnsSockAllocateIoBuffer(
                         VM_SOCK_EVENT_TYPE_UNKNOWN,
+                        NULL,
                         usExpectedSize,
                         &pIoDataResponse);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -784,19 +839,20 @@ VmDnsForwardRequest(
                       pIoDataResponse->dwCurrentSize);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsPeekResponseCode(
+                      pIoDataResponse->dwCurrentSize,
+                      pResponse,
+                      &dwResponseCode
+                      );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     *ppResponse = pResponse;
     *pdwResponseSize = pIoDataResponse->dwCurrentSize;
+    *pdwRCode = dwResponseCode;
+    //VmDnsOPStatisticUpdate(FORWARDER_QUERY_COUNT);
 
 cleanup:
 
-    if (pSocket)
-    {
-        VmDnsSockRelease(pSocket);
-    }
-    if (pIoRequest)
-    {
-        VmDnsSockReleaseIoBuffer(pIoRequest);
-    }
     if (pIoSizeResponse)
     {
         VmDnsSockReleaseIoBuffer(pIoSizeResponse);
@@ -820,12 +876,43 @@ error:
         *ppResponse = NULL;
     }
 
+    if (pdwRCode)
+    {
+        *pdwRCode = 0;
+    }
+
     if (pResponse)
     {
         VmDnsFreeMemory(pResponse);
     }
 
     goto cleanup;
+}
+
+static
+VOID
+VmDnsFreeForwarderEntry(
+    PVMDNS_FORWARDER_ENTRY pForwarder
+    )
+{
+    if (pForwarder)
+    {
+        VMDNS_SAFE_FREE_STRINGA(pForwarder->pszForwarder);
+        VMDNS_SAFE_FREE_MEMORY(pForwarder);
+    }
+}
+
+static
+VOID
+VmDnsFreeForwarderPacketContext(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
+    )
+{
+    if (pForwarderContext)
+    {
+        VmDnsSockRelease(pForwarderContext->pClientSocket);
+        VMDNS_SAFE_FREE_MEMORY(pForwarderContext);
+    }
 }
 
 static
@@ -893,19 +980,6 @@ VmDnsValidateForwarder(
     return TRUE;
 }
 
-static
-VOID
-VmDnsFreeForwarderEntry(
-    PVMDNS_FORWARDER_ENTRY pForwarder
-    )
-{
-    if (pForwarder)
-    {
-        VMDNS_SAFE_FREE_STRINGA(pForwarder->pszForwarder);
-        VMDNS_SAFE_FREE_MEMORY(pForwarder);
-    }
-}
-static
 DWORD
 VmDnsForwarderMetricsInit(
     PVMDNS_FORWARDER_ENTRY   pForwarder
@@ -951,30 +1025,6 @@ cleanup:
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed, error (%d)", __FUNCTION__, dwError);
     goto cleanup;
-}
-
-static
-VOID
-VmDnsForwarderMetricsUpdate(
-    PVMDNS_FORWARDER_ENTRY    pForwarderEntry,
-    UINT64                    duration,
-    DWORD                     opCode
-    )
-{
-    if (opCode == VM_DNS_OPCODE_QUERY)
-    {
-        VmMetricsHistogramUpdate(
-                    pForwarderEntry->ForwarderMetricsContext.pQueryDuration,
-                    VDNS_RESPONSE_TIME(duration)
-                    );
-    }
-    else if (opCode == VM_DNS_OPCODE_UPDATE)
-    {
-        VmMetricsHistogramUpdate(
-                    pForwarderEntry->ForwarderMetricsContext.pUpdateDuration,
-                    VDNS_RESPONSE_TIME(duration)
-                    );
-    }
 }
 
 static

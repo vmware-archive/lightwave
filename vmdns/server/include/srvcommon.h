@@ -45,6 +45,8 @@ typedef struct _VMDNS_HASHTABLE const *PCVMDNS_HASHTABLE;
 typedef struct _VMDNS_HASH_TABLE *PVMDNS_HASH_TABLE;
 typedef struct _VMDNS_HASH_TABLE const *PCVMDNS_HASH_TABLE;
 
+typedef DWORD VMDNS_OPERATION_STATISTIC;
+
 typedef struct _VMDNS_HASHTABLE_NODE
 {
     struct _VMDNS_HASHTABLE_NODE* pNext;
