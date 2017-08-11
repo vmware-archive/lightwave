@@ -29,6 +29,7 @@ typedef struct _VM_SOCKET
     int              fd;
 
     PVOID            pData;
+    BOOL             bInEventQueue;
 
 } VM_SOCKET;
 

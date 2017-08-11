@@ -310,9 +310,9 @@ VmDnsInitProtocolServer(
                         (PVOID*)&pSockContext->pWorkerThreads);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pSockContext->dwNumThreads = VMW_DNS_DEFAULT_THREAD_COUNT;
+    pSockContext->dwNumThreads = 0;
 
-    for (; iThr < pSockContext->dwNumThreads; iThr++)
+    for (; iThr < VMW_DNS_DEFAULT_THREAD_COUNT; iThr++)
     {
         dwError = VmDnsAllocateMemory(
                             sizeof(VMDNS_THREAD),
@@ -322,11 +322,12 @@ VmDnsInitProtocolServer(
 
         dwError = VmDnsCreateThread(
                             pSockContext->pWorkerThreads[iThr],
-                            TRUE,
+                            FALSE,
                             (PVMDNS_START_ROUTINE)&VmDnsSockWorkerThreadProc,
                             pSockContext
                             );
-            BAIL_ON_VMDNS_ERROR(dwError);
+        BAIL_ON_VMDNS_ERROR(dwError);
+        pSockContext->dwNumThreads++;
     }
 
     gpSrvContext->pSockContext = pSockContext;
@@ -1145,17 +1146,37 @@ VmDnsSockContextFree(
 {
     if (pSockContext->pEventQueue)
     {
-        VmDnsSockCloseEventQueue(pSockContext->pEventQueue);
+        VmDnsSockShutdownEventQueue(pSockContext->pEventQueue);
+        if (pSockContext->pListenerTCP)
+        {
+            VmDnsSockEventQueueRemove(pSockContext->pEventQueue,
+                    pSockContext->pListenerTCP);
+            VmDnsSockRelease(pSockContext->pListenerTCP);
+        }
+        if (pSockContext->pListenerUDP)
+        {
+            VmDnsSockEventQueueRemove(pSockContext->pEventQueue,
+                    pSockContext->pListenerUDP);
+            VmDnsSockClose(pSockContext->pListenerUDP);
+        }
+#ifdef AF_INET6
+        if (pSockContext->pListenerTCP6)
+        {
+            VmDnsSockEventQueueRemove(pSockContext->pEventQueue,
+                        pSockContext->pListenerTCP6);
+            VmDnsSockRelease(pSockContext->pListenerTCP6);
+        }
+        if (pSockContext->pListenerUDP6)
+        {
+            VmDnsSockEventQueueRemove(pSockContext->pEventQueue,
+                        pSockContext->pListenerUDP6);
+            VmDnsSockRelease(pSockContext->pListenerUDP6);
+        }
+#endif
+        VmDnsSockFreeEventQueue(pSockContext->pEventQueue);
         pSockContext->pEventQueue = NULL;
     }
-    if (pSockContext->pListenerTCP)
-    {
-        VmDnsSockRelease(pSockContext->pListenerTCP);
-    }
-    if (pSockContext->pListenerUDP)
-    {
-        VmDnsSockClose(pSockContext->pListenerUDP);
-    }
+
     if (pSockContext->pWorkerThreads)
     {
         DWORD iThr = 0;
@@ -1166,6 +1187,7 @@ VmDnsSockContextFree(
 
             if (pThread)
             {
+                VmDnsThreadJoin(pThread, NULL);
                 VmDnsFreeThread(pThread);
             }
         }
