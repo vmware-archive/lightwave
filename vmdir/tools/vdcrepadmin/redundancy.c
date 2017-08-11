@@ -312,8 +312,8 @@ VmDirEnableRedundantTopology(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("\t\t----------------------New Topology-----------------\n");
-    // dwError = _PrintTopologyServers(pNewTopology); // Uncomment after Implementing respective API
-    // BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = _PrintTopologyServers(pNewTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
     printf("\t\t---------------------------------------------------\n");
 
     if (!bNoInteraction)

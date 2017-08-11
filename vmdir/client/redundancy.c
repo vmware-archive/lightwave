@@ -70,6 +70,48 @@ _VmDirFreeHAServerList(
     DWORD                   dwCount
     );
 
+static
+DWORD
+_VmDirCreateTopologyStructure(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology,
+    PDWORD**                        pppdwCostMatrix,
+    PDWORD*                         ppFinalResult
+    );
+
+static
+DWORD
+_VmDirFindFinalTopology(
+    DWORD   dwNodeCount,
+    PDWORD* ppdwCostMatrix,
+    PDWORD  pdwFinalResult, // Output
+    PDWORD  pdwCost // Output
+    );
+
+static
+DWORD
+_VmDirFindNNA(
+    DWORD   dwNodeCount,
+    PDWORD* ppdwCostMatrix,
+    PDWORD  pdwFinalResult, // Output
+    PDWORD  pdwCost // Output
+    );
+
+static
+DWORD
+_VmDirCreateNewTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology,
+    PDWORD                          pFinalResult,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology
+    );
+
+static
+VOID
+_VmDirFreeTopologyStructure(
+    PDWORD* ppdwCostMatrix,
+    PDWORD  pFinalResult,
+    DWORD   dwCount
+    );
+
 DWORD
 VmDirGetIntraSiteTopology(
     PCSTR                           pszUserName,
@@ -209,11 +251,35 @@ VmDirGetNewTopology(
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology // Output
     )
 {
-    DWORD   dwError = 0;
+    DWORD                           dwError         = 0;
+    PDWORD*                         ppdwCostMatrix  = NULL;
+    PDWORD                          pFinalArray     = NULL;
+    DWORD                           dwCost          = 0;
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology    = NULL;
 
-    printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-    BAIL_ON_VMDIR_ERROR(dwError); // For removing build issue till real code is plugged in
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = _VmDirCreateTopologyStructure(pTopology,
+                                            &ppdwCostMatrix,
+                                            &pFinalArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirFindFinalTopology(pTopology->dwConsiderListCnt,
+                                      ppdwCostMatrix,
+                                      pFinalArray,
+                                      &dwCost);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirCreateNewTopology(pTopology,
+                                      pFinalArray,
+                                      &pNewTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppNewTopology = pNewTopology;
 cleanup:
+    _VmDirFreeTopologyStructure(ppdwCostMatrix,
+                                pFinalArray,
+                                pTopology->dwConsiderListCnt);
     return dwError;
 error:
     VMDIR_LOG_ERROR(
@@ -222,6 +288,7 @@ error:
             __FUNCTION__,
             dwError
             );
+    VmDirFreeHATopologyData(pNewTopology);
 
     goto cleanup;
 }
@@ -844,6 +911,7 @@ _VmDirFillIntraTopology(
                 if (pTopology->ppConsiderList)
                 {
                     pTopology->ppConsiderList[dwPosCon] = ppServerList[dwCnt];
+                    pTopology->ppConsiderList[dwPosCon]->dwIdx = dwPosCon;
                     dwPosCon++;
                 }
             }
@@ -857,6 +925,7 @@ _VmDirFillIntraTopology(
                 if (bOffline && pTopology->ppConsiderList)
                 {
                     pTopology->ppConsiderList[dwPosCon] = ppServerList[dwCnt];
+                    pTopology->ppConsiderList[dwPosCon]->dwIdx = dwPosCon;
                     dwPosCon++;
                 }
             }
@@ -882,3 +951,473 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirCreateTopologyStructure(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology,
+    PDWORD**                        pppdwCostMatrix,
+    PDWORD*                         ppFinalResult
+    )
+{
+    DWORD   dwError = 0;
+    PDWORD* ppdwCostMatrix          = NULL;
+    PDWORD  pdwFinalResult            = NULL;// list that will mantain the ring
+                                            // start - node - node - end
+    PVMDIR_HA_SERVER_INFO* ppList   = NULL;
+    DWORD   dwCnt                   = 0;
+    DWORD   dwCount                 = 0;
+    DWORD   i                       = 0;
+    DWORD   j                       = 0;
+    DWORD   src                     = 0;
+    DWORD   tgt                     = 0;
+    DWORD   dwMinStartIdx           = 0;
+    DWORD   dwMinStartCount         = 1999999999;
+    DWORD   dw1WayReplCost          = 200;
+    DWORD   dwNoNewReplCost         = 50;
+    DWORD   dwOfflineNoNewReplCost  = 0; // Reason Offline Node has zero cost
+                                        // if edge exist and make algorithm use this
+                                        // instead of Online node one
+
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    if (!pTopology ||
+        !pppdwCostMatrix ||
+        !ppFinalResult ||
+        !pTopology->ppConsiderList ||
+        !pTopology->dwConsiderListCnt)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    ppList  = pTopology->ppConsiderList;
+    dwCount = pTopology->dwConsiderListCnt;
+
+    dwError = VmDirAllocateMemory(sizeof(PDWORD)*dwCount, (PVOID*)&ppdwCostMatrix);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; i<dwCount; i++)
+    {
+        dwError = VmDirAllocateMemory(sizeof(DWORD)*dwCount, (PVOID*)&ppdwCostMatrix[i]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (i=0; i<dwCount; i++)
+    {
+        for (j=0; j<dwCount; j++)
+        {
+            ppdwCostMatrix[i][j] = ppdwCostMatrix[j][i] = dw1WayReplCost;
+        }
+    }
+
+    for (i=0; i<dwCount; i++)
+    {
+        if (ppList[i])
+        {
+            src = ppList[i]->dwIdx;
+            dwCnt = ppList[i]->dwPartnerCnt;
+            if (dwCnt)
+            {
+                if (dwCnt < dwMinStartCount)
+                {
+                    dwMinStartIdx   = i;
+                    dwMinStartCount = dwCnt;
+                }
+                for(j=0; j<dwCnt; j++)
+                {
+                    if (ppList[i]->ppPartnerList[j] && ppList[i]->ppPartnerList[j]->dwIdx != (DWORD)-1)
+                    {
+                        tgt = ppList[i]->ppPartnerList[j]->dwIdx;
+                        if (ppList[i]->pConnection)
+                        {
+                            ppdwCostMatrix[src][tgt] = dwNoNewReplCost;
+                        }
+                        else
+                        {
+                            ppdwCostMatrix[src][tgt] = dwOfflineNoNewReplCost;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(DWORD)*(dwCount+1), (PVOID*)&pdwFinalResult); // +1 because of ring
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pdwFinalResult[0]       = dwMinStartIdx; // start point
+    pdwFinalResult[dwCount] = dwMinStartIdx; // end point
+
+    *pppdwCostMatrix = ppdwCostMatrix;
+    *ppFinalResult   = pdwFinalResult;
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    for (i=0; i<dwCount; i++)
+    {
+        if(ppdwCostMatrix && ppdwCostMatrix[i])
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix[i]);
+        }
+    }
+    if (ppdwCostMatrix)
+    {
+        VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix);
+    }
+    if (pdwFinalResult)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pdwFinalResult);
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirFindFinalTopology(
+    DWORD   dwNodeCount,
+    PDWORD* ppdwCostMatrix,
+    PDWORD  pdwFinalResult, // Output
+    PDWORD  pdwCost // Output
+    )
+{
+    DWORD   dwError = 0;
+
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    if (!ppdwCostMatrix || !pdwFinalResult || !pdwCost)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = _VmDirFindNNA(dwNodeCount, ppdwCostMatrix, pdwFinalResult, pdwCost);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirFindNNA(
+    DWORD   dwNodeCount,
+    PDWORD* ppdwCostMatrix,
+    PDWORD  pdwFinalResult, // Output
+    PDWORD  pdwCost // Output
+    )
+{
+    DWORD       dwError = 0;
+    DWORD       i       = 0;
+    PBOOLEAN    pMark   = NULL;
+    DWORD       dwMarkCnt   = 1;
+    DWORD       dwMinIdx    = 0;
+    DWORD       dwMinCost   = 1999999999;
+    DWORD       dwTmpCost   = 1999999999;
+    DWORD       dwSrc       = 0;
+
+    printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    if (!ppdwCostMatrix || !pdwFinalResult || !pdwCost || !dwNodeCount)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(BOOLEAN)*dwNodeCount,(PVOID*)&pMark);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; i<dwNodeCount; i++)
+    {
+        pMark[i] = 0;
+    }
+
+    dwSrc = pdwFinalResult[0];
+    pMark[dwSrc] = 1;
+
+    *pdwCost = 0;
+
+    while(dwMarkCnt != dwNodeCount)
+    {
+        dwMinIdx  = -1;
+        dwMinCost = 1999999999;
+        for(i=0; i<dwNodeCount; i++)
+        {
+            if (!pMark[i])
+            {
+                dwTmpCost = ppdwCostMatrix[dwSrc][i] + ppdwCostMatrix[i][dwSrc];
+                if (dwTmpCost < dwMinCost)
+                {
+                    dwMinCost = dwTmpCost;
+                    dwMinIdx  = i;
+                }
+            }
+        }
+        if (dwMinIdx == -1)
+        {
+            dwError = VMDIR_ERROR_INVALID_RESULT;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        pMark[dwMinIdx] = 1;
+        pdwFinalResult[dwMarkCnt++] = dwMinIdx;
+        dwSrc = dwMinIdx;
+        *pdwCost += dwMinCost;
+    }
+    *pdwCost +=  (ppdwCostMatrix[pdwFinalResult[dwNodeCount-1]][pdwFinalResult[dwNodeCount]]);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pMark);
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirCopyHAServer(
+    PVMDIR_HA_SERVER_INFO   pSrcServer,
+    DWORD                   dwPartnerCnt,
+    PVMDIR_HA_SERVER_INFO*  ppDestServer
+    )
+{
+    DWORD   dwError = 0;
+
+    PVMDIR_HA_SERVER_INFO   pServer = NULL;
+
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_SERVER_INFO), (PVOID*)&pServer);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pSrcServer->pszHostName, &(pServer->pszHostName));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pSrcServer->pszServerName, &(pServer->pszServerName));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pSrcServer->pszSiteName)
+    {
+        dwError = VmDirAllocateStringA(pSrcServer->pszSiteName, &(pServer->pszSiteName));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        pServer->pszSiteName = NULL;
+    }
+
+    pServer->pConnection = pSrcServer->pConnection;
+    pSrcServer->pConnection = NULL;
+
+    if (dwPartnerCnt)
+    {
+        dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwPartnerCnt,(PVOID*)&(pServer->ppPartnerList));
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pServer->dwPartnerCnt = dwPartnerCnt;
+    }
+    else
+    {
+        pServer->ppPartnerList  = NULL;
+        pServer->dwPartnerCnt   = 0;
+    }
+
+    pServer->dwIdx = pSrcServer->dwIdx;
+
+    *ppDestServer = pServer;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    if (pServer)
+    {
+        VmDirFreeHAServerInfo(pServer);
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirCreateNewTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology,
+    PDWORD                          pFinalResult,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology
+    )
+{
+    DWORD   dwError         = 0;
+    DWORD   i               = 0;
+    DWORD   j               = 0;
+    DWORD   k               = 0;
+    DWORD   dwCount         = 0;
+    DWORD   dwOnlineCnt     = 0;
+    DWORD   dwOfflineCnt    = 0;
+
+    PVMDIR_HA_REPLICATION_TOPOLOGY pNewTopology = NULL;
+
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    if (!pTopology ||
+        !pFinalResult ||
+        !ppNewTopology ||
+        !pTopology->ppConsiderList ||
+        !pTopology->dwConsiderListCnt)
+    {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwCount = pTopology->dwConsiderListCnt;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_REPLICATION_TOPOLOGY), (PVOID*)&pNewTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwCount, (PVOID*)&(pNewTopology->ppConsiderList));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pNewTopology->dwConsiderListCnt = dwCount;
+
+    for (i=0; i<dwCount; i++)
+    {
+        dwError = _VmDirCopyHAServer(pTopology->ppConsiderList[i], 2, &(pNewTopology->ppConsiderList[i])); // 2 because ring topology has 2 partners
+        BAIL_ON_VMDIR_ERROR(dwError);
+        if (pNewTopology->ppConsiderList[i]->pConnection)
+        {
+            dwOnlineCnt += 1;
+        }
+        else
+        {
+            dwOfflineCnt += 1;
+        }
+    }
+    // printf("OnlineCnt: %u, OfflineCnt: %u\n",dwOnlineCnt,dwOfflineCnt);
+    if (dwOnlineCnt)
+    {
+        dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwOnlineCnt, (PVOID*)&(pNewTopology->ppOnlineList));
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pNewTopology->dwOnlineListCnt = dwOnlineCnt;
+    }
+
+    if (dwOfflineCnt)
+    {
+        dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwOfflineCnt, (PVOID*)&(pNewTopology->ppOfflineList));
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pNewTopology->dwOfflineListCnt = dwOfflineCnt;
+    }
+
+    // Setting Partner List for start node
+    (pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[0] = pNewTopology->ppConsiderList[pFinalResult[1]]; // second node in ring
+    (pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[1] = pNewTopology->ppConsiderList[pFinalResult[dwCount-1]]; // second last node in ring, last node is itself
+
+    for (i=1; i<dwCount; i++)
+    {
+         j = pFinalResult[i-1];
+         k = pFinalResult[i+1];
+         (pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[0] = pNewTopology->ppConsiderList[j];
+         (pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[1] = pNewTopology->ppConsiderList[k];
+    }
+
+    j = 0;
+    k = 0;
+
+    for (i=0; i<dwCount; i++)
+    {
+        if(pNewTopology->ppConsiderList[i]->pConnection)
+        {
+            pNewTopology->ppOnlineList[j] = pNewTopology->ppConsiderList[i];
+            j++;
+        }
+        else
+        {
+            pNewTopology->ppOfflineList[k] = pNewTopology->ppConsiderList[i];
+            k++;
+        }
+    }
+
+    *ppNewTopology = pNewTopology;
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    if (pNewTopology)
+    {
+        if (pNewTopology->ppConsiderList)
+        {
+            _VmDirFreeHAServerList(pNewTopology->ppConsiderList, pNewTopology->dwConsiderListCnt);
+        }
+
+        if (pNewTopology->ppOnlineList)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pNewTopology->ppOnlineList);
+        }
+
+        if (pNewTopology->ppOfflineList)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pNewTopology->ppOfflineList);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pNewTopology);
+
+    }
+    goto cleanup;
+}
+
+static
+VOID
+_VmDirFreeTopologyStructure(
+    PDWORD* ppdwCostMatrix,
+    PDWORD  pFinalResult,
+    DWORD   dwCount
+    )
+{
+    DWORD   i = 0;
+
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    for (i=0; i<dwCount; i++)
+    {
+        if(ppdwCostMatrix && ppdwCostMatrix[i])
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix[i]);
+        }
+    }
+    if (ppdwCostMatrix)
+    {
+        VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix);
+    }
+    if (pFinalResult)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pFinalResult);
+    }
+}
