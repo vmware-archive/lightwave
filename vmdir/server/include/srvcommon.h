@@ -226,6 +226,7 @@ typedef struct _VDIR_SUPERLOG_RECORD
 
 typedef struct _VDIR_CONN_REPL_SUPP_STATE
 {
+    USN             firstHighWaterMarkPerCycle;
     PLW_HASHMAP     phmSyncStateOneMap;
 } VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
 
