@@ -548,13 +548,61 @@ CPPFLAGS="$saved_CPPFLAGS"
 
 #--------------------------------------------------------------------
 
+# Adam: Fixme here
+# Configure flow chart for winjoin and pac
+#
+# winjoin ---Y---> MSPAC_SUPPORT / -DWINJOIN_CHECK_ENABLED
+#    |
+#    N
+#    |
+#    v
+#   pac -----Y---> VMDIR_ENABLE_PAC / -DVMDIR_ENABLE_PAC
+#    |
+#    N
+#    |
+#    v
+#  No PAC Support
+#
+WINJOIN_CHECK_ENABLED="no"
+VMDIR_PAC_CHECK_ENABLED="no"
+AC_ARG_ENABLE([winjoin],
+    [AC_HELP_STRING([--enable-winjoin], [enable experimental Windows "AD Join" to vmdir (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            WINJOIN_CHECK_ENABLED="yes"
+echo "debug: 0 WINJOIN_CHECK_ENABLED=$WINJOIN_CHECK_ENABLED" >> /tmp/vmdirconfig-dbg.txt
+        fi
+    ])
+
+# Windows Join to Lightwave first not set, check, for PAC disabled.
+VMDIR_PAC_CHECK_ENABLED="yes"
 AC_ARG_ENABLE([pac],
-     AS_HELP_STRING([--disable-pac], [Disable Kerberos PAC]))
-AM_CONDITIONAL([VMDIR_ENABLE_PAC], [test "x$enable_pac" != "xno"]])
-if test x"$enable_pac" != x"no"
+     [AS_HELP_STRING([--disable-pac], [Disable Kerberos PAC])],
+     [
+         if test x"$enableval" = x"no"
+         then
+             VMDIR_PAC_CHECK_ENABLED="no"
+echo "debug: 0 VMDIR_PAC_CHECK_ENABLED=$VMDIR_PAC_CHECK_ENABLED" >> /tmp/vmdirconfig-dbg.txt
+         fi
+     ])
+
+if test x"$WINJOIN_CHECK_ENABLED" = x"yes"
 then
-AC_DEFINE_UNQUOTED(VMDIR_ENABLE_PAC, 1, [ Enable PAC ])
+  VMDIR_PAC_CHECK_ENABLED="no"
+  AC_DEFINE_UNQUOTED(WINJOIN_CHECK_ENABLED, "1", [ Enable Windows AD Join to vmdir ])
 fi
+
+if test x"$VMDIR_PAC_CHECK_ENABLED" = "yes"
+then
+  AC_DEFINE_UNQUOTED(VMDIR_ENABLE_PAC, 1, [ Enable PAC ])
+fi
+
+AM_CONDITIONAL(MSPAC_SUPPORT, [test x"$WINJOIN_CHECK_ENABLED" = x"yes"])
+AM_CONDITIONAL(VMDIR_ENABLE_PAC, [test x"$VMDIR_PAC_CHECK_ENABLED" = x"yes"])
+
+AM_COND_IF([MSPAC_SUPPORT], [echo "debug: 1 MSPAC_SUPPORT" >> /tmp/vmdirconfig-dbg.txt])
+AM_COND_IF([VMDIR_ENABLE_PAC], [echo "debug: 1 VMDIR_ENABLE_PAC" >> /tmp/vmdirconfig-dbg.txt])
 
 #--------------------------------------------------------------------
 # POPT components

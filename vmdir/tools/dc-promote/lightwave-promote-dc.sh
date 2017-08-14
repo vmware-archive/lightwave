@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/sh 
+#!/bin/sh -x
 #
 # Script to promote a Photon OS system to a Lightwave Domain Controller
 #
@@ -54,13 +55,19 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+id=`ssh abernstein@$LIGHTWAVE_AD hostname -i`
+if [ $? -ne 0 ]; then
+  echo "ERROR: 'ssh abernstein@$LIGHTWAVE_AD' failed; fix IP or pub/priv keys"
+  exit 1
+fi
+
 if [ $LIGHTWAVE_AD != $id ]; then
   echo "ERROR: LIGHTWAVE_AD IP address '$LIGHTWAVE_AD' does not match configuration '$id'"
   exit 1
 fi
 
-if [ ! -f $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-2.x86_64.rpm  ]; then
-  echo "ERROR: file '$LIKEWISE_BASE/likewise-open-6.2.11-2.x86_64.rpm' does not exist"
+if [ ! -f $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-4.x86_64.rpm  ]; then
+  echo "ERROR: file '$LIKEWISE_BASE/likewise-open-6.2.11-?.x86_64.rpm' does not exist"
   exit 1
 fi
 
@@ -77,21 +84,20 @@ if [ $? -ne 0 ]; then
 fi
 
 # 1 Copy custom build of Likewise-Open
-scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-2.x86_64.rpm $LIGHTWAVE_AD:/tmp
+scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-?.x86_64.rpm $LIGHTWAVE_AD:/tmp
 
 # 2 Copy Lightwave --enable-winjoin build
 scp $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm $LIGHTWAVE_AD:/tmp
 
 # 3 Install Likewise-Open
-ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-2.x86_64.rpm
+ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-?.x86_64.rpm
 
 # 4 Install Lightwave RPMs
-ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/lightwave-1*.rpm /tmp/lightwave-client-1*.rpm
+ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/lightwave-1*.rpm /tmp/lightwave-client-1*.rpm /tmp/lightwave-server-1*.rpm
 
 # 5 Modify /etc/resolv.conf to point to self for DNS
 scp $TOOLS_DIR/resolv-config.sh  $LIGHTWAVE_AD:/tmp
 ssh root@$LIGHTWAVE_AD  /tmp/resolv-config.sh
-
 
 # 6 Promote Lightwave PSC
 ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/configure-lightwave-server \
@@ -109,9 +115,12 @@ ssh root@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
     iptables -I INPUT --proto tcp --dport 389 -j ACCEPT &&
     iptables -I OUTPUT --proto tcp --dport 389 -j ACCEPT )'
 
-# 9 Add DNS forwarder
-ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder 10.155.23.1 \
-    --server localhost --username Administrator --domain lightwave.local --password `cat /tmp/promote-pwd.txt`'
+## 9 Add DNS forwarder
+## Don't do this. Forwarder support is broken. Preserving 2nd/3rd entries in 
+## resolv.conf accomplishes the same thing.
+#ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder 10.155.23.1 \
+#    --server localhost --username Administrator --domain lightwave.local --password `cat /tmp/promote-pwd.txt`'
+#
 
 # 10 Additional DNS SRV records:
 ssh root@$LIGHTWAVE_AD \
@@ -180,5 +189,8 @@ ssh root@$LIGHTWAVE_AD \
 ssh root@$LIGHTWAVE_AD \
     /opt/likewise/bin/lwsm restart lwreg
 
-# 17 Ready for domainjoin-cli/Windows to join this system
+# 17 get a copy of the krb5.keytab from DC
+scp root@$LIGHTWAVE_AD:/etc/krb5.keytab /tmp/krb5-`date +%s`.keytab
+
+# 18 Ready for domainjoin-cli/Windows to join this system
 echo "Lightwave DC is now configured: IP: $LIGHTWAVE_AD"

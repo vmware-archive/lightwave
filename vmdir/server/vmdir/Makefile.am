@@ -159,14 +159,14 @@ srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
 
 vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
 
 if MSPAC_SUPPORT
 ms_pac_cstub.c ms_pac_h.h: $(idl_srcdir)/ms_pac.idl $(idl_srcdir)/ms_pac.acf $(idl_srcdir)/ms_pac_type.h
-	$(IDL) $(IDLFLAGS) -keep c_source -header ms_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header ms_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
 else
 if VMDIR_ENABLE_PAC
 vmdir_pac_cstub.c vmdir_pac_h.h: $(idl_srcdir)/vmdir_pac.idl $(idl_srcdir)/vmdir_pac.acf $(idl_srcdir)/vmdir_pac_type.h
-	$(IDL) $(IDLFLAGS) -DVMDIR_ENABLE_PAC -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -DVMDIR_ENABLE_PAC -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
 endif
 endif
