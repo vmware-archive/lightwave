@@ -437,7 +437,9 @@ typedef enum MDB_cursor_op {
 #define MDB_WAL_INVALID_META    (-30780)
         /** WAL recover failure pages in transaction mismatch */
 #define MDB_WAL_WRONG_TXN_PAGES (-30779)
-#define MDB_LAST_ERRCODE MDB_WAL_WRONG_TXN_PAGES
+        /** Missing WAL file or invalid WAL file */
+#define MDB_WAL_FILE_ERROR (-30778)
+#define MDB_LAST_ERRCODE MDB_WAL_FILE_ERROR
 /** @} */
 
 /** @brief Statistics for a database in the environment */
@@ -805,6 +807,13 @@ int  mdb_env_set_mapsize(MDB_env *env, size_t size);
 	 * </ul>
 	 */
 int  mdb_env_set_maxreaders(MDB_env *env, unsigned int readers);
+
+         /** @brief set database checkpoint interval in WAL mode
+          *
+          * @param[in] the interval in seconds
+          * @return A non-zero error value on failure and 0 on success
+          */
+int mdb_env_set_chkpt_interval(MDB_env *env, int interval);
 
 	/** @brief Get the maximum number of threads/reader slots for the environment.
 	 *
