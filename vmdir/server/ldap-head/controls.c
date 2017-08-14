@@ -478,9 +478,8 @@ WriteSyncStateControl(
 
                 assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
 
-                if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszUSNCreated, pszIDBuf) != 0)
+                if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, NULL, pszIDBuf) != 0)
                 {
-#if 0
                     retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
                     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -491,8 +490,11 @@ WriteSyncStateControl(
                     BAIL_ON_VMDIR_ERROR(retVal);
                     pszEID = NULL; pszUSNCreated = NULL; // map takes over
 
-                    VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "entry sync stat ADD %s at USNCreated %llu", pEntry->dn.lberbv_val, pszUSNCreated );
-#endif
+                    VMDIR_LOG_VERBOSE(
+                            LDAP_DEBUG_REPL,
+                            "entry sync stat ADD %s at USNCreated %s",
+                            pEntry->dn.lberbv_val,
+                            pAttr->vals[0].lberbv_val);
                 }
             }
         }
@@ -734,20 +736,6 @@ ParseSyncRequestControlVal(
 
     }
 
-    if (op->conn->ReplConnState.phmSyncStateOneMap == NULL)
-    {   // replication request, create connection level map for SyncStateControl adjustment (ADD -> MODIFY)
-        if (LwRtlCreateHashMap(
-                &op->conn->ReplConnState.phmSyncStateOneMap,
-                LwRtlHashDigestPstrCaseless,
-                LwRtlHashEqualPstrCaseless,
-                NULL) != 0
-           )
-        {
-            lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR(retVal);
-        }
-    }
-
     tag = ber_peek_tag( ber, &len );
 
     if (tag == LBER_SEQUENCE)
@@ -869,6 +857,41 @@ ParseSyncRequestControlVal(
         lr->errCode = LDAP_UNWILLING_TO_PERFORM;
         retVal = LDAP_NOTICE_OF_DISCONNECT;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "Partner is ahead of my changes.");
+    }
+
+    if (op->conn->ReplConnState.phmSyncStateOneMap == NULL)
+    {
+        // Initialize highwatermark at the beginning of the connection
+        op->conn->ReplConnState.firstHighWaterMarkPerCycle = VmDirStringToLA(syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+        // replication request, create connection level map for SyncStateControl adjustment (ADD -> MODIFY)
+        if (LwRtlCreateHashMap(
+                &op->conn->ReplConnState.phmSyncStateOneMap,
+                LwRtlHashDigestPstrCaseless,
+                LwRtlHashEqualPstrCaseless,
+                NULL) != 0)
+        {
+            lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "ParseSyncRequestControlVal: updating high watermark to ReplConnState: %lu",
+                op->conn->ReplConnState.firstHighWaterMarkPerCycle);
+    }
+    else
+    {
+        USN lastlocalUsnProcessed = VmDirStringToLA(syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+        if (op->conn->ReplConnState.firstHighWaterMarkPerCycle >= lastlocalUsnProcessed)
+        {
+            /*
+             * When retry happens, send add requests instead of modify requests. If entries are not removed
+             * from hashtable, modify request will be sent.
+             */
+             LwRtlHashMapClear(op->conn->ReplConnState.phmSyncStateOneMap, VmDirSimpleHashMapPairFree, NULL);
+             VMDIR_LOG_DEBUG(
+                     LDAP_DEBUG_REPL,
+                     "ParseSyncRequestControlVal: phmSyncStateOneMap Cleared because of replication cycle retry");
+        }
     }
 
 cleanup:
