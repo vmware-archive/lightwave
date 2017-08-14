@@ -112,6 +112,30 @@ _VmDirFreeTopologyStructure(
     DWORD   dwCount
     );
 
+static
+DWORD
+_VmDirCreateInternalChanges(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES      pChanges
+    );
+
+static
+DWORD
+_VmDirFindDifferenceInReplLinks(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES      pChanges
+    );
+
+static
+DWORD
+_VmDirCreateTopologyChanges(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES*     ppChanges
+    );
+
 DWORD
 VmDirGetIntraSiteTopology(
     PCSTR                           pszUserName,
@@ -302,8 +326,10 @@ VmDirGetTopologyChanges(
 {
     DWORD   dwError = 0;
 
-    printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-    BAIL_ON_VMDIR_ERROR(dwError); // For removing build issue till real code is plugged in
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+    dwError = _VmDirCreateTopologyChanges(pCurTopology, pNewTopology, ppTopologyChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
     return dwError;
 error:
@@ -387,9 +413,41 @@ VmDirFreeHAChanges(
     PVMDIR_HA_TOPOLOGY_CHANGES  pChanges
     )
 {
+    DWORD   i = 0;
+
     // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+
     if (pChanges)
     {
+        if (pChanges->ppAddLinkList)
+        {
+            _VmDirFreeHAServerList(
+                    pChanges->ppAddLinkList,
+                    pChanges->dwAddListCnt);
+        }
+        if (pChanges->ppDelLinkList)
+        {
+            for (i=0; i<pChanges->dwDelListCnt; i++)
+            {
+                if (pChanges->ppDelLinkList[i] &&
+                    pChanges->ppDelLinkList[i]->pConnection)
+                {
+                    /*
+                     * In function _VmDirCreateInternalChanges,
+                     * the pConnection of DelLinkList[i] is assigned
+                     * from pConnection of AddLinkList[i] i.e. new
+                     * Connection was not created for DelLinkList[i].
+                     * As that connection close would be taken care in
+                     * deletion of AddLinkList, connection of DelLinkList
+                     * is set to NULL
+                     */
+                    pChanges->ppDelLinkList[i]->pConnection = NULL;
+                }
+            }
+            _VmDirFreeHAServerList(
+                    pChanges->ppDelLinkList,
+                    pChanges->dwDelListCnt);
+        }
         VMDIR_SAFE_FREE_MEMORY(pChanges);
     }
 }
@@ -625,6 +683,9 @@ _VmDirGetHAServerFromStringList(
 
         // dwError = VmDirGetServerName( pszHostName, &pszServer);
         // VMDIR_HANDLE_OFFLINE_ERROR(dwError, pszServer);
+
+        // The hostname is formed by converting ServerDN to CN and thus it has to be FQDN.
+        // It is obtained from the API:VmDirGetServersInfoOnSite.
         dwError = VmDirAllocateStringA(pszHostName, &pszServer);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1203,6 +1264,7 @@ _VmDirCopyHAServer(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i       = 0;
 
     PVMDIR_HA_SERVER_INFO   pServer = NULL;
 
@@ -1235,6 +1297,10 @@ _VmDirCopyHAServer(
         dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwPartnerCnt,(PVOID*)&(pServer->ppPartnerList));
         BAIL_ON_VMDIR_ERROR(dwError);
         pServer->dwPartnerCnt = dwPartnerCnt;
+        for (i=0; i<dwPartnerCnt; i++)
+        {
+            pServer->ppPartnerList[i] = NULL;
+        }
     }
     else
     {
@@ -1334,6 +1400,11 @@ _VmDirCreateNewTopology(
     // Setting Partner List for start node
     (pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[0] = pNewTopology->ppConsiderList[pFinalResult[1]]; // second node in ring
     (pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[1] = pNewTopology->ppConsiderList[pFinalResult[dwCount-1]]; // second last node in ring, last node is itself
+    if ((pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[0] == (pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[1])
+    {
+        (pNewTopology->ppConsiderList[pFinalResult[0]])->ppPartnerList[1] = NULL;
+        (pNewTopology->ppConsiderList[pFinalResult[0]])->dwPartnerCnt = 1;
+    }
 
     for (i=1; i<dwCount; i++)
     {
@@ -1341,6 +1412,11 @@ _VmDirCreateNewTopology(
          k = pFinalResult[i+1];
          (pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[0] = pNewTopology->ppConsiderList[j];
          (pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[1] = pNewTopology->ppConsiderList[k];
+         if ((pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[0] == (pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[1])
+         {
+            (pNewTopology->ppConsiderList[pFinalResult[i]])->ppPartnerList[1] = NULL;
+            (pNewTopology->ppConsiderList[pFinalResult[i]])->dwPartnerCnt = 1;
+         }
     }
 
     j = 0;
@@ -1420,4 +1496,257 @@ _VmDirFreeTopologyStructure(
     {
         VMDIR_SAFE_FREE_MEMORY(pFinalResult);
     }
+}
+
+static
+DWORD
+_VmDirCreateTopologyChanges(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES*     ppChanges
+    )
+{
+    DWORD   dwError = 0;
+
+    PVMDIR_HA_TOPOLOGY_CHANGES  pChanges = NULL;
+
+    if (!pCurTopology || !pNewTopology || !ppChanges ||
+        !pCurTopology->ppConsiderList ||
+        !pNewTopology->ppConsiderList ||
+        !pCurTopology->dwConsiderListCnt ||
+        !pNewTopology->dwConsiderListCnt)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_TOPOLOGY_CHANGES), (PVOID*)&pChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirCreateInternalChanges(pCurTopology, pNewTopology, pChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirFindDifferenceInReplLinks(pCurTopology, pNewTopology, pChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppChanges = pChanges;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyChanges(pChanges);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirCreateInternalChanges(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES      pChanges
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCount = 0;
+    DWORD   i       = 0;
+
+    if (!pCurTopology || !pNewTopology || !pChanges ||
+        !pCurTopology->ppConsiderList ||
+        !pNewTopology->ppConsiderList ||
+        !pCurTopology->dwConsiderListCnt ||
+        !pNewTopology->dwConsiderListCnt ||
+        pCurTopology->dwConsiderListCnt != pNewTopology->dwConsiderListCnt)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwCount = pNewTopology->dwConsiderListCnt;
+
+    dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwCount,(PVOID*)&pChanges->ppAddLinkList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwCount,(PVOID*)&pChanges->ppDelLinkList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pChanges->dwAddListCnt = dwCount;
+    pChanges->dwDelListCnt = dwCount;
+
+    for (i=0; i<dwCount; i++)
+    {
+        pChanges->ppAddLinkList[i] = NULL;
+        pChanges->ppDelLinkList[i] = NULL;
+
+        dwError = _VmDirCopyHAServer(pNewTopology->ppConsiderList[i], 2, &(pChanges->ppAddLinkList[i])); // Because ring topology 2 partners can be added
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirCopyHAServer(pCurTopology->ppConsiderList[i],
+                                     pCurTopology->ppConsiderList[i]->dwPartnerCnt,
+                                     &(pChanges->ppDelLinkList[i])); // Maximum Number of its partner needs to be removed
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // The one pConnection allocated is shared by DelLinkList and AddLinkList i.e. they point to same location.
+        // Thus during free time only one of them should be freed and other should be set to Null.
+        pChanges->ppDelLinkList[i]->pConnection = pChanges->ppAddLinkList[i]->pConnection;
+
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    if (pChanges && pNewTopology)
+    {
+        if (pChanges->ppAddLinkList)
+        {
+            for (i=0; i<dwCount; i++)
+            {
+                if (pChanges->ppAddLinkList[i])
+                {
+                    pNewTopology->ppConsiderList[i]->pConnection = pChanges->ppAddLinkList[i]->pConnection;
+                    pChanges->ppAddLinkList[i]->pConnection = NULL;
+                }
+                if (pChanges->ppDelLinkList && pChanges->ppDelLinkList[i])
+                {
+                    pChanges->ppDelLinkList[i]->pConnection = NULL;
+                }
+            }
+        }
+    }
+
+    if (pChanges->ppAddLinkList)
+    {
+        _VmDirFreeHAServerList(pChanges->ppAddLinkList, pChanges->dwAddListCnt);
+        pChanges->ppAddLinkList = NULL;
+    }
+    if (pChanges->ppDelLinkList)
+    {
+        _VmDirFreeHAServerList(pChanges->ppDelLinkList, pChanges->dwDelListCnt);
+        pChanges->ppDelLinkList = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirFindDifferenceInReplLinks(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES      pChanges
+    )
+{
+    DWORD       dwError     = 0;
+    DWORD       i           = 0;
+    DWORD       j           = 0;
+    DWORD       k           = 0;
+    DWORD       dwCnt       = 0;
+    DWORD       dwCount     = 0;
+    DWORD       dwPosDel    = 0;
+    DWORD       dwPosAdd    = 0;
+    BOOLEAN     pMark[2]    = {0};
+    BOOLEAN     bStatus     = 0;
+    BOOLEAN     bCompareRes = 0;
+
+    if (!pCurTopology ||
+        !pNewTopology ||
+        !pChanges     ||
+        !pChanges->dwAddListCnt ||
+        pCurTopology->dwConsiderListCnt != pNewTopology->dwConsiderListCnt ||
+        pChanges->dwAddListCnt != pChanges->dwDelListCnt ||
+        pChanges->dwAddListCnt != pNewTopology->dwConsiderListCnt)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwCount = pNewTopology->dwConsiderListCnt;
+
+    for (i=0; i<dwCount; i++)
+    {
+        pMark[0] = 0;
+        pMark[1] = 0;
+        dwPosAdd = 0;
+        dwPosDel = 0;
+        dwCnt = pNewTopology->ppConsiderList[i]->dwPartnerCnt;
+
+        for (j=0; j<pCurTopology->ppConsiderList[i]->dwPartnerCnt; j++)
+        {
+            if (dwCnt)
+            {
+                bStatus = 1;
+                for (k=0; k<dwCnt; k++)
+                {
+                    if (!pMark[k])
+                    {
+                        bCompareRes = ( pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx ==
+                                        pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx);
+                        if (bCompareRes)
+                        {
+                            pMark[k] = 1;
+                            bStatus  = 0;
+                        }
+                    }
+                }
+                if (bStatus)
+                {
+                    if (pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx != (DWORD)-1)
+                    {
+                        pChanges->ppDelLinkList[i]->ppPartnerList[dwPosDel] = pChanges->ppDelLinkList[pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx];
+                        dwPosDel++;
+                    }
+                    else
+                    {
+                        printf("\n\nIgnoring Link Creation/Deletion with Offline Node: %s\n",pCurTopology->ppConsiderList[i]->ppPartnerList[j]->pszHostName);
+                    }
+                }
+            }
+        }
+        for (k=0; k<dwCnt; k++)
+        {
+            if (!pMark[k])
+            {
+                if (pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx != (DWORD)-1)
+                {
+                    pChanges->ppAddLinkList[i]->ppPartnerList[dwPosAdd] = pChanges->ppAddLinkList[pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx];
+                    dwPosAdd++;
+                }
+                else
+                {
+                    printf("\n\nIgnoring Link Creation/Deletion with Offline Node: %s\n",pCurTopology->ppConsiderList[i]->ppPartnerList[j]->pszHostName);
+                }
+            }
+        }
+        if (dwPosAdd < 2)
+        {
+            pChanges->ppAddLinkList[i]->dwPartnerCnt = dwPosAdd;
+        }
+        if (dwPosDel < pCurTopology->ppConsiderList[i]->dwPartnerCnt)
+        {
+            pChanges->ppDelLinkList[i]->dwPartnerCnt = dwPosDel;
+        }
+    }
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, Error[%d]\n",
+        __FUNCTION__,
+        dwError
+    );
+    goto cleanup;
 }
