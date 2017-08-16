@@ -6152,7 +6152,7 @@ VmDirGetCurrentGlobalTopology(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
 
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
 
     dwError = VmDirGetInterSiteTopology(
                         pszUserName,
@@ -6195,7 +6195,7 @@ VmDirGetProposedTopology(
     }
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
 
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
 
     dwError = VmDirGetNewTopology(
                     pCurTopology,
@@ -6238,7 +6238,7 @@ VmDirGetChangesInTopology(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
 
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
 
     dwError = VmDirGetTopologyChanges(
                     pCurTopology,
@@ -6277,7 +6277,7 @@ VmDirApplyTopologyChanges(
     }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
 
     dwError = VmDirModifyLinks(pTopologyChanges);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -6319,7 +6319,7 @@ VmDirFreeHATopologyChanges(
     PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
     )
 {
-    printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
     VmDirFreeHAChanges(pTopologyChanges);
 }
 

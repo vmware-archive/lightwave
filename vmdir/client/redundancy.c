@@ -349,9 +349,75 @@ VmDirModifyLinks(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i       = 0;
+    DWORD   j       = 0;
 
-    printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-    BAIL_ON_VMDIR_ERROR(dwError); // For removing build issue till real code is plugged in
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+    if (!pTopologyChanges)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!pTopologyChanges->dwAddListCnt || !pTopologyChanges->ppAddLinkList)
+    {
+        printf("\n\tNo Links are Added\n");
+    }
+    else
+    {
+        for (i=0; i<pTopologyChanges->dwAddListCnt; i++)
+        {
+            if (pTopologyChanges->ppAddLinkList[i])
+            {
+                if (pTopologyChanges->ppAddLinkList[i]->dwPartnerCnt)
+                {
+                    for (j=0; j<pTopologyChanges->ppAddLinkList[i]->dwPartnerCnt; j++)
+                    {
+                        if (pTopologyChanges->ppAddLinkList[i]->ppPartnerList[j])
+                        {
+                            dwError = VmDirLdapSetupRemoteHostRAByPLd(
+                                            pTopologyChanges->ppAddLinkList[i]->pConnection->pszDomain,
+                                            pTopologyChanges->ppAddLinkList[i]->pszHostName,
+                                            pTopologyChanges->ppAddLinkList[i]->ppPartnerList[j]->pszHostName,
+                                            0,
+                                            pTopologyChanges->ppAddLinkList[i]->pConnection->pLd,
+                                            pTopologyChanges->ppAddLinkList[i]->ppPartnerList[j]->pConnection->pLd);
+                            BAIL_ON_VMDIR_ERROR(dwError);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!pTopologyChanges->dwDelListCnt || !pTopologyChanges->ppDelLinkList)
+    {
+        printf("\n\tNo Links are Deleted\n");
+    }
+    else
+    {
+        for (i=0; i<pTopologyChanges->dwDelListCnt; i++)
+        {
+            if (pTopologyChanges->ppDelLinkList[i])
+            {
+                if (pTopologyChanges->ppDelLinkList[i]->dwPartnerCnt)
+                {
+                    for (j=0; j<pTopologyChanges->ppDelLinkList[i]->dwPartnerCnt; j++)
+                    {
+                        if (pTopologyChanges->ppDelLinkList[i]->ppPartnerList[j])
+                        {
+                            dwError = VmDirLdapRemoveRemoteHostRAByPLd(
+                                            pTopologyChanges->ppDelLinkList[i]->pConnection->pszDomain,
+                                            pTopologyChanges->ppDelLinkList[i]->pszHostName,
+                                            pTopologyChanges->ppDelLinkList[i]->ppPartnerList[j]->pszHostName,
+                                            pTopologyChanges->ppDelLinkList[i]->pConnection->pLd);
+                            BAIL_ON_VMDIR_ERROR(dwError);
+                        }
+                    }
+                }
+            }
+        }
+    }
 cleanup:
     return dwError;
 error:
@@ -1192,7 +1258,7 @@ _VmDirFindNNA(
     DWORD       dwTmpCost   = 1999999999;
     DWORD       dwSrc       = 0;
 
-    printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
 
     if (!ppdwCostMatrix || !pdwFinalResult || !pdwCost || !dwNodeCount)
     {

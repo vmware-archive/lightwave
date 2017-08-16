@@ -88,10 +88,11 @@ _PrintHAServerList(
             {
                 printf("\t\t\t\t%s\n",ppList[dwCnt]->ppPartnerList[dwPCnt]->pszHostName);
             }
+            printf("\n");
         }
         else
         {
-            printf("\t\t\tNo Partners of this server were found.\n");
+            printf("\t\t\tNo Partners of this server were found.\n\n");
         }
     }
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -221,18 +222,18 @@ _PromptForContinuation()
 
     // read Integer to continue from stdin
     VmDirReadString(
-        "Enter 1 to Continue, 0 to Abort:",
+        "Enter 1 to Continue, 0 to Abort: ",
         pszContinueStr,
         sizeof(pszContinueStr),
         FALSE);
     dwContinueVal = (DWORD)VmDirStringToIA(pszContinueStr);
     if (dwContinueVal == 0)
     {
-        printf("\tUser Decided to Abort and Therefore Aborting Task\n\n");
+        printf("\n\tUser Decided to Abort and Therefore Aborting Task\n\n");
     }
     else if (dwContinueVal != 1)
     {
-        printf("\tUser provided unrecognized input and Therefore Continuing Task\n\n");
+        printf("\n\tUser provided unrecognized input and Therefore Continuing Task\n\n");
         dwContinueVal = 1;
     }
 
@@ -295,7 +296,7 @@ VmDirEnableRedundantTopology(
     printf("\t\t----------------------Current Topology-----------------\n");
     dwError = _PrintTopologyServers(pCurTopology);
     BAIL_ON_VMDIR_ERROR(dwError);
-    printf("\t\t-------------------------------------------------------\n");
+    printf("\t\t-------------------------------------------------------\n\n");
 
     if (!bNoInteraction)
     {
@@ -314,7 +315,7 @@ VmDirEnableRedundantTopology(
     printf("\t\t----------------------New Topology-----------------\n");
     dwError = _PrintTopologyServers(pNewTopology);
     BAIL_ON_VMDIR_ERROR(dwError);
-    printf("\t\t---------------------------------------------------\n");
+    printf("\t\t---------------------------------------------------\n\n");
 
     if (!bNoInteraction)
     {
@@ -335,7 +336,7 @@ VmDirEnableRedundantTopology(
     printf("\t\t----------------------Proposed Topology Changes-----------------\n");
     dwError = _PrintTopologyChanges(pTopologyChanges);
     BAIL_ON_VMDIR_ERROR(dwError);
-    printf("\t\t----------------------------------------------------------------\n");
+    printf("\t\t----------------------------------------------------------------\n\n");
 
     if (!bNoInteraction)
     {
@@ -349,6 +350,8 @@ VmDirEnableRedundantTopology(
 
     dwError = VmDirApplyTopologyChanges(pTopologyChanges);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    printf("Topology was successfully modified and is now Highly Available Topology!!\n");
 
 cleanup:
     VmDirFreeHATopologyData(pCurTopology);
