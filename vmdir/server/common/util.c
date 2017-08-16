@@ -628,7 +628,7 @@ VmDirSrvCreateDomain(
             dwError = VmDirStringNCpyA(
                     pszObjDC,
                     MAX_DOMAIN_COMPONENT_VALUE_LEN,
-                    pszObjDN,
+                    pszObjDN + ATTR_DOMAIN_COMPONENT_LEN + 1,
                     rdnValLen);
             BAIL_ON_VMDIR_ERROR(dwError);
 
