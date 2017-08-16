@@ -36,9 +36,6 @@ VmDirMetricsInitialize(
     dwError = VmDirLdapMetricsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirReplMetricsInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = _VmDirRpcMetricsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -63,11 +60,11 @@ _VmDirRpcMetricsInit(
 
     VM_METRICS_LABEL labelOps[METRICS_RPC_OP_COUNT][1] = {
         {{"operation", "GeneratePassword"}},
-        {{"operation", "GetKeyTabRecBlob"}},
         {{"operation", "CreateUser"}},
         {{"operation", "CreateUserEx"}},
         {{"operation", "SetLogLevel"}},
         {{"operation", "SetLogMask"}},
+        {{"operation", "SetState"}},
         {{"operation", "SuperLogQueryServerData"}},
         {{"operation", "SuperLogEnable"}},
         {{"operation", "SuperLogDisable"}},
@@ -82,13 +79,17 @@ _VmDirRpcMetricsInit(
         {{"operation", "SetBackendState"}},
         {{"operation", "GetState"}},
         {{"operation", "GetLogLevel"}},
-        {{"operation", "GetLogMask"}}
+        {{"operation", "GetLogMask"}},
+        {{"operation", "SetMode"}},
+        {{"operation", "GetMode"}},
+        {{"operation", "RaftRequestVote"}},
+        {{"operation", "RaftAppendEntries"}}
     };
 
     for (i=0; i < METRICS_RPC_OP_COUNT; i++)
     {
         dwError = VmMetricsHistogramNew(pmContext,
-                                "vmdir_dcerpc_request_duration",
+                                "post_dcerpc_request_duration",
                                 labelOps[i], 1,
                                 "Histogram for DCERPC Request Durations for different operations",
                                 buckets, 3,

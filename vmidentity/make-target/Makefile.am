@@ -56,7 +56,8 @@ vmstsconf_DATA = \
     @top_builddir@/vmidentity/config/logging.properties \
     @top_builddir@/vmidentity/config/catalina.policy \
     @top_builddir@/vmidentity/config/context.xml \
-    @top_builddir@/vmidentity/config/tomcat-users.xml
+    @top_builddir@/vmidentity/config/tomcat-users.xml \
+    @top_builddir@/vmidentity/config/vmsts-telegraf.conf
 
 vmidmconf_DATA= \
     @top_srcdir@/vmidentity/sso-config/src/main/resources/ssoconfig.log4j2.xml \

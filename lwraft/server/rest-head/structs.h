@@ -25,6 +25,7 @@ typedef enum
     VDIR_REST_RSC_LDAP,
     VDIR_REST_RSC_OBJECT,
     VDIR_REST_RSC_ETCD,
+    VDIR_REST_RSC_METRICS,
     VDIR_REST_RSC_UNKNOWN,
     VDIR_REST_RSC_COUNT,
 
@@ -35,6 +36,8 @@ typedef struct _VDIR_REST_RESULT
     int         errCode;
     PSTR        pszErrMsg;
     PLW_HASHMAP pDataMap;
+    PSTR        pszData;
+    DWORD       dwDataLen;
     BOOLEAN     bErrSet;
 
 } VDIR_REST_RESULT, *PVDIR_REST_RESULT;

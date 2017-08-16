@@ -17,6 +17,11 @@
 #ifndef COMMON_INTERFACE_H_
 #define COMMON_INTERFACE_H_
 
+#include <vmmetrics.h>
+extern PVM_METRICS_CONTEXT pmContext;
+
+#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

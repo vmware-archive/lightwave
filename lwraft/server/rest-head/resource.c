@@ -44,6 +44,15 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         "error"
     },
     {
+        VDIR_REST_RSC_METRICS,
+        "/v1/post/metrics",
+        FALSE,
+        VmDirRESTUnknownSetResult,
+        VmDirRESTUnknownGetHttpError,
+        "error_code",
+        "error_message"
+    },
+    {
         VDIR_REST_RSC_UNKNOWN,
         NULL,
         FALSE,

@@ -1,6 +1,7 @@
 SUBDIRS = \
     include \
     . \
+    config \
     testing
 
 lib_LTLIBRARIES = libvmmetrics.la

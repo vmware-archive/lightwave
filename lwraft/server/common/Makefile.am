@@ -32,6 +32,7 @@ libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1 \
     -I$(top_srcdir)/lwraft/thirdparty \
     -I$(top_srcdir)/lwraft/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@

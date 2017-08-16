@@ -299,6 +299,18 @@ VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
     PSID*   ppBuiltInAdminsGroupSid
     );
 
+// metricsapi.c
+DWORD
+VmDirRESTGetMetricsModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTMetricsGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
 // objectapi.c
 DWORD
 VmDirRESTGetObjectModule(

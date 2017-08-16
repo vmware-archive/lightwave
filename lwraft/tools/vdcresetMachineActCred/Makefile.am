@@ -9,6 +9,7 @@ vdcresetMachineActCred_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include/public \
     -I$(top_srcdir)/lwraft/server/include \
     -I$(top_srcdir)/lwraft/tools/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

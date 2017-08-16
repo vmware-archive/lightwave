@@ -23,6 +23,7 @@ libschema_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/lwraft/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
