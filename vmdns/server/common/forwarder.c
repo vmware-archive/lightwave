@@ -331,7 +331,7 @@ VmDnsDeleteForwarder(
     BAIL_ON_VMDNS_INVALID_POINTER(pForwarder, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pszForwarder, dwError);
 
-    VMDNS_LOCKREAD(pForwarder->pLock);
+    VMDNS_LOCKWRITE(pForwarder->pLock);
     bLocked = TRUE;
 
     index = VmDnsForwarderLookup(
@@ -370,7 +370,7 @@ cleanup:
 
     if (bLocked)
     {
-        VMDNS_UNLOCKREAD(pForwarder->pLock);
+        VMDNS_UNLOCKWRITE(pForwarder->pLock);
     }
 
     return dwError;
