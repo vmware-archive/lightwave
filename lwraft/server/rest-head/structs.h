@@ -74,6 +74,7 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                    pszPath;
     PSTR                    pszSubPath;
     PSTR                    pszHeaderIfMatch;
+    PSTR                    pszInput;
     json_t*                 pjInput;
     PLW_HASHMAP             pParamMap;
     VDIR_REST_AUTH_METHOD   authMthd;
@@ -142,3 +143,11 @@ typedef struct _VDIR_REST_HEAD_CACHE
     PSID            pBuiltInAdminsGroupSid;
 
 } VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;
+
+//proxy.c
+typedef struct _VDIR_REST_CURL_RESPONSE
+{
+    PSTR    pResponse;
+    DWORD   dwResponseLen;
+} VDIR_REST_CURL_RESPONSE, *PVDIR_REST_CURL_RESPONSE;
+

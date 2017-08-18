@@ -107,6 +107,12 @@
 #define HTTP_NETWORK_AUTHENTICATION_REQUIRED    511
 #define HTTP_NETWORK_CONNECT_TIMEOUT_ERROR      599
 
+// Proxy constants
+#define HTTP_METHOD_GET     "GET"
+#define HTTP_METHOD_POST    "POST"
+#define HTTP_METHOD_PUT     "PUT"
+#define HTTP_METHOD_DEL     "DEL"
+#define HTTP_METHOD_PATCH   "PATCH"
 
 #define VMDIR_SET_REST_RESULT(pRestOp, pMLOp, dwError, pszErrMsg)       \
     do                                                                  \

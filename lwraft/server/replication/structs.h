@@ -91,13 +91,7 @@ typedef struct _VDIR_RAFT_LOG
 //Total storage for packRaftLog is RAFT_LOG_HEADER_LEN + chglog data length
 } VDIR_RAFT_LOG, *PVDIR_RAFT_LOG;
 
-typedef enum _VDIR_RAFT_ROLE
-{
-    VDIR_RAFT_ROLE_CANDIDATE = 0,
-    VDIR_RAFT_ROLE_FOLLOWER,
-    VDIR_RAFT_ROLE_LEADER,
-    VDIR_RAFT_ROLE_ALONE //standalone server that is pending cluster initialization
-} VDIR_RAFT_ROLE;
+
 
 typedef enum _VDIR_RAFT_EXEC_CMD
 {

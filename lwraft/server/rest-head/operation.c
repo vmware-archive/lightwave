@@ -180,8 +180,10 @@ VmDirRESTOperationReadRequest(
         }
     }
 
+    // Save the input in string format for proxy
+    pRestOp->pszInput = pszInput;
+
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszInput);
     return dwError;
 
 error:
@@ -190,6 +192,7 @@ error:
             "%s failed, error (%d)",
             __FUNCTION__,
             dwError);
+    VMDIR_SAFE_FREE_STRINGA(pszInput);
     goto cleanup;
 }
 
@@ -311,6 +314,7 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

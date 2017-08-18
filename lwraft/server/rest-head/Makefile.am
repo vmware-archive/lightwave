@@ -22,6 +22,7 @@ librest_head_la_SOURCES += \
     objectapi.c \
     operation.c \
     param.c \
+	proxy.c \
     resource.c \
     result.c \
     vmafd.c

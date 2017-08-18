@@ -521,3 +521,13 @@ VOID
 VmDirRESTUnloadVmAfdAPI(
     PVDIR_VMAFD_API pVmAfdAPI
     );
+
+// proxy.c
+DWORD
+VmDirRESTForwardRequest(
+    PVDIR_REST_OPERATION pRestOp,
+    uint32_t dwParamCount,
+    PREST_REQUEST pRequest,
+    PREST_RESPONSE* ppResponse,
+    PVMREST_HANDLE pRESTHandle
+    );

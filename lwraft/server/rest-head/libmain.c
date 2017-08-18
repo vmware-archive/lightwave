@@ -16,6 +16,15 @@
 
 #ifdef REST_ENABLED
 
+static
+DWORD
+_VmDirRESTHandleRequestInternal(
+    PVDIR_REST_OPERATION pRestOp,
+    PVMREST_HANDLE pRESTHandle,
+    PREST_RESPONSE* ppResponse,
+    uint32_t paramsCount
+    );
+
 REST_PROCESSOR sVmDirRESTHandlers =
 {
     .pfnHandleCreate = &VmDirRESTRequestHandler,
@@ -142,9 +151,9 @@ VmDirRESTRequestHandler(
     uint32_t        paramsCount
     )
 {
-    DWORD   dwError = 0;
+    DWORD                   dwError = 0;
     PVDIR_REST_OPERATION    pRestOp = NULL;
-    PREST_API_METHOD    pMethod = NULL;
+    VDIR_RAFT_ROLE          role = VDIR_RAFT_ROLE_CANDIDATE;
 
     if (!pRESTHandle || !pRequest || !ppResponse)
     {
@@ -161,8 +170,64 @@ VmDirRESTRequestHandler(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTOperationReadRequest(
-            pRestOp, pRESTHandle, pRequest, paramsCount);
+                        pRestOp, pRESTHandle, pRequest, paramsCount);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirRaftGetRole(&role);
+    if(role == VDIR_RAFT_ROLE_FOLLOWER)
+    {
+        dwError = VmDirRESTForwardRequest(
+                        pRestOp,
+                        paramsCount,
+                        pRequest,
+                        ppResponse,
+                        pRESTHandle);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = _VmDirRESTHandleRequestInternal(
+                        pRestOp,
+                        pRESTHandle,
+                        ppResponse,
+                        paramsCount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VmDirFreeRESTOperation(pRestOp);
+    return dwError;
+
+error:
+    // Send Error response
+    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
+    dwError = VmDirRESTOperationWriteResponse(
+            pRestOp, pRESTHandle, ppResponse);
+    VMDIR_LOG_VERBOSE(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirRESTHandleRequestInternal(
+    PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
+    PREST_RESPONSE*         ppResponse,
+    uint32_t                paramsCount
+    )
+{
+    DWORD               dwError = 0;
+    PREST_API_METHOD    pMethod = NULL;
+
+    if (!pRestOp  || !pRESTHandle || !ppResponse)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirRESTAuth(pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -177,25 +242,17 @@ VmDirRESTRequestHandler(
     dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-response:
     VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
     // Nothing can be done if failed to send response
     dwError = VmDirRESTOperationWriteResponse(
             pRestOp, pRESTHandle, ppResponse);
-    goto cleanup;
 
 cleanup:
-    VmDirFreeRESTOperation(pRestOp);
     return dwError;
 
 error:
-    VMDIR_LOG_VERBOSE(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
+    goto cleanup;
 
-    goto response;
 }
 
 #else
