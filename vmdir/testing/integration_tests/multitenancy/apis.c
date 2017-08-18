@@ -84,6 +84,83 @@ SanityCheckTenantDomain(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszUserDn);
     VMDIR_SAFE_FREE_STRINGA(pszUserSid);
+    VMDIR_SAFE_LDAP_UNBIND(pLd);
+    return dwError;
+error:
+    goto cleanup;
+}
+
+//
+// Test System Domain Administrator Permission in Tenant tree
+// 1. It can read tenant top tree DC entry
+// 2. It can not create object/container in tenant tree
+// 3. It can not read object/container created by tenant admin in tenant tree
+//
+DWORD
+TestSystemAdminTenantTreePermission(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszTenantName, // "foo.bar"
+    PCSTR pszTenantDn // dc=foo,dc=bar
+    )
+{
+    DWORD dwError = 0;
+    LDAP *pLd = NULL;
+    PSTR pszUserDn = NULL;
+    PSTR pszContainerDn = NULL;
+
+    dwError = _VmDirTestAdminConnectionFromDomain(pState, pszTenantName, &pLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                &pszUserDn,
+                "cn=test-user-1-cn,%s",
+                pszTenantDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                &pszContainerDn,
+                "cn=test-container-1-cn,%s",
+                pszTenantDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // use system domain admin cred
+    dwError = VmDirTestCreateSimpleUser(pState->pLd, "cn=test-user-1-cn", pszUserDn);
+    if (dwError != LDAP_INSUFFICIENT_ACCESS)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ACL_VIOLATION);
+    }
+    dwError = 0;
+
+    dwError = VmDirTestCreateSimpleContainer(pState->pLd, "cn=test-container-1-cn", pszContainerDn);
+    if (dwError != LDAP_INSUFFICIENT_ACCESS)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ACL_VIOLATION);
+    }
+    dwError = 0;
+
+    // use tenant domain admin cred
+    dwError = VmDirTestCreateSimpleUser(pLd, "cn=test-user-1-cn", pszUserDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestCreateSimpleContainer(pLd, "cn=test-container-1-cn", pszContainerDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // system domain admin could not read created user/container
+    if (VmDirTestCanReadSingleEntry(pState->pLd, pszUserDn) == TRUE)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ACL_VIOLATION);
+    }
+
+    if (VmDirTestCanReadSingleEntry(pState->pLd, pszContainerDn) == TRUE)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ACL_VIOLATION);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserDn);
+    VMDIR_SAFE_FREE_STRINGA(pszContainerDn);
+
+    VMDIR_SAFE_LDAP_UNBIND(pLd);
     return dwError;
 error:
     goto cleanup;
@@ -130,6 +207,9 @@ ShouldBeAbleToCreateTenants(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = SanityCheckTenantDomain(pState, "quad.com", "dc=quad,dc=com");
+    TestAssertEquals(dwError, 0);
+
+    dwError = TestSystemAdminTenantTreePermission(pState, "quad.com", "dc=quad,dc=com");
     TestAssertEquals(dwError, 0);
 
 cleanup:
