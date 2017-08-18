@@ -986,7 +986,7 @@ VmDnsForwarderMetricsInit(
     )
 {
     DWORD dwError = 0;
-    UINT64 buckets[] = {1, 5, 10};
+    UINT64 buckets[] = {1, 5, 10, 100, 300};
     VM_METRICS_LABEL labelDurationOps[2][2] = {{{"operation","query"},{"forwarder",""}},
                                                {{"operation","update"},{"forwarder",""}}};
 
@@ -997,24 +997,24 @@ VmDnsForwarderMetricsInit(
 
     dwError = VmMetricsHistogramNew(
                 gVmDnsMetricsContext,
-                "forwarder_request_duration",
+                "vmdns_forwarder_request_duration",
                 labelDurationOps[0],
                 2,
                 "Forwarder Process Request Duration",
                 buckets,
-                3,
+                5,
                 &pForwarder->ForwarderMetricsContext.pQueryDuration
                 );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmMetricsHistogramNew(
                 gVmDnsMetricsContext,
-                "forwarder_request_duration",
+                "vmdns_forwarder_request_duration",
                 labelDurationOps[1],
                 2,
                 "Forwarder Process Request Duration",
                 buckets,
-                3,
+                5,
                 &pForwarder->ForwarderMetricsContext.pUpdateDuration
                 );
     BAIL_ON_VMDNS_ERROR(dwError);

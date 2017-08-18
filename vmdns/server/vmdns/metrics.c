@@ -87,7 +87,7 @@ VmDnsMetricsCounterInit(
     {
         dwError = VmMetricsCounterNew(
                     gVmDnsMetricsContext,
-                    "dns_error_count",
+                    "vmdns_dns_error_count",
                     labelErrors[i - DNS_ERROR_NXDOMAIN_ERR_COUNT],
                     1,
                     "DNS Error Counts",
@@ -99,7 +99,7 @@ VmDnsMetricsCounterInit(
     {
         dwError = VmMetricsCounterNew(
                     gVmDnsMetricsContext,
-                    "cache_zone",
+                    "vmdns_cache_zone",
                     labelCacheOps[i - CACHE_ZONE_LOOKUP],
                     1,
                     "DNS Cache Zone",
@@ -111,7 +111,7 @@ VmDnsMetricsCounterInit(
     {
         dwError = VmMetricsCounterNew(
                     gVmDnsMetricsContext,
-                    "cache_cache",
+                    "vmdns_cache_cache",
                     labelCacheOps[i - CACHE_CACHE_LOOKUP],
                     1,
                     "DNS Cache Object",
@@ -123,7 +123,7 @@ VmDnsMetricsCounterInit(
     {
         dwError = VmMetricsCounterNew(
                     gVmDnsMetricsContext,
-                    "cache_purge",
+                    "vmdns_cache_purge",
                     labelCachePurgeType[i - CACHE_MODIFY_PURGE_COUNT],
                     1,
                     "DNS Error Counts",
@@ -147,19 +147,19 @@ VmDnsMetricsHistogramInit(
     )
 {
     DWORD dwError = 0;
-    UINT64 buckets[] = {1, 5, 10};
+    UINT64 buckets[] = {1, 5, 10, 100, 300};
     int i;
 
     for (i=DNS_QUERY_DURATION; i<=DNS_UPDATE_DURATION; i++)
     {
         dwError = VmMetricsHistogramNew(
                     gVmDnsMetricsContext,
-                    "dns_request_duration",
+                    "vmdns_dns_request_duration",
                     labelDurationOps[i - DNS_QUERY_DURATION],
                     1,
                     "DNS Protocol Process Request Duration",
                     buckets,
-                    3,
+                    5,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -169,12 +169,12 @@ VmDnsMetricsHistogramInit(
     {
         dwError = VmMetricsHistogramNew(
                     gVmDnsMetricsContext,
-                    "store_request_duration",
+                    "vmdns_store_request_duration",
                     labelDurationOps[i - STORE_QUERY_DURATION],
                     1,
                     "Store Process Request Duration",
                     buckets,
-                    3,
+                    5,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -184,12 +184,12 @@ VmDnsMetricsHistogramInit(
     {
         dwError = VmMetricsHistogramNew(
                     gVmDnsMetricsContext,
-                    "rpc_request_duration",
+                    "vmdns_rpc_request_duration",
                     labelDurationOps[i - RPC_QUERY_DURATION],
                     1,
                     "Rpc Process Request Duration",
                     buckets,
-                    3,
+                    5,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -213,7 +213,7 @@ VmDnsMetricsGaugeInit(
 
     dwError = VmMetricsGaugeNew(
                 gVmDnsMetricsContext,
-                "dns_outstanding_request_count",
+                "vmdns_dns_outstanding_request_count",
                 NULL,
                 0,
                 "Number of outstanding io requests in the queue",
@@ -223,7 +223,7 @@ VmDnsMetricsGaugeInit(
 
     dwError = VmMetricsGaugeNew(
                 gVmDnsMetricsContext,
-                "dns_active_service_threads",
+                "vmdns_dns_active_service_threads",
                 NULL,
                 0,
                 "Numbers of threads active for servicing the requests",
@@ -233,7 +233,7 @@ VmDnsMetricsGaugeInit(
 
     dwError = VmMetricsGaugeNew(
                 gVmDnsMetricsContext,
-                "cache_object_count",
+                "vmdns_cache_object_count",
                 NULL,
                 0,
                 "Number of active objects in the cache",
