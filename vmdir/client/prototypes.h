@@ -784,6 +784,11 @@ VmDirModifyLinks(
     );
 
 VOID
+VmDirFreeHATopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
+    );
+
+VOID
 VmDirFreeHAServer(
     PVMDIR_HA_SERVER_INFO   pServer
     );
@@ -849,4 +854,11 @@ VmDirGetServersInfoOnSite(
     PCSTR                   pszDomain,
     PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
     DWORD*                  pdwInfoCount
+    );
+
+DWORD
+VmDirGetSiteList(
+    LDAP*               pLd,
+    PCSTR               pszDomainName,
+    PVMDIR_STRING_LIST* ppSiteList
     );
