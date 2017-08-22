@@ -460,10 +460,9 @@ error:
 
 DWORD
 VmDnsSockAllocateIoBuffer(
-    VM_SOCK_EVENT_TYPE          eventType,
-    PVM_SOCK_EVENT_CONTEXT      pEventContext,
-    DWORD                       dwSize,
-    PVM_SOCK_IO_BUFFER*         ppIoBuffer
+    VM_SOCK_EVENT_TYPE      eventType,
+    DWORD                   dwSize,
+    PVM_SOCK_IO_BUFFER*     ppIoBuffer
     )
 {
     DWORD dwError = 0;
@@ -474,79 +473,13 @@ VmDnsSockAllocateIoBuffer(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmDnsSockPackage->pfnAllocateIoBuffer(
-                                                  eventType,
-                                                  pEventContext,
-                                                  dwSize,
-                                                  ppIoBuffer
-                                                  );
+    dwError = gpVmDnsSockPackage->pfnAllocateIoBuffer(eventType, dwSize, ppIoBuffer);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
 
     return dwError;
 }
-
-DWORD
-VmDnsSockSetEventContext(
-    PVM_SOCK_IO_BUFFER      pIoBuffer,
-    PVM_SOCK_EVENT_CONTEXT  pEventContext,
-    PVM_SOCK_EVENT_CONTEXT* ppOldEventContext
-    )
-{
-    DWORD dwError = 0;
-
-    if (!pIoBuffer || !ppOldEventContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = gpVmDnsSockPackage->pfnSetEventContext(pIoBuffer, pEventContext, ppOldEventContext);
-    BAIL_ON_VMSOCK_ERROR(dwError);
-
-cleanup:
-
-    return dwError;
-error:
-
-    if (ppOldEventContext)
-    {
-        *ppOldEventContext = NULL;
-    }
-    goto cleanup;
-}
-
-DWORD
-VmDnsSockGetEventContext(
-    PVM_SOCK_IO_BUFFER      pIoBuffer,
-    PVM_SOCK_EVENT_CONTEXT* ppEventContext
-    )
-{
-    DWORD dwError = 0;
-
-    if (!pIoBuffer || !ppEventContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = gpVmDnsSockPackage->pfnGetEventContext(pIoBuffer, ppEventContext);
-    BAIL_ON_VMSOCK_ERROR(dwError);
-
-cleanup:
-
-    return dwError;
-error:
-
-    if (ppEventContext)
-    {
-        *ppEventContext = NULL;
-    }
-    goto cleanup;
-}
-
-
 
 DWORD
 VmDnsSockReleaseIoBuffer(

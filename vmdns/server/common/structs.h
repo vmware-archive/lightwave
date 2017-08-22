@@ -345,17 +345,3 @@ typedef struct _VMDNS_DRIVER_GLOBALS
     BOOL                        bUseDirectoryStore;
 } VMW_DNS_DRIVER_GLOBALS, *PVMW_DNS_DRIVER_GLOBALS;
 
-/*Dns Statistics*/
-typedef struct _VMDNS_OP_STATISTIC_GLOBALS
-{
-    VMDNS_OPERATION_STATISTIC    dns_query_count;
-    VMDNS_OPERATION_STATISTIC    forwarder_query_count;
-
-} VMDNS_OP_STATISTIC_GLOBALS, *PVMDNS_OP_STATISTIC_GLOBALS;
-
-typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
-{
-    PVM_SOCKET        pClientSocket;
-    DWORD             dwCurrentIndex;
-    DWORD             dwRefCount;
-} VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;
