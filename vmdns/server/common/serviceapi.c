@@ -35,7 +35,7 @@ VmDnsSrvInitialize(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_FORWARDER_CONETXT pForwarderContext = NULL;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
     PVMDNS_CACHE_CONTEXT pCacheContext = NULL;
     PVMDNS_SECURITY_CONTEXT pSecurityContext = NULL;
 

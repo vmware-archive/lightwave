@@ -15,6 +15,7 @@ libvmkdctools_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/thirdparty/heimdal/krb5-crypto \
     -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1 \
     -I$(top_srcdir)/lwraft/server/vmkdc \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

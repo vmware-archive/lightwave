@@ -58,6 +58,11 @@ typedef DWORD (*PFN_ADD_EVENT_QUEUE)(
                     PVM_SOCKET           pSocket
                     );
 
+typedef DWORD (*PFN_REMOVE_EVENT_QUEUE)(
+                    PVM_SOCK_EVENT_QUEUE pQueue,
+                    PVM_SOCKET           pSocket
+                    );
+
 typedef DWORD (*PFN_WAIT_FOR_EVENT)(
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     int                  iTimeoutMS,
@@ -66,7 +71,11 @@ typedef DWORD (*PFN_WAIT_FOR_EVENT)(
                     PVM_SOCK_IO_BUFFER*  ppIoBuffer
                     );
 
-typedef VOID (*PFN_CLOSE_EVENT_QUEUE)(
+typedef VOID (*PFN_SHUTDOWN_EVENT_QUEUE)(
+                    PVM_SOCK_EVENT_QUEUE pQueue
+                    );
+
+typedef VOID (*PFN_FREE_EVENT_QUEUE)(
                     PVM_SOCK_EVENT_QUEUE pQueue
                     );
 
@@ -142,8 +151,10 @@ typedef struct _VM_SOCK_PACKAGE
     PFN_START_LISTENING    pfnStartListening;
     PFN_CREATE_EVENT_QUEUE pfnCreateEventQueue;
     PFN_ADD_EVENT_QUEUE    pfnAddEventQueue;
+    PFN_REMOVE_EVENT_QUEUE pfnRemoveEventQueue;
     PFN_WAIT_FOR_EVENT     pfnWaitForEvent;
-    PFN_CLOSE_EVENT_QUEUE  pfnCloseEventQueue;
+    PFN_SHUTDOWN_EVENT_QUEUE  pfnShutdownEventQueue;
+    PFN_FREE_EVENT_QUEUE   pfnFreeEventQueue;
     PFN_SET_NON_BLOCKING   pfnSetNonBlocking;
     PFN_SET_TIMEOUT        pfnSetTimeOut;
     PFN_GET_PROTOCOL       pfnGetProtocol;

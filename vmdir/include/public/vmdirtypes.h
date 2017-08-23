@@ -143,9 +143,9 @@ typedef struct _VMDIR_SERVER_CONTEXT VMDIR_SERVER_CONTEXT, *PVMDIR_SERVER_CONTEX
  */
 typedef struct _VMDIR_HA_SERVER_INFO
 {
-    PCSTR                           pszHostName;
-    PCSTR                           pszServerName;
-    PCSTR                           pszSiteName;
+    PSTR                            pszHostName;
+    PSTR                            pszServerName;
+    PSTR                            pszSiteName;
     PVMDIR_CONNECTION               pConnection;
     struct _VMDIR_HA_SERVER_INFO**  ppPartnerList;
     DWORD                           dwPartnerCnt;

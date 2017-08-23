@@ -59,18 +59,6 @@ VmMetricsMixedTest()
         goto error;
     }
 
-    dwError = VmMetricsCounterNew(pContext,
-                        "counter1_count",
-                        NULL,
-                        0,
-                        "Mixed Test counter",
-                        &pCounter);
-    if (dwError)
-    {
-        printf("FAIL: Error in CounterNew for test: MixedTest, Error Code = %d\n", dwError);
-        goto error;
-    }
-
     dwError = VmMetricsGaugeNew(pContext,
                         "gauge1_value",
                         NULL,
@@ -103,15 +91,80 @@ VmMetricsMixedTest()
         goto error;
     }
 
+    dwError = VmMetricsCounterNew(pContext,
+                        "counter1_count",
+                        NULL,
+                        0,
+                        "Mixed Test counter",
+                        &pCounter);
+    if (dwError)
+    {
+        printf("FAIL: Error in CounterNew for test: MixedTest, Error Code = %d\n", dwError);
+        goto error;
+    }
+
     VmMetricsHistogramUpdate(pHistogram2, 34);
 
     VmMetricsCounterIncrement(pCounter);
 
     VmMetricsGaugeAdd(pGauge, 5);
 
+    dwError = VmMetricsHistogramDelete(pContext, pHistogram1);
+    if (dwError)
+    {
+        printf("FAIL: Error in HistogramDelete for test: MixedTest, Error Code = %d\n", dwError);
+        goto error;
+    }
+
     VmMetricsHistogramUpdate(pHistogram2, 2);
 
-    VmMetricsHistogramUpdate(pHistogram1, 20);
+    dwError = VmMetricsGetPrometheusData(pContext, &pszData, &dataLen);
+    if (dwError)
+    {
+        printf("FAIL: Error in GetPrometheusData for test: MixedTest, Error Code = %d\n", dwError);
+        goto error;
+    }
+
+    pszExpected = "# HELP counter1_count Mixed Test counter\n" \
+                    "# TYPE counter1_count counter\n" \
+                    "counter1_count 1\n" \
+                     "# HELP histogram2_duration_milliseconds Mixed Test histogram 2\n" \
+                    "# TYPE histogram2_duration_milliseconds histogram\n" \
+                    "histogram2_duration_milliseconds_bucket{le=\"1\"} 0\n" \
+                    "histogram2_duration_milliseconds_bucket{le=\"10\"} 1\n" \
+                    "histogram2_duration_milliseconds_bucket{le=\"100\"} 2\n" \
+                    "histogram2_duration_milliseconds_bucket{le=\"+Inf\"} 2\n" \
+                    "histogram2_duration_milliseconds_count 2\n" \
+                    "histogram2_duration_milliseconds_sum 36\n" \
+                    "# HELP gauge1_value Mixed Test gauge\n" \
+                    "# TYPE gauge1_value gauge\n" \
+                    "gauge1_value 2\n";
+
+    if (strcmp(pszData, pszExpected) == 0)
+    {
+        printf("PASS: Expected Data received for test: MixedTest1\n");
+    }
+    else
+    {
+        printf("FAIL: Unexpected Data received for test: MixedTest1\n");
+        goto error;
+    }
+
+    VmMetricsFreePrometheusData(pszData);
+
+    dwError = VmMetricsGaugeDelete(pContext, pGauge);
+    if (dwError)
+    {
+        printf("FAIL: Error in GaugeDelete for test: MixedTest, Error Code = %d\n", dwError);
+        goto error;
+    }
+
+    dwError = VmMetricsCounterDelete(pContext, pCounter);
+    if (dwError)
+    {
+        printf("FAIL: Error in CounterDelete for test: MixedTest, Error Code = %d\n", dwError);
+        goto error;
+    }
 
     dwError = VmMetricsGetPrometheusData(pContext, &pszData, &dataLen);
     if (dwError)
@@ -127,29 +180,15 @@ VmMetricsMixedTest()
                     "histogram2_duration_milliseconds_bucket{le=\"100\"} 2\n" \
                     "histogram2_duration_milliseconds_bucket{le=\"+Inf\"} 2\n" \
                     "histogram2_duration_milliseconds_count 2\n" \
-                    "histogram2_duration_milliseconds_sum 36\n" \
-                    "# HELP gauge1_value Mixed Test gauge\n" \
-                    "# TYPE gauge1_value gauge\n" \
-                    "gauge1_value 2\n" \
-                    "# HELP counter1_count Mixed Test counter\n" \
-                    "# TYPE counter1_count counter\n" \
-                    "counter1_count 1\n" \
-                    "# HELP histogram1_duration_milliseconds Mixed Test histogram 1\n" \
-                    "# TYPE histogram1_duration_milliseconds histogram\n" \
-                    "histogram1_duration_milliseconds_bucket{le=\"1\",label1=\"value1\",label2=\"value2\"} 0\n" \
-                    "histogram1_duration_milliseconds_bucket{le=\"5\",label1=\"value1\",label2=\"value2\"} 1\n" \
-                    "histogram1_duration_milliseconds_bucket{le=\"10\",label1=\"value1\",label2=\"value2\"} 1\n" \
-                    "histogram1_duration_milliseconds_bucket{le=\"+Inf\",label1=\"value1\",label2=\"value2\"} 2\n" \
-                    "histogram1_duration_milliseconds_count{label1=\"value1\",label2=\"value2\"} 2\n" \
-                    "histogram1_duration_milliseconds_sum{label1=\"value1\",label2=\"value2\"} 23\n";
+                    "histogram2_duration_milliseconds_sum 36\n";
 
     if (strcmp(pszData, pszExpected) == 0)
     {
-        printf("PASS: Expected Data received for test: MixedTest\n");
+        printf("PASS: Expected Data received for test: MixedTest2\n");
     }
     else
     {
-        printf("FAIL: Unexpected Data received for test: MixedTest\n");
+        printf("FAIL: Unexpected Data received for test: MixedTest2\n");
         goto error;
     }
 

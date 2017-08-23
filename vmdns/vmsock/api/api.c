@@ -111,6 +111,28 @@ error:
 }
 
 DWORD
+VmDnsSockEventQueueRemove(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    PVM_SOCKET           pSocket
+    )
+{
+    DWORD dwError = 0;
+
+#ifndef WIN32
+    if (!pQueue || !pSocket)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMSOCK_ERROR(dwError);
+    }
+
+    dwError = gpVmDnsSockPackage->pfnRemoveEventQueue(pQueue, pSocket);
+#endif
+
+error:
+    return dwError;
+}
+
+DWORD
 VmDnsSockWaitForEvent(
     PVM_SOCK_EVENT_QUEUE pQueue,
     int                  iTimeoutMS,
@@ -141,14 +163,27 @@ error:
 }
 
 VOID
-VmDnsSockCloseEventQueue(
+VmDnsSockShutdownEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     )
 {
     if (pQueue)
     {
-        gpVmDnsSockPackage->pfnCloseEventQueue(pQueue);
+        gpVmDnsSockPackage->pfnShutdownEventQueue(pQueue);
     }
+}
+
+VOID
+VmDnsSockFreeEventQueue(
+    PVM_SOCK_EVENT_QUEUE pQueue
+    )
+{
+#ifndef WIN32
+    if (pQueue)
+    {
+        gpVmDnsSockPackage->pfnFreeEventQueue(pQueue);
+    }
+#endif
 }
 
 DWORD

@@ -42,7 +42,6 @@
 
 #include <vmdircommon.h>
 #include <srvcommon.h>
-#include <metricscommon.h>
 
 #include <middlelayer.h>
 #include <vmdirserver.h>
@@ -101,7 +100,6 @@
 
 #include <vmdircommon.h>
 #include <srvcommon.h>
-#include <metricscommon.h>
 
 #include <middlelayer.h>
 #include <vmdirserver.h>

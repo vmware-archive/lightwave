@@ -181,6 +181,33 @@ VmMetricsFreePrometheusData(
     );
 
 /*
+ * Delete a counter metric
+ */
+DWORD
+VmMetricsCounterDelete(
+    PVM_METRICS_CONTEXT pContext,
+    PVM_METRICS_COUNTER pCounter
+    );
+
+/*
+ * Delete a gauge metric
+ */
+DWORD
+VmMetricsGaugeDelete(
+    PVM_METRICS_CONTEXT pContext,
+    PVM_METRICS_GAUGE pGauge
+    );
+
+/*
+ * Delete a histogram metric
+ */
+DWORD
+VmMetricsHistogramDelete(
+    PVM_METRICS_CONTEXT pContext,
+    PVM_METRICS_HISTOGRAM pHistogram
+    );
+
+/*
  * Destroy the metrics context structure
  */
 VOID

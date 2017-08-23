@@ -17,6 +17,11 @@
 #ifndef COMMON_INTERFACE_H_
 #define COMMON_INTERFACE_H_
 
+#include <vmmetrics.h>
+extern PVM_METRICS_CONTEXT pmContext;
+
+#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -203,6 +208,13 @@ typedef struct _VDIR_CONNECTION_CTX
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
+
+typedef enum _VDIR_RAFT_ROLE
+{
+    VDIR_RAFT_ROLE_CANDIDATE = 0,
+    VDIR_RAFT_ROLE_FOLLOWER,
+    VDIR_RAFT_ROLE_LEADER
+} VDIR_RAFT_ROLE;
 
 typedef struct _VDIR_ATTRIBUTE
 {

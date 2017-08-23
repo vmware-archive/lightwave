@@ -979,6 +979,7 @@ Lightwave POST service
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/server.xml
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
 %config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/vmsts-telegraf.conf
 
 %files server
 
@@ -1012,15 +1013,19 @@ Lightwave POST service
 
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
+%{_datadir}/config/vmca-telegraf.conf
+
 %{_datadir}/config/saslvmdird.conf
 %{_datadir}/config/vmdir.reg
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
 %{_datadir}/config/vmdir-rest.json
+%{_datadir}/config/vmdir-telegraf.conf
 
 %{_datadir}/config/vmdns.reg
 %{_datadir}/config/vmdns-rest.json
 %{_datadir}/config/vmdnsd-syslog-ng.conf
+%{_datadir}/config/vmdns-telegraf.conf
 
 %{_configdir}/firewall.json
 %{_configdir}/setfirewallrules.py
@@ -1080,6 +1085,8 @@ Lightwave POST service
 %{_datadir}/config/vmdir-client.reg
 %{_datadir}/config/vmdns-client.reg
 %{_datadir}/config/vmafdd-syslog-ng.conf
+%{_datadir}/config/telegraf.conf
+%{_datadir}/config/vmafd-telegraf.conf
 
 %{_jreextdir}/vmware-endpoint-certificate-store.jar
 %{_jreextdir}/client-domain-controller-cache.jar
@@ -1128,6 +1135,7 @@ Lightwave POST service
 %{_datadir}/config/post.reg
 %{_datadir}/config/postd-syslog-ng.conf
 %{_datadir}/config/post-client.reg
+%{_datadir}/config/post-telegraf.conf
 
 %files devel
 

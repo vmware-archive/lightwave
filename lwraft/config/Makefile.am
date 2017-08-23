@@ -4,6 +4,7 @@ lwraftconf_DATA = \
     post-client.reg \
     postd-syslog-ng.conf \
     saslpostd.conf \
-    post-rest.json
+    post-rest.json \
+    post-telegraf.conf
 
 bin_SCRIPTS = 

@@ -507,43 +507,43 @@ VmDnsNameEntryGetRecords(
 
 DWORD
 VmDnsForwarderInit(
-    PVMDNS_FORWARDER_CONETXT*   ppForwarder
+    PVMDNS_FORWARDER_CONTEXT*   ppForwarder
     );
 
 VOID
 VmDnsForwarderCleanup(
-    PVMDNS_FORWARDER_CONETXT    pForwarder
+    PVMDNS_FORWARDER_CONTEXT    pForwarder
     );
 
 DWORD
 VmDnsGetForwarders(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     PSTR**                      pppszForwarders,
     PDWORD                      pdwCount
     );
 
 DWORD
 VmDnsSetForwarders(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     DWORD                       dwCount,
     PSTR*                       ppszForwarders
     );
 
 DWORD
 VmDnsAddForwarder(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     PCSTR                       pszForwarder
     );
 
 DWORD
 VmDnsDeleteForwarder(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     PCSTR                       pszForwarder
     );
 
 DWORD
 VmDnsForwarderResolveRequest(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     BOOL                        bUseUDP,
     BOOL                        bRecusive,
     DWORD                       dwQuerySize,

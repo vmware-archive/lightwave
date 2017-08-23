@@ -14,9 +14,18 @@
 
 typedef enum
 {
+    VDIR_REST_AUTH_METHOD_UNDEF,
+    VDIR_REST_AUTH_METHOD_BASIC,
+    VDIR_REST_AUTH_METHOD_TOKEN
+
+} VDIR_REST_AUTH_METHOD;
+
+typedef enum
+{
     VDIR_REST_RSC_LDAP,
     VDIR_REST_RSC_OBJECT,
     VDIR_REST_RSC_ETCD,
+    VDIR_REST_RSC_METRICS,
     VDIR_REST_RSC_UNKNOWN,
     VDIR_REST_RSC_COUNT,
 
@@ -27,6 +36,8 @@ typedef struct _VDIR_REST_RESULT
     int         errCode;
     PSTR        pszErrMsg;
     PLW_HASHMAP pDataMap;
+    PSTR        pszData;
+    DWORD       dwDataLen;
     BOOLEAN     bErrSet;
 
 } VDIR_REST_RESULT, *PVDIR_REST_RESULT;
@@ -58,16 +69,18 @@ typedef struct _VDIR_REST_RESOURCE
 
 typedef struct _VDIR_REST_OPERATION
 {
-    PSTR                pszAuth;
-    PSTR                pszMethod;
-    PSTR                pszPath;
-    PSTR                pszSubPath;
-    PSTR                pszHeaderIfMatch;
-    json_t*             pjInput;
-    PLW_HASHMAP         pParamMap;
-    PVDIR_CONNECTION    pConn;
-    PVDIR_REST_RESULT   pResult;
-    PVDIR_REST_RESOURCE pResource;
+    PSTR                    pszAuth;
+    PSTR                    pszMethod;
+    PSTR                    pszPath;
+    PSTR                    pszSubPath;
+    PSTR                    pszHeaderIfMatch;
+    PSTR                    pszInput;
+    json_t*                 pjInput;
+    PLW_HASHMAP             pParamMap;
+    VDIR_REST_AUTH_METHOD   authMthd;
+    PVDIR_CONNECTION        pConn;
+    PVDIR_REST_RESULT       pResult;
+    PVDIR_REST_RESOURCE     pResource;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
@@ -82,6 +95,7 @@ typedef enum
 typedef struct _VDIR_REST_AUTH_TOKEN
 {
     VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
+    PSTR                        pszAccessToken;
     PSTR                        pszBindUPN;
 
 } VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
@@ -129,3 +143,11 @@ typedef struct _VDIR_REST_HEAD_CACHE
     PSID            pBuiltInAdminsGroupSid;
 
 } VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;
+
+//proxy.c
+typedef struct _VDIR_REST_CURL_RESPONSE
+{
+    PSTR    pResponse;
+    DWORD   dwResponseLen;
+} VDIR_REST_CURL_RESPONSE, *PVDIR_REST_CURL_RESPONSE;
+

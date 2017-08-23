@@ -385,3 +385,102 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+VmDirTestCreateSimpleUser(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszUserDN
+    )
+{
+    DWORD       dwError = 0;
+
+    PCSTR       valsCn[] = {pszCN, NULL};
+    PCSTR       valsClass[] = {OC_USER, NULL};
+
+    LDAPMod     mod[2]={
+                            {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
+                            {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
+                       };
+    LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
+
+    dwError = ldap_add_ext_s(pLd, pszUserDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestCreateSimpleContainer(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszContainerDN
+    )
+{
+    DWORD       dwError = 0;
+
+    PCSTR       valsCn[] = {pszCN, NULL};
+    PCSTR       valsClass[] = {OC_CONTAINER, NULL};
+
+    LDAPMod     mod[2]={
+                            {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
+                            {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
+                       };
+    LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
+
+    dwError = ldap_add_ext_s(pLd, pszContainerDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+BOOLEAN
+VmDirTestCanReadSingleEntry(
+    LDAP* pLd,
+    PCSTR pszBaseDn
+    )
+{
+    DWORD   dwError = 0;
+    LDAPMessage* pResult = NULL;
+    BOOLEAN bRtn = FALSE;
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszBaseDn,
+                LDAP_SCOPE_BASE,
+                NULL,
+                NULL,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                -1,
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldap_count_entries(pLd, pResult) == 1)
+    {
+        bRtn = TRUE;
+    }
+
+cleanup:
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return bRtn;
+
+error:
+    goto cleanup;
+}

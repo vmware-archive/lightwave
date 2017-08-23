@@ -24,8 +24,7 @@ VmDirRESTAuthTokenInit(
 
     if (!ppAuthToken)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -55,18 +54,13 @@ VmDirRESTAuthTokenParse(
     )
 {
     DWORD   dwError = 0;
-    DWORD   dwOIDCError = 0;
-    BOOLEAN bCacheRefreshed = FALSE;
     PSTR    pszAuthDataCp = NULL;
     PSTR    pszTokenType = NULL;
     PSTR    pszAccessToken = NULL;
-    PSTR    pszOIDCSigningCertPEM = NULL;
-    POIDC_ACCESS_TOKEN      pOidcAccessToken = NULL;
 
     if (!pAuthToken || IsNullOrEmptyString(pszAuthData))
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateStringA(pszAuthData, &pszAuthDataCp);
@@ -76,8 +70,7 @@ VmDirRESTAuthTokenParse(
     if (IsNullOrEmptyString(pszTokenType) ||
         IsNullOrEmptyString(pszAccessToken))
     {
-        dwError = VMDIR_ERROR_AUTH_BAD_DATA;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_AUTH_BAD_DATA);
     }
 
     if (VmDirStringCompareA(pszTokenType, "Bearer", FALSE) == 0)
@@ -90,46 +83,14 @@ VmDirRESTAuthTokenParse(
     }
     else
     {
-        dwError = VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED);
     }
 
-retry:
-    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
-    dwError = VmDirRESTCacheGetOIDCSigningCertPEM(
-            gpVdirRestCache, &pszOIDCSigningCertPEM);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwOIDCError = OidcAccessTokenBuild(
-            &pOidcAccessToken,
-            pszAccessToken,
-            pszOIDCSigningCertPEM,
-            NULL,
-            VMDIR_REST_DEFAULT_SCOPE,
-            VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
-
-    // TODO should not retry for genuine token validation error
-    if (dwOIDCError && !bCacheRefreshed)
-    {
-        dwError = VmDirRESTCacheRefresh(gpVdirRestCache);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        bCacheRefreshed = TRUE;
-
-        goto retry;
-    }
-
-    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA(
-            OidcAccessTokenGetSubject(pOidcAccessToken),
-            &pAuthToken->pszBindUPN);
+    dwError = VmDirAllocateStringA(pszAccessToken, &pAuthToken->pszAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszAuthDataCp);
-    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
-    OidcAccessTokenDelete(pOidcAccessToken);
     return dwError;
 
 error:
@@ -139,11 +100,86 @@ error:
     {
         VMDIR_LOG_ERROR(
                 VMDIR_LOG_MASK_ALL,
-                "%s failed, error (%d) OIDC error (%d)",
+                "%s failed, error (%d)",
                 __FUNCTION__,
-                dwError,
-                dwOIDCError);
+                dwError);
     }
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTAuthTokenValidate(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwOIDCError = 0;
+    BOOLEAN bCacheRefreshed = FALSE;
+    PSTR    pszOIDCSigningCertPEM = NULL;
+    POIDC_ACCESS_TOKEN  pOidcAccessToken = NULL;
+
+    if (!pAuthToken)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+retry:
+    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
+    dwError = VmDirRESTCacheGetOIDCSigningCertPEM(
+            gpVdirRestCache, &pszOIDCSigningCertPEM);
+
+    // cache isn't setup - cannot support token auth
+    dwError = dwError ? VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED : 0;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    OidcAccessTokenDelete(pOidcAccessToken);
+    dwOIDCError = OidcAccessTokenBuild(
+            &pOidcAccessToken,
+            pAuthToken->pszAccessToken,
+            pszOIDCSigningCertPEM,
+            NULL,
+            VMDIR_REST_DEFAULT_SCOPE,
+            VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
+
+    if (dwOIDCError == SSOERROR_TOKEN_INVALID_SIGNATURE ||
+        dwOIDCError == SSOERROR_TOKEN_INVALID_AUDIENCE ||
+        dwOIDCError == SSOERROR_TOKEN_EXPIRED)
+    {
+        dwError = VMDIR_ERROR_AUTH_BAD_DATA;
+    }
+    else if (dwOIDCError)
+    {
+        dwError = VMDIR_ERROR_OIDC_UNAVAILABLE;
+    }
+
+    // no need to refresh cache if user provided a bad token
+    if (dwError && dwError != VMDIR_ERROR_AUTH_BAD_DATA && !bCacheRefreshed)
+    {
+        dwError = VmDirRESTCacheRefresh(gpVdirRestCache);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        bCacheRefreshed = TRUE;
+
+        goto retry;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            OidcAccessTokenGetSubject(pOidcAccessToken),
+            &pAuthToken->pszBindUPN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
+    OidcAccessTokenDelete(pOidcAccessToken);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d) OIDC error (%d)",
+            __FUNCTION__,
+            dwError,
+            dwOIDCError);
     goto cleanup;
 }
 
@@ -154,6 +190,7 @@ VmDirFreeRESTAuthToken(
 {
     if (pAuthToken)
     {
+        VMDIR_SAFE_FREE_MEMORY(pAuthToken->pszAccessToken);
         VMDIR_SAFE_FREE_MEMORY(pAuthToken->pszBindUPN);
         VMDIR_SAFE_FREE_MEMORY(pAuthToken);
     }

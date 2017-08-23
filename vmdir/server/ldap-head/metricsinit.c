@@ -55,6 +55,7 @@ VmDirLdapMetricsInit(
                                             {{"code","LDAP_SASL_BIND_IN_PROGRESS"}},
                                             {{"code","LDAP_TIMELIMIT_EXCEEDED"}},
                                             {{"code","LDAP_SIZELIMIT_EXCEEDED"}},
+                                            {{"code","LDAP_NO_SUCH_OBJECT"}},
                                             {{"code","LDAP_UNKNOWN"}}};
 
     for (i=0; i < METRICS_LDAP_ERROR_COUNT; i++)

@@ -1,5 +1,5 @@
 vmcaconf_DATA = \
     vmca.reg  \
     vmcad-syslog-ng.conf \
-    certool.cfg
-
+    certool.cfg \
+    vmca-telegraf.conf

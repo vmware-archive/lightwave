@@ -16,7 +16,7 @@
 
 static
 DWORD
-VmMetricsMakeLabel(
+_VmMetricsMakeLabel(
     PVM_METRICS_LABEL pLabel,
     DWORD dwLabelCount,
     PSTR* pszLabelOut
@@ -24,7 +24,7 @@ VmMetricsMakeLabel(
 
 static
 DWORD
-VmMetricsGetCounterData(
+_VmMetricsGetCounterData(
     PVM_METRICS_COUNTER pCounter,
     PSTR pszData,
     DWORD dwDataLen,
@@ -34,7 +34,7 @@ VmMetricsGetCounterData(
 
 static
 DWORD
-VmMetricsGetGaugeData(
+_VmMetricsGetGaugeData(
     PVM_METRICS_GAUGE pGauge,
     PSTR pszData,
     DWORD dwDataLen,
@@ -44,7 +44,7 @@ VmMetricsGetGaugeData(
 
 static
 DWORD
-VmMetricsGetHistogramData(
+_VmMetricsGetHistogramData(
     PVM_METRICS_HISTOGRAM pHistogram,
     PSTR pszData,
     DWORD dwDataLen,
@@ -54,7 +54,7 @@ VmMetricsGetHistogramData(
 
 static
 VOID
-VmMetricsNoopHashMapPairFree(
+_VmMetricsNoopHashMapPairFree(
     PLW_HASHMAP_PAIR pPair,
     LW_PVOID pUnused
     );
@@ -82,6 +82,7 @@ VmMetricsInit(
     BAIL_ON_VM_METRICS_ERROR(dwError);
 
     pContext->pMetrics = NULL;
+
     dwError = pthread_rwlock_init(&pContext->rwLock, NULL);
     BAIL_ON_VM_METRICS_ERROR(dwError);
 
@@ -137,7 +138,7 @@ VmMetricsCounterNew(
 
     if (pLabel && iLabelCount)
     {
-        dwError = VmMetricsMakeLabel(pLabel, iLabelCount, &pCounter->pszLabel);
+        dwError = _VmMetricsMakeLabel(pLabel, iLabelCount, &pCounter->pszLabel);
         BAIL_ON_VM_METRICS_ERROR(dwError);
     }
     else
@@ -227,7 +228,7 @@ VmMetricsGaugeNew(
 
     if (pLabel && iLabelCount)
     {
-        dwError = VmMetricsMakeLabel(pLabel, iLabelCount, &pGauge->pszLabel);
+        dwError = _VmMetricsMakeLabel(pLabel, iLabelCount, &pGauge->pszLabel);
         BAIL_ON_VM_METRICS_ERROR(dwError);
     }
     else
@@ -320,7 +321,7 @@ VmMetricsHistogramNew(
 
     if (pLabel && iLabelCount)
     {
-        dwError = VmMetricsMakeLabel(pLabel, iLabelCount, &pHistogram->pszLabel);
+        dwError = _VmMetricsMakeLabel(pLabel, iLabelCount, &pHistogram->pszLabel);
         BAIL_ON_VM_METRICS_ERROR(dwError);
     }
     else
@@ -556,7 +557,7 @@ VmMetricsGetPrometheusData(
                     BAIL_ON_VM_METRICS_ERROR(dwError);
                 }
 
-                bufLen = VmMetricsGetCounterData(pCounter, NULL, 0, 0, bNameUsed);
+                bufLen = _VmMetricsGetCounterData(pCounter, NULL, 0, 0, bNameUsed);
 
                 while (dataLen + bufLen > allocatedSize)
                 {
@@ -573,7 +574,7 @@ VmMetricsGetPrometheusData(
                     realloc = FALSE;
                 }
 
-                dataLen += VmMetricsGetCounterData(pCounter, pszData, dataLen, bufLen, bNameUsed);
+                dataLen += _VmMetricsGetCounterData(pCounter, pszData, dataLen, bufLen, bNameUsed);
                 dataLen--;
                 bNameUsed = FALSE;
 
@@ -594,7 +595,7 @@ VmMetricsGetPrometheusData(
                     BAIL_ON_VM_METRICS_ERROR(dwError);
                 }
 
-                bufLen = VmMetricsGetGaugeData(pGauge, NULL, 0, 0, bNameUsed);
+                bufLen = _VmMetricsGetGaugeData(pGauge, NULL, 0, 0, bNameUsed);
 
                 while (dataLen + bufLen > allocatedSize)
                 {
@@ -611,7 +612,7 @@ VmMetricsGetPrometheusData(
                     realloc = FALSE;
                 }
 
-                dataLen += VmMetricsGetGaugeData(pGauge, pszData, dataLen, bufLen, bNameUsed);
+                dataLen += _VmMetricsGetGaugeData(pGauge, pszData, dataLen, bufLen, bNameUsed);
                 dataLen--;
                 bNameUsed = FALSE;
 
@@ -632,7 +633,7 @@ VmMetricsGetPrometheusData(
                     BAIL_ON_VM_METRICS_ERROR(dwError);
                 }
 
-                bufLen = VmMetricsGetHistogramData(pHistogram, NULL, 0, 0, bNameUsed);
+                bufLen = _VmMetricsGetHistogramData(pHistogram, NULL, 0, 0, bNameUsed);
 
                 while (dataLen + bufLen > allocatedSize)
                 {
@@ -649,7 +650,7 @@ VmMetricsGetPrometheusData(
                     realloc = FALSE;
                 }
 
-                dataLen += VmMetricsGetHistogramData(pHistogram, pszData, dataLen, bufLen, bNameUsed);
+                dataLen += _VmMetricsGetHistogramData(pHistogram, pszData, dataLen, bufLen, bNameUsed);
                 dataLen--;
                 bNameUsed = FALSE;
 
@@ -668,7 +669,7 @@ VmMetricsGetPrometheusData(
     *pDataLen = dataLen;
 
 cleanup:
-    LwRtlHashMapClear(pNamesMap, VmMetricsNoopHashMapPairFree, NULL);
+    LwRtlHashMapClear(pNamesMap, _VmMetricsNoopHashMapPairFree, NULL);
     LwRtlFreeHashMap(&pNamesMap);
     return dwError;
 
@@ -686,6 +687,167 @@ VmMetricsFreePrometheusData(
     )
 {
     VM_METRICS_SAFE_FREE_MEMORY(pszData);
+}
+
+/*
+ * Delete a counter metric
+ */
+DWORD
+VmMetricsCounterDelete(
+    PVM_METRICS_CONTEXT pContext,
+    PVM_METRICS_COUNTER pCounter
+    )
+{
+    DWORD dwError = 0;
+    PVM_METRICS_LIST_ENTRY pEntry = NULL;
+    PVM_METRICS_LIST_ENTRY pPrev = NULL;
+
+    if (!pContext || !pCounter)
+    {
+        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_METRICS_ERROR(dwError);
+    }
+
+    pthread_rwlock_wrlock(&pContext->rwLock);
+    pEntry = pContext->pMetrics;
+    while (pEntry)
+    {
+        if (pEntry->type == VM_METRICS_TYPE_COUNTER && pEntry->pData == pCounter)
+        {
+            if (!pPrev)
+            {
+                pContext->pMetrics = pEntry->pNext;
+            }
+            else
+            {
+                pPrev->pNext = pEntry->pNext;
+            }
+            VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszName);
+            VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszLabel);
+            VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszDescription);
+            VM_METRICS_SAFE_FREE_MEMORY(pCounter);
+            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            break;
+        }
+        pPrev = pEntry;
+        pEntry = pEntry->pNext;
+    }
+
+    pthread_rwlock_unlock(&pContext->rwLock);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Delete a gauge metric
+ */
+DWORD
+VmMetricsGaugeDelete(
+    PVM_METRICS_CONTEXT pContext,
+    PVM_METRICS_GAUGE pGauge
+    )
+{
+    DWORD dwError = 0;
+    PVM_METRICS_LIST_ENTRY pEntry = NULL;
+    PVM_METRICS_LIST_ENTRY pPrev = NULL;
+
+    if (!pContext || !pGauge)
+    {
+        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_METRICS_ERROR(dwError);
+    }
+
+    pthread_rwlock_wrlock(&pContext->rwLock);
+    pEntry = pContext->pMetrics;
+    while (pEntry)
+    {
+        if (pEntry->type == VM_METRICS_TYPE_GAUGE && pEntry->pData == pGauge)
+        {
+            if (!pPrev)
+            {
+                pContext->pMetrics = pEntry->pNext;
+            }
+            else
+            {
+                pPrev->pNext = pEntry->pNext;
+            }
+            VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszName);
+            VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszLabel);
+            VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszDescription);
+            VM_METRICS_SAFE_FREE_MEMORY(pGauge);
+            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            break;
+        }
+        pPrev = pEntry;
+        pEntry = pEntry->pNext;
+    }
+
+    pthread_rwlock_unlock(&pContext->rwLock);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Delete a histogram metric
+ */
+DWORD
+VmMetricsHistogramDelete(
+    PVM_METRICS_CONTEXT pContext,
+    PVM_METRICS_HISTOGRAM pHistogram
+    )
+{
+    DWORD dwError = 0;
+    PVM_METRICS_LIST_ENTRY pEntry = NULL;
+    PVM_METRICS_LIST_ENTRY pPrev = NULL;
+
+    if (!pContext || !pHistogram)
+    {
+        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_METRICS_ERROR(dwError);
+    }
+
+    pthread_rwlock_wrlock(&pContext->rwLock);
+    pEntry = pContext->pMetrics;
+    while (pEntry)
+    {
+        if (pEntry->type == VM_METRICS_TYPE_HISTOGRAM && pEntry->pData == pHistogram)
+        {
+            if (!pPrev)
+            {
+                pContext->pMetrics = pEntry->pNext;
+            }
+            else
+            {
+                pPrev->pNext = pEntry->pNext;
+            }
+            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszName);
+            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszLabel);
+            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszDescription);
+            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
+            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
+            VM_METRICS_SAFE_FREE_MEMORY(pHistogram);
+            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            break;
+        }
+        pPrev = pEntry;
+        pEntry = pEntry->pNext;
+    }
+
+    pthread_rwlock_unlock(&pContext->rwLock);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 /*
@@ -759,7 +921,7 @@ VmMetricsDestroy(
  */
 static
 DWORD
-VmMetricsMakeLabel(
+_VmMetricsMakeLabel(
     PVM_METRICS_LABEL pLabel,
     DWORD dwLabelCount,
     PSTR* pszLabelOut
@@ -818,7 +980,7 @@ error:
 
 static
 DWORD
-VmMetricsGetCounterData(
+_VmMetricsGetCounterData(
     PVM_METRICS_COUNTER pCounter,
     PSTR pszData,
     DWORD dwDataLen,
@@ -855,7 +1017,7 @@ VmMetricsGetCounterData(
 
 static
 DWORD
-VmMetricsGetGaugeData(
+_VmMetricsGetGaugeData(
     PVM_METRICS_GAUGE pGauge,
     PSTR pszData,
     DWORD dwDataLen,
@@ -892,7 +1054,7 @@ VmMetricsGetGaugeData(
 
 static
 DWORD
-VmMetricsGetHistogramData(
+_VmMetricsGetHistogramData(
     PVM_METRICS_HISTOGRAM pHistogram,
     PSTR pszData,
     DWORD dwDataLen,
@@ -963,7 +1125,7 @@ VmMetricsGetHistogramData(
 
 static
 VOID
-VmMetricsNoopHashMapPairFree(
+_VmMetricsNoopHashMapPairFree(
     PLW_HASHMAP_PAIR pPair,
     LW_PVOID pUnused
     )

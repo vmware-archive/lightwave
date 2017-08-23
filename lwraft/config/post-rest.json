@@ -10,7 +10,8 @@
     "host": "IPADDRESS_MARKER:7577",
     "basePath": "/v1",
     "produces": [
-        "application/json"
+        "application/json",
+        "text/plain"
     ],
     "tags": [
         {
@@ -24,6 +25,10 @@
         {
             "name": "etcd",
             "description": "Key-Value Etcd API implemented in RESTful interface"
+        },
+        {
+            "name": "metrics",
+            "description": "Metrics module for publishing metrics data"
         }
     ],
     "paths": {
@@ -469,6 +474,26 @@
                   "etcd"
                 ]
             }
+        },
+        "/post/metrics": {
+            "get": {
+                "summary": "Get metrics data",
+                "description": "Get metrics data in Prometheus format",
+                "produces": [
+                    "text/plain"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metrics Response",
+                        "schema": {
+                            "$ref": "#/definitions/MetricsResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "metrics"
+                ]
+            }
         }
     },
     "definitions": {
@@ -864,6 +889,11 @@
                 "MOD",
                 "VALUE"
             ]
+        },
+        "MetricsResponse": {
+            "type": "object",
+            "properties": {
+            }
         }
     }
 }

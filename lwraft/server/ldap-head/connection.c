@@ -116,6 +116,12 @@ _VmDirPingAcceptThr(
     DWORD   dwPort
     );
 
+static
+VOID
+_VmDirUpdateErrorCount(
+    DWORD dwErrCode
+    );
+
 void
 VmDirDeleteConnection(
     VDIR_CONNECTION **conn
@@ -552,6 +558,9 @@ ProcessAConnection(
    int            reTries = 0;
    BOOLEAN                      bDownOpThrCount = FALSE;
    PVDIR_CONNECTION_CTX pConnCtx = NULL;
+   int            metricsTag = -1;
+   uint64_t       iStartTime = 0;
+   uint64_t       iEndTime = 0;
 
    // increment operation thread counter
    retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
@@ -641,7 +650,8 @@ ProcessAConnection(
          {
              VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: ber_get_next() peer (%s) disconnected",
                  __func__, pConn->szClientIP);
-         } else
+         }
+         else
          {
              VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() call failed with errno = %d peer (%s)",
                   __func__, errno, pConn->szClientIP);
@@ -680,6 +690,8 @@ ProcessAConnection(
       //
       pConn->SuperLogRec.iStartTime = pConn->SuperLogRec.iStartTime ? pConn->SuperLogRec.iStartTime : VmDirGetTimeInMilliSec();
 
+      iStartTime = VmDirGetTimeInMilliSec();
+
       switch (tag)
       {
          case LDAP_REQ_BIND:
@@ -688,32 +700,37 @@ ProcessAConnection(
             {
                 _VmDirCollectBindSuperLog(pConn, pOperation); // ignore error
             }
-
+            metricsTag = METRICS_LDAP_OP_BIND;
             break;
 
          case LDAP_REQ_ADD:
             retVal = VmDirPerformAdd(pOperation);
+            metricsTag = METRICS_LDAP_OP_ADD;
             break;
 
          case LDAP_REQ_SEARCH:
             retVal = VmDirPerformSearch(pOperation);
+            metricsTag = METRICS_LDAP_OP_SEARCH;
             break;
 
          case LDAP_REQ_UNBIND:
             retVal = VmDirPerformUnbind(pOperation);
+            metricsTag = METRICS_LDAP_OP_UNBIND;
             break;
 
          case LDAP_REQ_MODIFY:
              retVal = VmDirPerformModify(pOperation);
+             metricsTag = METRICS_LDAP_OP_MODIFY;
              break;
 
          case LDAP_REQ_DELETE:
              retVal = VmDirPerformDelete(pOperation);
+             metricsTag = METRICS_LDAP_OP_DELETE;
              break;
 
          case LDAP_REQ_MODDN:
-              retVal = VmDirPerformRename(pOperation);
-            break;
+             retVal = VmDirPerformRename(pOperation);
+             break;
 
          case LDAP_REQ_COMPARE:
          case LDAP_REQ_ABANDON:
@@ -731,7 +748,14 @@ ProcessAConnection(
             break;
       }
 
+      iEndTime = VmDirGetTimeInMilliSec();
+      if (metricsTag >= 0)
+      {
+            VmMetricsHistogramUpdate(pLdapRequestDuration[metricsTag], VMDIR_RESPONSE_TIME(iEndTime-iStartTime));
+      }
+
       pConn->SuperLogRec.iEndTime = VmDirGetTimeInMilliSec();
+
       VmDirOPStatisticUpdate(tag, pConn->SuperLogRec.iEndTime - pConn->SuperLogRec.iStartTime);
 
       if (tag != LDAP_REQ_BIND)
@@ -740,6 +764,8 @@ ProcessAConnection(
 
          _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
       }
+
+      _VmDirUpdateErrorCount(pOperation->ldapResult.errCode);
 
       VmDirFreeOperation(pOperation);
       pOperation = NULL;
@@ -1323,5 +1349,104 @@ _VmDirPingAcceptThr(
     _VmDirPingIPV4AcceptThr(dwPort);
     _VmDirPingIPV6AcceptThr(dwPort);
 
+    return;
+}
+
+static
+VOID
+_VmDirUpdateErrorCount(
+    DWORD dwErrCode
+    )
+{
+    switch (dwErrCode)
+    {
+        case LDAP_SUCCESS:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SUCCESS]);
+            break;
+
+        case LDAP_UNAVAILABLE:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNAVAILABLE]);
+            break;
+
+        case LDAP_SERVER_DOWN:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SERVER_DOWN]);
+            break;
+
+        case LDAP_UNWILLING_TO_PERFORM:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNWILLING_TO_PERFORM]);
+            break;
+
+        case LDAP_INVALID_DN_SYNTAX:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INVALID_DN_SYNTAX]);
+            break;
+
+        case LDAP_NO_SUCH_ATTRIBUTE:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NO_SUCH_ATTRIBUTE]);
+            break;
+
+        case LDAP_INVALID_SYNTAX:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INVALID_SYNTAX]);
+            break;
+
+        case LDAP_UNDEFINED_TYPE:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNDEFINED_TYPE]);
+            break;
+
+        case LDAP_TYPE_OR_VALUE_EXISTS:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_TYPE_OR_VALUE_EXISTS]);
+            break;
+
+        case LDAP_OBJECT_CLASS_VIOLATION:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_OBJECT_CLASS_VIOLATION]);
+            break;
+
+        case LDAP_ALREADY_EXISTS:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_ALREADY_EXISTS]);
+            break;
+
+        case LDAP_CONSTRAINT_VIOLATION:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_CONSTRAINT_VIOLATION]);
+            break;
+
+        case LDAP_NOT_ALLOWED_ON_NONLEAF:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NOT_ALLOWED_ON_NONLEAF]);
+            break;
+
+        case LDAP_PROTOCOL_ERROR:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_PROTOCOL_ERROR]);
+            break;
+
+        case LDAP_INVALID_CREDENTIALS:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INVALID_CREDENTIALS]);
+            break;
+
+        case LDAP_INSUFFICIENT_ACCESS:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INSUFFICIENT_ACCESS]);
+            break;
+
+        case LDAP_AUTH_METHOD_NOT_SUPPORTED:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_AUTH_METHOD_NOT_SUPPORTED]);
+            break;
+
+        case LDAP_SASL_BIND_IN_PROGRESS:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SASL_BIND_IN_PROGRESS]);
+            break;
+
+        case LDAP_TIMELIMIT_EXCEEDED:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_TIMELIMIT_EXCEEDED]);
+            break;
+
+        case LDAP_SIZELIMIT_EXCEEDED:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SIZELIMIT_EXCEEDED]);
+            break;
+
+        case LDAP_NO_SUCH_OBJECT:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NO_SUCH_OBJECT]);
+            break;
+
+        default:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNKNOWN]);
+            break;
+    }
     return;
 }

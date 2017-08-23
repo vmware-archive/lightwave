@@ -84,6 +84,7 @@ pwd
 
 buildSolution VMCertStoreSnapIn $BUILD_CONFIG
 buildSolution VMDirSnapIn $BUILD_CONFIG
+buildSolution LWRaftSnapIn $BUILD_CONFIG
 buildSolution VMPSCHighAvailabilitySnapIn $BUILD_CONFIG
 buildSolution VMRestSsoSnapIn $BUILD_CONFIG
 buildSolution VMCASnapIn $BUILD_CONFIG

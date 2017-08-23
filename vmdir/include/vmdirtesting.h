@@ -376,6 +376,26 @@ VmDirTestGetGuid(
     PSTR *ppszGuid
     );
 
+DWORD
+VmDirTestCreateSimpleUser(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszUserDN
+    );
+
+DWORD
+VmDirTestCreateSimpgleContainer(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszContainerDN
+    );
+
+BOOLEAN
+VmDirTestCanReadSingleEntry(
+    LDAP* pLd,
+    PCSTR pszBaseDn
+    );
+
 #define TestAssertEquals(a, b) if (a != b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertNotEquals(a, b) if (a == b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
 

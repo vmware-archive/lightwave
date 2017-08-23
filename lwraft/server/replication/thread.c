@@ -2886,6 +2886,22 @@ error:
     goto cleanup;
 }
 
+VOID
+VmDirRaftGetRole(VDIR_RAFT_ROLE *pRole)
+{
+    BOOLEAN bLock = FALSE;
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (gRaftState.clusterSize < 2)
+    {
+        *pRole = VDIR_RAFT_ROLE_LEADER;
+    }
+    else
+    {
+        *pRole = gRaftState.role;
+    }
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+}
+
 BOOLEAN
 VmDirRaftNeedReferral(PCSTR pszReqDn)
 {

@@ -40,6 +40,11 @@ VmDirRESTAuthTokenParse(
     PCSTR                   pszAuthData
     );
 
+DWORD
+VmDirRESTAuthTokenValidate(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
+    );
+
 VOID
 VmDirFreeRESTAuthToken(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
@@ -294,6 +299,18 @@ VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
     PSID*   ppBuiltInAdminsGroupSid
     );
 
+// metricsapi.c
+DWORD
+VmDirRESTGetMetricsModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTMetricsGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
 // objectapi.c
 DWORD
 VmDirRESTGetObjectModule(
@@ -503,4 +520,14 @@ VmDirRESTLoadVmAfdAPI(
 VOID
 VmDirRESTUnloadVmAfdAPI(
     PVDIR_VMAFD_API pVmAfdAPI
+    );
+
+// proxy.c
+DWORD
+VmDirRESTForwardRequest(
+    PVDIR_REST_OPERATION pRestOp,
+    uint32_t dwParamCount,
+    PREST_REQUEST pRequest,
+    PREST_RESPONSE* ppResponse,
+    PVMREST_HANDLE pRESTHandle
     );

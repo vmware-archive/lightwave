@@ -1069,13 +1069,13 @@ AC_DEFINE_UNQUOTED(LWRAFT_LOG_DIR, "$LWRAFT_LOG_DIR", [Log directory])
 
 #--------------------------------------------------------------------
 
-AC_ARG_WITH([version],
-    [AC_HELP_STRING([--with-version], [set the version (default: 1.3.0)])],
+AC_ARG_WITH([psc-version],
+    [AC_HELP_STRING([--with-psc-version], [set the PSC version (default: 1.0)])],
     [
         psc_version="$withval"
     ],
     [
-        psc_version="1.3.0"
+        psc_version="1.0"
     ])
 AC_SUBST(psc_version)
 AS_AC_EXPAND(VDIR_PSC_VERSION, $psc_version)
@@ -1471,10 +1471,14 @@ AC_SUBST(pscsetupjarsdir)
 
 #--------------------------------------------------------------------
 
+vmmetricsconfdir="$datadir/config"
+AC_SUBST(vmmetricsconfdir)
+
 AC_CONFIG_FILES([Makefile
                  vmmetrics/Makefile
                  vmmetrics/include/Makefile
                  vmmetrics/include/public/Makefile
+                 vmmetrics/config/Makefile
                  vmmetrics/testing/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile

@@ -105,6 +105,10 @@ error:
             retCode = 27;
             pszErrorMsg = "Server is unwilling to perform request.";
             break;
+        case VMDIR_ERROR_UNAVAILABLE:
+            retCode = 28;
+            pszErrorMsg = "Server is not available.";
+            break;
         default:
             VmDirGetErrorMessage(dwError, &pszErrorDesc);
             retCode = 1;

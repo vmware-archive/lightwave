@@ -18,9 +18,11 @@ librest_head_la_SOURCES += \
     ldapapi.c \
     ldapcontrol.c \
     lightwave.c \
+    metricsapi.c \
     objectapi.c \
     operation.c \
     param.c \
+	proxy.c \
     resource.c \
     result.c \
     vmafd.c
@@ -36,6 +38,7 @@ librest_head_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/server/include \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @JANSSON_INCLUDES@ \

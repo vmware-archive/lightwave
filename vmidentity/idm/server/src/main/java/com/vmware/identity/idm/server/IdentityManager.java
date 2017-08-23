@@ -8524,6 +8524,26 @@ public class IdentityManager implements IIdentityManager {
      * {@inheritDoc}
      */
     @Override
+    public void setTenantCredentials(String tenantName,
+            IIdmServiceContext serviceContext) throws  IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setTenantCredentials"))
+        {
+            try
+            {
+                this.setTenantCredentials(tenantName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public PrivateKey getTenantPrivateKey(String tenantName,
             IIdmServiceContext serviceContext) throws  IDMException
     {

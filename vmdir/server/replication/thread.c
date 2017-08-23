@@ -216,6 +216,12 @@ vdirReplicationThrFun(
     VMDIR_REPLICATION_CREDENTIALS   sCreds = {0};
     VMDIR_REPLICATION_CONNECTION    sConnection = {0};
     VMDIR_REPLICATION_CONTEXT       sContext = {0};
+    uint64_t                        uiCycleStartTime = 0;
+    uint64_t                        uiCycleEndTime = 0;
+    uint64_t                        uiConnectStartTime = 0;
+    uint64_t                        uiConnectEndTime = 0;
+    uint64_t                        uiSyncStartTime = 0;
+    uint64_t                        uiSyncEndTime = 0;
 
     /*
      * This is to address the backend's writer mutex contention problem so that
@@ -251,7 +257,9 @@ vdirReplicationThrFun(
             VmDirSleep(1000);
             continue;
         }
+
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Executing replication cycle %u.", gVmdirGlobals.dwReplCycleCounter + 1 );
+        uiCycleStartTime = VmDirGetTimeInMilliSec();
 
         // purge RAs that have been marked as isDeleted = TRUE
         VmDirRemoveDeletedRAsFromCache();
@@ -297,18 +305,42 @@ vdirReplicationThrFun(
                 replAgr->oldPasswordFailTime = 0;
             }
 
+            uiConnectStartTime = VmDirGetTimeInMilliSec();
+
             retVal = _VmDirReplicationConnect(&sContext, replAgr, &sCreds, &sConnection);
             if (retVal || sConnection.pLd == NULL)
             {
+                if (replAgr->ReplMetrics.pReplConnectFailures)
+                {
+                    VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplConnectFailures);
+                }
                 continue;
             }
+            uiConnectEndTime = VmDirGetTimeInMilliSec();
 
+            if (replAgr->ReplMetrics.pReplConnectDuration)
+            {
+                VmMetricsHistogramUpdate(replAgr->ReplMetrics.pReplConnectDuration,
+                            VMDIR_RESPONSE_TIME(uiConnectEndTime-uiConnectStartTime));
+            }
+            uiSyncStartTime = VmDirGetTimeInMilliSec();
             _VmDirConsumePartner(&sContext, replAgr, &sConnection);
+            uiSyncEndTime = VmDirGetTimeInMilliSec();
+
+            if (replAgr->ReplMetrics.pReplSyncDuration)
+            {
+                VmMetricsHistogramUpdate(replAgr->ReplMetrics.pReplSyncDuration,
+                            VMDIR_RESPONSE_TIME(uiSyncEndTime-uiSyncStartTime));
+            }
 
             _VmDirReplicationDisconnect(&sConnection);
         }
+
+        uiCycleEndTime = VmDirGetTimeInMilliSec();
         VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Done executing the replication cycle.");
 
+        VmMetricsHistogramUpdate(pReplCycleDuration,
+                VMDIR_RESPONSE_TIME(uiCycleEndTime-uiCycleStartTime));
 
         VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
         gVmdirGlobals.dwReplCycleCounter++;
@@ -1381,10 +1413,23 @@ replcycledone:
                     replAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
+            VmMetricsGaugeSet(replAgr->ReplMetrics.pReplUsn,
+                        VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10));
+            VmMetricsCounterAdd(replAgr->ReplMetrics.pReplChanges,
+                        VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10) - initUsn);
+
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
                 "Replication supplier %s USN range (%llu,%s) processed.",
                 replAgr->ldapURI, initUsn, replAgr->lastLocalUsnProcessed.lberbv_val);
         }
+        else
+        {
+            VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
+        }
+    }
+    else
+    {
+        VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
     }
 
 cleanup:
@@ -1395,6 +1440,7 @@ cleanup:
     return;
 
 ldaperror:
+    VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error code (%d)", __FUNCTION__,retVal);
 
     goto cleanup;

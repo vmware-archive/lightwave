@@ -36,6 +36,7 @@
 #define VMDIR_RAFT_ERROR_BASE             500
 #define VMDIR_SCHEMA_ERROR_BASE           600
 #define VMDIR_BACKEND_ERROR_BASE          700
+#define VMDIR_REST_PROXY_ERROR_BASE       800
 
 #define VMDIR_SUCCESS   0
 
@@ -110,6 +111,7 @@
 #define VMDIR_ERROR_TOKEN_IN_USE                      (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 105 )    // 9205
 #define VMDIR_ERROR_NO_MYSELF                         (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 106 )    // 9206
 #define VMDIR_ERROR_INSUFFICIENT_ACCESS               (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 107)     // 9207
+#define VMDIR_ERROR_ACL_VIOLATION                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 108)     // 9208
 
 // user account management 9230 ~ 9269
 #define VMDIR_ERROR_PASSWORD_TOO_LONG                 (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 130 )    // 9230
@@ -200,6 +202,15 @@
 #define VMDIR_ERROR_BACKEND_ENTRY_EXISTS              (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 6 )  // 9706
 #define VMDIR_ERROR_BACKEND_OPERATIONS                (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 7 )  // 9707
 #define VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND   (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 8 )  // 9708
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// post rest proxy error (range 9800 - 9899)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+#define IS_VMDIR_REST_PROXY_ERROR_SPACE(n) \
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 99) )
+
+#define VMDIR_ERROR_CURLINIT_FAILED                   (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 0 )  // 9800
+#define VMDIR_ERROR_CURL_ERROR                        (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 1 )  // 9801
 
 #endif /* __VDIR_ERRORCODE_H__ */
 

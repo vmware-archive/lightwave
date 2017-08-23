@@ -106,6 +106,7 @@ VmDirToLDAPError(
                 break;
 
             case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
+            case VMDIR_ERROR_AUTH_BAD_DATA:
                 dwError = LDAP_INVALID_CREDENTIALS;
                 break;
 

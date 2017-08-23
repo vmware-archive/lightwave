@@ -789,6 +789,12 @@ VmDirSetupHostInstance(
     PSTR    pszLotusServerNameCanon = NULL;
     int     err = 0;
     int     i = 0;
+    PVM_DIR_CONNECTION pIPCConnection = NULL;
+
+    if (VmDirOpenClientConnection(&pIPCConnection) != 0)
+    {   // POST is not listen on IPC port
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+    }
 
     // Generate an initial DC account password and store it in the registry.
 
@@ -845,6 +851,7 @@ VmDirSetupHostInstance(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY( pszLotusServerNameCanon );
+    VmDirCloseClientConnection(pIPCConnection);
     return dwError;
 
 error:
@@ -918,6 +925,7 @@ VmDirJoin(
     PSTR    pszErrMsg = NULL;
     LDAP*   pLd = NULL;
     PVMDIR_REPL_STATE pReplState = NULL;
+    PVM_DIR_CONNECTION pIPCConnection = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -925,6 +933,11 @@ VmDirJoin(
     {
         dwError =  VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (VmDirOpenClientConnection(&pIPCConnection) != 0)
+    {   // POST is not listen on IPC port
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
 
     // Determine the name of lotus server
@@ -1015,6 +1028,7 @@ cleanup:
         ldap_unbind_ext_s(pLd, NULL, NULL);
     }
     VmDirFreeReplicationStateInternal(pReplState);
+    VmDirCloseClientConnection(pIPCConnection);
     return dwError;
 
 error:
