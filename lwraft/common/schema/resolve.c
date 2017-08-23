@@ -121,8 +121,8 @@ error:
 
 DWORD
 VmDirLdapOcResolveSup(
-    PVDIR_LDAP_SCHEMA           pSchema,
-    PVDIR_LDAP_OBJECT_CLASS     pOc
+    PVDIR_LDAP_SCHEMA       pSchema,
+    PVDIR_LDAP_OBJECT_CLASS pOc
     )
 {
     DWORD   dwError = 0;

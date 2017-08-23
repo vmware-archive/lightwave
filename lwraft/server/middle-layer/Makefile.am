@@ -26,6 +26,7 @@ libmiddle_layer_la_SOURCES = \
     pscache.c \
     sasl.c \
     saslsockbuf.c \
+    schema.c \
     search.c \
     specialsearch.c \
     srputil.c \

@@ -106,7 +106,7 @@ VmDirFreeMemberships(
 
 DWORD
 VmDirLoadIndex(
-    BOOLEAN bFirstboot
+    VOID
     );
 
 // init.c
@@ -189,13 +189,8 @@ VmDirLoadSchema(
     );
 
 DWORD
-InitializeSchemaEntries(
+VmDirSchemaInitializeSubtree(
     PVDIR_SCHEMA_CTX    pSchemaCtx
-    );
-
-DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
     );
 
 /* service.c */
@@ -336,8 +331,7 @@ VmDirParseArgs(
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode,
-    PBOOLEAN    pbPatchSchema
+    PBOOLEAN    pbConsoleMode
     );
 
 VOID

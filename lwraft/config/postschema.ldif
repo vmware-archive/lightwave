@@ -2777,3 +2777,28 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
+
+############################################################
+# Attribute Indices
+#
+# This file contains user application indices only.
+# Directory operational indices are maintained in
+# lwraft/server/indexcfg/defines.h.
+#
+# Attribute index definition in ABNF:
+#
+#   AttributeIndexDescription = LPAREN WSP
+#       [ SP "NAME" SP qdescrs ]      ; attribute type name
+#       [ SP "GLOBALLY-UNIQUE" ]      ; value uniqueness
+#
+# Example:
+#
+#   attributeIndices: (
+#       NAME 'example'
+#       GLOBALLY-UNIQUE
+#       )
+############################################################
+
+attributeIndices: (
+    NAME 'uid'
+    )

@@ -153,7 +153,7 @@ VmDirInitBackend(
     dwError = VmDirLoadSchema(&bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadIndex(bInitializeEntries);
+    dwError = VmDirLoadIndex();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // prepare USNList to guarantee safe USN for replication
@@ -245,7 +245,6 @@ VmDirInit(
     BOOLEAN bWaitTimeOut = FALSE;
     VMDIR_RUNMODE runMode = VmDirdGetRunMode();
     BOOLEAN bDirtyShutdown = FALSE;
-    DWORD   dwLdapPort = VmDirGetLdapPort();
 
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -305,56 +304,28 @@ VmDirInit(
     dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bPatchSchema)
+    if (runMode == VMDIR_RUNMODE_NORMAL)
     {
-        if (IsNullOrEmptyString(gVmdirGlobals.pszBootStrapSchemaFile))
+        dwError = VmDirRpcServerInit();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIpcServerInit();
+        BAIL_ON_VMDIR_ERROR (dwError);
+
+        dwError = VmDirReplicationLibInit();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (gVmdirGlobals.bTrackLastLoginTime)
         {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "Schema file must be provided in schema patch mode (-u option)" );
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            dwError = VmDirInitTrackLastLoginThread();
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-
-        // Check default LDAP port availability - If it fails, then it means
-        // another lwraftd process is running in normal mode.
-        dwError = VmDirCheckPortAvailability(dwLdapPort);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
-
-        dwError = VmDirSchemaPatchViaFile(
-                gVmdirGlobals.pszBootStrapSchemaFile);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
-
-        (VOID)VmDirSetAdministratorPasswordNeverExpires();
     }
-    else
+    else if (runMode == VMDIR_RUNMODE_RESTORE)
     {
-        if ( runMode == VMDIR_RUNMODE_NORMAL )
-        {
-            dwError = VmDirRpcServerInit();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirIpcServerInit();
-            BAIL_ON_VMDIR_ERROR (dwError);
-
-            dwError = VmDirReplicationLibInit();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if (gVmdirGlobals.bTrackLastLoginTime)
-            {
-                dwError = VmDirInitTrackLastLoginThread();
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-        else if (runMode == VMDIR_RUNMODE_RESTORE)
-        {
-            // TBD: What happens if server is started in restore mode even when it has not been promoted?
-            dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
-            BAIL_ON_VMDIR_ERROR( dwError );
-        }
+        // TBD: What happens if server is started in restore mode even when it has not been promoted?
+        dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
+        BAIL_ON_VMDIR_ERROR( dwError );
     }
 
     if (bWriteInvocationId) // Logic for backward compatibility. Needs to come after schema patch logic.
@@ -371,7 +342,7 @@ VmDirInit(
                                         5000);  // wait time 5 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!(VmDirdGetRestoreMode() || gVmdirGlobals.bPatchSchema))
+    if (!VmDirdGetRestoreMode())
     {
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -683,7 +654,7 @@ InitializeVmdirdSystemEntries(
     iError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
-    iError = InitializeSchemaEntries(pSchemaCtx);
+    iError = VmDirSchemaInitializeSubtree(pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
     iError = InitializeCFGEntries(pSchemaCtx);

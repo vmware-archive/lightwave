@@ -98,10 +98,10 @@ error:
 
 /*
  * Initialize schemacontext subtree entries
- * Should be called if InitializeSchema() results pbWriteSchemaEntry = TRUE
+ * Should be called if VmDirLoadSchema() results pbWriteSchemaEntry = TRUE
  */
 DWORD
-InitializeSchemaEntries(
+VmDirSchemaInitializeSubtree(
     PVDIR_SCHEMA_CTX    pSchemaCtx
     )
 {
@@ -126,48 +126,6 @@ cleanup:
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
-    goto cleanup;
-}
-
-/*
- * During upgrade, we can patch schema via this function.
- *
- * INPUT:
- * new version of Lotus schema file
- */
-DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
-    )
-{
-    DWORD    dwError = 0;
-    PVDIR_SCHEMA_CTX    pOldSchemaCtx = NULL;
-    PVDIR_SCHEMA_CTX    pNewSchemaCtx = NULL;
-
-    dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaCtxAcquire(&pNewSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirPatchLocalSchemaObjects(pOldSchemaCtx, pNewSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirSchemaCtxRelease(pOldSchemaCtx);
-    VmDirSchemaCtxRelease(pNewSchemaCtx);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
-
     goto cleanup;
 }
 

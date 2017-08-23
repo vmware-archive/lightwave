@@ -93,8 +93,7 @@ VmDirPatchRemoteSchemaObjects(
 
     if (!pLd || !pNewSchema)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirLdapSchemaInit(&pCurSchema);

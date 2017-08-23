@@ -26,8 +26,7 @@ VmDirLdapAtMerge(
 
     if (!ppMergedAt || !(pOldAt || pNewAt))
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pNewAt)
@@ -140,8 +139,7 @@ VmDirLdapOcMerge(
 
     if (!ppMergedOc || !(pOldOc || pNewOc))
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pNewOc)
@@ -201,8 +199,7 @@ VmDirLdapCrMerge(
 
     if (!ppMergedCr || !(pOldCr || pNewCr))
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pNewCr)
@@ -276,8 +273,7 @@ VmDirLdapSchemaMerge(
 
     if (!pOldSchema || !pNewSchema || !ppMergedSchema)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirLdapSchemaCopy(pOldSchema, &pMergedSchema);
