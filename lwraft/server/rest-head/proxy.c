@@ -302,13 +302,13 @@ VmDirRESTFormHttpURL(
 
             // Copy parameter
             dwError = VmDirStringCpyA(
-                            pszQuery + currQueryLen,
-                            VmDirStringLenA(pszEncodedParam),
+                            &pszQuery[currQueryLen],
+                            VmDirStringLenA(pszEncodedParam) + 1,
                             pszEncodedParam);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        currQueryLen += VmDirStringLenA(pszEncodedParam);
+        currQueryLen = VmDirStringLenA(pszQuery);
         VMDIR_SAFE_FREE_MEMORY(pszEncodedParam);
         VMDIR_SAFE_FREE_MEMORY(pszValue);
         VMDIR_SAFE_FREE_MEMORY(pszKey);
