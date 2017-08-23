@@ -135,7 +135,7 @@ Development libraries to communicate with Lightwave services
 
 %package post
 Summary: Lightwave POST Service
-Requires: lightwave-client = %{_version}
+Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
 
