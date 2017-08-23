@@ -85,13 +85,6 @@
         VMDIR_SF_INIT(.bIsNumeric, FALSE)                                \
     },                                                                   \
     {                                                                    \
-        VMDIR_SF_INIT(.pszAttrName,  ATTR_UID),                          \
-        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
-        VMDIR_SF_INIT(.bScopeEditable, TRUE),                            \
-        VMDIR_SF_INIT(.bGlobalUniq, FALSE),                              \
-        VMDIR_SF_INIT(.bIsNumeric, FALSE)                                \
-    },                                                                   \
-    {                                                                    \
         VMDIR_SF_INIT(.pszAttrName,  ATTR_KRB_SPN),                      \
         VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
         VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
