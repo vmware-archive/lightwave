@@ -379,6 +379,14 @@ extern "C" {
            BAIL_ON_VMDIR_ERROR(errCode);          \
         }
 
+// For all curl errors
+#define BAIL_ON_CURL_ERROR(dwCurlError)                                     \
+    if (dwCurlError)                                                        \
+    {                                                                       \
+        VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "[%s,%d]", __FILE__, __LINE__); \
+        goto curlerror;                                                     \
+    }
+
 // see ldap.h for other LDAP error code and range definitions.
 #define LDAP_SERVER_ERROR(n)        LDAP_RANGE((n),0x01,0x0e) /* 1 ~ 15 */
 

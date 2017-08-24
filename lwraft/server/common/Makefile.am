@@ -11,6 +11,7 @@ noinst_LTLIBRARIES = libsrvcommon.la
 
 libsrvcommon_la_SOURCES = \
     candidates.c \
+    curltovmdirerror.c \
     entryencodedecode.c \
     krbsrvutil.c \
     oprequestutil.c \
