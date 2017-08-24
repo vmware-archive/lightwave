@@ -191,8 +191,11 @@ error:
 }
 
 /*
+ * Note: This function is only for VMware internal usage. It will never be
+ * exercised by any external users.
+ *
  * If upgrading from 6.5 or lower, use this function to patch schema.
- * Should be called if InitializeSchema() results pbLegacyDataLoaded = TRUE
+ * Should be called if VmDirLoadSchema() results pbLegacyDataLoaded = TRUE
  *
  * INPUT:
  * new version of Lotus schema file

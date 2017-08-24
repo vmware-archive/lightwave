@@ -14,11 +14,18 @@
 
 #include "../includes.h"
 
+/*
+ * Note: This function is only for VMware internal usage. It will never be
+ * exercised by any external users.
+ */
 DWORD
 VmDirPatchLocalSubSchemaSubEntry(
     VOID
     )
 {
+#ifdef LIGHTWAVE_BUILD
+    return 0;
+#else
     DWORD   dwError = 0;
     PVDIR_ENTRY pSchemaEntry = NULL;
     PVDIR_LEGACY_SCHEMA pLegacySchema = NULL;
@@ -66,4 +73,5 @@ error:
             "%s did not succeed (%d)", __FUNCTION__, dwError );
 
     goto cleanup;
+#endif
 }

@@ -43,8 +43,19 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+    // fix EID lookup found but not the same DN. it must be deleted tombstone entry.
+    // such as "cn=aggregate#objectGUID:187ac1c1-924d-4b16-a40d-fcea4ab35e7b,cn=Deleted Objects,dc=vsphere,dc=local"
+    // in vmdir log file, you will see ERROR: DecodeEntry failed (9602) line. you can ignore this.
+    // unfortunately, we would not have exact DN at this layer. thus, rely on error code to determine the case.
+    if (dwError == VMDIR_ERROR_BACKEND_ERROR)
+    {   // treats as if this entry does not exit.
+        dwError = ERROR_BACKEND_ENTRY_NOTFOUND;
+    }
+    else
+    {
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
             "%s subschema subentry not found (%d)", __FUNCTION__, dwError );
+    }
 
     VmDirFreeEntry(pEntry);
     goto cleanup;
