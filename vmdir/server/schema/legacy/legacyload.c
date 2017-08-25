@@ -60,7 +60,6 @@ VmDirSchemaAttrIdMapLoadSubSchemaSubEntry(
 
         pszToken = VmDirStringTokA(NULL, SCHEMA_ATTR_ID_MAP_TOKEN_SEP, &save);
     }
-    pAttrIdMap->usNextId = (USHORT)VmDirStringToIA(pszToken);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszBuf);
