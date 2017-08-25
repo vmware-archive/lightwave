@@ -13,4 +13,5 @@ SUBDIRS = \
     vdcleavefed \
     vdcresetMachineActCred \
     vdcmetric \
-    vdcschema
+    vdcschema \
+    idmap

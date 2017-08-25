@@ -693,6 +693,7 @@ AC_CONFIG_FILES([Makefile
                  tools/vdcresetMachineActCred/Makefile
                  tools/vdcmetric/Makefile
                  tools/vdcschema/Makefile
+                 tools/idmap/Makefile
                  tools/test/Makefile
                  tools/test/circularbuffer/Makefile
                  tools/test/dequetest/Makefile

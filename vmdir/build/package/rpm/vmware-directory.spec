@@ -383,6 +383,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_bindir}/vmkdc_admin
 %{_bindir}/vdcmetric
 %{_bindir}/vdcschema
+%{_bindir}/idmap
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
 %{_lib64dir}/libkrb5crypto.so*
