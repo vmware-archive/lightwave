@@ -61,7 +61,12 @@ extern "C" {
 #define VMDIR_PAGED_SEARCH_CACHE_HASH_TABLE_SIZE 32
 #define VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE  1000
 
-#define VMDIR_DEFAULT_REPL_INTERVAL     "30"
+//Note: Ssetting replinterval to 1 second could have negative impact on a star topology where many nodes(say > 5) all
+//      have same sigle replication partner.
+//      In such case, the center node could potentially starve and could not catch up with changes from other nodes
+//      because there are constant repl pull from other nodes and current replication algorithm exclude roles a node can play (consumer/supplier).
+#define VMDIR_DEFAULT_REPL_INTERVAL     "1"
+
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
 #define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
 #define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
