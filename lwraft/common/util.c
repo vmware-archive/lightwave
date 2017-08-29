@@ -1268,7 +1268,7 @@ VmDirLoadLibrary(
     pLibHandle = LoadLibrary(pszLibPath);
     if (pLibHandle == NULL)
     {
-        VMDIR_LOG_VERBOSE(
+        VMDIR_LOG_WARNING(
             VMDIR_LOG_MASK_ALL,
             "LoadLibrary %s failed, error code %d",
             pszLibPath,
@@ -1279,7 +1279,7 @@ VmDirLoadLibrary(
     pLibHandle = dlopen(pszLibPath, RTLD_LAZY);
     if (pLibHandle == NULL)
     {
-        VMDIR_LOG_VERBOSE(
+        VMDIR_LOG_WARNING(
              VMDIR_LOG_MASK_ALL,
              "dlopen %s library failed, error msg (%s)",
              pszLibPath,
