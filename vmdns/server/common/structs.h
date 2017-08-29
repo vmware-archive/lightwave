@@ -347,7 +347,6 @@ typedef struct _VMDNS_DRIVER_GLOBALS
 
 typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
 {
-    PVM_SOCKET        pClientSocket;
     DWORD             dwCurrentIndex;
     DWORD             dwRefCount;
 } VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;
