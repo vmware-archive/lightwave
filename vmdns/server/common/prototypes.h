@@ -550,7 +550,6 @@ VmDnsDeleteForwarder(
 
 DWORD
 VmDnsAllocateForwarderPacketContext(
-   PVM_SOCKET  pClientSocket,
    PVMDNS_FORWARDER_PACKET_CONTEXT* ppForwarderContext
    );
 
@@ -568,8 +567,7 @@ DWORD
 VmDnsForwardRequest(
     PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
     BOOL                                 bUseUDP,
-    DWORD                                dwQuerySize,
-    PBYTE                                pQueryBuffer
+    PVM_SOCK_IO_BUFFER                   pIoBuffer
     );
 
 DWORD

@@ -457,20 +457,10 @@ VmDnsSockPosixEventQueueAdd(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    dwError = VmDnsLockMutex(pQueue->pMutex);
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-    bLocked = TRUE;
-
     dwError = VmDnsSockPosixEventQueueAdd_inlock(pQueue, pSocket);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:
-
-    if (bLocked)
-    {
-        VmDnsUnlockMutex(pQueue->pMutex);
-    }
 
     return dwError;
 
@@ -486,7 +476,6 @@ VmDnsSockPosixEventQueueRemove(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bLocked = FALSE;
 
     if (!pQueue || !pSocket)
     {
@@ -494,20 +483,10 @@ VmDnsSockPosixEventQueueRemove(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    dwError = VmDnsLockMutex(pQueue->pMutex);
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-    bLocked = TRUE;
-
     dwError = VmDnsSockPosixEventQueueDelete_inlock(pQueue, pSocket);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:
-
-    if (bLocked)
-    {
-        VmDnsUnlockMutex(pQueue->pMutex);
-    }
 
     return dwError;
 
@@ -526,7 +505,6 @@ VmDnsSockPosixWaitForEvent(
     )
 {
     DWORD  dwError = 0;
-    BOOLEAN bLocked = FALSE;
     VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
     PVM_SOCKET pSocket = NULL;
     PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
@@ -1028,14 +1006,14 @@ VmDnsSockPosixRead(
 
     bLocked = TRUE;
 
-    dwSockAddrLen = sizeof(pSocket->addr);
+    dwSockAddrLen = sizeof(pIoBuffer->clientAddr);
 
     nRead = recvfrom(
                 pSocket->fd,
                 pIoBuffer->pData + pIoBuffer->dwCurrentSize,
                 dwBufSize,
                 flags,
-                (struct sockaddr*)&pSocket->addr,
+                (struct sockaddr*)&pIoBuffer->clientAddr,
                 &dwSockAddrLen);
     if (nRead < 0)
     {
@@ -1043,16 +1021,7 @@ VmDnsSockPosixRead(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    pSocket->pAddr = &pSocket->addr;
-    pSocket->addrLen = dwSockAddrLen;
-
-    //TODO: Does IoBuffer need the clientAddr?
-    memcpy(
-        &pIoBuffer->clientAddr,
-        pSocket->pAddr,
-        pSocket->addrLen);
-
-    pIoBuffer->addrLen = pSocket->addrLen;
+    pIoBuffer->addrLen = dwSockAddrLen;
 
     pIoBuffer->dwCurrentSize += nRead;
     pIoBuffer->dwTotalBytesTransferred += nRead;
@@ -1577,6 +1546,10 @@ VmDnsSockPosixFreeIoBuffer(
     PVM_SOCK_IO_BUFFER     pIoBuffer
     )
 {
+    if (pIoBuffer && pIoBuffer->pClientSocket)
+    {
+        VmDnsSockPosixReleaseSocket(pIoBuffer->pClientSocket);
+    }
     PVM_SOCK_IO_CONTEXT pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
     VMDNS_SAFE_FREE_MEMORY(pIoContext);
 }
