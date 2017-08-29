@@ -34,7 +34,6 @@ typedef struct _VM_SOCK_IO_BUFFER
     DWORD                    dwTotalBytesTransferred;
     struct sockaddr_storage  clientAddr;
     socklen_t                addrLen;
-    PVM_SOCKET               pClientSocket;
 } VM_SOCK_IO_BUFFER, *PVM_SOCK_IO_BUFFER;
 
 typedef PBYTE PVM_SOCK_EVENT_CONTEXT;
