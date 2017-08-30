@@ -523,13 +523,6 @@ VmDnsGetForwarders(
     );
 
 DWORD
-VmDnsGetForwarderAtIndex(
-    PVMDNS_FORWARDER_CONTEXT    pForwarder,
-    DWORD                       dwIndex,
-    PSTR*                       ppszForwarder
-    );
-
-DWORD
 VmDnsSetForwarders(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
     DWORD                       dwCount,
@@ -549,36 +542,15 @@ VmDnsDeleteForwarder(
     );
 
 DWORD
-VmDnsAllocateForwarderPacketContext(
-   PVM_SOCKET  pClientSocket,
-   PVMDNS_FORWARDER_PACKET_CONTEXT* ppForwarderContext
-   );
-
-PVMDNS_FORWARDER_PACKET_CONTEXT
-VmDnsAcquireForwarderPacketContext(
-    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
-    );
-
-VOID
-VmDnsReleaseForwarderPacketContext(
-    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
-    );
-
-DWORD
-VmDnsForwardRequest(
-    PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
-    BOOL                                 bUseUDP,
-    DWORD                                dwQuerySize,
-    PBYTE                                pQueryBuffer
-    );
-
-DWORD
-VmDnsForwardResponse(
-    BOOL        bUseUDP,
-    PVM_SOCKET  pSocket,
-    PBYTE*      ppResponse,
-    PDWORD      pdwResponseSize,
-    PDWORD      pdwRCode
+VmDnsForwarderResolveRequest(
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
+    BOOL                        bUseUDP,
+    BOOL                        bRecusive,
+    DWORD                       dwQuerySize,
+    PBYTE                       pQueryBuffer,
+    PDWORD                      pdwResponseSize,
+    PBYTE*                      ppResopnse,
+    PUCHAR                      prCode
     );
 
 //dirfacade
