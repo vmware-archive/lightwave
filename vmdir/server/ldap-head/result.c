@@ -181,6 +181,7 @@ VmDirSendLdapResult(
    }
 
    if (op->ldapResult.errCode &&
+       op->ldapResult.errCode != LDAP_BUSY &&
        op->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
    {
        VMDIR_LOG_ERROR(

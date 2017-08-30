@@ -982,9 +982,9 @@ _VmDirReplicationConnect(
     if (dwError != 0)
     {
         VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "_vdirReplicationConnect: VmDirReplURIToHostname failed. %s",
-            pReplAgr->ldapURI);
+                VMDIR_LOG_MASK_ALL,
+                "_vdirReplicationConnect: VmDirReplURIToHostname failed. %s",
+                pReplAgr->ldapURI);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1053,11 +1053,16 @@ _VmDirReplicationConnect(
         }
     }
 
+    pConnection->pszPartnerHostName = pszPartnerHostName;
+    pszPartnerHostName = NULL;
+
     pConnection->pLd = pLd;
+    pLd = NULL;
 
 error:
     VMDIR_SAFE_FREE_STRINGA(pszErrorMsg);
     VMDIR_SAFE_FREE_STRINGA(pszPartnerHostName);
+    VDIR_SAFE_UNBIND_EXT_S(pLd);
     return dwError;
 }
 
@@ -1072,7 +1077,7 @@ _VmDirReplicationDisconnect(
     if (pConnection)
     {
         VDIR_SAFE_UNBIND_EXT_S(pConnection->pLd);
-        VMDIR_SAFE_FREE_STRINGA(pConnection->pszConnectionDescription);
+        VMDIR_SAFE_FREE_STRINGA(pConnection->pszPartnerHostName);
     }
 }
 
@@ -1399,9 +1404,12 @@ replcycledone:
                     replAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-                "Replication supplier %s USN range (%llu,%s) processed.",
-                replAgr->ldapURI, initUsn, replAgr->lastLocalUsnProcessed.lberbv_val);
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "Replication supplier %s USN range (%llu,%s) processed.",
+                    replAgr->ldapURI,
+                    initUsn,
+                    replAgr->lastLocalUsnProcessed.lberbv_val);
         }
         pContext->bFirstReplicationCycle = FALSE;
     }
@@ -1486,12 +1494,13 @@ _VmDirFetchReplicationPage(
     )
 {
     int retVal = LDAP_SUCCESS;
-    LDAPControl *srvCtrls[2] = {NULL, NULL};
-    LDAPControl **ctrls = NULL;
+    BOOLEAN bLogErr = TRUE;
+    LDAPControl*    srvCtrls[2] = {NULL, NULL};
+    LDAPControl**   ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
-    LDAP *pLd = NULL;
-    struct timeval tv = {0};
-    struct timeval *pTv = NULL;
+    LDAP*   pLd = NULL;
+    struct timeval  tv = {0};
+    struct timeval* pTv = NULL;
 
     if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
     {
@@ -1529,9 +1538,29 @@ _VmDirFetchReplicationPage(
     srvCtrls[0] = &(pPage->syncReqCtrl);
     srvCtrls[1] = NULL;
 
-    retVal = ldap_search_ext_s(pLd, "", LDAP_SCOPE_SUBTREE, pPage->pszFilter, NULL, FALSE,
-                               srvCtrls, NULL, pTv, pPage->iEntriesRequested,
-                               &(pPage->searchRes) );
+    retVal = ldap_search_ext_s(
+            pLd,
+            "",
+            LDAP_SCOPE_SUBTREE,
+            pPage->pszFilter,
+            NULL,
+            FALSE,
+            srvCtrls,
+            NULL,
+            pTv,
+            pPage->iEntriesRequested,
+            &(pPage->searchRes));
+
+    if (retVal == LDAP_BUSY)
+    {
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL,
+                "%s: partner (%s) is busy",
+                __FUNCTION__,
+                pConnection->pszPartnerHostName);
+
+        bLogErr = FALSE;
+    }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     pPage->iEntriesReceived = ldap_count_entries(pLd, pPage->searchRes);
@@ -1599,14 +1628,14 @@ _VmDirFetchReplicationPage(
     *ppPage = pPage;
 
     VMDIR_LOG_INFO(
-        LDAP_DEBUG_REPL,
-        "%s: filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
-        __FUNCTION__,
-        VDIR_SAFE_STRING(pPage->pszFilter),
-        pPage->iEntriesRequested,
-        pPage->iEntriesReceived,
-        initUsn,
-        VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+            LDAP_DEBUG_REPL,
+            "%s: filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pPage->pszFilter),
+            pPage->iEntriesRequested,
+            pPage->iEntriesReceived,
+            initUsn,
+            VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
 
 cleanup:
 
@@ -1620,18 +1649,18 @@ cleanup:
 
 ldaperror:
 
-    if (pPage)
+    if (bLogErr && pPage)
     {
         VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s: error: %d filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
-            __FUNCTION__,
-            retVal,
-            VDIR_SAFE_STRING(pPage->pszFilter),
-            pPage->iEntriesRequested,
-            pPage->iEntriesReceived,
-            initUsn,
-            VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+                VMDIR_LOG_MASK_ALL,
+                "%s: error: %d filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+                __FUNCTION__,
+                retVal,
+                VDIR_SAFE_STRING(pPage->pszFilter),
+                pPage->iEntriesRequested,
+                pPage->iEntriesReceived,
+                initUsn,
+                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
     }
 
     _VmDirFreeReplicationPage(pPage);
