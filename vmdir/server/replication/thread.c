@@ -1519,10 +1519,11 @@ _VmDirFetchReplicationPage(
     }
 
     retVal = VmDirCreateSyncRequestControl(
-                gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                initUsn,
-                gVmdirServerGlobals.utdVector.lberbv.bv_val,
-                &(pPage->syncReqCtrl));
+            gVmdirServerGlobals.invocationId.lberbv.bv_val,
+            initUsn,
+            gVmdirServerGlobals.utdVector.lberbv.bv_val,
+            initUsn == lastSupplierUsnProcessed,
+            &(pPage->syncReqCtrl));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     srvCtrls[0] = &(pPage->syncReqCtrl);

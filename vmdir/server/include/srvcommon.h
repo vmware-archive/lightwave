@@ -226,7 +226,6 @@ typedef struct _VDIR_SUPERLOG_RECORD
 
 typedef struct _VDIR_CONN_REPL_SUPP_STATE
 {
-    USN             firstHighWaterMarkPerCycle;
     PLW_HASHMAP     phmSyncStateOneMap;
 } VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
 
@@ -542,7 +541,7 @@ typedef struct SyncRequestControlValue
     VDIR_BERVALUE           bvLastLocalUsnProcessed;
     USN                     intLastLocalUsnProcessed;
     VDIR_BERVALUE           bvUtdVector;
-    BOOLEAN                 reloadHint;
+    BOOLEAN                 bFirstPage;
 } SyncRequestControlValue;
 
 typedef struct SyncDoneControlValue

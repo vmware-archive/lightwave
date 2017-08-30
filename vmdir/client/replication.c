@@ -427,37 +427,43 @@ _VmDirReplicationEntriesExist(
 
     // bind to server
     dwError = VmDirConnectLDAPServer(
-                            &pLd,
-                            pszServerName,
-                            pszDomain,
-                            pszUserName,
-                            pszPassword);
+            &pLd,
+            pszServerName,
+            pszDomain,
+            pszUserName,
+            pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
-                &pszFilter, "%s>=%ld",
-                ATTR_USN_CHANGED,
-                pCookie->lastLocalUsnProcessed + 1);
+            &pszFilter,
+            "%s>=%ld",
+            ATTR_USN_CHANGED,
+            pCookie->lastLocalUsnProcessed + 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateSyncRequestControl(pCookie->pszInvocationId, pCookie->lastLocalUsnProcessed, pCookie->pszUtdVector, &syncReqCtrl);
+    dwError = VmDirCreateSyncRequestControl(
+            pCookie->pszInvocationId,
+            pCookie->lastLocalUsnProcessed,
+            pCookie->pszUtdVector,
+            FALSE,
+            &syncReqCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     srvCtrls[0] = &syncReqCtrl;
     srvCtrls[1] = NULL;
 
     dwError = ldap_search_ext_s(
-                pLd,
-                "",
-                LDAP_SCOPE_SUBTREE,
-                pszFilter,
-                NULL,
-                FALSE, /* get values      */
-                srvCtrls,  /* server controls */
-                NULL,  /* client controls */
-                NULL,  /* timeout         */
-                1,     /* size limit      */
-                &pResult);
+            pLd,
+            "",
+            LDAP_SCOPE_SUBTREE,
+            pszFilter,
+            NULL,
+            FALSE, /* get values      */
+            srvCtrls,  /* server controls */
+            NULL,  /* client controls */
+            NULL,  /* timeout         */
+            1,     /* size limit      */
+            &pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (ldap_count_entries(pLd, pResult))
@@ -558,7 +564,9 @@ _VmDirQueryUsn(
     dwError = VmDirCreateSyncRequestControl(
                 pCookie->pszInvocationId,
                 pCookie->lastLocalUsnProcessed,
-                pCookie->pszUtdVector, &syncReqCtrl);
+                pCookie->pszUtdVector,
+                FALSE,
+                &syncReqCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     srvCtrls[0] = &syncReqCtrl;
