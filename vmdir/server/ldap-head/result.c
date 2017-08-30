@@ -1088,11 +1088,12 @@ WriteMetaDataAttribute(
             berVal.lberbv.bv_val = attrMetaDataVal;
             berVal.lberbv.bv_len = VmDirStringLenA( attrMetaDataVal );
             if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFYTIMESTAMP, FALSE ) != 0 &&
+                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFIERS_NAME, FALSE ) != 0  &&
                 VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) != 0     &&
                 VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE ) != 0)
             {
                 // To prevent endless replication ping pong, supplier should send result only if there are changes
-                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP and ATTR_OBJECT_GUID.
+                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP,ATTR_MODIFIERS_NAME and ATTR_OBJECT_GUID.
                 *nonTrivialAttrsInReplScope = TRUE;
             }
             if (ber_printf( ber, "O", &berVal ) == -1 )
