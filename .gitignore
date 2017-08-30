@@ -573,4 +573,5 @@ build/vmdns/
 build/vmevent/
 build/vmidentity/
 build/vmmetrics/
+build/rpmbuild/
 

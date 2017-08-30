@@ -1673,10 +1673,11 @@ VmDirAnonymousLDAPBind(
 
 int
 VmDirCreateSyncRequestControl(
-    PCSTR pszInvocationId,
-    USN lastLocalUsnProcessed,
-    PCSTR pszUtdVector,
-    LDAPControl *syncReqCtrl
+    PCSTR           pszInvocationId,
+    USN             lastLocalUsnProcessed,
+    PCSTR           pszUtdVector,
+    BOOLEAN         bFirstPage,
+    LDAPControl*    syncReqCtrl
     );
 
 VOID
