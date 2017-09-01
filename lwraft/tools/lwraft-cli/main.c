@@ -545,7 +545,11 @@ RaftCliExecNodePrincipalRequest(
 
             printf("Initializing Persistent Objectstore Service instance ... \n");
 
-            if (pszDomain)
+            if ((pszDomain && pszPartnerName) || (!pszDomain && !pszPartnerName))
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_OPTION_INVALID);
+            }
+            else if (pszDomain)
             {
                 dwError = RaftCliPromoteA(pszPreferredHostName, pszDomain, pszLogin, pszPassword);
                 BAIL_ON_VMDIR_ERROR(dwError);
@@ -582,7 +586,7 @@ ShowUsage(
 {
     fprintf(
         stdout,
-        "Usage: lwraft-cli { arguments }\n\n"
+        "Usage: post-cli { arguments }\n\n"
         "Arguments:\n\n"
         "\tnode list    --server-name      <host name>\n\n"
 
@@ -592,8 +596,10 @@ ShowUsage(
 
         "\tnode promote --password         <password>\n"
  //       "\t            [--administrator    <user name> default to \"administrator\"]\n"
-        "\t            [--host-name        <host name> preferred Lightwave Raft host name, can be FQDN or IP]\n"
-        "\t            [--domain-name      <domain name> | --partner-name    <host of partner> ]\n\n"
+        "\t            [--host-name        <host name> preferred Lightwave POST host name, can be FQDN or IP]\n"
+        "\t            [--domain-name      <domain name>      (for first node deployment)\n"
+        "\t             or \n"
+        "\t             --partner-name     <host of partner>  (for other nodes deployment)]\n\n"
 
         "\tnode demote  --server-name      <host name>\n"
         "\t             --login            <user@domain>\n"
