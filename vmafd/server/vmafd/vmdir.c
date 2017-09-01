@@ -545,8 +545,6 @@ VmAfSrvDemoteVmDir(
     gVmafdGlobals.pSourceIpContext = NULL;
 #endif
 
-    /* TODO: remove KrbConfig entries */
-
     if (gVmafdGlobals.pCertUpdateThr)
     {
         VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
