@@ -55,8 +55,9 @@ typedef struct _VM_SOCK_EVENT_QUEUE
 
 typedef struct _VM_SOCK_IO_CONTEXT
 {
-    VM_SOCK_EVENT_TYPE  eventType;
-    VM_SOCK_IO_BUFFER   IoBuffer;
-    CHAR                DataBuffer[1];
+    VM_SOCK_EVENT_TYPE           eventType;
+    PVM_SOCK_EVENT_CONTEXT       pEventContext;
+    VM_SOCK_IO_BUFFER            IoBuffer;
+    CHAR                         DataBuffer[1];
 } VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
 
