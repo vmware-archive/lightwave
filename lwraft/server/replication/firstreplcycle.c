@@ -285,8 +285,8 @@ _VmDirGetRemoteDBFileUsingRPC(
     UINT32      remoteFileSizeMb,
     UINT32      remoteDbMapSizeMb)
 {
-//read block size of one MB.
-#define VMDIR_DB_READ_BLOCK_SIZE     (1<<20)
+//read block size of eight MB.
+#define VMDIR_DB_READ_BLOCK_SIZE     (1<<23)
 
     DWORD       retVal = 0;
 #ifdef _WIN32
