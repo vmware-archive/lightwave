@@ -176,6 +176,12 @@ int get_sp_salt(const char *username,
         sp = strrchr(salt, '$');
         salt_len = sp - salt + 1;
     }
+    if(salt_len == 0)//locked user, user with nologin etc
+    {
+        st = -1;
+        errno = EPERM;
+        goto error;
+    }
     salt[salt_len] = '\0';
     *ret_salt = salt;
     *ret_encpwd = encpwd;
