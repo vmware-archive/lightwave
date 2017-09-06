@@ -21,7 +21,7 @@
 #define VMDIR_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmdir"
 #define VMDIR_START_SERVICE "/opt/likewise/bin/lwsm start vmdir"
 // in embedded VCHA, snapshot database live under vmware-vmdir/
-#define VMDIR_CLEANUP_DATA "rm -rf /storage/db/vmware-vmdir/*"
+#define VMDIR_CLEANUP_DATA "mv /var/lib/vmware/vmdir/data.mdb /var/lib/vmware/vmdir/data.mdb.bak"
 
 #define VMKDC_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmkdc"
 #define VMKDC_START_SERVICE "/opt/likewise/bin/lwsm start vmkdc"

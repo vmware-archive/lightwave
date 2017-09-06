@@ -832,6 +832,11 @@ Lightwave POST service
             #
             # Uninstall
             #
+            if [ -f %{_vmdir_dbdir}/data.mdb ]; then
+                # backup db if exists
+                mv %{_vmdir_dbdir}/data.mdb %{_vmdir_dbdir}/data.mdb.bak
+            fi
+
             echo "Existing database files kept at [%{_vmdir_dbdir}]."
 
             ;;
@@ -894,7 +899,11 @@ Lightwave POST service
                 fi
             fi
 
-            echo "Existing VECS files kept under [%{_vmafd_dbdir}]"
+            # Cleanup vmafd db and files
+            if [ -d %{_vmafd_dbdir} ]; then
+                rm -rf %{_vmafd_dbdir}
+            fi
+
             ;;
 
         1)
