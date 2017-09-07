@@ -375,7 +375,7 @@ VmDirSendSearchEntry(
 
                     // Shouldn't stop cycle until we don't have a skip, inform consumer to come back again
                     pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
-                    goto cleanup; // Don't send this entry
+                    goto updateSyncDoneCtrl; // Don't send this entry
                 }
             }
 
@@ -571,11 +571,26 @@ VmDirSendSearchEntry(
                             pSrEntry->dn.lberbv.bv_val, pOperation->syncReqCtrl, nonTrivialAttrsInReplScope);
         }
 
-        // record max local usnChanged in syncControlDone
+updateSyncDoneCtrl:
         if (pOperation->syncReqCtrl != NULL)
         {
-            if (usnChanged  > pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed)
+            if (pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
             {
+                VMDIR_LOG_INFO(
+                        LDAP_DEBUG_REPL,
+                        "%s: update lastLocalUsnProcessed from %" PRId64 " to lowestPendingUncommittedUsn %" PRId64 " to avoid retry",
+                        __FUNCTION__,
+                        pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed,
+                        pOperation->lowestPendingUncommittedUsn-1);
+                /*
+                 * Sending high watermark to consumer results in repl cycle retry.
+                 * Avoid retry by sending lowestpendingUncommittedUsn-1.
+                 */
+                pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed = pOperation->lowestPendingUncommittedUsn-1;
+            }
+            else if (usnChanged  > pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed)
+            {
+                // record max local usnChanged in syncControlDone
                 pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed = usnChanged;
             }
         }
