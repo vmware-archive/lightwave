@@ -640,23 +640,6 @@ error:
     return dwError;
 }
 
-static
-int
-_VmDirGetUsnFromSyncDoneCtrl(
-    struct berval* syncDoneCtrlVal,
-    USN *pUsn)
-{
-    int retVal = LDAP_SUCCESS;
-    PSTR pszEnd = NULL;
-    USN usn = 0;
-
-    usn = VmDirStringToLA(syncDoneCtrlVal->bv_val, &pszEnd, 10);
-
-    *pUsn = usn;
-
-    return retVal;
-}
-
 int
 VmDirReplUpdateCookies(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
@@ -1559,7 +1542,7 @@ _VmDirFetchReplicationPage(
 
     if (VmDirAllocateStringPrintf(
             &pPage->pszFilter,
-            "%s>=%ld",
+            "%s>=%" PRId64,
             ATTR_USN_CHANGED,
             lastSupplierUsnProcessed + 1))
     {
@@ -1660,22 +1643,25 @@ _VmDirFetchReplicationPage(
     }
 
     // Get last local USN processed from the cookie
-    retVal = _VmDirGetUsnFromSyncDoneCtrl(
-            &(pPage->searchResCtrls[0]->ldctl_value),
+    retVal = VmDirStringToUSN(
+            pPage->searchResCtrls[0]->ldctl_value.bv_val,
             &(pPage->lastSupplierUsnProcessed));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     *ppPage = pPage;
 
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "%s: filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
-            __FUNCTION__,
-            VDIR_SAFE_STRING(pPage->pszFilter),
-            pPage->iEntriesRequested,
-            pPage->iEntriesReceived,
-            initUsn,
-            VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+    if (pPage->iEntriesReceived > 0)
+    {
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "%s: filter: '%s' requested: %d received: %d usn: %" PRId64 " utd: '%s'",
+                __FUNCTION__,
+                VDIR_SAFE_STRING(pPage->pszFilter),
+                pPage->iEntriesRequested,
+                pPage->iEntriesReceived,
+                initUsn,
+                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+    }
 
 cleanup:
     if (ctrls)

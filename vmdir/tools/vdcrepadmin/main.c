@@ -175,8 +175,8 @@ _VmDirPrintReplStateList(
         printf("\nDomain Controller: %s\n",VDIR_SAFE_STRING(pReplStateList[dwCount]->pszHost));
         printf("  Invocation ID: ......... %s\n",VDIR_SAFE_STRING(pReplStateList[dwCount]->pszInvocationId));
         printf("  Replication Cycles: .... %d\n",pReplStateList[dwCount]->dwCycleCount);
-        printf("  Highest Replicable  USN: %lu\n",pReplStateList[dwCount]->maxConsumableUSN);
-        printf("  Highest Originating USN: %lu\n",pReplStateList[dwCount]->maxOriginatingUSN);
+        printf("  Highest Replicable  USN: %" PRId64 "\n",pReplStateList[dwCount]->maxConsumableUSN);
+        printf("  Highest Originating USN: %" PRId64 "\n",pReplStateList[dwCount]->maxOriginatingUSN);
 
 
         pVector = pReplStateList[dwCount]->pReplUTDVec;
@@ -249,7 +249,7 @@ _VmDirPrintReplStateList(
 
             partnerOrigUsn = pVector->maxOriginatingUSN;
 
-            dwError = VmDirAllocateStringPrintf(&pszHighestOrigUsn, "%10lu", partnerOrigUsn);
+            dwError = VmDirAllocateStringPrintf(&pszHighestOrigUsn, "%10" PRId64, partnerOrigUsn);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             if (bPartnerFound)
@@ -276,7 +276,7 @@ _VmDirPrintReplStateList(
 
                         dwError = VmDirAllocateStringPrintf(
                                                 &pszLag,
-                                                "%ld",
+                                                "%" PRId64,
                                                 partnerLocalOrigUsn - partnerOrigUsn
                                                 );
                     }
@@ -287,14 +287,14 @@ _VmDirPrintReplStateList(
                 {
                     dwError = VmDirAllocateStringPrintf(
                                                 &pszHighestReplUsn,
-                                                "%lu",
+                                                "%" PRId64,
                                                 partnerReplUsn
                                                 );
                     BAIL_ON_VMDIR_ERROR(dwError);
 
                     dwError = VmDirAllocateStringPrintf(
                                                 &pszLag,
-                                                "%ld",
+                                                "%" PRId64,
                                                 partnerLocalUsn - partnerReplUsn
                                                 );
                     BAIL_ON_VMDIR_ERROR(dwError);
@@ -746,6 +746,8 @@ _VmDirDummyDomainWrite(
                                                   ATTR_COMMENT,
                                                   (PCSTR*) ppszVals);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        printf("Domain Controller: %s dummy write triggered\n", pszServerName);
     }
 
 cleanup:
@@ -764,6 +766,7 @@ cleanup:
     return dwError;
 
 error:
+    printf("%s failed %d\n\n", __FUNCTION__, dwError);
     goto cleanup;
 }
 

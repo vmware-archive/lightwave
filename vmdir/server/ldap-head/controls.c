@@ -307,7 +307,7 @@ WriteSyncDoneControl(
             writer = bvCtrlVal.lberbv.bv_val;
             bvCtrlVal.lberbv.bv_len = 0;
 
-            VmDirStringPrintFA( writer, bufferSize, "%ld,", op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed );
+            VmDirStringPrintFA( writer, bufferSize, "%" PRId64 ",", op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed );
             tmpLen = VmDirStringLenA( writer );
             writer += tmpLen;
             bufferSize -= tmpLen;
@@ -316,7 +316,7 @@ WriteSyncDoneControl(
             while ((pNode = LwRtlHashTableIterate(op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, &iter)))
             {
                 pUtdVectorEntry = LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
-                VmDirStringPrintFA( writer, bufferSize, "%s:%ld,", pUtdVectorEntry->invocationId.lberbv.bv_val,
+                VmDirStringPrintFA( writer, bufferSize, "%s:%" PRId64 ",", pUtdVectorEntry->invocationId.lberbv.bv_val,
                                     pUtdVectorEntry->currMaxOrigUsnProcessed );
                 tmpLen = VmDirStringLenA( writer );
                 writer += tmpLen;

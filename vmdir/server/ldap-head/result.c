@@ -363,13 +363,13 @@ VmDirSendSearchEntry(
                     pOperation->lowestPendingUncommittedUsn++;
 
                     VMDIR_LOG_INFO( LDAP_DEBUG_REPL,
-                            "SendSearchEntry: bumping lowestPendingUncommittedUsn to %ld",
+                            "SendSearchEntry: bumping lowestPendingUncommittedUsn to %" PRId64,
                             pOperation->lowestPendingUncommittedUsn );
                 }
                 else if (usnChanged > pOperation->lowestPendingUncommittedUsn)
                 {
                     VMDIR_LOG_INFO( LDAP_DEBUG_REPL,
-                            "SendSearchEntry: usnChanged = %ld, lowestPendingUncommittedUsn = %ld, "
+                            "SendSearchEntry: usnChanged = %" PRId64 ", lowestPendingUncommittedUsn = %" PRId64 ", "
                             "skipping entry: %s", usnChanged, pOperation->lowestPendingUncommittedUsn,
                             pSrEntry->dn.lberbv.bv_val );
 

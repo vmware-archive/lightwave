@@ -1285,7 +1285,7 @@ _VmDirPluginAddOpAttrsPreAdd(
     dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%ld", usn);
+    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, usn);
 
     // Append usnCreated attribute
     pszErrorContext = "Add USN create attribute";
@@ -1676,7 +1676,7 @@ _VmDirPluginReplaceOpAttrsPreModApplyModify(
     dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
     BAIL_ON_VMDIR_ERROR( dwError );
 
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%ld", usn);
+    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, usn);
 
     pszErrorContext = "Replace USN change attribute";
     dwError = VmDirAppendAMod( pOperation, MOD_OP_REPLACE, ATTR_USN_CHANGED, ATTR_USN_CHANGED_LEN, usnStr, VmDirStringLenA( usnStr ) );
