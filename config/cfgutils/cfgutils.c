@@ -560,14 +560,17 @@ VmwDeploySetupClientWithDC(
     pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
                             ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
 
-    dwError = VmAfdJoinVmDirA(
+    dwError = VmAfdJoinVmDirWithSiteA(
                     pParams->pszServer,
+                    pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
                             pParams->pszMachineAccount : pParams->pszHostname,
-                    pParams->pszDomainName,
-                    pParams->pszOrgUnit);
+                    pParams->pszOrgUnit,
+                    NULL,
+                    pParams->bMachinePreJoined ?
+                        VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(
@@ -699,13 +702,15 @@ VmwDeploySetupClient(
 
     VMW_DEPLOY_LOG_INFO("Performing domain join operation");
 
-    dwError = VmAfdJoinVmDir2A(
+    dwError = VmAfdJoinVmDirWithSiteA(
+                    NULL,
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
+                    NULL,
                     pParams->bMachinePreJoined ?
                         VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
     BAIL_ON_DEPLOY_ERROR(dwError);
