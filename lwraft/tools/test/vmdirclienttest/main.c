@@ -15,6 +15,8 @@
 
 #include "includes.h"
 
+// dummy checkin.  will remove the whole directory soon.
+
 /* Example of why you don't call public APIs internally */
 ULONG
 VmDirCreateBindingHandleA(
