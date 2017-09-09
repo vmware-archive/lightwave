@@ -34,7 +34,10 @@ typedef struct _VM_SOCK_IO_BUFFER
     DWORD                    dwTotalBytesTransferred;
     struct sockaddr_storage  clientAddr;
     socklen_t                addrLen;
+    PVM_SOCKET               pClientSocket;
 } VM_SOCK_IO_BUFFER, *PVM_SOCK_IO_BUFFER;
+
+typedef PBYTE PVM_SOCK_EVENT_CONTEXT;
 
 typedef enum
 {
@@ -359,15 +362,29 @@ VmDnsSockGetAddress(
 
 DWORD
 VmDnsSockAllocateIoBuffer(
-    VM_SOCK_EVENT_TYPE      eventType,
-    DWORD                   dwSize,
-    PVM_SOCK_IO_BUFFER*     ppIoContext
+    VM_SOCK_EVENT_TYPE          eventType,
+    PVM_SOCK_EVENT_CONTEXT      pEventContext,
+    DWORD                       dwSize,
+    PVM_SOCK_IO_BUFFER*         ppIoContext
+    );
+
+DWORD
+VmDnsSockSetEventContext(
+    PVM_SOCK_IO_BUFFER      pIoBuffer,
+    PVM_SOCK_EVENT_CONTEXT  pEventContext,
+    PVM_SOCK_EVENT_CONTEXT* ppOldEventContext
+    );
+
+DWORD
+VmDnsSockGetEventContext(
+    PVM_SOCK_IO_BUFFER      pIoBuffer,
+    PVM_SOCK_EVENT_CONTEXT* ppEventContext
     );
 
 /**
  * @brief  VmwReleaseIoContext
  *
- * @param[in] pIoContext 
+ * @param[in] pIoContext
  *
  * @return DWORD - 0 on success
  */

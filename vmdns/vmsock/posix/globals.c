@@ -37,6 +37,8 @@ VM_SOCK_PACKAGE gVmDnsSockPosixPackage =
     .pfnCloseSocket = &VmDnsSockPosixCloseSocket,
     .pfnGetAddress = &VmDnsSockPosixGetAddress,
     .pfnAllocateIoBuffer = &VmDnsSockPosixAllocateIoBuffer,
+    .pfnSetEventContext = &VmDnsSockPosixSetEventContext,
+    .pfnGetEventContext = &VmDnsSockPosixGetEventContext,
     .pfnReleaseIoBuffer = &VmDnsSockPosixFreeIoBuffer
 };
 

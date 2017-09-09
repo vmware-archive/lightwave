@@ -29,7 +29,10 @@ typedef struct _VM_SOCKET
     int              fd;
 
     PVOID            pData;
-    BOOL             bInEventQueue;
+    PVM_SOCK_EVENT_QUEUE    pEventQueue;
+
+    BOOL             bActive;
+    LIST_ENTRY       ActiveSockets;
 
 } VM_SOCKET;
 
@@ -51,12 +54,15 @@ typedef struct _VM_SOCK_EVENT_QUEUE
     int                  nReady; // Number of ready descriptors
     int                  iReady; // Index when processing
 
+    LIST_ENTRY          ActiveSocketsHead;
+
 } VM_SOCK_EVENT_QUEUE;
 
 typedef struct _VM_SOCK_IO_CONTEXT
 {
-    VM_SOCK_EVENT_TYPE  eventType;
-    VM_SOCK_IO_BUFFER   IoBuffer;
-    CHAR                DataBuffer[1];
+    VM_SOCK_EVENT_TYPE           eventType;
+    PVM_SOCK_EVENT_CONTEXT       pEventContext;
+    VM_SOCK_IO_BUFFER            IoBuffer;
+    CHAR                         DataBuffer[1];
 } VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
 

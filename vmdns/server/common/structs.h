@@ -345,3 +345,8 @@ typedef struct _VMDNS_DRIVER_GLOBALS
     BOOL                        bUseDirectoryStore;
 } VMW_DNS_DRIVER_GLOBALS, *PVMW_DNS_DRIVER_GLOBALS;
 
+typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
+{
+    DWORD             dwCurrentIndex;
+    DWORD             dwRefCount;
+} VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;
