@@ -508,7 +508,7 @@ VmDnSockAddToActiveQueue(
 
     if (!pSocket)
     {
-        dwError = ERROR_INVALDI_PARAMETER;
+        dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
@@ -660,7 +660,7 @@ VmDnsSockPosixGetNextSignaledSocket(
                 else
                 {
                     for (pLink = pQueue->ActiveSocketsHead.Blink;
-                         pLink != &pLruList->ActiveSocketsHead ;
+                         pLink != &pQueue->ActiveSocketsHead ;
                          pLink = pLink->Blink)
                     {
                         pSocket = CONTAINING_RECORD(pLink, VM_SOCKET, ActiveSockets);          
