@@ -202,20 +202,6 @@ typedef struct _VMDNS_DIR_CONTEXT
     LDAP*   pLdap;
 } VMDNS_DIR_CONTEXT;
 
-#ifndef _WIN32
-
-typedef struct _SINGLE_LIST_ENTRY
-{
-    struct _SINGLE_LIST_ENTRY *Next;
-} SINGLE_LIST_ENTRY;
-
-typedef struct _LIST_ENTRY {
-    struct _LIST_ENTRY *Flink;
-    struct _LIST_ENTRY *Blink;
-} LIST_ENTRY, *PLIST_ENTRY;
-
-#endif
-
 typedef enum _LRU_STATE
 {
     LRU_STATE_IDLE = 0,

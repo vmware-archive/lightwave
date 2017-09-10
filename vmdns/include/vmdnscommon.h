@@ -55,6 +55,94 @@ typedef enum
 } VMDNS_LOG_LEVEL;
 #endif
 
+#ifndef _WIN32
+
+typedef struct _SINGLE_LIST_ENTRY
+{
+    struct _SINGLE_LIST_ENTRY *Next;
+} SINGLE_LIST_ENTRY;
+
+typedef struct _LIST_ENTRY {
+    struct _LIST_ENTRY *Flink;
+    struct _LIST_ENTRY *Blink;
+} LIST_ENTRY, *PLIST_ENTRY;
+
+#endif
+
+
+#ifndef PopEntryList
+#define PopEntryList(ListHead) \
+    (ListHead)->Next;\
+        {\
+        PSINGLE_LIST_ENTRY FirstEntry;\
+        FirstEntry = (ListHead)->Next;\
+        if (FirstEntry != NULL) {     \
+            (ListHead)->Next = FirstEntry->Next;\
+                }                             \
+        }
+#endif
+
+#ifndef PushEntryList
+#define PushEntryList(ListHead,Entry) \
+    (Entry)->Next = (ListHead)->Next; \
+    (ListHead)->Next = (Entry)
+#endif
+
+#ifndef CONTAINING_RECORD
+#define CONTAINING_RECORD(address, type, field) ((type *)( \
+                                                  (PCHAR)(address) - \
+                                                  (ULONG_PTR)(&((type *)0)->field)))
+#endif
+
+#ifndef InitializeListHead
+
+#define InitializeListHead(ListHead) (\
+    (ListHead)->Flink = (ListHead)->Blink = (ListHead))
+
+#define IsListEmpty(ListHead) \
+    ((ListHead)->Flink == (ListHead))
+
+#define RemoveHeadList(ListHead) \
+    (ListHead)->Flink; \
+{RemoveEntryList((ListHead)->Flink)}
+
+#define RemoveTailList(ListHead) \
+    (ListHead)->Blink; \
+{RemoveEntryList((ListHead)->Blink)}
+
+#define RemoveEntryList(Entry) {\
+    PLIST_ENTRY _EX_Blink; \
+    PLIST_ENTRY _EX_Flink; \
+    _EX_Flink = (Entry)->Flink; \
+    _EX_Blink = (Entry)->Blink; \
+    _EX_Blink->Flink = _EX_Flink; \
+    _EX_Flink->Blink = _EX_Blink; \
+    }
+
+#define InsertTailList(ListHead,Entry) {\
+    PLIST_ENTRY _EX_Blink; \
+    PLIST_ENTRY _EX_ListHead; \
+    _EX_ListHead = (ListHead); \
+    _EX_Blink = _EX_ListHead->Blink; \
+    (Entry)->Flink = _EX_ListHead; \
+    (Entry)->Blink = _EX_Blink; \
+    _EX_Blink->Flink = (Entry); \
+    _EX_ListHead->Blink = (Entry); \
+    }
+
+#define InsertHeadList(ListHead,Entry) {\
+    PLIST_ENTRY _EX_Flink; \
+    PLIST_ENTRY _EX_ListHead; \
+    _EX_ListHead = (ListHead); \
+    _EX_Flink = _EX_ListHead->Flink; \
+    (Entry)->Flink = _EX_Flink; \
+    (Entry)->Blink = _EX_ListHead; \
+    _EX_Flink->Blink = (Entry); \
+    _EX_ListHead->Flink = (Entry); \
+    }
+
+#endif
+
 DWORD
 VmDnsLogInitialize(
     PCSTR   pszLogFileName,
