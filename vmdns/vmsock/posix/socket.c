@@ -419,7 +419,7 @@ VmDnsSockPosixCreateEventQueue(
     pQueue->iReady = 0;
 
 
-    InitializeListHead(&pQueue->ActiveSockets);
+    InitializeListHead(&pQueue->ActiveSocketsHead);
 
     dwError = VmDnsSockPosixEventQueueAdd_inlock(pQueue, pQueue->pSignalReader);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);

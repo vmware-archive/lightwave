@@ -54,7 +54,7 @@ typedef struct _VM_SOCK_EVENT_QUEUE
     int                  nReady; // Number of ready descriptors
     int                  iReady; // Index when processing
 
-    LIST_ENTRY          ActiveSocketsHead;
+    LIST_ENTRY           ActiveSocketsHead;
 
 } VM_SOCK_EVENT_QUEUE;
 
