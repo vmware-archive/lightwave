@@ -1075,7 +1075,7 @@ error:
 DWORD
 VmDnsSockPosixRead(
     PVM_SOCKET          pSocket,
-    PVM_SOCK_IO_BUFFER  pIoBuffer,
+    PVM_SOCK_IO_BUFFER  pIoBuffer
     )
 {
     DWORD   dwError = 0;
