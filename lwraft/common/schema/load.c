@@ -57,7 +57,7 @@ VmDirLdapSchemaLoadStrLists(
         // inherit sup syntax if available (PR 1868307)
         if (!bEmpty)
         {
-            (VOID)VmDirLdapAtResolveSup(pSchema, pNewAt);
+            (VOID)VmDirLdapAtResolveSupWithLogOpt(pSchema, pNewAt, FALSE);
             // cast VOID because this might not succeed
             // if sup isn't already added in pSchema
         }

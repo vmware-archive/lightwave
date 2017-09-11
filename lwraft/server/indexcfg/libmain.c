@@ -27,6 +27,8 @@ VmDirIndexLibInit(
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
+    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
+    PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
 
     if (!pModMutex)
     {
@@ -76,11 +78,29 @@ VmDirIndexLibInit(
     BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = FALSE;
 
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // open default indices
     for (i = 0; defIdx[i].pszAttrName; i++)
     {
         dwError = VmDirDefaultIndexCfgInit(&defIdx[i], &pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        // update attribute types in schema cache with their index info
+        dwError = VmDirSchemaAttrNameToDescriptor(
+                pSchemaCtx, pIndexCfg->pszAttrName, &pATDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIndexCfgGetAllScopesInStrArray(
+                pIndexCfg, &pATDesc->ppszUniqueScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pATDesc->dwSearchFlags |= 1;
+
+        // for free later
+        pATDesc->pLdapAt->ppszUniqueScopes = pATDesc->ppszUniqueScopes;
+        pATDesc->pLdapAt->dwSearchFlags = pATDesc->dwSearchFlags;
 
         dwError = VmDirIndexOpen(pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -96,12 +116,16 @@ cleanup:
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
     VmDirBackendCtxContentFree(&beCtx);
+    VmDirSchemaCtxRelease(pSchemaCtx);
     VMDIR_SAFE_FREE_MEMORY(pszLastOffset);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeIndexCfg(pIndexCfg);
     goto cleanup;

@@ -396,8 +396,8 @@ VmDirLdapNfToStr(
 // patch.c
 DWORD
 VmDirPatchRemoteSchemaObjects(
-    LDAP*               pLd,
-    PVDIR_LDAP_SCHEMA   pNewSchema
+    LDAP*                   pLd,
+    PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff
     );
 
 // resolve.c

@@ -2669,7 +2669,9 @@ _VmDirJoinPreCondition(
     DWORD   dwError = 0;
     PSTR    pszSchemaFile = NULL;
     PVMDIR_CONNECTION   pConnection = NULL;
-    PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pCurSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pNewSchema = NULL;
+    PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff = NULL;
     PSTR    pszErrMsg = NULL;
 
     // open connection to remote node
@@ -2681,24 +2683,37 @@ _VmDirJoinPreCondition(
                 &pConnection);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // get file schema
+    // get remote schema (tree)
+    dwError = VmDirLdapSchemaInit(&pCurSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaLoadRemoteSchema(pCurSchema, pConnection->pLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // try loading file
+    dwError = VmDirLdapSchemaCopy(pCurSchema, &pNewSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirGetDefaultSchemaFile(&pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaInit(&pFileSchema);
+    dwError = VmDirLdapSchemaLoadFile(pNewSchema, pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaLoadFile(pFileSchema, pszSchemaFile);
+    // compute diff
+    dwError = VmDirLdapSchemaGetDiff(pCurSchema, pNewSchema, &pSchemaDiff);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirPatchRemoteSchemaObjects(
-            pConnection->pLd, pFileSchema);
+    // perform patch
+    dwError = VmDirPatchRemoteSchemaObjects(pConnection->pLd, pSchemaDiff);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VmDirConnectionClose(pConnection);
     VMDIR_SAFE_FREE_MEMORY(pszSchemaFile);
-    VmDirFreeLdapSchema(pFileSchema);
+    VmDirFreeLdapSchema(pCurSchema);
+    VmDirFreeLdapSchema(pNewSchema);
+    VmDirFreeLdapSchemaDiff(pSchemaDiff);
     return dwError;
 
 error:
