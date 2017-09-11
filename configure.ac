@@ -1521,10 +1521,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/tools/lwraft-cli/Makefile
                  lwraft/tools/vdcaclmgr/Makefile
                  lwraft/tools/vdcadmintool/Makefile
-                 lwraft/tools/vdcleavefed/Makefile
                  lwraft/tools/vdcschema/Makefile
-                 lwraft/tools/test/Makefile
-                 lwraft/tools/test/vmdirclienttest/Makefile
                  lwraft/thirdparty/Makefile
                  lwraft/thirdparty/openldap/Makefile
                  lwraft/thirdparty/openldap/libraries/Makefile

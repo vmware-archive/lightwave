@@ -1130,9 +1130,7 @@ Lightwave POST service
 %{_sbindir}/postd
 
 %{_bindir}/postadmintool
-%{_bindir}/lwraftleavefed
-%{_bindir}/lwraftaclmgr
-%{_bindir}/lwraftpromo
+%{_bindir}/postaclmgr
 %{_bindir}/postschema
 %{_bindir}/post-cli
 

@@ -769,14 +769,6 @@ VmDirGetRegKeyTabFile(
 }
 
 DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    )
-{
-    return VmDirGetRegGuid(VMDIR_REG_KEY_LDU_GUID, pszLduGuid);
-}
-
-DWORD
 VmDirGetLocalSiteGuid(
     PSTR pszSiteGuid
     )

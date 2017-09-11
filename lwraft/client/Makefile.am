@@ -13,7 +13,6 @@ libpostclient_la_SOURCES = \
     binding.c \
     client.c \
     globals.c \
-    groups.c \
     krb5login.c \
     ldaputil.c \
     libmain.c \
@@ -22,7 +21,6 @@ libpostclient_la_SOURCES = \
     repadmin.c \
     replication.c \
     rpc.c \
-    setupldu.c \
     shell.c \
     superlogutil.c \
     users.c \

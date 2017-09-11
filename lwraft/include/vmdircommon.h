@@ -2024,13 +2024,6 @@ VmDirGetLocalSiteGuid(
     PSTR pszSiteGuid
     );
 
-// following functions are in libvmdirclient but should not be published in vmdirclient.h
-DWORD
-VmDirGetUsnFromPartners(
-    PCSTR pszHostName,
-    USN   *pUsn
-    );
-
 VOID
 VmDirRpcFreeSuperLogEntryLdapOperationArray(
     PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY pRpcEntries

@@ -217,11 +217,6 @@ VmDirGetServerName(
     PSTR* ppszServerName);
 
 DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    );
-
-DWORD
 VmDirGetLocalSiteGuid(
     PSTR pszSiteGuid
     );
@@ -326,14 +321,6 @@ VmDirLdapDeleteServiceAccount(
     PCSTR   pszServiceName,
     PCSTR   pszDCHostName,         // Self host name
     BOOLEAN bActuallyDelete
-    );
-
-DWORD
-VmDirMergeGroups(
-    LDAP*   pSourceLd,
-    LDAP*   pTargetLd,
-    PCSTR   pszSourceDomainDN,
-    PCSTR   pszTargetDomainDN
     );
 
 DWORD
