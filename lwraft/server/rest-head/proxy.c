@@ -372,7 +372,7 @@ VmDirRESTWriteResponseCallback(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCopyMemory(
-                    pCurlResponse->pResponse + pCurlResponse->dwResponseLen,
+                    (PVOID)&pCurlResponse->pResponse[pCurlResponse->dwResponseLen],
                     bytesRead,
                     pMemPointer,
                     bytesRead);
@@ -452,8 +452,6 @@ VmDirRESTWriteProxyResponse(
                     VDIR_SAFE_STRING(curlResponse.pResponse) + sentLen,
                     chunkLen,
                     &bytesWritten);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
         sentLen += bytesWritten;
         curlResponse.dwResponseLen -= bytesWritten;
     }
