@@ -2218,6 +2218,13 @@ VmDirStringToTokenList(
     );
 
 DWORD
+VmDirStringToTokenListExt(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
 VmDirUTDVectorToStruct(
     PCSTR   pszStr,
     PVMDIR_REPL_UTDVECTOR*  ppVector
