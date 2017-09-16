@@ -145,7 +145,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapConnectPorts;
     PDWORD                          pdwLdapsConnectPorts;
     DWORD                           dwLdapsConnectPorts;
-    PSTR                            pszRestListenPort;
+    PSTR                            pszHTTPListenPort;
+    PSTR                            pszHTTPSListenPort;
 
     DWORD                           dwLdapRecvTimeoutSec;
     // following fields are protected by mutex
