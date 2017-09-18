@@ -26,8 +26,7 @@ VmDirParseArgs(
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode,
-    PBOOLEAN    pbPatchSchema
+    PBOOLEAN    pbConsoleMode
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -74,13 +73,6 @@ VmDirParseArgs(
                 }
                 break;
 
-            case VMDIR_OPTION_PATCH_SCHEMA:
-                if ( pbPatchSchema != NULL )
-                {
-                    *pbPatchSchema = TRUE;
-                }
-                break;
-
             case VMDIR_OPTION_RUN_MODE:
                 if ( VmDirStringCompareA(VMDIR_RUN_MODE_RESTORE, optarg, TRUE ) == 0 )
                 {
@@ -122,8 +114,7 @@ VmDirParseArgs(
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode,
-    PBOOLEAN    pbPatchSchema
+    PBOOLEAN    pbConsoleMode
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -168,14 +159,6 @@ VmDirParseArgs(
                 if ( pbConsoleMode != NULL )
                 {
                     *pbConsoleMode = TRUE;
-                }
-            }
-            else if ( VmDirStringCompareA(
-                            VMDIR_OPTION_PATCH_SCHEMA, argv[i], TRUE ) == 0 )
-            {
-                if ( pbPatchSchema != NULL )
-                {
-                    *pbPatchSchema = TRUE;
                 }
             }
             else if ( VmDirStringCompareA(

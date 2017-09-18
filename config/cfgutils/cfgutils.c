@@ -396,7 +396,7 @@ VmwDeploySetupServerCommon(
     VMW_DEPLOY_LOG_INFO(
          "Adding VMCA's root certificate to VMware endpoint certificate store");
 
-    dwError = VmwDeployAddTrustedRoot(pParams->pszHostname, pszCACert);
+    dwError = VmwDeployAddTrustedRoot(pszCACert);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
@@ -560,32 +560,23 @@ VmwDeploySetupClientWithDC(
     pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
                             ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
 
-    dwError = VmAfdJoinVmDirA(
+    dwError = VmAfdJoinVmDirWithSiteA(
                     pParams->pszServer,
+                    pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
                             pParams->pszMachineAccount : pParams->pszHostname,
-                    pParams->pszDomainName,
-                    pParams->pszOrgUnit);
+                    pParams->pszOrgUnit,
+                    NULL,
+                    pParams->bMachinePreJoined ?
+                        VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(
-                    "Get root certificate from VMware Certificate Authority");
+            "Refreshing root certificates from VMware Certificate Authority");
 
-    dwError = VmwDeployGetRootCACert(
-                    pParams->pszServer,
-                    pParams->pszDomainName,
-                    pszUsername,
-                    pParams->pszPassword,
-                    &pszCACert);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    VMW_DEPLOY_LOG_INFO(
-         "Adding VMCA's root certificate to VMware endpoint certificate store");
-
-    dwError = VmwDeployAddTrustedRoot(pParams->pszServer, pszCACert);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+    VmAfdLocalTriggerRootCertsRefresh();
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
 
@@ -711,35 +702,25 @@ VmwDeploySetupClient(
 
     VMW_DEPLOY_LOG_INFO("Performing domain join operation");
 
-    dwError = VmAfdJoinVmDir2A(
+    dwError = VmAfdJoinVmDirWithSiteA(
+                    NULL,
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
+                    NULL,
                     pParams->bMachinePreJoined ?
                         VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    VMW_DEPLOY_LOG_INFO(
+            "Refreshing root certificates from VMware Certificate Authority");
+
+    VmAfdLocalTriggerRootCertsRefresh();
+
     dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    VMW_DEPLOY_LOG_INFO(
-                    "Get root certificate from VMware Certificate Authority");
-
-    dwError = VmwDeployGetRootCACert(
-                    pszDC,
-                    pParams->pszDomainName,
-                    pszUsername,
-                    pParams->pszPassword,
-                    &pszCACert);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    VMW_DEPLOY_LOG_INFO(
-         "Adding VMCA's root certificate to VMware endpoint certificate store");
-
-    dwError = VmwDeployAddTrustedRoot(pszDC, pszCACert);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");

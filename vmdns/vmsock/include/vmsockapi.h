@@ -26,6 +26,7 @@ typedef enum
     VM_SOCK_TYPE_CLIENT,
     VM_SOCK_TYPE_SERVER,
     VM_SOCK_TYPE_LISTENER,
+    VM_SOCK_TYPE_FORWARDER,
     VM_SOCK_TYPE_SIGNAL
 } VM_SOCK_TYPE;
 
@@ -55,6 +56,7 @@ typedef DWORD (*PFN_CREATE_EVENT_QUEUE)(
 
 typedef DWORD (*PFN_ADD_EVENT_QUEUE)(
                     PVM_SOCK_EVENT_QUEUE pQueue,
+                    BOOL                 bOneShot,
                     PVM_SOCKET           pSocket
                     );
 
@@ -135,9 +137,21 @@ typedef DWORD (*PFN_GET_ADDRESS)(
                     );
 
 typedef DWORD (*PFN_ALLOCATE_IO_BUFFER)(
-                    VM_SOCK_EVENT_TYPE      eventType,
-                    DWORD                   dwSize,
-                    PVM_SOCK_IO_BUFFER*     ppIoBuffer
+                    VM_SOCK_EVENT_TYPE          eventType,
+                    PVM_SOCK_EVENT_CONTEXT      pEventContext,
+                    DWORD                       dwSize,
+                    PVM_SOCK_IO_BUFFER*         ppIoBuffer
+                    );
+
+typedef DWORD(*PFN_SET_EVENT_CONTEXT)(
+                    PVM_SOCK_IO_BUFFER      pIoBuffer,
+                    PVM_SOCK_EVENT_CONTEXT  pEventContext,
+                    PVM_SOCK_EVENT_CONTEXT* ppOldEventContext
+                    );
+
+typedef DWORD(*PFN_GET_EVENT_CONTEXT)(
+                    PVM_SOCK_IO_BUFFER      pIoBuffer,
+                    PVM_SOCK_EVENT_CONTEXT* ppEventContext
                     );
 
 typedef VOID(*PFN_RELEASE_IO_BUFFER)(
@@ -167,5 +181,7 @@ typedef struct _VM_SOCK_PACKAGE
     PFN_CLOSE_SOCKET       pfnCloseSocket;
     PFN_GET_ADDRESS        pfnGetAddress;
     PFN_ALLOCATE_IO_BUFFER pfnAllocateIoBuffer;
+    PFN_SET_EVENT_CONTEXT  pfnSetEventContext;
+    PFN_GET_EVENT_CONTEXT  pfnGetEventContext;
     PFN_RELEASE_IO_BUFFER  pfnReleaseIoBuffer;
 } VM_SOCK_PACKAGE, *PVM_SOCK_PACKAGE;

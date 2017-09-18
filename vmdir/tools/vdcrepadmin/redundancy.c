@@ -35,6 +35,7 @@ _PrintOptionSelected(
     )
 {
     printf("\t\t--------------------Configuration--------------------\n\n");
+    printf("\tNote: Site Name Cannot be Displayed for Offline Nodes\n\n");
     if (bNoInteraction)
     {
         printf("\tRunning the tool in No Interaction Mode\n\n");
@@ -80,13 +81,21 @@ _PrintHAServerList(
             dwError = VMDIR_ERROR_INVALID_RESULT;
             break;
         }
-        printf("\t\t%s\n\n",ppList[dwCnt]->pszHostName);
+        printf("\t\t%s\n",ppList[dwCnt]->pszHostName);
+        if (ppList[dwCnt]->pszSiteName)
+        {
+            printf("\t\tSite: %s\n\n",ppList[dwCnt]->pszSiteName);
+        }
         if (ppList[dwCnt]->dwPartnerCnt)
         {
             printf("\t\t\tPartner of Server are as follow:\n");
             for (dwPCnt=0; dwPCnt<ppList[dwCnt]->dwPartnerCnt; dwPCnt++)
             {
                 printf("\t\t\t\t%s\n",ppList[dwCnt]->ppPartnerList[dwPCnt]->pszHostName);
+                if (ppList[dwCnt]->ppPartnerList[dwPCnt]->pszSiteName)
+                {
+                    printf("\t\t\t\tSite: %s\n\n",ppList[dwCnt]->ppPartnerList[dwPCnt]->pszSiteName);
+                }
             }
             printf("\n");
         }

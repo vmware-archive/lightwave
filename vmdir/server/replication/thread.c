@@ -54,10 +54,10 @@ _VmDirReplicationFreeCredentialsContents(
 static
 DWORD
 _VmDirReplicationConnect(
-    PVMDIR_REPLICATION_CONTEXT pContext,
-    PVMDIR_REPLICATION_AGREEMENT pReplAgr,
-    PVMDIR_REPLICATION_CREDENTIALS pCreds,
-    PVMDIR_REPLICATION_CONNECTION pConnection
+    PVMDIR_REPLICATION_CONTEXT      pContext,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    PVMDIR_REPLICATION_CREDENTIALS  pCreds,
+    PVMDIR_REPLICATION_CONNECTION   pConnection
     );
 
 static
@@ -75,9 +75,9 @@ _VmDirWaitForReplicationAgreement(
 static
 VOID
 _VmDirConsumePartner(
-    PVMDIR_REPLICATION_CONTEXT pContext,
-    PVMDIR_REPLICATION_AGREEMENT replAgr,
-    PVMDIR_REPLICATION_CONNECTION pConnection
+    PVMDIR_REPLICATION_CONTEXT      pContext,
+    PVMDIR_REPLICATION_AGREEMENT    replAgr,
+    PVMDIR_REPLICATION_CONNECTION   pConnection
     );
 
 static
@@ -102,10 +102,10 @@ VmDirSetGlobalServerId();
 static
 int
 _VmDirFetchReplicationPage(
-    PVMDIR_REPLICATION_CONNECTION pConnection,
-    USN lastSupplierUsnProcessed,
-    USN initUsn,
-    PVMDIR_REPLICATION_PAGE *ppPage
+    PVMDIR_REPLICATION_CONNECTION   pConnection,
+    USN                             lastSupplierUsnProcessed,
+    USN                             initUsn,
+    PVMDIR_REPLICATION_PAGE*        ppPage
     );
 
 static
@@ -640,23 +640,6 @@ error:
     return dwError;
 }
 
-static
-int
-_VmDirGetUsnFromSyncDoneCtrl(
-    struct berval* syncDoneCtrlVal,
-    USN *pUsn)
-{
-    int retVal = LDAP_SUCCESS;
-    PSTR pszEnd = NULL;
-    USN usn = 0;
-
-    usn = VmDirStringToLA(syncDoneCtrlVal->bv_val, &pszEnd, 10);
-
-    *pUsn = usn;
-
-    return retVal;
-}
-
 int
 VmDirReplUpdateCookies(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
@@ -978,28 +961,28 @@ error:
 static
 DWORD
 _VmDirReplicationConnect(
-    PVMDIR_REPLICATION_CONTEXT pContext,
-    PVMDIR_REPLICATION_AGREEMENT pReplAgr,
-    PVMDIR_REPLICATION_CREDENTIALS pCreds,
-    PVMDIR_REPLICATION_CONNECTION pConnection
+    PVMDIR_REPLICATION_CONTEXT      pContext,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    PVMDIR_REPLICATION_CREDENTIALS  pCreds,
+    PVMDIR_REPLICATION_CONNECTION   pConnection
     )
 {
-    DWORD dwError = 0;
-    LDAP *pLd = NULL;
-    PSTR pszPartnerHostName = NULL;
-    VMDIR_REPLICATION_PASSWORD sPasswords[2];
-    DWORD dwPasswords = 0;
-    DWORD i = 0;
-    PSTR pszErrorMsg = NULL;
-    time_t currentTime = time(NULL);
+    DWORD   dwError = 0;
+    LDAP*   pLd = NULL;
+    PSTR    pszPartnerHostName = NULL;
+    VMDIR_REPLICATION_PASSWORD  sPasswords[2];
+    DWORD   dwPasswords = 0;
+    DWORD   i = 0;
+    PSTR    pszErrorMsg = NULL;
+    time_t  currentTime = time(NULL);
 
     dwError = VmDirReplURIToHostname(pReplAgr->ldapURI, &pszPartnerHostName);
     if (dwError != 0)
     {
         VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "_vdirReplicationConnect: VmDirReplURIToHostname failed. %s",
-            pReplAgr->ldapURI);
+                VMDIR_LOG_MASK_ALL,
+                "_vdirReplicationConnect: VmDirReplURIToHostname failed. %s",
+                pReplAgr->ldapURI);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1044,17 +1027,13 @@ _VmDirReplicationConnect(
         }
 
         // Bind via SASL [srp,krb] mech
-        dwError = VmDirSafeLDAPBind(&pLd,
-                                    pszPartnerHostName,
-                                    pCreds->pszUPN,
-                                    pszPassword);
+        dwError = VmDirSafeLDAPBind(
+                &pLd, pszPartnerHostName, pCreds->pszUPN, pszPassword);
         if (dwError != 0)
         {
             // Use SSL and LDAP URI for 5.5 compatibility
-            dwError = VmDirSSLBind(&pLd,
-                                   pReplAgr->ldapURI,
-                                   pCreds->pszDN,
-                                   pszPassword);
+            dwError = VmDirSSLBind(
+                    &pLd, pReplAgr->ldapURI, pCreds->pszDN, pszPassword);
         }
 
         if (dwError == LDAP_INVALID_CREDENTIALS)
@@ -1068,11 +1047,16 @@ _VmDirReplicationConnect(
         }
     }
 
+    pConnection->pszPartnerHostName = pszPartnerHostName;
+    pszPartnerHostName = NULL;
+
     pConnection->pLd = pLd;
+    pLd = NULL;
 
 error:
     VMDIR_SAFE_FREE_STRINGA(pszErrorMsg);
     VMDIR_SAFE_FREE_STRINGA(pszPartnerHostName);
+    VDIR_SAFE_UNBIND_EXT_S(pLd);
     return dwError;
 }
 
@@ -1087,7 +1071,7 @@ _VmDirReplicationDisconnect(
     if (pConnection)
     {
         VDIR_SAFE_UNBIND_EXT_S(pConnection->pLd);
-        VMDIR_SAFE_FREE_STRINGA(pConnection->pszConnectionDescription);
+        VMDIR_SAFE_FREE_STRINGA(pConnection->pszPartnerHostName);
     }
 }
 
@@ -1269,9 +1253,9 @@ error:
 static
 VOID
 _VmDirConsumePartner(
-    PVMDIR_REPLICATION_CONTEXT pContext,
-    PVMDIR_REPLICATION_AGREEMENT replAgr,
-    PVMDIR_REPLICATION_CONNECTION pConnection
+    PVMDIR_REPLICATION_CONTEXT      pContext,
+    PVMDIR_REPLICATION_AGREEMENT    replAgr,
+    PVMDIR_REPLICATION_CONNECTION   pConnection
     )
 {
     int retVal = LDAP_SUCCESS;
@@ -1293,7 +1277,7 @@ _VmDirConsumePartner(
 
         bReTrialDesired = FALSE;
         bContinue = FALSE;
-        initUsn = VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10 );
+        initUsn = VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
 
         if (bReplayEverything)
         {
@@ -1325,36 +1309,38 @@ _VmDirConsumePartner(
             pPage = NULL;
 
             retVal = _VmDirFetchReplicationPage(
-                        pConnection,
-                        lastSupplierUsnProcessed, // used in search filter
-                        initUsn,                  // used in syncRequestCtrl to send(supplier) high watermark.
-                        &pPage);
+                    pConnection,
+                    lastSupplierUsnProcessed, // used in search filter
+                    initUsn,                  // used in syncRequestCtrl to send(supplier) high watermark.
+                    &pPage);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            retVal = _VmDirProcessReplicationPage(
-                        pContext,
-                        pPage);
+            retVal = _VmDirProcessReplicationPage(pContext, pPage);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
             iEntriesOutOfSequence += pPage->iEntriesOutOfSequence;
 
             // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
-            retVal = _VmDirFilterEmptyPageSyncDoneCtr(replAgr->lastLocalUsnProcessed.lberbv.bv_val,
-                                                      &bervalSyncDoneCtrl,
-                                                      &(pPage->searchResCtrls[0]->ldctl_value));
+            retVal = _VmDirFilterEmptyPageSyncDoneCtr(
+                    replAgr->lastLocalUsnProcessed.lberbv.bv_val,
+                    &bervalSyncDoneCtrl,
+                    &(pPage->searchResCtrls[0]->ldctl_value));
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             // Check if sync done control contains explicit continue indicator
-            bContinue = VmDirStringStrA(pPage->searchResCtrls[0]->ldctl_value.bv_val,
-                                        VMDIR_REPL_CONT_INDICATOR) ? TRUE : FALSE;
+            bContinue = VmDirStringStrA(
+                    pPage->searchResCtrls[0]->ldctl_value.bv_val,
+                    VMDIR_REPL_CONT_INDICATOR) ?
+                            TRUE : FALSE;
 
             // Check if we received a full page and need to continue
             bContinue |= pPage->iEntriesRequested > 0 &&
                          pPage->iEntriesReceived > 0 &&
                          pPage->iEntriesReceived == pPage->iEntriesRequested;
 
-        } while (bContinue);
+        }
+        while (bContinue);
 
         if (iEntriesOutOfSequence > 0)
         {
@@ -1382,13 +1368,19 @@ _VmDirConsumePartner(
                 if (pContext->stLastTimeTriedToFillHoleInDirectory == 0 ||
                     pContext->stLastTimeTriedToFillHoleInDirectory + (SECONDS_IN_HOUR) < time(NULL))
                 {
-                    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirConsumePartner: Attempting to plug hole in directory.");
+                    VMDIR_LOG_ERROR(
+                            VMDIR_LOG_MASK_ALL,
+                            "_VmDirConsumePartner: Attempting to plug hole in directory");
+
                     bReplayEverything = TRUE;
                     bReTrialDesired = TRUE;
                 }
                 else
                 {
-                    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirConsumePartner: Did not succesfully perform any updates.");
+                    VMDIR_LOG_ERROR(
+                            VMDIR_LOG_MASK_ALL,
+                            "_VmDirConsumePartner: Did not succesfully perform any updates");
+
                     bReTrialDesired = FALSE; // Trying again probably won't help.
                     retVal = LDAP_CANCELLED; // We need an error value.
                 }
@@ -1396,10 +1388,15 @@ _VmDirConsumePartner(
             }
         }
 
-        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
-            "_VmDirConsumePartner: bReTrialDesired %d", bReTrialDesired);
-
-    } while ( bReTrialDesired );
+        if (bReTrialDesired)
+        {
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "_VmDirConsumePartner: will retry consuming partner (%s)",
+                    pConnection->pszPartnerHostName);
+        }
+    }
+    while (bReTrialDesired);
 
 replcycledone:
     if (retVal == LDAP_SUCCESS)
@@ -1408,19 +1405,23 @@ replcycledone:
         if (pPage && bervalSyncDoneCtrl.bv_val)
         {
             retVal = VmDirReplUpdateCookies(
-                    pContext->pSchemaCtx,
-                    &bervalSyncDoneCtrl,
-                    replAgr);
+                    pContext->pSchemaCtx, &bervalSyncDoneCtrl, replAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            VmMetricsGaugeSet(replAgr->ReplMetrics.pReplUsn,
-                        VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10));
-            VmMetricsCounterAdd(replAgr->ReplMetrics.pReplChanges,
-                        VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10) - initUsn);
+            VmMetricsGaugeSet(
+                    replAgr->ReplMetrics.pReplUsn,
+                    VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10));
 
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-                "Replication supplier %s USN range (%llu,%s) processed.",
-                replAgr->ldapURI, initUsn, replAgr->lastLocalUsnProcessed.lberbv_val);
+            VmMetricsCounterAdd(
+                    replAgr->ReplMetrics.pReplChanges,
+                    VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10) - initUsn);
+
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "Replication supplier %s USN range (%llu,%s) processed",
+                    replAgr->ldapURI,
+                    initUsn,
+                    replAgr->lastLocalUsnProcessed.lberbv_val);
         }
         else
         {
@@ -1436,13 +1437,16 @@ cleanup:
     VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
     _VmDirFreeReplicationPage(pPage);
-
     return;
 
 ldaperror:
-    VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error code (%d)", __FUNCTION__,retVal);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error code (%d)",
+            __FUNCTION__,
+            retVal);
 
+    VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
     goto cleanup;
 }
 
@@ -1505,19 +1509,20 @@ error:
 static
 int
 _VmDirFetchReplicationPage(
-    PVMDIR_REPLICATION_CONNECTION pConnection,
-    USN lastSupplierUsnProcessed,
-    USN initUsn,
-    PVMDIR_REPLICATION_PAGE *ppPage
+    PVMDIR_REPLICATION_CONNECTION   pConnection,
+    USN                             lastSupplierUsnProcessed,
+    USN                             initUsn,
+    PVMDIR_REPLICATION_PAGE*        ppPage
     )
 {
     int retVal = LDAP_SUCCESS;
-    LDAPControl *srvCtrls[2] = {NULL, NULL};
-    LDAPControl **ctrls = NULL;
+    BOOLEAN bLogErr = TRUE;
+    LDAPControl*    srvCtrls[2] = {NULL, NULL};
+    LDAPControl**   ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
-    LDAP *pLd = NULL;
-    struct timeval tv = {0};
-    struct timeval *pTv = NULL;
+    LDAP*   pLd = NULL;
+    struct timeval  tv = {0};
+    struct timeval* pTv = NULL;
 
     if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
     {
@@ -1536,7 +1541,8 @@ _VmDirFetchReplicationPage(
     pPage->iEntriesRequested = gVmdirServerGlobals.replPageSize;
 
     if (VmDirAllocateStringPrintf(
-            &pPage->pszFilter, "%s>=%ld",
+            &pPage->pszFilter,
+            "%s>=%" PRId64,
             ATTR_USN_CHANGED,
             lastSupplierUsnProcessed + 1))
     {
@@ -1545,18 +1551,39 @@ _VmDirFetchReplicationPage(
     }
 
     retVal = VmDirCreateSyncRequestControl(
-                gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                initUsn,
-                gVmdirServerGlobals.utdVector.lberbv.bv_val,
-                &(pPage->syncReqCtrl));
+            gVmdirServerGlobals.invocationId.lberbv.bv_val,
+            initUsn,
+            gVmdirServerGlobals.utdVector.lberbv.bv_val,
+            initUsn == lastSupplierUsnProcessed, // it's fetching first page if TRUE
+            &(pPage->syncReqCtrl));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     srvCtrls[0] = &(pPage->syncReqCtrl);
     srvCtrls[1] = NULL;
 
-    retVal = ldap_search_ext_s(pLd, "", LDAP_SCOPE_SUBTREE, pPage->pszFilter, NULL, FALSE,
-                               srvCtrls, NULL, pTv, pPage->iEntriesRequested,
-                               &(pPage->searchRes) );
+    retVal = ldap_search_ext_s(
+            pLd,
+            "",
+            LDAP_SCOPE_SUBTREE,
+            pPage->pszFilter,
+            NULL,
+            FALSE,
+            srvCtrls,
+            NULL,
+            pTv,
+            pPage->iEntriesRequested,
+            &(pPage->searchRes));
+
+    if (retVal == LDAP_BUSY)
+    {
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL,
+                "%s: partner (%s) is busy",
+                __FUNCTION__,
+                pConnection->pszPartnerHostName);
+
+        bLogErr = FALSE;
+    }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     pPage->iEntriesReceived = ldap_count_entries(pLd, pPage->searchRes);
@@ -1573,14 +1600,14 @@ _VmDirFetchReplicationPage(
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
         }
 
-        for (entry = ldap_first_entry( pLd, pPage->searchRes );
+        for (entry = ldap_first_entry(pLd, pPage->searchRes);
              entry != NULL && iEntries < pPage->iEntriesRequested;
-             entry = ldap_next_entry( pLd, entry ) )
+             entry = ldap_next_entry(pLd, entry))
         {
             int entryState = -1;
             USN ulPartnerUSN = 0;
 
-            retVal = ldap_get_entry_controls( pLd, entry, &ctrls );
+            retVal = ldap_get_entry_controls(pLd, entry, &ctrls);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             retVal = ParseAndFreeSyncStateControl(&ctrls, &entryState, &ulPartnerUSN);
@@ -1592,7 +1619,7 @@ _VmDirFetchReplicationPage(
             pPage->pEntries[iEntries].dwDnLength = 0;
             if (VmDirParseEntryForDn(entry, &(pPage->pEntries[iEntries].pszDn)) == 0)
             {
-                pPage->pEntries[iEntries].dwDnLength = (DWORD) VmDirStringLenA(pPage->pEntries[iEntries].pszDn);
+                pPage->pEntries[iEntries].dwDnLength = (DWORD)VmDirStringLenA(pPage->pEntries[iEntries].pszDn);
             }
 
             iEntries++;
@@ -1609,56 +1636,55 @@ _VmDirFetchReplicationPage(
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     if (pPage->searchResCtrls[0] == NULL ||
-        VmDirStringCompareA(pPage->searchResCtrls[0]->ldctl_oid, LDAP_CONTROL_SYNC_DONE, TRUE ) != 0 )
+        VmDirStringCompareA(pPage->searchResCtrls[0]->ldctl_oid, LDAP_CONTROL_SYNC_DONE, TRUE) != 0)
     {
         retVal = LDAP_OPERATIONS_ERROR;
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
     // Get last local USN processed from the cookie
-    retVal = _VmDirGetUsnFromSyncDoneCtrl(
-                &(pPage->searchResCtrls[0]->ldctl_value),
-                &(pPage->lastSupplierUsnProcessed));
+    retVal = VmDirStringToUSN(
+            pPage->searchResCtrls[0]->ldctl_value.bv_val,
+            &(pPage->lastSupplierUsnProcessed));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     *ppPage = pPage;
 
-    VMDIR_LOG_INFO(
-        LDAP_DEBUG_REPL,
-        "%s: filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
-        __FUNCTION__,
-        VDIR_SAFE_STRING(pPage->pszFilter),
-        pPage->iEntriesRequested,
-        pPage->iEntriesReceived,
-        initUsn,
-        VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+    if (pPage->iEntriesReceived > 0)
+    {
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "%s: filter: '%s' requested: %d received: %d usn: %" PRId64 " utd: '%s'",
+                __FUNCTION__,
+                VDIR_SAFE_STRING(pPage->pszFilter),
+                pPage->iEntriesRequested,
+                pPage->iEntriesReceived,
+                initUsn,
+                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+    }
 
 cleanup:
-
     if (ctrls)
     {
         ldap_controls_free(ctrls);
         ctrls = NULL;
     }
-
     return retVal;
 
 ldaperror:
-
-    if (pPage)
+    if (bLogErr && pPage)
     {
         VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s: error: %d filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
-            __FUNCTION__,
-            retVal,
-            VDIR_SAFE_STRING(pPage->pszFilter),
-            pPage->iEntriesRequested,
-            pPage->iEntriesReceived,
-            initUsn,
-            VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+                VMDIR_LOG_MASK_ALL,
+                "%s: error: %d filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+                __FUNCTION__,
+                retVal,
+                VDIR_SAFE_STRING(pPage->pszFilter),
+                pPage->iEntriesRequested,
+                pPage->iEntriesReceived,
+                initUsn,
+                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
     }
-
     _VmDirFreeReplicationPage(pPage);
     pPage = NULL;
     goto cleanup;

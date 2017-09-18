@@ -42,14 +42,23 @@ _VmDirGetHAServerFromStringList(
     PVMDIR_HA_SERVER_INFO** pppList,
     PDWORD                  pdwListCount,
     PDWORD                  pdwOnlineCount,
-    PDWORD                  pdwOfflineCount
+    PDWORD                  pdwOfflineCount,
+    BOOLEAN                 bFillPartners
     );
 
 static
 DWORD
 _VmDirFillPartnersInList(
     PVMDIR_HA_SERVER_INFO*  ppList,
-    DWORD                   Count
+    DWORD                   dwCount
+    );
+
+static
+DWORD
+_VmDirFillInterSitePartners(
+    PVMDIR_HA_SERVER_INFO*  ppList,
+    DWORD                   dwCount,
+    PDWORD                  pdwInterSiteCnt
     );
 
 static
@@ -136,6 +145,65 @@ _VmDirCreateTopologyChanges(
     PVMDIR_HA_TOPOLOGY_CHANGES*     ppChanges
     );
 
+static
+DWORD
+_VmDirFillInterTopology(
+    PVMDIR_HA_SERVER_INFO*          ppServerList,
+    DWORD                           dwListCount,
+    PVMDIR_HA_SERVER_INFO**         pppInterSiteServerList,
+    DWORD                           dwInterSiteServerListCnt,
+    DWORD                           dwOnlineCount,
+    DWORD                           dwOfflineCount,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppTopology
+    );
+
+static
+DWORD
+_VmDirGetInterSiteServerList(
+    PVMDIR_STRING_LIST      pSiteList,
+    PVMDIR_HA_SERVER_INFO*  ppHAServerList,
+    DWORD                   dwHAListCount,
+    DWORD                   dwInterSiteCount,
+    BOOLEAN                 bConsiderOfflineNodes,
+    PVMDIR_HA_SERVER_INFO** pppInterSiteList,
+    PDWORD                  pdwInterSiteListCnt
+    );
+
+static
+VOID
+_FreeSiteHashMap(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    );
+
+static
+DWORD
+_VmDirFinalizeList(
+    PVMDIR_HA_SERVER_INFO*  ppServerList,
+    DWORD                   dwServerCnt,
+    DWORD                   dwSiteCnt,
+    PDWORD*                 ppMatrix,
+    BOOLEAN                 bConsiderOfflineNodes,
+    PVMDIR_HA_SERVER_INFO** pppFinalList
+    );
+
+static
+DWORD
+_VmDirCreateServerListBySite(
+    PVMDIR_HA_SERVER_INFO*  ppServerList,
+    DWORD                   dwServerCnt,
+    DWORD                   dwSiteCnt,
+    PLW_HASHMAP             pHashmap,
+    PDWORD**                pppMatrix // Output
+    );
+
+static
+DWORD
+_VmDirGenerateSiteHashMap(
+    PVMDIR_STRING_LIST  pSiteList,
+    PLW_HASHMAP*        ppHashMap
+    );
+
 DWORD
 VmDirGetIntraSiteTopology(
     PCSTR                           pszUserName,
@@ -157,7 +225,6 @@ VmDirGetIntraSiteTopology(
     DWORD                           dwHAOfflineCount = 0;
     DWORD                           dwCnt = 0;
 
-    // printf( "\t\t\t%s\t%d\n", __FUNCTION__, __LINE__); // For Debugging till final check-in
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
         IsNullOrEmptyString(pszHostName) ||
@@ -190,7 +257,8 @@ VmDirGetIntraSiteTopology(
                     &ppHAServerList,
                     &dwHAListCount,
                     &dwHAOnlineCount,
-                    &dwHAOfflineCount);
+                    &dwHAOfflineCount,
+                    1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     /*
@@ -238,6 +306,7 @@ error:
     _VmDirFreeHAServerList(
                 ppHAServerList,
                 dwHAListCount);
+    ppHAServerList = NULL;
     VmDirFreeHATopologyData(pTopology);
 
     goto cleanup;
@@ -252,12 +321,140 @@ VmDirGetInterSiteTopology(
     PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
     )
 {
-    DWORD   dwError = 0;
+    DWORD                           dwError             = 0;
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology           = NULL;
+    PVMDIR_STRING_LIST              pAllServerList      = NULL;
+    PVMDIR_STRING_LIST              pSiteList           = NULL;
+    PVMDIR_SERVER_INFO              pServerInfo         = NULL;
+    DWORD                           dwServerInfoCount   = 0;
+    PVMDIR_HA_SERVER_INFO*          ppHAServerList      = NULL;
+    DWORD                           dwHAListCount       = 0;
+    DWORD                           dwHAOnlineCount     = 0;
+    DWORD                           dwHAOfflineCount    = 0;
+    DWORD                           dwCnt               = 0;
+    LDAP*                           pLd                 = NULL;
+    PSTR                            pszDomain           = NULL;
+    PSTR                            pszServerName       = NULL;
+    PVMDIR_HA_SERVER_INFO*          ppInterSiteList     = NULL;
+    DWORD                           dwInterSiteListCnt  = 0;
+    DWORD                           dwInterSiteCount    = 0;
 
-    printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-    BAIL_ON_VMDIR_ERROR(dwError); // For removing build issue till real code is plugged in
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszHostName) ||
+        !ppCurTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirGetServerName( pszHostName, &pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // get domain name
+    dwError = VmDirGetDomainName(
+                    pszServerName,
+                    &pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectLDAPServer(
+                    &pLd,
+                    pszServerName,
+                    pszDomain,
+                    pszUserName,
+                    pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetSiteList(
+                    pLd,
+                    pszDomain,
+                    &pSiteList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetServers(
+                    pszHostName,
+                    pszUserName,
+                    pszPassword,
+                    &pServerInfo,
+                    &dwServerInfoCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirGetListFromServerInfo(
+                    pServerInfo,
+                    dwServerInfoCount,
+                    &pAllServerList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirGetHAServerFromStringList(
+                    pAllServerList,
+                    pszUserName,
+                    pszPassword,
+                    &ppHAServerList,
+                    &dwHAListCount,
+                    &dwHAOnlineCount,
+                    &dwHAOfflineCount,
+                    0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirFillInterSitePartners(
+                    ppHAServerList,
+                    dwHAListCount,
+                    &dwInterSiteCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // ppInterSiteList will have pointers to the servers in ppHAServerList
+    dwError = _VmDirGetInterSiteServerList(
+                    pSiteList,
+                    ppHAServerList,
+                    dwHAListCount,
+                    dwInterSiteCount,
+                    bConsiderOfflineNodes,
+                    &ppInterSiteList,
+                    &dwInterSiteListCnt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    /*
+     * In this call servers formed in ppHAServerList are transferred to
+     * pTopology Servers i.e. servers in ppHAServerList and pTopology are same
+     * and can be referenced from one - another. That's the reason, there is
+     * difference in way of freeing memory of ppHAServerList in case of normal
+     * flow and error condition.
+     * In addition to this, ppInterSiteList is transferred to pTopology->ppConsiderList.
+     * After transfer ppInterSiteList will be NULL.
+     */
+    dwError = _VmDirFillInterTopology(
+                    ppHAServerList,
+                    dwHAListCount,
+                    &ppInterSiteList,
+                    dwInterSiteListCnt,
+                    dwHAOnlineCount,
+                    dwHAOfflineCount,
+                    &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppCurTopology = pTopology;
+
 cleanup:
+    VmDirStringListFree(pAllServerList);
+    VmDirStringListFree(pSiteList);
+
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    VmDirLdapUnbind(&pLd);
+
+    if (pServerInfo)
+    {
+        for (dwCnt=0; dwCnt<dwServerInfoCount; dwCnt++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pServerInfo[dwCnt].pszServerDN);
+        }
+    }
+    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+    if (ppHAServerList)
+    {
+        VMDIR_SAFE_FREE_MEMORY(ppHAServerList);
+    }
+    VMDIR_SAFE_FREE_MEMORY(ppInterSiteList);
     return dwError;
+
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
@@ -265,6 +462,11 @@ error:
             __FUNCTION__,
             dwError
             );
+    _VmDirFreeHAServerList(
+                ppHAServerList,
+                dwHAListCount);
+    ppHAServerList = NULL;
+    VmDirFreeHATopologyData(pTopology);
 
     goto cleanup;
 }
@@ -281,7 +483,17 @@ VmDirGetNewTopology(
     DWORD                           dwCost          = 0;
     PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology    = NULL;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+    if (!pTopology ||
+        !ppNewTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (pTopology->dwConsiderListCnt < 2)
+    {
+        printf("\n\nThe Number of Servers to be considered are not sufficient for creating Redundant Topology!!\n\n");
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     dwError = _VmDirCreateTopologyStructure(pTopology,
                                             &ppdwCostMatrix,
@@ -326,7 +538,6 @@ VmDirGetTopologyChanges(
 {
     DWORD   dwError = 0;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
     dwError = _VmDirCreateTopologyChanges(pCurTopology, pNewTopology, ppTopologyChanges);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -352,11 +563,9 @@ VmDirModifyLinks(
     DWORD   i       = 0;
     DWORD   j       = 0;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
     if (!pTopologyChanges)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (!pTopologyChanges->dwAddListCnt || !pTopologyChanges->ppAddLinkList)
@@ -436,7 +645,6 @@ VmDirFreeHATopology(
     PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
     )
 {
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
     if (pTopology)
     {
         _VmDirFreeHAServerList(
@@ -456,7 +664,6 @@ VmDirFreeHAServer(
     PVMDIR_HA_SERVER_INFO   pServer
     )
 {
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
     if (pServer)
     {
         VMDIR_SAFE_FREE_MEMORY(pServer->pszHostName);
@@ -480,8 +687,6 @@ VmDirFreeHAChanges(
     )
 {
     DWORD   i = 0;
-
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
 
     if (pChanges)
     {
@@ -546,8 +751,7 @@ _VmDirGetServersOnSite(
         pszPassword == NULL ||
         pdwNumServer == NULL)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirGetServerName( pszHostName, &pszServerName);
@@ -556,8 +760,7 @@ _VmDirGetServersOnSite(
     // get domain name
     dwError = VmDirGetDomainName(
                     pszServerName,
-                    &pszDomain
-                    );
+                    &pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszUserName, pszDomain);
@@ -634,8 +837,7 @@ _VmDirGetListFromServerInfo(
 
     if (!pServerInfo || !ppList)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirStringListInitialize(&pList, 16);
@@ -680,7 +882,8 @@ _VmDirGetHAServerFromStringList(
     PVMDIR_HA_SERVER_INFO** pppList,
     PDWORD                  pdwListCount,
     PDWORD                  pdwOnlineCount,
-    PDWORD                  pdwOfflineCount
+    PDWORD                  pdwOfflineCount,
+    BOOLEAN                 bFillPartners
     )
 {
     DWORD   dwError        = 0;
@@ -708,8 +911,7 @@ _VmDirGetHAServerFromStringList(
         !pdwOfflineCount ||
         !pAllServerList->dwCount)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -719,11 +921,12 @@ _VmDirGetHAServerFromStringList(
 
     for (dwCnt=0; dwCnt<pAllServerList->dwCount; dwCnt++)
     {
-        pszHost   = NULL;
-        pszServer = NULL;
-        pszSite   = NULL;
-        pCon      = NULL;
-        pServer   = NULL;
+        pszHost         = NULL;
+        pszServer       = NULL;
+        pszSite         = NULL;
+        pCon            = NULL;
+        pServer         = NULL;
+        bIsNodeOffline  = 0;
 
         VMDIR_SAFE_FREE_MEMORY(pszHostName);
         VMDIR_SAFE_FREE_MEMORY(pszDomain);
@@ -784,20 +987,16 @@ _VmDirGetHAServerFromStringList(
         pServer->pConnection    = pCon;
         pServer->pszSiteName    = pszSite;
         pServer->ppPartnerList  = NULL;
-
-        if (!pCon)
-        {
-            pServer->dwIdx = -1;
-        }
-        else
-        {
-            pServer->dwIdx = 0;
-        }
+        pServer->dwIdx = -1;
         ppList[dwCnt] = pServer;
         dwListCount += 1;
     }
-    dwError = _VmDirFillPartnersInList(ppList, dwListCount);
-    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bFillPartners)
+    {
+        dwError = _VmDirFillPartnersInList(ppList, dwListCount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     *pppList         = ppList;
     *pdwOnlineCount  = dwOnlineCount;
@@ -844,8 +1043,7 @@ _VmDirFillPartnersInList(
 
     if (!ppList || !dwCount)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     for (dwCnt = 0; dwCnt < dwCount; dwCnt++)
@@ -871,8 +1069,6 @@ _VmDirFillPartnersInList(
 
                 dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwPartnerCnt, (PVOID*)&(ppList[dwCnt]->ppPartnerList));
                 BAIL_ON_VMDIR_ERROR(dwError);
-
-                (VOID) memset(pbFound, 0, sizeof(BOOLEAN)*dwPartnerCnt);
 
                 k = 0;
 
@@ -927,6 +1123,129 @@ error:
 }
 
 static
+DWORD
+_VmDirFillInterSitePartners(
+    PVMDIR_HA_SERVER_INFO*  ppList,
+    DWORD                   dwCount,
+    PDWORD                  pdwInterSiteCnt
+    )
+{
+    DWORD       dwError         = 0;
+    DWORD       dwPartnerCnt    = 0;
+    PSTR*       ppszPartners    = NULL;
+    DWORD       dwCnt           = 0;
+    DWORD       i               = 0;
+    DWORD       j               = 0;
+    DWORD       k               = 0;
+    PBOOLEAN    pbFound         = NULL;
+    LONG        lCompareRes     = 0;
+    DWORD       dwInterSiteCnt  = 0;
+
+    if (!ppList || !dwCount)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    for (dwCnt = 0; dwCnt < dwCount; dwCnt++)
+    {
+        VmDirFreeStringArray(ppszPartners, dwPartnerCnt);
+        dwPartnerCnt = 0;
+        ppszPartners = NULL;
+
+        if (ppList[dwCnt]->pConnection)
+        {
+            dwError = VmDirFindAllReplPartnerHostByPLd(
+                                ppList[dwCnt]->pszServerName,
+                                ppList[dwCnt]->pConnection->pszDomain,
+                                ppList[dwCnt]->pConnection->pLd,
+                                &ppszPartners,
+                                &dwPartnerCnt);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (dwPartnerCnt)
+            {
+                dwError = VmDirAllocateMemory(sizeof(BOOLEAN)*dwPartnerCnt, (PVOID*)&pbFound);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwPartnerCnt, (PVOID*)&(ppList[dwCnt]->ppPartnerList));
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                k = 0;
+
+                for (i=0; i<dwCount; i++)
+                {
+                    for (j=0; j<dwPartnerCnt; j++)
+                    {
+                        if (!pbFound[j])
+                        {
+                            lCompareRes = VmDirStringCompareA(
+                                                ppList[i]->pszHostName,
+                                                ppszPartners[j],
+                                                0);
+                            if(!lCompareRes)
+                            {
+                                if (ppList[i]->pszSiteName)
+                                {
+                                    lCompareRes = VmDirStringCompareA(
+                                                        ppList[i]->pszSiteName,
+                                                        ppList[dwCnt]->pszSiteName,
+                                                        0);
+                                    if (lCompareRes)
+                                    {
+                                        ppList[dwCnt]->ppPartnerList[k] = ppList[i];
+                                        k++;
+                                    }
+                                }
+                                pbFound[j] = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+                VMDIR_SAFE_FREE_MEMORY(pbFound);
+                ppList[dwCnt]->dwPartnerCnt = k;
+
+                if (k == 0)
+                {
+                    VMDIR_SAFE_FREE_MEMORY(ppList[dwCnt]->ppPartnerList);
+                    ppList[dwCnt]->ppPartnerList = NULL;
+                }
+                else
+                {
+                    dwInterSiteCnt++;
+                }
+            }
+            else
+            {
+                ppList[dwCnt]->ppPartnerList = NULL;
+                ppList[dwCnt]->dwPartnerCnt  = 0;
+            }
+        }
+        else
+        {
+            ppList[dwCnt]->ppPartnerList = NULL;
+            ppList[dwCnt]->dwPartnerCnt  = 0;
+        }
+    }
+
+    *pdwInterSiteCnt = dwInterSiteCnt;
+
+cleanup:
+    VmDirFreeStringArray(ppszPartners, dwPartnerCnt);
+    VMDIR_SAFE_FREE_MEMORY(pbFound);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed. Error[%d]\n",
+        __FUNCTION__,
+        dwError
+        );
+    goto cleanup;
+}
+
+static
 VOID
 _VmDirFreeHAServerList(
     PVMDIR_HA_SERVER_INFO*  ppList,
@@ -937,7 +1256,6 @@ _VmDirFreeHAServerList(
 
     if (ppList)
     {
-        // printf("%s Count is %d\n", __FUNCTION__, dwCount); // For Debugging till final check-in
         for (dwCnt = 0; dwCnt < dwCount; dwCnt++)
         {
             if (ppList[dwCnt])
@@ -973,8 +1291,7 @@ _VmDirFillIntraTopology(
 
     if (!ppServerList || !ppTopology)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_REPLICATION_TOPOLOGY), (PVOID*)&pTopology);
@@ -1088,8 +1405,8 @@ _VmDirCreateTopologyStructure(
 {
     DWORD   dwError = 0;
     PDWORD* ppdwCostMatrix          = NULL;
-    PDWORD  pdwFinalResult            = NULL;// list that will mantain the ring
-                                            // start - node - node - end
+    PDWORD  pdwFinalResult          = NULL;// list that will mantain the ring
+                                           // start - node - node - end
     PVMDIR_HA_SERVER_INFO* ppList   = NULL;
     DWORD   dwCnt                   = 0;
     DWORD   dwCount                 = 0;
@@ -1105,16 +1422,13 @@ _VmDirCreateTopologyStructure(
                                         // if edge exist and make algorithm use this
                                         // instead of Online node one
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-
     if (!pTopology ||
         !pppdwCostMatrix ||
         !ppFinalResult ||
         !pTopology->ppConsiderList ||
         !pTopology->dwConsiderListCnt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     ppList  = pTopology->ppConsiderList;
@@ -1187,15 +1501,12 @@ error:
             __FUNCTION__,
             dwError
             );
-    for (i=0; i<dwCount; i++)
+    if(ppdwCostMatrix)
     {
-        if(ppdwCostMatrix && ppdwCostMatrix[i])
+        for (i=0; i<dwCount; i++)
         {
             VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix[i]);
         }
-    }
-    if (ppdwCostMatrix)
-    {
         VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix);
     }
     if (pdwFinalResult)
@@ -1216,12 +1527,9 @@ _VmDirFindFinalTopology(
 {
     DWORD   dwError = 0;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-
     if (!ppdwCostMatrix || !pdwFinalResult || !pdwCost)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = _VmDirFindNNA(dwNodeCount, ppdwCostMatrix, pdwFinalResult, pdwCost);
@@ -1258,12 +1566,9 @@ _VmDirFindNNA(
     DWORD       dwTmpCost   = 1999999999;
     DWORD       dwSrc       = 0;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-
     if (!ppdwCostMatrix || !pdwFinalResult || !pdwCost || !dwNodeCount)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(sizeof(BOOLEAN)*dwNodeCount,(PVOID*)&pMark);
@@ -1334,7 +1639,10 @@ _VmDirCopyHAServer(
 
     PVMDIR_HA_SERVER_INFO   pServer = NULL;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
+    if (!pSrcServer || !ppDestServer)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_SERVER_INFO), (PVOID*)&pServer);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1413,16 +1721,13 @@ _VmDirCreateNewTopology(
 
     PVMDIR_HA_REPLICATION_TOPOLOGY pNewTopology = NULL;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-
     if (!pTopology ||
         !pFinalResult ||
         !ppNewTopology ||
         !pTopology->ppConsiderList ||
         !pTopology->dwConsiderListCnt)
     {
-            dwError = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwCount = pTopology->dwConsiderListCnt;
@@ -1448,7 +1753,6 @@ _VmDirCreateNewTopology(
             dwOfflineCnt += 1;
         }
     }
-    // printf("OnlineCnt: %u, OfflineCnt: %u\n",dwOnlineCnt,dwOfflineCnt);
     if (dwOnlineCnt)
     {
         dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwOnlineCnt, (PVOID*)&(pNewTopology->ppOnlineList));
@@ -1545,17 +1849,12 @@ _VmDirFreeTopologyStructure(
 {
     DWORD   i = 0;
 
-    // printf( "\t\t\t%s\n", __FUNCTION__); // For Debugging till final check-in
-
-    for (i=0; i<dwCount; i++)
+    if (ppdwCostMatrix)
     {
-        if(ppdwCostMatrix && ppdwCostMatrix[i])
+        for (i=0; i<dwCount; i++)
         {
             VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix[i]);
         }
-    }
-    if (ppdwCostMatrix)
-    {
         VMDIR_SAFE_FREE_MEMORY(ppdwCostMatrix);
     }
     if (pFinalResult)
@@ -1582,8 +1881,7 @@ _VmDirCreateTopologyChanges(
         !pCurTopology->dwConsiderListCnt ||
         !pNewTopology->dwConsiderListCnt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_TOPOLOGY_CHANGES), (PVOID*)&pChanges);
@@ -1630,8 +1928,7 @@ _VmDirCreateInternalChanges(
         !pNewTopology->dwConsiderListCnt ||
         pCurTopology->dwConsiderListCnt != pNewTopology->dwConsiderListCnt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwCount = pNewTopology->dwConsiderListCnt;
@@ -1734,8 +2031,7 @@ _VmDirFindDifferenceInReplLinks(
         pChanges->dwAddListCnt != pChanges->dwDelListCnt ||
         pChanges->dwAddListCnt != pNewTopology->dwConsiderListCnt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwCount = pNewTopology->dwConsiderListCnt;
@@ -1768,14 +2064,15 @@ _VmDirFindDifferenceInReplLinks(
                 }
                 if (bStatus)
                 {
-                    if (pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx != (DWORD)-1)
+                    if ((pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx != (DWORD)-1) &&
+                        pChanges->ppDelLinkList[pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx]->pConnection)
                     {
                         pChanges->ppDelLinkList[i]->ppPartnerList[dwPosDel] = pChanges->ppDelLinkList[pCurTopology->ppConsiderList[i]->ppPartnerList[j]->dwIdx];
                         dwPosDel++;
                     }
                     else
                     {
-                        printf("\n\nIgnoring Link Creation/Deletion with Offline Node: %s\n",pCurTopology->ppConsiderList[i]->ppPartnerList[j]->pszHostName);
+                        printf("\nIgnoring Link Creation/Deletion with Offline/Non-Considered Node: %s\n\n",pCurTopology->ppConsiderList[i]->ppPartnerList[j]->pszHostName);
                     }
                 }
             }
@@ -1784,14 +2081,15 @@ _VmDirFindDifferenceInReplLinks(
         {
             if (!pMark[k])
             {
-                if (pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx != (DWORD)-1)
+                if (pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx != (DWORD)-1 &&
+                    pChanges->ppAddLinkList[pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx]->pConnection)
                 {
                     pChanges->ppAddLinkList[i]->ppPartnerList[dwPosAdd] = pChanges->ppAddLinkList[pNewTopology->ppConsiderList[i]->ppPartnerList[k]->dwIdx];
                     dwPosAdd++;
                 }
                 else
                 {
-                    printf("\n\nIgnoring Link Creation/Deletion with Offline Node: %s\n",pCurTopology->ppConsiderList[i]->ppPartnerList[j]->pszHostName);
+                    printf("\nIgnoring Link Creation/Deletion with Offline/Non-Considered Node: %s\n\n",pNewTopology->ppConsiderList[i]->ppPartnerList[k]->pszHostName);
                 }
             }
         }
@@ -1814,5 +2112,459 @@ error:
         __FUNCTION__,
         dwError
     );
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirFillInterTopology(
+    PVMDIR_HA_SERVER_INFO*          ppServerList,
+    DWORD                           dwListCount,
+    PVMDIR_HA_SERVER_INFO**         pppInterSiteServerList,
+    DWORD                           dwInterSiteListCnt,
+    DWORD                           dwOnlineCount,
+    DWORD                           dwOfflineCount,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppTopology
+    )
+{
+    DWORD   dwError         = 0;
+    DWORD   dwCnt           = 0;
+    DWORD   dwPosOn         = 0;
+    DWORD   dwPosOff        = 0;
+
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology           = NULL;
+
+    if (!ppServerList || !ppTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_HA_REPLICATION_TOPOLOGY), (PVOID*)&pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pTopology->ppConsiderList    = NULL;
+    pTopology->dwConsiderListCnt = 0;
+
+    if (dwOnlineCount)
+    {
+        dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwOnlineCount, (PVOID*)&(pTopology->ppOnlineList));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        pTopology->ppOnlineList = NULL;
+        pTopology->dwOnlineListCnt = 0;
+    }
+
+    if (dwOfflineCount)
+    {
+        dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwOfflineCount, (PVOID*)&(pTopology->ppOfflineList));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        pTopology->ppOfflineList = NULL;
+        pTopology->dwOfflineListCnt = 0;
+    }
+
+    dwPosOn = dwPosOff = 0;
+
+    for (dwCnt=0; dwCnt < dwListCount; dwCnt++)
+    {
+        if (ppServerList[dwCnt])
+        {
+            if (ppServerList[dwCnt]->pConnection)
+            {
+                if (pTopology->ppOnlineList)
+                {
+                    pTopology->ppOnlineList[dwPosOn] = ppServerList[dwCnt];
+                    dwPosOn++;
+                }
+                else
+                {
+                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+                }
+            }
+            else
+            {
+                if (pTopology->ppOfflineList)
+                {
+                    pTopology->ppOfflineList[dwPosOff] = ppServerList[dwCnt];
+                    dwPosOff++;
+                }
+                else
+                {
+                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+                }
+            }
+        }
+    }
+
+    pTopology->dwOnlineListCnt   = dwPosOn;
+    pTopology->dwOfflineListCnt  = dwPosOff;
+
+    pTopology->ppConsiderList    = *pppInterSiteServerList;
+    pTopology->dwConsiderListCnt = dwInterSiteListCnt;
+
+    *pppInterSiteServerList = NULL;
+
+    *ppTopology = pTopology;
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, Error[%d]\n",
+        __FUNCTION__,
+        dwError
+    );
+    // Need to NULL contents of pTopology->ppOnlineList &
+    // pTopology->ppOfflineList to prevent double deletion
+    // in case of error condition. No need free them as
+    // they will be taken care in VmDirFreeHATopology
+    if (dwPosOn && pTopology->ppOnlineList)
+    {
+        for (dwCnt=0; dwCnt<dwPosOn; dwCnt++)
+        {
+            pTopology->ppOnlineList[dwCnt] = NULL;
+        }
+    }
+    if (dwPosOff && pTopology->ppOfflineList)
+    {
+        for (dwCnt=0; dwCnt<dwPosOff; dwCnt++)
+        {
+            pTopology->ppOfflineList[dwCnt] = NULL;
+        }
+    }
+    VmDirFreeHATopology(pTopology);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGetInterSiteServerList(
+    PVMDIR_STRING_LIST      pSiteList,
+    PVMDIR_HA_SERVER_INFO*  ppHAServerList,
+    DWORD                   dwHAListCount,
+    DWORD                   dwInterSiteCount,
+    BOOLEAN                 bConsiderOfflineNodes,
+    PVMDIR_HA_SERVER_INFO** pppInterSiteList,
+    PDWORD                  pdwInterSiteListCnt
+    )
+{
+    DWORD                   dwError = 0;
+    DWORD                   i       = 0;
+    PLW_HASHMAP             pHashMap = NULL;
+    PDWORD*                 ppServerMatrixBySite = NULL;
+    PVMDIR_HA_SERVER_INFO*  ppInterSiteList = NULL;
+
+    if (!pSiteList ||
+        !pSiteList->dwCount ||
+        !ppHAServerList ||
+        !dwHAListCount ||
+        !pppInterSiteList ||
+        !pdwInterSiteListCnt)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _VmDirGenerateSiteHashMap(pSiteList, &pHashMap);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirCreateServerListBySite(
+                    ppHAServerList,
+                    dwHAListCount,
+                    pSiteList->dwCount,
+                    pHashMap,
+                    &ppServerMatrixBySite);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirFinalizeList(
+                    ppHAServerList,
+                    dwHAListCount,
+                    pSiteList->dwCount,
+                    ppServerMatrixBySite,
+                    bConsiderOfflineNodes,
+                    &ppInterSiteList
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pppInterSiteList    = ppInterSiteList;
+    *pdwInterSiteListCnt = pSiteList->dwCount;
+
+cleanup:
+    if (pHashMap)
+    {
+        LwRtlHashMapClear(pHashMap, _FreeSiteHashMap, NULL);
+        LwRtlFreeHashMap(&pHashMap);
+    }
+    for (i=0; i<pSiteList->dwCount; i++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(ppServerMatrixBySite[i]);
+    }
+    VMDIR_SAFE_FREE_MEMORY(ppServerMatrixBySite);
+
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, Error[%d]\n",
+        __FUNCTION__,
+        dwError
+    );
+    VMDIR_SAFE_FREE_MEMORY(ppInterSiteList);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGenerateSiteHashMap(
+    PVMDIR_STRING_LIST  pSiteList,
+    PLW_HASHMAP*        ppHashMap
+    )
+{
+    DWORD       dwError     = 0;
+    DWORD       i           = -1;
+    PSTR        pszSite     = NULL;
+    PDWORD*     ppdwValues  = NULL;
+    PLW_HASHMAP pHashMap    = NULL;
+
+    if (!pSiteList ||
+        !ppHashMap ||
+        !pSiteList->dwCount)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(PDWORD)*pSiteList->dwCount, (PVOID*)&ppdwValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwRtlCreateHashMap(
+                    &pHashMap,
+                    LwRtlHashDigestPstrCaseless,
+                    LwRtlHashEqualPstrCaseless,
+                    NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; i<pSiteList->dwCount; i++)
+    {
+        pszSite = NULL;
+
+        dwError = VmDirAllocateMemory(sizeof(DWORD),(PVOID*)&(ppdwValues[i]));
+        BAIL_ON_VMDIR_ERROR(dwError);
+        *ppdwValues[i] = i;
+
+        dwError = VmDirAllocateStringA(pSiteList->pStringList[i], &pszSite);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = LwRtlHashMapInsert(
+                        pHashMap,
+                        (PVOID)pszSite,
+                        (PVOID)ppdwValues[i],
+                        NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppHashMap = pHashMap;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(ppdwValues);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, Error[%d]\n",
+        __FUNCTION__,
+        dwError
+    );
+    LwRtlHashMapClear(pHashMap, _FreeSiteHashMap, NULL);
+    LwRtlFreeHashMap(&pHashMap);
+    VMDIR_SAFE_FREE_MEMORY(pszSite);
+    // This if is required to prevent memory leak of DWORD in case of
+    // error condition.
+    if (ppdwValues && i != (DWORD)-1 && ppdwValues[i])
+    {
+        VMDIR_SAFE_FREE_MEMORY(ppdwValues[i]);
+    }
+    goto cleanup;
+}
+
+static
+VOID
+_FreeSiteHashMap(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pPair->pKey);
+    VMDIR_SAFE_FREE_MEMORY(pPair->pValue);
+}
+
+static
+DWORD
+_VmDirCreateServerListBySite(
+    PVMDIR_HA_SERVER_INFO*  ppServerList,
+    DWORD                   dwServerCnt,
+    DWORD                   dwSiteCnt,
+    PLW_HASHMAP             pHashMap,
+    PDWORD**                pppMatrix // Output
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i       = 0;
+    PDWORD  pValue  = NULL;
+    PDWORD* ppMatrix = NULL;
+
+    if (!ppServerList ||
+        !dwServerCnt ||
+        !dwSiteCnt ||
+        !pHashMap ||
+        !pppMatrix)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(PDWORD)*dwSiteCnt, (PVOID*)&ppMatrix);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; i<dwSiteCnt; i++)
+    {
+        dwError = VmDirAllocateMemory(sizeof(DWORD)*(dwServerCnt+1), (PVOID*)&ppMatrix[i]); // +1 inorder to save count in the matrix itself
+        BAIL_ON_VMDIR_ERROR(dwError);
+        ppMatrix[i][0] = 0; // Intializing column 0 saved for count to Zero.
+    }
+
+    for (i=0; i<dwServerCnt; i++)
+    {
+        if (ppServerList[i] && ppServerList[i]->pszSiteName)
+        {
+            dwError = LwRtlHashMapFindKey(pHashMap, (PVOID*)&pValue, ppServerList[i]->pszSiteName);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            ppMatrix[*pValue][0] += 1;
+            ppMatrix[*pValue][ppMatrix[*pValue][0]] = i;
+        }
+    }
+
+    *pppMatrix = ppMatrix;
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, Error[%d]\n",
+        __FUNCTION__,
+        dwError
+    );
+    if (ppMatrix)
+    {
+        for ( i=0; i<dwSiteCnt; i++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppMatrix[i]);
+        }
+        VMDIR_SAFE_FREE_MEMORY(ppMatrix);
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirFinalizeList(
+    PVMDIR_HA_SERVER_INFO*  ppServerList,
+    DWORD                   dwServerCnt,
+    DWORD                   dwSiteCnt,
+    PDWORD*                 ppMatrix,
+    BOOLEAN                 bConsiderOfflineNodes,
+    PVMDIR_HA_SERVER_INFO** pppFinalList
+    )
+{
+    DWORD                   dwError         = 0;
+    DWORD                   i               = 0;
+    DWORD                   j               = 0;
+    DWORD                   dwMaxPartner    = 0;
+    DWORD                   dwSelectIdx     = -1;
+    DWORD                   dwMaxOnline     = 0;
+    DWORD                   dwOnlineIdx     = -1;
+    DWORD                   dwServerPos     = 0;
+    PVMDIR_HA_SERVER_INFO*  ppFinalList      = NULL;
+
+    if (!ppServerList ||
+        !dwServerCnt ||
+        !dwSiteCnt ||
+        !ppMatrix ||
+        !pppFinalList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(PVMDIR_HA_SERVER_INFO)*dwSiteCnt, (PVOID*)&ppFinalList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; i<dwSiteCnt; i++)
+    {
+        if (ppMatrix[i] && ppMatrix[i][0])
+        {
+            dwMaxPartner = 0;
+            dwSelectIdx  = -1;
+            dwMaxOnline  = 0;
+            dwOnlineIdx  = -1;
+            for (j=1; j<=ppMatrix[i][0]; j++)
+            {
+                dwServerPos = ppMatrix[i][j];
+                if (ppServerList[dwServerPos])
+                {
+                   if (dwMaxOnline <= ppServerList[dwServerPos]->dwPartnerCnt)
+                   {
+                       if (dwMaxPartner < ppServerList[dwServerPos]->dwPartnerCnt)
+                       {
+                            dwMaxPartner = ppServerList[dwServerPos]->dwPartnerCnt;
+                            dwSelectIdx  = dwServerPos;
+                       }
+
+                       if (ppServerList[dwServerPos]->pConnection)
+                       {
+                           dwMaxOnline = ppServerList[dwServerPos]->dwPartnerCnt;
+                           dwOnlineIdx = dwServerPos;
+                       }
+                   }
+                }
+            }
+            if (!bConsiderOfflineNodes)
+            {
+                dwMaxPartner = dwMaxOnline;
+                dwSelectIdx  = dwOnlineIdx;
+            }
+
+            if (dwSelectIdx != (DWORD)-1)
+            {
+                ppFinalList[i] = ppServerList[dwSelectIdx];
+                ppServerList[dwSelectIdx]->dwIdx = i;
+            }else
+            {
+                printf("\n\nA Complete Site is down. Please Fix it or Bring one node from that Site to run this tool\n\n");
+                dwError = VMDIR_ERROR_INVALID_RESULT;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }else
+        {
+            printf("\n\nA Complete Site is down. Please Fix it or Bring one node from that Site to run this tool\n\n");
+            dwError = VMDIR_ERROR_INVALID_RESULT;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    *pppFinalList = ppFinalList;
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, Error[%d]\n",
+        __FUNCTION__,
+        dwError
+    );
+    VMDIR_SAFE_FREE_MEMORY(ppFinalList);
     goto cleanup;
 }

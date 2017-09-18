@@ -14,7 +14,7 @@
 
 // C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
-#define VMDIR_REST_DEBUGLOGFILE     "/tmp/post-rest.log"
+#define VMDIR_REST_DEBUGLOGFILE     "/var/log/lightwave/post-rest.log"
 
 #define VMDIR_REST_CLIENTCNT        "64"
 #define VMDIR_REST_WORKERTHCNT      "64"
@@ -111,7 +111,7 @@
 #define HTTP_METHOD_GET     "GET"
 #define HTTP_METHOD_POST    "POST"
 #define HTTP_METHOD_PUT     "PUT"
-#define HTTP_METHOD_DEL     "DEL"
+#define HTTP_METHOD_DEL     "DELETE"
 #define HTTP_METHOD_PATCH   "PATCH"
 
 #define VMDIR_SET_REST_RESULT(pRestOp, pMLOp, dwError, pszErrMsg)       \

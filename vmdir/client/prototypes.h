@@ -21,7 +21,7 @@
 #define VMDIR_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmdir"
 #define VMDIR_START_SERVICE "/opt/likewise/bin/lwsm start vmdir"
 // in embedded VCHA, snapshot database live under vmware-vmdir/
-#define VMDIR_CLEANUP_DATA "rm -rf /storage/db/vmware-vmdir/*"
+#define VMDIR_CLEANUP_DATA "mv /var/lib/vmware/vmdir/data.mdb /var/lib/vmware/vmdir/data.mdb.bak"
 
 #define VMKDC_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmkdc"
 #define VMKDC_START_SERVICE "/opt/likewise/bin/lwsm start vmkdc"
@@ -784,6 +784,11 @@ VmDirModifyLinks(
     );
 
 VOID
+VmDirFreeHATopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
+    );
+
+VOID
 VmDirFreeHAServer(
     PVMDIR_HA_SERVER_INFO   pServer
     );
@@ -849,4 +854,11 @@ VmDirGetServersInfoOnSite(
     PCSTR                   pszDomain,
     PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
     DWORD*                  pdwInfoCount
+    );
+
+DWORD
+VmDirGetSiteList(
+    LDAP*               pLd,
+    PCSTR               pszDomainName,
+    PVMDIR_STRING_LIST* ppSiteList
     );

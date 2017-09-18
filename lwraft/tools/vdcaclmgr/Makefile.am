@@ -1,11 +1,11 @@
-bin_PROGRAMS = lwraftaclmgr
+bin_PROGRAMS = postaclmgr
 
-lwraftaclmgr_SOURCES = \
+postaclmgr_SOURCES = \
     acl.c           \
     ldap.c          \
     main.c
 
-lwraftaclmgr_CPPFLAGS = \
+postaclmgr_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \
     -I$(top_srcdir)/lwraft/include/public \
     -I$(top_srcdir)/lwraft/tools/include \
@@ -14,7 +14,7 @@ lwraftaclmgr_CPPFLAGS = \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-lwraftaclmgr_LDADD = \
+postaclmgr_LDADD = \
     $(top_builddir)/lwraft/client/libpostclient.la \
     $(top_builddir)/lwraft/common/libcommon.la \
     @DCERPC_LIBS@ \
@@ -32,6 +32,6 @@ lwraftaclmgr_LDADD = \
     @UUID_LIBS@ \
     @LBER_LIBS@
 
-lwraftaclmgr_LDFLAGS = \
+postaclmgr_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

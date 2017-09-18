@@ -615,7 +615,7 @@ int MdbTester::restore_db()
 
 static void show_usage(char *path)
 {
-    printf("Usage %s -w1|-w2|-w3|-w4|-w5|-w6|-r1|-r2|-r3|-r4|-b1|-b2|-b3|-b4|-b5|-d1|-d2|-s\n", path);
+    printf("Usage %s -w1|-w2|-w3|-w4|-w5|-w6|-w7|-r1|-r2|-r3|-r4|-b1|-b2|-b3|-b4|-b5|-d1|-d2|-s\n", path);
     exit(-1);
 }
 
@@ -657,6 +657,8 @@ main(int argc, char **argv)
     t_modify=5;
   else if (strcmp(argv[1], "-w6")==0)
     t_modify=6;
+  else if (strcmp(argv[1], "-w7")==0)
+    t_modify=7;
   else if (strcmp(argv[1], "-b1")==0)
     t_bigdata = 1;
   else if (strcmp(argv[1], "-r1")==0)
@@ -756,33 +758,27 @@ main(int argc, char **argv)
 
     rc = mtp->test_mod_search(2);
     if (rc == 0 ) {
-      printf("test search returned a value for no-such-data\n");
+      printf("test search faild: returned a value for no-such-data\n");
       rc = -1;
     } else
       rc = 0;
 
-    printf("Pause 32 seconds for checkpoint...\n");
-    SLEEP(32); //observe checkpoint
     delete mtp;
-	SLEEP(1);
+    SLEEP(1);
   }
 
   if (t_modify == 2) {
+    // Test transaction commit
     mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE, 0);
     mtp->txn_begin();
-    mtp->provision(16000);
+    mtp->provision(8000);
     printf ("search data inside transaction...\n");
     mtp->test_provision_search(1000);
     mtp->test_provision_search(7001);
     rc = mtp->txn_commit();
     if (rc)
     {
-      /* This can be triggered with a modified mdb.c
-       * where wal write is limited to 2000 pags:
-       * if ((pos/pgsize + pgs) >= 2000)
-       * in function mdb_walbuf_cpy()
-       */
-
+      /* There is no easy way to trigger this condition */
       printf ("search again after commit failed\n");
       mtp->test_provision_search(1000);
       mtp->test_provision_search(7001);
@@ -792,26 +788,11 @@ main(int argc, char **argv)
       mtp->test_provision_search(1000);
       mtp->test_provision_search(7001);
     }
-
-    if (rc)
-    {
-       mtp->txn_begin();
-       mtp->provision(1000);
-       mtp->test_provision_search(100);
-       mtp->test_provision_search(701);
-       rc = mtp->txn_commit();
-       printf("transaction commit %s with 1000 data provisioned.\n", rc?"failed":"succeed");
-       printf("search again outside transaction after 1000 data provisioned...\n");
-       mtp->test_provision_search(100);
-       mtp->test_provision_search(701);
-    }
-
-    printf("Pause 32 seconds for checkpoint...\n");
-    SLEEP(32); //observe checkpoint
     delete mtp;
   }
 
   if (t_modify == 3) {
+    // Test transaciton abort
     mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4, 0);
     mtp->txn_begin();
     mtp->provision(8000);
@@ -822,13 +803,11 @@ main(int argc, char **argv)
     printf ("search again after aborting the transaction...\n");
     mtp->test_provision_search(100);
     mtp->test_provision_search(201);
-
-    printf("Pause 32 seconds for checkpoint...\n");
-    SLEEP(32); //observe checkpoint
     delete mtp;
   }
 
   if (t_modify == 4) {
+    // Test nested transaction
     mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>4, 0);
     mtp->provision(200);
 
@@ -838,8 +817,7 @@ main(int argc, char **argv)
     rc = mtp->test_modify_nested(1, 0, 0);
     rc = mtp->test_mod_search(1);
 
-    /* MDB WAL now supports nested transaction
-     */
+    /* MDB WAL now supports nested transaction */
     printf("\nmodify and search inside of transaction with child txn aborted...\n");
     rc = mtp->test_modify_nested(2, 1, 0);
     rc = mtp->test_mod_search(2);
@@ -850,18 +828,14 @@ main(int argc, char **argv)
 
     mtp->txn_commit();
 
-    printf("\nsearch outside of transaction...\n");
+    printf("\nsearch outside of transaction, only 1 and 3 should exist ...\n");
     rc = mtp->test_mod_search(1);
     rc = mtp->test_mod_search(2);
     rc = mtp->test_mod_search(3);
-
-    printf("Pause 32 seconds for checkpoint...\n");
-    SLEEP(32); //observe checkpoint
-    delete mtp;
   }
 
   if (t_modify == 5) {
-    /* test map full case */
+    /* Test map full case */
     mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE>>7, 1);
     mtp->largedata_modify(5, 300, "mark5");
     printf("search added large data idx 5 ...\n");
@@ -888,6 +862,7 @@ main(int argc, char **argv)
   }
 
   if (t_modify == 6) {
+    //Test database hot copy
     unsigned long current_xlog_num = 0;
     unsigned long dbSizeMb = 0;
     unsigned long dbMapSizeMb = 0;
@@ -921,7 +896,24 @@ main(int argc, char **argv)
     t_search = 4; //t_search 4 will search for added data after backup_db.
   }
 
+  //Debug transaction log rollforward
+  if (t_modify == 7) {
+    mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE, 1);
+    mtp->provision(200);
+
+    if (wal_enabled)
+    {
+      MdbTester::backup_db(); //backup database with 200 items in the database
+    }
+
+    mtp->provision(1000, 200);
+    exit(0);
+    //use -r3 to test rollforward after copy back the backup database
+    delete mtp;
+  }
+
   if (t_delete == 1) {
+    //Test restore database for deleted data.
     mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE, 1);
 
     if (wal_enabled)
@@ -930,30 +922,19 @@ main(int argc, char **argv)
       MdbTester::backup_db();
     }
 
-    mtp->provision(8000);
-    rc = mtp->test_modify(1000);
-    printf("add idx 1000 %s\n", rc?"failed":"succeeded");
+    mtp->provision(2000);
 
+    rc = mtp->test_modify(1000);
     mtp->test_mod_search(1000);
 
     rc = mtp->test_del(1000, "modify key ");
-    printf("delete idx 1000 %s\n", rc?"failed":"succeeded");
-
-    printf("search deleted small data idx 1000...\n");
     mtp->test_mod_search(1000);
 
     mtp->largedata_modify(200, 4096*4); //four overflow pages
-    printf("search added big data idx 200...\n");
     mtp->largedata_search(200);
 
-    printf("deleting big data idx 200 ...\n");
     rc = mtp->test_del(200, "");
-    printf("delete bigdata idx 200 %s\n", rc?"failed":"succeeded");
-
-    printf("search deleted big data idx 200...\n");
     mtp->largedata_search(200);
-
-    printf("Pause 32 seconds for checkpoint...\n");
 
     delete mtp;
 
@@ -964,23 +945,9 @@ main(int argc, char **argv)
     mtp = new MdbTester(env_flags, DB_DEFAULT_SIZE, 0);
 
     mtp->test_provision_search(100);
-    mtp->test_provision_search(2000);
+    mtp->test_provision_search(1200);
 
     mtp->test_mod_search(1000);
-    mtp->largedata_search(200);
-
-    printf("add idx 1000 ...");
-    rc=mtp->test_modify(1000);
-    printf("add idx 1000 %s\n", rc?"failed":"succeeded");
-
-    printf("search  modified data idx 1000...\n");
-    mtp->test_mod_search(1000);
-
-    printf("add bigdata idx 200 ...\n");
-    rc = mtp->largedata_modify(200, 4096*4); //four overflow pages
-    printf("add bigdata idx 200 %s\n", rc?"failed":"succeeded");
-
-    printf("search bigdata again ...\n");
     mtp->largedata_search(200);
 
     delete mtp;

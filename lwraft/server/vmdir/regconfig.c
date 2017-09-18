@@ -802,7 +802,7 @@ VmDirGetMdbWalEnable(
                             &keyValue);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    *pbMdbEnableWal = keyValue==1;
+    *pbMdbEnableWal = (keyValue!=0);
 
 cleanup:
     if (pCfgHandle)
@@ -810,6 +810,49 @@ cleanup:
         VmDirRegConfigHandleClose(pCfgHandle);
     }
     return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirGetMdbChkptInterval(
+    DWORD *pdwMdbChkptInterval
+    )
+{
+    DWORD keyValue = 0;
+    DWORD dwError = 0;
+
+    *pdwMdbChkptInterval = VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT;
+
+    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
+
+    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigGetDword(
+                            pCfgHandle,
+                            VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+                            VMDIR_REG_KEY_MDB_CHKPT_INTERVAL,
+                            &keyValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (keyValue < VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN ||
+        keyValue > VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pdwMdbChkptInterval = keyValue;
+
+cleanup:
+    if (pCfgHandle)
+    {
+        VmDirRegConfigHandleClose(pCfgHandle);
+    }
+    return dwError;
+
 error:
     goto cleanup;
 }

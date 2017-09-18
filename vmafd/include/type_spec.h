@@ -890,6 +890,11 @@ typedef struct _VMW_TYPE_SPEC_
 #define JOIN_VMDIR_2_INPUT_PARAMS \
 {\
     {\
+        "Server Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
         "Domain Name",\
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
@@ -911,6 +916,11 @@ typedef struct _VMW_TYPE_SPEC_
     },\
     {\
         "Organizational Unit",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Site Name",\
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
     },\

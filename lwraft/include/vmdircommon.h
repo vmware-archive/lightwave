@@ -901,6 +901,10 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
 #define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 30
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1428,6 +1432,11 @@ VmDirGetRegKeyValueQword(
 DWORD
 VmDirGetMdbWalEnable(
     BOOLEAN *pbMdbEnableWal
+    );
+
+DWORD
+VmDirGetMdbChkptInterval(
+    DWORD *pdwMdbChkptInterval
     );
 
 DWORD
@@ -2015,13 +2024,6 @@ VmDirGetLocalSiteGuid(
     PSTR pszSiteGuid
     );
 
-// following functions are in libvmdirclient but should not be published in vmdirclient.h
-DWORD
-VmDirGetUsnFromPartners(
-    PCSTR pszHostName,
-    USN   *pUsn
-    );
-
 VOID
 VmDirRpcFreeSuperLogEntryLdapOperationArray(
     PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY pRpcEntries
@@ -2210,6 +2212,13 @@ VmDirDnLastRDNToCn(
 
 DWORD
 VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirStringToTokenListExt(
     PCSTR pszStr,
     PCSTR pszDelimiter,
     PVMDIR_STRING_LIST *ppStrList

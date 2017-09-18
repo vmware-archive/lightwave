@@ -7174,7 +7174,7 @@ public class IdentityManager implements IIdentityManager {
                         true);
             	if(isLightwave != 0 ) {
                 logger.info("Configuring branding name for Lightwave instance");
-            	_configStore.setBrandName(tenantName, "Photon Platform<br/>Single Sign-On");
+            	_configStore.setBrandName(tenantName, "Cascade Platform<br/>Authentication Service");
             }
             } finally {
                 rootRegistryKey.close();

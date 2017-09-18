@@ -123,18 +123,18 @@ VdcLdapUnbind(
 //
 DWORD
 VdcGrantPermissionToUser(
-    LDAP *pLd,
+    LDAP*       pLd,
     PLW_HASHMAP pUserToSidMapping,
-    PCSTR pszObjectDN,
-    PCSTR pszPermissionStatement
+    PCSTR       pszObjectDN,
+    COMMAND_LINE_PARAMETER_STATE*   pState
     );
 
 DWORD
 VdcRemovePermissionFromUser(
-    LDAP *pLd,
+    LDAP*       pLd,
     PLW_HASHMAP pUserToSidMapping,
-    PCSTR pszObjectDN,
-    PCSTR pszPermissionStatement
+    PCSTR       pszObjectDN,
+    COMMAND_LINE_PARAMETER_STATE*   pState
     );
 
 DWORD

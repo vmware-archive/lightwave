@@ -857,6 +857,103 @@ error:
 }
 
 DWORD
+VmDirGetSiteList(
+    LDAP*               pLd,
+    PCSTR               pszDomainName,
+    PVMDIR_STRING_LIST* ppSiteList
+    )
+{
+    DWORD               dwError = 0;
+    PCSTR               pszAttrCN = ATTR_CN;
+    PCSTR               ppszAttrs[] = { pszAttrCN, NULL };
+    PSTR                pszSite = NULL;
+    LDAPMessage*        pResult = NULL;
+    LDAPMessage*        pEntry = NULL;
+    PSTR                pszBaseDN = NULL;
+    PSTR                pszDomainDN = NULL;
+    PVMDIR_STRING_LIST  pSiteList = NULL;
+    struct berval**     ppValues = NULL;
+
+    if (!pLd || !pszDomainName || !ppSiteList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirStringListInitialize( &pSiteList, 16);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                    &pszBaseDN, "cn=Sites,cn=Configuration,%s",
+                    pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pLd,
+                    pszBaseDN,
+                    LDAP_SCOPE_ONELEVEL,
+                    NULL,
+                    (PSTR*)ppszAttrs,
+                    FALSE, /* get values also */
+                    NULL,  /* server controls */
+                    NULL,  /* client controls */
+                    NULL,  /* timeout         */
+                    0,     /* size limit      */
+                    &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( pEntry = ldap_first_entry(pLd, pResult);
+          pEntry;
+          pEntry = ldap_next_entry(pLd, pEntry))
+    {
+        if (ppValues)
+        {
+            ldap_value_free_len(ppValues);
+        }
+
+        ppValues = ldap_get_values_len(pLd, pEntry, pszAttrCN);
+
+        if (ppValues && ldap_count_values_len(ppValues) == 1)
+        {
+            dwError = VmDirAllocateStringA(ppValues[0]->bv_val, &pszSite);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringListAdd(pSiteList, pszSite);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pszSite = NULL;
+        }
+        else
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_STATE);
+        }
+    }
+
+    *ppSiteList = pSiteList;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszSite);
+    VMDIR_SAFE_FREE_MEMORY(pszBaseDN);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pSiteList);
+    goto cleanup;
+}
+
+DWORD
 VmDirGetSiteDN(
     PCSTR pszDomain,
     PCSTR pszSiteName,

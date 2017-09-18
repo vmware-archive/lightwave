@@ -79,7 +79,22 @@ ShowUsage(
     PVOID pvContext
     )
 {
-    printf("Usage: vdcaclmgr -H <host> -u <user UPN> [-w <password> | -x <password file>] -b <base DN> -o <object DN> [-g <username:permissions>] [-d <username:permissions>] [-r] [-v]\n");
+
+    printf(
+        "Usage: postaclmgr { arguments }\n\n"
+        "Arguments:\n\n"
+        "\t-H\t<host name>\n\n"
+        "\t-u\t<user UPN> For example administrator@post.local>\n\n"
+        "\t-o\t<DN of the target object to grant/delete permission to -g/-d username> For example cn=myContainer,dc=post,dc=local\n"
+        "\t[-r]\t<recursively grant/delete permission to -o DN subtree>\n\n"
+        "\t-b\t<base DN to find users and groups to match -g/-d username>\n\n"
+        "\t[-g\t<grant username:FLAGS>]  For example -g MyAdmins:RP:CI\n"
+        "\t[-d\t<delete username:FALGS>] For example -d MyAdmins:WP:OI\n\n"
+        "\t[-v]\t<verbose output>\n\n"
+        "\t[-D]\t<dry run>\n\n"
+        "\t[-w <password> | -x <password file>]\n\n"
+        "Where FLAGS := (PERMISSIONS such as RPWP)*:(ACE_FLAGS such as CIOI)*\n\n"
+        "\t\n");
 }
 
 DWORD
@@ -182,6 +197,7 @@ VmDirMain(int argc, char* argv[])
             {'x', "password-file", CL_STRING_PARAMETER, &State.pszPasswordFile},
             {'v', "verbose", CL_NO_PARAMETER, &State.bVerbose},
             {'r', "recursive", CL_NO_PARAMETER, &State.bRecursive},
+            {'D', "dryrun", CL_NO_PARAMETER, &State.bDryrun},
 
             {0, 0, 0, 0}
     };
@@ -232,7 +248,8 @@ VmDirMain(int argc, char* argv[])
                         pLd,
                         pUserToSidMapping,
                         pObjectDNs->pStringList[dwStringIndex],
-                        State.pszGrantParameter);
+                        &State);
+
         }
         else if (State.pszRemoveParameter)
         {
@@ -240,7 +257,7 @@ VmDirMain(int argc, char* argv[])
                         pLd,
                         pUserToSidMapping,
                         pObjectDNs->pStringList[dwStringIndex],
-                        State.pszRemoveParameter);
+                        &State);
         }
         else
         {

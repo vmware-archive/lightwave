@@ -719,6 +719,8 @@ _VmDirReplicationThrFun(
 
     if (!bGlobalsLoaded)
     {
+        BOOLEAN firstServer = FALSE;
+
         VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
         dwError = 0;
 
@@ -747,17 +749,18 @@ _VmDirReplicationThrFun(
             VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: complete vdcpromo from partner %s.", gNewPartner);
         } else
         {
+            firstServer = TRUE;
             VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: complete vdcpromo as first server.");
         }
-    }
 
-    //Wake up LDAP connection threads
-    VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
-    VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
-    VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+        if (firstServer)
+        {
+            //Wake up LDAP connection threads so that account can be provisioned via LDAP
+            VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+            VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
+            VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+        }
 
-    if (!bGlobalsLoaded)
-    {
         //Wait until vdcpromo has completed adding the DC to cluster.
         int retryCnt = 0;
         while(TRUE)
@@ -829,6 +832,10 @@ _VmDirReplicationThrFun(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pRaftLogCompactThreadInfo);
+
+    VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+    VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
+    VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: started.");
 

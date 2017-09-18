@@ -471,15 +471,16 @@ _VmDirSASLGSSAPIInteraction(
 
 int
 VmDirCreateSyncRequestControl(
-    PCSTR pszInvocationId,
-    USN lastLocalUsnProcessed,
-    PCSTR pszUtdVector,
-    LDAPControl *           syncReqCtrl
+    PCSTR           pszInvocationId,
+    USN             lastLocalUsnProcessed,
+    PCSTR           pszUtdVector,
+    BOOLEAN         bFirstPage,
+    LDAPControl*    syncReqCtrl
     )
 {
-    int                 retVal = LDAP_SUCCESS;
-    BerElement *        ber = NULL;
-    PSTR                pszLastLocalUsnProcessed = NULL;
+    int retVal = LDAP_SUCCESS;
+    BerElement* ber = NULL;
+    PSTR    pszLastLocalUsnProcessed = NULL;
 
     if (syncReqCtrl == NULL)
     {
@@ -499,14 +500,15 @@ VmDirCreateSyncRequestControl(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
-    if ( ber_printf( ber, "{i{sss}}", LDAP_SYNC_REFRESH_ONLY,
-                    pszInvocationId,
-                    pszLastLocalUsnProcessed,
-                    pszUtdVector ) == -1)
+    if (ber_printf(ber, "{i{sss}b}", LDAP_SYNC_REFRESH_ONLY,
+                   pszInvocationId,
+                   pszLastLocalUsnProcessed,
+                   pszUtdVector,
+                   bFirstPage) == -1)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirCreateSyncRequestControl: ber_printf failed." );
         retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR( retVal );
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
     memset( syncReqCtrl, 0, sizeof( LDAPControl ));

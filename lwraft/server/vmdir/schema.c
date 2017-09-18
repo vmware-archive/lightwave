@@ -21,12 +21,6 @@
     NULL                                                \
 }
 
-static
-DWORD
-_MarkDefaultIndices(
-    VOID
-    );
-
 /*
  * Examines the following options in order and use the first detected source
  * to initialize schema:
@@ -42,7 +36,7 @@ VmDirLoadSchema(
     PBOOLEAN    pbWriteSchemaEntry
     )
 {
-    DWORD               dwError = 0;
+    DWORD   dwError = 0;
     PVDIR_ENTRY_ARRAY   pAtEntries = NULL;
     PVDIR_ENTRY_ARRAY   pOcEntries = NULL;
 
@@ -62,25 +56,16 @@ VmDirLoadSchema(
     }
     else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
     {
-        PSTR pszSchemaFilePath = gVmdirGlobals.pszBootStrapSchemaFile;
-        if (!pszSchemaFilePath)
+        PCSTR pszSchemaFilePath = gVmdirGlobals.pszBootStrapSchemaFile;
+        if (IsNullOrEmptyString(pszSchemaFilePath))
         {
-            dwError = ERROR_NO_SCHEMA;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SCHEMA);
         }
 
         dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         *pbWriteSchemaEntry = TRUE;
-
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSchemaLibUpdate(0);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _MarkDefaultIndices();
-        BAIL_ON_VMDIR_ERROR(dwError);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -90,22 +75,25 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
 
 /*
  * Initialize schemacontext subtree entries
- * Should be called if InitializeSchema() results pbWriteSchemaEntry = TRUE
+ * Should be called if VmDirLoadSchema() results pbWriteSchemaEntry = TRUE
  */
 DWORD
-InitializeSchemaEntries(
+VmDirSchemaInitializeSubtree(
     PVDIR_SCHEMA_CTX    pSchemaCtx
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
 
     static PSTR ppszSchemaContext[] =
             VDIR_SCHEMA_NAMING_CONTEXT_ENTRY_INITIALIZER;
@@ -124,107 +112,10 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
-    goto cleanup;
-}
-
-/*
- * During upgrade, we can patch schema via this function.
- *
- * INPUT:
- * new version of Lotus schema file
- */
-DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
-    )
-{
-    DWORD    dwError = 0;
-    PVDIR_SCHEMA_CTX    pOldSchemaCtx = NULL;
-    PVDIR_SCHEMA_CTX    pNewSchemaCtx = NULL;
-
-    dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaCtxAcquire(&pNewSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirPatchLocalSchemaObjects(pOldSchemaCtx, pNewSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirSchemaCtxRelease(pOldSchemaCtx);
-    VmDirSchemaCtxRelease(pNewSchemaCtx);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
-
-    goto cleanup;
-}
-
-static
-DWORD
-_MarkDefaultIndices(
-    VOID
-    )
-{
-    DWORD   dwError = 0;
-    PLW_HASHMAP pIndexCfgMap = NULL;
-    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
-    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
-    LW_HASHMAP_PAIR pair = {NULL, NULL};
-
-    dwError = VmDirIndexCfgMap(&pIndexCfgMap);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    while (LwRtlHashMapIterate(pIndexCfgMap, &iter, &pair))
-    {
-        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pair.pValue;
-        PVDIR_SCHEMA_AT_DESC pATDesc = NULL;
-
-        dwError = VmDirSchemaAttrNameToDescriptor(
-                pSchemaCtx, pIndexCfg->pszAttrName, &pATDesc);
-
-        // VMIT support
-        if (dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "%s detected index for unknown attribute %s, "
-                    "the index will be deleted",
-                    __FUNCTION__, pIndexCfg->pszAttrName, dwError );
-
-            pIndexCfg->status = VDIR_INDEXING_DISABLED;
-            continue;
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirIndexCfgGetAllScopesInStrArray(
-                pIndexCfg, &pATDesc->ppszUniqueScopes);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pATDesc->dwSearchFlags |= 1;
-
-        // for free later
-        pATDesc->pLdapAt->ppszUniqueScopes = pATDesc->ppszUniqueScopes;
-        pATDesc->pLdapAt->dwSearchFlags = pATDesc->dwSearchFlags;
-    }
-
-cleanup:
-    VmDirSchemaCtxRelease(pSchemaCtx);
-    return dwError;
-
-error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
     goto cleanup;
 }

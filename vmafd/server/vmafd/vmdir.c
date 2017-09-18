@@ -545,8 +545,6 @@ VmAfSrvDemoteVmDir(
     gVmafdGlobals.pSourceIpContext = NULL;
 #endif
 
-    /* TODO: remove KrbConfig entries */
-
     if (gVmafdGlobals.pCertUpdateThr)
     {
         VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
@@ -789,11 +787,13 @@ error:
 
 DWORD
 VmAfSrvJoinVmDir2(
+    PWSTR            pwszServerName,     /* IN            */
     PWSTR            pwszDomainName,     /* IN            */
     PWSTR            pwszUserName,       /* IN            */
     PWSTR            pwszPassword,       /* IN            */
     PWSTR            pwszMachineName,    /* IN   OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
+    PWSTR            pwszSiteName,       /* IN            */
     VMAFD_JOIN_FLAGS dwFlags             /* IN            */
     )
 {
@@ -808,8 +808,9 @@ VmAfSrvJoinVmDir2(
     PSTR pszCanonicalHostName = NULL;
     PSTR pszDCHostname = NULL;
     PSTR pszDCAddress = NULL;
+    PSTR pszDC = NULL;
     PWSTR pwszDCHostname = NULL;
-    PWSTR pwszSiteName = NULL;
+    PWSTR pwszSite = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
     DWORD dwDirJoinFlags = 0;
 
@@ -873,13 +874,25 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdGetDomainController(
-                    pszDomainName,
-                    pszUserName,
-                    pszPassword,
-                    &pszDCHostname,
-                    &pszDCAddress);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (pwszServerName)
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszDCHostname);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszDC = pszDCHostname;
+    }
+    else
+    {
+        dwError = VmAfdGetDomainController(
+                        pszDomainName,
+                        pszUserName,
+                        pszPassword,
+                        &pszDCHostname,
+                        &pszDCAddress);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszDC = pszDCAddress;
+    }
 
     if (pwszMachineName)
     {
@@ -940,17 +953,22 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdAllocateStringWFromA(pszDCHostname, &pwszDCHostname);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSiteName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfSrvSetDCName(pwszDCHostname);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pwszSiteName)
+    {
+        dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSite);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pwszSiteName = pwszSite;
+    }
 
     dwError = VmAfSrvSetSiteName(pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDNSRecords(
-                      pszDCAddress,
+                      pszDC,
                       pszDomainName,
                       pszUserName,
                       pszPassword,
@@ -1018,7 +1036,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszMachineName);
     VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
-    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+    VMAFD_SAFE_FREE_MEMORY(pwszSite);
     VMAFD_SAFE_FREE_MEMORY(pszHostname);
     VMAFD_SAFE_FREE_MEMORY(pszCanonicalHostName);
     VMAFD_SAFE_FREE_MEMORY(pszDCAddress);
@@ -1036,7 +1054,7 @@ error:
     if (dwError == VMDIR_ERROR_SERVER_DOWN)
     {
         VmAfdLog(VMAFD_DEBUG_ERROR, "Failed to reach domain controller at [%s]",
-                 VMAFD_SAFE_STRING(pszDCAddress));
+                 VMAFD_SAFE_STRING(pszDC));
 
         dwError = ERROR_HOST_DOWN;
     }

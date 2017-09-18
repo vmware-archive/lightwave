@@ -64,7 +64,7 @@
     doc     = "Enable or Disable DCE/RPC Server"
 }
 "LegacyModeHA" = {
-    default = dword:00000000
+    default = dword:00000001
     doc     = "Enable or Disable Legacy Mode for HA"
 }
 "EnableDnsUpdates" = {

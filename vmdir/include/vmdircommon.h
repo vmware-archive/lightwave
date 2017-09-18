@@ -660,6 +660,12 @@ VmDirConnectLDAPServerWithMachineAccount(
     );
 
 DWORD
+VmDirStringToUSN(
+    PCSTR   pszUSNStr,
+    USN*    poutUSN
+    );
+
+DWORD
 VmDirGetDomainFuncLvlInternal(
     LDAP*  pLd,
     PCSTR  pszDomain,
@@ -1673,10 +1679,11 @@ VmDirAnonymousLDAPBind(
 
 int
 VmDirCreateSyncRequestControl(
-    PCSTR pszInvocationId,
-    USN lastLocalUsnProcessed,
-    PCSTR pszUtdVector,
-    LDAPControl *syncReqCtrl
+    PCSTR           pszInvocationId,
+    USN             lastLocalUsnProcessed,
+    PCSTR           pszUtdVector,
+    BOOLEAN         bFirstPage,
+    LDAPControl*    syncReqCtrl
     );
 
 VOID
@@ -2225,6 +2232,13 @@ VmDirDnLastRDNToCn(
 
 DWORD
 VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirStringToTokenListExt(
     PCSTR pszStr,
     PCSTR pszDelimiter,
     PVMDIR_STRING_LIST *ppStrList

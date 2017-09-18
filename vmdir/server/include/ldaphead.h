@@ -214,12 +214,12 @@ VmDirFreeOperation(
 // result.c
 void
 VmDirSendLdapResult(
-   VDIR_OPERATION *   op
-   );
+    PVDIR_OPERATION pOperation
+    );
 
 VOID
 VmDirSendSASLBindResponse(
-    PVDIR_OPERATION     pOperation
+    PVDIR_OPERATION pOperation
     );
 
 // modify.c

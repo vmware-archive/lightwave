@@ -51,6 +51,9 @@
 #include <backend.h>
 #include <middlelayer.h>
 
+// curl error codes
+#include <curl/curl.h>
+
 #else
 
 #pragma once

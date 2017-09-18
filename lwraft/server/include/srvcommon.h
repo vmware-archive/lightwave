@@ -53,6 +53,7 @@ extern "C" {
 #define VMDIR_DEFAULT_REPL_INTERVAL     "30"
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
 
+#define VMDIR_RUN_MODE_NORMAL           "normal"
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 

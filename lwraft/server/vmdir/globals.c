@@ -37,7 +37,6 @@ VMDIR_GLOBALS gVmdirGlobals =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pszBootStrapSchemaFile, NULL),
-        VMDIR_SF_INIT(.bPatchSchema, FALSE),
         VMDIR_SF_INIT(.pszBDBHome, NULL),
         VMDIR_SF_INIT(.bAllowInsecureAuth, 0),
         VMDIR_SF_INIT(.bAllowAdminLockout, 0),

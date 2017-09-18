@@ -85,7 +85,7 @@ VmDirRESTForwardRequest(
     pCurlHandle = curl_easy_init();
     if (!pCurlHandle)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURLINIT_FAILED);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_FAILED_INIT);
     }
 
     dwError = VmDirAllocateMemory(1, (PVOID*)&curlResponse.pResponse);
@@ -96,13 +96,13 @@ VmDirRESTForwardRequest(
                     pCurlHandle,
                     CURLOPT_PROTOCOLS,
                     CURLPROTO_HTTP);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     // Common header
     pHeaders = curl_slist_append(pHeaders, "Accept: application/json");
     if (!pHeaders)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_ERROR);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_NULLSLIST);
     }
 
     // If Authorization exists
@@ -116,7 +116,7 @@ VmDirRESTForwardRequest(
         pHeaders = curl_slist_append(pHeaders, pszAuthHeader);
         if (!pHeaders)
         {
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_ERROR);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_NULLSLIST);
         }
     }
 
@@ -131,7 +131,7 @@ VmDirRESTForwardRequest(
         pHeaders = curl_slist_append(pHeaders, pszIfMatchHeader);
         if (!pHeaders)
         {
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_ERROR);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_NULLSLIST);
         }
     }
 
@@ -141,14 +141,14 @@ VmDirRESTForwardRequest(
         pHeaders = curl_slist_append(pHeaders, "Content-Type: application/json");
         if (!pHeaders)
         {
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_ERROR);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_NULLSLIST);
         }
     }
     dwCurlError = curl_easy_setopt(
                     pCurlHandle,
                     CURLOPT_HTTPHEADER,
                     pHeaders);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     // Add the payload if exists
     if(pRestOp->pszInput && strlen(pRestOp->pszInput) != 0)
@@ -157,13 +157,13 @@ VmDirRESTForwardRequest(
                         pCurlHandle,
                         CURLOPT_POSTFIELDS,
                         pRestOp->pszInput);
-        BAIL_ON_VMDIR_ERROR(dwCurlError);
+        BAIL_ON_CURL_ERROR(dwCurlError);
 
         dwCurlError = curl_easy_setopt(
                         pCurlHandle,
                         CURLOPT_POSTFIELDSIZE,
                         VmDirStringLenA(pRestOp->pszInput));
-        BAIL_ON_VMDIR_ERROR(dwCurlError);
+        BAIL_ON_CURL_ERROR(dwCurlError);
     }
 
     // set http URL
@@ -176,7 +176,7 @@ VmDirRESTForwardRequest(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_URL, pszURL);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     // set the appropiate method
     if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_GET, FALSE) == 0)
@@ -189,7 +189,7 @@ VmDirRESTForwardRequest(
     }
     else if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_PUT, FALSE) == 0)
     {
-        dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_PUT, 1L);
+        dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_CUSTOMREQUEST, "PUT");
     }
     else if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_DEL, FALSE) == 0)
     {
@@ -199,24 +199,24 @@ VmDirRESTForwardRequest(
     {
         dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_CUSTOMREQUEST, "PATCH");
     }
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     // set writeback function and data type
     dwCurlError = curl_easy_setopt(
                     pCurlHandle,
                     CURLOPT_WRITEFUNCTION,
                     VmDirRESTWriteResponseCallback);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     dwCurlError = curl_easy_setopt(
                     pCurlHandle,
                     CURLOPT_WRITEDATA,
                     &curlResponse);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     // send the request to leader
     dwCurlError = curl_easy_perform(pCurlHandle);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
 
     dwError = VmDirRESTWriteProxyResponse(
                     curlResponse,
@@ -236,16 +236,15 @@ cleanup:
     return dwError;
 
 error:
-    if (dwCurlError)
-    {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "Curl Error: %d",
-                dwCurlError);
-        dwError = VMDIR_ERROR_CURL_ERROR;
-    }
     goto cleanup;
 
+curlerror:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "Curl Error: %d",
+            dwError);
+    dwError = VmDirCurlToDirError(dwCurlError);
+    goto error;
 }
 
 static
@@ -373,7 +372,7 @@ VmDirRESTWriteResponseCallback(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCopyMemory(
-                    pCurlResponse->pResponse + pCurlResponse->dwResponseLen,
+                    (PVOID)&pCurlResponse->pResponse[pCurlResponse->dwResponseLen],
                     bytesRead,
                     pMemPointer,
                     bytesRead);
@@ -419,7 +418,7 @@ VmDirRESTWriteProxyResponse(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwCurlError = curl_easy_getinfo(pCurlHandle, CURLINFO_RESPONSE_CODE, &statusCode);
-    BAIL_ON_VMDIR_ERROR(dwCurlError);
+    BAIL_ON_CURL_ERROR(dwCurlError);
     pHttpError = VmDirRESTGetHttpError(statusCode);
 
     dwError = VmRESTSetHttpStatusCode(ppResponse, pHttpError->pszHttpStatus);
@@ -453,8 +452,6 @@ VmDirRESTWriteProxyResponse(
                     VDIR_SAFE_STRING(curlResponse.pResponse) + sentLen,
                     chunkLen,
                     &bytesWritten);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
         sentLen += bytesWritten;
         curlResponse.dwResponseLen -= bytesWritten;
     }
@@ -466,15 +463,15 @@ cleanup:
     return dwError;
 
 error:
-    if (dwCurlError)
-    {
-        VMDIR_LOG_ERROR(
+    goto cleanup;
+
+curlerror:
+    VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "Curl Error: %d",
-            dwCurlError);
-        dwError = VMDIR_ERROR_CURL_ERROR;
-    }
-    goto cleanup;
+            dwError);
+    dwError = VmDirCurlToDirError(dwCurlError);
+    goto error;
 }
 
 

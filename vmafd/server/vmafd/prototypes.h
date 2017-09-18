@@ -177,11 +177,13 @@ VmAfSrvJoinVmDir(
 
 DWORD
 VmAfSrvJoinVmDir2(
+    PWSTR            pwszServerName,     /* IN     OPTIONAL */
     PWSTR            pwszDomainName,     /* IN              */
     PWSTR            pwszUserName,       /* IN              */
     PWSTR            pwszPassword,       /* IN              */
     PWSTR            pwszMachineName,    /* IN     OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN     OPTIONAL */
+    PWSTR            pwszSiteName,       /* IN     OPTIONAL */
     VMAFD_JOIN_FLAGS dwFlags             /* IN              */
     );
 

@@ -125,7 +125,6 @@ typedef struct _VMDIR_GLOBALS
     // static fields initialized during server startup.
     // their values never change, so no access protection necessary.
     PSTR                            pszBootStrapSchemaFile;
-    BOOLEAN                         bPatchSchema;
     PSTR                            pszBDBHome;
 
     BOOLEAN                         bAllowInsecureAuth;
