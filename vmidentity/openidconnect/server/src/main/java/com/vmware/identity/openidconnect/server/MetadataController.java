@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -64,6 +65,7 @@ public class MetadataController {
         this.idmClient = idmClient;
     }
 
+    @CrossOrigin(allowCredentials = "false")
     @RequestMapping(value = Endpoints.BASE + Endpoints.METADATA, method = RequestMethod.GET)
     public void metadata(
             HttpServletRequest httpServletRequest,
@@ -71,6 +73,7 @@ public class MetadataController {
         metadata(httpServletRequest, httpServletResponse, null);
     }
 
+    @CrossOrigin(allowCredentials = "false")
     @RequestMapping(value = Endpoints.BASE + "/{tenant:.*}" + Endpoints.METADATA, method = RequestMethod.GET)
     public void metadata(
             HttpServletRequest httpServletRequest,
