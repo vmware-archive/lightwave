@@ -114,11 +114,24 @@ OidcServerMetadataGetSigningCertificatePEM(
 
 // OIDC_ID_TOKEN
 
-// on success, pp will be non-null, when done, OidcIDTokenDelete it
+// (TODO) Deprecated
 SSOERROR
 OidcIDTokenBuild(
     POIDC_ID_TOKEN* pp,
     PCSTRING psz,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    SSO_LONG clockToleranceInSeconds);
+
+// on success, pp will be non-null, when done, OidcIDTokenDelete it
+SSOERROR
+OidcIDTokenParse(
+    POIDC_ID_TOKEN* pp,
+    PCSTRING psz);
+
+SSOERROR
+OidcIDTokenValidate(
+    POIDC_ID_TOKEN p,
     PCSTRING pszSigningCertificatePEM,
     PCSTRING pszIssuer, // not used for now
     SSO_LONG clockToleranceInSeconds);
@@ -193,11 +206,25 @@ OidcIDTokenGetStringClaim(
 
 // OIDC_ACCESS_TOKEN
 
-// on success, pp will be non-null, when done, OidcAccessTokenDelete it
+// (TODO) Deprecated
 SSOERROR
 OidcAccessTokenBuild(
     POIDC_ACCESS_TOKEN* pp,
     PCSTRING psz,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName,
+    SSO_LONG clockToleranceInSeconds);
+
+// on success, pp will be non-null, when done, OidcAccessTokenDelete it
+SSOERROR
+OidcAccessTokenParse(
+    POIDC_ACCESS_TOKEN* pp,
+    PCSTRING psz);
+
+SSOERROR
+OidcAccessTokenValidate(
+    POIDC_ACCESS_TOKEN p,
     PCSTRING pszSigningCertificatePEM,
     PCSTRING pszIssuer, // not used for now
     PCSTRING pszResourceServerName,

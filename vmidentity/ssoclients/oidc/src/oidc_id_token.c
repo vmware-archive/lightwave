@@ -14,7 +14,7 @@
 
 #include "includes.h"
 
-// on success, pp will be non-null, when done, OidcIDTokenDelete it
+// (TODO) Deprecated
 SSOERROR
 OidcIDTokenBuild(
     POIDC_ID_TOKEN* pp,
@@ -26,9 +26,9 @@ OidcIDTokenBuild(
     SSOERROR e = SSOERROR_NONE;
     POIDC_ID_TOKEN p = NULL;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
-    ASSERT_NOT_NULL(pszSigningCertificatePEM);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
+    BAIL_ON_NULL_ARGUMENT(pszSigningCertificatePEM);
 
     e = SSOMemoryAllocate(sizeof(OIDC_ID_TOKEN), (void**) &p);
     BAIL_ON_ERROR(e);
@@ -48,6 +48,7 @@ error:
     return e;
 }
 
+// on success, pp will be non-null, when done, OidcIDTokenDelete it
 SSOERROR
 OidcIDTokenParse(
     POIDC_ID_TOKEN* pp,
@@ -56,8 +57,8 @@ OidcIDTokenParse(
     SSOERROR e = SSOERROR_NONE;
     POIDC_ID_TOKEN p = NULL;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
 
     e = SSOMemoryAllocate(sizeof(OIDC_ID_TOKEN), (void**) &p);
     BAIL_ON_ERROR(e);
@@ -74,6 +75,24 @@ error:
         OidcIDTokenDelete(p);
     }
 
+    return e;
+}
+
+SSOERROR
+OidcIDTokenValidate(
+    POIDC_ID_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    SSO_LONG clockToleranceInSeconds)
+{
+    SSOERROR e = SSOERROR_NONE;
+
+    BAIL_ON_NULL_ARGUMENT(p);
+
+    e = OidcTokenValidate(p->pToken, pszSigningCertificatePEM, pszIssuer, NULL, clockToleranceInSeconds);
+    BAIL_ON_ERROR(e);
+
+error:
     return e;
 }
 

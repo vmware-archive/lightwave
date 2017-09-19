@@ -3,6 +3,7 @@ LIBRARY "libssooidc"
 EXPORTS
 OidcAccessTokenBuild
 OidcAccessTokenParse
+OidcAccessTokenValidate
 OidcAccessTokenDelete
 OidcAccessTokenGetIssuer
 OidcAccessTokenGetSubject
@@ -26,6 +27,7 @@ OidcErrorResponseGetErrorDescription
 OidcErrorResponseGetErrorCode
 OidcIDTokenBuild
 OidcIDTokenParse
+OidcIDTokenValidate
 OidcIDTokenDelete
 OidcIDTokenGetIssuer
 OidcIDTokenGetSubject

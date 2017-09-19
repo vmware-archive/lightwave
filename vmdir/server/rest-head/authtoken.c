@@ -94,9 +94,12 @@ VmDirRESTAuthTokenParse(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirDomainDNToName(
-            BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN),
-            &pszDomainName);
+    dwOIDCError = OidcAccessTokenParse(&pOidcAccessToken, pszAccessToken);
+    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirUPNToNameAndDomain(
+            OidcAccessTokenGetSubject(pOidcAccessToken), NULL, &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwOIDCError = OidcServerMetadataAcquire(
@@ -108,9 +111,8 @@ VmDirRESTAuthTokenParse(
     dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwOIDCError = OidcAccessTokenBuild(
-            &pOidcAccessToken,
-            pszAccessToken,
+    dwOIDCError = OidcAccessTokenValidate(
+            pOidcAccessToken,
             OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
             NULL,
             VMDIR_REST_DEFAULT_SCOPE,

@@ -33,11 +33,11 @@ OidcTokenBuild(
     bool resourceServerFound = false;
     size_t i = 0;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
-    ASSERT_NOT_NULL(pszSigningCertificatePEM);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
+    BAIL_ON_NULL_ARGUMENT(pszSigningCertificatePEM);
     // pszResourceServerName is nullable
-    ASSERT_NOT_NULL(pszExpectedTokenClass);
+    BAIL_ON_NULL_ARGUMENT(pszExpectedTokenClass);
 
     if (clockToleranceInSeconds < 0 || clockToleranceInSeconds > MAX_CLOCK_TOLERANCE_IN_SECONDS)
     {
@@ -110,9 +110,9 @@ OidcTokenParse(
     bool hasHokJwksClaim = false;
     bool hasGroupsClaim = false;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
-    ASSERT_NOT_NULL(pszExpectedTokenClass);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
+    BAIL_ON_NULL_ARGUMENT(pszExpectedTokenClass);
 
     e = SSOMemoryAllocate(sizeof(OIDC_TOKEN), (void**) &p);
     BAIL_ON_ERROR(e);
@@ -211,6 +211,68 @@ error:
     SSOStringFree(pszHolderOfKeyJWKS);
     SSOJwkDelete(pJwk);
 
+    return e;
+}
+
+SSOERROR
+OidcTokenValidate(
+    POIDC_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName, /* OPT */
+    SSO_LONG clockToleranceInSeconds)
+{
+    SSOERROR e = SSOERROR_NONE;
+    time_t now = time(NULL);
+    bool validSignature = false;
+
+    BAIL_ON_NULL_ARGUMENT(p);
+    BAIL_ON_NULL_ARGUMENT(pszSigningCertificatePEM);
+    // pszResourceServerName is nullable
+
+    if (clockToleranceInSeconds < 0 || clockToleranceInSeconds > MAX_CLOCK_TOLERANCE_IN_SECONDS)
+    {
+        e = SSOERROR_INVALID_ARGUMENT;
+        BAIL_ON_ERROR(e);
+    }
+
+    // validate signature
+    e = SSOJwtVerifySignature(p->pJwt, pszSigningCertificatePEM, &validSignature);
+    BAIL_ON_ERROR(e);
+    if (!validSignature)
+    {
+        e = SSOERROR_TOKEN_INVALID_SIGNATURE;
+        BAIL_ON_ERROR(e);
+    }
+
+    // validate resource server name appears in audience
+    if (pszResourceServerName != NULL)
+    {
+        bool resourceServerFound = false;
+        size_t i = 0;
+        for (i = 0; i < p->audienceSize; i++)
+        {
+            if (SSOStringEqual(p->ppszAudience[i], pszResourceServerName))
+            {
+                resourceServerFound = true;
+                break;
+            }
+        }
+        if (!resourceServerFound)
+        {
+            e = SSOERROR_TOKEN_INVALID_AUDIENCE;
+            BAIL_ON_ERROR(e);
+        }
+    }
+
+    // check for notBefore and notAfter
+    if (now < p->issueTime - clockToleranceInSeconds || now > p->expirationTime + clockToleranceInSeconds)
+    {
+        e = SSOERROR_TOKEN_EXPIRED;
+        BAIL_ON_ERROR(e);
+    }
+
+error:
     return e;
 }
 
