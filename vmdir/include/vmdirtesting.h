@@ -46,6 +46,7 @@ typedef struct _VMDIR_TEST_STATE
     PTEST_CLEANUP_CALLBACK  pfnCleanupCallback;
 
     PCSTR pszServerName;        // The server name
+    PCSTR pszUserUPN;           // UserUPN to connect with.
     PCSTR pszUserName;          // Username to connect with.
     PCSTR pszPassword;          // Password to connect with.
     PCSTR pszDomain;            // The domain to use (e.g., vsphere.local)

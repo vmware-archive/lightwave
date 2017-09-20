@@ -220,6 +220,7 @@ VmDirSrvSetupHostInstance(
     PSTR    pszUpperCaseFQDomainName = NULL;
     PSTR    pszLowerCaseHostName = NULL;
     PSTR    pszDefaultAdminDN = NULL;
+    PSTR    pszDCClientGroupDN = NULL;
 
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     char                pszHostName[VMDIR_MAX_HOSTNAME_LEN];
@@ -586,6 +587,21 @@ VmDirSrvSetupHostInstance(
         dwError = VmDirSrvCreateReplAgrsContainer(pSchemaCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirAllocateStringPrintf(
+                &pszDCClientGroupDN,
+                "cn=%s,cn=%s,%s",
+                VMDIR_DCCLIENT_GROUP_NAME,
+                VMDIR_BUILTIN_CONTAINER_NAME,
+                pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // allow DCClients group to read (RP) system domain
+        dwError = VmDirAppendAllowAceForDn(
+                pszDomainDN,
+                pszDCClientGroupDN,
+                VMDIR_RIGHT_DS_READ_PROP);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         // 1st replica => no replication agreements => 1st replication cycle done
         VMDIR_LOCK_MUTEX(bInLockReplCycle, gVmdirGlobals.replCycleDoneMutex);
         VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
@@ -645,6 +661,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLowerCaseHostName);
     VMDIR_SAFE_FREE_MEMORY(SecDescAnonymousRead.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescNoDelete.pSecDesc);
+    VMDIR_SAFE_FREE_MEMORY(pszDCClientGroupDN);
     VmDirFreeBervalContent(&bv);
     return dwError;
 

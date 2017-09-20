@@ -64,10 +64,13 @@ TestRunner(
     dwError = TestCustomGroups(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = TestDefaultSecurityDescriptor(pState);
+    dwError = TestK8sMachineActSelfService(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #if 0 // TODO
+    dwError = TestDefaultSecurityDescriptor(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = TestStandardRightsForAdminUser(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
