@@ -8,11 +8,12 @@ if REST_ENABLED
 
 librest_head_la_SOURCES += \
     globals.c \
+    handler.c \
+    httperror.c \
     metricsapi.c \
     operation.c \
     resource.c \
-    result.c \
-    httperror.c
+    result.c
 
 endif
 

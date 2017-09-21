@@ -12,19 +12,33 @@
  * under the License.
  */
 
-//// httperror.c
-PVDNS_HTTP_ERROR
-VmDnsRESTGetHttpError(
-    int httpStatus
-    );
-
-// libmain.c
+// handler.c
 DWORD
 VmDnsRESTRequestHandler(
     PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
+    );
+
+DWORD
+VmDnsRESTProcessRequest(
+    PVDNS_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
+    PREST_REQUEST           pRequest
+    );
+
+DWORD
+VmDnsRESTWriteSimpleErrorResponse(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_RESPONSE* ppResponse,
+    int             httpStatus
+    );
+
+//// httperror.c
+PVDNS_HTTP_ERROR
+VmDnsRESTGetHttpError(
+    int httpStatus
     );
 
 // metricsapi.c
