@@ -209,6 +209,30 @@ VmDirRESTEtcdDelete(
     void**  ppOut
     );
 
+// handler.c
+DWORD
+VmDirRESTRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirRESTProcessRequest(
+    PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
+    PREST_REQUEST           pRequest,
+    uint32_t                paramsCount
+    );
+
+DWORD
+VmDirRESTWriteSimpleErrorResponse(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_RESPONSE* ppResponse,
+    int             httpStatus
+    );
+
 // httperror.c
 PVDIR_HTTP_ERROR
 VmDirRESTGetHttpError(
@@ -265,15 +289,6 @@ VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
-    );
-
-// libmain.c
-DWORD
-VmDirRESTRequestHandler(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_REQUEST   pRequest,
-    PREST_RESPONSE* ppResponse,
-    uint32_t        paramsCount
     );
 
 // lightwave.c

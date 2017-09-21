@@ -74,6 +74,10 @@ VmDirRESTForwardRequest(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    dwError = VmDirRESTOperationReadRequest(
+            pRestOp, pRESTHandle, pRequest, dwParamCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // Get the leader for forwarding if leader not set no use of proceeding
     dwError = VmDirRaftGetLeader(&pszLeader);
     BAIL_ON_VMDIR_ERROR(dwError);
