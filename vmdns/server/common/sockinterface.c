@@ -1228,7 +1228,6 @@ VmDnsSockContextFree(
 {
     if (pSockContext->pEventQueue)
     {
-        VmDnsSockShutdownEventQueue(pSockContext->pEventQueue);
         if (pSockContext->pListenerTCP)
         {
             VmDnsSockEventQueueRemove(pSockContext->pEventQueue,
@@ -1255,8 +1254,7 @@ VmDnsSockContextFree(
             VmDnsSockRelease(pSockContext->pListenerUDP6);
         }
 #endif
-        VmDnsSockFreeEventQueue(pSockContext->pEventQueue);
-        pSockContext->pEventQueue = NULL;
+        VmDnsSockShutdownEventQueue(pSockContext->pEventQueue);
     }
 
     if (pSockContext->pWorkerThreads)
@@ -1272,6 +1270,12 @@ VmDnsSockContextFree(
                 VmDnsThreadJoin(pThread, NULL);
                 VmDnsFreeThread(pThread);
             }
+        }
+
+        if (pSockContext->pEventQueue)
+        {
+            VmDnsSockFreeEventQueue(pSockContext->pEventQueue);
+            pSockContext->pEventQueue = NULL;
         }
 
         VmDnsFreeMemory(pSockContext->pWorkerThreads);
@@ -1305,7 +1309,7 @@ cleanup:
     return dwError;
 
 error:
-
+    
     goto cleanup;
 }
 
