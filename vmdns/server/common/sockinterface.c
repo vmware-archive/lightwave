@@ -1522,6 +1522,8 @@ VmDnsOnForwarderResponse(
 
 cleanup:
 
+    VMDNS_SAFE_FREE_MEMORY(pResponse);
+
     if (pForwarderContext)
     {
         VmDnsReleaseForwarderPacketContext(pForwarderContext);
@@ -1560,7 +1562,13 @@ VmDnsOnUdpForwardResponse(
 
 cleanup:
 
+    if (pSocket)
+    {
+        VmDnsSockRelease(pSocket);
+    }
+
     return dwError;
+
 error:
 
     goto cleanup;
@@ -1581,7 +1589,13 @@ VmDnsOnTcpForwardResponse(
 
 cleanup:
 
+    if (pSocket)
+    {
+        VmDnsSockRelease(pSocket);
+    }
+
     return dwError;
+
 error:
 
     goto cleanup;
