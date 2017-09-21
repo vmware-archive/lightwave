@@ -291,10 +291,11 @@ VmDirRESTFormHttpURL(
         else
         {
             // readjust size of query
-            dwError = VmDirReallocateMemory(
+            dwError = VmDirReallocateMemoryWithInit(
                             (PVOID)pszQuery,
                             (PVOID*)&pszQuery,
-                            currQueryLen + VmDirStringLenA(pszEncodedParam) + 2); // +2 for & and \0
+                            currQueryLen + VmDirStringLenA(pszEncodedParam) + 2,
+                            currQueryLen); // +2 for & and \0
             BAIL_ON_VMDIR_ERROR(dwError);
 
             pszQuery[currQueryLen++] = '&';
@@ -365,10 +366,11 @@ VmDirRESTWriteResponseCallback(
 
     pCurlResponse = (PVDIR_REST_CURL_RESPONSE)pContext;
 
-    dwError = VmDirReallocateMemory(
+    dwError = VmDirReallocateMemoryWithInit(
                     (PVOID)pCurlResponse->pResponse,
                     (PVOID*)&pCurlResponse->pResponse,
-                    pCurlResponse->dwResponseLen + bytesRead + 1);
+                    pCurlResponse->dwResponseLen + bytesRead + 1,
+                    pCurlResponse->dwResponseLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCopyMemory(
@@ -379,7 +381,6 @@ VmDirRESTWriteResponseCallback(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pCurlResponse->dwResponseLen += bytesRead;
-    pCurlResponse->pResponse[pCurlResponse->dwResponseLen] = 0;
 
 cleanup:
     return memorySize;

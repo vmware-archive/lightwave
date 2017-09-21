@@ -144,10 +144,11 @@ VmDirRESTOperationReadRequest(
     {
         if (bytesRead || !pszInput)
         {
-            dwError = VmDirReallocateMemory(
+            dwError = VmDirReallocateMemoryWithInit(
                     (PVOID)pszInput,
                     (PVOID*)&pszInput,
-                    len + MAX_REST_PAYLOAD_LENGTH + 1);     // +1 for NULL char
+                    len + MAX_REST_PAYLOAD_LENGTH + 1,
+                    len);     // +1 for NULL char
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -159,8 +160,6 @@ VmDirRESTOperationReadRequest(
     }
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
-    // Terminate the string
-    pszInput[len] = 0;
 
     if (!IsNullOrEmptyString(pszInput))
     {
