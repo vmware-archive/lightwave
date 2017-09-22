@@ -774,7 +774,7 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
 
             logger.debug(String.format(
-                    "Band name [%s] will be set for tenant [%s]",
+                    "Brand name [%s] will be set for tenant [%s]",
                     brandName,
                     tenantName));
 
@@ -7173,9 +7173,13 @@ public class IdentityManager implements IIdentityManager {
                         IS_LIGHTWAVE_KEY,
                         true);
             	if(isLightwave != 0 ) {
-                logger.info("Configuring branding name for Lightwave instance");
-            	_configStore.setBrandName(tenantName, "Cascade Platform<br/>Authentication Service");
-            }
+                    logger.info("Configuring branding name for Lightwave instance");
+                    _configStore.setBrandName(tenantName, "Pivotal Container Service");
+                }
+                else {
+                    logger.info("Configuring branding name for Lightwave instance");
+                    _configStore.setBrandName(tenantName, String.format("Lightwave <br> %s", tenantName));
+                }
             } finally {
                 rootRegistryKey.close();
             }
