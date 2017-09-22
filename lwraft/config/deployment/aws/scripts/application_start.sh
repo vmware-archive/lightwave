@@ -26,7 +26,7 @@ find_partners() {
             PARTNERS+=(${IP})
         fi
     done
-    eval "$4=${PARTNERS}"
+    eval "$4=(`echo ${PARTNERS[@]}`)"
 }
 
 echo "Step 1: Get variables from AWS"
