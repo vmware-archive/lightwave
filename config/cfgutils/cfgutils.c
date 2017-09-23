@@ -266,6 +266,7 @@ VmwDeploySetupServerPartner(
 
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
+                    VMW_ADMIN_NAME,
                     pParams->pszPassword,
                     pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -516,8 +517,12 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
+                    pszUsername,
                     pParams->pszPassword,
                     pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -556,9 +561,6 @@ VmwDeploySetupClientWithDC(
     VMW_DEPLOY_LOG_INFO(
             "Joining system to directory service at [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszServer));
-
-    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
-                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
 
     dwError = VmAfdJoinVmDirWithSiteA(
                     pParams->pszServer,

@@ -12,6 +12,7 @@ librest_head_la_SOURCES += \
     decode.c \
     encode.c \
     globals.c \
+    handler.c \
     httperror.c \
     ldapapi.c \
     metricsapi.c \

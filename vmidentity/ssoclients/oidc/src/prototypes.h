@@ -33,23 +33,17 @@ OidcTokenParse(
     PCSTRING psz,
     PCSTRING pszExpectedTokenClass);
 
+SSOERROR
+OidcTokenValidate(
+    POIDC_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName, /* OPT */
+    SSO_LONG clockToleranceInSeconds);
+
 void
 OidcTokenDelete(
     POIDC_TOKEN p);
-
-// OIDC_ID_TOKEN
-
-SSOERROR
-OidcIDTokenParse(
-    POIDC_ID_TOKEN* pp,
-    PCSTRING psz);
-
-// OIDC_ACCESS_TOKEN
-
-SSOERROR
-OidcAccessTokenParse(
-    POIDC_ACCESS_TOKEN* pp,
-    PCSTRING psz);
 
 // OIDC_TOKEN_SUCCESS_RESPONSE
 

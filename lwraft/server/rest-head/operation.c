@@ -142,12 +142,17 @@ VmDirRESTOperationReadRequest(
     // read request input json
     do
     {
-        dwError = VmDirReallocateMemory(
-                (PVOID)pszInput,
-                (PVOID*)&pszInput,
-                len + MAX_REST_PAYLOAD_LENGTH);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (bytesRead || !pszInput)
+        {
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pszInput,
+                    (PVOID*)&pszInput,
+                    len + MAX_REST_PAYLOAD_LENGTH + 1,
+                    len);     // +1 for NULL char
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
+        bytesRead = 0;
         dwError = VmRESTGetData(
                 pRESTHandle, pRestReq, pszInput + len, &bytesRead);
 

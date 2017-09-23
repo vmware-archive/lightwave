@@ -284,6 +284,7 @@ if (bLocked) \
 #define VMDDNS_DELETE_PACKET      0
 #define VMDNS_SERVER_PORT         "53"
 #define VMDNS_SOURCEIP_UDP_PORT   "2020"
+#define VMDNS_RETRY_INTERVAL      5000
 
 #define VMDIR_HEARTBEAT_ENTRY_W \
 {'V','M','w','a','r','e',' ','D','i','r','e','c','t','o','r','y','-','S','e','r','v','i','c','e',0}

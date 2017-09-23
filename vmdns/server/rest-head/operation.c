@@ -115,13 +115,17 @@ VmDnsRESTOperationReadRequest(
     // read request input json
     do
     {
-        dwError = VmDnsReallocateMemory(
-                (PVOID)pszInput,
-                (PVOID*)&pszInput,
-                len + MAX_REST_PAYLOAD_LENGTH
-                );
-        BAIL_ON_VMDNS_ERROR(dwError);
+        if (bytesRead || !pszInput)
+        {
+            dwError = VmDnsReallocateMemory(
+                    (PVOID)pszInput,
+                    (PVOID*)&pszInput,
+                    len + MAX_REST_PAYLOAD_LENGTH + 1       // +1 for NULL char
+                    );
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
 
+        bytesRead = 0;
         dwError = VmRESTGetData(
                 pRESTHandle,
                 pRestReq,
@@ -133,6 +137,7 @@ VmDnsRESTOperationReadRequest(
     }
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDNS_ERROR(dwError);
+    pszInput[len] = 0;
 
     if (!IsNullOrEmptyString(pszInput))
     {

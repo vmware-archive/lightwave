@@ -24,7 +24,7 @@ ShowUsage(
     printf("Usage: vmdir_integration_test <args>\n");
     printf("Required arguments:\n");
     printf("\t-H/--host <host> -- The host to connect to.\n");
-    printf("\t-u/--username <user UPN> -- user@domain to connect with.\n");
+    printf("\t-u/--username <user name> -- user to connect with.\n");
     printf("\t-w/--password <password> -- The password to authenticate with\n");
     printf("\t-d/--domain domain -- The domain to use (e.g., vsphere.local)\n");
     printf("\t-b/--break -- Break into debugger if a test fails.\n");
@@ -237,7 +237,7 @@ TestInfrastructureInitialize(
     dwError = VmDirSafeLDAPBind(
                 &pState->pLd,
                 pState->pszServerName,
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -361,6 +361,14 @@ VmDirMain(
                 &Callbacks,
                 argc,
                 argv);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    dwError = VmDirAllocateStringPrintf(
+                (PSTR*)&State.pszUserUPN,
+                "%s@%s",
+                State.pszUserName,
+                State.pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("VmDir integration tests starting ...\n");

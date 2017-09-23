@@ -296,12 +296,12 @@ error:
 DWORD
 VmwDeployValidatePartnerCredentials(
     PCSTR pszServer,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszDomain
     )
 {
     DWORD dwError = 0;
-    PCSTR pszUsername = VMW_ADMIN_NAME;
     PSTR  pszLdapURI = NULL;
     PVMDIR_CONNECTION pConnection = NULL;
 

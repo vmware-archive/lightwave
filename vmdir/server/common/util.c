@@ -460,6 +460,16 @@ VmDirSrvCreateServerObj(
     switch (dwError)
     {
         case VMDIR_SUCCESS:
+
+            assert(gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val);
+
+            // allow DCClients group to read site container (to get siteGUID during client join)
+            dwError = VmDirAppendAllowAceForDn(
+                        siteContainerDN.lberbv.bv_val,
+                        gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val,
+                        VMDIR_RIGHT_DS_READ_PROP);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
             // Create Servers container
             dwError = VmDirSrvCreateContainer( pSchemaCtx, serversContainerDN.lberbv.bv_val, pszServersContainerName );
             BAIL_ON_VMDIR_ERROR(dwError);

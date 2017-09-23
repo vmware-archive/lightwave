@@ -174,7 +174,7 @@ ShouldBeAbleToCreateTenants(
     DWORD dwError = 0;
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "secondary.local",
                 "administrator",
@@ -186,7 +186,7 @@ ShouldBeAbleToCreateTenants(
     TestAssertEquals(dwError, 0);
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "tertiary.com",
                 "administrator",
@@ -198,7 +198,7 @@ ShouldBeAbleToCreateTenants(
     TestAssertEquals(dwError, 0);
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "quad.com",
                 "administrator",
@@ -227,7 +227,7 @@ ShouldNotBeAbleToCreateTenantsOfACertainLength(
     DWORD dwError = 0;
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "marketing.pepsi.com",
                 "administrator",
@@ -251,7 +251,7 @@ ShouldBeAbleToEnumerateTenants(
     DWORD dwTenantCount = 0;
 
     dwError = VmDirEnumerateTenants(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 &ppszTenants,
                 &dwTenantCount);
@@ -274,19 +274,19 @@ ShouldBeAbleToDeleteTenants(
     DWORD dwError = 0;
 
     dwError = VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "secondary.local");
     TestAssertEquals(dwError, 0);
 
     dwError = VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "tertiary.com");
     TestAssertEquals(dwError, 0);
 
     dwError = VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "quad.com");
     TestAssertEquals(dwError, 0);
@@ -306,37 +306,37 @@ NullParametersShouldFail(
     dwError = VmDirCreateTenant(NULL, pState->pszPassword, "domain.com", "administrator", pState->pszPassword);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirCreateTenant(pState->pszUserName, NULL, "domain.com", "administrator", pState->pszPassword);
+    dwError = VmDirCreateTenant(pState->pszUserUPN, NULL, "domain.com", "administrator", pState->pszPassword);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirCreateTenant(pState->pszUserName, pState->pszPassword, NULL, "administrator", pState->pszPassword);
+    dwError = VmDirCreateTenant(pState->pszUserUPN, pState->pszPassword, NULL, "administrator", pState->pszPassword);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirCreateTenant(pState->pszUserName, pState->pszPassword, "domain.com", NULL, pState->pszPassword);
+    dwError = VmDirCreateTenant(pState->pszUserUPN, pState->pszPassword, "domain.com", NULL, pState->pszPassword);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirCreateTenant(pState->pszUserName, pState->pszPassword, "domain.com", "administrator", NULL);
+    dwError = VmDirCreateTenant(pState->pszUserUPN, pState->pszPassword, "domain.com", "administrator", NULL);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
     dwError = VmDirDeleteTenant(NULL, pState->pszPassword, "domain.com");
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirDeleteTenant(pState->pszUserName, NULL, "domain.com");
+    dwError = VmDirDeleteTenant(pState->pszUserUPN, NULL, "domain.com");
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirDeleteTenant(pState->pszUserName, pState->pszPassword, NULL);
+    dwError = VmDirDeleteTenant(pState->pszUserUPN, pState->pszPassword, NULL);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
     dwError = VmDirEnumerateTenants(NULL, pState->pszPassword, &ppszTenants, &dwTenantCount);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirEnumerateTenants(pState->pszUserName, NULL, &ppszTenants, &dwTenantCount);
+    dwError = VmDirEnumerateTenants(pState->pszUserUPN, NULL, &ppszTenants, &dwTenantCount);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirEnumerateTenants(pState->pszUserName, pState->pszPassword, NULL, &dwTenantCount);
+    dwError = VmDirEnumerateTenants(pState->pszUserUPN, pState->pszPassword, NULL, &dwTenantCount);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 
-    dwError = VmDirEnumerateTenants(pState->pszUserName, pState->pszPassword, &ppszTenants, NULL);
+    dwError = VmDirEnumerateTenants(pState->pszUserUPN, pState->pszPassword, &ppszTenants, NULL);
     TestAssertEquals(dwError, VMDIR_ERROR_INVALID_PARAMETER);
 }
 
@@ -352,18 +352,18 @@ InvalidCredentialsShouldFail(
     dwError = VmDirCreateTenant("no_such_user@vsphere.local", pState->pszPassword, "domain.com", "administrator", pState->pszPassword);
     TestAssertEquals(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
 
-    dwError = VmDirCreateTenant(pState->pszUserName, "not the password", "domain.com", "administrator", pState->pszPassword);
+    dwError = VmDirCreateTenant(pState->pszUserUPN, "not the password", "domain.com", "administrator", pState->pszPassword);
     TestAssertEquals(dwError, VMDIR_ERROR_USER_INVALID_CREDENTIAL);
 
     dwError = VmDirDeleteTenant("no_such_user@vsphere.local", pState->pszPassword, "domaintodelete.com");
     TestAssertEquals(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
 
-    dwError = VmDirDeleteTenant(pState->pszUserName, "not the password", "domaintodelete.com");
+    dwError = VmDirDeleteTenant(pState->pszUserUPN, "not the password", "domaintodelete.com");
     TestAssertEquals(dwError, VMDIR_ERROR_USER_INVALID_CREDENTIAL);
 
     dwError = VmDirEnumerateTenants("no_such_user@vsphere.local", pState->pszPassword, &ppszTenants, &dwTenantCount);
     TestAssertEquals(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
 
-    dwError = VmDirEnumerateTenants(pState->pszUserName, "not the password", &ppszTenants, &dwTenantCount);
+    dwError = VmDirEnumerateTenants(pState->pszUserUPN, "not the password", &ppszTenants, &dwTenantCount);
     TestAssertEquals(dwError, VMDIR_ERROR_USER_INVALID_CREDENTIAL);
 }

@@ -27,32 +27,32 @@ TestCleanup(
     )
 {
     (VOID)VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "secondary.local");
 
     (VOID)VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "tertiary.com");
 
     (VOID)VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "quad.com");
 
     (VOID)VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "testing.local");
 
     (VOID)VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "customer.com");
 
     (VOID)VmDirDeleteTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "foobar.net");
 

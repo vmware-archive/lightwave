@@ -42,6 +42,12 @@ TestDefaultSecurityDescriptor(
     PVMDIR_TEST_STATE pState
     );
 
+// k8s_machine_act_selfservice.c
+DWORD
+TestK8sMachineActSelfService(
+    PVMDIR_TEST_STATE pState
+    );
+
 // domainadminsrights.c
 DWORD
 TestStandardRightsForDomainAdmin(

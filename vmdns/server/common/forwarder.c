@@ -74,13 +74,13 @@ VmDnsValidateForwarder(
 static
 VOID
 VmDnsFreeForwarderEntry(
-    PVMDNS_FORWARDER_ENTRY pForwarder
+    PVMDNS_FORWARDER_ENTRY pForwarderEntry
     );
 
 static
 DWORD
 VmDnsForwarderMetricsInit(
-    PVMDNS_FORWARDER_ENTRY   pForwarder
+    PVMDNS_FORWARDER_ENTRY   pForwarderEntry
     );
 
 
@@ -136,7 +136,7 @@ VmDnsForwarderCleanup(
         {
             if (pForwarder->pForwarderEntries[i])
             {
-            VmDnsFreeForwarderEntry(pForwarder->pForwarderEntries[i]);
+                VmDnsFreeForwarderEntry(pForwarder->pForwarderEntries[i]);
             }
         }
         VMDNS_FREE_RWLOCK(pForwarder->pLock);
@@ -542,11 +542,8 @@ VmDnsForwarderRemoveAt(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsForwarderMetricsDelete(pForwarder->pForwarderEntries[nIndex]);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
+    VmDnsFreeForwarderEntry(pForwarder->pForwarderEntries[nIndex]);
     pForwarder->pForwarderEntries[nIndex] = NULL;
-
 
 #ifndef WIN32
     memmove(&pForwarder->pForwarderEntries[nIndex],
@@ -740,26 +737,29 @@ VmDnsForwardRequest(
 
 cleanup:
 
+    VMDNS_SAFE_FREE_MEMORY(pszForwarder);
+
     if (pOldRequest)
     {
-	VMDNS_LOG_IO_RELEASE(pOldRequest);
+        VMDNS_LOG_IO_RELEASE(pOldRequest);
         VmDnsSockReleaseIoBuffer(pOldRequest);
     }
-
-    return dwError;
-error:
-
     if (pSocket)
     {
         VmDnsSockRelease(pSocket);
     }
+
+    return dwError;
+
+error:
+
     if (pCurrentContext)
     {
         VmDnsReleaseForwarderPacketContext(pCurrentContext);
     }
     if (pIoRequest)
     {
-	VMDNS_LOG_IO_RELEASE(pIoRequest);
+        VMDNS_LOG_IO_RELEASE(pIoRequest);
         VmDnsSockReleaseIoBuffer(pIoRequest);
     }
     goto cleanup;
@@ -869,12 +869,12 @@ cleanup:
     if (pIoSizeResponse)
     {
       
-	    VMDNS_LOG_IO_RELEASE(pIoSizeResponse);
+        VMDNS_LOG_IO_RELEASE(pIoSizeResponse);
         VmDnsSockReleaseIoBuffer(pIoSizeResponse);
     }
     if (pIoDataResponse)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoDataResponse);
+        VMDNS_LOG_IO_RELEASE(pIoDataResponse);
         VmDnsSockReleaseIoBuffer(pIoDataResponse);
     }
 
@@ -908,13 +908,14 @@ error:
 static
 VOID
 VmDnsFreeForwarderEntry(
-    PVMDNS_FORWARDER_ENTRY pForwarder
+    PVMDNS_FORWARDER_ENTRY pForwarderEntry
     )
 {
-    if (pForwarder)
+    if (pForwarderEntry)
     {
-        VMDNS_SAFE_FREE_STRINGA(pForwarder->pszForwarder);
-        VMDNS_SAFE_FREE_MEMORY(pForwarder);
+        (void) VmDnsForwarderMetricsDelete(pForwarderEntry);
+        VMDNS_SAFE_FREE_STRINGA(pForwarderEntry->pszForwarder);
+        VMDNS_SAFE_FREE_MEMORY(pForwarderEntry);
     }
 }
 
@@ -998,7 +999,7 @@ VmDnsValidateForwarder(
 static
 DWORD
 VmDnsForwarderMetricsInit(
-    PVMDNS_FORWARDER_ENTRY   pForwarder
+    PVMDNS_FORWARDER_ENTRY pForwarderEntry
     )
 {
     DWORD dwError = 0;
@@ -1006,8 +1007,8 @@ VmDnsForwarderMetricsInit(
     VM_METRICS_LABEL labelDurationOps[2][2] = {{{"operation","query"},{"forwarder",""}},
                                                {{"operation","update"},{"forwarder",""}}};
 
-    labelDurationOps[0][1].pszValue = pForwarder->pszForwarder;
-    labelDurationOps[1][1].pszValue = pForwarder->pszForwarder;
+    labelDurationOps[0][1].pszValue = pForwarderEntry->pszForwarder;
+    labelDurationOps[1][1].pszValue = pForwarderEntry->pszForwarder;
 
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -1019,7 +1020,7 @@ VmDnsForwarderMetricsInit(
                 "Forwarder Process Request Duration",
                 buckets,
                 5,
-                &pForwarder->ForwarderMetricsContext.pQueryDuration
+                &pForwarderEntry->ForwarderMetricsContext.pQueryDuration
                 );
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -1031,7 +1032,7 @@ VmDnsForwarderMetricsInit(
                 "Forwarder Process Request Duration",
                 buckets,
                 5,
-                &pForwarder->ForwarderMetricsContext.pUpdateDuration
+                &pForwarderEntry->ForwarderMetricsContext.pUpdateDuration
                 );
     BAIL_ON_VMDNS_ERROR(dwError);
 

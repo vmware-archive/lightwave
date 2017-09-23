@@ -30,12 +30,16 @@ VMCARESTGetPayload(
 
     do
     {
-        dwError = VMCAReallocateMemory(
-                (PVOID)pszPayload,
-                (PVOID*)&pszPayload,
-                len + VMCARESTMAXPAYLOADLENGTH);
-        BAIL_ON_VMCA_ERROR(dwError);
+        if (bytesRead || !pszPayload)
+        {
+            dwError = VMCAReallocateMemory(
+                    (PVOID)pszPayload,
+                    (PVOID*)&pszPayload,
+                    len + VMCARESTMAXPAYLOADLENGTH + 1);    // +1 for NULL char
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
 
+        bytesRead = 0;
         dwError = VmRESTGetData(
                 pRESTHandle,
                 pRESTRequest,
@@ -46,6 +50,8 @@ VMCARESTGetPayload(
     }
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMCA_ERROR(dwError);
+
+    pszPayload[len] = 0;
 
     pVMCARequest->pszPayload = pszPayload;
     pszPayload = NULL;

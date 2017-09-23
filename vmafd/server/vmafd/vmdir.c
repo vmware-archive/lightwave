@@ -225,6 +225,7 @@ VmAfSrvPromoteVmDir(
     )
 {
     DWORD dwError = 0;
+    DWORD dwDNSRetry = 0;
     PSTR pszLotusServerName = NULL;
     PSTR pszDomainName = NULL;
     PSTR pszUserName = NULL;
@@ -309,6 +310,41 @@ VmAfSrvPromoteVmDir(
                           pszPassword,
                           pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvGetPNID(&pwszPNID);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwDNSRetry = 0;
+
+        do
+        {
+            dwError = VmAfSrvConfigureDNSW(
+                              pwszPNID,
+                              pwszDomainName,
+                              pwszUserName,
+                              pwszPassword);
+
+            if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+            {
+                VmAfdSleep(VMDNS_RETRY_INTERVAL);
+            }
+            else
+            {
+                break;
+            }
+        }
+        while (TRUE);
+
+        if (dwError)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s failed to initialize dns. Error(%u)",
+                __FUNCTION__,
+                dwError);
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
     }
     else
     {
@@ -356,12 +392,36 @@ VmAfSrvPromoteVmDir(
                           &pszCanonicalHostName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfSrvSetDNSRecords(
-                          pszPartnerHostName,
-                          pszDomainName,
-                          pszUserName,
-                          pszPassword,
-                          pszCanonicalHostName);
+        dwDNSRetry = 0;
+
+        do
+        {
+            dwError = VmAfSrvSetDNSRecords(
+                              pszPartnerHostName,
+                              pszDomainName,
+                              pszUserName,
+                              pszPassword,
+                              pszCanonicalHostName);
+
+            if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+            {
+                VmAfdSleep(VMDNS_RETRY_INTERVAL);
+            }
+            else
+            {
+                break;
+            }
+        }
+        while (TRUE);
+
+        if (dwError)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s failed to initialize dns. Error(%u)",
+                __FUNCTION__,
+                dwError);
+        }
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -394,35 +454,12 @@ VmAfSrvPromoteVmDir(
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
-    dwError = VmAfSrvGetPNID(&pwszPNID);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdRegSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
                            VMAFD_REG_KEY_DC_NAME,
                            pwszLotusServerName);
     BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
-    dwError = VmAfSrvConfigureDNSW(
-                      pwszPNID,
-                      pwszDomainName,
-                      pwszUserName,
-                      pwszPassword);
-    if (dwError)
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to initialize dns. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
-    }
-    else
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s successfully initialized dns.",
-            __FUNCTION__);
-    }
 
 #if 0
     dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);

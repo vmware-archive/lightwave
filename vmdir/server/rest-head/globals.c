@@ -16,4 +16,5 @@
 
 PREST_API_DEF gpVdirRestApiDef = NULL;
 
-PVMREST_HANDLE gpVdirRestHandle = NULL;
+PVMREST_HANDLE gpVdirRestHTTPHandle = NULL;
+PVMREST_HANDLE gpVdirRestHTTPSHandle = NULL;

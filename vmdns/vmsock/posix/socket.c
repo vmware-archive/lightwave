@@ -523,6 +523,13 @@ VmDnsSockPosixWaitForEvent(
 
     bLocked = TRUE;
 
+    if (pQueue->bShutdown)
+    {
+        dwError = ERROR_SHUTDOWN_IN_PROGRESS;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+
+
     if ((pQueue->state == VM_SOCK_POSIX_EVENT_STATE_PROCESS) &&
         (pQueue->iReady >= pQueue->nReady))
     {
@@ -548,6 +555,11 @@ VmDnsSockPosixWaitForEvent(
                 BAIL_ON_POSIX_SOCK_ERROR(dwError);
             }
 
+            if (pQueue->bShutdown)
+            {
+                dwError = ERROR_SHUTDOWN_IN_PROGRESS;
+                BAIL_ON_POSIX_SOCK_ERROR(dwError);
+            }
         }
 
         pQueue->state = VM_SOCK_POSIX_EVENT_STATE_PROCESS;
@@ -1546,7 +1558,7 @@ VmDnsSockPosixFreeIoBuffer(
     PVM_SOCK_IO_BUFFER     pIoBuffer
     )
 {
-//    VMDNS_LOG_DEBUG("pIoBuffer:%p released from thread %p", pIoBuffer, pthread_self()); 
+//    VMDNS_LOG_DEBUG("pIoBuffer:%p released from thread %p", pIoBuffer, pthread_self());
     if (pIoBuffer && pIoBuffer->pClientSocket)
     {
         VmDnsSockPosixReleaseSocket(pIoBuffer->pClientSocket);

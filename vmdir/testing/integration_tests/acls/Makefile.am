@@ -16,6 +16,7 @@ libsecuritydescriptortests_la_SOURCES = \
     domainadminsrights.c \
     domainclientsrights.c \
     inheritance.c \
+    k8s_machine_act_selfservice.c \
     legacy_access_checks.c \
     main.c \
     ntsecuritydescriptor.c \

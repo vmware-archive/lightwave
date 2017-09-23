@@ -171,13 +171,16 @@ VmDnsRESTRequestHandler(
 
 response:
     VMDNS_SET_REST_RESULT(pRestOp, dwError, NULL);
-    // Nothing can be done if failed to send response
+    /*
+     * Send response irrespective of error or success
+     * Nothing can be done if failed to send response
+     * All the module under response and cleanup flag, handles NULL pointer case
+     */
     dwError = VmDnsRESTOperationWriteResponse(
                     pRestOp,
                     pRESTHandle,
                     ppResponse
                     );
-    BAIL_ON_VMDNS_ERROR(dwError);
     goto cleanup;
 
 cleanup:

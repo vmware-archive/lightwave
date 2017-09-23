@@ -352,7 +352,7 @@ TestMultiTenancyPermissions(
     LDAP *pLdFoobarDotNet = NULL;
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "testing.local",
                 "administrator",
@@ -360,7 +360,7 @@ TestMultiTenancyPermissions(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "customer.com",
                 "administrator",
@@ -368,7 +368,7 @@ TestMultiTenancyPermissions(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateTenant(
-                pState->pszUserName,
+                pState->pszUserUPN,
                 pState->pszPassword,
                 "foobar.net",
                 "administrator",
@@ -409,9 +409,9 @@ TestMultiTenancyPermissions(
     CrossTenancyDeletionsShouldFail(pState);
 
 cleanup:
-    VmDirDeleteTenant(pState->pszUserName, pState->pszPassword, "testing.local");
-    VmDirDeleteTenant(pState->pszUserName, pState->pszPassword, "customer.com");
-    VmDirDeleteTenant(pState->pszUserName, pState->pszPassword, "foobar.net");
+    VmDirDeleteTenant(pState->pszUserUPN, pState->pszPassword, "testing.local");
+    VmDirDeleteTenant(pState->pszUserUPN, pState->pszPassword, "customer.com");
+    VmDirDeleteTenant(pState->pszUserUPN, pState->pszPassword, "foobar.net");
 
     VmDirTestLdapUnbind(pLdTestingDotLocal);
     VmDirTestLdapUnbind(pLdCustomerDotCom);
