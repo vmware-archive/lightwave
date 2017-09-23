@@ -192,6 +192,12 @@ VmAfdCliGetDCList(
 
 static
 DWORD
+VmAfdCliCreateComputerAccount(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
 VmAfdCliRefreshSiteName(
     VOID
     );
@@ -392,6 +398,11 @@ VmAfdCliExecute(
         case VM_AFD_ACTION_GET_DC_LIST:
 
             dwError = VmAfdCliGetDCList(pContext);
+            break;
+
+        case VM_AFD_ACTION_CREATE_COMPUTER_ACCOUNT:
+
+            dwError = VmAfdCliCreateComputerAccount(pContext);
             break;
 
         case VM_AFD_ACTION_ADD_PASSWORD_ENTRY:
@@ -1087,6 +1098,42 @@ cleanup:
     return dwError;
 
 error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmAfdCliCreateComputerAccount(
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszOutPassword = NULL;
+
+    if (!pContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdCreateComputerAccountA(
+                    pContext->pszUserName,
+                    pContext->pszPassword,
+                    pContext->pszMachineName,
+                    pContext->pszOrgUnit,
+                    &pszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    printf("password: %s\n", pszOutPassword);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    printf("%s failed: %d\n", __FUNCTION__, dwError);
 
     goto cleanup;
 }
