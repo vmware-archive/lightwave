@@ -37,12 +37,6 @@
     doc = ""
 }
 
-"AllowInsecureAuthentication" = {
-    default = dword:00000001
-    value   = dword:00000001
-    doc = "Set to '1' to allow clear-text password authentication."
-}
-
 "SslDisabledProtocols" = {
     default = "TLSv1"
     doc     = "List of protocols to disable"
