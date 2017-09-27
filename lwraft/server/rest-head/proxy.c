@@ -325,7 +325,7 @@ VmDirRESTFormHttpURL(
                     ppszURL,
                     "http://%s:%d%s%s",
                     pszLeader,
-                    DEFAULT_REST_PORT_NUM,
+                    DEFAULT_HTTP_PORT_NUM,
                     pRestOp->pszPath,
                     pszQuery);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -336,7 +336,7 @@ VmDirRESTFormHttpURL(
                     ppszURL,
                     "http://%s:%d%s",
                     pszLeader,
-                    DEFAULT_REST_PORT_NUM,
+                    DEFAULT_HTTP_PORT_NUM,
                     pRestOp->pszPath);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
