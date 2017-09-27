@@ -37,6 +37,12 @@
     doc = ""
 }
 
+"AllowInsecureAuthentication" = {
+    default = dword:00000001
+    value   = dword:00000001
+    doc = "Set to '1' to allow clear-text password authentication."
+}
+
 "KerberosPort" = {
     default = dword:00000058
     doc     = "Kerberos Protocol Port"
