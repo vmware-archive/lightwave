@@ -7174,11 +7174,7 @@ public class IdentityManager implements IIdentityManager {
                         true);
             	if(isLightwave != 0 ) {
                     logger.info("Configuring branding name for Lightwave instance");
-                    _configStore.setBrandName(tenantName, "Pivotal Container Service");
-                }
-                else {
-                    logger.info("Configuring branding name for Lightwave instance");
-                    _configStore.setBrandName(tenantName, String.format("Lightwave <br> %s", tenantName));
+                    _configStore.setBrandName(tenantName, "Lightwave Authentication Service");
                 }
             } finally {
                 rootRegistryKey.close();
