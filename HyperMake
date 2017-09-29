@@ -13,14 +13,15 @@ targets:
     cache: false
 
   toolchain:
-    description: placeholder for additional toolchain dependencies
+    description: place-holder for future dependencies
 
   bootstrap-lightwave:
     description: Bootstraps build
     after:
       - toolchain
     watches:
-      - configure.ac
+      - '**/**/*.am'
+      - '**/**/*.ac'
     cmds:
       - ./support/scripts/bootstrap.sh
 
@@ -30,6 +31,10 @@ targets:
       - bootstrap-lightwave
     watches:
       - support/scripts/build.sh
+      - '**/**/*.cpp'
+      - '**/**/*.c'
+      - '**/**/*.h'
+      - '**/**/*.java'
     cmds:
       - ./support/scripts/build.sh
 
