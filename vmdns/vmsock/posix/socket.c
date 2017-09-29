@@ -652,8 +652,8 @@ VmDnsSockPosixWaitForEvent(
         pQueue->iReady++;
     }
 
-    *ppSocket = pSocket;
-    pIoBuffer = pSocket->pData;
+    dwError = VmDnsSockPosixSetData(pSocket, NULL, (PVOID *)&pIoBuffer);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     if (pIoBuffer && eventType == VM_SOCK_EVENT_TYPE_UNKNOWN)
     {
@@ -661,8 +661,10 @@ VmDnsSockPosixWaitForEvent(
         pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
         eventType = pIoContext->eventType;
     }
-    *pEventType = eventType;
+
+    *ppSocket = pSocket;
     *ppIoBuffer = pIoBuffer;
+    *pEventType = eventType;
 
 cleanup:
 
@@ -1268,6 +1270,7 @@ VmDnsSockPosixEventQueueAdd_inlock(
     }
 
 
+    VmDnsSockPosixAcquireSocket(pSocket);
     if (pSocket->bInEventQueue == FALSE &&
         epoll_ctl(pQueue->epollFd, EPOLL_CTL_ADD, pSocket->fd, &event) < 0)
     {
@@ -1276,7 +1279,6 @@ VmDnsSockPosixEventQueueAdd_inlock(
     }
     pSocket->bInEventQueue = TRUE;
 
-    VmDnsSockPosixAcquireSocket(pSocket);
 
 error:
 
