@@ -20,7 +20,7 @@ sed -i -e "s|https://vmware.bintray.com/lightwave-dev/photon/master|file:///tmp/
 createrepo "/tmp/vmware/lightwave"
 
 
-echo "Step 3: Upgrade/install lightwave-post"
+echo "Step 3: Upgrade/install lightwave-post and lightwave-client"
 
 tdnf makecache
-tdnf install -y lightwave-post
+tdnf install -y lightwave-post lightwave-client
