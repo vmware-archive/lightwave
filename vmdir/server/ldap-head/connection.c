@@ -1509,8 +1509,12 @@ _VmDirUpdateErrorCount(
             VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NO_SUCH_OBJECT]);
             break;
 
+        case LDAP_BUSY:
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_BUSY]);
+            break;
+
         default:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNKNOWN]);
+            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_OTHER]);
             break;
     }
     return;
