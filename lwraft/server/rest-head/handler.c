@@ -19,11 +19,62 @@
  * c-rest-engine will use this callback upon receiving a request
  */
 DWORD
-VmDirRESTRequestHandler(
+VmDirHTTPRequestHandler(
     PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirRESTRequestHandlerInternal(
+            pRESTHandle, pRequest, ppResponse, paramsCount, TRUE);//TRUE - if HTTP request
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirHTTPSRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirRESTRequestHandlerInternal(
+            pRESTHandle, pRequest, ppResponse, paramsCount, FALSE);//FALSE - if HTTPS request
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTRequestHandlerInternal(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount,
+    BOOLEAN         bHttpRequest
     )
 {
     DWORD   dwError = 0;
@@ -63,7 +114,7 @@ VmDirRESTRequestHandler(
         else if (role == VDIR_RAFT_ROLE_FOLLOWER)
         {
             dwError = VmDirRESTForwardRequest(
-                    pRestOp, paramsCount, pRequest, ppResponse, pRESTHandle);
+                    pRestOp, paramsCount, pRequest, ppResponse, pRESTHandle, bHttpRequest);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else  // role == VDIR_RAFT_ROLE_CANDIDATE

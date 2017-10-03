@@ -211,11 +211,28 @@ VmDirRESTEtcdDelete(
 
 // handler.c
 DWORD
-VmDirRESTRequestHandler(
+VmDirHTTPRequestHandler(
     PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
+    );
+
+DWORD
+VmDirHTTPSRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirRESTRequestHandlerInternal(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount,
+    BOOLEAN         bHttpRequest
     );
 
 DWORD
@@ -544,5 +561,6 @@ VmDirRESTForwardRequest(
     uint32_t dwParamCount,
     PREST_REQUEST pRequest,
     PREST_RESPONSE* ppResponse,
-    PVMREST_HANDLE pRESTHandle
+    PVMREST_HANDLE pRESTHandle,
+    BOOLEAN  bHttpRequest
     );

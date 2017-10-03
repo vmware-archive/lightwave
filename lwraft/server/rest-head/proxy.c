@@ -38,7 +38,8 @@ VmDirRESTFormHttpURL(
     PREST_REQUEST           pRequest,
     DWORD                   dwParamCount,
     PSTR                    pszLeader,
-    PSTR*                   ppszURL
+    PSTR*                   ppszURL,
+    BOOLEAN                 bHttpRequest
     );
 
 static
@@ -56,7 +57,8 @@ VmDirRESTForwardRequest(
     uint32_t                dwParamCount,
     PREST_REQUEST           pRequest,
     PREST_RESPONSE*         ppResponse,
-    PVMREST_HANDLE          pRESTHandle
+    PVMREST_HANDLE          pRESTHandle,
+    BOOLEAN                 bHttpRequest
     )
 {
     DWORD                   dwError = 0;
@@ -96,11 +98,30 @@ VmDirRESTForwardRequest(
     BAIL_ON_VMDIR_ERROR(dwError);
     curlResponse.pResponse[curlResponse.dwResponseLen] = 0;
 
-    dwCurlError = curl_easy_setopt(
-                    pCurlHandle,
-                    CURLOPT_PROTOCOLS,
-                    CURLPROTO_HTTP);
-    BAIL_ON_CURL_ERROR(dwCurlError);
+    if (bHttpRequest == TRUE)
+    {
+        dwCurlError = curl_easy_setopt(
+                        pCurlHandle,
+                        CURLOPT_PROTOCOLS,
+                        CURLPROTO_HTTP);
+        BAIL_ON_CURL_ERROR(dwCurlError);
+    }
+    else
+    {
+        dwCurlError = curl_easy_setopt(
+                        pCurlHandle,
+                        CURLOPT_PROTOCOLS,
+                        CURLPROTO_HTTPS);
+        BAIL_ON_CURL_ERROR(dwCurlError);
+
+        //Skip Peer verification
+        curl_easy_setopt(pCurlHandle, CURLOPT_SSL_VERIFYPEER, FALSE);
+        BAIL_ON_CURL_ERROR(dwCurlError);
+
+        //Skip Host Verification
+        curl_easy_setopt(pCurlHandle, CURLOPT_SSL_VERIFYHOST, FALSE);
+        BAIL_ON_CURL_ERROR(dwCurlError);
+    }
 
     // Common header
     pHeaders = curl_slist_append(pHeaders, "Accept: application/json");
@@ -176,7 +197,8 @@ VmDirRESTForwardRequest(
                     pRequest,
                     dwParamCount,
                     pszLeader,
-                    &pszURL);
+                    &pszURL,
+                    bHttpRequest);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_URL, pszURL);
@@ -258,16 +280,19 @@ VmDirRESTFormHttpURL(
     PREST_REQUEST           pRequest,
     DWORD                   dwParamCount,
     PSTR                    pszLeader,
-    PSTR*                   ppszURL
+    PSTR*                   ppszURL,
+    BOOLEAN                 bHttpRequest
     )
 {
     DWORD   i = 0;
     DWORD   dwError = 0;
     DWORD   currQueryLen = 0;
+    DWORD   portNumber = 0;
     PSTR    pszKey = NULL;
     PSTR    pszValue = NULL;
     PSTR    pszQuery = NULL;
     PSTR    pszEncodedParam = NULL;
+    PSTR    pszRequest = NULL;
 
     if (!pRestOp || !pRequest || !ppszURL || !pszLeader)
     {
@@ -318,14 +343,26 @@ VmDirRESTFormHttpURL(
         VMDIR_SAFE_FREE_MEMORY(pszKey);
     }
 
+    if (bHttpRequest == TRUE)
+    {
+        portNumber = DEFAULT_HTTP_PORT_NUM;
+        pszRequest = "http";
+    }
+    else
+    {
+        portNumber = DEFAULT_HTTPS_PORT_NUM;
+        pszRequest = "https";
+    }
+
     // If parameters passed append to the URL
     if (pszQuery)
     {
         dwError = VmDirAllocateStringPrintf(
                     ppszURL,
-                    "http://%s:%d%s%s",
+                    "%s://%s:%d%s%s",
+                    pszRequest,
                     pszLeader,
-                    DEFAULT_HTTP_PORT_NUM,
+                    portNumber,
                     pRestOp->pszPath,
                     pszQuery);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -334,9 +371,10 @@ VmDirRESTFormHttpURL(
     {
         dwError = VmDirAllocateStringPrintf(
                     ppszURL,
-                    "http://%s:%d%s",
+                    "%s://%s:%d%s",
+                    pszRequest,
                     pszLeader,
-                    DEFAULT_HTTP_PORT_NUM,
+                    portNumber,
                     pRestOp->pszPath);
         BAIL_ON_VMDIR_ERROR(dwError);
     }

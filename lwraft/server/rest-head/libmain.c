@@ -46,13 +46,22 @@ _VmDirFreeRESTHandle(
     PVMREST_HANDLE pHandle
     );
 
-REST_PROCESSOR sVmDirRESTHandlers =
+REST_PROCESSOR sVmDirHTTPHandlers =
 {
-    .pfnHandleCreate = &VmDirRESTRequestHandler,
-    .pfnHandleRead = &VmDirRESTRequestHandler,
-    .pfnHandleUpdate = &VmDirRESTRequestHandler,
-    .pfnHandleDelete = &VmDirRESTRequestHandler,
-    .pfnHandleOthers = &VmDirRESTRequestHandler
+    .pfnHandleCreate = &VmDirHTTPRequestHandler,
+    .pfnHandleRead = &VmDirHTTPRequestHandler,
+    .pfnHandleUpdate = &VmDirHTTPRequestHandler,
+    .pfnHandleDelete = &VmDirHTTPRequestHandler,
+    .pfnHandleOthers = &VmDirHTTPRequestHandler
+};
+
+REST_PROCESSOR sVmDirHTTPSHandlers =
+{
+    .pfnHandleCreate = &VmDirHTTPSRequestHandler,
+    .pfnHandleRead = &VmDirHTTPSRequestHandler,
+    .pfnHandleUpdate = &VmDirHTTPSRequestHandler,
+    .pfnHandleDelete = &VmDirHTTPSRequestHandler,
+    .pfnHandleOthers = &VmDirHTTPSRequestHandler
 };
 
 // TODO
@@ -133,7 +142,7 @@ _VmDirRESTServerInitHTTP(
 {
     DWORD   dwError = 0;
     REST_CONF   config = {0};
-    PREST_PROCESSOR     pHandlers = &sVmDirRESTHandlers;
+    PREST_PROCESSOR     pHandlers = &sVmDirHTTPHandlers;
     PREST_API_MODULE    pModule = NULL;
 
     /*
@@ -197,7 +206,7 @@ _VmDirRESTServerInitHTTPS(
     PSTR    pszCert = NULL;
     PSTR    pszKey = NULL;
     REST_CONF   config = {0};
-    PREST_PROCESSOR     pHandlers = &sVmDirRESTHandlers;
+    PREST_PROCESSOR     pHandlers = &sVmDirHTTPSHandlers;
     PREST_API_MODULE    pModule = NULL;
 
     /*
