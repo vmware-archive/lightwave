@@ -43,6 +43,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bDisableVECSIntegration, 0),
         VMDIR_SF_INIT(.dwLdapPort, DEFAULT_LDAP_PORT_NUM),
         VMDIR_SF_INIT(.dwLdapsPort, DEFAULT_LDAPS_PORT_NUM),
+        VMDIR_SF_INIT(.dwProxyCurlTimeout, 0),
         VMDIR_SF_INIT(.pszHTTPListenPort, NULL),
         VMDIR_SF_INIT(.pszHTTPSListenPort, NULL),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),

@@ -113,8 +113,11 @@ VmDirRESTRequestHandlerInternal(
         }
         else if (role == VDIR_RAFT_ROLE_FOLLOWER)
         {
-            dwError = VmDirRESTForwardRequest(
-                    pRestOp, paramsCount, pRequest, ppResponse, pRESTHandle, bHttpRequest);
+            dwRestOpErr = VmDirRESTForwardRequest(
+                    pRestOp, paramsCount, pRequest, pRESTHandle, bHttpRequest);
+
+            dwError = VmDirRESTWriteProxyResponse(
+                    pRestOp, ppResponse, pRESTHandle);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else  // role == VDIR_RAFT_ROLE_CANDIDATE

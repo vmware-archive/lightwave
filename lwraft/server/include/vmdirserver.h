@@ -133,6 +133,8 @@ typedef struct _VMDIR_GLOBALS
 
     DWORD                           dwLdapPort;
     DWORD                           dwLdapsPort;
+    // Timeout for curl requests
+    DWORD                           dwProxyCurlTimeout;
     PSTR                            pszHTTPListenPort;
     PSTR                            pszHTTPSListenPort;
     DWORD                           dwLdapRecvTimeoutSec;

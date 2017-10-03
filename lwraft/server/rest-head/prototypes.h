@@ -557,10 +557,26 @@ VmDirRESTUnloadVmAfdAPI(
 // proxy.c
 DWORD
 VmDirRESTForwardRequest(
-    PVDIR_REST_OPERATION pRestOp,
-    uint32_t dwParamCount,
-    PREST_REQUEST pRequest,
-    PREST_RESPONSE* ppResponse,
-    PVMREST_HANDLE pRESTHandle,
-    BOOLEAN  bHttpRequest
+    PVDIR_REST_OPERATION    pRestOp,
+    uint32_t                dwParamCount,
+    PREST_REQUEST           pRequest,
+    PVMREST_HANDLE          pRESTHandle,
+    BOOLEAN                 bHttpRequest
+    );
+
+DWORD
+VmDirRESTWriteProxyResponse(
+    PVDIR_REST_OPERATION     pRestOp,
+    PREST_RESPONSE*          ppResponse,
+    PVMREST_HANDLE           pRESTHandle
+    );
+
+DWORD
+VmDirRESTCreateProxyResult(
+    PVDIR_PROXY_RESULT*      ppProxyresult
+    );
+
+VOID
+VmDirFreeProxyResult(
+    PVDIR_PROXY_RESULT       pProxyResult
     );

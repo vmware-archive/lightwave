@@ -244,6 +244,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue;
         }
+        else if(!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_CURL_TIMEOUT_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwProxyCurlTimeout = pEntry->dwValue;
+        }
     }
 
 cleanup:
