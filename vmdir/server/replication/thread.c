@@ -1554,7 +1554,7 @@ _VmDirFetchReplicationPage(
             gVmdirServerGlobals.invocationId.lberbv.bv_val,
             initUsn,
             gVmdirServerGlobals.utdVector.lberbv.bv_val,
-            initUsn == lastSupplierUsnProcessed, // it's fetching first page if TRUE
+            initUsn == lastSupplierUsnProcessed || 0 == lastSupplierUsnProcessed, // it's fetching first page if TRUE
             &(pPage->syncReqCtrl));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
