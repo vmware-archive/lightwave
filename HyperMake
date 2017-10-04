@@ -8,8 +8,8 @@ targets:
   rebuild-toolchain:
     description: build toolchain image
     watches:
-      - support/toolchain/docker
-    build: support/toolchain/docker
+      - support/toolchain/docker/photon
+    build: support/toolchain/docker/photon
     cache: false
 
   toolchain:
@@ -61,4 +61,4 @@ settings:
     - build
     - pack
   docker:
-    image: 'vmware/lightwave-toolchain:0.0.1'
+    image: 'vmware/lightwave-toolchain-photon:0.0.1'
