@@ -147,7 +147,7 @@ VmDnsMetricsHistogramInit(
     )
 {
     DWORD dwError = 0;
-    UINT64 buckets[] = {1, 5, 10, 100, 300};
+    UINT64 buckets[] = {1, 10, 100, 300, 1000};
     int i;
 
     for (i=DNS_QUERY_DURATION; i<=DNS_UPDATE_DURATION; i++)
