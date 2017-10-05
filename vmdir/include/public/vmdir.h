@@ -49,7 +49,14 @@ extern "C" {
 #define DEFAULT_HTTP_PORT_STR          "7477p"
 
 #define DEFAULT_HTTPS_PORT_NUM           7478
-#define DEFAULT_HTTPS_PORT_STR          "7478"
+ /*
+  * SSL logic is present in both c-rest-engine (for https) and vmdir (for ldaps)
+  * during shutdown ssl related metrics are freed by c-rest-engine while SASL bind is
+  * being performed by replication thread.
+  * Temporarily disable HTTPS end point by default, until ssl init logic is fixed in c-rest-engine
+  */
+//#define DEFAULT_HTTPS_PORT_STR          "7478"
+#define DEFAULT_HTTPS_PORT_STR          ""
 
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
