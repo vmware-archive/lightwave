@@ -4,15 +4,15 @@ vecs_dlopen_SOURCES = \
 	testdl.c
 
 vecs_dlopen_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/test \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmafd/test \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vecs_dlopen_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/common/libcommon.la \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
     @DL_LIBS@  \
     @PTHREAD_LIBS@ \
     @GSSAPI_LIBS@ \
@@ -36,9 +36,9 @@ vecs_test_SOURCES = \
     vecstest.cpp
 
 vecs_test_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/test \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmafd/test \
     @BOOST_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
@@ -47,8 +47,8 @@ vecs_test_LDADD = \
     ${GOBUILD_BOOST1470_LIN64_GCC412_ROOT}/lib/libboost_unit_test_framework-gcc41-mt-1_47.a \
     ${GOBUILD_BOOST1470_LIN64_GCC412_ROOT}/lib/libboost_chrono-gcc41-mt-1_47.a \
     ${GOBUILD_BOOST1470_LIN64_GCC412_ROOT}/lib/libboost_thread-gcc41-mt-1_47.a  \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/common/libcommon.la \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
     @BOOST_LIBS@  \
     @DL_LIBS@  \
     @PTHREAD_LIBS@ \
@@ -70,4 +70,3 @@ vecs_test_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
     -ggdb
-

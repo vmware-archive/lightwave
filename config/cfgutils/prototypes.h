@@ -48,7 +48,6 @@ VmwDeployCreateMachineSSLCert(
 
 DWORD
 VmwDeployAddTrustedRoot(
-    PCSTR pszServername,
     PCSTR pszCACert
     );
 

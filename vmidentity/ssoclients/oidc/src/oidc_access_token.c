@@ -14,7 +14,7 @@
 
 #include "includes.h"
 
-// on success, pp will be non-null, when done, OidcAccessTokenDelete it
+// (TODO) Deprecated
 SSOERROR
 OidcAccessTokenBuild(
     POIDC_ACCESS_TOKEN* pp,
@@ -27,9 +27,9 @@ OidcAccessTokenBuild(
     SSOERROR e = SSOERROR_NONE;
     POIDC_ACCESS_TOKEN p = NULL;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
-    ASSERT_NOT_NULL(pszSigningCertificatePEM);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
+    BAIL_ON_NULL_ARGUMENT(pszSigningCertificatePEM);
     // pszResourceServerName is nullable
 
     e = SSOMemoryAllocate(sizeof(OIDC_ACCESS_TOKEN), (void**) &p);
@@ -50,6 +50,7 @@ error:
     return e;
 }
 
+// on success, pp will be non-null, when done, OidcAccessTokenDelete it
 SSOERROR
 OidcAccessTokenParse(
     POIDC_ACCESS_TOKEN* pp,
@@ -58,8 +59,8 @@ OidcAccessTokenParse(
     SSOERROR e = SSOERROR_NONE;
     POIDC_ACCESS_TOKEN p = NULL;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
 
     e = SSOMemoryAllocate(sizeof(OIDC_ACCESS_TOKEN), (void**) &p);
     BAIL_ON_ERROR(e);
@@ -76,6 +77,25 @@ error:
         OidcAccessTokenDelete(p);
     }
 
+    return e;
+}
+
+SSOERROR
+OidcAccessTokenValidate(
+    POIDC_ACCESS_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName,
+    SSO_LONG clockToleranceInSeconds)
+{
+    SSOERROR e = SSOERROR_NONE;
+
+    BAIL_ON_NULL_ARGUMENT(p);
+
+    e = OidcTokenValidate(p->pToken, pszSigningCertificatePEM, pszIssuer, pszResourceServerName, clockToleranceInSeconds);
+    BAIL_ON_ERROR(e);
+
+error:
     return e;
 }
 

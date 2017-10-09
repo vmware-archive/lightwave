@@ -177,11 +177,13 @@ VmAfSrvJoinVmDir(
 
 DWORD
 VmAfSrvJoinVmDir2(
+    PWSTR            pwszServerName,     /* IN     OPTIONAL */
     PWSTR            pwszDomainName,     /* IN              */
     PWSTR            pwszUserName,       /* IN              */
     PWSTR            pwszPassword,       /* IN              */
     PWSTR            pwszMachineName,    /* IN     OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN     OPTIONAL */
+    PWSTR            pwszSiteName,       /* IN     OPTIONAL */
     VMAFD_JOIN_FLAGS dwFlags             /* IN              */
     );
 
@@ -2303,26 +2305,27 @@ VmAfdRpcFreeHeartbeatStatus(
 
 //ddns.c
 
-DWORD
-VmDdnsInitThread(
-        PDDNS_CONTEXT* ppDdnsContext
-        );
-
-VOID
-VmDdnsShutdown(
-        PDDNS_CONTEXT pDdnsContext
-        );
-
-VOID
-VmDdnsExit(
-          PDDNS_CONTEXT pDdnsContext
-          );
 
 DWORD
-VmDdnsGetSourceIp(
-        VMDNS_IP4_ADDRESS** ppSourceIp4,
-        VMDNS_IP6_ADDRESS** ppSourceIp6
+VmAfdDDNSInit(
+    PVMNETEVENT_HANDLE* ppHandle
+    );
+
+VOID
+VmAfdDDNSShutDown(
+    PVMNETEVENT_HANDLE pHandle
+    );
+
+DWORD
+VmAfdDetectSourceIp(
+        VMDNS_IP4_ADDRESS* pSourceIp4,
+        VMDNS_IP6_ADDRESS* pSourceIp6
         );
+
+DWORD
+VmAfdUpdateIP(
+    );
+
 
 DWORD
 VmDdnsUpdateMakePacket(

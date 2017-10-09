@@ -61,6 +61,7 @@
 
 #include <structs.h>
 #include <prototypes.h>
+#include "externs.h"
 
 #define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
     do {                                        \
@@ -121,6 +122,7 @@
 
 #include <structs.h>
 #include "prototypes.h"
+#include "externs.h"
 #include "banned.h"
 #define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
     do {                                        \

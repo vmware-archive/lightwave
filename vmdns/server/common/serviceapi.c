@@ -35,7 +35,7 @@ VmDnsSrvInitialize(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_FORWARDER_CONETXT pForwarderContext = NULL;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
     PVMDNS_CACHE_CONTEXT pCacheContext = NULL;
     PVMDNS_SECURITY_CONTEXT pSecurityContext = NULL;
 
@@ -331,7 +331,7 @@ VmDnsSrvAddRecord(
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCachePurgeRecord(pZoneObject, pRecord->pszName);
+    dwError = VmDnsCachePurgeRecord(pZoneObject, pRecord->pszName, CACHE_PURGE_MODIFICATION);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -540,6 +540,7 @@ VmDnsSrvGetRecords(
 
     if (!pRecordList || VmDnsRecordListGetSize(pRecordList) == 0)
     {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_CACHE_MISS]);
         dwError = VmDnsStoreGetRecords(
                     pszZone,
                     szNameQuery,
@@ -1172,6 +1173,8 @@ VmDnsSrvCleanupDomain(
     PVMDNS_RECORD_LIST pNsRecordList = NULL;
     PVMDNS_RECORD_LIST pLdapSrvRecordList = NULL;
     PVMDNS_RECORD_LIST pKerberosSrvRecordList = NULL;
+    PVMDNS_RECORD_LIST pLdapDcSrvRecordList = NULL;
+    PVMDNS_RECORD_LIST pKerberosDcSrvRecordList = NULL;
     PVMDNS_RECORD_LIST pIpV4RecordList = NULL;
     PVMDNS_RECORD_LIST pIpV6RecordList = NULL;
     DWORD idx = 0;
@@ -1242,6 +1245,32 @@ VmDnsSrvCleanupDomain(
         VMDNS_LOG_ERROR("%s, failed to get KDC SRV records.", __FUNCTION__);
     }
 
+    // Query LDAP TCP DC SRV record(s)
+    dwError = VmDnsSrvQueryRecords(
+                    pZoneObject,
+                    VMDNS_LDAP_DC_SRV_NAME,
+                    VMDNS_RR_TYPE_SRV,
+                    0,
+                    &pLdapDcSrvRecordList
+                    );
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get LDAP DC SRV records.", __FUNCTION__);
+    }
+
+    // Query KDC TCP DC SRV record(s)
+    dwError = VmDnsSrvQueryRecords(
+                    pZoneObject,
+                    VMDNS_KERBEROS_DC_SRV_NAME,
+                    VMDNS_RR_TYPE_SRV,
+                    0,
+                    &pKerberosDcSrvRecordList
+                    );
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get KDC DC SRV records.", __FUNCTION__);
+    }
+
     // Query A record(s)
     dwError = VmDnsSrvQueryRecords(
                     pZoneObject,
@@ -1292,7 +1321,13 @@ VmDnsSrvCleanupDomain(
         }
     }
 
-    srvRecord.pszName = VMDNS_LDAP_SRV_NAME;
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_LDAP_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
     srvRecord.dwType = VMDNS_RR_TYPE_SRV;
     srvRecord.iClass = VMDNS_CLASS_IN;
     srvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
@@ -1320,7 +1355,14 @@ VmDnsSrvCleanupDomain(
         }
     }
 
-    srvRecord.pszName = VMDNS_KERBEROS_SRV_NAME;
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_KERBEROS_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     // Remove KDC TCP SRV record(s)
     if (pKerberosSrvRecordList)
@@ -1338,6 +1380,70 @@ VmDnsSrvCleanupDomain(
                 VMDNS_LOG_INFO(
                         "Cleanup KDC:SRV record %s from zone %s, status: %u.",
                         pKerberosSrvRecordList->ppRecords[idx]->pRecord->pszName,
+                        pInitInfo->pszDomain,
+                        dwError
+                        );
+            }
+        }
+    }
+
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_LDAP_DC_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    // Remove KDC TCP DC SRV record(s)
+    if (pLdapDcSrvRecordList)
+    {
+        for (idx = 0; idx < pLdapDcSrvRecordList->dwCurrentSize; ++idx)
+        {
+            if (VmDnsMatchRecord(
+                        &srvRecord,
+                        pLdapDcSrvRecordList->ppRecords[idx]->pRecord))
+            {
+                dwError = VmDnsSrvDeleteRecord(
+                                    pZoneObject,
+                                    pLdapDcSrvRecordList->ppRecords[idx]->pRecord
+                                    );
+                VMDNS_LOG_INFO(
+                        "Cleanup LDAP:DC:SRV record %s from zone %s, status: %u.",
+                        pLdapDcSrvRecordList->ppRecords[idx]->pRecord->pszName,
+                        pInitInfo->pszDomain,
+                        dwError
+                        );
+            }
+        }
+    }
+
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_KERBEROS_DC_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    // Remove KDC TCP DC SRV record(s)
+    if (pKerberosDcSrvRecordList)
+    {
+        for (idx = 0; idx < pKerberosDcSrvRecordList->dwCurrentSize; ++idx)
+        {
+            if (VmDnsMatchRecord(
+                        &srvRecord,
+                        pKerberosDcSrvRecordList->ppRecords[idx]->pRecord))
+            {
+                dwError = VmDnsSrvDeleteRecord(
+                                    pZoneObject,
+                                    pKerberosDcSrvRecordList->ppRecords[idx]->pRecord
+                                    );
+                VMDNS_LOG_INFO(
+                        "Cleanup KDC:DC:SRV record %s from zone %s, status: %u.",
+                        pKerberosDcSrvRecordList->ppRecords[idx]->pRecord->pszName,
                         pInitInfo->pszDomain,
                         dwError
                         );
@@ -1389,9 +1495,12 @@ cleanup:
     VmDnsRecordListRelease(pIpV4RecordList);
     VmDnsRecordListRelease(pIpV6RecordList);
     VMDNS_SAFE_FREE_STRINGA(pszAddressRecordName);
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
     goto cleanup;
 }
 

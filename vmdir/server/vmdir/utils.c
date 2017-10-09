@@ -567,7 +567,7 @@ VmDirReplicationStatusEntry(
     maxOriginatingUSN = backendCtx.pBE->pfnBEGetMaxOriginatingUSN( &backendCtx );
 
     dwError = VmDirAllocateStringPrintf( &pszPartnerVisibleUSN,
-                                             "%u",
+                                             "%" PRId64,
                                              maxPartnerVisibleUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -577,7 +577,7 @@ VmDirReplicationStatusEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszMaxOriginatingUSN,
-                                             "%u",
+                                             "%" PRId64,
                                              maxOriginatingUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 

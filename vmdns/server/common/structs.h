@@ -191,10 +191,10 @@ typedef struct _VMDNS_HASHTABLE
 
 typedef struct _VMDNS_HASH_TABLE
 {
-	ULONG ulSize;
-	ULONG ulThreshold;
-	ULONG ulCount;
-	PVMDNS_HASH_TABLE_NODE* ppData;
+    ULONG ulSize;
+    ULONG ulThreshold;
+    ULONG ulCount;
+    PVMDNS_HASH_TABLE_NODE* ppData;
 } VMDNS_HASH_TABLE;
 
 typedef struct _VMDNS_DIR_CONTEXT
@@ -271,6 +271,8 @@ typedef struct _VMDNS_NAME_ENTRY
     LIST_ENTRY          LruList;
     PSTR                pszName;
     PVMDNS_RECORD_LIST  pRecords;
+    DWORD               dwRoundRobinIndex;
+    VMDNS_RR_TYPE       dwRoundRobinType;
 } VMDNS_NAME_ENTRY;
 
 typedef struct _VMDNS_RECORD_OBJECT
@@ -299,12 +301,24 @@ typedef struct _VMDNS_CACHE_CONTEXT
     DWORD               dwLastUSN;
 } VMDNS_CACHE_CONTEXT, *PVMDNS_CACHE_CONTEXT;
 
-typedef struct _VMDNS_FORWARDER_CONETXT
+typedef struct _VMDNS_FORWARDER_METRICS_CONTEXT
 {
-    PSTR                ppszForwarders[VMDNS_MAX_NUM_FORWARDS];
-    DWORD               dwCount;
-    PVMDNS_RWLOCK       pLock;
-} VMDNS_FORWARDER_CONETXT;
+    PVM_METRICS_HISTOGRAM  pUpdateDuration;
+    PVM_METRICS_HISTOGRAM  pQueryDuration;
+} VMDNS_FORWARDER_METRICS_CONTEXT;
+
+typedef struct _VMDNS_FORWARDER_ENTRY
+{
+    PSTR                               pszForwarder;
+    VMDNS_FORWARDER_METRICS_CONTEXT    ForwarderMetricsContext;
+} VMDNS_FORWARDER_ENTRY, *PVMDNS_FORWARDER_ENTRY;
+
+typedef struct _VMDNS_FORWARDER_CONTEXT
+{
+    PVMDNS_FORWARDER_ENTRY    pForwarderEntries[VMDNS_MAX_NUM_FORWARDS];
+    DWORD                     dwCount;
+    PVMDNS_RWLOCK             pLock;
+} VMDNS_FORWARDER_CONTEXT, *PVMDNS_FORWARDER_CONTEXT;
 
 typedef struct _VMDNS_GSS_CONTEXT_HANDLE
 {
@@ -325,16 +339,14 @@ typedef struct _VMDNS_DRIVER_GLOBALS
 {
     PVMDNS_SECURITY_CONTEXT     pSecurityContext;
     PVMDNS_CACHE_CONTEXT        pCacheContext;
-    PVMDNS_FORWARDER_CONETXT    pForwarderContext;
+    PVMDNS_FORWARDER_CONTEXT    pForwarderContext;
     PVMDNS_SOCK_CONTEXT         pSockContext;
     VMDNS_STATE                 state;
     BOOL                        bUseDirectoryStore;
 } VMW_DNS_DRIVER_GLOBALS, *PVMW_DNS_DRIVER_GLOBALS;
 
-/*Dns Statistics*/
-typedef struct _VMDNS_OP_STATISTIC_GLOBALS
+typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
 {
-    VMDNS_OPERATION_STATISTIC    dns_query_count;
-    VMDNS_OPERATION_STATISTIC    forwarder_query_count;
-
-} VMDNS_OP_STATISTIC_GLOBALS, *PVMDNS_OP_STATISTIC_GLOBALS;
+    DWORD             dwCurrentIndex;
+    DWORD             dwRefCount;
+} VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;

@@ -293,11 +293,13 @@ VmAfdLocalJoinVmDir(
 
 DWORD
 VmAfdLocalJoinVmDir2(
+    PCWSTR           pwszServerName,
     PCWSTR           pwszDomainName,
     PCWSTR           pwszUserName,
     PCWSTR           pwszPassword,
     PCWSTR           pwszMachineName,
     PCWSTR           pwszOrgUnit,
+    PCWSTR           pwszSite,
     VMAFD_JOIN_FLAGS dwFlags
     );
 

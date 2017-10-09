@@ -22,8 +22,8 @@ libcommon_la_SOURCES = \
 
 libcommon_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmca/include \
+    -I$(top_srcdir)/vmca/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

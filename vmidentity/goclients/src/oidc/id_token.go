@@ -16,7 +16,7 @@ type IDToken struct {
     p C.POIDC_ID_TOKEN
 }
 
-// on success, result will be non-null, Close it when done
+// (TODO) Deprecated
 func IDTokenBuild(
         jwt string,
         signingCertificatePEM string,
@@ -45,6 +45,46 @@ func IDTokenBuild(
     result = &IDToken { p }
     runtime.SetFinalizer(result, idTokenFinalize)
     return
+}
+
+// on success, result will be non-null, Close it when done
+func IDTokenParse(jwt string) (result *IDToken, err error) {
+    jwtCStr := goStringToCString(jwt)
+    defer freeCString(jwtCStr)
+
+    var p C.POIDC_ID_TOKEN = nil
+    var e C.SSOERROR = C.OidcIDTokenParse(&p, jwtCStr)
+    if e != 0 {
+        err = cErrorToGoError(e)
+        return
+    }
+
+    result = &IDToken { p }
+    runtime.SetFinalizer(result, idTokenFinalize)
+    return
+}
+
+func (this *IDToken) IDTokenValidate(
+        signingCertificatePEM string,
+        issuer string,
+        clockToleranceInSeconds int64) error {
+    signingCertificatePEMCStr   := goStringToCString(signingCertificatePEM)
+    issuerCStr                  := goStringToCString(issuer)
+
+    defer freeCString(signingCertificatePEMCStr)
+    defer freeCString(issuerCStr)
+
+    var e C.SSOERROR = C.OidcIDTokenValidate(
+        this.p,
+        signingCertificatePEMCStr,
+        issuerCStr,
+        C.SSO_LONG(clockToleranceInSeconds))
+
+    var err error = nil
+    if e != 0 {
+        err = cErrorToGoError(e)
+    }
+    return err
 }
 
 func idTokenFinalize(this *IDToken) {

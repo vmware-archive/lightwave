@@ -299,6 +299,18 @@ VmDirSafeLDAPBind(
     PCSTR       pszPassword
     )
 {
+    return VmDirSafeLDAPBindToPort(ppLd, pszHost, 0, pszUPN, pszPassword);
+}
+
+DWORD
+VmDirSafeLDAPBindToPort(
+    LDAP**      ppLd,
+    PCSTR       pszHost,
+    DWORD       dwPort,
+    PCSTR       pszUPN,
+    PCSTR       pszPassword
+    )
+{
     DWORD       dwError = 0;
 
     LDAP*       pLd = NULL;
@@ -312,7 +324,11 @@ VmDirSafeLDAPBind(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (VmDirGetRegKeyValueDword(
+    if (dwPort)
+    {
+        dwLdapPort = dwPort;
+    }
+    else if (VmDirGetRegKeyValueDword(
                 VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_LDAP_PORT,
                 &dwTmpLdapPort,

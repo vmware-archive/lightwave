@@ -37,20 +37,20 @@ VMDIR_GLOBALS gVmdirGlobals =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pszBootStrapSchemaFile, NULL),
-        VMDIR_SF_INIT(.bPatchSchema, FALSE),
         VMDIR_SF_INIT(.pszBDBHome, NULL),
         VMDIR_SF_INIT(.bAllowInsecureAuth, 0),
         VMDIR_SF_INIT(.bAllowAdminLockout, 0),
         VMDIR_SF_INIT(.bDisableVECSIntegration, 0),
         VMDIR_SF_INIT(.dwLdapPort, DEFAULT_LDAP_PORT_NUM),
         VMDIR_SF_INIT(.dwLdapsPort, DEFAULT_LDAPS_PORT_NUM),
-        VMDIR_SF_INIT(.pszRestListenPort, NULL),
+        VMDIR_SF_INIT(.dwProxyCurlTimeout, 0),
+        VMDIR_SF_INIT(.pszHTTPListenPort, NULL),
+        VMDIR_SF_INIT(.pszHTTPSListenPort, NULL),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.bIsLDAPPortOpen, FALSE),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.vmdirdState, VMDIRD_STATE_UNDEFINED),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
-        VMDIR_SF_INIT(.bReplNow, FALSE),
 #if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
         VMDIR_SF_INIT(.pRPCServerThread, NULL),
 #endif
@@ -135,30 +135,6 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
-
-VMDIR_URGENT_REPL gVmdirUrgentRepl =
-    {
-        // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.pUrgentReplMutex, NULL),
-        VMDIR_SF_INIT(.bUrgentReplicationPending, FALSE),
-        VMDIR_SF_INIT(.dwUrgentReplResponseCount, 0),
-        VMDIR_SF_INIT(.dwUrgentReplTimeout, 0),
-        VMDIR_SF_INIT(.consensusUSN, 0),
-        VMDIR_SF_INIT(.pUTDVector, NULL),
-        VMDIR_SF_INIT(.pUrgentReplResponseRecvMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplResponseRecvCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplResponseRecv, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplThreadMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplThreadCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplThreadPredicate, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplDoneMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplDoneCondition, NULL),
-        VMDIR_SF_INIT(.bUrgentReplDone, FALSE),
-        VMDIR_SF_INIT(.pUrgentReplStartMutex, NULL),
-        VMDIR_SF_INIT(.pUrgentReplStartCondition, NULL),
-        VMDIR_SF_INIT(.pUrgentReplPartnerTable, NULL),
-        VMDIR_SF_INIT(.pUrgentReplServerList, NULL)
-    };
 
 VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
     {

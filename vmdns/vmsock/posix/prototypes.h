@@ -80,6 +80,21 @@ VmDnsSockPosixCreateEventQueue(
 DWORD
 VmDnsSockPosixEventQueueAdd(
     PVM_SOCK_EVENT_QUEUE pQueue,
+    BOOL                 bOneShot,
+    PVM_SOCKET           pSocket
+    );
+
+/**
+ * @brief Removes a socket on the event queue
+ *
+ * @param[in] pQueue  Pointer to Event queue
+ * @param[in] pSocket Pointer to Socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmDnsSockPosixEventQueueRemove(
+    PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
     );
 
@@ -105,15 +120,27 @@ VmDnsSockPosixWaitForEvent(
     );
 
 /**
- * @brief Closes and frees event queue
+ * @brief Shuts down the event queue
  *
  * @param[in] pQueue Pointer to event queue
  *
- * @return 0 on success
+ *
  */
 
 VOID
-VmDnsSockPosixCloseEventQueue(
+VmDnsSockPosixShutdownEventQueue(
+    PVM_SOCK_EVENT_QUEUE pQueue
+    );
+
+/**
+ * @brief frees event queue
+ *
+ * @param[in] pQueue Pointer to event queue
+ *
+ *
+ */
+VOID
+VmDnsSockPosixFreeEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     );
 
@@ -268,9 +295,23 @@ VmDnsSockPosixGetAddress(
 
 DWORD
 VmDnsSockPosixAllocateIoBuffer(
-    VM_SOCK_EVENT_TYPE      eventType,
-    DWORD                   dwSize,
-    PVM_SOCK_IO_BUFFER*     ppIoBuffer
+    VM_SOCK_EVENT_TYPE          eventType,
+    PVM_SOCK_EVENT_CONTEXT      pEventContext,
+    DWORD                       dwSize,
+    PVM_SOCK_IO_BUFFER*         ppIoBuffer
+    );
+
+DWORD
+VmDnsSockPosixSetEventContext(
+    PVM_SOCK_IO_BUFFER      pIoBuffer,
+    PVM_SOCK_EVENT_CONTEXT  pEventContext,
+    PVM_SOCK_EVENT_CONTEXT* ppOldEventContext
+    );
+
+DWORD
+VmDnsSockPosixGetEventContext(
+    PVM_SOCK_IO_BUFFER        pIoBuffer,
+    PVM_SOCK_EVENT_CONTEXT*   ppEventContext
     );
 
 VOID

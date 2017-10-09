@@ -24,5 +24,6 @@ typedef struct
     PSTR pszPasswordFile;       // password file
     BOOLEAN bVerbose;           // Break down the object's ACL information.
     BOOLEAN bRecursive;         // Apply the operation to the specified object
+    BOOLEAN bDryrun;            // Do not make change to SD
                                 // and all objects below it.
 } COMMAND_LINE_PARAMETER_STATE, *PCOMMAND_LINE_PARAMETER_STATE;

@@ -70,16 +70,14 @@
 #include <ldaphead.h>
 #include <resthead.h>
 #include <vmevent.h>
+#include <metricscommon.h>
 
 #include "defines.h"
 #include "structs.h"
 
 #include "vmdir_h.h"
-#include "vmdirftp_h.h"
 #include "vmdirdbcp_h.h"
-#include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
 #include "vmdirraft_h.h"
 #include "prototypes.h"
 
@@ -145,16 +143,15 @@
 #include <vmdirserver.h>
 #include <ldaphead.h>
 #include <vmevent.h>
+#include <metricscommon.h>
 
 #include "defines.h"
 #include "structs.h"
 
 #include "vmdir_h.h"
-#include "vmdirftp_h.h"
 #include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
-#include "vmdirurgentrepl_h.h"
 #include "prototypes.h"
 
 #include "externs.h"

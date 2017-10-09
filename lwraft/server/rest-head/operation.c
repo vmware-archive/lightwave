@@ -48,14 +48,20 @@ VmDirRESTOperationCreate(
 
     pRestOp->pResource = VmDirRESTGetResource(NULL);
 
+    dwError = VmDirRESTCreateProxyResult(&pRestOp->pProxyResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppRestOp = pRestOp;
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeRESTOperation(pRestOp);
     goto cleanup;
@@ -139,12 +145,17 @@ VmDirRESTOperationReadRequest(
     // read request input json
     do
     {
-        dwError = VmDirReallocateMemory(
-                (PVOID)pszInput,
-                (PVOID*)&pszInput,
-                len + MAX_REST_PAYLOAD_LENGTH);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (bytesRead || !pszInput)
+        {
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pszInput,
+                    (PVOID*)&pszInput,
+                    len + MAX_REST_PAYLOAD_LENGTH + 1,
+                    len);     // +1 for NULL char
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
+        bytesRead = 0;
         dwError = VmRESTGetData(
                 pRESTHandle, pRestReq, pszInput + len, &bytesRead);
 
@@ -177,13 +188,19 @@ VmDirRESTOperationReadRequest(
         }
     }
 
+    // Save the input in string format for proxy
+    pRestOp->pszInput = pszInput;
+
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszInput);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+    VMDIR_SAFE_FREE_STRINGA(pszInput);
     goto cleanup;
 }
 
@@ -228,14 +245,30 @@ VmDirRESTOperationWriteResponse(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pRestOp->pResult->pszData)
+    {
+        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "text/plain");
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTResultToResponseBody(
-            pRestOp->pResult, pRestOp->pResource, &pszBody);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirAllocateAndCopyMemory(
+                        (PVOID)pRestOp->pResult->pszData,
+                        pRestOp->pResult->dwDataLen,
+                        (PVOID*)&pszBody);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
+        bodyLen = pRestOp->pResult->dwDataLen;
+    }
+    else
+    {
+        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirRESTResultToResponseBody(
+                pRestOp->pResult, pRestOp->pResource, &pszBody);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
+    }
 
     dwError = VmDirAllocateStringPrintf(&pszBodyLen, "%ld", bodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -268,8 +301,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -285,6 +322,8 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);
@@ -293,6 +332,7 @@ VmDirFreeRESTOperation(
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         VmDirDeleteConnection(&pRestOp->pConn);
         VmDirFreeRESTResult(pRestOp->pResult);
+        VmDirFreeProxyResult(pRestOp->pProxyResult);
         VMDIR_SAFE_FREE_MEMORY(pRestOp);
     }
 }

@@ -544,6 +544,14 @@ VmDirStringNPrintFA(
     ...
 );
 
+DWORD
+VmDirStringReplaceAll(
+    PCSTR   pszSrc,
+    PCSTR   pszPatn,
+    PCSTR   pszRplc,
+    PSTR*   ppszDst
+    );
+
 VOID
 VmdDirNormalizeString(
     PSTR    pszString
@@ -629,18 +637,19 @@ VmDirLogGetMask(
 
 PCSTR
 VmDirSearchDomainDN(
-    PCSTR pszNormObjectDN
+    PCSTR   pszNormObjectDN
     );
 
 DWORD
 VmDirDomainDNToName(
-    PCSTR pszDomainDN,
-    PSTR* ppszDomainName);
+    PCSTR   pszDomainDN,
+    PSTR*   ppszDomainName
+    );
 
 DWORD
-VmDirSrvCreateDomainDN(
-    PCSTR pszFQDomainName,
-    PSTR* ppszDomainDN
+VmDirDomainNameToDN(
+    PCSTR   pszDomainName,
+    PSTR*   ppszDomainDN
     );
 
 DWORD
@@ -648,6 +657,12 @@ VmDirConnectLDAPServerWithMachineAccount(
     PCSTR  pszHostName,
     PCSTR  pszDomain,
     LDAP** ppLd
+    );
+
+DWORD
+VmDirStringToUSN(
+    PCSTR   pszUSNStr,
+    USN*    poutUSN
     );
 
 DWORD
@@ -921,7 +936,8 @@ typedef enum
 #define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
 #define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
 #define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
-#define VMDIR_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
+#define VMDIR_REG_KEY_HTTP_LISTEN_PORT        "RestListenHTTPPort"
+#define VMDIR_REG_KEY_HTTPS_LISTEN_PORT       "RestListenHTTPSPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
@@ -1664,10 +1680,11 @@ VmDirAnonymousLDAPBind(
 
 int
 VmDirCreateSyncRequestControl(
-    PCSTR pszInvocationId,
-    USN lastLocalUsnProcessed,
-    PCSTR pszUtdVector,
-    LDAPControl *syncReqCtrl
+    PCSTR           pszInvocationId,
+    USN             lastLocalUsnProcessed,
+    PCSTR           pszUtdVector,
+    BOOLEAN         bFirstPage,
+    LDAPControl*    syncReqCtrl
     );
 
 VOID
@@ -2216,6 +2233,13 @@ VmDirDnLastRDNToCn(
 
 DWORD
 VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirStringToTokenListExt(
     PCSTR pszStr,
     PCSTR pszDelimiter,
     PVMDIR_STRING_LIST *ppStrList

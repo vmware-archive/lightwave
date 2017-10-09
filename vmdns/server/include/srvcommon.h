@@ -37,18 +37,6 @@ extern "C" {
 #define VMDNS_LDAP_DC_SRV_NAME "_ldap._tcp.dc._msdcs"
 #define VMDNS_KERBEROS_DC_SRV_NAME "_kerberos._tcp.dc._msdcs"
 
-//Dns Statistics
-#define DNS_QUERY_COUNT            ((UINT16) 0x60U)
-#define FORWARDER_QUERY_COUNT      ((UINT16) 0x63U)
-
-/*Statistics*/
-typedef struct _VMDNS_OPERATION_STATISTIC
-{
-    PCSTR           pszOPName;
-    LONG            iCount;
-
-} VMDNS_OPERATION_STATISTIC, *PVMDNS_OPERATION_STATISTIC;
-
 /*hash table*/
 
 typedef struct _VMDNS_HASHTABLE *PVMDNS_HASHTABLE;
@@ -178,7 +166,7 @@ typedef struct _VMDNS_LRU_LIST          *PVMDNS_LRU_LIST;
 typedef struct _VMDNS_NAME_ENTRY        *PVMDNS_NAME_ENTRY;
 typedef struct _VMDNS_RECORD_LIST       *PVMDNS_RECORD_LIST;
 typedef struct _VMDNS_RECORD_OBJECT     *PVMDNS_RECORD_OBJECT;
-typedef struct _VMDNS_FORWARDER_CONETXT *PVMDNS_FORWARDER_CONETXT;
+typedef struct _VMDNS_FORWARDER_CONTEXT *PVMDNS_FORWARDER_CONTEXT;
 typedef struct _VMDNS_CACHE_CONETXT     *PVMDNS_CACHE_CONETXT;
 typedef struct _VMDNS_SECURITY_CONTEXT  *PVMDNS_SECURITY_CONTEXT;
 
@@ -440,6 +428,13 @@ VmDnsRecordListRelease(
     );
 
 DWORD
+VmDnsRecordListRoundRobin(
+    PVMDNS_RECORD_LIST      pList,
+    DWORD                   dwIndex,
+    PVMDNS_RECORD_LIST      *ppList
+    );
+
+DWORD
 VmDnsRecordObjectCreate(
     PVMDNS_RECORD   pRecord,
     PVMDNS_RECORD_OBJECT    *ppRecordObj
@@ -490,13 +485,6 @@ VmDnsGetDefaultDomainName(
 VOID
 VmDnsDirClose(
     PVMDNS_DIR_CONTEXT pDirContext
-    );
-
-// opstatistic.c
-
-LONG
-VmDnsOPStatisticGetCount(
-    UINT16 opTag
     );
 
 #ifdef __cplusplus

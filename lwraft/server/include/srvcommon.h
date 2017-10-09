@@ -17,6 +17,11 @@
 #ifndef COMMON_INTERFACE_H_
 #define COMMON_INTERFACE_H_
 
+#include <vmmetrics.h>
+extern PVM_METRICS_CONTEXT pmContext;
+
+#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,6 +53,7 @@ extern "C" {
 #define VMDIR_DEFAULT_REPL_INTERVAL     "30"
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
 
+#define VMDIR_RUN_MODE_NORMAL           "normal"
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
@@ -203,6 +209,13 @@ typedef struct _VDIR_CONNECTION_CTX
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
+
+typedef enum _VDIR_RAFT_ROLE
+{
+    VDIR_RAFT_ROLE_CANDIDATE = 0,
+    VDIR_RAFT_ROLE_FOLLOWER,
+    VDIR_RAFT_ROLE_LEADER
+} VDIR_RAFT_ROLE;
 
 typedef struct _VDIR_ATTRIBUTE
 {
@@ -632,12 +645,6 @@ typedef struct _VMDIR_OPERATION_STATISTIC
 } VMDIR_OPERATION_STATISTIC, *PVMDIR_OPERATION_STATISTIC;
 
 extern VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
-
-typedef struct _VMDIR_URGENT_REPL_SERVER_LIST
-{
-    PSTR    pInitiatorServerName;
-    struct _VMDIR_URGENT_REPL_SERVER_LIST *next;
-} VMDIR_URGENT_REPL_SERVER_LIST, *PVMDIR_URGENT_REPL_SERVER_LIST;
 
 typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
 {

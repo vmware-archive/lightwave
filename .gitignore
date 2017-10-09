@@ -562,6 +562,7 @@ __pycache__/
 
 build/confdefs.h
 build/libtool
+build/include/
 build/stage/
 build/config/
 build/lwraft/
@@ -571,4 +572,9 @@ build/vmdir/
 build/vmdns/
 build/vmevent/
 build/vmidentity/
+build/vmmetrics/
+build/rpmbuild/
 
+# hmake files
+.hmake
+.hmakerc

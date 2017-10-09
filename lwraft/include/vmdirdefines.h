@@ -252,6 +252,14 @@ extern "C" {
         }                                 \
     } while(0)
 
+#define VMDIR_SAFE_FREE_RWLOCK(lock)      \
+    do {                                  \
+        if ((lock)) {                     \
+            VmDirFreeRWLock(lock);        \
+            (lock) = NULL;                \
+        }                                 \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_CONDITION(cond)   \
     do {                                  \
         if ((cond)) {                     \
@@ -288,6 +296,39 @@ extern "C" {
                 (bInLock) = FALSE;              \
             }                                   \
         }                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_READLOCK(bInLock, lock, dwMilliSec)        \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmDirRWLockReadLock(lock, dwMilliSec) == 0)     \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_WRITELOCK(bInLock, lock, dwMilliSec)       \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmDirRWLockWriteLock(lock, dwMilliSec) == 0)    \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VMDIR_RWLOCK_UNLOCK(bInLock, lock)          \
+    do {                                            \
+        if ((bInLock))                              \
+        {                                           \
+            if (VmDirRWLockUnlock(lock) == 0)       \
+            {                                       \
+                (bInLock) = FALSE;                  \
+            }                                       \
+        }                                           \
     } while (0)
 
 #define BAIL_WITH_VMDIR_ERROR(dwError, ERROR_CODE)                          \
@@ -337,6 +378,14 @@ extern "C" {
            errCode = VMDIR_ERROR_INSUFFICIENT_ACCESS;         \
            BAIL_ON_VMDIR_ERROR(errCode);          \
         }
+
+// For all curl errors
+#define BAIL_ON_CURL_ERROR(dwCurlError)                                     \
+    if (dwCurlError)                                                        \
+    {                                                                       \
+        VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "[%s,%d]", __FILE__, __LINE__); \
+        goto curlerror;                                                     \
+    }
 
 // see ldap.h for other LDAP error code and range definitions.
 #define LDAP_SERVER_ERROR(n)        LDAP_RANGE((n),0x01,0x0e) /* 1 ~ 15 */
@@ -391,6 +440,36 @@ extern "C" {
                             "%s",                   \
                             errMsg);                \
     } while (0)
+
+#define VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppVals)       \
+    do                                              \
+    {                                               \
+        if (ppVals)                                 \
+        {                                           \
+            ldap_value_free_len(ppVals);            \
+            (ppVals) = NULL;                        \
+        }                                           \
+    } while(0)
+
+#define VDIR_SAFE_LDAP_MSGFREE(pResult)             \
+    do                                              \
+    {                                               \
+        if (pResult)                                \
+        {                                           \
+            ldap_msgfree(pResult);                  \
+            (pResult) = NULL;                       \
+        }                                           \
+    } while(0)
+
+#define VDIR_SAFE_LDAP_UNBIND_EXT_S(pLd)            \
+    do                                              \
+    {                                               \
+        if (pLd)                                    \
+        {                                           \
+            ldap_unbind_ext_s(pLd, NULL, NULL);     \
+            (pLd) = NULL;                           \
+        }                                           \
+    } while(0)
 
 // LBER call return -1 if error
 #define BAIL_ON_LBER_ERROR(dwError) \

@@ -8,18 +8,15 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-Requires: pkgconfig(openssl) >= 1.0.2, pkgconfig(krb5) >= 1.14, pkgconfig(sqlite3) >= 3.14, pkgconfig(libsasl2) >= 2.1, coreutils >= 8.22, likewise-open >= 6.2.10, gawk >= 4.1.3, boost = 1.60.0, apache-commons-daemon >= 1.0.15, tomcat >= 8.5.8, lightwave-client = %{_version}
-%if 0%{?fedora} >= 21
-Requires: java-1.8.0-openjdk >= 1.8.0.112
-%else
-Requires: openjdk >= 1.8.0.112
-%endif
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0, lightwave-server = %{_version}, lightwave-client = %{_version}
+BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, boost-devel = 1.60.0
 
-BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.10, python2-devel >= 2.7.8, boost-devel = 1.60.0
 %if 0%{?fedora} >= 21
-BuildRequires: java-1.8.0-openjdk >= 1.8.0.112, ant >= 1.9.4, maven >= 3.3.9
+Requires: java-1.8.0-openjdk >= 1.8.0.131, krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15
+BuildRequires: java-1.8.0-openjdk >= 1.8.0.131, ant >= 1.9.4, maven >= 3.3.9
 %else
-BuildRequires: openjdk >= 1.8.0.112, apache-ant >= 1.9.4, apache-maven >= 3.3.9
+Requires: openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14, apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
+BuildRequires: openjdk >= 1.8.0.131, apache-ant >= 1.9.4, apache-maven >= 3.3.9
 %endif
 
 %description
@@ -104,7 +101,7 @@ VMware Lightwave Server
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
 
-%define _lwraft_dbdir %{_localstatedir}/lwraft
+%define _post_dbdir   %{_localstatedir}/post
 %define _vmca_dbdir   %{_localstatedir}/vmca
 %define _vmdir_dbdir  %{_localstatedir}/vmdir
 %define _vmafd_dbdir  %{_localstatedir}/vmafd
@@ -115,23 +112,59 @@ VMware Lightwave Server
 
 %package client
 Summary: Lightwave Client
-Requires: pkgconfig(openssl) >= 1.0.2, pkgconfig(krb5) >= 1.14, pkgconfig(libsasl2) >= 2.1, coreutils >= 8.22, likewise-open >= 6.2.9, openjdk >= 1.8.0.112
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0
+%if 0%{?fedora} >= 21
+Requires: krb5-libs >= 1.14, sqlite >= 3.14
+%else
+Requires: krb5 >= 1.14, sqlite-autoconf >= 3.14
+%endif
 %description client
-Client libraries to communicate with Lightwave Services
+Client libraries to communicate with Lightwave services
+
+%package server
+Summary: Lightwave Server
+Requires: lightwave-client = %{_version}
+%description server
+Lightwave services
 
 %package devel
 Summary: Lightwave Client Development Library
 Requires: lightwave-client = %{_version}
 %description devel
-Development Libraries to communicate with Lightwave Services
+Development libraries to communicate with Lightwave services
 
-%package raft
-Summary: Lightwave Raft Service
-Requires: lightwave-client = %{_version}
-%description raft
-Lightwave Raft Service
+%package post
+Summary: Lightwave POST Service
+Requires: lightwave-client >= %{_version}
+%description post
+Lightwave POST service
 
 %pre
+
+    # First argument is 1 => New Installation
+    # First argument is 2 => Upgrade
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+            if [ ! -d %{_backupdir} ];
+            then
+                /bin/mkdir "%{_backupdir}"
+            fi
+            /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
+            ;;
+    esac
+
+
+%pre server
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -156,17 +189,11 @@ Lightwave Raft Service
             #
             # Upgrade
             #
-            if [ ! -d %{_backupdir} ];
-            then
-                /bin/mkdir "%{_backupdir}"
-            fi
-            /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
             ;;
 
     esac
 
 %pre client
-
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
 
@@ -190,7 +217,7 @@ Lightwave Raft Service
             ;;
     esac
 
-%pre raft
+%pre post
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -217,25 +244,66 @@ Lightwave Raft Service
 
 %post
 
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
+            fi
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                /bin/systemctl daemon-reload
+            fi
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+            %{_sbindir}/configure-build.sh "%{_backupdir}"
+            ;;
+    esac
+
+    if [ -x "%{_lwisbindir}/lwregshell" ]
+    then
+        %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            # add key if not exist
+            %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
+        fi
+
+        %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Release" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            # add value if not exist
+            %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Release" REG_SZ "Lightwave"
+        fi
+
+        %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Version" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            # add value if not exist
+            %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" REG_SZ "%{_version}"
+        else
+            # set value if exists
+            %{_lwisbindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
+        fi
+    fi
+
+%post server
+
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
 
     /sbin/ldconfig
 
-# config
-
-    /bin/systemctl enable firewall.service >/dev/null 2>&1
+    # start the firewall service
+    /bin/systemctl restart firewall.service
     if [ $? -ne 0 ]; then
-        /bin/ln -s %{_servicedir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
+        echo "Firewall service not restarted"
     fi
-
-    /bin/systemctl >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        /bin/systemctl daemon-reload
-    fi
-    /bin/systemctl start firewall.service
-
-# vmdir
+    # vmdir
 
     /bin/mkdir -m 700 -p %{_vmdir_dbdir}
 
@@ -292,7 +360,7 @@ Lightwave Raft Service
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 2
+                sleep 5
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -309,25 +377,12 @@ Lightwave Raft Service
                     wait
                 fi
             fi
-
-        /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
-        fi
-        /bin/systemctl >/dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            /bin/systemctl daemon-reload
-        fi
-
             ;;
 
         2)
             #
             # Upgrade
             #
-
-            %{_sbindir}/configure-build.sh "%{_backupdir}"
-
             try_starting_lwregd_svc=true
 
             if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
@@ -344,7 +399,7 @@ Lightwave Raft Service
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 2
+                sleep 5
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -353,9 +408,9 @@ Lightwave Raft Service
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -364,37 +419,28 @@ Lightwave Raft Service
             ;;
     esac
 
-if [ -x "%{_lwisbindir}/lwregshell" ]
-then
-    %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        # add key if not exist
-        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
-    fi
-
-    %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Release" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        # add value if not exist
-        %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Release" REG_SZ "Lightwave"
-    fi
-
-    %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Version" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        # add value if not exist
-        %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" REG_SZ "%{_version}"
-    else
-        # set value if exists
-        %{_lwisbindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-    fi
-fi
-
-
 %post client
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
 
+    # config firewall service for server/post
+
+    /bin/systemctl enable firewall.service >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        /bin/ln -s %{_servicedir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
+    fi
+
+    /bin/systemctl >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        /bin/systemctl daemon-reload
+    fi
+    /bin/systemctl restart firewall.service
+
     /bin/mkdir -m 755 -p %{_logdir}
+
+    SRP_MECH_OID="1.2.840.113554.1.2.10"
+    UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
 
     # add libgssapi_srp.so to GSSAPI plugin directory
     if [ ! -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
@@ -403,8 +449,15 @@ fi
 
     # Add GSSAPI SRP plugin configuration to GSS mech file
     if [ -f %{_krb5_gss_conf_dir}/mech ]; then
-        if [ `grep -c  "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -lt 1 ]; then
-            echo "srp  1.2.840.113554.1.2.10 libgssapi_srp.so" >> %{_krb5_gss_conf_dir}/mech
+        if [ `grep -c  "$SRP_MECH_OID" %{_krb5_gss_conf_dir}/mech` -lt 1 ]; then
+            echo "srp $SRP_MECH_OID libgssapi_srp.so" >> %{_krb5_gss_conf_dir}/mech
+        fi
+    fi
+
+    # Add GSSAPI UNIX plugin configuration to GSS mech file
+    if [ -f %{_krb5_gss_conf_dir}/mech ]; then
+        if [ `grep -c  "$UNIX_MECH_OID" %{_krb5_gss_conf_dir}/mech` -lt 1 ]; then
+            echo "#unix  $UNIX_MECH_OID libgssapi_unix.so" >> %{_krb5_gss_conf_dir}/mech
         fi
     fi
 
@@ -448,6 +501,7 @@ fi
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -485,6 +539,9 @@ fi
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
                 %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
+                sleep 5
+            else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
                     echo "Starting lwregd"
@@ -492,9 +549,9 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
                 if [ $started_lwregd = true ]; then
                     kill `pidof lwregd`
                     wait
@@ -503,23 +560,30 @@ fi
             ;;
     esac
 
-%post raft
+%post post
 
-    /bin/mkdir -m 700 -p %{_lwraft_dbdir}
-
-    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
-        /bin/rm %{_sasl2dir}/lwraftd.conf
+    # start the firewall service
+    /bin/systemctl restart firewall.service
+    if [ $? -ne 0 ]; then
+        echo "Firewall service not restarted"
     fi
 
-    # add lwraftd.conf to sasl2 directory
-    /bin/ln -s %{_datadir}/config/sasllwraftd.conf %{_sasl2dir}/lwraftd.conf
+    # make post db directory
+    /bin/mkdir -m 700 -p %{_post_dbdir}
+
+    if [ -a %{_sasl2dir}/postd.conf ]; then
+        /bin/rm %{_sasl2dir}/postd.conf
+    fi
+
+    # add postd.conf to sasl2 directory
+    /bin/ln -s %{_datadir}/config/saslpostd.conf %{_sasl2dir}/postd.conf
 
     /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
-    if [ -a %{_logconfdir}/lwraftd-syslog-ng.conf ]; then
-        /bin/rm %{_logconfdir}/lwraftd-syslog-ng.conf
+    if [ -a %{_logconfdir}/postd-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/postd-syslog-ng.conf
     fi
-    /bin/ln -s %{_datadir}/config/lwraftd-syslog-ng.conf %{_logconfdir}/lwraftd-syslog-ng.conf
+    /bin/ln -s %{_datadir}/config/postd-syslog-ng.conf %{_logconfdir}/postd-syslog-ng.conf
 
     case "$1" in
         1)
@@ -538,9 +602,9 @@ fi
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 2
+                sleep 5
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -549,7 +613,7 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -573,9 +637,9 @@ fi
             fi
 
             if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
                 %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 2
+                sleep 5
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -584,7 +648,7 @@ fi
                     started_lwregd=true
                     sleep 5
                 fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/lwraft.reg
+                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
                 if [ $started_lwregd = true ]; then
                     kill -TERM `pidof lwregd`
                     wait
@@ -603,6 +667,7 @@ fi
             #
             # Uninstall
             #
+
             /bin/systemctl >/dev/null 2>&1
             if [ $? -eq 0 ]; then
                  if [ -f /etc/systemd/system/vmware-stsd.service ]; then
@@ -612,39 +677,46 @@ fi
                      /bin/systemctl daemon-reload
                  fi
             fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%preun server
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
 
             %{_likewise_open_bindir}/lwsm info vmca > /dev/null 2>&1
             if [ $? -eq 0 ]; then
-                echo "Stopping the Certificate Authority Service..."
                 %{_likewise_open_bindir}/lwsm stop vmca
-                echo "Removing service configuration..."
                 %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmca'
-                echo "Restarting service control manager..."
-                /bin/systemctl restart lwsmd
-                sleep 2
-                echo "Autostart services..."
-                %{_likewise_open_bindir}/lwsm autostart
             fi
 
             %{_likewise_open_bindir}/lwsm info vmdir > /dev/null 2>&1
             if [ $? -eq 0 ]; then
                 %{_likewise_open_bindir}/lwsm stop vmdir
                 %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdir'
-                /bin/systemctl restart lwsmd
-                %{_likewise_open_bindir}/lwsm autostart
             fi
 
-# dns also?
-
-            /bin/systemctl >/dev/null 2>&1
+            %{_likewise_open_bindir}/lwsm info vmdns > /dev/null 2>&1
             if [ $? -eq 0 ]; then
-                 if [ -f /etc/systemd/system/firewall.service ]; then
-                     /bin/systemctl stop firewall.service
-                     /bin/systemctl disable firewall.service
-                     /bin/rm -f /etc/systemd/system/firewall.service
-                     /bin/systemctl daemon-reload
-                 fi
+                %{_likewise_open_bindir}/lwsm stop vmdns
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdns'
             fi
+
+            /bin/systemctl restart lwsmd
+            sleep 5
 
             if [ -h %{_logconfdir}/vmdird-syslog-ng.conf ]; then
                 /bin/rm -f %{_logconfdir}/vmdird-syslog-ng.conf
@@ -676,30 +748,20 @@ fi
             #
             %{_likewise_open_bindir}/lwsm info vmafd > /dev/null 2>&1
             if [ $? -eq 0 ]; then
-                echo "Stopping the AFD Service..."
                 %{_likewise_open_bindir}/lwsm stop vmafd
-                echo "Removing service configuration..."
                 %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmafd'
-                echo "Restarting service control manager..."
                 /bin/systemctl restart lwsmd
-                sleep 2
-                echo "Autostart services..."
-                %{_likewise_open_bindir}/lwsm autostart
+                sleep 5
             fi
 
-            # Cleanup GSSAPI SRP symlink
-            if [ -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
-                /bin/rm -f %{_krb5_lib_dir}/gss/libgssapi_srp.so
-            fi
-
-            # Remove GSSAPI SRP Plugin configuration from GSS mech file
-            if [ -f %{_krb5_gss_conf_dir}/mech ]; then
-                if [ `grep -c "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -gt 0 ]; then
-                    /bin/cat %{_krb5_gss_conf_dir}/mech | sed '/1.2.840.113554.1.2.10/d' > "/tmp/mech-$$"
-                    if [ -s /tmp/mech-$$ ]; then
-                        /bin/mv "/tmp/mech-$$" %{_krb5_gss_conf_dir}/mech
-                    fi
-                fi
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                 if [ -f /etc/systemd/system/firewall.service ]; then
+                     /bin/systemctl stop firewall.service
+                     /bin/systemctl disable firewall.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/firewall.service
+                     /bin/systemctl daemon-reload
+                 fi
             fi
 
             if [ -h %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
@@ -714,7 +776,7 @@ fi
             ;;
     esac
 
-%preun raft
+%preun post
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
@@ -724,12 +786,12 @@ fi
             #
             # Uninstall
             #
-            %{_likewise_open_bindir}/lwsm info lwraft > /dev/null 2>&1
+            %{_likewise_open_bindir}/lwsm info post > /dev/null 2>&1
             if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop lwraft
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\lwraft'
+                %{_likewise_open_bindir}/lwsm stop post
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\post'
                 /bin/systemctl restart lwsmd
-                %{_likewise_open_bindir}/lwsm autostart
+                sleep 5
             fi
             ;;
 
@@ -752,7 +814,6 @@ fi
             #
             # Uninstall
             #
-            echo "Existing database files kept at [%{_vmdir_dbdir}]."
 
             if [ -x "%{_lwisbindir}/lwregshell" ]
             then
@@ -762,6 +823,34 @@ fi
                     %{_lwisbindir}/lwregshell delete_tree "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
                 fi
             fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%postun server
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    /sbin/ldconfig
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+            if [ -f %{_vmdir_dbdir}/data.mdb ]; then
+                # backup db if exists
+                mv %{_vmdir_dbdir}/data.mdb %{_vmdir_dbdir}/data.mdb.bak
+            fi
+
+            echo "Existing database files kept at [%{_vmdir_dbdir}]."
+
             ;;
 
         1)
@@ -787,7 +876,46 @@ fi
             #
             # Uninstall
             #
-            echo "Existing VECS files kept under [%{_vmafd_dbdir}]"
+
+            # Un-configure SRP/UNIX mech authentication plugins
+            SRP_MECH_OID="1.2.840.113554.1.2.10"
+            UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
+
+            # Cleanup GSSAPI SRP symlink
+            if [ -h %{_libdir}/gss/libgssapi_srp.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_srp.so
+            fi
+
+            # Cleanup GSSAPI UNIX symlink
+            if [ -h %{_libdir}/gss/libgssapi_unix.so ]; then
+                rm -f %{_libdir}/gss/libgssapi_unix.so
+            fi
+
+            # Remove GSSAPI SRP plugin configuration from GSS mech file
+            if [ -f %{_krb5_gss_conf_dir} ]; then
+                if [ `grep -c  "$SRP_MECH_OID" %{_krb5_gss_conf_dir}` -gt 0 ]; then
+                    cat %{_krb5_gss_conf_dir} | sed "/$SRP_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" %{_krb5_gss_conf_dir}
+                    fi
+                fi
+            fi
+
+            # Remove GSSAPI UNIX plugin configuration from GSS mech file
+            if [ -f %{_krb5_gss_conf_dir} ]; then
+                if [ `grep -c  "$UNIX_MECH_OID" %{_krb5_gss_conf_dir}` -gt 0 ]; then
+                    cat %{_krb5_gss_conf_dir} | sed "/$UNIX_MECH_OID/d" > "/tmp/mech-$$"
+                    if [ -s /tmp/mech-$$ ]; then
+                        mv "/tmp/mech-$$" %{_krb5_gss_conf_dir}
+                    fi
+                fi
+            fi
+
+            # Cleanup vmafd db and files
+            if [ -d %{_vmafd_dbdir} ]; then
+                rm -rf %{_vmafd_dbdir}
+            fi
+
             ;;
 
         1)
@@ -797,7 +925,7 @@ fi
             ;;
     esac
 
-%postun raft
+%postun post
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
@@ -809,7 +937,7 @@ fi
             #
             # Uninstall
             #
-            echo "Existing database files kept at [%{_lwraft_dbdir}]."
+            echo "Existing database files kept at [%{_post_dbdir}]."
             ;;
 
         1)
@@ -819,19 +947,67 @@ fi
             ;;
     esac
 
-    if [ -a %{_sasl2dir}/lwraftd.conf ]; then
-        /bin/rm %{_sasl2dir}/lwraftd.conf
+    if [ -a %{_sasl2dir}/postd.conf ]; then
+        /bin/rm %{_sasl2dir}/postd.conf
     fi
 
 %files
 
 %defattr(-,root,root,0755)
 
-%{_bindir}/ic-promote
-%{_bindir}/ic-join
-%{_bindir}/configure-lightwave-server
 %{_bindir}/configure-sts
 %{_bindir}/configure-identity-server
+
+%{_sbindir}/vmware-stsd.sh
+%{_sbindir}/configure-build.sh
+%{_sbindir}/sso-config.sh
+
+%{_datadir}/config/idm/*
+
+%{_jarsdir}/samlauthority.jar
+%{_jarsdir}/vmware-identity-diagnostics.jar
+%{_jarsdir}/vmware-identity-idm-server.jar
+%{_jarsdir}/vmware-identity-rest-afd-server.jar
+%{_jarsdir}/vmware-identity-rest-core-server.jar
+%{_jarsdir}/vmware-identity-rest-idm-server.jar
+%{_jarsdir}/vmware-directory-rest-server.jar
+%{_jarsdir}/vmware-identity-install.jar
+%{_jarsdir}/vmware-identity-sso-config.jar
+%{_jarsdir}/websso.jar
+%{_jarsdir}/sts.jar
+%{_jarsdir}/openidconnect-protocol.jar
+%{_jarsdir}/openidconnect-server.jar
+%{_jarsdir}/commons-lang-2.6.jar
+%{_jarsdir}/commons-logging-1.2.jar
+%{_jarsdir}/jna-4.2.1.jar
+%{_jarsdir}/httpclient-4.5.1.jar
+%{_jarsdir}/slf4j-api-1.7.25.jar
+%{_jarsdir}/log4j-api-2.8.2.jar
+%{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
+%{_jarsdir}/log4j-core-2.8.2.jar
+
+%{_webappsdir}/lightwaveui.war
+%{_webappsdir}/ROOT.war
+
+%{_servicedir}/vmware-stsd.service
+
+%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
+%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.policy
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.properties
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/context.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/logging.properties
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/server.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/vmsts-telegraf.conf
+
+%files server
+
+%defattr(-,root,root,0755)
+
+%{_bindir}/ic-promote
+%{_bindir}/configure-lightwave-server
 %{_bindir}/test-ldapbind
 %{_bindir}/test-logon
 %{_bindir}/test-svr
@@ -853,70 +1029,33 @@ fi
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird
 %{_sbindir}/vmdnsd
-%{_sbindir}/vmware-stsd.sh
-%{_sbindir}/configure-build.sh
-%{_sbindir}/sso-config.sh
 
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
 
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
+%{_datadir}/config/vmca-telegraf.conf
+
 %{_datadir}/config/saslvmdird.conf
 %{_datadir}/config/vmdir.reg
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
 %{_datadir}/config/vmdir-rest.json
+%{_datadir}/config/vmdir-telegraf.conf
+
 %{_datadir}/config/vmdns.reg
+%{_datadir}/config/vmdns-rest.json
 %{_datadir}/config/vmdnsd-syslog-ng.conf
-%{_datadir}/config/idm/*
+%{_datadir}/config/vmdns-telegraf.conf
 
-%{_jarsdir}/openidconnect-client-lib.jar
-%{_jarsdir}/openidconnect-common.jar
-%{_jarsdir}/openidconnect-protocol.jar
-%{_jarsdir}/samlauthority.jar
-%{_jarsdir}/vmware-identity-diagnostics.jar
-%{_jarsdir}/vmware-identity-idm-server.jar
-%{_jarsdir}/vmware-identity-rest-afd-server.jar
-%{_jarsdir}/vmware-identity-rest-core-server.jar
-%{_jarsdir}/vmware-identity-rest-idm-server.jar
-%{_jarsdir}/vmware-directory-rest-server.jar
-%{_jarsdir}/vmware-identity-install.jar
-%{_jarsdir}/vmware-identity-sso-config.jar
-%{_jarsdir}/websso.jar
-%{_jarsdir}/sts.jar
-%{_jarsdir}/openidconnect-server.jar
-%{_jarsdir}/commons-lang-2.6.jar
-%{_jarsdir}/commons-logging-1.1.1.jar
-%{_jarsdir}/jna-4.2.1.jar
-%{_jarsdir}/httpclient-4.5.1.jar
-%{_jarsdir}/slf4j-api-1.7.10.jar
-%{_jarsdir}/log4j-api-2.2.jar
-%{_jarsdir}/log4j-slf4j-impl-2.2.jar
-%{_jarsdir}/log4j-core-2.2.jar
+%{_configdir}/lw-firewall-server.json
 
-%{_webappsdir}/lightwaveui.war
-%{_webappsdir}/ROOT.war
-
-%{_configdir}/firewall.json
-%{_configdir}/setfirewallrules.py
-
-%{_servicedir}/firewall.service
-%{_servicedir}/vmware-stsd.service
-
-%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
-%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.policy
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.properties
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/context.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/logging.properties
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/server.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
 
 %files client
 
 %defattr(-,root,root)
 
+%{_bindir}/ic-join
 %{_bindir}/cdc-cli
 %{_bindir}/certool
 %{_bindir}/dir-cli
@@ -929,6 +1068,8 @@ fi
 %{_bindir}/vdcaclmgr
 %{_bindir}/vdcpromo
 %{_bindir}/vecs-cli
+%{_lib64dir}/libkrb5crypto.so*
+%{_lib64dir}/libcsrp.so*
 
 %{_sbindir}/vmafdd
 
@@ -940,16 +1081,14 @@ fi
 %{_lib64dir}/libvmeventclient.so*
 %{_lib64dir}/libvmcaclient.so*
 %{_lib64dir}/libvmdirclient.so*
-%{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/libvmkdcserv.so*
-%{_lib64dir}/libcsrp.so*
 %{_lib64dir}/libgssapi_ntlm.so*
 %{_lib64dir}/libgssapi_srp.so*
 %{_lib64dir}/libgssapi_unix.so*
 %{_lib64dir}/libvmdnsclient.so*
 %{_lib64dir}/libcfgutils.so*
 %{_lib64dir}/libidm.so*
-%{_lib64dir}/liblwraftclient.so*
+%{_lib64dir}/libpostclient.so*
 %{_lib64dir}/libssoafdclient.so*
 %{_lib64dir}/libssocommon.so*
 %{_lib64dir}/libssocoreclient.so*
@@ -957,6 +1096,7 @@ fi
 %{_lib64dir}/libssooidc.so*
 %{_lib64dir}/libssovmdirclient.so*
 %{_lib64dir}/libvmdirauth.so*
+%{_lib64dir}/libvmmetrics.so*
 
 %{_datadir}/config/java.security.linux
 %{_datadir}/config/certool.cfg
@@ -964,6 +1104,8 @@ fi
 %{_datadir}/config/vmdir-client.reg
 %{_datadir}/config/vmdns-client.reg
 %{_datadir}/config/vmafdd-syslog-ng.conf
+%{_datadir}/config/telegraf.conf
+%{_datadir}/config/vmafd-telegraf.conf
 
 %{_jreextdir}/vmware-endpoint-certificate-store.jar
 %{_jreextdir}/client-domain-controller-cache.jar
@@ -989,28 +1131,35 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
 
+%{_configdir}/lw-firewall-client.json
+%{_configdir}/setfirewallrules.py
+
+%{_servicedir}/firewall.service
+
 %{_sysconfdir}/vmware/java/vmware-override-java.security
 
-%files raft
+%files post
 
 %defattr(-,root,root)
 
-%{_sbindir}/lwraftd
+%{_sbindir}/postd
 
-%{_bindir}/lwraft_upgrade.sh
-%{_bindir}/lwraftadmintool
-%{_bindir}/lwraftleavefed
-%{_bindir}/lwraftpromo
-%{_bindir}/lwraftschema
+%{_bindir}/postadmintool
+%{_bindir}/postaclmgr
+%{_bindir}/postschema
+%{_bindir}/post-cli
 
-%{_lib64dir}/sasl2/libsasllwraftdb.so*
+%{_lib64dir}/sasl2/libsaslpostdb.so*
 
-%{_datadir}/config/sasllwraftd.conf
-%{_datadir}/config/lwraftschema.ldif
-%{_datadir}/config/lwraft-rest.json
-%{_datadir}/config/lwraft.reg
-%{_datadir}/config/lwraftd-syslog-ng.conf
-%{_datadir}/config/lwraft-client.reg
+%{_datadir}/config/saslpostd.conf
+%{_datadir}/config/postschema.ldif
+%{_datadir}/config/post-rest.json
+%{_datadir}/config/post.reg
+%{_datadir}/config/postd-syslog-ng.conf
+%{_datadir}/config/post-client.reg
+%{_datadir}/config/post-telegraf.conf
+
+%{_configdir}/lw-firewall-post.json
 
 %files devel
 
@@ -1031,6 +1180,7 @@ fi
 %{_includedir}/vmdirtypes.h
 %{_includedir}/vmdns.h
 %{_includedir}/vmdnstypes.h
+%{_includedir}/vmmetrics.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la
@@ -1048,20 +1198,11 @@ fi
 %{_lib64dir}/libvmcaclient.la
 %{_lib64dir}/libvmdirclient.a
 %{_lib64dir}/libvmdirclient.la
-%{_lib64dir}/libcsrp.a
-%{_lib64dir}/libcsrp.la
-%{_lib64dir}/libgssapi_ntlm.a
-%{_lib64dir}/libgssapi_ntlm.la
-%{_lib64dir}/libgssapi_srp.a
-%{_lib64dir}/libgssapi_srp.la
-%{_lib64dir}/libgssapi_unix.a
-%{_lib64dir}/libgssapi_unix.la
 %{_lib64dir}/libvmdnsclient.a
 %{_lib64dir}/libvmdnsclient.la
+%{_lib64dir}/libvmmetrics.a
+%{_lib64dir}/libvmmetrics.la
 
-#
-# TBD - not sure if these should be included or excluded
-#
 %{_includedir}/oidc.h
 %{_includedir}/oidc_types.h
 %{_includedir}/ssoafdclient.h

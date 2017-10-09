@@ -7,16 +7,16 @@ sl_cli_SOURCES = \
 
 sl_cli_CPPFLAGS = \
     -DLDAP_DEPRECATED \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    @VMDIR_INCLUDES@ \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 sl_cli_LDADD = \
-    $(top_builddir)/client/libvmafdclient.la \
-    $(top_builddir)/common/libcommon.la \
-    @VMDIR_LIBS@ \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/common/libcommon.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -30,6 +30,5 @@ sl_cli_LDADD = \
     @PTHREAD_LIBS@
 
 sl_cli_LDFLAGS = \
-    @VMDIR_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

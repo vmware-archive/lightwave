@@ -17,15 +17,15 @@ libschema_la_SOURCES = \
     util.c
 
 libschema_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/lwraft/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 libschema_la_LDFLAGS = \
     -static
-

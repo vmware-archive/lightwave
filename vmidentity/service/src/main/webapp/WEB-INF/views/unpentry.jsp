@@ -58,34 +58,34 @@
 
    </script>
 
-   <script type="text/javascript" src="/resources/js/assets/csd_api_common.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_connection.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_base.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_factory.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_config.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_logging.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_session.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_sspi.js"></script>
-   <script type="text/javascript" src="/resources/js/assets/csd_api_sso.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_common.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_connection.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_base.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_factory.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_config.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_logging.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_session.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_sspi.js"></script>
+   <script type="text/javascript" src="../../resources/js/assets/csd_api_sso.js"></script>
 
-   <script type="text/javascript" src="/resources/js/Base64.js"></script>
-   <script type="text/javascript" src="/resources/js/VmrcPluginUtil.js"></script>
-   <script type="text/javascript" src="/resources/js/jquery-2.1.4.min.js"></script>
-   <script type="text/javascript" src="/resources/js/jquery-ui.min.js"></script>
-   <script type="text/javascript" src="/resources/js/websso.js"></script>
+   <script type="text/javascript" src="../../resources/js/Base64.js"></script>
+   <script type="text/javascript" src="../../resources/js/VmrcPluginUtil.js"></script>
+   <script type="text/javascript" src="../../resources/js/jquery-2.1.4.min.js"></script>
+   <script type="text/javascript" src="../../resources/js/jquery-ui.min.js"></script>
+   <script type="text/javascript" src="../../resources/js/websso.js"></script>
 
-   <link rel="icon" type="image/x-icon" href="/resources/img/favicon.ico" />
-   <link rel="SHORTCUT ICON" href="/resources/img/favicon.ico" />
-   <link rel="stylesheet" type="text/css" href="/resources/css/jquery-ui.min.css">
+   <link rel="icon" type="image/x-icon" href="../../resources/img/favicon.ico" />
+   <link rel="SHORTCUT ICON" href="../../resources/img/favicon.ico" />
+   <link rel="stylesheet" type="text/css" href="../../resources/css/jquery-ui.min.css">
 </head>
 <body>
 
 <script type="text/javascript">
     if (!isVCLogin()) {
-        document.write('<link rel="stylesheet" type="text/css" href="/resources/css/login_generic.css">');
+        document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/login_generic.css">');
     }
     else {
-        document.write('<link rel="stylesheet" type="text/css" href="/resources/css/login.css">');
+        document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/login.css">');
     }
 </script>
 
@@ -96,11 +96,11 @@
 //var _cspId = createCspPluginObject();
 
 if (isVCLogin()) {
-    document.write("<img id=\"topSplash\" src=\"/resources/img/AppBgPattern.png\"/>");
-
-    document.write("<img id=\"brand\" src=\"/resources/img/vmwareLogoBigger.png\" />");
+    document.write("<img id=\"topSplash\" src=\"../../resources/img/AppBgPattern.png\"/>");
+    document.write("<img id=\"brand\" src=\"../../resources/img/vmwareLogoBigger.png\" />");
 }
 else {
+    document.write("<p id=\"welcomeText\">Welcome to</p>");
     document.write("<p id=\"tenantBrand\">"+tenant_brandname+"</p>");
 }
 
@@ -108,6 +108,7 @@ else {
 </script>
 <div id="bg-banner"></div>
 <div id="loginForm">
+   <span>Please sign-in here</span>
    <p id="usernameID" class="loginRow" >
       <span class="loginLabel">${username}:</span>
       <input id="username" class="margeTextInput" type="text" placeholder="${username_placeholder}"/>
@@ -140,11 +141,11 @@ else {
 <div id="productName">
    <script type="text/javascript">
         if (isVCLogin()) {
-           document.write("<img id=\"VCSSO-Title\" src=\"/resources/img/VCSSO-title.png\" />");
+           document.write("<img id=\"VCSSO-Title\" src=\"../../resources/img/VCSSO-title.png\" />");
            }
    </script>
    <div id="response" style="display:none"></div>
-   <div id="progressBar" style="display:none"><img src="/resources/img/Marge-anim-progressbar.gif"></div>
+   <div id="progressBar" style="display:none"><img src="../../resources/img/Marge-anim-progressbar.gif"></div>
 </div>
 
 <div id="footer" class="footer">

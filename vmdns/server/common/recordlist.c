@@ -242,6 +242,52 @@ VmDnsRecordListRelease(
 }
 
 DWORD
+VmDnsRecordListRoundRobin(
+    PVMDNS_RECORD_LIST          pList,
+    DWORD                       dwIndex,
+    PVMDNS_RECORD_LIST          *ppList
+    )
+{
+    PVMDNS_RECORD_LIST pRecordList = NULL;
+    DWORD dwSize = 0, dwError = 0, i = 0;
+    PVMDNS_RECORD_OBJECT pRecordObj = NULL;
+    DWORD dwRecordIndex = dwIndex;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(pList,dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(ppList,dwError);
+
+    dwError = VmDnsRecordListCreate(&pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwSize = VmDnsRecordListGetSize(pList);
+
+    for (; i < dwSize; i++)
+    {
+        pRecordObj = VmDnsRecordListGetRecord(pList, dwRecordIndex);
+
+        dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwRecordIndex = (dwRecordIndex + 1) % dwSize;
+    }
+
+    *ppList = pRecordList;
+
+cleanup:
+    VmDnsRecordObjectRelease(pRecordObj);
+    return dwError;
+
+error:
+    VmDnsRecordListRelease(pRecordList);
+    if(ppList)
+    {
+        *ppList = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 VmDnsCopyRecordArray(
     PVMDNS_RECORD_LIST  pRecordList,
     PVMDNS_RECORD       **pppRecordArray

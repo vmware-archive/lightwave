@@ -114,6 +114,8 @@ VmDirShutdown(
 
     VmDirCleanupGlobals();
 
+    VmMetricsDestroy(pmContext);
+
     (VOID)VmDirSetRegKeyValueDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
@@ -195,7 +197,8 @@ VmDirCleanupGlobals(
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszRestListenPort);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszHTTPListenPort);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszHTTPSListenPort);
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replAgrsMutex );

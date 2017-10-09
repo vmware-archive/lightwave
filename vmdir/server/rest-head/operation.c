@@ -54,8 +54,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeRESTOperation(pRestOp);
     goto cleanup;
@@ -135,12 +138,16 @@ VmDirRESTOperationReadRequest(
     // read request input json
     do
     {
-        dwError = VmDirReallocateMemory(
-                (PVOID)pszInput,
-                (PVOID*)&pszInput,
-                len + MAX_REST_PAYLOAD_LENGTH);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (bytesRead || !pszInput)
+        {
+            dwError = VmDirReallocateMemory(
+                    (PVOID)pszInput,
+                    (PVOID*)&pszInput,
+                    len + MAX_REST_PAYLOAD_LENGTH + 1);     // +1 for NULL char
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
+        bytesRead = 0;
         dwError = VmRESTGetData(
                 pRESTHandle, pRestReq, pszInput + len, &bytesRead);
 
@@ -148,6 +155,7 @@ VmDirRESTOperationReadRequest(
     }
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pszInput[len] = 0;
 
     if (!IsNullOrEmptyString(pszInput))
     {
@@ -178,8 +186,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
     goto cleanup;
 }
 
@@ -224,14 +235,30 @@ VmDirRESTOperationWriteResponse(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pRestOp->pResult->pszData)
+    {
+        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "text/plain");
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTResultToResponseBody(
-            pRestOp->pResult, pRestOp->pResource, &pszBody);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirAllocateAndCopyMemory(
+                        (PVOID)pRestOp->pResult->pszData,
+                        pRestOp->pResult->dwDataLen,
+                        (PVOID*)&pszBody);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
+        bodyLen = pRestOp->pResult->dwDataLen;
+    }
+    else
+    {
+        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirRESTResultToResponseBody(
+                pRestOp->pResult, pRestOp->pResource, &pszBody);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
+    }
 
     dwError = VmDirAllocateStringPrintf(&pszBodyLen, "%ld", bodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -264,8 +291,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 

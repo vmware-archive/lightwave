@@ -90,16 +90,8 @@
       }
 
       //Remove windows session or smartcard authn checkbox if the corresponding authn type was not turned on
-      if (windows_auth == "false") {
-         var sspiEle = document.getElementById("sessionID");
-         sspiEle.parentNode.removeChild(sspiEle);
-      } else {
-         //disbable username pw field when password authn is not available
-         if (password_auth == "false" && rsa_am_auth == "false" && tlsclient_auth == "false") {
-             $('#username').prop('disabled',true);
-             $('#password').prop('disabled',true);
-         }
-      }
+      var sspiEle = document.getElementById("sessionID");
+      sspiEle.parentNode.removeChild(sspiEle);
 
       if (rsa_am_auth == "false") {
           var rsaamIDEle = document.getElementById("rsaamID");

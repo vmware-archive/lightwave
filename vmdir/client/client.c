@@ -154,7 +154,7 @@ VmDirRefreshActPassword(
                                  pszActPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN( pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN( pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszPolicyDN,
@@ -684,7 +684,7 @@ VmDirSetupHostInstanceEx(
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
     {
-        dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+        dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         if ( VmDirIsIPV6AddrFormat( pszPartnerHostName ) )
@@ -770,6 +770,12 @@ VmDirSetupHostInstance(
     PSTR    pszLotusServerNameCanon = NULL;
     int     err = 0;
     int     i = 0;
+    PVM_DIR_CONNECTION pIPCConnection = NULL;
+
+    if (VmDirOpenClientConnection(&pIPCConnection) != 0)
+    {   // VMDIR is not listen on IPC port
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+    }
 
     // Generate an initial DC account password and store it in the registry.
 
@@ -835,6 +841,7 @@ VmDirSetupHostInstance(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY( pszLotusServerNameCanon );
+    VmDirCloseClientConnection(pIPCConnection);
     return dwError;
 
 error:
@@ -906,6 +913,7 @@ VmDirJoin(
     DWORD   dwHighWatermark = 0;
     LDAP*   pLd = NULL;
     PVMDIR_REPL_STATE pReplState = NULL;
+    PVM_DIR_CONNECTION pIPCConnection = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -913,6 +921,11 @@ VmDirJoin(
     {
         dwError =  VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (VmDirOpenClientConnection(&pIPCConnection) != 0)
+    {   // VMDIR is not listen on IPC port
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
 
     // Determine the name of lotus server
@@ -1056,6 +1069,7 @@ cleanup:
         ldap_unbind_ext_s(pLd, NULL, NULL);
     }
     VmDirFreeReplicationStateInternal(pReplState);
+    VmDirCloseClientConnection(pIPCConnection);
     return dwError;
 
 error:
@@ -2504,13 +2518,9 @@ VmDirGetReplicationPartners(
     DWORD*              pdwNumReplPartner    // output
 )
 {
-    DWORD       dwError                 = 0;
-    DWORD       i                       = 0;
+    DWORD   dwError = 0;
+    LDAP*   pLd     = NULL;
     PSTR        pszDomain               = NULL;
-    LDAP*       pLd                     = NULL;
-    DWORD       dwInfoCount             = 0;
-    PREPLICATION_INFO pReplicationInfo  = NULL;
-    PVMDIR_REPL_PARTNER_INFO pReplPartnerInfo = NULL;
     PSTR        pszServerName = NULL;
 
     // parameter check
@@ -2545,11 +2555,60 @@ VmDirGetReplicationPartners(
                             pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirGetReplicationPartnersByPLd(
+                        pszServerName,
+                        pszDomain,
+                        pLd,
+                        ppReplPartnerInfo,
+                        pdwNumReplPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+    VmDirLdapUnbind(&pLd);
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "VmDirGetReplicationPartners failed, Error[%d]\n",
+            dwError
+            );
+    goto cleanup;
+}
+DWORD
+VmDirGetReplicationPartnersByPLd(
+    PCSTR               pszServerName,
+    PCSTR               pszDomainName,
+    LDAP*               pLd,
+    PVMDIR_REPL_PARTNER_INFO*  ppReplPartnerInfo,   // output
+    DWORD*              pdwNumReplPartner    // output
+)
+{
+    DWORD       dwError                 = 0;
+    DWORD       i                       = 0;
+    DWORD       dwInfoCount             = 0;
+    PREPLICATION_INFO pReplicationInfo  = NULL;
+    PVMDIR_REPL_PARTNER_INFO pReplPartnerInfo = NULL;
+
+    // parameter check
+    if (
+            IsNullOrEmptyString (pszServerName) ||
+            IsNullOrEmptyString (pszDomainName) ||
+            pLd                 == NULL         ||
+            pdwNumReplPartner   == NULL         ||
+            ppReplPartnerInfo   == NULL
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     //get replication agreement info for replication LDUs
     dwError = VmDirGetReplicationInfo(
                             pLd,
                             pszServerName,
-                            pszDomain,
+                            pszDomainName,
                             &pReplicationInfo,
                             &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2581,22 +2640,14 @@ VmDirGetReplicationPartners(
     *ppReplPartnerInfo = pReplPartnerInfo;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszDomain);
-    VMDIR_SAFE_FREE_MEMORY(pszServerName);
     VMDIR_SAFE_FREE_MEMORY(pReplicationInfo);
-
-    // unbind
-    if (pLd)
-    {
-        ldap_unbind_ext_s(pLd, NULL, NULL);
-    }
 
     return dwError;
 
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "VmDirGetReplicationPartners failed, Error[%d]\n",
+            "VmDirGetReplicationPartnersByPLd failed, Error[%d]\n",
             dwError
             );
 
@@ -4650,6 +4701,62 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirFindAllReplPartnerHostByPLd(
+    PCSTR   pszServerName,
+    PCSTR   pszDomainName,
+    LDAP*   pLd,
+    PSTR**  pppszPartnerHost,
+    DWORD*  pdwSize
+    )
+{
+    DWORD   dwError = 0;
+    PSTR*   ppszPartnerHost = NULL;
+    DWORD   dwNumReplPartner=0;
+    DWORD   dwCnt=0;
+
+    PVMDIR_REPL_PARTNER_INFO    pReplPartnerInfo = NULL;
+
+    dwError = VmDirGetReplicationPartnersByPLd(
+                                pszServerName,
+                                pszDomainName,
+                                pLd,
+                                &pReplPartnerInfo,
+                                &dwNumReplPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwNumReplPartner > 0)
+    {
+        dwError = VmDirAllocateMemory(dwNumReplPartner * sizeof(PSTR), (PVOID)&ppszPartnerHost);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++)
+        {
+            dwError = VmDirReplURIToHostname(pReplPartnerInfo[dwCnt].pszURI, &(ppszPartnerHost[dwCnt]));
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    *pppszPartnerHost = ppszPartnerHost;
+    *pdwSize = dwNumReplPartner;
+    ppszPartnerHost = NULL;
+
+cleanup:
+    for (dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo[dwCnt].pszURI);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
+    VmDirFreeStringArray(ppszPartnerHost, dwNumReplPartner);
+
+    goto cleanup;
+}
+
 /*
  *  Delete all replication agreements that has pszHost as partner
  */
@@ -5963,3 +6070,259 @@ VmDirUrgentReplicationResponse(
 {
    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
+
+/*
+ * API Exposed for HA Topology Management
+ */
+
+DWORD
+VmDirGetCurrentTopologyAtSite(
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    PCSTR                           pszSiteName,
+    BOOLEAN                         bConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    )
+{
+    DWORD   dwError = 0;
+
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszSiteName) ||
+        !ppCurTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+    VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "SiteName is %s",pszSiteName);
+
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    // printf( "SiteName is %s \n", pszSiteName); // For Debugging till final check-in
+
+    dwError = VmDirGetIntraSiteTopology(
+                        pszUserName,
+                        pszPassword,
+                        pszHostName,
+                        pszSiteName,
+                        bConsiderOfflineNodes,
+                        &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppCurTopology = pTopology;
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyData(pTopology);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetCurrentGlobalTopology(
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    BOOLEAN                         bConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    )
+{
+    DWORD   dwError = 0;
+
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszHostName) ||
+        !ppCurTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirGetInterSiteTopology(
+                        pszUserName,
+                        pszPassword,
+                        pszHostName,
+                        bConsiderOfflineNodes,
+                        &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppCurTopology = pTopology;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyData(pTopology);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetProposedTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology // Output
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology = NULL;
+
+    if (!pCurTopology ||
+        !ppNewTopology)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirGetNewTopology(
+                    pCurTopology,
+                    &pTopology);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppNewTopology = pTopology;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyData(pTopology);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirGetChangesInTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES* ppTopologyChanges //Output
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_HA_TOPOLOGY_CHANGES  pChanges = NULL;
+
+    if (!pCurTopology ||
+        !pNewTopology ||
+        !ppTopologyChanges)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirGetTopologyChanges(
+                    pCurTopology,
+                    pNewTopology,
+                    &pChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppTopologyChanges = pChanges;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+    VmDirFreeHATopologyChanges(pChanges);
+
+    goto cleanup;
+
+}
+
+DWORD
+VmDirApplyTopologyChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pTopologyChanges)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s", __FUNCTION__);
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+
+    dwError = VmDirModifyLinks(pTopologyChanges);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, Error[%d]\n",
+            __FUNCTION__,
+            dwError
+            );
+
+    goto cleanup;
+}
+
+VOID
+VmDirFreeHATopologyData(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
+    )
+{
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    VmDirFreeHATopology(pTopology);
+}
+
+VOID
+VmDirFreeHAServerInfo(
+    PVMDIR_HA_SERVER_INFO   pServer
+    )
+{
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    VmDirFreeHAServer(pServer);
+}
+
+VOID
+VmDirFreeHATopologyChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    )
+{
+    // printf( "\n%s\n", __FUNCTION__); // For Debugging till final check-in
+    VmDirFreeHAChanges(pTopologyChanges);
+}
+
+/*
+ * APIs for HA Topology Management ends here
+ */

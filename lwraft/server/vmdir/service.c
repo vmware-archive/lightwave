@@ -120,11 +120,8 @@ VmDirRegisterRpcServer(
         };
     DWORD dwEpCount = sizeof(endpoints)/sizeof(endpoints[0]);
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
-    VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pSrpVerifierInterfaceSpec = rpc_srp_verifier_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirRaftInterfaceSpec = vmdirraft_v1_0_s_ifspec;
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
 #if 0
@@ -134,19 +131,10 @@ VmDirRegisterRpcServer(
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    ulError = VmDirRpcServerRegisterIf(pVmDirFtpInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerRegisterIf(pSrpVerifierInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
     ulError = VmDirRpcServerRegisterIf(pSuperLogInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerRegisterIf(pVmDirDbcpInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerRegisterIf(pVmDirUrgentReplInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerRegisterIf(pVmDirRaftInterfaceSpec);
@@ -167,19 +155,7 @@ VmDirRegisterRpcServer(
         bEndpointsRegistered = FALSE;
     }
 
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirFtpInterfaceSpec, "Persistent Objectstore Service FTP");
-    if (ulError)
-    {
-        bEndpointsRegistered = FALSE;
-    }
-
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "Persistent Objectstore Service dbcp");
-    if (ulError)
-    {
-        bEndpointsRegistered = FALSE;
-    }
-
-    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirUrgentReplInterfaceSpec, "Persistent Objectstore Service Urgent Repl");
     if (ulError)
     {
         bEndpointsRegistered = FALSE;
@@ -223,25 +199,17 @@ VmDirUnRegisterRpcServer(
 {
     ULONG ulError = 0;
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
-    VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
-    VMDIR_IF_HANDLE_T pVmDirUrgentReplInterfaceSpec = vmdirurgentrepl_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirRaftInterfaceSpec = vmdirraft_v1_0_s_ifspec;
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerUnRegisterIf(pVmDirFtpInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirSuperLogInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirDbcpInterfaceSpec);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcServerUnRegisterIf(pVmDirUrgentReplInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirRaftInterfaceSpec);

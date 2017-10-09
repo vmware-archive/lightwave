@@ -10,9 +10,9 @@ libvmsockposix_la_SOURCES = \
     socket.c
 
 libvmsockposix_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/vmsock/include \
+    -I$(top_srcdir)/vmdns/include \
+    -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmdns/vmsock/include \
     -DHAVE_SYS_EPOLL_H \
     -DHAVE_FCNTL_H \
     -DHAVE_ARPA_INET_H \

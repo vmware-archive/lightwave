@@ -48,6 +48,7 @@ makePkgWithScript() {
 makePkg $CONFIG 'Lightwave CA.app' 'LightwaveCA.pkg' 'com.vmware.LightwaveCA'
 makePkg $CONFIG 'Lightwave Certificate Store.app' 'LightwaveCertStore.pkg' 'com.vmware.LightwaveCertStore'
 makePkg $CONFIG 'Lightwave Directory.app' 'LightwaveDirectory.pkg' 'com.vmware.LightwaveDirectory'
+makePkg $CONFIG 'Lightwave Raft Browser.app' 'LightwaveRaftBrowser.pkg' 'com.vmware.LightwaveRaftBrowser'
 makePkg $CONFIG 'Lightwave PSC Site Management.app' 'LightwavePSCSiteManagement.pkg' 'com.vmware.LightwavePSCSiteManagement'
 makePkgWithScript $CONFIG 'Lightwave SSO.app' 'LightwaveSSO.pkg' 'com.vmware.LightwaveSSO' 'scripts'
 makePkg $CONFIG 'Lightwave Directory Schema.app' 'LightwaveDirectorySchema.pkg' 'com.vmware.LightwaveDirectorySchema'
@@ -57,6 +58,7 @@ productbuild --synthesize \
   --package "x64/$CONFIG/LightwaveCA.pkg"  \
   --package "x64/$CONFIG/LightwaveCertStore.pkg" \
   --package "x64/$CONFIG/LightwaveDirectory.pkg" \
+  --package "x64/$CONFIG/LightwaveRaftBrowser.pkg" \
   --package "x64/$CONFIG/LightwavePSCSiteManagement.pkg" \
   --package "x64/$CONFIG/LightwaveSSO.pkg" \
   --package "x64/$CONFIG/LightwaveDirectorySchema.pkg" \

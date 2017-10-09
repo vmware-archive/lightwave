@@ -1,0 +1,34 @@
+#
+# Note: Log data produced by these scripts will be available in
+# /opt/codedeploy-agent/deployment-root/DEPLOYMENT_GROUP_ID/DEPLOYMENT_ID/logs/
+#
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /var/vmware/lightwave
+hooks:
+  BeforeBlockTraffic:
+    - location: scripts/before_block_traffic.sh
+      timeout: 300
+      runas: root
+  ApplicationStop:
+    - location: scripts/application_stop.sh
+      timeout: 300
+      runas: root
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: scripts/after_install.sh
+      timeout: 300
+      runas: root
+  ApplicationStart:
+    - location: scripts/application_start.sh
+      timeout: 300
+      runas: root
+  BeforeAllowTraffic:
+    - location: scripts/before_allow_traffic.sh
+      timeout: 300
+      runas: root

@@ -948,6 +948,64 @@
             " SINGLE-VALUE )")                                          \
     },                                                                  \
     {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 46),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.1.11"                                \
+            " NAME 'vmwRaftLogindex'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 47),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.4.31"                                                 \
+            " NAME 'member'"                                            \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 48),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.146"                                   \
+            " NAME 'objectSid'"                                         \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.40"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 49),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.25"                                \
+            " NAME 'parentid'"                                          \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 50),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.221"                                   \
+            " NAME 'sAMAccountName'"                                    \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 51),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.771"                                   \
+            " NAME 'servicePrincipalName'"                              \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 52),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.656"                                   \
+            " NAME 'userPrincipalName'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
     VMDIR_SF_INIT(.usAttrID, 0),                                        \
     VMDIR_SF_INIT(.pszDesc, NULL)                                       \
     },                                                                  \

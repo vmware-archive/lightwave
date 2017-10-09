@@ -17,6 +17,11 @@
 #ifndef COMMON_INTERFACE_H_
 #define COMMON_INTERFACE_H_
 
+#include <vmmetrics.h>
+extern PVM_METRICS_CONTEXT pmContext;
+
+#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,7 +61,12 @@ extern "C" {
 #define VMDIR_PAGED_SEARCH_CACHE_HASH_TABLE_SIZE 32
 #define VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE  1000
 
-#define VMDIR_DEFAULT_REPL_INTERVAL     "30"
+//Note: Ssetting replinterval to 1 second could have negative impact on a star topology where many nodes(say > 5) all
+//      have same sigle replication partner.
+//      In such case, the center node could potentially starve and could not catch up with changes from other nodes
+//      because there are constant repl pull from other nodes and current replication algorithm exclude roles a node can play (consumer/supplier).
+#define VMDIR_DEFAULT_REPL_INTERVAL     "1"
+
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
 #define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
 #define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
@@ -481,6 +491,7 @@ typedef struct SearchReq
     VDIR_BERVALUE * attrs;
     VDIR_FILTER *   filter;
     VDIR_BERVALUE   filterStr;
+    ACCESS_MASK     accessRequired;
     size_t          iNumEntrySent;      // total number entries sent for this request
     BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
 } SearchReq;
@@ -541,7 +552,7 @@ typedef struct SyncRequestControlValue
     VDIR_BERVALUE           bvLastLocalUsnProcessed;
     USN                     intLastLocalUsnProcessed;
     VDIR_BERVALUE           bvUtdVector;
-    BOOLEAN                 reloadHint;
+    BOOLEAN                 bFirstPage;
 } SyncRequestControlValue;
 
 typedef struct SyncDoneControlValue
@@ -658,14 +669,27 @@ typedef struct _VDIR_THREAD_INFO
 
 } REPO_THREAD_INFO, *PVDIR_THREAD_INFO;
 
+typedef struct _VMDIR_REPLICATION_METRICS
+{
+    PVM_METRICS_HISTOGRAM       pReplConnectDuration;
+    PVM_METRICS_COUNTER         pReplConnectFailures;
+    PVM_METRICS_COUNTER         pReplUnfinished;
+    PVM_METRICS_GAUGE           pReplUsn;
+    PVM_METRICS_COUNTER         pReplChanges;
+    PVM_METRICS_HISTOGRAM       pReplSyncDuration;
+
+} VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;
+
 typedef struct _VMDIR_REPLICATION_AGREEMENT
 {
-    VDIR_BERVALUE       dn;
-    char                ldapURI[VMDIR_MAX_LDAP_URI_LEN];
-    VDIR_BERVALUE       lastLocalUsnProcessed;
-    BOOLEAN             isDeleted;
-    time_t              oldPasswordFailTime;
-    time_t              newPasswordFailTime;
+    VDIR_BERVALUE               dn;
+    char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
+    VDIR_BERVALUE               lastLocalUsnProcessed;
+    BOOLEAN                     isDeleted;
+    time_t                      oldPasswordFailTime;
+    time_t                      newPasswordFailTime;
+    VMDIR_REPLICATION_METRICS   ReplMetrics;
+
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
 
 } VMDIR_REPLICATION_AGREEMENT, *PVMDIR_REPLICATION_AGREEMENT;
@@ -888,8 +912,8 @@ VmDirBervalContentDup(
 
 DWORD
 VmDirCreateTransientSecurityDescriptor(
-    BOOL bAllowAnonymousRead,
-    PVMDIR_SECURITY_DESCRIPTOR pvsd
+    BOOLEAN                     bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR  pvsd
     );
 
 DWORD
@@ -916,6 +940,12 @@ VmDirEntryReplaceAttribute(
 DWORD
 VmDirDeleteEntry(
     PVDIR_ENTRY pEntry
+    );
+
+DWORD
+VmDirSimpleEntryDeleteAttribute(
+    PCSTR   pszDN,
+    PCSTR   pszAttr
     );
 
 // util.c

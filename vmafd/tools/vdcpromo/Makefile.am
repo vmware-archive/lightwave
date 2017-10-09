@@ -5,16 +5,16 @@ vdcpromo_SOURCES = \
     main.c
 
 vdcpromo_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmdir/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@ \
-    @VMDIR_INCLUDES@
+    @OPENSSL_INCLUDES@
 
 vdcpromo_LDADD = \
-    $(top_builddir)/vmafcfg/api/libvmafcfgapi.la \
-    $(top_builddir)/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/vmafcfg/api/libvmafcfgapi.la \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

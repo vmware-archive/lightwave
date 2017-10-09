@@ -3,10 +3,10 @@ lib_LTLIBRARIES = libgssapi_ntlm.la
 libgssapi_ntlm_la_CPPFLAGS = \
    -D_MIT_KRB5_1_11 \
    -D_MIT_KRB5_1_12 \
-   -I$(top_srcdir)/gssapi-plugins/ntlm \
-   -I$(top_srcdir)/include \
-   -I$(top_srcdir)/include/public \
-   -I$(top_srcdir)/thirdparty \
+   -I$(top_srcdir)/vmdir/gssapi-plugins/ntlm \
+   -I$(top_srcdir)/vmdir/include \
+   -I$(top_srcdir)/vmdir/include/public \
+   -I$(top_srcdir)/vmdir/thirdparty \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -25,8 +25,8 @@ libgssapi_ntlm_la_SOURCES = \
     ntlm_util.c
 
 libgssapi_ntlm_la_LIBADD = \
-    $(top_builddir)/client/libvmdirclient.la \
-    $(top_builddir)/thirdparty/csrp/libcsrp.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
     @DCERPC_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \

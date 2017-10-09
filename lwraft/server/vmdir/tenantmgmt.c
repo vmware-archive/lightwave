@@ -113,7 +113,7 @@ VmDirSrvCreateTenant(
     dwError = _VmDirSrvCheckDomainDepth(pszFQDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszFQDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszFQDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);

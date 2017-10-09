@@ -4,18 +4,20 @@ ic_promote_SOURCES = \
     main.c
 
 ic_promote_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    @VMDIR_INCLUDES@ \
-    @VMAFD_INCLUDES@ \
+    -I$(top_srcdir)/config/include \
+    -I$(top_srcdir)/config/include/public \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmca/include/public \
+    -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@
 
 ic_promote_LDADD = \
-    @top_builddir@/cfgutils/libcfgutils.la \
-    @VMAFD_LIBS@ \
-    @VMDNS_LIBS@ \
-    @VMCA_LIBS@ \
-    @VMDIR_LIBS@ \
+    @top_builddir@/config/cfgutils/libcfgutils.la \
+    @top_builddir@/vmafd/client/libvmafdclient.la \
+    @top_builddir@/vmca/client/libvmcaclient.la \
+    @top_builddir@/vmdns/client/libvmdnsclient.la \
+    @top_builddir@/vmdir/client/libvmdirclient.la \
     @LWSM_LIBS@ \
     @DCERPC_LIBS@ \
     @LWRSUTILS_LIBS@ \
@@ -32,9 +34,5 @@ ic_promote_LDADD = \
     @PTHREAD_LIBS@
 
 ic_promote_LDFLAGS = \
-    @VMDNS_LDFLAGS@ \
-    @VMCA_LDFLAGS@ \
-    @VMAFD_LDFLAGS@ \
-    @VMDIR_LDFLAGS@ \
     @LW_LDFLAGS@ \
     @OPENSSL_LDFLAGS@

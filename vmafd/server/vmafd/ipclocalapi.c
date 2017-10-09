@@ -4293,11 +4293,13 @@ VmAfdIpcJoinVmDir2(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
 
+    PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
     PWSTR pwszMachineName = NULL;
     PWSTR pwszDomainName = NULL;
     PWSTR pwszOrgUnit = NULL;
+    PWSTR pwszSite = NULL;
     VMAFD_JOIN_FLAGS dwFlags = 0;
     int idx = 0;
 
@@ -4328,11 +4330,13 @@ VmAfdIpcJoinVmDir2(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
+    pwszServerName  = input_spec[idx++].data.pWString;
     pwszDomainName  = input_spec[idx++].data.pWString;
     pwszUserName    = input_spec[idx++].data.pWString;
     pwszPassword    = input_spec[idx++].data.pWString;
     pwszMachineName = input_spec[idx++].data.pWString;
     pwszOrgUnit     = input_spec[idx++].data.pWString;
+    pwszSite        = input_spec[idx++].data.pWString;
     dwFlags         = *input_spec[idx++].data.pUint32;
 
     if (IsNullOrEmptyString(pwszUserName) ||
@@ -4351,11 +4355,13 @@ VmAfdIpcJoinVmDir2(
     }
 
     uResult = VmAfSrvJoinVmDir2(
+                      pwszServerName,
                       pwszDomainName,
                       pwszUserName,
                       pwszPassword,
                       pwszMachineName,
                       pwszOrgUnit,
+                      pwszSite,
                       dwFlags);
     LOG_URESULT_ERROR(uResult);
 

@@ -18,10 +18,10 @@ libssocoreclient_la_SOURCES = \
     utils.c
 
 libssocoreclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/public/
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/public/
 
 libssocoreclient_la_LIBADD = \
-    @top_builddir@/ssoclients/common/src/libssocommon.la
+    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la

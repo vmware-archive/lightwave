@@ -9,13 +9,13 @@ liblwrafttesting_la_SOURCES = \
     user.c
 
 liblwrafttesting_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
 liblwrafttesting_la_LIBADD = \
-    @top_builddir@/common/libcommon.la \
+    @top_builddir@/lwraft/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

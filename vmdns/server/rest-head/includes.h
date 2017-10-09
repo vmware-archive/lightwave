@@ -42,6 +42,7 @@
 #include <resthead.h>
 #include <vmdnsserver.h>
 #include <srvcommon.h>
+#include <vmdnsmetrics.h>
 
 #ifdef REST_ENABLED
 

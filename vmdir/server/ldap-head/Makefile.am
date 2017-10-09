@@ -17,6 +17,7 @@ libldap_head_la_SOURCES = \
     delete.c        \
     filter.c        \
     globals.c       \
+    metricsinit.c   \
     modify.c        \
     openssl.c       \
     operation.c     \
@@ -28,15 +29,15 @@ libldap_head_la_SOURCES = \
     unbind.c
 
 libldap_head_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
 libldap_head_la_LDFLAGS = \
     -static
-

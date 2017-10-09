@@ -91,13 +91,7 @@ typedef struct _VDIR_RAFT_LOG
 //Total storage for packRaftLog is RAFT_LOG_HEADER_LEN + chglog data length
 } VDIR_RAFT_LOG, *PVDIR_RAFT_LOG;
 
-typedef enum _VDIR_RAFT_ROLE
-{
-    VDIR_RAFT_ROLE_CANDIDATE = 0,
-    VDIR_RAFT_ROLE_FOLLOWER,
-    VDIR_RAFT_ROLE_LEADER,
-    VDIR_RAFT_ROLE_ALONE //standalone server that is pending cluster initialization
-} VDIR_RAFT_ROLE;
+
 
 typedef enum _VDIR_RAFT_EXEC_CMD
 {
@@ -141,7 +135,7 @@ typedef struct _APPEND_ENTRIES_ARGS
     /* [in] */ int  entriesSize;
     /* [in] */ char *entries;
     /* [out] */ UINT32 currentTerm;
-    /* [out] */ UINT32 status;
+    /* [out] */ unsigned long long status;
 } APPEND_ENTRIES_ARGS;
 
 typedef struct _VMDIR_PEER_PROXY
@@ -182,3 +176,10 @@ typedef struct _VDIR_RAFT_STAT
     UINT32 votedForTerm;
     VDIR_BERVALUE votedFor;
 } VDIR_RAFT_STATE, *PVDIR_RAFT_STATE;
+
+typedef struct _VDIR_RAFT_COMMIT_CTX
+{
+    unsigned long long logIndex;
+    int logTerm;
+    int logRequestCode;
+} VDIR_RAFT_COMMIT_CTX, *PVDIR_RAFT_COMMIT_CTX;

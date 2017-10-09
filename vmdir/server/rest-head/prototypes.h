@@ -12,23 +12,6 @@
  * under the License.
  */
 
-// accesstoken.c
-DWORD
-VmDirRESTAccessTokenInit(
-    PVDIR_REST_ACCESS_TOKEN*    ppAccessToken
-    );
-
-DWORD
-VmDirRESTAccessTokenParse(
-    PVDIR_REST_ACCESS_TOKEN pAccessToken,
-    PSTR                    pszAuthData
-    );
-
-VOID
-VmDirFreeRESTAccessToken(
-    PVDIR_REST_ACCESS_TOKEN pAccessToken
-    );
-
 // auth.c
 DWORD
 VmDirRESTAuth(
@@ -36,15 +19,30 @@ VmDirRESTAuth(
     );
 
 DWORD
-VmDirRESTAuthBasic(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaBasic(
+    PVDIR_REST_OPERATION    pRestOp
     );
 
 DWORD
-VmDirRESTAuthToken(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaToken(
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
+// authtoken.c
+DWORD
+VmDirRESTAuthTokenInit(
+    PVDIR_REST_AUTH_TOKEN*  ppAuthToken
+    );
+
+DWORD
+VmDirRESTAuthTokenParse(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken,
+    PCSTR                   pszAuthData
+    );
+
+VOID
+VmDirFreeRESTAuthToken(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
     );
 
 // decode.c
@@ -92,6 +90,30 @@ VmDirRESTEncodeEntryArray(
     PVDIR_ENTRY_ARRAY   pEntryArray,
     PVDIR_BERVALUE      pbvAttrs,
     json_t**            ppjOutput
+    );
+
+// handler.c
+DWORD
+VmDirRESTRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirRESTProcessRequest(
+    PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
+    PREST_REQUEST           pRequest,
+    uint32_t                paramsCount
+    );
+
+DWORD
+VmDirRESTWriteSimpleErrorResponse(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_RESPONSE* ppResponse,
+    int             httpStatus
     );
 
 // httperror.c
@@ -143,15 +165,6 @@ VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
-    );
-
-// libmain.c
-DWORD
-VmDirRESTRequestHandler(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_REQUEST   pRequest,
-    PREST_RESPONSE* ppResponse,
-    uint32_t        paramsCount
     );
 
 // metricsapi.c
@@ -273,6 +286,11 @@ VmDirRESTResultSetError(
     PVDIR_REST_RESULT   pRestRslt,
     int                 errCode,
     PSTR                pszErrMsg
+    );
+
+DWORD
+VmDirRESTResultUnsetError(
+    PVDIR_REST_RESULT   pRestRslt
     );
 
 DWORD

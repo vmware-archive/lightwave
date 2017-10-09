@@ -300,6 +300,14 @@ ParseArgsGetDCList(
     );
 
 static
+DWORD
+ParseArgsCreateComputerAccount(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
 void
 ShowUsage(
     VOID
@@ -823,7 +831,16 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL,
                         pContext);
-                        }
+    }
+    else if (!strcmp(pszArg, "create-computer-account"))
+    {
+        pContext->action = VM_AFD_ACTION_CREATE_COMPUTER_ACCOUNT;
+
+        dwError = ParseArgsCreateComputerAccount(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
     else
     {
         dwError = ERROR_LOCAL_OPTION_UNKNOWN;
@@ -3627,6 +3644,165 @@ error:
     return dwError;
 }
 
+static
+DWORD
+ParseArgsCreateComputerAccount(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN = 0,
+        PARSE_MODE_CREATE_COMPUTER_ACCOUNT_SERVER_NAME,
+        PARSE_MODE_CREATE_COMPUTER_ACCOUNT_USER_NAME,
+        PARSE_MODE_CREATE_COMPUTER_ACCOUNT_PASSWORD,
+        PARSE_MODE_CREATE_COMPUTER_ACCOUNT_MACHINE_NAME,
+        PARSE_MODE_CREATE_COMPUTER_ACCOUNT_ORG_UNIT,
+    } PARSE_MODE_CREATE_COMPUTER_ACCOUNT;
+    PARSE_MODE_CREATE_COMPUTER_ACCOUNT parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN;
+    DWORD iArg = 0;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN:
+                if (!strcmp(pszArg, "--server-name"))
+                {
+                    parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_SERVER_NAME;
+                }
+                else if (!strcmp(pszArg, "--user-name"))
+                {
+                    parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_USER_NAME;
+                }
+                else if (!strcmp(pszArg, "--password"))
+                {
+                    parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_PASSWORD;
+                }
+                else if (!strcmp(pszArg, "--machine-name"))
+                {
+                    parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_MACHINE_NAME;
+                }
+                else if (!strcmp(pszArg, "--org-unit"))
+                {
+                    parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_ORG_UNIT;
+                }
+                else
+                {
+                    dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_CREATE_COMPUTER_ACCOUNT_SERVER_NAME:
+
+                if (pContext->pszServerName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN;
+
+                break;
+
+            case PARSE_MODE_CREATE_COMPUTER_ACCOUNT_MACHINE_NAME:
+
+                if (pContext->pszMachineName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszMachineName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN;
+
+                break;
+
+            case PARSE_MODE_CREATE_COMPUTER_ACCOUNT_USER_NAME:
+
+                if (pContext->pszUserName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszUserName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN;
+
+                break;
+
+            case PARSE_MODE_CREATE_COMPUTER_ACCOUNT_PASSWORD:
+
+                if (pContext->pszPassword)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPassword);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN;
+
+                break;
+
+            case PARSE_MODE_CREATE_COMPUTER_ACCOUNT_ORG_UNIT:
+
+                if (pContext->pszOrgUnit)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszOrgUnit);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_OPEN;
+
+                break;
+
+            default:
+
+                dwError = ERROR_INTERNAL_ERROR;
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                break;
+        }
+    }
+
+    if (!pContext->pszServerName ||
+        !pContext->pszUserName ||
+        !pContext->pszPassword ||
+        !pContext->pszMachineName ||
+        !pContext->pszOrgUnit)
+    {
+        dwError = ERROR_LOCAL_OPTION_INVALID;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+error:
+
+    return dwError;
+}
 
 static
 DWORD
@@ -3775,5 +3951,6 @@ ShowUsage(
         "\tleave-ad --server-name <server name> --user-name <user-name> --password <password> --domain-name <domain name>\n"
         "\tquery-ad --server-name <server name>\n"
         "\tget-dc-list --domain-name <domain name> --server-name <server name>\n"
+        "\tcreate-computer-account --server-name <server name> --user-name <user name> --password <password> --machine-name <machine name> --org-unit <org unit>\n"
         "\thelp\n");
 }

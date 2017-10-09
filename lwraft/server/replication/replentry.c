@@ -144,6 +144,14 @@ _VmDirLoadRaftState(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "no entry found; dn %s", RAFT_PERSIST_STATE_DN);
     }
 
+    pAttr =  VmDirEntryFindAttribute(ATTR_RAFT_TERM, entryArray.pEntry);
+    if (pAttr == NULL)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "cannot find attr %s", ATTR_RAFT_TERM);
+    }
+    gRaftState.currentTerm = VmDirStringToIA((PCSTR)pAttr->vals[0].lberbv.bv_val);
+
     pAttr =  VmDirEntryFindAttribute(ATTR_RAFT_LAST_APPLIED, entryArray.pEntry);
     if (pAttr == NULL)
     {
@@ -173,7 +181,6 @@ _VmDirLoadRaftState(
     dwError = _VmDirGetLastIndex(&gRaftState.lastLogIndex, &gRaftState.lastLogTerm);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gRaftState.currentTerm = gRaftState.lastLogTerm;
     gRaftState.initialized = TRUE;
 
 cleanup:

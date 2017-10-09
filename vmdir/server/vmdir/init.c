@@ -315,6 +315,9 @@ VmDirInit(
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirMetricsInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 #ifndef _WIN32
     dwError = InitializeResouceLimit();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -663,14 +666,14 @@ _VmDirRestoreInstance(
     //It's value less 1 is the one that has been consumed by the server to be restored.
     nextUsn = gVmdirServerGlobals.initialNextUSN - 1;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %lu, local USN: %lu",
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %" PRId64 " local USN: %" PRId64,
                    restoredUsn, nextUsn);
-    printf("Highest USN observed from partners %lu, local USN: %lu\n", restoredUsn, nextUsn);
+    printf("Highest USN observed from partners %" PRId64 " local USN: %" PRId64 "\n", restoredUsn, nextUsn);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Utilize larger of %lu and %lu for new USN", restoredUsn, nextUsn );
-    printf("Utilize larger of %lu and %lu for new USN \n", restoredUsn, nextUsn );
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Utilize larger of %" PRId64 " and %" PRId64" new USN", restoredUsn, nextUsn );
+    printf("Utilize larger of %" PRId64 " and %" PRId64 " new USN \n", restoredUsn, nextUsn );
 
-    dwError = VmDirStringNPrintFA( nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%ld", nextUsn);
+    dwError = VmDirStringNPrintFA( nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%" PRId64, nextUsn);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
                 "_VmDirRestoreInstance: VmDirStringNPrintFA failed with error code: %d", dwError,
                 VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
@@ -718,7 +721,7 @@ _VmDirRestoreInstance(
     // Advance the USN to the upToDateUsn passed in, which should be the maximum USN that has been seen by peer nodes.
     // This will avoid the situation where some new entries will be skipped in replication to peer nodes.
     // See Bug 1272548 for details.
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Advancing USN if neccessary, current: %d, goal to restore to: %d",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Advancing USN if neccessary, current: %" PRId64 ", goal to restore to: %" PRId64,
                     nextUsn, restoredUsn );
     while ( nextUsn < restoredUsn )
     {
@@ -926,7 +929,10 @@ InitializeVmdirdSystemEntries(
     iError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
-    iError = InitializeSchemaEntries(pSchemaCtx);
+    iError = VmDirSchemaInitializeSubtree(pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(iError);
+
+    iError = VmDirSchemaSetSystemDefaultSecurityDescriptors();
     BAIL_ON_VMDIR_ERROR(iError);
 
     iError = InitializeCFGEntries(pSchemaCtx);

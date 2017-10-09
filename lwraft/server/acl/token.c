@@ -163,6 +163,91 @@ error:
 }
 
 DWORD
+VmDirSrvCreateAccessTokenForAdmin(
+    PACCESS_TOKEN*  ppToken
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszAdministratorSid = NULL;
+    PSTR    pszBuiltInAdminsGroupSid = NULL;
+    PSTR    pszBuiltInUsersGroupSid = NULL;
+    TOKEN_USER      user = {{0}};
+    TOKEN_OWNER     owner = {0};
+    PTOKEN_GROUPS   pGroups = NULL;
+    TOKEN_PRIVILEGES    privileges = {0};
+    TOKEN_PRIMARY_GROUP primaryGroup = {0};
+    TOKEN_DEFAULT_DACL  dacl = {0};
+    PACCESS_TOKEN   pToken = NULL;
+
+    // build user token
+    dwError = VmDirGenerateWellknownSid(
+            gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
+            VMDIR_DOMAIN_USER_RID_ADMIN,
+            &pszAdministratorSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateSidFromCString(
+            pszAdministratorSid, &user.User.Sid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    owner.Owner = user.User.Sid;
+
+    // build group token
+    dwError = VmDirAllocateMemory(
+            sizeof(TOKEN_GROUPS) + sizeof(SID_AND_ATTRIBUTES),
+            (PVOID*)&pGroups);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pGroups->GroupCount = 1;
+
+    dwError = VmDirGenerateWellknownSid(
+            gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
+            VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+            &pszBuiltInAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateSidFromCString(
+            pszBuiltInAdminsGroupSid, &pGroups->Groups[0].Sid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pGroups->Groups[0].Attributes = SE_GROUP_ENABLED; // TODO should be set on the basis of status of the group?
+
+    // build primary group token (built-in users)
+    dwError = VmDirGenerateWellknownSid(
+            gVmdirServerGlobals.systemDomainDN.lberbv.bv_val,
+            VMDIR_DOMAIN_ALIAS_RID_USERS,
+            &pszBuiltInUsersGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateSidFromCString(
+            pszBuiltInUsersGroupSid, &primaryGroup.PrimaryGroup);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateAccessToken(
+            &pToken, &user, pGroups, &privileges, &owner, &primaryGroup, &dacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppToken = pToken;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszAdministratorSid);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInAdminsGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInUsersGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
+    VMDIR_SAFE_FREE_MEMORY(pGroups->Groups[0].Sid);
+    VMDIR_SAFE_FREE_MEMORY(pGroups);
+    VMDIR_SAFE_FREE_MEMORY(primaryGroup.PrimaryGroup);
+    return dwError;
+
+error:
+    if (pToken)
+    {
+        VmDirReleaseAccessToken(&pToken);
+    }
+    goto cleanup;
+}
+
+DWORD
 VmDirCreateAccessToken(
     PACCESS_TOKEN*          AccessToken,
     PTOKEN_USER             User,

@@ -62,14 +62,6 @@
 #include <structs.h>
 #include <prototypes.h>
 
-#define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
-    do {                                        \
-        if (pLd) {                              \
-            ldap_unbind_ext_s(pLd,NULL,NULL);   \
-            (pLd) = NULL;                       \
-        }                                       \
-    } while(0)
-
 #else
 
 #pragma once
@@ -126,11 +118,5 @@
 #include <structs.h>
 #include "prototypes.h"
 #include "banned.h"
-#define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
-    do {                                        \
-        if (pLd) {                              \
-            ldap_unbind_ext_s(pLd,NULL,NULL);   \
-            (pLd) = NULL;                       \
-        }                                       \
-    } while(0)
+
 #endif

@@ -34,6 +34,9 @@ extern "C" {
 
 // thread.c
 
+#define LARGE_TIMEOUT_VALUE_MS 36000000
+#define RAFT_PREVLOG_FETCH_MARGIN 64
+
 extern VDIR_RAFT_STATE gRaftState;
 
 extern DWORD

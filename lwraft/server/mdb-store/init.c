@@ -142,6 +142,8 @@ VmDirMDBInitializeDB(
     mdb_mode_t      oflags;
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
+    DWORD           db_chkpt_interval = 0;
+    BOOLEAN         bMdbWalEnable = TRUE;
 
     // TODO: fix the hard coded Database dir path
 #ifndef _WIN32
@@ -201,6 +203,19 @@ VmDirMDBInitializeDB(
      dwError = mdb_env_set_maxdbs ( gVdirMdbGlobals.mdbEnv, BE_MDB_ENV_MAX_DBS );
      BAIL_ON_VMDIR_ERROR( dwError );
 
+     dwError = VmDirGetMdbChkptInterval(&db_chkpt_interval);
+     if (dwError)
+     {
+         db_chkpt_interval = VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT;
+         dwError = 0;
+     }
+
+     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: %s is set to %d",
+        __func__, VMDIR_REG_KEY_MDB_CHKPT_INTERVAL, db_chkpt_interval);
+
+     dwError = mdb_env_set_chkpt_interval(gVdirMdbGlobals.mdbEnv, db_chkpt_interval);
+     BAIL_ON_VMDIR_ERROR( dwError );
+
      mdb_set_raft_prepare_commit_func(gVdirMdbGlobals.mdbEnv, VmDirRaftPrepareCommit);
 
      mdb_set_raft_post_commit_func(gVdirMdbGlobals.mdbEnv, VmDirRaftPostCommit);
@@ -224,6 +239,23 @@ VmDirMDBInitializeDB(
 #else
     oflags = GENERIC_READ|GENERIC_WRITE;
 #endif
+
+    //MDB WAL is the default mode and can be turned off with reg key MdbEnableWal set to 0
+    dwError = VmDirGetMdbWalEnable(&bMdbWalEnable);
+    if (dwError)
+    {
+        bMdbWalEnable = TRUE;
+        dwError = 0;
+    }
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: %s is set to %s",
+      __func__, VMDIR_REG_KEY_MDB_ENABLE_WAL, bMdbWalEnable?"True":"False");
+
+    if (bMdbWalEnable)
+    {
+        envFlags |= MDB_WAL;
+    }
+
     dwError = mdb_env_open ( gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, oflags );
 //TODO, what if open failed?  how to recover??
     BAIL_ON_VMDIR_ERROR( dwError );

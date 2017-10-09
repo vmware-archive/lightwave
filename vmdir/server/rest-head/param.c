@@ -47,9 +47,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d) (pszKey=%s)",
-            __FUNCTION__, dwError, VDIR_SAFE_STRING(pszKey));
+            __FUNCTION__,
+            dwError,
+            VDIR_SAFE_STRING(pszKey));
 
     goto cleanup;
 }
@@ -86,9 +89,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d) (pszKey=%s)",
-            __FUNCTION__, dwError, VDIR_SAFE_STRING(pszKey));
+            __FUNCTION__,
+            dwError,
+            VDIR_SAFE_STRING(pszKey));
 
     goto cleanup;
 }
@@ -134,9 +140,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d) (pszKey=%s)",
-            __FUNCTION__, dwError, VDIR_SAFE_STRING(pszKey));
+            __FUNCTION__,
+            dwError,
+            VDIR_SAFE_STRING(pszKey));
 
     goto cleanup;
 }
@@ -174,9 +183,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d) (pszKey=%s)",
-            __FUNCTION__, dwError, VDIR_SAFE_STRING(pszKey));
+            __FUNCTION__,
+            dwError,
+            VDIR_SAFE_STRING(pszKey));
 
     goto cleanup;
 }
@@ -313,8 +325,10 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     DeleteFilter(pFilter);
     VMDIR_SAFE_FREE_MEMORY(pbvAttrs);
@@ -355,8 +369,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszNewKeyCp);
     goto cleanup;

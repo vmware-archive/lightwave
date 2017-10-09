@@ -418,7 +418,7 @@ _VmDirReplicationEntriesExist(
     )
 {
     DWORD       dwError=0;
-    LDAP*       pLd                     = NULL;
+    LDAP*       pLd = NULL;
     PSTR        pszFilter = NULL;
     LDAPControl *srvCtrls[2] = {NULL, NULL};
     LDAPControl syncReqCtrl = {0};
@@ -427,37 +427,43 @@ _VmDirReplicationEntriesExist(
 
     // bind to server
     dwError = VmDirConnectLDAPServer(
-                            &pLd,
-                            pszServerName,
-                            pszDomain,
-                            pszUserName,
-                            pszPassword);
+            &pLd,
+            pszServerName,
+            pszDomain,
+            pszUserName,
+            pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
-                &pszFilter, "%s>=%ld",
-                ATTR_USN_CHANGED,
-                pCookie->lastLocalUsnProcessed + 1);
+            &pszFilter,
+            "%s>=%ld",
+            ATTR_USN_CHANGED,
+            pCookie->lastLocalUsnProcessed + 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateSyncRequestControl(pCookie->pszInvocationId, pCookie->lastLocalUsnProcessed, pCookie->pszUtdVector, &syncReqCtrl);
+    dwError = VmDirCreateSyncRequestControl(
+            pCookie->pszInvocationId,
+            pCookie->lastLocalUsnProcessed,
+            pCookie->pszUtdVector,
+            FALSE,
+            &syncReqCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     srvCtrls[0] = &syncReqCtrl;
     srvCtrls[1] = NULL;
 
     dwError = ldap_search_ext_s(
-                pLd,
-                "",
-                LDAP_SCOPE_SUBTREE,
-                pszFilter,
-                NULL,
-                FALSE, /* get values      */
-                srvCtrls,  /* server controls */
-                NULL,  /* client controls */
-                NULL,  /* timeout         */
-                1,     /* size limit      */
-                &pResult);
+            pLd,
+            "",
+            LDAP_SCOPE_SUBTREE,
+            pszFilter,
+            NULL,
+            FALSE, /* get values      */
+            srvCtrls,  /* server controls */
+            NULL,  /* client controls */
+            NULL,  /* timeout         */
+            1,     /* size limit      */
+            &pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (ldap_count_entries(pLd, pResult))
@@ -550,32 +556,35 @@ _VmDirQueryUsn(
     BerValue    bvLastLocalUsnProcessed = {0};
 
     dwError = VmDirAllocateStringPrintf(
-                &pszFilter, "%s>=%ld",
-                ATTR_USN_CHANGED,
-                startUsn);
+            &pszFilter,
+            "%s>=%ld",
+            ATTR_USN_CHANGED,
+            startUsn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateSyncRequestControl(
-                pCookie->pszInvocationId,
-                pCookie->lastLocalUsnProcessed,
-                pCookie->pszUtdVector, &syncReqCtrl);
+            pCookie->pszInvocationId,
+            pCookie->lastLocalUsnProcessed,
+            pCookie->pszUtdVector,
+            FALSE,
+            &syncReqCtrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     srvCtrls[0] = &syncReqCtrl;
     srvCtrls[1] = NULL;
 
     dwError = ldap_search_ext_s(
-                pLd,
-                "",
-                LDAP_SCOPE_SUBTREE,
-                pszFilter,
-                NULL,
-                FALSE, /* get values      */
-                srvCtrls,  /* server controls */
-                NULL,  /* client controls */
-                NULL,  /* timeout         */
-                LDAP_USN_QUERY_LIMIT,     /* size limit */
-                &pResult);
+            pLd,
+            "",
+            LDAP_SCOPE_SUBTREE,
+            pszFilter,
+            NULL,
+            FALSE, /* get values      */
+            srvCtrls,  /* server controls */
+            NULL,  /* client controls */
+            NULL,  /* timeout         */
+            LDAP_USN_QUERY_LIMIT,     /* size limit */
+            &pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwCount = ldap_count_entries(pLd, pResult);
@@ -585,14 +594,15 @@ _VmDirQueryUsn(
         goto cleanup;
     }
 
-    dwError = (DWORD)ldap_parse_result(pLd, pResult, &errCode,
-                NULL, NULL, NULL, &searchResCtrls, 0);
+    dwError = (DWORD)ldap_parse_result(
+            pLd, pResult, &errCode, NULL, NULL, NULL, &searchResCtrls, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (searchResCtrls[0] == NULL)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-            "_VmDirQueryUsn: ldap_parse_result returned empty ctrl.");
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "_VmDirQueryUsn: ldap_parse_result returned empty ctrl");
         dwError = LDAP_OPERATIONS_ERROR;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1121,7 +1131,7 @@ _VmDirQueryReplStateUSN(
     LDAPMessage *pResult = NULL;
     LDAPMessage *pEntry = NULL;
 
-    dwError = VmDirAllocateStringPrintf(&pszFilter, "usnchanged>=%u",
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "usnchanged>=%" PRId64,
                                             VMDIR_MAX( currentUSN-MAX_REPL_STATE_USN_SEARCH, 0));
     BAIL_ON_VMDIR_ERROR(dwError);
 

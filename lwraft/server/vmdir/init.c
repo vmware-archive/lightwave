@@ -59,10 +59,6 @@ _VmDirWriteBackInvocationId(VOID);
 
 static
 DWORD
-_VmDirRestoreInstance(VOID);
-
-static
-DWORD
 _VmDirGenerateInvocationId(VOID);
 
 int
@@ -153,7 +149,7 @@ VmDirInitBackend(
     dwError = VmDirLoadSchema(&bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadIndex(bInitializeEntries);
+    dwError = VmDirLoadIndex();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // prepare USNList to guarantee safe USN for replication
@@ -245,7 +241,6 @@ VmDirInit(
     BOOLEAN bWaitTimeOut = FALSE;
     VMDIR_RUNMODE runMode = VmDirdGetRunMode();
     BOOLEAN bDirtyShutdown = FALSE;
-    DWORD   dwLdapPort = VmDirGetLdapPort();
 
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -257,6 +252,9 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMetricsInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #ifndef _WIN32
@@ -302,55 +300,21 @@ VmDirInit(
     dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bPatchSchema)
+    if (runMode == VMDIR_RUNMODE_NORMAL)
     {
-        if (IsNullOrEmptyString(gVmdirGlobals.pszBootStrapSchemaFile))
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "Schema file must be provided in schema patch mode (-u option)" );
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        // Check default LDAP port availability - If it fails, then it means
-        // another lwraftd process is running in normal mode.
-        dwError = VmDirCheckPortAvailability(dwLdapPort);
+        dwError = VmDirRpcServerInit();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
+        dwError = VmDirIpcServerInit();
+        BAIL_ON_VMDIR_ERROR (dwError);
 
-        dwError = VmDirSchemaPatchViaFile(
-                gVmdirGlobals.pszBootStrapSchemaFile);
+        dwError = VmDirReplicationLibInit();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
-
-        (VOID)VmDirSetAdministratorPasswordNeverExpires();
-    }
-    else
-    {
-        if ( runMode == VMDIR_RUNMODE_NORMAL )
+        if (gVmdirGlobals.bTrackLastLoginTime)
         {
-            dwError = VmDirRpcServerInit();
+            dwError = VmDirInitTrackLastLoginThread();
             BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirIpcServerInit();
-            BAIL_ON_VMDIR_ERROR (dwError);
-
-            dwError = VmDirReplicationLibInit();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if (gVmdirGlobals.bTrackLastLoginTime)
-            {
-                dwError = VmDirInitTrackLastLoginThread();
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-        else if (runMode == VMDIR_RUNMODE_RESTORE)
-        {
-            // TBD: What happens if server is started in restore mode even when it has not been promoted?
-            dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
-            BAIL_ON_VMDIR_ERROR( dwError );
         }
     }
 
@@ -368,7 +332,7 @@ VmDirInit(
                                         5000);  // wait time 5 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!(VmDirdGetRestoreMode() || gVmdirGlobals.bPatchSchema))
+    if (!VmDirdGetRestoreMode())
     {
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -446,205 +410,6 @@ error:
     goto cleanup;
 }
 
-// _VmDirRestoreInstance():
-// 1. Get new invocation ID.
-//    So I can rejoin the federation with a fresh ID.
-// 2. Fix the up-to-date vector and invocation id in the server object and in the DSE root entry.
-// 3. Advance USN to proper value. i.e. My MAX(USN) seen by partners.
-//    So partners will pick up new changes from me.
-// 4. Advance RID sequence number.
-//    So there will be no ObjectSid conflict with entries created after backup.
-static
-DWORD
-_VmDirRestoreInstance(
-    VOID
-    )
-{
-    DWORD                   dwError = LDAP_SUCCESS;
-    size_t                  i = 0;
-    VDIR_OPERATION          op = {0};
-    VDIR_BERVALUE           newUtdVector = VDIR_BERVALUE_INIT;
-    USN                     nextUsn = 0;
-    USN                     restoredUsn = 0;
-    DWORD                   dwAdvanceRID = 1;  // as we advance nextUsn once before final nextUsn while loop
-    char                    nextUsnStr[VMDIR_MAX_USN_STR_LEN] = {0};
-    PSTR                    pszLocalErrMsg = NULL;
-    PSTR                    pszDCAccount = NULL;
-    PSTR*                   ppszServerInfo = NULL;
-    size_t                  dwInfoCount = 0;
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Restore Lotus Instance.");
-
-    dwError = VmDirRegReadDCAccount(&pszDCAccount);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
-    if (dwError != 0)
-    {
-        printf("_VmDirRestoreInstance: fail to get hosts from topology: %d\n", dwError );
-    }
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: fail to get hosts from topology: %d", dwError );
-
-    if ( dwInfoCount == 1 )
-    {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Single node deployment topology, skip restore procedure.");
-        printf("Single node deployment topology, skip restore procedure.\n");
-
-        goto cleanup;
-    }
-
-    /*
-     *  Try those servers one by one until one of the hosts can be reached and be used
-     *  to query up-to-date servers topology, and then follow those servers if they
-     *  are partners of the local host, and get the highest USN.
-     */
-    for (i=0; i<dwInfoCount; i++)
-    {
-        if (VmDirStringCompareA(ppszServerInfo[i], pszDCAccount, FALSE) == 0)
-        {
-            //Don't try to query self for the uptodate topology.
-            continue;
-        }
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Trying to get topology from host %s ...", ppszServerInfo[i]);
-        printf("Trying to get topology from host %s ...\n", ppszServerInfo[i]);
-
-        dwError = VmDirGetUsnFromPartners(ppszServerInfo[i], &restoredUsn);
-        if (dwError == 0)
-        {
-             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Got topology from host %s", ppszServerInfo[i]);
-             printf("Topology obtained from host %s.\n", ppszServerInfo[i]);
-             break;
-        }
-    }
-    if (dwError !=0 || restoredUsn == 0)
-    {
-        if (restoredUsn == 0 )
-        {
-            dwError = ERROR_NOT_FOUND;
-        }
-        printf("_VmDirRestoreInstance: failed to get restored USN from partners, error code: %d\n.", dwError );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: cannot get restored USN from partners, error code: %d.", dwError );
-    }
-
-    dwError = VmDirInitStackOperation( &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: VmDirInitStackOperation failed with error code: %d.", dwError );
-
-    // Setup target DN
-
-    dwError = VmDirBervalContentDup( &gVmdirServerGlobals.serverObjDN, &op.reqDn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.", dwError );
-
-    op.pBEIF = VmDirBackendSelect(op.reqDn.lberbv.bv_val);
-    assert(op.pBEIF);
-
-    dwError = VmDirBervalContentDup( &op.reqDn, &op.request.modifyReq.dn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.", dwError );
-
-    // Setup utdVector mod
-
-    // create an entry for the old invocationID in the up-to-date vector
-
-    dwError = op.pBEIF->pfnBEGetNextUSN( op.pBECtx, &nextUsn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: pfnBEGetNextUSN failed with error code: %d, error message: %s", dwError,
-            VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
-
-    //gVmdirServerGlobals.initialNextUSN was set by the first pfnBEGetNextUSN call.
-    //It's value less 1 is the one that has been consumed by the server to be restored.
-    nextUsn = gVmdirServerGlobals.initialNextUSN - 1;
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %lu, local USN: %lu",
-                   restoredUsn, nextUsn);
-    printf("Highest USN observed from partners %lu, local USN: %lu\n", restoredUsn, nextUsn);
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Utilize larger of %lu and %lu for new USN", restoredUsn, nextUsn );
-    printf("Utilize larger of %lu and %lu for new USN \n", restoredUsn, nextUsn );
-
-    dwError = VmDirStringNPrintFA( nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%ld", nextUsn);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirStringNPrintFA failed with error code: %d", dwError,
-                VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
-
-    // <existing up-to-date vector>,<old invocation ID>:<local USN>,
-    dwError = VmDirAllocateStringPrintf( &(newUtdVector.lberbv.bv_val), "%s%s:%s,",
-                                            gVmdirServerGlobals.utdVector.lberbv.bv_val,
-                                            gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                                            nextUsnStr);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAllocateStringPrintf failed with error code: %d", dwError,
-                VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
-
-    newUtdVector.bOwnBvVal = TRUE;
-
-    newUtdVector.lberbv.bv_len = VmDirStringLenA(newUtdVector.lberbv.bv_val);
-
-    dwError = VmDirBervalContentDup( &newUtdVector, &(gVmdirServerGlobals.utdVector) );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.", dwError );
-
-    dwError = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_UP_TO_DATE_VECTOR, ATTR_UP_TO_DATE_VECTOR_LEN,
-                              gVmdirServerGlobals.utdVector.lberbv.bv_val, gVmdirServerGlobals.utdVector.lberbv.bv_len );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAppendAMod failed with error code: %d.", dwError );
-
-    // Setup invocationId mod
-
-    dwError = _VmDirGenerateInvocationId();
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: _VmDirGenerateInvocationId failed with error code: %d.", dwError );
-
-    dwError = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_INVOCATION_ID, ATTR_INVOCATION_ID_LEN,
-                       gVmdirServerGlobals.invocationId.lberbv.bv_val, gVmdirServerGlobals.invocationId.lberbv.bv_len );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAppendAMod failed with error code: %d.", dwError );
-
-    dwError = VmDirInternalModifyEntry( &op );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "_VmDirRestoreInstance: InternalModifyEntry failed. DN: %s, "
-              "Error code: %d, Error string: %s", op.reqDn.lberbv.bv_val, dwError,
-              VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ) );
-
-    printf("Setup new invocationId [%s]\n", gVmdirServerGlobals.invocationId.lberbv.bv_val);
-
-    // Advance the USN to the upToDateUsn passed in, which should be the maximum USN that has been seen by peer nodes.
-    // This will avoid the situation where some new entries will be skipped in replication to peer nodes.
-    // See Bug 1272548 for details.
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Advancing USN if neccessary, current: %d, goal to restore to: %d",
-                    nextUsn, restoredUsn );
-    while ( nextUsn < restoredUsn )
-    {
-        dwAdvanceRID++;
-
-        dwError = op.pBEIF->pfnBEGetNextUSN( op.pBECtx, &nextUsn );
-        BAIL_ON_VMDIR_ERROR( dwError );
-    }
-
-    // Advance RID for all realms, USN advance (all writes) should >= RID advance (new entries).
-    dwError = VmDirAdvanceDomainRID( dwAdvanceRID );
-    BAIL_ON_VMDIR_ERROR(dwError);
-    printf("Domain RID advanced count=%u\n", dwAdvanceRID);
-
-    printf("Lotus instance restore succeeded.\n");
-
-cleanup:
-    VmDirFreeStrArray(ppszServerInfo);
-    VmDirFreeBervalContent(&newUtdVector);
-    VmDirFreeOperationContent(&op);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    VMDIR_SAFE_FREE_STRINGA(pszDCAccount);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, VDIR_SAFE_STRING(pszLocalErrMsg) );
-    printf("Lotus instance restore failed, error (%s)(%u)\n", VDIR_SAFE_STRING(pszLocalErrMsg), dwError );
-    goto cleanup;
-}
-
 static
 DWORD
 InitializeServerStatusGlobals(
@@ -680,7 +445,7 @@ InitializeVmdirdSystemEntries(
     iError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
-    iError = InitializeSchemaEntries(pSchemaCtx);
+    iError = VmDirSchemaInitializeSubtree(pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
     iError = InitializeCFGEntries(pSchemaCtx);
@@ -1250,9 +1015,6 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirGlobals.replAgrsMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirAllocateCondition(&gVmdirGlobals.replAgrsCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1266,30 +1028,6 @@ InitializeGlobalVars(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateCondition(&gVmdirKrbGlobals.pcond);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplResponseRecvCondition);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplThreadCondition);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplThreadMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplDoneMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplDoneCondition);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplStartMutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplStartCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // LDAP operation threads shutdown synchronization, shutdown continue

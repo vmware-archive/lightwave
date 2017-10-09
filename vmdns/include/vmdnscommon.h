@@ -57,10 +57,10 @@ typedef enum
 
 DWORD
 VmDnsLogInitialize(
-	PCSTR   pszLogFileName,
-	DWORD   dwMaximumOldFiles,
-	DWORD   dwMaxLogSizeBytes
-	);
+    PCSTR   pszLogFileName,
+    DWORD   dwMaximumOldFiles,
+    DWORD   dwMaxLogSizeBytes
+    );
 
 void
 VmDnsLogTerminate();
@@ -104,6 +104,10 @@ extern VMDNS_LOG_LEVEL VMDNSLogGetLevel();
         VMDNS_LOG_LEVEL_DEBUG,               \
     Format " [file: %s][line: %d]",     \
     ##__VA_ARGS__, __FILE__, __LINE__ )
+#define VMDNS_LOG_IO_RELEASE(pIoBuffer) \
+    VMDNS_LOG_DEBUG(                    \
+          "IoBuffer %p, Thread: %p, FUNCTION: %s", \
+           pIoBuffer, pthread_self(), __FUNCTION__)
 
 // Read write lock
 
@@ -926,6 +930,11 @@ DWORD
 VmDnsStringToLower (
     PCSTR pszSrcStr,
     PSTR *pszDstStr
+    );
+
+UINT64
+VmDnsGetTimeInMilliSec(
+    VOID
     );
 
 #define VMDNS_FREE_RECORD(pRecord) \

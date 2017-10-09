@@ -128,12 +128,22 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_REST_LISTEN_PORT,
+                    VMDIR_REG_KEY_HTTP_LISTEN_PORT,
                     TRUE))
         {
             dwError = VmDirAllocateStringA(
                         pEntry->pszValue,
-                        &gVmdirGlobals.pszRestListenPort);
+                        &gVmdirGlobals.pszHTTPListenPort);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_HTTPS_LISTEN_PORT,
+                    TRUE))
+        {
+            dwError = VmDirAllocateStringA(
+                        pEntry->pszValue,
+                        &gVmdirGlobals.pszHTTPSListenPort);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else if (!VmDirStringCompareA(
@@ -201,13 +211,6 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,
-                    TRUE))
-        {
-            gVmdirUrgentRepl.dwUrgentReplTimeout = pEntry->dwValue;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
                     VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,
                     TRUE))
         {
@@ -240,6 +243,13 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue;
+        }
+        else if(!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_CURL_TIMEOUT_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwProxyCurlTimeout = pEntry->dwValue;
         }
     }
 
@@ -783,6 +793,83 @@ cleanup:
         VmDirRegConfigHandleClose(pCfgHandle);
     }
     return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirGetMdbWalEnable(
+    BOOLEAN *pbMdbEnableWal
+    )
+{
+    DWORD keyValue = 1;
+    DWORD dwError = 0;
+
+    *pbMdbEnableWal = TRUE;
+
+    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
+
+    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigGetDword(
+                            pCfgHandle,
+                            VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+                            VMDIR_REG_KEY_MDB_ENABLE_WAL,
+                            &keyValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pbMdbEnableWal = (keyValue!=0);
+
+cleanup:
+    if (pCfgHandle)
+    {
+        VmDirRegConfigHandleClose(pCfgHandle);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirGetMdbChkptInterval(
+    DWORD *pdwMdbChkptInterval
+    )
+{
+    DWORD keyValue = 0;
+    DWORD dwError = 0;
+
+    *pdwMdbChkptInterval = VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT;
+
+    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
+
+    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigGetDword(
+                            pCfgHandle,
+                            VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+                            VMDIR_REG_KEY_MDB_CHKPT_INTERVAL,
+                            &keyValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (keyValue < VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN ||
+        keyValue > VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pdwMdbChkptInterval = keyValue;
+
+cleanup:
+    if (pCfgHandle)
+    {
+        VmDirRegConfigHandleClose(pCfgHandle);
+    }
+    return dwError;
+
 error:
     goto cleanup;
 }

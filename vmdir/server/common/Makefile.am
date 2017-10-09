@@ -22,16 +22,17 @@ libsrvcommon_la_SOURCES = \
     vmdirtoldaperror.c
 
 libsrvcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/thirdparty/heimdal \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
-    -I$(top_srcdir)/thirdparty \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/vmdir/thirdparty \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@

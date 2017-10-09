@@ -41,21 +41,27 @@ VmDirParseArgs(
     PSTR*    ppszTgtPort,
     PSTR*    ppszEntryDn,
     PSTR*    ppszAttribute,
-    PBOOLEAN pbVerbose
+    PSTR*    ppszSiteName,
+    PBOOLEAN pbVerbose,
+    PBOOLEAN pbNoInteraction,
+    PBOOLEAN pbIncludeOffline
     )
 {
-    DWORD   dwError        = ERROR_SUCCESS;
-    PSTR    pszFeatureSet  = NULL;
-    PSTR    pszSrcHostName = NULL;
-    PSTR    pszSrcPort     = DEFAULT_LDAPS_PORT_STR;
-    PSTR    pszSrcUserName = NULL;
-    PSTR    pszSrcPassword = NULL;
-    PSTR    pszTgtHostName = NULL;
-    PSTR    pszTgtPort     = DEFAULT_LDAPS_PORT_STR;
-    PSTR    pszEntryDn     = NULL;
-    PSTR    pszAttribute   = NULL;
-    BOOLEAN bVerbose       = FALSE;
-    BOOLEAN bTwoWayRepl    = FALSE;
+    DWORD   dwError         = ERROR_SUCCESS;
+    PSTR    pszFeatureSet   = NULL;
+    PSTR    pszSrcHostName  = NULL;
+    PSTR    pszSrcPort      = DEFAULT_LDAPS_PORT_STR;
+    PSTR    pszSrcUserName  = NULL;
+    PSTR    pszSrcPassword  = NULL;
+    PSTR    pszTgtHostName  = NULL;
+    PSTR    pszTgtPort      = DEFAULT_LDAPS_PORT_STR;
+    PSTR    pszEntryDn      = NULL;
+    PSTR    pszAttribute    = NULL;
+    PSTR    pszSiteName     = NULL;
+    BOOLEAN bVerbose        = FALSE;
+    BOOLEAN bTwoWayRepl     = FALSE;
+    BOOLEAN bNoInteraction  = FALSE;
+    BOOLEAN bIncludeOffline = FALSE;
 
 #ifndef _WIN32
     int opt = 0;
@@ -65,16 +71,18 @@ VmDirParseArgs(
 #endif
 
     if (
-           ppszFeatureSet  == NULL
-        || ppszSrcHostName == NULL
-        || ppszSrcPort     == NULL
-        || ppszSrcUserName == NULL
-        || ppszSrcPassword == NULL
-        || ppszTgtHostName == NULL
-        || ppszTgtPort     == NULL
-        || pbVerbose       == NULL
-        || pbTwoWayRepl    == NULL
-
+           ppszFeatureSet   == NULL
+        || ppszSrcHostName  == NULL
+        || ppszSrcPort      == NULL
+        || ppszSrcUserName  == NULL
+        || ppszSrcPassword  == NULL
+        || ppszTgtHostName  == NULL
+        || ppszTgtPort      == NULL
+        || pbVerbose        == NULL
+        || pbTwoWayRepl     == NULL
+        || pbIncludeOffline == NULL
+        || pbNoInteraction  == NULL
+        || ppszSiteName     == NULL
 
         )
     {
@@ -129,6 +137,18 @@ VmDirParseArgs(
 
             case VDCREPADMIN_OPTION_ATTRIBUTE:
                 pszAttribute = optarg;
+                break;
+
+            case VDCREPADMIN_OPTION_NO_INTERACTION:
+                bNoInteraction = TRUE;
+                break;
+
+            case VDCREPADMIN_OPTION_INCLUDE_OFFLINE_NODE:
+                bIncludeOffline = TRUE;
+                break;
+
+            case VDCREPADMIN_OPTION_SITENAME:
+                pszSiteName = optarg;
                 break;
 
             default:
@@ -207,6 +227,24 @@ VmDirParseArgs(
                                          TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszAttribute);
+            }
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_NO_INTERACTION,
+                                         argv[i],
+                                         TRUE) == 0)
+            {
+                bNoInteraction = TRUE;
+            }
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_INCLUDE_OFFLINE_NODE,
+                                         argv[i],
+                                         TRUE) == 0)
+            {
+                bIncludeOffline = TRUE;
+            }
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SITENAME,
+                                         argv[i],
+                                         TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszSiteName);
             }
 
         }
@@ -350,23 +388,39 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_ENABLE_REDUNDANT_TOPOLOGY,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+        if (
+               pszSrcHostName == NULL
+            || pszSrcUserName == NULL
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
     else
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    *ppszFeatureSet  = pszFeatureSet;
-    *ppszSrcHostName = pszSrcHostName;
-    *ppszSrcPort     = pszSrcPort;
-    *ppszSrcUserName = pszSrcUserName;
-    *ppszSrcPassword = pszSrcPassword;
-    *ppszTgtHostName = pszTgtHostName;
-    *ppszTgtPort     = pszTgtPort;
-    *ppszEntryDn     = pszEntryDn;
-    *ppszAttribute   = pszAttribute;
-    *pbVerbose       = bVerbose;
-    *pbTwoWayRepl    = bTwoWayRepl;
+    *ppszFeatureSet     = pszFeatureSet;
+    *ppszSrcHostName    = pszSrcHostName;
+    *ppszSrcPort        = pszSrcPort;
+    *ppszSrcUserName    = pszSrcUserName;
+    *ppszSrcPassword    = pszSrcPassword;
+    *ppszTgtHostName    = pszTgtHostName;
+    *ppszTgtPort        = pszTgtPort;
+    *ppszEntryDn        = pszEntryDn;
+    *ppszAttribute      = pszAttribute;
+    *pbVerbose          = bVerbose;
+    *pbTwoWayRepl       = bTwoWayRepl;
+    *pbNoInteraction    = bNoInteraction;
+    *pbIncludeOffline   = bIncludeOffline;
+    *ppszSiteName       = pszSiteName;
 
 cleanup:
     return dwError;
@@ -416,5 +470,15 @@ ShowUsage(
         "                   -e <entry_dn> [-a <attribute>]\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
         "                   -u <source_username> [-w <source_password>]\n"
+        "       vdcrepadmin -f enableredundanttopology\n"
+        "                   -h <source_hostname> [-p <source_portnumber>]\n"
+        "                   -u <source_username> [-w <source_password>]\n"
+        "                   [-s <sitename>]\n"
+        "                   [-n]\n"
+        "                   [-o]\n"
+        "                   Note:   -n, -s, -o are optional arguments. In absence of -s, inter-site topology will be created\n"
+        "                           -s should be mentioned only for creating intra-site topology with sitename\n"
+        "                           -n is for No Interaction option,\n"
+        "                           -o is for considering non-reachable servers to create topology\n"
       );
 }

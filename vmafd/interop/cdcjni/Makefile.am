@@ -1,13 +1,13 @@
 
 CLASSNAME = com.vmware.identity.cdc.CdcAdapter
-JARDIR=$(top_builddir)/authentication-framework/packages
+JARDIR=$(top_builddir)/vmafd/authentication-framework/packages
 JAR=$(JARDIR)/client-domain-controller-cache.jar
 
 lib_LTLIBRARIES = libcdcjni.la
 
 libcdcjni_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
     @JDK_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -16,7 +16,7 @@ libcdcjni_la_SOURCES = \
 		cdcjni.c
 
 libcdcjni_la_LIBADD = \
-    @top_builddir@/client/libvmafdclient.la
+    @top_builddir@/vmafd/client/libvmafdclient.la
 
 libcdcjni_la_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
@@ -32,4 +32,4 @@ cdcjni.h:
 	$(JAVAH) -o $@ -classpath $(JAR) $(CLASSNAME)
 
 jreext_DATA= \
-    @top_builddir@/authentication-framework/packages/client-domain-controller-cache.jar
+    @top_builddir@/vmafd/authentication-framework/packages/client-domain-controller-cache.jar

@@ -167,21 +167,17 @@ VmDirSetMdbBackendState(
 
 int
 VmDirRaftPrepareCommit(
-    unsigned long long *pLogIndex,
-    unsigned int *pLogTerm,
-    unsigned int *pLogOp
+    void **ppCtx
     );
 
 VOID
 VmDirRaftPostCommit(
-    unsigned long long logIndex,
-    unsigned int logTerm,
-    unsigned int logOp
+    void *pCtx
     );
 
 VOID
 VmDirRaftCommitFail(
-    VOID
+    void *pCtx
     );
 
 // generic.c

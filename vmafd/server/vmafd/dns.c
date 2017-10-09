@@ -33,8 +33,8 @@ VmAfSrvGetLotusServerName(
 static
 DWORD
 VmAfdReverseZoneInitialize(
-        PVMDNS_SERVER_CONTEXT pServerContext,
-        PVMDNS_INIT_INFO pInitInfo
+    PVMDNS_SERVER_CONTEXT pServerContext,
+    PVMDNS_INIT_INFO pInitInfo
     );
 
 DWORD
@@ -104,9 +104,10 @@ VmAfSrvConfigureDNSA(
     PVMDNS_IP6_ADDRESS      pV6Addresses = NULL;
     DWORD                   numV6Address = 0;
     VMDNS_INIT_INFO         initInfo = {0};
-    CHAR                    szDomainFQDN[260] = {0};
+    CHAR                    szDomainFQDN[257] = {0};
+    DWORD                   dwStrLen = 0;
 
-    if (IsNullOrEmptyString(pszDomainName) || strlen(pszDomainName) > 255)
+    if (IsNullOrEmptyString(pszDomainName) || strlen(pszDomainName) > 254)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -126,14 +127,15 @@ VmAfSrvConfigureDNSA(
 
     dwError = VmAfdStringCpyA(
                     szDomainFQDN,
-                    260,
+                    255,
                     pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (szDomainFQDN[strlen(szDomainFQDN) - 1] != '.')
+    dwStrLen = strlen(szDomainFQDN);
+    if (szDomainFQDN[dwStrLen - 1] != '.')
     {
-        szDomainFQDN[strlen(szDomainFQDN)] = '.';
-        szDomainFQDN[strlen(szDomainFQDN)+1] = 0;
+        szDomainFQDN[dwStrLen] = '.';
+        szDomainFQDN[dwStrLen + 1] = 0;
     }
 
     initInfo.IpV4Addrs.Addrs = pV4Addresses;
@@ -164,10 +166,11 @@ cleanup:
 
     VmAfdLog(
         VMAFD_DEBUG_ERROR,
-        "%s DnsInitialize : Error : %d, ServerName : %s",
+        "%s DnsInitialize : Error : %d, ServerName : %s, Domain : %s",
         __FUNCTION__,
         dwError,
-        pszCanonicalServerName);
+        pszCanonicalServerName,
+        szDomainFQDN);
 
     if (pServerContext)
     {
@@ -369,7 +372,8 @@ VmAfSrvUnconfigureDNSA(
     PVMDNS_IP6_ADDRESS      pV6Addresses = NULL;
     DWORD                   numV6Address = 0;
     VMDNS_INIT_INFO         initInfo = {0};
-    CHAR                    szDomainFQDN[260] = {0};
+    CHAR                    szDomainFQDN[257] = {0};
+    DWORD                   dwStrLen = 0;
 
     dwError = VmAfSrvGetIPAddressesWrap(
                             &pV4Addresses,
@@ -385,14 +389,15 @@ VmAfSrvUnconfigureDNSA(
 
     dwError = VmAfdStringCpyA(
                     szDomainFQDN,
-                    260,
+                    255,
                     pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (szDomainFQDN[strlen(szDomainFQDN) - 1] != '.')
+    dwStrLen = strlen(szDomainFQDN);
+    if (szDomainFQDN[dwStrLen - 1] != '.')
     {
-        szDomainFQDN[strlen(szDomainFQDN)] = '.';
-        szDomainFQDN[strlen(szDomainFQDN)+1] = 0;
+        szDomainFQDN[dwStrLen] = '.';
+        szDomainFQDN[dwStrLen + 1] = 0;
     }
 
     initInfo.IpV4Addrs.Addrs = pV4Addresses;
@@ -420,10 +425,11 @@ cleanup:
 
     VmAfdLog(
         VMAFD_DEBUG_ERROR,
-        "%s DnsUninitialize : Error : %d, ServerName : %s",
+        "%s DnsUninitialize : Error : %d, ServerName : %s, Domain : %s",
         __FUNCTION__,
         dwError,
-        pszCanonicalServerName);
+        pszCanonicalServerName,
+        szDomainFQDN);
     if (pServerContext)
     {
         VmDnsCloseServer(pServerContext);
@@ -715,8 +721,9 @@ VmAfSrvGetLotusServerName(
         dwError = VmAfdAllocateStringAFromW(
                          pwszPNID,
                          &pszHostnameCanon);
-        BAIL_ON_VMAFD_EMPTY_STRING(pszHostnameCanon, dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
+    BAIL_ON_VMAFD_EMPTY_STRING(pszHostnameCanon, dwError);
 
 
     if (!VmAfdCheckIfIPV4AddressA(pszHostnameCanon) &&

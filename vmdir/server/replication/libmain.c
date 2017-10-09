@@ -97,6 +97,9 @@ VmDirReplAgrEntryToInMemory(
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,"Replication partner: (%s) lastLocalUsnProcessed: (%s)",
                    pReplAgr->ldapURI, pReplAgr->lastLocalUsnProcessed.lberbv_val);
 
+    dwError = VmDirReplNewPartnerMetricsInit(pReplAgr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppReplAgr = pReplAgr;
 
 cleanup:
@@ -152,6 +155,9 @@ VmDirConstructReplAgr(
         BAIL_ON_VMDIR_ERROR( dwError );
     }
 
+    dwError = VmDirReplNewPartnerMetricsInit(pReplAgr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppReplAgr = pReplAgr;
 
 cleanup:
@@ -163,6 +169,7 @@ error:
     {
         VmDirFreeBervalContent( &pReplAgr->lastLocalUsnProcessed );
         VmDirFreeBervalContent( &pReplAgr->dn );
+        VmDirReplPartnerMetricsDelete(pReplAgr);
         VMDIR_SAFE_FREE_MEMORY( pReplAgr );
     }
     goto cleanup;
@@ -202,6 +209,10 @@ VmDirFreeReplicationAgreement(
 {
     if (pReplAgr)
     {
+        if (VmDirReplPartnerMetricsDelete(pReplAgr) != 0)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirFreeReplicationAgreement: Could not delete metrics");
+        }
         VmDirFreeBervalContent( &(pReplAgr->lastLocalUsnProcessed) );
         VmDirFreeBervalContent( &(pReplAgr->dn) );
         VMDIR_SAFE_FREE_MEMORY( pReplAgr );

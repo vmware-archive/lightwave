@@ -1,0 +1,241 @@
+{
+    "sts": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "443",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "443",
+                "portoffset": 0
+            }
+        ]
+
+    },
+    "vmdns": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "53",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "udp",
+                "porttype": "dst",
+                "port": "53",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2015",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "53",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "udp",
+                "porttype": "dst",
+                "port": "53",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2015",
+                "portoffset": 0
+            }
+        ]
+
+    },
+    "vmkdc": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "88",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "udp",
+                "porttype": "dst",
+                "port": "88",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2012",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2012",
+                "portoffset": 0
+            }
+        ]
+    },
+    "vmca": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2014",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2014",
+                "portoffset": 0
+            }
+        ]
+
+    },
+    "vmafd": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2020",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2020",
+                "portoffset": 0
+            }
+        ]
+
+    },
+    "lwio": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "445",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "445",
+                "portoffset": 0
+            }
+        ]
+    },
+    "vmdir": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "389",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "icmp"
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "636",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7477",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7478",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "389",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "636",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7477",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7478",
+                "portoffset": 0
+            }
+        ]
+    }
+}

@@ -115,6 +115,14 @@ VmAfdSrvUpdateConfig(
         {
             pGlobals->bEnableRPC = pEntry->cfgValue.dwValue?TRUE:FALSE;
         }
+        else if (!VmAfdStringCompareA(
+                pEntry->pszName,
+                VMAFD_REG_KEY_ENABLE_DDNS,
+                TRUE))
+        {
+            pGlobals->bEnableDDNS = pEntry->cfgValue.dwValue?TRUE:FALSE;
+        }
+
     }
 
 #ifdef USE_DEFAULT_KRB5_PATHS

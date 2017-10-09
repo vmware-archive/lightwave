@@ -26,6 +26,8 @@ typedef struct _VDNS_REST_RESULT
     PSTR        pszErrMsg;
     PLW_HASHMAP pDataMap;
     BOOLEAN     bErrSet;
+    PSTR        pszData;
+    DWORD       dwDataLen;
 
 } VDNS_REST_RESULT, *PVDNS_REST_RESULT;
 

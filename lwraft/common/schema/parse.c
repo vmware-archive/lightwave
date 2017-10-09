@@ -28,13 +28,12 @@ VmDirLdapAtParseStr(
 
     if (!pcszStr || !ppAt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (IS_ATTRIBUTETYPES_TAG(pcszStr))
     {
-        pcszStr += ATTRIBUTETYPS_TAG_LEN;
+        pcszStr += ATTRIBUTETYPES_TAG_LEN;
         while (isspace(*pcszStr)) pcszStr++;
     }
 
@@ -42,11 +41,14 @@ VmDirLdapAtParseStr(
 
     if (!pSource)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
                 "%s: ldap_str2attributetype failed (code:%d) (err:%s) %s",
-                __FUNCTION__, iCode, ldap_scherr2str(iCode), pErr);
-        dwError = ERROR_INVALID_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                __FUNCTION__,
+                iCode,
+                ldap_scherr2str(iCode),
+                pErr);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
     }
 
     dwError = VmDirLdapAtCreate(pSource, ppAt);
@@ -77,8 +79,7 @@ VmDirLdapOcParseStr(
 
     if (!pcszStr || !ppOc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (IS_OBJECTCLASSES_TAG(pcszStr))
@@ -91,11 +92,14 @@ VmDirLdapOcParseStr(
 
     if (!pSource)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
                 "%s: ldap_str2objectclass failed (code:%d) (err:%s) %s",
-                __FUNCTION__, iCode, ldap_scherr2str(iCode), pErr);
-        dwError = ERROR_INVALID_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                __FUNCTION__,
+                iCode,
+                ldap_scherr2str(iCode),
+                pErr);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
     }
 
     pSource->oc_kind = gVdirOpenLdapToADClassType[pSource->oc_kind];
@@ -128,8 +132,7 @@ VmDirLdapCrParseStr(
 
     if (!pcszStr || !ppCr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (IS_CONTENTRULES_TAG(pcszStr))
@@ -142,11 +145,14 @@ VmDirLdapCrParseStr(
 
     if (!pSource)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
                 "%s: ldap_str2contentrule failed (code:%d) (err:%s) %s",
-                __FUNCTION__, iCode, ldap_scherr2str(iCode), pErr);
-        dwError = ERROR_INVALID_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                __FUNCTION__,
+                iCode,
+                ldap_scherr2str(iCode),
+                pErr);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
     }
 
     dwError = VmDirLdapCrCreate(pSource, ppCr);
@@ -177,8 +183,7 @@ VmDirLdapSrParseStr(
 
     if (!pcszStr || !ppSr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (IS_STRUCTURERULES_TAG(pcszStr))
@@ -191,11 +196,14 @@ VmDirLdapSrParseStr(
 
     if (!pSource)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
                 "%s: ldap_str2structurerule failed (code:%d) (err:%s) %s",
-                __FUNCTION__, iCode, ldap_scherr2str(iCode), pErr);
-        dwError = ERROR_INVALID_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                __FUNCTION__,
+                iCode,
+                ldap_scherr2str(iCode),
+                pErr);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
     }
 
     dwError = VmDirLdapSrCreate(pSource, ppSr);
@@ -226,8 +234,7 @@ VmDirLdapNfParseStr(
 
     if (!pcszStr || !ppNf)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (IS_NAMEFORM_TAG(pcszStr))
@@ -240,11 +247,14 @@ VmDirLdapNfParseStr(
 
     if (!pSource)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
                 "%s: ldap_str2nameform failed (code:%d) (err:%s) %s",
-                __FUNCTION__, iCode, ldap_scherr2str(iCode), pErr);
-        dwError = ERROR_INVALID_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                __FUNCTION__,
+                iCode,
+                ldap_scherr2str(iCode),
+                pErr);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
     }
 
     dwError = VmDirLdapNfCreate(pSource, ppNf);
@@ -258,6 +268,81 @@ error:
     {
         ldap_nameform_free(pSource);
     }
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapIdxParseStr(
+    PCSTR       pcszStr,
+    PSTR*       ppszAtName,
+    PBOOLEAN    pbGlobalUniq
+    )
+{
+    DWORD   dwError = 0;
+    SIZE_T  lenName = 0;
+    PCSTR   pszName = NULL;
+    PSTR    pszNameCpy = NULL;
+    BOOLEAN bGlobalUniq = FALSE;
+    PVMDIR_STRING_LIST  pTokList = NULL;
+
+    if (IsNullOrEmptyString(pcszStr) || !ppszAtName || !pbGlobalUniq)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirStringToTokenList(pcszStr, " ", &pTokList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pTokList->dwCount < 4 || pTokList->dwCount > 5)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
+    }
+
+    if (VmDirStringCompareA("(", pTokList->pStringList[0], TRUE) ||
+        VmDirStringCompareA("NAME", pTokList->pStringList[1], TRUE) ||
+        VmDirStringCompareA(")", pTokList->pStringList[pTokList->dwCount - 1], TRUE))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
+    }
+
+    pszName = pTokList->pStringList[2];
+    lenName = VmDirStringLenA(pszName);
+
+    if (lenName < 3 || pszName[0] != '\'' || pszName[lenName - 1] != '\'')
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
+    }
+
+    dwError = VmDirAllocateStringA(pszName + 1, &pszNameCpy);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszNameCpy[lenName - 2] = '\0';
+
+    if (pTokList->dwCount == 5)
+    {
+        if (VmDirStringCompareA("GLOBALLY-UNIQUE", pTokList->pStringList[3], TRUE))
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
+        }
+        bGlobalUniq = TRUE;
+    }
+
+    *ppszAtName = pszNameCpy;
+    *pbGlobalUniq = bGlobalUniq;
+
+cleanup:
+    VmDirStringListFree(pTokList);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed to parse \"%s\" (%d)",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pcszStr),
+            dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pszNameCpy);
     goto cleanup;
 }
 
@@ -279,8 +364,7 @@ VmDirLdapAtParseLDAPEntry(
 
     if (!pEntry || !ppAt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -294,8 +378,7 @@ VmDirLdapAtParseLDAPEntry(
                 VmDirStringCompareA(
                         "TRUE", ppBerVals[0]->bv_val, FALSE) == 0;
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_VMW_ATTRIBUTE_USAGE);
@@ -313,8 +396,7 @@ VmDirLdapAtParseLDAPEntry(
             dwVmwAttrUsage >>= 1;
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_CN);
@@ -328,8 +410,7 @@ VmDirLdapAtParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->at_names[0]);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_ATTRIBUTE_SYNTAX);
@@ -339,8 +420,7 @@ VmDirLdapAtParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->at_syntax_oid);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_ATTRIBUTE_ID);
@@ -350,8 +430,7 @@ VmDirLdapAtParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->at_oid);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_DESCRIPTION);
@@ -361,8 +440,7 @@ VmDirLdapAtParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->at_desc);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SEARCH_FLAGS);
@@ -370,8 +448,7 @@ VmDirLdapAtParseLDAPEntry(
     {
         dwSearchFlags = VmDirStringToIA(ppBerVals[0]->bv_val);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_UNIQUENESS_SCOPE);
@@ -393,8 +470,7 @@ VmDirLdapAtParseLDAPEntry(
             }
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     dwError = VmDirLdapAtCreate(pSource, &pAt);
@@ -413,10 +489,8 @@ error:
     {
         ldap_attributetype_free(pSource);
     }
-    if (ppBerVals)
-    {
-        ldap_value_free_len(ppBerVals);
-    }
+    VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
+    VmDirFreeStrArray(ppszUniqueScopes);
     VmDirFreeLdapAt(pAt);
     goto cleanup;
 }
@@ -435,8 +509,7 @@ VmDirLdapOcParseLDAPEntry(
 
     if (!pEntry || !ppOc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -454,8 +527,7 @@ VmDirLdapOcParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->oc_sup_oids[0]);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_CN);
@@ -469,8 +541,7 @@ VmDirLdapOcParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->oc_names[0]);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_GOVERNSID);
@@ -480,8 +551,7 @@ VmDirLdapOcParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->oc_oid);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_DESCRIPTION);
@@ -491,8 +561,7 @@ VmDirLdapOcParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->oc_desc);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_OBJECTCLASS_CATEGORY);
@@ -500,8 +569,7 @@ VmDirLdapOcParseLDAPEntry(
     {
         pSource->oc_kind = VmDirStringToIA(ppBerVals[0]->bv_val);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SYSTEMMUSTCONTAIN);
@@ -523,8 +591,7 @@ VmDirLdapOcParseLDAPEntry(
             }
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SYSTEMMAYCONTAIN);
@@ -546,8 +613,7 @@ VmDirLdapOcParseLDAPEntry(
             }
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     dwError = VmDirLdapOcCreate(pSource, ppOc);
@@ -561,10 +627,7 @@ error:
     {
         ldap_objectclass_free(pSource);
     }
-    if (ppBerVals)
-    {
-        ldap_value_free_len(ppBerVals);
-    }
+    VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     goto cleanup;
 }
 
@@ -583,8 +646,7 @@ VmDirLdapCrParseLDAPEntry(
 
     if (!pEntry || !ppCr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -602,8 +664,7 @@ VmDirLdapCrParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->cr_names[0]);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_GOVERNSID);
@@ -613,8 +674,7 @@ VmDirLdapCrParseLDAPEntry(
                 ppBerVals[0]->bv_val, &pSource->cr_oid);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_MUSTCONTAIN);
@@ -638,8 +698,7 @@ VmDirLdapCrParseLDAPEntry(
             bHasCr = TRUE;
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_MAYCONTAIN);
@@ -663,8 +722,7 @@ VmDirLdapCrParseLDAPEntry(
             bHasCr = TRUE;
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_AUXILIARY_CLASS);
@@ -689,8 +747,7 @@ VmDirLdapCrParseLDAPEntry(
             bHasCr = TRUE;
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SYSTEMAUXILIARY_CLASS);
@@ -716,8 +773,7 @@ VmDirLdapCrParseLDAPEntry(
             bHasCr = TRUE;
         }
 
-        ldap_value_free_len(ppBerVals);
-        ppBerVals = NULL;
+        VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     }
 
     if (!bHasCr)
@@ -736,14 +792,11 @@ error:
     {
         ldap_contentrule_free(pSource);
     }
-    if (ppBerVals)
-    {
-        ldap_value_free_len(ppBerVals);
-    }
     if (ppCr)
     {
         *ppCr = NULL;
     }
+    VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppBerVals);
     goto cleanup;
 }
 
@@ -758,8 +811,7 @@ VmDirLdapAtToStr(
 
     if (!pAt || !ppszStr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pszStr = ldap_attributetype2str(pAt->pSource);
@@ -787,8 +839,7 @@ VmDirLdapOcToStr(
 
     if (!pOc || !ppszStr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pOc->pSource->oc_kind = gVdirADToOpenLdapClassType[pOc->type - 1];
@@ -819,8 +870,7 @@ VmDirLdapCrToStr(
 
     if (!pCr || !ppszStr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pszStr = ldap_contentrule2str(pCr->pSource);
@@ -848,8 +898,7 @@ VmDirLdapSrToStr(
 
     if (!pSr || !ppszStr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pszStr = ldap_structurerule2str(pSr->pSource);
@@ -877,8 +926,7 @@ VmDirLdapNfToStr(
 
     if (!pNf || !ppszStr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pszStr = ldap_nameform2str(pNf->pSource);

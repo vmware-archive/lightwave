@@ -43,6 +43,7 @@ VmDnsRESTResultCreate(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pRestRslt->bErrSet = FALSE;
+    pRestRslt->dwDataLen = 0;
 
     *ppRestRslt = pRestRslt;
 
@@ -280,6 +281,7 @@ VmDnsFreeRESTResult(
     if (pRestRslt)
     {
         VMDNS_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
+        VMDNS_SAFE_FREE_MEMORY(pRestRslt->pszData);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);
         VMDNS_SAFE_FREE_MEMORY(pRestRslt);

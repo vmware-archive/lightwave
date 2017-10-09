@@ -44,7 +44,25 @@ VmAfSrvDirOpenConnection(
 
 static
 DWORD
+VmAfSrvDeleteDNSRecordsIfFound(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszDnsZone,
+    PVMDNS_RECORD           pDnsRecord
+    );
+
+static
+DWORD
 VmAfSrvSetDNSRecords(
+    PCSTR pszDCAddress,
+    PCSTR pszDomain,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName
+    );
+
+static
+DWORD
+VmAfSrvUnsetDNSRecords(
     PCSTR pszDCAddress,
     PCSTR pszDomain,
     PCSTR pszUserName,
@@ -207,6 +225,7 @@ VmAfSrvPromoteVmDir(
     )
 {
     DWORD dwError = 0;
+    DWORD dwDNSRetry = 0;
     PSTR pszLotusServerName = NULL;
     PSTR pszDomainName = NULL;
     PSTR pszUserName = NULL;
@@ -291,6 +310,41 @@ VmAfSrvPromoteVmDir(
                           pszPassword,
                           pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvGetPNID(&pwszPNID);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwDNSRetry = 0;
+
+        do
+        {
+            dwError = VmAfSrvConfigureDNSW(
+                              pwszPNID,
+                              pwszDomainName,
+                              pwszUserName,
+                              pwszPassword);
+
+            if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+            {
+                VmAfdSleep(VMDNS_RETRY_INTERVAL);
+            }
+            else
+            {
+                break;
+            }
+        }
+        while (TRUE);
+
+        if (dwError)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s failed to initialize dns. Error(%u)",
+                __FUNCTION__,
+                dwError);
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
     }
     else
     {
@@ -338,12 +392,36 @@ VmAfSrvPromoteVmDir(
                           &pszCanonicalHostName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfSrvSetDNSRecords(
-                          pszPartnerHostName,
-                          pszDomainName,
-                          pszUserName,
-                          pszPassword,
-                          pszCanonicalHostName);
+        dwDNSRetry = 0;
+
+        do
+        {
+            dwError = VmAfSrvSetDNSRecords(
+                              pszPartnerHostName,
+                              pszDomainName,
+                              pszUserName,
+                              pszPassword,
+                              pszCanonicalHostName);
+
+            if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+            {
+                VmAfdSleep(VMDNS_RETRY_INTERVAL);
+            }
+            else
+            {
+                break;
+            }
+        }
+        while (TRUE);
+
+        if (dwError)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s failed to initialize dns. Error(%u)",
+                __FUNCTION__,
+                dwError);
+        }
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -376,35 +454,12 @@ VmAfSrvPromoteVmDir(
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
-    dwError = VmAfSrvGetPNID(&pwszPNID);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdRegSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
                            VMAFD_REG_KEY_DC_NAME,
                            pwszLotusServerName);
     BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
-    dwError = VmAfSrvConfigureDNSW(
-                      pwszPNID,
-                      pwszDomainName,
-                      pwszUserName,
-                      pwszPassword);
-    if (dwError)
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to initialize dns. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
-    }
-    else
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s successfully initialized dns.",
-            __FUNCTION__);
-    }
 
 #if 0
     dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);
@@ -494,7 +549,6 @@ VmAfSrvDemoteVmDir(
                         pwszDomainName,
                         pwszUserName,
                         pwszPassword);
-
     if (dwError)
     {
         VmAfdLog(
@@ -512,6 +566,11 @@ VmAfSrvDemoteVmDir(
             __FUNCTION__);
     }
 
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
     dwError = VmDirDemote(pszUserName, pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -522,13 +581,6 @@ VmAfSrvDemoteVmDir(
     VmAfdShutdownSrcIpThread(gVmafdGlobals.pSourceIpContext);
     gVmafdGlobals.pSourceIpContext = NULL;
 #endif
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    dwError = VmAfSrvSignalVmdirProvider();
-    BAIL_ON_VMAFD_ERROR(dwError);
-#endif
-
-    /* TODO: remove KrbConfig entries */
 
     if (gVmafdGlobals.pCertUpdateThr)
     {
@@ -772,11 +824,13 @@ error:
 
 DWORD
 VmAfSrvJoinVmDir2(
+    PWSTR            pwszServerName,     /* IN            */
     PWSTR            pwszDomainName,     /* IN            */
     PWSTR            pwszUserName,       /* IN            */
     PWSTR            pwszPassword,       /* IN            */
     PWSTR            pwszMachineName,    /* IN   OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
+    PWSTR            pwszSiteName,       /* IN            */
     VMAFD_JOIN_FLAGS dwFlags             /* IN            */
     )
 {
@@ -791,8 +845,9 @@ VmAfSrvJoinVmDir2(
     PSTR pszCanonicalHostName = NULL;
     PSTR pszDCHostname = NULL;
     PSTR pszDCAddress = NULL;
+    PSTR pszDC = NULL;
     PWSTR pwszDCHostname = NULL;
-    PWSTR pwszSiteName = NULL;
+    PWSTR pwszSite = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
     DWORD dwDirJoinFlags = 0;
 
@@ -856,13 +911,25 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdGetDomainController(
-                    pszDomainName,
-                    pszUserName,
-                    pszPassword,
-                    &pszDCHostname,
-                    &pszDCAddress);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (pwszServerName)
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszDCHostname);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszDC = pszDCHostname;
+    }
+    else
+    {
+        dwError = VmAfdGetDomainController(
+                        pszDomainName,
+                        pszUserName,
+                        pszPassword,
+                        &pszDCHostname,
+                        &pszDCAddress);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszDC = pszDCAddress;
+    }
 
     if (pwszMachineName)
     {
@@ -923,17 +990,22 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdAllocateStringWFromA(pszDCHostname, &pwszDCHostname);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSiteName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfSrvSetDCName(pwszDCHostname);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pwszSiteName)
+    {
+        dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSite);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pwszSiteName = pwszSite;
+    }
 
     dwError = VmAfSrvSetSiteName(pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDNSRecords(
-                      pszDCAddress,
+                      pszDC,
                       pszDomainName,
                       pszUserName,
                       pszPassword,
@@ -1001,7 +1073,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszMachineName);
     VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
-    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+    VMAFD_SAFE_FREE_MEMORY(pwszSite);
     VMAFD_SAFE_FREE_MEMORY(pszHostname);
     VMAFD_SAFE_FREE_MEMORY(pszCanonicalHostName);
     VMAFD_SAFE_FREE_MEMORY(pszDCAddress);
@@ -1019,7 +1091,7 @@ error:
     if (dwError == VMDIR_ERROR_SERVER_DOWN)
     {
         VmAfdLog(VMAFD_DEBUG_ERROR, "Failed to reach domain controller at [%s]",
-                 VMAFD_SAFE_STRING(pszDCAddress));
+                 VMAFD_SAFE_STRING(pszDC));
 
         dwError = ERROR_HOST_DOWN;
     }
@@ -1072,6 +1144,9 @@ VmAfSrvLeaveVmDir(
     PSTR pszServerName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszHostName = NULL;
+    PSTR pszHostNameFQDN = NULL;
     PWSTR pwszServerName = NULL;
     PWSTR pwszMachineAccount = NULL;
     PWSTR pwszMachinePassword = NULL;
@@ -1119,7 +1194,6 @@ VmAfSrvLeaveVmDir(
         dwError = VmAfdAllocateStringAFromW(pwszMachinePassword, &pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
-
     else
     {
         dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
@@ -1129,6 +1203,30 @@ VmAfSrvLeaveVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    dwError = VmAfSrvGetDomainNameA(&pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdGetHostName(&pszHostName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdGetCanonicalHostName(
+                            pszHostName,
+                            &pszHostNameFQDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvUnsetDNSRecords(
+                        pszServerName,
+                        pszDomainName,
+                        pszUserName,
+                        pszPassword,
+                        pszHostNameFQDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
     // Machine credentials will be used if the user name or password are NULL.
 
     dwError = VmDirClientLeave(
@@ -1136,7 +1234,6 @@ VmAfSrvLeaveVmDir(
                     pszUserName,
                     pszPassword
                     );
-
     if (dwError)
     {
         VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwError);
@@ -1154,11 +1251,6 @@ VmAfSrvLeaveVmDir(
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    dwError = VmAfSrvSignalVmdirProvider();
-    BAIL_ON_VMAFD_ERROR(dwError);
-#endif
 
     /*
      * TODO: remove krb5.conf entries, machine account, etc.
@@ -1202,6 +1294,9 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszMachinePassword);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszDomainName);
+    VMAFD_SAFE_FREE_STRINGA(pszHostName);
+    VMAFD_SAFE_FREE_STRINGA(pszHostNameFQDN);
 
     return dwError;
 
@@ -1773,7 +1868,7 @@ VmAfSrvDirOpenConnection(
     PCWSTR pwszDomain,
     PCWSTR pwszAccount,
     PCWSTR pwszPassword,
-    PVMDIR_CONNECTION*ppConnection
+    PVMDIR_CONNECTION *ppConnection
     )
 {
     DWORD dwError = 0;
@@ -1842,6 +1937,78 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+VmAfSrvDeleteDNSRecordsIfFound(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszDnsZone,
+    PVMDNS_RECORD           pDnsRecord
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    DWORD i = 0;
+    PVMDNS_RECORD_ARRAY pDnsRecordArray = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pServerContext, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pszDnsZone, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pDnsRecord, dwError);
+
+    dwError = VmDnsQueryRecordsA(
+                    pServerContext,
+                    (PSTR)pszDnsZone,
+                    pDnsRecord->pszName,
+                    pDnsRecord->dwType,
+                    0,
+                    &pDnsRecordArray);
+    if (dwError != ERROR_SUCCESS && dwError != ERROR_NOT_FOUND)
+    {
+        VmAfdLog(VMAFD_DEBUG_ERROR,
+                 "%s: failed to query DNS records (%u),%s, %s",
+                 __FUNCTION__,
+                 dwError,
+                 pszDnsZone,
+                 pDnsRecord->pszName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (dwError == ERROR_SUCCESS)
+    {
+        for (i = 0; i < pDnsRecordArray->dwCount; i++)
+        {
+            dwError = VmDnsDeleteRecordA(
+                            pServerContext,
+                            (PSTR)pszDnsZone,
+                            &pDnsRecordArray->Records[i]);
+            if (dwError)
+            {
+                VmAfdLog(VMAFD_DEBUG_ANY,
+                         "%s: failed to delete DNS record for %s (%u)",
+                         __FUNCTION__,
+                         pDnsRecordArray->Records[i].pszName,
+                         dwError);
+            }
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+    else
+    {
+        dwError = ERROR_SUCCESS;
+    }
+
+
+cleanup:
+
+    if (pDnsRecordArray)
+    {
+        VmDnsFreeRecordArray(pDnsRecordArray);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
 
 static
 DWORD
@@ -1850,7 +2017,8 @@ VmAfSrvSetDNSRecords(
     PCSTR pszDomain,
     PCSTR pszUserName,
     PCSTR pszPassword,
-    PCSTR pszMachineName)
+    PCSTR pszMachineName
+    )
 {
     DWORD dwError = 0;
     DWORD dwFlags = 0;
@@ -1860,7 +2028,6 @@ VmAfSrvSetDNSRecords(
     VMDNS_IP6_ADDRESS* pV6Addresses = NULL;
     DWORD dwNumV6Address = 0;
     size_t i = 0;
-    PVMDNS_RECORD_ARRAY pRecordArray = NULL;
     PSTR pszName = NULL;
     VMDNS_RECORD record = {0};
     CHAR szZone[255] = {0};
@@ -1880,41 +2047,52 @@ VmAfSrvSetDNSRecords(
                     dwFlags,
                     NULL,
                     &pServerContext);
-
     if (dwError)
     {
         VmAfdLog(VMAFD_DEBUG_ERROR,
                  "%s: failed to connect to DNS server %s (%u)",
-                 __FUNCTION__, pszDCAddress, dwError);
+                 __FUNCTION__,
+                 pszDCAddress,
+                 dwError);
     }
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdStringCpyA(szZone,255,pszDomain);
+    dwError = VmAfdStringCpyA(
+                    szZone,
+                    255,
+                    pszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwDomainNameStrLen = strlen(szZone);
 
-    if (szZone[dwDomainNameStrLen -1 ] != '.')
+    if (szZone[dwDomainNameStrLen - 1 ] != '.')
     {
         szZone[dwDomainNameStrLen] = '.';
-        szZone[dwDomainNameStrLen +1] = 0;
+        szZone[dwDomainNameStrLen + 1] = 0;
     }
 
-    dwError = VmAfdAppendDomain(pszMachineName, pszDomain, &pszName);
-    VmAfdLog(VMAFD_DEBUG_ERROR, "%s: DNS name %s (%u)",
-                 __FUNCTION__, pszName, dwError);
+    dwError = VmAfdAppendDomain(
+                    pszMachineName,
+                    pszDomain,
+                    &pszName);
+    VmAfdLog(VMAFD_DEBUG_ERROR,
+             "%s: DNS name %s (%u)",
+             __FUNCTION__,
+             pszName,
+             dwError);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetIPAddressesWrap(
-                    &pV4Addresses,
-                    &dwNumV4Address,
-                    &pV6Addresses,
-                    &dwNumV6Address);
+                        &pV4Addresses,
+                        &dwNumV4Address,
+                        &pV6Addresses,
+                        &dwNumV6Address);
     if (dwError)
     {
         VmAfdLog(VMAFD_DEBUG_ERROR,
                  "%s: failed to get interface addresses (%u)",
-                 __FUNCTION__, dwError);
+                 __FUNCTION__,
+                 dwError);
     }
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -1922,46 +2100,13 @@ VmAfSrvSetDNSRecords(
     record.pszName = pszName;
     record.dwType = VMDNS_RR_TYPE_A;
     record.dwTtl = 3600;
+    record.Data.A.IpAddress = pV4Addresses[0];
 
-    dwError = VmDnsQueryRecordsA(
-                    pServerContext,
-                    szZone,
-                    pszName,
-                    VMDNS_RR_TYPE_A,
-                    0,
-                    &pRecordArray);
-    if (dwError != 0 && dwError != ERROR_NOT_FOUND)
-    {
-        VmAfdLog(VMAFD_DEBUG_ERROR,
-                 "%s: failed to query DNS records (%u),%s, %s",
-                 __FUNCTION__, dwError, szZone,pszName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    if (dwError == 0)
-    {
-        record.Data.A.IpAddress = pV4Addresses[0];
-
-        /* delete existing A records for this hostname */
-        for (i = 0; i < pRecordArray->dwCount; i++)
-        {
-            dwError = VmDnsDeleteRecordA(
+    dwError = VmAfSrvDeleteDNSRecordsIfFound(
                             pServerContext,
                             szZone,
-                            &pRecordArray->Records[i]);
-            if (dwError)
-            {
-                VmAfdLog(VMAFD_DEBUG_ANY,
-                         "%s: failed to delete DNS record for %s (%u)",
-                         __FUNCTION__, pRecordArray->Records[i].pszName, dwError);
-            }
-            BAIL_ON_VMAFD_ERROR(dwError);
-        }
-    }
-    else
-    {
-        dwError = 0;
-    }
+                            &record);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     /* add A records for this hostname */
     for (i = 0; i < dwNumV4Address; i++)
@@ -1976,16 +2121,14 @@ VmAfSrvSetDNSRecords(
         {
             VmAfdLog(VMAFD_DEBUG_ANY,
                      "%s: failed to add DNS A record for %s (%u)",
-                     __FUNCTION__, record.pszName, dwError);
+                     __FUNCTION__,
+                     record.pszName,
+                     dwError);
         }
     }
 
 cleanup:
 
-    if (pRecordArray)
-    {
-        VmDnsFreeRecordArray(pRecordArray);
-    }
     VMAFD_SAFE_FREE_MEMORY(pV4Addresses);
     VMAFD_SAFE_FREE_MEMORY(pV6Addresses);
 
@@ -1998,8 +2141,129 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)",
-             __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__,
+             dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmAfSrvUnsetDNSRecords(
+    PCSTR pszDCAddress,
+    PCSTR pszDomain,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwFlags = 0;
+    PVMDNS_SERVER_CONTEXT pServerContext = NULL;
+    VMDNS_IP4_ADDRESS* pV4Addresses = NULL;
+    DWORD dwNumV4Address = 0;
+    VMDNS_IP6_ADDRESS* pV6Addresses = NULL;
+    DWORD dwNumV6Address = 0;
+    PSTR pszName = NULL;
+    VMDNS_RECORD record = {0};
+    CHAR szZone[255] = {0};
+    DWORD dwDomainNameStrLen = 0;
+
+    if (VmAfdCheckIfIPV4AddressA(pszMachineName) ||
+        VmAfdCheckIfIPV6AddressA(pszMachineName))
+    {
+       return dwError;
+    }
+
+    dwError = VmDnsOpenServerA(
+                    pszDCAddress,
+                    pszUserName,
+                    pszDomain,
+                    pszPassword,
+                    dwFlags,
+                    NULL,
+                    &pServerContext);
+    if (dwError)
+    {
+        VmAfdLog(VMAFD_DEBUG_ERROR,
+                 "%s: failed to connect to DNS server %s (%u)",
+                 __FUNCTION__,
+                 pszDCAddress,
+                 dwError);
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdStringCpyA(
+                    szZone,
+                    255,
+                    pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwDomainNameStrLen = strlen(szZone);
+
+    if (szZone[dwDomainNameStrLen - 1 ] != '.')
+    {
+        szZone[dwDomainNameStrLen] = '.';
+        szZone[dwDomainNameStrLen + 1] = 0;
+    }
+
+    dwError = VmAfdAppendDomain(
+                    pszMachineName,
+                    pszDomain,
+                    &pszName);
+    VmAfdLog(VMAFD_DEBUG_ERROR,
+             "%s: DNS name %s (%u)",
+             __FUNCTION__,
+             pszName,
+             dwError);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetIPAddressesWrap(
+                        &pV4Addresses,
+                        &dwNumV4Address,
+                        &pV6Addresses,
+                        &dwNumV6Address);
+    if (dwError)
+    {
+        VmAfdLog(VMAFD_DEBUG_ERROR,
+                 "%s: failed to get interface addresses (%u)",
+                 __FUNCTION__,
+                 dwError);
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    record.iClass = VMDNS_CLASS_IN;
+    record.pszName = pszName;
+    record.dwType = VMDNS_RR_TYPE_A;
+    record.dwTtl = 3600;
+    record.Data.A.IpAddress = pV4Addresses[0];
+
+    dwError = VmAfSrvDeleteDNSRecordsIfFound(
+                            pServerContext,
+                            szZone,
+                            &record);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pV4Addresses);
+    VMAFD_SAFE_FREE_MEMORY(pV6Addresses);
+
+    if (pServerContext)
+    {
+        VmDnsCloseServer(pServerContext);
+    }
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__,
+             dwError);
 
     goto cleanup;
 }

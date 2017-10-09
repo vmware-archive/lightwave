@@ -2857,11 +2857,13 @@ VmAfdJoinVmDir2W(
     }
 
     dwError = VmAfdLocalJoinVmDir2(
+                      NULL,
                       pwszDomainName,
                       pwszUserName,
                       pwszPassword,
                       pwszMachineName,
                       pwszOrgUnit,
+                      NULL,
                       dwFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -2872,6 +2874,142 @@ cleanup:
 error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDir2W failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdJoinVmDirWithSiteA(
+    PCSTR            pszServerName,  /* IN     OPTIONAL */
+    PCSTR            pszDomainName,  /* IN              */
+    PCSTR            pszUserName,    /* IN              */
+    PCSTR            pszPassword,    /* IN              */
+    PCSTR            pszMachineName, /* IN     OPTIONAL */
+    PCSTR            pszOrgUnit,     /* IN     OPTIONAL */
+    PCSTR            pszSiteName,    /* IN     OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags         /* IN              */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszServerName = NULL;
+    PWSTR pwszDomainName = NULL;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
+    PWSTR pwszOrgUnit = NULL;
+    PWSTR pwszSiteName = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszDomainName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszServerName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszMachineName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszOrgUnit)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszOrgUnit, &pwszOrgUnit);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszSiteName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszSiteName, &pwszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdJoinVmDirWithSiteW(
+                  pwszServerName,
+                  pwszDomainName,
+                  pwszUserName,
+                  pwszPassword,
+                  pwszMachineName,
+                  pwszOrgUnit,
+                  pwszSiteName,
+                  dwFlags);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszServerName);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
+    VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDirWithSiteA failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdJoinVmDirWithSiteW(
+    PCWSTR           pwszServerName,  /* IN   OPTIONAL */
+    PCWSTR           pwszDomainName,  /* IN            */
+    PCWSTR           pwszUserName,    /* IN            */
+    PCWSTR           pwszPassword,    /* IN            */
+    PCWSTR           pwszMachineName, /* IN   OPTIONAL */
+    PCWSTR           pwszOrgUnit,     /* IN   OPTIONAL */
+    PCWSTR           pwszSiteName,    /* IN   OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags          /* IN            */
+    )
+{
+    DWORD dwError = 0;
+
+    if (IsNullOrEmptyString(pwszUserName) ||
+            IsNullOrEmptyString(pwszPassword) ||
+            IsNullOrEmptyString(pwszDomainName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdLocalJoinVmDir2(
+                      pwszServerName,
+                      pwszDomainName,
+                      pwszUserName,
+                      pwszPassword,
+                      pwszMachineName,
+                      pwszOrgUnit,
+                      pwszSiteName,
+                      dwFlags);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDirWithSiteW failed. Error(%u)", dwError);
 
     goto cleanup;
 }

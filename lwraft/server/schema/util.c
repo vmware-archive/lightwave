@@ -24,8 +24,7 @@ VmDirReadAttributeSchemaObjects(
 
     if (!ppAtEntries)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -53,8 +52,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_WARNING(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeEntryArray(pAtEntries);
     goto cleanup;
@@ -70,8 +72,7 @@ VmDirReadClassSchemaObjects(
 
     if (!ppOcEntries)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -99,34 +100,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_WARNING(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeEntryArray(pOcEntries);
-    goto cleanup;
-}
-
-DWORD
-VmDirWriteSchemaObjects(
-    VOID
-    )
-{
-    DWORD   dwError = 0;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirPatchLocalSchemaObjects(NULL, pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirSchemaCtxRelease(pSchemaCtx);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
-
     goto cleanup;
 }

@@ -6,17 +6,17 @@ vdcmetric_SOURCES = \
     main.c
 
 vdcmetric_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/tools/include \
-    -I$(top_srcdir)/client \
-    -I$(top_builddir)/client \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/tools/include \
+    -I$(top_srcdir)/lwraft/client \
+    -I$(top_builddir)/lwraft/client \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vdcmetric_LDADD = \
-    $(top_builddir)/client/liblwraftclient.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/lwraft/client/liblwraftclient.la \
+    $(top_builddir)/lwraft/common/libcommon.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \

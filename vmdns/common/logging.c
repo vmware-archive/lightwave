@@ -53,6 +53,11 @@ VmDnsLogInitialize(
    if (vmdns_syslog)
    {
       openlog("vmdnsd", 0, LOG_DAEMON);
+      setlogmask(LOG_UPTO(logLevelToSysLogLevel(vmdns_syslog_level)));
+   }
+   else
+   {
+      setlogmask(LOG_UPTO(LOG_ERR));
    }
 
 done:
@@ -161,6 +166,10 @@ logLevelToSysLogLevel(
    {
       case VMDNS_LOG_LEVEL_ERROR:
          return LOG_ERR;
+      case VMDNS_LOG_LEVEL_WARNING:
+         return LOG_WARNING;
+      case VMDNS_LOG_LEVEL_INFO:
+         return LOG_INFO;
       default:
          return LOG_DEBUG;
    }

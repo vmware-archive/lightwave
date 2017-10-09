@@ -46,7 +46,7 @@ _VmDirRequestVoteGetReply(
     );
 
 DWORD
-_VmDirAppendEntriesGetReply(
+VmDirAppendEntriesGetReply(
     UINT32 term,
     char *leader,
     unsigned long long preLogIndex,
@@ -55,7 +55,7 @@ _VmDirAppendEntriesGetReply(
     int entrySize,
     char *entries,
     UINT32 *currentTerm,
-    UINT32 *status
+    unsigned long long *status
     );
 
 DWORD
@@ -247,6 +247,10 @@ Srv_RpcVmDirGeneratePassword(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
     int pwdLen = 0;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     if ( !pContainer)
     {
@@ -289,6 +293,10 @@ cleanup:
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
 
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GENERATEPASSWORD],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwAPIError;
 
 error:
@@ -297,173 +305,6 @@ error:
     VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGeneratePassword failed (%u)(%u)", dwError, dwAPIError);
-
-    goto cleanup;
-
-}
-
-UINT32
-Srv_RpcVmDirGetKeyTabRecBlob(
-    handle_t    hBinding,
-    PWSTR       pwszUPN,                // [in] FQDN
-    VMDIR_DATA_CONTAINER* pContainer    // [out]
-    )
-{
-    DWORD dwError = 0;
-    DWORD dwAPIError = 0;
-    PSTR  pszUPN = NULL;
-    PBYTE pLocalByte = NULL;
-    DWORD dwByteSize = 0;
-    PBYTE pContainerBlob = NULL;
-    DWORD dwAPIErrorMap[] = {  VMDIR_ERROR_INVALID_PARAMETER   //TODO, not complete
-                            };
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                     | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                     | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                     | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                     | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    if (IsNullOrEmptyString(pwszUPN)
-        || !pContainer )
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(
-                    pwszUPN,
-                    &pszUPN
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetKeyTabRecBlob(
-                    pszUPN,
-                    &pLocalByte,
-                    &dwByteSize
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //clone data into container
-    dwError = VmDirRpcAllocateMemory(
-                    dwByteSize,
-                    (PVOID*)&pContainerBlob
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory (
-                    pContainerBlob,
-                    dwByteSize,
-                    pLocalByte,
-                    dwByteSize
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pContainer->dwCount = dwByteSize;
-    pContainer->data    = pContainerBlob;
-    pContainerBlob      = NULL;
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "RpcVmDirGetKeyTabRecBlob (%s)", VDIR_SAFE_STRING(pszUPN) );
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pLocalByte );
-    VMDIR_SAFE_FREE_STRINGA(pszUPN);
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-
-    return dwAPIError;
-
-error:
-
-    VmDirRpcFreeMemory( pContainerBlob );
-    VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGetKeyTabRecBlob failed (%u)(%u)(%s)",
-                                      dwError, dwAPIError, VDIR_SAFE_STRING(pszUPN) );
-
-    goto cleanup;
-}
-
-UINT32
-Srv_RpcVmDirGetKrbMasterKey(
-    handle_t    hBinding,
-    PWSTR       pwszDomainName,      // [in] FQDN
-    VMDIR_DATA_CONTAINER* pContainer // [out]
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwAPIError = 0;
-    PBYTE   pLocalByte = NULL;
-    PBYTE   pLocalRPCByte = NULL;
-    DWORD   dwKeySize = 0;
-    PSTR    pszDomainName = NULL;
-    DWORD   dwAPIErrorMap[] = {  VMDIR_ERROR_INVALID_PARAMETER,
-                                 VMDIR_ERROR_INVALID_REALM
-                              };
-    DWORD   dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (IsNullOrEmptyString(pwszDomainName)
-        || !pContainer
-       )
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAFromW( pwszDomainName,
-                                         &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetKrbMasterKey( pszDomainName,
-                                    &pLocalByte,
-                                    &dwKeySize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRpcAllocateMemory( dwKeySize,
-                                      (PVOID*)&pLocalRPCByte);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory ( pLocalRPCByte,
-                                dwKeySize,
-                                pLocalByte,
-                                dwKeySize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pContainer->data    = pLocalRPCByte;
-    pContainer->dwCount = dwKeySize;
-    pLocalRPCByte = NULL;
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "RpcVmDirGetKrbMasterKey (%s)", VDIR_SAFE_STRING(pszDomainName) );
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-
-    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY( pLocalByte );
-
-    return dwAPIError;
-
-error:
-
-    VmDirRpcFreeMemory( pLocalRPCByte );
-    VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGetKrbMasterKey failed (%u)(%u)(%s)",
-                                      dwError, dwAPIError, VDIR_SAFE_STRING(pszDomainName) );
 
     goto cleanup;
 }
@@ -512,85 +353,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvSetSRPSecret failed (%u)(%s)",
                                       dwError, VDIR_SAFE_STRING(pszUPN) );
 
-    goto cleanup;
-}
-
-UINT32
-Srv_RpcVmDirGetKrbUPNKey(
-    handle_t    hBinding,
-    PWSTR       pwszUpnName,
-    VMDIR_DATA_CONTAINER *pContainer
-    )
-{
-    DWORD   dwError = 0;
-    PBYTE   pLocalByte = NULL;
-    PBYTE   pLocalRPCByte = NULL;
-    DWORD   dwKeySize = 0;
-    PSTR    pszUpnName = NULL;
-    DWORD   dwAPIError = 0;
-    DWORD   dwAPIErrorMap[] = {  VMDIR_ERROR_INVALID_PARAMETER,
-                                 VMDIR_ERROR_NO_SUCH_ATTRIBUTE,
-                                 VMDIR_ERROR_ENTRY_NOT_FOUND
-                              };
-    DWORD   dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (IsNullOrEmptyString(pwszUpnName)
-        || !pContainer
-       )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAFromW( pwszUpnName,
-                                         &pszUpnName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-
-    dwError = VmDirGetKrbUPNKey( pszUpnName,
-                                 &pLocalByte,
-                                 &dwKeySize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRpcAllocateMemory( dwKeySize,
-                                      (PVOID*)&pLocalRPCByte);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCopyMemory ( pLocalRPCByte,
-                                dwKeySize,
-                                pLocalByte,
-                                dwKeySize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pContainer->data    = pLocalRPCByte;
-    pContainer->dwCount = dwKeySize;
-    pLocalRPCByte = NULL;
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "RpcVmDirGetKrbUPNKey (%s)", VDIR_SAFE_STRING(pszUpnName) );
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszUpnName);
-    VMDIR_SAFE_FREE_MEMORY( pLocalByte );
-
-    return dwAPIError;
-
-error:
-
-    VmDirRpcFreeMemory( pLocalRPCByte );
-    VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGetKrbUPNKey failed (%u)(%u)(%s)",
-                                     dwError, dwAPIError, VDIR_SAFE_STRING(pszUpnName) );
     goto cleanup;
 }
 
@@ -736,6 +498,10 @@ Srv_RpcVmDirCreateUser(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -753,6 +519,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_CREATEUSER],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -775,6 +546,10 @@ Srv_RpcVmDirCreateUserEx(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     if (!hBinding || !pCreateParams)
     {
@@ -795,20 +570,15 @@ cleanup:
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
 
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_CREATEUSEREX],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
 
     goto cleanup;
-}
-
-UINT32
-Srv_RpcVmDirReplNow(
-    handle_t    hBinding
-    )
-{
-    //Deplicated by Raft protocol
-    return ERROR_INVALID_PARAMETER;
 }
 
 UINT32
@@ -824,6 +594,10 @@ Srv_RpcVmDirSetLogLevel(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -835,6 +609,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETLOGLEVEL],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -857,6 +636,10 @@ Srv_RpcVmDirSetLogMask(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -868,6 +651,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETLOGMASK],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -887,6 +675,10 @@ Srv_RpcVmDirSetState(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -907,56 +699,16 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETSTATE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState failed (%u)(%u)", dwError, dwState );
     goto cleanup;
-}
-
-UINT32
-Srv_RpcVmDirOpenDBFile(
-    handle_t    hBinding,
-    PWSTR       pwszDBFileName,
-    vmdir_ftp_handle_t  *   ppFileHandle)
-{
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirOpenDBFile is obsolete.");
-    return LDAP_OPERATIONS_ERROR;
-}
-
-UINT32
-Srv_RpcVmDirReadDBFile(
-    handle_t    hBinding,
-    vmdir_ftp_handle_t pFileHandle,
-    UINT32      dwCount,
-    VMDIR_FTP_DATA_CONTAINER  * pReadBufferContainer)
-{
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirReadDBFile is obsolete.");
-    return LDAP_OPERATIONS_ERROR;
-}
-
-UINT32
-Srv_RpcVmDirCloseDBFile(
-    handle_t    hBinding,
-    vmdir_ftp_handle_t pFileHandle)
-{
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirCloseDBFile is obsolete.");
-    return LDAP_OPERATIONS_ERROR;
-}
-
-
-/*
- * Rundown function for vmdir_ftp_handle data. Handle the case where the
- * client/server connection is lost and the existing connection handle (FILE *)
- * is still open. Close the file to prevent a fd leak. However, must protect
- * against calling fclose() twice on the same open FILE *.
- */
-void vmdir_ftp_handle_t_rundown(void *ctx)
-{
-    if (ctx && fileno((FILE *) ctx) != -1)
-    {
-        fclose((FILE *) ctx);
-    }
 }
 
 static
@@ -1066,7 +818,6 @@ cleanup:
     {
         rpc_string_free((unsigned_char_p_t *)&pszRpcHandle, &rpc_status);
     }
-
     return dwError;
 
 error:
@@ -1135,7 +886,6 @@ _VmDirRemoteDBCopyWhiteList(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszFullPathName);
-
     return dwError;
 
 error:
@@ -1155,6 +905,10 @@ Srv_RpcVmDirSuperLogQueryServerData(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1167,6 +921,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1186,6 +945,10 @@ Srv_RpcVmDirSuperLogEnable(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1198,6 +961,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGENABLE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1217,6 +985,10 @@ Srv_RpcVmDirSuperLogDisable(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1229,6 +1001,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGDISABLE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1250,6 +1027,10 @@ Srv_RpcVmDirIsSuperLogEnabled(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
     BOOLEAN bEnabled = FALSE;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1262,6 +1043,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_ISSUPERLOGENABLED],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1281,6 +1067,10 @@ Srv_RpcVmDirSuperLogFlush(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1293,6 +1083,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGFLUSH],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1313,6 +1108,10 @@ Srv_RpcVmDirSuperLogSetSize(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1325,6 +1124,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGSETSIZE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1345,6 +1149,10 @@ Srv_RpcVmDirSuperLogGetSize(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1357,6 +1165,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGGETSIZE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1411,6 +1224,10 @@ Srv_RpcVmDirSuperLogGetEntriesLdapOperation(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1426,6 +1243,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1448,6 +1270,10 @@ Srv_RpcVmDirOpenDatabaseFile(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1498,6 +1324,11 @@ cleanup:
     }
     VMDIR_SAFE_FREE_MEMORY(pszDBFileName);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_OPENDATABASEFILE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1525,6 +1356,10 @@ Srv_RpcVmDirReadDatabaseFile(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1567,6 +1402,11 @@ cleanup:
     }
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_READDATABASEFILE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
+
     return dwError;
 
 error:
@@ -1588,6 +1428,10 @@ Srv_RpcVmDirCloseDatabaseFile(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1612,6 +1456,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_CLOSEDATABASEFILE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1641,6 +1490,10 @@ Srv_RpcVmDirSetBackendState(
     DWORD dwDbSizeMb = 0;
     DWORD dwDbMapSizeMb = 0;
     PBYTE pData = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1667,6 +1520,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETBACKENDSTATE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1689,6 +1547,10 @@ Srv_RpcVmDirGetState(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1706,6 +1568,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETSTATE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1725,6 +1592,10 @@ Srv_RpcVmDirGetLogLevel(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1742,6 +1613,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETLOGLEVEL],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1761,6 +1637,10 @@ Srv_RpcVmDirGetLogMask(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1778,6 +1658,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETLOGMASK],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1816,28 +1701,6 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
 }
 
 UINT32
-Srv_RpcVmDirUrgentReplicationRequest(
-    handle_t    hBinding,
-    PWSTR       pwszServerName
-    )
-{
-    //deplicated by Raft protocol
-    return ERROR_INVALID_PARAMETER;
-}
-
-UINT32
-Srv_RpcVmDirUrgentReplicationResponse(
-    handle_t  hBinding,
-    PWSTR     pwszInvocationId,
-    PWSTR     pwszUtdVector,
-    PWSTR     pwszHostName
-    )
-{
-   //Deplicated by Raft protocol
-   return ERROR_INVALID_PARAMETER;
-}
-
-UINT32
 Srv_RpcVmDirSetMode(
     handle_t hBinding,
     UINT32   dwMode)
@@ -1849,6 +1712,10 @@ Srv_RpcVmDirSetMode(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1870,6 +1737,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETMODE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1890,6 +1762,10 @@ Srv_RpcVmDirGetMode(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1907,6 +1783,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETMODE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:
@@ -1935,6 +1816,10 @@ Srv_RpcVmDirRaftRequestVote(
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1957,6 +1842,11 @@ cleanup:
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
 
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_RAFTREQUESTVOTE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
+
     return dwError;
 
 error:
@@ -1974,15 +1864,19 @@ UINT32 Srv_RpcVmDirRaftAppendEntries(
     /* [in] */ idl_uhyper_int leaderCommit,
     /* [in] */  chglog_container *entries,
     /* [out] */ UINT32 *currentTerm,
-    /* [out] */ UINT32 *status
+    /* [out] */ idl_uhyper_int *status
 )
 {
     DWORD  dwError = 0;
     UINT32 iCurrentTerm = 0;
-    UINT32 iStatus = 0;
+    unsigned long long iStatus = 0;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     *currentTerm = 0;
-    *status = 1;
+    *status = 0;
 
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
@@ -1994,7 +1888,7 @@ UINT32 Srv_RpcVmDirRaftAppendEntries(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirAppendEntriesGetReply(term, (char *)leader, preLogIndex, prevLogTerm,
+    dwError = VmDirAppendEntriesGetReply(term, (char *)leader, preLogIndex, prevLogTerm,
                                           leaderCommit, entries->chglog_size, entries->chglog_bytes, &iCurrentTerm, &iStatus);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2006,6 +1900,11 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
     }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_RAFTAPPENDENTRIES],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
     return dwError;
 
 error:

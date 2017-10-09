@@ -138,6 +138,40 @@ typedef struct _VMDIR_CONNECTION* PVMDIR_CONNECTION;
 
 typedef struct _VMDIR_SERVER_CONTEXT VMDIR_SERVER_CONTEXT, *PVMDIR_SERVER_CONTEXT;
 
+/*
+ * Structure required for HA topology Management
+ */
+typedef struct _VMDIR_HA_SERVER_INFO
+{
+    PSTR                            pszHostName;
+    PSTR                            pszServerName;
+    PSTR                            pszSiteName;
+    PVMDIR_CONNECTION               pConnection;
+    struct _VMDIR_HA_SERVER_INFO**  ppPartnerList;
+    DWORD                           dwPartnerCnt;
+    DWORD                           dwIdx;
+} VMDIR_HA_SERVER_INFO, *PVMDIR_HA_SERVER_INFO;
+
+typedef struct _VMDIR_HA_REPLICATION_TOPOLOGY
+{
+    PVMDIR_HA_SERVER_INFO*  ppConsiderList;
+    DWORD                   dwConsiderListCnt;
+    PVMDIR_HA_SERVER_INFO*  ppOnlineList;
+    DWORD                   dwOnlineListCnt;
+    PVMDIR_HA_SERVER_INFO*  ppOfflineList;
+    DWORD                   dwOfflineListCnt;
+} VMDIR_HA_REPLICATION_TOPOLOGY, *PVMDIR_HA_REPLICATION_TOPOLOGY;
+
+typedef struct _VMDIR_HA_TOPOLOGY_CHANGES
+{
+    PVMDIR_HA_SERVER_INFO*  ppAddLinkList;
+    DWORD                   dwAddListCnt;
+    PVMDIR_HA_SERVER_INFO*  ppDelLinkList;
+    DWORD                   dwDelListCnt;
+} VMDIR_HA_TOPOLOGY_CHANGES, *PVMDIR_HA_TOPOLOGY_CHANGES;
+/*
+ * Structure for HA topology Management end here
+ */
 
 typedef enum
 {

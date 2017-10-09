@@ -147,6 +147,13 @@ extern "C" {
 //
 #define VMDIR_AUTHENTICATED_USER_SID "S-1-5-11"
 
+//
+// Null SID template to be used in defaultSecurityDescriptors.
+// This template will be replaced with SID of corresponding domain
+// when applied to objects.
+//
+#define VMDIR_NULL_SID_TEMPLATE "S-1-0-0"
+
 // objectSid.c
 DWORD
 VmDirAdvanceDomainRID(
@@ -173,14 +180,14 @@ VmDirInternalRemoveOrgConfig(
 
 PCSTR
 VmDirFindDomainDN(
-    PCSTR pszObjectDN
+    PCSTR   pszObjectDN
     );
 
 DWORD
 VmDirGenerateWellknownSid(
-    PCSTR    pszDomainDN,
-    DWORD    dwWellKnowRid,
-    PSTR*    ppszAdminSid
+    PCSTR   pszDomainDN,
+    DWORD   dwWellKnowRid,
+    PSTR*   ppszAdminSid
     );
 
 // libmain.c
@@ -231,7 +238,6 @@ VmDirSrvCreateSecurityDescriptor(
     PCSTR                       pszDomainAdminDn,
     PCSTR                       pszAdminsGroupSid,
     PCSTR                       pszDomainAdminsGroupSid,
-    PCSTR                       pszDomainClientsGroupSid,
     BOOLEAN                     bProtectedDacl,
     BOOLEAN                     bAnonymousRead,
     BOOLEAN                     bAuthenticatedRead,
@@ -259,18 +265,10 @@ VmDirIsFailedAccessInfo(
     );
 
 DWORD
-VmDirAddAceToSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc,
-    PCSTR pszAdminUserDn,
-    ACCESS_MASK amAccess
-    );
-
-DWORD
 VmDirGetObjectSidFromEntry(
     PVDIR_ENTRY pEntry,
-    PSTR* ppszObjectSid, /* Optional */
-    PSID* ppSid /* Optional */
+    PSTR*       ppszObjectSid, /* Optional */
+    PSID*       ppSid /* Optional */
     );
 
 DWORD
@@ -283,10 +281,10 @@ VmDirIsBindDnMemberOfSystemDomainAdmins(
 // security.c
 DWORD
 VmDirGetSecurityDescriptorForEntry(
-    PVDIR_ENTRY pEntry,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE* ppSecDesc,
-    PULONG pulSecDescLength
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulSecDescLength
     );
 
 DWORD
@@ -296,24 +294,36 @@ VmDirSetSecurityDescriptorForDn(
     );
 
 DWORD
-VmDirEntryCacheSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
-    ULONG ulSecDescToSetLen
-    );
-
-DWORD
 VmDirSetRecursiveSecurityDescriptorForDn(
     PCSTR                       pszObjectDn,
     PVMDIR_SECURITY_DESCRIPTOR  pSecDesc
     );
 
 DWORD
-VmDirSetSecurityDescriptorForEntry(
-    PVDIR_ENTRY pEntry,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRel,
-    ULONG ulSecDescRel
+VmDirAppendSecurityDescriptorForDn(
+    PCSTR                       pszObjectDn,
+    PVMDIR_SECURITY_DESCRIPTOR  pSecDesc,
+    BOOLEAN                     bReplaceOwnerAndGroup
+    );
+
+DWORD
+VmDirAppendAllowAceForDn(
+    PCSTR       pszObjectDn,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
+    );
+
+DWORD
+VmDirEntryCacheSecurityDescriptor(
+    PVDIR_ENTRY                     pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRelToSet,
+    ULONG                           ulSecDescToSetLen
+    );
+
+DWORD
+VmDirSetDefaultSecurityDescriptorForClass(
+    PCSTR   pszClassName,
+    PCSTR   pszDacl
     );
 
 // sdcalc.c

@@ -31,13 +31,11 @@ int _tmain(int argc, TCHAR *targv[])
             "Please select:\n"
             "0. exit\n"
             "1. Test LDAP connectivity\n"
-            "2. Force start replication cycle\n"
             "3. Reset account password\n"
             "4. Set log level and mask\n"
             "5. Set vmdir state\n"
             "6. Get vmdir state\n"
             "7. Get vmdir log level and mask\n"
-            "8. Send Urgent Replication request and display repl partner last updated USN \n"
 //            "99. Set SRP Authentication data\n"  do not want to expose this to users.  internal test only.
             "==================\n\n",
             pszChoice,
@@ -55,10 +53,6 @@ int _tmain(int argc, TCHAR *targv[])
         {
           case 1:
               VdcadminTestSASLClient();
-              break;
-
-          case 2:
-              VdcadminReplNow();
               break;
 
           case 3:
@@ -79,10 +73,6 @@ int _tmain(int argc, TCHAR *targv[])
 
           case 7:
               VdcadminGetLogParameters();
-              break;
-
-          case 8:
-              VdcadminUrgentReplicationRequest();
               break;
 
           case 99:

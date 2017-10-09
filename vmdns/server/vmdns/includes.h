@@ -69,6 +69,7 @@
 #include <srvcommon.h>
 #include <vmsock.h>
 #include <vmdnsserver.h>
+#include <vmdnsmetrics.h>
 
 #include "defines.h"
 #include "structs.h"

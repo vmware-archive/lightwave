@@ -11,6 +11,7 @@ noinst_LTLIBRARIES = libsrvcommon.la
 
 libsrvcommon_la_SOURCES = \
     candidates.c \
+    curltovmdirerror.c \
     entryencodedecode.c \
     krbsrvutil.c \
     oprequestutil.c \
@@ -18,21 +19,21 @@ libsrvcommon_la_SOURCES = \
     srp.c \
     util.c \
     vmdirentry.c \
-    urgentrepl.c \
     vmafdlib.c \
     vmdirtoldaperror.c
 
 libsrvcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/thirdparty/heimdal \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
-    -I$(top_srcdir)/thirdparty \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/include/public \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/lwraft/thirdparty \
+    -I$(top_srcdir)/lwraft/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@

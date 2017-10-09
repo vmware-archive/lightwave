@@ -245,7 +245,8 @@ ParseArgs(
                 {
                     bDisableAfdListener = TRUE;
                 }
-                else if (!strcmp(pszArg, "--use-machine-accout"))
+                else if (!strcmp(pszArg, "--use-machine-account") ||
+                         !strcmp(pszArg, "--use-machine-accout"))
                 {
                     bUseMachineAccount = TRUE;
                 }
