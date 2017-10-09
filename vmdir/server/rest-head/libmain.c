@@ -63,10 +63,6 @@ VmDirRESTServerInit(
         {NULL, NULL}
     };
 
-    // Initialize OidcClient only once
-    dwError = OidcClientGlobalInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     /*
      * We can use the same REST_API_SPEC for both HTTP and HTTPS because vmdir
      * rest init code only refers to API definitions (which is common)
@@ -115,7 +111,6 @@ VmDirRESTServerShutdown(
     _VmDirRESTServerShutdownHTTP();
     _VmDirRESTServerShutdownHTTPS();
 
-    OidcClientGlobalCleanup();
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 

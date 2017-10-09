@@ -114,6 +114,15 @@ VmDirShutdown(
 
     VmDirCleanupGlobals();
 
+   /*
+    * TODO move curl_global_init/curl_global_cleanup out of OidcClient
+    * can't call OidcClientGlobalCleanup untill all threads have exited.
+    *
+    * #ifdef REST_ENABLED
+    *   OidcClientGlobalCleanup();
+    * #endif
+    */
+
     VmMetricsDestroy(pmContext);
 
     (VOID)VmDirSetRegKeyValueDword(

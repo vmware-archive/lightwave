@@ -83,9 +83,6 @@ VmDirRESTServerInit(
         {NULL, NULL}
     };
 
-    dwError = OidcClientGlobalInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirRESTLoadVmAfdAPI(&gpVdirVmAfdApi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -128,7 +125,6 @@ VmDirRESTServerShutdown(
     _VmDirRESTServerShutdownHTTP();
     _VmDirRESTServerShutdownHTTPS();
     //cleanup all global variables
-    OidcClientGlobalCleanup();
     VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdApi);
     VmDirFreeRESTCache(gpVdirRestCache);
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
