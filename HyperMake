@@ -1,0 +1,64 @@
+---
+format: hypermake.v0
+
+name: lightwave
+description: Lightwave
+
+targets:
+  rebuild-toolchain:
+    description: build toolchain image
+    watches:
+      - support/toolchain/docker/photon
+    build: support/toolchain/docker/photon
+    cache: false
+
+  toolchain:
+    description: place-holder for future dependencies
+
+  bootstrap-lightwave:
+    description: Bootstraps build
+    after:
+      - toolchain
+    watches:
+      - '**/**/*.am'
+      - '**/**/*.ac'
+    cmds:
+      - ./support/scripts/bootstrap.sh
+
+  build-lightwave:
+    description: build Lightwave source code for linux
+    after:
+      - bootstrap-lightwave
+    watches:
+      - support/scripts/build.sh
+      - '**/**/*.cpp'
+      - '**/**/*.c'
+      - '**/**/*.h'
+      - '**/**/*.java'
+    cmds:
+      - ./support/scripts/build.sh
+
+  build:
+    description: build source code
+    after:
+      - 'build-*'
+
+  pack:
+    description: Create RPM Package
+    after:
+      - build
+    cmds:
+      - ./support/scripts/pack.sh
+
+  clean:
+    description: Cleanup
+    always: true
+    cmds:
+      - ./support/scripts/clean.sh
+
+settings:
+  default-targets:
+    - build
+    - pack
+  docker:
+    image: 'vmware/lightwave-toolchain-photon:0.0.1'

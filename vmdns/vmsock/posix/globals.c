@@ -15,27 +15,31 @@
 
 #include "includes.h"
 
-VM_SOCK_PACKAGE gVmSockPosixPackage =
+VM_SOCK_PACKAGE gVmDnsSockPosixPackage =
 {
-    .pfnOpenClientSocket = &VmSockPosixOpenClient,
-    .pfnOpenServerSocket = &VmSockPosixOpenServer,
-    .pfnCreateEventQueue = &VmSockPosixCreateEventQueue,
-    .pfnAddEventQueue = &VmSockPosixEventQueueAdd,
-    .pfnWaitForEvent = &VmSockPosixWaitForEvent,
-    .pfnCloseEventQueue = &VmSockPosixCloseEventQueue,
-    .pfnSetNonBlocking = &VmSockPosixSetNonBlocking,
-    .pfnSetTimeOut = &VmSockPosixSetTimeOut,
-    .pfnGetProtocol = &VmSockPosixGetProtocol,
-    .pfnSetData = &VmSockPosixSetData,
-    .pfnGetData = &VmSockPosixGetData,
-    .pfnRead = &VmSockPosixRead,
-    .pfnWrite = &VmSockPosixWrite,
-    .pfnAcquireSocket = &VmSockPosixAcquireSocket,
-    .pfnReleaseSocket = &VmSockPosixReleaseSocket,
-    .pfnCloseSocket = &VmSockPosixCloseSocket,
-    .pfnGetAddress = &VmSockPosixGetAddress,
-    .pfnAllocateIoBuffer = &VmSockPosixAllocateIoBuffer,
-    .pfnReleaseIoBuffer = &VmSockPosixFreeIoBuffer
+    .pfnOpenClientSocket = &VmDnsSockPosixOpenClient,
+    .pfnOpenServerSocket = &VmDnsSockPosixOpenServer,
+    .pfnCreateEventQueue = &VmDnsSockPosixCreateEventQueue,
+    .pfnAddEventQueue = &VmDnsSockPosixEventQueueAdd,
+    .pfnRemoveEventQueue = &VmDnsSockPosixEventQueueRemove,
+    .pfnWaitForEvent = &VmDnsSockPosixWaitForEvent,
+    .pfnShutdownEventQueue = &VmDnsSockPosixShutdownEventQueue,
+    .pfnFreeEventQueue = &VmDnsSockPosixFreeEventQueue,
+    .pfnSetNonBlocking = &VmDnsSockPosixSetNonBlocking,
+    .pfnSetTimeOut = &VmDnsSockPosixSetTimeOut,
+    .pfnGetProtocol = &VmDnsSockPosixGetProtocol,
+    .pfnSetData = &VmDnsSockPosixSetData,
+    .pfnGetData = &VmDnsSockPosixGetData,
+    .pfnRead = &VmDnsSockPosixRead,
+    .pfnWrite = &VmDnsSockPosixWrite,
+    .pfnAcquireSocket = &VmDnsSockPosixAcquireSocket,
+    .pfnReleaseSocket = &VmDnsSockPosixReleaseSocket,
+    .pfnCloseSocket = &VmDnsSockPosixCloseSocket,
+    .pfnGetAddress = &VmDnsSockPosixGetAddress,
+    .pfnAllocateIoBuffer = &VmDnsSockPosixAllocateIoBuffer,
+    .pfnSetEventContext = &VmDnsSockPosixSetEventContext,
+    .pfnGetEventContext = &VmDnsSockPosixGetEventContext,
+    .pfnReleaseIoBuffer = &VmDnsSockPosixFreeIoBuffer
 };
 
-PVM_SOCK_PACKAGE gpVmSockPosixPackage = &gVmSockPosixPackage;
+PVM_SOCK_PACKAGE gpVmDnsSockPosixPackage = &gVmDnsSockPosixPackage;

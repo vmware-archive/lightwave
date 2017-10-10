@@ -256,6 +256,34 @@ VmDirPasswordSchemeFree(
     _gpDefaultScheme = NULL;
 }
 
+VOID
+VmDirGetDefaultPasswdLockoutPolicy(
+    PVDIR_PASSWD_LOCKOUT_POLICY     pPolicy
+    )
+{
+    VDIR_PASSWD_LOCKOUT_POLICY policy =
+    {
+        .bEnabled                   = TRUE,
+        .iAutoUnlockIntervalSec     = 300,
+        .iFailedAttemptIntervalSec  = 100,
+        .iMaxFailedAttempt          = 5,
+        .iExpireInDay               = 90,
+        .iMaxSameAdjacentCharCnt    = 2,
+        .iMinSpecialCharCnt         = 1,
+        .iMinNumericCnt             = 1,
+        .iMinUpperCaseCnt           = 1,
+        .iMinLowerCaseCnt           = 1,
+        .iMinAlphaCnt               = 1,
+        .iMinLen                    = 8,
+        .iMaxLen                    = 20,
+    };
+
+    memset(policy.specialChars, 0, MAX_PASSWORD_SPECIAL_CHARS+1);
+    VmDirStringCpyA(policy.specialChars, MAX_PASSWORD_SPECIAL_CHARS, "~!@#$%^&*()_+{}[]|:<>?,./");
+
+    *pPolicy = policy;
+}
+
 DWORD
 VmDirGenerateRandomPasswordByDefaultPolicy
 (
@@ -713,12 +741,6 @@ VdirPasswordModifyPreCheck(
                         &pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, " read entry (%s) failed",
                                      VDIR_SAFE_STRING(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn)));
-
-        // handle krb logic first while we have clear text password
-        dwError = VmDirKrbUPNKeySet(  pOperation,
-                                      pEntry,
-                                      &pModAddPasswd->attr.vals[0]);
-        BAIL_ON_VMDIR_ERROR(dwError);
 
         // handle srp password logic.
         dwError = VmDirSRPSetSecret( pOperation,

@@ -12,7 +12,6 @@
  * under the License.
  */
 
-
 #ifndef _SRV_COMMON_H_
 #define _SRV_COMMON_H_
 
@@ -167,7 +166,7 @@ typedef struct _VMDNS_LRU_LIST          *PVMDNS_LRU_LIST;
 typedef struct _VMDNS_NAME_ENTRY        *PVMDNS_NAME_ENTRY;
 typedef struct _VMDNS_RECORD_LIST       *PVMDNS_RECORD_LIST;
 typedef struct _VMDNS_RECORD_OBJECT     *PVMDNS_RECORD_OBJECT;
-typedef struct _VMDNS_FORWARDER_CONETXT *PVMDNS_FORWARDER_CONETXT;
+typedef struct _VMDNS_FORWARDER_CONTEXT *PVMDNS_FORWARDER_CONTEXT;
 typedef struct _VMDNS_CACHE_CONETXT     *PVMDNS_CACHE_CONETXT;
 typedef struct _VMDNS_SECURITY_CONTEXT  *PVMDNS_SECURITY_CONTEXT;
 
@@ -293,6 +292,23 @@ VmDnsSrvQueryRecords(
     );
 
 DWORD
+VmDnsSrvGetRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PCSTR               pszName,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    );
+
+DWORD
+VmDnsGetLinkedRecords(
+    DWORD               dwRecursionIndex,
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD       pRecord,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    );
+
+DWORD
 VmDnsSrvListRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PVMDNS_RECORD_LIST *ppRecordList
@@ -367,6 +383,12 @@ VmDnsRecordListAdd(
     );
 
 DWORD
+VmDnsRecordListAddList(
+    PVMDNS_RECORD_LIST      pDestList,
+    PVMDNS_RECORD_LIST      pSrcList
+    );
+
+DWORD
 VmDnsRecordListRemove(
     PVMDNS_RECORD_LIST      pList,
     PVMDNS_RECORD_OBJECT    pRecord
@@ -403,6 +425,13 @@ VmDnsRecordListAddRef(
 VOID
 VmDnsRecordListRelease(
     PVMDNS_RECORD_LIST      pRecordList
+    );
+
+DWORD
+VmDnsRecordListRoundRobin(
+    PVMDNS_RECORD_LIST      pList,
+    DWORD                   dwIndex,
+    PVMDNS_RECORD_LIST      *ppList
     );
 
 DWORD

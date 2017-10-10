@@ -13,3 +13,4 @@
  */
 
 extern PVMW_DNS_DRIVER_GLOBALS gpSrvContext;
+

@@ -36,7 +36,6 @@ extern "C" {
 #define VMDIR_PCSTR_UNKNOWN "unknown"
 
 #ifdef _WIN32
-    #define HAVE_LMDB_H
     #define PCVOID const PVOID
     #define ssize_t SSIZE_T
 
@@ -543,6 +542,14 @@ extern "C" {
                                    Mask, "[file: %s][line: %d] " Format,\
                                    __FILE__, __LINE__, ##__VA_ARGS__ )
 
+#define VMDIR_SAFE_LDAP_UNBIND(pLd)                 \
+    do {                                            \
+        if ((pLd)) {                                \
+            ldap_unbind_ext_s( pLd, NULL, NULL);    \
+            (pLd) = NULL;                           \
+        }                                           \
+    } while(0)
+
 // if VDIR_CONNECTION has bind info in VDIR_ACCESS_INFO, use it; otherwise,
 // this is an internal operation and hence uses default administrator DN
 #define VMDIR_CURRENT_AUTHENTICATED_DN( pAccessInfo )       \
@@ -732,7 +739,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_INITIALIZE_HOST      0
 #define VMDIR_IPC_INITIALIZE_TENANT    1
 #define VMDIR_IPC_FORCE_RESET_PASSWORD 2
-//#define VMDIR_IPC_GET_SRP_SECRET       3
+#define VMDIR_IPC_GET_SRP_SECRET       3
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
 #define VMDIR_IPC_GET_SERVER_STATE     6

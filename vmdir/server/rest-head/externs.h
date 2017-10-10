@@ -13,3 +13,6 @@
  */
 
 extern PREST_API_DEF gpVdirRestApiDef;
+
+extern PVMREST_HANDLE gpVdirRestHTTPHandle;
+extern PVMREST_HANDLE gpVdirRestHTTPSHandle;

@@ -14,8 +14,7 @@
 
 #include "includes.h"
 
-static const SSO_LONG MAX_CLOCK_TOLERANCE_IN_SECONDS = 10 * 60; // 10 minutes
-
+// (TODO) Deprecated
 SSOERROR
 OidcIDTokenBuild(
     POIDC_ID_TOKEN* pp,
@@ -26,36 +25,46 @@ OidcIDTokenBuild(
 {
     SSOERROR e = SSOERROR_NONE;
     POIDC_ID_TOKEN p = NULL;
-    time_t now = time(NULL);
-    bool validSignature = false;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
-    ASSERT_NOT_NULL(pszSigningCertificatePEM);
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
+    BAIL_ON_NULL_ARGUMENT(pszSigningCertificatePEM);
 
-    if (clockToleranceInSeconds < 0 || clockToleranceInSeconds > MAX_CLOCK_TOLERANCE_IN_SECONDS)
-    {
-        e = SSOERROR_INVALID_ARGUMENT;
-        BAIL_ON_ERROR(e);
-    }
-
-    e = OidcIDTokenParse(&p, psz);
+    e = SSOMemoryAllocate(sizeof(OIDC_ID_TOKEN), (void**) &p);
     BAIL_ON_ERROR(e);
 
-    e = SSOJwtVerifySignature(p->pJwt, pszSigningCertificatePEM, &validSignature);
+    e = OidcTokenBuild(&p->pToken, psz, pszSigningCertificatePEM, pszIssuer, NULL /* pszResourceServerName */, clockToleranceInSeconds, "id_token");
     BAIL_ON_ERROR(e);
-    if (!validSignature)
+
+    *pp = p;
+
+error:
+
+    if (e != SSOERROR_NONE)
     {
-        e = SSOERROR_TOKEN_INVALID_SIGNATURE;
-        BAIL_ON_ERROR(e);
+        OidcIDTokenDelete(p);
     }
 
-    // check for notBefore and notAfter
-    if (now < p->issueTime - clockToleranceInSeconds || now > p->expirationTime + clockToleranceInSeconds)
-    {
-        e = SSOERROR_TOKEN_EXPIRED;
-        BAIL_ON_ERROR(e);
-    }
+    return e;
+}
+
+// on success, pp will be non-null, when done, OidcIDTokenDelete it
+SSOERROR
+OidcIDTokenParse(
+    POIDC_ID_TOKEN* pp,
+    PCSTRING psz)
+{
+    SSOERROR e = SSOERROR_NONE;
+    POIDC_ID_TOKEN p = NULL;
+
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(psz);
+
+    e = SSOMemoryAllocate(sizeof(OIDC_ID_TOKEN), (void**) &p);
+    BAIL_ON_ERROR(e);
+
+    e = OidcTokenParse(&p->pToken, psz, "id_token");
+    BAIL_ON_ERROR(e);
 
     *pp = p;
 
@@ -70,81 +79,20 @@ error:
 }
 
 SSOERROR
-OidcIDTokenParse(
-    POIDC_ID_TOKEN* pp,
-    PCSTRING psz)
+OidcIDTokenValidate(
+    POIDC_ID_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    SSO_LONG clockToleranceInSeconds)
 {
     SSOERROR e = SSOERROR_NONE;
-    POIDC_ID_TOKEN p = NULL;
-    PSTRING pszTokenClass = NULL;
-    PSTRING pszHolderOfKeyJWKS = NULL;
-    PSSO_JWK pJwk = NULL;
-    bool hasHokJwksClaim = false;
-    bool hasGroupsClaim = false;
 
-    ASSERT_NOT_NULL(pp);
-    ASSERT_NOT_NULL(psz);
+    BAIL_ON_NULL_ARGUMENT(p);
 
-    e = SSOMemoryAllocate(sizeof(OIDC_ID_TOKEN), (void**) &p);
+    e = OidcTokenValidate(p->pToken, pszSigningCertificatePEM, pszIssuer, NULL, clockToleranceInSeconds);
     BAIL_ON_ERROR(e);
-
-    e = SSOJwtParse(&p->pJwt, psz);
-    BAIL_ON_ERROR(e);
-
-    e = SSOJwtGetStringClaim(p->pJwt, "token_class", &pszTokenClass);
-    BAIL_ON_ERROR(e);
-    if (!SSOStringEqual(pszTokenClass, "id_token"))
-    {
-        e = SSOERROR_INVALID_ARGUMENT;
-        BAIL_ON_ERROR(e);
-    }
-
-    e = SSOJwtGetStringClaim(p->pJwt, "iss", &p->pszIssuer);
-    BAIL_ON_ERROR(e);
-    e = SSOJwtGetStringClaim(p->pJwt, "sub", &p->pszSubject);
-    BAIL_ON_ERROR(e);
-    e = SSOJwtGetStringClaim(p->pJwt, "aud", &p->pszAudience);
-    BAIL_ON_ERROR(e);
-    e = SSOJwtGetLongClaim(p->pJwt, "iat", &p->issueTime);
-    BAIL_ON_ERROR(e);
-    e = SSOJwtGetLongClaim(p->pJwt, "exp", &p->expirationTime);
-    BAIL_ON_ERROR(e);
-
-    e = SSOJwtHasClaim(p->pJwt, "groups", &hasGroupsClaim);
-    BAIL_ON_ERROR(e);
-    if (hasGroupsClaim)
-    {
-        e = SSOJwtGetStringArrayClaim(p->pJwt, "groups", &p->ppszGroups, &p->groupsSize);
-        BAIL_ON_ERROR(e);
-    }
-
-    e = SSOJwtHasClaim(p->pJwt, "hotk", &hasHokJwksClaim);
-    BAIL_ON_ERROR(e);
-    if (hasHokJwksClaim)
-    {
-        e = SSOJwtGetJsonClaim(p->pJwt, "hotk", &pszHolderOfKeyJWKS);
-        BAIL_ON_ERROR(e);
-
-        e = SSOJwkParseFromSet(&pJwk, pszHolderOfKeyJWKS);
-        BAIL_ON_ERROR(e);
-
-        e = SSOJwkToPublicKeyPEM(pJwk, &p->pszHolderOfKeyPEM);
-        BAIL_ON_ERROR(e);
-    }
-
-    *pp = p;
 
 error:
-
-    if (e != SSOERROR_NONE)
-    {
-        OidcIDTokenDelete(p);
-    }
-
-    SSOStringFree(pszTokenClass);
-    SSOStringFree(pszHolderOfKeyJWKS);
-    SSOJwkDelete(pJwk);
-
     return e;
 }
 
@@ -154,14 +102,17 @@ OidcIDTokenDelete(
 {
     if (p != NULL)
     {
-        SSOJwtDelete(p->pJwt);
-        SSOStringFree(p->pszIssuer);
-        SSOStringFree(p->pszSubject);
-        SSOStringFree(p->pszAudience);
-        SSOStringFree(p->pszHolderOfKeyPEM);
-        SSOMemoryFreeArrayOfObjects((void**) p->ppszGroups, p->groupsSize, (GenericDestructorFunction) SSOStringFree);
+        OidcTokenDelete(p->pToken);
         SSOMemoryFree(p, sizeof(OIDC_ID_TOKEN));
     }
+}
+
+OIDC_TOKEN_TYPE
+OidcIDTokenGetTokenType(
+    PCOIDC_ID_TOKEN p)
+{
+    ASSERT_NOT_NULL(p);
+    return p->pToken->tokenType;
 }
 
 PCSTRING
@@ -169,7 +120,7 @@ OidcIDTokenGetIssuer(
     PCOIDC_ID_TOKEN p)
 {
     ASSERT_NOT_NULL(p);
-    return p->pszIssuer;
+    return p->pToken->pszIssuer;
 }
 
 PCSTRING
@@ -177,15 +128,39 @@ OidcIDTokenGetSubject(
     PCOIDC_ID_TOKEN p)
 {
     ASSERT_NOT_NULL(p);
-    return p->pszSubject;
+    return p->pToken->pszSubject;
 }
 
-PCSTRING
+void
 OidcIDTokenGetAudience(
+    PCOIDC_ID_TOKEN p,
+    const PSTRING** pppszAudience,
+    size_t* pAudienceSize)
+{
+    ASSERT_NOT_NULL(p);
+    ASSERT_NOT_NULL(pppszAudience);
+    ASSERT_NOT_NULL(pAudienceSize);
+
+    *pppszAudience = p->pToken->ppszAudience;
+    *pAudienceSize = p->pToken->audienceSize;
+}
+
+size_t
+OidcIDTokenGetAudienceSize(
     PCOIDC_ID_TOKEN p)
 {
     ASSERT_NOT_NULL(p);
-    return p->pszAudience;
+    return p->pToken->audienceSize;
+}
+
+PCSTRING
+OidcIDTokenGetAudienceEntry(
+    PCOIDC_ID_TOKEN p,
+    int index)
+{
+    ASSERT_NOT_NULL(p);
+    ASSERT_TRUE(0 <= index && index < p->pToken->audienceSize);
+    return p->pToken->ppszAudience[index];
 }
 
 SSO_LONG
@@ -193,7 +168,7 @@ OidcIDTokenGetIssueTime(
     PCOIDC_ID_TOKEN p)
 {
     ASSERT_NOT_NULL(p);
-    return p->issueTime;
+    return p->pToken->issueTime;
 }
 
 SSO_LONG
@@ -201,7 +176,7 @@ OidcIDTokenGetExpirationTime(
     PCOIDC_ID_TOKEN p)
 {
     ASSERT_NOT_NULL(p);
-    return p->expirationTime;
+    return p->pToken->expirationTime;
 }
 
 PCSTRING
@@ -209,7 +184,7 @@ OidcIDTokenGetHolderOfKeyPEM(
     PCOIDC_ID_TOKEN p)
 {
     ASSERT_NOT_NULL(p);
-    return p->pszHolderOfKeyPEM;
+    return p->pToken->pszHolderOfKeyPEM;
 }
 
 void
@@ -222,8 +197,35 @@ OidcIDTokenGetGroups(
     ASSERT_NOT_NULL(pppszGroups);
     ASSERT_NOT_NULL(pGroupsSize);
 
-    *pppszGroups = p->ppszGroups;
-    *pGroupsSize = p->groupsSize;
+    *pppszGroups = p->pToken->ppszGroups;
+    *pGroupsSize = p->pToken->groupsSize;
+}
+
+size_t
+OidcIDTokenGetGroupsSize(
+    PCOIDC_ID_TOKEN p)
+{
+    ASSERT_NOT_NULL(p);
+    return p->pToken->groupsSize;
+}
+
+PCSTRING
+OidcIDTokenGetGroupsEntry(
+    PCOIDC_ID_TOKEN p,
+    int index)
+{
+    ASSERT_NOT_NULL(p);
+    ASSERT_TRUE(0 <= index && index < p->pToken->groupsSize);
+    return p->pToken->ppszGroups[index];
+
+}
+
+PCSTRING
+OidcIDTokenGetTenant(
+    PCOIDC_ID_TOKEN p)
+{
+    ASSERT_NOT_NULL(p);
+    return p->pToken->pszTenant;
 }
 
 SSOERROR
@@ -235,5 +237,5 @@ OidcIDTokenGetStringClaim(
     ASSERT_NOT_NULL(p);
     ASSERT_NOT_NULL(pszKey);
     ASSERT_NOT_NULL(ppszValue);
-    return SSOJwtGetStringClaim(p->pJwt, pszKey, ppszValue);
+    return SSOJwtGetStringClaim(p->pToken->pJwt, pszKey, ppszValue);
 }

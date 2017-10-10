@@ -249,39 +249,6 @@ error:
 }
 
 VOID
-VdcadminReplNow(
-    VOID
-    )
-{
-
-    DWORD       dwError = 0;
-    char        pszServerName[SIZE_256];
-    PSTR        pszLocalErrorMsg = NULL;
-
-    VmDirReadString(
-        " Enter hostname to start replication cycle: ",
-        pszServerName,
-        SIZE_256,
-        FALSE);
-
-    dwError = VmDirReplNow( pszServerName );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                "VdcadminReplNow: VmDirReplNow() call failed with error: %d", dwError  );
-
-    printf( "VmDirReplNow passed\n");
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    return;
-
-error:
-
-    printf( "%s\n", pszLocalErrorMsg ? pszLocalErrorMsg : "Hmmm ... no local error message."  );
-    goto cleanup;
-}
-
-VOID
 VdcadminSetSRPAuthData(
     VOID
     )
@@ -362,40 +329,4 @@ VdcadminSetSRPAuthData(
     {
         printf("VmDirOpenServerA: failed %x\n", dwError);
     }
-}
-
-VOID
-VdcadminUrgentReplicationRequest(
-    VOID
-    )
-{
-    DWORD   dwError = 0;
-    char    remoteHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
-    PSTR    pszRemoteHostName = NULL;
-
-    printf("\n Please enter the replication partner's hostname: ");
-    scanf("%s", remoteHostName);
-
-    if (IsNullOrEmptyString(remoteHostName))
-    {
-        dwError = -1;
-        printf("\n Entered hostname is NULL or empty ");
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAVsnprintf(&pszRemoteHostName, remoteHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirUrgentReplicationRequest(pszRemoteHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    printf("\n RPC call succeeded ");
-
-cleanup:
-    return;
-
-error:
-    printf("\n RPC call failed with status: %d ",dwError);
-    VMDIR_SAFE_FREE_MEMORY(pszRemoteHostName);
-    goto cleanup;
 }

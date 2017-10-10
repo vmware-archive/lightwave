@@ -115,13 +115,7 @@ VmDirFirstReplicationCycle(
     }
 #endif
 
-    if ( gFirstReplCycleMode != FIRST_REPL_CYCLE_MODE_COPY_DB )
-    {
-        retVal = LDAP_OPERATIONS_ERROR;
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                  "VmDirFirstReplicationCycle: Not a special first replication cycle mode, nothing is to be done." );
-        goto cleanup;
-    }
+    assert( gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB );
 
     retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
@@ -570,7 +564,7 @@ _VmDirWrapUpFirstReplicationCycle(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: partnerLocalUsn %llu locaUsn %llu", partnerLocalUsn, localUsn);
 
     if ((retVal = VmDirStringNPrintFA( partnerlocalUsnStr, sizeof(partnerlocalUsnStr), sizeof(partnerlocalUsnStr) - 1,
-                                       "%ld", partnerLocalUsn)) != 0)
+                                       "%" PRId64, partnerLocalUsn)) != 0)
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: VmDirStringNPrintFA failed with error code: %d",
                   retVal );
@@ -743,7 +737,7 @@ _VmGetHighestCommittedUSN(
         VMDIR_SAFE_FREE_MEMORY(usnStr);
         VmDirFreeEntryArrayContent(&entryArray);
 
-        dwError = VmDirAllocateStringPrintf(&usnStr, "%llu", usn);
+        dwError = VmDirAllocateStringPrintf(&usnStr, "%" PRId64, usn);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSimpleEqualFilterInternalSearch(
@@ -765,7 +759,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmGetHighestCommittedUSN: fail to find an entry with USN <= %llu", startUsn);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmGetHighestCommittedUSN: fail to find an entry with USN <= %" PRId64, startUsn);
     goto cleanup;
 }
 

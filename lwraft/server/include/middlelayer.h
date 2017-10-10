@@ -48,6 +48,12 @@ VmDirMLAdd(
    PVDIR_OPERATION pOperation
    );
 
+int
+VmDirEntryAttrValueNormalize(
+    PVDIR_ENTRY    pEntry,
+    BOOLEAN   bIndexAttributeOnly
+    );
+
 // delete.c
 
 int
@@ -78,13 +84,6 @@ VmDirModifyEntryCoreLogic(
     ENTRYID             entryId, /* IN */
     BOOLEAN             bRaftLog,
     VDIR_ENTRY *        pEntry  /* OUT */
-    );
-
-int
-VmDirGenerateModsNewMetaData(
-    PVDIR_OPERATION          pOperation,
-    PVDIR_MODIFICATION       pmods,
-    USN                      entryId
     );
 
 int
@@ -121,6 +120,11 @@ VmDirMLBind(
 int
 VmDirInternalBindEntry(
     PVDIR_OPERATION  pOperation
+    );
+
+DWORD
+VmDirMLSetupAnonymousAccessInfo(
+    PVDIR_ACCESS_INFO   pAccessInfo
     );
 
 // dn.c

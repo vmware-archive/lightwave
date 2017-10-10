@@ -44,7 +44,6 @@ VmDirSyncRIDSeqToDB(
     );
 
 // acl.c
-
 DWORD
 VmDirGetObjectSidFromDn(
     PCSTR pszObjectDn,
@@ -52,27 +51,16 @@ VmDirGetObjectSidFromDn(
     );
 
 DWORD
-VmDirSrvCreateAccessTokenWithDn(
-    PCSTR pszObjectDn,
-    PACCESS_TOKEN* ppToken
+VmDirCopyAces(
+    PACL    pSrcDacl,
+    PACL    pDestDacl
     );
 
 DWORD
-VmDirCreateAccessToken(
-    PACCESS_TOKEN*          AccessToken,
-    PTOKEN_USER             User,
-    PTOKEN_GROUPS           Groups,
-    PTOKEN_PRIVILEGES       Privileges,
-    PTOKEN_OWNER            Owner,
-    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
-    PTOKEN_DEFAULT_DACL     DefaultDacl
-    );
-
-DWORD
-VmDirIsBindDnMemberOfSystemDomainAdmins(
-    PVDIR_BACKEND_CTX   pBECtx,
-    PVDIR_ACCESS_INFO   pAccessInfo,
-    PBOOLEAN            pbIsMemberOfAdmins
+VmDirMergeAces(
+    PACL    pDaclA,
+    PACL    pDaclB,
+    PACL*   ppMergedDacl
     );
 
 // legacy_checks.c
@@ -90,23 +78,37 @@ VmDirIsLegacySecurityDescriptor(
     );
 
 // security.c
-
 DWORD
 VmDirSetSecurityDescriptorForEntry(
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel,
+    ULONG                           ulSecDescRel
+    );
+
+DWORD
+VmDirAppendSecurityDescriptorForEntry(
+    PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            securityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE   pSecDescRel,
+    ULONG                           ulSecDescRel,
+    BOOLEAN                         bReplaceOwnerAndGroup
+    );
+
+DWORD
+VmDirAppendAllowAceForEntry(
     PVDIR_ENTRY pEntry,
-    SECURITY_INFORMATION SecurityInformation,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRel,
-    ULONG ulSecDescRel
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
     );
 
 DWORD
 VmDirSecurityAclSelfRelativeToAbsoluteSD(
-    PSECURITY_DESCRIPTOR_ABSOLUTE *ppAbsolute,
-    PSECURITY_DESCRIPTOR_RELATIVE pRelative
+    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppAbsolute,
+    PSECURITY_DESCRIPTOR_RELATIVE   pRelative
     );
 
 // objectSid.c
-
 void
 VmDirFindDomainRidSequenceWithDN(
     PCSTR pszDomainDN,
@@ -120,10 +122,35 @@ VmDirGetSidGenStateIfDomain_inlock(
     PVDIR_DOMAIN_SID_GEN_STATE* ppDomainState
     );
 
+PCSTR
+VmDirFindDomainSid(
+    PCSTR   pszObjectDN
+    );
+
 // ridsyncthr.c
 DWORD
 VmDirInitRidSynchThr(
     PVDIR_THREAD_INFO* ppThrInfo
+    );
+
+// token.c
+DWORD
+VmDirCreateAccessToken(
+    PACCESS_TOKEN*          AccessToken,
+    PTOKEN_USER             User,
+    PTOKEN_GROUPS           Groups,
+    PTOKEN_PRIVILEGES       Privileges,
+    PTOKEN_OWNER            Owner,
+    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
+    PTOKEN_DEFAULT_DACL     DefaultDacl
+    );
+
+// TODO:
+// this is temporary to avoid build error
+// remove once likewise-open is updated
+USHORT
+RtlGetAclSize(
+    IN PACL Acl
     );
 
 #ifdef __cplusplus

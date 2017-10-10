@@ -27,9 +27,11 @@
 #include "common_types.h"
 #include "common.h"
 #include "ssoerrors.h"
+#include "ssocommon.h"
 
 #include "oidc_types.h"
 #include "oidc.h"
+#include "structs.h"
 #include "prototypes.h"
 
 SSOERROR
@@ -38,7 +40,9 @@ TestInit(
     PCSTRING pszTenant,
     PCSTRING pszUsername,
     PCSTRING pszPassword,
-    bool highAvailabilityEnabled);
+    PCSTRING pszClientID,
+    bool highAvailabilityEnabled,
+    bool validateTls);
 
 void
 TestCleanup();

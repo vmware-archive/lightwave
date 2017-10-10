@@ -50,7 +50,10 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/include/config.h.in* \
     $(SRCROOT)/install-sh \
     $(SRCROOT)/ltmain.sh \
-    $(SRCROOT)/missing
+    $(SRCROOT)/missing \
+    $(SRCROOT)/debugfiles.list \
+    $(SRCROOT)/debuglinks.list \
+    $(SRCROOT)/debugsources.list
 
 PKG_SPEC=vmware-directory.spec
 

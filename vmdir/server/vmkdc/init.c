@@ -29,6 +29,8 @@ InitializeGlobals(
 {
     pGlobals->iAcceptSock = -1;
     pGlobals->iAcceptSockUdp = -1;
+    pGlobals->iAcceptSock6 = -1;
+    pGlobals->iAcceptSock6Udp = -1;
     pGlobals->workerThreadMax = 10; // Get from registry configuration
     pGlobals->workerThreadCount = 0; // Total number of running threads
     pthread_mutex_init(&pGlobals->mutex, NULL);
@@ -56,10 +58,16 @@ VmKdcInit()
     dwError = VmKdcInitKrb5(&gVmkdcGlobals.pKrb5Ctx);
     BAIL_ON_VMKDC_ERROR(dwError);
 
-    dwError = VmKdcSrvOpenServicePort(&gVmkdcGlobals, VMKDC_SERVICE_PORT_TCP);
+    dwError = VmKdcSrvOpenServicePort(&gVmkdcGlobals, TRUE, VMKDC_SERVICE_PORT_TCP);
     BAIL_ON_VMKDC_ERROR(dwError);
 
-    dwError = VmKdcSrvOpenServicePort(&gVmkdcGlobals, VMKDC_SERVICE_PORT_UDP);
+    dwError = VmKdcSrvOpenServicePort(&gVmkdcGlobals, FALSE, VMKDC_SERVICE_PORT_TCP);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcSrvOpenServicePort(&gVmkdcGlobals, TRUE, VMKDC_SERVICE_PORT_UDP);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcSrvOpenServicePort(&gVmkdcGlobals, FALSE, VMKDC_SERVICE_PORT_UDP);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     dwError = VmKdcSrvServicePortListen(&gVmkdcGlobals);

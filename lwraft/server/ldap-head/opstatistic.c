@@ -220,7 +220,7 @@ VmDirOPStatistic(
     {
         PCSTR pszOPName = VmDirGetOperationStringFromTag(opTag);
 
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                         &pszStatistic,
                         "LDAP %10s - count:(%ld), Avg response time in MS:(%ld)",
                         pszOPName,

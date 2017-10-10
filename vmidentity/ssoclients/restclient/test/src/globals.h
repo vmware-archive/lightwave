@@ -23,6 +23,7 @@ extern PSTRING systemTenantPassword;
 extern PCSTRING testTenant;
 extern PCSTRING testTenantUsername;
 extern PCSTRING testTenantPassword;
+extern PCSTRING tlsCAPath;
 
 extern PSTRING testOIDCClientId;
 

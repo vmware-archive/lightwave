@@ -65,4 +65,4 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 }
 #endif
 
-SASL_AUXPROP_PLUG_INIT( lwraftdb )
+SASL_AUXPROP_PLUG_INIT( postdb )

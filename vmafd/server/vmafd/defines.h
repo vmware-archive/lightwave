@@ -29,6 +29,14 @@
 #define VMAFD_MAX_LOG_SIZE    1000
 #define VMAFD_OPEN_FILES_MAX  16384
 
+#define VMAFD_DEFAULT_REFRESH_INTERVAL  3600
+#define VMAFD_DEFAULT_RETRY_INTERVAL    600
+#define VMAFD_DEFAULT_EXPIRE            86400
+#define VMAFD_DEFAULT_TTL               3600
+
+#define VMAFD_ZONE_TYPE_FORWARD 0
+#define VMAFD_ZONE_TYPE_REVERSE 1
+
 #ifndef _WIN32
 
 #define VMAFD_OPTION_LOGGING_LEVEL 'l'
@@ -276,6 +284,7 @@ if (bLocked) \
 #define VMDDNS_DELETE_PACKET      0
 #define VMDNS_SERVER_PORT         "53"
 #define VMDNS_SOURCEIP_UDP_PORT   "2020"
+#define VMDNS_RETRY_INTERVAL      5000
 
 #define VMDIR_HEARTBEAT_ENTRY_W \
 {'V','M','w','a','r','e',' ','D','i','r','e','c','t','o','r','y','-','S','e','r','v','i','c','e',0}
@@ -301,9 +310,7 @@ if (bLocked) \
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMCA_HEARTBEAT_ENTRY_W,\
       WEBSSO_ENTRY_W, \
-      LOOKUP_SERVICE_ENTRY_W, \
-      STS_HEARTBEAT_ENTRY_W, \
-      LICENSING_ENTRY_W \
+      STS_HEARTBEAT_ENTRY_W \
 }
 
 #define VMAFD_HEARTBEAT_ENTRY_PORTS \
@@ -311,9 +318,7 @@ if (bLocked) \
       VMDIR_HEARTBEAT_ENTRY_PORT,\
       VMCA_HEARTBEAT_ENTRY_PORT, \
       WEBSSO_ENTRY_PORT, \
-      LOOKUP_SERVICE_ENTRY_PORT, \
-      STS_HEARTBEAT_ENTRY_PORT, \
-       LICENSING_ENTRY_PORT \
+      STS_HEARTBEAT_ENTRY_PORT \
 }
 
 
@@ -335,18 +340,8 @@ if (bLocked) \
       0\
   },\
   {\
-      LOOKUP_SERVICE_ENTRY_W,\
-      LOOKUP_SERVICE_ENTRY_PORT, \
-      0\
-  },\
-  {\
       STS_HEARTBEAT_ENTRY_W,\
       STS_HEARTBEAT_ENTRY_PORT,\
       0\
-  },\
-  {\
-      LICENSING_ENTRY_W,\
-      LICENSING_ENTRY_PORT, \
-      0\
-  },\
+  }\
 }

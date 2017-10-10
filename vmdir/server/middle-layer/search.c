@@ -17,6 +17,12 @@
 #include "includes.h"
 
 static
+VOID
+ComputeRequiredAccess(
+    SearchReq*  pSearchReq
+    );
+
+static
 int
 BuildCandidateList(
     PVDIR_OPERATION    pOperation,
@@ -49,7 +55,7 @@ VmDirMLSearch(
     pOperation->pBEIF = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
     assert(pOperation->pBEIF);
 
-    retVal = VmDirInternalSearch( pOperation);
+    retVal = VmDirInternalSearch(pOperation);
     BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
@@ -169,18 +175,21 @@ VmDirInternalSearch(
     PVDIR_OPERATION pOperation
     )
 {
-    int        retVal = LDAP_SUCCESS;
-    ENTRYID    eId = 0;
-    int        deadLockRetries = 0;
-    BOOLEAN    bHasTxn = FALSE;
-    PSTR       pszLocalErrMsg = NULL;
-    PVDIR_LDAP_RESULT  pResult = &(pOperation->ldapResult);
-    ENTRYID eStartingId = 0;
-    ENTRYID *pValidatedEntries = NULL;
-    DWORD dwEntryCount = 0;
+    int     retVal = LDAP_SUCCESS;
+    int     deadLockRetries = 0;
+    DWORD   dwEntryCount = 0;
+    BOOLEAN bHasTxn = FALSE;
     BOOLEAN bUseOldSearch = TRUE;
+    PSTR    pszLocalErrMsg = NULL;
+    ENTRYID     eId = 0;
+    ENTRYID     eStartingId = 0;
+    ENTRYID*    pValidatedEntries = NULL;
+    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
 
     assert(pOperation && pOperation->pBEIF);
+
+    // compute required access for this search
+    ComputeRequiredAccess(&pOperation->request.searchReq);
 
     // Normalize (base) DN
     retVal = VmDirNormalizeDN( &(pOperation->reqDn), pOperation->pSchemaCtx );
@@ -189,7 +198,7 @@ VmDirInternalSearch(
 
     if (VmDirHandleSpecialSearch( pOperation, pResult )) // TODO, add &pszLocalErrMsg
     {
-        retVal = pResult->errCode;
+        retVal = pResult->errCode ? pResult->errCode : pResult->vmdirErrCode;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Special search failed - (%u)", retVal);
 
         goto cleanup;  // done special search
@@ -642,6 +651,48 @@ error:
 }
 
 static
+VOID
+ComputeRequiredAccess(
+    SearchReq*  pSearchReq
+    )
+{
+    DWORD   i = 0, j = 0;
+    BOOLEAN bSDAttr = FALSE;
+    PSTR    pszAttr = NULL;
+
+    PCSTR   pszSDAttrs[] = { ATTR_OBJECT_SECURITY_DESCRIPTOR, ATTR_ACL_STRING };
+
+    pSearchReq->accessRequired = VMDIR_RIGHT_DS_READ_PROP;
+
+    for (i = 0; pSearchReq->attrs && pSearchReq->attrs[i].lberbv.bv_val; i++)
+    {
+        bSDAttr = FALSE;
+        pszAttr = pSearchReq->attrs[i].lberbv.bv_val;
+
+        for (j = 0; j < VMDIR_ARRAY_SIZE(pszSDAttrs); j++)
+        {
+            if (VmDirStringCompareA(pszAttr, pszSDAttrs[j], FALSE) == 0)
+            {
+                bSDAttr = TRUE;
+                break;
+            }
+        }
+
+        if (bSDAttr)
+        {
+            // SD attributes require only READ_CONTROL
+            pSearchReq->accessRequired = VMDIR_ENTRY_READ_ACL;
+        }
+        else
+        {
+            // any other attributes require READ_PROP
+            pSearchReq->accessRequired = VMDIR_RIGHT_DS_READ_PROP;
+            break;  // no need to continue
+        }
+    }
+}
+
+static
 DWORD
 _GetFilterCandidateLabel(
     VDIR_FILTER *   f,
@@ -1002,7 +1053,7 @@ SetPagedSearchCookie(
         dwError = VmDirStringPrintFA(
                     pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
                     VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
-                    "%u",
+                    "%llu",
                     eId);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1050,10 +1101,13 @@ ProcessCandidateList(
             pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize < (DWORD)pOperation->request.searchReq.sizeLimit))
     {
         VmDirLog( LDAP_DEBUG_TRACE, "showPagedResultsCtrl applies to this query." );
+
         bPageResultsCtrl = TRUE;
         dwPageSize = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize;
-        lastEID = atoi(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
+        lastEID = atoll(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
         pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
+
+        VmDirSortCandidateList(cl);  // sort candidate list if not yet sorted
     }
 
     if (cl && cl->size > 0)
@@ -1077,13 +1131,9 @@ ProcessCandidateList(
         {
             if (!gVmdirGlobals.bPagedSearchReadAhead)
             {
-                //skip entries we sent before
-                if (bPageResultsCtrl && lastEID > 0)
+                //skip entries we sent before in sorted cl->eIds.
+                if (bPageResultsCtrl && cl->eIds[i] <= lastEID)
                 {
-                    if (cl->eIds[i] == lastEID)
-                    {
-                        lastEID = 0;
-                    }
                     continue;
                 }
             }
@@ -1110,30 +1160,54 @@ ProcessCandidateList(
 
             if (CheckIfEntryPassesFilter(pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
             {
+                BOOLEAN bSendEntry = TRUE;
+                CHAR    sha1Digest[SHA_DIGEST_LENGTH] = {0};
+
                 retVal = VmDirBuildComputedAttribute( pOperation, pSrEntry );
                 BAIL_ON_VMDIR_ERROR( retVal );
 
-                retVal = VmDirSendSearchEntry( pOperation, pSrEntry );
-                if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
+                if (pOperation->digestCtrl)
                 {
-                    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                            "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)\n",
-                            __FILE__,
-                            __LINE__,
-                            pOperation->conn->AccessInfo.pszBindedDn,
-                            pSrEntry->dn.lberbv.bv_val);
-                    // make sure search continues
-                    retVal = 0;
-                }
-                BAIL_ON_VMDIR_ERROR( retVal );
+                    retVal = VmDirEntrySHA1Digest(pSrEntry, sha1Digest);
+                    BAIL_ON_VMDIR_ERROR(retVal);
 
-                if (pSrEntry->bSearchEntrySent)
-                {
-                    numSentEntries++;
-                    if (bInternalSearch || bStoreRsltInMem)
+                    if (memcmp(sha1Digest, pOperation->digestCtrl->value.digestCtrlVal.sha1Digest, SHA_DIGEST_LENGTH) == 0)
                     {
-                        pOperation->internalSearchEntryArray.iSize++;
-                        pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+                        bSendEntry = FALSE;
+                        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,"%s digest match %s",
+                                           __FUNCTION__, pSrEntry->dn.lberbv.bv_val);
+                    }
+                    else
+                    {
+                        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,"%s digest mismatch %s",
+                                           __FUNCTION__, pSrEntry->dn.lberbv.bv_val);
+                    }
+                }
+
+                if (bSendEntry)
+                {
+                    retVal = VmDirSendSearchEntry( pOperation, pSrEntry );
+                    if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
+                    {
+                        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                                "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)\n",
+                                __FILE__,
+                                __LINE__,
+                                pOperation->conn->AccessInfo.pszBindedDn,
+                                pSrEntry->dn.lberbv.bv_val);
+                        // make sure search continues
+                        retVal = 0;
+                    }
+                    BAIL_ON_VMDIR_ERROR( retVal );
+
+                    if (pSrEntry->bSearchEntrySent)
+                    {
+                        numSentEntries++;
+                        if (bInternalSearch || bStoreRsltInMem)
+                        {
+                            pOperation->internalSearchEntryArray.iSize++;
+                            pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+                        }
                     }
                 }
             }

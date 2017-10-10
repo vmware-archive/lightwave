@@ -17,6 +17,8 @@
 #include <config.h>
 #include <vmdirsys.h>
 
+#include <ldap_log.h>
+
 #else
 
 #pragma once
@@ -43,8 +45,12 @@
 
 #include <backend.h>
 #include <middlelayer.h>
+#include <ldaphead.h>
 #include <resthead.h>
+#include <schema.h>
 #include <vmdirserver.h>
+
+#ifdef REST_ENABLED
 
 #include <copenapi/copenapi.h>
 #include <curl/curl.h>
@@ -54,11 +60,14 @@
 #include <sasl/saslutil.h>
 #include <vmrest.h>
 
-#include <common_types.h>
+#include <ssotypes.h>
+#include <ssoerrors.h>
 #include <oidc_types.h>
 #include <oidc.h>
 
 #include "defines.h"
-#include "externs.h"
 #include "structs.h"
+#include "externs.h"
 #include "prototypes.h"
+
+#endif

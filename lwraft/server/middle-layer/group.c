@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -56,7 +56,7 @@ VmDirPluginGroupTypePreAdd(
 
     if ( pOperation->opType != VDIR_OPERATION_TYPE_REPL
          &&
-         TRUE == VmDirIsEntryWithObjectclass(pEntry, OC_GROUP)
+         TRUE == VmDirEntryIsObjectclass(pEntry, OC_GROUP)
        )
     {
         PVDIR_ATTRIBUTE pAttrGroupType = VmDirFindAttrByName(pEntry, ATTR_GROUPTYPE);
@@ -74,7 +74,7 @@ VmDirPluginGroupTypePreAdd(
                                        GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
                )
             {
-                dwError = ERROR_INVALID_ENTRY;
+                dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
                 BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
                                               VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
             }
@@ -113,7 +113,7 @@ VmDirPluginGroupTypePreModify(
 
     if ( pOperation->opType != VDIR_OPERATION_TYPE_REPL
          &&
-         TRUE == VmDirIsEntryWithObjectclass(pEntry, OC_GROUP)
+         TRUE == VmDirEntryIsObjectclass(pEntry, OC_GROUP)
        )
     {
         PVDIR_ATTRIBUTE pAttrGroupType = VmDirFindAttrByName(pEntry, ATTR_GROUPTYPE);
@@ -125,7 +125,7 @@ VmDirPluginGroupTypePreModify(
              VmDirStringCompareA( pAttrGroupType->vals[0].lberbv.bv_val , GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
            )
         {
-            dwError = ERROR_INVALID_ENTRY;
+            dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
                                           VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
         }

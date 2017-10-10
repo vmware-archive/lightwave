@@ -53,18 +53,6 @@ VmDirConnectionOpenByHost(
     PVMDIR_CONNECTION* ppConnection
     );
 
-DWORD
-VmDirGetSiteGuid(
-    PVMDIR_CONNECTION pConnection,
-    PSTR*             ppszGuid
-    );
-
-DWORD
-VmDirGetSiteName(
-    PVMDIR_CONNECTION pConnection,
-    PSTR*             ppszGuid
-    );
-
 LDAP*
 VmDirConnectionGetLdap(
     PVMDIR_CONNECTION pConnection
@@ -84,80 +72,11 @@ VmDirGetReplicationPartners(
     DWORD*              pdwNumReplPartner
     );
 
-DWORD
-VmDirGetReplicationPartnerStatus(
-    PCSTR               pszHostName,
-    PCSTR               pszUserName,
-    PCSTR               pszPassword,
-    PVMDIR_REPL_PARTNER_STATUS* ppReplPartnerStatus,
-    DWORD*              pdwNumReplPartner
-    );
-
-DWORD
-VmDirGetServers(
-    PCSTR               pszHostName,
-    PCSTR               pszUserName,
-    PCSTR               pszPassword,
-    PVMDIR_SERVER_INFO* ppServerInfo,
-    DWORD*              pdwNumServer
-    );
-
-DWORD
-VmDirGetComputers(
-    PCSTR               pszHostName,
-    PCSTR               pszUserName,
-    PCSTR               pszPassword,
-    PSTR**              pppszComputers,
-    DWORD*              pdwNumComputers
-    );
-
-DWORD
-VmDirGetDCInfo(
-    PCSTR               pszHostName,
-    PCSTR               pszUserName,
-    PCSTR               pszPassword,
-    PVMDIR_DC_INFO**    pppDC,
-    DWORD*              pdwNumDC
-    );
-
-VOID
-VmDirFreeDCInfo(
-    PVMDIR_DC_INFO      pDC
-    );
-
-VOID
-VmDirFreeDCInfoArray(
-    PVMDIR_DC_INFO*     ppDC,
-    DWORD               dwNumDC
-    );
-
 VOID
 VmDirFreeStringArray(
     PSTR* ppszStr,
     DWORD size
     );
-
-DWORD
-VmDirAddReplicationAgreement(
-    BOOLEAN bTwoWayRepl,
-    PCSTR pszSrcHostName,
-    PCSTR pszSrcPort,
-    PCSTR pszSrcUserName,
-    PCSTR pszSrcPassword,
-    PCSTR pszTgtHostName,
-    PCSTR pszTgtPort
-);
-
-DWORD
-VmDirRemoveReplicationAgreement(
-    BOOLEAN bTwoWayRepl,
-    PCSTR pszSrcHostName,
-    PCSTR pszSrcPort,
-    PCSTR pszSrcUserName,
-    PCSTR pszSrcPassword,
-    PCSTR pszTgtHostName,
-    PCSTR pszTgtPort
-);
 
 /*
  * Domain Controller/Client Life cycle management functions
@@ -172,12 +91,6 @@ VmDirSetupHostInstance(
     );
 
 DWORD
-VmDirDemote(
-    PCSTR   pszUserName,
-    PCSTR   pszPassword
-    );
-
-DWORD
 VmDirJoin(
     PCSTR   pszLotusServerName, // optional Lotus Server Name (FQDN/IP/hostname)
     PCSTR   pszUserName,
@@ -188,26 +101,16 @@ VmDirJoin(
     );
 
 DWORD
-VmDirClientJoin(
-    PCSTR    pszServerName,
-    PCSTR    pszUserName,
-    PCSTR    pszPassword,
-    PCSTR    pszMachineName,
-    PCSTR    pszOrgUnit
-    );
-
-DWORD
-VmDirClientLeave(
-    PCSTR    pszServerName,
-    PCSTR    pszUserName,
-    PCSTR    pszPassword
-    );
-
-DWORD
 VmDirSetupTenantInstance(
     PCSTR pszDomainName,
     PCSTR pszUsername,
     PCSTR pszPassword
+    );
+
+DWORD
+VmDirRaftLeader(
+    PCSTR   pszServerName,
+    PSTR*   ppszLeader
     );
 
 DWORD
@@ -220,12 +123,6 @@ DWORD
 VmDirGetDomainName(
     PCSTR pszHostName,
     PSTR* ppszDomainName
-    );
-
-DWORD
-VmDirGetPartnerSiteName(
-    PCSTR pszHostName,
-    PSTR* ppszSiteName
     );
 
 DWORD
@@ -248,26 +145,11 @@ VmDirForceResetPassword(
     );
 
 DWORD
-VmDirGetKeyTabeRecBlob(
-    PCSTR       pszServerName,
+VmDirLocalGetSRPSecret(
     PCSTR       pszUPN,
-    PBYTE*      ppByte,
+    PBYTE*      ppSecretBlob,
     DWORD*      pSize
-    );
-
-DWORD
-VmDirGetKrbMasterKey(
-    PSTR        pszDomainName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    );
-
-DWORD
-VmDirGetKrbUPNKey(
-    PSTR        pszUpnName,
-    PBYTE*      ppKeyBlob,
-    DWORD*      pSize
-    );
+);
 
 DWORD
 VmDirSetSRPSecret(
@@ -275,81 +157,10 @@ VmDirSetSRPSecret(
     PCSTR       pszSecret
     );
 
-DWORD
-VmDirCreateUser(
-    PSTR    pszUserName,	/* IN              */
-    PSTR    pszPassword,	/* IN              */
-    PSTR    pszUPNName,		/* IN              */
-    BOOLEAN bRandKey		/* IN              */
-    );
-
-DWORD
-VmDirCreateUserA(
-    PVMDIR_SERVER_CONTEXT       pServerContext,
-    PVMDIR_USER_CREATE_PARAMS_A pCreateParams
-    );
-
-DWORD
-VmDirCreateUserW(
-    PVMDIR_SERVER_CONTEXT       pServerContext,
-    PVMDIR_USER_CREATE_PARAMS_W pCreateParams
-    );
-
-DWORD
-VmDirSetPassword(
-    PCSTR pszHostName,		/* IN              */
-    PCSTR pszAdminUPN,		/* IN              */
-    PCSTR pszAdminPassword,	/* IN              */
-    PCSTR pszUserUPN,		/* IN              */
-    PCSTR pszNewPassword	/* IN              */
-    );
-
-DWORD
-VmDirChangePassword(
-    PCSTR pszHostName,		/* IN              */
-    PCSTR pszUserUPN,		/* IN              */
-    PCSTR pszOldPassword,	/* IN              */
-    PCSTR pszNewPassword	/* IN              */
-    );
-
-DWORD
-VmDirCreateService(
-    PCSTR pszSvcname,  		/* IN              */
-    PCSTR pszPassword, 	 	/* IN     OPTIONAL */
-    PSTR* ppszUPN,      	/*    OUT OPTIONAL */
-    PSTR* ppszPassword  	/*    OUT OPTIONAL */
-    );
-
-DWORD
-VmDirGetMemberships(
-    PVMDIR_CONNECTION pConnection,  /* IN  */
-    PCSTR pszUPNName,               /* IN  */
-    PSTR **pppszMemberships,        /* OUT */
-    PDWORD pdwMemberships           /* OUT */
-    );
-
 VOID
 VmDirFreeMemberships(
     PSTR* ppszMemberships,
     DWORD dwMemberships
-    );
-
-DWORD
-VmDirCreateGroup(
-    PCSTR pszGroupname,   	/* IN              */
-    PSTR* ppszUPN         	/*    OUT OPTIONAL */
-    );
-
-DWORD
-VmDirGroupAddMember(
-    PCSTR pszGroupUPN,  	/* IN              */
-    PCSTR pszMemberUPN  	/* IN              */
-    );
-
-DWORD
-VmDirGroupRemoveMember(
-    PCSTR pszGroupUPN,  	/* IN              */
-    PCSTR pszMemberUPN  	/* IN              */
     );
 
 DWORD
@@ -406,10 +217,6 @@ DWORD
 VmDirGetLocalState(
     UINT32* pdwState);
 
-DWORD
-VmDirReplNow(
-    PCSTR   pszServerName);
-
 VOID
 VmDirFreeMemory(
     PVOID   pMemory
@@ -450,34 +257,6 @@ VmDirGeneratePassword(
     PCSTR       pszSRPPassword,
     PBYTE*      ppByte,
     DWORD*      pSize
-    );
-
-DWORD
-VmDirGetServerID(
-    PVMDIR_CONNECTION pConnection,
-    PCSTR             pszMachineName,
-    PSTR*             ppszGuid
-    );
-
-DWORD
-VmDirSetServerID(
-    PVMDIR_CONNECTION pConnection,
-    PCSTR             pszMachineName,
-    PCSTR             pszGuid
-    );
-
-DWORD
-VmDirGetComputerID(
-    PVMDIR_CONNECTION pConnection,
-    PCSTR             pszMachineName,
-    PSTR*             ppszGuid
-    );
-
-DWORD
-VmDirSetComputerID(
-    PVMDIR_CONNECTION pConnection,
-    PCSTR             pszMachineName,
-    PCSTR             pszGuid
     );
 
 #ifndef _VMDIR_COMMON_H__
@@ -538,39 +317,6 @@ VmDirOpenServerW(
 DWORD
 VmDirCloseServer(
     PVMDIR_SERVER_CONTEXT pServerContext
-    );
-
-DWORD
-VmDirLeaveFederation(
-    PCSTR pszRaftLeader,
-    PCSTR pszServerToLeave,
-    PCSTR pszUserName,
-    PCSTR pszPassword
-    );
-
-DWORD
-VmDirGetReplicationCycleCount(
-    PVMDIR_CONNECTION   pConnection,
-    DWORD*              pdwReplCycleCount
-    );
-
-DWORD
-VmDirGetReplicationState(
-    PVMDIR_CONNECTION  pConnection,
-    PVMDIR_REPL_STATE* ppReplState
-    );
-
-VOID
-VmDirFreeReplicationState(
-    PVMDIR_REPL_STATE   pReplState
-    );
-
-DWORD
-VmDirGetAttributeMetadata(
-    PVMDIR_CONNECTION pConnection,
-    PCSTR pszEntryDn,
-    PCSTR pszAttribute,
-    PVMDIR_METADATA_LIST* ppMetadataList
     );
 
 VOID
@@ -647,39 +393,6 @@ VmDirFreeSuperLogTable(
     );
 
 DWORD
-VmDirGetDomainFunctionalLevel(
-    PCSTR       pszHostName,
-    PCSTR       pszUPN,
-    PCSTR       pszPassword,
-    PCSTR	pszDomainName,
-    PDWORD	pdwFuncLvl
-    );
-
-DWORD
-VmDirSetDomainFunctionalLevel(
-    PCSTR       pszHostName,
-    PCSTR       pszUPN,
-    PCSTR       pszPassword,
-    PCSTR	pszDomainName,
-    PDWORD	pdwFuncLvl,
-    BOOLEAN	bUseDefault
-    );
-
-DWORD
-VmDirGetDCNodesVersion (
-    PCSTR       pszHostName,
-    PCSTR       pszUserName,
-    PCSTR       pszPassword,
-    PCSTR       pszDomainName,
-    PVMDIR_DC_VERSION_INFO *pDCVerInfo
-    );
-
-VOID
-VmDirFreeDCVersionInfo(
-    PVMDIR_DC_VERSION_INFO pDCVerInfo
-    );
-
-DWORD
 VmDirSetBackendState(
     PVMDIR_SERVER_CONTEXT    hBinding,
     UINT32     dwFileTransferState,
@@ -713,19 +426,6 @@ VmDirCloseDatabaseFile(
 );
 
 DWORD
-VmDirUrgentReplicationRequest(
-    PCSTR pszRemoteServerName
-    );
-
-DWORD
-VmDirUrgentReplicationResponse(
-    PCSTR    pszRemoteServerName,
-    PCSTR    pszUtdVector,
-    PCSTR    pszInvocationId,
-    PCSTR    pszHostName
-    );
-
-DWORD
 VmDirGetMode(
     PVMDIR_SERVER_CONTEXT hInBinding,
     UINT32*               pdwMode);
@@ -734,6 +434,40 @@ DWORD
 VmDirSetMode(
     PVMDIR_SERVER_CONTEXT hInBinding,
     UINT32                dwMode);
+
+DWORD
+VmDirRaftListCluster(
+    PCSTR                   pszServerName,
+    PVMDIR_RAFT_CLUSTER*    ppRaftCluster
+    );
+
+DWORD
+VmDirRaftShowClusterState(
+    PCSTR                   pszServerName,
+    PCSTR                   pszDomainName,
+    PCSTR                   pszUserName,
+    PCSTR                   pszPassword,
+    PVMDIR_RAFT_CLUSTER*    ppRaftCluster
+    );
+
+DWORD
+VmDirRaftLeaveCluster(
+    PCSTR                   pszServerName,
+    PCSTR                   pszDomainName,
+    PCSTR                   pszUserName,
+    PCSTR                   pszPassword,
+    PCSTR                   pszLeaveNode
+    );
+
+VOID
+VmDirFreeRaftNode(
+    PVMDIR_RAFT_NODE        pRaftNode
+    );
+
+VOID
+VmDirFreeRaftCluster(
+    PVMDIR_RAFT_CLUSTER     pRaftCluster
+    );
 
 #ifdef __cplusplus
 }

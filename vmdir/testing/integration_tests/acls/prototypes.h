@@ -30,6 +30,24 @@ TestBadParameters(
     PVMDIR_TEST_STATE pState
     );
 
+// custom_groups.c
+DWORD
+TestCustomGroups(
+    PVMDIR_TEST_STATE pState
+    );
+
+// default_security_descriptor.c
+DWORD
+TestDefaultSecurityDescriptor(
+    PVMDIR_TEST_STATE pState
+    );
+
+// k8s_machine_act_selfservice.c
+DWORD
+TestK8sMachineActSelfService(
+    PVMDIR_TEST_STATE pState
+    );
+
 // domainadminsrights.c
 DWORD
 TestStandardRightsForDomainAdmin(
@@ -42,16 +60,19 @@ TestStandardRightsForDomainClients(
     PVMDIR_TEST_STATE pState
     );
 
+// ntsecuritydescriptor.c
 DWORD
 TestSecurityDescriptors(
     PVMDIR_TEST_STATE pState
     );
 
+// sddl.c
 DWORD
 TestSecurityDescriptorsSddl(
     PVMDIR_TEST_STATE pState
     );
 
+// protected_entries.c
 DWORD
 TestProtectedEntries(
     PVMDIR_TEST_STATE pState
@@ -70,7 +91,6 @@ TestLegacyAccessChecks(
     );
 
 // standard_rights.c
-
 DWORD
 TryToListChildObjects(
     PVMDIR_TEST_STATE pState,

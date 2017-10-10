@@ -5,9 +5,9 @@
 <project name="vmware-config-depends" default="build" basedir=".">
 
    <property name="MAINSRCROOT" value="${basedir}/.." />
-   <property file="../product.properties" />
-   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
-   <property name="depends" value="${MAINSRCROOT}/build/depends" />
+   <property file="${MAINSRCROOT}/product.properties" />
+   <property name="buildRoot" value="${build_dir}/${PRODUCT_NAME}" />
+   <property name="depends" value="${build_dir}/depends" />
 
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
@@ -27,15 +27,16 @@
           <url url="http://central.maven.org/maven2/net/java/dev/jna/jna/4.2.1/jna-4.2.1.jar" />
           <url url="http://central.maven.org/maven2/net/java/dev/jna/jna-platform/4.2.1/jna-platform-4.2.1.jar" />
           <url url="http://central.maven.org/maven2/commons-codec/commons-codec/1.4/commons-codec-1.4.jar" />
-          <url url="http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.10/jcl-over-slf4j-1.7.10.jar" />
-          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-1.2-api/2.0.2/log4j-1.2-api-2.0.2.jar" />
-          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.2/log4j-core-2.2.jar" />
-          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.2/log4j-api-2.2.jar" />
-          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.2/log4j-slf4j-impl-2.2.jar" />
-          <url url="http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.10/jcl-over-slf4j-1.7.10.jar" />
+          <url url="http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.25/jcl-over-slf4j-1.7.25.jar" />
+          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-1.2-api/2.8.2/log4j-1.2-api-2.8.2.jar" />
+          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.8.2/log4j-core-2.8.2.jar" />
+          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.8.2/log4j-api-2.8.2.jar" />
+          <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.8.2/log4j-slf4j-impl-2.8.2.jar" />
+          <url url="http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.25/jcl-over-slf4j-1.7.25.jar" />
 
           <!-- TEST DEPENDENCIES -->
            <url url="http://central.maven.org/maven2/org/powermock/powermock-easymock-release-full/1.6.2/powermock-easymock-release-full-1.6.2-full.jar" />
+           <url url="http://central.maven.org/maven2/ant-contrib/ant-contrib/1.0b3/ant-contrib-1.0b3.jar" />
 
          </resources>
      </copy>

@@ -240,34 +240,6 @@ VmDirdSetRunMode(
 }
 
 VOID
-VmDirdSetReplNow(
-    BOOLEAN bReplNow)
-{
-    BOOLEAN             bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    gVmdirGlobals.bReplNow = bReplNow;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    return;
-}
-
-BOOLEAN
-VmDirdGetReplNow(
-    VOID
-    )
-{
-    BOOLEAN     bReplNow = FALSE;
-    BOOLEAN     bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    bReplNow = gVmdirGlobals.bReplNow;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    return bReplNow;
-}
-
-VOID
 VmDirdSetLimitLocalUsnToBeSupplied(
     USN usn
     )
@@ -302,52 +274,115 @@ VmDirdGetAllowInsecureAuth(
     return gVmdirGlobals.bAllowInsecureAuth;
 }
 
-VOID
-VmDirGetLdapListenPorts(
-    PDWORD* ppdwLdapListenPorts,
-    PDWORD  pdwLdapListenPorts
+DWORD
+VmDirGetLdapPort(
+    VOID
     )
 {
-    *ppdwLdapListenPorts = gVmdirGlobals.pdwLdapListenPorts;
-    *pdwLdapListenPorts = gVmdirGlobals.dwLdapListenPorts;
-}
-
-VOID
-VmDirGetLdapsListenPorts(
-    PDWORD* ppdwLdapsListenPorts,
-    PDWORD  pdwLdapsListenPorts
-    )
-{
-    *ppdwLdapsListenPorts = gVmdirGlobals.pdwLdapsListenPorts;
-    *pdwLdapsListenPorts = gVmdirGlobals.dwLdapsListenPorts;
-}
-
-VOID
-VmDirGetLdapConnectPorts(
-    PDWORD* ppdwLdapConnectPorts,
-    PDWORD  pdwLdapConnectPorts
-    )
-{
-    *ppdwLdapConnectPorts = gVmdirGlobals.pdwLdapConnectPorts;
-    *pdwLdapConnectPorts = gVmdirGlobals.dwLdapConnectPorts;
-}
-
-VOID
-VmDirGetLdapsConnectPorts(
-    PDWORD* ppdwLdapsConnectPorts,
-    PDWORD  pdwLdapsConnectPorts
-    )
-{
-    *ppdwLdapsConnectPorts = gVmdirGlobals.pdwLdapsConnectPorts;
-    *pdwLdapsConnectPorts = gVmdirGlobals.dwLdapsConnectPorts;
+    return gVmdirGlobals.dwLdapPort;
 }
 
 DWORD
-VmDirGetAllLdapPortsCount(
+VmDirGetLdapsPort(
     VOID
-)
+    )
 {
-    return gVmdirGlobals.dwLdapConnectPorts + gVmdirGlobals.dwLdapsConnectPorts;
+    return gVmdirGlobals.dwLdapsPort;
+}
+
+DWORD
+VmDirCheckPortAvailability(
+    DWORD   dwPort
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bIPV4Addr = FALSE;
+    BOOLEAN bIPV6Addr = FALSE;
+    int     ip4_fd = -1;
+    int     ip6_fd = -1;
+    int     level = 0;
+    int     optname = 0;
+    int     on = 1;
+    struct sockaddr_in  serv_4addr = {0};
+    struct sockaddr_in6 serv_6addr = {0};
+
+#ifdef _WIN32
+    level = IPPROTO_IPV6;
+    optname = SO_EXCLUSIVEADDRUSE;
+#else
+    level = SOL_IPV6;
+    optname = SO_REUSEADDR;
+#endif
+
+    dwError = VmDirWhichAddressPresent(&bIPV4Addr, &bIPV6Addr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bIPV4Addr)
+    {
+        if ((ip4_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        bzero((char *) &serv_4addr, sizeof(serv_4addr));
+        serv_4addr.sin_family = AF_INET;
+        serv_4addr.sin_addr.s_addr = INADDR_ANY;
+        serv_4addr.sin_port = htons(dwPort);
+
+        if (setsockopt(ip4_fd, SOL_SOCKET, optname, (const char *)(&on), sizeof(on)) < 0 ||
+            bind(ip4_fd, (struct sockaddr *)&serv_4addr, sizeof(serv_4addr)) < 0)
+        {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s failed to bind to (IPV4) port %d with errno %d",
+                    __FUNCTION__, dwPort, errno );
+
+            dwError = VMDIR_ERROR_INVALID_STATE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    if (bIPV6Addr)
+    {
+        if ((ip6_fd = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        memset((char *) &serv_6addr, 0, sizeof(serv_6addr));
+        serv_6addr.sin6_family = AF_INET6;
+        serv_6addr.sin6_port = htons(dwPort);
+
+        if (setsockopt(ip6_fd, SOL_SOCKET, optname, (const char *)(&on), sizeof(on)) < 0 ||
+            setsockopt(ip6_fd, level, IPV6_V6ONLY, (const char *)(&on), sizeof(on)) < 0 ||
+            bind(ip6_fd, (struct sockaddr *)&serv_6addr, sizeof(serv_6addr)) < 0)
+        {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s failed to bind to (IPV6) port %d with errno %d",
+                    __FUNCTION__, dwPort, errno );
+
+            dwError = VMDIR_ERROR_INVALID_STATE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    if (ip4_fd >= 0)
+    {
+        tcp_close(ip4_fd);
+    }
+    if (ip6_fd >= 0)
+    {
+        tcp_close(ip6_fd);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError);
+
+    goto cleanup;
 }
 
 DWORD
@@ -405,6 +440,7 @@ VmDirServerStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        SERVER_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -480,17 +516,17 @@ VmDirReplicationStatusEntry(
 
     maxOriginatingUSN = backendCtx.pBE->pfnBEGetMaxOriginatingUSN( &backendCtx );
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszPartnerVisibleUSN,
+    dwError = VmDirAllocateStringPrintf( &pszPartnerVisibleUSN,
                                              "%u",
                                              maxPartnerVisibleUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszCycleCount,
+    dwError = VmDirAllocateStringPrintf( &pszCycleCount,
                                              "%u",
                                              VmDirGetReplCycleCounter());
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszMaxOriginatingUSN,
+    dwError = VmDirAllocateStringPrintf( &pszMaxOriginatingUSN,
                                              "%u",
                                              maxOriginatingUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -525,7 +561,7 @@ VmDirReplicationStatusEntry(
             dwError = VmDirAllocateStringA( ppszArray[dwCnt*3], &ppszAttrList[dwIndex++]);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirAllocateStringAVsnprintf( &(ppszAttrList[dwIndex++]),
+            dwError = VmDirAllocateStringPrintf( &(ppszAttrList[dwIndex++]),
                                                      "%s%s",
                                                      ppszArray[dwCnt*3+1] ? ppszArray[dwCnt*3+1] : "" ,
                                                      ppszArray[dwCnt*3+2] ? ppszArray[dwCnt*3+2] : "Unknown" );
@@ -539,6 +575,7 @@ VmDirReplicationStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        REPLICATION_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -594,6 +631,106 @@ VmDirSrvValidateUserCreateParams(
     }
 
     return dwError;
+}
+
+DWORD
+VmDirRaftStateEntry(
+    PVDIR_ENTRY*    ppEntry
+    )
+{
+    DWORD dwError = 0;
+    DEQUE members = {0};
+    DEQUE membersState = {0};
+    PSTR pNode = NULL;
+    PSTR pHost = NULL;
+    PVDIR_ENTRY pEntry = NULL;
+    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
+    PVDIR_BERVALUE pBerv = NULL;
+    int i = 0;
+    int attrCnt = 0;
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRaftGetMembers(&members);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (members.iSize == 0)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    while(dequePopLeft(&members, (PVOID*)&pHost) == 0)
+    {
+        dwError = VmDirAppendRaftState(&membersState, pHost);
+        if (dwError)
+        {
+            //best-effort to get state from members
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirRaftStateEntry fail to get raft state on host %s, error %d",
+                            pHost, dwError);
+        }
+        VMDIR_SAFE_FREE_MEMORY(pHost);
+
+        if (dwError==0)
+        {
+            dwError = VmDirAllocateStringPrintf(&pNode, "-");
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = dequePush(&membersState, pNode);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pNode = NULL;
+        }
+    }
+
+    attrCnt = membersState.iSize;
+    if (attrCnt == 0)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    {
+        PSTR ppStateEntry[] = {ATTR_CN, "raftstate", ATTR_OBJECT_CLASS, OC_CLASS_RAFT_STATE, NULL};
+        dwError = VmDirAttrListToNewEntry(pSchemaCtx, RAFT_STATE_DN, ppStateEntry, FALSE, &pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (attrCnt + 1), (PVOID*)&pBerv);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    i=0;
+    while(dequePopLeft(&membersState, (PVOID*)&pNode) == 0)
+    {
+         pBerv[i].lberbv_len = VmDirStringLenA(pNode);
+         pBerv[i].lberbv_val = pNode;
+         pBerv[i].bOwnBvVal = TRUE;
+         pNode = NULL;
+         i++;
+    }
+    dwError = VmDirEntryAddBervArrayAttribute(pEntry, ATTR_RAFT_STATE, pBerv, attrCnt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppEntry = pEntry;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pNode);
+    dequeFreeStringContents(&members);
+    dequeFreeStringContents(&membersState);
+    if (pSchemaCtx)
+    {
+        VmDirSchemaCtxRelease(pSchemaCtx);
+    }
+    VmDirFreeBervalArrayContent(pBerv, attrCnt);
+    VMDIR_SAFE_FREE_MEMORY(pBerv);
+    return dwError;
+
+error:
+    if (pEntry)
+    {
+        VmDirFreeEntry(pEntry);
+    }
+    goto cleanup;
 }
 
 #ifdef _WIN32
@@ -670,7 +807,7 @@ VmDirGetBootStrapSchemaFilePath(
     {
        dwError = VmDirAppendStringToEnvVar(
                         TEXT("PROGRAMDATA"),
-                        TEXT("\\VMware\\CIS\\cfg\\lwraftd\\vmdirschema.ldif"),
+                        TEXT("\\VMware\\CIS\\cfg\\lwraftd\\lwraftschema.ldif"),
                         pBootStrapSchemaFile
                         );
     }

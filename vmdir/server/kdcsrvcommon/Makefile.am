@@ -9,7 +9,7 @@
 
 noinst_LTLIBRARIES = libkdcsrvcommon.la
 
-idl_srcdir=$(top_srcdir)/idl
+idl_srcdir=$(top_srcdir)/vmdir/idl
 
 PAC_SOURCES =
 
@@ -28,7 +28,7 @@ CLEANFILES = \
     vmdir_pac_sstub.c
 
 vmdir_pac_cstub.c vmdir_pac_h.h: $(idl_srcdir)/vmdir_pac.idl $(idl_srcdir)/vmdir_pac.acf
-	$(IDL) $(IDLFLAGS) -DVMDIR_ENABLE_PAC -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+	$(IDL) $(IDLFLAGS) -DVMDIR_ENABLE_PAC -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
 endif
 
 libkdcsrvcommon_la_SOURCES = \
@@ -38,11 +38,12 @@ libkdcsrvcommon_la_SOURCES = \
 
 libkdcsrvcommon_la_CPPFLAGS = \
     $(VMDIR_ENABLE_PAC_DEFINE) \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmmetrics/include/public \
     -I. \
-    -I$(top_builddir)/server/kdcsrvcommon \
+    -I$(top_builddir)/vmdir/server/kdcsrvcommon \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@

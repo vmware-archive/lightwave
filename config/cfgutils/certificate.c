@@ -378,7 +378,6 @@ error:
 
 DWORD
 VmwDeployAddTrustedRoot(
-    PCSTR pszServername,
     PCSTR pszCACert
     )
 {
@@ -386,7 +385,7 @@ VmwDeployAddTrustedRoot(
     PCSTR pszHostname = "localhost";
     PVECS_STORE pStore = NULL;
 
-    if (IsNullOrEmptyString(pszServername) || IsNullOrEmptyString(pszCACert))
+    if (IsNullOrEmptyString(pszCACert))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -410,7 +409,7 @@ VmwDeployAddTrustedRoot(
     dwError =  VecsAddEntryA(
                 pStore,
                 CERT_ENTRY_TYPE_TRUSTED_CERT,
-                pszServername,
+                NULL,
                 pszCACert,
                 NULL,
                 NULL,

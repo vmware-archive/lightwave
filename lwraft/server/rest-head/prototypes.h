@@ -12,23 +12,6 @@
  * under the License.
  */
 
-// accesstoken.c
-DWORD
-VmDirRESTAccessTokenInit(
-    PVDIR_REST_ACCESS_TOKEN*    ppAccessToken
-    );
-
-DWORD
-VmDirRESTAccessTokenParse(
-    PVDIR_REST_ACCESS_TOKEN pAccessToken,
-    PSTR                    pszAuthData
-    );
-
-VOID
-VmDirFreeRESTAccessToken(
-    PVDIR_REST_ACCESS_TOKEN pAccessToken
-    );
-
 // auth.c
 DWORD
 VmDirRESTAuth(
@@ -36,18 +19,78 @@ VmDirRESTAuth(
     );
 
 DWORD
-VmDirRESTAuthBasic(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaBasic(
+    PVDIR_REST_OPERATION    pRestOp
     );
 
 DWORD
-VmDirRESTAuthToken(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVDIR_OPERATION         pBindOp
+VmDirRESTAuthViaToken(
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
+// authtoken.c
+DWORD
+VmDirRESTAuthTokenInit(
+    PVDIR_REST_AUTH_TOKEN*  ppAuthToken
+    );
+
+DWORD
+VmDirRESTAuthTokenParse(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken,
+    PCSTR                   pszAuthData
+    );
+
+DWORD
+VmDirRESTAuthTokenValidate(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
+    );
+
+VOID
+VmDirFreeRESTAuthToken(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken
+    );
+
+// cache.c
+DWORD
+VmDirRESTCacheInit(
+    PVDIR_REST_HEAD_CACHE*  ppRestCache
+    );
+
+DWORD
+VmDirRESTCacheRefresh(
+    PVDIR_REST_HEAD_CACHE   pRestCache
+    );
+
+DWORD
+VmDirRESTCacheGetOIDCSigningCertPEM(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PSTR*                   ppszOIDCSigningCertPEM
+    );
+
+DWORD
+VmDirRESTCacheGetBuiltInAdminsGroupSid(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PSID*                   ppBuiltInAdminsGroupSid
+    );
+
+VOID
+VmDirFreeRESTCache(
+    PVDIR_REST_HEAD_CACHE   pRestCache
     );
 
 // decode.c
+DWORD
+VmDirRESTDecodeAttributeNoAlloc(
+    json_t*         pjInput,
+    PVDIR_ATTRIBUTE pAttr
+    );
+
+DWORD
+VmDirRESTDecodeAttribute(
+    json_t*             pjInput,
+    PVDIR_ATTRIBUTE*    ppAttr
+    );
+
 DWORD
 VmDirRESTDecodeEntry(
     json_t*         pjInput,
@@ -55,8 +98,37 @@ VmDirRESTDecodeEntry(
     );
 
 DWORD
-VmDirRESTDecodeMods(
+VmDirRESTDecodeEntryMods(
     json_t*             pjInput,
+    PVDIR_MODIFICATION* ppMods,
+    DWORD*              pdwNumMods
+    );
+
+DWORD
+VmDirRESTDecodeObjectPathToDN(
+    PCSTR   pszObjPath,
+    PCSTR   pszTenant,
+    PSTR*   ppszDN
+    );
+
+DWORD
+VmDirRESTDecodeObjectFilter(
+    PVDIR_FILTER    pFilter,
+    PCSTR           pszTenant
+    );
+
+DWORD
+VmDirRESTDecodeObject(
+    json_t*         pjInput,
+    PCSTR           pszObjPath,
+    PCSTR           pszTenant,
+    PVDIR_ENTRY*    ppObj
+    );
+
+DWORD
+VmDirRESTDecodeObjectMods(
+    json_t*             pjInput,
+    PCSTR               pszTenant,
     PVDIR_MODIFICATION* ppMods,
     DWORD*              pdwNumMods
     );
@@ -80,6 +152,102 @@ VmDirRESTEncodeEntryArray(
     PVDIR_ENTRY_ARRAY   pEntryArray,
     PVDIR_BERVALUE      pbvAttrs,
     json_t**            ppjOutput
+    );
+
+DWORD
+VmDirRESTEncodeDNToObjectPath(
+    PCSTR   pszDN,
+    PCSTR   pszTenant,
+    PSTR*   ppszObjPath
+    );
+
+DWORD
+VmDirRESTEncodeObjectAttribute(
+    PVDIR_ATTRIBUTE pObjAttr,
+    PCSTR           pszTenant,
+    json_t**        ppjOutput
+    );
+
+DWORD
+VmDirRESTEncodeObject(
+    PVDIR_ENTRY     pObj,
+    PVDIR_BERVALUE  pbvAttrs,
+    PCSTR           pszTenant,
+    json_t**        ppjOutput
+    );
+
+DWORD
+VmDirRESTEncodeObjectArray(
+    PVDIR_ENTRY_ARRAY   pObjArray,
+    PVDIR_BERVALUE      pbvAttrs,
+    PCSTR               pszTenant,
+    json_t**            ppjOutput,
+    size_t*             pSkipped
+    );
+
+// etcdapi.c
+DWORD
+VmDirRESTGetEtcdModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTEtcdPut(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTEtcdGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTEtcdDelete(
+    void*   pIn,
+    void**  ppOut
+    );
+
+// handler.c
+DWORD
+VmDirHTTPRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirHTTPSRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirRESTRequestHandlerInternal(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount,
+    BOOLEAN         bHttpRequest
+    );
+
+DWORD
+VmDirRESTProcessRequest(
+    PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
+    PREST_REQUEST           pRequest,
+    uint32_t                paramsCount
+    );
+
+DWORD
+VmDirRESTWriteSimpleErrorResponse(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_RESPONSE* ppResponse,
+    int             httpStatus
     );
 
 // httperror.c
@@ -126,6 +294,13 @@ VmDirRESTLdapSetResult(
     PSTR                pszErrMsg
     );
 
+// ldapcontro.c
+DWORD
+VmDirAddCondWriteCtrl(
+    PVDIR_OPERATION pOp,
+    PCSTR           pszCondWriteFilter
+    );
+
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
@@ -133,12 +308,69 @@ VmDirRESTLdapGetHttpError(
     PSTR*               ppszHttpReason
     );
 
-// libmain.c
+// lightwave.c
 DWORD
-VmDirRESTRequestHandler(
-    PREST_REQUEST   pRequest,
-    PREST_RESPONSE* ppResponse,
-    uint32_t        paramsCount
+VmDirRESTGetLightwaveOIDCSigningCertPEM(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PSTR*   ppszOIDCSigningCertPEM
+    );
+
+DWORD
+VmDirRESTGetLightwaveObjectSid(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszDN,
+    PSID*   ppSid
+    );
+
+DWORD
+VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
+    PCSTR   pszDCName,
+    PCSTR   pszDomainName,
+    PSID*   ppBuiltInAdminsGroupSid
+    );
+
+// metricsapi.c
+DWORD
+VmDirRESTGetMetricsModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTMetricsGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
+// objectapi.c
+DWORD
+VmDirRESTGetObjectModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTObjectPut(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTObjectGet(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTObjectPatch(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTObjectDelete(
+    void*   pIn,
+    void**  ppOut
     );
 
 // operation.c
@@ -150,6 +382,7 @@ VmDirRESTOperationCreate(
 DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
     );
@@ -157,6 +390,7 @@ VmDirRESTOperationReadRequest(
 DWORD
 VmDirRESTOperationWriteResponse(
     PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
     PREST_RESPONSE*         ppResponse
     );
 
@@ -169,7 +403,7 @@ VmDirFreeRESTOperation(
 DWORD
 VmDirRESTGetStrParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     PSTR*                   ppszVal,
     BOOLEAN                 bRequired
     );
@@ -177,15 +411,23 @@ VmDirRESTGetStrParam(
 DWORD
 VmDirRESTGetIntParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     int*                    piVal,
+    BOOLEAN                 bRequired
+    );
+
+DWORD
+VmDirRESTGetBoolParam(
+    PVDIR_REST_OPERATION    pRestOp,
+    PCSTR                   pszKey,
+    BOOLEAN*                pbVal,
     BOOLEAN                 bRequired
     );
 
 DWORD
 VmDirRESTGetStrListParam(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR                    pszKey,
+    PCSTR                   pszKey,
     PVMDIR_STRING_LIST*     ppValList,
     BOOLEAN                 bRequired
     );
@@ -193,22 +435,46 @@ VmDirRESTGetStrListParam(
 DWORD
 VmDirRESTGetLdapSearchParams(
     PVDIR_REST_OPERATION    pRestOp,
-    PSTR*                   ppszDN,
     int*                    piScope,
     PVDIR_FILTER*           ppFilter,
     PVDIR_BERVALUE*         ppbvAttrs,
     PVDIR_LDAP_CONTROL*     ppPagedResultsCtrl
     );
 
-// resource.c
-VDIR_REST_RESOURCE_TYPE
-VmDirRESTGetEndpointRscType(
-    PSTR    pszEndpoint
+DWORD
+VmDirRESTGetObjectTenantParam(
+    PVDIR_REST_OPERATION    pRestOp,
+    PSTR*                   ppszTenant
     );
 
+DWORD
+VmDirRESTGetObjectGetParams(
+    PVDIR_REST_OPERATION    pRestOp,
+    PSTR*                   ppszTenant,
+    int*                    piSearchScope,
+    PVDIR_FILTER*           ppFilter,
+    PVDIR_BERVALUE*         ppbvAttrs,
+    PVDIR_LDAP_CONTROL*     ppPagedResultsCtrl
+    );
+
+DWORD
+VmDirRESTRenameParamKey(
+    PVDIR_REST_OPERATION    pRestOp,
+    PCSTR                   pszOldKey,
+    PCSTR                   pszNewKey
+    );
+
+DWORD
+VmDirRESTFilterObjectToDN(
+    PCSTR           pszTenant,
+    PVDIR_FILTER    pObjectFilter,
+    PVDIR_FILTER*   ppDNFilter
+    );
+
+// resource.c
 PVDIR_REST_RESOURCE
 VmDirRESTGetResource(
-    VDIR_REST_RESOURCE_TYPE rscType
+    PSTR    pszPath
     );
 
 DWORD
@@ -237,6 +503,11 @@ VmDirRESTResultSetError(
     PVDIR_REST_RESULT   pRestRslt,
     int                 errCode,
     PSTR                pszErrMsg
+    );
+
+DWORD
+VmDirRESTResultUnsetError(
+    PVDIR_REST_RESULT   pRestRslt
     );
 
 DWORD
@@ -270,4 +541,42 @@ VmDirRESTResultToResponseBody(
 VOID
 VmDirFreeRESTResult(
     PVDIR_REST_RESULT   pRestRslt
+    );
+
+// vmafd.c
+DWORD
+VmDirRESTLoadVmAfdAPI(
+    PVDIR_VMAFD_API*    ppVmAfdAPI
+    );
+
+VOID
+VmDirRESTUnloadVmAfdAPI(
+    PVDIR_VMAFD_API pVmAfdAPI
+    );
+
+// proxy.c
+DWORD
+VmDirRESTForwardRequest(
+    PVDIR_REST_OPERATION    pRestOp,
+    uint32_t                dwParamCount,
+    PREST_REQUEST           pRequest,
+    PVMREST_HANDLE          pRESTHandle,
+    BOOLEAN                 bHttpRequest
+    );
+
+DWORD
+VmDirRESTWriteProxyResponse(
+    PVDIR_REST_OPERATION     pRestOp,
+    PREST_RESPONSE*          ppResponse,
+    PVMREST_HANDLE           pRESTHandle
+    );
+
+DWORD
+VmDirRESTCreateProxyResult(
+    PVDIR_PROXY_RESULT*      ppProxyresult
+    );
+
+VOID
+VmDirFreeProxyResult(
+    PVDIR_PROXY_RESULT       pProxyResult
     );

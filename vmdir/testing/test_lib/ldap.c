@@ -67,7 +67,7 @@ VmDirTestGetAttributeValueString(
                 pLd,
                 pBase,
                 ldapScope,
-                pszFilter ? pszFilter : "",
+                pszFilter,
                 (PSTR*)ppszAttrs,
                 0,
                 NULL,
@@ -251,14 +251,16 @@ VmDirTestLdapUnbind(
 //
 DWORD
 VmDirTestGetObjectList(
-    LDAP *pLd,
-    PCSTR pszDn,
-    PVMDIR_STRING_LIST *ppObjectList /* OPTIONAL */
+    LDAP*               pLd,
+    PCSTR               pszDn,
+    PCSTR               pszFilter,      /* OPTIONAL */
+    PCSTR               pszAttr,        /* OPTIONAL */
+    PVMDIR_STRING_LIST* ppObjectList    /* OPTIONAL */
     )
 {
-    DWORD dwError = 0;
-    DWORD dwObjectCount = 0;
-    PCSTR ppszAttrs[] = {NULL};
+    DWORD   dwError = 0;
+    DWORD   dwObjectCount = 0;
+    PSTR    pszAttrs[] = { (PSTR)pszAttr, NULL };
     LDAPMessage *pResult = NULL;
     PVMDIR_STRING_LIST pObjectList = NULL;
 
@@ -266,8 +268,8 @@ VmDirTestGetObjectList(
                 pLd,
                 pszDn,
                 LDAP_SCOPE_SUBTREE,
-                "(objectClass=*)",
-                (PSTR*)ppszAttrs,
+                pszFilter,
+                pszAttrs,
                 0,
                 NULL,
                 NULL,
@@ -280,18 +282,21 @@ VmDirTestGetObjectList(
     {
         dwObjectCount = ldap_count_entries(pLd, pResult);
         dwError = VmDirStringListInitialize(&pObjectList, dwObjectCount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         if (dwObjectCount > 0)
         {
             LDAPMessage* pEntry = ldap_first_entry(pLd, pResult);
 
-            //
-            // Grab the next entry. The first one will be the base DN itself.
-            //
-            pEntry = ldap_next_entry(pLd, pEntry);
             for (; pEntry != NULL; pEntry = ldap_next_entry(pLd, pEntry))
             {
-                dwError = VmDirStringListAddStrClone(ldap_get_dn(pLd, pEntry), pObjectList);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                PCSTR pszObjDn = ldap_get_dn(pLd, pEntry);
+                // skip the root entry
+                if (VmDirStringCompareA(pszDn, pszObjDn, FALSE))
+                {
+                    dwError = VmDirStringListAddStrClone(ldap_get_dn(pLd, pEntry), pObjectList);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
             }
         }
 
@@ -346,29 +351,26 @@ error:
 }
 
 DWORD
-VmDirTestDeleteContainer(
+VmDirTestDeleteContainerByDn(
     LDAP *pLd,
     PCSTR pszContainerDn
     )
 {
     DWORD dwError = 0;
     DWORD dwIndex = 0;
-    PVMDIR_STRING_LIST pObjectList;
+    PVMDIR_STRING_LIST pObjectList = NULL;
 
-    dwError = VmDirTestGetObjectList(
-                pLd,
-                pszContainerDn,
-                &pObjectList);
+    dwError = VmDirTestGetObjectList(pLd, pszContainerDn, NULL, NULL, &pObjectList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwIndex = 0; dwIndex < pObjectList->dwCount; ++dwIndex)
     {
-        dwError = ldap_delete_ext_s(pLd, pObjectList->pStringList[dwIndex], NULL, NULL);
+        dwError = ldap_delete_ext_s(
+                pLd, pObjectList->pStringList[dwIndex], NULL, NULL);
         if (dwError == LDAP_NOT_ALLOWED_ON_NONLEAF)
         {
-            dwError = VmDirTestDeleteContainer(
-                        pLd,
-                        pObjectList->pStringList[dwIndex]);
+            dwError = VmDirTestDeleteContainerByDn(
+                    pLd, pObjectList->pStringList[dwIndex]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -377,7 +379,108 @@ VmDirTestDeleteContainer(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VmDirStringListFree(pObjectList);
     return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestCreateSimpleUser(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszUserDN
+    )
+{
+    DWORD       dwError = 0;
+
+    PCSTR       valsCn[] = {pszCN, NULL};
+    PCSTR       valsClass[] = {OC_USER, NULL};
+
+    LDAPMod     mod[2]={
+                            {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
+                            {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
+                       };
+    LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
+
+    dwError = ldap_add_ext_s(pLd, pszUserDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirTestCreateSimpleContainer(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszContainerDN
+    )
+{
+    DWORD       dwError = 0;
+
+    PCSTR       valsCn[] = {pszCN, NULL};
+    PCSTR       valsClass[] = {OC_CONTAINER, NULL};
+
+    LDAPMod     mod[2]={
+                            {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
+                            {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
+                       };
+    LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
+
+    dwError = ldap_add_ext_s(pLd, pszContainerDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+BOOLEAN
+VmDirTestCanReadSingleEntry(
+    LDAP* pLd,
+    PCSTR pszBaseDn
+    )
+{
+    DWORD   dwError = 0;
+    LDAPMessage* pResult = NULL;
+    BOOLEAN bRtn = FALSE;
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszBaseDn,
+                LDAP_SCOPE_BASE,
+                NULL,
+                NULL,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                -1,
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldap_count_entries(pLd, pResult) == 1)
+    {
+        bRtn = TRUE;
+    }
+
+cleanup:
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return bRtn;
+
 error:
     goto cleanup;
 }

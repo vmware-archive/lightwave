@@ -9,16 +9,16 @@ domainjoin_SOURCES = \
 
 domainjoin_CPPFLAGS = \
     -DLDAP_DEPRECATED \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    @VMDIR_INCLUDES@ \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
  
 domainjoin_LDADD = \
-    $(top_builddir)/client/libvmafdclient.la \
-    $(top_builddir)/common/libcommon.la \
-    @VMDIR_LIBS@ \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/common/libcommon.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
     @LWSM_LIBS@ \
     @LWADVAPI_LIBS@ \
     @DCERPC_LIBS@ \
@@ -34,7 +34,5 @@ domainjoin_LDADD = \
     @PTHREAD_LIBS@
 
 domainjoin_LDFLAGS = \
-    @VMDIR_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@
- 

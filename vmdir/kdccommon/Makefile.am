@@ -15,8 +15,8 @@ libkdccommon_la_SOURCES = \
     security-sd.c
 
 libkdccommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

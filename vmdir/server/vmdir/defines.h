@@ -119,6 +119,16 @@
 #define TOMBSTONE_REAPING_THROTTLE_SLEEP (1 * 1000)
 #define VDIR_REAP_EXPIRED_ENTRIES_BATCH 2000
 
+#define VDIR_INTEGRITY_CHECK_BATCH     1000
+
+#ifdef LIGHTWAVE_BUILD
+#define ACTIVE_LDAP_PORT_STR   DEFAULT_LDAP_PORT_STR "\000"
+#define ACTIVE_LDAPS_PORT_STR  DEFAULT_LDAPS_PORT_STR "\000"
+#else
+#define ACTIVE_LDAP_PORT_STR   DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000"
+#define ACTIVE_LDAPS_PORT_STR  DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000"
+#endif
+
 /*
  * Table to define and initialize VMDIR configuration data.
  *
@@ -165,7 +175,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAP_PORT_STR,             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -176,7 +186,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAPS_PORT_STR,            \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -187,7 +197,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAP_PORT_STR,             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -198,18 +208,29 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
+        /*.pszDefault     = */ ACTIVE_LDAPS_PORT_STR,            \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_REST_LISTEN_PORT,   \
+        /*.pszName        = */ VMDIR_REG_KEY_HTTP_LISTEN_PORT,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
         /*.RegDataType    = */ REG_SZ,                           \
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_REST_PORT_STR,            \
+        /*.pszDefault     = */ DEFAULT_HTTP_PORT_STR,       \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_HTTPS_LISTEN_PORT,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
+        /*.RegDataType    = */ REG_SZ,                           \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ DEFAULT_HTTPS_PORT_STR,      \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -377,3 +398,30 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
 }
+
+typedef enum
+{
+    METRICS_RPC_OP_GENERATEPASSWORD,
+    METRICS_RPC_OP_GETKEYTABRECBLOB,
+    METRICS_RPC_OP_CREATEUSER,
+    METRICS_RPC_OP_CREATEUSEREX,
+    METRICS_RPC_OP_SETLOGLEVEL,
+    METRICS_RPC_OP_SETLOGMASK,
+    METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA,
+    METRICS_RPC_OP_SUPERLOGENABLE,
+    METRICS_RPC_OP_SUPERLOGDISABLE,
+    METRICS_RPC_OP_ISSUPERLOGENABLED,
+    METRICS_RPC_OP_SUPERLOGFLUSH,
+    METRICS_RPC_OP_SUPERLOGSETSIZE,
+    METRICS_RPC_OP_SUPERLOGGETSIZE,
+    METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION,
+    METRICS_RPC_OP_OPENDATABASEFILE,
+    METRICS_RPC_OP_READDATABASEFILE,
+    METRICS_RPC_OP_CLOSEDATABASEFILE,
+    METRICS_RPC_OP_SETBACKENDSTATE,
+    METRICS_RPC_OP_GETSTATE,
+    METRICS_RPC_OP_GETLOGLEVEL,
+    METRICS_RPC_OP_GETLOGMASK,
+    METRICS_RPC_OP_COUNT
+
+} METRICS_RPC_OPS;

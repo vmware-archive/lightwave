@@ -24,9 +24,8 @@
 #define VMDIR_OPTION_LDAP_PORT              'p'
 #define VMDIR_OPTION_ENABLE_SYSLOG          's'
 #define VMDIR_OPTION_CONSOLE_MODE           'c'
-#define VMDIR_OPTION_PATCH_SCHEMA           'u'
 #define VMDIR_OPTION_RUN_MODE               'm' // Start server in restore or stand-alone mode
-#define VMDIR_OPTIONS_VALID                 "f:l:L:p:scum:"
+#define VMDIR_OPTIONS_VALID                 "f:l:L:p:scm:"
 
 #define VMDIR_IF_HANDLE_T rpc_if_handle_t
 #define VMDIR_RPC_BINDING_VECTOR_P_T rpc_binding_vector_p_t
@@ -36,8 +35,8 @@
 
 
 #define VMDIR_MAX_CONFIG_VALUE_LENGTH   2048
-#define VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH "Services\\lwraft\\Parameters"
-#define VMDIR_CONFIG_CREDS_KEY_PATH     "Services\\lwraft\\Parameters\\Credentials"
+#define VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH "Services\\post\\Parameters"
+#define VMDIR_CONFIG_CREDS_KEY_PATH     "Services\\post\\Parameters\\Credentials"
 
 #define VMDIR_ADDR_INFO_NEXT( ifa ) ifa->ifa_next
 #define VMDIR_ADDR_INFO_FLAGS( ifa ) ifa->ifa_flags
@@ -54,7 +53,6 @@
 #define VMDIR_OPTION_LDAP_PORT              "-p"
 #define VMDIR_OPTION_ENABLE_SYSLOG          "-s"
 #define VMDIR_OPTION_CONSOLE_MODE           "-c"
-#define VMDIR_OPTION_PATCH_SCHEMA           "-u"
 #define VMDIR_OPTION_RUN_MODE               "-m" // Start server in restore or stand-alone mode
 
 #if defined(HAVE_DCERPC_WIN32)
@@ -157,58 +155,47 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAP_LISTEN_PORTS,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_PORT,          \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 99999,                            \
+        /*.dwDefault      = */ 38900,                            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_LISTEN_PORTS, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_PORT,         \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 99999,                            \
+        /*.dwDefault      = */ 63600,                            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAP_CONNECT_PORTS, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_LDAPS_CONNECT_PORTS,\
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_MULTISTRING,  \
-        /*.RegDataType    = */ REG_MULTI_SZ,                     \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_REST_LISTEN_PORT,   \
+        /*.pszName        = */ VMDIR_REG_KEY_HTTP_LISTEN_PORT,   \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
         /*.RegDataType    = */ REG_SZ,                           \
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_REST_PORT_STR,            \
+        /*.pszDefault     = */ DEFAULT_HTTP_PORT_STR,            \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_HTTPS_LISTEN_PORT,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
+        /*.RegDataType    = */ REG_SZ,                           \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ DEFAULT_HTTPS_PORT_STR,           \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -310,17 +297,6 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 60000,                            \
-        /*.dwDefault      = */ 10000,                            \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
         /*.RegDataType    = */ REG_DWORD,                        \
@@ -348,7 +324,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 200,                              \
         /*.dwMax          = */ 90000,                            \
-        /*.dwDefault      = */ 20000,                             \
+        /*.dwDefault      = */ 10000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -359,7 +335,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 100,                              \
         /*.dwMax          = */ 30000,                            \
-        /*.dwDefault      = */ 7000,                                \
+        /*.dwDefault      = */ 3000,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -370,9 +346,51 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 50,                               \
         /*.dwMax          = */ 10000,                            \
-        /*.dwDefault      = */ 100,                                \
+        /*.dwDefault      = */ 500,                              \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_CURL_TIMEOUT_SEC,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 10000,                            \
+        /*.dwDefault      = */ 3,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                          \
 }
+
+typedef enum
+{
+    METRICS_RPC_OP_GENERATEPASSWORD,
+    METRICS_RPC_OP_CREATEUSER,
+    METRICS_RPC_OP_CREATEUSEREX,
+    METRICS_RPC_OP_SETLOGLEVEL,
+    METRICS_RPC_OP_SETLOGMASK,
+    METRICS_RPC_OP_SETSTATE,
+    METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA,
+    METRICS_RPC_OP_SUPERLOGENABLE,
+    METRICS_RPC_OP_SUPERLOGDISABLE,
+    METRICS_RPC_OP_ISSUPERLOGENABLED,
+    METRICS_RPC_OP_SUPERLOGFLUSH,
+    METRICS_RPC_OP_SUPERLOGSETSIZE,
+    METRICS_RPC_OP_SUPERLOGGETSIZE,
+    METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION,
+    METRICS_RPC_OP_OPENDATABASEFILE,
+    METRICS_RPC_OP_READDATABASEFILE,
+    METRICS_RPC_OP_CLOSEDATABASEFILE,
+    METRICS_RPC_OP_SETBACKENDSTATE,
+    METRICS_RPC_OP_GETSTATE,
+    METRICS_RPC_OP_GETLOGLEVEL,
+    METRICS_RPC_OP_GETLOGMASK,
+    METRICS_RPC_OP_SETMODE,
+    METRICS_RPC_OP_GETMODE,
+    METRICS_RPC_OP_RAFTREQUESTVOTE,
+    METRICS_RPC_OP_RAFTAPPENDENTRIES,
+    METRICS_RPC_OP_COUNT
+
+} METRICS_RPC_OPS;

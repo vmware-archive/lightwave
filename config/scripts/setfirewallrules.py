@@ -3,6 +3,7 @@ import syslog
 import os.path
 import sys
 import subprocess
+import glob
 
 LIGHTWAVE_CHAIN = 'LIGHTWAVE'
 dir_map = {'inbound': LIGHTWAVE_CHAIN}
@@ -122,18 +123,10 @@ def run_command(cmd, stdin=None):
     return rc, stdout, stderr
 
 def main():
-    json_file = "/opt/vmware/share/config/firewall.json"
+    json_files = glob.glob('/opt/vmware/share/config/lw-firewall*.json')
     error = 1
     syslog.openlog()
     syslog.syslog('Setting Lightwave firewall rules')
-
-
-    if not os.path.exists(json_file):
-        syslog.syslog(syslog.LOG_ERR, "Error: " + json_file + " not found")
-        return
-
-    with open(json_file) as file:
-        rules = json.load(file)
 
     # remove existing rules
     flush_ip4rules()
@@ -143,31 +136,39 @@ def main():
     set_lightwave_chain()
     set_ip6_lightwave_chain()
 
-    #apply rules per json file
-    for service in rules:
-        if 'ip4_rules' in rules[service]:
-            for ip4_rules in rules[service]['ip4_rules']:
-                if 'port' in ip4_rules.keys():
-                    cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']],
-                           '-p', ip4_rules['protocol'], '--dport', ip4_rules['port'],
-                           '-j', 'ACCEPT']
-                else:
-                    cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']], '-p',
-                           ip4_rules['protocol'], '-j', 'ACCEPT']
-                (rc, stdout, stderr) = run_command(cmd)
-                if rc != 0:
-                    syslog.syslog(syslog.LOG_ERR, "Error: Service " + service + " port " + ip4_rules['port'] +
-                                  " rule was not applied. (" + stderr + ")")
+    for json_file in json_files:
+        if not os.path.exists(json_file):
+            syslog.syslog(syslog.LOG_ERR, "Error: " + json_file + " not found")
+            return
+
+        with open(json_file) as file:
+            rules = json.load(file)
+
+        #apply rules per json file
+        for service in rules:
+            if 'ip4_rules' in rules[service]:
+                for ip4_rules in rules[service]['ip4_rules']:
+                    if 'port' in ip4_rules.keys():
+                        cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']],
+                               '-p', ip4_rules['protocol'], '--dport', ip4_rules['port'],
+                               '-j', 'ACCEPT']
+                    else:
+                        cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']], '-p',
+                               ip4_rules['protocol'], '-j', 'ACCEPT']
+                    (rc, stdout, stderr) = run_command(cmd)
+                    if rc != 0:
+                        syslog.syslog(syslog.LOG_ERR, "Error: Service " + service + " port " + ip4_rules['port'] +
+                                      " rule was not applied. (" + stderr + ")")
 
 
-        if 'ip6_rules' in rules[service]:
-            for ip6_rules in rules[service]['ip6_rules']:
-                cmd = [IP6TABLES, '-I', dir_map[ip6_rules['direction']], '-p', ip6_rules['protocol'],
-                       '--dport', ip6_rules['port'], '-j', 'ACCEPT']
-                (rc, stdout, stderr) = run_command(cmd)
-                if rc != 0:
-                    syslog.syslog(syslog.LOG_ERR, "Error: Service " + service + " port " + ip6_rules['port'] +
-                                  " rule was not applied. (" + stderr + ")")
+            if 'ip6_rules' in rules[service]:
+                for ip6_rules in rules[service]['ip6_rules']:
+                    cmd = [IP6TABLES, '-I', dir_map[ip6_rules['direction']], '-p', ip6_rules['protocol'],
+                           '--dport', ip6_rules['port'], '-j', 'ACCEPT']
+                    (rc, stdout, stderr) = run_command(cmd)
+                    if rc != 0:
+                        syslog.syslog(syslog.LOG_ERR, "Error: Service " + service + " port " + ip6_rules['port'] +
+                                      " rule was not applied. (" + stderr + ")")
 
 
 if __name__ == "__main__":

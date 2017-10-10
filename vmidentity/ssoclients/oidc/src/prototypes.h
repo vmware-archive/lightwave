@@ -15,28 +15,42 @@
 #ifndef _PROTOTYPES_H_
 #define _PROTOTYPES_H_
 
-// OIDC_ID_TOKEN
+// OIDC_TOKEN
 
 SSOERROR
-OidcIDTokenParse(
-    POIDC_ID_TOKEN* pp,
-    PCSTRING psz);
-
-// OIDC_ACCESS_TOKEN
+OidcTokenBuild(
+    POIDC_TOKEN* pp,
+    PCSTRING psz,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName, /* OPT */
+    SSO_LONG clockToleranceInSeconds,
+    PCSTRING pszExpectedTokenClass);
 
 SSOERROR
-OidcAccessTokenParse(
-    POIDC_ACCESS_TOKEN* pp,
-    PCSTRING psz);
+OidcTokenParse(
+    POIDC_TOKEN* pp,
+    PCSTRING psz,
+    PCSTRING pszExpectedTokenClass);
+
+SSOERROR
+OidcTokenValidate(
+    POIDC_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName, /* OPT */
+    SSO_LONG clockToleranceInSeconds);
+
+void
+OidcTokenDelete(
+    POIDC_TOKEN p);
 
 // OIDC_TOKEN_SUCCESS_RESPONSE
 
 SSOERROR
 OidcTokenSuccessResponseParse(
     POIDC_TOKEN_SUCCESS_RESPONSE* pp,
-    PCSTRING pszJsonResponse,
-    PCSTRING pszSigningCertificatePEM,
-    SSO_LONG clockToleranceInSeconds);
+    PCSTRING pszJsonResponse);
 
 // OIDC_ERROR_RESPONSE
 
@@ -46,7 +60,7 @@ OidcErrorResponseParse(
     PCSTRING pszJsonResponse);
 
 SSOERROR
-OidcErrorResponseGetSSOErrorCode(
+OidcErrorResponseGetErrorCode(
     PCOIDC_ERROR_RESPONSE p);
 
 #endif

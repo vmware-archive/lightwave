@@ -78,11 +78,11 @@ libssoidmclient_la_SOURCES = \
     user_resource.c
 
 libssoidmclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/idmclient/include/public/
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/idmclient/include/public/
 
 libssoidmclient_la_LIBADD = \
-    @top_builddir@/ssoclients/restclient/coreclient/src/libssocoreclient.la
+    @top_builddir@/vmidentity/ssoclients/restclient/coreclient/src/libssocoreclient.la

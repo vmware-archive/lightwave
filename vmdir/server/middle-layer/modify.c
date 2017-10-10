@@ -271,6 +271,13 @@ VmDirInternalModifyEntry(
 
     modReq = &(pOperation->request.modifyReq);
 
+    // make sure we have minimum DN length
+    if (modReq->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", modReq->dn.lberbv_len);
+    }
+
     // Normalize DN
     retVal = VmDirNormalizeDN( &(modReq->dn), pOperation->pSchemaCtx);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
@@ -775,7 +782,6 @@ VmDirApplyModsToEntryStruct(
         }
     }
 
-
 cleanup:
 
     if (ppszErrorMsg)
@@ -966,7 +972,6 @@ error:
  * 1. Normalize attribute values present in the modifications list.
  * 2. Make sure no duplicate value
  */
-
 int
 VmDirNormalizeMods(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
@@ -1189,12 +1194,12 @@ CheckIfAnAttrValAlreadyExists(
     )
 {
     int retVal = LDAP_SUCCESS;
-    int i = 0;
-    int j = 0;
-    int numVals = modAttr->numVals;
+    unsigned int i = 0;
+    unsigned int j = 0;
+    unsigned int numVals = modAttr->numVals;
     PSTR    pszLocalErrorMsg = NULL;
 
-    for (i=0; i < (int)eAttr->numVals; i++)
+    for (i=0; i < eAttr->numVals; i++)
     {
         retVal = VmDirSchemaBervalNormalize( pSchemaCtx, modAttr->pATDesc, // Assumption: modAttr type is same as eAttr type
                                               &eAttr->vals[i]) ;
@@ -1204,7 +1209,7 @@ CheckIfAnAttrValAlreadyExists(
                                 VMDIR_MIN(eAttr->vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
                                 VDIR_SAFE_STRING(eAttr->vals[i].lberbv.bv_val));
 
-        for (j = 0; j < (int)modAttr->numVals; j++)
+        for (j = 0; j < modAttr->numVals; j++)
         {
             // modAttr values are already normalized.
             assert( modAttr->vals[j].bvnorm_val );
@@ -1242,7 +1247,7 @@ CheckIfAnAttrValAlreadyExists(
         }
     }
 
-    if (numVals < (int)modAttr->numVals)
+    if (numVals < modAttr->numVals)
     {
          VDIR_BERVALUE * vals = modAttr->vals;
          int modAttrNumVals = modAttr->numVals;

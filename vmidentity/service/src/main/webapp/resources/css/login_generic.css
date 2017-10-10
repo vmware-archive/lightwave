@@ -28,6 +28,16 @@ input [type=checkbox] {
  border: 1px solid black;
 }
 
+#welcomeText {
+   position: absolute;
+   top: 180px;
+   left: 96px;
+   font-size: 20px;
+   line-height: 12px;
+   margin-top: 24px;
+   font-weight: 200;
+   color: black;
+}
 
 #tenantBrand {
    position: absolute;
@@ -41,7 +51,7 @@ input [type=checkbox] {
 }
 
 #loginForm {
-   width: 312px;
+   width: 280px;
    position: relative;
    margin-left:96px;
    top:308px;

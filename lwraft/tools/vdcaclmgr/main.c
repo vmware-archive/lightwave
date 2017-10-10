@@ -11,16 +11,26 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 #include "includes.h"
 
+static
 VOID
-VdcHashMapFreeStringPair(
-    PLW_HASHMAP_PAIR pPair,
-    LW_PVOID pUserData
+_FreeCLStateContent(
+    PCOMMAND_LINE_PARAMETER_STATE pState
     )
 {
-    VMDIR_SAFE_FREE_MEMORY(pPair->pKey);
-    VMDIR_SAFE_FREE_MEMORY(pPair->pValue);
+    if (pState)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pState->pszServerName);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszUserName);
+        VMDIR_SECURE_FREE_STRINGA(pState->pszPassword);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszObjectName);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszBaseDN);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszGrantParameter);
+        VMDIR_SAFE_FREE_MEMORY(pState->pszRemoveParameter);
+        VMDIR_SECURE_FREE_STRINGA(pState->pszPasswordFile);
+    }
 }
 
 VOID
@@ -30,7 +40,7 @@ VdcFreeHashMap(
 {
     if (*ppHashMap != NULL)
     {
-        LwRtlHashMapClear(*ppHashMap, VdcHashMapFreeStringPair, NULL);
+        LwRtlHashMapClear(*ppHashMap, VmDirSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(ppHashMap);
     }
 }
@@ -66,169 +76,25 @@ error:
 
 VOID
 ShowUsage(
-    PVOID pvState
+    PVOID pvContext
     )
 {
-    printf("Usage: vdcaclmgr -H <host> -u <user UPN> [-w <password> | -x <password file>] -o <object DN> [-g <username:permission>] [-r <username:permission>] [-v]\n");
-}
 
-DWORD
-HandleServerParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszServerName != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszServerName = pValue;
-
-    return 0;
-}
-
-DWORD
-HandleUserNameParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszUserName != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszUserName = pValue;
-
-    return 0;
-}
-
-DWORD
-HandlePasswordFileParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszPassword != NULL || pContext->pszPasswordFile != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszPasswordFile = pValue;
-
-    return 0;
-}
-
-DWORD
-HandlePasswordParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszPassword != NULL || pContext->pszPasswordFile != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszPassword = pValue;
-
-    return 0;
-}
-
-DWORD
-HandleBaseDNParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszBaseDN != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszBaseDN = pValue;
-
-    return 0;
-}
-
-DWORD
-HandleObjectParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszObjectName != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszObjectName = pValue;
-
-    return 0;
-}
-
-DWORD
-HandleGrantParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszGrantParameter != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszGrantParameter = pValue;
-
-    return 0;
-}
-
-DWORD
-HandleRemoveParameterCallback(
-    PVOID pContextPointer,
-    PCSTR pValue
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    if (pContext->pszRemoveParameter != NULL)
-    {
-        return VMDIR_ERROR_INVALID_PARAMETER;
-    }
-
-    pContext->pszRemoveParameter = pValue;
-
-    return 0;
-}
-
-DWORD
-HandleVerboseParameterCallback(
-    PVOID pContextPointer
-    )
-{
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
-
-    //
-    // We don't check if the user specified '-v' multiple times.
-    //
-    pContext->bVerbose = TRUE;
-
-    return 0;
+    printf(
+        "Usage: postaclmgr { arguments }\n\n"
+        "Arguments:\n\n"
+        "\t-H\t<host name>\n\n"
+        "\t-u\t<user UPN> For example administrator@post.local>\n\n"
+        "\t-o\t<DN of the target object to grant/delete permission to -g/-d username> For example cn=myContainer,dc=post,dc=local\n"
+        "\t[-r]\t<recursively grant/delete permission to -o DN subtree>\n\n"
+        "\t-b\t<base DN to find users and groups to match -g/-d username>\n\n"
+        "\t[-g\t<grant username:FLAGS>]  For example -g MyAdmins:RP:CI\n"
+        "\t[-d\t<delete username:FALGS>] For example -d MyAdmins:WP:OI\n\n"
+        "\t[-v]\t<verbose output>\n\n"
+        "\t[-D]\t<dry run>\n\n"
+        "\t[-w <password> | -x <password file>]\n\n"
+        "Where FLAGS := (PERMISSIONS such as RPWP)*:(ACE_FLAGS such as CIOI)*\n\n"
+        "\t\n");
 }
 
 DWORD
@@ -257,26 +123,16 @@ PostValidationRoutine(
         return VMDIR_ERROR_INVALID_PARAMETER;
     }
 
+    //
+    // Only one password is expected
+    //
+    if (pContext->pszPassword && pContext->pszPasswordFile)
+    {
+        return VMDIR_ERROR_INVALID_PARAMETER;
+    }
+
     return 0;
 }
-
-VMDIR_COMMAND_LINE_OPTIONS CommandLineOptions =
-{
-    ShowUsage,
-    PostValidationRoutine,
-    {
-        {'H', "host", CL_STRING_PARAMETER, HandleServerParameterCallback},
-        {'u', "username", CL_STRING_PARAMETER, HandleUserNameParameterCallback},
-        {'w', "password", CL_STRING_PARAMETER, HandlePasswordParameterCallback},
-        {'b', "basedn", CL_STRING_PARAMETER, HandleBaseDNParameterCallback},
-        {'o', "object", CL_STRING_PARAMETER, HandleObjectParameterCallback},
-        {'g', "grant", CL_STRING_PARAMETER, HandleGrantParameterCallback},
-        {'r', "remove", CL_STRING_PARAMETER, HandleRemoveParameterCallback},
-        {'x', "password-file", CL_STRING_PARAMETER, HandlePasswordFileParameterCallback},
-        {'v', "verbose", CL_NO_PARAMETER, HandleVerboseParameterCallback},
-        {0, 0, 0, 0}
-    }
-};
 
 DWORD
 VdcGetUsersPassword(
@@ -299,7 +155,8 @@ VdcGetUsersPassword(
         //
         dwError = VmDirStringCpyA(pszPasswordBuf, dwBufferSize - 1, pParameters->pszPassword);
         BAIL_ON_VMDIR_ERROR(dwError);
-    } else
+    }
+    else
     {
         //
         // VmDirReadString expects the buffer size to include the terminating null.
@@ -324,10 +181,37 @@ VmDirMain(int argc, char* argv[])
     PLW_HASHMAP pUserToSidMapping = NULL; // Used to store "user/group SID" => "display name" mapping.
     PLW_HASHMAP pSidToUserMapping = NULL; // Used to store "display name" => "user/group SID" mapping.
     CHAR pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = { 0 };
+    PVMDIR_STRING_LIST pObjectDNs = NULL;
+    DWORD dwStringIndex = 0;
+    PSTR pszErrorMessage = NULL;
+
+    VMDIR_COMMAND_LINE_OPTION Options[] =
+    {
+            {'H', "host", CL_STRING_PARAMETER, &State.pszServerName},
+            {'u', "username", CL_STRING_PARAMETER, &State.pszUserName},
+            {'w', "password", CL_STRING_PARAMETER, &State.pszPassword},
+            {'b', "basedn", CL_STRING_PARAMETER, &State.pszBaseDN},
+            {'o', "object", CL_STRING_PARAMETER, &State.pszObjectName},
+            {'g', "grant", CL_STRING_PARAMETER, &State.pszGrantParameter},
+            {'d', "delete", CL_STRING_PARAMETER, &State.pszRemoveParameter},
+            {'x', "password-file", CL_STRING_PARAMETER, &State.pszPasswordFile},
+            {'v', "verbose", CL_NO_PARAMETER, &State.bVerbose},
+            {'r', "recursive", CL_NO_PARAMETER, &State.bRecursive},
+            {'D', "dryrun", CL_NO_PARAMETER, &State.bDryrun},
+
+            {0, 0, 0, 0}
+    };
+
+    VMDIR_PARSE_ARG_CALLBACKS Callbacks =
+    {
+            PostValidationRoutine,
+            ShowUsage,
+            &State
+    };
 
     dwError = VmDirParseArguments(
-                &CommandLineOptions,
-                &State,
+                Options,
+                &Callbacks,
                 argc,
                 argv);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -349,25 +233,53 @@ VmDirMain(int argc, char* argv[])
     // We're either granting a user/group privileges on an object or just showing the
     // existing privileges on it.
     //
-    if (State.pszGrantParameter)
+    dwError = VdcLdapEnumerateObjects(
+                pLd,
+                State.pszObjectName,
+                State.bRecursive ? LDAP_SCOPE_SUBTREE : LDAP_SCOPE_BASE,
+                &pObjectDNs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwStringIndex = 0; dwStringIndex < pObjectDNs->dwCount; ++dwStringIndex)
     {
-        dwError = VdcGrantPermissionToUser(pLd, pUserToSidMapping, State.pszObjectName, State.pszGrantParameter);
-    }
-    else if (State.pszRemoveParameter)
-    {
-        dwError = VdcRemovePermissionFromUser(pLd, pUserToSidMapping, State.pszObjectName, State.pszRemoveParameter);
-    }
-    else
-    {
-        dwError = VdcPrintSecurityDescriptorForObject(pLd, pSidToUserMapping, State.pszObjectName, State.bVerbose);
+        if (State.pszGrantParameter)
+        {
+            dwError = VdcGrantPermissionToUser(
+                        pLd,
+                        pUserToSidMapping,
+                        pObjectDNs->pStringList[dwStringIndex],
+                        &State);
+
+        }
+        else if (State.pszRemoveParameter)
+        {
+            dwError = VdcRemovePermissionFromUser(
+                        pLd,
+                        pUserToSidMapping,
+                        pObjectDNs->pStringList[dwStringIndex],
+                        &State);
+        }
+        else
+        {
+            dwError = VdcPrintSecurityDescriptorForObject(
+                        pLd,
+                        pSidToUserMapping,
+                        pObjectDNs->pStringList[dwStringIndex],
+                        State.bVerbose);
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
     VdcFreeHashMap(&pUserToSidMapping);
     VdcFreeHashMap(&pSidToUserMapping);
+    _FreeCLStateContent(&State);
+    VMDIR_SAFE_FREE_STRINGA(pszErrorMessage);
     return dwError;
 
 error:
+    VmDirGetErrorMessage(dwError, &pszErrorMessage);
+    printf("vdcaclmgr failed. Error[%d] - %s\n", dwError, VDIR_SAFE_STRING(pszErrorMessage));
     goto cleanup;
 }
 

@@ -16,9 +16,9 @@ libasn1_la_SOURCES = \
     hex.c
 
 libasn1_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/public \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1
+    -I$(top_srcdir)/lwraft/include \
+    -I$(top_srcdir)/lwraft/public \
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1
 
 libasn1_la_LDFLAGS = \
     -static
@@ -28,7 +28,7 @@ libasn1db_la_SOURCES = \
     asn1_kerberos_db.c
 
 libasn1db_la_CPPFLAGS = \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1
+    -I$(top_srcdir)/lwraft/thirdparty/heimdal/asn1
 
 libasn1db_la_LDFLAGS = \
     -static

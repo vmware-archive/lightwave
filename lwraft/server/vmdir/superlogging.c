@@ -174,7 +174,11 @@ _VmDirInitEventLogPublisherThread(
     dwError = VmDirSrvThrInit(&pThrInfo, NULL, NULL, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateThread(&pThrInfo->tid, FALSE, _VmDirEventLogPublisherThrFun, (PVOID)pCircularBuffer);
+    dwError = VmDirCreateThread(
+            &pThrInfo->tid,
+            pThrInfo->bJoinThr,
+            _VmDirEventLogPublisherThrFun,
+            (PVOID)pCircularBuffer);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirSrvThrAdd(pThrInfo);

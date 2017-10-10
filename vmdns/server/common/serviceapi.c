@@ -35,7 +35,7 @@ VmDnsSrvInitialize(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_FORWARDER_CONETXT pForwarderContext = NULL;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
     PVMDNS_CACHE_CONTEXT pCacheContext = NULL;
     PVMDNS_SECURITY_CONTEXT pSecurityContext = NULL;
 
@@ -293,6 +293,7 @@ VmDnsSrvAddRecord(
     DWORD dwError = 0;
     PSTR pszName = NULL;
     PVMDNS_RECORD_LIST pRecordList = NULL;
+    VMDNS_RR_TYPE dwType = pRecord->dwType;
 
     if (VMDNS_READY != VmDnsSrvGetState())
     {
@@ -312,24 +313,17 @@ VmDnsSrvAddRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (VmDnsIsUpdatePermitted(pRecord->dwType))
+    if (pRecord->dwType == VMDNS_RR_TYPE_CNAME)
     {
-        dwError = VmDnsSrvQueryRecords(
-                            pZoneObject,
-                            pRecord->pszName,
-                            pRecord->dwType,
-                            0,
-                            &pRecordList
-                            );
-        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
-
-        if (pRecordList &&
-            VmDnsRecordListGetSize(pRecordList) == 1)
-        {
-            dwError = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
+        dwType = VMDNS_RR_QTYPE_ANY;
     }
+
+    dwError = VmDnsSrvGetRecords(pZoneObject, pRecord->pszName, dwType, &pRecordList);
+
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
+
+    dwError = VmDnsIsUpdatePermitted(pRecord->dwType,pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsStoreAddZoneRecord(
                         pszName,
@@ -337,7 +331,7 @@ VmDnsSrvAddRecord(
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCachePurgeRecord(pZoneObject, pRecord->pszName);
+    dwError = VmDnsCachePurgeRecord(pZoneObject, pRecord->pszName, CACHE_PURGE_MODIFICATION);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -372,23 +366,10 @@ VmDnsSrvDeleteRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (VmDnsIsUpdatePermitted(pRecord->dwType))
+    if (pRecord->dwType == VMDNS_RR_TYPE_SOA)
     {
-        dwError = VmDnsSrvQueryRecords(
-                            pZoneObject,
-                            pRecord->pszName,
-                            pRecord->dwType,
-                            0,
-                            &pRecordList
-                            );
-        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
-
-        if (pRecordList &&
-            VmDnsRecordListGetSize(pRecordList) < 1)
-        {
-            dwError = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
+        dwError = ERROR_OPERATION_NOT_PERMITTED;
+        BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     dwError = VmDnsCacheGetZoneName(
@@ -521,82 +502,70 @@ error:
 }
 
 DWORD
-VmDnsSrvQueryRecords(
+VmDnsSrvGetRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PCSTR               pszName,
     VMDNS_RR_TYPE       dwType,
-    DWORD               dwOptions,
     PVMDNS_RECORD_LIST  *ppRecordList
     )
 {
     DWORD dwError = 0;
-    PVMDNS_RECORD_LIST pRecordList = NULL;
     PSTR pszZone = NULL;
     PSTR szNameFqdn = NULL;
     PCSTR szNameQuery = NULL;
-
-    if (!pZoneObject)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    if (VMDNS_READY != VmDnsSrvGetState())
-    {
-        dwError = ERROR_NOT_READY;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
+    PVMDNS_RECORD_LIST pRecordList = NULL;
 
     dwError = VmDnsCacheGetZoneName(
-                        pZoneObject,
-                        &pszZone
-                        );
+                pZoneObject,
+                &pszZone
+                );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsMakeFQDN(
-                    pszName,
-                    pszZone,
-                    &szNameFqdn
-                    );
+                pszName,
+                pszZone,
+                &szNameFqdn
+                );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     szNameQuery = szNameFqdn ? szNameFqdn : pszName;
 
     dwError = VmDnsZoneGetRecords(
-                        pZoneObject,
-                        szNameQuery,
-                        dwType,
-                        &pRecordList
-                        );
+                pZoneObject,
+                szNameQuery,
+                dwType,
+                &pRecordList
+                );
     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
-    if (!pRecordList)
+    if (!pRecordList || VmDnsRecordListGetSize(pRecordList) == 0)
     {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_CACHE_MISS]);
         dwError = VmDnsStoreGetRecords(
-                            pszZone,
-                            szNameQuery,
-                            &pRecordList
-                            );
+                    pszZone,
+                    szNameQuery,
+                    &pRecordList
+                    );
         BAIL_ON_VMDNS_ERROR(dwError && dwError != ERROR_NOT_FOUND);
 
         if (pRecordList)
         {
             dwError = VmDnsZoneUpdateRecords(
-                                pZoneObject,
-                                szNameQuery,
-                                pRecordList
-                                );
+                        pZoneObject,
+                        szNameQuery,
+                        pRecordList
+                        );
             BAIL_ON_VMDNS_ERROR(dwError);
 
             VmDnsRecordListRelease(pRecordList);
             pRecordList = NULL;
 
             dwError = VmDnsZoneGetRecords(
-                            pZoneObject,
-                            szNameQuery,
-                            dwType,
-                            &pRecordList
-                            );
+                        pZoneObject,
+                        szNameQuery,
+                        dwType,
+                        &pRecordList
+                        );
             BAIL_ON_VMDNS_ERROR(dwError);
         }
     }
@@ -610,7 +579,155 @@ cleanup:
     return dwError;
 
 error:
+    if (ppRecordList)
+    {
+        *ppRecordList = NULL;
+    }
 
+    VmDnsRecordListRelease(pRecordList);
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsSrvQueryRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PCSTR               pszName,
+    VMDNS_RR_TYPE       dwType,
+    DWORD               dwOptions,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    )
+{
+    DWORD dwError = 0, dwRecordListSize = 0, dwRecursionIndex = 0, i = 0;
+    PVMDNS_RECORD_LIST pRecordList = NULL;
+    PVMDNS_RECORD_LIST pLinkedRecordList = NULL;
+    PVMDNS_RECORD_LIST pTempRecordList = NULL;
+    PVMDNS_RECORD_OBJECT pRecordObject = NULL;
+
+    if (!pZoneObject)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    if (VMDNS_READY != VmDnsSrvGetState())
+    {
+        dwError = ERROR_NOT_READY;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsRecordListCreate(&pLinkedRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvGetRecords(pZoneObject, pszName, dwType, &pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwRecordListSize = VmDnsRecordListGetSize(pRecordList);
+
+    for (; i < dwRecordListSize; i++)
+    {
+        pRecordObject = VmDnsRecordListGetRecord(pRecordList, i);
+
+        dwError = VmDnsGetLinkedRecords(++dwRecursionIndex,
+                                        pZoneObject,
+                                        dwType,
+                                        pRecordObject->pRecord,
+                                        &pTempRecordList
+                                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsRecordListAddList(pLinkedRecordList, pTempRecordList);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsRecordListRelease(pTempRecordList);
+        pTempRecordList = NULL;
+    }
+
+    dwError = VmDnsRecordListAddList(pRecordList, pLinkedRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppRecordList = pRecordList;
+
+cleanup:
+    VmDnsRecordObjectRelease(pRecordObject);
+    VmDnsRecordListRelease(pLinkedRecordList);
+
+    return dwError;
+
+error:
+    if (ppRecordList)
+    {
+        *ppRecordList = NULL;
+    }
+
+    VmDnsRecordListRelease(pRecordList);
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsGetLinkedRecords(
+    DWORD               dwRecursionIndex,
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    VMDNS_RR_TYPE       dwType,
+    PVMDNS_RECORD       pRecord,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    )
+{
+    DWORD dwError = 0, i = 0, dwRecordListSize = 0;
+    PVMDNS_RECORD_LIST pRecordList = NULL;
+    PVMDNS_RECORD_LIST pTempRecordList = NULL;
+    PVMDNS_RECORD_LIST pLinkedRecordList = NULL;
+    PVMDNS_RECORD_OBJECT pRecordObject = NULL;
+
+    if(pRecord->dwType != VMDNS_RR_TYPE_CNAME)
+        return 0;
+
+    if(dwRecursionIndex > 4)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsRecordListCreate(&pLinkedRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvGetRecords(pZoneObject, pRecord->Data.CNAME.pNameHost, dwType, &pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwRecordListSize = VmDnsRecordListGetSize(pRecordList);
+
+    for (; i < dwRecordListSize; i++)
+    {
+        pRecordObject = VmDnsRecordListGetRecord(pRecordList, i);
+
+        dwError = VmDnsGetLinkedRecords(++dwRecursionIndex,
+                                        pZoneObject,
+                                        dwType,
+                                        pRecordObject->pRecord,
+                                        &pTempRecordList
+                                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsRecordListAddList(pLinkedRecordList, pTempRecordList);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsRecordListRelease(pTempRecordList);
+        pTempRecordList = NULL;
+    }
+
+    dwError = VmDnsRecordListAddList(pRecordList, pLinkedRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppRecordList = pRecordList;
+
+cleanup:
+    VmDnsRecordObjectRelease(pRecordObject);
+    VmDnsRecordListRelease(pLinkedRecordList);
+
+    return dwError;
+
+error:
     if (ppRecordList)
     {
         *ppRecordList = NULL;
@@ -684,6 +801,7 @@ VmDnsSrvListRecords(
     *ppRecordList = pRecordList;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszZone);
     return dwError;
 
 error:
@@ -1004,6 +1122,28 @@ VmDnsSrvInitDomain(
             }
         }
     }
+
+    for (idx = 0; idx < 5 || VmDnsSrvGetState() != VMDNS_READY; idx++)
+    {
+        dwError = VmDnsConditionSignal(gpSrvContext->pCacheContext->pRefreshEvent);
+        if (dwError)
+        {
+            VMDNS_LOG_ERROR("Failed to signal cache refresh thread with %u.", dwError);
+        }
+        BAIL_ON_VMDNS_ERROR(dwError);
+        sleep(5);
+    }
+
+    if (VmDnsSrvGetState() != VMDNS_READY)
+    {
+        dwError = ERROR_INVALID_STATE;
+        VMDNS_LOG_ERROR("Failed to populate cache and VMDNS state is not ready: %u.", dwError);
+    }
+    else
+    {
+        VMDNS_LOG_INFO("Succesfully populated cache and VMDNS state is ready: %u.", dwError);
+    }
+
     dwError = VmDnsCacheLoadZoneFromStore(
                             gpSrvContext->pCacheContext,
                             pInitInfo->pszDomain
@@ -1033,6 +1173,8 @@ VmDnsSrvCleanupDomain(
     PVMDNS_RECORD_LIST pNsRecordList = NULL;
     PVMDNS_RECORD_LIST pLdapSrvRecordList = NULL;
     PVMDNS_RECORD_LIST pKerberosSrvRecordList = NULL;
+    PVMDNS_RECORD_LIST pLdapDcSrvRecordList = NULL;
+    PVMDNS_RECORD_LIST pKerberosDcSrvRecordList = NULL;
     PVMDNS_RECORD_LIST pIpV4RecordList = NULL;
     PVMDNS_RECORD_LIST pIpV6RecordList = NULL;
     DWORD idx = 0;
@@ -1103,6 +1245,32 @@ VmDnsSrvCleanupDomain(
         VMDNS_LOG_ERROR("%s, failed to get KDC SRV records.", __FUNCTION__);
     }
 
+    // Query LDAP TCP DC SRV record(s)
+    dwError = VmDnsSrvQueryRecords(
+                    pZoneObject,
+                    VMDNS_LDAP_DC_SRV_NAME,
+                    VMDNS_RR_TYPE_SRV,
+                    0,
+                    &pLdapDcSrvRecordList
+                    );
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get LDAP DC SRV records.", __FUNCTION__);
+    }
+
+    // Query KDC TCP DC SRV record(s)
+    dwError = VmDnsSrvQueryRecords(
+                    pZoneObject,
+                    VMDNS_KERBEROS_DC_SRV_NAME,
+                    VMDNS_RR_TYPE_SRV,
+                    0,
+                    &pKerberosDcSrvRecordList
+                    );
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get KDC DC SRV records.", __FUNCTION__);
+    }
+
     // Query A record(s)
     dwError = VmDnsSrvQueryRecords(
                     pZoneObject,
@@ -1153,7 +1321,13 @@ VmDnsSrvCleanupDomain(
         }
     }
 
-    srvRecord.pszName = VMDNS_LDAP_SRV_NAME;
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_LDAP_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
     srvRecord.dwType = VMDNS_RR_TYPE_SRV;
     srvRecord.iClass = VMDNS_CLASS_IN;
     srvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
@@ -1181,7 +1355,14 @@ VmDnsSrvCleanupDomain(
         }
     }
 
-    srvRecord.pszName = VMDNS_KERBEROS_SRV_NAME;
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_KERBEROS_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     // Remove KDC TCP SRV record(s)
     if (pKerberosSrvRecordList)
@@ -1199,6 +1380,70 @@ VmDnsSrvCleanupDomain(
                 VMDNS_LOG_INFO(
                         "Cleanup KDC:SRV record %s from zone %s, status: %u.",
                         pKerberosSrvRecordList->ppRecords[idx]->pRecord->pszName,
+                        pInitInfo->pszDomain,
+                        dwError
+                        );
+            }
+        }
+    }
+
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_LDAP_DC_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    // Remove KDC TCP DC SRV record(s)
+    if (pLdapDcSrvRecordList)
+    {
+        for (idx = 0; idx < pLdapDcSrvRecordList->dwCurrentSize; ++idx)
+        {
+            if (VmDnsMatchRecord(
+                        &srvRecord,
+                        pLdapDcSrvRecordList->ppRecords[idx]->pRecord))
+            {
+                dwError = VmDnsSrvDeleteRecord(
+                                    pZoneObject,
+                                    pLdapDcSrvRecordList->ppRecords[idx]->pRecord
+                                    );
+                VMDNS_LOG_INFO(
+                        "Cleanup LDAP:DC:SRV record %s from zone %s, status: %u.",
+                        pLdapDcSrvRecordList->ppRecords[idx]->pRecord->pszName,
+                        pInitInfo->pszDomain,
+                        dwError
+                        );
+            }
+        }
+    }
+
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+    dwError = VmDnsAllocateStringPrintfA(
+                            &srvRecord.pszName,
+                            "%s.%s",
+                            VMDNS_KERBEROS_DC_SRV_NAME,
+                            pInitInfo->pszDomain
+                            );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    // Remove KDC TCP DC SRV record(s)
+    if (pKerberosDcSrvRecordList)
+    {
+        for (idx = 0; idx < pKerberosDcSrvRecordList->dwCurrentSize; ++idx)
+        {
+            if (VmDnsMatchRecord(
+                        &srvRecord,
+                        pKerberosDcSrvRecordList->ppRecords[idx]->pRecord))
+            {
+                dwError = VmDnsSrvDeleteRecord(
+                                    pZoneObject,
+                                    pKerberosDcSrvRecordList->ppRecords[idx]->pRecord
+                                    );
+                VMDNS_LOG_INFO(
+                        "Cleanup KDC:DC:SRV record %s from zone %s, status: %u.",
+                        pKerberosDcSrvRecordList->ppRecords[idx]->pRecord->pszName,
                         pInitInfo->pszDomain,
                         dwError
                         );
@@ -1250,9 +1495,12 @@ cleanup:
     VmDnsRecordListRelease(pIpV4RecordList);
     VmDnsRecordListRelease(pIpV6RecordList);
     VMDNS_SAFE_FREE_STRINGA(pszAddressRecordName);
+    VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
+
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
     goto cleanup;
 }
 

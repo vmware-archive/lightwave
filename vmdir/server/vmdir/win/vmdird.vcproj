@@ -211,6 +211,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\integritychk.c"
+				>
+			</File>
+			<File
 				RelativePath="..\ipcapihandler.c"
 				>
 			</File>

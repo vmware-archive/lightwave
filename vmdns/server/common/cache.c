@@ -387,7 +387,7 @@ VmDnsCacheFindZoneByQName(
 {
     DWORD dwError = 0;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
-    BOOL bLocked = TRUE;
+    BOOL bLocked = FALSE;
 
     if (!pContext || IsNullOrEmptyString(szQName) || !ppZoneObject)
     {
@@ -412,6 +412,8 @@ cleanup:
         VmDnsUnlockRead(pContext->pLock);
     }
 
+    VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_ZONE_LOOKUP]);
+
     return dwError;
 
 error:
@@ -422,11 +424,22 @@ error:
 DWORD
 VmDnsCachePurgeRecord(
     PVMDNS_ZONE_OBJECT pZoneObject,
-    PCSTR              pszRecord
+    PCSTR              pszRecord,
+    DWORD              dwCachePurgeEvent
     )
 {
     PVMDNS_RECORD_LIST pList = NULL;
     DWORD dwError = 0;
+    DWORD dwOpCode;
+
+    if (dwCachePurgeEvent == CACHE_PURGE_MODIFICATION)
+    {
+       dwOpCode = CACHE_MODIFY_PURGE_COUNT;
+    }
+    else if (dwCachePurgeEvent == CACHE_PURGE_REPLICATION)
+    {
+       dwOpCode = CACHE_NOTIFY_PURGE_COUNT;
+    }
 
     if (VmDnsStringCompareA(pZoneObject->pszName, pszRecord, FALSE) == 0)
     {
@@ -468,6 +481,7 @@ VmDnsCachePurgeRecord(
         }
         else
         {
+            VmMetricsCounterIncrement(gVmDnsCounterMetrics[dwOpCode]);
             VmDnsLog(
                 VMDNS_LOG_LEVEL_DEBUG,
                 "Succesfully Purged (%s) from Cache",
@@ -506,7 +520,7 @@ VmDnsCachePurgeRecordProc(
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCachePurgeRecord(pZoneObject, pszNode);
+    dwError = VmDnsCachePurgeRecord(pZoneObject, pszNode, CACHE_PURGE_REPLICATION);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -620,13 +634,16 @@ VmDnsCacheRefreshThread(
             dwError = VmDnsCacheLoadInitialData(pCacheContext);
             if (dwError)
             {
-                VMDNS_LOG_ERROR("Loading intial data failed with %u.", dwError);
+                VMDNS_LOG_DEBUG("DnsCacheRefreshThread loading initial data failed with %u...Retrying", dwError);
+                goto wait;
             }
             else
             {
+                VMDNS_LOG_INFO("DnsCacheRefreshThread loaded initial data, setting VMDNS state to READY.");
                 VmDnsSrvSetState(VMDNS_READY);
             }
         }
+
         newUSN = 0;
         VmDnsStoreGetReplicationStatus(&newUSN);
         if (pCacheContext->dwLastUSN != 0)
@@ -637,19 +654,28 @@ VmDnsCacheRefreshThread(
                             newUSN,
                             pCacheContext
                             );
-            BAIL_ON_VMDNS_ERROR(dwError)
+            if (dwError)
+            {
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread zone synchronization failed with %u.", dwError);
+            }
         }
         else
         {
-            VMDNS_LOG_ERROR("Failed to get replication status %u.", dwError);
+            VMDNS_LOG_ERROR("DnsCacheRefreshThread failed to get replication status %u.", dwError);
         }
+
         if (newUSN != 0)
         {
             pCacheContext->dwLastUSN = newUSN;
 
             dwError = VmDnsCachePurgeLRU(pCacheContext);
-            BAIL_ON_VMDNS_ERROR(dwError);
+            if (dwError)
+            {
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread failed to purge LRU cache with %u.", dwError);
+            }
         }
+
+wait:
         if (!pCacheContext->bShutdown)
         {
             dwError = VmDnsConditionTimedWait(
@@ -661,6 +687,7 @@ VmDnsCacheRefreshThread(
                 dwError != WSAETIMEDOUT &&
                 dwError != ERROR_SUCCESS)
             {
+                VMDNS_LOG_ERROR("DnsCacheRefreshThread failed to wait with %u. Thread DIEING.", dwError);
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
         }
@@ -668,7 +695,6 @@ VmDnsCacheRefreshThread(
 
 cleanup:
     pCacheContext->bRunning = FALSE;
-
     return dwError;
 
 error:

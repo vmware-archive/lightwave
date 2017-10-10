@@ -13,4 +13,4 @@
  */
 
 
-extern PVM_SOCK_PACKAGE gpVmSockPackage;
+extern PVM_SOCK_PACKAGE gpVmDnsSockPackage;

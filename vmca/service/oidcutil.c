@@ -47,9 +47,6 @@ VMCAVerifyOIDC(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = OidcClientGlobalInit();
-    BAIL_ON_VMCA_ERROR(dwError);
-
     dwError = VMCAGetTenantSigningCert(&pszSigningCertificatePEM);
     BAIL_ON_VMCA_ERROR(dwError);
 
@@ -94,11 +91,12 @@ VMCAGetTenantSigningCert(
     PSTR* ppszSigningCertPEM
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
     POIDC_SERVER_METADATA pMetadata = NULL;
-    PCSTR pszServer = "localhost";
-    int nPortNumber = 443;
-    PSTR pszTenant = NULL;
+    PCSTR   pszServer = "localhost";
+    int     nPortNumber = 443;
+    PSTR    pszTenant = NULL;
+    PCSTR   pszSigningCertPEM = NULL;
 
     if (!ppszSigningCertPEM)
     {
@@ -112,10 +110,12 @@ VMCAGetTenantSigningCert(
                                 &pMetadata,
                                 pszServer,
                                 nPortNumber,
-                                pszTenant);
+                                pszTenant,
+                                NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *ppszSigningCertPEM = pMetadata->pszSigningCertificatePEM;
+    pszSigningCertPEM = OidcServerMetadataGetSigningCertificatePEM(pMetadata);
+    *ppszSigningCertPEM = (PSTR)pszSigningCertPEM;
 
 cleanup:
     return dwError;

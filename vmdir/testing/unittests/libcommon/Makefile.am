@@ -1,8 +1,8 @@
 lib_LTLIBRARIES = libcommonunittests.la
 
 libcommonunittests_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -25,7 +25,7 @@ libcommonunittests_la_SOURCES = \
     VmDirStringToTokenList.c
 
 libcommonunittests_la_LIBADD = \
-    @top_builddir@/testing/test_lib/libvmdirtesting.la \
+    @top_builddir@/vmdir/testing/test_lib/libvmdirtesting.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -41,7 +41,7 @@ libcommonunittests_la_LIBADD = \
     @PTHREAD_LIBS@
 
 libcommonunittests_la_LDFLAGS = \
-    -export-symbols @top_srcdir@/testing/unittests/libcommon/libcommonunittests.exp \
+    -export-symbols @top_srcdir@/vmdir/testing/unittests/libcommon/libcommonunittests.exp \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

@@ -32,6 +32,15 @@ _ParsePagedResultControlVal(
     VDIR_LDAP_RESULT *                  lr                  // Output
     );
 
+static
+int
+_ParseCondWriteControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    VDIR_CONDWRITE_CONTROL_VALUE *          pCtrlVal,        // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -201,6 +210,21 @@ ParseRequestControls(
                                                   "ParseRequestControls: _ParsePagedResultControlVal failed.");
                 }
                 op->showPagedResultsCtrl = *control;
+            }
+
+            if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_CONDITIONAL_WRITE, TRUE ) == 0)
+            {
+                retVal = _ParseCondWriteControlVal(
+                            op,
+                            &lberBervCtlValue,
+                            &((*control)->value.condWriteCtrlVal),
+                            lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParseConditionalWriteControlVal failed.");
+                }
+                op->pCondWriteCtrl = *control;
             }
 
             if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
@@ -862,6 +886,65 @@ cleanup:
 
 error:
     VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
+    goto cleanup;
+}
+
+static
+int
+_ParseCondWriteControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    VDIR_CONDWRITE_CONTROL_VALUE *          pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf;
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    PSTR                pszCondFilter = NULL;
+
+    if (!pOp)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, pControlBer, LBER_USE_DER );
+
+    /*
+     * https://confluence.eng.vmware.com/display/LIG/Conditional+LDAP+Write+Operation
+     *
+     * The ConditionalWriteControl is a null terminated STRING wrapping the BER-encoded version of the following SEQUENCE:
+     *
+     * ControlValue ::= SEQUENCE {
+     *        ConditionalWriteFilter            OCTET STRING
+     *  }
+     */
+
+    if (ber_scanf(ber, "{a}", &pszCondFilter) == LBER_ERROR)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing filter value", __FUNCTION__);
+        pLdapResult->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading conditional write control filter");
+    }
+
+    retVal = VmDirAllocateStringA(pszCondFilter, &(pCtrlVal->pszFilter));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+cleanup:
+    if (pszCondFilter)
+    {
+        ber_memfree(pszCondFilter);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pLdapResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 

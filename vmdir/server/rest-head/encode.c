@@ -24,7 +24,7 @@ VmDirRESTEncodeAttribute(
     DWORD   i = 0;
     json_t* pjVals = NULL;
     json_t* pjAttr = NULL;
-    PSTR    pszEncodedVal = NULL;
+    PSTR    pszEncoded = NULL;
     int     len = 0;
 
     if (!pAttr || !ppjOutput)
@@ -45,23 +45,23 @@ VmDirRESTEncodeAttribute(
         // check if value needs to be encoded
         if (VmDirSchemaAttrIsOctetString(pAttr->pATDesc))
         {
-            VMDIR_SAFE_FREE_STRINGA(pszEncodedVal);
+            VMDIR_SAFE_FREE_STRINGA(pszEncoded);
 
             dwError = VmDirAllocateMemory(
                     pAttr->vals[i].lberbv.bv_len * 2 + 1,
-                    (PVOID*)&pszEncodedVal);
+                    (PVOID*)&pszEncoded);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = sasl_encode64(
                     pAttr->vals[i].lberbv.bv_val,
                     pAttr->vals[i].lberbv.bv_len,
-                    pszEncodedVal,
+                    pszEncoded,
                     pAttr->vals[i].lberbv.bv_len * 2 + 1,
                     &len);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = json_array_append_new(
-                    pjVals, json_string(pszEncodedVal));
+                    pjVals, json_string(pszEncoded));
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else
@@ -79,12 +79,15 @@ VmDirRESTEncodeAttribute(
     *ppjOutput = pjAttr;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszEncodedVal);
+    VMDIR_SAFE_FREE_STRINGA(pszEncoded);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjVals)
     {
@@ -107,6 +110,8 @@ VmDirRESTEncodeEntry(
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
     BOOLEAN bReturn = FALSE;
+    BOOLEAN bAsterisk = FALSE;
+    BOOLEAN bPlusSign = FALSE;
     PVDIR_ATTRIBUTE pAttr = NULL;
     PVDIR_ATTRIBUTE pAttrs[3] = {0};
     json_t*         pjAttr = NULL;
@@ -126,7 +131,18 @@ VmDirRESTEncodeEntry(
             pjEntry, "dn", json_string(pEntry->dn.lberbv.bv_val));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // TODO special char?
+    for (i = 0; pbvAttrs && pbvAttrs[i].lberbv.bv_val; i++)
+    {
+        if (VmDirStringCompareA("*", pbvAttrs[i].lberbv.bv_val, TRUE) == 0)
+        {
+            bAsterisk = TRUE;
+        }
+        else if (VmDirStringCompareA("+", pbvAttrs[i].lberbv.bv_val, TRUE) == 0)
+        {
+            bPlusSign = TRUE;
+        }
+    }
+
     pAttrs[0] = pEntry->attrs;
     pAttrs[1] = pEntry->pComputedAttrs;
 
@@ -134,17 +150,32 @@ VmDirRESTEncodeEntry(
     {
         for (pAttr = pAttrs[i]; pAttr; pAttr = pAttr->next)
         {
-            bReturn = pbvAttrs == NULL;
+            bReturn = FALSE;
 
-            for (j = 0; pbvAttrs && pbvAttrs[j].lberbv.bv_val; j++)
+            if ((bAsterisk || !pbvAttrs) &&
+                    pAttr->pATDesc->usage ==
+                            VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
             {
-                if (VmDirStringCompareA(
-                        pAttr->type.lberbv.bv_val,
-                        pbvAttrs[j].lberbv.bv_val,
-                        FALSE) == 0)
+                bReturn = TRUE;
+            }
+            else if (bPlusSign &&
+                    pAttr->pATDesc->usage ==
+                            VDIR_LDAP_DIRECTORY_OPERATION_ATTRIBUTE)
+            {
+                bReturn = TRUE;
+            }
+            else if (pbvAttrs)
+            {
+                for (j = 0; pbvAttrs[j].lberbv.bv_val; j++)
                 {
-                    bReturn = TRUE;
-                    break;
+                    if (VmDirStringCompareA(
+                            pAttr->type.lberbv.bv_val,
+                            pbvAttrs[j].lberbv.bv_val,
+                            FALSE) == 0)
+                    {
+                        bReturn = TRUE;
+                        break;
+                    }
                 }
             }
 
@@ -170,8 +201,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjAttr)
     {
@@ -227,8 +261,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     if (pjEntry)
     {

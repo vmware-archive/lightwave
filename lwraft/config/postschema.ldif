@@ -1,0 +1,2804 @@
+#
+#
+#
+# VMware ldap Core schema
+#
+# Version 0.1 (Commonly used schema definitions from various RFC for development purpose)
+#
+entryDN: cn=aggregate,cn=schemacontext
+
+cn: aggregate
+
+# subschemaSubentry: cn=aggregate
+
+# structuralObjectClass: subentry
+
+objectclass: top
+
+objectclass: subschema
+
+objectclass: subentry
+
+############################################################
+########## vmdird core definition - BEGIN
+############################################################
+objectClasses: (
+    2.5.20.1
+    NAME 'subschema'
+    DESC 'RFC4512: controlling subschema (sub)entry'
+    AUXILIARY
+    MAY ( ldapSyntaxes
+        $ objectClasses
+        $ attributeTypes
+        $ matchingRules
+        $ matchingRuleUse
+        $ dITContentRules
+        $ dITStructureRules
+        $ vmwAttributeToIdMap
+        )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.1
+    NAME 'vmwDirCfg'
+    DESC 'vmware extension'
+    SUP top
+    STRUCTURAL
+    MUST ( cn )
+    MAY ( vmwAttrIndexDesc
+        $ vmwAttrOrganizationList
+        )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.2
+    NAME 'vmwDseRoot'
+    DESC 'Object class defined by vmware to manage the DSE root entry.'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( rootDomainNamingContext
+        $ defaultNamingContext
+        $ configurationNamingContext
+        $ schemaNamingContext
+        $ namingContexts
+        $ supportedLDAPVersion
+        $ subschemaSubentry
+        $ serverName
+        $ vmwDCAccountDN
+        $ vmwDCAccountUPN
+        $ supportedControl
+        $ invocationId
+        $ msDS-SiteName
+        $ vmwPlatformServicesControllerVersion
+        $ ref
+        $ vmwRaftLeader
+        $ vmwRaftActiveFollower
+        $ vmwRaftMember
+        $ vmwRaftState
+        )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.3
+    NAME 'vmwDirServer'
+    DESC 'Object class defined by vmware to manage a vmware directory server entry.'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ serverId
+         $ replInterval
+         $ replPageSize
+         $ invocationId
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.4
+    NAME 'vmwReplicationAgreement'
+    DESC 'Object class defined by vmware to store and manage replication agreements in vmdir.'
+    SUP top
+    STRUCTURAL
+    MUST ( labeledURI
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.5
+    NAME 'vmwDirServerStatus'
+    DESC 'defines object containing server stats'
+    SUP top
+    STRUCTURAL
+    MUST ( cn )
+    MAY ( vmwServerRunTimeStatus
+        )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.6
+    NAME 'vmwPolicy'
+    DESC 'VMware - per tenant policy'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ Enabled
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.7
+    NAME 'vmwPasswordPolicy'
+    DESC 'VMware - per tenant password policy'
+    AUXILIARY
+    MAY  ( description
+         $ vmwPasswordProhibitedPreviousCount
+         $ vmwPasswordLifetimeDays
+         $ vmwPasswordMaxLength
+         $ vmwPasswordMinLength
+         $ vmwPasswordMinAlphabeticCount
+         $ vmwPasswordMinUpperCaseCount
+         $ vmwPasswordMinLowerCaseCount
+         $ vmwPasswordMinNumericCount
+         $ vmwPasswordMinSpecialCharCount
+         $ vmwPasswordMaxIdenticalAdjacentChars
+         $ vmwPasswordSpecialChars
+         )
+   )
+
+objectClasses: (
+    VMWare.DIR.objectclass.8
+    NAME 'vmwLockoutPolicy'
+    DESC 'VMware - per tenant lockout policy'
+    AUXILIARY
+    MAY  ( description
+         $ vmwPasswordChangeMaxFailedAttempts
+         $ vmwPasswordChangeFailedAttemptIntervalSec
+         $ vmwPasswordChangeAutoUnlockIntervalSec
+         )
+   )
+
+#objectClasses: (
+#    VMWare.DIR.objectclass.10
+#    NAME 'vmwServicePrincipal'
+#    DESC 'VMWare service principal'
+#    SUP top
+#    AUXILIARY
+#    MUST ( cn
+#         $ vmwSTSSubjectDN
+#         )
+#    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.11
+    NAME 'vmwRaftLogEntry'
+    DESC 'a Raft log entry'
+    SUP top
+    STRUCTURAL
+    MUST ( vmwRaftTerm
+         $ vmwRaftLogindex
+         $ vmwRaftLogEntries
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.12
+    NAME 'vmwRaftPersistState'
+    DESC 'Raft persistent state'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ vmwRaftTerm
+         $ vmwRaftLastApplied
+         $ vmwRaftVotedForTerm
+         $ vmwRaftFirstLogIndex
+         )
+    MAY  ( vmwRaftVotedFor
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.13
+    NAME 'vmwRaftClusterState'
+    DESC 'Raft state of all memmbers'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY  ( vmwRaftState
+         )
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.1
+    NAME 'vmwAttributeToIdMap'
+    DESC 'VMware extension'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+# like to add USAGE vmwExtension
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.2
+    NAME 'vmwAttrIndexDesc'
+    DESC 'VMware extension'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.3
+    NAME 'lastKnownDn'
+    DESC 'last known DN of the DELETED object'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.5
+    NAME 'rootDomainNamingContext'
+    DESC 'Attribute containing the distinguished name of the root (main) domain naming context'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.6
+    NAME 'defaultNamingContext'
+    DESC 'Attribute containing the distinguished name of the default naming context'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.7
+    NAME 'configurationNamingContext'
+    DESC 'Attribute containing the distinguished name of the configuration naming context'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.8
+    NAME 'schemaNamingContext'
+    DESC 'Attribute containing the distinguished name of the schema naming context'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.9
+    NAME 'vmwServerGUID'
+    DESC 'A GUID identifying a vmware directory server and the associated DB'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44{36}
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.10
+    NAME 'deletedObjectsContainer'
+    DESC 'Attribute containing the distinguished name of the deleted objects container'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.11
+    NAME 'replBindDN'
+    DESC 'Attribute containing the distinguished name of the bind DN to be used to bind to a replication partner.'
+    SUP distinguishedName
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.12
+    NAME 'replBindPassword'
+    DESC 'Attribute containing the bind password to be used to bind to a replication partner.'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40{128}
+    )
+
+# attribute replInterval from AD
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.15
+    NAME 'replPageSize'
+    DESC 'Number of changes requested in seach replication search request'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.17
+    NAME 'vmwRidSequenceNumber'
+    DESC 'An integer uniquely identifying the current rid sequence number used to generate next RID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.18
+    NAME 'vmwNodeSequenceNumber'
+    DESC 'An integer uniquely identifying the current node sequence number used to generate next RID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.19
+    NAME 'vmwAttrOrganizationList'
+    DESC 'VMware extension'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+# use nTSecurityDescriptor instead
+#attributeTypes: (
+#    VMWare.DIR.attribute.0.20
+#    NAME 'vmwSecurityDescriptor'
+#    DESC 'A security descriptor describing access control for an entry'
+#    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+#    SINGLE-VALUE
+#    USAGE directoryOperation
+#    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.21
+    NAME 'oldUserPassword'
+    DESC 'Old passwords in digest form to prevent password recycle per policy'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.23
+    NAME 'vmwEntryIdSequenceNumber'
+    DESC 'Entry ID sequence number generator key prefix, not used in any objectclass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.25
+    NAME 'parentid'
+    DESC 'VMW internal usage to represent sudo parent id attribute, not used in any objectclass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.26
+    NAME 'passwordHashScheme'
+    DESC 'Name of the password hashing scheme'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.27
+    NAME 'serverId'
+    DESC 'An ID used in SID allocation relative to this server'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.29
+    NAME 'externalObjectId'
+    DESC 'VMware defined attribute to store FSP objectId'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.30
+    NAME 'vmwDomainFunctionalLevel'
+    DESC 'Domain functional level supported by a Lotus domain'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.31
+    NAME 'vmwForestFunctionalLevel'
+    DESC 'Forest functional level supported by the Lotus forest'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.32
+    NAME 'vmwServerVersion'
+    DESC 'Lotus server version'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.33
+    NAME 'vmwServerRunTimeStatus'
+    DESC 'Server runtime status'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.34
+    NAME 'vmwPasswordProhibitedPreviousCount'
+    DESC 'VMWare - prohibited previous passwords count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.35
+    NAME 'vmwPasswordLifetimeDays'
+    DESC 'VMWare - password expiration in days'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.36
+    NAME 'vmwPasswordMaxLength'
+    DESC 'VMWare- password max length'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.37
+    NAME 'vmwPasswordMinLength'
+    DESC 'VMWare - password min length'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.38
+    NAME 'vmwPasswordMinAlphabeticCount'
+    DESC 'VMWare i- password min alphabetic count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.39
+    NAME 'vmwPasswordMinUpperCaseCount'
+    DESC 'VMWare - password min upper case count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.40
+    NAME 'vmwPasswordMinNumericCount'
+    DESC 'VMWare - password min numeric count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.41
+    NAME 'vmwPasswordMinSpecialCharCount'
+    DESC 'VMWare - password min special char @#$%&^* count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.42
+    NAME 'vmwPasswordMaxIdenticalAdjacentChars'
+    DESC 'VMWare - password max identical adjacent char'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.43
+    NAME 'vmwPasswordChangeMaxFailedAttempts'
+    DESC 'VMWare - password change max failed attempts'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.43
+    NAME 'vmwPasswordChangeFailedAttemptIntervalSec'
+    DESC 'VMWare - password change failed attempt interval in second'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.45
+    NAME 'vmwPasswordChangeAutoUnlockIntervalSec'
+    DESC 'VMWare - password change unlock interval in second'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.46
+    NAME 'vmwPasswordMinLowerCaseCount'
+    DESC 'VMWare - password min lower case count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.DIR.attribute.0.47
+    NAME 'vmwDCAccountDN'
+    DESC 'Attribute containing the distinguished name of the domain controller machine account object'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+# Following attribute will be set on the <system domain DN> object.
+# Ideally, it should be set on a forest level object, and not on an object in a Domain scope.
+# Since it is an operational attribute, object class definition need not be alterred.
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.48
+    NAME 'vmwMaxServerId'
+    DESC 'Maximum server id allocated to servers in this forest so far.'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.49
+    NAME 'vmwDCAccountUPN'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.50
+    NAME 'vmwLDUGuid'
+    DESC 'A GUID identifying an LDU associated with this vmware directory server'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44{36}
+    SINGLE-VALUE
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.51
+    NAME 'vmwPasswordNeverExpires'
+    DESC 'Attribute to indicate if the password ever expires for the object'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.52
+    NAME 'vmwAdministratorDN'
+    DESC 'Default administrator DN'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.53
+    NAME 'vmwSRPSecret'
+    DESC 'SRP secret'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.54
+    NAME 'vmwAclString'
+    DESC 'ACL in string format'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.55
+    NAME 'vmwPasswordSpecialChars'
+    DESC 'List of special characters'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{32}
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.56
+    NAME 'vmwMachineGUID'
+    DESC 'A GUID identifying a machine'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44{36}
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.57
+    NAME 'vmwPlatformServicesControllerVersion'
+    DESC 'Platform Services Controller version'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.0.58
+    NAME 'vmwAttributeUsage'
+    DESC 'VMware extension - flag to represent NO-USER-MODIFICATION and USAGE values'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+##############################################################
+########## Following attribute override AD schema.  ##########
+########## ??????????? should we do this ?????????  ##########
+##############################################################
+attributeTypes: (
+    VMWare.DIR.attribute.1.3
+    NAME 'isDeleted'
+    DESC 'Value of the attribute determines if an object is in the DELETED state'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{256}
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.4
+    NAME 'objectGUID'
+    DESC 'GUID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{36}
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.5
+    NAME 'serverName'
+    DESC 'Attribute containing the distinguished name of the object containing properties of this server'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+############################################################
+########## vmdird other RFC definition - BEGIN
+############################################################
+
+attributeTypes: (
+    2.5.18.3
+    NAME 'creatorsName'
+    DESC 'RFC4512: name of creator'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.18.4
+    NAME 'modifiersName'
+    DESC 'RFC4512: name of last modifier'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.18.9
+    NAME 'hasSubordinates'
+    DESC 'X.501: entry has children'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.1.16.4
+    NAME 'entryUUID'
+    DESC 'UUID of the entry'
+    SYNTAX 1.3.6.1.1.16.1
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.6
+    NAME 'altServer'
+    DESC 'RFC4512: alternative servers'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.5
+    NAME 'namingContexts'
+    DESC 'RFC4512: naming contexts'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.13
+    NAME 'supportedControl'
+    DESC 'RFC4512: supported controls'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.7
+    NAME 'supportedExtension'
+    DESC 'RFC4512: supported extended operations'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.15
+    NAME 'supportedLDAPVersion'
+    DESC 'RFC4512: supported LDAP versions'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.14
+    NAME 'supportedSASLMechanisms'
+    DESC 'RFC4512: supported SASL mechanisms'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.4203.1.3.5
+    NAME 'supportedFeatures'
+    DESC 'RFC4512: features supported by the server'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.1.4
+    NAME 'vendorName'
+    DESC 'RFC3045: name of implementation vendor'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.1.5
+    NAME 'vendorVersion'
+    DESC 'RFC3045: version of implementation'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    2.5.21.1 NAME 'dITStructureRules'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.17
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.7 NAME 'nameForms'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.35
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.16.840.1.113730.3.1.34
+    NAME 'ref'
+    DESC 'RFC3296: subordinate referral URL'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    USAGE distributedOperation
+    )
+
+attributeTypes: (
+    2.5.4.48
+    NAME 'protocolInformation'
+    DESC 'RFC2256: protocol information'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.42
+    )
+
+attributeTypes: (
+    2.5.4.52
+    NAME 'supportedAlgorithms'
+    DESC 'RFC2256: supported algorithms'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.49
+    )
+
+objectClasses: (
+    1.3.6.1.4.1.1466.101.120.111
+    NAME 'extensibleObject'
+    DESC 'RFC4512: extensible object'
+    SUP top
+    AUXILIARY
+    )
+
+objectClasses: (
+    2.16.840.1.113730.3.2.6
+    NAME 'referral'
+    DESC 'namedref: named subordinate referral'
+    SUP top
+    STRUCTURAL
+    MUST ref
+    )
+
+objectClasses: (
+    1.3.6.1.4.1.1466.344
+    NAME 'dcObject'
+    DESC 'RFC2247: domain component object'
+    SUP top
+    AUXILIARY
+    MUST dc
+    MAY ( krbMKey
+        )
+    )
+
+############################################################
+########## vmdird other RFC definition - END
+############################################################
+
+############################################################
+########## AD core definition - BEGIN
+############################################################
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.1
+    NAME 'uid'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.20
+    NAME 'homePhone'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.21
+    NAME 'secretary'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.25
+    NAME 'dc'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.3
+    NAME 'mail'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.37
+    NAME 'associatedDomain'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.38
+    NAME 'associatedName'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.41
+    NAME 'mobile'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.42
+    NAME 'pager'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.44
+    NAME 'uniqueIdentifier'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.45
+    NAME 'organizationalStatus'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.48
+    NAME 'buildingName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.5
+    NAME 'drink'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.55
+    NAME 'audio'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.56
+    NAME 'documentPublisher'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.6
+    NAME 'roomNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.60
+    NAME 'jpegPhoto'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.7
+    NAME 'photo'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.8
+    NAME 'userClass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    0.9.2342.19200300.100.1.9
+    NAME 'host'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113549.1.9.2
+    NAME 'unstructuredName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+    )
+
+attributeTypes: (
+    1.2.840.113549.1.9.8
+    NAME 'unstructuredAddress'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.1
+    NAME 'instanceType'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+### memberOf is a NO-USER_MODIFICATION attribute i.e. it's value is
+### computed on the fly.
+attributeTypes: (
+    1.2.840.113556.1.2.102
+    NAME 'memberOf'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.115
+    NAME 'invocationId'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.118
+    NAME 'otherPager'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.13
+    NAME 'displayName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.131
+    NAME 'co'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.135
+    NAME 'cost'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.14
+    NAME 'hasMasterNCs'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.141
+    NAME 'department'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.146
+    NAME 'company'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.15
+    NAME 'hasPartialReplicaNCs'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.16
+    NAME 'nCName'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.169
+    NAME 'showInAdvancedViewOnly'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.18
+    NAME 'otherTelephone'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.194
+    NAME 'adminDisplayName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.2
+    NAME 'whenCreated'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.21
+    NAME 'subClassOf'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.210
+    NAME 'proxyAddresses'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.212
+    NAME 'dSHeuristics'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.214
+    NAME 'originalDisplayTableMSDOS'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.218
+    NAME 'oMObjectClass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.22
+    NAME 'governsID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.226
+    NAME 'adminDescription'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.227
+    NAME 'extensionName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.231
+    NAME 'oMSyntax'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.24
+    NAME 'mustContain'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.25
+    NAME 'mayContain'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.255
+    NAME 'addressSyntax'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.256
+    NAME 'streetAddress'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.26
+    NAME 'rDNAttID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.281
+    NAME 'nTSecurityDescriptor'
+    SYNTAX 1.2.840.113556.1.4.907
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.3
+    NAME 'whenChanged'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.30
+    NAME 'attributeID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.32
+    NAME 'attributeSyntax'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.33
+    NAME 'isSingleValued'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.334
+    NAME 'searchFlags'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.7
+    NAME 'vmwAttrUniquenessScope'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.8
+    NAME 'vmwRaftTerm'
+    DESC 'VMware Raft Election Term'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.9
+    NAME 'vmwRaftLastApplied'
+    DESC 'VMware Raft highest log entry applied'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.10
+    NAME 'vmwRaftVotedForTerm'
+    DESC 'VMware Raft voted Term'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.11
+    NAME 'vmwRaftLogindex'
+    DESC 'VMware Raft Log index'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.12
+    NAME 'vmwRaftLogEntries'
+    DESC 'VMware Raft log entry'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.13
+    NAME 'vmwRaftVotedFor'
+    DESC 'VMware Raft server name voted for'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.14
+    NAME 'vmwRaftFirstLogindex'
+    DESC 'VMware Raft First Log index'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.15
+    NAME 'vmwRaftLeader'
+    DESC 'Raft Leader'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.16
+    NAME 'vmwRaftActiveFollower'
+    DESC 'A list of active Raft Followers'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.17
+    NAME 'vmwRaftMember'
+    DESC 'A list of Raft cluster members'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.18
+    NAME 'vmwRaftState'
+    DESC 'Raft volatile state'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.19
+    NAME 'vmwRaftLogChanged'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.34
+    NAME 'rangeLower'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.35
+    NAME 'rangeUpper'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.351
+    NAME 'auxiliaryClass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.370
+    NAME 'objectClassCategory'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.380
+    NAME 'extendedCharsAllowed'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.460
+    NAME 'lDAPDisplayName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.471
+    NAME 'schemaVersion'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    )
+
+#attributeTypes: (
+#    1.2.840.113556.1.2.48
+#    NAME 'isDeleted'
+#    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+#    SINGLE-VALUE
+#    NO-USER-MODIFICATION
+#    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.49
+    NAME 'mAPIID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.50
+    NAME 'linkID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.557
+    NAME 'Enabled'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.598
+    NAME 'dmdName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.7
+    NAME 'subRefs'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.2.8
+    NAME 'possSuperiors'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.1
+    NAME 'name'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.120
+    NAME 'schemaFlagsEx'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.1212
+    NAME 'isEphemeral'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.1336
+    NAME 'replInterval'
+    DESC 'Replication interval in seconds.'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.1358
+    NAME 'schemaInfo'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.144
+    NAME 'operatorCount'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.145
+    NAME 'revision'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.146
+    NAME 'objectSid'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.148
+    NAME 'schemaIDGUID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.149
+    NAME 'attributeSecurityGUID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.156
+    NAME 'comment'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.1696
+    NAME 'lastLogonTimestamp'
+    SYNTAX 1.2.840.113556.1.4.906
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.170
+    NAME 'systemOnly'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.195
+    NAME 'systemPossSuperiors'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.196
+    NAME 'systemMayContain'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.1961
+    NAME 'msDS-SiteName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.197
+    NAME 'systemMustContain'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.198
+    NAME 'systemAuxiliaryClass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.2058
+    NAME 'isRecycled'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.221
+    NAME 'sAMAccountName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.224
+    NAME 'defaultSecurityDescriptor'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.25
+    NAME 'countryCode'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.26
+    NAME 'creationTime'
+    SYNTAX 1.2.840.113556.1.4.906
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.362
+    NAME 'siteGUID'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.480
+    NAME 'defaultGroup'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.481
+    NAME 'schemaUpdate'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.518
+    NAME 'defaultHidingValue'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.52
+    NAME 'lastLogon'
+    SYNTAX 1.2.840.113556.1.4.906
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.538
+    NAME 'prefixMap'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.610
+    NAME 'classDisplayName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.618
+    NAME 'wellKnownObjects'
+    SYNTAX 1.2.840.113556.1.4.903
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.639
+    NAME 'isMemberOfPartialAttributeSet'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.640
+    NAME 'partialAttributeSet'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.653
+    NAME 'managedBy'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.656
+    NAME 'userPrincipalName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.661
+    NAME 'isDefunct'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.662
+    NAME 'lockoutTime'
+    SYNTAX 1.2.840.113556.1.4.906
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.748
+    NAME 'attributeDisplayNames'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.750
+    NAME 'groupType'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.771
+    NAME 'servicePrincipalName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.782
+    NAME 'objectCategory'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.783
+    NAME 'defaultObjectCategory'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.8
+    NAME 'userAccountControl'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.911
+    NAME 'allowedChildClasses'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.912
+    NAME 'allowedChildClassesEffective'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.913
+    NAME 'allowedAttributes'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.914
+    NAME 'allowedAttributesEffective'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.915
+    NAME 'possibleInferiors'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.916
+    NAME 'canonicalName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    1.2.840.113556.1.4.96
+    NAME 'pwdLastSet'
+# vmw use INTEGER instead of SYNTAX 1.2.840.113556.1.4.906 (MSFT LargeInteger)
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.1.20
+    NAME 'entryDN'
+    DESC 'DN of the entry'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.16
+    NAME 'ldapSyntaxes'
+    DESC 'RFC4512: LDAP syntaxes'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.250.1.57
+    NAME 'labeledURI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.16.840.1.113730.3.1.34
+    NAME 'middleName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.18.1
+    NAME 'createTimeStamp'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+# vmw
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.18.10
+    NAME 'subSchemaSubEntry'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    2.5.18.2
+    NAME 'modifyTimeStamp'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+# vmw
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.2
+    NAME 'dITContentRules'
+#  AD use following, RFC use different (need consolidate?)
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.4
+    NAME 'matchingRules'
+    DESC 'RFC4512: matching rules'
+#  AD use DirectoryString syntax, RFC use following
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.5
+    NAME 'attributeTypes'
+#  AD use following , RFC use different
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.6
+    NAME 'objectClasses'
+#  AD use following, RFC use different
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.8
+    NAME 'matchingRuleUse'
+    DESC 'RFC4512: matching rule uses'
+#  AD use following, RFC use different
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    2.5.21.9
+    NAME 'structuralObjectClass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    )
+
+attributeTypes: (
+    2.5.4.0
+    NAME 'objectClass'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    )
+
+attributeTypes: (
+    2.5.4.10
+    NAME 'o'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.5.4.11
+    NAME 'ou'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.5.4.13
+    NAME 'description'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.5.4.14
+    NAME 'searchGuide'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    2.5.4.15
+    NAME 'businessCategory'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.5.4.16
+    NAME 'postalAddress'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.5.4.17
+    NAME 'postalCode'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.18
+    NAME 'postOfficeBox'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    2.5.4.19
+    NAME 'physicalDeliveryOfficeName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.2
+    NAME 'knowledgeInformation'
+    SYNTAX 1.2.840.113556.1.4.905
+    )
+
+attributeTypes: (
+    2.5.4.20
+    NAME 'telephoneNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.21
+    NAME 'telexNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    2.5.4.22
+    NAME 'teletexTerminalIdentifier'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    2.5.4.23
+    NAME 'facsimileTelephoneNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.24
+    NAME 'x121Address'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.36
+    )
+
+attributeTypes: (
+    2.5.4.25
+    NAME 'internationalISDNNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.36
+    )
+
+attributeTypes: (
+    2.5.4.26
+    NAME 'registeredAddress'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    2.5.4.27
+    NAME 'destinationIndicator'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
+attributeTypes: (
+    2.5.4.28
+    NAME 'preferredDeliveryMethod'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    )
+
+attributeTypes: (
+    2.5.4.29
+    NAME 'presentationAddress'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.43
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.3
+    NAME 'cn'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+#TODO, DN syntax should use EQALITY to get normalized correctly
+# not done with all 121.1.12 yet
+attributeTypes: (
+    2.5.4.31
+    NAME 'member'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    2.5.4.32
+    NAME 'owner'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.34
+    NAME 'seeAlso'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    2.5.4.35
+    NAME 'userPassword'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.36
+    NAME 'userCertificate'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    2.5.4.4
+    NAME 'sn'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.42
+    NAME 'givenName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.49
+    NAME 'distinguishedName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+#vmw
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    )
+
+attributeTypes: (
+    2.5.4.5
+    NAME 'serialNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
+attributeTypes: (
+    2.5.4.50
+    NAME 'uniqueMember'
+#vmw
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    2.5.4.6
+    NAME 'c'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.7
+    NAME 'l'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.8
+    NAME 'st'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    2.5.4.9
+    NAME 'street'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+objectClasses: (
+    1.2.840.113556.1.3.13
+    NAME 'classSchema'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ subClassOf
+         $ governsID
+         $ objectClassCategory
+         $ schemaIDGUID
+         $ defaultObjectCategory
+         )
+    MAY ( possSuperiors
+        $ mustContain
+        $ mayContain
+        $ rDNAttID
+        $ auxiliaryClass
+        $ lDAPDisplayName
+        $ schemaFlagsEx
+        $ systemOnly
+        $ systemPossSuperiors
+        $ systemMayContain
+        $ systemMustContain
+        $ systemAuxiliaryClass
+        $ defaultSecurityDescriptor
+        $ defaultHidingValue
+        $ classDisplayName
+        $ isDefunct
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.3.14
+    NAME 'attributeSchema'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ attributeSyntax
+         $ isSingleValued
+         $ lDAPDisplayName
+         )
+    MAY ( rangeLower
+        $ rangeUpper
+        $ mAPIID
+        $ linkID
+        $ oMObjectClass
+        $ searchFlags
+        $ vmwAttrUniquenessScope
+        $ extendedCharsAllowed
+        $ schemaFlagsEx
+        $ attributeSecurityGUID
+        $ systemOnly
+        $ classDisplayName
+        $ isMemberOfPartialAttributeSet
+        $ isDefunct
+        $ isEphemeral
+# vmw move from MUST to MAY
+        $ attributeID
+        $ oMSyntax
+        $ schemaIDGUID
+        $ vmwAttributeUsage
+        )
+    )
+
+objectClasses: (
+# should use vmw OID
+    1.2.840.113556.1.3.23
+    NAME 'container'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( description
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.3.30
+    NAME 'computer'
+    SUP user
+    STRUCTURAL
+    MUST ( objectSid
+         )
+    MAY ( cn
+        $ siteGUID
+        $ vmwMachineGUID
+        $ vmwPlatformServicesControllerVersion
+        $ sAMAccountName
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.1
+    NAME 'securityObject'
+    SUP top
+    ABSTRACT
+    MUST ( cn
+         )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.6
+    NAME 'securityPrincipal'
+    SUP top
+    AUXILIARY
+    MUST ( objectSid
+         )
+    MAY ( nTSecurityDescriptor
+# lotus move from MUST to MAY
+        $ sAMAccountName
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.66
+    NAME 'domain'
+    SUP top
+    ABSTRACT
+    MUST ( dc
+         )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.67
+    NAME 'domainDNS'
+    SUP domain
+    STRUCTURAL
+    MAY ( managedBy
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.76
+    NAME 'foreignSecurityPrincipal'
+    SUP top
+    STRUCTURAL
+    MUST ( externalObjectId )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.8
+    NAME 'group'
+    SUP top
+    STRUCTURAL
+    MUST ( groupType
+         $ objectSid
+         )
+    MAY ( member
+        $ sAMAccountName
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.9
+    NAME 'user'
+    SUP organizationalPerson
+    STRUCTURAL
+    MUST ( objectSid
+         )
+    MAY ( o
+        $ userCertificate
+        $ givenName
+        $ userAccountControl
+        $ lastLogon
+        $ pwdLastSet
+        $ userPrincipalName
+        $ lockoutTime
+        $ servicePrincipalName
+        $ lastLogonTimestamp
+        $ uid
+        $ labeledURI
+        $ krbPrincipalKey
+        $ sAMAccountName
+        )
+    )
+
+objectClasses: (
+    2.16.840.1.113730.3.2.2
+    NAME 'inetOrgPerson'
+    SUP user
+    STRUCTURAL
+    MUST ( objectSid
+         )
+    MAY ( o
+        $ userCertificate
+        $ givenName
+        $ uid
+        $ labeledURI
+        $ sAMAccountName
+        )
+    )
+
+
+#objectClasses: (
+#    2.5.20.1
+#    NAME 'subschema'
+#    DESC 'RFC4512: controllingsubschema (sub)entry'
+#    AUXILIARY
+#    MAY ( ldapSyntaxes
+#        $ objectClasses
+#        $ attributeTypes
+#        $ matchingRules
+#        $ matchingRuleUse
+#        $ dITContentRules
+#        $ dITStructureRules
+#        $ vmwAttributeToIdMap
+#        )
+#    )
+
+#
+# moved instancetype ntsecuritydescripto objectcategory from must to may
+#
+objectClasses: (
+    2.5.6.0
+    NAME 'top'
+    ABSTRACT
+    MUST ( objectClass
+         )
+    MAY ( cn
+        $ nTSecurityDescriptor
+        $ instanceType
+        $ objectCategory
+        $ description
+        $ distinguishedName
+        $ whenCreated
+        $ whenChanged
+        $ subRefs
+        $ isDeleted
+        $ memberOf
+        $ extensionName
+        $ objectGUID
+        $ wellKnownObjects
+        $ allowedChildClasses
+        $ allowedChildClassesEffective
+        $ allowedAttributes
+        $ allowedAttributesEffective
+        $ possibleInferiors
+        $ canonicalName
+        $ isRecycled
+        $ structuralObjectClass
+        $ createTimeStamp
+        $ modifyTimeStamp
+        $ subSchemaSubEntry
+        $ vmwRaftLogChanged
+        )
+    )
+
+objectClasses: (
+    2.5.6.17
+    NAME 'groupOfUniqueNames'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ uniqueMember
+         )
+    MAY ( o
+        $ ou
+        $ description
+        $ businessCategory
+        $ owner
+        $ seeAlso
+        )
+    )
+
+objectClasses: (
+    2.5.6.4
+    NAME 'organization'
+    SUP top
+    STRUCTURAL
+    MUST ( o
+         )
+    MAY ( l
+        $ st
+        $ street
+        $ searchGuide
+        $ businessCategory
+        $ postalAddress
+        $ postalCode
+        $ postOfficeBox
+        $ physicalDeliveryOfficeName
+        $ telephoneNumber
+        $ telexNumber
+        $ teletexTerminalIdentifier
+        $ facsimileTelephoneNumber
+        $ x121Address
+        $ internationalISDNNumber
+        $ registeredAddress
+        $ destinationIndicator
+        $ preferredDeliveryMethod
+        $ seeAlso
+        $ userPassword
+        )
+    )
+
+objectClasses: (
+    2.5.6.5
+    NAME 'organizationalUnit'
+    SUP top
+    STRUCTURAL
+    MUST ( ou
+         )
+    MAY ( c
+        $ l
+        $ st
+        $ street
+        $ searchGuide
+        $ businessCategory
+        $ postalAddress
+        $ postalCode
+        $ postOfficeBox
+        $ physicalDeliveryOfficeName
+        $ telephoneNumber
+        $ telexNumber
+        $ teletexTerminalIdentifier
+        $ facsimileTelephoneNumber
+        $ x121Address
+        $ internationalISDNNumber
+        $ registeredAddress
+        $ destinationIndicator
+        $ preferredDeliveryMethod
+        $ seeAlso
+        $ userPassword
+        $ co
+        $ countryCode
+        $ defaultGroup
+        $ managedBy
+        )
+    )
+
+objectClasses: (
+    2.5.6.6
+    NAME 'person'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( sn
+        $ serialNumber
+        $ telephoneNumber
+        $ seeAlso
+        $ userPassword
+        $ vmwPasswordNeverExpires
+        )
+    )
+
+objectClasses: (
+    2.5.6.7
+    NAME 'organizationalPerson'
+    SUP person
+    STRUCTURAL
+    MAY ( c
+        $ l
+        $ o
+        $ ou
+        $ givenName
+        $ middleName
+# vmw
+        $ oldUserPassword
+        )
+    )
+
+objectClasses: (
+    2.5.6.8
+    NAME 'organizationalRole'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( l
+        $ st
+        $ street
+        $ ou
+        $ postalAddress
+        $ postalCode
+        $ postOfficeBox
+        $ physicalDeliveryOfficeName
+        $ telephoneNumber
+        $ telexNumber
+        $ teletexTerminalIdentifier
+        $ facsimileTelephoneNumber
+        $ x121Address
+        $ internationalISDNNumber
+        $ registeredAddress
+        $ destinationIndicator
+        $ preferredDeliveryMethod
+        $ seeAlso
+        )
+    )
+
+objectClasses: (
+    2.5.6.9
+    NAME 'groupOfNames'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( o
+        $ ou
+        $ member
+        $ businessCategory
+        $ owner
+        $ seeAlso
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.3.9
+    NAME 'dMD'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( dmdName
+        $ schemaUpdate
+        $ prefixMap
+        $ schemaInfo
+        )
+    )
+
+objectClasses: (
+    1.2.840.113556.1.5.4
+    NAME 'builtinDomain'
+    SUP top
+    STRUCTURAL
+    MAY ( objectSid
+        )
+    )
+
+############################################################
+########### kerberos definition 
+
+attributetypes: (
+    VMWare.Kerberos.attribute.1
+    NAME 'krbPrincipalName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+    )
+
+attributetypes: (
+    VMWare.Kerberos.attribute.28
+    NAME 'krbPrincipalKey'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributetypes: (
+    VMWare.Kerberos.attribute.36
+    NAME 'krbMKey'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+############################################################
+
+############################################################
+########## content rules
+############################################################
+
+dITContentRules:  (
+    1.2.840.113556.1.5.67
+    NAME  'domainDNS'
+    AUX ( dcObject
+        )
+    MAY ( objectSid
+        )
+    )
+
+########## AD core definition - END
+############################################################
+
+############################################################
+# DIT Content Rules
+############################################################
+
+##ditcontentrules: (
+##    VMWare.core.ditcontentrules.1
+##    NAME 'subentry'
+##    AUX ( subschema
+##        )
+##    )
+
+# use AD rule
+#ditcontentrules: (
+#    VMWare.core.ditcontentrules.2
+#    NAME 'organization'
+#    AUX ( dcObject
+#        )
+#    )
+
+ditcontentrules: (
+    VMWare.STS.ditcontentrules.1
+    NAME 'vmwPolicy'
+    AUX ( vmwLockoutPolicy
+        $ vmwPasswordPolicy
+        )
+    )
+
+############################################################
+########## ETCD
+############################################################
+
+objectClasses: (
+    POST.ETCD.objectclass.1
+    NAME 'vmwEtcdKV'
+    SUP top
+    STRUCTURAL
+    MUST ( vmwEtcdKey
+         $ vmwEtcdCreateRevision
+         $ vmwEtcdModRevision
+         $ vmwEtcdKeyVersion
+         )
+    MAY ( vmwEtcdValue
+        $ vmwEtcdLease
+        )
+    )
+
+attributeTypes: (
+    POST.ETCD.attribute.1
+    NAME 'vmwEtcdKey'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    POST.ETCD.attribute.2
+    NAME 'vmwEtcdCreateRevision'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    POST.ETCD.attribute.3
+    NAME 'vmwEtcdModRevision'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    POST.ETCD.attribute.4
+    NAME 'vmwEtcdKeyVersion'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    POST.ETCD.attribute.5
+    NAME 'vmwEtcdValue'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    POST.ETCD.attribute.6
+    NAME 'vmwEtcdLease'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+############################################################
+# Attribute Indices
+#
+# This file contains user application indices only.
+# Directory operational indices are maintained in
+# lwraft/server/indexcfg/defines.h.
+#
+# Attribute index definition in ABNF:
+#
+#   AttributeIndexDescription = LPAREN WSP
+#       [ SP "NAME" SP qdescrs ]      ; attribute type name
+#       [ SP "GLOBALLY-UNIQUE" ]      ; value uniqueness
+#
+# Example:
+#
+#   attributeIndices: (
+#       NAME 'example'
+#       GLOBALLY-UNIQUE
+#       )
+############################################################
+
+attributeIndices: (
+    NAME 'uid'
+    )

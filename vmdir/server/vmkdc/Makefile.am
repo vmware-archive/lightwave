@@ -22,28 +22,29 @@ libvmkdcserv_la_SOURCES = \
 
 libvmkdcserv_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/include \
-    -I$(top_srcdir)/server/kdctools \
-    -I$(top_srcdir)/server \
-    -I$(top_srcdir)/thirdparty/heimdal \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
-    -I$(top_srcdir)/build/server/kdcsrvcommon \
-    -I$(top_srcdir)/server/kdcsrvcommon \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmdir/server/kdctools \
+    -I$(top_srcdir)/vmdir/server \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/vmdir/build/server/kdcsrvcommon \
+    -I$(top_srcdir)/vmdir/server/kdcsrvcommon \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 libvmkdcserv_la_LIBADD = \
-    $(top_builddir)/server/kdckrb5/libvmkrb5.la \
-    $(top_builddir)/server/kdctools/libvmkdctools.la \
-    $(top_builddir)/server/kdcsrvcommon/libkdcsrvcommon.la \
-    $(top_builddir)/kdccommon/libkdccommon.la \
-    $(top_builddir)/thirdparty/heimdal/asn1/libasn1.la \
-    $(top_builddir)/thirdparty/heimdal/asn1/libasn1db.la \
-    $(top_builddir)/thirdparty/heimdal/krb5-crypto/libkrb5crypto.la \
+    $(top_builddir)/vmdir/server/kdckrb5/libvmkrb5.la \
+    $(top_builddir)/vmdir/server/kdctools/libvmkdctools.la \
+    $(top_builddir)/vmdir/server/kdcsrvcommon/libkdcsrvcommon.la \
+    $(top_builddir)/vmdir/kdccommon/libkdccommon.la \
+    $(top_builddir)/vmdir/thirdparty/heimdal/asn1/libasn1.la \
+    $(top_builddir)/vmdir/thirdparty/heimdal/asn1/libasn1db.la \
+    $(top_builddir)/vmdir/thirdparty/heimdal/krb5-crypto/libkrb5crypto.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -60,6 +61,6 @@ libvmkdcserv_la_LIBADD = \
 
 #    $(VMKDCD_BACKEND_LD_FLAGS) 
 libvmkdcserv_la_LDFLAGS = \
-    -export-symbols @top_srcdir@/server/vmkdc/libvmkdcserv.exp \
+    -export-symbols @top_srcdir@/vmdir/server/vmkdc/libvmkdcserv.exp \
     @LW_LDFLAGS@ \
     @OPENSSL_LDFLAGS@

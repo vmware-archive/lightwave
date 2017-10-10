@@ -20,7 +20,7 @@ namespace VMPSCHighAvailability.Nodes
 	{
 		public ManagementsGroupNode ()
 		{
-			DisplayName = "vCenter Servers";
+			DisplayName = "Photon Controllers";
 		}
 
 		public string GetSiteName()

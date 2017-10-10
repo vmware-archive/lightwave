@@ -67,6 +67,7 @@ IdmIdentityProviderCreateInternal(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToIdentityProviderData,
         (void**) &pIdentityProviderReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -189,6 +190,7 @@ IdmIdentityProviderGetAll(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToIdentityProviderArrayData,
         (void**) &pIdentityProviderArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -252,6 +254,7 @@ IdmIdentityProviderGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToIdentityProviderData,
         (void**) &pIdentityProviderReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -316,6 +319,7 @@ IdmIdentityProviderUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) IdmJsonToIdentityProviderData,
         (void**) &pIdentityProviderReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -377,6 +381,7 @@ IdmIdentityProviderDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

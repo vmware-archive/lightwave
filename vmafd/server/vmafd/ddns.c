@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 VMware, Inc. All rights reserved.
+ * Copyright (C) 2017 VMware, Inc. All rights reserved.
  *
  * Module   : ddns.c
  *
@@ -8,9 +8,6 @@
  */
 #include "includes.h"
 
-#ifndef _WIN32
-typedef struct sockaddr_nl nl_addr;
-#endif
 
 static
 DWORD
@@ -21,46 +18,6 @@ VmDdnsGetMachineInfo(
     PVMDNS_SERVER_CONTEXT *ppServerContext
     );
 
-#ifndef _WIN32
-static
-PVOID
-VmDdnsUpdateWorker(
-    PVOID pData
-    );
-#endif
-
-static
-DWORD
-VmDdnsUpdate(
-    PDDNS_CONTEXT pDdnsContext
-    );
-
-static
-DWORD
-VmDdnsDelete(
-    PDDNS_CONTEXT pDdnsContext
-    );
-
-static
-DWORD
-VmDdnsRpcUpdate(
-    PSTR pszZone,
-    PSTR pszHostname,
-    PSTR pszName,
-    PVMDNS_SERVER_CONTEXT pServerContext
-    );
-
-static
-DWORD
-VmDdnsProtocolUpdate(
-    PSTR pszDomain,
-    PSTR pszHostname,
-    PSTR pszMachineName,
-    PVMDNS_SERVER_CONTEXT pServerContext,
-    PDDNS_CONTEXT pDdnsContext,
-    DWORD dwFlag
-    );
-
 static
 DWORD
 VmDdnsRpcDelete(
@@ -69,247 +26,74 @@ VmDdnsRpcDelete(
     PSTR pszName
     );
 
-VOID
-VmDdnsShutdown(
-    PDDNS_CONTEXT pDdnsContext
+static
+DWORD
+VmDdnsRpcUpdate(
+    VMDNS_IP4_ADDRESS SourceIp4,
+    VMDNS_IP6_ADDRESS SourceIp6,
+    PSTR pszZone,
+    PSTR pszHostname,
+    PSTR pszName,
+    PVMDNS_SERVER_CONTEXT pServerContext
+    );
+
+static
+DWORD
+VmAfdDDNSUpdateDNS(
+    VMDNS_IP4_ADDRESS SourceIp4,
+    VMDNS_IP6_ADDRESS SourceIp6
     );
 
 DWORD
-VmDdnsInitThread(
-    PDDNS_CONTEXT *ppDdnsContext
+VmAfdUpdateIP(
+    );
+
+DWORD
+VmAfdDDNSInit(
+    PVMNETEVENT_HANDLE* ppHandle
     )
 {
     DWORD dwError = 0;
-    DWORD netLinkFd = 0;
-    DWORD enableDns = 0;
-    VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
-    PDDNS_CONTEXT pDdnsContext = NULL;
+    PVMNETEVENT_HANDLE pHandle = NULL;
 
-    if(!ppDdnsContext)
+    if (!ppHandle)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDomainState(&domainState);
-
-    if(domainState != VMAFD_DOMAIN_STATE_CLIENT || dwError)
-    {
-        VmAfdLog(VMAFD_DEBUG_ANY, "DDNS Client not started. Domain State invalid");
-        return 0;
-    }
-
-    dwError = VmAfdAllocateMemory(
-                        sizeof(DDNS_CONTEXT),
-                        (PVOID *)&pDdnsContext
-                        );
+    dwError = VmAfdUpdateIP();
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdRegGetInteger(
-                      VMAFD_REG_KEY_ENABLE_DNS,
-                      &enableDns
-                      );
-    if(dwError)
-    {
-        enableDns = 0;
-        dwError = 0;
-    }
-    pDdnsContext->bIsEnabledDnsUpdates = enableDns;
+    dwError = VmNetEventRegister(
+                          VMNET_EVENT_TYPE_IPCHANGE,
+                          VmAfdUpdateIP,
+                          &pHandle
+                          );
+    BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = pthread_mutex_init(&pDdnsContext->ddnsMutex, NULL);
-    if(dwError)
-    {
-  #ifndef _WIN32
-        dwError = LwErrnoToWin32Error(dwError);
-  #endif
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-  #ifndef _WIN32
-    dwError = pipe(pDdnsContext->pipeFd);
-    if(dwError < 0)
-    {
-
-        dwError = LwErrnoToWin32Error(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    netLinkFd = socket(
-                AF_NETLINK,
-                SOCK_RAW,
-                NETLINK_ROUTE);
-    if(netLinkFd < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-  #endif
-    pDdnsContext->netLinkFd = netLinkFd;
-    pDdnsContext->idSeed = VMDDNS_ID_SEED;
-
-    //first update
-    dwError = VmDdnsUpdate(pDdnsContext);
-    if(dwError)
-    {
-        VmAfdLog(VMAFD_DEBUG_DEBUG, "First update failed!");
-    }
-
-  #ifndef _WIN32
-    dwError = pthread_create(
-                  &pDdnsContext->thread,
-                  NULL,
-                  &VmDdnsUpdateWorker,
-                  (PVOID)pDdnsContext
-                  );
-    if(dwError)
-    {
-        dwError = LwErrnoToWin32Error(dwError);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-  #endif
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "Started DDNS client Thread successfully");
-    *ppDdnsContext = pDdnsContext;
+    *ppHandle = pHandle;
 
 cleanup:
 
     return dwError;
-
-error:
-    if(pDdnsContext)
-    {
-        VmDdnsShutdown(pDdnsContext);
-    }
-    if(ppDdnsContext)
-    {
-        *ppDdnsContext = NULL;
-    }
-    goto cleanup;
-}
-
-VOID
-VmDdnsShutdown(
-    PDDNS_CONTEXT pDdnsContext
-    )
-{
-    DWORD dwError = 0;
-    char notifyDdns = 0;
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "Shutting down DDNS Client service");
-
-    if(!pDdnsContext)
-    {
-        VmAfdLog(VMAFD_DEBUG_ERROR, "Context invalid! Shutdown failed!");
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-  #ifndef _WIN32
-    dwError = write(pDdnsContext->pipeFd[1], (PVOID *)&notifyDdns, sizeof(notifyDdns));
-    if(dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        VmAfdLog(
-            VMAFD_DEBUG_ERROR,
-            "Write socket failed: %d",
-            dwError
-            );
-    }
-  #endif
-
-    dwError = pthread_join(pDdnsContext->thread, NULL);
-    if(dwError)
-    {
-  #ifndef _WIN32
-        dwError = LwErrnoToWin32Error(dwError);
-  #endif
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "DDNS join failed. Error [%d]",
-            dwError
-            );
-    }
-
-  #ifndef _WIN32
-    dwError = close(pDdnsContext->pipeFd[0]);
-    if(dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "Pipe close failed. Error [%d]",
-            dwError
-            );
-    }
-
-    dwError = close(pDdnsContext->pipeFd[1]);
-    if(dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "Pipe[1] close failed. Error [%d]",
-            dwError
-            );
-    }
-
-    dwError = close(pDdnsContext->netLinkFd);
-    if(dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "Netlink close failed. Error [%d]",
-            dwError
-            );
-    }
-  #endif
-
-    dwError = pthread_mutex_destroy(&pDdnsContext->ddnsMutex);
-    if(dwError)
-    {
-      #ifndef _WIN32
-        dwError = LwErrnoToWin32Error(dwError);
-      #endif
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "Pthread mutex failed. Error [%d]",
-            dwError
-            );
-    }
-cleanup:
-
-    VMAFD_SAFE_FREE_MEMORY(pDdnsContext);
-    return;
-
 error:
 
-    goto cleanup;
-}
-
-VOID
-VmDdnsExit(
-    PDDNS_CONTEXT pDdnsContext
-)
-{
-    DWORD dwError = 0;
-
-    if(pDdnsContext)
+    if (ppHandle)
     {
-        dwError = VmDdnsDelete(pDdnsContext);
-        if(dwError)
-        {
-            VmAfdLog(VMAFD_DEBUG_ANY, "Ddns delete failed");
-        }
-        VmDdnsShutdown(pDdnsContext);
+        *ppHandle = NULL;
     }
+    if (pHandle)
+    {
+        VmNetEventUnregister(pHandle);
+    }
+    goto cleanup;
 }
 
 DWORD
-VmDdnsGetSourceIp(
-      VMDNS_IP4_ADDRESS** ppSourceIp4,
-      VMDNS_IP6_ADDRESS** ppSourceIp6
+VmAfdDetectSourceIP(
+      VMDNS_IP4_ADDRESS* pSourceIp4,
+      VMDNS_IP6_ADDRESS* pSourceIp6
       )
 {
     DWORD dwError = 0;
@@ -320,8 +104,8 @@ VmDdnsGetSourceIp(
     struct addrinfo *serverAddr = NULL;
     char message = '1';
     char recvBuff[VMDNS_IP6_ADDRESS_SIZE] = {0};
-    VMDNS_IP6_ADDRESS* pSourceIp6 = NULL;
-    VMDNS_IP4_ADDRESS* pSourceIp4 = NULL;
+    VMDNS_IP6_ADDRESS SourceIp6 = {0};
+    VMDNS_IP4_ADDRESS SourceIp4 = 0;
     struct timeval recvTimeOut = {0};
     PSTR pDCName = NULL;
     PWSTR pwDCName = NULL;
@@ -399,14 +183,8 @@ VmDdnsGetSourceIp(
 
     if(recvLen == VMDNS_IP4_ADDRESS_SIZE)
     {
-        dwError = VmAfdAllocateMemory(
-                          VMDNS_IP4_ADDRESS_SIZE,
-                          (PVOID *)&pSourceIp4
-                          );
-        BAIL_ON_VMAFD_ERROR(dwError);
-
         dwError = VmAfdCopyMemory(
-                        pSourceIp4,
+                        &SourceIp4,
                         VMDNS_IP4_ADDRESS_SIZE,
                         recvBuff,
                         recvLen
@@ -415,149 +193,70 @@ VmDdnsGetSourceIp(
     }
     else
     {
-        dwError = VmAfdAllocateMemory(
-                          VMDNS_IP6_ADDRESS_SIZE,
-                          (PVOID *)&pSourceIp6
-                          );
-        BAIL_ON_VMAFD_ERROR(dwError);
-
         dwError = VmAfdCopyMemory(
-                        pSourceIp6,
+                        &SourceIp6,
                         VMDNS_IP6_ADDRESS_SIZE,
                         recvBuff,
                         recvLen
                         );
         BAIL_ON_VMAFD_ERROR(dwError);
     }
-    *ppSourceIp6 = pSourceIp6;
-    *ppSourceIp4 = pSourceIp4;
+    *pSourceIp6 = SourceIp6;
+    *pSourceIp4 = SourceIp4;
 
 cleanup:
     VMAFD_SAFE_FREE_MEMORY(serverAddr);
     return dwError;
 
 error:
-    VMAFD_SAFE_FREE_MEMORY(pSourceIp4);
-    VMAFD_SAFE_FREE_MEMORY(pSourceIp6);
-    if(ppSourceIp4)
+    if(pSourceIp4)
     {
-        *ppSourceIp4 = NULL;
-    }
-    if(ppSourceIp6)
-    {
-        *ppSourceIp6 = NULL;
+        *pSourceIp4 = 0;
     }
     goto cleanup;
 }
 
-// Only for LINUX
-#ifndef _WIN32
-static
-PVOID
-VmDdnsUpdateWorker(
-    PVOID pdata
+
+DWORD
+VmAfdUpdateIP(
     )
 {
-    DWORD len = 0;
-    DWORD maxFd = 0;
     DWORD dwError = 0;
-    char buffer[VMDDNS_BUFFER_SIZE] = {0};
-    PDDNS_CONTEXT pDdnsContext = (PDDNS_CONTEXT)pdata;
-    nl_addr *bindAddr = NULL;
-    struct nlmsghdr *nh = NULL;
-    fd_set readFs;
+    VMDNS_IP6_ADDRESS IP6 = {0};
+    VMDNS_IP4_ADDRESS IP4 = 0;
 
-    dwError = VmAfdAllocateMemory(
-                      sizeof(nl_addr),
-                      (PVOID *)&bindAddr
-                      );
+    dwError = VmAfdDetectSourceIP(
+                              &IP4,
+                              &IP6
+                              );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    bindAddr->nl_family = AF_NETLINK;
-    bindAddr->nl_pad = 0;
-    bindAddr->nl_pid = getpid();
-    bindAddr->nl_groups = RTMGRP_IPV6_IFADDR | RTMGRP_IPV4_IFADDR;
-
-    //bind to the IFADDR API
-    dwError = bind(
-                pDdnsContext->netLinkFd,
-                (struct sockaddr*)bindAddr,
-                sizeof(nl_addr)
-                );
-    if (dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    nh = (struct nlmsghdr *)buffer;
-    maxFd = (pDdnsContext->netLinkFd > pDdnsContext->pipeFd[0]) ?
-            pDdnsContext->netLinkFd
-            : pDdnsContext->pipeFd[0];
-    while(1)
-    {
-        FD_ZERO(&readFs);
-        FD_SET(pDdnsContext->netLinkFd, &readFs);
-        FD_SET(pDdnsContext->pipeFd[0], &readFs);
-        dwError = select(maxFd + 1, &readFs, NULL, NULL, NULL);
-        if (dwError < 0)
-        {
-             dwError = LwErrnoToWin32Error(errno);
-             VmAfdLog(VMAFD_DEBUG_ANY, "Select failed. Error[%d]", dwError);
-             continue;
-        }
-
-        if(FD_ISSET(pDdnsContext->netLinkFd, &readFs))
-        {
-            len = recv(pDdnsContext->netLinkFd, nh, 4096, 0);
-            if(len < 0)
-            {
-                dwError = LwErrnoToWin32Error(errno);
-                VmAfdLog(VMAFD_DEBUG_ANY, "Reciev failed. Error[%d]", dwError);
-                continue;
-            }
-
-            for(; (NLMSG_OK (nh, len)) && (nh->nlmsg_type != NLMSG_DONE); nh = NLMSG_NEXT(nh, len))
-            {
-                if (nh->nlmsg_type != RTM_NEWADDR)
-                {
-                    continue; /* some other kind of message */
-                }
-                // Update detected
-                dwError = VmDdnsUpdate(pDdnsContext);
-                if(dwError)
-                {
-                    VmAfdLog(VMAFD_DEBUG_ANY, "DDNS Update failed");
-                }
-            }
-            memset(buffer, 0, VMDDNS_BUFFER_SIZE);
-        }
-        else if(FD_ISSET(pDdnsContext->pipeFd[0], &readFs))
-        {
-            VmAfdLog(
-                VMAFD_DEBUG_ANY,
-                "Recieved Terminate. DDNS Client exiting.");
-            break;
-        }
-        else
-        {
-            VmAfdLog(
-                VMAFD_DEBUG_ANY,
-                "Invalid file descriptor set.");
-        }
-    }
+    dwError = VmAfdDDNSUpdateDNS(
+                          IP4,
+                          IP6
+                          );
+    BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(bindAddr);
-    VmAfdLog(VMAFD_DEBUG_ANY, "DDNS Update Worker exiting. Error[%d]", dwError);
-    return NULL;
+    return dwError;
 
 error:
-
     goto cleanup;
 }
-#endif
+
+
+
+VOID
+VmAfdDDNSShutDown(
+    PVMNETEVENT_HANDLE pHandle
+    )
+{
+    if (pHandle)
+    {
+        VmNetEventUnregister(pHandle);
+    }
+}
 
 static
 DWORD
@@ -652,24 +351,20 @@ VmDdnsGetMachineInfo(
     goto cleanup;
 }
 
+
+
 static
 DWORD
-VmDdnsUpdate(
-    PDDNS_CONTEXT pDdnsContext
+VmAfdDDNSUpdateDNS(
+    VMDNS_IP4_ADDRESS SourceIp4,
+    VMDNS_IP6_ADDRESS SourceIp6
     )
 {
     DWORD dwError = 0;
-    BOOL mutexIsLocked = FALSE;
     PSTR pszDomain = NULL;
     PSTR pszHostname = NULL;
     PSTR pszMachineName = NULL;
     PVMDNS_SERVER_CONTEXT pServerContext = NULL;
-
-    if(!pDdnsContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
 
     dwError = VmDdnsGetMachineInfo(
                       &pszDomain,
@@ -679,34 +374,18 @@ VmDdnsUpdate(
                       );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VMAFD_LOCK_MUTEX(mutexIsLocked, &pDdnsContext->ddnsMutex);
-
-    if(pDdnsContext->bIsEnabledDnsUpdates)
-    {
-        dwError = VmDdnsProtocolUpdate(
-                            pszDomain,
-                            pszHostname,
-                            pszMachineName,
-                            pServerContext,
-                            pDdnsContext,
-                            VMDDNS_UPDATE_PACKET
-                            );
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-    else
-    {
-        dwError = VmDdnsRpcUpdate(
-                          pszDomain,
-                          pszHostname,
-                          pszMachineName,
-                          pServerContext
-                          );
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
+    dwError = VmDdnsRpcUpdate(
+                      SourceIp4,
+                      SourceIp6,
+                      pszDomain,
+                      pszHostname,
+                      pszMachineName,
+                      pServerContext
+                      );
+    BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
 
-    VMAFD_UNLOCK_MUTEX(mutexIsLocked, &pDdnsContext->ddnsMutex);
     if(pServerContext)
     {
         VmDnsCloseServer(pServerContext);
@@ -722,218 +401,12 @@ error:
 
 }
 
-static
-DWORD
-VmDdnsDelete(
-    PDDNS_CONTEXT pDdnsContext
-    )
-{
-    DWORD dwError = 0;
-    BOOL mutexIsLocked = FALSE;
-    PSTR pszDomain = NULL;
-    PSTR pszHostname = NULL;
-    PSTR pszMachineName = NULL;
-    PVMDNS_SERVER_CONTEXT pServerContext = NULL;
-
-    if(!pDdnsContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmDdnsGetMachineInfo(
-                      &pszDomain,
-                      &pszHostname,
-                      &pszMachineName,
-                      &pServerContext
-                      );
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    VMAFD_LOCK_MUTEX(mutexIsLocked, &pDdnsContext->ddnsMutex);
-
-    if(pDdnsContext->bIsEnabledDnsUpdates)
-    {
-        dwError = VmDdnsProtocolUpdate(
-                            pszDomain,
-                            pszHostname,
-                            pszMachineName,
-                            pServerContext,
-                            pDdnsContext,
-                            VMDDNS_DELETE_PACKET
-                            );
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-    else
-    {
-        dwError = VmDdnsRpcDelete(
-                        pServerContext,
-                        pszDomain,
-                        pszMachineName
-                        );
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-cleanup:
-
-    VMAFD_UNLOCK_MUTEX(mutexIsLocked, &pDdnsContext->ddnsMutex);
-    VMAFD_SAFE_FREE_STRINGA(pszDomain);
-    VMAFD_SAFE_FREE_STRINGA(pszHostname);
-    VMAFD_SAFE_FREE_STRINGA(pszMachineName);
-    if(pServerContext)
-    {
-        VmDnsCloseServer(pServerContext);
-    }
-    return dwError;
-
-error:
-
-    goto cleanup;
-
-}
-
-static
-DWORD
-VmDdnsProtocolUpdate(
-    PSTR pszDomain,
-    PSTR pszHostname,
-    PSTR pszMachineName,
-    PVMDNS_SERVER_CONTEXT pServerContext,
-    PDDNS_CONTEXT pDdnsContext,
-    DWORD dwFlag
-    )
-{
-    DWORD dwError = 0;
-    DWORD udpSocket = 0;
-    DWORD packetSize = 0;
-    DWORD socketLen = 0;
-    PSTR pDnsPacket = NULL;
-    PSTR pDCName = NULL;
-    PWSTR pwDCName = NULL;
-    PDDNS_UPDATE_HEADER pHeader = NULL;
-    PSTR pDnsPort = VMDNS_SERVER_PORT;
-    struct timeval recvTimeOut = {0};
-    struct addrinfo *serverAddr = NULL;
-    struct addrinfo hints = {0};
-
-    if(!pszDomain || !pszMachineName || !pszHostname || !pServerContext || !pDdnsContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfSrvGetDCName(&pwDCName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW(pwDCName, &pDCName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-    dwError = getaddrinfo(
-                    pDCName,
-                    pDnsPort,
-                    &hints,
-                    &serverAddr
-                    );
-    if(dwError < 0)
-    {
-  #ifndef _WIN32
-        dwError = LwErrnoToWin32Error(errno);
-  #endif
-    }
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    recvTimeOut.tv_sec = VMDDNS_RECV_TIMEOUT;
-    recvTimeOut.tv_usec = 0;
-
-    dwError = setsockopt(
-                    udpSocket,
-                    SOL_SOCKET,
-                    SO_RCVTIMEO,
-                    (PSTR)&recvTimeOut,
-                    sizeof(struct timeval)
-                    );
-    if(dwError < 0)
-    {
-      #ifndef _WIN32
-        dwError = LwErrnoToWin32Error(errno);
-      #endif
-        VmAfdLog(VMAFD_DEBUG_ANY, "Setsockopt failed!");
-    }
-
-    dwError = VmDdnsUpdateMakePacket(
-                        pszDomain,
-                        pszHostname,
-                        pszMachineName,
-                        &pDnsPacket,
-                        &packetSize,
-                        pDdnsContext->idSeed++,
-                        dwFlag
-                        );
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-  #ifndef _WIN32
-    dwError = sendto(
-                  udpSocket,
-                  (PCVOID *)pDnsPacket,
-                  packetSize,
-                  0,
-                  serverAddr->ai_addr,
-                  serverAddr->ai_addrlen
-                  );
-    if(dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    VMAFD_SAFE_FREE_STRINGA(pDnsPacket);
-
-    dwError = recvfrom(
-                  udpSocket,
-                  (PCVOID *)pDnsPacket,
-                  packetSize,
-                  0,
-                  (struct sockaddr *)&serverAddr->ai_addr,
-                  &socketLen
-                  );
-    if(dwError < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-  #endif
-
-    pHeader = (PDDNS_UPDATE_HEADER)pDnsPacket;
-    dwError = pHeader->headerCodes & 0xFF00;
-    if(dwError)
-    {
-        VmAfdLog(VMAFD_DEBUG_ERROR,
-            "DNS Update Failed: %d",
-            dwError);
-    }
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "Response recieved: %d", dwError);
-
-cleanup:
-
-    VMAFD_SAFE_FREE_MEMORY(serverAddr);
-    VMAFD_SAFE_FREE_STRINGA(pDCName);
-    VMAFD_SAFE_FREE_STRINGA(pDnsPacket);
-    VMAFD_SAFE_FREE_STRINGW(pwDCName);
-    close(udpSocket);
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
 
 static
 DWORD
 VmDdnsRpcUpdate(
+    VMDNS_IP4_ADDRESS SourceIp4,
+    VMDNS_IP6_ADDRESS SourceIp6,
     PSTR pszZone,
     PSTR pszHostname,
     PSTR pszName,
@@ -941,8 +414,6 @@ VmDdnsRpcUpdate(
     )
 {
     DWORD dwError = 0;
-    VMDNS_IP4_ADDRESS* pV4Address = NULL;
-    VMDNS_IP6_ADDRESS* pV6Address = NULL;
     VMDNS_RECORD record = {0};
 
     if(!pszZone || pszHostname || pszName || pServerContext)
@@ -960,24 +431,18 @@ VmDdnsRpcUpdate(
 
     //Add updated records
 
-    dwError = VmDdnsGetSourceIp(
-                    &pV4Address,
-                    &pV6Address
-                    );
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     record.iClass = VMDNS_CLASS_IN;
     record.pszName = pszName;
     record.dwType = VMDNS_RR_TYPE_A;
     record.dwTtl = 3600;
 
-    if(pV4Address)
+    if(SourceIp4)
     {
-        record.Data.A.IpAddress = (DWORD)*pV4Address;
+        record.Data.A.IpAddress = SourceIp4;
     }
     else
     {
-        record.Data.AAAA.Ip6Address = pV6Address[0];
+        record.Data.AAAA.Ip6Address = SourceIp6;
     }
 
     dwError = VmDnsAddRecordA(
@@ -994,8 +459,6 @@ VmDdnsRpcUpdate(
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pV4Address);
-    VMAFD_SAFE_FREE_MEMORY(pV6Address);
     return dwError;
 
 error:
@@ -1110,3 +573,5 @@ error:
 
     goto cleanup;
 }
+
+

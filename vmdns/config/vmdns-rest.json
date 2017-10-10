@@ -1,0 +1,54 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Lightwave VmDns API",
+    "version": "1.3.0"
+  },
+  "schemes": [
+    "http"
+  ],
+  "host": "IPADDRESS_MARKER:7677",
+  "basePath": "/v1",
+  "produces": [
+    "application/json"
+  ],
+  "tags": [
+    {
+      "name": "VmDnsMetrics",
+      "description": "Metrics module for publishing metrics data"
+    }
+  ],
+  "paths": {
+    "/dns/metrics": {
+      "get": {
+        "summary": "Get metrics data",
+        "description": "Get metrics data",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics response",
+            "schema": {
+              "$ref": "#/definitions/MetricsResponse"
+            }
+          }
+        },
+        "tags": [
+          "metrics"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "MetricsResponse": {
+      "type": "object",
+      "properties": {
+        "dns_metrics_data": {
+          "type": "string",
+          "format": "text/plain"
+        }
+      }
+    }
+  }
+}

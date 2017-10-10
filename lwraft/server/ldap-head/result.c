@@ -808,8 +808,27 @@ WriteAttributes(
                     {
                         if (VmDirStringCompareA( sr->attrs[i].lberbv.bv_val, pAttr->type.lberbv.bv_val, FALSE) == 0)
                         {
-                           bSendAttribute = TRUE;
-                           break;
+                            //
+                            // Access checks for a search request requires the
+                            // caller to have VMDIR_RIGHT_DS_READ_PROP access
+                            // to the entry. This will allow them to "see" the
+                            // entry and any attributes EXCEPT for the entry's
+                            // security descriptor. The SD is goverened by a
+                            // separate permission, VMDIR_ENTRY_READ_ACL. So,
+                            // if the caller requested that attribute we have
+                            // to make sure they have the permission required.
+                            //
+                            if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_ACL_STRING, FALSE) == 0 ||
+                                VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+                            {
+                                bSendAttribute = (VmDirSrvAccessCheck(op, &op->conn->AccessInfo, pEntry, VMDIR_ENTRY_READ_ACL) == 0);
+                            }
+                            else
+                            {
+                                bSendAttribute = TRUE;
+                            }
+
+                            break;
                         }
                     }
                 }
@@ -1175,10 +1194,7 @@ VmDirSendLdapReferralResult(
    PSTR             pszLeader = NULL;
    PSTR             pszRef = NULL;
    PVDIR_BERVALUE   pBerv = NULL;
-   DWORD            dwLdapsPorts = 0;
-   PDWORD           pdwLdapsPorts = NULL;
    BOOLEAN          bIsLdaps = FALSE;
-   int              i = 0;
 
    *pbRefSent = FALSE;
    (void) memset( (char *)&berbuf, '\0', sizeof( BerElementBuffer ));
@@ -1201,17 +1217,15 @@ VmDirSendLdapReferralResult(
        goto done;
    }
 
-   VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
-   for (i = 0; i < dwLdapsPorts; i++)
+   if (op->conn->dwServerPort == VmDirGetLdapsPort())
    {
-       if (pdwLdapsPorts[i] == op->conn->dwServerPort)
-       {
-           bIsLdaps = TRUE;
-           break;
-       }
+       bIsLdaps = TRUE;
    }
 
-   dwError = VmDirAllocateStringAVsnprintf(&pszRef, "%s://%s/%s", bIsLdaps?"ldaps":"ldap", pszLeader, pszRefSuffix);
+   dwError = VmDirAllocateStringPrintf(&pszRef, "%s://%s/%s",
+               bIsLdaps ? "ldaps":"ldap",
+               pszLeader,
+               pszRefSuffix );
    BAIL_ON_VMDIR_ERROR(dwError);
 
    op->ldapResult.errCode = 0;

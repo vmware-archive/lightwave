@@ -19,11 +19,11 @@ libssovmdirclient_la_SOURCES = \
     user_resource.c
 
 libssovmdirclient_la_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/vmdirclient/include/public/
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/vmdirclient/include/public/
 
 libssovmdirclient_la_LIBADD = \
-    @top_builddir@/ssoclients/restclient/coreclient/src/libssocoreclient.la
+    @top_builddir@/vmidentity/ssoclients/restclient/coreclient/src/libssocoreclient.la

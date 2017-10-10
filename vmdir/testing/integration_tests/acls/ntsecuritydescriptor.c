@@ -653,8 +653,8 @@ TestDomainAdminPrivileges(
     PSTR pszGroupDn = NULL;
     LDAP *pLd = NULL;
 
-    dwError = VmDirTestGetGuid(&pszUserName); // TODO -- We need to be freeing these strings.
-    TestAssert(dwError == 0); // TODO
+    dwError = VmDirTestGetGuid(&pszUserName);
+    TestAssert(dwError == 0);
 
     dwError = VmDirTestCreateUser(pState, "testcontainer", pszUserName, NULL);
     TestAssert(dwError == 0);
@@ -673,7 +673,6 @@ TestDomainAdminPrivileges(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VdcConnectionFromUser(pState, pszUserName, &pLd);
-    printf("connection from user returned %d\n", dwError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #if 0 // TODO -- This isn't returning an error for this case.
@@ -683,24 +682,21 @@ TestDomainAdminPrivileges(
 #endif
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
-    printf("Adding user %s to group %s\n", pszUserDn, pszGroupDn); // TODO
-    dwError = VmDirTestAddUserToGroup(pState, pszUserDn, pszGroupDn);
+    dwError = VmDirTestAddUserToGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     TestAssert(dwError == 0);
 
     dwError = _VdcConnectionFromUser(pState, pszUserName, &pLd); // TODO -- Why are we re-opening this connection?
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pLd, pState->pszBaseDN, NULL);
-    printf("ldapgetobjectlist returned %d\n", dwError); // TODO
+    dwError = VmDirTestGetObjectList(pLd, pState->pszBaseDN, NULL, NULL, NULL);
     TestAssert(dwError == 0);
     VmDirTestLdapUnbind(pLd); pLd = NULL;
 
-    dwError = VmDirTestRemoveUserFromGroup(pState, pszUserDn, pszGroupDn);
+    dwError = VmDirTestRemoveUserFromGroupByDn(pState->pLd, pszUserDn, pszGroupDn);
     TestAssert(dwError == 0);
 
 cleanup:
-    dwError = VmDirTestDeleteUser(pState, "testcontainer", pszUserName);
-    printf("deleteuser returned %d\n", dwError); dwError = 0;
+    VmDirTestDeleteUser(pState, "testcontainer", pszUserName);
     VMDIR_SAFE_FREE_STRINGA(pszUserName);
     VMDIR_SAFE_FREE_STRINGA(pszUserDn);
     VMDIR_SAFE_FREE_STRINGA(pszGroupDn);
@@ -717,6 +713,7 @@ TestRoundTrip(
     )
 {
     DWORD dwError = 0;
+
     //
     // First, make sure we can round-trip the current SD.
     //

@@ -45,10 +45,8 @@ VmDirShutdown(
 
     pBE = VmDirBackendSelect(NULL);
 
-#if 0
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop REST listening threads", __func__);
     VmDirRESTServerShutdown();
-#endif
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();
@@ -115,6 +113,8 @@ VmDirShutdown(
     }
 
     VmDirCleanupGlobals();
+
+    VmMetricsDestroy(pmContext);
 
     (VOID)VmDirSetRegKeyValueDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
@@ -197,7 +197,8 @@ VmDirCleanupGlobals(
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszRestListenPort);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszHTTPListenPort);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszHTTPSListenPort);
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replAgrsMutex );
@@ -220,4 +221,7 @@ VmDirCleanupGlobals(
     VMDIR_SAFE_FREE_MUTEX( gVmdirTrackLastLoginTime.pMutex );
     VMDIR_SAFE_FREE_CONDITION(gVmdirTrackLastLoginTime.pCond);
     // ignore gVmdirTrackLastLoginTime.pTSStack
+
+    VMDIR_SAFE_FREE_MUTEX( gVmdirIntegrityCheck.pMutex );
+    VMDIR_SAFE_FREE_MEMORY( gVmdirIntegrityCheck.pJob );
 }

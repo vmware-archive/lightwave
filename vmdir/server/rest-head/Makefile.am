@@ -2,33 +2,42 @@
 noinst_LTLIBRARIES = librest-head.la
 
 librest_head_la_SOURCES = \
-    accesstoken.c \
+    libmain.c
+
+if REST_ENABLED
+
+librest_head_la_SOURCES += \
     auth.c \
+    authtoken.c \
     decode.c \
     encode.c \
     globals.c \
+    handler.c \
     httperror.c \
     ldapapi.c \
-    libmain.c \
+    metricsapi.c \
     operation.c \
     param.c \
     resource.c \
     result.c
 
+endif
+
 librest_head_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/thirdparty/openldap/include \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
-    -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/server/include \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
-    @TRIDENT_INCLUDES@ \
     @JANSSON_INCLUDES@ \
     @COPENAPI_INCLUDES@ \
-    @SSOCOMMON_INCLUDES@ \
-    @OIDC_INCLUDES@
+    @CRESTENGINE_INCLUDES@
 
 librest_head_la_LDFLAGS = \
     -static

@@ -16,8 +16,6 @@
 
 #include "includes.h"
 
-#define VMDIR_FQDN_SEPARATOR '.'
-
 static
 int
 _VmDirSASLInteraction(
@@ -27,103 +25,6 @@ _VmDirSASLInteraction(
     void *      pIn
     );
 
-/*
- * Note: based on http://en.wikipedia.org/wiki/FQDN, a valid FQDN
- * always contains a trailing dot "." at the end of the string.
- * However, in our code, we will handle cases where the trailing dot is
- * omitted. I.e., we treat all of the following examples as valid FQDN:
- * "com.", "vmware.com.", "eng.vmware.com."
- * "com",  "vmware.com",  "eng.vmware.com"
- */
-DWORD
-VmDirFQDNToDNSize(
-    PCSTR pszFQDN,
-    UINT32 *sizeOfDN
-)
-{
-    DWORD dwError  = 0;
-    int    numElem = 1;
-    int    numDots = 0;
-    UINT32 sizeRet = 0;
-    int len = (int)VmDirStringLenA(pszFQDN);
-    int i;
-    for ( i=0; i<=len; i++ )
-    {
-        if (pszFQDN[i] == VMDIR_FQDN_SEPARATOR )
-        {
-            numDots++;
-            if ( i>0 && i<len-1 )
-            {
-                 numElem++;
-            }
-        }
-    }
-    sizeRet = len - numDots;
-    // "dc=," for each elements except the last one does NOT has a ","
-    sizeRet += 4 * numElem - 1;
-    *sizeOfDN = sizeRet;
-    return dwError;
-}
-
-/*
- * in: pszFQDN = "csp.com"
- * out: *ppszDN = "dc=csp,dc=com"
- */
-DWORD
-VmDirFQDNToDN(
-    PCSTR pszFQDN,
-    PSTR* ppszDN
-)
-{
-    int len = (int)VmDirStringLenA(pszFQDN);
-    int iStart = 0;
-    int iStop = iStart + 1 ;
-    int iDest = 0;
-    int i;
-    PSTR        pszDN = NULL;
-    UINT32      dnSize = 0;
-
-    // Calculate size needed to store DN
-    DWORD dwError = VmDirFQDNToDNSize(pszFQDN, &dnSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Allocate memory needed to store DN
-    dwError = VmDirAllocateMemory(dnSize + 1, (PVOID*)&pszDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for ( ; iStop < len; iStop++ )
-    {
-        if (pszFQDN[iStop] == VMDIR_FQDN_SEPARATOR)
-        {
-            (pszDN)[iDest++] = 'd';
-            (pszDN)[iDest++] = 'c';
-            (pszDN)[iDest++] = '=';
-            for ( i= iStart; i<iStop; i++)
-            {
-                (pszDN)[iDest++] = pszFQDN[i];
-            }
-            (pszDN)[iDest++] = ',';
-            iStart = iStop + 1;
-            iStop = iStart;
-        }
-    }
-    (pszDN)[iDest++] = 'd';
-    (pszDN)[iDest++] = 'c';
-    (pszDN)[iDest++] = '=';
-    for ( i= iStart; i<iStop; i++)
-    {
-        (pszDN)[iDest++] = pszFQDN[i];
-    }
-    (pszDN)[iDest] = '\0';
-    *ppszDN = pszDN;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszDN);
-    goto cleanup;
-}
 
 /*
  * Qsort comparison function for char** data type
@@ -403,7 +304,7 @@ VmDirSrvCreateDN(
     DWORD dwError = 0;
     PSTR  pszContainerDN = NULL;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszContainerDN, "cn=%s,%s", pszContainerName, pszDomainDN);
+    dwError = VmDirAllocateStringPrintf(&pszContainerDN, "cn=%s,%s", pszContainerName, pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszContainerDN = pszContainerDN;
@@ -421,6 +322,7 @@ VmDirSrvCreateContainerWithEID(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
     PCSTR            pszContainerName,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc, // OPTIONAL
     ENTRYID          eID
     )
 {
@@ -435,6 +337,12 @@ VmDirSrvCreateContainerWithEID(
 
     dwError = VmDirSimpleEntryCreate(pSchemaCtx, ppszAttributes, (PSTR)pszContainerDN, eID);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pSecDesc != NULL)
+    {
+        dwError = VmDirSetSecurityDescriptorForDn(pszContainerDN, pSecDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     return dwError;
@@ -453,7 +361,7 @@ VmDirSrvCreateContainer(
 {
     DWORD dwError = 0;
 
-    dwError = VmDirSrvCreateContainerWithEID(pSchemaCtx, pszContainerDN, pszContainerName, 0);
+    dwError = VmDirSrvCreateContainerWithEID(pSchemaCtx, pszContainerDN, pszContainerName, NULL, 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
@@ -998,8 +906,9 @@ VmDirSrvGetDomainFunctionalLevel(
 
     if ( entryArray.iSize == 1)
     {
-        pAttrDomainLevel = VmDirEntryFindAttribute(ATTR_DOMAIN_FUNCTIONAL_LEVEL,
-&entryArray.pEntry[0]);
+        pAttrDomainLevel = VmDirEntryFindAttribute(
+                                ATTR_DOMAIN_FUNCTIONAL_LEVEL,
+                                &entryArray.pEntry[0]);
         if (!pAttrDomainLevel)
         {
             dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;

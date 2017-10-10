@@ -10,9 +10,9 @@ libvmsock_la_SOURCES = \
     libmain.c
 
 libvmsock_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/vmsock/include \
+    -I$(top_srcdir)/vmdns/include \
+    -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmdns/vmsock/include \
     -DHAVE_ARPA_INET_H \
     @LW_INCLUDES@
 
@@ -21,6 +21,5 @@ libvmsock_la_LDFLAGS = \
     @LW_LDFLAGS@
 
 libvmsock_la_LIBADD = \
-    $(top_builddir)/vmsock/posix/libvmsockposix.la \
+    $(top_builddir)/vmdns/vmsock/posix/libvmsockposix.la \
     @LWBASE_LIBS@
-

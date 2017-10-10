@@ -466,7 +466,7 @@ VdirGetPasswdAndLockoutPolicy(
     if (pszDomainDN)
     {
         // default policy entry lives under domain entry with fix cn
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                         &pszPolicyDN,
                         "cn=%s,%s",
                         PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
@@ -477,6 +477,13 @@ VdirGetPasswdAndLockoutPolicy(
         // BUGBUG PERFORMANCE BUGBUG should  consider caching policies.
         ///////////////////////////////////////////////////////////////////////
         dwError = VmDirSimpleDNToEntry(pszPolicyDN, &pPolicyEntry);
+        if (gVmdirGlobals.bIsLDAPPortOpen &&
+            (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND || dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND))
+        {
+            dwError = 0;
+            VmDirGetDefaultPasswdLockoutPolicy(pPolicy);
+            goto cleanup;
+        }
         BAIL_ON_VMDIR_ERROR(dwError);
 
         LockoutPolicyLoadFromEntry(pPolicyEntry, pPolicy);

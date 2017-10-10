@@ -16,17 +16,17 @@
 #include "includes.h"
 
 DWORD
-VmSockPosixInitialize(
+VmDnsSockPosixInitialize(
     PVM_SOCK_PACKAGE* ppPackage
     )
 {
-    *ppPackage = gpVmSockPosixPackage;
+    *ppPackage = gpVmDnsSockPosixPackage;
 
     return 0;
 }
 
 VOID
-VmSockPosixShutdown(
+VmDnsSockPosixShutdown(
     PVM_SOCK_PACKAGE pPackage
     )
 {

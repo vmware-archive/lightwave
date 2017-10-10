@@ -157,17 +157,6 @@ VmDirIndexCfgRestoreProgress(
     {
         pIndexCfg->status = VDIR_INDEXING_COMPLETE;
     }
-    else if (gVdirIndexGlobals.bLegacyDB)
-    {
-        if (pBECtx->pBE->pfnBEIndexExist(pIndexCfg))
-        {
-            pIndexCfg->status = VDIR_INDEXING_COMPLETE;
-        }
-        else
-        {
-            pIndexCfg->status = VDIR_INDEXING_SCHEDULED;
-        }
-    }
     else
     {
         PSTR pszToken = NULL;

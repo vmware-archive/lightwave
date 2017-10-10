@@ -311,6 +311,11 @@ public class MockIdmClient extends CasIdmClient {
     }
 
     @Override
+    public String getSystemTenant() throws Exception {
+        return this.tenantName;
+    }
+
+    @Override
     public PrivateKey getTenantPrivateKey(String tenantName) throws Exception {
         validateTenant(tenantName);
         return this.tenantPrivateKey;

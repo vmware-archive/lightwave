@@ -17,20 +17,16 @@
 SSOERROR
 OidcTokenSuccessResponseParse(
     POIDC_TOKEN_SUCCESS_RESPONSE* pp,
-    PCSTRING pszJsonResponse,
-    PCSTRING pszSigningCertificatePEM,
-    SSO_LONG clockToleranceInSeconds)
+    PCSTRING pszJsonResponse)
 {
     SSOERROR e = SSOERROR_NONE;
     PSSO_JSON pJson = NULL;
     PSSO_JSON pJsonValue = NULL;
-    PSTRING pszJsonString = NULL;
     bool isNullRefreshToken = false;
     POIDC_TOKEN_SUCCESS_RESPONSE p = NULL;
 
     ASSERT_NOT_NULL(pp);
     ASSERT_NOT_NULL(pszJsonResponse);
-    ASSERT_NOT_NULL(pszSigningCertificatePEM);
 
     e = SSOMemoryAllocate(sizeof(OIDC_TOKEN_SUCCESS_RESPONSE), (void**) &p);
     BAIL_ON_ERROR(e);
@@ -40,9 +36,7 @@ OidcTokenSuccessResponseParse(
 
     e = SSOJsonObjectGet(pJson, "id_token", &pJsonValue);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonValue, &pszJsonString);
-    BAIL_ON_ERROR(e);
-    e = OidcIDTokenBuild(&p->pIDToken, pszJsonString, pszSigningCertificatePEM, NULL /* pszIssuer */, clockToleranceInSeconds);
+    e = SSOJsonStringValue(pJsonValue, &p->pszIDToken);
     BAIL_ON_ERROR(e);
     SSOJsonDelete(pJsonValue);
     pJsonValue = NULL;
@@ -71,7 +65,6 @@ OidcTokenSuccessResponseParse(
 error:
     SSOJsonDelete(pJson);
     SSOJsonDelete(pJsonValue);
-    SSOStringFree(pszJsonString);
 
     if (e != SSOERROR_NONE)
     {
@@ -86,19 +79,19 @@ OidcTokenSuccessResponseDelete(
 {
     if (p != NULL)
     {
-        OidcIDTokenDelete(p->pIDToken);
+        SSOStringFree(p->pszIDToken);
         SSOStringFree(p->pszAccessToken);
         SSOStringFree(p->pszRefreshToken);
         SSOMemoryFree(p, sizeof(OIDC_TOKEN_SUCCESS_RESPONSE));
     }
 }
 
-PCOIDC_ID_TOKEN
+PCSTRING
 OidcTokenSuccessResponseGetIDToken(
     PCOIDC_TOKEN_SUCCESS_RESPONSE p)
 {
     ASSERT_NOT_NULL(p);
-    return p->pIDToken;
+    return p->pszIDToken;
 }
 
 PCSTRING

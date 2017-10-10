@@ -23,6 +23,7 @@ typedef enum _VMKDC_SERVICE_PORT_TYPE
 DWORD
 VmKdcSrvOpenServicePort(
     PVMKDC_GLOBALS pGlobals,
+    BOOLEAN bIpV6,
     VMKDC_SERVICE_PORT_TYPE portType);
 
 DWORD

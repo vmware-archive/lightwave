@@ -172,6 +172,37 @@ VmDirStringNCompareA(
 }
 
 BOOLEAN
+VmDirStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bStartsWith = FALSE;
+
+    if (IsNullOrEmptyString(pszPrefix))
+    {
+        bStartsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        size_t strlen = VmDirStringLenA(pszStr);
+        size_t prefixlen = VmDirStringLenA(pszPrefix);
+
+        if (strlen >= prefixlen)
+        {
+            if (VmDirStringNCompareA(
+                    pszStr, pszPrefix, prefixlen, bIsCaseSensitive) == 0)
+            {
+                bStartsWith = TRUE;
+            }
+        }
+    }
+
+    return bStartsWith;
+}
+
+BOOLEAN
 VmDirStringEndsWith(
     PCSTR   pszStr,
     PCSTR   pszSuffix,
@@ -504,6 +535,13 @@ error:
     return dwError;
 }
 
+/*
+ *  does NOT return empty string token.
+ *  say pszStr = "(A;;RP;;;MYSID)" and pszDelimiter = ";"
+ *  return pList->pStringList[0] = "(A"
+ *         pList->pStringList[1] = "RP"
+ *         pList->pStringList[2] = "MYSID)"
+ */
 DWORD
 VmDirStringToTokenList(
     PCSTR pszStr,
@@ -539,6 +577,71 @@ VmDirStringToTokenList(
         dwError = VmDirStringListAddStrClone (pszToken, pList);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    *ppStrList = pList;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocal);
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pList);
+    goto cleanup;
+}
+
+/*
+ *  return empty string token.
+ *  say pszStr = "(A;;RP;;;MYSID)" and pszDelimiter = ";"
+ *  return pList->pStringList[0] = "(A"
+ *         pList->pStringList[1] = ""
+ *         pList->pStringList[2] = "RP"
+ *         pList->pStringList[3] = ""
+ *         pList->pStringList[4] = ""
+ *         pList->pStringList[5] = "MYSID)"
+ */
+DWORD
+VmDirStringToTokenListExt(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszToken = NULL;
+    PSTR        pszLocal = NULL;
+    PSTR        pszHead = NULL;
+    SIZE_T      dwSize = 0;
+    PVMDIR_STRING_LIST  pList = NULL;
+
+    if ( IsNullOrEmptyString(pszStr) || IsNullOrEmptyString(pszDelimiter) || ppStrList == NULL )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwSize = VmDirStringLenA(pszDelimiter);
+
+    dwError = VmDirStringListInitialize(&pList, 10);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // make a local copy
+    dwError = VmDirAllocateStringA(
+                pszStr,
+                &pszLocal);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszHead = pszLocal;
+    while ((pszToken = strstr(pszHead, pszDelimiter)) != NULL)
+    {
+        *pszToken = '\0';
+        dwError = VmDirStringListAddStrClone (pszHead, pList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszHead = pszToken + dwSize;
+    }
+
+    dwError = VmDirStringListAddStrClone (pszHead, pList);
 
     *ppStrList = pList;
 

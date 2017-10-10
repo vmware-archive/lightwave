@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -16,7 +16,7 @@
 
 DWORD
 VmDirIndexLibInit(
-    VOID
+    PVMDIR_MUTEX    pModMutex
     )
 {
     static VDIR_DEFAULT_INDEX_CFG defIdx[] = VDIR_INDEX_INITIALIZER;
@@ -24,13 +24,21 @@ VmDirIndexLibInit(
     DWORD   dwError = 0;
     DWORD   i = 0;
     PSTR    pszLastOffset = NULL;
-    ENTRYID maxEId = 0;
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
+    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
+    PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
 
-    dwError = VmDirAllocateMutex(&gVdirIndexGlobals.mutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pModMutex)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // pModMutex refers to gVdirSchemaGlobals.cacheModMutex,
+    // so do not free it during shutdown
+    gVdirIndexGlobals.mutex = pModMutex;
 
     dwError = VmDirAllocateCondition(&gVdirIndexGlobals.cond);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -53,17 +61,7 @@ VmDirIndexLibInit(
             &beCtx, INDEX_LAST_OFFSET_KEY, &pszLastOffset);
     if (dwError)
     {
-        dwError = beCtx.pBE->pfnBEMaxEntryId(&maxEId);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (maxEId == ENTRY_ID_SEQ_INITIAL_VALUE)
-        {
-            gVdirIndexGlobals.bFirstboot = TRUE;
-        }
-        else
-        {
-            gVdirIndexGlobals.bLegacyDB = TRUE;
-        }
+        gVdirIndexGlobals.bFirstboot = TRUE;
 
         // set index_last_offset = -1 to indicate indexing has started
         gVdirIndexGlobals.offset = -1;
@@ -80,20 +78,34 @@ VmDirIndexLibInit(
     BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = FALSE;
 
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // open default indices
     for (i = 0; defIdx[i].pszAttrName; i++)
     {
         dwError = VmDirDefaultIndexCfgInit(&defIdx[i], &pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // update attribute types in schema cache with their index info
+        dwError = VmDirSchemaAttrNameToDescriptor(
+                pSchemaCtx, pIndexCfg->pszAttrName, &pATDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIndexCfgGetAllScopesInStrArray(
+                pIndexCfg, &pATDesc->ppszUniqueScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pATDesc->dwSearchFlags |= 1;
+
+        // for free later
+        pATDesc->pLdapAt->ppszUniqueScopes = pATDesc->ppszUniqueScopes;
+        pATDesc->pLdapAt->dwSearchFlags = pATDesc->dwSearchFlags;
+
         dwError = VmDirIndexOpen(pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
         pIndexCfg = NULL;
     }
-
-    // VMIT support
-    dwError = VmDirIndexLibInitVMIT();
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = InitializeIndexingThread();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -103,12 +115,17 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
+    VmDirSchemaCtxRelease(pSchemaCtx);
     VMDIR_SAFE_FREE_MEMORY(pszLastOffset);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeIndexCfg(pIndexCfg);
     goto cleanup;
@@ -186,9 +203,6 @@ VmDirIndexLibShutdown(
     VMDIR_SAFE_FREE_CONDITION(gVdirIndexGlobals.cond);
     gVdirIndexGlobals.cond = NULL;
 
-    VMDIR_SAFE_FREE_MUTEX(gVdirIndexGlobals.mutex);
     gVdirIndexGlobals.mutex = NULL;
-
     gVdirIndexGlobals.bFirstboot = FALSE;
-    gVdirIndexGlobals.bLegacyDB = FALSE;
 }

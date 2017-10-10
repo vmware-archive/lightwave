@@ -24,7 +24,7 @@ extern "C" {
 
 #define VMW_DNS_DEFAULT_LISTENER_QUEUE_COUNT (5)
 
-#define VMW_DNS_DEFAULT_THREAD_COUNT (1)
+#define VMW_DNS_DEFAULT_THREAD_COUNT (4)
 
 #define ATTR_KRB_UPN  "userPrincipalName"
 #define ATTR_MEMBEROF "memberOf"
@@ -36,7 +36,9 @@ extern "C" {
 #define VMAFD_REG_KEY_DOMAIN_NAME   "DomainName"
 #define VMAFD_REG_KEY_PNID          "PNID"
 
+#define VMDNS_ROOTDNSCONTEXT_NAME       "rootDomainNamingContext"
 #define VMDNS_DOMAINDNSZONES_NAME       "DomainDnsZones"
+#define VMDNS_DELETEDOBJECTS_NAME       "Deleted Objects"
 
 #define VMDNS_LDAP_SEARCH_TIMEOUT_SECS  (15)
 
@@ -48,18 +50,18 @@ extern "C" {
 #define VMDNS_LDAP_OC_VMWDNSCONFIG      "vmwDNSConfig"
 
 #define VMDNS_LDAP_ATTR_DC              "dc"
+#define VMDNS_LDAP_ATTR_DN              "dn"
+#define VMDNS_LDAP_ATTR_CN              "cn"
 #define VMDNS_LDAP_ATTR_FORWARDERS      "vmwDNSForwarders"
 #define VMDNS_LDAP_ATTR_NAME            "name"
 #define VMDNS_LDAP_ATTR_DNS_RECORD      "dnsRecord"
 #define VMDNS_LDAP_ATTR_OBJECTCLASS     "objectclass"
 #define VMDNS_LDAP_ATTR_USNCHANGED      "USNChanged"
 #define VMDNS_LDAP_ATTR_DNSANY          "dns*"
-#define VMDNS_LDAP_ATTR_DNSBASEDN       "dc=DomainDnsZones,dc=vsphere,dc=local"
 #define VMDNS_LDAP_ATTR_RUNTIMESTATUS   "vmwServerRunTimeStatus"
 #define VMDNS_LDAP_ATTR_USN             "USN: "
 
 #define VMDNS_LDAP_DELETE_CONTROL       "1.2.840.113556.1.4.417"
-#define VMDNS_LDAP_DELETE_BASEDN        "cn=Deleted Objects,dc=vsphere,dc=local"
 #define VMDNS_LDAP_DELETE_DELIMITER     "#"
 
 #define VMDNS_REPL_BASEDN               "cn=replicationstatus"
@@ -143,6 +145,13 @@ typedef enum
     VM_DNS_QUERY_OP_QUESTION = 0,
     VM_DNS_QUERY_OP_RESPONSE = 1
 } VM_DNS_QUERY_OP;
+
+typedef enum
+{
+    CACHE_PURGE_REPLICATION,
+    CACHE_PURGE_MODIFICATION,
+
+} VM_DNS_CACHE_PURGE_TYPE;
 
 
 #ifndef PopEntryList

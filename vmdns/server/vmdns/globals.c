@@ -48,5 +48,8 @@ VMDNS_GLOBALS gVmdnsGlobals =
         VMDNS_SF_INIT(.vmdnsdState, VMDNSD_STARTUP),
         VMDNS_SF_INIT(.pRPCServerThread, NULL),
         VMDNS_SF_INIT(.bRegisterTcpEndpoint, FALSE),
-        VMDNS_SF_INIT(.bEnableDNSProtocol, FALSE)
+        VMDNS_SF_INIT(.bEnableDNSProtocol, FALSE),
+
+        //rest-head
+        VMDNS_SF_INIT(.pszRestListenPort, NULL)
     };

@@ -118,7 +118,7 @@ VmDnsLruAddNameEntry(
             "LRU Cache Full, Evicting"
             );
 
-        dwError = VmDnsLruTrimEntries(
+        dwError = VmDnsLruClearEntries(
                             pLruList,
                             10);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -128,6 +128,7 @@ VmDnsLruAddNameEntry(
     VmDnsNameEntryAddRef(pNameEntry);
 
     ++pLruList->dwCurrentCount;
+    VmMetricsGaugeIncrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
 
 cleanup:
 
@@ -162,6 +163,7 @@ VmDnsLruRemoveNameEntry(
 
     RemoveEntryList(&pNameEntry->LruList);
     --pLruList->dwCurrentCount;
+    VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
     VmDnsNameEntryRelease(pNameEntry);
 
 cleanup:
@@ -213,24 +215,16 @@ error:
 }
 
 DWORD
-VmDnsLruTrimEntries(
+VmDnsLruClearEntries(
     PVMDNS_LRU_LIST pLruList,
     DWORD dwCount
     )
 {
     DWORD dwError = 0;
-    BOOL bLocked = FALSE;
     PVMDNS_NAME_ENTRY pNameEntry = NULL;
     PLIST_ENTRY pLink = NULL;
 
-    assert(pLruList);
-    assert(pLruList->pLock);
-
-    dwError = VmDnsLockMutex(pLruList->pLock);
-    BAIL_ON_VMDNS_ERROR(dwError);
-    bLocked = TRUE;
-
-    //start purging from least priority up
+        //start purging from least priority up
     for (pLink = pLruList->LruListHead.Blink;
         (pLink != &pLruList->LruListHead && dwCount > 0);
         pLink = pLink->Blink)
@@ -239,6 +233,8 @@ VmDnsLruTrimEntries(
 
         RemoveEntryList(&pNameEntry->LruList);
         --pLruList->dwCurrentCount;
+        VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_LRU_PURGE_COUNT]);
 
         dwError = pLruList->pPurgeEntryProc(pNameEntry, pLruList->pZoneObject);
         BAIL_ON_VMDNS_ERROR(dwError && dwError != ERROR_INVALID_PARAMETER);
@@ -254,6 +250,33 @@ VmDnsLruTrimEntries(
             --dwCount;
         }
     }
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsLruTrimEntries(
+    PVMDNS_LRU_LIST pLruList,
+    DWORD dwCount
+    )
+{
+    DWORD dwError = 0;
+    BOOL bLocked = FALSE;
+
+    assert(pLruList);
+    assert(pLruList->pLock);
+
+    dwError = VmDnsLockMutex(pLruList->pLock);
+    BAIL_ON_VMDNS_ERROR(dwError);
+    bLocked = TRUE;
+
+    dwError = VmDnsLruClearEntries(pLruList, dwCount);
+    BAIL_ON_VMDNS_ERROR(dwError);
 cleanup:
 
     if (bLocked)
@@ -325,6 +348,7 @@ VmDnsLruClearList(PVMDNS_LRU_LIST pLruList)
     {
         RemoveEntryList((&pLruList->LruListHead)->Flink)
         pLruList->dwCurrentCount--;
+        VmMetricsGaugeDecrement(gVmDnsGaugeMetrics[CACHE_OBJECT_COUNT]);
     }
 
 cleanup:

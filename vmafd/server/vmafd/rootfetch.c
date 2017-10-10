@@ -269,7 +269,7 @@ VmAfdRootFetchTask(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VecsSrvFlushSSLCertFromDB(bLogOnDuplicate);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     VMAFD_UNLOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
 

@@ -445,6 +445,11 @@ VmDirLdapSchemaRemoveNoopData(
     PVDIR_LDAP_SCHEMA   pSchema
     );
 
+BOOLEAN
+VmDirLdapSchemaIsEmpty(
+    PVDIR_LDAP_SCHEMA   pSchema
+    );
+
 VOID
 VmDirFreeLdapSchema(
     PVDIR_LDAP_SCHEMA   pSchema

@@ -35,12 +35,18 @@ typedef struct _VMDIR_TEST_STATE
     LDAP *pLdAnonymous;
 
     //
+    // Customizable connection to the server.
+    //
+    LDAP *pLdCustom;
+
+    //
     // The test runner's cleanup callback. We'll call this when an assertion
     // fails and we're going to exit() the process.
     //
     PTEST_CLEANUP_CALLBACK  pfnCleanupCallback;
 
     PCSTR pszServerName;        // The server name
+    PCSTR pszUserUPN;           // UserUPN to connect with.
     PCSTR pszUserName;          // Username to connect with.
     PCSTR pszPassword;          // Password to connect with.
     PCSTR pszDomain;            // The domain to use (e.g., vsphere.local)
@@ -120,9 +126,11 @@ VmDirTestGetAttributeValue(
 
 DWORD
 VmDirTestGetObjectList(
-    LDAP *pLd,
-    PCSTR pszDn,
-    PVMDIR_STRING_LIST *ppObjectList /* OPTIONAL */
+    LDAP*               pLd,
+    PCSTR               pszDn,
+    PCSTR               pszFilter,      /* OPTIONAL */
+    PCSTR               pszAttr,        /* OPTIONAL */
+    PVMDIR_STRING_LIST* ppObjectList    /* OPTIONAL */
     );
 
 VOID
@@ -183,7 +191,14 @@ VmDirTestGetInternalUserDn(
 DWORD
 VmDirTestCreateContainer(
     PVMDIR_TEST_STATE pState,
-    PCSTR pszName
+    PCSTR pszName,
+    PCSTR pszAcl /* OPTIONAL */
+    );
+
+DWORD
+VmDirTestDeleteContainer(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer
     );
 
 DWORD
@@ -195,17 +210,35 @@ VmDirTestCreateUser(
     );
 
 DWORD
+VmDirTestAddUserToGroupByDn(
+    LDAP *pLd,
+    PCSTR pszUserDn,
+    PCSTR pszGroupDn
+    );
+
+DWORD
 VmDirTestAddUserToGroup(
-    PVMDIR_TEST_STATE pState,
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszUserName,
+    PCSTR               pszUserContainer, // optional
+    PCSTR               pszGroupName,
+    PCSTR               pszGroupContainer // optional
+    );
+
+DWORD
+VmDirTestRemoveUserFromGroupByDn(
+    LDAP *pLd,
     PCSTR pszUserDn,
     PCSTR pszGroupDn
     );
 
 DWORD
 VmDirTestRemoveUserFromGroup(
-    PVMDIR_TEST_STATE pState,
-    PCSTR pszUserDn,
-    PCSTR pszGroupDn
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszUserName,
+    PCSTR               pszUserContainer, // optional
+    PCSTR               pszGroupName,
+    PCSTR               pszGroupContainer // optional
     );
 
 DWORD
@@ -262,6 +295,51 @@ VmDirTestConnectionFromUser(
     );
 
 DWORD
+VmDirTestCreateGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszGroupName,
+    PCSTR pszAcl /* OPTIONAL */
+    );
+
+DWORD
+VmDirTestDeleteGroupEx(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszGroup,
+    BOOLEAN bUseLimitedAccount
+    );
+
+DWORD
+VmDirTestDeleteGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszUserName
+    );
+
+DWORD
+VmDirTestGetGroupSid(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszGroupName,
+    PCSTR pszContainer, // optional
+    PSTR *ppszGroupSid
+    );
+
+DWORD
+VmDirTestListUsersGroups(
+    LDAP *pLd,
+    PCSTR pszUserDn,
+    PVMDIR_STRING_LIST *ppvsGroups /* OUT */
+    );
+
+DWORD
+VmDirTestListGroupMembers(
+    LDAP *pLd,
+    PCSTR pszUserDn,
+    PVMDIR_STRING_LIST *ppvsMembers/* OUT */
+    );
+
+DWORD
 VmDirTestCreateClass(
     PVMDIR_TEST_STATE pState,
     PCSTR pszClassName
@@ -276,7 +354,20 @@ VmDirTestCreateObject(
     );
 
 DWORD
-VmDirTestDeleteContainer(
+VmDirTestCreateObjectByDNPrefix(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszDNPrefix,
+    PCSTR               pszClassName
+    );
+
+DWORD
+VmDirTestDeleteObjectByDNPrefix(
+    PVMDIR_TEST_STATE   pState,
+    PCSTR               pszDNPrefix
+    );
+
+DWORD
+VmDirTestDeleteContainerByDn(
     LDAP *pLd,
     PCSTR pszContainerDn
     );
@@ -284,6 +375,26 @@ VmDirTestDeleteContainer(
 DWORD
 VmDirTestGetGuid(
     PSTR *ppszGuid
+    );
+
+DWORD
+VmDirTestCreateSimpleUser(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszUserDN
+    );
+
+DWORD
+VmDirTestCreateSimpgleContainer(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszContainerDN
+    );
+
+BOOLEAN
+VmDirTestCanReadSingleEntry(
+    LDAP* pLd,
+    PCSTR pszBaseDn
     );
 
 #define TestAssertEquals(a, b) if (a != b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
@@ -294,6 +405,9 @@ VmDirTestGetGuid(
 
 #define TestAssertStrEquals(a, b) if (strcmp(a, b) != 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertStrNotEquals(a, b) if (strcmp(a, b) == 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
+
+#define TestAssertStrIEquals(a, b) if (VmDirStringCompare(a, b, TRUE) != 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
+#define TestAssertStrINotEquals(a, b) if (VmDirStringCompare(a, b, TRUE) == 0) { VmDirTestReportAssertionFailureStringOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
 
 #define TestAssert(expr) if (!(expr)) { VmDirTestReportAssertionFailure(#expr, "", __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertMsg(expr, msg) if (!(expr)) { VmDirTestReportAssertionFailure(#expr, msg, __FILE__, __FUNCTION__, __LINE__, pState); }

@@ -901,12 +901,6 @@ Srv_VmAfdRpcTriggerRootCertsRefresh(
     dwError = VmAfdRpcServerCheckAccess(hBinding, dwRpcFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (!gVmafdGlobals.pCertUpdateThr)
-    {
-        dwError = ERROR_INVALID_STATE;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
     dwError = VmAfdRootFetchTask(TRUE);
     BAIL_ON_VMAFD_ERROR(dwError);
 

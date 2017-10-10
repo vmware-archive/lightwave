@@ -270,7 +270,8 @@ VmDirReadSchemaFile(
     PCSTR               pszSchemaFilePath,
     PVMDIR_STRING_LIST* ppAtStrList,
     PVMDIR_STRING_LIST* ppOcStrList,
-    PVMDIR_STRING_LIST* ppCrStrList
+    PVMDIR_STRING_LIST* ppCrStrList,
+    PVMDIR_STRING_LIST* ppIdxStrList
     );
 
 // load.c
@@ -279,7 +280,8 @@ VmDirLdapSchemaLoadStrLists(
     PVDIR_LDAP_SCHEMA   pSchema,
     PVMDIR_STRING_LIST  pAtStrList,
     PVMDIR_STRING_LIST  pOcStrList,
-    PVMDIR_STRING_LIST  pCrStrList
+    PVMDIR_STRING_LIST  pCrStrList,
+    PVMDIR_STRING_LIST  pIdxStrList
     );
 
 DWORD
@@ -331,6 +333,13 @@ DWORD
 VmDirLdapNfParseStr(
     PCSTR                   pcszStr,
     PVDIR_LDAP_NAME_FORM*   ppNf
+    );
+
+DWORD
+VmDirLdapIdxParseStr(
+    PCSTR       pcszStr,
+    PSTR*       ppszAtName,
+    PBOOLEAN    pbGlobalUniq
     );
 
 DWORD
@@ -387,15 +396,15 @@ VmDirLdapNfToStr(
 // patch.c
 DWORD
 VmDirPatchRemoteSchemaObjects(
-    LDAP*               pLd,
-    PVDIR_LDAP_SCHEMA   pNewSchema
+    LDAP*                   pLd,
+    PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff
     );
 
 // resolve.c
 DWORD
 VmDirLdapOcResolveSup(
-    PVDIR_LDAP_SCHEMA           pSchema,
-    PVDIR_LDAP_OBJECT_CLASS     pOc
+    PVDIR_LDAP_SCHEMA       pSchema,
+    PVDIR_LDAP_OBJECT_CLASS pOc
     );
 
 // schema.c
@@ -435,6 +444,13 @@ VmDirLdapSchemaAddNf(
     );
 
 DWORD
+VmDirLdapSchemaAddIdx(
+    PVDIR_LDAP_SCHEMA   pSchema,
+    PCSTR               pszAtName,
+    BOOLEAN             bGlobalUniq
+    );
+
+DWORD
 VmDirLdapSchemaResolveAndVerifyAll(
     PVDIR_LDAP_SCHEMA   pSchema
     );
@@ -444,9 +460,22 @@ VmDirLdapSchemaRemoveNoopData(
     PVDIR_LDAP_SCHEMA   pSchema
     );
 
+BOOLEAN
+VmDirLdapSchemaIsEmpty(
+    PVDIR_LDAP_SCHEMA   pSchema
+    );
+
 VOID
 VmDirFreeLdapSchema(
     PVDIR_LDAP_SCHEMA   pSchema
+    );
+
+// util.c
+DWORD
+VmDirLdapSearchSubSchemaSubEntry(
+    LDAP*           pLd,
+    LDAPMessage**   ppResult,
+    LDAPMessage**   ppEntry
     );
 
 // verify.c
@@ -465,87 +494,6 @@ DWORD
 VmDirLdapCrVerify(
     PVDIR_LDAP_SCHEMA       pSchema,
     PVDIR_LDAP_CONTENT_RULE pCRDesc
-    );
-
-//////////////////////////////////////
-// Legacy support structs/functions //
-//////////////////////////////////////
-
-typedef struct _VDIR_LEGACY_SCHEMA
-{
-    PLW_HASHMAP pAtDefStrMap;
-    PLW_HASHMAP pOcDefStrMap;
-    PLW_HASHMAP pCrDefStrMap;
-    PVDIR_LDAP_SCHEMA   pSchema;
-
-} VDIR_LEGACY_SCHEMA, *PVDIR_LEGACY_SCHEMA;
-
-typedef struct _VDIR_LEGACY_SCHEMA_MOD
-{
-    PVMDIR_STRING_LIST  pDelAt;
-    PVMDIR_STRING_LIST  pAddAt;
-    PVMDIR_STRING_LIST  pDelOc;
-    PVMDIR_STRING_LIST  pAddOc;
-    PVMDIR_STRING_LIST  pDelCr;
-    PVMDIR_STRING_LIST  pAddCr;
-
-} VDIR_LEGACY_SCHEMA_MOD, *PVDIR_LEGACY_SCHEMA_MOD;
-
-// legacy/legacyload.c
-DWORD
-VmDirLegacySchemaLoadRemoteSchema(
-    PVDIR_LEGACY_SCHEMA pLegacySchema,
-    LDAP*               pLd
-    );
-
-// legacy/legacypatch.c
-DWORD
-VmDirPatchRemoteSubSchemaSubEntry(
-    LDAP*               pLd,
-    PVDIR_LDAP_SCHEMA   pNewSchema
-    );
-
-// legacy/legacyschema.c
-DWORD
-VmDirLegacySchemaInit(
-    PVDIR_LEGACY_SCHEMA*    ppLegacySchema
-    );
-
-VOID
-VmDirFreeLegacySchema(
-    PVDIR_LEGACY_SCHEMA pLegacySchema
-    );
-
-// legacy/legacyschemamod.c
-DWORD
-VmDirLegacySchemaModInit(
-    PVDIR_LEGACY_SCHEMA_MOD*    ppLegacySchemaMod
-    );
-
-DWORD
-VmDirLegacySchemaModPopulate(
-    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod,
-    PVDIR_LEGACY_SCHEMA     pLegacySchema,
-    PVDIR_LDAP_SCHEMA       pNewSchema
-    );
-
-VOID
-VmDirFreeLegacySchemaMod(
-    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod
-    );
-
-// legacy/legacyutil.c
-DWORD
-VmDirLdapSearchSubSchemaSubEntry(
-    LDAP*           pLd,
-    LDAPMessage**   ppResult,
-    LDAPMessage**   ppEntry
-    );
-
-DWORD
-VmDirFixLegacySchemaDefSyntaxErr(
-    PSTR    pszDef,
-    PSTR*   ppszFixedDef
     );
 
 #ifdef __cplusplus

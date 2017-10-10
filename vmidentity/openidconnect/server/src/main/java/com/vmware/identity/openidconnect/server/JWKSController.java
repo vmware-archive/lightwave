@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -59,14 +60,16 @@ public class JWKSController {
         this.idmClient = idmClient;
     }
 
-    @RequestMapping(value = Endpoints.JWKS, method = RequestMethod.GET)
+    @CrossOrigin(allowCredentials = "false")
+    @RequestMapping(value = Endpoints.BASE + Endpoints.JWKS, method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws IOException {
         jwks(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = Endpoints.JWKS + "/{tenant:.*}", method = RequestMethod.GET)
+    @CrossOrigin(allowCredentials = "false")
+    @RequestMapping(value = Endpoints.BASE + Endpoints.JWKS + "/{tenant:.*}", method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,

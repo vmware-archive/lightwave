@@ -90,7 +90,7 @@ extern "C" {
     do {                                  \
         if ((bInLock))                    \
         {                                 \
-            VmDnsUnLockMutex(mutex);      \
+            VmDnsUnlockMutex(mutex);      \
             (bInLock) = FALSE;            \
         }                                 \
     } while (0)
@@ -209,6 +209,9 @@ extern "C" {
 #define VMDNS_DEFAULT_TTL               3600
 #define VMDNS_DEFAULT_LDAP_PORT         389
 #define VMDNS_DEFAULT_KDC_PORT          88
+/* Time */
+#define NSECS_PER_MSEC      1000000
+#define MSECS_PER_SEC       1000
 
 #ifdef __cplusplus
 }

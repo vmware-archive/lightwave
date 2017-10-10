@@ -49,7 +49,6 @@
 #include <ldaphead.h>
 
 #include <backend.h>
-
 #include <mdbstore.h>
 
 //#include "defines.h"
@@ -92,7 +91,6 @@
 #include <ldaphead.h>
 
 #include <backend.h>
-
 #include <mdbstore.h>
 
 #include "structs.h"

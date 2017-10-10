@@ -67,7 +67,10 @@ typedef struct _VMKDC_GLOBALS
     int                             iMaxRenewableLife;
     INT64                           iAcceptSock;
     INT64                           iAcceptSockUdp;
+    INT64                           iAcceptSock6;
+    INT64                           iAcceptSock6Udp;
     int                             addrLen;
+    int                             addrLen6;
 
     // following fields are protected by mutex
     pthread_t                       thread;

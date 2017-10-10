@@ -55,6 +55,7 @@ IdmRelyingPartyRegister(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToRelyingPartyData,
         (void**) &pRelyingPartyReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -117,6 +118,7 @@ IdmRelyingPartyGetAll(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToRelyingPartyArrayData,
         (void**) &pRelyingPartyArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -180,6 +182,7 @@ IdmRelyingPartyGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToRelyingPartyData,
         (void**) &pRelyingPartyReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -244,6 +247,7 @@ IdmRelyingPartyUpdate(
         REST_HTTP_METHOD_TYPE_PUT,
         (JsonToDataObjectFunc) IdmJsonToRelyingPartyData,
         (void**) &pRelyingPartyReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -305,6 +309,7 @@ IdmRelyingPartyDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

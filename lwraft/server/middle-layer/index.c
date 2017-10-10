@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -31,7 +31,7 @@ VmDirPluginIndexEntryPreAdd(
     PSTR    pszSearchFlags = NULL;
     int     iSearchFlags = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -103,7 +103,7 @@ VmDirPluginIndexEntryPostAdd(
     PVMDIR_STRING_LIST  pScopes = NULL;
     PVDIR_INDEX_UPD     pIndexUpd = NULL;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -199,7 +199,7 @@ VmDirPluginIndexEntryPreModApplyModify(
     PSTR    pszSearchFlags = NULL;
     int     iSearchFlags = 0;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }
@@ -335,7 +335,7 @@ VmDirPluginIndexEntryPreModify(
     PVMDIR_STRING_LIST  pScopes = NULL;
     PVDIR_INDEX_UPD     pIndexUpd = NULL;
 
-    if (!pOperation->bSchemaWriteOp)
+    if (!pOperation->dwSchemaWriteOp)
     {
         goto cleanup;
     }

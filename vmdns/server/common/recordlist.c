@@ -103,6 +103,32 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDnsRecordListAddList(
+    PVMDNS_RECORD_LIST          pDestList,
+    PVMDNS_RECORD_LIST          pSrcList
+    )
+{
+    DWORD dwError = 0, i = 0, dwRecordListSize = 0;
+
+    if (!pSrcList || pSrcList->dwCurrentSize == 0)
+        return dwError;
+
+    dwRecordListSize = VmDnsRecordListGetSize(pSrcList);
+
+    for (; i < dwRecordListSize; i++)
+    {
+        dwError = VmDnsRecordListAdd(pDestList, pSrcList->ppRecords[i]);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 
 DWORD
 VmDnsRecordListRemove(
@@ -213,6 +239,52 @@ VmDnsRecordListRelease(
             VmDnsRecordListFree(pList);
         }
     }
+}
+
+DWORD
+VmDnsRecordListRoundRobin(
+    PVMDNS_RECORD_LIST          pList,
+    DWORD                       dwIndex,
+    PVMDNS_RECORD_LIST          *ppList
+    )
+{
+    PVMDNS_RECORD_LIST pRecordList = NULL;
+    DWORD dwSize = 0, dwError = 0, i = 0;
+    PVMDNS_RECORD_OBJECT pRecordObj = NULL;
+    DWORD dwRecordIndex = dwIndex;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(pList,dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(ppList,dwError);
+
+    dwError = VmDnsRecordListCreate(&pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwSize = VmDnsRecordListGetSize(pList);
+
+    for (; i < dwSize; i++)
+    {
+        pRecordObj = VmDnsRecordListGetRecord(pList, dwRecordIndex);
+
+        dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwRecordIndex = (dwRecordIndex + 1) % dwSize;
+    }
+
+    *ppList = pRecordList;
+
+cleanup:
+    VmDnsRecordObjectRelease(pRecordObj);
+    return dwError;
+
+error:
+    VmDnsRecordListRelease(pRecordList);
+    if(ppList)
+    {
+        *ppList = NULL;
+    }
+
+    goto cleanup;
 }
 
 DWORD

@@ -36,6 +36,63 @@ extern "C" {
 #define VMDIR_MAX_UPN_LEN                   512
 #define VMDIR_CLIENT_JOIN_FLAGS_PREJOINED   0x00000001
 
+/*
+ * API exposed for HA Topology Management
+ */
+DWORD
+VmDirGetCurrentTopologyAtSite(
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    PCSTR                           pszSiteName,
+    BOOLEAN                         bConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    );
+
+DWORD
+VmDirGetCurrentGlobalTopology(
+    PCSTR                           pszUserName,
+    PCSTR                           pszPassword,
+    PCSTR                           pszHostName,
+    BOOLEAN                         bConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    );
+
+DWORD
+VmDirGetProposedTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology // Output
+    );
+
+DWORD
+VmDirGetChangesInTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES*     ppTopologyChanges //Output
+    );
+
+DWORD
+VmDirApplyTopologyChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    );
+
+VOID
+VmDirFreeHATopologyData(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
+    );
+
+VOID
+VmDirFreeHAServerInfo(
+    PVMDIR_HA_SERVER_INFO   pServer
+    );
+
+VOID
+VmDirFreeHATopologyChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    );
+/*
+ * API for HA Topology Management end here
+ */
 DWORD
 VmDirConnectionOpen(
     PCSTR pszLdapURI,
@@ -314,6 +371,13 @@ VmDirGetKrbUPNKey(
     PBYTE*      ppKeyBlob,
     DWORD*      pSize
     );
+
+DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
 
 DWORD
 VmDirSetSRPSecret(

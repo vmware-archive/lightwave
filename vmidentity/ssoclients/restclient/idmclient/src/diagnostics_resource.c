@@ -51,6 +51,7 @@ IdmDiagnosticsClearEventLog(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -104,6 +105,7 @@ IdmDiagnosticsGetEventLog(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToEventLogArrayData,
         (void**) &pEventLogArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -166,6 +168,7 @@ IdmDiagnosticsGetEventLogStatus(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToEventLogStatusData,
         (void**) &pEventLogStatusReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -233,6 +236,7 @@ IdmDiagnosticsStartEventLog(
         REST_HTTP_METHOD_TYPE_POST,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -284,6 +288,7 @@ IdmDiagnosticsStopEventLog(
         REST_HTTP_METHOD_TYPE_POST,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

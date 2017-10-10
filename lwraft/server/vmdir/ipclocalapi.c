@@ -76,8 +76,8 @@ VmDirIpcInitializeHost(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -176,8 +176,8 @@ VmDirIpcInitializeTenant(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -271,8 +271,8 @@ VmDirIpcForceResetPassword(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -306,7 +306,7 @@ VmDirIpcForceResetPassword(
 
     output_spec[0].data.pUint32 = &uResult;
     output_spec[1].data.pUint32 = &dwContainerLength;
-    output_spec[2].data.pByte = (PBYTE) pContainerBlob;
+    output_spec[2].data.pByte = pContainerBlob;
 
     dwError = VmDirMarshalResponse (
                     apiType,
@@ -379,7 +379,7 @@ VmDirIpcGeneratePassword(
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                         apiType,
                         VER1_INPUT,
@@ -418,7 +418,7 @@ VmDirIpcGeneratePassword(
 
     output_spec[0].data.pUint32 = &uResult;
     output_spec[1].data.pUint32 = &dwContainerLength;
-    output_spec[2].data.pByte = (PBYTE) pContainerBlob;
+    output_spec[2].data.pByte = pContainerBlob;
 
     dwError = VmDirMarshalResponse (
                     apiType,
@@ -494,8 +494,8 @@ VmDirIpcSetSRPSecret(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
     dwError = VmDirUnMarshal (
                     apiType,
                     VER1_INPUT,
@@ -584,7 +584,7 @@ VmDirIpcGetServerState(
     // Unmarshall the request buffer to the format
     // that the API actually has
     //
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
 
     dwError = VmDirUnMarshal (
                     apiType,
@@ -754,5 +754,169 @@ error:
 
     VMDIR_SAFE_FREE_MEMORY (pResponse);
 
+    goto cleanup;
+}
+
+static
+DWORD
+VmDirSrvGetSRPSecret(
+    PSTR       pszUPN,               // [in] account UPN
+    VMDIR_DATA_CONTAINER* pContainer // [out]
+    )
+{
+    DWORD   dwError = 0;
+    PBYTE   pLocalByte = NULL;
+    DWORD   dwKeySize = 0;
+
+    if (   IsNullOrEmptyString(pszUPN)
+        || !pContainer
+       )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirSRPGetIdentityData( pszUPN,
+                                       &pLocalByte,
+                                       &dwKeySize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pContainer->data    = pLocalByte;
+    pContainer->dwCount = dwKeySize;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDirRpcFreeMemory( pLocalByte );
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvGetSRPSecret failed (%u)(%s)",
+                                      dwError, VDIR_SAFE_STRING(pszUPN) );
+
+    goto cleanup;
+}
+
+
+
+
+DWORD
+VmDirIpcGetSRPSecret(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMDIR_IPC_GET_SRP_SECRET;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    PSTR pszUPN = NULL;
+    VMDIR_DATA_CONTAINER dataContainer = {0};
+    DWORD dwContainerLength = 0;
+    PBYTE pContainerBlob = NULL;
+    VMW_TYPE_SPEC input_spec[] = GET_SRP_SECRET_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = GET_SRP_SECRET_OUTPUT_PARAMS;
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcGetSRPSecret");
+
+    if (!pSecurityContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    dwError = VmDirUnMarshal (
+                    apiType,
+                    VER1_INPUT,
+                    noOfArgsIn,
+                    pRequest,
+                    dwRequestSize,
+                    input_spec);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    pszUPN = input_spec[0].data.pString;
+
+    uResult = VmDirSrvGetSRPSecret(
+                    pszUPN,
+                    &dataContainer);
+
+    dwError = VmDirMarshalContainerLength(
+                              (PVMDIR_IPC_DATA_CONTAINER)&dataContainer,
+                              &dwContainerLength);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    dwError = VmDirAllocateMemory(
+                             dwContainerLength,
+                             (PVOID*)&pContainerBlob);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    dwError = VmDirMarshalContainer(
+                               (PVMDIR_IPC_DATA_CONTAINER)&dataContainer,
+                               dwContainerLength,
+                               pContainerBlob);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    output_spec[0].data.pUint32 = &uResult;
+    output_spec[1].data.pUint32 = &dwContainerLength;
+    output_spec[2].data.pByte = (PBYTE) pContainerBlob;
+
+    dwError = VmDirMarshalResponse (
+                    apiType,
+                    output_spec,
+                    noOfArgsOut,
+                    &pResponse,
+                    &dwResponseSize);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Exiting VmDirIpcGetSRPSecret");
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(dataContainer.data);
+    VMDIR_SAFE_FREE_MEMORY(pContainerBlob);
+
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    VmDirFreeTypeSpecContent (input_spec, noOfArgsIn);
+    return dwError;
+
+error:
+    VmDirHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                     "VmDirIpcGetSRPSecret failed (%u)",
+                     dwError);
+
+    dwError = 0;
     goto cleanup;
 }

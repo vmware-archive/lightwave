@@ -11,7 +11,6 @@ SUBDIRS = \
 if ENABLE_SERVER
 
 SUBDIRS += \
-   kdccommon \
     server \
     tools \
     config \

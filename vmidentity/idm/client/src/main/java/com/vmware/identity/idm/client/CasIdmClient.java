@@ -1204,6 +1204,30 @@ public class CasIdmClient
     }
 
     /**
+     * Sets a certificate chain and private key for the tenant.
+     *
+     * This is the credential used to sign SAML tokens generated for the
+     * tenant's clients.
+     *
+     * @param tenantName         Name of tenant
+     * TODO: verify this is correct Exception
+     * @throws IllegalArgumentException
+     *         when either privateKey or certification chain fails in validation
+     * @throws IDMException
+     * @throws Exception
+     */
+    public
+    void
+    setTenantCredentials(
+        String                  tenantName
+        ) throws Exception
+    {
+        getService().setTenantCredentials(
+                tenantName,
+                this.getServiceContext());
+    }
+
+    /**
      * Add a trusted certificate chain for the tenant.
      *
      * This added certificate chain is used to as part of the certChain set to

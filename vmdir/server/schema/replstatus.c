@@ -249,7 +249,7 @@ VmDirSchemaReplStatusEntriesRefresh(
 
         dwError = VmDirCreateThread(
                 &gVdirSchemaReplStatusGlobals.pThrInfo->tid,
-                FALSE,
+                gVdirSchemaReplStatusGlobals.pThrInfo->bJoinThr,
                 VmDirSchemaReplStatusEntriesRefreshThread,
                 gVdirSchemaReplStatusGlobals.pThrInfo);
         BAIL_ON_VMDIR_ERROR(dwError);

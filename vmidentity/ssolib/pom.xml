@@ -6,21 +6,40 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>vmware-identity-websso-client</artifactId>
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
   <name>WebSSO Client</name>
 
   <build>
     <plugins>
+
+     <plugin>
+      <artifactId>maven-jar-plugin</artifactId>
+      <configuration>
+        <archive>
+        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+        </archive>
+      </configuration>
+     </plugin>
+
       <!-- Build OSGi Manifest -->
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <version>${maven.bundle.plugin.version}</version>
         <extensions>true</extensions>
+         <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals> 
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -30,6 +49,11 @@
       <groupId>com.vmware.vmafd</groupId>
       <artifactId>client-domain-controller-cache</artifactId>
       <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-beanutils</groupId>
+      <artifactId>commons-beanutils</artifactId>
+      <version>${commons.beanutils.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -42,6 +66,11 @@
       <version>${commons.collection.version}</version>
     </dependency>
     <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>${commons.fileupload.version}</version>
+    </dependency>
+    <dependency>
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
       <version>${commons.httpclient.version}</version>
@@ -50,6 +79,12 @@
       <groupId>org.owasp.esapi</groupId>
       <artifactId>esapi</artifactId>
       <version>${esapi.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>commons-beanutils-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>net.jcip</groupId>

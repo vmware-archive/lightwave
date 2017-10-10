@@ -23,33 +23,10 @@ _VmDirEntryDupAttrValueCheck(
     PSTR*   ppszDupAttributeName
     );
 
-static
-int
-_VmDirGenerateAttrMetaData(
-    PVDIR_ENTRY    pEntry,
-    /* OPTIONAL, if specified, only generate metaData for that particular attribute
-     * Otherwise, generate for all attributes*/
-    PSTR           pszAttributeName
-    );
-
-int
-VmDirEntryAttrValueNormalize(
-    PVDIR_ENTRY    pEntry,
-    BOOLEAN   bIndexAttributeOnly
-    );
-
-static
-DWORD
-_VmDirAddPrepareObjectSD(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    PVDIR_ENTRY      pParentEntry
-    );
-
 int
 VmDirMLAdd(
-   PVDIR_OPERATION pOperation
-   )
+    PVDIR_OPERATION pOperation
+    )
 {
     DWORD   dwError = 0;
     PSTR    pszLocalErrMsg = NULL;
@@ -122,6 +99,13 @@ VmDirInternalAddEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode");
     }
 
+    // make sure we have minimum DN length
+    if (pEntry->dn.lberbv_len < 3)
+    {
+        retVal = VMDIR_ERROR_INVALID_REQUEST;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", pEntry->dn.lberbv_len);
+    }
+
     // Make sure Attribute has its ATDesc set
     retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "%s",
@@ -149,10 +133,6 @@ VmDirInternalAddEntry(
         retVal = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "schema error - (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
-
-        // Generate attributes' meta-data
-        retVal = _VmDirGenerateAttrMetaData(pEntry, NULL);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateAttributesMetaData failed - (%u)", retVal );
     }
 
     // Normalize all attribute value
@@ -253,7 +233,7 @@ txnretry:
         {
             // Skip SD in case of a replication operation (SD should exist by then anyways)
             // so that we do not manipulate data in replication operation (replicate 'purely')
-            retVal = _VmDirAddPrepareObjectSD(pOperation, pEntry, pEntry->pParentEntry);
+            retVal = VmDirComputeObjectSecurityDescriptor(&pOperation->conn->AccessInfo, pEntry, pEntry->pParentEntry);
             BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Prepare object SD failed, (%u)", retVal );
 
             // check and read lock dn referenced entries
@@ -271,6 +251,10 @@ txnretry:
                 }
             }
         }
+
+        // add vmwRaftLogChanged attribute
+        retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         retVal = pOperation->pBEIF->pfnBEEntryAdd( pOperation->pBECtx, pEntry );
         if (retVal != 0)
@@ -307,7 +291,6 @@ txnretry:
     }
 
 cleanup:
-
     {
         int iPostCommitPluginRtn = 0;
 
@@ -369,7 +352,7 @@ VmDirEntryCheckStructureRule(
                     pEntry);
     if (retVal)
     {
-        VmDirAllocateStringAVsnprintf(&pszLocalErrMsg,
+        VmDirAllocateStringPrintf(&pszLocalErrMsg,
                 "DIT Structure rule check failed. (%s)",
                 VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
         retVal = VMDIR_ERROR_STRUCTURE_VIOLATION;
@@ -461,90 +444,6 @@ error:
     return iError;
 }
 
-/* GenerateAttributesMetaData:
- *
- * Returns:
- *      LDAP_SUCCESS: On Success
- *      LDAP_OPERATIONS_ERROR: In case of an error
- *
- */
-
-static
-int
-_VmDirGenerateAttrMetaData(
-    PVDIR_ENTRY    pEntry,
-    /* OPTIONAL, if specified, only generate metaData for that particular attribute
-     * Otherwise, generate for all attributes*/
-    PSTR           pszAttributeName
-    )
-{
-    int              retVal = LDAP_SUCCESS;
-    PVDIR_ATTRIBUTE  usnCreated = NULL;
-    PVDIR_ATTRIBUTE  attrFound = NULL;
-    PVDIR_ATTRIBUTE  attr = NULL;
-    char             origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    PSTR             pszLocalErrMsg = NULL;
-
-    if (1)
-       return 0;
-
-    assert( pEntry );
-
-    usnCreated = VmDirEntryFindAttribute( ATTR_USN_CREATED, pEntry );
-    assert(usnCreated);
-
-    if (VmDirGenOriginatingTimeStr( origTimeStamp ) != 0)
-    {
-        retVal = VMDIR_ERROR_GENERIC;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                         "GenerateAttributesMetaData: VmDirGenOriginatingTimeStr() failed." );
-    }
-
-    if (gVmdirServerGlobals.invocationId.lberbv.bv_val == NULL)
-    {
-        retVal = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                        "GenerateAttributesMetaData: gVmdirServerGlobals.invocationId.lberbv.bv_val not set." );
-    }
-
-    if (pszAttributeName)
-    {
-        attrFound = VmDirEntryFindAttribute( pszAttributeName, pEntry );
-        // if found such attribute, generate metadata for it, otherwise, do nothing
-        if (attrFound)
-        {
-            // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-            VmDirStringNPrintFA( attrFound->metaData, sizeof( attrFound->metaData ), sizeof( attrFound->metaData ) - 1,
-                      "%s:%s:%s:%s:%s", usnCreated->vals[0].lberbv.bv_val, "1",
-                      gVmdirServerGlobals.invocationId.lberbv.bv_val, origTimeStamp, usnCreated->vals[0].lberbv.bv_val );
-
-            VmDirLog( LDAP_DEBUG_TRACE, "GenerateAttributesMetaData: DN: %s, attribute name = %s, meta data = %s",
-                      pEntry->dn.lberbv.bv_val, pszAttributeName, attrFound->metaData );
-        }
-    }
-    else
-    {
-        for (attr = pEntry->attrs; attr; attr = attr->next)
-        {
-            // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-            VmDirStringNPrintFA( attr->metaData, sizeof( attr->metaData ), sizeof( attr->metaData ) - 1, "%s:%s:%s:%s:%s",
-                      usnCreated->vals[0].lberbv.bv_val, "1",
-                      gVmdirServerGlobals.invocationId.lberbv.bv_val, origTimeStamp, usnCreated->vals[0].lberbv.bv_val );
-
-            VmDirLog( LDAP_DEBUG_TRACE, "GenerateAttributesMetaData: DN: %s, attribute name = %s, meta data = %s",
-                      pEntry->dn.lberbv.bv_val, attr->type.lberbv.bv_val, attr->metaData );
-        }
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    return retVal;
-
-error:
-    VmDirLog(LDAP_DEBUG_ANY, VDIR_SAFE_STRING(pszLocalErrMsg) );
-    goto cleanup;
-}
-
 int
 VmDirEntryAttrValueNormalize(
     PVDIR_ENTRY     pEntry,
@@ -594,124 +493,4 @@ VmDirEntryAttrValueNormalize(
 error:
     VmDirIndexCfgRelease(pIndexCfg);
     return dwError;
-}
-
-static
-DWORD
-_VmDirAddPrepareObjectSD(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    PVDIR_ENTRY      pParentEntry
-    )
-{
-    DWORD           dwError = 0;
-    PVDIR_ATTRIBUTE pObjectSdExist = NULL;
-    PVDIR_ATTRIBUTE pAclStringAttr = NULL;
-    PVDIR_ATTRIBUTE pObjectSdAttr = NULL;
-    SECURITY_INFORMATION SecInfoAll = (OWNER_SECURITY_INFORMATION |
-                                       GROUP_SECURITY_INFORMATION |
-                                       DACL_SECURITY_INFORMATION |
-                                       SACL_SECURITY_INFORMATION);
-
-    assert(pEntry);
-
-    // If ATTR_OBJECT_SECURITY_DESCRIPTOR in the request, just use it
-    pObjectSdExist = VmDirEntryFindAttribute(  ATTR_OBJECT_SECURITY_DESCRIPTOR,  pEntry );
-    if (pObjectSdExist)
-    {
-        goto cleanup;
-    }
-
-    // If ATTR_ACL_STRING in the request, convert it to SD and use it
-    pAclStringAttr = VmDirEntryFindAttribute(  ATTR_ACL_STRING,  pEntry );
-    if (pAclStringAttr)
-    {
-        dwError = VmDirAttributeAllocate(
-                        ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                        1,
-                        pEntry->pSchemaCtx,
-                        &pObjectSdAttr);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = LwNtStatusToWin32Error( RtlAllocateSecurityDescriptorFromSddlCString(
-                                            (PSECURITY_DESCRIPTOR_RELATIVE*)&pObjectSdAttr->vals[0].lberbv.bv_val,
-                                            (PULONG)&pObjectSdAttr->vals[0].lberbv.bv_len,
-                                            pAclStringAttr->vals[0].lberbv.bv_val, SDDL_REVISION_1 ));
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirEntryRemoveAttribute(pEntry, ATTR_ACL_STRING);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        // If SD or ACL_STRING is not explicitly specified, use object's parent SD
-
-        if (!pParentEntry)
-        {
-            goto cleanup;
-        }
-
-        dwError = VmDirAttributeAllocate(
-                        ATTR_OBJECT_SECURITY_DESCRIPTOR,
-                        1,
-                        pEntry->pSchemaCtx,
-                        &pObjectSdAttr);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirGetSecurityDescriptorForEntry(
-                        pParentEntry, SecInfoAll,
-                        (PSECURITY_DESCRIPTOR_RELATIVE*)&pObjectSdAttr->vals[0].lberbv.bv_val,
-                        (PULONG)&pObjectSdAttr->vals[0].lberbv.bv_len);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirReallocateMemoryWithInit(
-                        (PVOID)pObjectSdAttr->vals[0].lberbv.bv_val,
-                        (PVOID *)(&pObjectSdAttr->vals[0].lberbv.bv_val),
-                        pObjectSdAttr->vals[0].lberbv.bv_len+1,
-                        pObjectSdAttr->vals[0].lberbv.bv_len);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    pObjectSdAttr->vals[0].bOwnBvVal = TRUE;
-
-    dwError = VmDirEntryAddAttribute(
-                    pEntry,
-                    pObjectSdAttr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    pObjectSdAttr = NULL;
-
-    dwError = _VmDirGenerateAttrMetaData(pEntry,
-                                         ATTR_OBJECT_SECURITY_DESCRIPTOR);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
-    {
-        // Some initial objects created during startup/vdcpromo do not have SD. Their SD is setup after cn=Administrator,...
-        // object is created
-        VMDIR_LOG_WARNING( LDAP_DEBUG_ACL, "_VmDirAddPrepareObjectSD() failed for (%s), error code (%d)",
-                           VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
-    }
-    else
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirAddPrepareObjectSD() failed for (%s), error code (%d)",
-                         VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
-    }
-
-    if (pObjectSdAttr)
-    {
-        VmDirFreeAttribute(pObjectSdAttr);
-    }
-
-    // ignore if cannot find a SD from parentEntry (during instance set up
-    // parent does not have SD, until an admin can be created to generate SD
-    if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
-    {
-        dwError = 0;
-    }
-
-    goto cleanup;
 }

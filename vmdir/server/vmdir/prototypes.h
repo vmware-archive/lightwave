@@ -122,6 +122,12 @@ VmDirAllocateBerValueAVsnprintf(
     ...
     );
 
+DWORD
+VmDirGetHostsInternal(
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
+    );
+
 // instance.c
 
 DWORD
@@ -133,9 +139,8 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousRead, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescDeletedObjectsOut // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut,    // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescNoDeleteOut          // OPTIONAL
     );
 
 DWORD
@@ -184,8 +189,13 @@ VmDirLoadSchema(
     );
 
 DWORD
-InitializeSchemaEntries(
+VmDirSchemaInitializeSubtree(
     PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
+DWORD
+VmDirSchemaSetSystemDefaultSecurityDescriptors(
+    VOID
     );
 
 DWORD
@@ -601,6 +611,22 @@ VmDirCreateHeartbeatThread(
 VOID
 VmDirKillHeartbeatThread(
     );
+
+DWORD
+VmDirIpcGetSRPSecret(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+// metricsinit.c
+DWORD
+VmDirMetricsInitialize(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

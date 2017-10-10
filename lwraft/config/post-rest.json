@@ -1,0 +1,900 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Lightwave POST API",
+        "version": "1.3.0"
+    },
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "host": "IPADDRESS_MARKER",
+    "basePath": "/v1",
+    "produces": [
+        "application/json",
+        "text/plain"
+    ],
+    "tags": [
+        {
+            "name": "object",
+            "description": "Lightwave Post data store object API implemented in RESTful interface"
+        },
+        {
+            "name": "ldap",
+            "description": "LDAP(Lightweight Directory Access Protocol) protocol implemented in RESTful interface"
+        },
+        {
+            "name": "etcd",
+            "description": "Key-Value Etcd API implemented in RESTful interface"
+        },
+        {
+            "name": "metrics",
+            "description": "Metrics module for publishing metrics data"
+        }
+    ],
+    "paths": {
+        "/post/ldap": {
+            "put": {
+                "summary": "Add an LDAP entry",
+                "description": "Add an LDAP entry",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "entry",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LDAPEntry"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic LDAP response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "ldap"
+                ]
+            },
+            "get": {
+                "summary": "Search for LDAP entries",
+                "description": "Search for LDAP entries",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "dn",
+                        "in": "query",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "attrs",
+                        "in": "query",
+                        "required": false,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "paged_results_cookie",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic LDAP response with an array of LDAP entries",
+                        "schema": {
+                            "$ref": "#/definitions/LDAPSearchResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "ldap"
+                ]
+            },
+            "patch": {
+                "summary": "Modify an LDAP entry",
+                "description": "Modify an LDAP entry",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "dn",
+                        "in": "query",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "mods",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LDAPMod"
+                            }
+                        }
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic LDAP response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "ldap"
+                ]
+            },
+            "delete": {
+                "summary": "Delete an LDAP entry",
+                "description": "Delete an LDAP entry",
+                "parameters": [
+                    {
+                        "name": "dn",
+                        "in": "query",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic LDAP response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "ldap"
+                ]
+            }
+        },
+        "/post/object/{objectpath}": {
+            "put": {
+                "summary": "Add a post object",
+                "description": "Add a post object",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "objectpath",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tenant",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "attributes",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostObjectAttributes"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic POST object response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "object"
+                ]
+            },
+            "get": {
+                "summary": "Search for post objects",
+                "description": "Search for post objects",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "objectpath",
+                        "description": "maps to LDAP search base DN",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tenant",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "searchscope",
+                        "description": "(base/one/sub) default to sub",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "filter",
+                        "description": "ldap style filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "attrs",
+                        "description": "list of return attributes",
+                        "in": "query",
+                        "required": false,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "description": "return page size",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "paged_results_cookie",
+                        "description": "opaque server state used for next page search",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Post objects search response",
+                        "schema": {
+                            "$ref": "#/definitions/PostObjectGetResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "object"
+                ]
+            },
+            "patch": {
+                "summary": "Modify a post object",
+                "description": "Modify a post object",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "objectpath",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tenant",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "mods",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LDAPMod"
+                            }
+                        }
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic POST response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "object"
+                ]
+            },
+            "delete": {
+                "summary": "Delete a post object",
+                "description": "Delete a post object",
+                "parameters": [
+                    {
+                        "name": "objectpath",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tenant",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "recursive",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generic POST response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "object"
+                ]
+            }
+        },
+        "/post/etcd/KV/put": {
+            "post": {
+                "summary": "Put the given key into the key-value store. It increments the revision of the key-value store and generates one event in the event history.",
+                "description": "Put a given key into key-value store",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                          "$ref": "#/definitions/EtcdPutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Etcd Put Response",
+                        "schema": {
+                            "$ref": "#/definitions/EtcdPutResponse"
+                        }
+                    }
+                },
+                "tags": [
+                  "etcd"
+                ]
+            }
+        },
+        "/post/etcd/KV/range": {
+            "post": {
+                "summary": "Range gets the keys in the range from the key-value store.",
+                "description": "Range gets the keys in the range from the key-value store",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                          "$ref": "#/definitions/EtcdRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Etcd Get Range Response",
+                        "schema": {
+                            "$ref": "#/definitions/EtcdRangeResponse"
+                        }
+                    }
+                },
+                "tags": [
+                  "etcd"
+                ]
+            }
+        },
+        "/post/etcd/KV/deleterange": {
+            "post": {
+                "summary": "Deletes the given range from the key-value store. A delete request increments the revision of the key-value store and generates a delete event in the event history for every deleted key.",
+                "description": "Delete the range of keys from store",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EtcdDeleteRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Etcd Delete Range Response",
+                        "schema": {
+                            "$ref": "#/definitions/EtcdDeleteRangeResponse"
+                        }
+                    }
+                },
+                "tags": [
+                  "etcd"
+                ]
+            }
+        },
+        "/post/metrics": {
+            "get": {
+                "summary": "Get metrics data",
+                "description": "Get metrics data in Prometheus format",
+                "produces": [
+                    "text/plain"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metrics Response",
+                        "schema": {
+                            "$ref": "#/definitions/MetricsResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "metrics"
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "LDAPEntry": {
+            "type": "object",
+            "properties": {
+                "dn": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LDAPAttribute"
+                    }
+                }
+            }
+        },
+        "LDAPAttribute": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "name of the attribute",
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "LDAPMod": {
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "description": "add/delete/replace LDAP Modify changetype",
+                    "type": "string"
+                },
+                "attribute": {
+                    "$ref": "#/definitions/LDAPAttribute"
+                }
+            }
+        },
+        "GenericResponse": {
+            "type": "object",
+            "properties": {
+                "error_code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "result_count": {
+                    "type": "integer",
+                    "format": "int32"
+                }
+            }
+        },
+        "LDAPSearchResponse": {
+            "type": "object",
+            "properties": {
+                "error_code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "paged_results_cookie": {
+                    "type": "string"
+                },
+                "result_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LDAPEntry"
+                    }
+                }
+            }
+        },
+        "PostObjectAttributes": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LDAPAttribute"
+                    }
+                }
+            }
+        },
+        "PostObject": {
+            "type": "object",
+            "properties": {
+                "objectpath": {
+                    "description": "object full path",
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LDAPAttribute"
+                    }
+                }
+            }
+        },
+        "PostObjectGetResponse": {
+            "type": "object",
+            "properties": {
+                "error_code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "paged_results_cookie": {
+                    "type": "string"
+                },
+                "result_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PostObject"
+                    }
+                }
+            }
+        },
+        "KeyValue": {
+            "type": "object",
+            "properties": {
+                "create_revision": {
+                    "description": "revision of last creation on this key.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "key": {
+                    "description": "key in bytes. An empty key is not allowed.",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "lease": {
+                    "description": "lease is the ID of the lease that attached to key. When the attached lease expires, the key will be deleted. If lease is 0, then no lease is attached to the key.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "mod_revision": {
+                    "description": "revision of last modification on this key.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "value": {
+                    "description": "value held by the key, in bytes.",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "version": {
+                    "description": "version of the key. A deletion resets the version to zero and any modification of the key increases its version.",
+                    "type": "string",
+                    "format": "int64"
+                }
+            }
+        },
+        "ResponseHeader": {
+            "type": "object",
+            "properties": {
+                "cluster_id": {
+                    "description": "ID of the cluster which sent the response.",
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "member_id": {
+                    "description": "ID of the member which sent the response.",
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "raft_term": {
+                    "description": "raft term when the request was applied.",
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "revision": {
+                    "description": "key-value store revision when the request was applied.",
+                    "type": "string",
+                    "format": "int64"
+                }
+            }
+        },
+        "EtcdPutRequest": {
+            "type": "object",
+            "properties": {
+                "ignore_lease": {
+                    "description": "If ignore_lease is set, etcd updates the key using its current lease. Returns an error if the key does not exist.",
+                    "type": "boolean",
+                    "format": "boolean"
+                },
+                "ignore_value": {
+                    "description": "If ignore_value is set, etcd updates the key using its current value. Returns an error if the key does not exist.",
+                    "type": "boolean",
+                    "format": "boolean"
+                },
+                "key": {
+                    "description": "key is the key, in bytes, to put into the key-value store.",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "lease": {
+                    "description": "lease is the lease ID to associate with the key in the key-value store. A lease value of 0 indicates no lease.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "prev_kv": {
+                    "description": "If prev_kv is set, etcd gets the previous key-value pair before changing it. The previous key-value pair will be returned in the put response.",
+                    "type": "boolean",
+                    "format": "boolean"
+                },
+                "value": {
+                    "description": "value is the value, in bytes, to associate with the key in the key-value store.",
+                    "type": "string",
+                    "format": "byte"
+                }
+            }
+        },
+        "EtcdPutResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "$ref": "#/definitions/ResponseHeader"
+                },
+                "prev_kv": {
+                    "description": "if prev_kv is set in the request, the previous key-value pair will be returned.",
+                    "$ref": "#/definitions/KeyValue"
+                }
+            }
+        },
+        "EtcdRangeRequest": {
+            "type": "object",
+            "properties": {
+                "count_only": {
+                    "description": "count_only when set returns only the count of the keys in the range.",
+                    "type": "boolean",
+                    "format": "boolean"
+                },
+                "key": {
+                    "description": "key is the first key for the range. If range_end is not given, the request only looks up key.",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "keys_only": {
+                    "description": "keys_only when set returns only the keys and not the values.",
+                    "type": "boolean",
+                    "format": "boolean"
+                },
+                "limit": {
+                    "description": "limit is a limit on the number of keys returned for the request. When limit is set to 0, it is treated as no limit.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "max_create_revision": {
+                    "description": "max_create_revision is the upper bound for returned key create revisions; all keys with greater create revisions will be filtered away.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "max_mod_revision": {
+                    "description": "max_mod_revision is the upper bound for returned key mod revisions; all keys with greater mod revisions will be filtered away.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "min_create_revision": {
+                    "description": "min_create_revision is the lower bound for returned key create revisions; all keys with lesser create trevisions will be filtered away.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "min_mod_revision": {
+                    "description": "min_mod_revision is the lower bound for returned key mod revisions; all keys with lesser mod revisions will be filtered away.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "range_end": {
+                    "description": "range_end is the upper bound on the requested range [key, range_end).",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "revision": {
+                    "description": "revision is the point-in-time of the key-value store to use for the range. If revision is less or equal to zero, the range is over the newest key-value store. If the revision has been compacted, ErrCompacted is returned as a response.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "serializable": {
+                    "description": "serializable sets the range request to use serializable member-local reads. Range requests are linearizable by default; linearizable requests have higher latency and lower throughput than serializable requests but reflect the current consensus of the cluster. For better performance, in exchange for possible stale reads, a serializable range request is served locally without needing to reach consensus with other nodes in the cluster.",
+                    "type": "boolean",
+                    "format": "boolean"
+                },
+                "sort_order": {
+                    "description": "sort_order is the order for returned sorted results.",
+                    "$ref": "#/definitions/RangeRequestSortOrder"
+                },
+                "sort_target": {
+                    "description": "sort_target is the key-value field to use for sorting.",
+                    "$ref": "#/definitions/RangeRequestSortTarget"
+                }
+            }
+        },
+        "EtcdRangeResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "count is set to the number of keys within the range when requested.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "header": {
+                    "$ref": "#/definitions/ResponseHeader"
+                },
+                "kvs": {
+                    "description": "kvs is the list of key-value pairs matched by the range request. kvs is empty when count is requested.",
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/KeyValue"
+                    }
+                },
+                "more": {
+                    "description": "more indicates if there are more keys to return in the requested range.",
+                    "type": "boolean",
+                    "format": "boolean"
+                }
+            }
+        },
+        "EtcdDeleteRangeRequest": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "key is the first key to delete in the range.",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "prev_kv": {
+                  "description": "If prev_kv is set, etcd gets the previous key-value pairs before deleting it. The previous key-value pairs will be returned in the delete response.",
+                  "type": "boolean",
+                  "format": "boolean"
+                },
+                "range_end": {
+                    "description": "range_end is the key following the last key to delete for the range [key, range_end).",
+                    "type": "string",
+                    "format": "byte"
+                }
+            }
+        },
+        "EtcdDeleteRangeResponse" : {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "description": "deleted is the number of keys deleted by the delete range request.",
+                    "type": "string",
+                    "format": "int64"
+                },
+                "header": {
+                    "$ref": "#/definitions/ResponseHeader"
+                },
+                "prev_kvs": {
+                    "description": "if prev_kv is set in the request, the previous key-value pairs will be returned.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/KeyValue"
+                    }
+                }
+            }
+        },
+        "RangeRequestSortOrder": {
+            "type": "string",
+            "default": "NONE",
+            "enum": [
+                "NONE",
+                "ASCEND",
+                "DESCEND"
+            ]
+        },
+        "RangeRequestSortTarget": {
+            "type": "string",
+            "default": "KEY",
+            "enum": [
+                "KEY",
+                "VERSION",
+                "CREATE",
+                "MOD",
+                "VALUE"
+            ]
+        },
+        "MetricsResponse": {
+            "type": "object",
+            "properties": {
+            }
+        }
+    }
+}

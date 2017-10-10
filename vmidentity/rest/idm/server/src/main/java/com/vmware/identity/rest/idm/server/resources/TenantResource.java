@@ -108,8 +108,7 @@ public class TenantResource extends BaseResource {
     /**
      * Creates new tenant
      *
-     * @param tenantName Name of tenant to create
-     * @param longTenantName (Optional - long name of tenant )
+     * @param tenant The new tenant to be created
      * @return
      * <code> 200 </code> If tenant was created successfully.
      * <code> 500 </code> Otherwise
@@ -120,21 +119,23 @@ public class TenantResource extends BaseResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public TenantDTO create(TenantDTO tenantDTO) {
-
-        Validate.notNull(tenantDTO.getCredentials(), sm.getString("valid.not.null", "tenant credentials"));
-        Validate.notEmpty(tenantDTO.getCredentials().getCertificates(), sm.getString("valid.not.empty", "trusted certificates"));
-        Validate.notNull(tenantDTO.getCredentials().getPrivateKey(), sm.getString("valid.not.null", "signing certificate"));
         try {
             // Create tenant
             Tenant tenantToCreate = TenantMapper.getTenant(tenantDTO);
             PrincipalId adminId = PrincipalUtil.fromName(tenantDTO.getUsername());
             getIDMClient().addTenant(tenantToCreate, adminId.getName(), tenantDTO.getPassword().toCharArray());
 
-            // Set tenant credentials (signing + trusted certs) to above created tenant
             try {
-                List<CertificateDTO> signatureCerts = tenantDTO.getCredentials().getCertificates();
-                PrivateKeyDTO tenantPrivateKey = tenantDTO.getCredentials().getPrivateKey();
-                getIDMClient().setTenantCredentials(tenantDTO.getName(), CertificateMapper.getCertificates(signatureCerts), tenantPrivateKey.getPrivateKey());
+                if (tenantDTO.getCredentials() == null || tenantDTO.getCredentials().getCertificates() == null || tenantDTO.getCredentials().getPrivateKey() == null) {
+                    log.info("Attempting to create tenant with no provided credentials - using root credentials instead");
+                    getIDMClient().setTenantCredentials(tenantDTO.getName());
+                } else {
+                    log.info("Attempting to create tenant with user provided credentials");
+                    // Set tenant credentials (signing + trusted certs) to above created tenant
+                    List<CertificateDTO> signatureCerts = tenantDTO.getCredentials().getCertificates();
+                    PrivateKeyDTO tenantPrivateKey = tenantDTO.getCredentials().getPrivateKey();
+                    getIDMClient().setTenantCredentials(tenantDTO.getName(), CertificateMapper.getCertificates(signatureCerts), tenantPrivateKey.getPrivateKey());
+                }
             } catch (Exception e) {
                 // Exception occurred while setting credentials - delete the tenant we created so it
                 // doesn't wind up in a bizarre state

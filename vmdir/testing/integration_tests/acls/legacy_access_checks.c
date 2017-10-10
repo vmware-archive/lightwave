@@ -97,7 +97,7 @@ _VmDirSetSecurityDescriptors(
     dwError = VmDirTestGetParentDn(pState->pszBaseDN, &pszParentDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestGetObjectList(pState->pLd, pszParentDn, &pObjectList);
+    dwError = VmDirTestGetObjectList(pState->pLd, pszParentDn, NULL, NULL, &pObjectList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirApplyAttributeModification(

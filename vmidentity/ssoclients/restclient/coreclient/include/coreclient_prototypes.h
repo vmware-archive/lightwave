@@ -101,6 +101,7 @@ RestBuildAndExecuteHttp(
     REST_HTTP_METHOD_TYPE httpMethodType,
     JsonToDataObjectFunc fJsonToDataObject,
     void** ppDataObjectReturn,
+    PCSTRING tlsCAPath,
     REST_SERVER_ERROR** ppError);
 
 SSOERROR

@@ -5,14 +5,14 @@ vmdir_test_runner_SOURCES = \
     testinfrastructure.c
 
 vmdir_test_runner_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vmdir_test_runner_LDADD = \
-    $(top_builddir)/client/libvmdirclient.la \
-    $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/common/libcommon.la \
     ../test_lib/libvmdirtesting.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

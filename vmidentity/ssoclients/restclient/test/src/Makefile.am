@@ -19,17 +19,19 @@ ssorestclienttest_SOURCES = \
     vecs_resource_test.c
 
 ssorestclienttest_CPPFLAGS = \
-    -I$(top_srcdir)/ssoclients/common/include/ \
-    -I$(top_srcdir)/ssoclients/common/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/ \
-    -I$(top_srcdir)/ssoclients/restclient/coreclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/idmclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/vmdirclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/restclient/afdclient/include/public/ \
-    -I$(top_srcdir)/ssoclients/oidc/include/public/
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/coreclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/idmclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/vmdirclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/restclient/afdclient/include/public/ \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public/
 
 ssorestclienttest_LDADD = \
-    @top_builddir@/ssoclients/restclient/idmclient/src/libssoidmclient.la \
-    @top_builddir@/ssoclients/restclient/vmdirclient/src/libssovmdirclient.la \
-    @top_builddir@/ssoclients/restclient/afdclient/src/libssoafdclient.la \
-    @top_builddir@/ssoclients/oidc/src/libssooidc.la
+    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
+    @top_builddir@/vmidentity/ssoclients/restclient/idmclient/src/libssoidmclient.la \
+    @top_builddir@/vmidentity/ssoclients/restclient/vmdirclient/src/libssovmdirclient.la \
+    @top_builddir@/vmidentity/ssoclients/restclient/afdclient/src/libssoafdclient.la \
+    @top_builddir@/vmidentity/ssoclients/restclient/coreclient/src/libssocoreclient.la \
+    @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la

@@ -157,6 +157,12 @@ VmDnsFreeDnsUpdateMessage(
     PVMDNS_UPDATE_MESSAGE pVmDnsMessage
     );
 
+DWORD
+VmDnsIsUpdatePermitted(
+    VMDNS_RR_TYPE   dwRecordType,
+    PVMDNS_RECORD_LIST pRecordList
+    );
+
 /* cache.c */
 
 DWORD
@@ -222,7 +228,8 @@ VmDnsCacheFindZoneByQName(
 DWORD
 VmDnsCachePurgeRecord(
     PVMDNS_ZONE_OBJECT pZoneObject,
-    PCSTR              pszRecord
+    PCSTR              pszRecord,
+    DWORD              dwCachePurgeEvent
     );
 
 DWORD
@@ -288,6 +295,12 @@ DWORD
 VmDnsLruRefreshNameEntry(
     PVMDNS_LRU_LIST pLruList,
     PVMDNS_NAME_ENTRY pNameEntry
+    );
+
+DWORD
+VmDnsLruClearEntries(
+    PVMDNS_LRU_LIST pLruList,
+    DWORD dwCount
     );
 
 DWORD
@@ -494,50 +507,76 @@ VmDnsNameEntryGetRecords(
 
 DWORD
 VmDnsForwarderInit(
-    PVMDNS_FORWARDER_CONETXT*   ppForwarder
+    PVMDNS_FORWARDER_CONTEXT*   ppForwarder
     );
 
 VOID
 VmDnsForwarderCleanup(
-    PVMDNS_FORWARDER_CONETXT    pForwarder
+    PVMDNS_FORWARDER_CONTEXT    pForwarder
     );
 
 DWORD
 VmDnsGetForwarders(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     PSTR**                      pppszForwarders,
     PDWORD                      pdwCount
     );
 
 DWORD
+VmDnsGetForwarderAtIndex(
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
+    DWORD                       dwIndex,
+    PSTR*                       ppszForwarder
+    );
+
+DWORD
 VmDnsSetForwarders(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     DWORD                       dwCount,
     PSTR*                       ppszForwarders
     );
 
 DWORD
 VmDnsAddForwarder(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     PCSTR                       pszForwarder
     );
 
 DWORD
 VmDnsDeleteForwarder(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
+    PVMDNS_FORWARDER_CONTEXT    pForwarder,
     PCSTR                       pszForwarder
     );
 
 DWORD
-VmDnsForwarderResolveRequest(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
-    BOOL                        bUseUDP,
-    BOOL                        bRecusive,
-    DWORD                       dwQuerySize,
-    PBYTE                       pQueryBuffer,
-    PDWORD                      pdwResponseSize,
-    PBYTE*                      ppResopnse,
-    PUCHAR                      prCode
+VmDnsAllocateForwarderPacketContext(
+   PVMDNS_FORWARDER_PACKET_CONTEXT* ppForwarderContext
+   );
+
+PVMDNS_FORWARDER_PACKET_CONTEXT
+VmDnsAcquireForwarderPacketContext(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
+    );
+
+VOID
+VmDnsReleaseForwarderPacketContext(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderContext
+    );
+
+DWORD
+VmDnsForwardRequest(
+    PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
+    BOOL                                 bUseUDP,
+    PVM_SOCK_IO_BUFFER                   pIoBuffer
+    );
+
+DWORD
+VmDnsForwardResponse(
+    BOOL        bUseUDP,
+    PVM_SOCKET  pSocket,
+    PBYTE*      ppResponse,
+    PDWORD      pdwResponseSize,
+    PDWORD      pdwRCode
     );
 
 //dirfacade

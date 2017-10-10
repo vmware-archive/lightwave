@@ -17,6 +17,11 @@
 #ifndef COMMON_INTERFACE_H_
 #define COMMON_INTERFACE_H_
 
+#include <vmmetrics.h>
+extern PVM_METRICS_CONTEXT pmContext;
+
+#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,7 +61,12 @@ extern "C" {
 #define VMDIR_PAGED_SEARCH_CACHE_HASH_TABLE_SIZE 32
 #define VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE  1000
 
-#define VMDIR_DEFAULT_REPL_INTERVAL     "30"
+//Note: Ssetting replinterval to 1 second could have negative impact on a star topology where many nodes(say > 5) all
+//      have same sigle replication partner.
+//      In such case, the center node could potentially starve and could not catch up with changes from other nodes
+//      because there are constant repl pull from other nodes and current replication algorithm exclude roles a node can play (consumer/supplier).
+#define VMDIR_DEFAULT_REPL_INTERVAL     "1"
+
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
 #define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
 #define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
@@ -224,6 +234,11 @@ typedef struct _VDIR_SUPERLOG_RECORD
     VDIR_SUPERLOG_RECORD_OPERATION_INFO opInfo;
 } VDIR_SUPERLOG_RECORD, *PVDIR_SUPERLOG_RECORD;
 
+typedef struct _VDIR_CONN_REPL_SUPP_STATE
+{
+    PLW_HASHMAP     phmSyncStateOneMap;
+} VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
+
 typedef struct _VDIR_CONNECTION
 {
     Sockbuf *               sb;
@@ -238,6 +253,7 @@ typedef struct _VDIR_CONNECTION
     char                    szClientIP[INET6_ADDRSTRLEN];
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
+    VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -475,6 +491,7 @@ typedef struct SearchReq
     VDIR_BERVALUE * attrs;
     VDIR_FILTER *   filter;
     VDIR_BERVALUE   filterStr;
+    ACCESS_MASK     accessRequired;
     size_t          iNumEntrySent;      // total number entries sent for this request
     BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
 } SearchReq;
@@ -535,7 +552,7 @@ typedef struct SyncRequestControlValue
     VDIR_BERVALUE           bvLastLocalUsnProcessed;
     USN                     intLastLocalUsnProcessed;
     VDIR_BERVALUE           bvUtdVector;
-    BOOLEAN                 reloadHint;
+    BOOLEAN                 bFirstPage;
 } SyncRequestControlValue;
 
 typedef struct SyncDoneControlValue
@@ -551,11 +568,17 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
+typedef struct _VDIR_DIGEST_CONTROL_VALUE
+{
+    CHAR                    sha1Digest[SHA_DIGEST_LENGTH+1];
+} VDIR_DIGEST_CONTROL_VALUE, *PVDIR_DIGEST_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
     SyncRequestControlValue            syncReqCtrlVal;
     SyncDoneControlValue               syncDoneCtrlVal;
     VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
+    VDIR_DIGEST_CONTROL_VALUE          digestCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -590,6 +613,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
+    VDIR_LDAP_CONTROL *       digestCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
@@ -645,14 +669,27 @@ typedef struct _VDIR_THREAD_INFO
 
 } REPO_THREAD_INFO, *PVDIR_THREAD_INFO;
 
+typedef struct _VMDIR_REPLICATION_METRICS
+{
+    PVM_METRICS_HISTOGRAM       pReplConnectDuration;
+    PVM_METRICS_COUNTER         pReplConnectFailures;
+    PVM_METRICS_COUNTER         pReplUnfinished;
+    PVM_METRICS_GAUGE           pReplUsn;
+    PVM_METRICS_COUNTER         pReplChanges;
+    PVM_METRICS_HISTOGRAM       pReplSyncDuration;
+
+} VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;
+
 typedef struct _VMDIR_REPLICATION_AGREEMENT
 {
-    VDIR_BERVALUE       dn;
-    char                ldapURI[VMDIR_MAX_LDAP_URI_LEN];
-    VDIR_BERVALUE       lastLocalUsnProcessed;
-    BOOLEAN             isDeleted;
-    time_t              oldPasswordFailTime;
-    time_t              newPasswordFailTime;
+    VDIR_BERVALUE               dn;
+    char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
+    VDIR_BERVALUE               lastLocalUsnProcessed;
+    BOOLEAN                     isDeleted;
+    time_t                      oldPasswordFailTime;
+    time_t                      newPasswordFailTime;
+    VMDIR_REPLICATION_METRICS   ReplMetrics;
+
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
 
 } VMDIR_REPLICATION_AGREEMENT, *PVMDIR_REPLICATION_AGREEMENT;
@@ -875,8 +912,8 @@ VmDirBervalContentDup(
 
 DWORD
 VmDirCreateTransientSecurityDescriptor(
-    BOOL bAllowAnonymousRead,
-    PVMDIR_SECURITY_DESCRIPTOR pvsd
+    BOOLEAN                     bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR  pvsd
     );
 
 DWORD
@@ -903,6 +940,12 @@ VmDirEntryReplaceAttribute(
 DWORD
 VmDirDeleteEntry(
     PVDIR_ENTRY pEntry
+    );
+
+DWORD
+VmDirSimpleEntryDeleteAttribute(
+    PCSTR   pszDN,
+    PCSTR   pszAttr
     );
 
 // util.c
@@ -1085,6 +1128,19 @@ VmDirOperationTypeToName(
     VDIR_OPERATION_TYPE opType
     );
 
+BOOLEAN
+VmDirIsSameConsumerSupplierEntryAttr(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSrcEntry,
+    PVDIR_ENTRY     pDstEntry
+    );
+
+int
+VmDirPVdirBValCmp(
+    const void *p1,
+    const void *p2
+    );
+
 // candidates.c
 void
 AndFilterResults(
@@ -1115,6 +1171,11 @@ void
 OrFilterResults(
     VDIR_FILTER * src,
     VDIR_FILTER * dst);
+
+VOID
+VmDirSortCandidateList(
+    VDIR_CANDIDATES *  pCl
+    );
 
 // entryencodedecode.c
 DWORD
@@ -1464,7 +1525,7 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pSecretResult
     );
 
-//vmafdlib.c
+// vmafdlib.c
 DWORD
 VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle

@@ -1,14 +1,14 @@
 sbin_PROGRAMS = vmdnsd
 
-idl_srcdir=$(top_srcdir)/idl
-include_srcdir=$(top_srcdir)/include
-include_public_srcdir=$(top_srcdir)/include/public
+idl_srcdir=$(top_srcdir)/vmdns/idl
+include_public_srcdir=$(top_srcdir)/vmdns/include/public
 
 vmdnsd_SOURCES = \
     auth.c        \
     globals.c     \
     init.c        \
     main.c        \
+    metrics.c     \
     parseargs.c   \
     rpc.c         \
     rpcserv.c     \
@@ -19,19 +19,24 @@ vmdnsd_SOURCES = \
     vmdns_sstub.c
 
 vmdnsd_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/common \
-    -I$(top_srcdir)/server/include \
-    -I$(top_srcdir)/server/service \
+    -I$(top_srcdir)/vmdns/include \
+    -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmdns/server/common \
+    -I$(top_srcdir)/vmdns/server/include \
+    -I$(top_srcdir)/vmdns/server/service \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
 vmdnsd_LDADD = \
-    $(top_builddir)/server/common/libsrvcommon.la \
-    $(top_builddir)/common/libcommon.la \
-    $(top_builddir)/vmsock/api/libvmsock.la \
-    @VMDIR_LIBS@ \
+    $(top_builddir)/vmdns/server/common/libsrvcommon.la \
+    $(top_builddir)/vmdns/server/rest-head/librest-head.la \
+    $(top_builddir)/vmdns/common/libcommon.la \
+    $(top_builddir)/vmdns/vmsock/api/libvmsock.la \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
+    $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     @DCERPC_LIBS@ \
     @LDAP_LIBS@ \
     @LWIO_LIBS@ \
@@ -43,12 +48,17 @@ vmdnsd_LDADD = \
     @CRYPTO_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @JANSSON_LIBS@ \
+    @COPENAPI_LIBS@ \
+    @CRESTENGINE_LIBS@
 
 vmdnsd_LDFLAGS = \
-    @VMDIR_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
-    @LW_LDFLAGS@
+    @LW_LDFLAGS@ \
+    @JANSSON_LDFLAGS@ \
+    @COPENAPI_LDFLAGS@ \
+    @CRESTENGINE_LDFLAGS@
 
 CLEANFILES = \
     vmdns_h.h \

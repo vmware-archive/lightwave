@@ -124,7 +124,7 @@ VmDirChangePNID(
     dwError = VmDirAllocASCIILowerToUpper(pszDomain, &pszUpperCaseDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(

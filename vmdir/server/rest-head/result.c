@@ -40,6 +40,7 @@ VmDirRESTResultCreate(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pRestRslt->bErrSet = FALSE;
+    pRestRslt->dwDataLen = 0;
 
     *ppRestRslt = pRestRslt;
 
@@ -47,8 +48,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeRESTResult(pRestRslt);
     goto cleanup;
@@ -84,8 +88,42 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTResultUnsetError(
+    PVDIR_REST_RESULT   pRestRslt
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pRestRslt)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
+    pRestRslt->pszErrMsg = NULL;
+    pRestRslt->errCode = 0;
+    pRestRslt->bErrSet = FALSE;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -112,8 +150,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -133,8 +175,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -164,8 +210,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszKeyCp);
     goto cleanup;
@@ -223,7 +272,7 @@ VmDirRESTResultToResponseBody(
 
     if (json_object_size(pjBody))
     {
-        pszBody = json_dumps(pjBody, JSON_INDENT(4));
+        pszBody = json_dumps(pjBody, JSON_COMPACT);
         *ppszBody = pszBody;
     }
 
@@ -235,8 +284,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszBody);
     goto cleanup;
@@ -267,6 +319,7 @@ VmDirFreeRESTResult(
         VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);
+        VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszData);
         VMDIR_SAFE_FREE_MEMORY(pRestRslt);
     }
 }

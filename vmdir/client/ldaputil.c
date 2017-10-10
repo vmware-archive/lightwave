@@ -127,7 +127,7 @@ VmDirAddCMSiteNode(
     LDAPMod*    attrs[] = {&mod[0], &mod[1], &mod[2], NULL};
     PSTR        pszDomainDN = NULL;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pszDN,
@@ -192,7 +192,7 @@ VmDirAddLduNode(
                                             pszLduGUID);
     valsDisname[0] = pszDisName;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pszDN,
@@ -242,7 +242,7 @@ VmDirIsSolutionUser(
                             );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetLocalLduGuid(pszLduGuid);
@@ -857,6 +857,103 @@ error:
 }
 
 DWORD
+VmDirGetSiteList(
+    LDAP*               pLd,
+    PCSTR               pszDomainName,
+    PVMDIR_STRING_LIST* ppSiteList
+    )
+{
+    DWORD               dwError = 0;
+    PCSTR               pszAttrCN = ATTR_CN;
+    PCSTR               ppszAttrs[] = { pszAttrCN, NULL };
+    PSTR                pszSite = NULL;
+    LDAPMessage*        pResult = NULL;
+    LDAPMessage*        pEntry = NULL;
+    PSTR                pszBaseDN = NULL;
+    PSTR                pszDomainDN = NULL;
+    PVMDIR_STRING_LIST  pSiteList = NULL;
+    struct berval**     ppValues = NULL;
+
+    if (!pLd || !pszDomainName || !ppSiteList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirStringListInitialize( &pSiteList, 16);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                    &pszBaseDN, "cn=Sites,cn=Configuration,%s",
+                    pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pLd,
+                    pszBaseDN,
+                    LDAP_SCOPE_ONELEVEL,
+                    NULL,
+                    (PSTR*)ppszAttrs,
+                    FALSE, /* get values also */
+                    NULL,  /* server controls */
+                    NULL,  /* client controls */
+                    NULL,  /* timeout         */
+                    0,     /* size limit      */
+                    &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( pEntry = ldap_first_entry(pLd, pResult);
+          pEntry;
+          pEntry = ldap_next_entry(pLd, pEntry))
+    {
+        if (ppValues)
+        {
+            ldap_value_free_len(ppValues);
+        }
+
+        ppValues = ldap_get_values_len(pLd, pEntry, pszAttrCN);
+
+        if (ppValues && ldap_count_values_len(ppValues) == 1)
+        {
+            dwError = VmDirAllocateStringA(ppValues[0]->bv_val, &pszSite);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringListAdd(pSiteList, pszSite);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pszSite = NULL;
+        }
+        else
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_STATE);
+        }
+    }
+
+    *ppSiteList = pSiteList;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszSite);
+    VMDIR_SAFE_FREE_MEMORY(pszBaseDN);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pSiteList);
+    goto cleanup;
+}
+
+DWORD
 VmDirGetSiteDN(
     PCSTR pszDomain,
     PCSTR pszSiteName,
@@ -875,7 +972,7 @@ VmDirGetSiteDN(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -969,7 +1066,7 @@ VmDirGetReplicationInfo(
     PSTR                pszEntryDN = NULL;
     PSTR                pszHostMatch = NULL;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pszSearchBaseDN,
@@ -1078,7 +1175,7 @@ VmDirGetAllRAToHost(
     dwError = VmDirGetDomainName( "localhost", &pszDomain );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pszSiteDN,
@@ -1218,7 +1315,7 @@ VmDirCreateCMSubtree(
     PSTR    pszDomainDN = NULL;
     LDAP* pLd = (LDAP *) pvLd;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
 
     //create "ComponentManager"
     dwError = VmDirAllocateStringPrintf(&pszDN,
@@ -1321,12 +1418,81 @@ VmDirLdapSetupRemoteHostRA(
     )
 {
     DWORD       dwError = 0;
+    LDAP*       pLocalLd = NULL;
+    LDAP*       pPartnerLd = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        pszPassword == NULL ||
+        IsNullOrEmptyString(pszReplHostName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirConnectLDAPServer(
+                            &pLocalLd,
+                            pszHostName,
+                            pszDomainName,
+                            pszUsername,
+                            pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwHighWatermark == 0)
+    {
+        dwError = VmDirConnectLDAPServer(
+                            &pPartnerLd,
+                            pszReplHostName,
+                            pszDomainName,
+                            pszUsername,
+                            pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirLdapSetupRemoteHostRAByPLd(
+                    pszDomainName,
+                    pszHostName,
+                    pszReplHostName,
+                    dwHighWatermark,
+                    pLocalLd,
+                    pPartnerLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+cleanup:
+   VmDirLdapUnbind(&pLocalLd);
+   VmDirLdapUnbind(&pPartnerLd);
+
+    return dwError;
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapSetupRemoteHostRA failed with error (%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapSetupRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark,
+    LDAP* pLocalLd,
+    LDAP* pPartnerLd
+    )
+{
+    DWORD       dwError = 0;
     PSTR        pszReplURI = NULL;
     PSTR        pszReplHostNameDN = NULL;
     PSTR        pszReplAgrDN = NULL;
     PSTR        pszLastLocalUsn = NULL;
-    LDAP*       pLd = NULL;
     PSTR        pszDomainDN = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        pLocalLd == NULL ||
+        IsNullOrEmptyString(pszReplHostName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirIsIPV6AddrFormat( pszReplHostName ) )
     {
@@ -1338,18 +1504,10 @@ VmDirLdapSetupRemoteHostRA(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirConnectLDAPServer(
-                            &pLd,
-                            pszHostName,
-                            pszDomainName,
-                            pszUsername,
-                            pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLd, pszHostName);
+    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLocalLd, pszHostName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -1389,13 +1547,11 @@ VmDirLdapSetupRemoteHostRA(
 
         if (dwHighWatermark == 0)
         {
-            dwError = VmDirLdapGetHighWatermark(
-                                        pLd,
+            dwError = VmDirLdapGetHighWatermarkByPLd(
+                                        pLocalLd,
+                                        pPartnerLd,
                                         pszHostName,
                                         pszReplHostName,
-                                        pszDomainName,
-                                        pszUsername,
-                                        pszPassword,
                                         &lastLocalUsn);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -1417,7 +1573,7 @@ VmDirLdapSetupRemoteHostRA(
         replUSN.mod_values = modv_usn;
 
         // and the ldap_add_ext_s is a synchronous call
-        dwError = ldap_add_ext_s(pLd, pszReplAgrDN, &pReplAgrObjAttrs[0], NULL, NULL);
+        dwError = ldap_add_ext_s(pLocalLd, pszReplAgrDN, &pReplAgrObjAttrs[0], NULL, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1428,12 +1584,10 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszLastLocalUsn);
 
-    VmDirLdapUnbind(&pLd);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapSetupRemoteHostRA failed with error (%u)", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapSetupRemoteHostRAByPLd failed with error (%u)", dwError);
     goto cleanup;
 }
 
@@ -1450,12 +1604,66 @@ VmDirLdapRemoveRemoteHostRA(
     )
 {
     DWORD       dwError = 0;
+    LDAP*       pLd = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        pszPassword == NULL ||
+        IsNullOrEmptyString(pszReplHostName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirConnectLDAPServer(
+                            &pLd,
+                            pszHostName,
+                            pszDomainName,
+                            pszUsername,
+                            pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapRemoveRemoteHostRAByPLd(
+                                pszDomainName,
+                                pszHostName,
+                                pszReplHostName,
+                                pLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirLdapUnbind(&pLd);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapRemoveRemoteHostRA failed with error (%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapRemoveRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    LDAP* pHostLd
+    )
+{
+    DWORD       dwError = 0;
     PSTR        pszReplURI = NULL;
     PSTR        pszReplHostNameDN = NULL;
     PSTR        pszReplAgrDN = NULL;
 
-    LDAP*       pLd = NULL;
     PSTR        pszDomainDN = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszReplHostName) ||
+        !pHostLd)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirIsIPV6AddrFormat( pszReplHostName ) )
     {
@@ -1467,18 +1675,10 @@ VmDirLdapRemoveRemoteHostRA(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirConnectLDAPServer(
-                            &pLd,
-                            pszHostName,
-                            pszDomainName,
-                            pszUsername,
-                            pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLd, pszHostName);
+    dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pHostLd, pszHostName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -1491,7 +1691,7 @@ VmDirLdapRemoveRemoteHostRA(
 
     // the ldap_delete_ext_s is a synchronous call
     dwError = ldap_delete_ext_s(
-                    pLd,
+                    pHostLd,
                     pszReplAgrDN,
                     NULL,
                     NULL
@@ -1504,12 +1704,10 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszReplAgrDN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
 
-    VmDirLdapUnbind(&pLd);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapRemoveRemoteHostRA failed with error (%u)", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapRemoveRemoteHostRAByPld failed with error (%u)", dwError);
     goto cleanup;
 }
 
@@ -1649,7 +1847,7 @@ VmDirLdapSetupDCAccountOnPartner(
     modUserPrincipalName.mod_type = ATTR_KRB_UPN;
     modUserPrincipalName.mod_values = modv_upn;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszDCDN, "%s=%s,%s=%s,%s", ATTR_CN, pszLowerCaseDCHostName,
@@ -1835,6 +2033,7 @@ VmDirLdapSetupComputerAccount(
     BOOLEAN     bAcctExists = FALSE;
     PSTR        pszSRPUPN = NULL;
     PSTR        pszExtendedOU = (PSTR)pszComputerOU;
+    PSTR        pszOUPrefix = ATTR_OU "=";
 
     char* modv_oc[] = {OC_PERSON, OC_ORGANIZATIONAL_PERSON, OC_USER, OC_COMPUTER, OC_TOP, NULL};
     char* modv_cn[] = {(PSTR)pszComputerHostName, NULL};
@@ -1926,7 +2125,7 @@ VmDirLdapSetupComputerAccount(
     modUserPrincipalName.mod_type = ATTR_KRB_UPN;
     modUserPrincipalName.mod_values = modv_upn;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (VmDirStringCompareA(pszComputerOU, VMDIR_COMPUTERS_RDN_VAL, FALSE) != 0)
@@ -1940,15 +2139,30 @@ VmDirLdapSetupComputerAccount(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringPrintf(
-                    &pszComputerDN,
-                    "%s=%s,%s=%s,%s",
-                    ATTR_CN,
-                    pszLowerCaseComputerHostName,
-                    ATTR_OU,
-                    pszExtendedOU,
-                    pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (VmDirStringNCompareA(pszExtendedOU, pszOUPrefix,
+                             VmDirStringLenA(pszOUPrefix), FALSE) != 0)
+    {
+        dwError = VmDirAllocateStringPrintf(
+                        &pszComputerDN,
+                        "%s=%s,%s=%s,%s",
+                        ATTR_CN,
+                        pszLowerCaseComputerHostName,
+                        ATTR_OU,
+                        pszExtendedOU,
+                        pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                        &pszComputerDN,
+                        "%s=%s,%s,%s",
+                        ATTR_CN,
+                        pszLowerCaseComputerHostName,
+                        pszExtendedOU,
+                        pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirStringCompareA( pszHostName, pszComputerHostName, FALSE ) != 0 )
     {   // BUGBUG, does not consider simple vs fqdn name scenario.
@@ -2010,9 +2224,11 @@ VmDirLdapSetupComputerAccount(
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Computer account (%s) created (recycle %s)", pszComputerDN, bAcctExists ? "T":"F");
 
+#ifndef LIGHTWAVE_BUILD
     // add Computer Account into DCClients group
     dwError = _VmDirLdapSetupAccountMembership( pLd, pszDomainDN, VMDIR_DCCLIENT_GROUP_NAME, pszComputerDN );
     BAIL_ON_VMDIR_ERROR(dwError);
+#endif
 
     if (bStoreInRegistry)
     {
@@ -2230,7 +2446,7 @@ VmDirLdapSetupServiceAccount(
     modUserPrincipalName.mod_type = ATTR_KRB_UPN;
     modUserPrincipalName.mod_values = modv_upn;
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszMSADN, "%s=%s,%s=%s,%s", ATTR_CN, pszUPN,
@@ -2881,7 +3097,7 @@ VmDirLdapDeleteDCAccount(
     dwError = VmDirAllocASCIIUpperToLower( pszDCHostName, &pszLowerCaseDCHostName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszDCDN, "%s=%s,%s=%s,%s", ATTR_CN, pszLowerCaseDCHostName,
@@ -2958,7 +3174,7 @@ VmDirLdapDeleteServiceAccount(
     dwError = VmDirAllocateStringPrintf( &pszUPN, "%s/%s@%s", pszServiceName, pszLowerCaseDCHostName, pszUpperCaseDomainName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszMSADN, "%s=%s,%s=%s,%s", ATTR_CN, pszUPN,
@@ -3182,7 +3398,7 @@ VmDirGetDCContainerDN(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -3778,7 +3994,7 @@ VmDirSetDomainFuncLvlInternal(
     mods[1] = NULL;
 
     // Get the DomainDN
-    dwError = VmDirSrvCreateDomainDN(
+    dwError = VmDirDomainNameToDN(
                   pszDomainName,
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -3839,7 +4055,7 @@ VmDirGetAllDCInternal(
     dwError = VmDirStringListInitialize( &pStrList, 16);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -4053,7 +4269,7 @@ VmDirGetObjectAttribute(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pszSearchBase,
@@ -4148,6 +4364,7 @@ VmDirLdapCreateComputerOUContainer(
                           {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
                       };
     LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
+    PSTR        pszOUPrefix = ATTR_OU "=";
 
     if (!pLd || !pszDomainName || !pszOUContainer)
     {
@@ -4159,20 +4376,35 @@ VmDirLdapCreateComputerOUContainer(
         goto cleanup;  // default container
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
+
 
     // create user specified OU container under default OU=computers container.
-    dwError = VmDirAllocateStringPrintf(
-                &pszOuDN,
-                "%s=%s,%s=%s,%s",
-                ATTR_OU,
-                pszOUContainer,
-                ATTR_OU,
-                VMDIR_COMPUTERS_RDN_VAL,
-                pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
+    if (VmDirStringNCompareA(pszOUContainer, pszOUPrefix,
+                             VmDirStringLenA(pszOUPrefix), FALSE) != 0)
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszOuDN,
+                    "%s=%s,%s=%s,%s",
+                    ATTR_OU,
+                    pszOUContainer,
+                    ATTR_OU,
+                    VMDIR_COMPUTERS_RDN_VAL,
+                    pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszOuDN,
+                    "%s,%s=%s,%s",
+                    pszOUContainer,
+                    ATTR_OU,
+                    VMDIR_COMPUTERS_RDN_VAL,
+                    pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if ( VmDirIfDNExist(pLd, pszOuDN) )
     {

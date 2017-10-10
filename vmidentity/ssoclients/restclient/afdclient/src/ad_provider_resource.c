@@ -54,6 +54,7 @@ AfdAdProviderJoin(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) AfdJsonToActiveDirectoryJoinInfoData,
         (void**) &pActiveDirectoryJoinInfoReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -115,6 +116,7 @@ AfdAdProviderLeave(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -166,6 +168,7 @@ AfdAdProviderGetStatus(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) AfdJsonToActiveDirectoryJoinInfoData,
         (void**) &pActiveDirectoryJoinInfoReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

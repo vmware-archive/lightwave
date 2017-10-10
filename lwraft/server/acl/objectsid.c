@@ -37,12 +37,6 @@ VmDirGenerateDomainGuidSid_inlock(
     );
 
 DWORD
-VmDirGenerateObjectRid(
-    PDWORD  pdwRidSequence,
-    PDWORD  pdwObjectRid
-    );
-
-DWORD
 _VmDirAllocateSidGenStackNode(
     PVMDIR_SID_GEN_STACK_NODE *ppSidGenStackNode,
     DWORD dwDomainRidSequence,
@@ -418,13 +412,12 @@ VmDirGenerateWellknownSid(
     BAIL_ON_VMDIR_ERROR(dwError);
     assert(pSidGenState!=NULL);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                     &pszWellKnownSid,
                     "%s-%u",
                     pSidGenState->pszDomainSid,
                     dwWellKnowRid
                     );
-
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszWellKnownSid = pszWellKnownSid;
@@ -692,37 +685,4 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszDomainSid);
     *ppszDomainSid = NULL;
     goto cleanup;
-}
-
-/*
- * Get the next value from our per-domain counter. This value constitutes
- * part of the object's SID.
- */
-DWORD
-VmDirGenerateObjectRid(
-    PDWORD pdwRidSequence,
-    PDWORD pdwObjectRid
-    )
-{
-    DWORD dwError = 0;
-    DWORD dwRid = *pdwRidSequence;
-
-    // Check to see whether current Rid hits the MAX
-    if (dwRid+1 > MAX_RID_SEQUENCE)
-    {
-        dwError = ERROR_RID_LIMIT_EXCEEDED;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwRid++;
-    *pdwRidSequence = dwRid;
-    *pdwObjectRid = dwRid;
-
-error:
-    if (dwError)
-    {
-        *pdwObjectRid = 0;
-    }
-
-    return dwError;
 }

@@ -51,7 +51,8 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapConnectPorts, 0),
         VMDIR_SF_INIT(.pdwLdapsConnectPorts, NULL),
         VMDIR_SF_INIT(.dwLdapsConnectPorts, 0),
-        VMDIR_SF_INIT(.pszRestListenPort, NULL),
+        VMDIR_SF_INIT(.pszHTTPListenPort, NULL),
+        VMDIR_SF_INIT(.pszHTTPSListenPort, NULL),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
@@ -152,4 +153,11 @@ VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
         VMDIR_SF_INIT(.pMutex, NULL),
         VMDIR_SF_INIT(.pCond, NULL),
         VMDIR_SF_INIT(.pTSStack, NULL)
+    };
+
+VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.pJob, NULL)
     };

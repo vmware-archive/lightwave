@@ -45,8 +45,18 @@ extern "C" {
 #define DEFAULT_LDAPS_PORT_NUM          636
 #define DEFAULT_LDAPS_PORT_STR          "636"
 
-#define DEFAULT_REST_PORT_NUM           7477
-#define DEFAULT_REST_PORT_STR           "7477"
+#define DEFAULT_HTTP_PORT_NUM           7477
+#define DEFAULT_HTTP_PORT_STR          "7477p"
+
+#define DEFAULT_HTTPS_PORT_NUM           7478
+ /*
+  * SSL logic is present in both c-rest-engine (for https) and vmdir (for ldaps)
+  * during shutdown ssl related metrics are freed by c-rest-engine while SASL bind is
+  * being performed by replication thread.
+  * Temporarily disable HTTPS end point by default, until ssl init logic is fixed in c-rest-engine
+  */
+//#define DEFAULT_HTTPS_PORT_STR          "7478"
+#define DEFAULT_HTTPS_PORT_STR          ""
 
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
@@ -67,6 +77,7 @@ extern "C" {
 #define SERVER_STATUS_DN                        "cn=serverstatus"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
+#define INTEGRITY_CHECK_STATUS_DN               "cn=integritycheckstatus"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -373,6 +384,7 @@ extern "C" {
 #define OC_VMW_SERVICEPRINCIPAL          "vmwServicePrincipal"
 
 #define OC_VMW_CONTAINER                 "vmwContainer"
+#define OC_VMW_CERTIFICATION_AUTHORITY   "vmwCertificationAuthority"
 
 #define OC_CONTAINER                     "container"
 #define OC_SERVER_STATUS                 "vmwDirServerStatus"
@@ -405,6 +417,9 @@ extern "C" {
 #define CM_DISPLAYNAME_LDU              "<Default Group>"
 #define CM_OBJECTCLASS_SITE             "vmwCisSite"
 #define CM_OBJECTCLASS_LDU              "vmwCisLdu"
+
+// cn=integritycheck sudo entry
+#define INTEGRITY_CHECK_STATUS_CN       "IntegrityCheckStatus"
 
 // cn=replicationstatus sudo entry
 #define REPLICATION_STATUS_CN           "ReplicationStatus"
@@ -466,6 +481,9 @@ extern "C" {
 #define VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS    "1.2.840.113556.1.4.417" // value same as defined by AD
 #define VDIR_LDAP_CONTROL_SHOW_MASTER_KEY         "9999.9990.9900.9000.1" //shouldn't be published
 // #define LDAP_CONTROL_SYNC       LDAP_SYNC_OID ".1" defined in ldap.h
+
+// vmw OID for Integrity Check Control Search
+#define LDAP_CONTROL_DIGEST_SEARCH                "1.3.6.1.4.1.6876.40.10.2"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

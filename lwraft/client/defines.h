@@ -318,6 +318,10 @@ the buffer size will always be adequate.
         "Vdcpromo error"}, \
     {VMDIR_ERROR_BACKEND_PARENT_NOTFOUND, \
         "Backend parent notfound"}, \
+    {VMDIR_ERROR_INVALID_ACE, \
+        "Invalid ACE"}, \
+    {VMDIR_ERROR_ACE_NOT_FOUND, \
+        "ACE not found"}, \
 };
 
 #define VMDIR_RPC_ERROR_TABLE_INITIALIZER \

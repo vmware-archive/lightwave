@@ -3,6 +3,7 @@ LIBRARY "libssooidc"
 EXPORTS
 OidcAccessTokenBuild
 OidcAccessTokenParse
+OidcAccessTokenValidate
 OidcAccessTokenDelete
 OidcAccessTokenGetIssuer
 OidcAccessTokenGetSubject
@@ -21,10 +22,12 @@ OidcClientAcquireTokensBySolutionUserCredentials
 OidcClientGetSigningCertificatePEM
 OidcErrorResponseParse
 OidcErrorResponseDelete
+OidcErrorResponseGetError
 OidcErrorResponseGetErrorDescription
-OidcErrorResponseGetSSOErrorCode
+OidcErrorResponseGetErrorCode
 OidcIDTokenBuild
 OidcIDTokenParse
+OidcIDTokenValidate
 OidcIDTokenDelete
 OidcIDTokenGetIssuer
 OidcIDTokenGetSubject

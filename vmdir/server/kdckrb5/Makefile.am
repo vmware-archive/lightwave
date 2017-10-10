@@ -28,13 +28,15 @@ libvmkrb5_la_SOURCES = \
     ticket.c
 
 libvmkrb5_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/include \
-    -I$(top_srcdir)/server \
-    -I$(top_srcdir)/thirdparty/heimdal \
-    -I$(top_srcdir)/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/thirdparty/heimdal/asn1 \
+    -DOPENSSL_NO_KRB5 \
+    -I$(top_srcdir)/vmdir/include \
+    -I$(top_srcdir)/vmdir/include/public \
+    -I$(top_srcdir)/vmdir/server/include \
+    -I$(top_srcdir)/vmdir/server \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto \
+    -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
+    -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

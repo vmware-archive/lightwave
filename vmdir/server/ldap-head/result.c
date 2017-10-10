@@ -24,6 +24,7 @@ IsAttrInReplScope(
     VDIR_OPERATION *    op,
     char *              attrType,
     char *              attrMetaData,
+    USN                 priorSentUSNCreated,
     BOOLEAN *           inScope,
     PSTR*               ppszErrorMsg
     );
@@ -152,96 +153,108 @@ error:
 
 void
 VmDirSendLdapResult(
-   VDIR_OPERATION * op
-   )
+    PVDIR_OPERATION pOperation
+    )
 {
-   BerElementBuffer berbuf;
-   BerElement *     ber = (BerElement *) &berbuf;
-   ber_int_t        msgId = 0;
-   ber_tag_t        resCode = 0;
-   size_t           iNumSearchEntrySent = 0;
-   PCSTR            pszSocketInfo = NULL;
+    BerElementBuffer berbuf;
+    BerElement *     ber = (BerElement *) &berbuf;
+    ber_int_t        msgId = 0;
+    ber_tag_t        resCode = 0;
+    size_t           iNumSearchEntrySent = 0;
+    PCSTR            pszSocketInfo = NULL;
 
-   (void) memset( (char *)&berbuf, '\0', sizeof( BerElementBuffer ));
+    (void)memset((char*)&berbuf, '\0', sizeof(BerElementBuffer));
 
-   resCode = GetResultTag( op->reqCode );
-   msgId = (resCode != LBER_SEQUENCE) ? op->msgId : 0;
+    resCode = GetResultTag(pOperation->reqCode);
+    msgId = (resCode != LBER_SEQUENCE) ? pOperation->msgId : 0;
 
-   if ( resCode == LDAP_RES_SEARCH_RESULT )
-   {
-       iNumSearchEntrySent = op->request.searchReq.iNumEntrySent;
-   }
+    if (resCode == LDAP_RES_SEARCH_RESULT)
+    {
+        iNumSearchEntrySent = pOperation->request.searchReq.iNumEntrySent;
+    }
 
-   ber_init2( ber, NULL, LBER_USE_DER );
+    ber_init2(ber, NULL, LBER_USE_DER);
 
-   if (op->conn)
-   {
-      pszSocketInfo = op->conn->szClientIP;
-   }
+    if (pOperation->conn)
+    {
+        pszSocketInfo = pOperation->conn->szClientIP;
+    }
 
-   if (op->ldapResult.errCode &&
-       op->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
-   {
-       VMDIR_LOG_ERROR(
-          VMDIR_LOG_MASK_ALL,
-          "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
-          VmDirLdapReqCodeToName(op->reqCode),
-          op->ldapResult.errCode,
-          VDIR_SAFE_STRING(op->ldapResult.pszErrMsg),
-          iNumSearchEntrySent,
-          VDIR_SAFE_STRING(pszSocketInfo));
-   }
-   else if ( op->reqCode == LDAP_REQ_SEARCH )
-   {
-       VMDIR_LOG_INFO(
-          LDAP_DEBUG_ARGS,
-          "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
-          VmDirLdapReqCodeToName(op->reqCode),
-          op->ldapResult.errCode,
-          VDIR_SAFE_STRING(op->ldapResult.pszErrMsg),
-          iNumSearchEntrySent,
-          VDIR_SAFE_STRING(pszSocketInfo));
-   }
+    if (pOperation->ldapResult.errCode &&
+        pOperation->ldapResult.errCode != LDAP_BUSY &&
+        pOperation->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                VmDirLdapReqCodeToName(pOperation->reqCode),
+                pOperation->ldapResult.errCode,
+                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                iNumSearchEntrySent,
+                VDIR_SAFE_STRING(pszSocketInfo));
+    }
+    else if (pOperation->reqCode == LDAP_REQ_SEARCH)
+    {
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_ARGS,
+                "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                VmDirLdapReqCodeToName(pOperation->reqCode),
+                pOperation->ldapResult.errCode,
+                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                iNumSearchEntrySent,
+                VDIR_SAFE_STRING(pszSocketInfo));
+    }
 
-   if (ber_printf( ber, "{it{essN}", msgId, resCode, op->ldapResult.errCode, "",
-                       VDIR_SAFE_STRING(op->ldapResult.pszErrMsg)) == -1)
-   {
-      VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: ber_printf (to print msgId ...) failed" );
-      goto done;
-   }
+    if (ber_printf(
+            ber,
+            "{it{essN}",
+            msgId,
+            resCode,
+            pOperation->ldapResult.errCode,
+            "",
+            VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg)) == -1)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "SendLdapResult: ber_printf (to print msgId ...) failed");
+        goto done;
+    }
 
-   // If Search, Replication, and one or more entries were sent back => Send back Sync Done Control
-   if ( op->reqCode == LDAP_REQ_SEARCH && op->syncReqCtrl != NULL && op->syncDoneCtrl != NULL)
-   {
-       if (WriteSyncDoneControl( op, ber ) != LDAP_SUCCESS)
-       {
-           goto done;
-       }
-   }
+    // If Search, Replication, and one or more entries were sent back => Send back Sync Done Control
+    if (pOperation->reqCode == LDAP_REQ_SEARCH && pOperation->syncReqCtrl && pOperation->syncDoneCtrl)
+    {
+        if (WriteSyncDoneControl(pOperation, ber) != LDAP_SUCCESS)
+        {
+            goto done;
+        }
+    }
 
-   if ( op->reqCode == LDAP_REQ_SEARCH && op->showPagedResultsCtrl != NULL)
-   {
-       if (WritePagedSearchDoneControl( op, ber ) != LDAP_SUCCESS)
-       {
-           goto done;
-       }
-   }
+    if (pOperation->reqCode == LDAP_REQ_SEARCH && pOperation->showPagedResultsCtrl)
+    {
+        if (WritePagedSearchDoneControl(pOperation, ber) != LDAP_SUCCESS)
+        {
+            goto done;
+        }
+    }
 
-   if (ber_printf( ber, "N}" ) == -1)
-   {
-      VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: ber_printf (to print msgId ...) failed" );
-      goto done;
-   }
+    if (ber_printf(ber, "N}") == -1)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "SendLdapResult: ber_printf (to print msgId ...) failed");
+        goto done;
+    }
 
-   if (WriteBerOnSocket( op->conn, ber ) != 0)
-   {
-      VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: WriteBerOnSocket failed" );
-      goto done;
-   }
+    if (WriteBerOnSocket(pOperation->conn, ber) != 0)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "SendLdapResult: WriteBerOnSocket failed");
+        goto done;
+    }
 
 done:
-   ber_free_buf( ber );
-
+    ber_free_buf(ber);
 }
 
 int
@@ -285,10 +298,8 @@ VmDirSendSearchEntry(
     // generating a final result to send back
     SetSpecialReturnChar(&pOperation->request.searchReq, &iSearchReqSpecialChars);
 
-    if ( pSrEntry->eId == DSE_ROOT_ENTRY_ID
-         &&
-         pOperation->request.searchReq.attrs == NULL
-       )
+    if (pSrEntry->eId == DSE_ROOT_ENTRY_ID &&
+        pOperation->request.searchReq.attrs == NULL)
     {
         //  For ADSI, if no specific attributes requested of DSE ROOT search,
         //  return ALL (include operational) attributes.
@@ -296,17 +307,21 @@ VmDirSendSearchEntry(
     }
 
     // ACL check before processing/sending the current srEntry back
-    retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pSrEntry, VMDIR_RIGHT_DS_READ_PROP );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirSrvAccessCheck(
+            pOperation,
+            &pOperation->conn->AccessInfo,
+            pSrEntry,
+            pOperation->request.searchReq.accessRequired);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    if ( pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL )
+    if (pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL)
     {
         // This is an internal search operation.
         // Set bSearchEntrySent = TRUE to indicate that ACL
         // check passed and should be included in the result.
         pSrEntry->bSearchEntrySent = TRUE;
     }
-    else if ( sr->bStoreRsltInMem )
+    else if (sr->bStoreRsltInMem)
     {
         // This is an external search operation but wants to
         // store the result in memory instead of sending.
@@ -348,19 +363,19 @@ VmDirSendSearchEntry(
                     pOperation->lowestPendingUncommittedUsn++;
 
                     VMDIR_LOG_INFO( LDAP_DEBUG_REPL,
-                            "SendSearchEntry: bumping lowestPendingUncommittedUsn to %ld",
+                            "SendSearchEntry: bumping lowestPendingUncommittedUsn to %" PRId64,
                             pOperation->lowestPendingUncommittedUsn );
                 }
                 else if (usnChanged > pOperation->lowestPendingUncommittedUsn)
                 {
                     VMDIR_LOG_INFO( LDAP_DEBUG_REPL,
-                            "SendSearchEntry: usnChanged = %ld, lowestPendingUncommittedUsn = %ld, "
+                            "SendSearchEntry: usnChanged = %" PRId64 ", lowestPendingUncommittedUsn = %" PRId64 ", "
                             "skipping entry: %s", usnChanged, pOperation->lowestPendingUncommittedUsn,
                             pSrEntry->dn.lberbv.bv_val );
 
                     // Shouldn't stop cycle until we don't have a skip, inform consumer to come back again
                     pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
-                    goto cleanup; // Don't send this entry
+                    goto updateSyncDoneCtrl; // Don't send this entry
                 }
             }
 
@@ -523,7 +538,7 @@ VmDirSendSearchEntry(
 
         if ( pOperation->syncReqCtrl != NULL ) // Replication, => write Sync State Control
         {
-            retVal = WriteSyncStateControl( pOperation, pSrEntry->attrs, ber, &pszLocalErrorMsg );
+            retVal = WriteSyncStateControl( pOperation, pSrEntry, ber, &pszLocalErrorMsg );
             BAIL_ON_VMDIR_ERROR( retVal );
         }
 
@@ -556,11 +571,26 @@ VmDirSendSearchEntry(
                             pSrEntry->dn.lberbv.bv_val, pOperation->syncReqCtrl, nonTrivialAttrsInReplScope);
         }
 
-        // record max local usnChanged in syncControlDone
+updateSyncDoneCtrl:
         if (pOperation->syncReqCtrl != NULL)
         {
-            if (usnChanged  > pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed)
+            if (pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
             {
+                VMDIR_LOG_INFO(
+                        LDAP_DEBUG_REPL,
+                        "%s: update lastLocalUsnProcessed from %" PRId64 " to lowestPendingUncommittedUsn %" PRId64 " to avoid retry",
+                        __FUNCTION__,
+                        pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed,
+                        pOperation->lowestPendingUncommittedUsn-1);
+                /*
+                 * Sending high watermark to consumer results in repl cycle retry.
+                 * Avoid retry by sending lowestpendingUncommittedUsn-1.
+                 */
+                pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed = pOperation->lowestPendingUncommittedUsn-1;
+            }
+            else if (usnChanged  > pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed)
+            {
+                // record max local usnChanged in syncControlDone
                 pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed = usnChanged;
             }
         }
@@ -604,8 +634,10 @@ static
 int
 _VmDirIsUsnInScope(
     VDIR_OPERATION *    op,
+    PCSTR               pAttrName,
     char *              origInvocationId,
     USN                 origUsn,
+    USN                 priorSentUSNCreated,
     BOOLEAN *           isUsnInScope
     )
 {
@@ -661,7 +693,26 @@ _VmDirIsUsnInScope(
         {
             utdVectorEntry->currMaxOrigUsnProcessed = origUsn;
         }
-        *isUsnInScope = TRUE;
+
+        // Note, this handles ADD->MODIFY case but not multiple MODIFYs scenario.
+        // However, it is fine as consumer should be able to handle redundant feed from supplier.
+        // The key point here is to NOT send ATTR_USN_CREATED, so we can derive correct sync_state in WriteSyncStateControl.
+        if (origUsn > priorSentUSNCreated)
+        {
+            *isUsnInScope = TRUE;
+
+            if (priorSentUSNCreated > 0)
+            {
+                VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s new usn %llu after prior usncreated %llu attr %s",
+                                        __FUNCTION__, origUsn, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
+            }
+        }
+        else
+        {
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s skip prior usncreated %llu attr %s",
+                                    __FUNCTION__, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
+        }
+
         goto cleanup;
     }
 
@@ -679,6 +730,7 @@ IsAttrInReplScope(
     VDIR_OPERATION *    op,
     char *              attrType,
     char *              attrMetaData,
+    USN                 priorSentUSNCreated,
     BOOLEAN *           inScope,
     PSTR*               ppszErrorMsg
     )
@@ -736,7 +788,7 @@ IsAttrInReplScope(
     else
     {
         BOOLEAN usnInScope = FALSE;
-        retVal = _VmDirIsUsnInScope(op, origInvocationId, origUsn, &usnInScope);
+        retVal = _VmDirIsUsnInScope(op, attrType, origInvocationId, origUsn, priorSentUSNCreated, &usnInScope);
         BAIL_ON_VMDIR_ERROR(retVal);
         if (!usnInScope)
         {
@@ -791,6 +843,21 @@ WriteAttributes(
     PVDIR_ATTRIBUTE pRetAttrs[3] = {pEntry->attrs, pEntry->pComputedAttrs, NULL};
     DWORD           dwCnt = 0;
     PSTR            pszLocalErrorMsg = NULL;
+    CHAR            pszIDBuf[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
+    PSTR            pszPriorSentUSNCreated = NULL;
+    USN             priorSentUSNCreated = 0;
+
+    if (op->syncReqCtrl != NULL)
+    {
+        assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
+
+        if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszPriorSentUSNCreated, pszIDBuf) == 0)
+        {   // we have already sent this entry back with sync_state ADD in the same replication cycle
+            priorSentUSNCreated = VmDirStringToLA( pszPriorSentUSNCreated, NULL, 10 );
+
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s sent %s with USNCreatd %llu before", __FUNCTION__, pEntry->dn.lberbv_val, priorSentUSNCreated);
+        }
+    }
 
     // loop through both normal and computed attributes
     for ( dwCnt = 0, pAttr = pRetAttrs[dwCnt];
@@ -804,7 +871,7 @@ WriteAttributes(
             if (op->syncReqCtrl != NULL) // Replication,
             {
                 // Filter attributes based on the input utdVector, and attribute's meta-data
-                retVal = IsAttrInReplScope( op, pAttr->type.lberbv.bv_val, pAttr->metaData, &bSendAttribute, &pszLocalErrorMsg );
+                retVal = IsAttrInReplScope( op, pAttr->type.lberbv.bv_val, pAttr->metaData, priorSentUSNCreated, &bSendAttribute, &pszLocalErrorMsg );
                 BAIL_ON_VMDIR_ERROR( retVal );
             }
             else
@@ -1048,11 +1115,12 @@ WriteMetaDataAttribute(
             berVal.lberbv.bv_val = attrMetaDataVal;
             berVal.lberbv.bv_len = VmDirStringLenA( attrMetaDataVal );
             if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFYTIMESTAMP, FALSE ) != 0 &&
+                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFIERS_NAME, FALSE ) != 0  &&
                 VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) != 0     &&
                 VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE ) != 0)
             {
                 // To prevent endless replication ping pong, supplier should send result only if there are changes
-                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP and ATTR_OBJECT_GUID.
+                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP,ATTR_MODIFIERS_NAME and ATTR_OBJECT_GUID.
                 *nonTrivialAttrsInReplScope = TRUE;
             }
             if (ber_printf( ber, "O", &berVal ) == -1 )
@@ -1074,7 +1142,7 @@ WriteMetaDataAttribute(
 
             if (pOp->syncReqCtrl != NULL) // Replication
             {
-                retVal = IsAttrInReplScope( pOp, NULL, pAttrMetaData[i].metaData, &bSendAttrMetaData, &pszLocalErrorMsg );
+                retVal = IsAttrInReplScope( pOp, NULL, pAttrMetaData[i].metaData, 0, &bSendAttrMetaData, &pszLocalErrorMsg );
                 BAIL_ON_VMDIR_ERROR( retVal );
             }
             else
@@ -1253,7 +1321,7 @@ PrepareValueMetaDataAttribute(
                 continue;
                 //Change is originated from the requesting server. Don't send it.
             }
-            retVal = _VmDirIsUsnInScope(pOp, origInvocationId, origUsn, &usnInScope);
+            retVal = _VmDirIsUsnInScope(pOp, NULL, origInvocationId, origUsn, 0, &usnInScope);
             BAIL_ON_VMDIR_ERROR(retVal);
             if (!usnInScope)
             {

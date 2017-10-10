@@ -5,7 +5,7 @@ INSTANCE_NAME=vmware-sts
 VMWARE_INSTANCE=$VMWARE_HOME/$INSTANCE_NAME
 VMWARE_STS_CONFIG=$VMWARE_HOME/config
 
-JAVA_HOME=${JAVA_HOME:-@JAVA_HOME@}
+JAVA_HOME=/etc/alternatives/jre
 JSVC_HOME=${JSVC_HOME:-@COMMONS_DAEMON_HOME@}
 JSVC_BIN=@JSVC@
 DEFAULT_MAX_RAM=256m
@@ -18,7 +18,7 @@ DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
 # JAVA Security Properties
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 
-# STS Instance 
+# STS Instance
 SERVICE_NAME=vmware-sts-stsd
 
 STSD_LOG_DIR="/var/log/vmware/sso"
@@ -62,21 +62,22 @@ StartService()
             $JAVA_OPTS \
             $CATALINA_OPTS \
             -Djava.endorsed.dirs="$CATALINA_HOME/endorsed" \
-            -classpath "$CATALINA_HOME/lib/*:$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar:$CATALINA_BASE/bin/vmware-identity-tomcat-extensions.jar" \
+            -classpath "$JSVC_HOME/*:$CATALINA_HOME/lib/*:$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar:$CATALINA_BASE/bin/vmware-identity-tomcat-extensions.jar" \
             -Dcatalina.base=$CATALINA_BASE \
             -Dcatalina.home=$CATALINA_HOME \
             -Dvmware.log.dir=$STSD_LOG_DIR \
             -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true \
             -Djava.io.tmpdir="$CATALINA_BASE/temp" \
+            -Djavax.xml.transform.TransformerFactory=com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl \
             $DAEMON_CLASS start
 
     rc=$?
     if [ $rc -ne 0 ]; then
         echo "Failed to start STS service. Error code : $rc"
-    else 
-	echo "STS(Secure Tokebn service) started successfully!"
+    else
+	echo "STS(Secure Token service) started successfully!"
     fi
-      
+
     return $rc
 }
 

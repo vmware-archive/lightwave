@@ -35,7 +35,11 @@ VmDirToLDAPError(
 {
     DWORD   dwError = dwVmDirError;
 
-    if ( IS_VMDIR_ERROR_SPACE( dwError ) )
+    if (IS_CUSTOMIZED_VMDIR_LDAP_ERROR_SPACE( dwError ))
+    {
+        ; // return customized vmdir ldap error code
+    }
+    else if ( IS_VMDIR_ERROR_SPACE( dwError ) )
     {
         switch (dwVmDirError)
         {
@@ -102,6 +106,7 @@ VmDirToLDAPError(
                 break;
 
             case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
+            case VMDIR_ERROR_AUTH_BAD_DATA:
                 dwError = LDAP_INVALID_CREDENTIALS;
                 break;
 
@@ -143,7 +148,7 @@ VmDirToLDAPError(
                 break;
         }
     }
-    else if ( NOT_LDAP_ERROR_SPACE( dwVmDirError ) )
+    else if ( NOT_LDAP_ERROR_SPACE( dwError ) )
     {   // for all non-VmDir/LDAP error case
         dwError = LDAP_OPERATIONS_ERROR;
     }

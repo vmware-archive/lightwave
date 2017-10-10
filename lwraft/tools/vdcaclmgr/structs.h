@@ -14,20 +14,16 @@
 
 typedef struct
 {
-    PSTR *pStringList;
-    DWORD dwCount; // Current count.
-    DWORD dwSize; // Max number of strings we can store currently.
-} STRING_LIST, *PSTRING_LIST;
-
-typedef struct
-{
-    PCSTR pszServerName;        // the server name
-    PCSTR pszUserName;          // administrator user - default to "Administrator"
-    PCSTR pszPassword;          // administrator password
-    PCSTR pszObjectName;        // Name (DN) of the object to operate on.
-    PCSTR pszBaseDN;            // The base DN that we'll query against for users/groups.
-    PCSTR pszGrantParameter;    // What user/group we're granting privileges to (if any).
-    PCSTR pszRemoveParameter;   // What user/group we're removing a privilege from.
+    PSTR pszServerName;         // the server name
+    PSTR pszUserName;           // administrator user - default to "Administrator"
+    PSTR pszPassword;           // administrator password
+    PSTR pszObjectName;         // Name (DN) of the object to operate on.
+    PSTR pszBaseDN;             // The base DN that we'll query against for users/groups.
+    PSTR pszGrantParameter;     // What user/group we're granting privileges to (if any).
+    PSTR pszRemoveParameter;    // What user/group we're removing a privilege from.
+    PSTR pszPasswordFile;       // password file
     BOOLEAN bVerbose;           // Break down the object's ACL information.
-    PCSTR pszPasswordFile;      // password file
+    BOOLEAN bRecursive;         // Apply the operation to the specified object
+    BOOLEAN bDryrun;            // Do not make change to SD
+                                // and all objects below it.
 } COMMAND_LINE_PARAMETER_STATE, *PCOMMAND_LINE_PARAMETER_STATE;

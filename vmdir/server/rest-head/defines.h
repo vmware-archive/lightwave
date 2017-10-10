@@ -12,15 +12,15 @@
  * under the License.
  */
 
-// REST ENGINE CONFIG VALUES
-// TRIDENT
-#define VMDIR_REST_SSLCERT          VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdircert.pem"
-#define VMDIR_REST_SSLKEY           VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdirkey.pem"
-#define REST_API_SPEC               VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdir-rest.json"
-#define VMDIR_REST_DEBUGLOGFILE     "/tmp/vmdir-rest.log"
-//#define VMDIR_REST_DEBUGLOGFILE     VMDIR_LOG_DIR    VMDIR_PATH_SEPARATOR_STR "vmdir-rest.log"    TODO use this when lightwave-first is complete
-#define VMDIR_REST_CLIENTCNT        "5"
-#define VMDIR_REST_WORKERTHCNT      "5"
+// C REST ENGINE CONFIG VALUES
+#define REST_API_SPEC                VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdir-rest.json"
+#define VMDIR_HTTP_DEBUGLOGFILE      "/var/log/lightwave/vmdir-rest-HTTP.log"
+#define VMDIR_HTTPS_DEBUGLOGFILE     "/var/log/lightwave/vmdir-rest-HTTPS.log"
+//TODO-update VMDIR_LOG_DIR to correct path, is still pointing to /var/log/lightwave/vmdir
+//#define VMDIR_HTTP_DEBUGLOGFILE      VMDIR_LOG_DIR VMDIR_PATH_SEPARATOR_STR "vmdir-rest-HTTP.log"
+//#define VMDIR_HTTPS_DEBUGLOGFILE     VMDIR_LOG_DIR VMDIR_PATH_SEPARATOR_STR "vmdir-rest-HTTPS.log"
+#define VMDIR_REST_CLIENTCNT        "64"
+#define VMDIR_REST_WORKERTHCNT      "64"
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
@@ -29,6 +29,10 @@
 #define VMDIR_REST_OIDC_PORT                443
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_vmdir"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
+
+// HTTP headers
+#define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
+#define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 
 // HTTP STATUS CODES
 // 1xx Informational
@@ -115,7 +119,7 @@
         {                                                               \
             pResource = ((PVDIR_REST_OPERATION)pRestOp)->pResource;     \
             pRestRslt = ((PVDIR_REST_OPERATION)pRestOp)->pResult;       \
-            (pResource)->pfnSetResult(                                   \
+            (pResource)->pfnSetResult(                                  \
                     pRestRslt, pLdapRslt, dwError, pszErrMsg);          \
         }                                                               \
     } while (0)

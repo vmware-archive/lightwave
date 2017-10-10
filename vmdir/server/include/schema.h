@@ -417,6 +417,11 @@ VmDirSchemaAttrIsOctetString(
     PVDIR_SCHEMA_AT_DESC    pATDesc
     );
 
+BOOLEAN
+VmDirSchemaAttrIsDN(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    );
+
 PVDIR_ENTRY
 VmDirSchemaAcquireAndOwnStartupEntry(
     VOID

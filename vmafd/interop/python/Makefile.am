@@ -10,19 +10,18 @@ vmafd_la_SOURCES = \
     afdclient.cpp
 
 vmafd_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/common \
-    -I$(top_srcdir)/interop/python \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmafd/common \
+    -I$(top_srcdir)/vmafd/interop/python \
     @BOOST_INCLUDES@ \
     @LW_INCLUDES@ \
-    @VMDIR_INCLUDES@ \
     @PYTHON_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 vmafd_la_LIBADD = \
     @BOOST_PYTHON_LDFLAGS@ \
-    $(top_builddir)/client/libvmafdclient.la \
+    $(top_builddir)/vmafd/client/libvmafdclient.la \
     @DL_LIBS@  \
     @PTHREAD_LIBS@ \
     @GSSAPI_LIBS@ \

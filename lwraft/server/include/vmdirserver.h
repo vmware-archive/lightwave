@@ -88,9 +88,9 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        invocationId;
     VDIR_BERVALUE        bvDefaultAdminDN;
     VDIR_BERVALUE        systemDomainDN;
-    VDIR_BERVALUE        delObjsContainerDN;
+    VDIR_BERVALUE        delObjsContainerDN;    //TODO, delete this
     VDIR_BERVALUE        bvDCGroupDN;
-    VDIR_BERVALUE        bvDCClientGroupDN;
+    VDIR_BERVALUE        bvDCClientGroupDN;     //TODO, delete this
     VDIR_BERVALUE        bvServicesRootDN;
     VDIR_BERVALUE        serverObjDN;
     VDIR_BERVALUE        dcAccountDN;   // Domain controller account DN
@@ -98,7 +98,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     int                  replInterval;
     int                  replPageSize;
     VDIR_BERVALUE        utdVector; // In string format, it is stored as: <serverId1>:<origUsn1>;<serverId2>:<origUsn2>;...
-    PSTR                 pszSiteName;
+    PSTR                 pszSiteName;           //TODO, delete this
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
     USN                  initialNextUSN; // used for server restore only
@@ -125,28 +125,24 @@ typedef struct _VMDIR_GLOBALS
     // static fields initialized during server startup.
     // their values never change, so no access protection necessary.
     PSTR                            pszBootStrapSchemaFile;
-    BOOLEAN                         bPatchSchema;
     PSTR                            pszBDBHome;
 
     BOOLEAN                         bAllowInsecureAuth;
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
 
-    PDWORD                          pdwLdapListenPorts;
-    DWORD                           dwLdapListenPorts;
-    PDWORD                          pdwLdapsListenPorts;
-    DWORD                           dwLdapsListenPorts;
-    PDWORD                          pdwLdapConnectPorts;
-    DWORD                           dwLdapConnectPorts;
-    PDWORD                          pdwLdapsConnectPorts;
-    DWORD                           dwLdapsConnectPorts;
-    PSTR                            pszRestListenPort;
+    DWORD                           dwLdapPort;
+    DWORD                           dwLdapsPort;
+    // Timeout for curl requests
+    DWORD                           dwProxyCurlTimeout;
+    PSTR                            pszHTTPListenPort;
+    PSTR                            pszHTTPSListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
+    BOOLEAN                         bIsLDAPPortOpen;
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
     VDIR_SERVER_STATE               vmdirdState;
     PVDIR_THREAD_INFO               pSrvThrInfo;
-    BOOLEAN                         bReplNow;
 
 #if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
     dcethread*                      pRPCServerThread;
@@ -157,8 +153,6 @@ typedef struct _VMDIR_GLOBALS
 #endif
 
     BOOLEAN                         bRegisterTcpEndpoint;
-
-    PSECURITY_DESCRIPTOR_ABSOLUTE   gpVmDirSrvSD;
 
     // To synchronize creation and use of replication agreements.
     PVMDIR_MUTEX                    replAgrsMutex;
@@ -219,49 +213,6 @@ typedef struct _VMDIR_KRB_GLOBALS
 
 extern VMDIR_KRB_GLOBALS gVmdirKrbGlobals;
 
-typedef struct _VMDIR_URGENT_REPL
-{
-    // To Synchronize Urgent Replication Request
-    PVMDIR_MUTEX                         pUrgentReplMutex;
-    BOOLEAN                              bUrgentReplicationPending;
-    DWORD                                dwUrgentReplResponseCount;
-    DWORD                                dwUrgentReplTimeout;
-    USN                                  consensusUSN;
-    PSTR                                 pUTDVector;
-    /*
-     * Used by RPC thread to notify urgentReplicationCoordinator thread
-     * if rpc response was received.
-     */
-    PVMDIR_MUTEX                         pUrgentReplResponseRecvMutex;
-    PVMDIR_COND                          pUrgentReplResponseRecvCondition;
-    BOOLEAN                              bUrgentReplResponseRecv;
-    /*
-     * Used by writer thread to notify urgentReplicationCoordinator thread
-     * to start urgent replication cycle immediately.
-     */
-    PVMDIR_MUTEX                         pUrgentReplThreadMutex;
-    PVMDIR_COND                          pUrgentReplThreadCondition;
-    BOOLEAN                              bUrgentReplThreadPredicate;
-    /*
-     * Used by urgentReplicationCoordinator thread to notify writer threads
-     * that urgent replication cycle is completed. It is a broadcast.
-     */
-    PVMDIR_MUTEX                         pUrgentReplDoneMutex;
-    PVMDIR_COND                          pUrgentReplDoneCondition;
-    BOOLEAN                              bUrgentReplDone;
-    /*
-     * Used by RPC thread to notify Replicaton thread to start urgent repl
-     * uses bReplNow predicate for proper synchronization.
-     */
-    PVMDIR_MUTEX                         pUrgentReplStartMutex;
-    PVMDIR_COND                          pUrgentReplStartCondition;
-
-    PVMDIR_STRONG_WRITE_PARTNER_CONTENT  pUrgentReplPartnerTable;
-    PVMDIR_URGENT_REPL_SERVER_LIST       pUrgentReplServerList;
-} VMDIR_URGENT_REPL, *PVMDIR_URGENT_REPL;
-
-extern VMDIR_URGENT_REPL gVmdirUrgentRepl;
-
 typedef struct _VMDIR_TRACK_LAST_LOGIN_TIME
 {
     PVMDIR_MUTEX    pMutex;
@@ -319,43 +270,19 @@ VmDirdGetAllowInsecureAuth(
     VOID
     );
 
-VOID
-VmDirGetLdapListenPorts(
-    PDWORD* ppdwLdapListenPorts,
-    PDWORD  pdwLdapListenPorts
-    );
-
-VOID
-VmDirGetLdapsListenPorts(
-    PDWORD* ppdwLdapsListenPorts,
-    PDWORD  pdwLdapsListenPorts
-    );
-
-VOID
-VmDirGetLdapConnectPorts(
-    PDWORD* ppdwLdapConnectPorts,
-    PDWORD  pdwLdapConnectPorts
-    );
-
-VOID
-VmDirGetLdapsConnectPorts(
-    PDWORD* ppdwLdapsConnectPorts,
-    PDWORD  pdwLdapsConnectPorts
+DWORD
+VmDirGetLdapPort(
+    VOID
     );
 
 DWORD
-VmDirGetAllLdapPortsCount(
+VmDirGetLdapsPort(
     VOID
-);
-
-VOID
-VmDirdSetReplNow(
-    BOOLEAN bReplNow
     );
 
-BOOLEAN
-VmDirdGetReplNow(
-    VOID
+DWORD
+VmDirCheckPortAvailability(
+    DWORD   dwPort
     );
 
 VOID
@@ -374,307 +301,13 @@ VmDirServerStatusEntry(
     );
 
 DWORD
-VmDirReplicationStatusEntry(
+VmDirRaftStateEntry(
     PVDIR_ENTRY*    ppEntry
     );
 
-//urgentreplthread.c
-VOID
-VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv(
-    VOID
-    );
-
-VOID
-VmDirUrgentReplSignalUrgentReplCoordinatorThreadStart(
-    VOID
-    );
-
 DWORD
-VmDirTimedWaitForUrgentReplDone(
-    UINT64 timeout,
-    UINT64 startTime
-    );
-
-BOOLEAN
-VmDirUrgentReplCondTimedWait(
-    VOID
-    );
-
-VOID
-VmDirUrgentReplSignal(
-    VOID
-    );
-
-//urgentrepl.c
-BOOLEAN
-VmDirdGetUrgentReplicationRequest(
-    VOID
-    );
-
-BOOLEAN
-VmDirdGetUrgentReplicationRequest_InLock(
-    VOID
-    );
-
-VOID
-VmDirdSetUrgentReplicationRequest(
-    BOOLEAN bUrgentRepl
-    );
-
-VOID
-VmDirdSetUrgentReplicationRequest_InLock(
-    BOOLEAN bUrgentRepl
-    );
-
-PVMDIR_URGENT_REPL_SERVER_LIST
-VmDirdGetUrgentReplicationServerList(
-    VOID
-    );
-
-PVMDIR_URGENT_REPL_SERVER_LIST
-VmDirdGetUrgentReplicationServerList_InLock(
-    VOID
-    );
-
-DWORD
-VmDirdAddToUrgentReplicationServerList(
-    PSTR    pszUrgentReplicationServer
-    );
-
-DWORD
-VmDirdAddToUrgentReplicationServerList_InLock(
-    PSTR    pszUrgentReplicationServer
-    );
-
-VOID
-VmDirdFreeUrgentReplicationServerList(
-    VOID
-    );
-
-VOID
-VmDirdFreeUrgentReplicationServerList_InLock(
-    VOID
-    );
-
-DWORD
-VmDirdInitiateUrgentRepl(
-    PSTR   pszServerName
-    );
-
-VOID
-VmDirSendAllUrgentReplicationResponse(
-    VOID
-    );
-
-DWORD
-VmDirdUrgentReplSetUtdVector(
-    PCSTR pUTDVector
-    );
-
-PCSTR
-VmDirdUrgentReplGetUtdVector(
-    VOID
-    );
-
-PCSTR
-VmDirdUrgentReplGetUtdVector_InLock(
-    VOID
-    );
-
-VOID
-VmDirReplUpdateUrgentReplCoordinatorTableForRequest(
-    VOID
-    );
-
-VOID
-VmDirReplUpdateUrgentReplCoordinatorTableForResponse(
-    PVMDIR_REPL_UTDVECTOR pUtdVector,
-    PCSTR pszInvocationId,
-    PSTR pszHostName
-    );
-
-VOID
-VmDirReplUpdateUrgentReplCoordinatorTableForResponse_InLock(
-    PSTR  pInvocationId,
-    USN   confirmedUSN,
-    PVMDIR_STRONG_WRITE_PARTNER_CONTENT pReplicationPartnerEntry
-    );
-
-DWORD
-VmDirReplGetUrgentReplCoordinatorTableEntry_InLock(
-    PCSTR pszRemoteServerInvocationId,
-    PSTR  pszRemoteServerName,
-    PVMDIR_STRONG_WRITE_PARTNER_CONTENT *ppReplicationPartnerEntry
-    );
-
-VOID
-VmDirReplUpdateUrgentReplCoordinatorTableForDelete(
-    PVMDIR_REPLICATION_AGREEMENT  pReplAgr
-    );
-
-VOID
-VmDirReplFreeUrgentReplCoordinatorTable(
-    VOID
-    );
-
-VOID
-VmDirReplFreeUrgentReplCoordinatorTable_InLock(
-    VOID
-    );
-
-DWORD
-VmDirReplGetUrgentReplResponseCount(
-    VOID
-    );
-
-DWORD
-VmDirReplGetUrgentReplResponseCount_InLock(
-    VOID
-    );
-
-VOID
-VmDirReplUpdateUrgentReplResponseCount(
-    VOID
-    );
-
-VOID
-VmDirReplResetUrgentReplResponseCount(
-    VOID
-    );
-
-VOID
-VmDirReplResetUrgentReplResponseCount_InLock(
-    VOID
-    );
-
-VOID
-VmDirReplSetUrgentReplResponseRecvCondition(
-    BOOLEAN bUrgentReplResponseRecv
-    );
-
-VOID
-VmDirReplSetUrgentReplResponseRecvCondition_InLock(
-    BOOLEAN bUrgentReplResponseRecv
-    );
-
-BOOLEAN
-VmDirReplGetUrgentReplResponseRecvCondition(
-    VOID
-    );
-
-BOOLEAN
-VmDirReplGetUrgentReplResponseRecvCondition_InLock(
-    VOID
-    );
-
-VOID
-VmDirReplSetUrgentReplThreadCondition(
-    BOOLEAN bUrgentReplThreadPredicate
-    );
-
-BOOLEAN
-VmDirReplGetUrgentReplThreadCondition(
-    VOID
-    );
-
-PVMDIR_STRONG_WRITE_PARTNER_CONTENT
-VmDirReplGetUrgentReplCoordinatorTable(
-    VOID
-    );
-
-PVMDIR_STRONG_WRITE_PARTNER_CONTENT
-VmDirReplGetUrgentReplCoordinatorTable_InLock(
-    VOID
-    );
-
-VOID
-VmDirReplSetUrgentReplDoneCondition(
-    BOOLEAN bUrgentReplDone
-    );
-
-VOID
-VmDirReplSetUrgentReplDoneCondition_InLock(
-    BOOLEAN bUrgentReplDone
-    );
-
-BOOLEAN
-VmDirReplGetUrgentReplDoneCondition(
-    VOID
-    );
-
-BOOLEAN
-VmDirReplGetUrgentReplDoneCondition_InLock(
-    VOID
-    );
-
-USN
-VmDirGetUrgentReplConsensus(
-    VOID
-    );
-
-USN
-VmDirGetUrgentReplConsensus_InLock(
-    VOID
-    );
-
-VOID
-VmDirSetUrgentReplConsensus_InLock(
-    USN
-    );
-
-BOOLEAN
-VmDirUrgentReplUpdateConsensus(
-    VOID
-    );
-
-DWORD
-VmDirGetUrgentReplTimeout(
-    VOID
-    );
-
-DWORD
-VmDirGetUrgentReplTimeout_InLock(
-    VOID
-    );
-
-VOID
-VmDirSetUrgentReplTimeout(
-    DWORD dwTimeout
-    );
-
-VOID
-VmDirSetUrgentReplTimeout_InLock(
-    DWORD dwTimeout
-    );
-
-BOOLEAN
-VmDirGetUrgentReplicationPending(
-    VOID
-    );
-
-BOOLEAN
-VmDirGetUrgentReplicationPending_InLock(
-    VOID
-    );
-
-VOID
-VmDirSetUrgentReplicationPending(
-    BOOLEAN bUrgentReplicationPending
-    );
-
-VOID
-VmDirSetUrgentReplicationPending_InLock(
-    BOOLEAN bUrgentReplicationPending
-    );
-
-VOID
-VmDirReplFreeUrgentReplPartnerEntry_InLock(
-    PVMDIR_STRONG_WRITE_PARTNER_CONTENT pUrgentReplPartnerTable
-    );
-
-DWORD
-VmDirGetReplicationPartnerCount(
-    VOID
+VmDirReplicationStatusEntry(
+    PVDIR_ENTRY*    ppEntry
     );
 
 // srvthr.c

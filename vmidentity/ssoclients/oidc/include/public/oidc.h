@@ -17,24 +17,41 @@
 
 // OIDC_CLIENT
 
+/*
+ * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * This is a wrapper for curl_global_init, from its documentation:
+ * This function is not thread safe.
+ * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
+ * This doesn't just mean no other thread that is using libcurl.
+ * Because curl_global_init calls functions of other libraries that are similarly thread unsafe,
+ * it could conflict with any other thread that uses these other libraries.
+ */
 SSOERROR
 OidcClientGlobalInit();
 
+// this function is not thread safe. Call it right before process exit
 void
 OidcClientGlobalCleanup();
 
+// make sure you call OidcClientGlobalInit once per process before calling this
+// on success, pp will be non-null, when done, OidcClientDelete it
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcClientBuild(
     POIDC_CLIENT* pp,
     PCSTRING pszServer, // OPT: null means use HA to get affinitized host
     int portNumber,
     PCSTRING pszTenant,
-    SSO_LONG clockToleranceInSeconds);
+    PCSTRING pszClientID /* OPT */,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */);
 
 void
 OidcClientDelete(
     POIDC_CLIENT p);
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByPassword(
     PCOIDC_CLIENT p,
@@ -44,6 +61,9 @@ OidcClientAcquireTokensByPassword(
     POIDC_TOKEN_SUCCESS_RESPONSE* ppOutTokenSuccessResponse, /* OUT */
     POIDC_ERROR_RESPONSE* ppOutTokenErrorResponse /* OUT */);
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensByRefreshToken(
     PCOIDC_CLIENT p,
@@ -51,6 +71,9 @@ OidcClientAcquireTokensByRefreshToken(
     POIDC_TOKEN_SUCCESS_RESPONSE* ppOutTokenSuccessResponse, /* OUT */
     POIDC_ERROR_RESPONSE* ppOutTokenErrorResponse /* OUT */);
 
+// on success, ppOutTokenSuccessResponse will be non-null
+// on error, ppOutTokenErrorResponse might be non-null (it will carry error info returned by the server if any)
+// delete both when done, whether invocation is successful or not, using OidcTokenSuccessResponseDelete and OidcErrorResponseDelete
 SSOERROR
 OidcClientAcquireTokensBySolutionUserCredentials(
     PCOIDC_CLIENT p,
@@ -66,12 +89,16 @@ OidcClientGetSigningCertificatePEM(
 
 // OIDC_SERVER_METADATA
 
+// make sure you call OidcClientGlobalInit once per process before calling this
+// on success, pp will be non-null, when done, OidcServerMetadataDelete it
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
 SSOERROR
 OidcServerMetadataAcquire(
     POIDC_SERVER_METADATA* pp,
     PCSTRING pszServer,
     int portNumber,
-    PCSTRING pszTenant);
+    PCSTRING pszTenant,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */);
 
 void
 OidcServerMetadataDelete(
@@ -87,6 +114,7 @@ OidcServerMetadataGetSigningCertificatePEM(
 
 // OIDC_ID_TOKEN
 
+// (TODO) Deprecated
 SSOERROR
 OidcIDTokenBuild(
     POIDC_ID_TOKEN* pp,
@@ -95,9 +123,26 @@ OidcIDTokenBuild(
     PCSTRING pszIssuer, // not used for now
     SSO_LONG clockToleranceInSeconds);
 
+// on success, pp will be non-null, when done, OidcIDTokenDelete it
+SSOERROR
+OidcIDTokenParse(
+    POIDC_ID_TOKEN* pp,
+    PCSTRING psz);
+
+SSOERROR
+OidcIDTokenValidate(
+    POIDC_ID_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    SSO_LONG clockToleranceInSeconds);
+
 void
 OidcIDTokenDelete(
     POIDC_ID_TOKEN p);
+
+OIDC_TOKEN_TYPE
+OidcIDTokenGetTokenType(
+    PCOIDC_ID_TOKEN p);
 
 PCSTRING
 OidcIDTokenGetIssuer(
@@ -107,9 +152,20 @@ PCSTRING
 OidcIDTokenGetSubject(
     PCOIDC_ID_TOKEN p);
 
-PCSTRING
+void
 OidcIDTokenGetAudience(
+    PCOIDC_ID_TOKEN p,
+    const PSTRING** pppszAudience,
+    size_t* pAudienceSize);
+
+size_t
+OidcIDTokenGetAudienceSize(
     PCOIDC_ID_TOKEN p);
+
+PCSTRING
+OidcIDTokenGetAudienceEntry(
+    PCOIDC_ID_TOKEN p,
+    int index);
 
 SSO_LONG
 OidcIDTokenGetIssueTime(
@@ -129,6 +185,19 @@ OidcIDTokenGetGroups(
     const PSTRING** pppszGroups,
     size_t* pGroupsSize);
 
+size_t
+OidcIDTokenGetGroupsSize(
+    PCOIDC_ID_TOKEN p);
+
+PCSTRING
+OidcIDTokenGetGroupsEntry(
+    PCOIDC_ID_TOKEN p,
+    int index);
+
+PCSTRING
+OidcIDTokenGetTenant(
+    PCOIDC_ID_TOKEN p);
+
 SSOERROR
 OidcIDTokenGetStringClaim(
     PCOIDC_ID_TOKEN p,
@@ -137,6 +206,7 @@ OidcIDTokenGetStringClaim(
 
 // OIDC_ACCESS_TOKEN
 
+// (TODO) Deprecated
 SSOERROR
 OidcAccessTokenBuild(
     POIDC_ACCESS_TOKEN* pp,
@@ -146,9 +216,27 @@ OidcAccessTokenBuild(
     PCSTRING pszResourceServerName,
     SSO_LONG clockToleranceInSeconds);
 
+// on success, pp will be non-null, when done, OidcAccessTokenDelete it
+SSOERROR
+OidcAccessTokenParse(
+    POIDC_ACCESS_TOKEN* pp,
+    PCSTRING psz);
+
+SSOERROR
+OidcAccessTokenValidate(
+    POIDC_ACCESS_TOKEN p,
+    PCSTRING pszSigningCertificatePEM,
+    PCSTRING pszIssuer, // not used for now
+    PCSTRING pszResourceServerName,
+    SSO_LONG clockToleranceInSeconds);
+
 void
 OidcAccessTokenDelete(
     POIDC_ACCESS_TOKEN p);
+
+OIDC_TOKEN_TYPE
+OidcAccessTokenGetTokenType(
+    PCOIDC_ACCESS_TOKEN p);
 
 PCSTRING
 OidcAccessTokenGetIssuer(
@@ -163,6 +251,15 @@ OidcAccessTokenGetAudience(
     PCOIDC_ACCESS_TOKEN p,
     const PSTRING** pppzAudience,
     size_t* pAudienceSize);
+
+size_t
+OidcAccessTokenGetAudienceSize(
+    PCOIDC_ACCESS_TOKEN p);
+
+PCSTRING
+OidcAccessTokenGetAudienceEntry(
+    PCOIDC_ACCESS_TOKEN p,
+    int index);
 
 SSO_LONG
 OidcAccessTokenGetIssueTime(
@@ -182,6 +279,19 @@ OidcAccessTokenGetGroups(
     const PSTRING** pppszGroups,
     size_t* pGroupsSize);
 
+size_t
+OidcAccessTokenGetGroupsSize(
+    PCOIDC_ACCESS_TOKEN p);
+
+PCSTRING
+OidcAccessTokenGetGroupsEntry(
+    PCOIDC_ACCESS_TOKEN p,
+    int index);
+
+PCSTRING
+OidcAccessTokenGetTenant(
+    PCOIDC_ACCESS_TOKEN p);
+
 SSOERROR
 OidcAccessTokenGetStringClaim(
     PCOIDC_ACCESS_TOKEN p,
@@ -194,7 +304,7 @@ void
 OidcTokenSuccessResponseDelete(
     POIDC_TOKEN_SUCCESS_RESPONSE p);
 
-PCOIDC_ID_TOKEN
+PCSTRING
 OidcTokenSuccessResponseGetIDToken(
     PCOIDC_TOKEN_SUCCESS_RESPONSE p);
 
@@ -211,6 +321,10 @@ OidcTokenSuccessResponseGetRefreshToken(
 void
 OidcErrorResponseDelete(
     POIDC_ERROR_RESPONSE p);
+
+PCSTRING
+OidcErrorResponseGetError(
+    PCOIDC_ERROR_RESPONSE p);
 
 PCSTRING
 OidcErrorResponseGetErrorDescription(

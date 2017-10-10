@@ -16,71 +16,30 @@
 
 #include "includes.h"
 
-DWORD
-VmDirCreateAccessToken(
-    PACCESS_TOKEN*          AccessToken,
-    PTOKEN_USER             User,
-    PTOKEN_GROUPS           Groups,
-    PTOKEN_PRIVILEGES       Privileges,
-    PTOKEN_OWNER            Owner,
-    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
-    PTOKEN_DEFAULT_DACL     DefaultDacl
-    );
-
 static
 DWORD
 _VmDirBuildTokenGroups(
     PVDIR_ENTRY     pEntry,
     PCSTR           pszBuiltinUsersGroupSid,
-    PTOKEN_GROUPS * ppTokenGroups
+    PCSTR           pszDomainClientsGroupSid,
+    PTOKEN_GROUPS*  ppTokenGroups
     );
 
-// Create access token for the bind
-DWORD
-VmDirSrvCreateAccessTokenWithDn(
-    PCSTR           pszObjectDn,
-    PACCESS_TOKEN*  ppToken
-    )
-{
-    DWORD           dwError = ERROR_SUCCESS;
-    PVDIR_ENTRY     pEntry = NULL;
-    PACCESS_TOKEN   pToken = NULL;
-
-    dwError = VmDirSimpleDNToEntry(pszObjectDn, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateAccessTokenWithEntry(pEntry, &pToken, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppToken = pToken;
-
-cleanup:
-
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
-    return dwError;
-
-error:
-    if (pToken)
-    {
-        VmDirReleaseAccessToken(&pToken);
-    }
-
-    goto cleanup;
-}
+static
+VOID
+_VmDirFreeTokenGroups(
+    PTOKEN_GROUPS   pGroups
+    );
 
 DWORD
 VmDirSrvCreateAccessTokenWithEntry(
     PVDIR_ENTRY     pEntry,
     PACCESS_TOKEN*  ppToken,
-    PSTR *          ppszObjectSid /* Optional */
+    PSTR*           ppszObjectSid
     )
 {
     DWORD               dwError = ERROR_SUCCESS;
-    PACCESS_TOKEN       pToken = *ppToken;
+    PACCESS_TOKEN       pToken = NULL;
     TOKEN_USER          user = {{0}};
     TOKEN_OWNER         owner = {0};
     PTOKEN_GROUPS       pGroups = {0};
@@ -88,9 +47,17 @@ VmDirSrvCreateAccessTokenWithEntry(
     TOKEN_PRIMARY_GROUP primaryGroup = {0};
     TOKEN_DEFAULT_DACL  dacl = {0};
     PSTR                pszObjectSid = NULL;
-    PSTR                pszBuildinUsersGroupSid = NULL;
+    PSTR                pszBuiltinUsersGroupSid = NULL;
+    PSTR                pszDomainClientsGroupSid = NULL;
     PCSTR               pszDomainDn = NULL;
-    unsigned int        i = 0;
+
+    if (!pEntry || !ppToken || !ppszObjectSid)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pToken = *ppToken;
 
     if (pToken)
     {
@@ -98,7 +65,8 @@ VmDirSrvCreateAccessTokenWithEntry(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirGetObjectSidFromEntry(pEntry, &pszObjectSid, &user.User.Sid);
+    dwError = VmDirGetObjectSidFromEntry(
+            pEntry, &pszObjectSid, &user.User.Sid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     owner.Owner = user.User.Sid;
@@ -110,176 +78,61 @@ VmDirSrvCreateAccessTokenWithEntry(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirGenerateWellknownSid(pszDomainDn, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBuildinUsersGroupSid);
+    dwError = VmDirGenerateWellknownSid(
+            pszDomainDn,
+            VMDIR_DOMAIN_ALIAS_RID_USERS,
+            &pszBuiltinUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Primary groups should be built-in\Users not admins
-    dwError = VmDirAllocateSidFromCString(pszBuildinUsersGroupSid, &primaryGroup.PrimaryGroup);
+    dwError = VmDirGenerateWellknownSid(
+            pszDomainDn,
+            VMDIR_DOMAIN_CLIENTS_RID,
+            &pszDomainClientsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirBuildTokenGroups(pEntry, pszBuildinUsersGroupSid, &pGroups);
+    // The primary group should be built-in\Users for all users.
+    dwError = VmDirAllocateSidFromCString(
+            pszBuiltinUsersGroupSid, &primaryGroup.PrimaryGroup);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateAccessToken(&pToken,
-                                     &user,
-                                     pGroups,
-                                     &privileges,
-                                     &owner,
-                                     &primaryGroup,
-                                     &dacl);
+    dwError = _VmDirBuildTokenGroups(
+            pEntry,
+            pszBuiltinUsersGroupSid,
+            pszDomainClientsGroupSid,
+            &pGroups);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (ppszObjectSid)
-    {
-        *ppszObjectSid = pszObjectSid;
-        pszObjectSid = NULL;
-    }
+    dwError = VmDirCreateAccessToken(
+            &pToken,
+            &user,
+            pGroups,
+            &privileges,
+            &owner,
+            &primaryGroup,
+            &dacl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszObjectSid = pszObjectSid;
     *ppToken = pToken;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
     VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
     VMDIR_SAFE_FREE_MEMORY(primaryGroup.PrimaryGroup);
-    VMDIR_SAFE_FREE_MEMORY(pszBuildinUsersGroupSid);
-    if (pGroups)
-    {
-        for (i = 0; i < pGroups->GroupCount; i++)
-        {
-            VMDIR_SAFE_FREE_MEMORY(pGroups->Groups[i].Sid);
-        }
-        VmDirFreeMemory(pGroups);
-    }
-
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltinUsersGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
+    _VmDirFreeTokenGroups(pGroups);
     return dwError;
 
 error:
-    *ppToken = NULL; // TODO
-
+    VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
     VmDirReleaseAccessToken(&pToken);
-    goto cleanup;
-}
-
-
-//
-// Builds up a list of all the groups this user is a member of. Note that all
-// known/authenticated users belong to the "Users" group (and the rest are
-// dictated by the "memberOf" attribute).
-//
-static
-DWORD
-_VmDirBuildTokenGroups(
-    PVDIR_ENTRY     pEntry,
-    PCSTR           pszBuiltinUsersGroupSid,
-    PTOKEN_GROUPS * ppTokenGroups)
-{
-    DWORD               dwError = ERROR_SUCCESS;
-    PVDIR_ATTRIBUTE     pMemberOfAttr = NULL;
-    unsigned int        i = 0;
-    PVDIR_ENTRY         pGroupEntry = NULL;
-    VDIR_OPERATION      searchOp = {0};
-    BOOLEAN             bHasTxn = FALSE;
-    PTOKEN_GROUPS       pLocalTokenGroups = NULL;
-    DWORD               dwGroupCount = 0;
-
-    if ( pEntry == NULL || ppTokenGroups == NULL )
-    {
-        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirInitStackOperation( &searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    searchOp.pBEIF = VmDirBackendSelect(NULL);
-
-    // start txn
-    dwError = searchOp.pBEIF->pfnBETxnBegin( searchOp.pBECtx, VDIR_BACKEND_TXN_READ );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    bHasTxn = TRUE;
-
-    dwError = VmDirBuildMemberOfAttribute( &searchOp, pEntry, &pMemberOfAttr );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (pMemberOfAttr != NULL)
-    {
-        dwGroupCount = pMemberOfAttr->numVals + 1;
-    }
-    else
-    {
-        dwGroupCount = 1;
-    }
-
-    // SJ-TBD: Do we need to align the address??
-    dwError = VmDirAllocateMemory( sizeof(TOKEN_GROUPS) +
-                                   (sizeof(SID_AND_ATTRIBUTES) * dwGroupCount),
-                                   (PVOID*)&pLocalTokenGroups );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateSidFromCString(
-                pszBuiltinUsersGroupSid,
-                &pLocalTokenGroups->Groups[0].Sid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // SJ-TBD: should be set on the basis of status of the group??
-    pLocalTokenGroups->Groups[0].Attributes = SE_GROUP_ENABLED;
-
-    pLocalTokenGroups->GroupCount = dwGroupCount;
-
-    if (pMemberOfAttr)
-    {
-        for (i = 0; i < pMemberOfAttr->numVals; i++)
-        {
-            if ((dwError = VmDirSimpleDNToEntry(pMemberOfAttr->vals[i].lberbv.bv_val, &pGroupEntry)) != 0)
-            {
-                // may be deleted in the meanwhile
-
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                                   "_VmDirBuildTokenGroups() memmberOf entry (%s) not found, error code (%d)",
-                                   pMemberOfAttr->vals[i].lberbv.bv_val, dwError );
-                continue;
-            }
-
-            dwError = VmDirGetObjectSidFromEntry(pGroupEntry, NULL, &pLocalTokenGroups->Groups[i + 1].Sid);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            // SJ-TBD: should be set on the basis of status of the group??
-            pLocalTokenGroups->Groups[i + 1].Attributes = SE_GROUP_ENABLED;
-
-            VmDirFreeEntry(pGroupEntry);
-            pGroupEntry = NULL;
-        }
-    }
-
-    *ppTokenGroups = pLocalTokenGroups;
-
-cleanup:
-    VmDirFreeAttribute(pMemberOfAttr);
-    if (pGroupEntry)
-    {
-        VmDirFreeEntry(pGroupEntry);
-    }
-    if (bHasTxn)
-    {
-        searchOp.pBEIF->pfnBETxnCommit( searchOp.pBECtx);
-    }
-    VmDirFreeOperationContent(&searchOp);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirBuildTokenGroups() failed, entry DN (%s), error code (%d)",
-                     pEntry ? pEntry->dn.lberbv.bv_val : "NULL", dwError );
-
-    VMDIR_SAFE_FREE_MEMORY(pLocalTokenGroups);
-
     goto cleanup;
 }
 
 DWORD
 VmDirSrvCreateAccessTokenForWellKnowObject(
-    PACCESS_TOKEN * ppToken,
-    PCSTR            pszWellknownObjectSid
+    PACCESS_TOKEN*  ppToken,
+    PCSTR           pszWellknownObjectSid
     )
 {
     DWORD               dwError = ERROR_SUCCESS;
@@ -323,7 +176,7 @@ error:
 
 DWORD
 VmDirCreateAccessToken(
-    PACCESS_TOKEN *         AccessToken,
+    PACCESS_TOKEN*          AccessToken,
     PTOKEN_USER             User,
     PTOKEN_GROUPS           Groups,
     PTOKEN_PRIVILEGES       Privileges,
@@ -332,13 +185,171 @@ VmDirCreateAccessToken(
     PTOKEN_DEFAULT_DACL     DefaultDacl
     )
 {
-    return LwNtStatusToWin32Error(RtlCreateAccessToken(
-                                   AccessToken,
-                                   User,
-                                   Groups,
-                                   Privileges,
-                                   Owner,
-                                   PrimaryGroup,
-                                   DefaultDacl,
-                                   NULL));
+    return LwNtStatusToWin32Error(
+            RtlCreateAccessToken(
+                    AccessToken,
+                    User,
+                    Groups,
+                    Privileges,
+                    Owner,
+                    PrimaryGroup,
+                    DefaultDacl,
+                    NULL));
+}
+
+//
+// Builds up a list of all the groups this user is a member of. All users
+// (anyone who doesn't login anonymously) automatically are members of their
+// domain's "Users" group and the global "Authenticated Users" group. All other
+// memberships are explicit (dictated by the "memberOf" attribute).
+//
+static
+DWORD
+_VmDirBuildTokenGroups(
+    PVDIR_ENTRY     pEntry,
+    PCSTR           pszBuiltinUsersGroupSid,
+    PCSTR           pszDomainClientsGroupSid,
+    PTOKEN_GROUPS*  ppTokenGroups
+    )
+{
+    DWORD   dwError = ERROR_SUCCESS;
+    DWORD   dwAllDefaultGroupCount = 0;
+    DWORD   dwComputerDefaultGroupCount = 0;
+    DWORD   dwEntryGroupCount = 0;
+    DWORD   dwTotalGroupCount = 0;
+    DWORD   i = 0, j = 0;
+    BOOLEAN bHasTxn = FALSE;
+    BOOLEAN bIsComputer = FALSE;
+    VDIR_OPERATION  searchOp = {0};
+    PVDIR_ATTRIBUTE pMemberOfAttr = NULL;
+    PVDIR_ENTRY     pGroupEntry = NULL;
+    PTOKEN_GROUPS   pTokenGroups = NULL;
+    PCSTR   ppszAllDefaultGroups[] = {pszBuiltinUsersGroupSid, VMDIR_AUTHENTICATED_USER_SID};
+    PCSTR   ppszComputerDefaultGroups[] = {pszDomainClientsGroupSid};
+
+    if (!pEntry || !ppTokenGroups || IsNullOrEmptyString(pszBuiltinUsersGroupSid))
+    {
+        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirInitStackOperation(
+            &searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    searchOp.pBEIF = VmDirBackendSelect(NULL);
+
+    // begin txn
+    dwError = searchOp.pBEIF->pfnBETxnBegin(searchOp.pBECtx, VDIR_BACKEND_TXN_READ);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = TRUE;
+
+    dwError = VmDirBuildMemberOfAttribute(&searchOp, pEntry, &pMemberOfAttr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // commit txn
+    dwError = searchOp.pBEIF->pfnBETxnCommit(searchOp.pBECtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = FALSE;
+
+    bIsComputer = VmDirEntryIsObjectclass(pEntry, OC_COMPUTER);
+
+    dwAllDefaultGroupCount = VMDIR_ARRAY_SIZE(ppszAllDefaultGroups);
+    dwComputerDefaultGroupCount = VMDIR_ARRAY_SIZE(ppszComputerDefaultGroups);
+    dwComputerDefaultGroupCount = bIsComputer ? dwComputerDefaultGroupCount : 0;
+    dwEntryGroupCount = pMemberOfAttr ? pMemberOfAttr->numVals : 0;
+
+    dwTotalGroupCount =
+            dwAllDefaultGroupCount +
+            dwComputerDefaultGroupCount +
+            dwEntryGroupCount;
+
+    dwError = VmDirAllocateMemory(
+            sizeof(TOKEN_GROUPS) +
+            (sizeof(SID_AND_ATTRIBUTES) * dwTotalGroupCount),
+            (PVOID*)&pTokenGroups);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pTokenGroups->GroupCount = dwTotalGroupCount;
+
+    for (i = 0; i < dwAllDefaultGroupCount; i++, j++)
+    {
+        dwError = VmDirAllocateSidFromCString(
+                ppszAllDefaultGroups[i],
+                &pTokenGroups->Groups[j].Sid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pTokenGroups->Groups[j].Attributes = SE_GROUP_ENABLED;
+    }
+
+    for (i = 0; i < dwComputerDefaultGroupCount; i++, j++)
+    {
+        dwError = VmDirAllocateSidFromCString(
+                ppszComputerDefaultGroups[i],
+                &pTokenGroups->Groups[j].Sid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pTokenGroups->Groups[j].Attributes = SE_GROUP_ENABLED;
+    }
+
+    for (i = 0; i < dwEntryGroupCount; i++, j++)
+    {
+        dwError = VmDirSimpleDNToEntry(
+                pMemberOfAttr->vals[i].lberbv.bv_val, &pGroupEntry);
+        if (dwError)
+        {
+            // may be deleted in the meanwhile
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "_VmDirBuildTokenGroups() memmberOf entry (%s) not found, error code (%d)",
+                    pMemberOfAttr->vals[i].lberbv.bv_val,
+                    dwError);
+            continue;
+        }
+
+        dwError = VmDirGetObjectSidFromEntry(
+                pGroupEntry, NULL, &pTokenGroups->Groups[j].Sid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pTokenGroups->Groups[j].Attributes = SE_GROUP_ENABLED;
+
+        VmDirFreeEntry(pGroupEntry);
+        pGroupEntry = NULL;
+    }
+
+    *ppTokenGroups = pTokenGroups;
+
+cleanup:
+    VmDirFreeAttribute(pMemberOfAttr);
+    VmDirFreeEntry(pGroupEntry);
+    VmDirFreeOperationContent(&searchOp);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "_VmDirBuildTokenGroups() failed, entry DN (%s), error code (%d)",
+            pEntry ? pEntry->dn.lberbv.bv_val : "NULL",
+            dwError);
+
+    if (bHasTxn)
+    {
+        searchOp.pBEIF->pfnBETxnAbort(searchOp.pBECtx);
+    }
+    _VmDirFreeTokenGroups(pTokenGroups);
+    goto cleanup;
+}
+
+static
+VOID
+_VmDirFreeTokenGroups(
+    PTOKEN_GROUPS   pGroups
+    )
+{
+    DWORD i = 0;
+
+    if (pGroups)
+    {
+        for (i = 0; i < pGroups->GroupCount; i++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pGroups->Groups[i].Sid);
+        }
+        VMDIR_SAFE_FREE_MEMORY(pGroups);
+    }
 }

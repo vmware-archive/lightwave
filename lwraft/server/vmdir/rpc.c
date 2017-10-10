@@ -312,7 +312,10 @@ VmDirRpcEpRegister(
 )
 {
     ULONG ulError = 0;
-
+#if 1
+    /* Do not register with dcerpc; all services use fixed endpoints */
+    return ulError;
+#else
     DCETHREAD_TRY
     {
        rpc_ep_register(
@@ -336,6 +339,7 @@ VmDirRpcEpRegister(
     DCETHREAD_ENDTRY;
 
     return ulError;
+#endif
 }
 
 ULONG

@@ -29,9 +29,10 @@ static
 int
 DetectAndResolveAttrsConflicts(
     PVDIR_OPERATION     pOperation,
-    PVDIR_BERVALUE      pDn,
+    PVDIR_ENTRY         pSupplierEntry,
     PVDIR_ATTRIBUTE     pAttrAttrSupplierMetaData,
-    ENTRYID             entryId
+    ENTRYID             entryId,
+    PVDIR_ENTRY         pConsumerEntry
     );
 
 static
@@ -41,7 +42,8 @@ SetAttributesNewMetaData(
     PVDIR_ENTRY         pEntry,
     char *              localUsn,
     PVDIR_ATTRIBUTE *   ppAttrAttrMetaData,
-    ENTRYID             entryId
+    ENTRYID             entryId,
+    PVDIR_ENTRY         pConsumerEntry
     );
 
 static
@@ -57,12 +59,6 @@ static
 int
 _VmDirPatchData(
     PVDIR_OPERATION     pOperation
-    );
-
-static
-DWORD
-_VmDirAssignEntryIdIfSpecialInternalEntry(
-    PVDIR_ENTRY pEntry
     );
 
 static
@@ -115,56 +111,13 @@ _VmDirAttrValueMetaResolve(
     PBOOLEAN        pInScope
     );
 
-/*
- * _VmDirAssignEntryIdIfSpecialInternalEntry()
- *
- * Internal entries from vmdir.h:
- *
- * #define DSE_ROOT_ENTRY_ID              1
- * #define SCHEMA_NAMING_CONTEXT_ID       2
- * #define SUB_SCEHMA_SUB_ENTRY_ID        3
- * #define CFG_ROOT_ENTRY_ID              4
- * #define CFG_INDEX_ENTRY_ID             5
- * #define CFG_ORGANIZATION_ENTRY_ID      6
- * #define DEL_ENTRY_CONTAINER_ENTRY_ID   7
- * #define DEFAULT_ADMINISTRATOR_ENTRY_ID 8
- *
- * Except System administrator and deleted objects container entries, rest are created at the initialization time of
- * all replicas => getting expected entry Ids.
- *
- */
-static DWORD
-_VmDirAssignEntryIdIfSpecialInternalEntry(
-    PVDIR_ENTRY pEntry )
-{
-    DWORD       dwError = 0;
-    PSTR        pszLocalErrMsg = NULL;
-
-    dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                  "_VmDirAssignEntryIdIfSpecialInternalEntry: DN normalization failed - (%u)(%s)",
-                                  dwError, pEntry->dn.lberbv.bv_val );
-
-    if (VmDirStringCompareA( BERVAL_NORM_VAL(pEntry->dn),
-                             BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN), TRUE) == 0)
-    {
-        pEntry->eId = DEFAULT_ADMINISTRATOR_ENTRY_ID;
-    }
-    else if (VmDirStringCompareA( BERVAL_NORM_VAL(pEntry->dn),
-                                  BERVAL_NORM_VAL(gVmdirServerGlobals.delObjsContainerDN), TRUE) == 0)
-    {
-        pEntry->eId = DEL_ENTRY_CONTAINER_ENTRY_ID;
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, pszLocalErrMsg );
-    goto cleanup;
-}
-
+static
+BOOLEAN
+_VmDirIsBenignReplConflict(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSupplierEntry,
+    PVDIR_ENTRY     pConsumerEntry
+    );
 
 // Replicate Add Entry operation
 
@@ -172,8 +125,7 @@ int
 ReplAddEntry(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx,
-    BOOLEAN                         bFirstReplicationCycle)
+    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx)
 {
     int                 retVal = LDAP_SUCCESS;
     VDIR_OPERATION      op = {0};
@@ -188,6 +140,7 @@ ReplAddEntry(
     int                 i = 0;
     PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
     LDAPMessage *       ldapMsg = pPageEntry->entry;
+    VDIR_ENTRY          consumerEntry = {0};
 
     retVal = VmDirInitStackOperation( &op,
                                       VDIR_OPERATION_TYPE_REPL,
@@ -224,7 +177,7 @@ ReplAddEntry(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%ld", localUsn)) != 0)
+    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%" PRId64, localUsn)) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplAddEntry: VmDirStringNPrintFA failed with error code: %d", retVal);
         retVal = LDAP_OPERATIONS_ERROR;
@@ -238,7 +191,7 @@ ReplAddEntry(
     retVal = _VmDirDetatchValueMetaData(&op, pEntry, &pAttrAttrValueMetaData);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    retVal = SetAttributesNewMetaData(&op, pEntry, localUsnStr, &pAttrAttrMetaData, 0);
+    retVal = SetAttributesNewMetaData(&op, pEntry, localUsnStr, &pAttrAttrMetaData, 0, &consumerEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // Creating deleted object scenario: Create attributes just with attribute meta data, and no values.
@@ -271,12 +224,6 @@ ReplAddEntry(
     retVal = _VmDirPatchData( &op );
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    if (bFirstReplicationCycle)
-    {
-        retVal =  _VmDirAssignEntryIdIfSpecialInternalEntry( pEntry );
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-
     op.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
     if ((retVal = VmDirInternalAddEntry( &op )) != LDAP_SUCCESS)
@@ -291,7 +238,7 @@ ReplAddEntry(
                           "ReplAddEntry/VmDirInternalAddEntry: %d (Object already exists). "
                           "DN: %s, first attribute: %s, it's meta data: '%s' "
                           "NOT resolving this possible replication CONFLICT or initial objects creation scenario. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs->type.lberbv.bv_val, pEntry->attrs->metaData,
                           pPageEntry->ulPartnerUSN);
 
@@ -302,14 +249,14 @@ ReplAddEntry(
                           "ReplAddEntryVmDirInternalAddEntry: %d (Parent object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s' "
                           "NOT resolving this possible replication CONFLICT or out-of-parent-child-order replication scenario. "
-                          "For this subtree, system may not converge. Partner USN %llu",
+                          "For this subtree, system may not converge. Partner USN %" PRId64,
                           retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs->type.lberbv.bv_val, pEntry->attrs->metaData,
                           pPageEntry->ulPartnerUSN);
                 break;
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplAddEntry/VmDirInternalAddEntry:  %d (%s). Partner USN %llu",
+                          "ReplAddEntry/VmDirInternalAddEntry:  %d (%s). Partner USN %" PRId64,
                           retVal, VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ), pPageEntry->ulPartnerUSN);
                 break;
         }
@@ -333,6 +280,7 @@ cleanup:
     VmDirFreeAttribute( pAttrAttrValueMetaData );
     VmDirFreeAttribute( pAttrAttrMetaData );
     VmDirFreeOperationContent(&op);
+    VmDirFreeEntryContent(&consumerEntry);
 
     return retVal;
 
@@ -410,7 +358,7 @@ ReplDeleteEntry(
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
                 retVal = LDAP_SUCCESS;
@@ -421,7 +369,7 @@ ReplDeleteEntry(
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (Operation not allowed on non-leaf). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
                 break;
@@ -431,14 +379,14 @@ ReplDeleteEntry(
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (No such attribute). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
                 break;
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplDeleteEntry/InternalDeleteEntry: %d (%s). Partner USN %llu",
+                          "ReplDeleteEntry/InternalDeleteEntry: %d (%s). Partner USN %" PRId64,
                           retVal, VDIR_SAFE_STRING( delOp.ldapResult.pszErrMsg ),pPageEntry->ulPartnerUSN);
                 break;
         }
@@ -575,7 +523,7 @@ txnretry:
                           "ReplModifyEntry/SetupReplModifyRequest: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "Possible replication CONFLICT. Object will get deleted from the system. "
-                          "Partner USN %llu",
+                          "Partner USN %" PRId64,
                           retVal, e.dn.lberbv.bv_val, e.attrs[0].type.lberbv.bv_val,
                           e.attrs[0].metaData, pPageEntry->ulPartnerUSN);
                 break;
@@ -588,7 +536,7 @@ txnretry:
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplModifyEntry/SetupReplModifyRequest: %d (%s). Partner USN %llu",
+                          "ReplModifyEntry/SetupReplModifyRequest: %d (%s). Partner USN %" PRId64,
                           retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ), pPageEntry->ulPartnerUSN);
                 break;
        }
@@ -772,6 +720,53 @@ error:
     goto cleanup;
 }
 
+static
+BOOLEAN
+_VmDirIsBenignReplConflict(
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_ENTRY     pSupplierEntry,
+    PVDIR_ENTRY     pConsumerEntry
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bIsBenign = FALSE;
+    CHAR    excludeAttrs[] = {ATTR_USN_CHANGED};  // supplier always send USNChanged, but it has a local context.
+    int     i = 0;
+
+    if (pConsumerEntry->eId == 0) // don't expect this, but pass through if no eid.
+    {
+        goto cleanup;
+    }
+
+    // query consumer entry if needed
+    if (!pConsumerEntry->dn.lberbv_val)
+    {
+        PVDIR_BACKEND_INTERFACE pBE = NULL;
+        pBE = VmDirBackendSelect(NULL);
+        assert(pBE);
+
+        dwError = pBE->pfnBESimpleIdToEntry(pConsumerEntry->eId, pConsumerEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (i=0; i< VMDIR_ARRAY_SIZE(excludeAttrs); i++)
+    {
+        if (VmDirStringCompareA(pAttr->type.lberbv_val, &excludeAttrs[i], FALSE) == 0)
+        {
+            bIsBenign = TRUE;
+            goto cleanup;
+        }
+    }
+
+    bIsBenign = VmDirIsSameConsumerSupplierEntryAttr(pAttr, pSupplierEntry, pConsumerEntry);
+
+cleanup:
+    return bIsBenign;
+
+error:
+    goto cleanup;
+}
+
 /* Detect and resolve attribute level conflicts.
  *
  * Read consumer attributes' meta data corresponding to given supplier attributes' meta data, "compare" them, and "mark"
@@ -812,9 +807,10 @@ static
 int
 DetectAndResolveAttrsConflicts(
     PVDIR_OPERATION     pOperation,
-    PVDIR_BERVALUE      pDn,
+    PVDIR_ENTRY         pSupplierEntry,
     PVDIR_ATTRIBUTE     pAttrAttrSupplierMetaData,
-    ENTRYID             entryId
+    ENTRYID             entryId,
+    PVDIR_ENTRY         pConsumerEntry
     )
 {
     int             retVal = LDAP_SUCCESS;
@@ -864,6 +860,7 @@ DetectAndResolveAttrsConflicts(
                     BAIL_ON_LDAP_ERROR( retVal, LDAP_LOCK_DEADLOCK, (pOperation->ldapResult.pszErrMsg),
                                         "backend read entry failed - (%d)(%s)", retVal,
                                         VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+                    break;
 
                 default:
                     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "DetectAndResolveAttrsConflicts: pfnBEGetAttrMetaData failed "
@@ -889,14 +886,14 @@ DetectAndResolveAttrsConflicts(
                 VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
                     "DetectAndResolveAttrsConflicts: No conflict, supplier version wins. "
                     "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s ",
-                     pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
+                     pSupplierEntry->dn.lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
             }
             else if (supplierVersionNum < consumerVersionNum)
             {
                 VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
                     "DetectAndResolveAttrsConflicts: Possible conflict, supplier version loses. "
                     "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
-                    pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
+                    pSupplierEntry->dn.lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
 
                 if (VmDirStringCompareA( pAttr->type.lberbv_val, ATTR_USN_CHANGED, FALSE ) == 0)
                 {
@@ -922,12 +919,18 @@ DetectAndResolveAttrsConflicts(
                 char * supplierInvocationId = strchr(strchr(metaData, ':') + 1, ':') + 1;
                 char * consumerInvocationId = strchr(strchr(pAttr->metaData, ':') + 1, ':') + 1;
 
+                // compare supplier and consumer attr content, log warning msg if different.
+                BOOLEAN bIsSameAttrValue = _VmDirIsBenignReplConflict(pAttr, pSupplierEntry, pConsumerEntry);
+
                 if (strncmp( supplierInvocationId, consumerInvocationId, VMDIR_GUID_STR_LEN ) < 0)
                 {
-                    VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
-                        "DetectAndResolveAttrsConflicts: Possible conflict, supplier serverId loses. "
-                        "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
-                        pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
+                    if (!bIsSameAttrValue)
+                    {
+                        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                            "DetectAndResolveAttrsConflicts: Possible conflict, supplier serverId loses. "
+                            "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
+                            pSupplierEntry->dn.lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
+                    }
 
                     if (VmDirStringCompareA( pAttr->type.lberbv_val, ATTR_USN_CHANGED, FALSE ) == 0)
                     {
@@ -949,10 +952,13 @@ DetectAndResolveAttrsConflicts(
                }
                 else
                 {
-                    VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
-                        "DetectAndResolveAttrsConflicts: Possible conflict, supplier serverId wins."
-                        "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
-                        pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
+                    if (!bIsSameAttrValue)
+                    {
+                        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                            "DetectAndResolveAttrsConflicts: Possible conflict, supplier serverId wins."
+                            "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
+                            pSupplierEntry->dn.lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
+                    }
                 }
             }
         }
@@ -1051,7 +1057,8 @@ SetAttributesNewMetaData(
     PVDIR_ENTRY         pEntry,
     char *              localUsnStr,
     PVDIR_ATTRIBUTE *   ppAttrAttrMetaData,
-    ENTRYID             entryId
+    ENTRYID             entryId,
+    PVDIR_ENTRY         pConsumerEntry
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -1106,7 +1113,12 @@ SetAttributesNewMetaData(
 
     if (pOperation->reqCode == LDAP_REQ_MODIFY)
     {
-        retVal = DetectAndResolveAttrsConflicts(pOperation, &pEntry->dn, pAttrAttrMetaData, entryId);
+        retVal = DetectAndResolveAttrsConflicts(
+                        pOperation,
+                        pEntry,
+                        pAttrAttrMetaData,
+                        entryId,
+                        pConsumerEntry);
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
@@ -1241,6 +1253,7 @@ SetupReplModifyRequest(
     VDIR_MODIFICATION * lastKnownDNMod = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = pOperation->pSchemaCtx;
     ModifyReq *         mr = &(pOperation->request.modifyReq);
+    VDIR_ENTRY          consumerEntry = {0};
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "SetupReplModifyRequest: next entry being replicated/Modified is: %s",
               pEntry->dn.lberbv.bv_val );
@@ -1263,7 +1276,7 @@ SetupReplModifyRequest(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%ld",
+    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%" PRId64,
                                        localUsn)) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: VmDirStringNPrintFA failed with error code: %d", retVal );
@@ -1275,7 +1288,8 @@ SetupReplModifyRequest(
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "SetupReplModifyRequest: next generated localUSN: %s", localUsnStr );
 
-    retVal = SetAttributesNewMetaData(pOperation, pEntry, localUsnStr, &pAttrAttrMetaData, entryId);
+    consumerEntry.eId = entryId;
+    retVal = SetAttributesNewMetaData(pOperation, pEntry, localUsnStr, &pAttrAttrMetaData, entryId, &consumerEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     for (currAttr = pEntry->attrs; currAttr; currAttr = currAttr->next)
@@ -1402,6 +1416,7 @@ SetupReplModifyRequest(
 cleanup:
     // pAttrAttrMetaData is local, needs to be freed within the call
     VmDirFreeAttribute( pAttrAttrMetaData );
+    VmDirFreeEntryContent(&consumerEntry);
 
     return retVal;
 
@@ -1612,7 +1627,7 @@ _VmSetupValueMetaData(
        // p now points to <version>...
        // Need to replace supp's <local-usn> with new locally generated local-usn.
        retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) - 1,
-                    "%s:%ld:", pAttr->type.lberbv.bv_val, localUsn);
+                    "%s:%" PRId64 ":", pAttr->type.lberbv.bv_val, localUsn);
        BAIL_ON_VMDIR_ERROR(retVal);
 
        //av_meta_pre contains "<attr-name>:<new-local-usn>:"
@@ -1849,7 +1864,7 @@ _VmDirAttachValueMetaData(
                VALUE_META_TO_NEXT_FIELD(p, 2);
                // p now points to <version>...
                retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) -1,
-                            "%s:%ld:", attr->type.lberbv.bv_val, localUsn);
+                            "%s:%" PRId64 ":", attr->type.lberbv.bv_val, localUsn);
                BAIL_ON_VMDIR_ERROR(retVal);
 
                //av_meta_pre contains "<attr-name>:<new-local-usn>:"

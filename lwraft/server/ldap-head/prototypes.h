@@ -39,11 +39,10 @@ VmDirOPStatisticUpdate(
     uint64_t iThisTimeInMilliSecs
     );
 
-// vecs.c
+// ldapmetrics.c
 DWORD
-VmDirGetVecsMachineCert(
-    PSTR*   ppszCert,
-    PSTR*   ppszKey
+VmDirLdapMetricsInit(
+    VOID
     );
 
 #ifdef __cplusplus

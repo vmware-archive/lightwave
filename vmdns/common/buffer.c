@@ -1385,11 +1385,9 @@ VmDnsReadStringFromBuffer(
                         );
             BAIL_ON_VMDNS_ERROR(dwError);
 
-
             pVmDnsBuffer->szCursor += dwStringLength;
+            pszString[dwStringLength] = '\0';
         }
-
-        pszString[dwStringLength] = '\0';
     }
     else
     {
@@ -1446,7 +1444,7 @@ VmDnsReadOffsetStringFromBuffer(
     }
 
     dwError = VmDnsAllocateMemory(
-                        VMDNS_NAME_LENGTH_MAX + 1,
+                        VMDNS_NAME_LENGTH_MAX + 2,
                         (PVOID *)&pszTempString
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -1455,7 +1453,9 @@ VmDnsReadOffsetStringFromBuffer(
 
     pszTempStringCursor = pszTempString;
 
+    // Get the first part of the label
     dwLabelLength = *(PUINT8)pCurrentPos;
+    pCurrentPos += sizeof(UINT8);
 
     while (dwLabelLength)
     {
@@ -1464,41 +1464,49 @@ VmDnsReadOffsetStringFromBuffer(
             dwError = ERROR_LABEL_TOO_LONG;
             BAIL_ON_VMDNS_ERROR(dwError);
         }
-
-        dwError = VmDnsCheckMemory(pVmDnsBuffer, dwLabelLength);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        pCurrentPos += sizeof(UINT8);
-
-        dwError = VmDnsCopyMemory(
-                        pszTempStringCursor,
-                        dwLabelLength + 1,
-                        pCurrentPos,
-                        dwLabelLength
-                        );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        if (dwLabelLength > (VMDNS_NAME_LENGTH_MAX - dwStringLength))
-        {
-            dwError = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
-
-        pszTempStringCursor[dwLabelLength]='.';
-        dwLabelLength++;
-
-        pszTempStringCursor = &pszTempStringCursor[dwLabelLength];
-        dwStringLength += dwLabelLength;
-
         if (dwStringLength > VMDNS_NAME_LENGTH_MAX)
         {
             dwError = ERROR_LABEL_TOO_LONG;
             BAIL_ON_VMDNS_ERROR(dwError);
         }
+        if (dwLabelLength > (VMDNS_NAME_LENGTH_MAX - dwStringLength))
+        {
+            dwError = ERROR_LABEL_TOO_LONG;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
 
-        pCurrentPos += dwLabelLength - 1;
+        dwError = VmDnsCheckMemory(pVmDnsBuffer, dwLabelLength);
+        BAIL_ON_VMDNS_ERROR(dwError);
 
+        if ((pCurrentPos + dwLabelLength) >
+            (pVmDnsBuffer->pMessage + pVmDnsBuffer->szLength ))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        dwError = VmDnsCopyMemory(
+                        pszTempStringCursor,
+                        VMDNS_NAME_LENGTH_MAX - dwStringLength,
+                        pCurrentPos,
+                        dwLabelLength
+                        );
+
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pCurrentPos += dwLabelLength;
+        pszTempStringCursor += dwLabelLength;
+
+        // Append . at the end
+        *pszTempStringCursor = '.';
+        ++dwLabelLength;
+        ++pszTempStringCursor;
+
+        dwStringLength += dwLabelLength;
+
+        // Go to the next part of the label
         dwLabelLength = *(PUINT8)pCurrentPos;
+        pCurrentPos += sizeof(UINT8);
     }
 
     bEndOfString = TRUE;

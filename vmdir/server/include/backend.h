@@ -99,6 +99,15 @@ typedef struct _VDIR_BACKEND_PARENT_ID_INDEX_ITERATOR
 
 } VDIR_BACKEND_PARENT_ID_INDEX_ITERATOR, *PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR;
 
+typedef struct _VDIR_BACKEND_ENTRYBLOB_ITERATOR
+{
+    PVOID   pIterator;
+    BOOLEAN bHasNext;
+    ENTRYID startEID;
+    ENTRYID maxEID;
+
+} VDIR_BACKEND_ENTRYBLOB_ITERATOR, *PVDIR_BACKEND_ENTRYBLOB_ITERATOR;
+
 typedef struct _VDIR_BACKEND_USN_LIST*          PVDIR_BACKEND_USN_LIST;
 
 /*
@@ -382,6 +391,33 @@ typedef VOID (*PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_FREE)(
                     );
 
 /*
+ * Initialize blob table iterator
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_ENTRYBLOB_ITERATOR_INIT)(
+                    ENTRYID                             eId,
+                    PVDIR_BACKEND_ENTRYBLOB_ITERATOR*   ppIterator
+                    );
+/*
+ * Iterate eid in the blob table
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_ENTRYBLOB_ITERATE)(
+                    PVDIR_BACKEND_ENTRYBLOB_ITERATOR    pIterator,
+                    ENTRYID*                            pEntryId
+                    );
+/*
+ * Free blob table iterator
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef VOID (*PFN_BACKEND_ENTRYBLOB_ITERATOR_FREE)(
+                    PVDIR_BACKEND_ENTRYBLOB_ITERATOR  pIterator
+                    );
+
+/*
  * Shutdown backend
  * return error -
  * ERROR_BACKEND_ERROR:             all others
@@ -548,6 +584,22 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Free index table enumerator
      */
     PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_FREE   pfnBEParentIdIndexIteratorFree;
+
+    //////////////////////////////////////////////////////////////////////
+    // EntryBlob iterator
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * initialize blob table enumerator
+     */
+    PFN_BACKEND_ENTRYBLOB_ITERATOR_INIT   pfnBEEntryBlobIteratorInit;
+    /*
+     * enumerate eid  in the blob table
+     */
+    PFN_BACKEND_ENTRYBLOB_ITERATE         pfnBEEntryBlobIterate;
+    /*
+     * Free blob table enumerator
+     */
+    PFN_BACKEND_ENTRYBLOB_ITERATOR_FREE   pfnBEEntryBlobIteratorFree;
 
     //////////////////////////////////////////////////////////////////////
     // transaction related functions
@@ -807,16 +859,6 @@ VmDirBackendAddOutstandingUSN(
 
 VOID
 VmDirBackendRemoveOutstandingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
-    );
-
-DWORD
-VmDirBackendAddOriginatingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
-    );
-
-VOID
-VmDirBackendRemoveOriginatingUSN(
     PVDIR_BACKEND_CTX      pBECtx
     );
 

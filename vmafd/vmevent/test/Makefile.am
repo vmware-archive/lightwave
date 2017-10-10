@@ -1,9 +1,9 @@
 noinst_PROGRAMS = vmevent_test
 
 vmevent_test_CPPFLAGS = \
-    -I$(top_srcdir)/vmevent/include \
-    -I$(top_srcdir)/vmevent/include/public \
-    -I$(top_builddir)/vmevent/client \
+    -I$(top_srcdir)/vmafd/vmevent/include \
+    -I$(top_srcdir)/vmafd/vmevent/include/public \
+    -I$(top_builddir)/vmafd/vmevent/client \
     @SQLITE_INCLUDES@ \
     @LW_INCLUDES@  \
     @OPENSSL_INCLUDES@
@@ -12,8 +12,8 @@ vmevent_test_SOURCES = \
 	testsrv.c
 
 vmevent_test_LDADD = \
-    $(top_builddir)/vmevent/db/libvmeventdb.la \
-    $(top_builddir)/vmevent/client/libvmeventclient.la \
+    $(top_builddir)/vmafd/vmevent/db/libvmeventdb.la \
+    $(top_builddir)/vmafd/vmevent/client/libvmeventclient.la \
     @DCERPC_LIBS@ \
     @DL_LIBS@  \
     @PTHREAD_LIBS@ \

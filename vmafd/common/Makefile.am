@@ -29,10 +29,11 @@ libcommon_la_SOURCES = \
     utils.c
 
 libcommon_la_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
+    -Wno-error=deprecated-declarations \
+    -I$(top_srcdir)/vmafd/include \
+    -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmdir/include/public \
     @LW_INCLUDES@ \
-    @VMDIR_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 libcommon_la_LDFLAGS = \

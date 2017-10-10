@@ -919,7 +919,7 @@ _VmDirPluginDflValidatePreModify(
 
                     if (pAttrMaxDfl)
                     {
-                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrVer->vals[0]));
+                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrMaxDfl->vals[0]));
                     }
                     else if (pAttrVer)
                     {
@@ -1129,13 +1129,12 @@ error:
     goto cleanup;
 }
 
-
 /*
-* Only users and groups ("security principals") require a real SID. Domain
-* objects need the domain-specific SID we store there (to construct SIDs for
-* real security principals). Rather than hard-code the classes that get a
-* SID here we just let the schema definition drive the logic.
-*/
+ * Only users and groups ("security principals") require a real SID. Domain
+ * objects need the domain-specific SID we store there (to construct SIDs for
+ * real security principals). Rather than hard-code the classes that get a
+ * SID here we just let the schema definition drive the logic.
+ */
 DWORD
 _VmDirNeedsSid(
     PVDIR_ENTRY pEntry,
@@ -1286,7 +1285,7 @@ _VmDirPluginAddOpAttrsPreAdd(
     dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%ld", usn);
+    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, usn);
 
     // Append usnCreated attribute
     pszErrorContext = "Add USN create attribute";
@@ -1677,7 +1676,7 @@ _VmDirPluginReplaceOpAttrsPreModApplyModify(
     dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
     BAIL_ON_VMDIR_ERROR( dwError );
 
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%ld", usn);
+    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, usn);
 
     pszErrorContext = "Replace USN change attribute";
     dwError = VmDirAppendAMod( pOperation, MOD_OP_REPLACE, ATTR_USN_CHANGED, ATTR_USN_CHANGED_LEN, usnStr, VmDirStringLenA( usnStr ) );
@@ -1833,26 +1832,37 @@ _VmDirPluginDflUpdatePostModifyCommit(
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult)
 {
-    PVDIR_ATTRIBUTE  pAttr = NULL;
-    DWORD dwDfl = 0;
+    PVDIR_MODIFICATION  pMod = NULL;
 
     // check if domain object
     if (gVmdirServerGlobals.systemDomainDN.bvnorm_val &&
-        VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn),
-                            gVmdirServerGlobals.systemDomainDN.bvnorm_val,
-                            FALSE) == 0)
+        VmDirStringCompareA(
+                BERVAL_NORM_VAL(pEntry->dn),
+                gVmdirServerGlobals.systemDomainDN.bvnorm_val,
+                FALSE) == 0)
     {
-        // Search for vmwDomainFunctionalLevel attr
-        pAttr = VmDirFindAttrByName(pEntry, ATTR_DOMAIN_FUNCTIONAL_LEVEL);
-
-        if (pAttr)
+        // search for vmwDomainFunctionalLevel mod
+        pMod = pOperation->request.modifyReq.mods;
+        while (pMod)
         {
-            dwDfl = atoi(BERVAL_NORM_VAL(pAttr->vals[0]));
+            if (pMod->operation == MOD_OP_ADD &&
+                VmDirStringCompareA(
+                        BERVAL_NORM_VAL(pMod->attr.type),
+                        ATTR_DOMAIN_FUNCTIONAL_LEVEL,
+                        FALSE) == 0)
+            {
+                gVmdirServerGlobals.dwDomainFunctionalLevel =
+                        atoi(BERVAL_NORM_VAL(pMod->attr.vals[0]));
 
-            gVmdirServerGlobals.dwDomainFunctionalLevel = dwDfl;
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "Domain Functional Level cache changed to (%d)",
+                        gVmdirServerGlobals.dwDomainFunctionalLevel);
 
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Domain Functional Level cache changed to (%d)",
-                            gVmdirServerGlobals.dwDomainFunctionalLevel);
+                break;
+            }
+
+            pMod = pMod->next;
         }
     }
 
@@ -2355,12 +2365,12 @@ _VmDirPluginVerifyAclAccess(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-         //
-         // In general a caller can modify an entry if they have
-         // VMDIR_RIGHT_DS_WRITEPROP access. However, the entry's security
-         // descriptor is special-cased and requires a separate permission
-         // (VMDIR_ENTRY_WRITE_ACL). This is the same behavior as AD.
-         //
+        //
+        // In general a caller can modify an entry if they have
+        // VMDIR_RIGHT_DS_WRITEPROP access. However, the entry's security
+        // descriptor is special-cased and requires a separate permission
+        // (VMDIR_ENTRY_WRITE_ACL). This is the same behavior as AD.
+        //
         if (VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_ACL_STRING, FALSE) == 0 ||
             VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
         {
@@ -2375,6 +2385,7 @@ _VmDirPluginVerifyAclAccess(
 cleanup:
     VmDirFreeEntry(pCurrentEntry);
     return dwPriorResult ? dwPriorResult : dwError;
+
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirPluginVerifyAclAccess failed with error %d", dwError);
     goto cleanup;

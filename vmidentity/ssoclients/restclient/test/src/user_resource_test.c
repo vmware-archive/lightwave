@@ -156,13 +156,13 @@ VmdirUserCreateTest()
     e = VmdirUserDetailsDataNew(
         &pDetails,
         "name@domain.com",
-        "name@test_tenant_name",
+        "name@my-test-tenant.com",
         "firstName",
         "lastName",
         "description");
     BAIL_ON_ERROR(e);
 
-    e = VmdirPasswordDetailsDataNew(&pPasswordDetails, "Admin!23", &lastSet, &lifetime);
+    e = VmdirPasswordDetailsDataNew(&pPasswordDetails, "Ca$hc0w1", &lastSet, &lifetime);
     BAIL_ON_ERROR(e);
 
     e = VmdirUserDataNew(&pUser, name, domain, pAlias, pDetails, &disabled, &locked, objectId, pPasswordDetails);
@@ -298,13 +298,13 @@ VmdirUserUpdateTest()
     e = VmdirUserDetailsDataNew(
         &pDetails,
         "name2@domain.com",
-        "name2@test_tenant_name",
+        "name2@my-test-tenant.com",
         "firstName2",
         "lastName2",
         "description2");
     BAIL_ON_ERROR(e);
 
-    e = VmdirPasswordDetailsDataNew(&pPasswordDetails, "Admin!23", &lastSet, &lifetime);
+    e = VmdirPasswordDetailsDataNew(&pPasswordDetails, "Ca$hc0w1", &lastSet, &lifetime);
     BAIL_ON_ERROR(e);
 
     e = VmdirUserDataNew(&pUser, name, domain, pAlias, pDetails, &disabled, &locked, objectId, pPasswordDetails);
@@ -340,7 +340,7 @@ VmdirUserUpdatePasswordTest()
 
     VMDIR_USER_DATA* pUserReturn = NULL;
 
-    PCSTRING currentPassword = "Admin!23";
+    PCSTRING currentPassword = "Ca$hc0w1";
     PCSTRING newPassword = "Admin!56";
 
     PCSTRING domain = testTenant;

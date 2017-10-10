@@ -37,3 +37,7 @@ extern BOOLEAN VmDirRaftNeedReferral(PCSTR pszReqDn);
 extern VOID VmDirSendLdapReferralResult( VDIR_OPERATION * op, PCSTR pszRefSuffix, PBOOLEAN pbRefSent);
 
 extern DWORD VmDirRaftGetLeader(PSTR *);
+
+extern PVM_METRICS_HISTOGRAM pLdapRequestDuration[];
+
+extern PVM_METRICS_COUNTER pLdapErrorCount[];

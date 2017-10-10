@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -77,9 +77,9 @@ VmDirIndexingTaskCompute(
 
     // compute offset for new task
     pBE = VmDirBackendSelect(NULL);
-    if (gVdirIndexGlobals.offset < 0)
+    if (gVdirIndexGlobals.offset < NEW_ENTRY_EID_PREFIX)
     {
-        gVdirIndexGlobals.offset = 0;
+        gVdirIndexGlobals.offset = NEW_ENTRY_EID_PREFIX;
     }
     else
     {
@@ -89,7 +89,7 @@ VmDirIndexingTaskCompute(
         gVdirIndexGlobals.offset += INDEXING_BATCH_SIZE;
         if (gVdirIndexGlobals.offset > maxEId)
         {
-            gVdirIndexGlobals.offset = 0;
+            gVdirIndexGlobals.offset = NEW_ENTRY_EID_PREFIX;
         }
     }
 
@@ -214,7 +214,6 @@ VmDirIndexingTaskPopulateIndices(
     pNode = pTask->pIndicesToPopulate->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
         // open index db first if it's new
@@ -229,7 +228,7 @@ VmDirIndexingTaskPopulateIndices(
                 pIndexCfgs, pIndexCfg->pszAttrName, pIndexCfg, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     dwError = pBE->pfnBEIndexPopulate(
@@ -272,7 +271,6 @@ VmDirIndexingTaskValidateScopes(
     pNode = pTask->pIndicesToValidate->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
         dwError = VmDirIndexCfgValidateUniqueScopeMods(pIndexCfg);
@@ -284,7 +282,7 @@ VmDirIndexingTaskValidateScopes(
         dwError = VmDirIndexCfgRevertBadUniqueScopeMods(pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
 cleanup:
@@ -323,7 +321,6 @@ VmDirIndexingTaskDeleteIndices(
     pNode = pTask->pIndicesToDelete->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
         // in case of resume, it may be already deleted
@@ -336,7 +333,7 @@ VmDirIndexingTaskDeleteIndices(
             VmDirIndexCfgClear(pIndexCfg);
         }
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
 cleanup:
@@ -495,6 +492,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszOffset);
     VMDIR_SAFE_FREE_MEMORY(pszStatus);
     return dwError;

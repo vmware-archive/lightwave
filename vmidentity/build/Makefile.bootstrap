@@ -33,7 +33,6 @@ CLEAN_OBJECTS = \
     diagnostics \
     idm \
     interop \
-    jdepends \
     platform \
     config.log \
     config.status \
@@ -88,7 +87,6 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/server/src/main/resources/messages.properties \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
     $(SRCROOT)/ROOT/target \
-    $(SRCROOT)/jdepends/target \
     $(SRCROOT)/diagnostics/target \
     $(SRCROOT)/platform/target \
     $(SRCROOT)/idm/interface/target \
@@ -103,8 +101,10 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/sts/target \
     $(SRCROOT)/websso/target \
     $(SRCROOT)/lightwaveui/target \
-    $(SRCROOT)/sso-config/target
-
+    $(SRCROOT)/sso-config/target \
+    $(SRCROOT)/debugfiles.list \
+    $(SRCROOT)/debuglinks.list \
+    $(SRCROOT)/debugsources.list
 
 PKG_SPEC=vmware-sts.spec
 
@@ -131,7 +131,6 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_javahome ${JAVA_HOME}" \
               --define "_antdir ${ANT_HOME}" \
               --define "_tomcatdir ${TOMCAT_HOME}" \
-              --define "_jaxwsdir ${JAXWS_HOME}" \
               --define "_mavendir ${MAVEN_HOME}" \
               --define "_version $(VMSTS_MAJOR_VER).$(VMSTS_MINOR_VER).$(VMSTS_RELEASE_VER)" \
               --define "_patch $(VMSTS_PATCH_VER)" \

@@ -27,7 +27,10 @@ VmDirSimpleNormDNToEntry(
     PVDIR_BACKEND_INTERFACE pBE = NULL;
     PVDIR_SCHEMA_CTX        pSchemaCtx = NULL;
 
-    assert(pszNormDN && ppEntry);
+    if (IsNullOrEmptyString(pszNormDN) || !ppEntry)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     pBE = VmDirBackendSelect(NULL);
     assert(pBE);
@@ -76,7 +79,10 @@ VmDirSimpleDNToEntry(
     VDIR_BERVALUE           bvDn = VDIR_BERVALUE_INIT;
     PVDIR_SCHEMA_CTX        pSchemaCtx = NULL;
 
-    assert(pszDN && ppEntry);
+    if (IsNullOrEmptyString(pszDN) || !ppEntry)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     pBE = VmDirBackendSelect(NULL);
     assert(pBE);

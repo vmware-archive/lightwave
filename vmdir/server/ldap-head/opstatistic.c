@@ -157,15 +157,20 @@ VmDirOPStatisticUpdate(
 
 uint16_t
 VmDirOPStatisticGetAvgTime(
-    PVMDIR_OPERATION_STATISTIC   pStatistic
+    ber_tag_t opTag
     )
 {
     BOOLEAN     bInLock = FALSE;
     uint64_t    iCurrentTotalTimeInMSec = 0;
     uint64_t    iCurrentCount = 0;
     uint64_t    iAvgTimeInMSecs = 0;
+    PVMDIR_OPERATION_STATISTIC pStatistic;
 
-    assert(pStatistic != NULL);
+    pStatistic = _VmDirGetStatisticFromTag(opTag);
+    if (pStatistic == NULL)
+    {
+        return 0;
+    }
 
     VMDIR_LOCK_MUTEX(bInLock, pStatistic->pmutex);
 
@@ -177,6 +182,28 @@ VmDirOPStatisticGetAvgTime(
     iAvgTimeInMSecs = iCurrentCount > 0 ? (iCurrentTotalTimeInMSec/iCurrentCount) : 0;
 
     return iAvgTimeInMSecs > UINT16_MAX ? UINT16_MAX : (uint16_t)iAvgTimeInMSecs;
+}
+
+uint64_t
+VmDirOPStatisticGetTotalTime(
+        ber_tag_t opTag
+)
+{
+    BOOLEAN     bInLock = FALSE;
+    uint64_t    iCurrentTotalTimeInMSec = 0;
+    PVMDIR_OPERATION_STATISTIC pStatistic;
+
+    pStatistic = _VmDirGetStatisticFromTag(opTag);
+    if (pStatistic != NULL)
+    {
+        VMDIR_LOCK_MUTEX(bInLock, pStatistic->pmutex);
+
+        iCurrentTotalTimeInMSec = pStatistic->iTimeInMilliSec;
+
+        VMDIR_UNLOCK_MUTEX(bInLock, pStatistic->pmutex);
+    }
+
+    return iCurrentTotalTimeInMSec;
 }
 
 uint64_t
@@ -225,7 +252,7 @@ VmDirOPStatistic(
                         "LDAP %10s - count:(%ld), Avg response time in MS:(%ld)",
                         pszOPName,
                         VmDirOPStatisticGetCount(opTag),
-                        VmDirOPStatisticGetAvgTime(pOPStatistic));
+                        VmDirOPStatisticGetAvgTime(opTag));
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 

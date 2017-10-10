@@ -15,6 +15,7 @@
 typedef enum
 {
     VDIR_REST_RSC_LDAP,
+    VDIR_REST_RSC_METRICS,
     VDIR_REST_RSC_UNKNOWN,
     VDIR_REST_RSC_COUNT,
 
@@ -25,6 +26,8 @@ typedef struct _VDIR_REST_RESULT
     int         errCode;
     PSTR        pszErrMsg;
     PLW_HASHMAP pDataMap;
+    PSTR        pszData;
+    DWORD       dwDataLen;
     BOOLEAN     bErrSet;
 
 } VDIR_REST_RESULT, *PVDIR_REST_RESULT;
@@ -45,6 +48,8 @@ typedef DWORD (*PFN_GET_HTTP_ERROR)(
 typedef struct _VDIR_REST_RESOURCE
 {
     VDIR_REST_RESOURCE_TYPE rscType;
+    PCSTR                   pszEndpoint;
+    BOOLEAN                 bIsEndpointPrefix;
     PFN_SET_RESULT          pfnSetResult;
     PFN_GET_HTTP_ERROR      pfnGetHttpError;
     PCSTR                   pszErrCodeKey;
@@ -56,7 +61,9 @@ typedef struct _VDIR_REST_OPERATION
 {
     PSTR                pszAuth;
     PSTR                pszMethod;
-    PSTR                pszEndpoint;
+    PSTR                pszPath;
+    PSTR                pszSubPath;
+    PSTR                pszHeaderIfMatch; // lwraft only
     json_t*             pjInput;
     PLW_HASHMAP         pParamMap;
     PVDIR_CONNECTION    pConn;
@@ -65,20 +72,20 @@ typedef struct _VDIR_REST_OPERATION
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
-// accesstoken.c
+// authtoken.c
 typedef enum
 {
-    VDIR_REST_ACCESS_TOKEN_BEARER,
-    VDIR_REST_ACCESS_TOKEN_HOTK
+    VDIR_REST_AUTH_TOKEN_BEARER,
+    VDIR_REST_AUTH_TOKEN_HOTK
 
-} VDIR_REST_ACCESS_TOKEN_TYPE;
+} VDIR_REST_AUTH_TOKEN_TYPE;
 
-typedef struct _VDIR_REST_ACCESS_TOKEN
+typedef struct _VDIR_REST_AUTH_TOKEN
 {
-    VDIR_REST_ACCESS_TOKEN_TYPE tokenType;
+    VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
     PSTR                        pszBindUPN;
 
-} VDIR_REST_ACCESS_TOKEN, *PVDIR_REST_ACCESS_TOKEN;
+} VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
 
 // httperror.c
 typedef struct _VDIR_HTTP_ERROR
@@ -88,11 +95,3 @@ typedef struct _VDIR_HTTP_ERROR
     PSTR    pszHttpReason;
 
 } VDIR_HTTP_ERROR, *PVDIR_HTTP_ERROR;
-
-// resource.c
-typedef struct _VDIR_REST_RESOURCE_ENDPOINT
-{
-    VDIR_REST_RESOURCE_TYPE rscType;
-    PCSTR                   pszEndpoint;
-
-} VDIR_REST_RESOURCE_ENDPOINT, *PVDIR_REST_RESOURCE_ENDPOINT;

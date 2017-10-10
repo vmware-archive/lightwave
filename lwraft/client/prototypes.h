@@ -217,11 +217,6 @@ VmDirGetServerName(
     PSTR* ppszServerName);
 
 DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    );
-
-DWORD
 VmDirGetLocalSiteGuid(
     PSTR pszSiteGuid
     );
@@ -326,14 +321,6 @@ VmDirLdapDeleteServiceAccount(
     PCSTR   pszServiceName,
     PCSTR   pszDCHostName,         // Self host name
     BOOLEAN bActuallyDelete
-    );
-
-DWORD
-VmDirMergeGroups(
-    LDAP*   pSourceLd,
-    LDAP*   pTargetLd,
-    PCSTR   pszSourceDomainDN,
-    PCSTR   pszTargetDomainDN
     );
 
 DWORD
@@ -587,6 +574,13 @@ VmDirLocalGeneratePassword(
 );
 
 DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
+
+DWORD
 VmDirLocalSetSRPSecret(
     PCWSTR      pwszUPN,
     PCWSTR      pwszSecret
@@ -713,3 +707,20 @@ VmDirLdapGetHighWatermark(
     USN*       pLastLocalUsn
     );
 
+/* raftclient.c */
+BOOLEAN
+VmDirRaftServerExists(
+    PCSTR       pszHostName,
+    PCSTR       pszDomainName,
+    PCSTR       pszUserName,
+    PCSTR       pszPassword,
+    PCSTR       pszRaftHostName
+    );
+
+/* ldaputil.c */
+DWORD
+VmDirGetDSERootAttribute(
+    PCSTR pszHostName,
+    PCSTR pszAttrName,
+    PSTR* ppszAttrValue
+    );

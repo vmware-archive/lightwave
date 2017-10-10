@@ -36,6 +36,12 @@ VmDirBuildComputedAttribute(
     );
 
 // password.c
+
+VOID
+VmDirGetDefaultPasswdLockoutPolicy(
+    PVDIR_PASSWD_LOCKOUT_POLICY     pPolicy
+    );
+
 DWORD
 VdirPasswordHash(
     PVDIR_PASSWORD_HASH_SCHEME  pHashScheme,
@@ -323,6 +329,42 @@ VmDirSASLSockbufInstall(
 VOID
 VmDirSASLSockbufRemove(
     Sockbuf*        pSockbuf
+    );
+
+// schema.c
+DWORD
+VmDirPluginSchemaLibUpdatePreModify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaLibUpdatePostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaLibUpdatePreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaLibUpdatePostAddCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwResult
     );
 
 // srputil.c

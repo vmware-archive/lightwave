@@ -17,13 +17,6 @@
 #include "includes.h"
 
 DWORD
-VmDirVsnprintf(
-    PSTR*    ppszOut,
-    PCSTR    pszFormat,
-    va_list  args
-    );
-
-DWORD
 VmDirAllocateMemory(
     size_t   dwSize,
     PVOID*   ppMemory
@@ -208,46 +201,6 @@ VmDirFreeMemory(
     }
 
     return;
-}
-
-DWORD
-VmDirAllocateStringAVsnprintf(
-    PSTR*   ppszOut,
-    PCSTR   pszFormat,
-    ...
-    )
-{
-    DWORD   dwError = 0;
-    BOOLEAN bVAEnd = FALSE;
-    va_list args;
-
-    if (!ppszOut || !pszFormat)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    va_start(args, pszFormat);
-    bVAEnd = TRUE;
-
-    dwError = VmDirVsnprintf(
-                ppszOut,
-                pszFormat,
-                args);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    if (bVAEnd)
-    {
-        va_end(args);
-    }
-
-    return dwError;
-
-error:
-
-    goto cleanup;
 }
 
 DWORD

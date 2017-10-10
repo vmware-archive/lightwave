@@ -410,6 +410,30 @@ VmAfdJoinVmDir2W(
     );
 
 DWORD
+VmAfdJoinVmDirWithSiteA(
+    PCSTR            pszServerName,  /* IN     OPTIONAL */
+    PCSTR            pszDomainName,  /* IN              */
+    PCSTR            pszUserName,    /* IN              */
+    PCSTR            pszPassword,    /* IN              */
+    PCSTR            pszMachineName, /* IN     OPTIONAL */
+    PCSTR            pszOrgUnit,     /* IN     OPTIONAL */
+    PCSTR            pszSiteName,    /* IN     OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags         /* IN              */
+    );
+
+DWORD
+VmAfdJoinVmDirWithSiteW(
+    PCWSTR           pwszServerName,  /* IN   OPTIONAL */
+    PCWSTR           pwszDomainName,  /* IN            */
+    PCWSTR           pwszUserName,    /* IN            */
+    PCWSTR           pwszPassword,    /* IN            */
+    PCWSTR           pwszMachineName, /* IN   OPTIONAL */
+    PCWSTR           pwszOrgUnit,     /* IN   OPTIONAL */
+    PCWSTR           pwszSiteName,    /* IN   OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags          /* IN            */
+    );
+
+DWORD
 VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN     OPTIONAL */
     PCSTR pszUserName,      /* IN              */

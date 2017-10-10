@@ -40,6 +40,15 @@ _ParseSyncStateControlVal(
     USN*        pPartnerUSN     // Output
     );
 
+static
+int
+_ParseDigestControlVal(
+    VDIR_OPERATION *                    op,
+    BerValue *                          controlValue,       // Input: control value encoded as ber
+    VDIR_DIGEST_CONTROL_VALUE *         digestCtrlVal,      // Output
+    VDIR_LDAP_RESULT *                  lr                  // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -186,6 +195,20 @@ ParseRequestControls(
                 op->showPagedResultsCtrl = *control;
             }
 
+            if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_DIGEST_SEARCH, TRUE ) == 0)
+            {
+                retVal = _ParseDigestControlVal( op,
+                                                &lberBervCtlValue,
+                                                &((*control)->value.digestCtrlVal),
+                                                lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParseDigestControlVal failed.");
+                }
+                op->digestCtrl = *control;
+            }
+
             if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
@@ -284,7 +307,7 @@ WriteSyncDoneControl(
             writer = bvCtrlVal.lberbv.bv_val;
             bvCtrlVal.lberbv.bv_len = 0;
 
-            VmDirStringPrintFA( writer, bufferSize, "%ld,", op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed );
+            VmDirStringPrintFA( writer, bufferSize, "%" PRId64 ",", op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed );
             tmpLen = VmDirStringLenA( writer );
             writer += tmpLen;
             bufferSize -= tmpLen;
@@ -293,7 +316,7 @@ WriteSyncDoneControl(
             while ((pNode = LwRtlHashTableIterate(op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, &iter)))
             {
                 pUtdVectorEntry = LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
-                VmDirStringPrintFA( writer, bufferSize, "%s:%ld,", pUtdVectorEntry->invocationId.lberbv.bv_val,
+                VmDirStringPrintFA( writer, bufferSize, "%s:%" PRId64 ",", pUtdVectorEntry->invocationId.lberbv.bv_val,
                                     pUtdVectorEntry->currMaxOrigUsnProcessed );
                 tmpLen = VmDirStringLenA( writer );
                 writer += tmpLen;
@@ -395,7 +418,7 @@ error:
 int
 WriteSyncStateControl(
    VDIR_OPERATION *   op,
-   VDIR_ATTRIBUTE *   pAttr,
+   VDIR_ENTRY *       pEntry,
    BerElement *       ber,
    PSTR*              ppszErrorMsg
    )
@@ -410,6 +433,10 @@ WriteSyncStateControl(
     PVDIR_BERVALUE      pbvUSN = NULL;
     PSTR                pszLocalErrorMsg = NULL;
     BOOLEAN             bHasFinalSyncState = FALSE;
+    CHAR                pszIDBuf[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
+    PSTR                pszEID = NULL;
+    PSTR                pszUSNCreated = NULL;
+    VDIR_ATTRIBUTE *    pAttr = NULL;
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: Begin" );
 
@@ -425,7 +452,7 @@ WriteSyncStateControl(
      *  => may lead to various conflict resolution scenarios.
      */
 
-    for ( ; pAttr != NULL; pAttr = pAttr->next)
+    for (pAttr = pEntry->attrs ; pAttr != NULL; pAttr = pAttr->next)
     {
         if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
         {
@@ -448,6 +475,27 @@ WriteSyncStateControl(
             {
                 entryState = LDAP_SYNC_ADD;
                 bHasFinalSyncState = TRUE;
+
+                assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
+
+                if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, NULL, pszIDBuf) != 0)
+                {
+                    retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+
+                    retVal = VmDirAllocateStringA(pAttr->vals[0].lberbv_val, &pszUSNCreated);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+
+                    retVal = LwRtlHashMapInsert(op->conn->ReplConnState.phmSyncStateOneMap, pszEID, pszUSNCreated, NULL);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                    pszEID = NULL; pszUSNCreated = NULL; // map takes over
+
+                    VMDIR_LOG_VERBOSE(
+                            LDAP_DEBUG_REPL,
+                            "entry sync stat ADD %s at USNCreated %s",
+                            pEntry->dn.lberbv_val,
+                            pAttr->vals[0].lberbv_val);
+                }
             }
         }
     }
@@ -512,6 +560,9 @@ cleanup:
     {
         VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     }
+
+    VMDIR_SAFE_FREE_MEMORY(pszEID);
+    VMDIR_SAFE_FREE_MEMORY(pszUSNCreated);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: End" );
 
@@ -634,9 +685,9 @@ ParseSyncRequestControlVal(
     VDIR_BACKEND_CTX        backendCtx = {0};
     USN                     maxPartnerVisibleUSN = 0;
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncRequestControlVal: Begin." );
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_TRACE, "ParseSyncRequestControlVal: Begin");
 
-    ber_init2( ber, controlValue, LBER_USE_DER );
+    ber_init2(ber, controlValue, LBER_USE_DER);
 
     /* http://www.rfc-editor.org/rfc/rfc4533.txt
      *
@@ -654,38 +705,60 @@ ParseSyncRequestControlVal(
      *  }
     */
 
-    if (ber_scanf( ber, "{i", &(syncReqCtrlVal->mode) ) == LBER_ERROR)
+    if (ber_scanf(ber, "{i", &(syncReqCtrlVal->mode)) == LBER_ERROR)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: ber_scanf failed while parsing the sync request "
-                  "control mode" );
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "ParseSyncRequestControlVal: ber_scanf failed while parsing the sync request "
+                "control mode");
+
         lr->errCode = LDAP_PROTOCOL_ERROR;
         retVal = LDAP_NOTICE_OF_DISCONNECT;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "Error in reading sync request control mode from PDU.");
+
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrorMsg,
+                "Error in reading sync request control mode from PDU.");
     }
 
     syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val = "";
     syncReqCtrlVal->intLastLocalUsnProcessed = 0;
 
-    if (VmDirAllocateMemory( sizeof( VDIR_LDAP_CONTROL ), (PVOID *)&op->syncDoneCtrl) != 0)
+    if (VmDirAllocateMemory(sizeof(VDIR_LDAP_CONTROL), (PVOID*)&op->syncDoneCtrl) != 0)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: VmDirAllocateMemory failed " );
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "ParseSyncRequestControlVal: VmDirAllocateMemory failed");
+
         lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "ParseSyncRequestControlVal: VmDirAllocateMemory failed.");
+
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrorMsg,
+                "ParseSyncRequestControlVal: VmDirAllocateMemory failed.");
     }
     op->syncDoneCtrl->type = LDAP_CONTROL_SYNC_DONE;
-    if (LwRtlCreateHashTable( &op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, UtdVectorEntryGetKey,
-                              LwRtlHashDigestPstr, LwRtlHashEqualPstr, NULL, VMDIR_UTD_VECTOR_HASH_TABLE_SIZE ) != 0)
+    if (LwRtlCreateHashTable(
+            &op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector,
+            UtdVectorEntryGetKey,
+            LwRtlHashDigestPstr,
+            LwRtlHashEqualPstr,
+            NULL,
+            VMDIR_UTD_VECTOR_HASH_TABLE_SIZE) != 0)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "UpdateSyncDoneUtdVectorEntry: LwRtlCreateHashTable failed" );
-        lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "UpdateSyncDoneUtdVectorEntry: LwRtlCreateHashTable failed");
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "UpdateSyncDoneUtdVectorEntry: LwRtlCreateHashTable failed");
 
+        lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
+
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrorMsg,
+                "UpdateSyncDoneUtdVectorEntry: LwRtlCreateHashTable failed.");
     }
 
-    tag = ber_peek_tag( ber, &len );
+    tag = ber_peek_tag(ber, &len);
 
     if (tag == LBER_SEQUENCE)
     { // syncCookie
@@ -703,123 +776,189 @@ ParseSyncRequestControlVal(
          */
         // {lastLocalUsnProcessed{{<serverid1><lastOrigUsnProcessed1>}{<serverid2><lastOrigUsnProcessed2>}...}}
 
-        if (ber_scanf( ber, "{mmm}",
-                        &syncReqCtrlVal->reqInvocationId.lberbv,
-                        &syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv,
-                        &syncReqCtrlVal->bvUtdVector.lberbv ) == LBER_ERROR )
+        if (ber_scanf(
+                ber,
+                "{mmm}",
+                &syncReqCtrlVal->reqInvocationId.lberbv,
+                &syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv,
+                &syncReqCtrlVal->bvUtdVector.lberbv) == LBER_ERROR)
         {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: ber_scanf failed while parsing "
-                      "lastLocalUsnProcessed in the sync request control value" );
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "ParseSyncRequestControlVal: ber_scanf failed while parsing "
+                    "lastLocalUsnProcessed in the sync request control value");
+
             lr->errCode = LDAP_PROTOCOL_ERROR;
             retVal = LDAP_NOTICE_OF_DISCONNECT;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                            "Error in reading lastLocalUsnProcessed in the sync request control value");
+
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrorMsg,
+                    "Error in reading lastLocalUsnProcessed in the sync request control value.");
         }
 
-        VMDIR_LOG_DEBUG( LDAP_DEBUG_REPL, "ParseSyncRequestControlVal: ServerId: %s, lastLocalUsnProcessed: %s, utdVector: %s",
-                  syncReqCtrlVal->reqInvocationId.lberbv.bv_val, syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val,
-                  syncReqCtrlVal->bvUtdVector.lberbv.bv_val );
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "ParseSyncRequestControlVal: ServerId: %s, lastLocalUsnProcessed: %s, utdVector: %s",
+                syncReqCtrlVal->reqInvocationId.lberbv.bv_val,
+                syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val,
+                syncReqCtrlVal->bvUtdVector.lberbv.bv_val);
 
-        syncReqCtrlVal->intLastLocalUsnProcessed = op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed =
-                                   VmDirStringToLA( syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val, NULL, 10 );
+        syncReqCtrlVal->intLastLocalUsnProcessed =
+                op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed =
+                        VmDirStringToLA(syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+
         {
-            char *                  nextServerIdStr = NULL;
-            char *                  nextOrigUsnStr = NULL;
+            char* nextServerIdStr = NULL;
+            char* nextOrigUsnStr = NULL;
 
             nextServerIdStr = syncReqCtrlVal->bvUtdVector.lberbv.bv_val;
 
-            while( nextServerIdStr != NULL && nextServerIdStr[0] != '\0')
+            while (nextServerIdStr != NULL && nextServerIdStr[0] != '\0')
             {
                 PLW_HASHTABLE_NODE pNode = NULL;
 
                 // Ignore continue indicator in sync request control
-                if (VmDirStringNCompareA(nextServerIdStr,
+                if (VmDirStringNCompareA(
+                        nextServerIdStr,
                         VMDIR_REPL_CONT_INDICATOR,
-                        VMDIR_REPL_CONT_INDICATOR_LEN, FALSE) == 0)
+                        VMDIR_REPL_CONT_INDICATOR_LEN,
+                        FALSE) == 0)
                 {
-                    nextServerIdStr = VmDirStringChrA( nextServerIdStr, ',') + 1;
+                    nextServerIdStr = VmDirStringChrA(nextServerIdStr, ',') + 1;
                     continue;
                 }
 
-                if (VmDirAllocateMemory( sizeof(UptoDateVectorEntry), (PVOID *)&utdVectorEntry ) != 0)
+                if (VmDirAllocateMemory(sizeof(UptoDateVectorEntry), (PVOID*)&utdVectorEntry) != 0)
                 {
-                    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: VmDirAllocateMemory failed " );
+                    VMDIR_LOG_ERROR(
+                            VMDIR_LOG_MASK_ALL,
+                            "ParseSyncRequestControlVal: VmDirAllocateMemory failed");
+
                     lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                    "ParseSyncRequestControlVal: VmDirAllocateMemory failed");
+
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                            retVal,
+                            pszLocalErrorMsg,
+                            "ParseSyncRequestControlVal: VmDirAllocateMemory failed.");
                 }
 
-                nextOrigUsnStr = VmDirStringChrA( nextServerIdStr, ':');
+                nextOrigUsnStr = VmDirStringChrA(nextServerIdStr, ':');
                 *nextOrigUsnStr = '\0';
                 nextOrigUsnStr++;
                 utdVectorEntry->invocationId.lberbv.bv_val = nextServerIdStr;
-                utdVectorEntry->invocationId.lberbv.bv_len = VmDirStringLenA( nextServerIdStr );
+                utdVectorEntry->invocationId.lberbv.bv_len = VmDirStringLenA(nextServerIdStr);
 
-                nextServerIdStr = VmDirStringChrA( nextOrigUsnStr, ',');
+                nextServerIdStr = VmDirStringChrA(nextOrigUsnStr, ',');
                 *nextServerIdStr = '\0';
                 nextServerIdStr++;
 
-                utdVectorEntry->currMaxOrigUsnProcessed = utdVectorEntry->reqLastOrigUsnProcessed =
-                                                              atol( nextOrigUsnStr );
+                utdVectorEntry->currMaxOrigUsnProcessed =
+                        utdVectorEntry->reqLastOrigUsnProcessed =
+                                atol(nextOrigUsnStr);
 
-                LwRtlHashTableResizeAndInsert( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector,
-                                               &utdVectorEntry->Node, &pNode);
-                assert( pNode == NULL );    // assert the key of added node is unique.
+                LwRtlHashTableResizeAndInsert(
+                        op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector,
+                        &utdVectorEntry->Node,
+                        &pNode);
+                assert(pNode == NULL);    // assert the key of added node is unique.
             }
         }
 
-        tag = ber_peek_tag( ber, &len );
+        tag = ber_peek_tag(ber, &len);
     }
     if (tag == LBER_BOOLEAN)
     {
-        ber_int_t reloadHint;
-        if (ber_scanf( ber, "b", &reloadHint) == LBER_ERROR)
+        ber_int_t firstPage;
+        if (ber_scanf(ber, "b", &firstPage) == LBER_ERROR)
         {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: Error in reading reloadHint from the PDU" );
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "ParseSyncRequestControlVal: Error in reading reloadHint from the PDU");
+
             lr->errCode = LDAP_PROTOCOL_ERROR;
             retVal = LDAP_NOTICE_OF_DISCONNECT;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                            "Error in reading reloadHint from the PDU.");
+
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrorMsg,
+                    "Error in reading reloadHint from the PDU.");
         }
-        if (reloadHint)
+        if (firstPage)
         {
-            syncReqCtrlVal->reloadHint = TRUE;
+            syncReqCtrlVal->bFirstPage = TRUE;
         }
     }
-    if ( ber_scanf( ber, "}") == LBER_ERROR ) // End of control value
+    if (ber_scanf(ber, "}") == LBER_ERROR) // End of control value
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: ber_scanf failed while parsing the end of "
-                  "sync request control value." );
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "ParseSyncRequestControlVal: ber_scanf failed while parsing the end of "
+                "sync request control value");
+
         lr->errCode = LDAP_PROTOCOL_ERROR;
         retVal = LDAP_NOTICE_OF_DISCONNECT;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "Decoding error while parsing the end of sync request control value.");
+
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrorMsg,
+                "Decoding error while parsing the end of sync request control value.");
     }
 
     backendCtx.pBE = VmDirBackendSelect("");
-    maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN( &backendCtx, FALSE ) - 1;
+    maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN(&backendCtx, FALSE) - 1;
 
     if (syncReqCtrlVal->intLastLocalUsnProcessed > maxPartnerVisibleUSN)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: ServerId %s has processed my USN (%u), my max USN is (%u).",
-                         syncReqCtrlVal->reqInvocationId.lberbv.bv_val, syncReqCtrlVal->intLastLocalUsnProcessed, maxPartnerVisibleUSN );
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "ParseSyncRequestControlVal: ServerId %s has processed my USN (%u), my max USN is (%u)",
+                syncReqCtrlVal->reqInvocationId.lberbv.bv_val,
+                syncReqCtrlVal->intLastLocalUsnProcessed, maxPartnerVisibleUSN);
+
         lr->errCode = LDAP_UNWILLING_TO_PERFORM;
         retVal = LDAP_NOTICE_OF_DISCONNECT;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "Partner is ahead of my changes.");
+
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrorMsg,
+                "Partner is ahead of my changes.");
+    }
+
+    if (op->conn->ReplConnState.phmSyncStateOneMap == NULL)
+    {
+        // replication request, create connection level map for SyncStateControl adjustment (ADD -> MODIFY)
+        if (LwRtlCreateHashMap(
+                &op->conn->ReplConnState.phmSyncStateOneMap,
+                LwRtlHashDigestPstrCaseless,
+                LwRtlHashEqualPstrCaseless,
+                NULL) != 0)
+        {
+            lr->errCode = retVal = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+    }
+    else if (syncReqCtrlVal->bFirstPage)
+    {
+        /*
+         * When retry happens, send add requests instead of modify requests.
+         * If entries are not removed from hashtable, modify request will be sent.
+         */
+        LwRtlHashMapClear(op->conn->ReplConnState.phmSyncStateOneMap, VmDirSimpleHashMapPairFree, NULL);
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL,
+                "ParseSyncRequestControlVal: phmSyncStateOneMap Cleared because of replication cycle retry");
     }
 
 cleanup:
     // Even in the error case, syncDoneCtrl should be freed during operation delete.
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncRequestControlVal: End." );
-    VmDirBackendCtxContentFree( &backendCtx );
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_TRACE, "ParseSyncRequestControlVal: End");
+    VmDirBackendCtxContentFree(&backendCtx);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
     return retVal;
 
 error:
-
     VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
-
     goto cleanup;
 }
 
@@ -900,4 +1039,130 @@ cleanup:
 error:
     VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
+}
+
+static
+int
+_ParseDigestControlVal(
+    VDIR_OPERATION *                    op,
+    BerValue *                          controlValue,       // Input: control value encoded as ber
+    VDIR_DIGEST_CONTROL_VALUE *         digestCtrlVal,      // Output
+    VDIR_LDAP_RESULT *                  lr                  // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf;
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    BerValue            localBV = {0};
+
+    if (!op)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, controlValue, LBER_USE_DER );
+
+    /*
+     *
+     * The DigestControlValue is an OCTET STRING wrapping the BER-encoded version of the following SEQUENCE:
+     *
+     * realSearchControlValue ::= SEQUENCE {
+     *        digest            OCTET STRING
+     *  }
+     */
+
+    if ((ber_scanf(ber, "{m}", &localBV) == LBER_ERROR)
+        ||
+        localBV.bv_len != SHA_DIGEST_LENGTH
+       )
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing digest control value", __FUNCTION__);
+        lr->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading digest control digest value");
+    }
+
+    memcpy(digestCtrlVal->sha1Digest, localBV.bv_val, SHA_DIGEST_LENGTH);
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
+    goto cleanup;
+}
+
+int
+VmDirCreateDigestControlContent(
+    PCSTR           pszDigest,
+    DWORD           dwDigestLen,
+    LDAPControl*    pDigestCtrl
+    )
+{
+    int             retVal = LDAP_SUCCESS;
+    BerElement*     pBer = NULL;
+    BerValue        localBV = {0};
+
+    if (!pszDigest || !pDigestCtrl)
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+    localBV.bv_val = (char*)pszDigest;
+    localBV.bv_len = dwDigestLen;
+
+    if ( ber_printf( pBer, "{O}", &localBV) == -1)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_printf failed.", __FUNCTION__ );
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR( retVal );
+    }
+
+    memset( pDigestCtrl, 0, sizeof( LDAPControl ));
+    pDigestCtrl->ldctl_oid = LDAP_CONTROL_DIGEST_SEARCH;
+    pDigestCtrl->ldctl_iscritical = '1';
+    if (ber_flatten2(pBer, &pDigestCtrl->ldctl_value, 1))
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+cleanup:
+
+    if (pBer)
+    {
+        ber_free(pBer, 1);
+    }
+    return retVal;
+
+ldaperror:
+    VmDirDeleteDigestControlContent(pDigestCtrl);
+    goto cleanup;
+}
+
+VOID
+VmDirDeleteDigestControlContent(
+    LDAPControl*    pDigestCtrl
+    )
+{
+    if (pDigestCtrl)
+    {
+        if (pDigestCtrl->ldctl_value.bv_val)
+        {
+            ber_memfree(pDigestCtrl->ldctl_value.bv_val);
+        }
+        memset(pDigestCtrl, 0, sizeof(LDAPControl));
+    }
 }

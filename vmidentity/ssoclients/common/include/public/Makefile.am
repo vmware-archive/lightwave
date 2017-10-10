@@ -1,3 +1,4 @@
 ssoclientsincludedir=$(includedir)
 ssoclientsinclude_HEADERS=ssoerrors.h \
-                          ssotypes.h
+                          ssotypes.h \
+                          ssocommon.h

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -26,8 +26,7 @@ VmDirLdapAtMerge(
 
     if (!ppMergedAt || !(pOldAt || pNewAt))
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pNewAt)
@@ -43,56 +42,9 @@ VmDirLdapAtMerge(
     }
     else if (pOldAt)
     {
-        if (VmDirStringCompareA(pOldAt->pszName, pNewAt->pszName, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: name mismatch (%s) (%s).",
-                    __FUNCTION__, pOldAt->pszName, pNewAt->pszName);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (VmDirStringCompareA(
-                pOldAt->pszSyntaxOid, pNewAt->pszSyntaxOid, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s syntaxOid mismatch (%s) (%s).",
-                    __FUNCTION__, pOldAt->pszName,
-                    pOldAt->pszSyntaxOid, pNewAt->pszSyntaxOid);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pOldAt->usage != pNewAt->usage)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s usage mismatch (%s) (%s).",
-                    __FUNCTION__, pOldAt->pszName,
-                    pOldAt->usage, pNewAt->usage);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pOldAt->bNoUserMod != pNewAt->bNoUserMod)
-        {
-            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
-                    "%s: %s noUserMod mismatch (%d) (%d).",
-                    __FUNCTION__, pOldAt->pszName,
-                    pOldAt->bNoUserMod, pNewAt->bNoUserMod);
-        }
-
-        if (pOldAt->bSingleValue != pNewAt->bSingleValue)
-        {
-            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
-                    "%s: %s singleValue mismatch (%d) (%d).",
-                    __FUNCTION__, pOldAt->pszName,
-                    pOldAt->bSingleValue, pNewAt->bSingleValue);
-
-            pMergedAt->bSingleValue = FALSE;
-            pMergedAt->pSource->at_single_value = 0;
-        }
-
-        if (pOldAt->pszDesc && !pNewAt->pszDesc)
+        // keep old description if there isn't new description
+        if (IsNullOrEmptyString(pNewAt->pszDesc) &&
+            !IsNullOrEmptyString(pOldAt->pszDesc))
         {
             dwError = VmDirAllocateStringA(
                     pOldAt->pszDesc, &pMergedAt->pszDesc);
@@ -102,12 +54,14 @@ VmDirLdapAtMerge(
             pMergedAt->pSource->at_desc = pMergedAt->pszDesc;
         }
 
+        // combine old and new search flags
         if (pOldAt->dwSearchFlags != pNewAt->dwSearchFlags)
         {
             pMergedAt->dwSearchFlags =
                     pOldAt->dwSearchFlags | pNewAt->dwSearchFlags;
         }
 
+        // combine old and new uniqueness scopes
         VmDirFreeStrArray(pMergedAt->ppszUniqueScopes);
         dwError = VmDirMergeStrArray(
                 pOldAt->ppszUniqueScopes,
@@ -185,8 +139,7 @@ VmDirLdapOcMerge(
 
     if (!ppMergedOc || !(pOldOc || pNewOc))
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pNewOc)
@@ -202,45 +155,9 @@ VmDirLdapOcMerge(
     }
     else if (pOldOc)
     {
-        if (VmDirStringCompareA(pOldOc->pszName, pNewOc->pszName, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: name mismatch (%s) (%s).",
-                    __FUNCTION__, pOldOc->pszName, pNewOc->pszName);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (VmDirStringCompareA(pOldOc->pszSup, pNewOc->pszSup, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s sup mismatch (%s) (%s).",
-                    __FUNCTION__, pOldOc->pszName,
-                    pOldOc->pszSup, pNewOc->pszSup);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pOldOc->type != pNewOc->type)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s type mismatch (%d) (%d).",
-                    __FUNCTION__, pOldOc->pszName,
-                    pOldOc->type, pNewOc->type);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (!VmDirIsStrArrayIdentical(pOldOc->ppszMust, pNewOc->ppszMust))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s must attribute list mismatch.",
-                    __FUNCTION__, pOldOc->pszName);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pOldOc->pszDesc && !pNewOc->pszDesc)
+        // keep old description if there isn't new description
+        if (IsNullOrEmptyString(pNewOc->pszDesc) &&
+            !IsNullOrEmptyString(pOldOc->pszDesc))
         {
             dwError = VmDirAllocateStringA(
                     pOldOc->pszDesc, &pMergedOc->pszDesc);
@@ -250,6 +167,7 @@ VmDirLdapOcMerge(
             pMergedOc->pSource->oc_desc = pMergedOc->pszDesc;
         }
 
+        // merged may = old may + new may
         VmDirFreeStrArray(pMergedOc->ppszMay);
         dwError = VmDirMergeStrArray(
                 pOldOc->ppszMay, pNewOc->ppszMay, &pMergedOc->ppszMay);
@@ -281,8 +199,7 @@ VmDirLdapCrMerge(
 
     if (!ppMergedCr || !(pOldCr || pNewCr))
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pNewCr)
@@ -298,24 +215,7 @@ VmDirLdapCrMerge(
     }
     else if (pOldCr)
     {
-        if (VmDirStringCompareA(pOldCr->pszName, pNewCr->pszName, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: name mismatch (%s) (%s).",
-                    __FUNCTION__, pOldCr->pszName, pNewCr->pszName);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (!VmDirIsStrArrayIdentical(pOldCr->ppszMust, pNewCr->ppszMust))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s must attribute list mismatch.",
-                    __FUNCTION__, pOldCr->pszName);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
+        // merged may = old may + new may
         VmDirFreeStrArray(pMergedCr->ppszMay);
         dwError = VmDirMergeStrArray(
                 pOldCr->ppszMay, pNewCr->ppszMay, &pMergedCr->ppszMay);
@@ -324,6 +224,7 @@ VmDirLdapCrMerge(
         // for free later
         pMergedCr->pSource->cr_at_oids_may = pMergedCr->ppszMay;
 
+        // merged aux = old aux + new aux
         VmDirFreeStrArray(pMergedCr->ppszAux);
         dwError = VmDirMergeStrArray(
                 pOldCr->ppszAux, pNewCr->ppszAux, &pMergedCr->ppszAux);
@@ -356,9 +257,9 @@ VmDirLdapSchemaMerge(
     LW_HASHMAP_ITER crIter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
 
-    PVDIR_LDAP_ATTRIBUTE_TYPE pOldAt = NULL;
-    PVDIR_LDAP_ATTRIBUTE_TYPE pNewAt = NULL;
-    PVDIR_LDAP_ATTRIBUTE_TYPE pMergedAt = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pOldAt = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pNewAt = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pMergedAt = NULL;
 
     PVDIR_LDAP_OBJECT_CLASS pOldOc = NULL;
     PVDIR_LDAP_OBJECT_CLASS pNewOc = NULL;
@@ -372,8 +273,7 @@ VmDirLdapSchemaMerge(
 
     if (!pOldSchema || !pNewSchema || !ppMergedSchema)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirLdapSchemaCopy(pOldSchema, &pMergedSchema);

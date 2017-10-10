@@ -189,7 +189,7 @@ public class LogoutControllerTest {
         Date issuedAt = new Date(now.getTime() - (5 * 60 * 1000L)); // issued 5 mins ago
         claimsBuilder = claimsBuilder.issueTime(issuedAt);
         params.put("client_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
-        assertErrorResponse(params, "invalid_client", "stale_client_assertion");
+        assertErrorResponse(params, "invalid_client", "client_assertion has expired");
     }
 
     @Test

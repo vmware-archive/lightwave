@@ -81,13 +81,6 @@ _VmDirSrvCreatePersistedDSERoot(VOID);
 
 static
 DWORD
-_VmDirGetHostsInternal(
-    PSTR **pppszServerInfo,
-    size_t *pdwInfoCount
-    );
-
-static
-DWORD
 _VmDirCheckPartnerDomainFunctionalLevel(
     VOID
     );
@@ -322,6 +315,9 @@ VmDirInit(
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirMetricsInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 #ifndef _WIN32
     dwError = InitializeResouceLimit();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -374,6 +370,11 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        // Check default LDAP port availability - If it fails, then it means
+        // another vmdird process is running in normal mode.
+        dwError = VmDirCheckPortAvailability(DEFAULT_LDAP_PORT_NUM);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
 
         if (bLegacyDataLoaded)
@@ -388,6 +389,9 @@ VmDirInit(
                     gVmdirGlobals.pszBootStrapSchemaFile);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
+
         (VOID)VmDirSetAdministratorPasswordNeverExpires();
     }
     else
@@ -449,10 +453,8 @@ VmDirInit(
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 0
         dwError = VmDirRESTServerInit();
         BAIL_ON_VMDIR_ERROR(dwError);
-#endif
     }
 
     if (gVmdirServerGlobals.serverId)
@@ -477,8 +479,12 @@ VmDirInit(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Config MaxLdapOpThrs (%d)", gVmdirGlobals.dwMaxFlowCtrlThr );
 
-error:
+cleanup:
     return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%d)", __FUNCTION__, dwError );
+    goto cleanup;
 }
 
 #ifndef VDIR_PSC_VERSION
@@ -533,29 +539,6 @@ error:
     goto cleanup;
 }
 
-static
-VOID
-_VmDirFreeCountedStringArray(
-    PSTR *ppszStrings,
-    size_t iCount
-    )
-{
-    size_t iIndex = 0;
-
-    if (ppszStrings == NULL)
-    {
-        return;
-    }
-
-    for (iIndex = 0; iIndex < iCount; iIndex++)
-    {
-        VmDirFreeStringA(ppszStrings[iIndex]);
-    }
-
-    VmDirFreeMemory(ppszStrings);
-}
-
-
 // _VmDirRestoreInstance():
 // 1. Get new invocation ID.
 //    So I can rejoin the federation with a fresh ID.
@@ -588,7 +571,7 @@ _VmDirRestoreInstance(
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
+    dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
     if (dwError != 0)
     {
         printf("_VmDirRestoreInstance: fail to get hosts from topology: %d\n", dwError );
@@ -683,14 +666,14 @@ _VmDirRestoreInstance(
     //It's value less 1 is the one that has been consumed by the server to be restored.
     nextUsn = gVmdirServerGlobals.initialNextUSN - 1;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %lu, local USN: %lu",
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %" PRId64 " local USN: %" PRId64,
                    restoredUsn, nextUsn);
-    printf("Highest USN observed from partners %lu, local USN: %lu\n", restoredUsn, nextUsn);
+    printf("Highest USN observed from partners %" PRId64 " local USN: %" PRId64 "\n", restoredUsn, nextUsn);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Utilize larger of %lu and %lu for new USN", restoredUsn, nextUsn );
-    printf("Utilize larger of %lu and %lu for new USN \n", restoredUsn, nextUsn );
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Utilize larger of %" PRId64 " and %" PRId64" new USN", restoredUsn, nextUsn );
+    printf("Utilize larger of %" PRId64 " and %" PRId64 " new USN \n", restoredUsn, nextUsn );
 
-    dwError = VmDirStringNPrintFA( nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%ld", nextUsn);
+    dwError = VmDirStringNPrintFA( nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%" PRId64, nextUsn);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
                 "_VmDirRestoreInstance: VmDirStringNPrintFA failed with error code: %d", dwError,
                 VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
@@ -738,7 +721,7 @@ _VmDirRestoreInstance(
     // Advance the USN to the upToDateUsn passed in, which should be the maximum USN that has been seen by peer nodes.
     // This will avoid the situation where some new entries will be skipped in replication to peer nodes.
     // See Bug 1272548 for details.
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Advancing USN if neccessary, current: %d, goal to restore to: %d",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Advancing USN if neccessary, current: %" PRId64 ", goal to restore to: %" PRId64,
                     nextUsn, restoredUsn );
     while ( nextUsn < restoredUsn )
     {
@@ -764,7 +747,7 @@ _VmDirRestoreInstance(
     printf("Lotus instance restore succeeded.\n");
 
 cleanup:
-    _VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeStrArray(ppszServerInfo);
     VmDirFreeBervalContent(&newUtdVector);
     VmDirFreeOperationContent(&op);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -809,7 +792,7 @@ _VmDirCheckPartnerDomainFunctionalLevel(
         goto cleanup;
     }
 
-    dwError = _VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
+    dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // No partners to compare DFL with.
@@ -902,7 +885,7 @@ cleanup:
         VmDirLdapUnbind(&pPartnerLd);
     }
 
-    _VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
+    VmDirFreeStrArray(ppszServerInfo);
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     return dwError;
 
@@ -946,7 +929,10 @@ InitializeVmdirdSystemEntries(
     iError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(iError);
 
-    iError = InitializeSchemaEntries(pSchemaCtx);
+    iError = VmDirSchemaInitializeSubtree(pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(iError);
+
+    iError = VmDirSchemaSetSystemDefaultSecurityDescriptors();
     BAIL_ON_VMDIR_ERROR(iError);
 
     iError = InitializeCFGEntries(pSchemaCtx);
@@ -1584,6 +1570,9 @@ InitializeGlobalVars(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = VmDirAllocateMutex(&gVmdirIntegrityCheck.pMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
 
     return dwError;
@@ -1599,41 +1588,42 @@ error:
  * Lookup servers topology internally first. Then one of the servers
  * will be used to query uptoupdate servers topology
  */
-static
 DWORD
-_VmDirGetHostsInternal(
-    PSTR **pppszServerInfo,
-    size_t *pdwInfoCount
+VmDirGetHostsInternal(
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
     )
 {
-    DWORD               dwError = 0;
-    DWORD               i = 0;
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszSearchBaseDN = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
-    PSTR                pszSearchBaseDN = NULL;
     PVDIR_ATTRIBUTE     pAttr = NULL;
-    PSTR *ppszServerInfo = NULL;
+    PSTR*   ppszServerInfo = NULL;
 
     dwError = VmDirAllocateStringPrintf(
-                &pszSearchBaseDN,
-                "cn=Sites,cn=Configuration,%s",
-                gVmdirServerGlobals.systemDomainDN.bvnorm_val);
+            &pszSearchBaseDN,
+            "cn=Sites,cn=Configuration,%s",
+            gVmdirServerGlobals.systemDomainDN.bvnorm_val);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSimpleEqualFilterInternalSearch(
-                    pszSearchBaseDN,
-                    LDAP_SCOPE_SUBTREE,
-                    ATTR_OBJECT_CLASS,
-                    OC_DIR_SERVER,
-                    &entryArray);
+            pszSearchBaseDN,
+            LDAP_SCOPE_SUBTREE,
+            ATTR_OBJECT_CLASS,
+            OC_DIR_SERVER,
+            &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (entryArray.iSize == 0 )
+    if (entryArray.iSize == 0)
     {
         dwError = LDAP_NO_SUCH_OBJECT;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(entryArray.iSize*sizeof(PSTR), (PVOID*)&ppszServerInfo);
+    dwError = VmDirAllocateMemory(
+            sizeof(PSTR) * (entryArray.iSize+1),
+            (PVOID*)&ppszServerInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i=0; i<entryArray.iSize; i++)
@@ -1642,6 +1632,7 @@ _VmDirGetHostsInternal(
          dwError = VmDirAllocateStringA(pAttr->vals[0].lberbv.bv_val, &ppszServerInfo[i]);
          BAIL_ON_VMDIR_ERROR(dwError);
     }
+
     *pppszServerInfo = ppszServerInfo;
     *pdwInfoCount = entryArray.iSize;
 
@@ -1649,8 +1640,9 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszSearchBaseDN);
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
+
 error:
-    _VmDirFreeCountedStringArray(ppszServerInfo, entryArray.iSize);
+    VmDirFreeStrArray(ppszServerInfo);
     goto cleanup;
 }
 

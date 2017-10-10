@@ -125,10 +125,14 @@ VmDirAdvanceDomainRID(
 
                 if ( dwRidSeq < dwOrgRidSeq )
                 {
-                    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s, Domain [%s] RID rollover to value (%u)",
-                                     __FUNCTION__, entryArray.pEntry[iIdx].dn.lberbv_val , dwRidSeq );
-                    dwError = ERROR_INVALID_STATE;
-                    BAIL_ON_VMDIR_ERROR(dwError);
+                    VMDIR_LOG_ERROR(
+                            VMDIR_LOG_MASK_ALL,
+                            "%s, Domain [%s] RID rollover to value (%u)",
+                            __FUNCTION__,
+                            entryArray.pEntry[iIdx].dn.lberbv_val ,
+                            dwRidSeq);
+
+                    BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_STATE);
                 }
 
                 dwError = VmDirStringNPrintFA( buf9, sizeof(buf9), sizeof(buf9)-1, "%u", dwRidSeq );
@@ -142,19 +146,29 @@ VmDirAdvanceDomainRID(
                                                               &bvRID);
                 BAIL_ON_VMDIR_ERROR(dwError);
 
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: Domain [%s] RID advanced from (%u) to (%u)",
-                                __FUNCTION__, entryArray.pEntry[iIdx].dn.lberbv_val, dwOrgRidSeq, dwRidSeq );
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: Domain [%s] RID advanced from (%u) to (%u)",
+                        __FUNCTION__,
+                        entryArray.pEntry[iIdx].dn.lberbv_val,
+                        dwOrgRidSeq,
+                        dwRidSeq);
             }
         }
     }
 
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: advance (%u) failed error (%u)", __FUNCTION__, dwCnt, dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: advance (%u) failed error (%u)",
+            __FUNCTION__,
+            dwCnt,
+            dwError);
+
     goto cleanup;
 }
 
@@ -187,11 +201,10 @@ VmDirGenerateObjectSid(
         if (IsNullOrEmptyString(pszDomainDn))
         {
             // special object for instance
-            // SUB_SCHEMA_SUB_ENTRY_DN, CFG_ROOT_DN, CFG_INDEX_ENTRY_DN, CFG_MANAGER_ENTRY_DN
+            // SUB_SCHEMA_SUB_ENTRY_DN, CFG_ROOT_DN, CFG_MANAGER_ENTRY_DN
             // Do nothing
             // and object cannot find an existing domain object
-            dwError = ERROR_NO_OBJECT_SID_GEN;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            BAIL_WITH_VMDIR_ERROR(dwError, ERROR_NO_OBJECT_SID_GEN);
         }
     }
     else
@@ -313,15 +326,13 @@ VmDirIsDomainObjectWithEntry(
 
     if (!pEntry)
     {
-        dwError = ERROR_INVALID_ENTRY;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_ENTRY);
     }
 
     pAttr = VmDirEntryFindAttribute(ATTR_OBJECT_CLASS, pEntry);
     if (!pAttr)
     {
-        dwError = ERROR_INVALID_ENTRY;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_ENTRY);
     }
 
     for (; iCnt < pAttr->numVals; iCnt++)
@@ -346,13 +357,13 @@ error:
 
 PCSTR
 VmDirFindDomainDN(
-    PCSTR pszObjectDN
+    PCSTR   pszObjectDN
     )
 {
-    PSTR                        pszCurrDn = (PSTR)pszObjectDN;
-    BOOLEAN                     bInLock = FALSE;
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PSTR    pszCurrDn = (PSTR)pszObjectDN;
     PVDIR_DOMAIN_SID_GEN_STATE  pSidGenState = NULL;
-    DWORD                       dwError = 0;
 
     VMDIR_LOCK_MUTEX(bInLock, gSidGenState.mutex);
 
@@ -367,11 +378,8 @@ VmDirFindDomainDN(
         }
 
         pszCurrDn = VmDirStringChrA(pszCurrDn, RDN_SEPARATOR_CHAR);
-
-        if (!IsNullOrEmptyString(pszCurrDn)) pszCurrDn++;
+        pszCurrDn = pszCurrDn ? pszCurrDn + 1 : NULL;
     }
-
-
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, gSidGenState.mutex);
@@ -379,6 +387,40 @@ cleanup:
 
 error:
     pszCurrDn = NULL;
+    goto cleanup;
+}
+
+PCSTR
+VmDirFindDomainSid(
+    PCSTR   pszObjectDN
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PSTR    pszCurrDn = (PSTR)pszObjectDN;
+    PVDIR_DOMAIN_SID_GEN_STATE  pSidGenState = NULL;
+
+    VMDIR_LOCK_MUTEX(bInLock, gSidGenState.mutex);
+
+    while (!IsNullOrEmptyString(pszCurrDn))
+    {
+        dwError = VmDirGetSidGenStateIfDomain_inlock( pszCurrDn, NULL, &pSidGenState );
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pSidGenState)
+        {
+            break;
+        }
+
+        pszCurrDn = VmDirStringChrA(pszCurrDn, RDN_SEPARATOR_CHAR);
+        pszCurrDn = pszCurrDn ? pszCurrDn + 1 : NULL;
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gSidGenState.mutex);
+    return pSidGenState ? pSidGenState->pszDomainSid : NULL;
+
+error:
     goto cleanup;
 }
 
@@ -437,43 +479,48 @@ error:
  * This API uses global cache, so not backend operations*/
 DWORD
 VmDirGenerateWellknownSid(
-    PCSTR pszDomainDN,
-    DWORD dwWellKnowRid,
-    PSTR* ppszWellKnownSid
+    PCSTR   pszDomainDN,
+    DWORD   dwWellKnowRid,
+    PSTR*   ppszWellKnownSid
     )
 {
-    DWORD                       dwError = 0;
-    BOOLEAN                     bInLock = FALSE;
+    DWORD   dwError = 0;
+    PSTR    pszDomainSid = NULL;
+    PSTR    pszWellKnownSid = NULL;
+    BOOLEAN bInLock = FALSE;
     // Do not free ref
     PVDIR_DOMAIN_SID_GEN_STATE  pSidGenState = NULL;
-    PSTR                        pszWellKnownSid = NULL;
 
     VMDIR_LOCK_MUTEX(bInLock, gSidGenState.mutex);
 
-    // pSidGenState refers to the state found in gSidGenState
-    dwError = VmDirGetSidGenStateIfDomain_inlock(pszDomainDN, NULL, &pSidGenState);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    assert(pSidGenState!=NULL);
+    if (IsNullOrEmptyString(pszDomainDN))
+    {
+        // use null SID template if domain is not specified
+        pszDomainSid = VMDIR_NULL_SID_TEMPLATE;
+    }
+    else
+    {
+        // pSidGenState refers to the state found in gSidGenState
+        dwError = VmDirGetSidGenStateIfDomain_inlock(
+                pszDomainDN, NULL, &pSidGenState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        assert(pSidGenState!=NULL);
+
+        pszDomainSid = pSidGenState->pszDomainSid;
+    }
 
     dwError = VmDirAllocateStringPrintf(
-                    &pszWellKnownSid,
-                    "%s-%u",
-                    pSidGenState->pszDomainSid,
-                    dwWellKnowRid
-                    );
+            &pszWellKnownSid, "%s-%u", pszDomainSid, dwWellKnowRid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszWellKnownSid = pszWellKnownSid;
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, gSidGenState.mutex);
-
     return dwError;
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pszWellKnownSid);
-    *ppszWellKnownSid = NULL;
-
     goto cleanup;
 }
 
@@ -548,8 +595,11 @@ VmDirGetSidGenStateIfDomain_inlock(
         if ((pObjSidAttr = VmDirEntryFindAttribute(ATTR_OBJECT_SID, pEntry)) == NULL)
         {
             dwError = VMDIR_ERROR_INVALID_ENTRY;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                "VmDirGetSidGenStateIfDomain_inlock(): Domain object (%s), ATTR_OBJECT_SID not found", pszObjectDN );
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    dwError,
+                    pszLocalErrorMsg,
+                    "VmDirGetSidGenStateIfDomain_inlock(): Domain object (%s), ATTR_OBJECT_SID not found",
+                    pszObjectDN);
         }
 
         if ((pRidSeqAttr = VmDirEntryFindAttribute(VDIR_ATTRIBUTE_SEQUENCE_RID, pEntry)) != NULL)
@@ -581,10 +631,11 @@ VmDirGetSidGenStateIfDomain_inlock(
     dwError = _VmDirSynchronizeRidSequence( pOrgState );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
-                    "Init Sid cache (%s) RID (%u)",
-                    pOrgState->pszDomainDn,
-                    pOrgState->dwDomainRidSeqence);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Init Sid cache (%s) RID (%u)",
+            pOrgState->pszDomainDn,
+            pOrgState->dwDomainRidSeqence);
 
     LwRtlHashTableResizeAndInsert(gSidGenState.pHashtable, &pOrgState->Node, NULL);
 
@@ -603,9 +654,13 @@ error:
     VmDirFreeOrgState(pOrgState);
     pOrgState = NULL;
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetSidGenStateIfDomain_inlock() failed. Error code = %d, objectDN = %s, "
-                     "local error message = %s", dwError, VDIR_SAFE_STRING(pszObjectDN),
-                     VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "VmDirGetSidGenStateIfDomain_inlock() failed. Error code = %d, objectDN = %s, "
+            "local error message = %s",
+            dwError,
+            VDIR_SAFE_STRING(pszObjectDN),
+            VDIR_SAFE_STRING(pszLocalErrorMsg));
 
     goto cleanup;
 }
@@ -749,8 +804,7 @@ VmDirGenerateObjectRid(
     // Check to see whether current Rid hits the MAX
     if (dwRid+1 > MAX_RID_SEQUENCE)
     {
-        dwError = ERROR_RID_LIMIT_EXCEEDED;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_RID_LIMIT_EXCEEDED);
     }
 
     dwRid++;
@@ -848,15 +902,15 @@ _VmDirSynchronizeRidSequence(
     pDomainSidState->dwDomainRidSeqence = dwCnt;
 
 cleanup:
-
     VmDirFreeEntryArrayContent(&entryArray);
     VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-
     return dwError;
 
 error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirSynchronizeRidSequence failed (%d)", dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "_VmDirSynchronizeRidSequence failed (%d)",
+            dwError);
 
     goto cleanup;
 }

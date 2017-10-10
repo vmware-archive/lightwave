@@ -55,7 +55,7 @@ public class OidcClientResource extends ClientResource {
     /**
      * Register a new Open ID Connect client using only metadata.
      *
-     * <p><b>Required Role:</b> {@code administrator}.
+     * <p><b>Required Role:</b> {@code TrustedUser}.
      *
      * @param tenant the name of the tenant to register the client with.
      * @param metadata the metadata necessary for registering the client.
@@ -99,7 +99,7 @@ public class OidcClientResource extends ClientResource {
     /**
      * Request the list of Open ID Connect clients associated with a tenant.
      *
-     * <p><b>Required Role:</b> {@code administrator}.
+     * <p><b>Required Role:</b> {@code TrustedUser}.
      *
      * @param tenant the name of the tenant to request the clients from.
      * @return a list of OIDC clients.
@@ -119,7 +119,7 @@ public class OidcClientResource extends ClientResource {
     /**
      * Request a specific Open ID Connect client.
      *
-     * <p><b>Required Role:</b> {@code administrator}.
+     * <p><b>Required Role:</b> {@code TrustedUser}.
      *
      * @param tenant the name of the tenant to request the client from.
      * @param clientId the identifier of the client to request.
@@ -140,7 +140,7 @@ public class OidcClientResource extends ClientResource {
     /**
      * Update an Open ID Connect client.
      *
-     * <p><b>Required Role:</b> {@code administrator}.
+     * <p><b>Required Role:</b> {@code TrustedUser}.
      *
      * @param tenant the name of the tenant containing the client.
      * @param clientId the identifier of the client being updated.
@@ -162,7 +162,7 @@ public class OidcClientResource extends ClientResource {
     /**
      * Delete an Open ID Connect client.
      *
-     * <p><b>Required Role:</b> {@code administrator}.
+     * <p><b>Required Role:</b> {@code TrustedUser}.
      *
      * @param tenant the name of the tenant containing the client.
      * @param clientId the identifier of the client being deleted.

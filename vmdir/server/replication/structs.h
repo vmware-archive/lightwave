@@ -66,14 +66,13 @@ typedef struct _VMDIR_REPLICATION_CREDENTIALS
 
 typedef struct _VMDIR_REPLICATON_CONNECTION
 {
-    LDAP *pLd;
-    PSTR pszConnectionDescription;
+    LDAP*   pLd;
+    PSTR    pszPartnerHostName;
 } VMDIR_REPLICATION_CONNECTION, *PVMDIR_REPLICATION_CONNECTION;
 
 typedef struct _VMDIR_REPLICATION_CONTEXT
 {
-    PVDIR_SCHEMA_CTX pSchemaCtx;
-    BOOLEAN bFirstReplicationCycle;
-    time_t stLastTimeTriedToFillHoleInDirectory;
-    PSTR pszKrb5ErrorMsg;
+    PVDIR_SCHEMA_CTX    pSchemaCtx;
+    time_t              stLastTimeTriedToFillHoleInDirectory;
+    PSTR                pszKrb5ErrorMsg;
 } VMDIR_REPLICATION_CONTEXT, *PVMDIR_REPLICATION_CONTEXT;

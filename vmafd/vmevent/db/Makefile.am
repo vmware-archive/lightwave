@@ -2,8 +2,8 @@
 noinst_LTLIBRARIES = libvmeventdb.la
 
 libvmeventdb_la_CPPFLAGS = \
-    -I$(top_srcdir)/vmevent/include \
-    -I$(top_srcdir)/vmevent/include/public \
+    -I$(top_srcdir)/vmafd/vmevent/include \
+    -I$(top_srcdir)/vmafd/vmevent/include/public \
     @SQLITE_INCLUDES@ \
     @LW_INCLUDES@  \
     @OPENSSL_INCLUDES@
@@ -17,7 +17,7 @@ libvmeventdb_la_SOURCES = \
     package.c
 
 libvmeventdb_la_LIBADD = \
-    $(top_builddir)/vmevent/common/libvmeventcommon.la \
+    $(top_builddir)/vmafd/vmevent/common/libvmeventcommon.la \
     @SQLITE_LIBS@ \
     @LWBASE_LIBS@ \
     @LWRSUTILS_LIBS@ \

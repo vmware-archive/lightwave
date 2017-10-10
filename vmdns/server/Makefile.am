@@ -9,5 +9,5 @@
 
 SUBDIRS = \
     common \
+    rest-head \
     vmdns
-

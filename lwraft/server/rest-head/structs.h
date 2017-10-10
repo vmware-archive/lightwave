@@ -14,7 +14,18 @@
 
 typedef enum
 {
+    VDIR_REST_AUTH_METHOD_UNDEF,
+    VDIR_REST_AUTH_METHOD_BASIC,
+    VDIR_REST_AUTH_METHOD_TOKEN
+
+} VDIR_REST_AUTH_METHOD;
+
+typedef enum
+{
     VDIR_REST_RSC_LDAP,
+    VDIR_REST_RSC_OBJECT,
+    VDIR_REST_RSC_ETCD,
+    VDIR_REST_RSC_METRICS,
     VDIR_REST_RSC_UNKNOWN,
     VDIR_REST_RSC_COUNT,
 
@@ -25,6 +36,8 @@ typedef struct _VDIR_REST_RESULT
     int         errCode;
     PSTR        pszErrMsg;
     PLW_HASHMAP pDataMap;
+    PSTR        pszData;
+    DWORD       dwDataLen;
     BOOLEAN     bErrSet;
 
 } VDIR_REST_RESULT, *PVDIR_REST_RESULT;
@@ -45,6 +58,8 @@ typedef DWORD (*PFN_GET_HTTP_ERROR)(
 typedef struct _VDIR_REST_RESOURCE
 {
     VDIR_REST_RESOURCE_TYPE rscType;
+    PCSTR                   pszEndpoint;
+    BOOLEAN                 bIsEndpointPrefix;
     PFN_SET_RESULT          pfnSetResult;
     PFN_GET_HTTP_ERROR      pfnGetHttpError;
     PCSTR                   pszErrCodeKey;
@@ -52,33 +67,51 @@ typedef struct _VDIR_REST_RESOURCE
 
 } VDIR_REST_RESOURCE, *PVDIR_REST_RESOURCE;
 
+// proxy.c
+typedef struct _VDIR_PROXY_RESULT
+{
+    DWORD   statusCode;
+    DWORD   dwError;
+    DWORD   dwCurlError;
+    PSTR    pResponse;
+    DWORD   dwResponseLen;
+
+} VDIR_PROXY_RESULT, *PVDIR_PROXY_RESULT;
+
 typedef struct _VDIR_REST_OPERATION
 {
-    PSTR                pszAuth;
-    PSTR                pszMethod;
-    PSTR                pszEndpoint;
-    json_t*             pjInput;
-    PLW_HASHMAP         pParamMap;
-    PVDIR_CONNECTION    pConn;
-    PVDIR_REST_RESULT   pResult;
-    PVDIR_REST_RESOURCE pResource;
+    PSTR                    pszAuth;
+    PSTR                    pszMethod;
+    PSTR                    pszPath;
+    PSTR                    pszSubPath;
+    PSTR                    pszHeaderIfMatch;
+    PSTR                    pszContentType;
+    PSTR                    pszInput;
+    json_t*                 pjInput;
+    PLW_HASHMAP             pParamMap;
+    VDIR_REST_AUTH_METHOD   authMthd;
+    PVDIR_CONNECTION        pConn;
+    PVDIR_REST_RESULT       pResult;
+    PVDIR_REST_RESOURCE     pResource;
+    PVDIR_PROXY_RESULT      pProxyResult;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
-// accesstoken.c
+// authtoken.c
 typedef enum
 {
-    VDIR_REST_ACCESS_TOKEN_BEARER,
-    VDIR_REST_ACCESS_TOKEN_HOTK
+    VDIR_REST_AUTH_TOKEN_BEARER,
+    VDIR_REST_AUTH_TOKEN_HOTK
 
-} VDIR_REST_ACCESS_TOKEN_TYPE;
+} VDIR_REST_AUTH_TOKEN_TYPE;
 
-typedef struct _VDIR_REST_ACCESS_TOKEN
+typedef struct _VDIR_REST_AUTH_TOKEN
 {
-    VDIR_REST_ACCESS_TOKEN_TYPE tokenType;
+    VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
+    PSTR                        pszAccessToken;
     PSTR                        pszBindUPN;
 
-} VDIR_REST_ACCESS_TOKEN, *PVDIR_REST_ACCESS_TOKEN;
+} VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
 
 // httperror.c
 typedef struct _VDIR_HTTP_ERROR
@@ -89,10 +122,37 @@ typedef struct _VDIR_HTTP_ERROR
 
 } VDIR_HTTP_ERROR, *PVDIR_HTTP_ERROR;
 
-// resource.c
-typedef struct _VDIR_REST_RESOURCE_ENDPOINT
-{
-    VDIR_REST_RESOURCE_TYPE rscType;
-    PCSTR                   pszEndpoint;
+// vmafd.c
+typedef DWORD (*PFN_VMAFD_GET_DC_NAME)(
+        PCSTR,
+        PSTR*
+        );
 
-} VDIR_REST_RESOURCE_ENDPOINT, *PVDIR_REST_RESOURCE_ENDPOINT;
+typedef DWORD (*PFN_VMAFD_GET_DOMAIN_NAME)(
+        PCSTR,
+        PSTR*
+        );
+
+typedef DWORD (*PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO)(
+        PCSTR,
+        PSTR*,
+        PSTR*
+        );
+
+typedef struct _VDIR_VMAFD_API
+{
+    VMDIR_LIB_HANDLE                    pVmAfdLib;
+    PFN_VMAFD_GET_DC_NAME               pfnGetDCName;
+    PFN_VMAFD_GET_DOMAIN_NAME           pfnGetDomainName;
+    PFN_VMAFD_GET_MACHINE_ACCOUNT_INFO  pfnGetMachineAccountInfo;
+
+} VDIR_VMAFD_API, *PVDIR_VMAFD_API;
+
+// cache.c
+typedef struct _VDIR_REST_HEAD_CACHE
+{
+    PVMDIR_RWLOCK   pRWLock;
+    PSTR            pszOIDCSigningCertPEM;
+    PSID            pBuiltInAdminsGroupSid;
+
+} VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;

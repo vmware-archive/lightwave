@@ -209,6 +209,7 @@ VmwDeployValidateSiteName(
 DWORD
 VmwDeployValidatePartnerCredentials(
     PCSTR pszServer,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszDomainName
     );

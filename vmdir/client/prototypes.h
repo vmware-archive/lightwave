@@ -21,7 +21,7 @@
 #define VMDIR_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmdir"
 #define VMDIR_START_SERVICE "/opt/likewise/bin/lwsm start vmdir"
 // in embedded VCHA, snapshot database live under vmware-vmdir/
-#define VMDIR_CLEANUP_DATA "rm -rf /storage/db/vmware-vmdir/*"
+#define VMDIR_CLEANUP_DATA "mv /var/lib/vmware/vmdir/data.mdb /var/lib/vmware/vmdir/data.mdb.bak"
 
 #define VMKDC_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmkdc"
 #define VMKDC_START_SERVICE "/opt/likewise/bin/lwsm start vmkdc"
@@ -609,6 +609,13 @@ VmDirLocalGeneratePassword(
 );
 
 DWORD
+VmDirLocalGetSRPSecret(
+    PCSTR       pszUPN,
+    PBYTE*      ppSecretBlob,
+    DWORD*      pSize
+);
+
+DWORD
 VmDirLocalSetSRPSecret(
     PCWSTR      pwszUPN,
     PCWSTR      pwszSecret
@@ -733,4 +740,125 @@ VmDirUpdateKeytabFile(
     PCSTR pszUserName,
     PCSTR pszPassword,
     BOOLEAN bIsServer
+    );
+
+/*
+ * HA Topolgy Management APIs
+ */
+
+DWORD
+VmDirGetIntraSiteTopology(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszHostName,
+    PCSTR   pszSiteName,
+    BOOLEAN bConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    );
+
+DWORD
+VmDirGetInterSiteTopology(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszHostName,
+    BOOLEAN bConsiderOfflineNodes,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppCurTopology // Output
+    );
+
+DWORD
+VmDirGetNewTopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY* ppNewTopology // Output
+    );
+
+DWORD
+VmDirGetTopologyChanges(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pCurTopology,
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pNewTopology,
+    PVMDIR_HA_TOPOLOGY_CHANGES* ppTopologyChanges //Output
+    );
+
+DWORD
+VmDirModifyLinks(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pTopologyChanges
+    );
+
+VOID
+VmDirFreeHATopology(
+    PVMDIR_HA_REPLICATION_TOPOLOGY  pTopology
+    );
+
+VOID
+VmDirFreeHAServer(
+    PVMDIR_HA_SERVER_INFO   pServer
+    );
+
+VOID
+VmDirFreeHAChanges(
+    PVMDIR_HA_TOPOLOGY_CHANGES  pChanges
+    );
+/*
+ * HA Topology Management APIs end here
+ */
+
+DWORD
+VmDirLdapRemoveRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    LDAP* pHostLd
+    );
+
+DWORD
+VmDirLdapSetupRemoteHostRAByPLd(
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark,
+    LDAP* pLocalLd,
+    LDAP* pPartnerLd
+    );
+
+DWORD
+VmDirLdapGetHighWatermarkByPLd(
+    LDAP*      pLocalLd,
+    LDAP*      pPartnerLd,
+    PCSTR      pszLocalHost,
+    PCSTR      pszPartnerHost,
+    USN*       pLastLocalUsn
+    );
+
+DWORD
+VmDirGetReplicationPartnersByPLd(
+    PCSTR               pszServerName,
+    PCSTR               pszDomainName,
+    LDAP*               pLd,
+    PVMDIR_REPL_PARTNER_INFO*  ppReplPartnerInfo,   // output
+    DWORD*              pdwNumReplPartner    // output
+);
+
+DWORD
+VmDirFindAllReplPartnerHostByPLd(
+    PCSTR    pszServerName,
+    PCSTR    pszDomainName,
+    LDAP*    pLd,
+    PSTR**   pppszPartnerHost,
+    DWORD*   pdwSize
+    );
+
+DWORD
+VmDirGetServersInfoOnSite(
+    LDAP*                   pLd,
+    PCSTR                   pszSiteName,
+    PCSTR                   pszHost,
+    PCSTR                   pszDomain,
+    PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
+    DWORD*                  pdwInfoCount
+    );
+
+DWORD
+VmDirGetSiteList(
+    LDAP*               pLd,
+    PCSTR               pszDomainName,
+    PVMDIR_STRING_LIST* ppSiteList
     );

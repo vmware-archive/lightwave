@@ -22,10 +22,11 @@ public class ReleaseUtil {
 
     // Decision factor : The RPM name is vmware-sts in lightwave and vmware-identity-sts in Vsphere.
     // TODO : Add the product release in registry entry.
+    // TODO : Add support for non-RPM Linux distributions
     public static boolean isLightwave() throws IOException {
 
         boolean lightwave = true;
-        Process p = Runtime.getRuntime().exec("rpm -qa vmware-sts");
+        Process p = Runtime.getRuntime().exec("rpm -qa lightwave");
         String rpmInfo;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 p.getInputStream()))) {

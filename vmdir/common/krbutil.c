@@ -199,7 +199,7 @@ VmDirKeyTabRead(
     int entrySize;
     int princSize;
     int princType;
-    int nameCompCnt;
+    int nameCompCnt = 0;
     int kvno;
     int keyType;
     int keyLength;

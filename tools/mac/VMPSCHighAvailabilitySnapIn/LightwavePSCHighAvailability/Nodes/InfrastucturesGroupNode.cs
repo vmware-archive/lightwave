@@ -20,7 +20,7 @@ namespace VMPSCHighAvailability.Nodes
 	{	
 		public InfrastucturesGroupNode ()
 		{
-			DisplayName = "Platform Services Controllers";
+			DisplayName = "Lightwave Domain Controllers";
 		}
 
 		public string GetSiteName()

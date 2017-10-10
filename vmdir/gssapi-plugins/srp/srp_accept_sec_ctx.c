@@ -180,6 +180,7 @@ error:
 static
 OM_uint32
 _srp_gss_auth_create_machine_acct_binding(
+    int *bUseLocalIpc,
     OM_uint32 *minor_status,
     PVMDIR_SERVER_CONTEXT *hRetServer)
 {
@@ -209,15 +210,15 @@ _srp_gss_auth_create_machine_acct_binding(
     if (pEnv)
     {
         domainState = atoi(pEnv);
-    } else
+    } 
+    else
     {
         /* Determine if this system is a management node */
         dwError = srp_reg_get_domain_state(hRegistry, &domainState);
         if (dwError)
         {
-            maj = GSS_S_FAILURE;
-            min = dwError;
-            goto error;
+            /* Assume infra node if registry lookup fails */
+            domainState = 1;
         }
     }
 
@@ -254,7 +255,12 @@ _srp_gss_auth_create_machine_acct_binding(
             goto error;
         }
     }
-
+    else if (domainState == 1)
+    {
+        /* Do not create a binding handle when on an infra node; use IPC */
+        *bUseLocalIpc = 1;
+        goto error;
+    }
 
     /*
      * This will create a remote binding handle when credentials are
@@ -297,6 +303,140 @@ error:
         }
     }
     return maj;
+}
+
+typedef struct _srp_secret_blob_data
+{
+    char *blob;
+    int blob_len;
+
+    /* All pointers below here are aliases into "blob" */
+    char *mda;
+    int mda_len;
+    char *v;
+    int v_len;
+    char *salt;
+    int salt_len;
+} srp_secret_blob_data, *srp_p_secret_blob_data;
+
+
+static long _get_srp_secret_decoded(
+    char *username,
+    srp_p_secret_blob_data srp_data)
+{
+    long sts = 0;
+    char *srp_secret = NULL;
+    char *srp_secret_str = NULL;
+    unsigned int srp_secret_str_len = 0;
+    unsigned int srp_secret_len_max = 0;
+    unsigned int srp_secret_len = 0;
+    uint32_t srp_decode_buf_len = 0;
+    uint16_t srp_decode_mda_len = 0;
+    uint16_t srp_decode_v_len = 0;
+    uint8_t srp_decode_salt_len = 0;
+    char *srp_decode_ptr = NULL;
+    char *srp_mda = NULL;
+    char *srp_v = NULL;
+    char *srp_salt = NULL;
+
+    /*
+     * This is the implementation of the RPC VmDirGetSRPSecret.
+     * The public interface VmDirGetSRPSecret() is no longer needed
+     * by this implementation
+     */
+    sts = VmDirLocalGetSRPSecret(
+              username,
+              (unsigned char **) &srp_secret_str,
+              &srp_secret_str_len);
+    if (sts)
+    {
+        goto error;
+    }
+
+    srp_secret = calloc(srp_secret_str_len, sizeof(char));
+    if (!srp_secret)
+    {
+        sts = rpc_s_no_memory;
+        goto error;
+    }
+    srp_secret_len_max = srp_secret_str_len;
+    sts = sasl_decode64(srp_secret_str,
+                        srp_secret_str_len,
+                        srp_secret,
+                        srp_secret_len_max,
+                        &srp_secret_len);
+    if (sts != SASL_OK)
+    {
+        sts = rpc_s_coding_error;
+        goto error;
+    }
+
+    /*
+     * Encoding of data blob (from common/srp.c):
+     * calculate buffer size
+     * mda: Message Digest Algorithm
+     * v: SRP private "hash" value * salt: random salt generated at "hash" creation time
+     *
+     * 0. 4 byte length
+     * 1. utf8(mda) : 2 bytes + string
+     * 2. mpi(v)    : 2 bytes + verifier
+     * 3. os(salt)  : 1 bytes + salt
+     */
+    srp_decode_ptr = srp_secret;
+    memcpy(&srp_decode_buf_len, srp_decode_ptr, sizeof(uint32_t));
+    srp_decode_ptr += sizeof(uint32_t);
+    srp_decode_buf_len = ntohl(srp_decode_buf_len);
+
+    memcpy(&srp_decode_mda_len, srp_decode_ptr, sizeof(uint16_t));
+    srp_decode_ptr += sizeof(uint16_t);
+    srp_decode_mda_len = ntohs(srp_decode_mda_len);
+    srp_mda = srp_decode_ptr;
+    srp_decode_ptr += srp_decode_mda_len;
+
+    memcpy(&srp_decode_v_len, srp_decode_ptr, sizeof(uint16_t));
+    srp_decode_ptr += sizeof(uint16_t);
+    srp_decode_v_len = ntohs(srp_decode_v_len);
+    srp_v = srp_decode_ptr;
+    srp_decode_ptr += srp_decode_v_len;
+
+    memcpy(&srp_decode_salt_len, srp_decode_ptr, sizeof(uint8_t));
+    srp_decode_ptr += sizeof(uint8_t);
+    srp_salt = srp_decode_ptr;
+
+
+    /* blob is the buffer, the rest are aliased pointers */
+    srp_data->blob = srp_secret;
+    srp_data->blob_len = srp_decode_buf_len;
+    srp_data->mda = srp_mda;
+    srp_data->mda_len = srp_decode_mda_len;
+    srp_data->v = srp_v;
+    srp_data->v_len = srp_decode_v_len;
+    srp_data->salt = srp_salt;
+    srp_data->salt_len = srp_decode_salt_len;
+
+error:
+    if (sts)
+    {
+        if (srp_secret)
+        {
+            free(srp_secret);
+        }
+    }
+    if (srp_secret_str)
+    {
+        free(srp_secret_str);
+    }
+
+    return sts;
+}
+
+static void _free_srp_secret_decoded(
+    srp_p_secret_blob_data srp_data)
+{
+    if (srp_data && srp_data->blob)
+    {
+        free(srp_data->blob);
+    }
 }
 
 static
@@ -344,6 +484,8 @@ _srp_gss_auth_init(
     ber_int_t gss_srp_version_min = 0;
     PVMDIR_SERVER_CONTEXT hServer = NULL;
     srp_verifier_handle_t hSrp = NULL; /* aliased / cast to "ver" variable */
+    srp_secret_blob_data srp_data = {0};
+    int bUseCSRP = 0; /* Use CRP library directly */
 
     ber_ctx.bv_val = (void *) input_token->value;
     ber_ctx.bv_len = input_token->length;
@@ -364,12 +506,14 @@ _srp_gss_auth_init(
                        &ber_state, &gss_srp_version_maj, &gss_srp_version_min);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_scanf(t{ii): failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
     berror = ber_scanf(ber, "OO}", &ber_upn, &ber_bytes_A);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_scanf(OO): failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -397,6 +541,7 @@ _srp_gss_auth_init(
                           &srp_context_handle->gss_upn_name);
     if (maj)
     {
+        srp_debug_printf("_srp_gss_auth_init() gss_import_name failed maj=%d\n", maj);
         goto error;
     }
 
@@ -406,11 +551,12 @@ _srp_gss_auth_init(
                            &disp_name_OID);
     if (maj)
     {
+        srp_debug_printf("_srp_gss_auth_init() gss_display_name failed maj=%d\n", maj);
         goto error;
     }
 
     disp_name = &disp_name_buf;
-    srp_debug_printf("srp_gss_accept_sec_context: UPN name=%.*s\n",
+    srp_debug_printf("_srp_gss_auth_init() srp_gss_accept_sec_context: UPN name=%.*s\n",
                      (int) disp_name_buf.length, (char *) disp_name_buf.value);
 
     srp_upn_name = calloc(disp_name_buf.length + 1, sizeof(char));
@@ -428,36 +574,84 @@ _srp_gss_auth_init(
 
 
     maj = _srp_gss_auth_create_machine_acct_binding(
+              &bUseCSRP,
               &min,
               &hServer);
     if (maj)
     {
+        srp_debug_printf("_srp_gss_auth_init() _srp_gss_auth_create_machine_acct_binding failed maj=%d\n", maj);
         maj = GSS_S_FAILURE;
         goto error;
     }
 
-    sts = cli_rpc_srp_verifier_new(
-            hServer ? hServer->hBinding : NULL,
-            hash_alg,
-            ng_type,
-            srp_upn_name,
-            ber_bytes_A->bv_val, (int) ber_bytes_A->bv_len,
-            &srp_bytes_B, &srp_bytes_B_len,
-            &srp_salt, &srp_decode_salt_len,
-            &srp_mda, &srp_decode_mda_len,
-            NULL, NULL, /* n_hex, g_hex */
-            &hSrp);
-    if (sts)
+    if (!bUseCSRP)
     {
-        maj = GSS_S_FAILURE;
-        min = sts;
-        goto error;
+        sts = cli_rpc_srp_verifier_new(
+                hServer ? hServer->hBinding : NULL,
+                hash_alg,
+                ng_type,
+                srp_upn_name,
+                ber_bytes_A->bv_val, (int) ber_bytes_A->bv_len,
+                &srp_bytes_B, &srp_bytes_B_len,
+                &srp_salt, &srp_decode_salt_len,
+                &srp_mda, &srp_decode_mda_len,
+                NULL, NULL, /* n_hex, g_hex */
+                &hSrp);
+        if (sts)
+        {
+            srp_debug_printf("_srp_gss_auth_init() cli_rpc_srp_verifier_new: failed sts=%d\n", sts);
+            maj = GSS_S_FAILURE;
+            min = sts;
+            goto error;
+        }
+        ver = (struct SRPVerifier *) hSrp, hSrp = NULL;
     }
-    ver = (struct SRPVerifier *) hSrp, hSrp = NULL;
+    else
+    {
+        sts = _get_srp_secret_decoded(
+                  srp_upn_name,
+                  &srp_data);
+        if (sts)
+        {
+            srp_debug_printf("_srp_gss_auth_init() _get_srp_secret_decoded: failed sts=%d\n", sts);
+            maj = GSS_S_FAILURE;
+            min = sts;
+            goto error;
+        }
+
+        /* Call SRP library implementation directly */
+        ver =  srp_verifier_new(hash_alg, 
+                                ng_type,
+                                srp_upn_name,
+
+                                /* SRP Salt value */
+                                srp_data.salt, srp_data.salt_len,
+
+                                /* SRP "V" verifier secret */
+                                srp_data.v, srp_data.v_len,
+
+                                /* SRP bytes_A */
+                                ber_bytes_A->bv_val, (int) ber_bytes_A->bv_len,
+
+                                /* SRP bytes B */
+                                &srp_bytes_B, &srp_bytes_B_len,
+
+                                /* SRP n_hex / g_hex */
+                                NULL, NULL);
+        if (!ver)
+        {
+            srp_debug_printf("_srp_gss_auth_init() srp_verifier_new: failed sts=%d\n", sts);
+            maj = GSS_S_FAILURE;
+            goto error;
+        }
+        srp_salt = srp_data.salt;
+        srp_decode_salt_len = srp_data.salt_len;
+
+    }
 
     if (!srp_bytes_B)
     {
-        srp_debug_printf("srp_verifier_new: failed!\n");
+        srp_debug_printf("_srp_gss_auth_init() srp_verifier_new: failed!\n");
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -496,6 +690,7 @@ _srp_gss_auth_init(
                  &ber_B);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_printf: failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -503,6 +698,7 @@ _srp_gss_auth_init(
     berror = ber_flatten(ber_resp, &flatten);
     if (berror == -1)
     {
+        srp_debug_printf("_srp_gss_auth_init() ber_flatten: failed berror=%d\n", berror);
         maj = GSS_S_FAILURE;
         goto error;
     }
@@ -516,16 +712,24 @@ _srp_gss_auth_init(
     output_token->length = flatten->bv_len;
     memcpy(output_token->value, flatten->bv_val, flatten->bv_len);
 
-    sts = cli_rpc_srp_verifier_get_session_key(
-        hServer ? hServer->hBinding : NULL,
-        ver,
-        &srp_session_key,
-        &srp_session_key_len);
-    if (sts)
+    if (bUseCSRP)
     {
-        min = sts;
-        maj = GSS_S_FAILURE;
-        goto error;
+        srp_session_key = srp_verifier_get_session_key(ver, &srp_session_key_len);
+    }
+    else
+    {
+        sts = cli_rpc_srp_verifier_get_session_key(
+            hServer ? hServer->hBinding : NULL,
+            ver,
+            &srp_session_key,
+            &srp_session_key_len);
+        if (sts)
+        {
+            min = sts;
+            maj = GSS_S_FAILURE;
+            goto error;
+        }
+
     }
 
     if (srp_session_key && srp_session_key_len > 0)
@@ -554,6 +758,7 @@ _srp_gss_auth_init(
     /* Return the SRP session key in the context handle */
     srp_context_handle->srp_session_key_len = srp_session_key_len;
     srp_context_handle->srp_session_key = ret_srp_session_key, ret_srp_session_key = NULL;
+    srp_context_handle->bUseCSRP = bUseCSRP;
 
     srp_print_hex(srp_session_key, srp_session_key_len,
                   "_srp_gss_auth_init(accept_sec_ctx) got session key");
@@ -561,9 +766,16 @@ _srp_gss_auth_init(
 error:
     if (ver)
     {
-        cli_rpc_srp_verifier_delete(
-            hServer ? hServer->hBinding : NULL,
-            (void **) &ver);
+        if (bUseCSRP)
+        {
+            srp_verifier_delete(ver);
+        }
+        else
+        {
+            cli_rpc_srp_verifier_delete(
+                hServer ? hServer->hBinding : NULL,
+                (void **) &ver);
+        }
     }
     VmDirCloseServer(hServer);
     if (srp_upn_name)
@@ -586,11 +798,11 @@ error:
     {
         gss_release_buffer(&min_tmp, disp_name);
     }
-    if (srp_bytes_B)
+    if (!bUseCSRP && srp_bytes_B)
     {
         free((void *) srp_bytes_B);
     }
-    if (srp_salt)
+    if (!bUseCSRP && srp_salt)
     {
         free((void *) srp_salt);
     }
@@ -598,9 +810,13 @@ error:
     {
         free((void *) srp_mda);
     }
-    if (srp_session_key)
+    if (!bUseCSRP && srp_session_key)
     {
         free((void *) srp_session_key);
+    }
+    if (bUseCSRP)
+    {
+        _free_srp_secret_decoded(&srp_data);
     }
     if (ret_srp_session_key)
     {
@@ -677,12 +893,26 @@ _srp_gss_validate_client(
     srp_print_hex(ber_srp_bytes_M->bv_val, (int) ber_srp_bytes_M->bv_len,
                   "_srp_gss_validate_client(accept_sec_ctx) received bytes_M");
 
-    hServer = srp_context_handle->hServer;
-    min = cli_rpc_srp_verifier_verify_session(
-              hServer->hBinding,
-              srp_context_handle->srp_ver,
-              ber_srp_bytes_M->bv_val, (int) ber_srp_bytes_M->bv_len,
-              &bytes_HAMK, &bytes_HAMK_len);
+    if (srp_context_handle->bUseCSRP)
+    {
+        srp_verifier_verify_session(
+            srp_context_handle->srp_ver,
+            ber_srp_bytes_M->bv_val,
+            &bytes_HAMK);
+        if (!bytes_HAMK)
+        {
+            min = rpc_s_auth_mut_fail;
+        }
+    }
+    else
+    {
+        hServer = srp_context_handle->hServer;
+        min = cli_rpc_srp_verifier_verify_session(
+                  hServer->hBinding,
+                  srp_context_handle->srp_ver,
+                  ber_srp_bytes_M->bv_val, (int) ber_srp_bytes_M->bv_len,
+                  &bytes_HAMK, &bytes_HAMK_len);
+    }
     if (min || !bytes_HAMK)
     {
         /*
@@ -710,22 +940,30 @@ _srp_gss_validate_client(
     }
     if (min == 0)
     {
-        /*
-         * Generate HAMK response. When min is an error code,
-         * an empty HAMK response (zero length) is created.
-         */
-        min = cli_rpc_srp_verifier_get_session_key_length(
-                  hServer->hBinding,
-                  srp_context_handle->srp_ver,
-                  (long *) &ber_HAMK.bv_len);
-        if (min)
+        if (srp_context_handle->bUseCSRP)
         {
-            maj = GSS_S_FAILURE;
-            goto error;
+            bytes_HAMK_len = srp_verifier_get_session_key_length(srp_context_handle->srp_ver);
+        }
+        else
+        {
+            /*
+             * Generate HAMK response. When min is an error code,
+             * an empty HAMK response (zero length) is created.
+             */
+            min = cli_rpc_srp_verifier_get_session_key_length(
+                      hServer->hBinding,
+                      srp_context_handle->srp_ver,
+                      (long *) &ber_HAMK.bv_len);
+            if (min)
+            {
+                maj = GSS_S_FAILURE;
+                goto error;
+            }
         }
     }
 
     ber_HAMK.bv_val = (void *) bytes_HAMK;
+    ber_HAMK.bv_len = bytes_HAMK_len;
     berror = ber_printf(ber_resp, "t{O}",
                   (int) SRP_AUTH_SERVER_VALIDATE,
                   &ber_HAMK);
@@ -762,7 +1000,7 @@ error:
     {
         ber_bvfree(ber_srp_bytes_M);
     }
-    if (bytes_HAMK)
+    if (!srp_context_handle->bUseCSRP && bytes_HAMK)
     {
         free((void *) bytes_HAMK);
     }
@@ -1070,13 +1308,20 @@ srp_gss_accept_sec_context(
             goto error;
         }
 
-        /* Clean up SRP server-side memory, then close the server context */
-        cli_rpc_srp_verifier_delete(
-            hServer->hBinding,
-            (void **) &srp_context_handle->srp_ver);
-
-        VmDirCloseServer(hServer);
-        srp_context_handle->hServer = NULL;
+        if (srp_context_handle->bUseCSRP)
+        {
+            srp_verifier_delete(srp_context_handle->srp_ver);
+        }
+        else
+        {
+            /* Clean up SRP server-side memory, then close the server context */
+            cli_rpc_srp_verifier_delete(
+                hServer->hBinding,
+                (void **) &srp_context_handle->srp_ver);
+    
+            VmDirCloseServer(hServer);
+            srp_context_handle->hServer = NULL;
+        }
     }
 
 error:

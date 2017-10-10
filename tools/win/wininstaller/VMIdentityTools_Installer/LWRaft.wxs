@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="LWRaft_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="lwraft_msc_comp" Guid="{66B66CC8-0C90-48DE-A322-F1D85436FBEA}" Win64="yes">
+        <File Id="lwraft_msc_file"
+              Name="Lightwave Raft.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave Raft.msc" />
+      </Component>
+      <Component Id="LWRaftSnapIn_Dll_Comp" Guid="{556D2BD6-813E-4AFA-9981-65C704CD2E35}" Win64="yes">
+        <File Id="LWRaftSnapIn_Dll_File"
+              Name="LWRaftSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="LWRaftSnapIn_Dll_File"
+              AssemblyApplication="LWRaftSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\LWRaftSnapIn.dll" />
+      </Component>
+    </ComponentGroup>
+
+
+    <ComponentGroup Id="LWRaft_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_LWRaft_Comp" Guid="{6F7DFA1F-8FB3-4270-AE67-BF0B362995A3}" Win64="yes">
+        <RegistryKey Id="Reg_LWRaft_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{D2DFC4BB-70D6-43D1-9C94-19C053A29059}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v2.0.50727"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="LWRaftSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="LWRaft Browser"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.LWRaft_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="LWRaftSnapIn.LWRaftSnapIn, LWRaftSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="LWRaft"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

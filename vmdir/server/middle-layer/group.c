@@ -148,6 +148,17 @@ error:
     goto cleanup;
 }
 
+//
+// Before an entry is deleted we remove it from any groups that it's a member
+// of. Note that this is called for all objects, not just security principals.
+//
+// Removing a user from a certain group requires the WP privilege while
+// deleting a user requires SD/DC. As such, it's possible for the caller to be
+// able to delete the object without having sufficient permission to remove it
+// from individual groups. So we verify that the user has permission to delete
+// the object, first. If so, then we remove it from groups as an internal
+// operation (so no access checking is performed).
+//
 DWORD
 VmDirPluginGroupMemberPreModApplyDelete(
     PVDIR_OPERATION  pOperation,
@@ -155,14 +166,46 @@ VmDirPluginGroupMemberPreModApplyDelete(
     DWORD            dwPriorResult
     )
 {
-    DWORD   dwError = 0;
-    DWORD   i = 0;
-    PVDIR_BERVALUE  pMemberDN = NULL;
-    PVDIR_BERVALUE  pGroupDN = NULL;
-    PVDIR_OPERATION pGroupOp = NULL;
-    VDIR_ENTRY_ARRAY    entryArray = {0};
+    DWORD dwError = 0;
+    DWORD i = 0;
+    BOOLEAN bHasParent = FALSE;
+    PVDIR_BERVALUE pMemberDN = NULL;
+    VDIR_BERVALUE bvParentDN = VDIR_BERVALUE_INIT;
+    PVDIR_BERVALUE pGroupDN = NULL;
+    VDIR_OPERATION groupOp = {0};
+    PVDIR_ENTRY pTargetEntry = NULL;
+    VDIR_ENTRY_ARRAY entryArray = {0};
 
     pMemberDN = &pOperation->request.deleteReq.dn;
+
+    dwError = VmDirSimpleDNToEntry(pMemberDN->lberbv.bv_val, &pTargetEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetParentDN(pMemberDN, &bvParentDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bHasParent = bvParentDN.lberbv.bv_len > 0;
+
+    dwError = VmDirSrvAccessCheck(
+                    pOperation,
+                    &pOperation->conn->AccessInfo,
+                    pTargetEntry,
+                    VMDIR_RIGHT_DS_DELETE_OBJECT);
+    if (dwError && bHasParent)
+    {
+        VmDirFreeEntry(pTargetEntry);
+        pTargetEntry = NULL;
+
+        dwError = VmDirSimpleDNToEntry(bvParentDN.lberbv.bv_val, &pTargetEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSrvAccessCheck(
+                    pOperation,
+                    &pOperation->conn->AccessInfo,
+                    pTargetEntry,
+                    VMDIR_RIGHT_DS_DELETE_CHILD);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // look up groups by searching "(member=dn)"
     dwError = VmDirSimpleEqualFilterInternalSearch(
@@ -176,19 +219,20 @@ VmDirPluginGroupMemberPreModApplyDelete(
     // delete the member from groups
     for (i = 0; i < entryArray.iSize; i++)
     {
-        VmDirFreeOperation(pGroupOp);
-        pGroupOp = NULL;
+        pGroupDN = &entryArray.pEntry[i].dn;
 
-        dwError = VmDirExternalOperationCreate(
-                NULL, -1, LDAP_REQ_MODIFY, pOperation->conn, &pGroupOp);
+        VmDirFreeOperationContent(&groupOp);
+        dwError = VmDirInitStackOperation(&groupOp,
+                VDIR_OPERATION_TYPE_INTERNAL,
+                LDAP_REQ_MODIFY,
+                NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pGroupDN = &entryArray.pEntry[i].dn;
-        pGroupOp->reqDn.lberbv = pGroupDN->lberbv;
-        pGroupOp->request.modifyReq.dn.lberbv = pGroupDN->lberbv;
+        groupOp.pBEIF = VmDirBackendSelect(NULL);
+        groupOp.reqDn.lberbv = pGroupDN->lberbv;
+        groupOp.request.modifyReq.dn.lberbv = pGroupDN->lberbv;
 
-        dwError = VmDirAppendAMod(
-                pGroupOp,
+        dwError = VmDirAppendAMod(&groupOp,
                 MOD_OP_DELETE,
                 ATTR_MEMBER,
                 ATTR_MEMBER_LEN,
@@ -196,7 +240,7 @@ VmDirPluginGroupMemberPreModApplyDelete(
                 pMemberDN->lberbv.bv_len);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirMLModify(pGroupOp);
+        dwError = VmDirInternalModifyEntry(&groupOp);
         // Handle possible conflicts gracefully:
         // - The member is already removed from group since search
         // - The group entry is deleted since search
@@ -209,8 +253,10 @@ VmDirPluginGroupMemberPreModApplyDelete(
     }
 
 cleanup:
+    VmDirFreeEntry(pTargetEntry);
     VmDirFreeEntryArrayContent(&entryArray);
-    VmDirFreeOperation(pGroupOp);
+    VmDirFreeOperationContent(&groupOp);
+    VmDirFreeBervalContent(&bvParentDN);
     return dwError;
 
 error:

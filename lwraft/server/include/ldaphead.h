@@ -80,6 +80,12 @@ VmDirDeleteConnection(
     VDIR_CONNECTION **  conn
     );
 
+DWORD
+VmDirWhichAddressPresent(
+    BOOLEAN *pIPV4AddressPresent,
+    BOOLEAN *pIPV6AddressPresent
+    );
+
 // controls.c
 void
 DeleteControls(
@@ -146,13 +152,22 @@ VmDirConcatTwoFilters(
 
 int
 AppendDNFilter(
-	VDIR_OPERATION *    op);
+	VDIR_OPERATION *    op
+	);
 
 VDIR_FILTER_COMPUTE_RESULT
 CheckIfEntryPassesFilter(
     VDIR_OPERATION * op,
     VDIR_ENTRY *     e,
-    VDIR_FILTER *   f);
+    VDIR_FILTER *   f
+    );
+
+DWORD
+VmDirMatchEntryWithFilter(
+    PVDIR_OPERATION     pOp,
+    PVDIR_ENTRY         pEntry,
+    PCSTR               pszFilter
+    );
 
 void
 DeleteFilter(
@@ -282,5 +297,12 @@ VmDirOPStatistic(
 PCSTR
 VmDirGetOperationStringFromTag(
     ber_tag_t opTag);
+
+// vecs.c
+DWORD
+VmDirGetVecsMachineCert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
 
 #endif /* LH_H_ */

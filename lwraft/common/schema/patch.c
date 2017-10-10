@@ -79,35 +79,19 @@ error:
 
 DWORD
 VmDirPatchRemoteSchemaObjects(
-    LDAP*               pLd,
-    PVDIR_LDAP_SCHEMA   pNewSchema
+    LDAP*                   pLd,
+    PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff
     )
 {
     DWORD   dwError = 0;
-    PVDIR_LDAP_SCHEMA               pCurSchema = NULL;
-    PVDIR_LDAP_SCHEMA               pMergedSchema = NULL;
-    PVDIR_LDAP_SCHEMA_DIFF          pSchemaDiff = NULL;
     PVDIR_LDAP_SCHEMA_OBJECT_DIFF   pObjDiff = NULL;
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
     LDAPMod**   mods = NULL;
 
-    if (!pLd || !pNewSchema)
+    if (!pLd || !pSchemaDiff)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
-
-    dwError = VmDirLdapSchemaInit(&pCurSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapSchemaLoadRemoteSchema(pCurSchema, pLd);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapSchemaMerge(pCurSchema, pNewSchema, &pMergedSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapSchemaGetDiff(pCurSchema, pMergedSchema, &pSchemaDiff);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     pNode = pSchemaDiff->attrToAdd->pHead;
     while (pNode)
@@ -175,8 +159,5 @@ VmDirPatchRemoteSchemaObjects(
 
 error:
     _FreeLDAPModArray(mods);
-    VmDirFreeLdapSchema(pCurSchema);
-    VmDirFreeLdapSchema(pMergedSchema);
-    VmDirFreeLdapSchemaDiff(pSchemaDiff);
     return dwError;
 }

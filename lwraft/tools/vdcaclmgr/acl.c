@@ -13,56 +13,223 @@
  */
 #include "includes.h"
 
+DWORD
+_VdcParsePermissionsString(
+    PCSTR pszPermissions,
+    PVMDIR_STRING_LIST pStringList
+    );
+
+DWORD
+_VdcParseAceFlagString(
+    PCSTR pszAceFlags,
+    PVMDIR_STRING_LIST pStringList
+    );
+
+static
+DWORD
+_VdcAppendNewValue(
+    PVMDIR_STRING_LIST  pAceTokenList,
+    PVMDIR_STRING_LIST  pNewValueList,
+    DWORD               dwNum
+    );
+
+static
+VOID
+_VdcSkipNewValue(
+    PVMDIR_STRING_LIST  pAceTokenList,
+    PVMDIR_STRING_LIST  pNewValueList,
+    DWORD               dwNum
+    );
+
 //
-// pszPermissionStatement will be of the form "Username:PERMISSION". E.g.,
-// "testuser:RP".
+// Looks up the user's SID give a username. However, pUserName might already
+// be the SID, in which case we just return that. On exit the caller owns
+// *ppUserSid.
+//
+DWORD
+_VdcLookupUserSid(
+    PLW_HASHMAP pUserToSidMapping,
+    PCSTR pszUserName,
+    PSTR *ppszUserSid
+    )
+{
+    PSTR pszUserSid = NULL;
+    PSTR pszPotentialUserSid = NULL;
+    DWORD dwError = 0;
+
+    dwError = LwRtlHashMapFindKey(pUserToSidMapping, (PVOID*)&pszPotentialUserSid, pszUserName);
+    if (dwError == ERROR_SUCCESS)
+    {
+
+        dwError = VmDirAllocateStringA(pszPotentialUserSid, &pszUserSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (dwError == LW_STATUS_NOT_FOUND)
+    {
+        //
+        // If it's LW_STATUS_NOT_FOUND then we assume the supplied user name is
+        // actually a SID. It might just be an invalid username but we have no
+        // simple/fast way to verify that.
+        //
+        dwError = VmDirAllocateStringA(pszUserName, &pszUserSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        //
+        // Otherwise, the error is fatal.
+        //
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszUserSid = pszUserSid;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+//
+// pszPermissionStatement :: = GRANTEE:(PERMISSIONS)*:(ACE_FLAGS)*
+//
+// GRANTEE          : could be cn or SID
+// (PERMISSIONS)*   : optional permissions
+// (ACE_FLAGS)*     : optional ACE_FLAGS (currently support 'CI' 'OI')
+//
+// Should have at lest one PERMISSIONS or ACE_FLAGS; otherwise, return VMDIR_ERROR_INVALID_PARAMETER
 //
 DWORD
 _VdcParsePermissionStatement(
     PCSTR pszPermissionStatement,
     PLW_HASHMAP pUserToSidMapping,
     PSTR *ppszUserSid,
-    PSTR *ppszPermission
+    PVMDIR_STRING_LIST *ppPermissionList,
+    PVMDIR_STRING_LIST *ppAceFlagList
     )
 {
     DWORD dwError = 0;
     PSTR pszUserSid = NULL;
-    PSTR pszUserName = NULL;
-    PSTR pszPermission = NULL;
-    PSTR pszStringEnd = NULL;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+    PVMDIR_STRING_LIST  pPermissionList = NULL;
+    PVMDIR_STRING_LIST  pAceFlagList = NULL;
 
-    pszStringEnd = strchr(pszPermissionStatement, ':');
-    if (pszStringEnd == NULL)
+    dwError = VmDirStringListInitialize(&pPermissionList, DEFAULT_PERMISSION_LIST_SIZE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringListInitialize(&pAceFlagList, DEFAULT_PERMISSION_LIST_SIZE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringToTokenListExt(pszPermissionStatement, ":", &pStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pStrList || pStrList->dwCount < 2 || pStrList->dwCount > 3)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _VdcLookupUserSid(pUserToSidMapping, pStrList->pStringList[0], &pszUserSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pStrList->pStringList[1][0] != '\0')
+    {
+        dwError = _VdcParsePermissionsString(pStrList->pStringList[1], pPermissionList);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringOfLenA(pszPermissionStatement, pszStringEnd - pszPermissionStatement, &pszUserName);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pStrList->dwCount == 3 && pStrList->pStringList[2][0] != '\0')
+    {
+        dwError = _VdcParseAceFlagString(pStrList->pStringList[2], pAceFlagList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-    dwError = VmDirAllocateStringA(pszStringEnd + 1, &pszPermission);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = LwRtlHashMapFindKey(pUserToSidMapping, (PVOID*)&pszUserSid, pszUserName);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    //
+    // no permission and no ace flag
+    //
+    if (pPermissionList->dwCount == 0 && (pAceFlagList->dwCount == 0))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     *ppszUserSid = pszUserSid;
-    *ppszPermission = pszPermission;
+
+    if (pPermissionList->dwCount > 0)
+    {
+        *ppPermissionList = pPermissionList;
+        pPermissionList = NULL;
+    }
+
+    if (pAceFlagList->dwCount > 0)
+    {
+        *ppAceFlagList = pAceFlagList;
+        pAceFlagList = NULL;
+    }
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszUserName);
+    VmDirStringListFree(pStrList);
+    VmDirStringListFree(pPermissionList);
+    VmDirStringListFree(pAceFlagList);
+
     return dwError;
 
 error:
-    VMDIR_SAFE_FREE_STRINGA(pszPermission);
     VMDIR_SAFE_FREE_STRINGA(pszUserSid);
+
     goto cleanup;
 }
+
+DWORD
+_VdcParseAceFlagString(
+    PCSTR pszAceFlags,
+    PVMDIR_STRING_LIST pStringList
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszFlag = NULL;
+
+    //
+    // All ace flags are two characters long so the length of the entire string should
+    // be even.
+    //
+    if (strlen(pszAceFlags) % SDDL_PERMISSION_LENGTH != 0)
+    {
+        dwError = VMDIR_ERROR_INVALID_ACE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    while (*pszAceFlags)
+    {
+        //
+        // All ace flags are two characters long.
+        //
+        dwError = VmDirAllocateStringOfLenA(pszAceFlags, SDDL_PERMISSION_LENGTH, &pszFlag);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszAceFlags += SDDL_PERMISSION_LENGTH;
+
+        if (VmDirStringCompareA(pszFlag, "CI", TRUE) != 0 &&
+            VmDirStringCompareA(pszFlag, "OI", TRUE) != 0 )
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_ACE);
+        }
+
+        dwError = VmDirStringListAdd(pStringList, pszFlag);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszFlag = NULL;
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszFlag);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 DWORD
 _VdcParsePermissionsString(
     PCSTR pszPermissions,
-    PSTRING_LIST pStringList
+    PVMDIR_STRING_LIST pStringList
     )
 {
     DWORD dwError = 0;
@@ -71,9 +238,9 @@ _VdcParsePermissionsString(
     // All permissions are two characters long so the length of the entire string should
     // be even.
     //
-    if (strlen(pszPermissions) % 2 != 0)
+    if (strlen(pszPermissions) % SDDL_PERMISSION_LENGTH != 0)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_ACE;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -84,12 +251,12 @@ _VdcParsePermissionsString(
         //
         // All permissions are two characters long.
         //
-        dwError = VmDirAllocateStringOfLenA(pszPermissions, 2, &pszPermission);
+        dwError = VmDirAllocateStringOfLenA(pszPermissions, SDDL_PERMISSION_LENGTH, &pszPermission);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pszPermissions += 2;
+        pszPermissions += SDDL_PERMISSION_LENGTH;
 
-        dwError = VdcStringListAdd(pStringList, pszPermission);
+        dwError = VmDirStringListAdd(pStringList, pszPermission);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -104,18 +271,18 @@ DWORD
 _VdcParseAce(
     PCSTR pszAce,
     PSTR *ppszSid,
-    PSTRING_LIST *ppPermissionList
+    PVMDIR_STRING_LIST *ppPermissionList
     )
 {
     DWORD dwError = 0;
     PSTR pszStringEnd = NULL;
     PSTR pszPermissions = NULL;
     PSTR pszSid = NULL;
-    PSTRING_LIST pPermissionList = NULL;
+    PVMDIR_STRING_LIST pPermissionList = NULL;
 
     assert(pszAce[0] == '(' && pszAce[strlen(pszAce) - 1] == ')');
 
-    dwError = VdcStringListInitialize(&pPermissionList, DEFAULT_PERMISSION_LIST_SIZE);
+    dwError = VmDirStringListInitialize(&pPermissionList, DEFAULT_PERMISSION_LIST_SIZE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //
@@ -201,7 +368,7 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_STRINGA(pszSid);
-    VdcStringListFree(pPermissionList);
+    VmDirStringListFree(pPermissionList);
     goto cleanup;
 }
 
@@ -210,16 +377,16 @@ _VdcParseSecurityDescriptor(
     PCSTR pszSecurityDescriptor,
     PSTR *ppszOwner,
     PSTR *ppszGroup,
-    PSTRING_LIST *ppAceList
+    PVMDIR_STRING_LIST *ppAceList
     )
 {
     DWORD dwError = 0;
     PSTR pszOwner = NULL;
     PSTR pszGroup = NULL;
-    PSTRING_LIST pAceList = NULL;
+    PVMDIR_STRING_LIST pAceList = NULL;
     PSTR pszStringEnd = NULL;
 
-    dwError = VdcStringListInitialize(&pAceList, DEFAULT_ACE_LIST_SIZE);
+    dwError = VmDirStringListInitialize(&pAceList, DEFAULT_ACE_LIST_SIZE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pszSecurityDescriptor[0] != 'O' || pszSecurityDescriptor[1] != ':')
@@ -263,21 +430,32 @@ _VdcParseSecurityDescriptor(
     //
     pszSecurityDescriptor = pszStringEnd + 2;
 
+    //
+    // Skip any DACL flags.
+    //
+    if (*pszSecurityDescriptor != '(')
+    {
+        pszStringEnd = strchr(pszSecurityDescriptor, '(');
+        if (pszStringEnd == NULL)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        }
+        pszSecurityDescriptor = pszStringEnd;
+    }
+
     while (*pszSecurityDescriptor)
     {
         PSTR pszAce = NULL;
 
         if (*pszSecurityDescriptor != '(')
         {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
         }
 
         pszStringEnd = strchr(pszSecurityDescriptor, ')');
         if (pszStringEnd == NULL)
         {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
         }
 
         //
@@ -286,7 +464,7 @@ _VdcParseSecurityDescriptor(
         dwError = VmDirAllocateStringOfLenA(pszSecurityDescriptor, pszStringEnd - pszSecurityDescriptor + 1, &pszAce);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VdcStringListAdd(pAceList, pszAce);
+        dwError = VmDirStringListAdd(pAceList, pszAce);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         //
@@ -305,7 +483,7 @@ cleanup:
 error:
     VMDIR_SAFE_FREE_STRINGA(pszOwner);
     VMDIR_SAFE_FREE_STRINGA(pszGroup);
-    VdcStringListFree(pAceList);
+    VmDirStringListFree(pAceList);
     goto cleanup;
 }
 
@@ -335,6 +513,9 @@ _VdcInitializePermissionDescriptions(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VdcAddCopiesToHashTable(pHashMap, "GW", "Generic Write");
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VdcAddCopiesToHashTable(pHashMap, "GX", "Generic Execute");
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VdcAddCopiesToHashTable(pHashMap, "GA", "Generic All");
@@ -398,15 +579,9 @@ _VdcGetObjectSecurityDescriptor(
 {
     DWORD dwError = 0;
     PSTR pszSecurityDescriptor = NULL;
-    PSTR pszFilter = NULL;
-
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VdcLdapGetAttributeValue(pLd,
                                        pszBaseDN,
-                                       LDAP_SCOPE_BASE,
-                                       pszFilter,
                                        ATTR_ACL_STRING,
                                        &pszSecurityDescriptor);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -414,7 +589,6 @@ _VdcGetObjectSecurityDescriptor(
     *ppszSecurityDescriptor = pszSecurityDescriptor;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszFilter);
     return dwError;
 
 error:
@@ -425,19 +599,82 @@ DWORD
 _VdcAddAceToSecurityDescriptor(
     PCSTR pszObjectSD,
     PCSTR pszUserSid,
-    PCSTR pszPermission,
+    PVMDIR_STRING_LIST  pPermissionList,
+    PVMDIR_STRING_LIST  pAceFlagList,
+    BOOLEAN bVerbose,
     PSTR *ppszNewSecurityDescriptor
     )
 {
     DWORD dwError = 0;
+    PSTR pszPermission = NULL;
+    PSTR pszAceFlag = NULL;
     PSTR pszNewSecurityDescriptor = NULL;
+    PSTR pszNewAce = NULL;
+    SIZE_T  dwTmpSize = 0;
+    DWORD   dwIdx = 0;
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszNewSecurityDescriptor, "%s(A;;%s;;;%s)", pszObjectSD, pszPermission, pszUserSid);
+    if (pPermissionList)
+    {
+        dwTmpSize = pPermissionList->dwCount * 2 + 1; //  +1 for null
+        dwError = VmDirAllocateMemory(dwTmpSize, (PVOID*)&pszPermission);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (dwIdx = 0; dwIdx < pPermissionList->dwCount; dwIdx++)
+        {
+            dwError = VmDirStringCatA(
+                        pszPermission,
+                        dwTmpSize,
+                        pPermissionList->pStringList[dwIdx]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    if (pAceFlagList)
+    {
+        dwTmpSize = pAceFlagList->dwCount * 2 + 1; //  +1 for null
+        dwError = VmDirAllocateMemory(dwTmpSize, (PVOID*)&pszAceFlag);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (dwIdx = 0; dwIdx < pAceFlagList->dwCount; dwIdx++)
+        {
+            dwError = VmDirStringCatA(
+                        pszAceFlag,
+                        dwTmpSize,
+                        pAceFlagList->pStringList[dwIdx]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    if (!pszPermission && !pszAceFlag)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateStringPrintf(
+                &pszNewAce, "(A;%s;%s;;;%s)",
+                pszAceFlag ? pszAceFlag : "",
+                pszPermission ? pszPermission : "",
+                pszUserSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bVerbose)
+    {
+        printf("New ACE: %s\n\n", pszNewAce);
+    }
+
+    dwError = VmDirAllocateStringPrintf(
+                &pszNewSecurityDescriptor,
+                "%s%s",
+                pszObjectSD,
+                pszNewAce);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszNewSecurityDescriptor = pszNewSecurityDescriptor;
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszAceFlag);
+    VMDIR_SAFE_FREE_MEMORY(pszPermission);
+    VMDIR_SAFE_FREE_MEMORY(pszNewAce);
     return dwError;
 
 error:
@@ -448,112 +685,109 @@ DWORD
 _VdcUpdateSecurityDescriptor(
     PSTR *ppszNewSecurityDescriptor,
     PCSTR pszObjectSD,
-    PCSTR pszAce,
-    PCSTR pszPermission,
-    BOOLEAN fAddPermission
+    PCSTR pszTargetAce,
+    PVMDIR_STRING_LIST  pPermissionList,
+    PVMDIR_STRING_LIST  pAceFlagList,
+    BOOLEAN fAddPermission,
+    BOOLEAN bVerbose
     )
 {
     DWORD dwError = 0;
-    DWORD dwDestinationBufferSize = 0;
+    SIZE_T sDestinationBufferSize = 0;
     PSTR pszNewSecurityDescriptor = NULL;
     PSTR pszAceStart = NULL;
-    PSTR pszTokenizer = NULL;
+    PSTR pszRemainingSD = NULL;
+    PSTR pszNewAce = NULL;
+    PVMDIR_STRING_LIST  pLocalStrList = NULL;
 
     //
-    // +1 for the null.
+    // calculate buffer size
     //
-    dwDestinationBufferSize = strlen(pszObjectSD) + strlen(pszPermission) + 1;
-    dwError = VmDirAllocateMemory(dwDestinationBufferSize, (PVOID*)&pszNewSecurityDescriptor);
+    sDestinationBufferSize = strlen(pszObjectSD) +
+                             (pPermissionList ? pPermissionList->dwCount * 2 : 0) +   // permission is 2 chars
+                             (pAceFlagList ? pAceFlagList->dwCount * 2 : 0) +         // ace flag is 2 chars
+                             1;                                                       // +1 for null
+    dwError = VmDirAllocateMemory(sDestinationBufferSize, (PVOID*)&pszNewSecurityDescriptor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pszAceStart = strstr(pszObjectSD, pszAce);
+    pszAceStart = strstr(pszObjectSD, pszTargetAce);
     dwError = VmDirStringNCpyA(
                 pszNewSecurityDescriptor,
-                dwDestinationBufferSize,
+                sDestinationBufferSize,
                 pszObjectSD,
                 pszAceStart - pszObjectSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //
-    // Skip ahead to the permssion section of the ACE.
-    //
-    pszTokenizer = strchr(pszAceStart, ';');
-    if (pszTokenizer == NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    pszTokenizer = strchr(pszTokenizer + 1, ';');
-    if (pszTokenizer == NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    pszRemainingSD = pszAceStart + VmDirStringLenA(pszTargetAce);
 
-    pszTokenizer += 1;
-
-    dwError = VmDirStringNCatA(
-                pszNewSecurityDescriptor,
-                dwDestinationBufferSize,
-                pszAceStart,
-                pszTokenizer - pszAceStart);
+    // separate pszTargetAce into token
+    dwError = VmDirStringToTokenListExt(pszTargetAce, ";", &pLocalStrList);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // proper ACE should have 6 parts
+    if (pLocalStrList->dwCount != 6)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_ACE);
+    }
 
     if (fAddPermission)
     {
-        //
-        // Add this permission to the ACE.
-        //
+        if (pPermissionList && pPermissionList->dwCount > 0)
+        {
+            dwError = _VdcAppendNewValue(pLocalStrList, pPermissionList, 2);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pAceFlagList && pAceFlagList->dwCount > 0)
+        {
+            dwError = _VdcAppendNewValue(pLocalStrList, pAceFlagList, 1);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else
+    {   // delete permission
+        if (pPermissionList && pPermissionList->dwCount > 0)
+        {
+            _VdcSkipNewValue(pLocalStrList, pPermissionList, 2);
+        }
+
+        if (pAceFlagList && pAceFlagList->dwCount > 0)
+        {
+            _VdcSkipNewValue(pLocalStrList, pAceFlagList, 1);
+        }
+    }
+
+    // make sure we have at least one permission; otherwise, skip this ACE.
+    if (pLocalStrList->pStringList[2][0] != '\0')
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszNewAce, "%s;%s;%s;%s;%s;%s",
+                    pLocalStrList->pStringList[0],
+                    pLocalStrList->pStringList[1],
+                    pLocalStrList->pStringList[2],
+                    pLocalStrList->pStringList[3],
+                    pLocalStrList->pStringList[4],
+                    pLocalStrList->pStringList[5]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (bVerbose)
+        {
+            printf("Old ACE: %s\n", pszTargetAce);
+            printf("New ACE: %s\n\n", pszNewAce);
+        }
+
         dwError = VmDirStringCatA(
                     pszNewSecurityDescriptor,
-                    dwDestinationBufferSize,
-                    pszPermission);
+                    sDestinationBufferSize,
+                    pszNewAce);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
     {
-        PSTR pszPermissionInString = pszTokenizer;
-
-        while (*pszPermissionInString != ';')
+        if (bVerbose)
         {
-            if (strncmp(pszPermissionInString, pszPermission, strlen(pszPermission)) == 0)
-            {
-                break;
-            }
-            else
-            {
-                pszPermissionInString += 2;
-            }
-        }
-
-        if (*pszPermissionInString != ';')
-        {
-            //
-            // We found the permission in question. Copy everything before it to the
-            // new SD.
-            //
-            dwError = VmDirStringNCatA(
-                        pszNewSecurityDescriptor,
-                        dwDestinationBufferSize,
-                        pszTokenizer,
-                        pszPermissionInString - pszTokenizer);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            //
-            // Skip over the permission to "remove" it. The rest of the ACE will get
-            // copied below.
-            //
-            pszTokenizer = pszPermissionInString + 2;
-        }
-        else
-        {
-            //
-            // This user doesn't have the permission in question. Let's report an
-            // error.
-            //
-            printf("Error: User doesn't have the %s permission\n", pszPermission);
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            printf("Old ACE: %s\n", pszTargetAce);
+            printf("New ACE: %s\n\n", "NULL");
         }
     }
 
@@ -562,13 +796,15 @@ _VdcUpdateSecurityDescriptor(
     //
     dwError = VmDirStringCatA(
                 pszNewSecurityDescriptor,
-                dwDestinationBufferSize,
-                pszTokenizer);
+                sDestinationBufferSize,
+                pszRemainingSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszNewSecurityDescriptor = pszNewSecurityDescriptor;
 
 cleanup:
+    VmDirStringListFree(pLocalStrList);
+    VMDIR_SAFE_FREE_MEMORY(pszNewAce);
     return dwError;
 
 error:
@@ -580,8 +816,10 @@ DWORD
 _VdcUpdateAclInSD(
     PCSTR pszObjectSD,
     PCSTR pszUserSid,
-    PCSTR pszPermission,
+    PVMDIR_STRING_LIST pPermissionList,
+    PVMDIR_STRING_LIST pAceFlagList,
     BOOLEAN fAddPermission,
+    BOOLEAN bVerbose,
     PSTR *ppszNewSD
     )
 {
@@ -590,10 +828,11 @@ _VdcUpdateAclInSD(
     DWORD dwUserAce = 0;
     PSTR pszOwnerSid = NULL;
     PSTR pszGroupSid = NULL;
-    PSTRING_LIST pAceList = NULL;
+    PSTR pszSid = NULL;
+    PVMDIR_STRING_LIST pAceList = NULL;
     BOOLEAN bFoundUser = FALSE;
-    PSTRING_LIST pPermissionList = NULL;
-    PSTR pszNewSecurityDescriptor;
+    PVMDIR_STRING_LIST pTmpList = NULL;
+    PSTR pszNewSecurityDescriptor = NULL;
 
     dwError = _VdcParseSecurityDescriptor(
                 pszObjectSD,
@@ -604,13 +843,13 @@ _VdcUpdateAclInSD(
 
     for (i = 0; i < pAceList->dwCount; ++i)
     {
-        PSTR pszSid = NULL;
-
-        dwError = _VdcParseAce(pAceList->pStringList[i], &pszSid, &pPermissionList);
+        dwError = _VdcParseAce(pAceList->pStringList[i], &pszSid, &pTmpList);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         bFoundUser = (strcmp(pszSid, pszUserSid) == 0);
         VMDIR_SAFE_FREE_STRINGA(pszSid);
+        VmDirStringListFree(pTmpList);
+        pTmpList = NULL;
 
         if (bFoundUser)
         {
@@ -621,23 +860,30 @@ _VdcUpdateAclInSD(
 
     if (bFoundUser)
     {
-        //
-        // If the user already has this permission then bail out.
-        //
-        if (fAddPermission && VdcStringListContains(pPermissionList, pszPermission))
-        {
-            printf("The user (%s) already has the %s permission\n", pszUserSid, pszPermission);
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        dwError = _VdcUpdateSecurityDescriptor(&pszNewSecurityDescriptor, pszObjectSD, pAceList->pStringList[dwUserAce], pszPermission, fAddPermission);
+        dwError = _VdcUpdateSecurityDescriptor(
+                    &pszNewSecurityDescriptor,
+                    pszObjectSD,
+                    pAceList->pStringList[dwUserAce],
+                    pPermissionList,
+                    pAceFlagList,
+                    fAddPermission,
+                    bVerbose);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (fAddPermission)
+    {
+        dwError = _VdcAddAceToSecurityDescriptor(
+                    pszObjectSD,
+                    pszUserSid,
+                    pPermissionList,
+                    pAceFlagList,
+                    bVerbose,
+                    &pszNewSecurityDescriptor);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
-    {
-        dwError = _VdcAddAceToSecurityDescriptor(pszObjectSD, pszUserSid, pszPermission, &pszNewSecurityDescriptor);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    {   // delete permission but no such ACE exists
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ACE_NOT_FOUND);
     }
 
     *ppszNewSD = pszNewSecurityDescriptor;
@@ -645,8 +891,9 @@ _VdcUpdateAclInSD(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszOwnerSid);
     VMDIR_SAFE_FREE_STRINGA(pszGroupSid);
-    VdcStringListFree(pAceList);
-    VdcStringListFree(pPermissionList);
+    VMDIR_SAFE_FREE_STRINGA(pszSid);
+    VmDirStringListFree(pAceList);
+    VmDirStringListFree(pTmpList);
 
     return dwError;
 
@@ -659,42 +906,59 @@ VdcGrantPermissionToUser(
     LDAP *pLd,
     PLW_HASHMAP pUserToSidMapping,
     PCSTR pszObjectDN,
-    PCSTR pszPermissionStatement
+    COMMAND_LINE_PARAMETER_STATE*   pState
     )
 {
     DWORD dwError = 0;
     PSTR pszFilter = NULL;
     PSTR pszObjectSD = NULL;
     PSTR pszUserSid = NULL;
-    PSTR pszPermission = NULL;
     PSTR pszNewSecurityDescriptor = NULL;
+    PVMDIR_STRING_LIST pPermissionList = NULL;
+    PVMDIR_STRING_LIST pAceFlagList = NULL;
 
     dwError = _VdcGetObjectSecurityDescriptor(pLd, pszObjectDN, &pszObjectSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf("Previous SD for %s ==> %s\n", pszObjectDN, pszObjectSD);
-
-    dwError = _VdcParsePermissionStatement(pszPermissionStatement, pUserToSidMapping, &pszUserSid, &pszPermission);
+    dwError = _VdcParsePermissionStatement(
+                pState->pszGrantParameter,
+                pUserToSidMapping,
+                &pszUserSid,
+                &pPermissionList,
+                &pAceFlagList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VdcUpdateAclInSD(pszObjectSD, pszUserSid, pszPermission, TRUE, &pszNewSecurityDescriptor);
+    dwError = _VdcUpdateAclInSD(
+                pszObjectSD,
+                pszUserSid,
+                pPermissionList,
+                pAceFlagList,
+                TRUE,
+                pState->bVerbose,
+                &pszNewSecurityDescriptor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf("Updated SD ==> %s\n", pszNewSecurityDescriptor);
-
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VdcLdapReplaceAttrOnEntries(pLd,
-                                          pszObjectDN,
-                                          LDAP_SCOPE_SUB,
-                                          pszFilter,
-                                          ATTR_ACL_STRING,
-                                          pszNewSecurityDescriptor);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pState->bDryrun)
+    {
+        dwError = VdcLdapReplaceAttrOnEntries(
+                    pLd,
+                    pszObjectDN,
+                    LDAP_SCOPE_BASE,
+                    pszFilter,
+                    ATTR_ACL_STRING,
+                    pszNewSecurityDescriptor);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszNewSecurityDescriptor);
+    VMDIR_SAFE_FREE_STRINGA(pszFilter);
+    VMDIR_SAFE_FREE_STRINGA(pszUserSid);
+    VmDirStringListFree(pPermissionList);
+    VmDirStringListFree(pAceFlagList);
     return dwError;
 
 error:
@@ -706,42 +970,58 @@ VdcRemovePermissionFromUser(
     LDAP *pLd,
     PLW_HASHMAP pUserToSidMapping,
     PCSTR pszObjectDN,
-    PCSTR pszPermissionStatement
+    COMMAND_LINE_PARAMETER_STATE*   pState
     )
 {
     DWORD dwError = 0;
     PSTR pszFilter = NULL;
     PSTR pszObjectSD = NULL;
     PSTR pszUserSid = NULL;
-    PSTR pszPermission = NULL;
     PSTR pszNewSecurityDescriptor = NULL;
+    PVMDIR_STRING_LIST pPermissionList = NULL;
+    PVMDIR_STRING_LIST pAceFlagList = NULL;
 
     dwError = _VdcGetObjectSecurityDescriptor(pLd, pszObjectDN, &pszObjectSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf("Previous SD for %s ==> %s\n", pszObjectDN, pszObjectSD);
-
-    dwError = _VdcParsePermissionStatement(pszPermissionStatement, pUserToSidMapping, &pszUserSid, &pszPermission);
+    dwError = _VdcParsePermissionStatement(
+                pState->pszRemoveParameter,
+                pUserToSidMapping,
+                &pszUserSid,
+                &pPermissionList,
+                &pAceFlagList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VdcUpdateAclInSD(pszObjectSD, pszUserSid, pszPermission, FALSE, &pszNewSecurityDescriptor);
+    dwError = _VdcUpdateAclInSD(
+                pszObjectSD,
+                pszUserSid,
+                pPermissionList,
+                pAceFlagList,
+                FALSE,
+                pState->bVerbose,
+                &pszNewSecurityDescriptor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf("Updated SD ==> %s\n", pszNewSecurityDescriptor);
-
-    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
+    dwError = VmDirAllocateStringPrintf(&pszFilter, "%s=*", ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VdcLdapReplaceAttrOnEntries(pLd,
-                                          pszObjectDN,
-                                          LDAP_SCOPE_SUB,
-                                          pszFilter,
-                                          ATTR_ACL_STRING,
-                                          pszNewSecurityDescriptor);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pState->bDryrun)
+    {
+        dwError = VdcLdapReplaceAttrOnEntries(
+                    pLd,
+                    pszObjectDN,
+                    LDAP_SCOPE_BASE,
+                    pszFilter,
+                    ATTR_ACL_STRING,
+                    pszNewSecurityDescriptor);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszNewSecurityDescriptor);
+    VMDIR_SAFE_FREE_STRINGA(pszUserSid);
+    VmDirStringListFree(pPermissionList);
+    VmDirStringListFree(pAceFlagList);
     return dwError;
 
 error:
@@ -752,14 +1032,14 @@ DWORD
 VdcPrintAce(
     PLW_HASHMAP pUserToSidMapping,
     PLW_HASHMAP pPermissionDescriptions,
-    PSTR pszAce
+    PCSTR pszAce
     )
 {
     DWORD dwError = 0;
     DWORD i = 0;
     PSTR pszSid = NULL;
     PSTR pszUserUPN = NULL;
-    PSTRING_LIST pPermissionList = NULL;
+    PVMDIR_STRING_LIST pPermissionList = NULL;
 
     dwError = _VdcParseAce(pszAce, &pszSid, &pPermissionList);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -770,7 +1050,7 @@ VdcPrintAce(
         pszUserUPN = pszSid;
     }
 
-    printf("\tACE for user/group %s:\n", pszUserUPN);
+    printf("\tACE for security principal %s:\n", pszUserUPN);
     for (i = 0; i < pPermissionList->dwCount; ++i)
     {
         PSTR pszDescription = NULL;
@@ -783,7 +1063,7 @@ VdcPrintAce(
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszSid);
-    VdcStringListFree(pPermissionList);
+    VmDirStringListFree(pPermissionList);
     return dwError;
 
 error:
@@ -801,8 +1081,8 @@ VdcLoadUsersAndGroups(
     DWORD dwError = 0;
     PLW_HASHMAP pUserToSidMapping = NULL;
     PLW_HASHMAP pSidToUserMapping = NULL;
-    PSTR pszUserFilter = "objectclass=user";
-    PSTR pszGroupFilter = "objectclass=group";
+    PCSTR pszUserFilter = "objectclass=user";
+    PCSTR pszGroupFilter = "objectclass=group";
 
     dwError = LwRtlCreateHashMap(
                 &pUserToSidMapping,
@@ -820,10 +1100,20 @@ VdcLoadUsersAndGroups(
                 );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VdcLdapGetObjectList(pLd, pszBaseDN, LDAP_SCOPE_SUBTREE, pszUserFilter, pUserToSidMapping, pSidToUserMapping);
+    dwError = VdcLdapGetObjectSidMappings(
+                pLd,
+                pszBaseDN,
+                pszUserFilter,
+                pUserToSidMapping,
+                pSidToUserMapping);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VdcLdapGetObjectList(pLd, pszBaseDN, LDAP_SCOPE_SUBTREE, pszGroupFilter, pUserToSidMapping, pSidToUserMapping);
+    dwError = VdcLdapGetObjectSidMappings(
+                pLd,
+                pszBaseDN,
+                pszGroupFilter,
+                pUserToSidMapping,
+                pSidToUserMapping);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppUserToSidMapping = pUserToSidMapping;
@@ -852,7 +1142,7 @@ VdcPrintSecurityDescriptorForObject(
     PSTR pszOwnerSid = NULL;
     PSTR pszGroup = NULL;
     PSTR pszGroupSid = NULL;
-    PSTRING_LIST pAceList = NULL;
+    PVMDIR_STRING_LIST pAceList = NULL;
     PLW_HASHMAP pPermissionDescriptions = NULL;
 
     dwError = _VdcGetObjectSecurityDescriptor(pLd, pszObjectDN, &pszSecurityDescriptor);
@@ -874,12 +1164,14 @@ VdcPrintSecurityDescriptorForObject(
         if (dwError != 0)
         {
             pszOwner = pszOwnerSid;
+            dwError = 0;
         }
 
         dwError = LwRtlHashMapFindKey(pSidToUserMapping, (PVOID*)&pszGroup, pszGroupSid);
         if (dwError != 0)
         {
             pszGroup = pszGroupSid;
+            dwError = 0;
         }
 
         printf("SD for %s\n", pszObjectDN);
@@ -899,7 +1191,7 @@ VdcPrintSecurityDescriptorForObject(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszOwnerSid);
     VMDIR_SAFE_FREE_STRINGA(pszGroupSid);
-    VdcStringListFree(pAceList);
+    VmDirStringListFree(pAceList);
     VMDIR_SAFE_FREE_MEMORY(pszSecurityDescriptor);
 
     VdcFreeHashMap(&pPermissionDescriptions);
@@ -908,4 +1200,85 @@ cleanup:
 
 error:
     goto cleanup;
+}
+
+static
+DWORD
+_VdcAppendNewValue(
+    PVMDIR_STRING_LIST  pAceTokenList,
+    PVMDIR_STRING_LIST  pNewValueList,
+    DWORD               dwNum)
+{
+    DWORD dwError;
+    DWORD dwIdx = 0;
+    SIZE_T dwNewSize = 0;
+
+    dwNewSize = VmDirStringLenA(pAceTokenList->pStringList[dwNum]) + (pNewValueList->dwCount*2) + 1;
+
+    dwError = VmDirReallocateMemory(
+                (PVOID)pAceTokenList->pStringList[dwNum],
+                (PVOID*)&(pAceTokenList->pStringList[dwNum]),
+                dwNewSize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    //
+    // Add new values to proper ACE token
+    //
+    // TODO, it is ok to have duplicate permission. But we could have check and add only if it does not exists.
+    //
+    for (dwIdx = 0; dwIdx < pNewValueList->dwCount; dwIdx++)
+    {
+        dwError = VmDirStringCatA(
+                    (PSTR)pAceTokenList->pStringList[dwNum],
+                    dwNewSize,
+                    pNewValueList->pStringList[dwIdx]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+VOID
+_VdcSkipNewValue(
+    PVMDIR_STRING_LIST  pAceTokenList,
+    PVMDIR_STRING_LIST  pNewValueList,
+    DWORD               dwNum)
+{
+    DWORD dwIdx = 0;
+    PSTR  pszHead = NULL;
+    PSTR  pszCurrent = NULL;
+
+    pszHead = pszCurrent = (PSTR)pAceTokenList->pStringList[dwNum];
+
+    while (*pszCurrent != '\0')
+    {
+        for (dwIdx = 0; dwIdx < pNewValueList->dwCount; dwIdx++)
+        {
+            if (strncmp(pszCurrent, pNewValueList->pStringList[dwIdx], SDDL_PERMISSION_LENGTH) == 0)
+            {
+                break;
+            }
+        }
+
+        if (dwIdx == pNewValueList->dwCount)
+        {
+            if (pszHead != pszCurrent)
+            {
+                *(pszHead)   = *(pszCurrent);
+                *(pszHead+1) = *(pszCurrent+1);
+            }
+
+            pszHead += 2;
+        }
+
+        pszCurrent += 2;
+    }
+
+    *pszHead = '\0';
+
+    return;
 }

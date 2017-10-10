@@ -266,7 +266,20 @@ typedef void (MDB_rel_func)(MDB_val *item, void *oldptr, void *newptr, void *rel
  * The transaction will be aborted if this callback return non zero
  * Used for Raft implementation to commit a log
  */
-typedef int  (MDB_commit_hook_func)(void);
+typedef int  (MDB_raft_prepare_commit_func)(void **raft_commit_ctx);
+
+
+/** @brief A callback function invoked when MDB transaction
+ * has been succeessfully committed (after obtaining raft consensus).
+ */
+typedef void  (MDB_raft_post_commit_func)(void *raft_commit_ctx);
+
+/** @brief A callback function invoked when MDB transaction
+ * fail to flush WAL or write meta page (usually due to disk full/failure)
+ * The callback should put the server on Raft Follower state so that it will
+ * not reuse the same logIndex/logTerm for new client request.
+ */
+typedef void  (MDB_raft_commit_fail_func)(void *raft_commit_ctx);
 
 /** @defgroup	mdb_env	Environment Flags
  *	@{
@@ -295,6 +308,8 @@ typedef int  (MDB_commit_hook_func)(void);
 #define MDB_NOMEMINIT	0x1000000
         /** keep WAL files after checkpoint -- this version of MDB doesn't support WAL, and the flag is for forward-compatability*/
 #define MDB_KEEPXLOGS   0x2000000
+        /** Enable WAL (Write Ahead Logging) feature */
+#define MDB_WAL   0x4000000
 /** @} */
 
 /**	@defgroup	mdb_dbi_open	Database Flags
@@ -422,7 +437,9 @@ typedef enum MDB_cursor_op {
 #define MDB_WAL_INVALID_META    (-30780)
         /** WAL recover failure pages in transaction mismatch */
 #define MDB_WAL_WRONG_TXN_PAGES (-30779)
-#define MDB_LAST_ERRCODE MDB_WAL_WRONG_TXN_PAGES
+        /** Missing WAL file or invalid WAL file */
+#define MDB_WAL_FILE_ERROR (-30778)
+#define MDB_LAST_ERRCODE MDB_WAL_FILE_ERROR
 /** @} */
 
 /** @brief Statistics for a database in the environment */
@@ -791,6 +808,13 @@ int  mdb_env_set_mapsize(MDB_env *env, size_t size);
 	 */
 int  mdb_env_set_maxreaders(MDB_env *env, unsigned int readers);
 
+         /** @brief set database checkpoint interval in WAL mode
+          *
+          * @param[in] the interval in seconds
+          * @return A non-zero error value on failure and 0 on success
+          */
+int mdb_env_set_chkpt_interval(MDB_env *env, int interval);
+
 	/** @brief Get the maximum number of threads/reader slots for the environment.
 	 *
 	 * @param[in] env An environment handle returned by #mdb_env_create()
@@ -1146,7 +1170,7 @@ int  mdb_set_relfunc(MDB_txn *txn, MDB_dbi dbi, MDB_rel_func *rel);
         /** @brief Set commit hook func for Raft
          *
          */
-void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func);
+void mdb_set_raft_prepare_commit_func(MDB_env *env, MDB_raft_prepare_commit_func *raft_prepare_commit_func);
 
 	/** @brief Set a context pointer for a #MDB_FIXEDMAP database's relocation function.
 	 *
@@ -1162,6 +1186,11 @@ void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_fu
 	 *	<li>EINVAL - an invalid parameter was specified.
 	 * </ul>
 	 */
+
+        /** @brief callback for raft post commit - set raft volatle state with logIndex argument when commit succeeded
+         */
+void mdb_set_raft_post_commit_func(MDB_env *env, MDB_raft_post_commit_func  *raft_post_commit_func);
+
 int  mdb_set_relctx(MDB_txn *txn, MDB_dbi dbi, void *ctx);
 
 	/** @brief Get items from a database.

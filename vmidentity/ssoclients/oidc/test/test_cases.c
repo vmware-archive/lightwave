@@ -19,6 +19,7 @@ static PCSTRING                 s_pszServer = NULL;
 static PCSTRING                 s_pszTenant = NULL;
 static PCSTRING                 s_pszUsername = NULL;
 static PCSTRING                 s_pszPassword = NULL;
+static PCSTRING                 s_pszClientID = NULL;
 
 static const PCSTRING s_pszIDTokenWithGroups = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbmlzdHJhdG9yQHZzcGhlcmUubG9jYWwiLCJpc3MiOiJodHRwczpcL1wvc2MtcmRvcHMtdm0xOC1kaGNwLTYyLTY0LmVuZy52bXdhcmUuY29tXC9vcGVuaWRjb25uZWN0XC92c3BoZXJlLmxvY2FsIiwiZ3JvdXBzIjpbInZzcGhlcmUubG9jYWxcXFVzZXJzIiwidnNwaGVyZS5sb2NhbFxcQWRtaW5pc3RyYXRvcnMiLCJ2c3BoZXJlLmxvY2FsXFxDQUFkbWlucyIsInZzcGhlcmUubG9jYWxcXENvbXBvbmVudE1hbmFnZXIuQWRtaW5pc3RyYXRvcnMiLCJ2c3BoZXJlLmxvY2FsXFxTeXN0ZW1Db25maWd1cmF0aW9uLkJhc2hTaGVsbEFkbWluaXN0cmF0b3JzIiwidnNwaGVyZS5sb2NhbFxcU3lzdGVtQ29uZmlndXJhdGlvbi5BZG1pbmlzdHJhdG9ycyIsInZzcGhlcmUubG9jYWxcXExpY2Vuc2VTZXJ2aWNlLkFkbWluaXN0cmF0b3JzIiwidnNwaGVyZS5sb2NhbFxcRXZlcnlvbmUiXSwidG9rZW5fY2xhc3MiOiJpZF90b2tlbiIsInRva2VuX3R5cGUiOiJCZWFyZXIiLCJnaXZlbl9uYW1lIjoiQWRtaW5pc3RyYXRvciIsImF1ZCI6ImFkbWluaXN0cmF0b3JAdnNwaGVyZS5sb2NhbCIsInNjb3BlIjoicnNfYWRtaW5fc2VydmVyIGF0X2dyb3VwcyBvcGVuaWQgaWRfZ3JvdXBzIiwiZXhwIjoxNDc3NTI2NTEwLCJpYXQiOjE0Nzc1MjYyMTAsImZhbWlseV9uYW1lIjoidnNwaGVyZS5sb2NhbCIsImp0aSI6IjlqZUpQXzg2dmt1QnhNMl96Z0s5dXBENDFzRms1cXRZbUVnMTNWRTdHSk0iLCJ0ZW5hbnQiOiJ2c3BoZXJlLmxvY2FsIn0.PE4ddqkx6sly9J6wfV9ZcquYp-0xrSBPSP_toZe6v4PP9DS0zGJDJvmgK7uEKJKyCSEIGe0F9IfZXhWW4fbh7ishztiqY8U9utPB01ciPotA7uLTn8jJsydZQt70IoqCh1zhwEXmr1MfOLTtM5uPn3BlHoZREdeLoQ7BLgbwNwcl3j4SDZQKqOQCzIXwVA4KBg20cVqLoy_hxbO2ri3WpzfFbgs5xV5hIL-8FUldW2AZ0rp-PGu7CUxwYPLVSyuwEOjI8_IaUv6M7YSXDILNBNqSstNturDlDg6utw2P-wSZnsHL1fvj9hJ3u8uWVu-vevwwgHSte4swxr0P0LOTGA";
 static const PCSTRING s_pszIDTokenWithoutGroups = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbmlzdHJhdG9yQHZzcGhlcmUubG9jYWwiLCJhdWQiOiJhZG1pbmlzdHJhdG9yQHZzcGhlcmUubG9jYWwiLCJzY29wZSI6InJzX2FkbWluX3NlcnZlciBvcGVuaWQiLCJpc3MiOiJodHRwczpcL1wvc2MtcmRvcHMtdm0xOC1kaGNwLTYyLTY0LmVuZy52bXdhcmUuY29tXC9vcGVuaWRjb25uZWN0XC92c3BoZXJlLmxvY2FsIiwidG9rZW5fY2xhc3MiOiJpZF90b2tlbiIsInRva2VuX3R5cGUiOiJCZWFyZXIiLCJleHAiOjE0Nzc1MjY0NzMsImdpdmVuX25hbWUiOiJBZG1pbmlzdHJhdG9yIiwiaWF0IjoxNDc3NTI2MTczLCJmYW1pbHlfbmFtZSI6InZzcGhlcmUubG9jYWwiLCJqdGkiOiItS1RUODNoX0pJbXNKWTVTeTBSS2M0aVlWbEJyc1ZVNlI3ek9yZWJURElNIiwidGVuYW50IjoidnNwaGVyZS5sb2NhbCJ9.P0s2Nr_IvrJ_5TFcyRbFeuIz0vthSdo0rQKYtaXjfaU0qQcB318xeMVOsFGGoxxvZaNE7iGBA61K-LARUJ1MBvw1LqthSBRi8lyplJNEG3xByS-kuBNyjdXIx3FdGf7fpDLQqKYih8SSehckMT7Rqwdms5yPMq816Nw0Ctx7FpOl1Md4Enosp9DQ-CMjOM9ceoFE7Rg8JQmOHTHWa6Io_d253gZThUafvsBuAD00INTZjanqmiJXYyQkbisnDYX7S8cIv8-Rqg7IP_tFwSJ6F8F9EKlff56MPs2cSvUastjOLrJxqMCvLFjM2IheqAlp-d03GjidlRzN-M4vXGiOlQ";
@@ -34,7 +35,9 @@ TestInit(
     PCSTRING pszTenant,
     PCSTRING pszUsername,
     PCSTRING pszPassword,
-    bool highAvailabilityEnabled)
+    PCSTRING pszClientID,
+    bool highAvailabilityEnabled,
+    bool validateTls)
 {
     SSOERROR e = SSOERROR_NONE;
 
@@ -42,11 +45,18 @@ TestInit(
     s_pszTenant = pszTenant;
     s_pszUsername = pszUsername;
     s_pszPassword = pszPassword;
+    s_pszClientID = pszClientID;
 
     e = OidcClientGlobalInit();
     BAIL_ON_ERROR(e);
 
-    e = OidcClientBuild(&s_pClient, highAvailabilityEnabled ? NULL : s_pszServer, 443, s_pszTenant, CLOCK_TOLERANCE_IN_SECONDS);
+    e = OidcClientBuild(
+        &s_pClient,
+        highAvailabilityEnabled ? NULL : s_pszServer,
+        443,
+        s_pszTenant,
+        s_pszClientID,
+        validateTls ? LIGHTWAVE_TLS_CA_PATH : NULL);
     BAIL_ON_ERROR(e);
 
 error:
@@ -68,11 +78,12 @@ TestPasswordGrantSuccessResponse()
 
     POIDC_TOKEN_SUCCESS_RESPONSE pTokenSuccessResponse = NULL;
     POIDC_ERROR_RESPONSE pTokenErrorResponse = NULL;
-    PCOIDC_ID_TOKEN pIDToken = NULL;
+    POIDC_ID_TOKEN pIDToken = NULL;
     POIDC_ACCESS_TOKEN pAccessToken = NULL;
     PSTRING pszStringClaim = NULL;
     const PSTRING* ppszAudience = NULL;
     size_t audienceSize = 0;
+    PCSTRING pszExpectedAudience = (s_pszClientID != NULL) ? s_pszClientID: s_pszUsername;
 
     e = OidcClientAcquireTokensByPassword(
         s_pClient,
@@ -83,10 +94,23 @@ TestPasswordGrantSuccessResponse()
         &pTokenErrorResponse);
     TEST_ASSERT_SUCCESS(e);
 
-    pIDToken = OidcTokenSuccessResponseGetIDToken(pTokenSuccessResponse);
+    e = OidcIDTokenBuild(
+        &pIDToken,
+        OidcTokenSuccessResponseGetIDToken(pTokenSuccessResponse),
+        OidcClientGetSigningCertificatePEM(s_pClient),
+        "issuer",
+        CLOCK_TOLERANCE_IN_SECONDS);
+    TEST_ASSERT_SUCCESS(e);
     TEST_ASSERT_TRUE(OidcIDTokenGetIssuer(pIDToken) != NULL);
     TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcIDTokenGetSubject(pIDToken));
-    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, OidcIDTokenGetAudience(pIDToken));
+
+    OidcIDTokenGetAudience(pIDToken, &ppszAudience, &audienceSize);
+    TEST_ASSERT_TRUE(ppszAudience != NULL);
+    TEST_ASSERT_TRUE(audienceSize == 1);
+    TEST_ASSERT_EQUAL_STRINGS(pszExpectedAudience, ppszAudience[0]);
+    TEST_ASSERT_TRUE(OidcIDTokenGetAudienceSize(pIDToken) == audienceSize);
+    TEST_ASSERT_EQUAL_STRINGS(pszExpectedAudience, OidcIDTokenGetAudienceEntry(pIDToken, 0));
+
     TEST_ASSERT_TRUE(OidcIDTokenGetIssueTime(pIDToken) > 0);
     TEST_ASSERT_TRUE(OidcIDTokenGetExpirationTime(pIDToken) > 0);
 
@@ -109,7 +133,9 @@ TestPasswordGrantSuccessResponse()
     OidcAccessTokenGetAudience(pAccessToken, &ppszAudience, &audienceSize);
     TEST_ASSERT_TRUE(ppszAudience != NULL);
     TEST_ASSERT_TRUE(audienceSize == 1);
-    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, ppszAudience[0]);
+    TEST_ASSERT_EQUAL_STRINGS(pszExpectedAudience, ppszAudience[0]);
+    TEST_ASSERT_TRUE(OidcAccessTokenGetAudienceSize(pAccessToken) == audienceSize);
+    TEST_ASSERT_EQUAL_STRINGS(pszExpectedAudience, OidcAccessTokenGetAudienceEntry(pAccessToken, 0));
 
     e = OidcAccessTokenGetStringClaim(pAccessToken, "token_class", &pszStringClaim);
     TEST_ASSERT_SUCCESS(e);
@@ -121,6 +147,7 @@ TestPasswordGrantSuccessResponse()
 
     OidcTokenSuccessResponseDelete(pTokenSuccessResponse);
     OidcErrorResponseDelete(pTokenErrorResponse);
+    OidcIDTokenDelete(pIDToken);
     OidcAccessTokenDelete(pAccessToken);
 
     return true;

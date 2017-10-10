@@ -25,6 +25,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 
+import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.identity.rest.core.client.AccessToken;
 import com.vmware.identity.rest.core.client.HostRetriever;
 import com.vmware.identity.rest.core.client.SimpleHostRetriever;
@@ -73,5 +74,25 @@ public class TestClientFactory {
     public static IdmClient createClient(String host, String tenant, String username, String domain, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
         return createClient(host, tenant, UPNUtil.buildUPN(username, domain), password);
     }
+
+    public static VmdirClient createVmdirClient(String host, String tenant, String username, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+        HostRetriever hostRetriever = new SimpleHostRetriever(host, true);
+        VmdirClient client = new VmdirClient(hostRetriever,
+                NoopHostnameVerifier.INSTANCE,
+                new SSLContextBuilder().loadTrustMaterial(null, new TrustStrategy() {
+
+                    @Override
+                    public boolean isTrusted(X509Certificate[] chain, String authType)
+                            throws CertificateException {
+                        return true;
+                    }
+                }).build());
+
+        String token = TokenFactory.getAccessToken(host, tenant, username, password);
+
+        client.setToken(new AccessToken(token, AccessToken.Type.JWT));
+        return client;
+    }
+
 
 }

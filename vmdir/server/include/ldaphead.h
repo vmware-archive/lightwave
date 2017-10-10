@@ -80,6 +80,12 @@ VmDirDeleteConnection(
     VDIR_CONNECTION **  conn
     );
 
+DWORD
+VmDirWhichAddressPresent(
+    BOOLEAN *pIPV4AddressPresent,
+    BOOLEAN *pIPV6AddressPresent
+    );
+
 // controls.c
 void
 DeleteControls(
@@ -112,10 +118,22 @@ WritePagedSearchDoneControl(
 int
 WriteSyncStateControl(
    VDIR_OPERATION *   op,
-   VDIR_ATTRIBUTE *   pAttr,
+   VDIR_ENTRY *       pEntry,
    BerElement *       ber,
    PSTR*              ppszErrorMsg
    );
+
+int
+VmDirCreateDigestControlContent(
+    PCSTR           pszDigest,
+    DWORD           dwDigestLen,
+    LDAPControl*    pDigestCtrl
+    );
+
+VOID
+VmDirDeleteDigestControlContent(
+    LDAPControl*    pDigestCtrl
+    );
 
 // delete.c
 int
@@ -196,12 +214,12 @@ VmDirFreeOperation(
 // result.c
 void
 VmDirSendLdapResult(
-   VDIR_OPERATION *   op
-   );
+    PVDIR_OPERATION pOperation
+    );
 
 VOID
 VmDirSendSASLBindResponse(
-    PVDIR_OPERATION     pOperation
+    PVDIR_OPERATION pOperation
     );
 
 // modify.c
@@ -256,7 +274,12 @@ VmDirInitOPStatisticGlobals(
 
 uint16_t
 VmDirOPStatisticGetAvgTime(
-    PVMDIR_OPERATION_STATISTIC   pStatistic
+    ber_tag_t opTag
+    );
+
+uint64_t
+VmDirOPStatisticGetTotalTime(
+    ber_tag_t opTag
     );
 
 uint64_t
@@ -272,5 +295,12 @@ VmDirOPStatistic(
 PCSTR
 VmDirGetOperationStringFromTag(
     ber_tag_t opTag);
+
+// vecs.c
+DWORD
+VmDirGetVecsMachineCert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
 
 #endif /* LH_H_ */

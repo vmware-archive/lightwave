@@ -47,6 +47,8 @@ public class IntegrationTestProperties {
         } catch (IOException e) {
             throw new IllegalArgumentException("Error loading config", e);
         }
+
+        properties.putAll(System.getProperties());
     }
 
     public String getHost() {

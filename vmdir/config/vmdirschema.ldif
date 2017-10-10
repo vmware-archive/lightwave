@@ -15341,7 +15341,9 @@ dITContentRules:  (
         $ securityPrincipal
         $ samDomainBase
         $ posixGroup
-        $ shadowAccount ) MAY (creationTime
+        $ shadowAccount
+        )
+    MAY ( creationTime
         $ forceLogoff
         $ lockoutDuration
         $ lockOutObservationWindow
@@ -16601,7 +16603,7 @@ dITContentRules:  (
         $ vmwDNSConfig
         $ dcObject
         )
-    MAY (cACertificate
+    MAY ( cACertificate
         $ builtinCreationTime
         $ builtinModifiedCount
         $ creationTime

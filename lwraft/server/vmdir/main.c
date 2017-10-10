@@ -22,18 +22,19 @@ static
 DWORD
 VmDirNotifyLikewiseServiceManager(
     VOID
-);
+    );
 
 static
 DWORD
 VmDirSetEnvironment(
     VOID
-);
+    );
 
 int
 main(
-   int     argc,
-   char  * argv[])
+    int     argc,
+    char*   argv[]
+    )
 {
     DWORD        dwError = 0;
     const char * logFileName = NULL;
@@ -41,23 +42,23 @@ main(
     const char * pszStateDir = LWRAFT_DB_DIR VMDIR_PATH_SEPARATOR_STR;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bConsoleMode = FALSE;
-    BOOLEAN      bPatchSchema = FALSE;
     int          iLocalLogMask = 0;
     BOOLEAN      bVmDirInit = FALSE;
     BOOLEAN      bWaitTimeOut = FALSE;
+
+    static PCSTR    pszRunMode[] = { VMDIR_RUN_MODE_NORMAL, VMDIR_RUN_MODE_STANDALONE, VMDIR_RUN_MODE_RESTORE };
 
     dwError = VmDirSrvUpdateConfig();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirParseArgs(
-                    argc,
-                    argv,
-                    &pszBootstrapSchemaFile,
-                    &iLocalLogMask,
-                    &logFileName,
-                    &bEnableSysLog,
-                    &bConsoleMode,
-                    &bPatchSchema);
+            argc,
+            argv,
+            &pszBootstrapSchemaFile,
+            &iLocalLogMask,
+            &logFileName,
+            &bEnableSysLog,
+            &bConsoleMode);
     if(dwError != ERROR_SUCCESS)
     {
         ShowUsage( argv[0] );
@@ -69,16 +70,14 @@ main(
             &gVmdirGlobals.pszBootStrapSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gVmdirGlobals.bPatchSchema = bPatchSchema;
-
     dwError = VmDirAllocateStringA(pszStateDir, &gVmdirGlobals.pszBDBHome);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLogInitialize( logFileName, bEnableSysLog, "lwraftd", VMDIR_LOG_INFO, iLocalLogMask);
+    dwError = VmDirLogInitialize(logFileName, bEnableSysLog, "postd", VMDIR_LOG_INFO, iLocalLogMask);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lightwave lwraftd: starting...");
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Persistent Objectstore postd: starting...");
 
     VmDirBlockSelectedSignals();
 
@@ -89,29 +88,27 @@ main(
     BAIL_ON_VMDIR_ERROR(dwError);
     bVmDirInit = TRUE;
 
-
-    if ( ! bPatchSchema && VmDirdGetRunMode() != VMDIR_RUNMODE_RESTORE )
+    if (!VmDirdGetRestoreMode())
     {   // Normal server startup route
 
         dwError = VmDirNotifyLikewiseServiceManager();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirdStateSet( VMDIRD_STATE_NORMAL );
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Ligthtwave lwraftd: running..., run mode = %s",
-              (VmDirdGetRunMode() == VMDIR_RUNMODE_RESTORE) ? VMDIR_RUN_MODE_RESTORE :
-              ((VmDirdGetRunMode() == VMDIR_RUNMODE_STANDALONE) ? VMDIR_RUN_MODE_STANDALONE : "normal" ) );
+        VmDirdStateSet(VMDIRD_STATE_NORMAL);
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Persistent Objectstore postd: running..., run mode = %s",
+                pszRunMode[VmDirdGetRunMode()]);
 
         // main thread waits on signals
         dwError = VmDirHandleSignals();
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Ligthtwave lwraftd: exiting..." );
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Persistent Objectstore postd: exiting..." );
 
 cleanup:
-
-
-    if ( bVmDirInit )
+    if (bVmDirInit)
     {
         VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
         VmDirShutdown(&bWaitTimeOut);
@@ -125,7 +122,6 @@ cleanup:
     }
 
     VmDirLogTerminate();
-
     VmDirSrvFreeConfig();
 
 done:
@@ -137,7 +133,9 @@ error:
 
 static
 DWORD
-VmDirNotifyLikewiseServiceManager()
+VmDirNotifyLikewiseServiceManager(
+    VOID
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     PCSTR   pszSmNotify = NULL;
@@ -172,7 +170,6 @@ VmDirNotifyLikewiseServiceManager()
             BAIL_ON_VMDIR_ERROR(dwError);
 #undef BUFFER_SIZE
         }
-
     }
 
 error:
@@ -188,7 +185,7 @@ static
 DWORD
 VmDirSetEnvironment(
     VOID
-)
+    )
 {
     DWORD dwError = 0;
     PSTR pszKrb5Conf = NULL;
@@ -207,15 +204,11 @@ VmDirSetEnvironment(
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_STRINGA(pszKrb5Conf);
-
     return dwError;
 
 error:
-
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSetEnvironment failed (%u)", dwError);
-
     goto cleanup;
 }
 

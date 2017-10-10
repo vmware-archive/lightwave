@@ -55,6 +55,7 @@ IdmExternalIdpRegister(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToExternalIdpData,
         (void**) &pExternalIdpReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -118,6 +119,7 @@ IdmExternalIdpRegisterByMetadata(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToExternalIdpData,
         (void**) &pExternalIdpReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -180,6 +182,7 @@ IdmExternalIdpGetAll(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToExternalIdpArrayData,
         (void**) &pExternalIdpArrayReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -243,6 +246,7 @@ IdmExternalIdpGet(
         REST_HTTP_METHOD_TYPE_POST,
         (JsonToDataObjectFunc) IdmJsonToExternalIdpData,
         (void**) &pExternalIdpReturn,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 
@@ -304,6 +308,7 @@ IdmExternalIdpDelete(
         REST_HTTP_METHOD_TYPE_DELETE,
         NULL,
         NULL,
+        pClient->tlsCAPath,
         &pError);
     BAIL_ON_ERROR(e);
 

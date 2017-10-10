@@ -432,6 +432,8 @@ cleanup:
     VmDnsUnlockRead(pZoneObject->pLock);
     VmDnsNameEntryRelease(pNameEntry);
 
+    VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_CACHE_LOOKUP]);
+
     return dwError;
 error:
     goto cleanup;

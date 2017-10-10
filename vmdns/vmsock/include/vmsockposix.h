@@ -14,11 +14,11 @@
 
 
 DWORD
-VmSockPosixInitialize(
+VmDnsSockPosixInitialize(
     PVM_SOCK_PACKAGE* ppPackage
     );
 
 VOID
-VmSockPosixShutdown(
+VmDnsSockPosixShutdown(
     PVM_SOCK_PACKAGE pPackage
     );
