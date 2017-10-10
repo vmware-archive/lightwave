@@ -28,7 +28,7 @@ hooks:
     - location: scripts/application_start.sh
       timeout: 300
       runas: root
-  BeforeAllowTraffic:
-    - location: scripts/before_allow_traffic.sh
+  ValidateService:
+    - location: scripts/validate_service.sh
       timeout: 300
       runas: root

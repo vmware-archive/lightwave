@@ -15,7 +15,7 @@ RETRY=1
 
 while [ ${RETRY} -le ${MAX_RETRY} ]
 do
-    sleep 2
+    sleep 3
     /opt/vmware/bin/post-cli node state --server-name localhost --login administrator --password ${POST_PASSWORD} &> ${LOGDIR}/post_cli_node_state.log
     RET=$?
     echo "Attempt ${RETRY}: ${RET}"

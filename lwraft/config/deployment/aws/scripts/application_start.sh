@@ -22,16 +22,27 @@ echo "POST started successfully"
 
 echo "Step 3: Promote POST if necessary"
 
-if [[ -z $(/opt/vmware/bin/post-cli node list --server-name localhost | grep `hostname`) ]]
+if [[ -n $(/opt/vmware/bin/post-cli node list --server-name localhost) ]]
 then
-    if [[ ${#PARTNERS[@]} -eq 0 ]]; then
-        echo "Step 3-A: Promote POST as the first instance (domain=${LW_DOMAIN})"
-        /opt/vmware/bin/post-cli node promote --domain-name ${LW_DOMAIN} --password ${POST_PASSWORD}
+    echo "Step 3-A: POST is already promoted - No action"
+else
+    PROMOTED_PARTNER=""
+    for PARTNER in ${PARTNERS[@]}
+    do
+        if [[ -n $(/opt/vmware/bin/post-cli node list --server-name ${PARTNER}) ]]
+        then
+            PROMOTED_PARTNER=${PARTNER}
+            break
+        fi
+    done
+
+    if [[ -n ${PROMOTED_PARTNER} ]]
+    then
+        echo "Step 3-B: Promote POST as a subsequent instance (partner=${PROMOTED_PARTNER})"
+        /opt/vmware/bin/post-cli node promote --partner-name ${PROMOTED_PARTNER} --password ${POST_PASSWORD}
     else
-        echo "Step 3-B: Promote POST as a subsequent instance (partner=${PARTNERS[0]})"
-        /opt/vmware/bin/post-cli node promote --partner-name ${PARTNERS[0]} --password ${POST_PASSWORD}
+        echo "Step 3-C: Promote POST as the first instance (domain=${LW_DOMAIN})"
+        /opt/vmware/bin/post-cli node promote --domain-name ${LW_DOMAIN} --password ${POST_PASSWORD}
     fi
     echo "POST promoted successfully"
-else
-    echo "Step 3-C: POST is already promoted - No action"
 fi
