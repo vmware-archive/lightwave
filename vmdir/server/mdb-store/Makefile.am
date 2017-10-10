@@ -35,7 +35,8 @@ libmdb_store_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmmetrics/include/public \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+    -D MDB_USE_PWRITEV
 
 libmdb_store_la_LDFLAGS = \
     -static \

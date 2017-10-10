@@ -636,7 +636,7 @@ MDBFreeMdbGlobals(
  */
 DWORD
 VmDirSetMdbBackendState(
-    DWORD               dwFileTransferState,
+    MDB_state_op        op,
     DWORD               *pdwLogNum,
     DWORD               *pdwDbSizeMb,
     DWORD               *pdwDbMapSizeMb,
@@ -648,29 +648,34 @@ VmDirSetMdbBackendState(
     unsigned long  dbSizeMb = 0L;
     unsigned long  dbMapSizeMb = 0L;
 
-    if (dwFileTransferState < 0 || dwFileTransferState > 2)
+    if (op < MDB_STATE_CLEAR || op > MDB_STATE_GETXLOGNUM)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (dwFileTransferState == 0)
-    {
-        VmDirdStateSet(VMDIRD_STATE_NORMAL);
-    }
-    else
-    {
-        VmDirdStateSet(VMDIRD_STATE_READ_ONLY);
-    }
-
     *pdwLogNum = 0;
     *pdwDbSizeMb = 0;
     *pdwDbMapSizeMb = 0;
-    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, dwFileTransferState, &lognum, &dbSizeMb, &dbMapSizeMb, pszDbPath, dwDbPathSize);
+    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, op, &lognum, &dbSizeMb, &dbMapSizeMb, pszDbPath, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
     *pdwLogNum = lognum;
     *pdwDbSizeMb = dbSizeMb;
     *pdwDbMapSizeMb = dbMapSizeMb;
+
+    if (op==MDB_STATE_CLEAR||op==MDB_STATE_READONLY||op==MDB_STATE_KEEPXLOGS)
+    {
+        //Log MDB state change event
+        if (op==MDB_STATE_KEEPXLOGS && lognum == 0)
+        {
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+              "VmDirSetMdbBackendState: set MDB state to ReadOnly for request keepXlogs - MdbEnableWal disabled");
+        } else
+        {
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSetMdbBackendState: set MDB state to %s",
+              op==MDB_STATE_CLEAR?"clear":(op==MDB_STATE_READONLY?"ReadOnly":(op==MDB_STATE_KEEPXLOGS?"keepXlogs":"")));
+        }
+    }
 
 cleanup:
     return dwError;
@@ -1005,6 +1010,7 @@ _VmDirOpenDbEnv()
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
     PSTR            pszLocalErrorMsg = NULL;
+    BOOLEAN         bMdbWalEnable = FALSE;
 #ifndef _WIN32
     const char  *dbHomeDir = VMDIR_DB_DIR;
     char dbSnapshotDir[VMDIR_MAX_FILE_NAME_LEN] = {0};
@@ -1060,6 +1066,21 @@ _VmDirOpenDbEnv()
      //envFlags |= MDB_RDONLY       need to open for read and write
 
     /* Open the environment.  */
+    //MDB NOWAL is the default mode and can be turned on with reg key MdbEnableWal set to 1
+    dwError = VmDirGetMdbWalEnable(&bMdbWalEnable);
+    if (dwError)
+    {
+        bMdbWalEnable = FALSE;
+        dwError = 0;
+    }
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: %s is set to %s",
+      __func__, VMDIR_REG_KEY_MDB_ENABLE_WAL, bMdbWalEnable?"True":"False");
+
+    if (bMdbWalEnable)
+    {
+        envFlags |= MDB_WAL;
+    }
 
 #ifndef _WIN32
     oflags = O_RDWR;
@@ -1177,6 +1198,7 @@ DWORD
 _VmdirCreateDbEnv(uint64_t db_max_mapsize)
 {
     DWORD dwError = 0;
+    DWORD db_chkpt_interval = 0;
 
     /* Create the environment */
     dwError = mdb_env_create ( &gVdirMdbGlobals.mdbEnv );
@@ -1190,6 +1212,20 @@ _VmdirCreateDbEnv(uint64_t db_max_mapsize)
 
     dwError = mdb_env_set_maxdbs ( gVdirMdbGlobals.mdbEnv, BE_MDB_ENV_MAX_DBS );
     BAIL_ON_VMDIR_ERROR( dwError );
+
+    dwError = VmDirGetMdbChkptInterval(&db_chkpt_interval);
+    if (dwError)
+    {
+        db_chkpt_interval = VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT;
+        dwError = 0;
+    }
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: %s is set to %d",
+        __func__, VMDIR_REG_KEY_MDB_CHKPT_INTERVAL, db_chkpt_interval);
+
+     dwError = mdb_env_set_chkpt_interval(gVdirMdbGlobals.mdbEnv, db_chkpt_interval);
+     BAIL_ON_VMDIR_ERROR( dwError );
+
 cleanup:
     return dwError;
 

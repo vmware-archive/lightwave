@@ -48,7 +48,8 @@ static
 int
 _VmDirGetRemoteDBUsingRPC(
     PCSTR   pszHostname,
-    PCSTR   dbHomeDir);
+    PCSTR   dbHomeDir,
+    BOOLEAN *pbHasXlog);
 
 static
 int
@@ -62,7 +63,8 @@ _VmDirGetRemoteDBFileUsingRPC(
 static
 int
 _VmDirSwapDB(
-    PCSTR   dbHomeDir);
+    PCSTR   dbHomeDir,
+    BOOLEAN bHasXlog);
 
 static
 int
@@ -99,6 +101,7 @@ VmDirFirstReplicationCycle(
     int                     retVal = LDAP_SUCCESS;
     PSTR                    pszLocalErrorMsg = NULL;
     BOOLEAN                 bWriteInvocationId = FALSE;
+    BOOLEAN                 bHasXlog = FALSE;
 #ifndef _WIN32
     const char  *dbHomeDir = VMDIR_DB_DIR;
 #else
@@ -117,11 +120,11 @@ VmDirFirstReplicationCycle(
 
     assert( gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB );
 
-    retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir);
+    retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir, &bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
                 "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d", retVal );
 
-    retVal = _VmDirSwapDB(dbHomeDir);
+    retVal = _VmDirSwapDB(dbHomeDir, bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
                 "VmDirFirstReplicationCycle: _VmDirSwapDB() call failed, error: %d.", retVal );
 
@@ -151,20 +154,25 @@ static
 int
 _VmDirGetRemoteDBUsingRPC(
     PCSTR   pszHostname,
-    PCSTR   dbHomeDir)
+    PCSTR   dbHomeDir,
+    BOOLEAN *pbHasXlog)
 {
     DWORD       retVal = 0;
     PSTR        pszLocalErrorMsg = NULL;
     char        dbRemoteFilename[VMDIR_MAX_FILE_NAME_LEN] = {0};
     char        localDir[VMDIR_MAX_FILE_NAME_LEN] = {0};
+    char        localXlogDir[VMDIR_MAX_FILE_NAME_LEN] = {0};
     char        localFilename[VMDIR_MAX_FILE_NAME_LEN] = {0};
     PSTR        pszDcAccountPwd = NULL;
     PVMDIR_SERVER_CONTEXT hServer = NULL;
     DWORD       low_xlognum = 0;
+    DWORD       high_xlognum = 0;
     DWORD       xlognum = 0;
     DWORD       remoteDbSizeMb = 0;
     DWORD       remoteDbMapSizeMb = 0;
     PBYTE       pDbPath = NULL;
+    BOOLEAN     bMdbWalEnable = FALSE;
+
 #ifndef _WIN32
     const char   fileSeperator = '/';
 #else
@@ -183,10 +191,21 @@ _VmDirGetRemoteDBUsingRPC(
             retVal, pszHostname  );
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: Connected to the replication partner (%s).", pszHostname );
 
-    //Set backend to read-only mode - currently no backend is supporting WAL yet.
-    retVal = VmDirSetBackendState (hServer, 1, &low_xlognum, &remoteDbSizeMb, &remoteDbMapSizeMb, pDbPath, VMDIR_MAX_FILE_NAME_LEN);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-            "_VmDirGetRemoteDBUsingRPC: VmDirSetBackendState failed with error: %d", retVal  );
+    VmDirGetMdbWalEnable(&bMdbWalEnable);
+
+    if (bMdbWalEnable)
+    {
+        //Set remote server backend to KEEPXLOGS  mode
+        retVal = VmDirSetBackendState (hServer, MDB_STATE_KEEPXLOGS, &low_xlognum, &remoteDbSizeMb,
+                                       &remoteDbMapSizeMb, pDbPath, VMDIR_MAX_FILE_NAME_LEN);
+    } else
+    {
+        //Set remote server backend to ReadOnly mode
+        retVal = VmDirSetBackendState (hServer, MDB_STATE_READONLY, &low_xlognum, &remoteDbSizeMb,
+                                       &remoteDbMapSizeMb, pDbPath, VMDIR_MAX_FILE_NAME_LEN);
+    }
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
+            "_VmDirGetRemoteDBUsingRPC: VmDirSetBackendState failed, WalEnabled: %d, error: %d", bMdbWalEnable, retVal);
 
     retVal = VmDirStringPrintFA( localDir, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator, LOCAL_PARTNER_DIR);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
@@ -194,6 +213,17 @@ _VmDirGetRemoteDBUsingRPC(
 
     retVal = _VmDirMkdir(localDir, 0700);
     BAIL_ON_VMDIR_ERROR( retVal );
+
+    if (low_xlognum > 0)
+    {
+        retVal = VmDirStringPrintFA( localXlogDir, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", localDir, fileSeperator, VMDIR_MDB_XLOGS_DIR_NAME);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                "_VmDirGetRemoteDBUsingRPC: VmDirStringPrintFA() call failed with error: %d", retVal );
+
+        retVal = _VmDirMkdir(localXlogDir, 0700);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                "_VmDirGetRemoteDBUsingRPC: _VmDirMkdir() call failed with error: %d %s", retVal );
+    }
 
     retVal = VmDirStringPrintFA( dbRemoteFilename, VMDIR_MAX_FILE_NAME_LEN, "%s/%s", (char *)pDbPath,
                                  VMDIR_MDB_DATA_FILE_NAME );
@@ -213,16 +243,48 @@ _VmDirGetRemoteDBUsingRPC(
     retVal = _VmDirGetRemoteDBFileUsingRPC( hServer, dbRemoteFilename, localFilename, remoteDbSizeMb, remoteDbMapSizeMb );
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    if (low_xlognum == 0)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+          "_VmDirGetRemoteDBUsingRPC: complete MDB cold copy - WAL not supported by remote");
+        goto cleanup;
+    }
+
+    //Query current xlog number
+    retVal = VmDirSetBackendState (hServer, MDB_STATE_GETXLOGNUM, &high_xlognum, &remoteDbSizeMb, &remoteDbMapSizeMb, pDbPath, VMDIR_MAX_FILE_NAME_LEN);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+            "_VmDirGetRemoteDBUsingRPC: VmDirSetBackendState failed to get current xlog: %d", retVal  );
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: start transfering XLOGS from %d to %d", low_xlognum, high_xlognum);
+    for (xlognum = low_xlognum; xlognum <= high_xlognum; xlognum++)
+    {
+        retVal = VmDirStringPrintFA( dbRemoteFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%lu", dbHomeDir, fileSeperator,
+                                 VMDIR_MDB_XLOGS_DIR_NAME, fileSeperator, xlognum );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+            "_VmDirGetRemoteDBUsingRPC: VmDirStringPrintFA() call failed with error: %d", retVal );
+
+        retVal = VmDirStringPrintFA( localFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%lu", localXlogDir, fileSeperator, xlognum);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+            "_VmDirGetRemoteDBUsingRPC: VmDirStringPrintFA() call failed with error: %d", retVal );
+
+        retVal = _VmDirGetRemoteDBFileUsingRPC( hServer, dbRemoteFilename, localFilename, 0, 0);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+            "_VmDirGetRemoteDBUsingRPC: _VmDirGetRemoteDBFileUsingRPC() call failed with error: %d", retVal );
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: complete transfering XLOGS from %d to %d", low_xlognum, high_xlognum);
+
 cleanup:
     if (hServer)
     {
-        //clear backend read-only mode
-        VmDirSetBackendState (hServer, 0, &xlognum, &remoteDbSizeMb, &remoteDbMapSizeMb, pDbPath, VMDIR_MAX_FILE_NAME_LEN);
+        //clear backend transfering xlog files mode.
+        VmDirSetBackendState (hServer, MDB_STATE_CLEAR, &xlognum, &remoteDbSizeMb, &remoteDbMapSizeMb, pDbPath, VMDIR_MAX_FILE_NAME_LEN);
         VmDirCloseServer( hServer);
     }
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     VMDIR_SAFE_FREE_MEMORY(pDbPath);
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);
+    *pbHasXlog = (low_xlognum > 0);
     return retVal;
 
 error:
@@ -230,7 +292,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
     goto cleanup;
 }
-
 DWORD
 VmDirReadDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hServer,
@@ -254,7 +315,7 @@ _VmDirGetRemoteDBFileUsingRPC(
     UINT32      remoteDbMapSizeMb)
 {
 //read block size of one MB.
-#define VMDIR_DB_READ_BLOCK_SIZE     (1<<20)
+#define VMDIR_DB_READ_BLOCK_SIZE     (1<<23)
 
     DWORD       retVal = 0;
 #ifdef _WIN32
@@ -391,15 +452,16 @@ error:
 static
 int
 _VmDirSwapDB(
-    PCSTR dbHomeDir)
+    PCSTR dbHomeDir,
+    BOOLEAN bHasXlog)
 {
     int                     retVal = LDAP_SUCCESS;
-    char                    dbExistingFilename[VMDIR_MAX_FILE_NAME_LEN] = {0};
-    char                    dbNewFilename[VMDIR_MAX_FILE_NAME_LEN] = {0};
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
+    char                    dbExistingName[VMDIR_MAX_FILE_NAME_LEN] = {0};
+    char                    dbNewName[VMDIR_MAX_FILE_NAME_LEN] = {0};
     PSTR                    pszLocalErrorMsg = NULL;
     int                     errorCode = 0;
     BOOLEAN                 bLegacyDataLoaded = FALSE;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
@@ -421,45 +483,82 @@ _VmDirSwapDB(
     VmDirBackendContentFree(pBE);
 
     // move .mdb files
-    retVal = VmDirStringPrintFA( dbExistingFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator,
+    retVal = VmDirStringPrintFA( dbExistingName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator,
                                  LOCAL_PARTNER_DIR, fileSeperator, VMDIR_MDB_DATA_FILE_NAME);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirSwapDB: VmDirStringPrintFA() call failed with error: %d", retVal );
 
-    retVal = VmDirStringPrintFA( dbNewFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator,
+    retVal = VmDirStringPrintFA( dbNewName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator,
                                  VMDIR_MDB_DATA_FILE_NAME );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirSwapDB: VmDirStringPrintFA() call failed with error: %d", retVal );
 
 #ifdef WIN32
-    if (MoveFileEx(dbExistingFilename, dbNewFilename, MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING) == 0)
+    if (MoveFileEx(dbExistingName, dbNewName, MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING) == 0)
     {
         retVal = LDAP_OPERATIONS_ERROR;
         errorCode = GetLastError();
 #else
-    if (rename(dbExistingFilename, dbNewFilename) != 0)
+    if (rename(dbExistingName, dbNewName) != 0)
     {
         retVal = LDAP_OPERATIONS_ERROR;
         errorCode = errno;
 #endif
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-            "_VmDirSwapDB: rename file from %s to %s failed, errno %d", dbExistingFilename, dbNewFilename, errorCode );
+            "_VmDirSwapDB: rename file from %s to %s failed, errno %d", dbExistingName, dbNewName, errorCode );
     }
 
-    retVal = VmDirStringPrintFA( dbExistingFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator, LOCAL_PARTNER_DIR);
+    retVal = VmDirStringPrintFA(dbNewName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator, VMDIR_MDB_XLOGS_DIR_NAME);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+            "_VmDirSwapDB: VmDirStringPrintFA() call failed with error: %d", retVal );
+
+    if (bHasXlog)
+    {
+        //move xlog directory
+        retVal = VmDirStringPrintFA(dbExistingName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator,
+                                    LOCAL_PARTNER_DIR, fileSeperator, VMDIR_MDB_XLOGS_DIR_NAME);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                "_VmDirSwapDB: VmDirStringPrintFA() call failed with error: %d", retVal );
+
+#ifdef     WIN32
+        if (MoveFileEx(dbExistingName, dbNewName, MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING) == 0)
+        {
+            retVal = LDAP_OPERATIONS_ERROR;
+            errorCode = GetLastError();
+#else
+        if (rmdir(dbNewName) != 0)
+        {
+            retVal = LDAP_OPERATIONS_ERROR;
+            errorCode = errno;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "_VmDirSwapDB cannot remove directory %s, errno %d",
+                                         dbNewName, errorCode);
+        }
+
+        if (rename(dbExistingName, dbNewName) != 0)
+        {
+            retVal = LDAP_OPERATIONS_ERROR;
+            errorCode = errno;
+#endif
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "_VmDirSwapDB cannot move directory from %s to %s, errno %d",
+                                         dbNewName, dbExistingName, errorCode);
+        }
+    }
+
+    retVal = VmDirStringPrintFA(dbExistingName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator, LOCAL_PARTNER_DIR);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirSwapDB: VmDirStringPrintFA() call failed with error: %d", retVal );
 
 #ifdef WIN32
-    if (RemoveDirectory(dbExistingFilename)==0)
+    if (RemoveDirectory(dbExistingName)==0)
     {
         errorCode = GetLastError();
 #else
-    if (rmdir(dbExistingFilename) != 0)
+    if (rmdir(dbExistingName))
     {
         errorCode = errno;
 #endif
-        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "_VmDirSwapDB cannot remove directory %s, errno %d", dbExistingFilename, errorCode);
+
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "cannot remove directory %s errno %d", dbExistingName, errorCode);
     }
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);

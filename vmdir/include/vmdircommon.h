@@ -966,6 +966,12 @@ typedef enum
 //
 #define VMDIR_REG_KEY_TOMBSTONE_REAPING_FREQ_IN_SEC  "TombstoneReapingThreadFreqInSec"
 
+#define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 30
+
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
 #else
@@ -1493,6 +1499,16 @@ VmDirGetRegKeyValueQword(
     PCSTR   pszConfigParamKeyPath,
     PCSTR   pszKey,
     PINT64  pi64Value
+    );
+
+DWORD
+VmDirGetMdbWalEnable(
+    BOOLEAN *pbMdbEnableWal
+    );
+
+DWORD
+VmDirGetMdbChkptInterval(
+    DWORD *pdwMdbChkptInterval
     );
 
 DWORD

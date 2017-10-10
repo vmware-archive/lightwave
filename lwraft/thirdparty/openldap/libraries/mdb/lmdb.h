@@ -1534,6 +1534,8 @@ int	mdb_reader_check(MDB_env *env, int *dead);
 int     mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
                           unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
 
+unsigned long long mdb_env_get_lasttid(MDB_env *env);
+
 /**	@} */
 
 #ifdef __cplusplus

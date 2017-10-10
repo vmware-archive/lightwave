@@ -391,6 +391,22 @@ typedef struct _VMDIR_SUPERLOG_TABLE
     PVMDIR_SUPERLOG_TABLE_ROW rows;
 } VMDIR_SUPERLOG_TABLE, *PVMDIR_SUPERLOG_TABLE;
 
+#ifndef MDB_STATE_OP
+#define MDB_STATE_OP
+
+typedef enum MDB_state_op {
+        MDB_STATE_CLEAR = 0,
+        MDB_STATE_READONLY,
+        MDB_STATE_KEEPXLOGS,
+        MDB_STATE_GETXLOGNUM
+} MDB_state_op;
+
+#endif
+
+#define VMDIR_MDB_DATA_FILE_NAME "data.mdb"
+#define VMDIR_MDB_LOCK_FILE_NAME "lock.mdb"
+#define VMDIR_MDB_XLOGS_DIR_NAME "xlogs"
+
 #ifdef VMDIR_ENABLE_PAC
 typedef struct _RPC_UNICODE_STRING
 {

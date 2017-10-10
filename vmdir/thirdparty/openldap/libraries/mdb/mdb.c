@@ -77,6 +77,7 @@
 #include <time.h>
 #ifndef _WIN32
 #include <unistd.h>
+#include <dirent.h>
 #endif
 
 #if !(defined(BYTE_ORDER) || defined(__BYTE_ORDER))
@@ -316,6 +317,10 @@ mdb_sem_wait(sem_t *sem)
 #ifndef MDB_DSYNC
 # define MDB_DSYNC	O_DSYNC
 #endif
+/**
+ * initial and incremental database size in Bytes - 256MB
+ */
+#define DB_SIZE_INC (1LL << 28)
 #endif
 
 /** Function for flushing the data of a file. Define this to fsync
@@ -890,6 +895,14 @@ typedef struct MDB_meta {
 #define	mm_flags	mm_dbs[0].md_flags
 	pgno_t		mm_last_pg;			/**< last used page in file */
 	txnid_t		mm_txnid;			/**< txnid that committed this page */
+        /** number of pages of this transaction not including the meta page used for WAL auditing */
+        uint32_t        mm_txn_pages;
+        /** The last xlog num being used.
+         * If the server was shutdown gracefully and all xlog files were purged,
+         * then this number is taken in database file's meta data, otherwise
+         * the meta data is rollforwarded by txn log files. */
+        uint32_t        mm_xlog_num;
+        uint32_t        mm_xlog_num_pre_chkpt;
 } MDB_meta;
 
 	/** Buffer for a stack-allocated meta page.
@@ -1058,6 +1071,34 @@ typedef struct MDB_pgstate {
 	txnid_t		mf_pglast;	/**< ID of last used record, or 0 if !mf_pghead */
 } MDB_pgstate;
 
+        /** State of write ahead logging **/
+        /** maximum number of pages before trying to use the next WAL file */
+#define MAX_WAL_PGS 32768
+        /** initial WAL buffer pages */
+#define WAL_INIT_PGS (MAX_WAL_PGS >> 3)
+#define XLOG_MIN_NUM 10000001
+#define XLOG_MAX_NUM 99999999
+
+/* purge upto current xlog_num file less the margin */
+#define XLOG_PURGE_SAFE_MARGIN 5
+
+/* the default value of check point interval */
+#define CHKPT_INTERVAL_DEFAULT 30
+
+typedef struct MDB_walstate {
+        pthread_t       chkpt_thread;   /* check point thread id */
+        unsigned long   xlog_num;       /* current WAL file number that derives the file name */
+        unsigned long   xlog_num_pre_chkpt; /* WAL file number right before chkpt completed */
+        unsigned long   xlog_purged;    /* last WAL file number being purged */
+	HANDLE		xlog_fd;	/* current WAL file fd */
+	uint32_t        xlog_pages;     /* number of pages written to current WAL file */
+        uint32_t        chkpt_interval; /* the interval in seconds of doing checkpoint on database */
+	pthread_cond_t  chkpt_waitcond;	/* for waking up check point thread */
+	pthread_mutex_t chkpt_waitmutex;/* Mutex for check point thread */
+        unsigned long   txn_pages;      /* number of pages to write to wal for current transaction */
+        int             chkpt_thread_active; /* set to 1 when  chkpt_thread started */
+} MDB_walstate;
+
 	/** The database environment. */
 struct MDB_env {
 	HANDLE		me_fd;		/**< The main data file */
@@ -1086,7 +1127,7 @@ struct MDB_env {
 	void		*me_pbuf;		/**< scratch area for DUPSORT put() */
 	MDB_txn		*me_txn;		/**< current write transaction */
 	size_t		me_mapsize;		/**< size of the data memory map */
-//	off_t		me_size;		/**< current file size */
+	off_t		me_size;		/**< current file size */
 	pgno_t		me_maxpg;		/**< me_mapsize / me_psize */
 	MDB_dbx		*me_dbxs;		/**< array of static DB info */
 	uint16_t	*me_dbflags;	/**< array of flags from MDB_db.md_flags */
@@ -1118,6 +1159,10 @@ struct MDB_env {
 #endif
 	void		*me_userctx;	 /**< User-settable context */
 	MDB_assert_func *me_assert_func; /**< Callback for assertion failures */
+        MDB_raft_prepare_commit_func *me_raft_prepare_commit_func; /** Commit hook function used for Raft committing a log **/
+        MDB_raft_post_commit_func *me_raft_post_commit_func; /** callback that sets raft state for the logIndex **/
+        MDB_raft_commit_fail_func *me_raft_commit_fail_func; /** callback that sets raft state if fail to write WAL or meta page  **/
+        MDB_walstate    me_walstate;    /** WAL (write ahead logging) state **/
 };
 
 	/** Nested transaction */
@@ -1193,7 +1238,15 @@ static void	mdb_xcursor_init0(MDB_cursor *mc);
 static void	mdb_xcursor_init1(MDB_cursor *mc, MDB_node *node);
 
 static int	mdb_drop0(MDB_cursor *mc, int subs);
-static void mdb_default_cmp(MDB_txn *txn, MDB_dbi dbi);
+static void     mdb_default_cmp(MDB_txn *txn, MDB_dbi dbi);
+static int      mdb_wal_init(MDB_env *env);
+static int      mdb_rollxlogs(MDB_env *env, int purge);
+static int      mdb_rollforward_file(MDB_env *env, char * xlog_file);
+static void *   mdb_chkpt_main(void *param_ptr);
+#ifndef _WIN32
+static int      wal_sync_meta(MDB_env *env, txnid_t tid);
+static int      write_wal_pages(MDB_env *env, const struct iovec *iov, int n);
+#endif
 
 /** @cond */
 static MDB_cmp_func	mdb_cmp_memn, mdb_cmp_memnr, mdb_cmp_int, mdb_cmp_cint, mdb_cmp_long;
@@ -1221,7 +1274,7 @@ static char *const mdb_errstr[] = {
 	"MDB_NOTFOUND: No matching key/data pair found",
 	"MDB_PAGE_NOTFOUND: Requested page not found",
 	"MDB_CORRUPTED: Located page was wrong type",
-	"MDB_PANIC: Update of meta page failed",
+	"MDB_PANIC: Update of meta page or WAL file failed",
 	"MDB_VERSION_MISMATCH: Database environment version mismatch",
 	"MDB_INVALID: File is not an MDB file",
 	"MDB_MAP_FULL: Environment mapsize limit reached",
@@ -1236,6 +1289,9 @@ static char *const mdb_errstr[] = {
 	"MDB_BAD_RSLOT: Invalid reuse of reader locktable slot",
 	"MDB_BAD_TXN: Transaction cannot recover - it must be aborted",
 	"MDB_BAD_VALSIZE: Too big key/data, key is empty, or wrong DUPFIXED size",
+        "MDB_WAL_INVALID_META: WAL recover failure - invalid meta page or missing WAL file",
+        "MDB_WAL_WRONG_TXN_PAGES: WAL recover failure - pages in transaction mismatch",
+        "MDB_WAL_FILE_ERROR: Missing or bad WAL file"
 };
 
 char *
@@ -2864,8 +2920,13 @@ mdb_page_flush(MDB_txn *txn, int keep)
 		/* Write up to MDB_COMMIT_PAGES dirty pages at a time. */
 		if (pos!=next_pos || n==MDB_COMMIT_PAGES || wsize+size>MAX_WRITE) {
 			if (n) {
-				/* Write previous page(s) */
+                                /* write pages to WAL file */
+                                rc = write_wal_pages(env, iov, n);
+                                if (rc)
+                                    return rc;
 #ifdef MDB_USE_PWRITEV
+
+				/* Write previous page(s) */
 				wres = pwritev(env->me_fd, iov, n, wpos);
 #else
 				if (n == 1) {
@@ -2929,6 +2990,7 @@ mdb_txn_commit(MDB_txn *txn)
 	int		rc;
 	unsigned int i;
 	MDB_env	*env;
+        void *raft_commit_ctx = NULL;
 
 	if (txn == NULL || txn->mt_env == NULL)
 		return EINVAL;
@@ -3107,16 +3169,32 @@ mdb_txn_commit(MDB_txn *txn)
 #if (MDB_DEBUG) > 2
 	mdb_audit(txn);
 #endif
+        if ((rc = mdb_page_flush(txn, 0)))
+        {
+                goto fail;
+        }
 
-	if ((rc = mdb_page_flush(txn, 0)) ||
-		(rc = mdb_env_sync(env, 0)) ||
-		(rc = mdb_env_write_meta(txn)))
-		goto fail;
+        if (!(env->me_flags & MDB_WAL)){
+            if((rc = mdb_env_sync(env, 0)))
+                goto fail;
+        }
+
+        if ((env->me_raft_prepare_commit_func &&
+             (rc = env->me_raft_prepare_commit_func(&raft_commit_ctx))) ||
+            (rc = mdb_env_write_meta(txn)))
+        {
+                goto fail;
+        }
 
 done:
 	env->me_pglast = 0;
 	env->me_txn = NULL;
 	mdb_dbis_update(txn, 1);
+
+        if (env->me_raft_post_commit_func)
+        {
+            env->me_raft_post_commit_func(raft_commit_ctx);
+        }
 
 	if (env->me_txns)
 		UNLOCK_MUTEX_W(env);
@@ -3125,6 +3203,10 @@ done:
 	return MDB_SUCCESS;
 
 fail:
+        if (env->me_raft_commit_fail_func)
+        {
+            env->me_raft_commit_fail_func(raft_commit_ctx);
+        }
 	mdb_txn_abort(txn);
 	return rc;
 }
@@ -3231,6 +3313,8 @@ mdb_env_init_meta(MDB_env *env, MDB_meta *meta)
 	meta->mm_flags |= MDB_INTEGERKEY;
 	meta->mm_dbs[0].md_root = P_INVALID;
 	meta->mm_dbs[1].md_root = P_INVALID;
+        meta->mm_xlog_num = XLOG_MIN_NUM - 1;
+        meta->mm_xlog_num_pre_chkpt = XLOG_MIN_NUM;
 
 	p = calloc(2, psize);
 	p->mp_pgno = 0;
@@ -3266,6 +3350,11 @@ mdb_env_write_meta(MDB_txn *txn)
 	int rc, len, toggle;
 	char *ptr;
 	HANDLE mfd;
+        MDB_metabuf mbuf = {0};
+        MDB_page *dp;
+        MDB_page *np = NULL;
+        int nw = 0;
+
 #ifdef _WIN32
 	OVERLAPPED ov;
 #else
@@ -3278,6 +3367,11 @@ mdb_env_write_meta(MDB_txn *txn)
 
 	env = txn->mt_env;
 	mp = env->me_metas[toggle];
+        dp = (MDB_page *)env->me_map;
+        if (toggle)
+            dp = (MDB_page *)(env->me_map + env->me_psize);
+        memcpy(&mbuf.mb_page, (char *)dp, PAGEHDRSZ);
+
 	if (env->me_flags & MDB_WRITEMAP) {
 		/* Persist any increases of mapsize config */
 		if (env->me_mapsize > mp->mm_mapsize)
@@ -3319,10 +3413,48 @@ mdb_env_write_meta(MDB_txn *txn)
 	len = sizeof(MDB_meta) - off;
 
 	ptr += off;
-	meta.mm_dbs[0] = txn->mt_dbs[0];
-	meta.mm_dbs[1] = txn->mt_dbs[1];
-	meta.mm_last_pg = txn->mt_next_pgno - 1;
-	meta.mm_txnid = txn->mt_txnid;
+        mbuf.mb_metabuf.mm_meta.mm_magic = mp->mm_magic;
+        mbuf.mb_metabuf.mm_meta.mm_version = mp->mm_version;
+        mbuf.mb_metabuf.mm_meta.mm_address = mp->mm_address;
+	mbuf.mb_metabuf.mm_meta.mm_dbs[0] = meta.mm_dbs[0] = txn->mt_dbs[0];
+	mbuf.mb_metabuf.mm_meta.mm_dbs[1] = meta.mm_dbs[1] = txn->mt_dbs[1];
+	mbuf.mb_metabuf.mm_meta.mm_last_pg = meta.mm_last_pg = txn->mt_next_pgno - 1;
+	mbuf.mb_metabuf.mm_meta.mm_txnid = meta.mm_txnid = txn->mt_txnid;
+        mbuf.mb_metabuf.mm_meta.mm_txn_pages = meta.mm_txn_pages = env->me_walstate.txn_pages;
+        mbuf.mb_metabuf.mm_meta.mm_xlog_num = meta.mm_xlog_num = env->me_walstate.xlog_num;
+        mbuf.mb_metabuf.mm_meta.mm_xlog_num_pre_chkpt = meta.mm_xlog_num_pre_chkpt = env->me_walstate.xlog_num_pre_chkpt;
+        env->me_walstate.txn_pages = 0;
+
+#ifndef _WIN32
+        if (env->me_flags & MDB_WAL)
+        {
+            np = mdb_page_malloc(txn, 1);
+            if (np == NULL)
+            {
+                rc = ENOMEM;
+                goto fail;
+            }
+
+            memcpy(np, (char *)&mbuf, sizeof(MDB_metabuf));
+            nw = write(env->me_walstate.xlog_fd, np, env->me_psize);
+            mdb_page_free(env, np);
+
+            if (nw != env->me_psize)
+            {
+                if (nw < 0)
+                    rc = ErrCode();
+                else
+                    rc = ENOMEM;
+                goto fail;
+            }
+            env->me_walstate.xlog_pages++;
+
+            if (wal_sync_meta(env, txn->mt_txnid) != 0)
+            {
+                goto fail;
+            }
+        }
+#endif
 
 	if (toggle)
 		off += env->me_psize;
@@ -3339,7 +3471,7 @@ mdb_env_write_meta(MDB_txn *txn)
 			rc = -1;
 	}
 #else
-	rc = pwrite(mfd, ptr, len, off);
+        rc = pwrite(env->me_fd, ptr, len, off);
 #endif
 	if (rc != len) {
 		rc = rc < 0 ? ErrCode() : EIO;
@@ -3534,6 +3666,16 @@ mdb_env_set_maxreaders(MDB_env *env, unsigned int readers)
 		return EINVAL;
 	env->me_maxreaders = readers;
 	return MDB_SUCCESS;
+}
+
+int
+mdb_env_set_chkpt_interval(MDB_env *env, int interval)
+{
+    if (env == NULL)
+       return EINVAL;
+
+    env->me_walstate.chkpt_interval = interval;
+    return MDB_SUCCESS;
 }
 
 int
@@ -4110,9 +4252,9 @@ fail:
 	 *	at runtime. Changing other flags requires closing the
 	 *	environment and re-opening it with the new flags.
 	 */
-#define	CHANGEABLE	(MDB_NOSYNC|MDB_NOMETASYNC|MDB_MAPASYNC|MDB_NOMEMINIT)
+#define	CHANGEABLE	(MDB_NOSYNC|MDB_NOMETASYNC|MDB_MAPASYNC|MDB_NOMEMINIT|MDB_KEEPXLOGS)
 #define	CHANGELESS	(MDB_FIXEDMAP|MDB_NOSUBDIR|MDB_RDONLY|MDB_WRITEMAP| \
-	MDB_NOTLS|MDB_NOLOCK|MDB_NORDAHEAD)
+	MDB_NOTLS|MDB_NOLOCK|MDB_NORDAHEAD|MDB_WAL)
 
 #if VALID_FLAGS & PERSISTENT_FLAGS & (CHANGEABLE|CHANGELESS)
 # error "Persistent DB flags & env flags overlap, but both go in mm_flags"
@@ -4124,9 +4266,14 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 	int		oflags, rc, len, excl = -1;
 	char *lpath, *dpath;
 
-	if (env->me_fd!=INVALID_HANDLE_VALUE || (flags & ~(CHANGEABLE|CHANGELESS)))
+	if (env->me_fd!=INVALID_HANDLE_VALUE || (flags & ~(CHANGEABLE|CHANGELESS)) ||
+            ((flags & MDB_WAL) && (flags & MDB_WRITEMAP)))
 		return EINVAL;
-
+#ifdef _WIN32
+       //WAL feature is currently not supported on Windows
+       if (flags & MDB_WAL)
+           return EINVAL;
+#endif
 	len = (int) strlen(path);
 	if (flags & MDB_NOSUBDIR) {
 		rc = len + sizeof(LOCKSUFF) + len + 1;
@@ -4236,11 +4383,25 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 			  (env->me_pbuf = calloc(1, env->me_psize))))
 			rc = ENOMEM;
 	}
+        if (env->me_flags & MDB_WAL)
+        {
+            if ((rc=mdb_rollxlogs(env, 0)) != MDB_SUCCESS)
+            {
+                 goto done;
+            }
+
+            if ((rc=mdb_wal_init(env) != MDB_SUCCESS))
+            {
+                goto leave;
+            }
+        }
 
 leave:
 	if (rc) {
 		mdb_env_close0(env, excl);
 	}
+
+done:
 	free(lpath);
 	return rc;
 }
@@ -4254,10 +4415,41 @@ mdb_env_close0(MDB_env *env, int excl)
 	if (!(env->me_flags & MDB_ENV_ACTIVE))
 		return;
 
+        if (env->me_flags & MDB_WAL)
+        {
+            env->me_flags &= ~MDB_ENV_ACTIVE;
+            pthread_cond_signal(&env->me_walstate.chkpt_waitcond);
+            if (env->me_walstate.chkpt_thread_active)
+                 pthread_join(env->me_walstate.chkpt_thread, NULL);
+
+            if (env->me_walstate.xlog_fd != INVALID_HANDLE_VALUE)
+            {
+                close(env->me_walstate.xlog_fd);
+                env->me_walstate.xlog_fd = INVALID_HANDLE_VALUE;
+            }
+
+            if (!(env->me_flags & MDB_FATAL_ERROR) &&
+                mdb_env_sync(env, 1) == 0 &&
+                !(env->me_flags & MDB_KEEPXLOGS))
+            {
+                /* Don't purge WAL files and sync database if a fatal error condition exists,
+                 * and go through WAL recovery procedure when server restarts.
+                 * Don't purge WAL files if sync database failed, and go through WAL
+                 * recovery procedure when server restarts.
+                 */
+                mdb_rollxlogs(env, 1);
+            }
+        }
+
 	/* Doing this here since me_dbxs may not exist during mdb_env_close */
 	for (i = env->me_maxdbs; --i > MAIN_DBI; )
 		free(env->me_dbxs[i].md_name.mv_data);
 
+        if (env->me_flags & MDB_WAL)
+        {
+            pthread_mutex_destroy(&env->me_walstate.chkpt_waitmutex);
+            pthread_cond_destroy(&env->me_walstate.chkpt_waitcond);
+        }
 	free(env->me_pbuf);
 	free(env->me_dbflags);
 	free(env->me_dbxs);
@@ -8544,49 +8736,708 @@ int mdb_reader_check(MDB_env *env, int *dead)
 	return MDB_SUCCESS;
 }
 
-/**
- * lmdb.h mdb_env_set_state for parameters
+/*
+ * Rollfoward pages assocated with a single transaction
+ * with pages started from "start" to "end" in that order,
+ * with memory pointers stored in "xlog_pgs".
+ * Page pointed by "end" is always a meta page
+ * Each transaction is limitted to (2^17 - 1) pages
+ * of data (e.g. 512MB when page size is 4Kb)
+ * The limitation can be increased by extending
+ * the compile time MDB_IDL_UM_SIZE value
+ */
+static
+int commit_xlog_txn(MDB_env *env, MDB_ID2L xlog_pgs, int start, int end)
+{
+    MDB_page *p;
+    MDB_metabuf *mbufp;
+    MDB_meta *m;
+    int i, j;
+
+    mbufp = (MDB_metabuf *)xlog_pgs[end].mptr;
+    m = &mbufp->mb_metabuf.mm_meta;
+    if (m->mm_magic != MDB_MAGIC)
+        return MDB_WAL_INVALID_META;
+    if ((end - start) != m->mm_txn_pages)
+        return MDB_WAL_WRONG_TXN_PAGES;
+
+    i = start;
+    while(i <= end)
+    {
+        p = xlog_pgs[i].mptr;
+        if (IS_OVERFLOW(p))
+        {
+            for (j=0; j < (int)p->mp_pages; j++) {
+                unsigned long d_offset = (unsigned long)(((p->mp_pgno +j ) * env->me_psize));
+                char *s_pos = xlog_pgs[i+j].mptr;
+                pwrite(env->me_fd, s_pos, env->me_psize, d_offset);
+            }
+            mdb_eassert(env, p->mp_pages > 0);
+            i += p->mp_pages;
+        } else if (F_ISSET(p->mp_flags, P_META))
+        {
+            mbufp = (MDB_metabuf *)p;
+            m = &mbufp->mb_metabuf.mm_meta;
+            pwrite(env->me_mfd, p, env->me_psize, (p->mp_pgno * env->me_psize));
+            env->me_txns->mti_txnid = m->mm_txnid;
+            i++;
+        } else
+        {
+           pwrite(env->me_fd, p, env->me_psize, (p->mp_pgno * env->me_psize));
+           i++;
+        }
+    }
+    return 0;
+}
+
+#ifdef _WIN32
+#define UNLINK_FILE(s) _unlink(s)
+#else
+#define UNLINK_FILE(s) unlink(s)
+#endif
+
+/*
+ * Rollfoward a single transaction log files, xlog_file
+ * Each xlog_file may contain pages cover multiple tranactions,
+ * but no transaction is allowed to across more than one xlog file.
+ */
+static
+int mdb_rollforward_file(MDB_env *env, char * xlog_file)
+{
+    HANDLE fd = INVALID_HANDLE_VALUE;
+    int rc = 0, nr, i, j, cnt;
+    char *p = NULL;
+    MDB_page *mp;
+    MDB_ID2L xlog_pgs = NULL;
+    MDB_ID2 mid;
+#ifdef _WIN32
+    DWORD len;
+#endif
+    xlog_pgs = calloc(MDB_IDL_UM_SIZE, sizeof(MDB_ID2));
+    if (xlog_pgs == NULL)
+    {
+        rc = ENOMEM;
+        goto done;
+    }
+#ifdef _WIN32
+    fd = CreateFile(xlog_file, GENERIC_READ, FILE_SHARE_READ,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+    fd = open(xlog_file, O_RDONLY);
+#endif
+    if (fd == INVALID_HANDLE_VALUE )
+    {
+        rc = ErrCode();
+        goto cleanup;
+    }
+    p = aligned_alloc(env->me_psize, env->me_psize);
+    if (p == NULL)
+    {
+        rc = ENOMEM;
+        goto cleanup;
+    }
+    while(1)
+    {
+#ifdef _WIN32
+        nr = ReadFile(fd, p, env->me_psize, &len, NULL) ? (int)len : -1;
+#else
+        nr = read(fd, p, env->me_psize);
+#endif
+        if (nr != (int)env->me_psize)
+            break;
+        mp = (MDB_page *)p;
+        mid.mid = mp->mp_pgno;
+        mid.mptr = mp;
+        rc = mdb_mid2l_append(xlog_pgs, &mid);
+        if (rc)
+        {
+            rc = ENOMEM;
+            goto cleanup;
+        }
+        p = aligned_alloc(env->me_psize, env->me_psize);
+        if (p == NULL)
+        {
+            rc = ENOMEM;
+            goto cleanup;
+        }
+    }
+
+    if (nr == 0)
+    {
+        i = 1;
+        j = 1;
+        cnt = (int)xlog_pgs[0].mid;
+        while (i <= cnt)
+        {
+            mp = xlog_pgs[i].mptr;
+            if (IS_OVERFLOW(mp)){
+                //printf("read %lu overflow pages on pgno %lu\n", mp->mp_pages, mp->mp_pgno);
+                i += mp->mp_pages;
+            }
+            else if (F_ISSET(mp->mp_flags, P_META))
+            {
+                //printf("commiting file %s from %d to %d (%d pgs)\n", xlog_file, j, i, i-j+1);
+                rc = commit_xlog_txn(env, xlog_pgs, j, i);
+                if (rc)
+                    goto cleanup;
+                i++;
+                j = i;
+            } else
+                i++;
+        }
+        goto cleanup;
+    } else if (nr < 0)
+    {
+        rc = ErrCode();
+        goto cleanup;
+    } else {
+        rc = MDB_WAL_WRONG_TXN_PAGES;
+        goto cleanup;
+    }
+cleanup:
+    if (p)
+        free(p);
+    i = 0;
+    cnt = (int) xlog_pgs[0].mid;
+    while (++i <= cnt) {
+        mp = xlog_pgs[i].mptr;
+        free(mp);
+    }
+    free(xlog_pgs);
+    if (fd >= 0)
+        close(fd);
+done:
+    if (rc == 0 )
+    {
+        if((rc=mdb_env_sync(env, 1)) != 0)
+        {
+           return rc;
+        }
+        if (!(env->me_flags & MDB_KEEPXLOGS))
+        {
+            UNLINK_FILE(xlog_file);
+        }
+    }
+    return rc;
+}
+
+/* Rollforward WAL files to the memory associated
+ * with the memory mapped database file if purge is 0,
+ * othewise purge all WAL files. Rollfoward is triggered
+ * if there is any WAL files in the destinated directory.
+ * Usually all WAL files were purged during graceful shutdown
+ * except when env is opended with MDB_KEEPXLOGS flag
+ *
+ * This function also discovers missing xlog files,
+ * and skip xlog files that are older than database file.
+ */
+static
+int mdb_rollxlogs(MDB_env *env, int purge)
+{
+    char xlog_file[256];
+    char xlog_file_dir[256];
+    char xlog_bad_file[256];
+    unsigned long xlog_num = 0, i;
+    int rc = 0;
+    unsigned long mm_xlog_num_pre_chkpt = env->me_metas[mdb_env_pick_meta(env)]->mm_xlog_num_pre_chkpt;
+
+#ifdef _WIN32
+    WIN32_FIND_DATA ffd;
+    HANDLE d = INVALID_HANDLE_VALUE;
+#else
+    DIR  *d  = NULL;
+    struct dirent *dir = NULL;
+#endif
+
+    MDB_IDL xlog_ids = mdb_midl_alloc(MDB_IDL_UM_MAX);
+    if(!xlog_ids)
+    {
+        rc = ENOMEM;
+        goto done;
+    }
+
+#ifdef _WIN32
+    sprintf(xlog_file_dir, "%s\\xlogs\\1*", env->me_path);
+    d = FindFirstFile(xlog_file_dir, &ffd);
+    if (d == INVALID_HANDLE_VALUE)
+    {
+        rc = ErrCode();
+        if (rc == ERROR_FILE_NOT_FOUND || rc == ERROR_PATH_NOT_FOUND)
+            rc = 0;
+        else
+            rc = ENOMEM;
+        goto done;
+    }
+    if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+    {
+        xlog_num=atol(ffd.cFileName);
+        if(xlog_num>=XLOG_MIN_NUM && xlog_num <= XLOG_MAX_NUM)
+        {
+            mdb_midl_xappend(xlog_ids, xlog_num);
+        }
+    }
+    while (1)
+    {
+        rc = FindNextFile(d, &ffd);
+        if (rc == 0)
+        {
+            rc=ErrCode();
+            if (rc == ERROR_NO_MORE_FILES)
+            {
+                rc = 0;
+                break;
+            }
+            else
+            {
+                rc = ENOMEM;
+                goto done;
+            }
+        } else if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            continue;
+        else
+            xlog_num=atol(ffd.cFileName);
+#else
+    sprintf(xlog_file_dir, "%s/xlogs", env->me_path);
+    d = opendir(xlog_file_dir);
+    if (d == NULL )
+    {
+       if(errno == ENOENT )
+           rc = 0;
+       else
+           rc = ENOMEM;
+       goto done;
+    }
+
+    while ((dir = readdir(d)) != NULL)
+    {
+        xlog_num=atol(dir->d_name);
+#endif
+        if(xlog_num>=XLOG_MIN_NUM && xlog_num <= XLOG_MAX_NUM)
+        {
+            if (xlog_ids[0] > (MDB_IDL_UM_MAX - 2))
+            {
+                rc = ENOMEM;
+                goto done;
+            }
+            mdb_midl_xappend(xlog_ids, xlog_num);
+        }
+    }
+    mdb_midl_sort(xlog_ids);
+    i = (unsigned long)xlog_ids[0];
+    if (!purge && i > 0)
+    {
+        if ((xlog_ids[1] - xlog_ids[i] + 1) != i || //logs are not continous numbers (missing files)
+            xlog_ids[1] < mm_xlog_num_pre_chkpt) //the last log is older than database
+        {
+            //Missing one or more WAL files
+            rc = MDB_WAL_FILE_ERROR;
+            mdb_eassert(env, rc == 0);
+            goto done;
+        }
+        DPRINTF(("MDB recover is needed; roll forward %ld transaction log files...", i));
+    }
+
+    for (; i; i--)
+    {
+#ifdef _WIN32
+        sprintf(xlog_file, "%s\\xlogs\\%08lu", env->me_path, xlog_ids[i]);
+#else
+        sprintf(xlog_file, "%s/%08lu", xlog_file_dir, xlog_ids[i]);
+#endif
+        if (purge)
+        {
+            rc = UNLINK_FILE(xlog_file);
+            //If unlink failed, the next startup may roll forward it, compromising integrity
+            mdb_eassert(env, rc == 0);
+            continue;
+        }
+
+        if ((xlog_ids[i] + 1)< mm_xlog_num_pre_chkpt)
+        {
+            //Database is newer than the xlog file.
+            DPRINTF(("skip rollfoward xlog_file %s\n", xlog_file));
+            if (!(env->me_flags & MDB_KEEPXLOGS))
+                UNLINK_FILE(xlog_file);
+            continue;
+        }
+
+        DPRINTF(("rollfoward xlog_file %s\n", xlog_file));
+        rc = mdb_rollforward_file(env, xlog_file);
+        if (rc)
+        {
+#ifndef _WIN32
+             sprintf(xlog_bad_file, "%s/garbled-%08lu", xlog_file_dir, xlog_ids[i]);
+             rename(xlog_file, xlog_bad_file);
+#endif
+             if (i==1)
+             {
+                 //This failure is most likely recoverable, and the garbled file was due
+                 // to machine powered off before fdatasync completed on the WAL file,
+                 // leaving the incompleted (the last) transaction in the WAL file.
+                 rc = 0;
+                 continue;
+             }
+             else
+                 //This is usually not recoverable, namely a WAL is inconsistent even
+                 //though it has completed fdatasync, and proceeded to the next log file.
+                 mdb_eassert(env, rc == 0);
+             goto done;
+        }
+    }
+
+done:
+#ifdef _WIN32
+    if (d != INVALID_HANDLE_VALUE)
+        FindClose(d);
+#else
+    if (d)
+        closedir(d);
+#endif
+    mdb_midl_free(xlog_ids);
+    return rc;
+}
+
+/* Initialize WAL state structure.
+ * Called once when the environment is opened
+ */
+static
+int mdb_wal_init(MDB_env *env)
+{
+#ifdef _WIN32
+    DWORD dwAttrib;
+#endif
+    char xlog_dir[256];
+    int rc = 0;
+
+    env->me_walstate.xlog_fd = INVALID_HANDLE_VALUE;
+    env->me_walstate.xlog_num = env->me_metas[mdb_env_pick_meta(env)]->mm_xlog_num + 1;
+    if (env->me_walstate.xlog_num < XLOG_MIN_NUM)
+        //This may occur once when switching from no-wal data.mdb to wal data.mdb
+        env->me_walstate.xlog_num = XLOG_MIN_NUM;
+    env->me_walstate.xlog_purged = XLOG_MIN_NUM - 1;
+    env->me_walstate.xlog_pages = 0;
+    env->me_walstate.txn_pages = 0;
+    if (env->me_walstate.chkpt_interval == 0)
+    {
+        //If mdb_env_set_chkpt_interval is not called, set to default value.
+        env->me_walstate.chkpt_interval = CHKPT_INTERVAL_DEFAULT;
+    }
+    if ((rc=pthread_mutex_init(&env->me_walstate.chkpt_waitmutex, NULL)) ||
+        (rc=pthread_cond_init(&env->me_walstate.chkpt_waitcond, NULL)))
+      return rc;
+
+#ifdef _WIN32
+    sprintf(xlog_dir, "%s\\xlogs", env->me_path);
+    dwAttrib = GetFileAttributes(xlog_dir);
+    if(dwAttrib == INVALID_FILE_ATTRIBUTES && CreateDirectory(xlog_dir, NULL)==0)
+#else
+    sprintf(xlog_dir, "%s/xlogs", env->me_path);
+    rc = access(xlog_dir, R_OK|W_OK|X_OK);
+    if(rc != 0 && mkdir(xlog_dir, 0700)!=0)
+#endif
+        return ENOMEM;
+
+    if ((rc=pthread_create(&env->me_walstate.chkpt_thread, NULL, mdb_chkpt_main, (void *)env)))
+    {
+        env->me_walstate.chkpt_thread_active = 0;
+        return rc;
+    }
+    env->me_walstate.chkpt_thread_active = 1;
+    return MDB_SUCCESS;
+}
+
+#ifndef _WIN32
+/* The all pages associated with the transaction
+ * into the WAL file. The last pages should always
+ * the meta page. Try to use O_DIRECT if the the OS/FS
+ * support it, otherwise issue an fdatasync to the
+ * WAL file. Close the WAL if its size exceeded the defined
+ * limit */
+static
+int wal_sync_meta(MDB_env *env, txnid_t tid)
+{
+    char xlog_file[256];
+    int rc = 0;
+    int i = 0;
+    HANDLE fd;
+
+    for(i=0; i<3; i++)
+    {
+        rc = fdatasync(env->me_walstate.xlog_fd);
+        if (rc == 0)
+            break;
+    }
+
+    if (rc)
+    {
+       goto done;
+    }
+
+    if (env->me_walstate.xlog_pages >= MAX_WAL_PGS)
+    {
+        mdb_eassert(env, env->me_walstate.xlog_fd != INVALID_HANDLE_VALUE);
+        close(env->me_walstate.xlog_fd);
+        env->me_walstate.xlog_fd = INVALID_HANDLE_VALUE;
+        env->me_walstate.xlog_num++;
+        env->me_walstate.xlog_pages = 0;
+        env->me_walstate.txn_pages = 0;
+        sprintf(xlog_file, "%s/xlogs/%08lu", env->me_path, env->me_walstate.xlog_num);
+        fd = open(xlog_file, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
+        if (fd == INVALID_HANDLE_VALUE)
+        {
+            rc = ENOMEM;
+            goto done;
+        }
+        env->me_walstate.xlog_fd = fd;
+    }
+
+done:
+    return rc;
+}
+#endif
+
+/* The checkpoint thread main function
+ * performs msync in a fixed interval, and
+ * then purge the transaction log files that are
+ * no longer needed for database recover.
+ * If MDB_KEEPXLOGS is set, no purge
+ * will be done, and the transaction log
+ * files, plus an earlier database file backup,
+ * can be used to restore the database to
+ * an earlier state (between when the database
+ * file was backup and the time the last log file
+ * was created).
+ */
+static
+void *mdb_chkpt_main(void *param_ptr)
+{
+    long i, rc=0;
+    char xlog_file_to_purge[256];
+    long xlog_num_pre_chkpt;
+    time_t now;
+    struct timespec ts;
+    int fatal_error = 0;
+
+    MDB_env *env = (MDB_env *)param_ptr;
+
+    while (env->me_flags & MDB_ENV_ACTIVE)
+    {
+        LOCK_MUTEX_W(env);
+        if (env->me_flags & MDB_FATAL_ERROR)
+            fatal_error = 1; //This can occur if disk is full when writing WAL file
+        else
+        {
+            xlog_num_pre_chkpt = env->me_walstate.xlog_num;
+            if (xlog_num_pre_chkpt < XLOG_MIN_NUM)
+                //This can occur once when switching from no-wal mdb to wal mdb
+                xlog_num_pre_chkpt = XLOG_MIN_NUM;
+
+            DPRINTF(("mdb_chkpt_main calls mdb_env_sync ..."));
+            for(i=0; i<3; i++)
+            {
+                rc = mdb_env_sync(env, 1);
+                if (rc == 0)
+                    break;
+            }
+            if (rc)
+            {
+                env->me_flags |= MDB_FATAL_ERROR;
+                fatal_error = 1;
+            } else
+            {
+                env->me_walstate.xlog_num_pre_chkpt = xlog_num_pre_chkpt;
+            }
+        }
+        UNLOCK_MUTEX_W(env);
+
+        if (!fatal_error && !(MDB_KEEPXLOGS & env->me_flags))
+        {
+            /* Any closed xlog files before chkpt can be safely purged
+             * - keep a few more files as a safe margin
+             */
+            for (i=env->me_walstate.xlog_purged + 1; i<(xlog_num_pre_chkpt - XLOG_PURGE_SAFE_MARGIN); i++)
+            {
+                sprintf(xlog_file_to_purge, "%s/xlogs/%08lu", env->me_path, i);
+                if (UNLINK_FILE(xlog_file_to_purge) == 0)
+                    env->me_walstate.xlog_purged  = i;
+            }
+        }
+
+        if ((env->me_flags & MDB_ENV_ACTIVE) == 0)
+            return NULL; //env has been shutdown
+
+        now = time(NULL);
+        ts.tv_sec = now + env->me_walstate.chkpt_interval;
+        ts.tv_nsec = 0;
+        pthread_mutex_lock(&env->me_walstate.chkpt_waitmutex);
+        pthread_cond_timedwait(&env->me_walstate.chkpt_waitcond,
+                   &env->me_walstate.chkpt_waitmutex, &ts);
+        pthread_mutex_unlock(&env->me_walstate.chkpt_waitmutex);
+    }
+    DPRINTF(("mdb_chkpt_main exits."));
+    return NULL;
+}
+
+/** @brief set, clear or query MDB state for database file cold or hot copy.
+ * Refer its description in lmdb.h for parameters.
  */
 int
-mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_num, unsigned long *dbSizeMb, unsigned long *dbMapSizeMb, char *db_path, int db_path_size)
+mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
+                  unsigned long *dbMapSizeMb, char *db_path, int db_path_size)
 {
     MDB_envinfo env_stats = {0};
     int ret = 0;
 
     if (env == NULL)
-        return 1; // invalid parameter
+        return EINVAL;
 
-    *last_xlog_num = 0; //Indicating that the backend doesn't support write-ahead-logging (WAL).
-                        //Will try to put the backend onto read-only state.
+    *last_xlog_num = 0;
     LOCK_MUTEX_W(env);
 
-    if (fileTransferState != 3)
+    if (((env->me_flags & MDB_RDONLY) && op == MDB_STATE_READONLY) ||
+        //Already in read-only state while trying to set to read-only
+        ((env->me_flags & MDB_RDONLY) && op == MDB_STATE_KEEPXLOGS) ||
+        //Already in read-only state while trying to set to keep XLOGS
+        (!(env->me_flags & MDB_RDONLY) && !(env->me_flags & MDB_KEEPXLOGS) && op == MDB_STATE_CLEAR)
+        // Not in read-only state while trying to clear read-only or keep XLOGS state
+       )
+         ret = EINVAL;
+    else if ( op == MDB_STATE_READONLY)
+         env->me_flags |= MDB_RDONLY;
+    else if (op == MDB_STATE_KEEPXLOGS)
     {
-        if (((env->me_flags & MDB_RDONLY) && fileTransferState == 1) || //Already in read-only state while trying to set to read-only
-            ((env->me_flags & MDB_RDONLY) && fileTransferState == 2) || //Already in read-only state while trying to set to keep XLOGS
-            (!(env->me_flags & MDB_RDONLY) && fileTransferState == 0)) // Not in read-only state while trying to clear read-only or keep XLOGS state
-            ret = 2;
-        else if ( fileTransferState == 1 || fileTransferState == 2 )
+         if (env->me_flags & MDB_WAL)
+         {
+             *last_xlog_num = env->me_walstate.xlog_num;
+             env->me_flags |= MDB_KEEPXLOGS;
+         } else
+         {
              env->me_flags |= MDB_RDONLY;
-        else if ( fileTransferState == 0)
-             env->me_flags &= ~MDB_RDONLY;
-        else
-            ret = 1; // invalid parameter
-
-        mdb_env_sync(env, 1);
+         }
+    } else if (op == MDB_STATE_GETXLOGNUM)
+    {
+         if (env->me_flags & MDB_WAL)
+         {
+             *last_xlog_num = env->me_walstate.xlog_num;
+         }
+    } else if ( op == MDB_STATE_CLEAR)
+    {
+         env->me_flags &= ~MDB_RDONLY;
+         env->me_flags &= ~MDB_KEEPXLOGS;
     }
+    else
+        ret = EINVAL;
+
+    mdb_env_sync(env, 1);
     mdb_env_info(env, &env_stats);
 
     //dbSizeMb is used as a hint so that there is no need to transfer the bytes beyond this value.
     *dbSizeMb = 1 + (unsigned long)(((unsigned long long)env_stats.me_last_pgno * (unsigned long long)env->me_psize) >> 20);
     *dbMapSizeMb = (unsigned long)((unsigned long long)env->me_mapsize >> 20);
     if (db_path == NULL || db_path_size <= 0 || strlen(env->me_path) >= db_path_size)
-        ret = 3;
+        ret = EOVERFLOW;
     else
         strcpy(db_path, env->me_path);
     UNLOCK_MUTEX_W(env);
     return ret;
 }
+
+/** @brief Set commit hook func for Raft
+ */
+void mdb_set_raft_prepare_commit_func(MDB_env *env, MDB_raft_prepare_commit_func *raft_prepare_commit_func)
+{
+    env->me_raft_prepare_commit_func = raft_prepare_commit_func;
+}
+
+/** @brief callback for raft post commit - set raft volatle state with logIndex argument when commit succeeded
+ */
+void mdb_set_raft_post_commit_func(MDB_env *env, MDB_raft_post_commit_func  *raft_post_commit_func)
+{
+    env->me_raft_post_commit_func = raft_post_commit_func;
+}
+
+/** @brief callback for raft commit fail to write WAL or meta page (due to disk full/failure). The callback
+ *  would set the server to Raft Follower role to avoid reusing the logIndex/logTerm for new client requests.
+ */
+void mdb_set_raft_commit_fail_func(MDB_env *env, MDB_raft_commit_fail_func  *raft_commit_fail_func)
+{
+    env->me_raft_commit_fail_func = raft_commit_fail_func;
+}
+
+#ifndef _WIN32
+/** @brief flush an array of dirty pages to WAL file
+ */
+static
+int write_wal_pages(MDB_env *env, const struct iovec *iov, int n)
+{
+    int rc = 0;
+    int i = 0;
+    int nw = 0;
+    int total_bytes = 0;
+    char xlog_file[256];
+    HANDLE fd = INVALID_HANDLE_VALUE;
+
+    if (!(env->me_flags & MDB_WAL))
+        goto done;
+
+    if (env->me_walstate.xlog_fd == INVALID_HANDLE_VALUE)
+    {
+        sprintf(xlog_file, "%s/xlogs/%08lu", env->me_path, env->me_walstate.xlog_num);
+        fd = open(xlog_file, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
+        if (fd == INVALID_HANDLE_VALUE)
+        {
+            rc = ENOMEM;
+            goto fatal_error;
+        }
+
+        env->me_walstate.xlog_fd = fd;
+        env->me_walstate.xlog_pages = 0;
+        env->me_walstate.txn_pages = 0;
+    }
+
+    for(i=0; i<n; i++)
+    {
+        total_bytes += iov[i].iov_len;
+    }
+
+    /* The xlog rollforward procedure can handle up to MDB_IDL_UM_MAX-1 pages (2^17-1 pages),
+     * including the meta page. Let the server quit if the limit is reached, and do WAL recovery
+     * procedure.
+     * A more desirable way is to clean-up the incompleted pages in WAL file, and abort
+     * the current transaction.
+     */
+    if((env->me_walstate.xlog_pages + (total_bytes/env->me_psize)) >= (MDB_IDL_UM_MAX - 2))
+    {
+        rc = ENOMEM;
+        goto fatal_error;
+    }
+
+    nw = writev(env->me_walstate.xlog_fd, iov, n);
+    if (nw < 0)
+    {
+        rc = ENOMEM;
+        goto fatal_error;
+    }
+
+    if (total_bytes != nw)
+    {
+        rc = ENOMEM;
+        goto fatal_error;
+    }
+
+    env->me_walstate.txn_pages += nw/env->me_psize;
+    env->me_walstate.xlog_pages += nw/env->me_psize;
+
+done:
+    return rc;
+
+fatal_error:
+    //The server will shutdown, and go though WAL recovery procedure
+    // to cleanup imcomplete pages in WAL file.
+    env->me_flags|=MDB_FATAL_ERROR;
+    goto done;
+}
+#endif
 
 unsigned long long
 mdb_env_get_lasttid(MDB_env *env)
@@ -8597,5 +9448,4 @@ mdb_env_get_lasttid(MDB_env *env)
     }
     return env->me_metas[0]->mm_txnid;
 }
-
 /** @} */
