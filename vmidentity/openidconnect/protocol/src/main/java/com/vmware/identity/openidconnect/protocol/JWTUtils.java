@@ -97,6 +97,21 @@ public final class JWTUtils {
         return result;
     }
 
+    public static boolean getBoolean(JWTClaimsSet claims, TokenClass tokenClass, String key) throws ParseException {
+        Validate.notNull(claims, "signedJwt");
+        Validate.notNull(tokenClass, "tokenClass");
+        Validate.notEmpty(key, "key");
+
+        Boolean result;
+        try {
+            result = claims.getBooleanClaim(key);
+        } catch (java.text.ParseException e) {
+            throw new ParseException(String.format("%s has non-boolean %s claim", tokenClass.getValue(), key), e);
+        }
+
+        return result!= null && result.booleanValue();
+    }
+
     public static String[] getStringArray(JWTClaimsSet claims, TokenClass tokenClass, String key) throws ParseException {
         Validate.notNull(claims, "signedJwt");
         Validate.notNull(tokenClass, "tokenClass");

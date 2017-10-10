@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.client;
 
+import java.io.IOException;
 import java.net.URI;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -29,6 +30,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.http.HttpException;
+import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
 
 import com.vmware.directory.rest.client.VmdirClient;
@@ -39,11 +42,15 @@ import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.PasswordGrant;
 import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
+import com.vmware.identity.rest.core.client.exceptions.ClientException;
+import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
+import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
+import com.vmware.identity.rest.idm.data.TenantDTO;
 
 /**
  * Base Class for OIDC Client Integration Test
@@ -57,31 +64,46 @@ public class OIDCClientITBase {
 
     static ClientID clientId;
     static ClientID clientIdWithoutAuthn;
-    static AccessToken accessToken;
-    static ConnectionConfig connectionConfig;
-    static ClientConfig clientConfig;
-    static OIDCClient nonRegNoHOKConfigClient, nonRegHOKConfigClient, regClient, regClientWithHA, regClientWithoutAuthn;
+    static ClientID clientIdWithoutAuthnForRegularTenant;
+    static AccessToken accessTokenSystemTenant;
+    static AccessToken accessTokenRegularTenant;
+    static ConnectionConfig connectionConfigForSystemTenant;
+    static ConnectionConfig connectionConfigForRegularTenant;
+    static ClientConfig clientConfigForSystemTenant;
+    static ClientConfig clientConfigForRegularTenant;
+    static OIDCClient nonRegNoHOKConfigClient, nonRegHOKConfigClient, nonRegNoHOKConfigClientForRegularTenant,
+                      regClient, regClientWithHA, regClientWithoutAuthn, regClientWithoutAuthnForRegularTenant;
     static TokenSpec withRefreshSpec, withoutRefreshSpec, groupFilteringSpec;
-    static PasswordGrant passwordGrant;
+    static PasswordGrant passwordGrantForSystemTenant;
     static SolutionUserCredentialsGrant solutionUserCredentialsGrant;
     static ClientCredentialsGrant clientCredentialsGrant;
 
-    static VmdirClient vmdirClient;
-    static IdmClient idmClient;
-    static String tenant;
-    static String username;
+    static VmdirClient vmdirClientForSystemTenant;
+    static IdmClient idmClientForSystemTenant;
+    static IdmClient idmClientForRegularTenant;
+    static String systemTenant;
+    static String regularTenant;
+    static String systemTenantAdminUsername;
+    static String regularTenantAdminUsername;
     static String solutionUserName;
+    static String multiTenantSolutionUserName;
     static String domainControllerFQDN;
     static int domainControllerPort;
     static KeyStore ks;
-    static RSAPrivateKey clientPrivateKey;
+    static RSAPrivateKey clientPrivateKey1;
+    static RSAPrivateKey clientPrivateKey2;
+    static X509Certificate clientCert1;
+    static X509Certificate clientCert2;
 
     public static void setUp(String config) throws Exception {
         Properties properties = new Properties();
         properties.load(OIDCClientIT.class.getClassLoader().getResourceAsStream(config));
-        username = properties.getProperty("admin.user");
-        String password = properties.getProperty("admin.password");
-        tenant = properties.getProperty("tenant");
+        systemTenantAdminUsername = properties.getProperty("admin.user");
+        String systemTenantAdminPassword = properties.getProperty("admin.password");
+        regularTenantAdminUsername = properties.getProperty("tenant1.admin.user");
+        String regularTenantAdminPassword = properties.getProperty("tenant1.admin.password");
+        systemTenant = properties.getProperty("tenant");
+        regularTenant= properties.getProperty("tenant1");
         domainControllerPort = Integer.parseInt(properties.getProperty("oidc.op.port"));
         domainControllerFQDN = System.getProperty("host");
         if (domainControllerFQDN == null || domainControllerFQDN.length() == 0) {
@@ -98,116 +120,110 @@ public class OIDCClientITBase {
                 domainControllerPort,
                 ks);
 
-        // retrieve OIDC meta data
+        // retrieve OIDC meta data from system tenant
         MetadataHelper metadataHelper = new MetadataHelper.Builder(domainControllerFQDN)
-        .domainControllerPort(domainControllerPort)
-        .tenant(tenant)
-        .keyStore(ks).build();
+                .domainControllerPort(domainControllerPort)
+                .tenant(systemTenant)
+                .keyStore(ks).build();
 
         ProviderMetadata providerMetadata = metadataHelper.getProviderMetadata();
         RSAPublicKey providerPublicKey = metadataHelper.getProviderRSAPublicKey(providerMetadata);
 
-        // create a non-registered OIDC client and get bearer tokens by admin user name/password
-        connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, ks);
-        clientConfig = new ClientConfig(connectionConfig, null, null, CLOCK_TOLERANCE_IN_SECONDS);
-        nonRegNoHOKConfigClient = new OIDCClient(clientConfig);
-        passwordGrant = new PasswordGrant(
-                username,
-                password);
-        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
-        OIDCTokens oidcTokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, tokenSpec);
-        accessToken = oidcTokens.getAccessToken();
+        connectionConfigForSystemTenant = new ConnectionConfig(providerMetadata, providerPublicKey, ks);
+        clientConfigForSystemTenant = new ClientConfig(connectionConfigForSystemTenant, null, null, CLOCK_TOLERANCE_IN_SECONDS);
+        accessTokenSystemTenant = TestUtils.getOidcBearerTokenWithUsernamePassword(clientConfigForSystemTenant, systemTenantAdminUsername, systemTenantAdminPassword);
 
-        // create REST idm client
-        idmClient = TestUtils.createIdmClient(
-                accessToken,
+        // create REST idm client for system tenant
+        idmClientForSystemTenant = TestUtils.createIdmClient(
+                accessTokenSystemTenant,
                 domainControllerFQDN,
                 domainControllerPort,
                 ks,
                 null);
 
-        // Create REST Vmdir client
-        vmdirClient = TestUtils.createVMdirClient(
-                accessToken,
+
+        // Create REST Vmdir client for system tenant
+        vmdirClientForSystemTenant = TestUtils.createVMdirClient(
+                accessTokenSystemTenant,
                 domainControllerFQDN,
                 domainControllerPort,
                 ks);
+
+        // create a non-system tenant
+        createTenant(regularTenant, regularTenantAdminUsername, regularTenantAdminPassword, properties.getProperty("tenant1.issuer"), idmClientForSystemTenant);
+        Thread.sleep(10 * 1000); // wait for tenant creation to finish
+
+        // retrieve OIDC meta data from regular tenant
+        metadataHelper = new MetadataHelper.Builder(domainControllerFQDN)
+                .domainControllerPort(domainControllerPort)
+                .tenant(regularTenant)
+                .keyStore(ks).build();
+
+        providerMetadata = metadataHelper.getProviderMetadata();
+        providerPublicKey = metadataHelper.getProviderRSAPublicKey(providerMetadata);
+
+        connectionConfigForRegularTenant = new ConnectionConfig(providerMetadata, providerPublicKey, ks);
+        clientConfigForRegularTenant = new ClientConfig(connectionConfigForRegularTenant, null, null, CLOCK_TOLERANCE_IN_SECONDS);
+        accessTokenRegularTenant =  TestUtils.getOidcBearerTokenWithUsernamePassword(clientConfigForRegularTenant, regularTenantAdminUsername, regularTenantAdminPassword);
+
+        // create REST idm client for non-system tenant
+        idmClientForRegularTenant = TestUtils.createIdmClient(
+                accessTokenRegularTenant,
+                domainControllerFQDN,
+                domainControllerPort,
+                ks,
+                null);
 
         // create key pair and client private key, certificate
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(1024, new SecureRandom());
         KeyPair clientKeyPair = keyGen.generateKeyPair();
-        clientPrivateKey = (RSAPrivateKey) clientKeyPair.getPrivate();
+
+        // create a regular solution user
         solutionUserName = properties.getProperty("oidc.rp.prefix") + UUID.randomUUID().toString();
-        X509Certificate clientCertificate = TestUtils.generateCertificate(clientKeyPair, solutionUserName, null);
+        clientPrivateKey1 = (RSAPrivateKey) clientKeyPair.getPrivate();
+        clientCert1 = TestUtils.generateCertificate(clientKeyPair, solutionUserName, null);
+        createSolutionUser(solutionUserName, systemTenant, false, vmdirClientForSystemTenant, clientCert1);
 
-        // create a solution user
-        CertificateDTO certificateDTO = new CertificateDTO.Builder()
-        .withEncoded(TestUtils.convertToBase64PEMString(clientCertificate))
-        .build();
-        SolutionUserDTO solutionUserDTO = new SolutionUserDTO.Builder()
-        .withName(solutionUserName)
-        .withDomain(tenant)
-        .withCertificate(certificateDTO)
-        .build();
-        vmdirClient.solutionUser().create(tenant, solutionUserDTO);
+        // create a multi tenant solution user
+        multiTenantSolutionUserName = properties.getProperty("oidc.rp.prefix") + UUID.randomUUID().toString();
+        clientPrivateKey2 = (RSAPrivateKey) clientKeyPair.getPrivate();
+        clientCert2 = TestUtils.generateCertificate(clientKeyPair, multiTenantSolutionUserName, null);
+        createSolutionUser(multiTenantSolutionUserName, systemTenant, true, vmdirClientForSystemTenant, clientCert2);
 
-        // add the solution user to ActAs group and Users group
-        List<String> members = Arrays.asList(solutionUserName + "@" + tenant);
-        vmdirClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
-        vmdirClient.group().addMembers(tenant, "Users", tenant, members, MemberType.USER);
-
-        // register a OIDC client
-        List<String> redirectURIs = Arrays.asList("https://test.com:7444/openidconnect/redirect");
-        List<String> postLogoutRedirectURIs = Arrays.asList("https://test.com:7444/openidconnect/postlogout");
-        String logoutURI = "https://test.com:7444/openidconnect/logout";
-        OIDCClientMetadataDTO oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder()
-        .withRedirectUris(redirectURIs)
-        .withPostLogoutRedirectUris(postLogoutRedirectURIs)
-        .withLogoutUri(logoutURI)
-        .withTokenEndpointAuthMethod("private_key_jwt")
-        .withCertSubjectDN(clientCertificate.getSubjectDN().getName())
-        .build();
-        OIDCClientDTO oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
-        clientId = new ClientID(oidcClientDTO.getClientId());
-
-        oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder()
-        .withRedirectUris(redirectURIs)
-        .withPostLogoutRedirectUris(postLogoutRedirectURIs)
-        .withLogoutUri(logoutURI)
-        .withTokenEndpointAuthMethod("none")
-        .withCertSubjectDN(null)
-        .build();
-        oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
-        clientIdWithoutAuthn = new ClientID(oidcClientDTO.getClientId());
+        clientId = registerOidcClient(systemTenant, clientCert1.getSubjectDN().getName(), "private_key_jwt", idmClientForSystemTenant);
+        clientIdWithoutAuthn = registerOidcClient(systemTenant, null, "none", idmClientForSystemTenant);
+        clientIdWithoutAuthnForRegularTenant = registerOidcClient(regularTenant, null, "none", idmClientForRegularTenant);
 
         // register resource server for group filtering tests
-        Set<String> groupFilter = new HashSet<String>(Arrays.asList("dummyDomain\\dummyUser", tenant + "\\Administrators"));
+        Set<String> groupFilter = new HashSet<String>(Arrays.asList("dummyDomain\\dummyUser", systemTenant + "\\Administrators"));
         ResourceServerDTO resourceServer = new ResourceServerDTO.Builder().withName(RESOURCE_SERVER_NAME).withGroupFilter(groupFilter).build();
-        idmClient.resourceServer().register(tenant, resourceServer);
+        idmClientForSystemTenant.resourceServer().register(systemTenant, resourceServer);
 
         // create client config
-        connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, ks);
-        HolderOfKeyConfig holderOfKeyConfig = new HolderOfKeyConfig(clientPrivateKey, clientCertificate);
+        HolderOfKeyConfig holderOfKeyConfig1 = new HolderOfKeyConfig(clientPrivateKey1, clientCert1);
+        HolderOfKeyConfig holderOfKeyConfig2 = new HolderOfKeyConfig(clientPrivateKey2, clientCert2);
 
         // create clients
-        clientConfig = new ClientConfig(connectionConfig, null, null, CLOCK_TOLERANCE_IN_SECONDS);
-        nonRegNoHOKConfigClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, null, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
-        nonRegHOKConfigClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, null, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
-        regClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, clientIdWithoutAuthn, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
-        regClientWithoutAuthn = new OIDCClient(clientConfig);
+        clientConfigForSystemTenant = new ClientConfig(connectionConfigForSystemTenant, null, null, CLOCK_TOLERANCE_IN_SECONDS);
+        nonRegNoHOKConfigClient = new OIDCClient(clientConfigForSystemTenant);
+        clientConfigForSystemTenant = new ClientConfig(connectionConfigForSystemTenant, null, holderOfKeyConfig1, CLOCK_TOLERANCE_IN_SECONDS);
+        nonRegHOKConfigClient = new OIDCClient(clientConfigForSystemTenant);
+        clientConfigForSystemTenant = new ClientConfig(connectionConfigForSystemTenant, clientId, holderOfKeyConfig1, null, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
+        regClient = new OIDCClient(clientConfigForSystemTenant);
+        clientConfigForSystemTenant = new ClientConfig(connectionConfigForSystemTenant, clientIdWithoutAuthn, holderOfKeyConfig1, CLOCK_TOLERANCE_IN_SECONDS);
+        regClientWithoutAuthn = new OIDCClient(clientConfigForSystemTenant);
+        clientConfigForRegularTenant = new ClientConfig(connectionConfigForRegularTenant, clientIdWithoutAuthnForRegularTenant, holderOfKeyConfig2, CLOCK_TOLERANCE_IN_SECONDS);
+        regClientWithoutAuthnForRegularTenant = new OIDCClient(clientConfigForRegularTenant);
 
         // create registered HA client
         String domainName = null;
-        URI issuerUri = URI.create(connectionConfig.getIssuer().getValue());
+        URI issuerUri = URI.create(connectionConfigForSystemTenant.getIssuer().getValue());
         String availableDomainController = issuerUri.getHost();
         ClientDCCacheFactory factory = new MockClientDCCacheFactory(domainName, availableDomainController);
         HighAvailabilityConfig haConfig = new HighAvailabilityConfig(domainName, factory);
-        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
-        regClientWithHA = new OIDCClient(clientConfig);
+        clientConfigForSystemTenant = new ClientConfig(connectionConfigForSystemTenant, clientId, holderOfKeyConfig1, haConfig, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
+        regClientWithHA = new OIDCClient(clientConfigForSystemTenant);
 
         withRefreshSpec = new TokenSpec.Builder().
                 refreshToken(true).
@@ -224,16 +240,65 @@ public class OIDCClientITBase {
                 resourceServers(Arrays.asList(RESOURCE_SERVER_NAME)).build();
 
         // create grants
-        passwordGrant = new PasswordGrant(username, password);
+        passwordGrantForSystemTenant = new PasswordGrant(systemTenantAdminUsername, systemTenantAdminPassword);
         solutionUserCredentialsGrant = new SolutionUserCredentialsGrant();
         clientCredentialsGrant = new ClientCredentialsGrant();
     }
 
+    private static TenantDTO createTenant(String tenant, String adminUsername, String adminPassword,
+            String issuer, IdmClient idmClient) throws Exception {
+        TenantDTO tenantDTO = new TenantDTO.Builder()
+            .withName(tenant)
+            .withUsername(adminUsername)
+            .withPassword(adminPassword)
+            .withIssuer(issuer)
+            .build();
+        return idmClient.tenant().create(tenantDTO);
+    }
+
+    private static void createSolutionUser(String username, String tenant, boolean multiTenant,
+            VmdirClient vmdirClient, X509Certificate cert) throws Exception {
+        CertificateDTO certificateDTO = new CertificateDTO.Builder()
+                .withEncoded(TestUtils.convertToBase64PEMString(cert))
+                .build();
+
+        SolutionUserDTO solutionUserDTO = new SolutionUserDTO.Builder()
+                .withName(username)
+                .withDomain(tenant)
+                .withCertificate(certificateDTO)
+                .withMultiTenant(multiTenant)
+                .build();
+        vmdirClient.solutionUser().create(tenant, solutionUserDTO);
+
+        // add the solution user to ActAs group and Users group
+        List<String> members = Arrays.asList(username + "@" + tenant);
+        vmdirClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
+        vmdirClient.group().addMembers(tenant, "Users", tenant, members, MemberType.USER);
+    }
+
+    private static ClientID registerOidcClient(String tenant, String subjectDN, String authnMethod, IdmClient idmClient)
+            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+        List<String> redirectURIs = Arrays.asList("https://test.com:7444/openidconnect/redirect");
+        List<String> postLogoutRedirectURIs = Arrays.asList("https://test.com:7444/openidconnect/postlogout");
+        String logoutURI = "https://test.com:7444/openidconnect/logout";
+        OIDCClientMetadataDTO oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder()
+                .withRedirectUris(redirectURIs)
+                .withPostLogoutRedirectUris(postLogoutRedirectURIs)
+                .withLogoutUri(logoutURI)
+                .withTokenEndpointAuthMethod(authnMethod)
+                .withCertSubjectDN(subjectDN)
+                .build();
+        OIDCClientDTO oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
+        return new ClientID(oidcClientDTO.getClientId());
+    }
+
     @AfterClass
     public static void tearDown() throws Exception {
-        vmdirClient.user().delete(tenant, solutionUserName, tenant);
-        idmClient.oidcClient().delete(tenant, clientId.getValue());
-        idmClient.oidcClient().delete(tenant, clientIdWithoutAuthn.getValue());
-        idmClient.resourceServer().delete(tenant, RESOURCE_SERVER_NAME);
+        idmClientForRegularTenant.tenant().delete(regularTenant);
+        vmdirClientForSystemTenant.user().delete(systemTenant, solutionUserName, systemTenant);
+        vmdirClientForSystemTenant.user().delete(systemTenant, multiTenantSolutionUserName, systemTenant);
+        idmClientForSystemTenant.oidcClient().delete(systemTenant, clientId.getValue());
+        idmClientForSystemTenant.oidcClient().delete(systemTenant, clientIdWithoutAuthn.getValue());
+        idmClientForSystemTenant.resourceServer().delete(systemTenant, RESOURCE_SERVER_NAME);
     }
 }

@@ -27,6 +27,7 @@ public class SolutionDetail extends PrincipalDetail {
      * Certificate
      */
     private X509Certificate certificate;
+    private boolean isMultiTenant;
 
     /**
      * Constructs solution details by certificate
@@ -35,8 +36,7 @@ public class SolutionDetail extends PrincipalDetail {
      *            certificate; requires {@code non-null} value
      */
     public SolutionDetail(X509Certificate certificate) {
-        super(null);
-        this.certificate = certificate;
+        this(certificate, null, false);
     }
 
     /**
@@ -49,6 +49,25 @@ public class SolutionDetail extends PrincipalDetail {
      */
     public SolutionDetail(X509Certificate certificate, String description) {
 
+        this(certificate, description, false);
+    }
+
+    /**
+     * Constructs solution details by certificate and description
+     *
+     * @param certificate
+     *            certificate; requires {@code non-null} value
+     * @param description
+     *            the description to set; requires {@code non-null} value
+     * @param multiTenant
+     *           whether this soluiton user represents a "multi-tenant" solution user
+     *           Multi-tenant solution users can only be registered within system tenant.
+     *           It is possible to obtain token representing such user within the context of
+     *           any tenant.
+     *           Sets the common name of the solution user
+     */
+    public SolutionDetail(X509Certificate certificate, String description, boolean multiTenant) {
+
         super(description);
 
         // ValidateUtil.validateNotNull(certificate, "certificate");
@@ -57,6 +76,7 @@ public class SolutionDetail extends PrincipalDetail {
         // ValidateUtil.validateNotNull(description, "description");
 
         this.certificate = certificate;
+        this.isMultiTenant = multiTenant;
     }
 
     /**
@@ -79,10 +99,21 @@ public class SolutionDetail extends PrincipalDetail {
     }
 
     /**
+     * Specifies whether this solution user is multi-tenant.
+     * Multi-tenant solution users can only be registered within system tenant.
+     * It is possible to obtain token representing such user within the context of
+     * any tenant.
+     */
+    public boolean isMultiTenant()
+    {
+       return this.isMultiTenant;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     protected Object[] getDetailFields() {
-       return new Object[] { getDescription(), getCertificate() };
+       return new Object[] { getDescription(), getCertificate(), isMultiTenant() };
     }
 }

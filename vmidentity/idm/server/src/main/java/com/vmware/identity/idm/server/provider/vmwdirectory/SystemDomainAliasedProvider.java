@@ -321,6 +321,13 @@ public class SystemDomainAliasedProvider extends VMwareDirectoryProvider
     }
 
     @Override
+    public SolutionUser findMultiTenantServicePrincipalByCertDn(String subjectDN)
+            throws Exception
+    {
+        return this.<SolutionUser>mapToAlias(super.findMultiTenantServicePrincipalByCertDn(subjectDN));
+    }
+
+    @Override
     public SolutionUser findServicePrincipalByCertDnInExternalTenant(
             String subjectDN) throws Exception
     {

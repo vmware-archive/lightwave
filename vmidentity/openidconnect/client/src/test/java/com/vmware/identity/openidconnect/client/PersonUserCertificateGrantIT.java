@@ -54,12 +54,12 @@ public class PersonUserCertificateGrantIT extends OIDCClientITBase {
         keyGen.initialize(1024, new SecureRandom());
         KeyPair keyPair = keyGen.generateKeyPair();
         personUserPrivateKey = (RSAPrivateKey) keyPair.getPrivate();
-        personUserCertificate = TestUtils.generateCertificate(keyPair, "PersonUser", username);
+        personUserCertificate = TestUtils.generateCertificate(keyPair, "PersonUser", systemTenantAdminUsername);
 
         CertificateDTO personUserCertificateDTO = new CertificateDTO.Builder().
                 withEncoded(TestUtils.convertToBase64PEMString(personUserCertificate)).build();
 
-        tenantConfigurationDTO = idmClient.tenant().getConfig(tenant);
+        tenantConfigurationDTO = idmClientForSystemTenant.tenant().getConfig(systemTenant);
         AuthenticationPolicyDTO authenticationPolicyDTO = tenantConfigurationDTO.getAuthenticationPolicy();
 
         ClientCertificatePolicyDTO clientCertificatePolicyDTO = new ClientCertificatePolicyDTO.Builder().
@@ -83,13 +83,13 @@ public class PersonUserCertificateGrantIT extends OIDCClientITBase {
                 withProviderPolicy(tenantConfigurationDTO.getProviderPolicy()).
                 withBrandPolicy(tenantConfigurationDTO.getBrandPolicy()).
                 withAuthenticationPolicy(authenticationPolicyDTOUpdate).build();
-        idmClient.tenant().updateConfig(tenant, tenantConfigurationDTOUpdate);
+        idmClientForSystemTenant.tenant().updateConfig(systemTenant, tenantConfigurationDTOUpdate);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         OIDCClientITBase.tearDown();
-        idmClient.tenant().updateConfig(tenant, tenantConfigurationDTO);
+        idmClientForSystemTenant.tenant().updateConfig(systemTenant, tenantConfigurationDTO);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class PersonUserCertificateGrantIT extends OIDCClientITBase {
         Assert.assertNotNull(oidcTokens.getAccessToken());
         Assert.assertNotNull(oidcTokens.getRefreshToken());
 
-        Assert.assertTrue("id_token subject", username.equalsIgnoreCase(oidcTokens.getIDToken().getSubject().getValue()));
+        Assert.assertTrue("id_token subject", systemTenantAdminUsername.equalsIgnoreCase(oidcTokens.getIDToken().getSubject().getValue()));
     }
 
     @Test

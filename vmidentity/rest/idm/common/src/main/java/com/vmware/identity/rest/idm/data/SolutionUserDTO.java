@@ -39,6 +39,7 @@ public class SolutionUserDTO extends DTO {
     private final CertificateDTO certificate;
     private final Boolean disabled;
     private final String objectId;
+    private final Boolean multiTenant;
 
     /**
      * Construct a {@code SolutionUserDTO} with its various fields.
@@ -52,6 +53,25 @@ public class SolutionUserDTO extends DTO {
      * @param objectId the object identifier for the solution user.
      */
     public SolutionUserDTO(String name, String domain, String description, PrincipalDTO alias, CertificateDTO certificate, Boolean disabled, String objectId) {
+        this(name, domain, description, alias, certificate, disabled, objectId, null);
+    }
+
+    /**
+     * Construct a {@code SolutionUserDTO} with its various fields.
+     *
+     * @param name the name of the solution user.
+     * @param domain the domain of the solution user.
+     * @param description the description of the solution user.
+     * @param alias an optional alias for the solution user.
+     * @param certificate the certificate associated with the solution user.
+     * @param disabled a flag indicating whether the solution user is disabled or not.
+     * @param objectId the object identifier for the solution user.
+     * @param multiTenant whether solution user is multi-tenated.
+     *          Multi tenant solution user can be registered only within system tenant.
+     *          Multi-tenanted solution user can be authenticated in context of any registered tenant.
+     */
+    public SolutionUserDTO(String name, String domain, String description, PrincipalDTO alias,
+            CertificateDTO certificate, Boolean disabled, String objectId, Boolean multiTenant) {
         this.name = name;
         this.domain = domain;
         this.description = description;
@@ -59,6 +79,7 @@ public class SolutionUserDTO extends DTO {
         this.certificate = certificate;
         this.disabled = disabled;
         this.objectId = objectId;
+        this.multiTenant = multiTenant;
     }
 
     /**
@@ -125,6 +146,15 @@ public class SolutionUserDTO extends DTO {
     }
 
     /**
+     * Get multitenant flag of the solution user.
+     *
+     * @return whether solution user is multi-tenanted
+     */
+    public Boolean isMultiTenant() {
+        return multiTenant;
+    }
+
+    /**
      * Creates an instance of the {@link SolutionUserDTO.Builder} class.
      *
      * @return a new {@code SolutionUserDTO.Builder}.
@@ -149,6 +179,7 @@ public class SolutionUserDTO extends DTO {
         private CertificateDTO certificate;
         private Boolean disabled;
         private String objectId;
+        private Boolean multiTenant;
 
         public Builder withName(String name) {
             this.name = name;
@@ -185,8 +216,13 @@ public class SolutionUserDTO extends DTO {
             return this;
         }
 
+        public Builder withMultiTenant(Boolean multiTenant) {
+            this.multiTenant = multiTenant;
+            return this;
+        }
+
         public SolutionUserDTO build() {
-            return new SolutionUserDTO(name, domain, description, alias, certificate, disabled, objectId);
+            return new SolutionUserDTO(name, domain, description, alias, certificate, disabled, objectId, multiTenant);
         }
     }
 

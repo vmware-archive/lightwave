@@ -80,6 +80,10 @@ public class SAMLToken implements AccessToken {
         return TokenType.SAML.getJsonName();
     }
 
+    // TODO: add support for multi-tenanted user to saml flows
+    @Override
+    public boolean isSubjectMultiTenant() { return false; }
+
     private static List<String> getNetBiosGroupList(List<PrincipalId> principals) {
         List<String> upns = new ArrayList<String>(principals.size());
 

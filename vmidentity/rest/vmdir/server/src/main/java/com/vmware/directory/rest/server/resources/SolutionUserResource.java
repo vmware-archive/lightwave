@@ -82,7 +82,10 @@ public class SolutionUserResource extends BaseSubResource {
         Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "certificate#encoded"));
 
         try {
-            SolutionDetail solutionDetail = new SolutionDetail(user.getCertificate().getX509Certificate(), user.getDescription());
+            SolutionDetail solutionDetail = new SolutionDetail(
+                    user.getCertificate().getX509Certificate(),
+                    user.getDescription(),
+                    (user.isMultiTenant()!= null) ? user.isMultiTenant().booleanValue() : false);
             getIDMClient().addSolutionUser(tenant, user.getName(), solutionDetail);
             return SolutionUserMapper.getSolutionUserDTO(getIDMClient().findSolutionUser(tenant, user.getName()));
         } catch (NoSuchTenantException e) {
@@ -127,10 +130,10 @@ public class SolutionUserResource extends BaseSubResource {
     }
 
     /**
-     * Updates certificate for a solution user.
+     * Updates solution user details.
      *
      * @param name Name of solution user
-     * @param certificate The new certificate to be updated with.
+     * @param user SolutionUserDTO.
      * @return
      * <code> HTTP 200 </code> If update operation succeeds.
      * <code> HTTP 500 </code> Otherwise
@@ -144,7 +147,11 @@ public class SolutionUserResource extends BaseSubResource {
         Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "user certificate"));
 
         try {
-            SolutionDetail solutionDetail = new SolutionDetail(CertificateHelper.convertToX509(user.getCertificate().getEncoded()));
+            SolutionDetail solutionDetail = new SolutionDetail(
+                    CertificateHelper.convertToX509(user.getCertificate().getEncoded()),
+                    user.getDescription(),
+                    (user.isMultiTenant()!= null) ? user.isMultiTenant().booleanValue() : false
+            );
             getIDMClient().updateSolutionUserDetail(tenant, name, solutionDetail);
             return SolutionUserMapper.getSolutionUserDTO(getIDMClient().findSolutionUser(tenant, user.getName()));
         } catch (InvalidPrincipalException | NoSuchTenantException e) {

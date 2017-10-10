@@ -42,6 +42,7 @@ public class JWTBuilder {
     public static String ROLE_CLAIM = "admin_server_role";
     public static String TOKEN_CLASS_CLAIM = "token_class";
     public static String TOKEN_TYPE_CLAIM = "token_type";
+    public static String MULTI_TENANT_CLAIM = "multi_tenant";
 
     private String tokenClass;
     private TokenType type;

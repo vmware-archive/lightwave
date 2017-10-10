@@ -33,6 +33,7 @@ public class JWTBearerToken implements AccessToken {
     private String tokenType;
     private String role;
     private List<String> groups;
+    private boolean multiTenanted;
 
     /**
      * Constructs a new {@link JWTBearerToken}.
@@ -44,12 +45,17 @@ public class JWTBearerToken implements AccessToken {
      * @throws ParseException if there is an error parsing information from the JWT
      */
     @SuppressWarnings("unchecked")
-    public JWTBearerToken(SignedJWT jwt, String tokenTypeField, String roleField, String groupsField) throws ParseException {
+    public JWTBearerToken(
+            SignedJWT jwt, String tokenTypeField,
+            String roleField, String groupsField,
+            String tokenMultiTenantField) throws ParseException {
         this.jwt = jwt;
         this.claims = jwt.getJWTClaimsSet();
         this.tokenType = (String) claims.getClaim(tokenTypeField);
         this.role = (String) claims.getClaim(roleField);
         this.groups = (List<String>) claims.getClaim(groupsField);
+        Boolean val = claims.getBooleanClaim(tokenMultiTenantField);
+        this.multiTenanted = (val != null) && (val.booleanValue());
     }
 
     @Override
@@ -91,6 +97,9 @@ public class JWTBearerToken implements AccessToken {
     public String getTokenType() {
         return tokenType;
     }
+
+    @Override
+    public boolean isSubjectMultiTenant() { return this.multiTenanted; }
 
     /**
      * Fetch the {@link SignedJWT} object from the access token.

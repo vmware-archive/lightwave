@@ -188,7 +188,7 @@ public class ResourceAccessRequest {
 
             Role role = roles[i];
             while (role.is(requiredRole)) {
-                if (checkIfGroupExists(groupList, roleMapper.getRoleGroup(role).getGroupNetbios())) {
+                if (checkIfGroupExists(groupList, roleMapper.getRoleGroup(role, token.isSubjectMultiTenant()).getGroupNetbios())) {
                     return;
                 }
                 role = roles[--i];
@@ -309,9 +309,9 @@ public class ResourceAccessRequest {
     private static AccessTokenBuilder getAccessTokenBuilder(TokenType type) throws ServerException {
         switch(type) {
         case BEARER:
-            return new JWTBearerTokenBuilder(Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+            return new JWTBearerTokenBuilder(Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD, Config.JWT_MUTITENANTED_FIELD);
         case HOK:
-            return new JWTHoKTokenBuilder(Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD, Config.JWT_HOK_FIELD);
+            return new JWTHoKTokenBuilder(Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD, Config.JWT_HOK_FIELD, Config.JWT_MUTITENANTED_FIELD);
         case SAML:
             return new SAMLTokenBuilder();
         default:

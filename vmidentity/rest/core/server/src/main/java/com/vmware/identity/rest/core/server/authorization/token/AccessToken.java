@@ -85,4 +85,10 @@ public interface AccessToken {
      */
     public String getTokenType();
 
+    /**
+     * Whether the subject represented by this token is multi-tenant.
+     * Currently only Solution users could be multi-tenanted.
+     * @return
+     */
+    public boolean isSubjectMultiTenant();
 }

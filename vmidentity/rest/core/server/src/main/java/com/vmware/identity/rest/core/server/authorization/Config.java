@@ -35,6 +35,7 @@ public class Config {
     public static final String JWT_ROLE_FIELD = "admin_server_role";
     public static final String JWT_GROUPS_FIELD = "groups";
     public static final String JWT_HOK_FIELD = "hotk";
+    public static final String JWT_MUTITENANTED_FIELD = "multi_tenant";
 
     public static final String LOCALIZATION_PACKAGE_NAME = "i18n.authorization";
 

@@ -114,6 +114,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         // at the moment vmwSTSSubjectDN is not indexed, so vmdir gurus say
         // query by objectClass first...
         "(&(objectClass=vmwServicePrincipal)(vmwSTSSubjectDN=%s))";
+
+    private static final String MULTITENANT_SVC_PRINC_QUERY_BY_SUBJECT_DN =
+            // at the moment vmwSTSSubjectDN is not indexed, so vmdir gurus say
+            // query by objectClass first...
+            "(&(objectClass=vmwServicePrincipal)(vmwSTSMultiTenant=%s)(vmwSTSSubjectDN=%s))";
+
     /**
      * arg1 - userPrincipalName
      */
@@ -267,6 +273,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final String ATTR_PWD_LAST_SET = "pwdLastSet";
     private static final String ATTR_DESCRIPTION = "description";
     private static final String ATTR_SVC_DESCRIPTION = "description";
+    private static final String ATTR_SVC_MULTITENANT = "vmwSTSMultiTenant";
     private static final String ATTR_SUBJECT_TYPE = "subjectType";
     private static final String ATTR_USER_PRINCIPAL_NAME = "userPrincipalName";
     private static final String ATTR_OBJECT_GUID = "objectGUID";
@@ -1249,7 +1256,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_NAME_CERT };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_NAME_CERT, ATTR_SVC_MULTITENANT };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -1308,11 +1315,14 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                                     "Certificate content should exist.");
                     }
 
+                    boolean isMultiTenant = ServerUtils.getBooleanValue(entry
+                            .getAttributeValues(ATTR_SVC_MULTITENANT));
+
                     PrincipalId id = this.getPrincipalId(upn, accountName, domainName);
                     X509Certificate cert = ServerUtils.getCertificateValue(certValue);
 
                     SolutionDetail detail =
-                                new SolutionDetail(cert, description);
+                                new SolutionDetail(cert, description, isMultiTenant);
 
                     solution =
                                 new SolutionUser(id, this.getPrincipalAliasId(accountName), null, detail,
@@ -2370,6 +2380,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             // (this should be mandatory, subjectDn is a MUST which is derived from cert)
             LdapMod attrCert = null; // Mandatory
             LdapMod attrDescription = null; // Optional
+            LdapMod attrMultiTenant = null; // Optional
 
             objectClass =
                     new LdapMod(
@@ -2413,6 +2424,14 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     new LdapMod(LdapModOperation.ADD, ATTR_NAME_CERT,
                             new LdapValue[] { new LdapValue(certBytes) });
             attributeList.add(attrCert);
+
+            if (detail.isMultiTenant())
+            {
+                attrMultiTenant = new LdapMod(LdapModOperation.ADD,
+                        ATTR_SVC_MULTITENANT,
+                        ServerUtils.getLdapValue(detail.isMultiTenant()));
+                attributeList.add(attrMultiTenant);
+            }
 
            connection.addObject(dn,
                    attributeList.toArray(new LdapMod[attributeList.size()]));
@@ -2472,7 +2491,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
 
             String filter = buildQueryBySrvFilter(principal);
 
@@ -2535,6 +2554,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             getOptionalStringValue(entries[0]
                                     .getAttributeValues(ATTR_SVC_DESCRIPTION));
 
+                boolean isMultiTenant = ServerUtils.getBooleanValue(entries[0]
+                        .getAttributeValues(ATTR_SVC_MULTITENANT));
+
                 int flag =
                             getOptionalIntegerValue(
                                     entries[0]
@@ -2544,7 +2566,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 boolean disabled = ((flag & USER_ACCT_DISABLED_FLAG) != 0);
 
                 SolutionDetail detail =
-                            new SolutionDetail(cert, description);
+                            new SolutionDetail(cert, description, isMultiTenant);
 
                 result = new SolutionUser(foundPrincipal, this.getPrincipalAliasId(username), null, detail, disabled, isExternal);
             } finally
@@ -2586,7 +2608,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -2630,6 +2652,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getOptionalStringValue(entry
                                 .getAttributeValues(ATTR_SVC_DESCRIPTION));
 
+                boolean isMultiTenant = ServerUtils.getBooleanValue(entry
+                        .getAttributeValues(ATTR_SVC_MULTITENANT));
+
                 if (containsSearchString(solutionName, searchString) ||
                     containsSearchString(upn, searchString) ||
                     containsSearchString(description, searchString))
@@ -2648,7 +2673,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     X509Certificate cert = ServerUtils.getCertificateValue(certValue);
 
                     SolutionDetail detail =
-                                new SolutionDetail(cert, description);
+                                new SolutionDetail(cert, description, isMultiTenant);
 
                     int flag = getOptionalIntegerValue(
                                         entries[0].getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS),
@@ -2725,7 +2750,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                        String[] solutionAttrNames =
                                { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT,
                                        ATTR_SVC_DESCRIPTION,
-                                       ATTR_NAME_ACCOUNT_FLAGS };
+                                       ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
 
                        // We only want solution user objects
                        String solutionFilter = SVC_ALL_PRINC_QUERY;
@@ -2770,6 +2795,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                                    getOptionalStringValue(solutionEntries[0]
                                            .getAttributeValues(ATTR_SVC_DESCRIPTION));
 
+                           boolean isMultiTenant = ServerUtils.getBooleanValue(solutionEntries[0]
+                                   .getAttributeValues(ATTR_SVC_MULTITENANT));
+
                            if (containsSearchString(accountName, searchString) ||
                                containsSearchString(upn, searchString) ||
                                containsSearchString(description, searchString))
@@ -2790,7 +2818,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
                                X509Certificate cert = ServerUtils.getCertificateValue(certValue);
 
-                               SolutionDetail detail = new SolutionDetail(cert, description);
+                               SolutionDetail detail = new SolutionDetail(cert, description, isMultiTenant);
 
                                int flag = getOptionalIntegerValue(
                                                    entries[0].getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS),
@@ -2837,6 +2865,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 getServicePrincipalsDN(getDomain()), false);
     }
 
+    // TODO: this function should be deleted
     @Override
     public SolutionUser findServicePrincipalByCertDnInExternalTenant(
             String subjectDN) throws Exception
@@ -2845,6 +2874,106 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
         return findServicePrincipalByCertDnInContainer(subjectDN,
                 getTenantSearchBaseRootDN(), true);
+    }
+
+    @Override
+    public SolutionUser findMultiTenantServicePrincipalByCertDn(String subjectDN)
+        throws Exception
+    {
+        SolutionUser result = null;
+
+        try (PooledLdapConnection pooledConnection = borrowConnection())
+        {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            String containerDn = getServicePrincipalsDN(getDomain());
+
+            String[] attrNames =
+                    { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
+
+            String filter =
+                    String.format(MULTITENANT_SVC_PRINC_QUERY_BY_SUBJECT_DN,
+                            "TRUE",
+                            LdapFilterString.encode(subjectDN));
+
+            ILdapMessage message =
+                    connection.search(containerDn, LdapScope.SCOPE_SUBTREE,
+                            filter, attrNames, false);
+
+            try
+            {
+                ILdapEntry[] entries = message.getEntries();
+
+                if (entries == null || entries.length == 0)
+                {
+                    // According to admin interface, we should return null
+                    // if not found
+                    return null;
+                } else if (entries.length != 1)
+                {
+                    throw new IllegalStateException(
+                            "More than one solution user found");
+                }
+
+                PrincipalId principal = null;
+
+                String username =
+                        getStringValue(entries[0]
+                                .getAttributeValues(ATTR_NAME_ACCOUNT));
+
+                String upn =
+                        getOptionalStringValue(entries[0]
+                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+
+                principal = this.getPrincipalId(upn, username, getDomain());
+
+                //                LdapValue[] aliasValue =
+                //                            entries[0].getAttributeValues(ATTR_NAME_ALIAS);
+                //
+                //                if (aliasValue != null)
+                //                {
+                //                    alias = new PrincipalId(
+                //                                    getStringValue(aliasValue),
+                //                                    getDomain());
+                //                }
+
+                LdapValue[] certValue =
+                        entries[0].getAttributeValues(ATTR_NAME_CERT);
+
+                if (certValue == null || certValue[0] == null)
+                {
+                    throw new IllegalStateException(
+                                "Certificate content should exist.");
+                }
+
+                X509Certificate cert = ServerUtils.getCertificateValue(certValue);
+
+                String description =
+                            getOptionalStringValue(entries[0]
+                                    .getAttributeValues(ATTR_SVC_DESCRIPTION));
+
+                boolean isMultiTenant = ServerUtils.getBooleanValue(entries[0]
+                        .getAttributeValues(ATTR_SVC_MULTITENANT));
+
+                SolutionDetail detail =
+                            new SolutionDetail(cert, description, isMultiTenant);
+
+                int flag =
+                            getOptionalIntegerValue(
+                                    entries[0]
+                                            .getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS),
+                                    0);
+
+                boolean disabled = ((flag & USER_ACCT_DISABLED_FLAG) != 0);
+
+                result = new SolutionUser(principal, this.getPrincipalAliasId(username), null, detail, disabled, false);
+            } finally
+            {
+                message.close();
+            }
+        }
+
+        return result;
     }
 
     private SolutionUser findServicePrincipalByCertDnInContainer(
@@ -2859,7 +2988,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
 
             String filter =
                     String.format(SVC_PRINC_QUERY_BY_SUBJECT_DN,
@@ -2921,8 +3050,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             getOptionalStringValue(entries[0]
                                     .getAttributeValues(ATTR_SVC_DESCRIPTION));
 
+                boolean isMultiTenant = ServerUtils.getBooleanValue(entries[0]
+                        .getAttributeValues(ATTR_SVC_MULTITENANT));
+
                 SolutionDetail detail =
-                            new SolutionDetail(cert, description);
+                            new SolutionDetail(cert, description, isMultiTenant);
 
                 int flag =
                             getOptionalIntegerValue(
@@ -4165,6 +4297,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                                 new LdapValue[] { LdapValue.fromString(desc) });
                 attributeList.add(attrDescription);
             }
+
+            LdapMod attrMultiTenant =
+                    new LdapMod(LdapModOperation.REPLACE,
+                            ATTR_SVC_MULTITENANT,
+                            ServerUtils.getLdapValue(detail.isMultiTenant()));
+            attributeList.add(attrMultiTenant);
 
             X509Certificate cert = detail.getCertificate();
 

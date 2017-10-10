@@ -119,7 +119,8 @@ public class TokenIssuer {
                     this.nonce,
                     groups,
                     givenName,
-                    familyName);
+                    familyName,
+                    multiTenant());
         } catch (JOSEException e) {
             throw new ServerException(ErrorObject.serverError("faild to sign id_token"), e);
         }
@@ -172,7 +173,8 @@ public class TokenIssuer {
                     actAs(),
                     this.nonce,
                     groups,
-                    adminServerRole);
+                    adminServerRole,
+                    multiTenant());
         } catch (JOSEException e) {
             throw new ServerException(ErrorObject.serverError("faild to sign access_token"), e);
         }
@@ -214,6 +216,10 @@ public class TokenIssuer {
 
     private Subject subject() {
         return (this.personUser != null) ? this.personUser.getSubject() : this.solutionUser.getSubject();
+    }
+
+    private boolean multiTenant() {
+        return (this.personUser == null) && (this.solutionUser != null) && (this.solutionUser.isMultuTenant());
     }
 
     private List<String> audience() {
