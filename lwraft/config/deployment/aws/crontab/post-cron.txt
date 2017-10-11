@@ -1,0 +1,2 @@
+*/3 * * * *    /opt/vmware/share/config/post-demote-deads.sh
+*/5 * * * *    systemctl restart systemd-networkd systemd-resolved

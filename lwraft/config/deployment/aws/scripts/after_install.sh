@@ -24,3 +24,8 @@ echo "Step 3: Upgrade/install lightwave-post and lightwave-client"
 
 tdnf makecache
 tdnf install -y lightwave-post lightwave-client
+
+
+echo "Step 4: Set proxy curl timeout"
+
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\post\Parameters]' CurlTimeoutSec REG_DWORD 10 || echo "CurTimeoutSec is already set"
