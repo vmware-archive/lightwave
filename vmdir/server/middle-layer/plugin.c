@@ -229,7 +229,7 @@
 #define VDIR_POST_ADD_COMMIT_PLUGIN_INITIALIZER                     \
 {                                                                   \
     {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostAddCommit),  \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
@@ -276,7 +276,7 @@
 #define VDIR_POST_DELETE_COMMIT_PLUGIN_INITIALIZER                  \
 {                                                                   \
     {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostDeleteCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
@@ -1516,8 +1516,6 @@ _VmDirPluginReplAgrPostAddCommit(
     DWORD                           dwError = 0;
     PVMDIR_REPLICATION_AGREEMENT    replAgr = NULL;
     PVMDIR_REPLICATION_AGREEMENT    pCurrReplAgr = NULL;
-    PVDIR_ATTRIBUTE                 pAttr = NULL;
-    unsigned int                    i = 0;
     BOOLEAN                         bInLock = FALSE;
     PCSTR                           pszErrorContext = NULL;
 
@@ -1530,64 +1528,57 @@ _VmDirPluginReplAgrPostAddCommit(
             BAIL_ON_VMDIR_ERROR( dwError );
         }
 
+        if(!VmDirEntryIsObjectclass(pEntry, OC_REPLICATION_AGREEMENT))
+        {
+            goto cleanup;
+        }
+
         if ((pEntry->dn.bvnorm_len > gVmdirServerGlobals.serverObjDN.bvnorm_len) &&
             (VmDirStringCompareA( gVmdirServerGlobals.serverObjDN.bvnorm_val,
                      pEntry->dn.bvnorm_val + (pEntry->dn.bvnorm_len - gVmdirServerGlobals.serverObjDN.bvnorm_len), TRUE) == 0))
         {
-            pAttr = VmDirEntryFindAttribute( ATTR_OBJECT_CLASS, pEntry );
-            if (pAttr != NULL)
+            pszErrorContext = "Add Replication Agreement into cache";
+            if (VmDirReplAgrEntryToInMemory( pEntry, &replAgr ) != 0)
             {
-                for (i = 0 ; i < pAttr->numVals; i++)
+                dwError = LDAP_OPERATIONS_ERROR;
+                BAIL_ON_VMDIR_ERROR( dwError );
+            }
+
+            VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+            // Insert replAgr in gVmdirReplAgrs if not already present.
+            // Note: 1st RA is created first in memory then in DB, so it would already exist in gVmdirReplAgrs
+            for (pCurrReplAgr = gVmdirReplAgrs; pCurrReplAgr != NULL; pCurrReplAgr = pCurrReplAgr->next )
+            {
+                if (pCurrReplAgr->isDeleted == FALSE &&
+                    VmDirStringCompareA(pCurrReplAgr->ldapURI, replAgr->ldapURI, FALSE)  == 0)
                 {
-                    if (VmDirStringCompareA( pAttr->vals[i].lberbv.bv_val, OC_REPLICATION_AGREEMENT, FALSE ) == 0)
-                    {
-                        pszErrorContext = "Add Replication Agreement into cache";
-                        if (VmDirReplAgrEntryToInMemory( pEntry, &replAgr ) != 0)
-                        {
-                            dwError = LDAP_OPERATIONS_ERROR;
-                            BAIL_ON_VMDIR_ERROR( dwError );
-                        }
-
-                        VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-                        // Insert replAgr in gVmdirReplAgrs if not already present.
-                        // Note: 1st RA is created first in memory then in DB, so it would already exist in gVmdirReplAgrs
-                        for (pCurrReplAgr = gVmdirReplAgrs; pCurrReplAgr != NULL; pCurrReplAgr = pCurrReplAgr->next )
-                        {
-                            if (pCurrReplAgr->isDeleted == FALSE &&
-                                VmDirStringCompareA(pCurrReplAgr->ldapURI, replAgr->ldapURI, FALSE)  == 0)
-                            {
-                                break; // found a non-deleted match
-                            }
-                        }
-                        if (pCurrReplAgr == NULL) // match not found, insert it in front
-                        {
-                            replAgr->next = gVmdirReplAgrs;
-                            gVmdirReplAgrs = replAgr;
-                            replAgr = NULL;
-                        }
-
-                        // wake up replication thread waiting on the existence
-                        // of a replication agreement.
-                        VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
-                        VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-                        break; // breaks from objectClass values loop
-                    }
+                    goto cleanup; // found a non-deleted match
                 }
             }
+            if (pCurrReplAgr == NULL) // match not found, insert it in front
+            {
+                replAgr->next = gVmdirReplAgrs;
+                gVmdirReplAgrs = replAgr;
+                replAgr = NULL;
+            }
+
+            // wake up replication thread waiting on the existence
+            // of a replication agreement.
+            VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
+            VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
         }
     }
 
 cleanup:
 
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+    VmDirFreeReplicationAgreement(replAgr);
 
     return dwError;
 
 error:
 
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-    VmDirFreeReplicationAgreement(replAgr);
 
     goto cleanup;
 }
@@ -1611,6 +1602,11 @@ _VmDirPluginReplAgrPostDeleteCommit(
         pszErrorContext = "Normalize DN";
         dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx);
         BAIL_ON_VMDIR_ERROR( dwError );
+    }
+
+    if(!VmDirEntryIsObjectclass(pEntry, OC_REPLICATION_AGREEMENT))
+    {
+        goto cleanup;
     }
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);

@@ -5059,35 +5059,29 @@ _VmDirLeaveFederationOffline(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = _VmDirRemoveComputer(pLD, pszDomain, pszServerName);
+    dwError = _VmDirRemoveComputer(pLD, pszDomain, pszServerName); //Remove Domain Controller/Computer account
     if (dwError == LDAP_SUCCESS)
     {
-        //The server is a management node, done if if the computer is removed successfully.
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: passed for domain client %s", pszServerName);
-        goto cleanup;
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: RemoveComputer succeeded %s", pszServerName);
     }
     else if (dwError != LDAP_NO_SUCH_OBJECT && dwError != VMDIR_ERROR_ENTRY_NOT_FOUND)
     {
-        //Failed to remove the computer
+        //Failed to remove the account
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
-             "fail to remove domain clinet %s", pszServerName);
+             "RemoveComputer failed %s", pszServerName);
     }
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
          "_VmDirLeaveFederationOffline: proceed to cleanup entries associated with domain controller %s", pszServerName);
-
-    //The server is not a management node, then assume it is a domain controller
-
-    // Remove entries associated with the server under Domain Controllers.
-    // Bail if entry is not found since it is the first entry to be created on partner
-    // during join.
-    dwError = VmDirLdapDeleteDCAccount( pLD, pszDomain, pszServerName, FALSE, TRUE);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to VmDirLdapDeleteDCAccount for domain controller %s", pszServerName)
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: complete deleting DC account for domain controller %s", pszServerName);
 
     // Remove the server from the server tree.
     dwError = VmDirLdapCreateReplHostNameDN(&pszServerDN, pLD, pszServerName);
     if (dwError == 0 && pszServerDN)
     {
+        if (!VmDirIfDNExist(pLD, pszServerDN))
+        {
+            goto cleanup; //the server is Computer
+        }
+
         //An example of the subtree to be deleted (cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...):
         //labeledURI=ldap://sea2-office-dhcp-97-124.eng.vmware.com,cn=Replication Agreements,cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
         //cn=Replication Agreements,cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
