@@ -24,7 +24,7 @@
 
 static
 DWORD
-InitializeResouceLimit(
+InitializeResourceLimit(
     VOID
     );
 
@@ -38,7 +38,7 @@ VmDnsInit()
     DWORD dwEnableDNS = 0;
 
 #ifndef _WIN32
-    dwError = InitializeResouceLimit();
+    dwError = InitializeResourceLimit();
     BAIL_ON_VMDNS_ERROR(dwError);
 #endif
 
@@ -88,7 +88,7 @@ error:
  */
 static
 DWORD
-InitializeResouceLimit(
+InitializeResourceLimit(
     VOID
     )
 {
@@ -96,19 +96,27 @@ InitializeResouceLimit(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 #ifndef _WIN32
-    struct rlimit   VMLimit = {0};
+    struct rlimit rlim = {0};
 
-    // unlimited virtual memory
-    VMLimit.rlim_cur = RLIM_INFINITY;
-    VMLimit.rlim_max = RLIM_INFINITY;
+    /* unlimited virtual memory */
+    rlim.rlim_cur = RLIM_INFINITY;
+    rlim.rlim_max = RLIM_INFINITY;
 
-    dwError = setrlimit(RLIMIT_AS, &VMLimit);
+    dwError = setrlimit(RLIMIT_AS, &rlim);
     if (dwError != 0)
     {
         dwError = ERROR_INVALID_CONFIGURATION;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    /* increase file descriptor limit to the hard value if possible */
+    dwError = getrlimit(RLIMIT_NOFILE, &rlim);
+    if (dwError == 0)
+    {
+        rlim.rlim_cur = rlim.rlim_max;
+
+        (void) setrlimit(RLIMIT_NOFILE, &rlim);
+    }
 #endif
 
 error:
