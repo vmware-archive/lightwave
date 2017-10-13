@@ -5680,6 +5680,7 @@ VmAfdIpcConfigureDNS(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     uResult = VmAfSrvConfigureDNSW(
+                   NULL,
                    pwszPNID,
                    pwszDomainName,
                    pwszUserName,

@@ -238,8 +238,6 @@ VmAfSrvPromoteVmDir(
     PWSTR pwszCurDomainName = NULL;
     BOOLEAN bFirstInstance = TRUE;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
-    PSTR pszCanonicalHostName = NULL;
-    PSTR pszLocalHostName = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszLotusServerName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
@@ -283,6 +281,9 @@ VmAfSrvPromoteVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    dwError = VmAfSrvGetPNID(&pwszPNID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     if (bFirstInstance)
     {
         dwError = VmAfdAllocateStringA(pszDomainName, &pszDefaultRealm);
@@ -311,14 +312,12 @@ VmAfSrvPromoteVmDir(
                           pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfSrvGetPNID(&pwszPNID);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
         dwDNSRetry = 0;
 
         do
         {
             dwError = VmAfSrvConfigureDNSW(
+                              NULL,
                               pwszPNID,
                               pwszDomainName,
                               pwszUserName,
@@ -384,24 +383,16 @@ VmAfSrvPromoteVmDir(
                           &pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdGetHostName(&pszLocalHostName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfdGetCanonicalHostName(
-                          pszLocalHostName,
-                          &pszCanonicalHostName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
         dwDNSRetry = 0;
 
         do
         {
-            dwError = VmAfSrvSetDNSRecords(
-                              pszPartnerHostName,
-                              pszDomainName,
-                              pszUserName,
-                              pszPassword,
-                              pszCanonicalHostName);
+            dwError = VmAfSrvConfigureDNSW(
+                              pwszPartnerHostName,
+                              pwszPNID,
+                              pwszDomainName,
+                              pwszUserName,
+                              pwszPassword);
 
             if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
             {
@@ -477,8 +468,6 @@ VmAfSrvPromoteVmDir(
 
 cleanup:
 
-    VMAFD_SAFE_FREE_STRINGA(pszLocalHostName);
-    VMAFD_SAFE_FREE_STRINGA(pszCanonicalHostName);
     VMAFD_SAFE_FREE_STRINGA(pszLotusServerName);
     VMAFD_SAFE_FREE_STRINGA(pszDomainName);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
