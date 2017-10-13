@@ -714,6 +714,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_MAX_REALM_LEN             256
 
 #define VMDIR_MAX_LOG_OUTPUT_LEN        256
+#define MAX_NUM_MOD_CONTENT_LOG         256
 
 #define VMDIR_SASL_MIN_SSF              1
 #define VMDIR_SASL_MAX_SSF              1024

@@ -216,7 +216,7 @@ VmDirRESTLdapModify(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
-    BAIL_ON_VMDIR_ERROR(dwError)
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirStringToBervalContent(pszDN, &pModifyOp->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
