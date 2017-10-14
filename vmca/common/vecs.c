@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -13,9 +13,8 @@
  */
 
 /*
- * Module Name: Directory ldap head
  *
- * Filename: vesc.c
+ * Filename: vecs.c
  *
  * Abstract:
  *
@@ -25,11 +24,15 @@
 
 #include "includes.h"
 
+//#include "../../vmafd/include/public/vmafdtypes.h"
+//#include "../../vmafd/include/public/vmafd.h"
+//#include "../../vmafd/include/public/vecsclient.h"
+
 #define BAIL_ON_VECS_ERROR(dwError)                                 \
     if (dwError)                                                    \
     {                                                               \
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "[%s,%d], VECS error code %d",__FILE__, __LINE__, dwError); \
-        dwError = VMDIR_ERROR_GENERIC;                              \
+        VMCA_LOG_ERROR("[%s,%d], VECS error code %d",__FILE__, __LINE__, dwError); \
+        dwError = VMCA_UNKNOW_ERROR; \
         goto vecs_error;                                            \
     }
 
@@ -39,7 +42,7 @@
 #define FN_VECS_CLOSE_CERT_STORE            "VecsCloseCertStore"
 #define FN_VECS_FREE_ENTRY_A                "VecsFreeCertEntryA"
 
-#define MACIHNE_CERT_STORE_NAME             "MACHINE_SSL_CERT"
+#define MACHINE_CERT_STORE_NAME             "MACHINE_SSL_CERT"
 #define MACHINE_CERT_ALIAS                  "__MACHINE_CERT"
 
 typedef DWORD   (*fpVecsOpenCertStoreA)     ( PCSTR,PCSTR, PCSTR, PVECS_STORE* );
@@ -50,8 +53,8 @@ typedef VOID    (*fpVecsFreeCertEntryA)     ( PVECS_CERT_ENTRY_A );
 
 static
 DWORD
-_VmDirGetSSLCert(
-    VMDIR_LIB_HANDLE  plibHandle,
+_VMCAGetSSLCert(
+    VMCA_LIB_HANDLE plibHandle,
     PSTR*           ppszCert,
     PSTR*           ppszKey
     )
@@ -62,33 +65,39 @@ _VmDirGetSSLCert(
     PVECS_STORE         pVECSStore = NULL;
     PVECS_CERT_ENTRY_A  pCertEntry = NULL;
 
+    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
+    {
+        dwError = VMCA_ARGUMENT_ERROR;
+        goto cleanup;
+    }
+
     fpVecsOpenCertStoreA    fpOpenStore = NULL;
     fpVecsGetEntryByAliasA  fpGetEntry = NULL;
     fpVecsGetKeyByAliasA    fpGetKey = NULL;
     fpVecsCloseCertStore    fpCloseStore = NULL;
     fpVecsFreeCertEntryA    fpFreeEntry = NULL;
 
-    if ( (fpOpenStore = (fpVecsOpenCertStoreA) VmDirGetLibSym(plibHandle, FN_VECS_OPEN_CERT_STORE_A) ) == NULL
+    if ( (fpOpenStore = (fpVecsOpenCertStoreA) VMCAGetLibSym(plibHandle, FN_VECS_OPEN_CERT_STORE_A) ) == NULL
           ||
-         (fpGetEntry = (fpVecsGetEntryByAliasA) VmDirGetLibSym(plibHandle, FN_VECS_GET_ENTRY_BY_ALIAS_A) ) == NULL
+         (fpGetEntry = (fpVecsGetEntryByAliasA) VMCAGetLibSym(plibHandle, FN_VECS_GET_ENTRY_BY_ALIAS_A) ) == NULL
           ||
-         (fpGetKey = (fpVecsGetKeyByAliasA) VmDirGetLibSym(plibHandle, FN_VECS_GET_KEY_BY_ALIAS_A) ) == NULL
+         (fpGetKey = (fpVecsGetKeyByAliasA) VMCAGetLibSym(plibHandle, FN_VECS_GET_KEY_BY_ALIAS_A) ) == NULL
           ||
-         (fpCloseStore = (fpVecsCloseCertStore) VmDirGetLibSym(plibHandle, FN_VECS_CLOSE_CERT_STORE) ) == NULL
+         (fpCloseStore = (fpVecsCloseCertStore) VMCAGetLibSym(plibHandle, FN_VECS_CLOSE_CERT_STORE) ) == NULL
           ||
-         (fpFreeEntry = (fpVecsFreeCertEntryA) VmDirGetLibSym(plibHandle, FN_VECS_FREE_ENTRY_A) ) == NULL
+         (fpFreeEntry = (fpVecsFreeCertEntryA) VMCAGetLibSym(plibHandle, FN_VECS_FREE_ENTRY_A) ) == NULL
        )
     {
 #ifdef _WIN32
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VECS sym lookup failed, %d", WSAGetLastError());
+        VMCA_LOG_ERROR("VECS sym lookup failed, %d", WSAGetLastError());
 #else
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VECS sym lookup failed, %s", VDIR_SAFE_STRING(dlerror()));
+        VMCA_LOG_ERROR("VECS sym lookup failed, %s", VMCA_SAFE_STRING(dlerror()));
 #endif
-        dwError = VMDIR_ERROR_NOT_FOUND;
+        dwError = VMCA_UNKNOW_ERROR;
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMCA_ERROR(dwError);
 
-    dwError = (*fpOpenStore)( "localhost", MACIHNE_CERT_STORE_NAME, NULL, &pVECSStore );
+    dwError = (*fpOpenStore)( "localhost", MACHINE_CERT_STORE_NAME, NULL, &pVECSStore );
     BAIL_ON_VECS_ERROR(dwError);
 
     dwError = (*fpGetEntry)( pVECSStore, MACHINE_CERT_ALIAS, ENTRY_INFO_LEVEL_2, &pCertEntry );
@@ -97,11 +106,11 @@ _VmDirGetSSLCert(
     dwError = (*fpGetKey)( pVECSStore, MACHINE_CERT_ALIAS, NULL, &pszKey );
     BAIL_ON_VECS_ERROR(dwError);
 
-    dwError = VmDirAllocateStringA( pCertEntry->pszCertificate, &pszCert );
+    dwError = VMCAAllocateStringA( pCertEntry->pszCertificate, &pszCert );
     BAIL_ON_VECS_ERROR(dwError);
 
-    *ppszCert = pszCert;  pszCert = NULL;
-    *ppszKey  = pszKey;   pszKey = NULL;
+    *ppszCert = pszCert;
+    *ppszKey  = pszKey;
 
 cleanup:
 
@@ -115,13 +124,15 @@ cleanup:
         (*fpCloseStore)(pVECSStore);
     }
 
-    VMDIR_SAFE_FREE_MEMORY(pszCert);
-    VMDIR_SAFE_FREE_MEMORY(pszKey);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed, error (%u)", __FUNCTION__, dwError);
+    *ppszCert = NULL;
+    *ppszKey = NULL;
+    VMCA_SAFE_FREE_MEMORY(pszCert);
+    VMCA_SAFE_FREE_MEMORY(pszKey);
+
+    VMCA_LOG_ERROR("%s failed, error (%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 
@@ -129,36 +140,47 @@ vecs_error:
     goto cleanup;
 }
 
+
 DWORD
-VmDirGetVecsMachineCert(
+VMCAGetVecsMachineCert(
     PSTR*   ppszCert,
     PSTR*   ppszKey
     )
 {
-    DWORD             dwError = 0;
-    VMDIR_LIB_HANDLE  plibHandle = NULL;
-    PSTR              pszCert = NULL;
-    PSTR              pszKey = NULL;
+    DWORD            dwError = 0;
+    VMCA_LIB_HANDLE  plibHandle = NULL;
+    PSTR             pszCert = NULL;
+    PSTR             pszKey = NULL;
 
-    dwError = VmDirOpenVmAfdClientLib( &plibHandle );
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (ppszCert == NULL || ppszKey == NULL)
+    {
+        dwError = VMCA_ARGUMENT_ERROR;
+        goto cleanup;
+    }
 
-    dwError = _VmDirGetSSLCert( plibHandle, &pszCert, &pszKey );
-    BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VMCAOpenVmAfdClientLib( &plibHandle );
+    BAIL_ON_VMCA_ERROR(dwError);
 
-    *ppszCert = pszCert; pszCert = NULL;
-    *ppszKey  = pszKey;  pszKey = NULL;
+    dwError = _VMCAGetSSLCert( plibHandle, &pszCert, &pszKey );
+    BAIL_ON_VMCA_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Acquired SSL Cert from VECS");
+    *ppszCert = pszCert;
+    *ppszKey  = pszKey;
+
+    VMCA_LOG_INFO("Acquired SSL Cert from VECS");
 
 cleanup:
-    VmDirCloseLibrary( plibHandle );
-
-    VMDIR_SAFE_FREE_MEMORY(pszCert);
-    VMDIR_SAFE_FREE_MEMORY(pszKey);
+    VMCACloseLibrary( plibHandle );
 
     return dwError;
 
 error:
+    *ppszCert = NULL;
+    *ppszKey = NULL;
+    VMCA_SAFE_FREE_MEMORY(pszCert);
+    VMCA_SAFE_FREE_MEMORY(pszKey);
+
     goto cleanup;
 }
+
+

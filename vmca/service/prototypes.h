@@ -84,6 +84,20 @@ VMCAShutdown(
     VOID
     );
 
+#ifdef REST_ENABLED
+#ifndef _WIN32
+DWORD
+VMCARestServiceStartup(
+    VOID
+    );
+
+VOID
+VMCARestServiceShutdown(
+    VOID
+    );
+#endif
+#endif
+
 #if 0
 DWORD
 VMCACreateCA(
@@ -613,8 +627,9 @@ VMCASignedRequestPrivate(
 
 #ifdef REST_ENABLED
 
-//vmcaHTTPCallback.c
 #ifndef _WIN32
+
+//vmcaHTTPCallback.c
 DWORD
 VMCARESTGetCRL(
     VMCA_HTTP_REQ_OBJ request,

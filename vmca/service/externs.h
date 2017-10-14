@@ -33,7 +33,8 @@ extern VMCA_SERVER_GLOBALS gVMCAServerGlobals;
 
 #ifdef REST_ENABLED
 
-extern PVMREST_HANDLE gpVMCARESTHandle;
+extern PVMREST_HANDLE gpVMCAHTTPHandle;
+extern PVMREST_HANDLE gpVMCAHTTPSHandle;
 
 extern VMCA_ACCESS_TOKEN_METHODS gVMCAAccessTokenMethods[];
 

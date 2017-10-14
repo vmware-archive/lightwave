@@ -113,8 +113,9 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 #define VMCA_ERROR_INVALID_URI              (VMCA_ROOT_CA_MISSING + 70)
 #define VMCA_ERROR_MISSING_PARAMETER        (VMCA_ROOT_CA_MISSING + 71)
 #define VMCA_ERROR_INVALID_METHOD           (VMCA_ROOT_CA_MISSING + 72)
+#define VMCA_ERROR_CANNOT_LOAD_LIBRARY      (VMCA_ROOT_CA_MISSING + 73)
+#define VMCA_ERROR_NO_FILE_OR_DIRECTORY     (VMCA_ROOT_CA_MISSING + 74)
 #define VMCA_UNKNOW_ERROR                   (VMCA_ROOT_CA_MISSING + 101)
-
 
 #define VMCA_ERROR_TABLE_INITIALIZER \
 { \
@@ -193,7 +194,9 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_ERROR_CN_HOSTNAME_MISMATCH, "VMCA_ERROR_CN_HOSTNAME_MISMATCH", "CSR CN does not match to hostname"},\
     { VMCA_ERROR_SAN_HOSTNAME_MISMATCH, "VMCA_ERROR_SAN_HOSTNAME_MISMATCH", "CSR SAN does not match to hostname"},\
     { VMCA_ERROR_SAN_IPADDR_INVALID, "VMCA_ERROR_SAN_IPADDR_INVALID", "CSR SAN has an invalid ip"},\
-    { VMCA_UNKNOW_ERROR             , "VMCA_UNKNOWN_ERROR", "Certificate Server Unknown Error" }, \
+    { VMCA_ERROR_CANNOT_LOAD_LIBRARY, "VMCA_ERROR_CANNOT_LOAD_LIBRARY", "Unable to load library"},\
+    { VMCA_ERROR_NO_FILE_OR_DIRECTORY, "VMCA_ERROR_NO_FILE_OR_DIRECTORY", "Unable to find the specified file or directory"},\
+    { VMCA_UNKNOW_ERROR              , "VMCA_UNKNOWN_ERROR", "Certificate Server Unknown Error" }, \
 };
 
 
