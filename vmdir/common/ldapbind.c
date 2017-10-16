@@ -100,6 +100,18 @@ VmDirSASLSRPBind(
      PCSTR      pszPass
      )
 {
+    return VmDirSASLSRPBindExt1(ppLd, pszURI, pszUPN, pszPass, -1);  // -1 == no timeout
+}
+
+DWORD
+VmDirSASLSRPBindExt1(
+     LDAP**     ppLd,
+     PCSTR      pszURI,
+     PCSTR      pszUPN,
+     PCSTR      pszPass,
+     int        iTimeout
+     )
+{
     DWORD       dwError = 0;
     int         retVal = 0;
     PSTR        pszLowerCaseUPN = NULL;
@@ -108,6 +120,10 @@ VmDirSASLSRPBind(
     const int   iSaslNoCanon = 1;
     VMDIR_SASL_INTERACTIVE_DEFAULT srpDefault = {0};
     int         iCnt = 0;
+    struct timeval  optTimeout={0};
+
+    optTimeout.tv_usec = 0;
+    optTimeout.tv_sec = iTimeout;
 
     if ( ppLd == NULL || pszURI == NULL || pszUPN == NULL || pszPass == NULL )
     {
@@ -133,6 +149,14 @@ VmDirSASLSRPBind(
         retVal = ldap_set_option(pLd, LDAP_OPT_X_SASL_NOCANON, &iSaslNoCanon);
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
+        // timeout connect
+        retVal = ldap_set_option(pLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        // timeout poll
+        retVal = ldap_set_option(pLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
         retVal = ldap_sasl_interactive_bind_s( pLd,
                                                 NULL,
                                                 "SRP",
@@ -141,6 +165,7 @@ VmDirSASLSRPBind(
                                                 LDAP_SASL_QUIET,
                                                 _VmDirSASLSRPInteraction,
                                                 &srpDefault);
+#ifndef LIGHTWAVE_BUILD
         if (retVal == LDAP_SERVER_DOWN)
         {
             VmDirSleep(50); // pause 50 ms
@@ -152,6 +177,7 @@ VmDirSASLSRPBind(
             continue;   // if transient network error, retry once.
         }
         else
+#endif
         {
             break;
         }
@@ -288,15 +314,26 @@ error:
     goto cleanup;
 }
 
-/*
- * Bind to partner via "SRP" mechanism.
- */
 DWORD
 VmDirSafeLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszHost,
     PCSTR       pszUPN,
     PCSTR       pszPassword
+    )
+{
+    return VmDirSafeLDAPBindExt1(ppLd, pszHost, pszUPN, pszPassword, -1);   // -1 == no timeout
+}
+/*
+ * Bind to partner via "SRP" mechanism.
+ */
+DWORD
+VmDirSafeLDAPBindExt1(
+    LDAP**      ppLd,
+    PCSTR       pszHost,
+    PCSTR       pszUPN,
+    PCSTR       pszPassword,
+    int         iTimeout
     )
 {
     DWORD       dwError = 0;
@@ -322,7 +359,7 @@ VmDirSafeLDAPBind(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSASLSRPBind( &pLd, &(ldapURI[0]), pszUPN, pszPassword);
+    dwError = VmDirSASLSRPBindExt1( &pLd, &(ldapURI[0]), pszUPN, pszPassword, iTimeout);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppLd = pLd;
@@ -333,8 +370,8 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSafeLDAPBind to (%s) failed. SRP(%d)",
-                     ldapURI, dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s to (%s) failed. SRP(%d)",
+                     __FUNCTION__, ldapURI, dwError );
 
     if ( pLd )
     {
@@ -361,7 +398,7 @@ VmDirAnonymousLDAPBind(
     const int   ldapVer = LDAP_VERSION3;
     BerValue    ldapBindPwd = {0};
     LDAP*       pLocalLd = NULL;
-
+    struct timeval  optTimeout={0};
 
     if (ppLd == NULL || pszLdapURI == NULL)
     {
@@ -373,6 +410,17 @@ VmDirAnonymousLDAPBind(
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     retVal = ldap_set_option( pLocalLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    optTimeout.tv_usec = 0;
+    optTimeout.tv_sec = MAX_LDAP_CONNECT_NETWORK_TIMEOUT;
+
+    // timeout connect
+    retVal = ldap_set_option(pLocalLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    // timeout poll
+    retVal = ldap_set_option(pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     ldapBindPwd.bv_val = NULL;
@@ -597,6 +645,8 @@ VmDirMapLdapError(
             return VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
         case LDAP_BUSY:
             return VMDIR_ERROR_BUSY;
+        case LDAP_TIMEOUT:
+            return VMDIR_ERROR_NETWORK_TIMEOUT;
         default:
             return VMDIR_ERROR_GENERIC;
     }
@@ -631,7 +681,12 @@ VmDirConnectLDAPServerWithMachineAccount(
     dwError = VmDirGetServerName( pszHostName, &pszServerName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLd, pszServerName, bufUPN, pszDCAccountPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLd,
+        pszServerName,
+        bufUPN,
+        pszDCAccountPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppLd = pLd;

@@ -997,7 +997,7 @@ _VmDirReplicationConnect(
     }
 
     // Do we have an old password and has it not failed?
-    if (pCreds->pszPassword != NULL &&
+    if (pCreds->pszOldPassword != NULL &&
         pReplAgr->oldPasswordFailTime == 0)
     {
         sPasswords[dwPasswords].pszPassword = pCreds->pszOldPassword;
@@ -1012,31 +1012,20 @@ _VmDirReplicationConnect(
     {
         PCSTR pszPassword = sPasswords[i].pszPassword;
 
-        if (VmDirCacheKrb5Creds(pCreds->pszUPN, pszPassword, &pszErrorMsg))
-        {
-            // If message from VmDirCacheKrb5Creds changes, log it.
-            if (pszErrorMsg != NULL &&
-                (pContext->pszKrb5ErrorMsg == NULL ||
-                 strcmp(pContext->pszKrb5ErrorMsg, pszErrorMsg) != 0))
-            {
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszErrorMsg));
-            }
-            VMDIR_SAFE_FREE_STRINGA(pContext->pszKrb5ErrorMsg);
-            pContext->pszKrb5ErrorMsg = pszErrorMsg;
-            pszErrorMsg = NULL;
-        }
+        // Bind via SASL [srp] mech
+        dwError = VmDirSafeLDAPBindExt1(
+                &pLd, pszPartnerHostName, pCreds->pszUPN, pszPassword, gVmdirGlobals.dwLdapConnectTimeoutSec);
 
-        // Bind via SASL [srp,krb] mech
-        dwError = VmDirSafeLDAPBind(
-                &pLd, pszPartnerHostName, pCreds->pszUPN, pszPassword);
+#ifndef LIGHTWAVE_BUILD
         if (dwError != 0)
         {
             // Use SSL and LDAP URI for 5.5 compatibility
             dwError = VmDirSSLBind(
                     &pLd, pReplAgr->ldapURI, pCreds->pszDN, pszPassword);
         }
+#endif
 
-        if (dwError == LDAP_INVALID_CREDENTIALS)
+        if (dwError == VMDIR_ERROR_USER_INVALID_CREDENTIAL)
         {
             *(sPasswords[i].pPasswordFailTime) = currentTime;
         }

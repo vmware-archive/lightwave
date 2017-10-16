@@ -54,6 +54,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.pszHTTPListenPort, NULL),
         VMDIR_SF_INIT(.pszHTTPSListenPort, NULL),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
+        VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
