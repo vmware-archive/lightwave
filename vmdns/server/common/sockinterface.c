@@ -515,7 +515,7 @@ cleanup:
 
     if (dwError != ERROR_IO_PENDING && pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -569,7 +569,7 @@ VmDnsOnDisconnect(
 
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -597,7 +597,7 @@ VmDnsOnDataAvailable(
 cleanup:
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -641,7 +641,7 @@ VmDnsReceiveData(
 cleanup:
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -682,7 +682,7 @@ VmDnsTcpReceiveData(
 cleanup:
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -721,7 +721,7 @@ VmDnsUdpReceiveData(
 cleanup:
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -771,7 +771,7 @@ cleanup:
 
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -823,7 +823,7 @@ cleanup:
 
     if (pIoBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoBuffer);
     }
 
@@ -893,7 +893,7 @@ cleanup:
 
     if (pIoNewBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoNewBuffer);
     }
 
@@ -911,6 +911,7 @@ VmDnsOnTcpRequestDataRead(
     )
 {
     DWORD dwError = 0;
+    DWORD dwFrwdError = 0;
     PVM_SOCK_IO_BUFFER  pIoNewBuffer = NULL;
     PVM_SOCK_IO_BUFFER  pIoSizeBuffer = NULL;
     PBYTE pResponse = NULL;
@@ -959,7 +960,15 @@ VmDnsOnTcpRequestDataRead(
                             );
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        if (!rCode)
+        if (rCode)
+        {
+            dwFrwdError = VmDnsOnForwarderRequest(
+                                    FALSE,
+                                    pSocket,
+                                    pIoBuffer
+                                    );
+        }
+        else if (!rCode || dwFrwdError)
         {
             dwError = VmDnsSockAllocateIoBuffer(
                                 VM_SOCK_EVENT_TYPE_TCP_RESPONSE_SIZE_WRITE,
@@ -1026,22 +1035,17 @@ VmDnsOnTcpRequestDataRead(
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
         }
-        else
-        {
-            dwError = VmDnsOnForwarderRequest(FALSE, pSocket, pIoBuffer);
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
     }
 cleanup:
 
     if (pIoSizeBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoSizeBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoSizeBuffer);
         VmDnsSockReleaseIoBuffer(pIoSizeBuffer);
     }
     if (pIoNewBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoNewBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoNewBuffer);
         VmDnsSockReleaseIoBuffer(pIoNewBuffer);
     }
 
@@ -1060,6 +1064,7 @@ VmDnsOnUdpRequestDataRead(
     )
 {
     DWORD dwError = 0;
+    DWORD dwFrwdError = 0;
     PVM_SOCK_IO_BUFFER  pIoNewBuffer = NULL;
     PBYTE pResponse = NULL;
     DWORD dwDnsResponseSize = 0;
@@ -1085,9 +1090,16 @@ VmDnsOnUdpRequestDataRead(
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (!rCode)
+    if (rCode)
     {
-
+        dwError = VmDnsOnForwarderRequest(
+                            TRUE,
+                            pSocket,
+                            pIoBuffer
+                            );
+    }
+    else if (!rCode || dwFrwdError)
+    {
         dwError = VmDnsSockAllocateIoBuffer(
                             VM_SOCK_EVENT_TYPE_UDP_RESPONSE_DATA_WRITE,
                             NULL,
@@ -1111,7 +1123,6 @@ VmDnsOnUdpRequestDataRead(
                         pIoBuffer->addrLen,
                         pIoNewBuffer
                         );
-
         if (dwError == ERROR_SUCCESS)
         {
             dwError = VmDnsOnUdpResponseDataWrite(
@@ -1126,21 +1137,12 @@ VmDnsOnUdpRequestDataRead(
             BAIL_ON_VMDNS_ERROR(dwError);
         }
     }
-    else
-    {
-       dwError = VmDnsOnForwarderRequest(
-                                    TRUE,
-                                    pSocket,
-                                    pIoBuffer
-                                    );
-       BAIL_ON_VMDNS_ERROR(dwError);
-    }
 
 cleanup:
 
     if (pIoNewBuffer)
     {
-	    VMDNS_LOG_IO_RELEASE(pIoBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoBuffer);
         VmDnsSockReleaseIoBuffer(pIoNewBuffer);
     }
 
@@ -1309,7 +1311,7 @@ cleanup:
     return dwError;
 
 error:
-    
+
     goto cleanup;
 }
 
@@ -1534,12 +1536,12 @@ cleanup:
     }
     if (pIoNewBuffer)
     {
-	VMDNS_LOG_IO_RELEASE(pIoNewBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoNewBuffer);
         VmDnsSockReleaseIoBuffer(pIoNewBuffer);
     }
     if (pIoSizeBuffer)
     {
-	VMDNS_LOG_IO_RELEASE(pIoSizeBuffer);
+        VMDNS_LOG_IO_RELEASE(pIoSizeBuffer);
         VmDnsSockReleaseIoBuffer(pIoSizeBuffer);
     }
 
