@@ -958,7 +958,6 @@ VmDnsOnTcpRequestDataRead(
                             &dwDnsResponseSize,
                             &rCode
                             );
-        BAIL_ON_VMDNS_ERROR(dwError);
 
         if (rCode)
         {
@@ -967,8 +966,14 @@ VmDnsOnTcpRequestDataRead(
                                     pSocket,
                                     pIoBuffer
                                     );
+            if (dwFrwdError == ERROR_SUCCESS)
+            {
+                // Forwarder state machine will fulfill the response, cleanup
+                goto cleanup;
+            }
         }
-        else if (!rCode || dwFrwdError)
+
+        if (pResponse && dwDnsResponseSize > 0)
         {
             dwError = VmDnsSockAllocateIoBuffer(
                                 VM_SOCK_EVENT_TYPE_TCP_RESPONSE_SIZE_WRITE,
@@ -1036,6 +1041,7 @@ VmDnsOnTcpRequestDataRead(
             }
         }
     }
+
 cleanup:
 
     if (pIoSizeBuffer)
@@ -1088,17 +1094,22 @@ VmDnsOnUdpRequestDataRead(
                         &dwDnsResponseSize,
                         &rCode
                         );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
     if (rCode)
     {
-        dwError = VmDnsOnForwarderRequest(
+        dwFrwdError = VmDnsOnForwarderRequest(
                             TRUE,
                             pSocket,
                             pIoBuffer
                             );
+        if (dwFrwdError == ERROR_SUCCESS)
+        {
+            // Forwarder state machine will fulfill the response, cleanup
+            goto cleanup;
+        }
     }
-    else if (!rCode || dwFrwdError)
+
+
+    if (pResponse && dwDnsResponseSize > 0)
     {
         dwError = VmDnsSockAllocateIoBuffer(
                             VM_SOCK_EVENT_TYPE_UDP_RESPONSE_DATA_WRITE,
