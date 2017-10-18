@@ -2862,6 +2862,12 @@ VmDirRaftAppendEntries(
     *currentTerm = 0;
     *status = 0;
 
+    if (hBinding==NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     VMDIR_RPC_TRY
     {
         dwError =  RpcVmDirRaftAppendEntries(hBinding->hBinding, term, (idl_char *)leader, preLogIndex,
@@ -2897,6 +2903,12 @@ VmDirRaftRequestVote(
 )
 {
     DWORD   dwError = 0;
+
+    if (hBinding==NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     VMDIR_RPC_TRY
     {
