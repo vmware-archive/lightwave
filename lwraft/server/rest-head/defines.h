@@ -14,11 +14,8 @@
 
 // C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
-#define VMDIR_HTTP_DEBUGLOGFILE     "/var/log/lightwave/post-rest-HTTP.log"
-#define VMDIR_HTTPS_DEBUGLOGFILE    "/var/log/lightwave/post-rest-HTTPS.log"
-//TODO-update LWRAFT_LOG_DIR to correct path, is still pointing to /var/log/lightwave/post
-//#define VMDIR_HTTP_DEBUGLOGFILE      LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTP.log"
-//#define VMDIR_HTTPS_DEBUGLOGFILE     LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTPS.log"
+#define VMDIR_HTTP_DEBUGLOGFILE      LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTP.log"
+#define VMDIR_HTTPS_DEBUGLOGFILE     LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTPS.log"
 
 #define VMDIR_REST_CLIENTCNT        "64"
 #define VMDIR_REST_WORKERTHCNT      "64"

@@ -1057,12 +1057,12 @@ AC_ARG_WITH([logdir],
        LOG_BASE_PATH="/var/log/lightwave"
    ])
 
-vmdirlogdir=$LOG_BASE_PATH/vmdir
+vmdirlogdir=$LOG_BASE_PATH
 AC_SUBST(vmdirlogdir)
 AS_AC_EXPAND(VMDIR_LOG_DIR, $vmdirlogdir)
 AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
 
-lwraftlogdir=$LOG_BASE_PATH/post
+lwraftlogdir=$LOG_BASE_PATH
 AC_SUBST(lwraftlogdir)
 AS_AC_EXPAND(LWRAFT_LOG_DIR, $lwraftlogdir)
 AC_DEFINE_UNQUOTED(LWRAFT_LOG_DIR, "$LWRAFT_LOG_DIR", [Log directory])
