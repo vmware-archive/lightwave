@@ -235,7 +235,7 @@ ReplAddEntry(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%ld", localUsn)) != 0)
+    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%" PRId64, localUsn)) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplAddEntry: VmDirStringNPrintFA failed with error code: %d", retVal);
         retVal = LDAP_OPERATIONS_ERROR;
@@ -302,7 +302,7 @@ ReplAddEntry(
                           "ReplAddEntry/VmDirInternalAddEntry: %d (Object already exists). "
                           "DN: %s, first attribute: %s, it's meta data: '%s' "
                           "NOT resolving this possible replication CONFLICT or initial objects creation scenario. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs->type.lberbv.bv_val, pEntry->attrs->metaData,
                           pPageEntry->ulPartnerUSN);
 
@@ -313,14 +313,14 @@ ReplAddEntry(
                           "ReplAddEntryVmDirInternalAddEntry: %d (Parent object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s' "
                           "NOT resolving this possible replication CONFLICT or out-of-parent-child-order replication scenario. "
-                          "For this subtree, system may not converge. Partner USN %llu",
+                          "For this subtree, system may not converge. Partner USN %" PRId64,
                           retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs->type.lberbv.bv_val, pEntry->attrs->metaData,
                           pPageEntry->ulPartnerUSN);
                 break;
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplAddEntry/VmDirInternalAddEntry:  %d (%s). Partner USN %llu",
+                          "ReplAddEntry/VmDirInternalAddEntry:  %d (%s). Partner USN %" PRId64,
                           retVal, VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ), pPageEntry->ulPartnerUSN);
                 break;
         }
@@ -422,7 +422,7 @@ ReplDeleteEntry(
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
                 retVal = LDAP_SUCCESS;
@@ -433,7 +433,7 @@ ReplDeleteEntry(
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (Operation not allowed on non-leaf). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
                 break;
@@ -443,14 +443,14 @@ ReplDeleteEntry(
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (No such attribute). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
-                          "For this object, system may not converge. Partner USN %llu",
+                          "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
                 break;
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplDeleteEntry/InternalDeleteEntry: %d (%s). Partner USN %llu",
+                          "ReplDeleteEntry/InternalDeleteEntry: %d (%s). Partner USN %" PRId64,
                           retVal, VDIR_SAFE_STRING( delOp.ldapResult.pszErrMsg ),pPageEntry->ulPartnerUSN);
                 break;
         }
@@ -587,7 +587,7 @@ txnretry:
                           "ReplModifyEntry/SetupReplModifyRequest: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "Possible replication CONFLICT. Object will get deleted from the system. "
-                          "Partner USN %llu",
+                          "Partner USN %" PRId64,
                           retVal, e.dn.lberbv.bv_val, e.attrs[0].type.lberbv.bv_val,
                           e.attrs[0].metaData, pPageEntry->ulPartnerUSN);
                 break;
@@ -600,7 +600,7 @@ txnretry:
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplModifyEntry/SetupReplModifyRequest: %d (%s). Partner USN %llu",
+                          "ReplModifyEntry/SetupReplModifyRequest: %d (%s). Partner USN %" PRId64,
                           retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ), pPageEntry->ulPartnerUSN);
                 break;
        }
@@ -1340,7 +1340,7 @@ SetupReplModifyRequest(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%ld",
+    if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%" PRId64,
                                        localUsn)) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: VmDirStringNPrintFA failed with error code: %d", retVal );
@@ -1691,7 +1691,7 @@ _VmSetupValueMetaData(
        // p now points to <version>...
        // Need to replace supp's <local-usn> with new locally generated local-usn.
        retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) - 1,
-                    "%s:%ld:", pAttr->type.lberbv.bv_val, localUsn);
+                    "%s:%" PRId64 ":", pAttr->type.lberbv.bv_val, localUsn);
        BAIL_ON_VMDIR_ERROR(retVal);
 
        //av_meta_pre contains "<attr-name>:<new-local-usn>:"
@@ -1928,7 +1928,7 @@ _VmDirAttachValueMetaData(
                VALUE_META_TO_NEXT_FIELD(p, 2);
                // p now points to <version>...
                retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) -1,
-                            "%s:%ld:", attr->type.lberbv.bv_val, localUsn);
+                            "%s:%" PRId64 ":", attr->type.lberbv.bv_val, localUsn);
                BAIL_ON_VMDIR_ERROR(retVal);
 
                //av_meta_pre contains "<attr-name>:<new-local-usn>:"

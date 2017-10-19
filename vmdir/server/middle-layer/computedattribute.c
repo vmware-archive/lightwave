@@ -171,7 +171,7 @@ _VmDirBuildHighestCommittedUSNfAttribute(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(    &pszLocalUSN,
-                                            "%ld",
+                                            "%" PRId64,
                                             highestCommittedUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 

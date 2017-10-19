@@ -23,6 +23,32 @@ _VmDirIsIPV4AddrFormat(
     );
 
 /*
+ * convert string to USN
+ */
+DWORD
+VmDirStringToUSN(
+    PCSTR   pszUSNStr,
+    USN*    poutUSN
+    )
+{
+    DWORD   dwError = 0;
+    PSTR pszEnd = NULL;
+
+    if (!pszUSNStr || !poutUSN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *poutUSN = VmDirStringToLA(pszUSNStr, &pszEnd, 10);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
  * Assumptions: tenant dn starts with "dc="
  */
 PCSTR

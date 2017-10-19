@@ -651,6 +651,12 @@ VmDirConnectLDAPServerWithMachineAccount(
     );
 
 DWORD
+VmDirStringToUSN(
+    PCSTR   pszUSNStr,
+    USN*    poutUSN
+    );
+
+DWORD
 VmDirGetDomainFuncLvlInternal(
     LDAP*  pLd,
     PCSTR  pszDomain,
