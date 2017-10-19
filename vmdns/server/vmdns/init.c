@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+#define VMDNS_OPEN_FILES_MAX 16384
+
 static
 DWORD
 InitializeResourceLimit(
@@ -109,13 +111,20 @@ InitializeResourceLimit(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    /* increase file descriptor limit to the hard value if possible */
-    dwError = getrlimit(RLIMIT_NOFILE, &rlim);
-    if (dwError == 0)
-    {
-        rlim.rlim_cur = rlim.rlim_max;
+    rlim.rlim_cur = VMDNS_OPEN_FILES_MAX;
+    rlim.rlim_max = VMDNS_OPEN_FILES_MAX;
 
-        (void) setrlimit(RLIMIT_NOFILE, &rlim);
+    dwError = setrlimit(RLIMIT_NOFILE, &rlim);
+    if (dwError)
+    {
+        /* increase file descriptor limit to the hard value if possible */
+        dwError = getrlimit(RLIMIT_NOFILE, &rlim);
+        if (dwError == 0)
+        {
+            rlim.rlim_cur = rlim.rlim_max;
+
+            (void) setrlimit(RLIMIT_NOFILE, &rlim);
+        }
     }
 #endif
 
