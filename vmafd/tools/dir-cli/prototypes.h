@@ -78,8 +78,9 @@ DWORD
 DirCliCreateServiceA(
     PCSTR pszServiceName,
     PCSTR pszCertPath,
+    BOOLEAN_OPTION multiTenant,
     PCSTR pszSsoGroups,
-    BOOL bTrustedUserGroup,
+    BOOL  bTrustedUserGroup,
     SSO_ADMIN_ROLE ssoAdminRole,
     PCSTR pszLogin,
     PCSTR pszPassword
@@ -89,6 +90,7 @@ DWORD
 DirCliUpdateServiceA(
     PCSTR pszServiceName,
     PCSTR pszCertPath,
+    BOOLEAN_OPTION multiTenant,
     PCSTR pszLogin,
     PCSTR pszPassword
     );
@@ -277,6 +279,7 @@ DirCliLdapCreateService(
     PCSTR         pszServiceName,
     PCSTR         pszDomain,
     PDIR_CLI_CERT pCert,
+    BOOLEAN_OPTION multiTenant,
     PSTR*         ppszServiceDN
     );
 
@@ -285,7 +288,8 @@ DirCliLdapUpdateService(
     LDAP*         pLd,
     PCSTR         pszServiceName,
     PCSTR         pszDomain,
-    PDIR_CLI_CERT pCert
+    PDIR_CLI_CERT pCert,
+    BOOLEAN_OPTION multiTenant
     );
 
 DWORD

@@ -142,6 +142,7 @@ DirCliLdapCreateService(
     PCSTR         pszServiceName,
     PCSTR         pszDomain,
     PDIR_CLI_CERT pCert,
+    BOOLEAN_OPTION multiTenant,
     PSTR*         ppszServiceDN
     )
 {
@@ -151,6 +152,7 @@ DirCliLdapCreateService(
     LDAPMod mod_acct = {0};
     LDAPMod mod_cert = {0};
     LDAPMod mod_subject_dn = {0};
+    LDAPMod mod_multi_tenant = {0};
     LDAPMod *mods[] =
     {
         &mod_oc,
@@ -158,12 +160,27 @@ DirCliLdapCreateService(
         &mod_acct,
         &mod_subject_dn,
         &mod_cert,
+        &mod_multi_tenant,
         NULL
     };
     PSTR  vals_oc[] = {OBJECT_CLASS_SVC_PRINCIPAL, OBJECT_CLASS_USER, NULL};
     PSTR  vals_cn[] = {(PSTR)pszServiceName, NULL};
     PSTR  vals_account[] = {(PSTR)pszServiceName, NULL};
     PSTR  vals_subject_dn[] = {pCert->pszSubjectName, NULL};
+
+    PSTR  pszMultiTenant = NULL;
+    switch (multiTenant)
+    {
+        case BOOLEAN_OPTION_NONE:
+        case BOOLEAN_OPTION_FALSE:
+            pszMultiTenant = "FALSE";
+            break;
+        case BOOLEAN_OPTION_TRUE:
+            pszMultiTenant = "TRUE";
+            break;
+    }
+    PSTR  vals_multi_tenant[] = {pszMultiTenant, NULL};
+
     struct berval bercert = { 0 };
     struct berval *bervals_cert[] = {&bercert, NULL};
     PSTR  pszServiceDN = NULL;
@@ -191,6 +208,10 @@ DirCliLdapCreateService(
     mod_subject_dn.mod_op   = LDAP_MOD_ADD;
     mod_subject_dn.mod_type = ATTR_NAME_SUBJECT_DN;
     mod_subject_dn.mod_vals.modv_strvals = vals_subject_dn;
+
+    mod_multi_tenant.mod_op   = LDAP_MOD_ADD;
+    mod_multi_tenant.mod_type = ATTR_NAME_MULTI_TENANT;
+    mod_multi_tenant.mod_vals.modv_strvals = vals_multi_tenant;
 
     bercert.bv_len = dwLength;
     bercert.bv_val = pCertBytes;
@@ -224,7 +245,8 @@ DirCliLdapUpdateService(
     LDAP*         pLd,
     PCSTR         pszServiceName,
     PCSTR         pszDomain,
-    PDIR_CLI_CERT pCert
+    PDIR_CLI_CERT pCert,
+    BOOLEAN_OPTION multiTenant
     )
 {
     DWORD dwError = 0;
@@ -276,6 +298,7 @@ DirCliLdapUpdateService(
             NULL
         };
         PSTR  vals_subject_dn[] = {pCert->pszSubjectName, NULL};
+
         struct berval bercert = { 0 };
         struct berval *bervals_cert[] = {&bercert, NULL};
 
@@ -290,6 +313,43 @@ DirCliLdapUpdateService(
         mod_cert.mod_type = ATTR_NAME_CERT;
         mod_cert.mod_vals.modv_bvals = bervals_cert;
 
+        dwError = ldap_modify_ext_s(pLd, pszServiceDN, mods, NULL, NULL);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    PSTR pszMultiTenant = NULL;
+    switch (multiTenant)
+    {
+
+        case BOOLEAN_OPTION_TRUE:
+
+            pszMultiTenant = "TRUE";
+
+            break;
+
+        case BOOLEAN_OPTION_FALSE:
+
+            pszMultiTenant = "FALSE";
+
+            break;
+
+        case BOOLEAN_OPTION_NONE:
+
+            break;
+    }
+
+    if (pszMultiTenant)
+    {
+        LDAPMod mod_multi_tenant = {0};
+        LDAPMod *mods[] =
+        {
+            &mod_multi_tenant,
+            NULL
+        };
+        PSTR  vals_multi_tenant[] = {pszMultiTenant, NULL};
+        mod_multi_tenant.mod_op   = LDAP_MOD_REPLACE;
+        mod_multi_tenant.mod_type = ATTR_NAME_MULTI_TENANT;
+        mod_multi_tenant.mod_vals.modv_strvals = vals_multi_tenant;
         dwError = ldap_modify_ext_s(pLd, pszServiceDN, mods, NULL, NULL);
         BAIL_ON_VMAFD_ERROR(dwError);
     }

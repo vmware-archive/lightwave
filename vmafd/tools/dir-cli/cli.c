@@ -103,6 +103,7 @@ DWORD
 DirCliCreateServiceA(
     PCSTR pszServiceName,
     PCSTR pszCertPath,
+    BOOLEAN_OPTION multiTenant,
     PCSTR pszSsoGroups,
     BOOL  bTrustedUserGroup,
     SSO_ADMIN_ROLE ssoAdminRole,
@@ -183,6 +184,7 @@ DirCliCreateServiceA(
                     pszServiceName,
                     pszDomain,
                     pCert,
+                    multiTenant,
                     &pszServiceDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -272,6 +274,7 @@ DWORD
 DirCliUpdateServiceA(
     PCSTR pszServiceName,
     PCSTR pszCertPath,
+    BOOLEAN_OPTION multiTenant,
     PCSTR pszLogin,
     PCSTR pszPassword
     )
@@ -344,7 +347,8 @@ DirCliUpdateServiceA(
                     pLd,
                     pszServiceName,
                     pszDomain,
-                    pCert);
+                    pCert,
+                    multiTenant);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:

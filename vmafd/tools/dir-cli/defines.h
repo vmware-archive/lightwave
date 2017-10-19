@@ -78,6 +78,13 @@ typedef enum
     USER_MODIFY_PWD_EXPIRE    = 1 << 2,
 } USER_MODIFY_OPT;
 
+typedef enum
+{
+    BOOLEAN_OPTION_NONE = 0,
+    BOOLEAN_OPTION_TRUE,
+    BOOLEAN_OPTION_FALSE
+} BOOLEAN_OPTION;
+
 #define DIR_LOGIN_DEFAULT "administrator"
 
 #define OBJECT_CLASS_SVC_PRINCIPAL "vmwServicePrincipal"
@@ -89,6 +96,7 @@ typedef enum
 
 #define ATTR_NAME_OBJECTCLASS "objectclass"
 #define ATTR_NAME_SUBJECT_DN  "vmwSTSSubjectDN"
+#define ATTR_NAME_MULTI_TENANT    "vmwSTSMultiTenant"
 #define ATTR_NAME_CN          "cn"
 #define ATTR_NAME_ACCOUNT     "sAMAccountName"
 #define ATTR_NAME_CERT        "userCertificate"
