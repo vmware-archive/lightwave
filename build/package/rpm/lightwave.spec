@@ -981,6 +981,7 @@ Lightwave POST service
 %{_jarsdir}/commons-logging-1.2.jar
 %{_jarsdir}/jna-4.2.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
+%{_jarsdir}/httpcore-4.4.4.jar
 %{_jarsdir}/slf4j-api-1.7.25.jar
 %{_jarsdir}/log4j-api-2.8.2.jar
 %{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
