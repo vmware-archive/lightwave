@@ -21,6 +21,7 @@ libsrvcommon_la_SOURCES = \
     nameEntry.c           \
     recordlist.c          \
     recordobject.c        \
+    registry.c            \
     securityutils.c       \
     dnsprotocol.c         \
     serviceapi.c          \

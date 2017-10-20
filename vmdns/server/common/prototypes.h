@@ -912,6 +912,19 @@ VmDnsSecIsRRTypeSec(
     DWORD dwRecordType
     );
 
+//registry.c
+DWORD
+VmDnsRegSaveForwarders(
+    DWORD           dwCount,
+    PCSTR*          ppszForwarders
+    );
+
+DWORD
+VmDnsRegLoadForwarders(
+    PDWORD         pdwCount,
+    PSTR**         pppszForwarders
+    );
+
 // Zone
 #ifdef	__cplusplus
 }
