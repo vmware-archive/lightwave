@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -34,11 +31,7 @@ public abstract class SSOConfigCommand {
     protected CmdLineParser parser;
 
     protected static final String HELP_CMD = "-h";
-    private static final String CLASS_FILE_SUFFIX = ".class";
     private static final String COMMAND_CLASS_SUFFIX = "Command";
-    private static final String PKG_SEPARATOR = ".";
-    private static final String DIR_SEPARATOR = "/";
-    private static final String BASE_CLASS_NAME = "SSOConfigCommand";
     private static final int CMD_LINE_USAGE_LENGTH = 120;
 
     /**

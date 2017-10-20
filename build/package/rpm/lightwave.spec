@@ -977,15 +977,24 @@ Lightwave POST service
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-protocol.jar
 %{_jarsdir}/openidconnect-server.jar
+%{_jarsdir}/args4j-2.33.jar
+%{_jarsdir}/commons-codec-1.9.jar
 %{_jarsdir}/commons-lang-2.6.jar
+%{_jarsdir}/commons-lang3-3.3.2.jar
 %{_jarsdir}/commons-logging-1.2.jar
+%{_jarsdir}/jersey-media-json-jackson-2.25.1.jar
+%{_jarsdir}/jackson-core-2.8.4.jar
+%{_jarsdir}/jackson-databind-2.8.4.jar
+%{_jarsdir}/jackson-annotations-2.8.4.jar
 %{_jarsdir}/jna-4.2.1.jar
+%{_jarsdir}/json-smart-1.3.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
 %{_jarsdir}/httpcore-4.4.4.jar
 %{_jarsdir}/slf4j-api-1.7.25.jar
 %{_jarsdir}/log4j-api-2.8.2.jar
 %{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
 %{_jarsdir}/log4j-core-2.8.2.jar
+%{_jarsdir}/nimbus-jose-jwt-4.12.jar
 
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
