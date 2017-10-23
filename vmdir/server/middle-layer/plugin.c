@@ -2100,15 +2100,21 @@ _VmDirpluginPasswordPostModifyCommit(
         }
         else if (pEntry->eId != 0 && dwPriorResult == 0)
         {   // ignore error for post modify handling
-            // if reset password succeeded (either by admin or self), clear out
-            //     USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG and
-            //     USER_ACCOUNT_CONTROL_LOCKOUT_FLAG flags.
-            VdirUserActCtlFlagUnset(pEntry, USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG |
-                                            USER_ACCOUNT_CONTROL_LOCKOUT_FLAG );
 
-            VdirLockoutCacheRemoveRec(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn));
+            if (!pOperation->conn->AccessInfo.pszNormBindedDn   ||
+                VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn),
+                                    pOperation->conn->AccessInfo.pszNormBindedDn,
+                                    FALSE) != 0
+               )
+            {
+                // if reset password by admin , clear out
+                //     USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG and
+                //     USER_ACCOUNT_CONTROL_LOCKOUT_FLAG flags.
+                VdirUserActCtlFlagUnset(pEntry, USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG |
+                                                USER_ACCOUNT_CONTROL_LOCKOUT_FLAG );
 
-            dwError = 0;
+                VdirLockoutCacheRemoveRec(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn));
+            }
 
             VMDIR_LOG_INFO(
                 VMDIR_LOG_MASK_ALL,
