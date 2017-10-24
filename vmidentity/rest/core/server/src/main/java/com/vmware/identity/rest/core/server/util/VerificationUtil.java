@@ -193,9 +193,16 @@ public class VerificationUtil {
     }
 
     public static String buildStringToSign(ContainerRequestContext context) {
+        // client is expected to use the exact content type they pass to us in their signature calculation.
+        String contentType = context.getHeaderString("Content-Type");
+
+        if (contentType == null) {
+            contentType = "";
+        }
+
         return RequestSigner.createSigningString(context.getMethod(),
                 getMD5(context),
-                context.getMediaType().toString(),
+                contentType,
                 context.getDate(),
                 context.getUriInfo().getRequestUri());
     }
