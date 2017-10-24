@@ -836,9 +836,26 @@ VmDirDropThreadPriority(
                     __FUNCTION__, new_sch_policy);
         }
     }
+    else if (old_sch_policy == SCHED_OTHER)
+    {
+        //Based on man sched, priority for SCHED_OTHER/IDLE/BATCH classes can be 0 only,
+        // we drop the class to SCHED_IDLE and ignore the delta.
+        new_sch_policy = SCHED_IDLE;
+        new_sch_param.sched_priority = sched_get_priority_min(new_sch_policy);
+        if (new_sch_param.sched_priority < 0)
+        {
+            retVal = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrorMsg,
+                    "%s: sched_get_priority_min failed sch_policy=%d",
+                    __FUNCTION__, new_sch_policy);
+        }
+    }
     else
     {
         // Thread is in a non-realtime policy, lower its priority by iDelta
+        // note that this change will not have effect since all callers are
+        // SCHED_OTHER class. Keep this part in case Linux kerenl introduces
+        // other non FIFO/RR/IDLE classes that can have priorities other than 0.
         min_sched_pri = sched_get_priority_min(old_sch_policy);
         if (min_sched_pri < 0)
         {
