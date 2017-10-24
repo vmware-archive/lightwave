@@ -1032,7 +1032,6 @@ Lightwave POST service
 %{_bindir}/vdcupgrade
 %{_bindir}/vmkdc_admin
 %{_bindir}/vdcmetric
-%{_bindir}/vdcschema
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
 
@@ -1077,6 +1076,8 @@ Lightwave POST service
 %{_bindir}/vmdns-cli
 %{_bindir}/vdcaclmgr
 %{_bindir}/vdcpromo
+%{_bindir}/vdcschema
+%{_bindir}/postschema
 %{_bindir}/vecs-cli
 %{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/libcsrp.so*
@@ -1156,7 +1157,6 @@ Lightwave POST service
 
 %{_bindir}/postadmintool
 %{_bindir}/postaclmgr
-%{_bindir}/postschema
 %{_bindir}/post-cli
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
