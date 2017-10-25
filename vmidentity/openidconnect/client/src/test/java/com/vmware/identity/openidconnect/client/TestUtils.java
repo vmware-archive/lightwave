@@ -22,6 +22,8 @@ import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -58,9 +60,11 @@ import com.nimbusds.jwt.SignedJWT;
 import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
+import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.openidconnect.protocol.AuthorizationGrant;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.PasswordGrant;
 import com.vmware.identity.openidconnect.protocol.RefreshTokenGrant;
 import com.vmware.identity.rest.afd.client.AfdClient;
 import com.vmware.identity.rest.core.data.CertificateDTO;
@@ -72,6 +76,8 @@ import com.vmware.identity.rest.idm.client.IdmClient;
  * @author Jun Sun
  */
 class TestUtils {
+
+    static final long CLOCK_TOLERANCE_IN_SECONDS = 5 * 60L; // 5 mins
 
     static X509Certificate generateCertificate(KeyPair keyPair, String dn, String subjectAltName) throws Exception {
         ContentSigner sigGen = new JcaContentSignerBuilder("SHA1withRSA").build(keyPair.getPrivate());
@@ -314,5 +320,15 @@ class TestUtils {
         byteArrayOutputStream.write("-----END CERTIFICATE-----".getBytes());
         byteArrayOutputStream.write("\n".getBytes());
         return byteArrayOutputStream.toString();
+    }
+
+
+    static AccessToken getOidcBearerTokenWithUsernamePassword(ClientConfig clientConfig, String username, String password)
+            throws OIDCClientException, OIDCServerException, SSLConnectionException, TokenValidationException {
+        OIDCClient nonRegNoHOKConfigClient = new OIDCClient(clientConfig);
+        PasswordGrant passwordGrant = new PasswordGrant(username, password);
+        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
+        OIDCTokens oidcTokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, tokenSpec);
+        return oidcTokens.getAccessToken();
     }
 }

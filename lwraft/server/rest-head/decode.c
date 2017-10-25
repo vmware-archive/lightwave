@@ -247,12 +247,14 @@ VmDirRESTDecodeEntryMods(
 {
     DWORD   dwError = 0;
     DWORD   dwNumMods = 0;
-    DWORD   i = 0;
+    DWORD   i = 0, j = 0;
+    DWORD   dwTotalValues = 0;
     json_t* pjMods = NULL;
     json_t* pjMod = NULL;
     json_t* pjOp = NULL;
     json_t* pjAttr = NULL;
     PCSTR   pszOp = NULL;
+    PCSTR   pszLogValue = NULL;
     PVDIR_MODIFICATION  pMod = NULL;
     PVDIR_MODIFICATION  pMods = NULL;
 
@@ -317,6 +319,36 @@ VmDirRESTDecodeEntryMods(
 
         dwError = VmDirRESTDecodeAttributeNoAlloc(pjAttr, &pMod->attr);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (j = 0; j < pMod->attr.numVals; j++)
+        {
+            pszLogValue = (0 == VmDirStringCompareA(VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val), ATTR_USER_PASSWORD, FALSE)) ?
+                "XXX" : VDIR_SAFE_STRING(pMod->attr.vals[j].lberbv.bv_val);
+
+            // log the mod operation
+            if (j < MAX_NUM_MOD_CONTENT_LOG) // cap the number of logs per attribute
+            {
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "MOD %d,%s,%s: (%.*s)",
+                        ++dwTotalValues,
+                        pszOp,
+                        VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                        VMDIR_MIN(pMod->attr.vals[j].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN), // cap the len of value being logged
+                        pszLogValue);
+            }
+            else if (j == MAX_NUM_MOD_CONTENT_LOG)
+            {
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "MOD %d,%s,%s: .... Total MOD %d",
+                        ++dwTotalValues,
+                        pszOp,
+                        VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                        pMod->attr.numVals);
+                break;
+            }
+        }
 
         pMod->next = pMods;
         pMods = pMod;

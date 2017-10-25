@@ -133,7 +133,10 @@ typedef struct _VMDIR_GLOBALS
 
     DWORD                           dwLdapPort;
     DWORD                           dwLdapsPort;
-    PSTR                            pszRestListenPort;
+    // Timeout for curl requests
+    DWORD                           dwProxyCurlTimeout;
+    PSTR                            pszHTTPListenPort;
+    PSTR                            pszHTTPSListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
     BOOLEAN                         bIsLDAPPortOpen;
     // following fields are protected by mutex

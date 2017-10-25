@@ -99,7 +99,8 @@ public class SolutionUserAuthenticator {
         }
 
         if (idmSolutionUser == null || idmSolutionUser.getId() == null || idmSolutionUser.getCert() == null) {
-            throw new ServerException(ErrorObject.invalidRequest("solution user with specified cert subject dn not found"));
+            throw new ServerException(ErrorObject.invalidRequest(
+                String.format("solution user with specified cert subject dn '%s' not found", certSubjectDn)));
         }
 
         if (idmSolutionUser.isDisabled()) {
@@ -111,6 +112,14 @@ public class SolutionUserAuthenticator {
             throw new ServerException(ErrorObject.accessDenied("cert has expired"));
         }
 
-        return new SolutionUser(idmSolutionUser.getId(), tenant, idmSolutionUser.getCert());
+        if (idmSolutionUser.getDetail().isMultiTenant()) {
+            try {
+                tenant = this.idmClient.getSystemTenant();
+            } catch (Exception e) {
+                throw new ServerException(ErrorObject.serverError("idm error while retrieving system tenant"), e);
+            }
+        }
+
+        return new SolutionUser(idmSolutionUser.getId(), tenant, idmSolutionUser.getCert(), idmSolutionUser.getDetail().isMultiTenant());
     }
 }

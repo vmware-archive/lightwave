@@ -207,7 +207,8 @@ VmDnsZoneListFindZoneByQName(
     int i = 0, nMaxMatchedIndex = -1;
     PSTR szZoneName = NULL;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
-    size_t nZoneNameLength = 0, nStartCursor = 0, nQueryNameLength = 0;
+    size_t nZoneNameLength = 0,nQueryNameLength = 0;
+    int  nStartCursor = 0;
     size_t nMaxNameMatched = 0;
 
     nQueryNameLength = strlen(sQName);

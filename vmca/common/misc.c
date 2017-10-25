@@ -571,3 +571,84 @@ error:
    goto cleanup;
 }
 
+DWORD
+VMCALoadLibrary(
+    PCSTR           pszLibPath,
+    VMCA_LIB_HANDLE* ppLibHandle
+    )
+{
+    DWORD   dwError = 0;
+    VMCA_LIB_HANDLE pLibHandle = NULL;
+
+    if (ppLibHandle == NULL)
+    {
+        dwError = VMCA_ARGUMENT_ERROR;
+        goto cleanup;
+    }
+
+#ifdef _WIN32
+    pLibHandle = LoadLibrary(pszLibPath);
+    if (pLibHandle == NULL)
+    {
+        VMCA_LOG_VERBOSE(
+            "LoadLibrary %s failed, error code %d",
+            pszLibPath,
+            WSAGetLastError());
+        dwError = VMCA_ERROR_CANNOT_LOAD_LIBRARY;
+    }
+#else
+    pLibHandle = dlopen(pszLibPath, RTLD_LAZY);
+    if (pLibHandle == NULL)
+    {
+        VMCA_LOG_VERBOSE(
+             "dlopen %s library failed, error msg (%s)",
+             pszLibPath,
+             VMCA_SAFE_STRING(dlerror()));
+         dlerror();    /* Clear any existing error */
+         dwError = VMCA_ERROR_CANNOT_LOAD_LIBRARY;
+    }
+#endif
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppLibHandle = pLibHandle;
+
+cleanup:
+    return dwError;
+
+error:
+    *ppLibHandle = NULL;
+    goto cleanup;
+}
+
+VOID
+VMCACloseLibrary(
+    VMCA_LIB_HANDLE  pLibHandle
+    )
+{
+    if (pLibHandle)
+    {
+#ifdef _WIN32
+        FreeLibrary(pLibHandle);
+#else
+        dlclose(pLibHandle);
+#endif
+    }
+}
+
+#ifdef _WIN32
+FARPROC WINAPI
+#else
+VOID*
+#endif
+VMCAGetLibSym(
+    VMCA_LIB_HANDLE  pLibHandle,
+    PCSTR           pszFunctionName
+    )
+{
+#ifdef _WIN32
+    return GetProcAddress(pLibHandle, pszFunctionName);
+#else
+    return dlsym(pLibHandle, pszFunctionName);
+#endif
+}
+

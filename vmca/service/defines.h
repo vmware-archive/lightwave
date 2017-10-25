@@ -40,8 +40,7 @@
 #define VMCA_SERVER_VERSION_STRING "VMware Certificate Server  - Version  2.0.0 \nCopyright VMware Inc. All rights reserved."
 #ifndef _WIN32
 #define VMCA_PATH_SEPARATOR_CHAR '/'
-// #define VMCA_PATH_SEPARATOR "/"
-// #define VMCA_KEY_PARAMETERS "\\Services\\vmca\\Parameters"
+#define VMCA_PATH_SEPARATOR_STR "/"
 // #define VMCA_ROOT_CERT "RootCert"
 // #define VMCA_ROOT_PRIVATE_KEY "RootPrivateKey"
 // #define VMCA_ROOT_PRIVATE_KEY_PASS_PHRASE "RootPrivateKeyPassPhrase"
@@ -49,8 +48,7 @@
 
 #else
 #define VMCA_PATH_SEPARATOR_CHAR '\\'
-// #define VMCA_PATH_SEPARATOR "\\"
-// #define VMCA_KEY_PARAMETERS "\\Services\\vmca\\Parameters"
+#define VMCA_PATH_SEPARATOR_STR "\\"
 // #define VMCA_ROOT_CERT "RootCert"
 // #define VMCA_ROOT_PRIVATE_KEY "RootPrivateKey"
 // #define VMCA_ROOT_PRIVATE_KEY_PASS_PHRASE "RootPrivateKeyPassPhrase"
@@ -225,11 +223,18 @@ typedef DWORD VMCA_FUNC_LEVEL;
 // C REST ENGINE CONFIG VALUES
 #define VMCARESTSSLCERT "/root/mycert.pem"
 #define VMCARESTSSLKEY "/root/mycert.pem"
-#define VMCARESTPORT "81p"  // TODO remove p
-#define VMCARESTDEBUGLOGFILE "/tmp/restServer.log"
+#define VMCAHTTPPORT "7777p"
+#define VMCAHTTPSPORT "7778"
+#define VMCAHTTPDEBUGLOGFILE VMCA_LOG_DIR VMCA_PATH_SEPARATOR_STR "vmca-rest-http.log"
+#define VMCAHTTPSDEBUGLOGFILE VMCA_LOG_DIR VMCA_PATH_SEPARATOR_STR "vmca-rest-https.log"
 #define VMCARESTCLIENTCNT "5"
 #define VMCARESTWORKERTHCNT "5"
 #define VMCARESTMAXPAYLOADLENGTH 4096
+
+//Rest port config
+#define VMCA_HTTP_PORT_REG_KEY "RestListenHTTPPort"
+#define VMCA_HTTPS_PORT_REG_KEY "RestListenHTTPSPort"
+
 
 //VMCA HTTP ENDPOINT URI VALUES
 #define VMCA_CRL_URI "vmca/crl"

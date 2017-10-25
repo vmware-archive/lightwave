@@ -149,6 +149,7 @@ typedef struct _VMDIR_GLOBALS
     PSTR                            pszHTTPSListenPort;
 
     DWORD                           dwLdapRecvTimeoutSec;
+    DWORD                           dwLdapConnectTimeoutSec;
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
     PVDIR_THREAD_INFO               pSrvThrInfo;

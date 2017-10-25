@@ -23,22 +23,41 @@ typedef enum
     ATTR_DIFFER,
 } ATTR_SEARCH_RESULT;
 
-#ifndef _WIN32
-#define VMCA_PATH_SEPARATOR "/"
-#define VMCA_KEY_PARAMETERS "\\Services\\vmca\\Parameters"
-#define VMCA_ROOT_CERT "RootCert"
-#define VMCA_ROOT_PRIVATE_KEY "RootPrivateKey"
-#define VMCA_ROOT_PRIVATE_KEY_PASS_PHRASE "RootPrivateKeyPassPhrase"
-#define VMCA_ROOT_CERT_DIR VMCA_DB_DIR
-#define VMCA_LOG_DIR "/var/log/vmware"
-#else
+#ifdef _WIN32
+
 #define VMCA_PATH_SEPARATOR "\\"
-#define VMCA_KEY_PARAMETERS "\\Services\\vmca\\Parameters"
 #define VMCA_ROOT_CERT "RootCert"
 #define VMCA_ROOT_PRIVATE_KEY "RootPrivateKey"
 #define VMCA_ROOT_PRIVATE_KEY_PASS_PHRASE "RootPrivateKeyPassPhrase"
 #define VMCA_ROOT_CERT_DIR "C:\\ProgramData\\VMware\\cis\\data\\vmcad"
 #define VMCA_LOG_DIR "C:\\ProgramData\\VMware\\CIS\\logs"
+#define WIN_SYSTEM32_PATH "c:\\windows\\system32"
+#define VMAFD_VECS_CLIENT_LIBRARY   "\\libvmafdclient.dll"
+#define VMAFD_KEY_ROOT              VMAFD_CONFIG_SOFTWARE_KEY_PATH
+#define VMAFD_LIB_KEY               VMCA_REG_KEY_INSTALL_PATH
+
+#else
+
+#define VMCA_PATH_SEPARATOR "/"
+#define VMCA_ROOT_CERT "RootCert"
+#define VMCA_ROOT_PRIVATE_KEY "RootPrivateKey"
+#define VMCA_ROOT_PRIVATE_KEY_PASS_PHRASE "RootPrivateKeyPassPhrase"
+#define VMCA_ROOT_CERT_DIR VMCA_DB_DIR
+
+#ifdef LIGHTWAVE_BUILD
+
+#define VMAFD_VECS_CLIENT_LIBRARY   "/libvmafdclient.so"
+#define VMAFD_KEY_ROOT              VMAFD_CONFIG_KEY_ROOT
+#define VMAFD_LIB_KEY               VMAFD_REG_KEY_PATH
+
+#else
+
+#define VMAFD_VECS_CLIENT_LIBRARY   "/lib64/libvmafdclient.so"
+#define VMAFD_KEY_ROOT              VMAFD_CONFIG_KEY_ROOT
+#define VMAFD_LIB_KEY               VMAFD_REG_KEY_PATH
+
+#endif
+
 #endif
 
 #define ROOT_CER "root.cer"
@@ -66,5 +85,7 @@ typedef enum
 #define CA_CONTAINER_NAME   "Certificate-Authorities"
 
 #define MAX_CN_LENGTH 64
+
+#define VMCA_MAX_PATH_LEN 512
 
 #endif //__VMCA_COMMON_DEFINES_H__

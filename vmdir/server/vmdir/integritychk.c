@@ -625,11 +625,12 @@ _VmDirIntegrityCheckingThreadFun(
         dwError = VmDirAllocateStringA(ppszServerInfo[pJob->dwNumJobCtx], &pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSafeLDAPBind(
+        dwError = VmDirSafeLDAPBindExt1(
                     &pJob->pJobctx[pJob->dwNumJobCtx].pLd,
                     pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName,
                     pszDCUPN,
-                    pszDCPasswd);
+                    pszDCPasswd,
+                    gVmdirGlobals.dwLdapConnectTimeoutSec);
         if (dwError)
         {
             VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s failed to connect to DC %s, %d",

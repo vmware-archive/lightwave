@@ -298,20 +298,12 @@ Lightwave POST service
 
     /sbin/ldconfig
 
-# config
-
-    /bin/systemctl enable firewall.service >/dev/null 2>&1
+    # start the firewall service
+    /bin/systemctl restart firewall.service
     if [ $? -ne 0 ]; then
-        /bin/ln -s %{_servicedir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
+        echo "Firewall service not restarted"
     fi
-
-    /bin/systemctl >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        /bin/systemctl daemon-reload
-    fi
-    /bin/systemctl start firewall.service
-
-# vmdir
+    # vmdir
 
     /bin/mkdir -m 700 -p %{_vmdir_dbdir}
 
@@ -431,6 +423,19 @@ Lightwave POST service
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
+
+    # config firewall service for server/post
+
+    /bin/systemctl enable firewall.service >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        /bin/ln -s %{_servicedir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
+    fi
+
+    /bin/systemctl >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        /bin/systemctl daemon-reload
+    fi
+    /bin/systemctl restart firewall.service
 
     /bin/mkdir -m 755 -p %{_logdir}
 
@@ -557,6 +562,13 @@ Lightwave POST service
 
 %post post
 
+    # start the firewall service
+    /bin/systemctl restart firewall.service
+    if [ $? -ne 0 ]; then
+        echo "Firewall service not restarted"
+    fi
+
+    # make post db directory
     /bin/mkdir -m 700 -p %{_post_dbdir}
 
     if [ -a %{_sasl2dir}/postd.conf ]; then
@@ -706,16 +718,6 @@ Lightwave POST service
             /bin/systemctl restart lwsmd
             sleep 5
 
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                 if [ -f /etc/systemd/system/firewall.service ]; then
-                     /bin/systemctl stop firewall.service
-                     /bin/systemctl disable firewall.service
-                     /bin/rm -f /etc/systemd/system/firewall.service
-                     /bin/systemctl daemon-reload
-                 fi
-            fi
-
             if [ -h %{_logconfdir}/vmdird-syslog-ng.conf ]; then
                 /bin/rm -f %{_logconfdir}/vmdird-syslog-ng.conf
             fi
@@ -750,6 +752,16 @@ Lightwave POST service
                 %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmafd'
                 /bin/systemctl restart lwsmd
                 sleep 5
+            fi
+
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                 if [ -f /etc/systemd/system/firewall.service ]; then
+                     /bin/systemctl stop firewall.service
+                     /bin/systemctl disable firewall.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/firewall.service
+                     /bin/systemctl daemon-reload
+                 fi
             fi
 
             if [ -h %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
@@ -965,14 +977,24 @@ Lightwave POST service
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-protocol.jar
 %{_jarsdir}/openidconnect-server.jar
+%{_jarsdir}/args4j-2.33.jar
+%{_jarsdir}/commons-codec-1.9.jar
 %{_jarsdir}/commons-lang-2.6.jar
+%{_jarsdir}/commons-lang3-3.3.2.jar
 %{_jarsdir}/commons-logging-1.2.jar
+%{_jarsdir}/jersey-media-json-jackson-2.25.1.jar
+%{_jarsdir}/jackson-core-2.8.4.jar
+%{_jarsdir}/jackson-databind-2.8.4.jar
+%{_jarsdir}/jackson-annotations-2.8.4.jar
 %{_jarsdir}/jna-4.2.1.jar
+%{_jarsdir}/json-smart-1.3.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
+%{_jarsdir}/httpcore-4.4.4.jar
 %{_jarsdir}/slf4j-api-1.7.25.jar
 %{_jarsdir}/log4j-api-2.8.2.jar
 %{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
 %{_jarsdir}/log4j-core-2.8.2.jar
+%{_jarsdir}/nimbus-jose-jwt-4.12.jar
 
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
@@ -1036,10 +1058,8 @@ Lightwave POST service
 %{_datadir}/config/vmdnsd-syslog-ng.conf
 %{_datadir}/config/vmdns-telegraf.conf
 
-%{_configdir}/firewall.json
-%{_configdir}/setfirewallrules.py
+%{_configdir}/lw-firewall-server.json
 
-%{_servicedir}/firewall.service
 
 %files client
 
@@ -1121,6 +1141,11 @@ Lightwave POST service
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
 
+%{_configdir}/lw-firewall-client.json
+%{_configdir}/setfirewallrules.py
+
+%{_servicedir}/firewall.service
+
 %{_sysconfdir}/vmware/java/vmware-override-java.security
 
 %files post
@@ -1143,6 +1168,10 @@ Lightwave POST service
 %{_datadir}/config/postd-syslog-ng.conf
 %{_datadir}/config/post-client.reg
 %{_datadir}/config/post-telegraf.conf
+
+%{_configdir}/lw-firewall-post.json
+
+%config %attr(750, root, root) %{_datadir}/config/post-demote-deads.sh
 
 %files devel
 

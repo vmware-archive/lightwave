@@ -404,6 +404,7 @@ DirCliExecServicePrincipalRequest(
     PSTR pszSsoGroups = NULL;
     SSO_ADMIN_ROLE ssoAdminRole = SSO_ROLE_UNKNOWN;
     BOOL bTrustedUserGroup = FALSE;
+    BOOLEAN_OPTION multiTenant = BOOLEAN_OPTION_NONE;
 
     typedef enum
     {
@@ -422,7 +423,8 @@ DirCliExecServicePrincipalRequest(
         PARSE_SUB_MODE_WSTRUSTEDROLE,
         PARSE_SUB_MODE_SSOADMINROLE,
         PARSE_SUB_MODE_LOGIN,
-        PARSE_SUB_MODE_PASSWORD
+        PARSE_SUB_MODE_PASSWORD,
+        PARSE_SUB_MODE_MULTI_TENANT
     } PARSE_SUB_MODE;
     PARSE_MODE mode = PARSE_MODE_OPEN;
     PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
@@ -484,6 +486,10 @@ DirCliExecServicePrincipalRequest(
                         {
                             submode = PARSE_SUB_MODE_CERT;
                         }
+                        else if (!VmAfdStringCompareA(pszArg, "--multitenant", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_MULTI_TENANT;
+                        }
                         else if (!VmAfdStringCompareA(pszArg, "--ssogroups", TRUE))
                         {
                             submode = PARSE_SUB_MODE_SSOGROUPS;
@@ -530,6 +536,30 @@ DirCliExecServicePrincipalRequest(
                     case PARSE_SUB_MODE_SSOGROUPS:
 
                         pszSsoGroups = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_MULTI_TENANT:
+
+                        if (!VmAfdStringCompareA(pszArg, "True", FALSE))
+                        {
+                            multiTenant = BOOLEAN_OPTION_TRUE;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "False", FALSE))
+                        {
+                            multiTenant = BOOLEAN_OPTION_FALSE;
+                        }
+                        else
+                        {
+                            fprintf(
+                                stdout,
+                                "Invalid value [%s]. The input value should be True or False. \n",
+                                pszArg);
+                            dwError = ERROR_INVALID_STATE;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
 
                         submode = PARSE_SUB_MODE_OPEN;
 
@@ -705,6 +735,7 @@ DirCliExecServicePrincipalRequest(
             dwError = DirCliCreateServiceA(
                            pszServiceName,
                            pszCertPath,
+                           multiTenant,
                            pszSsoGroups,
                            bTrustedUserGroup,
                            ssoAdminRole,
@@ -724,6 +755,7 @@ DirCliExecServicePrincipalRequest(
             dwError = DirCliUpdateServiceA(
                            pszServiceName,
                            pszCertPath,
+                           multiTenant,
                            pszLogin,
                            pszPassword);
             BAIL_ON_VMAFD_ERROR(dwError);
@@ -4290,6 +4322,7 @@ ShowUsage(
         "\t             [ --ssoadminrole <Administrator/User>   ]\n"
         "\t             [ --login    <admin user id>            ]\n"
         "\t             [ --password <password>                 ]\n"
+        "\t             [ --multitenant <TRUE|FALSE>            ]\n"
         "\tservice list\n"
         "\t             [ --login    <admin user id>            ]\n"
         "\t             [ --password <password>                 ]\n"
@@ -4300,6 +4333,7 @@ ShowUsage(
         "\t               --cert <path to cert file>\n"
         "\t             [ --login    <admin user id>            ]\n"
         "\t             [ --password <password>                 ]\n"
+        "\t             [ --multitenant <TRUE|FALSE>            ]\n"
         "\tuser create --account <account name>\n"
         "\t            --user-password <password>\n"
         "\t            --first-name    <first name>\n"

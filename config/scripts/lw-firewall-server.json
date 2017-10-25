@@ -115,6 +115,20 @@
                 "porttype": "dst",
                 "port": "2014",
                 "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7777",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7778",
+                "portoffset": 0
             }
         ],
         "ip6_rules": [
@@ -123,6 +137,20 @@
                 "protocol": "tcp",
                 "porttype": "dst",
                 "port": "2014",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7777",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7778",
                 "portoffset": 0
             }
         ]
@@ -191,6 +219,20 @@
                 "porttype": "dst",
                 "port": "636",
                 "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7477",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7478",
+                "portoffset": 0
             }
         ],
         "ip6_rules": [
@@ -206,6 +248,20 @@
                 "protocol": "tcp",
                 "porttype": "dst",
                 "port": "636",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7477",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7478",
                 "portoffset": 0
             }
         ]

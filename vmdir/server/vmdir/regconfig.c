@@ -289,6 +289,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirServerGlobals.dwTombstoneThreadFrequency = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwLdapConnectTimeoutSec = pEntry->dwValue;
+        }
     }
 
 cleanup:

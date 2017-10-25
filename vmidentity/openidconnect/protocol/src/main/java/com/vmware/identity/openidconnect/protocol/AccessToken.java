@@ -51,6 +51,7 @@ public final class AccessToken extends ServerIssuedToken {
 
     private final Collection<String> groups;
     private final String adminServerRole;
+    private final boolean multiTenant;
 
     private AccessToken(SignedJWT signedJwt) throws ParseException {
         super(TOKEN_CLASS, signedJwt);
@@ -69,6 +70,12 @@ public final class AccessToken extends ServerIssuedToken {
             adminServerRole = JWTUtils.getString(claims, TOKEN_CLASS, "admin_server_role");
         }
         this.adminServerRole = adminServerRole;
+
+        if (claims.getClaims().containsKey("multi_tenant")) {
+            this.multiTenant = JWTUtils.getBoolean(claims, TOKEN_CLASS, "multi_tenant");
+        } else {
+            this.multiTenant = false;
+        }
     }
 
     public AccessToken(
@@ -91,12 +98,39 @@ public final class AccessToken extends ServerIssuedToken {
 
             Collection<String> groups,
             String adminServerRole) throws JOSEException {
+       this( privateKey, tokenType, jwtId, issuer, subject, audience, issueTime, expirationTime,
+               scope, tenant, clientId, sessionId, holderOfKey, actAs, nonce, groups, adminServerRole, false
+       );
+    }
+
+    public AccessToken(
+            RSAPrivateKey privateKey,
+            TokenType tokenType,
+            JWTID jwtId,
+            Issuer issuer,
+            Subject subject,
+            List<String> audience,
+            Date issueTime,
+
+            Date expirationTime,
+            Scope scope,
+            String tenant,
+            ClientID clientId,
+            SessionID sessionId,
+            RSAPublicKey holderOfKey,
+            Subject actAs,
+            Nonce nonce,
+
+            Collection<String> groups,
+            String adminServerRole,
+            boolean multiTenant) throws JOSEException {
         super(TOKEN_CLASS, tokenType, jwtId, issuer, subject, audience, issueTime, expirationTime, scope, tenant, clientId, sessionId, holderOfKey, actAs, nonce);
 
         Validate.notNull(privateKey, "privateKey");
 
         this.groups = (groups == null) ? null : Collections.unmodifiableCollection(groups);
         this.adminServerRole = adminServerRole;
+        this.multiTenant = multiTenant;
 
         JWTClaimsSet.Builder claimsBuilder = super.claimsBuilder();
         if (this.groups != null) {
@@ -105,6 +139,8 @@ public final class AccessToken extends ServerIssuedToken {
         if (this.adminServerRole != null) {
             claimsBuilder = claimsBuilder.claim("admin_server_role", this.adminServerRole);
         }
+
+        claimsBuilder = claimsBuilder.claim("multi_tenant", this.multiTenant);
 
         this.signedJwt = JWTUtils.signClaimsSet(claimsBuilder.build(), privateKey);
     }
@@ -121,6 +157,8 @@ public final class AccessToken extends ServerIssuedToken {
     public String getAdminServerRole() {
         return this.adminServerRole;
     }
+
+    public boolean getMultiTenant() { return this.multiTenant; }
 
     public static AccessToken parse(JSONObject jsonObject) throws ParseException {
         Validate.notNull(jsonObject, "jsonObject");

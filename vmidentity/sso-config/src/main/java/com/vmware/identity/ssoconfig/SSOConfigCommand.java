@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -34,11 +31,7 @@ public abstract class SSOConfigCommand {
     protected CmdLineParser parser;
 
     protected static final String HELP_CMD = "-h";
-    private static final String CLASS_FILE_SUFFIX = ".class";
     private static final String COMMAND_CLASS_SUFFIX = "Command";
-    private static final String PKG_SEPARATOR = ".";
-    private static final String DIR_SEPARATOR = "/";
-    private static final String BASE_CLASS_NAME = "SSOConfigCommand";
     private static final int CMD_LINE_USAGE_LENGTH = 120;
 
     /**
@@ -98,27 +91,19 @@ public abstract class SSOConfigCommand {
      * @throws URISyntaxException
      */
     public static List<Class<?>> all() throws ClassNotFoundException, IOException, URISyntaxException {
-        String pathToJar = SSOConfigCommand.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-        @SuppressWarnings("resource")
-		JarFile jarFile = new JarFile(pathToJar);
-        Enumeration<JarEntry> entries = jarFile.entries();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
-        List<Class<?>> classes = new ArrayList<>();
-        while (entries.hasMoreElements()) {
-            JarEntry je = entries.nextElement();
-            if (je.isDirectory() || !je.getName().endsWith(CLASS_FILE_SUFFIX)) {
-                continue;
-            }
-            String fileName = je.getName();
-            String className = fileName.substring(0, fileName.length() - CLASS_FILE_SUFFIX.length());
-            if (className.endsWith(COMMAND_CLASS_SUFFIX) && !className.contains(BASE_CLASS_NAME)) {
-                className = className.replace(DIR_SEPARATOR, PKG_SEPARATOR);
-                classes.add(classLoader.loadClass(className));
-            }
-        }
-
-        return classes;
+        return new ArrayList<Class<?>>(
+                        Arrays.asList(
+                            AuthnPolicyCommand.class,
+                            ExternalIDPCommand.class,
+                            GetDomainJoinStatusCommand.class,
+                            IdentityProviderCommand.class,
+                            RelyingPartyCommand.class,
+                            SetCredentialsCommand.class,
+                            TenantConfigurationCommand.class,
+                            UserResourceCommand.class
+                            )
+                    );
     }
 
     /**
@@ -210,6 +195,11 @@ public abstract class SSOConfigCommand {
 
             String cmdName = arguments.get(0);
             SSOConfigCommand cmd = SSOConfigCommand.clone(cmdName);
+            if (cmd == null) {
+                System.err.println("Error: Invalid command [" + cmdName + "] specified.\n");
+                printUsage();
+                System.exit(1);
+            }
             cmd.setCommandAndParseArguments(cmdName, arguments.subList(1, arguments.size()));
             cmd.execute();
         } catch (com.vmware.identity.rest.core.client.exceptions.client.UnauthorizedException ue) {

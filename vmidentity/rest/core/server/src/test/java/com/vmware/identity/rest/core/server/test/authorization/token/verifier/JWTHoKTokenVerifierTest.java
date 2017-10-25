@@ -77,7 +77,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -101,7 +101,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -122,7 +122,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(keypair.getPublic())
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -146,7 +146,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -170,7 +170,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -194,7 +194,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -220,7 +220,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(badPublicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -247,7 +247,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -275,7 +275,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -303,7 +303,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -331,7 +331,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -359,7 +359,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -387,7 +387,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM, JWTBuilder.MULTI_TENANT_CLAIM);
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
@@ -414,7 +414,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         } else {
             expect(context.hasEntity()).andReturn(false).anyTimes();
         }
-        expect(context.getMediaType()).andReturn(mediaType).anyTimes();
+        expect(context.getHeaderString("Content-Type")).andReturn(mediaType.toString()).anyTimes();
         expect(context.getDate()).andReturn(date).anyTimes();
         expect(context.getUriInfo()).andReturn(uriInfo).anyTimes();
         replay(context);

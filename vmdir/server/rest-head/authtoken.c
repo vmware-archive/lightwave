@@ -59,7 +59,6 @@ VmDirRESTAuthTokenParse(
     PSTR    pszAuthDataCp = NULL;
     PSTR    pszTokenType = NULL;
     PSTR    pszAccessToken = NULL;
-    PSTR    pszDomainName = NULL;
     POIDC_SERVER_METADATA   pOidcMetadata = NULL;
     POIDC_ACCESS_TOKEN      pOidcAccessToken = NULL;
 
@@ -98,15 +97,11 @@ VmDirRESTAuthTokenParse(
     dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirUPNToNameAndDomain(
-            OidcAccessTokenGetSubject(pOidcAccessToken), NULL, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwOIDCError = OidcServerMetadataAcquire(
             &pOidcMetadata,
             VMDIR_REST_OIDC_SERVER,
             VMDIR_REST_OIDC_PORT,
-            pszDomainName,
+            OidcAccessTokenGetTenant(pOidcAccessToken),
             NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
     dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -127,7 +122,6 @@ VmDirRESTAuthTokenParse(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszAuthDataCp);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     OidcServerMetadataDelete(pOidcMetadata);
     OidcAccessTokenDelete(pOidcAccessToken);
     return dwError;

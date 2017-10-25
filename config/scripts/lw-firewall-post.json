@@ -1,0 +1,70 @@
+{
+    "post": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "38900",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "63600",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "icmp"
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7577",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7578",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "38900",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "63600",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7577",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7578",
+                "portoffset": 0
+            }
+        ]
+
+    }
+}

@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 
 echo "Step 1: Create symlinks in /tmp/vmware/lightwave to rpm files"
+
 rm -rf /tmp/vmware/lightwave
 mkdir -p /tmp/vmware/lightwave/x86_64
 
@@ -12,10 +13,19 @@ do
     ln -nfs ${org} ${tgt}
 done
 
+
 echo "Step 2: Create lightwave yum repo in /tmp/vmware/lightwave"
+
 sed -i -e "s|https://vmware.bintray.com/lightwave-dev/photon/master|file:///tmp/vmware/lightwave|" -e "s|gpgcheck=1|gpgcheck=0|" /etc/yum.repos.d/lightwave.repo
 createrepo "/tmp/vmware/lightwave"
-tdnf makecache
 
-echo "Step 3: Upgrade/install lightwave-post"
-tdnf install -y lightwave-post
+
+echo "Step 3: Upgrade/install lightwave-post and lightwave-client"
+
+tdnf makecache
+tdnf install -y lightwave-post lightwave-client
+
+
+echo "Step 4: Set proxy curl timeout"
+
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\post\Parameters]' CurlTimeoutSec REG_DWORD 10 || echo "CurTimeoutSec is already set"

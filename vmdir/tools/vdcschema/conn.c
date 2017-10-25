@@ -101,10 +101,11 @@ VdcSchemaConnOpen(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSafeLDAPBind(&pConn->pLd,
+    dwError = VmDirSafeLDAPBindExt1(&pConn->pLd,
             pConn->pszHostName,
             pConn->pszUPN,
-            pConn->pszPassword);
+            pConn->pszPassword,
+            MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:

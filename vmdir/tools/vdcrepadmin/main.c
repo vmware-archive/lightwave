@@ -684,7 +684,7 @@ _VmDirDummyDomainWrite(
     dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind(&pLd, pszHostName, pszUserName, pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(&pLd, pszHostName, pszUserName, pszPassword, MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetDCDNList(
@@ -705,10 +705,12 @@ _VmDirDummyDomainWrite(
         dwError = VmDirDnLastRDNToCn(pDCList->pStringList[dwCnt], &pszServerName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSafeLDAPBind(&pLd,
-                                    pszServerName,
-                                    pszUserName,
-                                    pszPassword);
+        dwError = VmDirSafeLDAPBindExt1(
+            &pLd,
+            pszServerName,
+            pszUserName,
+            pszPassword,
+            MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
 
         if (dwError)
         {

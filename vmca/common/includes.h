@@ -82,3 +82,7 @@
 #include "prototypes.h"
 #include "externs.h"
 
+#include "vmafdtypes.h"
+#include "vmafd.h"
+#include "vecsclient.h"
+

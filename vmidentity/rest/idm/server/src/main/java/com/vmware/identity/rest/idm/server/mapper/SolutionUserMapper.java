@@ -45,6 +45,7 @@ public final class SolutionUserMapper {
             builder.withName(solutionUser.getId().getName())
                    .withDomain(solutionUser.getId().getDomain())
                    .withDescription(solutionUser.getDetail().getDescription())
+                   .withMultiTenant(solutionUser.getDetail().isMultiTenant())
                    .withAlias(alias);
 
             if (cert != null) {

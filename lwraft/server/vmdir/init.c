@@ -332,6 +332,17 @@ VmDirInit(
                                         5000);  // wait time 5 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
+#ifdef REST_ENABLED
+    /*
+     * Initialize OidcClient only once.
+     * Moved the ownership of OidcClientGlobalCleanup function to lwraft server from rest-head
+     * because as part of cleanup all ciphers and digests from the table are removed which results
+     * in a crash, if there are any active SASL bind in the service
+     */
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+#endif
+
     if (!VmDirdGetRestoreMode())
     {
         dwError = VmDirInitConnAcceptThread();

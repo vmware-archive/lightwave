@@ -48,6 +48,9 @@ VmDirRESTOperationCreate(
 
     pRestOp->pResource = VmDirRESTGetResource(NULL);
 
+    dwError = VmDirRESTCreateProxyResult(&pRestOp->pProxyResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppRestOp = pRestOp;
 
 cleanup:
@@ -319,6 +322,7 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         if (pRestOp->pjInput)
         {
@@ -328,6 +332,7 @@ VmDirFreeRESTOperation(
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         VmDirDeleteConnection(&pRestOp->pConn);
         VmDirFreeRESTResult(pRestOp->pResult);
+        VmDirFreeProxyResult(pRestOp->pProxyResult);
         VMDIR_SAFE_FREE_MEMORY(pRestOp);
     }
 }

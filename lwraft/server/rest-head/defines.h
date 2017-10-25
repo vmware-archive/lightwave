@@ -14,7 +14,8 @@
 
 // C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
-#define VMDIR_REST_DEBUGLOGFILE     "/var/log/lightwave/post-rest.log"
+#define VMDIR_HTTP_DEBUGLOGFILE      LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTP.log"
+#define VMDIR_HTTPS_DEBUGLOGFILE     LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTPS.log"
 
 #define VMDIR_REST_CLIENTCNT        "64"
 #define VMDIR_REST_WORKERTHCNT      "64"
@@ -36,6 +37,7 @@
 // HTTP headers
 #define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
+#define VMDIR_REST_HEADER_CONTENT_TYPE      "Content-Type"
 
 // HTTP STATUS CODES
 // 1xx Informational
@@ -106,13 +108,6 @@
 #define HTTP_NOT_EXTENDED                       510
 #define HTTP_NETWORK_AUTHENTICATION_REQUIRED    511
 #define HTTP_NETWORK_CONNECT_TIMEOUT_ERROR      599
-
-// Proxy constants
-#define HTTP_METHOD_GET     "GET"
-#define HTTP_METHOD_POST    "POST"
-#define HTTP_METHOD_PUT     "PUT"
-#define HTTP_METHOD_DEL     "DELETE"
-#define HTTP_METHOD_PATCH   "PATCH"
 
 #define VMDIR_SET_REST_RESULT(pRestOp, pMLOp, dwError, pszErrMsg)       \
     do                                                                  \

@@ -48,6 +48,8 @@ public interface ISystemDomainIdentityProvider extends IIdentityProvider
 
     public SolutionUser findServicePrincipalByCertDn(String subjectDN) throws Exception;
 
+    public SolutionUser findMultiTenantServicePrincipalByCertDn(String subjectDN) throws Exception;
+
     public SolutionUser findServicePrincipalByCertDnInExternalTenant(String subjectDN) throws Exception;
 
     public Set<SolutionUser> findServicePrincipalsInGroup(String groupName, String searchString)

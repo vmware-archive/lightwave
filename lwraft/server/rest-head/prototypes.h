@@ -209,6 +209,47 @@ VmDirRESTEtcdDelete(
     void**  ppOut
     );
 
+// handler.c
+DWORD
+VmDirHTTPRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirHTTPSRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirRESTRequestHandlerInternal(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount,
+    BOOLEAN         bHttpRequest
+    );
+
+DWORD
+VmDirRESTProcessRequest(
+    PVDIR_REST_OPERATION    pRestOp,
+    PVMREST_HANDLE          pRESTHandle,
+    PREST_REQUEST           pRequest,
+    uint32_t                paramsCount
+    );
+
+DWORD
+VmDirRESTWriteSimpleErrorResponse(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_RESPONSE* ppResponse,
+    int             httpStatus
+    );
+
 // httperror.c
 PVDIR_HTTP_ERROR
 VmDirRESTGetHttpError(
@@ -265,15 +306,6 @@ VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
-    );
-
-// libmain.c
-DWORD
-VmDirRESTRequestHandler(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_REQUEST   pRequest,
-    PREST_RESPONSE* ppResponse,
-    uint32_t        paramsCount
     );
 
 // lightwave.c
@@ -525,9 +557,26 @@ VmDirRESTUnloadVmAfdAPI(
 // proxy.c
 DWORD
 VmDirRESTForwardRequest(
-    PVDIR_REST_OPERATION pRestOp,
-    uint32_t dwParamCount,
-    PREST_REQUEST pRequest,
-    PREST_RESPONSE* ppResponse,
-    PVMREST_HANDLE pRESTHandle
+    PVDIR_REST_OPERATION    pRestOp,
+    uint32_t                dwParamCount,
+    PREST_REQUEST           pRequest,
+    PVMREST_HANDLE          pRESTHandle,
+    BOOLEAN                 bHttpRequest
+    );
+
+DWORD
+VmDirRESTWriteProxyResponse(
+    PVDIR_REST_OPERATION     pRestOp,
+    PREST_RESPONSE*          ppResponse,
+    PVMREST_HANDLE           pRESTHandle
+    );
+
+DWORD
+VmDirRESTCreateProxyResult(
+    PVDIR_PROXY_RESULT*      ppProxyresult
+    );
+
+VOID
+VmDirFreeProxyResult(
+    PVDIR_PROXY_RESULT       pProxyResult
     );

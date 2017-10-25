@@ -167,15 +167,6 @@ VmDirRESTLdapGetHttpError(
     PSTR*               ppszHttpReason
     );
 
-// libmain.c
-DWORD
-VmDirRESTRequestHandler(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_REQUEST   pRequest,
-    PREST_RESPONSE* ppResponse,
-    uint32_t        paramsCount
-    );
-
 // metricsapi.c
 DWORD
 VmDirRESTGetMetricsModule(

@@ -75,7 +75,7 @@ public class SAMLTokenVerifierTest {
         expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes())).anyTimes();
         context.setEntityStream(isA(InputStream.class));
         expectLastCall().anyTimes();
-        expect(context.getMediaType()).andReturn(mediaType).anyTimes();
+        expect(context.getHeaderString("Content-Type")).andReturn(mediaType.toString()).anyTimes();
         expect(context.getDate()).andReturn(date).anyTimes();
         expect(context.getUriInfo()).andReturn(uriInfo).anyTimes();
         replay(context);

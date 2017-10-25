@@ -27,6 +27,7 @@ vmcad_SOURCES += \
     oidcutil.c \
     restauth.c \
     restnegauth.c \
+    restserviceinit.c \
     restutil.c \
     vmcaHTTPCallBack.c \
     vmcaHTTPHandlers.c

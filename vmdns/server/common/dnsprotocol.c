@@ -20,7 +20,8 @@ VmDnsProcessQuery(
     PVMDNS_MESSAGE pDnsMessage,
     PBYTE *ppDnsResponse,
     PDWORD pdwDnsResponseSize,
-    PCHAR pcRCode
+    PCHAR pcRCode,
+    PBOOL pbQueryInZone
     );
 
 static
@@ -105,7 +106,8 @@ VmDnsProcessRequest(
     DWORD dwDnsRequestSize,
     PBYTE *ppDnsResponse,
     PDWORD pdwDnsResponseSize,
-    PUCHAR pRCode
+    PUCHAR pRCode,
+    PBOOL pbQueryInZone
     )
 {
     DWORD dwError = 0;
@@ -116,6 +118,7 @@ VmDnsProcessRequest(
     PVMDNS_HEADER pDnsHeader = NULL;
     PVMDNS_MESSAGE pDnsMessage = NULL;
     PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage = NULL;
+    BOOL bQueryInZone = FALSE;
     UCHAR rCode = 0;
 
     if (!pDnsRequest || !ppDnsResponse ||
@@ -153,7 +156,8 @@ VmDnsProcessRequest(
                         pDnsMessage,
                         &pDnsResponse,
                         &dwDnsResponseSize,
-                        &rCode
+                        &rCode,
+                        &bQueryInZone
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
@@ -200,6 +204,7 @@ cleanup:
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;
     *pRCode = rCode;
+    *pbQueryInZone = bQueryInZone;
 
     VmDnsMetricsRcodeUpdate(rCode);
 
@@ -218,10 +223,12 @@ VmDnsProcessQuery(
     PVMDNS_MESSAGE  pDnsMessage,
     PBYTE           *ppDnsResponse,
     PDWORD          pdwDnsResponseSize,
-    PCHAR           pcRCode
+    PCHAR           pcRCode,
+    PBOOL           pbQueryInZone
     )
 {
     DWORD dwError = 0;
+    BOOL bQueryInZone = FALSE;
     VMDNS_HEADER ResponseHeader = { 0 };
     VMDNS_MESSAGE ResponseMessage = { 0 };
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
@@ -300,6 +307,7 @@ VmDnsProcessQuery(
             goto response;
         }
 
+        bQueryInZone = TRUE;
         dwError = VmDnsSrvQueryRecords(
                             pZoneObject,
                             pQuestion->pszQName,
@@ -342,6 +350,7 @@ response:
 
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;
+    *pbQueryInZone = bQueryInZone;
 
     VmDnsZoneObjectRelease(pZoneObject);
     VmDnsRecordListRelease(pAnswerList);

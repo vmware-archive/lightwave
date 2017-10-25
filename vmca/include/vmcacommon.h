@@ -69,6 +69,8 @@ typedef struct _VMW_CFG_KEY*        PVMW_CFG_KEY;
 #define VMCA_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
 #define VMCA_ASCII_DIGIT(c)    ( (c) >= '0' && (c) <= '9' )
 
+#define VMCA_KEY_PARAMETERS "Services\\vmca\\Parameters"
+
 #define VMCA_SAFE_FREE_STRINGA(PTR)    \
     do {                          \
         if ((PTR)) {              \
@@ -295,6 +297,7 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 #define VMCA_REG_KEY_ENABLEEVENTLOGS         "EnableEventLogs"
 #define VMCA_REG_KEY_ENABLESERVICE           "EnableService"
 #define VMCA_REG_KEY_SERVER_OPTION           "ServerOption"
+#define VMCA_REG_KEY_INSTALL_PATH            "InstallPath"
 
 #define VMCA_RPC_TCP_END_POINT               "2014"
 #define VMCA_NCALRPC_END_POINT               "vmcasvc"
@@ -303,6 +306,7 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 
 #define VMCA_EVENT_SOURCE                    "VMware Certificate-Service"
 
+#define WIN_SYSTEM32_PATH                   "c:\\windows\\system32"
 
 #if 0
 /* mutexes/threads/conditions */
@@ -670,6 +674,13 @@ typedef struct _VMCA_PKCS_10_REQ_DATA
     DWORD         dwKeyUsageConstraints;
 } VMCA_PKCS_10_REQ_DATAW,*PVMCA_PKCS_10_REQ_DATAW;
 #endif //_VMCA_PKCS_10_DATAW_DEFINED
+
+#ifdef _WIN32
+typedef HINSTANCE   VMCA_LIB_HANDLE;
+#else
+#include <dlfcn.h>
+typedef VOID*       VMCA_LIB_HANDLE;
+#endif
 
 DWORD
 VMCACommonInit();
@@ -1283,6 +1294,42 @@ VMCALdapGetMemberships(
     PSTR  **pppszMemberships,
     PDWORD pdwMemberships
     );
+
+// vecs.c
+DWORD
+VMCAGetVecsMachineCert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
+
+// misc.c
+DWORD
+VMCALoadLibrary(
+    PCSTR           pszLibPath,
+    VMCA_LIB_HANDLE* ppLibHandle
+    );
+
+VOID
+VMCACloseLibrary(
+    VMCA_LIB_HANDLE  pLibHandle
+    );
+
+#ifdef _WIN32
+FARPROC WINAPI
+#else
+VOID*
+#endif
+VMCAGetLibSym(
+    VMCA_LIB_HANDLE  pLibHandle,
+    PCSTR           pszFunctionName
+    );
+
+// vmafdlib.c
+DWORD
+VMCAOpenVmAfdClientLib(
+    VMCA_LIB_HANDLE*   pplibHandle
+    );
+
 //
 // Config
 //

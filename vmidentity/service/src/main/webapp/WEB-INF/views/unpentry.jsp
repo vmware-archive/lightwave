@@ -97,10 +97,10 @@
 
 if (isVCLogin()) {
     document.write("<img id=\"topSplash\" src=\"../../resources/img/AppBgPattern.png\"/>");
-
     document.write("<img id=\"brand\" src=\"../../resources/img/vmwareLogoBigger.png\" />");
 }
 else {
+    document.write("<p id=\"welcomeText\">Welcome to</p>");
     document.write("<p id=\"tenantBrand\">"+tenant_brandname+"</p>");
 }
 
@@ -108,6 +108,7 @@ else {
 </script>
 <div id="bg-banner"></div>
 <div id="loginForm">
+   <span>Please sign-in here</span>
    <p id="usernameID" class="loginRow" >
       <span class="loginLabel">${username}:</span>
       <input id="username" class="margeTextInput" type="text" placeholder="${username_placeholder}"/>

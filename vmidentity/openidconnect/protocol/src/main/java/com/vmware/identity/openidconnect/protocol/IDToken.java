@@ -52,6 +52,7 @@ public final class IDToken extends ServerIssuedToken {
     private final Collection<String> groups;
     private final String givenName;
     private final String familyName;
+    private final boolean multiTenant;
 
     private IDToken(SignedJWT signedJwt) throws ParseException {
         super(TOKEN_CLASS, signedJwt);
@@ -76,6 +77,12 @@ public final class IDToken extends ServerIssuedToken {
             familyName = JWTUtils.getString(claims, TOKEN_CLASS, "family_name");
         }
         this.familyName = familyName;
+
+        if (claims.getClaims().containsKey("multi_tenant")) {
+            this.multiTenant = JWTUtils.getBoolean(claims, TOKEN_CLASS, "multi_tenant");
+        } else {
+            this.multiTenant = false;
+        }
     }
 
     public IDToken(
@@ -99,6 +106,32 @@ public final class IDToken extends ServerIssuedToken {
             Collection<String> groups,
             String givenName,
             String familyName) throws JOSEException {
+        this(privateKey, tokenType, jwtId, issuer, subject, audience, issueTime, expirationTime,
+                scope, tenant, clientId, sessionId, holderOfKey, actAs, nonce, groups, givenName, familyName, false);
+    }
+
+    public IDToken(
+            RSAPrivateKey privateKey,
+            TokenType tokenType,
+            JWTID jwtId,
+            Issuer issuer,
+            Subject subject,
+            List<String> audience,
+            Date issueTime,
+
+            Date expirationTime,
+            Scope scope,
+            String tenant,
+            ClientID clientId,
+            SessionID sessionId,
+            RSAPublicKey holderOfKey,
+            Subject actAs,
+            Nonce nonce,
+
+            Collection<String> groups,
+            String givenName,
+            String familyName,
+            boolean multiTenant) throws JOSEException {
         super(TOKEN_CLASS, tokenType, jwtId, issuer, subject, audience, issueTime, expirationTime, scope, tenant, clientId, sessionId, holderOfKey, actAs, nonce);
 
         Validate.notNull(privateKey, "privateKey");
@@ -106,6 +139,7 @@ public final class IDToken extends ServerIssuedToken {
         this.groups = (groups == null) ? null : Collections.unmodifiableCollection(groups);
         this.givenName = givenName;
         this.familyName = familyName;
+        this.multiTenant = multiTenant;
 
         JWTClaimsSet.Builder claimsBuilder = super.claimsBuilder();
         if (this.groups != null) {
@@ -117,6 +151,8 @@ public final class IDToken extends ServerIssuedToken {
         if (this.familyName != null) {
             claimsBuilder = claimsBuilder.claim("family_name", this.familyName);
         }
+
+        claimsBuilder = claimsBuilder.claim("multi_tenant", this.multiTenant);
 
         this.signedJwt = JWTUtils.signClaimsSet(claimsBuilder.build(), privateKey);
     }
@@ -137,6 +173,8 @@ public final class IDToken extends ServerIssuedToken {
     public String getFamilyName() {
         return this.familyName;
     }
+
+    public boolean getMultiTenant() { return this.multiTenant; }
 
     public static IDToken parse(JSONObject jsonObject) throws ParseException {
         Validate.notNull(jsonObject, "jsonObject");

@@ -59,7 +59,7 @@ _VmDirRpcMetricsInit(
     DWORD dwError = 0;
     DWORD i = 0;
 
-    uint64_t buckets[3] = {1, 5, 10};
+    uint64_t buckets[5] = {1, 10, 100, 500, 1000};
 
     VM_METRICS_LABEL labelOps[METRICS_RPC_OP_COUNT][1] = {
         {{"operation", "GeneratePassword"}},
@@ -91,7 +91,7 @@ _VmDirRpcMetricsInit(
                                 "vmdir_dcerpc_request_duration",
                                 labelOps[i], 1,
                                 "Histogram for DCERPC Request Durations for different operations",
-                                buckets, 3,
+                                buckets, 5,
                                 &pRpcRequestDuration[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
     }

@@ -26,7 +26,7 @@ VmDirLdapMetricsInit(
     DWORD dwError = 0;
     DWORD i = 0;
 
-    uint64_t buckets[3] = {1, 5, 10};
+    uint64_t buckets[5] = {1, 10, 100, 500, 1000};
 
     VM_METRICS_LABEL labelOps[METRICS_LDAP_OP_COUNT][1] = {{{"operation","bind"}},
                                         {{"operation","search"}},
@@ -56,7 +56,8 @@ VmDirLdapMetricsInit(
                                             {{"code","LDAP_TIMELIMIT_EXCEEDED"}},
                                             {{"code","LDAP_SIZELIMIT_EXCEEDED"}},
                                             {{"code","LDAP_NO_SUCH_OBJECT"}},
-                                            {{"code","LDAP_UNKNOWN"}}};
+                                            {{"code","LDAP_BUSY"}},
+                                            {{"code","LDAP_OTHER"}}};
 
     for (i=0; i < METRICS_LDAP_ERROR_COUNT; i++)
     {
@@ -74,7 +75,7 @@ VmDirLdapMetricsInit(
                                 "vmdir_ldap_request_duration",
                                 labelOps[i], 1,
                                 "Histogram for LDAP Request Durations for different operations",
-                                buckets, 3,
+                                buckets, 5,
                                 &pLdapRequestDuration[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
     }

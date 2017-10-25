@@ -59,6 +59,10 @@
 #include "prototypes.h"
 #include "externs.h"
 
+#include "vmafdtypes.h"
+#include "vmafd.h"
+#include "vecsclient.h"
+
 #else
 
 #pragma once
@@ -118,5 +122,9 @@
 #include "externs.h"
 
 #include "banned.h"
+
+#include "vmafdtypes.h"
+#include "vmafd.h"
+#include "vecsclient.h"
 
 #endif

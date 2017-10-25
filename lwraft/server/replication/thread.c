@@ -956,7 +956,8 @@ _VmDirRequestVoteRpc(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxySe
     if (dwError)
     {
         if (dwError == rpc_s_connect_rejected || dwError == rpc_s_connect_timed_out ||
-            dwError == rpc_s_cannot_connect || dwError == rpc_s_connection_closed || dwError == rpc_s_host_unreachable)
+            dwError == rpc_s_cannot_connect || dwError == rpc_s_connection_closed ||
+            dwError == rpc_s_host_unreachable || pServer == NULL)
         {
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
               "_VmDirRequestVoteRpc: not connected or disconnected peer %s dcerpc error %d", pPeerHostName, dwError);
@@ -1155,7 +1156,8 @@ ReplicateLog:
     if (dwError)
     {
         if (dwError == rpc_s_connect_rejected || dwError == rpc_s_connect_timed_out ||
-            dwError == rpc_s_cannot_connect || dwError == rpc_s_connection_closed || dwError == rpc_s_host_unreachable)
+            dwError == rpc_s_cannot_connect || dwError == rpc_s_connection_closed ||
+            dwError == rpc_s_host_unreachable || pServer == NULL)
         {
             pProxySelf->proxy_state = RPC_DISCONN;
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,

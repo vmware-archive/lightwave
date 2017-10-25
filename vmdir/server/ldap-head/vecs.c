@@ -25,11 +25,6 @@
 
 #include "includes.h"
 
-// WARNING, WARNING, WARNING. It is awkward to get VECS headers via source tree structure.
-#include "../../../vmafd/include/public/vmafdtypes.h"
-#include "../../../vmafd/include/public/vmafd.h"
-#include "../../../vmafd/include/public/vecsclient.h"
-
 #define BAIL_ON_VECS_ERROR(dwError)                                 \
     if (dwError)                                                    \
     {                                                               \

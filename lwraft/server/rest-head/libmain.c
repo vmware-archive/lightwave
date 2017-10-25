@@ -18,20 +18,50 @@
 
 static
 DWORD
-_VmDirRESTHandleRequestInternal(
-    PVDIR_REST_OPERATION pRestOp,
-    PVMREST_HANDLE pRESTHandle,
-    PREST_RESPONSE* ppResponse,
-    uint32_t paramsCount
+_VmDirRESTServerInitHTTP(
+    VOID
     );
 
-REST_PROCESSOR sVmDirRESTHandlers =
+static
+DWORD
+_VmDirRESTServerInitHTTPS(
+    VOID
+    );
+
+static
+VOID
+_VmDirRESTServerShutdownHTTP(
+    VOID
+    );
+
+static
+VOID
+_VmDirRESTServerShutdownHTTPS(
+    VOID
+    );
+
+static
+VOID
+_VmDirFreeRESTHandle(
+    PVMREST_HANDLE pHandle
+    );
+
+REST_PROCESSOR sVmDirHTTPHandlers =
 {
-    .pfnHandleCreate = &VmDirRESTRequestHandler,
-    .pfnHandleRead = &VmDirRESTRequestHandler,
-    .pfnHandleUpdate = &VmDirRESTRequestHandler,
-    .pfnHandleDelete = &VmDirRESTRequestHandler,
-    .pfnHandleOthers = &VmDirRESTRequestHandler
+    .pfnHandleCreate = &VmDirHTTPRequestHandler,
+    .pfnHandleRead = &VmDirHTTPRequestHandler,
+    .pfnHandleUpdate = &VmDirHTTPRequestHandler,
+    .pfnHandleDelete = &VmDirHTTPRequestHandler,
+    .pfnHandleOthers = &VmDirHTTPRequestHandler
+};
+
+REST_PROCESSOR sVmDirHTTPSHandlers =
+{
+    .pfnHandleCreate = &VmDirHTTPSRequestHandler,
+    .pfnHandleRead = &VmDirHTTPSRequestHandler,
+    .pfnHandleUpdate = &VmDirHTTPSRequestHandler,
+    .pfnHandleDelete = &VmDirHTTPSRequestHandler,
+    .pfnHandleOthers = &VmDirHTTPSRequestHandler
 };
 
 // TODO
@@ -43,9 +73,6 @@ VmDirRESTServerInit(
     )
 {
     DWORD   dwError = 0;
-    REST_CONF   config = {0};
-    PREST_PROCESSOR     pHandlers = &sVmDirRESTHandlers;
-    PREST_API_MODULE    pModule = NULL;
 
     MODULE_REG_MAP stRegMap[] =
     {
@@ -56,16 +83,6 @@ VmDirRESTServerInit(
         {NULL, NULL}
     };
 
-    config.pSSLCertificate = RSA_SERVER_CERT;
-    config.pSSLKey = RSA_SERVER_KEY;
-    config.pServerPort = gVmdirGlobals.pszRestListenPort;
-    config.pDebugLogFile = VMDIR_REST_DEBUGLOGFILE;
-    config.pClientCount = VMDIR_REST_CLIENTCNT;
-    config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
-
-    dwError = OidcClientGlobalInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirRESTLoadVmAfdAPI(&gpVdirVmAfdApi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -73,41 +90,30 @@ VmDirRESTServerInit(
     // post should still handle simple auth
     (VOID)VmDirRESTCacheInit(&gpVdirRestCache);
 
-    dwError = VmRESTInit(&config, NULL, &gpVdirRestHandle);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdirRestApiDef);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = coapi_map_api_impl(gpVdirRestApiDef, stRegMap);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (pModule = gpVdirRestApiDef->pModules; pModule; pModule = pModule->pNext)
-    {
-        PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
-        for (; pEndPoint; pEndPoint = pEndPoint->pNext)
-        {
-            dwError = VmRESTRegisterHandler(
-                    gpVdirRestHandle, pEndPoint->pszName, pHandlers, NULL);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    dwError = VmRESTStart(gpVdirRestHandle);
+    dwError = _VmDirRESTServerInitHTTP();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirRESTServerInitHTTPS();
+    if (dwError != 0)
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "VmDirRESTServerInit: HTTPS port init failed with error %d, (failure is expected before promote)",
+                dwError);
+        dwError = 0;
+    }
 
 cleanup:
     return dwError;
 
 error:
-    // soft fail - will not listen on REST port.
-    VMDIR_LOG_WARNING(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed with error %d, not going to listen on REST port",
-            __FUNCTION__,
-            dwError);
-
-    dwError = 0;
+    VmDirRESTServerShutdown();
     goto cleanup;
 }
 
@@ -116,11 +122,183 @@ VmDirRESTServerShutdown(
     VOID
     )
 {
+    _VmDirRESTServerShutdownHTTP();
+    _VmDirRESTServerShutdownHTTPS();
+    //cleanup all global variables
+    VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdApi);
+    VmDirFreeRESTCache(gpVdirRestCache);
+    VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
+}
+
+static
+DWORD
+_VmDirRESTServerInitHTTP(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    REST_CONF   config = {0};
+    PREST_PROCESSOR     pHandlers = &sVmDirHTTPHandlers;
     PREST_API_MODULE    pModule = NULL;
 
-    if (gpVdirRestHandle)
+    /*
+     * pszHTTPListenPort can never be NULL because of default values assigned to them
+     * if Port string is empty, it means user wants to disable corresponding service
+     */
+    if (IsNullOrEmptyString(gVmdirGlobals.pszHTTPListenPort))
     {
-        VmRESTStop(gpVdirRestHandle);
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s : not listening in HTTP port",
+                __FUNCTION__);
+        goto cleanup;
+    }
+
+    config.pSSLCertificate = RSA_SERVER_CERT;
+    config.pSSLKey = RSA_SERVER_KEY;
+    config.pServerPort = gVmdirGlobals.pszHTTPListenPort;
+    config.pDebugLogFile = VMDIR_HTTP_DEBUGLOGFILE;
+    config.pClientCount = VMDIR_REST_CLIENTCNT;
+    config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
+
+    dwError = VmRESTInit(&config, NULL, &gpVdirRestHTTPHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pModule = gpVdirRestApiDef->pModules; pModule; pModule = pModule->pNext)
+    {
+        PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
+        for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+        {
+            dwError = VmRESTRegisterHandler(
+                    gpVdirRestHTTPHandle, pEndPoint->pszName, pHandlers, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    dwError = VmRESTStart(gpVdirRestHTTPHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    _VmDirRESTServerShutdownHTTP();
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed with error %d, not going to listen on REST port",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirRESTServerInitHTTPS(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszCert = NULL;
+    PSTR    pszKey = NULL;
+    REST_CONF   config = {0};
+    PREST_PROCESSOR     pHandlers = &sVmDirHTTPSHandlers;
+    PREST_API_MODULE    pModule = NULL;
+
+    /*
+     * pszHTTPSListenPort can never be NULL because of default values assigned to them
+     * if Port string is empty, it means user wants to disable corresponding service
+     */
+    if (IsNullOrEmptyString(gVmdirGlobals.pszHTTPSListenPort))
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s : not listening in HTTP port",
+                __FUNCTION__);
+        goto cleanup;
+    }
+
+    config.pSSLCertificate = NULL;
+    config.pSSLKey = NULL;
+    config.pServerPort = gVmdirGlobals.pszHTTPSListenPort;
+    config.pDebugLogFile = VMDIR_HTTPS_DEBUGLOGFILE;
+    config.pClientCount = VMDIR_REST_CLIENTCNT;
+    config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
+
+    dwError = VmRESTInit(&config, NULL, &gpVdirRestHTTPSHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //Get Certificate and Key from VECS and Set it to Rest Engine
+    dwError = VmDirGetVecsMachineCert(&pszCert, &pszKey);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTSetSSLInfo(gpVdirRestHTTPSHandle, pszCert, VmDirStringLenA(pszCert)+1, SSL_DATA_TYPE_CERT);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTSetSSLInfo(gpVdirRestHTTPSHandle, pszKey, VmDirStringLenA(pszKey)+1, SSL_DATA_TYPE_KEY);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pModule = gpVdirRestApiDef->pModules; pModule; pModule = pModule->pNext)
+    {
+        PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
+        for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+        {
+            dwError = VmRESTRegisterHandler(
+                    gpVdirRestHTTPSHandle, pEndPoint->pszName, pHandlers, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    dwError = VmRESTStart(gpVdirRestHTTPSHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszCert);
+    VMDIR_SAFE_FREE_MEMORY(pszKey);
+    return dwError;
+
+error:
+    _VmDirRESTServerShutdownHTTPS();
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed with error %d, not going to listen on REST port (expected before promote)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+static
+VOID
+_VmDirRESTServerShutdownHTTP(
+    VOID
+    )
+{
+    _VmDirFreeRESTHandle(gpVdirRestHTTPHandle);
+    gpVdirRestHTTPHandle = NULL;
+}
+
+static
+VOID
+_VmDirRESTServerShutdownHTTPS(
+    VOID
+    )
+{
+    _VmDirFreeRESTHandle(gpVdirRestHTTPSHandle);
+    gpVdirRestHTTPSHandle = NULL;
+}
+
+static
+VOID
+_VmDirFreeRESTHandle(
+    PVMREST_HANDLE    pHandle
+    )
+{
+    PREST_API_MODULE  pModule = NULL;
+
+    if (pHandle)
+    {
+        VmRESTStop(pHandle);
         if (gpVdirRestApiDef)
         {
             pModule = gpVdirRestApiDef->pModules;
@@ -130,129 +308,12 @@ VmDirRESTServerShutdown(
                 for (; pEndPoint; pEndPoint = pEndPoint->pNext)
                 {
                     (VOID)VmRESTUnRegisterHandler(
-                            gpVdirRestHandle, pEndPoint->pszName);
+                            pHandle, pEndPoint->pszName);
                 }
             }
         }
-        VmRESTShutdown(gpVdirRestHandle);
+        VmRESTShutdown(pHandle);
     }
-
-    OidcClientGlobalCleanup();
-    VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
-    VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdApi);
-    VmDirFreeRESTCache(gpVdirRestCache);
-}
-
-DWORD
-VmDirRESTRequestHandler(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_REQUEST   pRequest,
-    PREST_RESPONSE* ppResponse,
-    uint32_t        paramsCount
-    )
-{
-    DWORD                   dwError = 0;
-    PVDIR_REST_OPERATION    pRestOp = NULL;
-    VDIR_RAFT_ROLE          role = VDIR_RAFT_ROLE_CANDIDATE;
-
-    if (!pRESTHandle || !pRequest || !ppResponse)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-    {
-        goto cleanup;
-    }
-
-    dwError = VmDirRESTOperationCreate(&pRestOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTOperationReadRequest(
-                        pRestOp, pRESTHandle, pRequest, paramsCount);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirRaftGetRole(&role);
-    if(role == VDIR_RAFT_ROLE_FOLLOWER)
-    {
-        dwError = VmDirRESTForwardRequest(
-                        pRestOp,
-                        paramsCount,
-                        pRequest,
-                        ppResponse,
-                        pRESTHandle);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        dwError = _VmDirRESTHandleRequestInternal(
-                        pRestOp,
-                        pRESTHandle,
-                        ppResponse,
-                        paramsCount);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-cleanup:
-    VmDirFreeRESTOperation(pRestOp);
-    return dwError;
-
-error:
-    // Send Error response
-    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
-    dwError = VmDirRESTOperationWriteResponse(
-            pRestOp, pRESTHandle, ppResponse);
-    VMDIR_LOG_VERBOSE(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirRESTHandleRequestInternal(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_RESPONSE*         ppResponse,
-    uint32_t                paramsCount
-    )
-{
-    DWORD               dwError = 0;
-    PREST_API_METHOD    pMethod = NULL;
-
-    if (!pRestOp  || !pRESTHandle || !ppResponse)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirRESTAuth(pRestOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = coapi_find_handler(
-            gpVdirRestApiDef,
-            pRestOp->pszPath,
-            pRestOp->pszMethod,
-            &pMethod);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
-    // Nothing can be done if failed to send response
-    dwError = VmDirRESTOperationWriteResponse(
-            pRestOp, pRESTHandle, ppResponse);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-
 }
 
 #else

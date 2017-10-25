@@ -67,6 +67,17 @@ typedef struct _VDIR_REST_RESOURCE
 
 } VDIR_REST_RESOURCE, *PVDIR_REST_RESOURCE;
 
+// proxy.c
+typedef struct _VDIR_PROXY_RESULT
+{
+    DWORD   statusCode;
+    DWORD   dwError;
+    DWORD   dwCurlError;
+    PSTR    pResponse;
+    DWORD   dwResponseLen;
+
+} VDIR_PROXY_RESULT, *PVDIR_PROXY_RESULT;
+
 typedef struct _VDIR_REST_OPERATION
 {
     PSTR                    pszAuth;
@@ -74,6 +85,7 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                    pszPath;
     PSTR                    pszSubPath;
     PSTR                    pszHeaderIfMatch;
+    PSTR                    pszContentType;
     PSTR                    pszInput;
     json_t*                 pjInput;
     PLW_HASHMAP             pParamMap;
@@ -81,6 +93,7 @@ typedef struct _VDIR_REST_OPERATION
     PVDIR_CONNECTION        pConn;
     PVDIR_REST_RESULT       pResult;
     PVDIR_REST_RESOURCE     pResource;
+    PVDIR_PROXY_RESULT      pProxyResult;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
@@ -143,11 +156,3 @@ typedef struct _VDIR_REST_HEAD_CACHE
     PSID            pBuiltInAdminsGroupSid;
 
 } VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;
-
-//proxy.c
-typedef struct _VDIR_REST_CURL_RESPONSE
-{
-    PSTR    pResponse;
-    DWORD   dwResponseLen;
-} VDIR_REST_CURL_RESPONSE, *PVDIR_REST_CURL_RESPONSE;
-

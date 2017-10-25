@@ -755,7 +755,7 @@ public class IdentityManager implements IIdentityManager {
      * If a non-empty value is set, the brand name string is displayed on the login page.
      *
      * @param tenantName
-     * @param brandname
+     * @param brandName
      * @return
      * @throws IDMException
      * @throws NoSuchTenantException - if no such tenant exist
@@ -774,7 +774,7 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
 
             logger.debug(String.format(
-                    "Band name [%s] will be set for tenant [%s]",
+                    "Brand name [%s] will be set for tenant [%s]",
                     brandName,
                     tenantName));
 
@@ -3849,6 +3849,11 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateSolutionDetail(detail, "Solution user detail",
                     this.getClockTolerance(tenantName));
 
+            if ( detail.isMultiTenant() && !ServerUtils.isEquals(tenantName, this.getSystemTenant()) )
+            {
+                throw new InvalidArgumentException("Multi-tenant solution user can only be registered in system tenant.") ;
+            }
+
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
@@ -3929,24 +3934,47 @@ public class IdentityManager implements IIdentityManager {
                     tenantInfo.findSystemProvider();
             ServerUtils.validateNotNullSystemIdp(provider, tenantName);
 
-            if (ServerUtils.isEquals(tenantName, this.getSystemTenant()))
+            // TODO: we should retire findServicePrincipalByCertDnInExternalTenant which does not make any sense
+
+            String systemTenantName = this.getSystemTenant();
+            SolutionUser su = null;
+            boolean systemTenant = ServerUtils.isEquals(tenantName, systemTenantName);
+            try
             {
-                return provider.findServicePrincipalByCertDn(subjectDN);
+                if (systemTenant)
+                {
+                    su = provider.findServicePrincipalByCertDn(subjectDN);
+                }
+                else
+                {
+                    su = provider.findServicePrincipalByCertDnInExternalTenant(subjectDN);
+                }
             }
-            else
+            catch(NoSuchUserException ex)
             {
-                return provider.findServicePrincipalByCertDnInExternalTenant(subjectDN);
+                su = null;
             }
-        }
-        catch(NoSuchUserException ex)
-        {
-            logger.info(
+
+            if ( (su == null) && (systemTenant == false)) {
+                TenantInformation systemTenantInfo = findTenant(systemTenantName);
+                ServerUtils.validateNotNullTenant(systemTenantInfo, systemTenantName);
+
+                ISystemDomainIdentityProvider systemProvider =
+                        systemTenantInfo.findSystemProvider();
+                ServerUtils.validateNotNullSystemIdp(systemProvider, systemTenantName);
+
+                su = systemProvider.findMultiTenantServicePrincipalByCertDn(subjectDN);
+            }
+
+            if (su == null) {
+                logger.info(
                     String.format(
                             "Failed to find solution user by subject DN [%s] in tenant [%s]",
                             subjectDN,
                             tenantName));
+            }
 
-            return null;
+            return su;
         }
         catch (Exception ex)
         {
@@ -7173,9 +7201,9 @@ public class IdentityManager implements IIdentityManager {
                         IS_LIGHTWAVE_KEY,
                         true);
             	if(isLightwave != 0 ) {
-                logger.info("Configuring branding name for Lightwave instance");
-            	_configStore.setBrandName(tenantName, "Cascade Platform<br/>Authentication Service");
-            }
+                    logger.info("Configuring branding name for Lightwave instance");
+                    _configStore.setBrandName(tenantName, "Lightwave Authentication Service");
+                }
             } finally {
                 rootRegistryKey.close();
             }

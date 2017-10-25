@@ -318,6 +318,7 @@ VmDirFreeRESTResult(
         VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);
+        VMDIR_SAFE_FREE_STRINGA(pRestRslt->pszData);
         VMDIR_SAFE_FREE_MEMORY(pRestRslt);
     }
 }

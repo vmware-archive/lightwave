@@ -16,7 +16,7 @@ type AccessToken struct {
     p C.POIDC_ACCESS_TOKEN
 }
 
-// on success, result will be non-null, Close it when done
+// (TODO) Deprecated
 func AccessTokenBuild(
         jwt string,
         signingCertificatePEM string,
@@ -49,6 +49,50 @@ func AccessTokenBuild(
     result = &AccessToken { p }
     runtime.SetFinalizer(result, accessTokenFinalize)
     return
+}
+
+// on success, result will be non-null, Close it when done
+func AccessTokenParse(jwt string) (result *AccessToken, err error) {
+    jwtCStr := goStringToCString(jwt)
+    defer freeCString(jwtCStr)
+
+    var p C.POIDC_ACCESS_TOKEN = nil
+    var e C.SSOERROR = C.OidcAccessTokenParse(&p, jwtCStr)
+    if e != 0 {
+        err = cErrorToGoError(e)
+        return
+    }
+
+    result = &AccessToken { p }
+    runtime.SetFinalizer(result, accessTokenFinalize)
+    return
+}
+
+func (this *AccessToken) AccessTokenValidate(
+        signingCertificatePEM string,
+        issuer string,
+        resourceServerName string,
+        clockToleranceInSeconds int64) error {
+    signingCertificatePEMCStr   := goStringToCString(signingCertificatePEM)
+    issuerCStr                  := goStringToCString(issuer)
+    resourceServerNameCStr      := goStringToCString(resourceServerName)
+
+    defer freeCString(signingCertificatePEMCStr)
+    defer freeCString(issuerCStr)
+    defer freeCString(resourceServerNameCStr)
+
+    var e C.SSOERROR = C.OidcAccessTokenValidate(
+        this.p,
+        signingCertificatePEMCStr,
+        issuerCStr,
+        resourceServerNameCStr,
+        C.SSO_LONG(clockToleranceInSeconds))
+
+    var err error = nil
+    if e != 0 {
+        err = cErrorToGoError(e)
+    }
+    return err
 }
 
 func accessTokenFinalize(this *AccessToken) {

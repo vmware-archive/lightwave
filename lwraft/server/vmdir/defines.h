@@ -177,14 +177,25 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_REST_LISTEN_PORT,   \
+        /*.pszName        = */ VMDIR_REG_KEY_HTTP_LISTEN_PORT,   \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
         /*.RegDataType    = */ REG_SZ,                           \
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_REST_PORT_STR,            \
+        /*.pszDefault     = */ DEFAULT_HTTP_PORT_STR,            \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_HTTPS_LISTEN_PORT,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
+        /*.RegDataType    = */ REG_SZ,                           \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ DEFAULT_HTTPS_PORT_STR,           \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -340,6 +351,17 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_CURL_TIMEOUT_SEC,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 10000,                            \
+        /*.dwDefault      = */ 3,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                          \
 }
 
 typedef enum

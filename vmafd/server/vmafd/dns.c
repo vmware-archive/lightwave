@@ -39,6 +39,7 @@ VmAfdReverseZoneInitialize(
 
 DWORD
 VmAfSrvConfigureDNSW(
+    PCWSTR pwszTargetName,  /* IN    OPTIONAL */
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
@@ -46,10 +47,19 @@ VmAfSrvConfigureDNSW(
     )
 {
     DWORD dwError = 0;
+    PSTR pszTargetName = NULL;
     PSTR pszServerName = NULL;
     PSTR pszDomainName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
+
+    if (pwszTargetName)
+    {
+        dwError = VmAfdAllocateStringAFromW(
+                      pwszTargetName,
+                      &pszTargetName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = VmAfdAllocateStringAFromW(
                   pwszServerName,
@@ -72,6 +82,7 @@ VmAfSrvConfigureDNSW(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvConfigureDNSA(
+                  pszTargetName,
                   pszServerName,
                   pszDomainName,
                   pszUserName,
@@ -80,6 +91,7 @@ VmAfSrvConfigureDNSW(
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pszTargetName);
     VMAFD_SAFE_FREE_MEMORY(pszServerName);
     VMAFD_SAFE_FREE_MEMORY(pszDomainName);
     VMAFD_SAFE_FREE_MEMORY(pszUserName);
@@ -90,6 +102,7 @@ error:
 
 DWORD
 VmAfSrvConfigureDNSA(
+    PCSTR   pszTargetName,  /* IN   OPTIONAL */
     PCSTR   pszServerName,
     PCSTR   pszDomainName,
     PCSTR   pszUserName,
@@ -147,7 +160,9 @@ VmAfSrvConfigureDNSA(
     initInfo.wPort = VMDNS_DEFAULT_LDAP_PORT;
 
     dwError = VmDnsOpenServerA(
-                "localhost", /* always promote with local DNS */
+                IsNullOrEmptyString(pszTargetName)
+                    ? "localhost"
+                    : pszTargetName,
                 pszUserName,
                 pszDomainName,
                 pszPassword,

@@ -130,7 +130,8 @@ public class TestContext {
         SOLUTION_USER = new SolutionUser(
                 new PrincipalId(SOLUTION_USERNAME, TENANT_NAME),
                 TENANT_NAME,
-                CLIENT_CERT);
+                CLIENT_CERT,
+                false);
     }
 
     public static AuthenticationController authnController() {

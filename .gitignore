@@ -575,3 +575,6 @@ build/vmidentity/
 build/vmmetrics/
 build/rpmbuild/
 
+# hmake files
+.hmake
+.hmakerc

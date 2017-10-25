@@ -345,6 +345,7 @@ VmAfdGetDomainControllerList(
 
 DWORD
 VmAfSrvConfigureDNSW(
+    PCWSTR pwszTargetName,  /* IN   OPTIONAL */
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
@@ -353,6 +354,7 @@ VmAfSrvConfigureDNSW(
 
 DWORD
 VmAfSrvConfigureDNSA(
+    PCSTR pszTargetName,    /* IN   OPTIONAL */
     PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUserName,

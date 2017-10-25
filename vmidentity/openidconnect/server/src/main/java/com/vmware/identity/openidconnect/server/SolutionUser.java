@@ -26,18 +26,23 @@ import com.vmware.identity.idm.PrincipalId;
  */
 public class SolutionUser extends User {
     private final X509Certificate certificate;
+    private final boolean multiTenant;
 
     public SolutionUser(
             PrincipalId principalId,
             String tenant,
-            X509Certificate certificate) {
+            X509Certificate certificate,
+            boolean multiTenant) {
         super(principalId, tenant);
 
         Validate.notNull(certificate, "certificate");
         this.certificate = certificate;
+        this.multiTenant = multiTenant;
     }
 
     public RSAPublicKey getPublicKey() {
         return (RSAPublicKey) this.certificate.getPublicKey();
     }
+
+    public boolean isMultuTenant() { return this.multiTenant; }
 }

@@ -5,8 +5,10 @@ bin_SCRIPTS = \
     @top_srcdir@/config/scripts/domainjoin.sh
 
 scriptsconf_SCRIPTS = \
-    setfirewallrules.py \
-    firewall.json 
+ setfirewallrules.py \
+ lw-firewall-server.json \
+ lw-firewall-post.json \
+ lw-firewall-client.json
 
 systemd_SCRIPTS = firewall.service
 

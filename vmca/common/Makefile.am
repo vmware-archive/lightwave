@@ -17,6 +17,8 @@ libcommon_la_SOURCES = \
     ldap.c \
     string.c \
     misc.c \
+    vmafdlib.c \
+    vecs.c \
     pkcs_crl.c \
     logging.c
 
@@ -24,6 +26,7 @@ libcommon_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \
     -I$(top_srcdir)/vmca/include \
     -I$(top_srcdir)/vmca/include/public \
+    -I$(top_srcdir)/vmafd/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

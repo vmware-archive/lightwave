@@ -14,6 +14,7 @@ librest_head_la_SOURCES += \
     encode.c \
     etcdapi.c \
     globals.c \
+    handler.c \
     httperror.c \
     ldapapi.c \
     ldapcontrol.c \

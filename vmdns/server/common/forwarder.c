@@ -1003,7 +1003,7 @@ VmDnsForwarderMetricsInit(
     )
 {
     DWORD dwError = 0;
-    UINT64 buckets[] = {1, 5, 10, 100, 300};
+    UINT64 buckets[] = {1, 10, 100, 300, 1000};
     VM_METRICS_LABEL labelDurationOps[2][2] = {{{"operation","query"},{"forwarder",""}},
                                                {{"operation","update"},{"forwarder",""}}};
 

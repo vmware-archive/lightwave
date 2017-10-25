@@ -82,6 +82,13 @@
 		</div>
 </div>
 <script type="text/javascript">
+document.getElementById("tenant")
+    .addEventListener("keyup", function(event) {
+    event.preventDefault();
+    if (event.keyCode == 13) {
+        redirect();
+    }
+});
 function redirect(){
 	var tenantName = document.getElementById('tenant').value;
 

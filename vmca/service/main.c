@@ -16,8 +16,8 @@
 static
 VOID
 PrintCurrentState(
-	VOID
-	);
+    VOID
+    );
 
 static DWORD
 VMCAParseArgs(
@@ -62,102 +62,6 @@ error:
     return dwError;
 }
 
-#ifdef REST_ENABLED
-
-REST_PROCESSOR sVmcaHttpHandlers =
-{
-    .pfnHandleRequest  = NULL,
-    .pfnHandleCreate  = &VMCAHandleHttpRequest,
-    .pfnHandleRead  = &VMCAHandleHttpRequest,
-    .pfnHandleUpdate  = &VMCAHandleHttpRequest,
-    .pfnHandleDelete  = &VMCAHandleHttpRequest,
-};
-
-
-#ifndef _WIN32
-DWORD
-VMCAHttpServiceStartup()
-{
-    DWORD dwError = 0;
-    PREST_CONF pConfig = NULL;
-    PREST_PROCESSOR pHandlers = &sVmcaHttpHandlers;
-
-    dwError = VMCAAllocateMemory(
-            sizeof(REST_CONF),
-            (PVOID*) &pConfig
-            );
-
-    pConfig->pSSLCertificate = VMCARESTSSLCERT;
-    pConfig->pSSLKey = VMCARESTSSLKEY;
-    pConfig->pServerPort = VMCARESTPORT;
-    pConfig->pDebugLogFile = VMCARESTDEBUGLOGFILE;
-    pConfig->pClientCount = VMCARESTCLIENTCNT;
-    pConfig->pMaxWorkerThread = VMCARESTWORKERTHCNT;
-
-    dwError = VmRESTInit(pConfig, NULL, &gpVMCARESTHandle);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTRegisterHandler(
-            gpVMCARESTHandle,
-            "/vmca/certificates",
-            pHandlers,
-            NULL);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTRegisterHandler(
-            gpVMCARESTHandle,
-            "/vmca/root",
-            pHandlers,
-            NULL);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTRegisterHandler(
-            gpVMCARESTHandle,
-            "/vmca/crl",
-            pHandlers,
-            NULL);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTRegisterHandler(
-            gpVMCARESTHandle,
-            "/vmca",
-            pHandlers,
-            NULL);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTStart(gpVMCARESTHandle);
-    if (dwError)
-    {
-        // soft fail - will not listen on REST port.
-        VMCA_LOG_WARNING(
-                "VmRESTStart failed with error %d, not going to listen on REST port",
-                dwError);
-        dwError = 0;
-    }
-
-cleanup:
-
-    VMCA_SAFE_FREE_MEMORY(pConfig);
-    return dwError;
-
-error:
-    goto cleanup;
-
-}
-
-void
-VMCAHttpServiceShutdown()
-{
-    if (gpVMCARESTHandle)
-    {
-        VmRESTStop(gpVMCARESTHandle);
-        VmRESTShutdown(gpVMCARESTHandle);
-    }
-}
-#endif
-
-#endif
-
 int
 main(
     int   argc,
@@ -199,7 +103,7 @@ main(
 
 #ifdef REST_ENABLED
 #ifndef _WIN32
-    dwError = VMCAHttpServiceStartup();
+    dwError = VMCARestServiceStartup();
     BAIL_ON_VMCA_ERROR(dwError);
     VMCA_LOG_INFO("VM Certificate ReST Protocol started.");
 #endif
@@ -241,7 +145,7 @@ cleanup:
     VMCAShutdown();
 #ifdef REST_ENABLED
 #ifndef _WIN32
-    VMCAHttpServiceShutdown();
+    VMCARestServiceShutdown();
 #endif
 #endif
     return (dwError);
@@ -269,3 +173,4 @@ PrintCurrentState(
         printf("VMCA Server Functional level is VMCA_FUNC_LEVEL_SELF_CA\n");
     }
 }
+

@@ -881,7 +881,8 @@ typedef enum
 #define VMDIR_REG_KEY_ADMIN_PASSWD            "AdministratorPassword"
 #define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
 #define VMDIR_REG_KEY_LDAPS_PORT              "LdapsPort"
-#define VMDIR_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
+#define VMDIR_REG_KEY_HTTP_LISTEN_PORT        "RestListenHTTPPort"
+#define VMDIR_REG_KEY_HTTPS_LISTEN_PORT       "RestListenHTTPSPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
@@ -902,6 +903,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
+#define VMDIR_REG_KEY_CURL_TIMEOUT_SEC        "CurlTimeoutSec"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 30

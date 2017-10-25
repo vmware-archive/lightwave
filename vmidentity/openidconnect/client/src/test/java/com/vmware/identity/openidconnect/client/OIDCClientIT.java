@@ -14,7 +14,6 @@
 
 package com.vmware.identity.openidconnect.client;
 
-import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -43,7 +42,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testNonRegNoHOKConfigClientGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegNoHOKConfigClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -51,7 +50,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testNonRegNoHOKConfigClientGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegNoHOKConfigClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withoutRefreshSpec);
     }
 
@@ -98,7 +97,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testNonRegHOKConfigClientGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegHOKConfigClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -106,7 +105,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testNonRegHOKConfigClientGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withoutRefreshSpec);
     }
 
@@ -114,7 +113,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testNonRegHOKConfigClientGetHOKWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegHOKConfigClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -122,7 +121,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testNonRegHOKConfigClientGetHOKWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withoutRefreshSpec);
     }
 
@@ -177,7 +176,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -185,7 +184,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withoutRefreshSpec);
     }
 
@@ -193,7 +192,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientGetHOKWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -201,7 +200,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientGetHOKWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withoutRefreshSpec);
     }
 
@@ -256,7 +255,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientWithHAGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClientWithHA,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -265,7 +264,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientWithoutAuthnGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClientWithoutAuthn,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withRefreshSpec);
     }
 
@@ -273,7 +272,7 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testRegClientWithoutAuthnGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClientWithoutAuthn,
-                passwordGrant,
+                passwordGrantForSystemTenant,
                 withoutRefreshSpec);
     }
 
@@ -286,16 +285,24 @@ public class OIDCClientIT extends OIDCClientITBase {
     }
 
     @Test
+    public void testRegClientWithoutAuthnGetHOKWithouRefreshByMultiTenantSolutionUser() throws Exception {
+        TestUtils.verifyTokens(
+                regClientWithoutAuthnForRegularTenant,
+                solutionUserCredentialsGrant,
+                withoutRefreshSpec);
+    }
+
+    @Test
     public void testGroupFiltering() throws Exception {
-        OIDCTokens tokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, groupFilteringSpec);
+        OIDCTokens tokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrantForSystemTenant, groupFilteringSpec);
         ResourceServerAccessToken accessToken = ResourceServerAccessToken.build(
                 tokens.getAccessToken().getValue(),
-                connectionConfig.getProviderPublicKey(),
-                connectionConfig.getIssuer(),
+                connectionConfigForSystemTenant.getProviderPublicKey(),
+                connectionConfigForSystemTenant.getIssuer(),
                 RESOURCE_SERVER_NAME,
                 5 * 60L /* clockToleranceInSeconds */);
         Collection<String> actualGroups = accessToken.getGroups();
-        List<String> expectedGroups = Arrays.asList(tenant + "\\administrators");
+        List<String> expectedGroups = Arrays.asList(systemTenant + "\\administrators");
         Assert.assertEquals("groups", expectedGroups, actualGroups);
     }
 
@@ -308,8 +315,8 @@ public class OIDCClientIT extends OIDCClientITBase {
                 domainControllerFQDN,
                 domainControllerPort,
                 ks,
-                clientPrivateKey);
-        String[] parts = username.split("@");
-        idmClient.user().get(tenant, parts[0], parts[1]);
+                clientPrivateKey1);
+        String[] parts = systemTenantAdminUsername.split("@");
+        idmClient.user().get(systemTenant, parts[0], parts[1]);
     }
 }
