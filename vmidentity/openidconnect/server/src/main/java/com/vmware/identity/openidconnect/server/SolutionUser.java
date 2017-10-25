@@ -44,5 +44,5 @@ public class SolutionUser extends User {
         return (RSAPublicKey) this.certificate.getPublicKey();
     }
 
-    public boolean isMultuTenant() { return this.multiTenant; }
+    public boolean isMultiTenant() { return this.multiTenant; }
 }

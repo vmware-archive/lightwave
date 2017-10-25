@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -29,6 +30,7 @@ import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.KnownSamlAttributes;
+import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.Scope;
@@ -59,28 +61,36 @@ public class UserInfoRetriever {
 
         String givenName = null;
         String familyName = null;
+        List<String> groupMembership = null;
+
+        Collection<Attribute> attributes = new ArrayList<>();
+
         if (user instanceof PersonUser) {
-            com.vmware.identity.idm.PersonUser idmPersonUser;
-            try {
-                idmPersonUser = this.idmClient.findPersonUser(user.getTenant(), user.getPrincipalId());
-            } catch (Exception e) {
-                throw new ServerException(ErrorObject.serverError("idm error while retrieving person user"), e);
-            }
-            if (idmPersonUser == null) {
-                throw new ServerException(ErrorObject.invalidRequest("person user with specified id not found"));
-            }
-            givenName = idmPersonUser.getDetail().getFirstName();
-            familyName = idmPersonUser.getDetail().getLastName();
+            attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_FIRST_NAME));
+            attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_LAST_NAME));
         }
 
-        List<String> groupMembership = null;
         if (
                 scope.contains(ScopeValue.ID_TOKEN_GROUPS) ||
                 scope.contains(ScopeValue.ID_TOKEN_GROUPS_FILTERED) ||
                 scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS) ||
                 scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED) ||
                 scope.contains(ScopeValue.RESOURCE_SERVER_ADMIN_SERVER)) {
-            groupMembership = computeGroupMembership(user);
+            attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_GROUPS));
+        }
+
+
+        Collection<AttributeValuePair> attributeValuePairs = getAttributes(user, attributes);
+
+        for (AttributeValuePair entry : attributeValuePairs) {
+            String attributeName = entry.getAttrDefinition().getName();
+            if (attributeName.equals(KnownSamlAttributes.ATTRIBUTE_USER_FIRST_NAME)) {
+                givenName = entry.getValues().isEmpty() ? null : entry.getValues().get(0);
+            } else if (attributeName.equals(KnownSamlAttributes.ATTRIBUTE_USER_LAST_NAME)) {
+                familyName = entry.getValues().isEmpty() ? null : entry.getValues().get(0);
+            } else if (attributeName.equals(KnownSamlAttributes.ATTRIBUTE_USER_GROUPS)) {
+                groupMembership = entry.getValues();
+            }
         }
 
         String adminServerRole = null;
@@ -151,19 +161,22 @@ public class UserInfoRetriever {
         return result;
     }
 
-    private List<String> computeGroupMembership(User user) throws ServerException {
-        Collection<AttributeValuePair> attributeValuePairs;
+    private Collection<AttributeValuePair> getAttributes(User user, Collection<Attribute> attributes) throws ServerException {
+        if (attributes == null || attributes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        ValidateUtil.validateNotNull(user, "user");
         try {
-            attributeValuePairs = this.idmClient.getAttributeValues(
+            Collection<AttributeValuePair> attributeValuePairs = this.idmClient.getAttributeValues(
                     user.getTenant(),
                     user.getPrincipalId(),
-                    Collections.singleton(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_GROUPS)));
+                    attributes);
+            ValidateUtil.validateNotNull(attributeValuePairs, "attribute value pairs");
+            return attributeValuePairs;
         } catch (Exception e) {
-            throw new ServerException(ErrorObject.serverError("idm error while retrieving group membership"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving user attributes"), e);
         }
-        assert attributeValuePairs != null && attributeValuePairs.size() == 1;
-        AttributeValuePair attributeValuePair = attributeValuePairs.iterator().next();
-        return attributeValuePair.getValues();
     }
 
     private String computeAdminServerRole(User user, List<String> groupMembership) throws ServerException {
