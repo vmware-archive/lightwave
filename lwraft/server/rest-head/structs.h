@@ -80,6 +80,7 @@ typedef struct _VDIR_PROXY_RESULT
 
 typedef struct _VDIR_REST_OPERATION
 {
+    DWORD                   dwPort;
     PSTR                    pszAuth;
     PSTR                    pszMethod;
     PSTR                    pszPath;
@@ -87,6 +88,7 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                    pszHeaderIfMatch;
     PSTR                    pszContentType;
     PSTR                    pszInput;
+    PSTR                    pszClientIP;
     json_t*                 pjInput;
     PLW_HASHMAP             pParamMap;
     VDIR_REST_AUTH_METHOD   authMthd;

@@ -324,6 +324,7 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszClientIP);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

@@ -101,6 +101,10 @@ VmDirRESTRequestHandlerInternal(
     }
     else
     {
+        // Get the client IP
+        dwError = VmRESTGetConnectionInfo(pRequest, &pRestOp->pszClientIP, &pRestOp->dwPort);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         VmDirRaftGetRole(&role);
         if (role == VDIR_RAFT_ROLE_LEADER)
         {
@@ -125,6 +129,12 @@ VmDirRESTRequestHandlerInternal(
             dwError = VmDirRESTWriteSimpleErrorResponse(
                     pRESTHandle, ppResponse, 503);  // 503 = Service Unavailable
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "Error: %d Node in invalid state no leader. Status returned: 503 to client: %s",
+                    VMDIR_ERROR_NO_LEADER,
+                    VDIR_SAFE_STRING(pRestOp->pszClientIP));
         }
     }
 
@@ -135,10 +145,11 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d), rest operation error (%d)",
+            "%s failed, error (%d), rest operation error (%d) for client: %s",
             __FUNCTION__,
             dwError,
-            dwRestOpErr);
+            dwRestOpErr,
+            pRestOp ? VDIR_SAFE_STRING(pRestOp->pszClientIP) : "");
 
     goto cleanup;
 }
@@ -176,6 +187,13 @@ VmDirRESTProcessRequest(
     dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Leader received REST request from: %s request type: %s request URI: %s",
+            VDIR_SAFE_STRING(pRestOp->pszClientIP),
+            VDIR_SAFE_STRING(pRestOp->pszMethod),
+            VDIR_SAFE_STRING(pRestOp->pszPath));
+
 cleanup:
     VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
     return dwError;
@@ -183,9 +201,10 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
+            "%s failed, error (%d) for client: %s",
             __FUNCTION__,
-            dwError);
+            dwError,
+            VDIR_SAFE_STRING(pRestOp->pszClientIP));
 
     goto cleanup;
 }
