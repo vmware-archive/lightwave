@@ -36,8 +36,6 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -82,8 +80,6 @@ import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.data.attributes.SearchType;
 import com.vmware.identity.rest.idm.data.attributes.TenantConfigType;
 import com.vmware.identity.rest.idm.server.mapper.AuthenticationPolicyMapper;
-import com.vmware.identity.rest.idm.server.mapper.LockoutPolicyMapper;
-import com.vmware.identity.rest.idm.server.mapper.PasswordPolicyMapper;
 import com.vmware.identity.rest.idm.server.resources.CertificateResource;
 import com.vmware.identity.rest.idm.server.resources.GroupResource;
 import com.vmware.identity.rest.idm.server.resources.IdentityProviderResource;
@@ -200,7 +196,7 @@ public class TenantResourceTest {
     @Test(expected=BadRequestException.class)
     public void testCreateTenant_WithInvalidTenantCredentials() {
         TenantDTO tenantDTO = TenantDTO.builder()
-                .withName(TENANT_NAME)
+                .withUsername(TENANT_NAME)
                 .withLongName(TENANT_LONG_NAME)
                 .withKey(TENANT_KEY)
                 .withCredentials(null)
