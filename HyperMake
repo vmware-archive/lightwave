@@ -50,18 +50,23 @@ targets:
     cmds:
       - ./support/scripts/pack.sh
 
-  pre-container:
+  docker-lightwave-base:
+    description: build lightwave-base docker image
+    build: ./support/docker/base
+    image: 'vmware/lightwave-base:1.0.0'
+
+  docker-lightwave-pre:
     description: Prepare for container build
     cmds:
       - ./support/scripts/prep-container-build.sh
     always: true
 
-  container:
+  docker-lightwave:
     description: build lightwave docker image
     build: ./build/docker
     image: 'vmware/lightwave-sts'
     after:
-      - pre-container
+      - docker-lightwave-pre
 
   clean:
     description: Cleanup

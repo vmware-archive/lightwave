@@ -16,13 +16,15 @@ cp $PROJECT_ROOT/support/docker/Dockerfile $DOCKER_ROOT
 
 # modify Dockerfile to use local lightwave yum repository
 
+#
+# Assumes that sed and createrepo are already installed
+#
 tmpfile=$(mktemp /tmp/lw.XXXXXX)
 cat >$tmpfile <<EOF
 COPY x86_64 /tmp/vmware/lightwave/x86_64
-RUN tdnf makecache && \
-    tdnf install -y sed createrepo && \
-    sed -i -e "s/https:\/\/dl.bintray.com/file:\/\/\/tmp/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo && \
-    createrepo /tmp/vmware/lightwave
+RUN sed -i -e "s/https:\/\/dl.bintray.com/file:\/\/\/tmp/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo && \
+    createrepo /tmp/vmware/lightwave && \
+    tdnf makecache
 EOF
 sed -i -e "/# Build hook/r $tmpfile" -e "//d" $DOCKER_ROOT/Dockerfile
 rm $tmpfile
