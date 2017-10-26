@@ -1149,6 +1149,40 @@ public class IdentityManager implements IIdentityManager {
 
     private
     void
+    setTenantCredentials(
+            String                  tenantName
+    ) throws Exception
+    {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+
+            // check whether tenant exists, if not, throw NoSucnTenantException.
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            this.generateAndSetDefaultTenantCredentials(tenantName);
+
+            _tenantCache.deleteTenant(tenantName);
+
+            logger.info(String.format(
+                    "Default Credentials successfully set for tenant [%s]",
+                    tenantName));
+        }
+        catch(Exception ex)
+        {
+            logger.error(String.format(
+                    "Failed to set default credentials for tenant [%s]",
+                    tenantName));
+
+            throw ex;
+        }
+    }
+
+
+
+    private
+    void
     setTenantTrustedCertificateChain(
             String                  tenantName,
             Collection<Certificate> tenantCertificates
@@ -7058,7 +7092,7 @@ public class IdentityManager implements IIdentityManager {
                     _configStore.setSystemTenant(spDomain);
 
                     // call VMCA to create certs/private key and set tenant credentials
-                    setTenantCredentials(spDomain);
+                    generateAndSetDefaultTenantCredentials(spDomain);
 
                     // set default tenant settings
                     _configStore.setClockTolerance(spDomain, IConfigStore.DEFAULT_CLOCK_TOLERANCE);
@@ -7109,7 +7143,7 @@ public class IdentityManager implements IIdentityManager {
         return spTenant.getName();
     }
 
-    private void setTenantCredentials(String tenantName) throws Exception {
+    private void generateAndSetDefaultTenantCredentials(String tenantName) throws Exception {
         // VMCA time constants
         final int VMCA_DEFAULT_KEY_LENGTH = 2048;
         final long VMCA_TIME_SECS_PER_MINUTE = 60;
