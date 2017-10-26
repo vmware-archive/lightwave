@@ -6,14 +6,10 @@ LABEL vendor="VMware, Inc."
 LABEL com.vmware.lightwave-base.version="1.0.0"
 
 RUN tdnf update --refresh -y \
-         rpm-4.13.0 \
-         tdnf \
-         pcre-8.39 \
-         expat-2.2.0 \
-         bzip2-1.0.6 && \
+         tdnf-1.1.0 \
+         rpm-4.13.0 && \
     tdnf install -y \
          openssl-1.0.2h \
-         curl-7.54.0 \
          createrepo-0.10.4 \
          apache-tomcat-8.5.20 \
          boost-1.60.0 \
