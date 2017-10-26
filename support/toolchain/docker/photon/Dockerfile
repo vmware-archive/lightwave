@@ -3,7 +3,7 @@ MAINTAINER "Sriram Nambakam" <snambakam@vmware.com>
 ENV container=docker
 ENV GOROOT=/usr/lib/golang
 
-RUN tdnf update -y --refresh rpm-4.13.1 tdnf && \
+RUN tdnf update -y --refresh rpm-4.13.0.1 tdnf && \
     tdnf makecache && \
     tdnf update -y tdnf && \
     tdnf install -y sed-4.2.2 && \
