@@ -151,7 +151,7 @@ public class OIDCClientITBase {
 
         // create a non-system tenant
         createTenant(regularTenant, regularTenantAdminUsername, regularTenantAdminPassword, properties.getProperty("tenant1.issuer"), idmClientForSystemTenant);
-        Thread.sleep(10 * 1000); // wait for tenant creation to finish
+        Thread.sleep(15 * 1000); // wait for tenant creation to finish
 
         // retrieve OIDC meta data from regular tenant
         metadataHelper = new MetadataHelper.Builder(domainControllerFQDN)
