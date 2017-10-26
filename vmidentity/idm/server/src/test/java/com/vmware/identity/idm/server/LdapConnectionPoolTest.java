@@ -18,7 +18,14 @@ import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PooledLdapConnectionIdentity;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
+import com.vmware.identity.interop.ldap.ILdapMessage;
+import com.vmware.identity.interop.ldap.ILdapPagedSearchResult;
+import com.vmware.identity.interop.ldap.LdapBindMethod;
+import com.vmware.identity.interop.ldap.LdapControlNative;
+import com.vmware.identity.interop.ldap.LdapMod;
+import com.vmware.identity.interop.ldap.LdapOption;
 import com.vmware.identity.interop.ldap.LdapScope;
+import com.vmware.identity.interop.ldap.TimevalNative;
 
 public class LdapConnectionPoolTest {
 
@@ -164,6 +171,16 @@ public class LdapConnectionPoolTest {
     }
 
     @Test
+    public void test_returnConnection_NullIdentity() {
+        LdapConnectionPool pool = LdapConnectionPool.getInstance();
+        pool.createPool(newTenantName);
+        LdapConnectionExTest conn = new LdapConnectionExTest();
+        PooledLdapConnection pooledLdapConnectionWithNullIdentity = new PooledLdapConnection(conn, null, pool);
+        pool.returnConnection(pooledLdapConnectionWithNullIdentity);
+        Assert.assertTrue(conn.isClosed());
+    }
+
+    @Test
     public void test_returnConnection_BuildNewIdentity() throws Exception {
 
 	LdapConnectionPool pool = LdapConnectionPool.getInstance();
@@ -293,5 +310,128 @@ public class LdapConnectionPoolTest {
 	} catch (Exception e) {
 	    throw new IllegalStateException(e);
 	}
+    }
+
+    private static class LdapConnectionExTest implements ILdapConnectionEx {
+
+        private boolean isClosed = false;
+
+        @Override
+        public void setOption(LdapOption option, int value) {
+
+        }
+
+        @Override
+        public void setOption(LdapOption option, boolean value) {
+
+        }
+
+        @Override
+        public void bindConnection(String dn, String cred, LdapBindMethod method) {
+
+        }
+
+        @Override
+        public void bindSaslConnection(String userName, String domainName,
+                String userPassword, String krbConfPath) {
+
+        }
+
+        @Override
+        public void addObject(String dn, LdapMod[] attributes) {
+
+        }
+
+        @Override
+        public void addObject(String dn, Collection<LdapMod> attributes) {
+
+        }
+
+        @Override
+        public void modifyObject(String dn, LdapMod attribute) {
+
+        }
+
+        @Override
+        public void modifyObject(String dn, LdapMod[] attributes) {
+
+        }
+
+        @Override
+        public void modifyObject(String dn, Collection<LdapMod> attributes) {
+
+        }
+
+        @Override
+        public ILdapMessage search(String base, LdapScope scope, String filter,
+                String[] attributes, boolean attributesOnly) {
+            return null;
+        }
+
+        @Override
+        public ILdapMessage search(String base, LdapScope scope, String filter,
+                Collection<String> attributes, boolean attributesOnly) {
+            return null;
+        }
+
+        @Override
+        public ILdapMessage search_ext(String base, LdapScope scope,
+                String filter, Collection<String> attributes,
+                boolean attributesOnly, Collection<LdapControlNative> sctrls,
+                Collection<LdapControlNative> cctrls, TimevalNative timeout,
+                int sizelimit) {
+            return null;
+        }
+
+        @Override
+        public ILdapPagedSearchResult search_one_page(String base,
+                LdapScope scope, String filter, Collection<String> attributes,
+                int pageSize, ILdapPagedSearchResult prevPagedSearchResult) {
+            return null;
+        }
+
+        @Override
+        public Collection<ILdapMessage> paged_search(String base,
+                LdapScope scope, String filter, Collection<String> attributes,
+                int pageSize) {
+            return null;
+        }
+
+        @Override
+        public void deleteObject(String dn) {
+
+        }
+
+        @Override
+        public void deleteObjectTree(String dn) {
+
+        }
+
+        @Override
+        public void close() {
+            this.isClosed = true;
+        }
+
+        boolean isClosed() {
+            return this.isClosed;
+        }
+
+        @Override
+        public void bindSaslSrpConnection(String upn, String userPassword) {
+
+        }
+
+        @Override
+        public void bindSaslConnection(String userName, String domainName,
+                String userPassword) {
+
+        }
+
+        @Override
+        public Collection<ILdapMessage> paged_search(String base,
+                LdapScope scope, String filter, Collection<String> attributes,
+                int pageSize, int limit) {
+            return null;
+        }
     }
 }

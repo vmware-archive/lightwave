@@ -56,7 +56,13 @@ public final class LdapConnectionPool {
     }
 
     public void returnConnection(PooledLdapConnection pooledConnection) {
-        if (pooledConnection == null || pooledConnection.getIdentity() == null || pooledConnection.getConnection() == null) {
+        if (pooledConnection == null || pooledConnection.getConnection() == null) {
+            return;
+        }
+
+        if (pooledConnection.getIdentity() == null) {
+            logger.warn("Identity is not set. Closing connection");
+            pooledConnection.getConnection().close();
             return;
         }
 
