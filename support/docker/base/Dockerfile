@@ -7,7 +7,7 @@ LABEL com.vmware.lightwave-base.version="1.0.0"
 
 RUN tdnf update --refresh -y \
          tdnf-1.1.0 \
-         rpm-4.13.0 && \
+         rpm-4.13.0.1 && \
     tdnf install -y \
          openssl-1.0.2h \
          createrepo-0.10.4 \
