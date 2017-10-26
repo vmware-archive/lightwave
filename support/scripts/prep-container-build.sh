@@ -3,16 +3,16 @@
 PROJECT_ROOT=$(pwd)
 
 DOCKER_ROOT=$PROJECT_ROOT/build/docker
+DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sts
 
 mkdir -p $DOCKER_ROOT
 
 rm -rf $DOCKER_ROOT/*
 
-cp $PROJECT_ROOT/support/docker/lightwave-init $DOCKER_ROOT
-
 cp -r $PROJECT_ROOT/build/rpmbuild/RPMS/x86_64 $DOCKER_ROOT
 
-cp $PROJECT_ROOT/support/docker/Dockerfile $DOCKER_ROOT
+cp $DOCKER_SRC_ROOT/lightwave-init $DOCKER_ROOT
+cp $DOCKER_SRC_ROOT/Dockerfile $DOCKER_ROOT
 
 # modify Dockerfile to use local lightwave yum repository
 
