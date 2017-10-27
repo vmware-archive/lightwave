@@ -111,10 +111,12 @@ VdcSchemaConnOpen(
     }
 
     // always connect to leader
-    dwError = VmDirSafeLDAPBind(&pConn->pLd,
-            pszLeader,
-            pConn->pszUPN,
-            pConn->pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pConn->pLd,
+        pConn->pszHostName,
+        pConn->pszUPN,
+        pConn->pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

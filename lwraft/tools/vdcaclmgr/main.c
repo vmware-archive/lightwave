@@ -219,11 +219,12 @@ VmDirMain(int argc, char* argv[])
     dwError = VdcGetUsersPassword(&State, pszPasswordBuf, VMDIR_ARRAY_SIZE(pszPasswordBuf));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind(
+    dwError = VmDirSafeLDAPBindExt1(
                 &pLd,
                 State.pszServerName,
                 State.pszUserName,
-                pszPasswordBuf);
+                pszPasswordBuf,
+                MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VdcLoadUsersAndGroups(pLd, State.pszBaseDN, &pUserToSidMapping, &pSidToUserMapping);

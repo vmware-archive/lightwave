@@ -210,6 +210,17 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ -1,                               \
+        /*.dwDefault      = */ 3,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_MAX_OP_THREADS,     \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \

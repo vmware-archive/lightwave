@@ -80,7 +80,7 @@ DWORD VmDirCreateLdAtHostViaMachineAccount(
     dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszDCAccount, pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLd, pszServerName, bufUPN, pszDCAccountPassword);
+    dwError = VmDirSafeLDAPBindExt1( &pLd, pszServerName, bufUPN, pszDCAccountPassword, MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppLd = pLd;

@@ -104,7 +104,7 @@ VmDirRESTGetLightwaveObjectSid(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBindToPort(
-            &pLd, pszDCName, dwPort, pszAccountUPN, pszPassword);
+            &pLd, pszDCName, dwPort, pszAccountUPN, pszPassword, gVmdirGlobals.dwLdapConnectTimeoutSec);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = ldap_search_ext_s(
