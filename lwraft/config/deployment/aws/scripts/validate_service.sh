@@ -6,7 +6,7 @@ ERRCNT=0
 
 echo "Step 1: Wait for leader election (mostly for 2nd node promotion)"
 
-get_tag_value "POST_PASSWORD" POST_PASSWORD
+get_post_password POST_PASSWORD
 
 echo '/opt/vmware/bin/post-cli node state --server-name localhost --login administrator --password <censored>'
 

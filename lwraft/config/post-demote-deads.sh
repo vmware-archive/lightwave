@@ -10,9 +10,18 @@ logger -t post-demote-deads "Step 1: Read ASG tags"
 INSTANCE=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)
 REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e "s:\([0-9][0-9]*\)[a-z]*\$:\\1:")
 ASG=$(aws autoscaling describe-auto-scaling-instances --instance-ids ${INSTANCE} --region ${REGION} --query AutoScalingInstances[].AutoScalingGroupName --output text)
-
-POST_PASSWORD=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${ASG} --region ${REGION} --query AutoScalingGroups[].Tags[?Key==\'POST_PASSWORD\'].Value --output text)
 LW_DOMAIN=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${ASG} --region ${REGION} --query AutoScalingGroups[].Tags[?Key==\'LW_DOMAIN\'].Value --output text)
+PASSWORD_PATH=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${ASG} --region ${REGION} --query AutoScalingGroups[].Tags[?Key==\'PASSWORD_PATH\'].Value --output text)
+
+if [[ -z ${PASSWORD_PATH} ]]
+then
+    PASSWORD_PATH=s3://cascade-passwords/post-password  # default path
+fi
+
+TMPFILE=/tmp/cronpw-${RANDOM}
+aws s3 cp ${PASSWORD_PATH} ${TMPFILE}
+POST_PASSWORD=$(cat ${TMPFILE})
+rm ${TMPFILE}
 
 
 logger -t post-demote-deads "Step 2: Check if localhost is the leader (if yes, continue)"

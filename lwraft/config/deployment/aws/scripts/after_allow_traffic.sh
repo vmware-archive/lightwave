@@ -6,7 +6,7 @@ source $(dirname $(realpath $0))/common.sh
 
 echo "Step 1: Check if localhost is the leader (if yes, continue)"
 
-get_tag_value "POST_PASSWORD" POST_PASSWORD
+get_post_password POST_PASSWORD
 
 LOCALHOST=`hostname -f | awk '{print tolower($0)}'`
 LEADER=$(/opt/vmware/bin/post-cli node state --server-name localhost --login administrator --password ${POST_PASSWORD} | grep Leader | awk '{print $1}')
