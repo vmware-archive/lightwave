@@ -7,7 +7,8 @@ libvmdirmdb_la_SOURCES = \
 libvmdirmdb_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/public \
-    -I$(top_srcdir)/thirdparty/openldap/include
+    -I$(top_srcdir)/thirdparty/openldap/include \
+    -D MDB_PARANOID
 
 libvmdirmdb_la_LDFLAGS = \
     -static

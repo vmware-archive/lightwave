@@ -1776,7 +1776,7 @@ mdb_page_alloc(MDB_cursor *mc, int num, MDB_page **mp)
 	 * records if me_pghead is empty. Then the freelist cannot play
 	 * catch-up with itself by growing while trying to save it.
 	 */
-	enum { Paranoid = 1, Max_retries = 500 };
+	enum { Paranoid = 1, Max_retries = 1000 };
 #else
 	enum { Paranoid = 0, Max_retries = INT_MAX /*infinite*/ };
 #endif
