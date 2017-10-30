@@ -44,25 +44,27 @@ public class RoleMapper {
 
     public RoleGroup getRoleGroup(Role role) { return getRoleGroup(role, false); }
 
-    public RoleGroup getRoleGroup(Role role, boolean multiTenanted) {
+    public RoleGroup getRoleGroup(Role role, boolean isSystemTenantDomain) {
         switch (role) {
         case ADMINISTRATOR:
-            return new RoleGroup(role, "Administrators", subjectDomain(multiTenanted));
+            return new RoleGroup(role, "Administrators", subjectDomain(isSystemTenantDomain));
         case CONFIGURATION_USER:
             return new RoleGroup(role, "SystemConfiguration.Administrators", systemTenantDomain);
+        case TENANT_OPERATOR:
+            return new RoleGroup(role, "TenantOperators", systemTenantDomain);
         case TRUSTED_USER:
-            return new RoleGroup(role, "TrustedUsers", subjectDomain(multiTenanted));
+            return new RoleGroup(role, "TrustedUsers", subjectDomain(isSystemTenantDomain));
         case REGULAR_USER:
-            return new RoleGroup(role, "Users", subjectDomain(multiTenanted));
+            return new RoleGroup(role, "Users", subjectDomain(isSystemTenantDomain));
         case GUEST_USER:
-            return new RoleGroup(role, "Everyone", subjectDomain(multiTenanted));
+            return new RoleGroup(role, "Everyone", subjectDomain(isSystemTenantDomain));
         default:
             throw new IllegalArgumentException("Invalid Role: '" + role.toString() + "'");
         }
     }
 
-    private String subjectDomain(boolean multiTenant)
+    private String subjectDomain(boolean isSystemTenantDomain)
     {
-        return multiTenant ? systemTenantDomain : tenantDomain;
+        return isSystemTenantDomain ? systemTenantDomain : tenantDomain;
     }
 }

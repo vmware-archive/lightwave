@@ -57,9 +57,9 @@ public class TestGenerator {
         return keyPair;
     }
 
-    public static TenantDTO generateTenant() throws IOException, GeneralSecurityException {
+    public static TenantDTO generateTenant(String tenant) throws IOException, GeneralSecurityException {
         TenantDTO.Builder builder = new TenantDTO.Builder()
-            .withName(TEST_TENANT_NAME)
+            .withName(tenant)
             .withLongName(TEST_TENANT_LONG_NAME)
             .withKey(TEST_TENANT_KEY)
             .withCredentials(generateTenantCredentials())
@@ -69,6 +69,9 @@ public class TestGenerator {
         return builder.build();
     }
 
+    public static TenantDTO generateTenant() throws IOException, GeneralSecurityException {
+        return generateTenant(TEST_TENANT_NAME);
+    }
     public static ExternalIDPDTO generateExternalIDP(CertificateDTO certificate) throws GeneralSecurityException, IOException {
         return ExternalIdpGenerator.generateExternalIDP(certificate);
     }

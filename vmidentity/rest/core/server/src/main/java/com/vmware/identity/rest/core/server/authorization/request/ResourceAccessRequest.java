@@ -47,6 +47,7 @@ import com.vmware.identity.rest.core.server.authorization.verifier.saml.SAMLToke
 import com.vmware.identity.rest.core.server.exception.ServerException;
 import com.vmware.identity.rest.core.server.util.ClientFactory;
 import com.vmware.identity.rest.core.server.util.PathParameters;
+import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.core.util.StringManager;
 
 /**
@@ -161,6 +162,16 @@ public class ResourceAccessRequest {
      * @param requiredRole the role to ensure that the token is valid for
      */
     public void validateRole(Role requiredRole) throws InsufficientRoleException {
+        // if the required role is in system tenant domain but the user is not in system tenant domain,
+        // the user should not have the permission
+        if (requiredRole.isSystemTenantDomain()) {
+            String userDomain = PrincipalUtil.fromName(token.getSubject()).getDomain();
+            String systemTenantDomain = roleMapper.getSystemTenantDomain();
+            if (!userDomain.equalsIgnoreCase(systemTenantDomain)) {
+                throw new InsufficientRoleException(sm.getString("auth.ise.wrong.role", requiredRole));
+            }
+        }
+
         if (token.getRole() != null) {
             checkRoleField(requiredRole);
         } else {
@@ -188,7 +199,8 @@ public class ResourceAccessRequest {
 
             Role role = roles[i];
             while (role.is(requiredRole)) {
-                if (checkIfGroupExists(groupList, roleMapper.getRoleGroup(role, token.isSubjectMultiTenant()).getGroupNetbios())) {
+                boolean isSystemTenantDomain = requiredRole.isSystemTenantDomain() || token.isSubjectMultiTenant();
+                if (checkIfGroupExists(groupList, roleMapper.getRoleGroup(role, isSystemTenantDomain).getGroupNetbios())) {
                     return;
                 }
                 role = roles[--i];
@@ -212,9 +224,10 @@ public class ResourceAccessRequest {
      * Construct a ResourceAccessRequest from a {@link ContainerRequestContext}.
      *
      * @param context the request to parse from
+     * @param requiredRole the requested role for the request
      * @return the request object constructed from the specified context or null if no token exists
      */
-    public static ResourceAccessRequest fromRequestContext(ContainerRequestContext context) throws ServerException {
+    public static ResourceAccessRequest fromRequestContext(ContainerRequestContext context, Role requiredRole) throws ServerException {
         boolean secure = isRequestSecure(context);
 
         CasIdmClient client = ClientFactory.getClient();
@@ -230,7 +243,7 @@ public class ResourceAccessRequest {
 
         String tenant = getTenant(context, client);
         long skew = getSkew(tenant, client);
-        Certificate cert = getSigningCert(tenant, client);
+        Certificate cert = getSigningCert(tenant, client, requiredRole.isSystemTenantDomain());
 
         AccessTokenVerifier verifier = getAccessTokenVerifier(context, info, skew, cert);
 
@@ -385,11 +398,13 @@ public class ResourceAccessRequest {
      *
      * @param tenant the tenant to get the signing certificates for
      * @param client the IDM client to communicate with
+     * @param isSystemdomain whether to get signing cert from system tenant
      * @return the signing certificate for <tt>tenant</tt>
      * @throws ServerException if there is a server error preventing the retrieval of the certificate
      */
-    private static Certificate getSigningCert(String tenant, CasIdmClient client) throws ServerException {
+    private static Certificate getSigningCert(String tenant, CasIdmClient client, boolean isSystemdomain) throws ServerException {
         List<Certificate> certList;
+        tenant = isSystemdomain ? getSystemTenant(client) : tenant;
         try {
             certList = client.getTenantCertificate(tenant);
         } catch (Exception e) {

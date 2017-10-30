@@ -83,7 +83,7 @@ public class AuthorizationRequestFilter implements ContainerRequestFilter {
         StringManager sm = StringManager.getManager(Config.LOCALIZATION_PACKAGE_NAME);
 
         try {
-            ResourceAccessRequest request = ResourceAccessRequest.fromRequestContext(context);
+            ResourceAccessRequest request = ResourceAccessRequest.fromRequestContext(context, requiredRole);
 
             if (request == null) {
 

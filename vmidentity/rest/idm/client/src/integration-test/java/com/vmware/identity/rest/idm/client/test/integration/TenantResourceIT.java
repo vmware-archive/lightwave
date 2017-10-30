@@ -19,28 +19,52 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.vmware.directory.rest.common.data.MemberType;
+import com.vmware.directory.rest.common.data.UserDTO;
+import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
+import com.vmware.identity.rest.core.client.exceptions.client.ForbiddenException;
+import com.vmware.identity.rest.idm.client.IdmClient;
+import com.vmware.identity.rest.idm.client.test.integration.util.TestClientFactory;
+import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
+import com.vmware.identity.rest.idm.client.test.integration.util.UserGenerator;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 
 public class TenantResourceIT extends IntegrationTestBase {
 
+    private static UserDTO testUserWithPriviledge;
+    private static UserDTO testUserWithoutPriviledge;
+    private static String systemTenant;
+    private static String testTenantName1 = TenantResourceIT.class.getSimpleName() + ".tenant1";
+    private static String testTenantName2 = TenantResourceIT.class.getSimpleName() + ".tenant2";
+
     @BeforeClass
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
         IntegrationTestBase.init(true);
+        systemTenant = properties.getSystemTenant();
+        testUserWithPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser1", systemTenant, "Test user with tenant operator priviledge."));
+        List<String> members = Arrays.asList(UPNUtil.buildUPN(testUserWithPriviledge.getName() ,testUserWithPriviledge.getDomain()));
+        systemAdminVmdirClient.group().addMembers(systemTenant, "TenantOperators", systemTenant, members, MemberType.USER);
+        testUserWithoutPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser2", systemTenant, "Test user without tenant operator priviledge."));
     }
 
     @AfterClass
     public static void cleanup() throws ClientProtocolException, HttpException, ClientException, IOException {
         IntegrationTestBase.cleanup(true);
+        systemAdminVmdirClient.user().delete(systemTenant, testUserWithPriviledge.getName(), testUserWithPriviledge.getDomain());
+        systemAdminVmdirClient.user().delete(systemTenant, testUserWithoutPriviledge.getName(), testUserWithoutPriviledge.getDomain());
     }
 
     @Test
@@ -83,4 +107,35 @@ public class TenantResourceIT extends IntegrationTestBase {
         assertEquals(lockout.getMaxFailedAttempts(), actual.getLockoutPolicy().getMaxFailedAttempts());
     }
 
+    @Test
+    public void testCreateAndDelete() throws Exception {
+        IdmClient idmClientWithPrviledge = TestClientFactory.createClient(properties.getHost(),
+                systemTenant,
+                UPNUtil.buildUPN(testUserWithPriviledge.getName() ,testUserWithPriviledge.getDomain()),
+                UserGenerator.PASSWORD);
+        idmClientWithPrviledge.tenant().create(TestGenerator.generateTenant(testTenantName1));
+        Thread.sleep(15 * 1000);
+
+        IdmClient idmClientWithoutPrviledge = TestClientFactory.createClient(properties.getHost(),
+                systemTenant,
+                UPNUtil.buildUPN(testUserWithoutPriviledge.getName(), testUserWithoutPriviledge.getDomain()),
+                UserGenerator.PASSWORD);
+        Exception ex = null;
+        try {
+            idmClientWithoutPrviledge.tenant().create(TestGenerator.generateTenant(testTenantName2));
+        } catch (Exception e) {
+            ex = e;
+        }
+        Assert.assertTrue(ex instanceof ForbiddenException);
+
+        ex = null;
+        try {
+            idmClientWithoutPrviledge.tenant().delete(testTenantName1);
+        } catch (Exception e) {
+            ex = e;
+        }
+        Assert.assertTrue(ex instanceof ForbiddenException);
+
+        idmClientWithPrviledge.tenant().delete(testTenantName1);
+    }
 }
