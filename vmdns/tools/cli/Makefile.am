@@ -12,9 +12,9 @@ vmdns_cli_CPPFLAGS = \
     @LW_INCLUDES@
 
 vmdns_cli_LDADD = \
+    @top_builddir@/vmdns/common/libcommon.la \
     $(top_builddir)/vmdns/client/libvmdnsclient.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
-    @top_builddir@/vmdns/common/libcommon.la \
     @LDAP_LIBS@ \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

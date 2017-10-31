@@ -518,6 +518,10 @@ VmDnsCliAddRecord(
     dwError = VmDnsCliValidateAndCompleteRecord(pContext);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    if (pContext->record.dwType == VMDNS_RR_TYPE_SRVFF)
+    {
+        pContext->record.dwType = VMDNS_RR_TYPE_SRV;
+    }
     dwError = VmDnsAddRecordA(pContext->pServerContext,
                             pContext->pszZone,
                             &pContext->record);
@@ -541,6 +545,9 @@ VmDnsCliDelRecord(
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
     BOOL bFound = FALSE;
     PSTR pszTargetFQDN = NULL;
+    PSTR pszPtr = NULL;
+    PSTR pszDot = "";
+    PSTR pszNewNameTarget = NULL;
 
     if (pContext->record.dwType == VMDNS_RR_TYPE_SOA)
     {
@@ -566,7 +573,42 @@ VmDnsCliDelRecord(
             pszTargetFQDN = NULL;
         }
     }
-    if (pContext->record.dwType == VMDNS_RR_TYPE_NS)
+    else if (pContext->record.dwType == VMDNS_RR_TYPE_SRVFF)
+    {
+        if (!pContext->record.Data.SRV.pNameTarget)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+ 
+        pszPtr = &pContext->pszZone[strlen(pContext->pszZone) - 1];
+        if (*pszPtr != '.')
+        {
+            pszDot = ".";
+        }
+        dwError = VmDnsAllocateStringPrintfA(&pContext->record.pszName,
+                                            "%s.%s%s",
+                                            pContext->pszService,
+                                            pContext->pszZone,
+                                            pszDot);
+        BAIL_ON_VMDNS_ERROR(dwError);
+        pszPtr = &pContext->record.Data.SRV.pNameTarget[strlen(
+                     pContext->record.Data.SRV.pNameTarget) - 1];
+        if (*pszPtr != '.')
+        {
+            dwError = VmDnsAllocateStringPrintfA(
+                          &pszNewNameTarget,
+                          "%s.",
+                          pContext->record.Data.SRV.pNameTarget);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.SRV.pNameTarget);
+            pContext->record.Data.SRV.pNameTarget = pszNewNameTarget;
+            pszNewNameTarget = NULL;
+            pContext->record.dwType = VMDNS_RR_TYPE_SRV;
+        }
+    }
+    else if (pContext->record.dwType == VMDNS_RR_TYPE_NS)
     {
         dwError = VmDnsMakeFQDN(pContext->record.Data.NS.pNameHost,
                                 pContext->pszZone,
@@ -589,7 +631,7 @@ VmDnsCliDelRecord(
             pszTargetFQDN = NULL;
         }
     }
-    if (pContext->record.dwType == VMDNS_RR_TYPE_PTR)
+    else if (pContext->record.dwType == VMDNS_RR_TYPE_PTR)
     {
         dwError = VmDnsMakeFQDN(
                 pContext->record.pszName,
@@ -663,6 +705,9 @@ VmDnsCliValidateAndCompleteRecord(
 {
     DWORD dwError = 0;
     PSTR pszTargetFQDN = NULL;
+    PSTR pszPtr = NULL;
+    PSTR pszDot = "";
+    PSTR pszNewNameTarget = NULL;
 
     pContext->record.iClass = VMDNS_CLASS_IN;
     pContext->record.dwTtl = VMDNS_DEFAULT_TTL;
@@ -708,6 +753,43 @@ VmDnsCliValidateAndCompleteRecord(
                 pContext->record.Data.SRV.pNameTarget = pszTargetFQDN;
                 pszTargetFQDN = NULL;
             }
+            break;
+
+        case VMDNS_RR_TYPE_SRVFF:
+            if (!pContext->record.Data.SRV.pNameTarget)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+ 
+            pszPtr = &pContext->pszZone[strlen(pContext->pszZone) - 1];
+            if (*pszPtr != '.')
+            {
+                pszDot = ".";
+            }
+            dwError = VmDnsAllocateStringPrintfA(&pContext->record.pszName,
+                                                "%s.%s%s",
+                                                pContext->pszService,
+                                                pContext->pszZone,
+                                                pszDot);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            pszPtr = &pContext->record.Data.SRV.pNameTarget[strlen(
+                         pContext->record.Data.SRV.pNameTarget) - 1];
+            if (*pszPtr != '.')
+            {
+                dwError = VmDnsAllocateStringPrintfA(
+                              &pszNewNameTarget,
+                              "%s.",
+                              pContext->record.Data.SRV.pNameTarget);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                VMDNS_SAFE_FREE_STRINGA(
+                    pContext->record.Data.SRV.pNameTarget);
+                pContext->record.Data.SRV.pNameTarget = pszNewNameTarget;
+                pszNewNameTarget = NULL;
+            }
+            pContext->record.dwType = VMDNS_RR_TYPE_SRV;
+
             break;
 
         case VMDNS_RR_TYPE_NS:
@@ -825,6 +907,7 @@ VmDnsCliValidateRecordInput(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
     if (pContext->record.dwType == VMDNS_RR_TYPE_NONE)
     {
         fprintf(stderr, "Error: DNS Record type is not specified\n");
@@ -832,8 +915,7 @@ VmDnsCliValidateRecordInput(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-
-    if (pContext->record.dwType == VMDNS_RR_TYPE_SRV)
+    else if (pContext->record.dwType == VMDNS_RR_TYPE_SRV)
     {
         if (!pContext->record.Data.SRV.pNameTarget)
         {
@@ -851,6 +933,16 @@ VmDnsCliValidateRecordInput(
             dwError = ERROR_INVALID_PARAMETER;
         }
         BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else if (pContext->record.dwType == VMDNS_RR_TYPE_SRVFF)
+    {
+        if (!pContext->pszService)
+        {
+            fprintf(stderr, "Error: service type is not specified\n");
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        BAIL_ON_VMDNS_ERROR(dwError);
+
     }
 
 error:

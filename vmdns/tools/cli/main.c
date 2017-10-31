@@ -27,7 +27,8 @@ DWORD
 ParseArgs(
     int                  argc,
     char*                argv[],
-    PVM_DNS_CLI_CONTEXT* ppContext
+    PVM_DNS_CLI_CONTEXT* ppContext,
+    DWORD                *dwAction
     );
 
 static
@@ -122,7 +123,8 @@ ParseArgsListZones(
 static
 void
 ShowUsage(
-    VOID
+    DWORD action,
+    PSTR command
     );
 
 static
@@ -173,6 +175,7 @@ VmDnsSetDefaultParams(
 int main(int argc, char* argv[])
 {
     DWORD dwError = 0;
+    DWORD dwAction = 0;
     PVM_DNS_CLI_CONTEXT pContext = NULL;
 
 #ifdef _WIN32
@@ -181,10 +184,10 @@ int main(int argc, char* argv[])
     BAIL_ON_VMDNS_ERROR(dwError);
 #endif
 
-    dwError = ParseArgs(argc, argv, &pContext);
+    dwError = ParseArgs(argc, argv, &pContext, &dwAction);
     if (dwError == ERROR_INVALID_PARAMETER)
     {
-        ShowUsage();
+        ShowUsage(dwAction, NULL);
     }
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -203,13 +206,9 @@ cleanup:
     WSACleanup();
 #endif
 
-    return dwError;
+    return dwError; /* Really return error status 87? */
 
 error:
-    fprintf(
-        stderr,
-        "vmdns-cli failed, error %u\n",
-        dwError);
     goto cleanup;
 }
 
@@ -219,7 +218,8 @@ DWORD
 ParseArgs(
     int                  argc,
     char*                argv[],
-    PVM_DNS_CLI_CONTEXT* ppContext
+    PVM_DNS_CLI_CONTEXT* ppContext,
+    DWORD *dwAction
     )
 {
     DWORD dwError = 0;
@@ -258,7 +258,15 @@ ParseArgs(
 
     if (!strcmp(pszArg, "help"))
     {
-        ShowUsage();
+        ShowUsage(VM_DNS_ACTION_HELP, iArg < argc ? argv[iArg] : NULL);
+        dwError = ERROR_INVALID_VERIFY_SWITCH;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else if (!strcmp(pszArg, "help-full"))
+    {
+        ShowUsage(VM_DNS_ACTION_HELP_FULL, NULL);
+        dwError = ERROR_INVALID_VERIFY_SWITCH;
+        BAIL_ON_VMDNS_ERROR(dwError);
     }
     else if (!strcmp(pszArg, "add-zone"))
     {
@@ -436,7 +444,12 @@ error:
 
     if (pContext)
     {
+        *dwAction = pContext->action;
         VmDnsCliFreeContext(pContext);
+    }
+    else
+    {
+        *dwAction = VM_DNS_ACTION_HELP;
     }
 
     goto cleanup;
@@ -798,6 +811,7 @@ ParseArgsAddRecord(
         // SRV
         PARSE_MODE_ADD_RECORD_SRV_TARGET,
         PARSE_MODE_ADD_RECORD_SRV_SERVICE,
+        PARSE_MODE_ADD_RECORD_SRV_SERVICE_LITERAL,
         PARSE_MODE_ADD_RECORD_SRV_PROTOCOL,
         PARSE_MODE_ADD_RECORD_SRV_PRIORITY,
         PARSE_MODE_ADD_RECORD_SRV_WEIGHT,
@@ -900,6 +914,10 @@ ParseArgsAddRecord(
                 else if (!strcmp(pszArg, "--service"))
                 {
                     parseMode = PARSE_MODE_ADD_RECORD_SRV_SERVICE;
+                }
+                else if (!strcmp(pszArg, "--service-literal"))
+                {
+                    parseMode = PARSE_MODE_ADD_RECORD_SRV_SERVICE_LITERAL;
                 }
                 else if (!strcmp(pszArg, "--protocol"))
                 {
@@ -1049,6 +1067,26 @@ ParseArgsAddRecord(
                                     &pContext->pszService,
                                     "_%s",
                                     pszArg);
+                    }
+                }
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_ADD_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_ADD_RECORD_SRV_SERVICE_LITERAL:
+                if (!IsNullOrEmptyString(pszArg))
+                {
+                    if (pszArg[0] == '_')
+                    {
+                        dwError = VmDnsAllocateStringA(pszArg, &pContext->pszService);
+                    }
+                    else
+                    {
+                        /* Error usage */
+                        fprintf(stdout, "%s: Requires \"_serv._proto.FreeFormat\"\n", pszArg);
+                        dwError = ERROR_INVALID_PARAMETER;
                     }
                 }
                 BAIL_ON_VMDNS_ERROR(dwError);
@@ -1312,6 +1350,7 @@ ParseArgsDelRecord(
         // SRV
         PARSE_MODE_DEL_RECORD_SRV_TARGET,
         PARSE_MODE_DEL_RECORD_SRV_SERVICE,
+        PARSE_MODE_DEL_RECORD_SRV_SERVICE_LITERAL,
         PARSE_MODE_DEL_RECORD_SRV_PROTOCOL,
         PARSE_MODE_DEL_RECORD_SRV_PRIORITY,
         PARSE_MODE_DEL_RECORD_SRV_WEIGHT,
@@ -1454,6 +1493,10 @@ ParseArgsDelRecord(
                 else if (!strcmp(pszArg, "--service"))
                 {
                     parseMode = PARSE_MODE_DEL_RECORD_SRV_SERVICE;
+                }
+                else if (!strcmp(pszArg, "--service-literal"))
+                {
+                    parseMode = PARSE_MODE_DEL_RECORD_SRV_SERVICE_LITERAL;
                 }
                 else if (!strcmp(pszArg, "--protocol"))
                 {
@@ -1600,6 +1643,27 @@ ParseArgsDelRecord(
                                     &pContext->pszService,
                                     "_%s",
                                     pszArg);
+                    }
+                }
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_DEL_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_DEL_RECORD_SRV_SERVICE_LITERAL:
+
+                if (!IsNullOrEmptyString(pszArg))
+                {
+                    if (pszArg[0] == '_')
+                    {
+                        dwError = VmDnsAllocateStringA(pszArg, &pContext->pszService);
+                    }
+                    else
+                    {
+                        /* Error usage */
+                        fprintf(stdout, "%s: Requires \"_serv._proto.FreeFormat\"\n", pszArg);
+                        dwError = ERROR_INVALID_PARAMETER;
                     }
                 }
                 BAIL_ON_VMDNS_ERROR(dwError);
@@ -2211,130 +2275,283 @@ error:
 static
 void
 ShowUsage(
-    VOID
+    DWORD dwAction,
+    PSTR command
     )
 {
-    fprintf(
-        stdout,
-        "Usage: vmdns-cli { arguments }\n\n"
-        "Arguments:\n\n"
-        "\tadd-zone <zone name | network id>\n"
-        "\t\t--ns-host <hostname>\n"
-        "\t\t--ns-ip <ip address>\n"
-        "\t\t[--admin-email <admin-email>]\n"
-        "\t\t[--type <forward | reverse>]\n"
-        /*"\t\t[--type <forward|reverse>]\n"*/
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n"
-        /*"\t\tfor reverse lookup zone, pass network id instead of zone name. Zone name will be generated based on network id.\n"
-        "\t\tfor example, 10.118.1.0/24 where 24 is the network id length in bits.\n"
-        "\t\tfor ipv4, network id length can be 8, 16 or 24.\n"
-        "\t\tfor ipv6, network id length must be more than 0 and less than 128 and must be dividable by 8.\n"
-        "\t\tip address part must be full ip address.\n"
-        "\t\t--ns-ip isn't needed for reverse zone.\n"*/
-        "\tExample: add-zone zone1 --ns-host ns1 --ns-ip 1.10.0.192 --type forward\n\n"
-        "\tdel-zone <zone name>\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n"
-        "\tExample: del-zone zone1\n\n"
-        "\tlist-zone\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n\n"
-        "\tadd-record --zone <zone name>\n"
-        "\t\t--type <record type>\n"
-        "\t\t[<key> <value>]...\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n"
-        "\t\t<key> <value> pair for SRV:\n"
-        "\t\t\t--service <service-type>\n"
-        "\t\t\tService type examples: ldap, kerberos or any other services\n"
-        "\t\t\t--protocol <tcp|udp>\n"
-        "\t\t\t--target <hostname>\n"
-        "\t\t\t--priority <priority>\n"
-        "\t\t\t--weight <weight>\n"
-        "\t\t\t--port <port>\n"
-        "\t\t<key> <value> pair for A:\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t\t--ip <ip-address>\n"
-        "\t\t<key> <value> pair for AAAA:\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t\t--ip6 <ip6address>\n"
-        "\t\t<key> <value> pair for NS:\n"
-        "\t\t\t--ns-domain   <domain>\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t<key> <value> pair for PTR:\n"
-        "\t\t\t--ip <address>\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t<key> <value> pair for CNAME:\n"
-        "\t\t\t--<name> <name>\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\tExample: add-record --zone zone1 --type A --hostname test-host --ip 1.10.0.124\n\n"
-        "\tdel-record --zone <zone name>\n"
-        "\t\t--type <record type>\n"
-        "\t\t[<key> <value>]...\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n"
-        "\t\t<key> <value> pair for SRV:\n"
-        "\t\t\t--service <service-type>\n"
-        "\t\t\tService type examples: ldap, kerberos or any other services\n"
-        "\t\t\t--protocol <tcp|udp>\n"
-        "\t\t\t--target <hostname>\n"
-        "\t\t<key> <value> pair for A:\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t\t--ip <ip-address>\n"
-        "\t\t<key> <value> pair for AAAA:\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t\t--ip6 <ip6-address>\n"
-        "\t\t<key> <value> pair for NS:\n"
-        "\t\t\t--ns-domain <domain>\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t<key> <value> pair for PTR:\n"
-        "\t\t\t--ip <address>\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\t\t<key> <value> pair for CNAME:\n"
-        "\t\t\t--name <name>\n"
-        "\t\t\t--hostname <hostname>\n"
-        "\tlist-record --zone <zone name>\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n\n"
-        "\tquery-record --zone <zone name>\n"
-        "\t\t--type <record type>\n"
-        "\t\t--name <record name>\n"
-        "\t\tFor PTR records use:\n"
-        "\t\t\t--ip <address> instead of --name <record name>\n"
-        "\t\t<key> <value>\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n\n"
-        "\tadd-forwarder <forwarder ip>\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n\n"
-        "\tdel-forwarder <forwarder ip>\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n\n"
-        "\tlist-forwarders\n"
-        "\t\t--server <server>\n"
-        "\t\t--username <user>\n"
-        "\t\t--domain <domain>\n"
-        "\t\t--password <pwd>\n\n"
-        "\thelp\n");
+    DWORD i = 0;
+    DWORD start = 0;
+    DWORD end = 0;
+
+
+    if (dwAction == VM_DNS_ACTION_UNKNOWN)
+    {
+        end = VM_DNS_ACTION_LIST_FORWARDERS;
+    }
+    else if (dwAction == VM_DNS_ACTION_HELP && command)
+    {
+        if (!strcmp(command, "zone"))
+        {
+            start = VM_DNS_ACTION_ADD_ZONE;
+            end = VM_DNS_ACTION_LIST_ZONES;
+        }
+        else if (!strcmp(command, "record"))
+        {
+            start = VM_DNS_ACTION_ADD_RECORD;
+            end = VM_DNS_ACTION_QUERY_RECORD;
+        }
+        else if (!strcmp(command, "forwarder"))
+        {
+            start = VM_DNS_ACTION_ADD_FORWARDER;
+            end = VM_DNS_ACTION_LIST_FORWARDERS;
+        }
+        else if (!strcmp(command, "add-zone"))
+        {
+            start = end = VM_DNS_ACTION_ADD_ZONE;
+        }
+        else if (!strcmp(command, "del-zone"))
+        {
+            start = end = VM_DNS_ACTION_DEL_ZONE;
+        }
+        else if (!strcmp(command, "list-zone"))
+        {
+            start = end = VM_DNS_ACTION_LIST_ZONES;
+        }
+        else if (!strcmp(command, "add-record"))
+        {
+            start = end = VM_DNS_ACTION_ADD_RECORD;
+        }
+        else if (!strcmp(command, "del-record"))
+        {
+            start = end = VM_DNS_ACTION_DEL_RECORD;
+        }
+        else if (!strcmp(command, "list-record"))
+        {
+            start = end = VM_DNS_ACTION_LIST_RECORDS;
+        }
+        else if (!strcmp(command, "query-record"))
+        {
+            start = end = VM_DNS_ACTION_QUERY_RECORD;
+        }
+        else if (!strcmp(command, "add-forwarder"))
+        {
+            start = end = VM_DNS_ACTION_ADD_FORWARDER;
+        }
+        else if (!strcmp(command, "del-forwarder"))
+        {
+            start = end = VM_DNS_ACTION_DEL_FORWARDER;
+        }
+        else if (!strcmp(command, "list-forwarders"))
+        {
+            start = end = VM_DNS_ACTION_LIST_FORWARDERS;
+        }
+        else
+        {
+            fprintf(stdout, "\tUnknown command '%s'\n", command);
+            fprintf(stdout, "\tTry \"vmdns-cli help\" for list of commands\n");
+            return;
+        }
+    }
+    else if (dwAction == VM_DNS_ACTION_HELP)
+    {
+        fprintf(stdout, "\n\n");
+        fprintf(stdout, "\tadd-zone ...\n");
+        fprintf(stdout, "\tdel-zone ...\n");
+        fprintf(stdout, "\tlist-zone ...\n");
+        fprintf(stdout, "\tadd-record ...\n");
+        fprintf(stdout, "\tdel-record ...\n");
+        fprintf(stdout, "\tlist-record ...\n");
+        fprintf(stdout, "\tquery-record ...\n");
+        fprintf(stdout, "\tadd-forwarder ...\n");
+        fprintf(stdout, "\tdel-forwarder ...\n");
+        fprintf(stdout, "\tlist-forwarders ...\n");
+        fprintf(stdout, "\thelp\n");
+        fprintf(stdout, "\thelp action-type\n");
+        fprintf(stdout, "\t     Example: help add-record\n");
+        fprintf(stdout, "\thelp [zone | record | forwarder] \n");
+        fprintf(stdout, "\thelp-full\n");
+        exit(0);
+    }
+    else if (dwAction == VM_DNS_ACTION_HELP_FULL)
+    {
+        end = VM_DNS_ACTION_LIST_FORWARDERS;
+    }
+    else
+    {
+        start = dwAction;
+        end = dwAction;
+    }
+
+    fprintf(stdout,
+            "Usage: vmdns-cli %s { arguments }\n\n",
+            command  ? command : "");
+
+    for (i=start; i <= end; i++)
+    {
+        switch (i)
+        {
+            case VM_DNS_ACTION_ADD_ZONE:
+                fprintf(stdout,
+                        "\tadd-zone <zone name | network id>\n"
+                        "\t\t--ns-host <hostname>\n"
+                        "\t\t--ns-ip <ip address>\n"
+                        "\t\t[--admin-email <admin-email>]\n"
+                        "\t\t[--type <forward | reverse>]\n"
+                        /*"\t\t[--type <forward|reverse>]\n"*/
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n"
+                        /*"\t\tfor reverse lookup zone, pass network id instead of zone name. Zone name will be generated based on network id.\n"
+                        "\t\tfor example, 10.118.1.0/24 where 24 is the network id length in bits.\n"
+                        "\t\tfor ipv4, network id length can be 8, 16 or 24.\n"
+                        "\t\tfor ipv6, network id length must be more than 0 and less than 128 and must be dividable by 8.\n"
+                        "\t\tip address part must be full ip address.\n"
+                        "\t\t--ns-ip isn't needed for reverse zone.\n"*/
+                        "\tExample: add-zone zone1 --ns-host ns1 --ns-ip 1.10.0.192 --type forward\n\n");
+                break;
+    
+            case VM_DNS_ACTION_DEL_ZONE:
+                fprintf(stdout,
+                        "\tdel-zone <zone name>\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n"
+                        "\tExample: del-zone zone1\n\n");
+                break;
+    
+            case VM_DNS_ACTION_LIST_ZONES:
+                fprintf(stdout,
+                        "\tlist-zone\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n\n");
+                break;
+    
+            case VM_DNS_ACTION_ADD_RECORD:
+                fprintf(stdout,
+                        "\tadd-record --zone <zone name>\n"
+                        "\t\t--type <record type>\n"
+                        "\t\t[<key> <value>]...\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n"
+                        "\t\t<key> <values> for SRV:\n"
+                        "\t\t\t--service <service-type>\n"
+                        "\t\t\t  Service type examples: ldap, kerberos or any other services\n"
+                        "\t\t\t--protocol <tcp|udp>\n"
+                        "\t\t\t--target <hostname>\n"
+                        "\t\t\t--priority <priority>\n"
+                        "\t\t\t--weight <weight>\n"
+                        "\t\t\t--port <port>\n"
+                        "\t\t<key> <value> pair for A:\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t\t--ip <ip-address>\n"
+                        "\t\t<key> <value> pair for AAAA:\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t\t--ip6 <ip6address>\n"
+                        "\t\t<key> <value> pair for NS:\n"
+                        "\t\t\t--ns-domain   <domain>\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t<key> <value> pair for PTR:\n"
+                        "\t\t\t--ip <address>\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t<key> <value> pair for CNAME:\n"
+                        "\t\t\t--<name> <name>\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\tExample: add-record --zone zone1 --type A --hostname test-host --ip 1.10.0.124\n\n");
+                break;
+    
+            case VM_DNS_ACTION_DEL_RECORD:
+                fprintf(stdout,
+                        "\tdel-record --zone <zone name>\n"
+                        "\t\t--type <record type>\n"
+                        "\t\t[<key> <value>]...\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n"
+                        "\t\t<key> <value> pair for SRV:\n"
+                        "\t\t\t--service <service-type>\n"
+                        "\t\t\tService type examples: ldap, kerberos or any other services\n"
+                        "\t\t\t--protocol <tcp|udp>\n"
+                        "\t\t\t--target <hostname>\n"
+                        "\t\t<key> <value> pair for A:\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t\t--ip <ip-address>\n"
+                        "\t\t<key> <value> pair for AAAA:\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t\t--ip6 <ip6-address>\n"
+                        "\t\t<key> <value> pair for NS:\n"
+                        "\t\t\t--ns-domain <domain>\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t<key> <value> pair for PTR:\n"
+                        "\t\t\t--ip <address>\n"
+                        "\t\t\t--hostname <hostname>\n"
+                        "\t\t<key> <value> pair for CNAME:\n"
+                        "\t\t\t--name <name>\n"
+                        "\t\t\t--hostname <hostname>\n");
+                break;
+    
+            case VM_DNS_ACTION_LIST_RECORDS:
+                fprintf(stdout,
+                        "\tlist-record --zone <zone name>\n"
+                        "\t\t[--server <server>]\n"
+                        "\t\t[--username <user>]\n"
+                        "\t\t[--domain <domain>]\n"
+                        "\t\t[--password <pwd>]\n\n");
+    
+                break;
+    
+            case VM_DNS_ACTION_QUERY_RECORD:
+                fprintf(stdout,
+                        "\tquery-record --zone <zone name>\n"
+                        "\t\t--type <record type>\n"
+                        "\t\t--name <record name>\n"
+                        "\t\tFor PTR records use:\n"
+                        "\t\t\t--ip <address> instead of --name <record name>\n"
+                        "\t\t<key> <value>\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n\n");
+                break;
+    
+            case VM_DNS_ACTION_ADD_FORWARDER:
+                fprintf(stdout,
+                        "\tadd-forwarder <forwarder ip>\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n\n");
+                break;
+    
+            case VM_DNS_ACTION_DEL_FORWARDER:
+                fprintf(stdout,
+                        "\tdel-forwarder <forwarder ip>\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n\n");
+                break;
+    
+            case VM_DNS_ACTION_LIST_FORWARDERS:
+                fprintf(stdout,
+                        "\tlist-forwarders\n"
+                        "\t\t--server <server>\n"
+                        "\t\t--username <user>\n"
+                        "\t\t--domain <domain>\n"
+                        "\t\t--password <pwd>\n\n");
+                break;
+    
+            default:
+                fprintf(stdout,
+                       "\tERROR: Unknown action specified %d\n", dwAction);
+        }
+    }
 }
 
 static

@@ -89,6 +89,11 @@ typedef
 #define VMDNS_RR_QTYPE_MAILB  0x00FD
 #define VMDNS_RR_QTYPE_MAILA  0x00FE // obsoleted by RFC 973
 #define VMDNS_RR_QTYPE_ANY    0x00FF
+/*
+ * Unassigned range: 260-32767
+ * Ref: https://www.iana.org/assignments/dns-parameters/dns-parameters.xml
+ */
+#define VMDNS_RR_TYPE_SRVFF   0x014D /* SRV "free format"; 333 decimal */
 
 typedef UINT16  VMDNS_RR_TYPE;
 typedef UINT16  VMDNS_CLASS;

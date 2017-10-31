@@ -25,7 +25,8 @@ VMDNS_RECORD_TYPE_NAME_MAP gRecordTypeMap[] =
     { VMDNS_RR_TYPE_CNAME,  "CNAME" },
     { VMDNS_RR_TYPE_PTR,    "PTR"   },
     { VMDNS_RR_MTYPE_TKEY,  "TKEY"  },
-    { VMDNS_RR_MTYPE_TSIG,  "TSIG"  }
+    { VMDNS_RR_MTYPE_TSIG,  "TSIG"  },
+    { VMDNS_RR_TYPE_SRVFF,  "SRVFF" },
 };
 DWORD gRecordTypeMapSize = sizeof(gRecordTypeMap) / sizeof(VMDNS_RECORD_TYPE_NAME_MAP);
 
