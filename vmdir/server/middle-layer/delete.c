@@ -26,12 +26,6 @@ GenerateDeleteAttrsMods(
     VDIR_ENTRY *    pEntry
     );
 
-static
-BOOLEAN
-_VmDirIsDeletedContainer(
-    PCSTR   pszDN
-    );
-
 int
 VmDirMLDelete(
     PVDIR_OPERATION    pOperation
@@ -87,7 +81,7 @@ VmDirInternalDeleteEntry(
     ModifyReq *     modReq = &(pOperation->request.modifyReq);
     BOOLEAN         bIsDomainObject = FALSE;
     BOOLEAN         bHasTxn = FALSE;
-    BOOLEAN         bIsDeletedObj = FALSE;
+    BOOLEAN         bIsTombstoneObj = FALSE;
     PSTR            pszLocalErrMsg = NULL;
 
     assert(pOperation && pOperation->pBECtx->pBE);
@@ -110,15 +104,23 @@ VmDirInternalDeleteEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
 
-    // Execute pre modify apply Delete plugin logic
-    retVal = VmDirExecutePreModApplyDeletePlugins(pOperation, NULL, retVal);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyDelete plugin failed - (%u)",  retVal );
+    bIsTombstoneObj = VmDirStringEndsWith(
+                delReq->dn.lberbv_val,
+                gVmdirServerGlobals.delObjsContainerDN.lberbv_val,
+                FALSE);
+
+    if (!bIsTombstoneObj)
+    {
+        // Execute pre modify apply Delete plugin logic
+        retVal = VmDirExecutePreModApplyDeletePlugins(pOperation, NULL, retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyDelete plugin failed - (%u)",  retVal );
+    }
 
     retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // make sure VDIR_BACKEND_CTX has usn change number by now
-    if ( pOperation->pBECtx->wTxnUSN <= 0 )
+    if ( pOperation->pBECtx->wTxnUSN <= 0 && !bIsTombstoneObj)
     {
         retVal = VMDIR_ERROR_NO_USN;
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECtx.wTxnUSN not set");
@@ -247,17 +249,13 @@ txnretry:
             retVal,
             VMDIR_ACCESS_DENIED_ERROR_MSG);
 
-        // age off tombstone entry?
-        if  (pEntry->pParentEntry &&
-             _VmDirIsDeletedContainer(pEntry->pParentEntry->dn.lberbv_val))
+        if (bIsTombstoneObj)
         {
-            bIsDeletedObj = TRUE;
             // Normalize index attribute, so mdb can cleanup index tables properly.
             retVal = VmDirEntryAttrValueNormalize(pEntry, TRUE);
             BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Attr value normalization failed - (%u)", retVal );
         }
-
-        if (!bIsDeletedObj)
+        else
         {
             // Make sure it is a leaf node
             retVal = pOperation->pBEIF->pfnBEChkIsLeafEntry(
@@ -318,7 +316,7 @@ txnretry:
         // Update Entry
         retVal = pOperation->pBEIF->pfnBEEntryDelete(
                     pOperation->pBECtx,
-                    bIsDeletedObj ? NULL : modReq->mods,
+                    bIsTombstoneObj ? NULL : modReq->mods,
                     pEntry);
         if (retVal != 0)
         {
@@ -377,15 +375,18 @@ cleanup:
     {
         int iPostCommitPluginRtn  = 0;
 
-        // Execute post Delete commit plugin logic
-        iPostCommitPluginRtn = VmDirExecutePostDeleteCommitPlugins(pOperation, pEntry, retVal);
-        if ( iPostCommitPluginRtn != LDAP_SUCCESS
-                &&
-                iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-        )
+        if (!bIsTombstoneObj)
         {
-            VmDirLog( LDAP_DEBUG_ANY, "InternalDeleteEntry: VdirExecutePostDeleteCommitPlugins - code(%d)",
-                    iPostCommitPluginRtn);
+            // Execute post Delete commit plugin logic
+            iPostCommitPluginRtn = VmDirExecutePostDeleteCommitPlugins(pOperation, pEntry, retVal);
+            if ( iPostCommitPluginRtn != LDAP_SUCCESS
+                    &&
+                    iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
+            )
+            {
+                VmDirLog( LDAP_DEBUG_ANY, "InternalDeleteEntry: VdirExecutePostDeleteCommitPlugins - code(%d)",
+                        iPostCommitPluginRtn);
+            }
         }
     }
 
@@ -567,20 +568,4 @@ cleanup:
 
 error:
     goto cleanup;
-}
-static
-BOOLEAN
-_VmDirIsDeletedContainer(
-    PCSTR   pszDN
-    )
-{
-    BOOLEAN bRtn = FALSE;
-
-    if (pszDN &&
-        VmDirStringCompareA(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE) == 0)
-    {
-        bRtn = TRUE;
-    }
-
-    return bRtn;
 }
