@@ -51,8 +51,8 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapConnectPorts, 0),
         VMDIR_SF_INIT(.pdwLdapsConnectPorts, NULL),
         VMDIR_SF_INIT(.dwLdapsConnectPorts, 0),
-        VMDIR_SF_INIT(.pszHTTPListenPort, NULL),
-        VMDIR_SF_INIT(.pszHTTPSListenPort, NULL),
+        VMDIR_SF_INIT(.dwHTTPListenPort, 0),
+        VMDIR_SF_INIT(.dwHTTPSListenPort, 0),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
@@ -93,7 +93,8 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwCopyDbWritesMin, 100),
         VMDIR_SF_INIT(.dwCopyDbIntervalInSec, 0),
         VMDIR_SF_INIT(.dwCopyDbBlockWriteInSec, 30),
-        VMDIR_SF_INIT(.dwLdapWrites, 0)
+        VMDIR_SF_INIT(.dwLdapWrites, 0),
+        VMDIR_SF_INIT(.gpVdirSslCtx, NULL)
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =

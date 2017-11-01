@@ -25,6 +25,12 @@ REST_PROCESSOR sVmDnsRESTHandlers =
     .pfnHandleOthers = &VmDnsRESTRequestHandler
 };
 
+static
+VOID
+VmDnsFreeRESTHandle(
+    PVMREST_HANDLE    pHandle
+    );
+
 DWORD
 VmDnsRESTServerInit(
     VOID
@@ -35,6 +41,7 @@ VmDnsRESTServerInit(
     REST_CONF   config = {0};
     PREST_PROCESSOR     pHandlers = &sVmDnsRESTHandlers;
     PREST_API_MODULE    pModule = NULL;
+    PVMREST_HANDLE      pHTTPHandle = NULL;
 
     MODULE_REG_MAP stRegMap[] =
     {
@@ -42,23 +49,40 @@ VmDnsRESTServerInit(
           {NULL, NULL}
     };
 
-    config.pSSLCertificate = NULL;
-    config.pSSLKey = NULL;
-
     //get the listen port from the registry
-    dwError = VmDnsConfigGetStringA(
-                VMDNS_REG_CONFIG_KEY_PATH,
+    dwError = VmDnsConfigGetDword(
                 VMDNS_REG_KEY_REST_LISTEN_PORT,
-                &gVmdnsGlobals.pszRestListenPort
+                &gVmdnsGlobals.dwRestListenPort
                 );
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (dwError != 0)
+    {
+        gVmdnsGlobals.dwRestListenPort = DEFAULT_HTTP_PORT_NUM;
+        dwError = 0;
+    }
 
-    config.pServerPort = gVmdnsGlobals.pszRestListenPort;
-    config.pDebugLogFile = VMDNS_REST_DEBUGLOGFILE;
-    config.pClientCount = VMDNS_REST_CLIENTCNT;
-    config.pMaxWorkerThread = VMDNS_REST_WORKERTHCNT;
+    // if Rest port is '0' then user wants to disable HTTP endpoint
+    if (gVmdnsGlobals.dwRestListenPort == 0)
+    {
+        goto cleanup;
+    }
 
-    dwError = VmRESTInit(&config, NULL, &gpVdnsRESTHandle);
+    config.serverPort = gVmdnsGlobals.dwRestListenPort;
+    config.connTimeoutSec = VMDNS_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = VMDNS_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = NULL;
+    config.nWorkerThr = VMDNS_REST_WORKERTHCNT;
+    config.nClientCnt = VMDNS_REST_CLIENTCNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = VMDNS_REST_DEBUGLOGFILE;
+    config.pszDaemonName = VMDNS_HTTP_DAEMON_NAME;
+    config.isSecure = FALSE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
+
+    dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdnsRestApiDef);
@@ -73,7 +97,7 @@ VmDnsRESTServerInit(
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
             dwError = VmRESTRegisterHandler(
-                            gpVdnsRESTHandle,
+                            pHTTPHandle,
                             pEndPoint->pszName,
                             pHandlers,
                             NULL
@@ -82,7 +106,7 @@ VmDnsRESTServerInit(
         }
     }
 
-    dwError = VmRESTStart(gpVdnsRESTHandle);
+    dwError = VmRESTStart(pHTTPHandle);
     if (dwError)
     {
         // soft fail - will not listen on REST port.
@@ -90,24 +114,51 @@ VmDnsRESTServerInit(
         dwError = 0;
     }
 
+    gpVdnsRESTHandle = pHTTPHandle;
+
 cleanup:
     return dwError;
 
 error:
+    VmDnsFreeRESTHandle(pHTTPHandle);
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed, error (%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
+
 
 VOID
 VmDnsRESTServerShutdown(
     VOID
     )
 {
-    PREST_API_MODULE    pModule = NULL;
+    VmDnsFreeRESTHandle(gpVdnsRESTHandle);
+    gpVdnsRESTHandle = NULL;
+}
 
-    if (gpVdnsRESTHandle)
+static
+VOID
+VmDnsFreeRESTHandle(
+    PVMREST_HANDLE    pHandle
+    )
+{
+    PREST_API_MODULE    pModule = NULL;
+    DWORD               dwError = 0;
+
+    if (pHandle)
     {
-        VmRESTStop(gpVdnsRESTHandle);
+        /*
+         * REST library have detached threads, maximum time out specified is the max time
+         * allowed for the threads to  finish their execution.
+         * If finished early, it will return success.
+         * If not able to finish in specified time, failure will be returned
+         */
+        dwError = VmRESTStop(pHandle, VMDNS_REST_STOP_TIMEOUT_SEC);
+
+        if (dwError != 0)
+        {
+            VmDnsLog(VMDNS_LOG_LEVEL_WARNING,"%s: rest stop error: %d",__FUNCTION__, dwError);
+        }
+
         if (gpVdnsRestApiDef)
         {
             pModule = gpVdnsRestApiDef->pModules;
@@ -117,11 +168,11 @@ VmDnsRESTServerShutdown(
                 for (; pEndPoint; pEndPoint = pEndPoint->pNext)
                 {
                     (VOID)VmRESTUnRegisterHandler(
-                            gpVdnsRESTHandle, pEndPoint->pszName);
+                            pHandle, pEndPoint->pszName);
                 }
             }
         }
-        VmRESTShutdown(gpVdnsRESTHandle);
+        VmRESTShutdown(pHandle);
     }
 }
 

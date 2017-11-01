@@ -135,8 +135,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapsPort;
     // Timeout for curl requests
     DWORD                           dwProxyCurlTimeout;
-    PSTR                            pszHTTPListenPort;
-    PSTR                            pszHTTPSListenPort;
+    DWORD                           dwHTTPListenPort;
+    DWORD                           dwHTTPSListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
     DWORD                           dwLdapConnectTimeoutSec;
     BOOLEAN                         bIsLDAPPortOpen;
@@ -198,6 +198,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwRaftPingIntervalMS;
     //Raft logs to keep in 1000
     DWORD                           dwRaftKeeplogs;
+
+    SSL_CTX*                        gpVdirSslCtx;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

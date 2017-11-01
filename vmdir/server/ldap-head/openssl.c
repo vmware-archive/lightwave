@@ -135,8 +135,6 @@ Sockbuf_IO opensslBerSockbufIO = {
 ///////////////////////////////////////////////////////////////////////////////
 Sockbuf_IO*         gpVdirBerSockbufIOOpenssl = &opensslBerSockbufIO;
 
-// initialized in VmDirOpensslInit during startup and used to create SSL*
-static SSL_CTX*     gpVdirSslCtx = NULL;
 ///////////////////////////////////////////////////////////////////////////////
 // ****************** shared static variables end ********************
 ///////////////////////////////////////////////////////////////////////////////
@@ -347,7 +345,7 @@ _VmDirInitSslCtx(
 }
 
 /*
- * Initialize openssl libraries and create a default SSL_CTX - gpVdirSslCtx
+ * Initialize openssl libraries and create a default SSL_CTX - gVmdirGlobals.gpVdirSslCtx
  */
 DWORD
 VmDirOpensslInit(
@@ -437,7 +435,7 @@ VmDirOpensslInit(
         BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_check_private_key");
     }
 
-    gpVdirSslCtx = pSslCtx;
+    gVmdirGlobals.gpVdirSslCtx = pSslCtx;
     gVmdirOpensslGlobals.bSSLInitialized = TRUE;
 
 cleanup:
@@ -472,9 +470,9 @@ VmDirOpensslShutdown(
 {
     DWORD   dwSize = 0;
 
-    if (gpVdirSslCtx)
+    if (gVmdirGlobals.gpVdirSslCtx)
     {
-        SSL_CTX_free(gpVdirSslCtx);
+        SSL_CTX_free(gVmdirGlobals.gpVdirSslCtx);
     }
 
     ERR_remove_state(0);
@@ -635,7 +633,7 @@ opensslSbSetup(
 
     pSbiod->sbiod_sb->sb_fd = *((int *)pArg);
 
-    pSsl = SSL_new(gpVdirSslCtx);
+    pSsl = SSL_new(gVmdirGlobals.gpVdirSslCtx);
     BAIL_ON_OPENSSL_ERROR( (pSsl == NULL), "SSL_new" );
 
 #ifdef _WIN32

@@ -145,8 +145,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapConnectPorts;
     PDWORD                          pdwLdapsConnectPorts;
     DWORD                           dwLdapsConnectPorts;
-    PSTR                            pszHTTPListenPort;
-    PSTR                            pszHTTPSListenPort;
+    DWORD                           dwHTTPListenPort;
+    DWORD                           dwHTTPSListenPort;
 
     DWORD                           dwLdapRecvTimeoutSec;
     DWORD                           dwLdapConnectTimeoutSec;
@@ -214,6 +214,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwCopyDbBlockWriteInSec;
     // Collect stats for estimate elapsed time with database copy
     DWORD                           dwLdapWrites;
+
+    SSL_CTX*                        gpVdirSslCtx;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

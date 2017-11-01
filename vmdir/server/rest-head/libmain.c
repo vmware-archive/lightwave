@@ -49,6 +49,12 @@ _VmDirRESTServerShutdownHTTPS(
     VOID
     );
 
+static
+VOID
+_VmDirFreeRESTHandle(
+    PVMREST_HANDLE    pHandle
+    );
+
 DWORD
 VmDirRESTServerInit(
     VOID
@@ -94,6 +100,7 @@ cleanup:
     return dwError;
 
 error:
+    VmDirRESTServerShutdown();
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",
@@ -122,14 +129,14 @@ _VmDirRESTServerInitHTTP(
 {
     DWORD   dwError = 0;
     REST_CONF   config = {0};
-    PREST_PROCESSOR     pHandlers = &sVmDirRESTHandlers;
-    PREST_API_MODULE    pModule = NULL;
+    PREST_PROCESSOR    pHandlers = &sVmDirRESTHandlers;
+    PREST_API_MODULE   pModule = NULL;
+    PVMREST_HANDLE     pHTTPHandle = NULL;
 
     /*
-     * pszHTTPListenPort can never be NULL because of default values assigned to them
-     * if Port string is empty, it means user wants to disable corresponding service
+     * dwHTTPListenPort is '0' then user wants to disable HTTP endpoint
      */
-    if (IsNullOrEmptyString(gVmdirGlobals.pszHTTPListenPort))
+    if (gVmdirGlobals.dwHTTPListenPort == 0)
     {
         VMDIR_LOG_WARNING(
                 VMDIR_LOG_MASK_ALL,
@@ -138,14 +145,23 @@ _VmDirRESTServerInitHTTP(
         goto cleanup;
     }
 
-    config.pSSLCertificate = RSA_SERVER_CERT;
-    config.pSSLKey = RSA_SERVER_KEY;
-    config.pServerPort = gVmdirGlobals.pszHTTPListenPort;
-    config.pDebugLogFile = VMDIR_HTTP_DEBUGLOGFILE;
-    config.pClientCount = VMDIR_REST_CLIENTCNT;
-    config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
+    config.serverPort = gVmdirGlobals.dwHTTPListenPort;
+    config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = NULL;
+    config.nWorkerThr = VMDIR_REST_WORKERTHCNT;
+    config.nClientCnt = VMDIR_REST_CLIENTCNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = VMDIR_HTTP_DEBUGLOGFILE;
+    config.pszDaemonName = VMDIR_HTTP_DAEMON_NAME;
+    config.isSecure = FALSE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
 
-    dwError = VmRESTInit(&config, NULL, &gpVdirRestHTTPHandle);
+    dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (pModule = gpVdirRestApiDef->pModules; pModule; pModule = pModule->pNext)
@@ -154,18 +170,21 @@ _VmDirRESTServerInitHTTP(
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
             dwError = VmRESTRegisterHandler(
-                    gpVdirRestHTTPHandle, pEndPoint->pszName, pHandlers, NULL);
+                     pHTTPHandle, pEndPoint->pszName, pHandlers, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
-    dwError = VmRESTStart(gpVdirRestHTTPHandle);
+    dwError = VmRESTStart(pHTTPHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    gpVdirRestHTTPHandle = pHTTPHandle;
 
 cleanup:
     return dwError;
 
 error:
+    _VmDirFreeRESTHandle(pHTTPHandle);
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",
@@ -182,17 +201,17 @@ _VmDirRESTServerInitHTTPS(
     )
 {
     DWORD   dwError = 0;
-    PSTR    pszCert = NULL;
-    PSTR    pszKey = NULL;
     REST_CONF   config = {0};
     PREST_PROCESSOR     pHandlers = &sVmDirRESTHandlers;
     PREST_API_MODULE    pModule = NULL;
+    PVMREST_HANDLE     pHTTPSHandle = NULL;
 
     /*
-     * pszHTTPSListenPort can never be NULL because of default values assigned to them
-     * if Port string is empty, it means user wants to disable corresponding service
+     * dwHTTPSListenPort is '0' then user wants to disable HTTPS endpoint
+     * Initializing openssl context is treated as soft fail, gpVdirSslCtx can be NULL
+     * If gpVdirSslCtx NULL, don't start the service
      */
-    if (IsNullOrEmptyString(gVmdirGlobals.pszHTTPSListenPort))
+    if (gVmdirGlobals.dwHTTPSListenPort == 0 || gVmdirGlobals.gpVdirSslCtx == NULL)
     {
         VMDIR_LOG_WARNING(
                 VMDIR_LOG_MASK_ALL,
@@ -201,24 +220,23 @@ _VmDirRESTServerInitHTTPS(
         goto cleanup;
     }
 
-    config.pSSLCertificate = NULL;
-    config.pSSLKey = NULL;
-    config.pServerPort = gVmdirGlobals.pszHTTPSListenPort;
-    config.pDebugLogFile = VMDIR_HTTPS_DEBUGLOGFILE;
-    config.pClientCount = VMDIR_REST_CLIENTCNT;
-    config.pMaxWorkerThread = VMDIR_REST_WORKERTHCNT;
+    config.serverPort = gVmdirGlobals.dwHTTPSListenPort;
+    config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = gVmdirGlobals.gpVdirSslCtx;
+    config.nWorkerThr = VMDIR_REST_WORKERTHCNT;
+    config.nClientCnt = VMDIR_REST_CLIENTCNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = VMDIR_HTTPS_DEBUGLOGFILE;
+    config.pszDaemonName = VMDIR_HTTPS_DAEMON_NAME;
+    config.isSecure = TRUE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
 
-    dwError = VmRESTInit(&config, NULL, &gpVdirRestHTTPSHandle);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //Get Certificate and Key from VECS and Set it to Rest Engine
-    dwError = VmDirGetVecsMachineCert(&pszCert, &pszKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetSSLInfo(gpVdirRestHTTPSHandle, pszCert, VmDirStringLenA(pszCert)+1, SSL_DATA_TYPE_CERT);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetSSLInfo(gpVdirRestHTTPSHandle, pszKey, VmDirStringLenA(pszKey)+1, SSL_DATA_TYPE_KEY);
+    dwError = VmRESTInit(&config, &pHTTPSHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (pModule = gpVdirRestApiDef->pModules; pModule; pModule = pModule->pNext)
@@ -227,20 +245,21 @@ _VmDirRESTServerInitHTTPS(
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
             dwError = VmRESTRegisterHandler(
-                    gpVdirRestHTTPSHandle, pEndPoint->pszName, pHandlers, NULL);
+                    pHTTPSHandle, pEndPoint->pszName, pHandlers, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
-    dwError = VmRESTStart(gpVdirRestHTTPSHandle);
+    dwError = VmRESTStart(pHTTPSHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    gpVdirRestHTTPSHandle = pHTTPSHandle;
+
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszCert);
-    VMDIR_SAFE_FREE_MEMORY(pszKey);
     return dwError;
 
 error:
+    _VmDirFreeRESTHandle(pHTTPSHandle);
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",
@@ -256,32 +275,8 @@ _VmDirRESTServerShutdownHTTP(
     VOID
     )
 {
-    PREST_API_MODULE    pModule = NULL;
-
-    if (IsNullOrEmptyString(gVmdirGlobals.pszHTTPListenPort))
-    {
-        //No operation - HTTP port was not initialized
-        return;
-    }
-
-    if (gpVdirRestHTTPHandle)
-    {
-        VmRESTStop(gpVdirRestHTTPHandle);
-        if (gpVdirRestApiDef)
-        {
-            pModule = gpVdirRestApiDef->pModules;
-            for (; pModule; pModule = pModule->pNext)
-            {
-                PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
-                for (; pEndPoint; pEndPoint = pEndPoint->pNext)
-                {
-                    (VOID)VmRESTUnRegisterHandler(
-                            gpVdirRestHTTPHandle, pEndPoint->pszName);
-                }
-            }
-        }
-        VmRESTShutdown(gpVdirRestHTTPHandle);
-    }
+    _VmDirFreeRESTHandle(gpVdirRestHTTPHandle);
+    gpVdirRestHTTPHandle = NULL;
 }
 
 static
@@ -290,17 +285,38 @@ _VmDirRESTServerShutdownHTTPS(
     VOID
     )
 {
-    PREST_API_MODULE    pModule = NULL;
+    _VmDirFreeRESTHandle(gpVdirRestHTTPSHandle);
+    gpVdirRestHTTPSHandle = NULL;
+}
 
-    if (IsNullOrEmptyString(gVmdirGlobals.pszHTTPSListenPort))
-    {
-        //No operation - HTTPS port was not initialized
-        return;
-    }
+static
+VOID
+_VmDirFreeRESTHandle(
+    PVMREST_HANDLE    pHandle
+    )
+{
+    DWORD dwError = 0;
+    PREST_API_MODULE  pModule = NULL;
 
-    if (gpVdirRestHTTPSHandle)
+    if (pHandle)
     {
-        VmRESTStop(gpVdirRestHTTPSHandle);
+        /*
+         * REST library have detached threads, maximum time out specified is the max time
+         * allowed for the threads to  finish their execution.
+         * If finished early, it will return success.
+         * If not able to finish in specified time, failure will be returned
+         */
+        dwError = VmRESTStop(pHandle, VMDIR_REST_STOP_TIMEOUT_SEC);
+
+        if (dwError != 0)
+        {
+            VMDIR_LOG_WARNING(
+                   VMDIR_LOG_MASK_ALL,
+                   "%s: Rest stop error: %d",
+                   __FUNCTION__,
+                   dwError);
+        }
+
         if (gpVdirRestApiDef)
         {
             pModule = gpVdirRestApiDef->pModules;
@@ -310,11 +326,11 @@ _VmDirRESTServerShutdownHTTPS(
                 for (; pEndPoint; pEndPoint = pEndPoint->pNext)
                 {
                     (VOID)VmRESTUnRegisterHandler(
-                            gpVdirRestHTTPSHandle, pEndPoint->pszName);
+                            pHandle, pEndPoint->pszName);
                 }
             }
         }
-        VmRESTShutdown(gpVdirRestHTTPSHandle);
+        VmRESTShutdown(pHandle);
     }
 }
 

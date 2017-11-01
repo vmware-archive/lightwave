@@ -8,8 +8,8 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0, lightwave-server = %{_version}, lightwave-client = %{_version}
-BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, boost-devel = 1.60.0
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, c-rest-engine = 1.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0, lightwave-server = %{_version}, lightwave-client = %{_version}
+BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, boost-devel = 1.60.0, c-rest-engine-devel = 1.1
 
 %if 0%{?fedora} >= 21
 Requires: java-1.8.0-openjdk >= 1.8.0.131, krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15

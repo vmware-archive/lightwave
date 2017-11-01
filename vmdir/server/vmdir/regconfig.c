@@ -169,20 +169,14 @@ VmDirSrvUpdateConfig(
                     VMDIR_REG_KEY_HTTP_LISTEN_PORT,
                     TRUE))
         {
-            dwError = VmDirAllocateStringA(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pszHTTPListenPort);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            gVmdirGlobals.dwHTTPListenPort = pEntry->dwValue;
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_HTTPS_LISTEN_PORT,
                     TRUE))
         {
-            dwError = VmDirAllocateStringA(
-                        pEntry->pszValue,
-                        &gVmdirGlobals.pszHTTPSListenPort);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            gVmdirGlobals.dwHTTPSListenPort = pEntry->dwValue;
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,

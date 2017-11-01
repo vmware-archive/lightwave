@@ -61,11 +61,9 @@ _VMCAHttpsServiceShutdown(
     );
 
 static
-DWORD
-_VMCAGetRestRegPort(
-    PSTR  pszPortRegKeyStr,
-    PSTR  pszDefaultPort,
-    PSTR* ppszRegPort
+VOID
+_VMCARestFreeHandle(
+    PVMREST_HANDLE    pHandle
     );
 
 DWORD
@@ -114,31 +112,41 @@ _VMCAHttpServiceStartup(
     DWORD dwError = 0;
     DWORD iter = 0;
     DWORD endPointCnt = 0;
-    PSTR  pszPort = NULL;
+    DWORD dwPort = 0;
     REST_CONF config = {0};
     PREST_PROCESSOR pHandlers = &sVmcaRestHandlers;
+    PVMREST_HANDLE  pHTTPHandle = NULL;
 
-    dwError = _VMCAGetRestRegPort(
-            VMCA_HTTP_PORT_REG_KEY,
-            VMCAHTTPPORT,
-            &pszPort
-            );
-    BAIL_ON_VMCA_ERROR(dwError);
+    (VOID)VMCAGetRegKeyValueDword(
+                  VMCA_KEY_PARAMETERS,//VMCA_CONFIG_PARAMETER_KEY_PATH,
+                  VMCA_HTTP_PORT_REG_KEY,
+                  &dwPort,
+                  VMCA_HTTP_PORT_NUM
+                  );
 
-    // empty port string indicates don't start corresponding service
-    if (IsNullOrEmptyString(pszPort))
+    // port value '0' indicates don't start HTTP service
+    if (dwPort == 0)
     {
         goto cleanup;
     }
 
-    config.pSSLCertificate = VMCARESTSSLCERT;
-    config.pSSLKey = VMCARESTSSLKEY;
-    config.pServerPort = pszPort;
-    config.pDebugLogFile = VMCAHTTPDEBUGLOGFILE;
-    config.pClientCount = VMCARESTCLIENTCNT;
-    config.pMaxWorkerThread = VMCARESTWORKERTHCNT;
+    config.serverPort = dwPort;
+    config.connTimeoutSec = VMCA_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = VMCA_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = NULL;
+    config.nWorkerThr = VMCA_REST_WORKER_TH_CNT;
+    config.nClientCnt = VMCA_REST_CLIENT_CNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = VMCA_HTTP_DEBUG_LOGFILE;
+    config.pszDaemonName = VMCA_HTTP_DAEMON_NAME;
+    config.isSecure = FALSE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
 
-    dwError = VmRESTInit(&config, NULL, &gpVMCAHTTPHandle);
+    dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
     endPointCnt = ARRAY_SIZE(restEndPoints);
@@ -146,22 +154,23 @@ _VMCAHttpServiceStartup(
     for (iter = 0; iter < endPointCnt; iter++)
     {
         dwError = VmRESTRegisterHandler(
-                gpVMCAHTTPHandle,
+                pHTTPHandle,
                 restEndPoints[iter],
                 pHandlers,
                 NULL);
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmRESTStart(gpVMCAHTTPHandle);
+    dwError = VmRESTStart(pHTTPHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    gpVMCAHTTPHandle = pHTTPHandle;
+
 cleanup:
-    VMCA_SAFE_FREE_MEMORY(pszPort);
     return dwError;
 
 error:
-    _VMCAHttpServiceShutdown();
+    _VMCARestFreeHandle(pHTTPHandle);
     VMCA_LOG_ERROR("%s: failure while starting REST HTTP service, error: %d", __FUNCTION__, dwError);
     goto cleanup;
 }
@@ -178,40 +187,50 @@ _VMCAHttpsServiceStartup(
     REST_CONF config = {0};
     PSTR  pszCert = NULL;
     PSTR  pszKey = NULL;
-    PSTR  pszPort = NULL;
+    DWORD dwPort = 0;
     PREST_PROCESSOR pHandlers = &sVmcaRestHandlers;
+    PVMREST_HANDLE  pHTTPSHandle = NULL;
 
-    dwError = _VMCAGetRestRegPort(
-            VMCA_HTTPS_PORT_REG_KEY,
-            VMCAHTTPSPORT,
-            &pszPort
-            );
-    BAIL_ON_VMCA_ERROR(dwError);
+    (VOID)VMCAGetRegKeyValueDword(
+                  VMCA_KEY_PARAMETERS,//VMCA_CONFIG_PARAMETER_KEY_PATH,
+                  VMCA_HTTPS_PORT_REG_KEY,
+                  &dwPort,
+                  VMCA_HTTPS_PORT_NUM
+                  );
 
-    // empty port string indicates don't start corresponding service
-    if (IsNullOrEmptyString(pszPort))
+    // port value '0' indicates don't start HTTPS service
+    if (dwPort == 0)
     {
         goto cleanup;
     }
 
-    config.pSSLCertificate = NULL;
-    config.pSSLKey = NULL;
-    config.pServerPort = pszPort;
-    config.pDebugLogFile = VMCAHTTPSDEBUGLOGFILE;
-    config.pClientCount = VMCARESTCLIENTCNT;
-    config.pMaxWorkerThread = VMCARESTWORKERTHCNT;
+    config.serverPort = dwPort;
+    config.connTimeoutSec = VMCA_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = VMCA_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = NULL;
+    config.nWorkerThr = VMCA_REST_WORKER_TH_CNT;
+    config.nClientCnt = VMCA_REST_CLIENT_CNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = VMCA_HTTPS_DEBUG_LOGFILE;
+    config.pszDaemonName = VMCA_HTTPS_DAEMON_NAME;
+    config.isSecure = TRUE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
 
     //Get Certificate and Key from VECS and Set it to Rest Engine
     dwError = VMCAGetVecsMachineCert(&pszCert, &pszKey);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTInit(&config, NULL, &gpVMCAHTTPSHandle);
+    dwError = VmRESTInit(&config, &pHTTPSHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTSetSSLInfo(gpVMCAHTTPSHandle, pszCert, VMCAStringLenA(pszCert)+1, SSL_DATA_TYPE_CERT);
+    dwError = VmRESTSetSSLInfo(pHTTPSHandle, pszCert, VMCAStringLenA(pszCert)+1, SSL_DATA_TYPE_CERT);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTSetSSLInfo(gpVMCAHTTPSHandle, pszKey, VMCAStringLenA(pszKey)+1, SSL_DATA_TYPE_KEY);
+    dwError = VmRESTSetSSLInfo(pHTTPSHandle, pszKey, VMCAStringLenA(pszKey)+1, SSL_DATA_TYPE_KEY);
     BAIL_ON_VMREST_ERROR(dwError);
 
     endPointCnt = ARRAY_SIZE(restEndPoints);
@@ -219,24 +238,25 @@ _VMCAHttpsServiceStartup(
     for (iter = 0; iter < endPointCnt; iter++)
     {
         dwError = VmRESTRegisterHandler(
-                gpVMCAHTTPSHandle,
+                pHTTPSHandle,
                 restEndPoints[iter],
                 pHandlers,
                 NULL);
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmRESTStart(gpVMCAHTTPSHandle);
+    dwError = VmRESTStart(pHTTPSHandle);
     BAIL_ON_VMREST_ERROR(dwError);
+
+    gpVMCAHTTPSHandle = pHTTPSHandle;
 
 cleanup:
     VMCA_SAFE_FREE_MEMORY(pszCert);
     VMCA_SAFE_FREE_MEMORY(pszKey);
-    VMCA_SAFE_FREE_MEMORY(pszPort);
     return dwError;
 
 error:
-    _VMCAHttpsServiceShutdown();
+    _VMCARestFreeHandle(pHTTPSHandle);
     VMCA_LOG_ERROR("%s: failure while starting REST HTTPS service, error: %d", __FUNCTION__, dwError);
     goto cleanup;
 }
@@ -247,23 +267,11 @@ _VMCAHttpServiceShutdown(
     VOID
     )
 {
-    DWORD iter = 0;
-    DWORD endPointCnt = 0;
-
     VMCA_LOG_INFO("%s: starting http rest server shutdown:", __FUNCTION__);
-    if (gpVMCAHTTPHandle)
-    {
-        VmRESTStop(gpVMCAHTTPHandle);
-        endPointCnt = ARRAY_SIZE(restEndPoints);
-        for (iter = 0; iter < endPointCnt; iter++)
-        {
-            (VOID)VmRESTUnRegisterHandler(
-                    gpVMCAHTTPHandle,
-                    restEndPoints[iter]);
-        }
-        VmRESTShutdown(gpVMCAHTTPHandle);
-    }
+
+    _VMCARestFreeHandle(gpVMCAHTTPHandle);
     gpVMCAHTTPHandle = NULL;
+
     VMCA_LOG_INFO("%s: completed http rest server shutdown:", __FUNCTION__);
 }
 
@@ -273,81 +281,49 @@ _VMCAHttpsServiceShutdown(
     VOID
     )
 {
-    DWORD iter = 0;
-    DWORD endPointCnt = 0;
-
     VMCA_LOG_INFO("%s: starting https rest server shutdown:", __FUNCTION__);
-    if (gpVMCAHTTPSHandle)
-    {
-        VmRESTStop(gpVMCAHTTPSHandle);
-        endPointCnt = ARRAY_SIZE(restEndPoints);
-        for (iter = 0; iter < endPointCnt; iter++)
-        {
-            (VOID)VmRESTUnRegisterHandler(
-                    gpVMCAHTTPSHandle,
-                    restEndPoints[iter]);
-        }
-        VmRESTShutdown(gpVMCAHTTPSHandle);
-    }
+
+    _VMCARestFreeHandle(gpVMCAHTTPSHandle);
     gpVMCAHTTPSHandle = NULL;
+
     VMCA_LOG_INFO("%s: completed https rest server shutdown:", __FUNCTION__);
 }
 
 static
-DWORD
-_VMCAGetRestRegPort(
-    PSTR  pszPortRegKeyStr,
-    PSTR  pszDefaultPort,
-    PSTR* ppszRegPort
+VOID
+_VMCARestFreeHandle(
+    PVMREST_HANDLE    pHandle
     )
 {
+    DWORD iter = 0;
     DWORD dwError = 0;
-    PSTR  pszPort = NULL;
+    DWORD endPointCnt = 0;
 
-    if (ppszRegPort == NULL)
+    if (pHandle)
     {
-        dwError = VMCA_ARGUMENT_ERROR;
-        BAIL_ON_VMCA_ERROR(dwError);
+       /*
+        * REST library have detached threads, maximum time out specified is the max time
+        * allowed for the threads to  finish their execution.
+        * If finished early, it will return success.
+        * If not able to finish in specified time, failure will be returned
+        */
+       dwError = VmRESTStop(pHandle, VMCA_REST_STOP_TIMEOUT_SEC);
+
+        if (dwError != 0)
+        {
+            VMCA_LOG_WARNING("%s: rest server stop error:%d", __FUNCTION__, dwError);
+        }
+
+        endPointCnt = ARRAY_SIZE(restEndPoints);
+        for (iter = 0; iter < endPointCnt; iter++)
+        {
+            (VOID)VmRESTUnRegisterHandler(
+                    pHandle,
+                    restEndPoints[iter]);
+        }
+        VmRESTShutdown(pHandle);
     }
-
-    dwError = VMCAAllocateMemory(
-                  VMCA_REST_PORT_STR_MAX_SIZE,
-                  (PVOID*)&pszPort
-                  );
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VMCAGetRegKeyValue(
-                  VMCA_KEY_PARAMETERS,
-                  pszPortRegKeyStr,
-                  pszPort,
-                  VMCA_REST_PORT_STR_MAX_SIZE
-                  );
-
-    if (dwError != 0)
-    {
-        //assign default value
-        VMCAStringNCpyA(
-            pszPort,
-            VMCAStringLenA(pszDefaultPort)+1,
-            pszDefaultPort,
-            VMCAStringLenA(pszDefaultPort)+1
-            );
-        //not a failure
-        dwError = 0;
-    }
-
-    //transfer ownership
-    *ppszRegPort = pszPort;
-     pszPort = NULL;
-
-cleanup:
-    VMCA_SAFE_FREE_MEMORY(pszPort);
-    return dwError;
-
-error:
-    VMCA_LOG_ERROR("%s: failed error: %d", __FUNCTION__, dwError);
-    goto cleanup;
-
 }
+
 #endif
 #endif

@@ -14,8 +14,8 @@
 
 #ifndef _SSO_TYPES_H_
 #define _SSO_TYPES_H_
+#include <stdbool.h>
 
-typedef unsigned char bool;
 #ifndef false
 #define false 0
 #endif

@@ -80,8 +80,8 @@ VmDnsRESTOperationReadRequest(
     dwError = VmRESTGetHttpMethod(pRestReq, &pRestOp->pszMethod);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    // read request URI
-    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszPath);
+    // read request URI. TRUE - Request c-rest-engine to decode URI
+    dwError = VmRESTGetHttpURI(pRestReq, TRUE, &pRestOp->pszPath);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pszTmp = VmDnsStringChrA(pRestOp->pszPath, '?');

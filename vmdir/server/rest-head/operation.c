@@ -91,8 +91,8 @@ VmDirRESTOperationReadRequest(
     dwError = VmRESTGetHttpMethod(pRestReq, &pRestOp->pszMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read request URI
-    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszPath);
+    // read request URI. TRUE - req c-rest-engine to decode URI
+    dwError = VmRESTGetHttpURI(pRestReq, TRUE, &pRestOp->pszPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pszTmp = VmDirStringChrA(pRestOp->pszPath, '?');

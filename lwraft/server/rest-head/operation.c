@@ -85,7 +85,8 @@ VmDirRESTOperationReadMetadata(
     dwError = VmRESTGetConnectionInfo(pRequest, &pRestOp->pszClientIP, &pRestOp->dwPort);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTGetHttpURI(pRequest, &pRestOp->pszPath);
+    // read request URI. TRUE requests c-rest-engine to decode URI
+    dwError = VmRESTGetHttpURI(pRequest, TRUE, &pRestOp->pszPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pszTemp = VmDirStringChrA(pRestOp->pszPath, '?');

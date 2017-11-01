@@ -201,8 +201,6 @@ VmDirCleanupGlobals(
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszHTTPListenPort);
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszHTTPSListenPort);
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replAgrsMutex );

@@ -178,24 +178,24 @@
     },                                                           \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_HTTP_LISTEN_PORT,   \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
-        /*.RegDataType    = */ REG_SZ,                           \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ DEFAULT_HTTP_PORT_NUM,            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_HTTP_PORT_STR,            \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_HTTPS_LISTEN_PORT,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
-        /*.RegDataType    = */ REG_SZ,                           \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ DEFAULT_HTTPS_PORT_NUM,           \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_HTTPS_PORT_STR,           \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
