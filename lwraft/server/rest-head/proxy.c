@@ -427,6 +427,10 @@ _VmDirRESTProxyResultGetHttpCode(
     {
         *pdwHttpCode = _VmDirRESTCurlToHttpCode(pProxyResult->dwCurlError);
     }
+    else if(pProxyResult->dwError == VMDIR_ERROR_NO_LEADER)
+    {
+        *pdwHttpCode = 503;
+    }
     else
     {
         *pdwHttpCode = 500;
@@ -645,7 +649,6 @@ _VmDirRESTProxyReadRequest(
     DWORD   len = 0;
     DWORD   i = 0;
     PSTR    pszInput = NULL;
-    PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
     PSTR    pszVal = NULL;
 
@@ -657,16 +660,6 @@ _VmDirRESTProxyReadRequest(
     // request method
     dwError = VmRESTGetHttpMethod(pRequest, &pRestOp->pszMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    // request URI
-    dwError = VmRESTGetHttpURI(pRequest, &pRestOp->pszPath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pszTmp = VmDirStringChrA(pRestOp->pszPath, '?');
-    if (pszTmp)
-    {
-        *pszTmp = '\0';
-    }
 
     // auth header
     dwError = VmRESTGetHttpHeader(pRequest, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);

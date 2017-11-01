@@ -394,11 +394,14 @@ VmDirRESTLdapGetHttpError(
     case LDAP_TYPE_OR_VALUE_EXISTS:
     case LDAP_OBJECT_CLASS_VIOLATION:
     case LDAP_ALREADY_EXISTS:
-    case LDAP_NO_SUCH_OBJECT:
     case LDAP_CONSTRAINT_VIOLATION:
     case LDAP_NOT_ALLOWED_ON_NONLEAF:
     case LDAP_PROTOCOL_ERROR:
         httpStatus = HTTP_BAD_REQUEST;
+        break;
+
+    case LDAP_NO_SUCH_OBJECT:
+        httpStatus = HTTP_NOT_FOUND;
         break;
 
     case LDAP_INVALID_CREDENTIALS:

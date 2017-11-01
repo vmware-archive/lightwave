@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+BOOL
+_VmDirRESTProcessLocally(
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
 /*
  * We provide this function as callback to c-rest-engine,
  * c-rest-engine will use this callback upon receiving a request
@@ -101,12 +107,13 @@ VmDirRESTRequestHandlerInternal(
     }
     else
     {
-        // Get the client IP
-        dwError = VmRESTGetConnectionInfo(pRequest, &pRestOp->pszClientIP, &pRestOp->dwPort);
+        dwError = VmDirRESTOperationReadMetadata(pRestOp, pRequest);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VmDirRaftGetRole(&role);
-        if (role == VDIR_RAFT_ROLE_LEADER)
+        // if node is leader or the request needs to be processed locally
+        if (role == VDIR_RAFT_ROLE_LEADER ||
+                _VmDirRESTProcessLocally(pRestOp) )
         {
             dwRestOpErr = VmDirRESTProcessRequest(
                     pRestOp, pRESTHandle, pRequest, paramsCount);
@@ -115,6 +122,7 @@ VmDirRESTRequestHandlerInternal(
                     pRestOp, pRESTHandle, ppResponse);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+        // else if follower proxy to leader
         else if (role == VDIR_RAFT_ROLE_FOLLOWER)
         {
             dwRestOpErr = VmDirRESTForwardRequest(
@@ -249,4 +257,32 @@ error:
             dwError);
 
     goto cleanup;
+}
+
+static
+BOOL
+_VmDirRESTProcessLocally(
+    PVDIR_REST_OPERATION    pRestOp
+    )
+{
+    BOOL    bReturn = FALSE;
+
+    if (!pRestOp || !pRestOp->pszPath)
+    {
+        // This is an invalid case, we will return true so that
+        // the error is handled locally in the upcoming calls
+        bReturn = TRUE;
+    }
+    else if (VmDirStringStartsWith(pRestOp->pszPath, VMDIR_V1_METRICS_RESOURCE, FALSE))
+    {
+        // currently only metrics API will be an exception
+        // Any more exceptions should be added here.
+        bReturn = TRUE;
+    }
+    else
+    {
+        bReturn = FALSE;
+    }
+
+    return bReturn;
 }

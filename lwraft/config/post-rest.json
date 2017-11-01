@@ -51,7 +51,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "default": {
                         "description": "Generic LDAP response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
@@ -116,7 +116,14 @@
                         "schema": {
                             "$ref": "#/definitions/LDAPSearchResponse"
                         }
+                    },
+                    "default": {
+                        "description": "Generic LDAP response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
                     }
+
                 },
                 "tags": [
                     "ldap"
@@ -154,7 +161,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "default": {
                         "description": "Generic LDAP response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
@@ -177,7 +184,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "default": {
                         "description": "Generic LDAP response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
@@ -219,7 +226,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "default": {
                         "description": "Generic POST object response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
@@ -295,6 +302,12 @@
                         "schema": {
                             "$ref": "#/definitions/PostObjectGetResponse"
                         }
+                    },
+                    "default": {
+                        "description": "Generic POST object response",
+                        "schema": {
+                            "$ref": "#/definitions/GenericResponse"
+                        }
                     }
                 },
                 "tags": [
@@ -339,7 +352,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "default": {
                         "description": "Generic POST response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
@@ -374,7 +387,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "default": {
                         "description": "Generic POST response",
                         "schema": {
                             "$ref": "#/definitions/GenericResponse"
@@ -548,10 +561,6 @@
                 },
                 "error_message": {
                     "type": "string"
-                },
-                "result_count": {
-                    "type": "integer",
-                    "format": "int32"
                 }
             }
         },

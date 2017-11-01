@@ -68,6 +68,40 @@ error:
 }
 
 DWORD
+VmDirRESTOperationReadMetadata(
+    PVDIR_REST_OPERATION    pRestOp,
+    PREST_REQUEST           pRequest
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszTemp = NULL;
+
+    if (!pRestOp || !pRequest)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    // Get the client IP
+    dwError = VmRESTGetConnectionInfo(pRequest, &pRestOp->pszClientIP, &pRestOp->dwPort);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpURI(pRequest, &pRestOp->pszPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszTemp = VmDirStringChrA(pRestOp->pszPath, '?');
+    if (pszTemp)
+    {
+        *pszTemp = '\0';
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
     PVMREST_HANDLE          pRESTHandle,
@@ -78,7 +112,6 @@ VmDirRESTOperationReadRequest(
     DWORD   dwError = 0;
     DWORD   i = 0, bytesRead = 0;
     json_error_t    jError = {0};
-    PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
     PSTR    pszVal = NULL;
     PSTR    pszInput = NULL;
@@ -93,16 +126,6 @@ VmDirRESTOperationReadRequest(
     // read request methods
     dwError = VmRESTGetHttpMethod(pRestReq, &pRestOp->pszMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    // read request URI
-    dwError = VmRESTGetHttpURI(pRestReq, &pRestOp->pszPath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pszTmp = VmDirStringChrA(pRestOp->pszPath, '?');
-    if (pszTmp)
-    {
-        *pszTmp = '\0';
-    }
 
     // determine resource
     pRestOp->pResource = VmDirRESTGetResource(pRestOp->pszPath);

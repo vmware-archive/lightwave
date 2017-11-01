@@ -25,6 +25,7 @@
 #define VMDIR_V1_LDAP_RESOURCE      "/v1/post/ldap"
 #define VMDIR_V1_OBJ_RESOURCE       "/v1/post/object"
 #define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
+#define VMDIR_V1_METRICS_RESOURCE   "/v1/post/metrics"
 
 // Lightwave
 #define VMDIR_REST_LIGHTWAVE_LDAP_PORT      389
