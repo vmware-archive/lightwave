@@ -131,6 +131,8 @@ extern "C" {
     (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
             VDIR_DFL_CONCURRENT_ATTR_VALUE_UPDATE)
 
+#define MAX_NUM_CONTENT_LOG     256
+
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
 

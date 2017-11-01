@@ -583,6 +583,13 @@ VmDirLog1(
     ...);
 
 LOGGING_API
+BOOLEAN
+VmDirLogLevelAndMaskTest(
+    VMDIR_LOG_LEVEL iLevel,
+    ULONG           iMask
+    );
+
+LOGGING_API
 DWORD
 VmDirLogInitialize(
    PCSTR            pszLogFileName,

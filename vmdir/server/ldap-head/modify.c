@@ -135,7 +135,7 @@ VmDirPerformModify(
               PCSTR pszLogValue = (0 == VmDirStringCompareA( pMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
                                     "XXX" : pLberBerv[iCnt].bv_val;
 
-              if (iCnt < MAX_NUM_MOD_CONTENT_LOG)
+              if (iCnt < MAX_NUM_CONTENT_LOG)
               {
                   VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s: (%.*s)",
                             ++dwModCount,
@@ -144,7 +144,7 @@ VmDirPerformModify(
                             VMDIR_MIN(pLberBerv[iCnt].bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
                             VDIR_SAFE_STRING( pszLogValue ));
               }
-              else if (iCnt == MAX_NUM_MOD_CONTENT_LOG)
+              else if (iCnt == MAX_NUM_CONTENT_LOG)
               {
                   VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s: .... Total MOD %d)",
                             ++dwModCount,
