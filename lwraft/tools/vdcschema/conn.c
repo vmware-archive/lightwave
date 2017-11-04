@@ -113,7 +113,7 @@ VdcSchemaConnOpen(
     // always connect to leader
     dwError = VmDirSafeLDAPBindExt1(
         &pConn->pLd,
-        pConn->pszHostName,
+        pszLeader,
         pConn->pszUPN,
         pConn->pszPassword,
         MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
