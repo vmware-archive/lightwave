@@ -21,4 +21,4 @@ RUN tdnf update --refresh -y \
          jansson-2.9  \
          gawk-4.1.3 \
          copenapi-0.0.1 \
-         c-rest-engine-1.0.5
+         c-rest-engine-1.1

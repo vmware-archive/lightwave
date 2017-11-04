@@ -79,4 +79,4 @@ settings:
     - build
     - pack
   docker:
-    image: 'vmware/lightwave-toolchain-photon:0.0.2'
+    image: 'vmware/lightwave-toolchain-photon:0.0.3'
