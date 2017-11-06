@@ -21,6 +21,7 @@ libmiddle_layer_la_SOURCES = \
     krb.c \
     lockoutpolicy.c \
     modify.c \
+    pagedsearch.c \
     password.c \
     plugin.c \
     pscache.c \

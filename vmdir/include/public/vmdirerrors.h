@@ -140,6 +140,10 @@
 #define VMDIR_ERROR_OPTION_UNKNOWN                    (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 176 )    // 9276
 #define VMDIR_ERROR_OPTION_INVALID                    (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 177 )    // 9277
 
+// pagedsearch 9290 ~ 9299
+#define VMDIR_ERROR_NO_PAGED_SEARCH_CONTEXT            (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 190 )    // 9290
+#define VMDIR_ERROR_INVALID_PAGED_SEARCH_REQUEST       (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 191 )    // 9291
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // customized LDAP return code (range 9300 - 9399)
 //////////////////////////////////////////////////////////////////////////////////////////////////
