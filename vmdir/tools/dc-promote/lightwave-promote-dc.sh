@@ -8,10 +8,15 @@
 # Configure these constants to match your environment
 # ADMIN_PASSWORD must meet password complexity requirements of vmdir
 #                Upper/Lower/Number/Legal punctuation/ 9 < pwd_len <= 20
-LIGHTWAVE_AD=10.118.97.57
+LIGHTWAVE_AD=10.118.97.121
 ADMIN_PASSWORD="VMware123@"
 
 LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/likewise-open
+
+# DEBUG: Use old build of likewise, as merged version is broken
+#LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/tmp/extract.deleteme/likewise-open
+#LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/tmp/likewise-open-backup-081417/likewise-open/
+
 LIGHTWAVE_BASE=/home/abernstein/workspaces/git/lightwave/lightwave/
 
 # Command line usage: ./lightwave-promote-dc.sh [[IP_PSC]  [Admin PWD]]
@@ -77,7 +82,7 @@ if [ `ls -1 $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm | wc -l` -eq 0 ]; t
 fi
 
 # Save Administrator password to a file on AD system
-echo -n "$ADMIN_PASSWORD" | ssh root@$LIGHTWAVE_AD 'cat > /tmp/promote-pwd.txt'
+echo -n "$ADMIN_PASSWORD" | ssh root@$LIGHTWAVE_AD 'cat > /var/tmp/promote-pwd.txt'
 if [ $? -ne 0 ]; then
   echo "ERROR: Failed setting promote-pwd.txt file on '$LIGHTWAVE_AD' system"
   exit 1
@@ -92,6 +97,10 @@ scp $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm $LIGHTWAVE_AD:/tmp
 # 3 Install Likewise-Open
 ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-?.x86_64.rpm
 
+#echo "DEBUG: Quitting..."
+#exit 1
+##zzz
+
 # 4 Install Lightwave RPMs
 ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/lightwave-1*.rpm /tmp/lightwave-client-1*.rpm /tmp/lightwave-server-1*.rpm
 
@@ -101,7 +110,18 @@ ssh root@$LIGHTWAVE_AD  /tmp/resolv-config.sh
 
 # 6 Promote Lightwave PSC
 ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/configure-lightwave-server \
-  --domain lightwave.local --password `cat /tmp/promote-pwd.txt`'
+  --domain lightwave.local --password `cat /var/tmp/promote-pwd.txt`'
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# 6a Fix busted vmafd value DCName value
+# Getting localhost vs FQDN of DC
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-vmafd.sh
+/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]' DCName  `ssh root@$LIGHTWAVE_AD hostname -f`
+NNNN
+scp /tmp/regshell-vmafd.sh root@$LIGHTWAVE_AD:/tmp
+ssh root@$LIGHTWAVE_AD sh /tmp/regshell-vmafd.sh
 
 # 7 Start Likewise SMB services
 ssh root@$LIGHTWAVE_AD '( /opt/likewise/bin/lwsm start npfs && /opt/likewise/bin/lwsm start pvfs && 
@@ -119,7 +139,7 @@ ssh root@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
 ## Don't do this. Forwarder support is broken. Preserving 2nd/3rd entries in 
 ## resolv.conf accomplishes the same thing.
 #ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder 10.155.23.1 \
-#    --server localhost --username Administrator --domain lightwave.local --password `cat /tmp/promote-pwd.txt`'
+#    --server localhost --username Administrator --domain lightwave.local --password `cat /var/tmp/promote-pwd.txt`'
 #
 
 # 10 Additional DNS SRV records:
@@ -133,7 +153,7 @@ ssh root@$LIGHTWAVE_AD \
    --weight 1 \
    --port 88 \
    --server localhost \
-   --password `cat /tmp/promote-pwd.txt`'
+   --password `cat /var/tmp/promote-pwd.txt`'
 
 ssh root@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local \
@@ -145,7 +165,56 @@ ssh root@$LIGHTWAVE_AD \
    --weight 1 \
    --port 88 \
    --server localhost \
-   --password `cat /tmp/promote-pwd.txt`'
+   --password `cat /var/tmp/promote-pwd.txt`'
+
+# 10a Missing _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.LIGHTWAVE.LOCAL
+#
+ssh root@$LIGHTWAVE_AD \
+  '/opt/vmware/bin/vmdns-cli add-zone  Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
+   --ns-host Default-First-Site \
+   --ns-ip $LIGHTWAVE_AD \
+   --type forward \
+   --server localhost \
+   --username Administrator \
+   --domain lightwave.local \
+   --password `cat /var/tmp/promote-pwd.txt`'
+
+
+ssh root@$LIGHTWAVE_AD \
+  '/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local \
+   --type SRV \
+   --service _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
+   --protocol tcp \
+   --target photon-102-test \
+   --priority 1 \
+   --weight 1 \
+   --port 389 \
+   --server localhost \
+   --domain lightwave.local \
+   --password `cat /var/tmp/promote-pwd.txt`'
+
+ssh root@$LIGHTWAVE_AD \
+  '/opt/vmware/bin/vmdns-cli add-record --zone Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
+   --type SRV \
+   --service ldap \
+   --protocol tcp \
+   --target photon-102-test \
+   --priority 1 \
+   --weight 1 \
+   --port 389 \
+   --server localhost \
+   --domain lightwave.local \
+   --password `cat /var/tmp/promote-pwd.txt`'
+
+# A record photon-102-test.Default-First-Site-Name._sites.dc._msdcs.lightwave.local
+ssh root@$LIGHTWAVE_AD \
+  '/opt/vmware/bin/vmdns-cli add-record --zone Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
+   --type A \
+   --hostname photon-102-test \
+   --ip $LIGHTWAVE_AD \
+   --server localhost \
+   --domain lightwave.local \
+   --password `cat /var/tmp/promote-pwd.txt`'
 
 # 11  Add additional cifs entries to krb5.keytab
 scp $TOOLS_DIR/add-keytab.sh $LIGHTWAVE_AD:/tmp
@@ -184,6 +253,16 @@ echo "Update CN=photon-102-test,CN=Partitions,cn=configuration,dc=lightwave,dc=l
 scp $TOOLS_DIR/partitions-vmdir.sh abernstein@$LIGHTWAVE_AD:/var/tmp
 ssh root@$LIGHTWAVE_AD \
     /var/tmp/partitions-vmdir.sh 
+
+# 15a Get rid of the local provider; not relevant to a AD/DC
+cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-loadorder.sh
+/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\lsass\Parameters\\Providers]' LoadOrder   ActiveDirectory VmDir 
+NNNN
+scp /tmp/regshell-loadorder.sh root@$LIGHTWAVE_AD:/tmp
+ssh root@$LIGHTWAVE_AD sh /tmp/regshell-loadorder.sh
+
+# 15b Configure the dsapi.conf file to use vmdirdb.so plugin
+echo /opt/likewise/lib64/libvmdirdb.so | ssh root@$LIGHTWAVE_AD 'cat > /etc/likewise/dsapi.conf'
 
 # 16 Restart all lightwave services
 ssh root@$LIGHTWAVE_AD \
