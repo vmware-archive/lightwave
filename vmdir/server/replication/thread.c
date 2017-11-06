@@ -40,30 +40,9 @@ UpdateServerObject(
     VMDIR_REPLICATION_AGREEMENT *   replAgr);
 
 static
-DWORD
-_VmDirReplicationLoadCredentials(
-    PVMDIR_REPLICATION_CREDENTIALS pCreds
-    );
-
-static
-VOID
-_VmDirReplicationFreeCredentialsContents(
-    PVMDIR_REPLICATION_CREDENTIALS pCreds
-    );
-
-static
-DWORD
+VMDIR_DC_CONNECTION_STATE
 _VmDirReplicationConnect(
-    PVMDIR_REPLICATION_CONTEXT      pContext,
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
-    PVMDIR_REPLICATION_CREDENTIALS  pCreds,
-    PVMDIR_REPLICATION_CONNECTION   pConnection
-    );
-
-static
-VOID
-_VmDirReplicationDisconnect(
-    PVMDIR_REPLICATION_CONNECTION pConnection
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
     );
 
 static
@@ -76,8 +55,8 @@ static
 VOID
 _VmDirConsumePartner(
     PVMDIR_REPLICATION_CONTEXT      pContext,
-    PVMDIR_REPLICATION_AGREEMENT    replAgr,
-    PVMDIR_REPLICATION_CONNECTION   pConnection
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    PVMDIR_DC_CONNECTION            pConnection
     );
 
 static
@@ -102,10 +81,10 @@ VmDirSetGlobalServerId();
 static
 int
 _VmDirFetchReplicationPage(
-    PVMDIR_REPLICATION_CONNECTION   pConnection,
-    USN                             lastSupplierUsnProcessed,
-    USN                             initUsn,
-    PVMDIR_REPLICATION_PAGE*        ppPage
+    PVMDIR_DC_CONNECTION        pConnection,
+    USN                         lastSupplierUsnProcessed,
+    USN                         initUsn,
+    PVMDIR_REPLICATION_PAGE*    ppPage
     );
 
 static
@@ -208,18 +187,14 @@ vdirReplicationThrFun(
     )
 {
     int                             retVal = 0;
-    VMDIR_REPLICATION_AGREEMENT    *replAgr = NULL;
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
     BOOLEAN                         bInReplAgrsLock = FALSE;
     BOOLEAN                         bInReplCycleDoneLock = FALSE;
     BOOLEAN                         bExitThread = FALSE;
     int                             i = 0;
-    VMDIR_REPLICATION_CREDENTIALS   sCreds = {0};
-    VMDIR_REPLICATION_CONNECTION    sConnection = {0};
     VMDIR_REPLICATION_CONTEXT       sContext = {0};
     uint64_t                        uiCycleStartTime = 0;
     uint64_t                        uiCycleEndTime = 0;
-    uint64_t                        uiConnectStartTime = 0;
-    uint64_t                        uiConnectEndTime = 0;
     uint64_t                        uiSyncStartTime = 0;
     uint64_t                        uiSyncEndTime = 0;
 
@@ -265,23 +240,17 @@ vdirReplicationThrFun(
         VmDirRemoveDeletedRAsFromCache();
 
         VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
-        replAgr = gVmdirReplAgrs;
+        pReplAgr = gVmdirReplAgrs;
         VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
 
-        retVal = _VmDirReplicationLoadCredentials(&sCreds);
-        if (retVal)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Error loading passwords from registry: %u\n", retVal);
-        }
-
-        for (; replAgr != NULL; replAgr = replAgr->next )
+        for (; pReplAgr != NULL; pReplAgr = pReplAgr->next )
         {
             if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
             {
                 goto cleanup;
             }
 
-            if (replAgr->isDeleted) // skip deleted RAs
+            if (pReplAgr->isDeleted) // skip deleted RAs
             {
                 continue;
             }
@@ -299,41 +268,22 @@ vdirReplicationThrFun(
                 VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Acquires new schema context");
             }
 
-            if (sCreds.bChanged)
+            if (_VmDirReplicationConnect(pReplAgr) != DC_CONNECTION_STATE_CONNECTED)
             {
-                replAgr->newPasswordFailTime = 0;
-                replAgr->oldPasswordFailTime = 0;
-            }
-
-            uiConnectStartTime = VmDirGetTimeInMilliSec();
-
-            retVal = _VmDirReplicationConnect(&sContext, replAgr, &sCreds, &sConnection);
-            if (retVal || sConnection.pLd == NULL)
-            {
-                if (replAgr->ReplMetrics.pReplConnectFailures)
-                {
-                    VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplConnectFailures);
-                }
                 continue;
             }
-            uiConnectEndTime = VmDirGetTimeInMilliSec();
 
-            if (replAgr->ReplMetrics.pReplConnectDuration)
-            {
-                VmMetricsHistogramUpdate(replAgr->ReplMetrics.pReplConnectDuration,
-                            VMDIR_RESPONSE_TIME(uiConnectEndTime-uiConnectStartTime));
-            }
             uiSyncStartTime = VmDirGetTimeInMilliSec();
-            _VmDirConsumePartner(&sContext, replAgr, &sConnection);
+
+            _VmDirConsumePartner(&sContext, pReplAgr, &pReplAgr->dcConn);
+
             uiSyncEndTime = VmDirGetTimeInMilliSec();
 
-            if (replAgr->ReplMetrics.pReplSyncDuration)
+            if (pReplAgr->ReplMetrics.pReplSyncDuration)
             {
-                VmMetricsHistogramUpdate(replAgr->ReplMetrics.pReplSyncDuration,
+                VmMetricsHistogramUpdate(pReplAgr->ReplMetrics.pReplSyncDuration,
                             VMDIR_RESPONSE_TIME(uiSyncEndTime-uiSyncStartTime));
             }
-
-            _VmDirReplicationDisconnect(&sConnection);
         }
 
         uiCycleEndTime = VmDirGetTimeInMilliSec();
@@ -383,10 +333,6 @@ vdirReplicationThrFun(
 
 cleanup:
 
-    _VmDirReplicationDisconnect(&sConnection);
-
-    _VmDirReplicationFreeCredentialsContents(&sCreds);
-
     VmDirSchemaCtxRelease(sContext.pSchemaCtx);
     VMDIR_SAFE_FREE_STRINGA(sContext.pszKrb5ErrorMsg);
 
@@ -399,218 +345,6 @@ error:
     VmDirdStateSet( VMDIRD_STATE_FAILURE );
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                     "vdirReplicationThrFun: Replication has failed with unrecoverable error." );
-    goto cleanup;
-}
-
-DWORD
-VmDirCacheKrb5Creds(
-    PCSTR pszDcAccountUPN,
-    PCSTR pszDcAccountPwd,
-    PSTR  *ppszErrorMsg
-    )
-{
-    krb5_error_code             dwError = 0;
-    krb5_context                pKrb5Ctx = NULL;
-    krb5_creds                  myCreds = {0};
-    krb5_creds                  credsToMatch = {0};
-    krb5_principal              pKrb5TgtPrincipal = NULL;
-    krb5_principal              pKrb5DCAccountPrincipal = NULL;
-    krb5_ccache                 pDefCredCache = NULL;
-    krb5_get_init_creds_opt *   pOptions = NULL; // Not really used right now.
-    PSTR                        pszLocalErrorMsg = NULL;
-    PCSTR                       pKrb5ErrMsg = NULL;
-    PSTR                        pszTgtUPN = NULL;
-    time_t                      currentTimeInSecs = 0;
-    krb5_keytab                 keyTabHandle = NULL;
-
-    if (pszDcAccountUPN == NULL ||
-        pszDcAccountPwd == NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = krb5_init_context(&pKrb5Ctx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                            "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_init_context()",
-                            dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    dwError = krb5_get_init_creds_opt_alloc(pKrb5Ctx, &pOptions);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_get_init_creds_opt_alloc()",
-                dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    dwError = krb5_parse_name(pKrb5Ctx, pszDcAccountUPN, &pKrb5DCAccountPrincipal);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                             "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_parse_name()",
-                              dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirKerberosBasedBind: DCAccountPrinicpal=(%s)",
-                                       VDIR_SAFE_STRING(pszDcAccountUPN));
-
-    dwError = krb5_cc_default(pKrb5Ctx, &pDefCredCache);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_default()",
-                                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirKerberosBasedBind: credCache = %s",
-                                       VDIR_SAFE_STRING(krb5_cc_get_name(pKrb5Ctx, pDefCredCache)));
-
-    // non-1st replica, before 1st replication cycle is over scenario
-    // => credCache has not yet been initialized with the creds for the DC machine account => initialize it
-    if (gVmdirKrbGlobals.pszRealm == NULL || gVmdirKrbGlobals.bTryInit)
-    {
-        gVmdirKrbGlobals.bTryInit = FALSE;
-
-        dwError = krb5_get_init_creds_password(
-                        pKrb5Ctx,                           // [in] context - Library context
-                        &myCreds,                           // [out] creds - New credentials
-                        pKrb5DCAccountPrincipal,            // [in] client - Client principal
-                        (PSTR)pszDcAccountPwd,              // [in] password - Password (or NULL)
-                        NULL,                               // [in] prompter - Prompter function
-                        0,                                  // [in] data - Prompter callback data
-                        0,                                  // [in] start_time - Time when ticket becomes valid (0 for now)
-                        NULL,                               // [in] in_tkt_service - Service name of initial credentials (or NULL)
-                        pOptions);                          // [in] k5_gic_options - Initial credential options
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_get_init_creds_password()",
-                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        dwError = krb5_cc_initialize(pKrb5Ctx, pDefCredCache,
-                                     myCreds.client /* This is canonical, otherwise use pKrb5DCAccountPrincipal */);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                          "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_initialize()",
-                          dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        dwError = krb5_cc_store_cred(pKrb5Ctx, pDefCredCache, &myCreds);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                          "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_store_cred()",
-                          dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "First init creds cache, UPN(%s), size (%d) passed",
-                                            VDIR_SAFE_STRING( pszDcAccountUPN ),
-                                            pszDcAccountPwd ? VmDirStringLenA(pszDcAccountPwd) : 0);
-    }
-    else
-    {
-        // Try to retrieve creds for the DC machine account
-        memset(&credsToMatch, 0, sizeof(credsToMatch));
-        credsToMatch.client = pKrb5DCAccountPrincipal;
-
-        dwError = VmDirAllocateStringPrintf(&pszTgtUPN, "krbtgt/%s@%s",
-                                                gVmdirKrbGlobals.pszRealm, gVmdirKrbGlobals.pszRealm);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "creadsToMatch = (%s)", pszTgtUPN);
-
-        dwError = krb5_parse_name(pKrb5Ctx, pszTgtUPN, &pKrb5TgtPrincipal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                              "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_parse_name()",
-                              dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        credsToMatch.server = pKrb5TgtPrincipal;
-        currentTimeInSecs = time (NULL);
-
-        dwError = krb5_cc_retrieve_cred(pKrb5Ctx, pDefCredCache, KRB5_TC_MATCH_SRV_NAMEONLY, &credsToMatch, &myCreds);
-        if (dwError == KRB5_FCC_NOFILE
-            ||
-            dwError == KRB5_CC_NOTFOUND
-            ||
-            (dwError == 0 && ( (currentTimeInSecs - myCreds.times.starttime) > (myCreds.times.endtime - myCreds.times.starttime)/2 ) ) )
-        {
-            BOOLEAN     bLogKeytabInit = dwError;
-
-            dwError = krb5_kt_default(pKrb5Ctx, &keyTabHandle);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                      "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_kt_default()",
-                      dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            dwError = krb5_get_init_creds_keytab(
-                            pKrb5Ctx,                   // [in] context - Library context
-                            &myCreds,                   // [out] creds - New credentials
-                            pKrb5DCAccountPrincipal,    // [in] client - Client principal
-                            keyTabHandle,               // [in] Key table handle
-                            0,                          // [in] start_time - Time when ticket becomes valid (0 for now)
-                            NULL,                       // [in] in_tkt_service - Service name of initial credentials (or NULL)
-                            pOptions);                  // [in] k5_gic_options - Initial credential options
-            if (dwError == KRB5KDC_ERR_PREAUTH_FAILED)
-            {
-                gVmdirKrbGlobals.bTryInit = TRUE;
-            }
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_get_init_creds_keytab()",
-                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            dwError = krb5_cc_initialize(pKrb5Ctx, pDefCredCache,
-                                         myCreds.client /* This is canonical, otherwise use pKrb5DCAccountPrincipal */);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                      "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_initialize()",
-                      dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            dwError = krb5_cc_store_cred(pKrb5Ctx, pDefCredCache, &myCreds);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                      "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_store_cred()",
-                      dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            if ( bLogKeytabInit )
-            {
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Init creds cache via keytab, UPN(%s) passed.",
-                                VDIR_SAFE_STRING( pszDcAccountUPN ));
-            }
-        }
-        else
-        {
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_retrieve_cred()",
-                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-        }
-    }
-
-cleanup:
-    if (pKrb5Ctx)
-    {
-        if (pKrb5TgtPrincipal)
-        {
-            krb5_free_principal(pKrb5Ctx, pKrb5TgtPrincipal);
-        }
-        if (pKrb5DCAccountPrincipal)
-        {
-            krb5_free_principal(pKrb5Ctx, pKrb5DCAccountPrincipal);
-        }
-        if (pDefCredCache)
-        {
-            krb5_cc_close(pKrb5Ctx, pDefCredCache);
-        }
-        if (pOptions)
-        {
-            krb5_get_init_creds_opt_free(pKrb5Ctx, pOptions);
-        }
-        if (pKrb5ErrMsg)
-        {
-            krb5_free_error_message(pKrb5Ctx, pKrb5ErrMsg);
-        }
-        if (keyTabHandle)
-        {
-            krb5_kt_close(pKrb5Ctx, keyTabHandle); // SJ-TBD: Do I really need to do that?
-        }
-        krb5_free_cred_contents( pKrb5Ctx, &myCreds );
-        krb5_free_context(pKrb5Ctx);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszTgtUPN);
-    if (ppszErrorMsg != NULL)
-    {
-        *ppszErrorMsg = pszLocalErrorMsg;
-        pszLocalErrorMsg = NULL;
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    return dwError;
-
-error:
-    if (ppszErrorMsg == NULL)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg));
-    }
     goto cleanup;
 }
 
@@ -952,214 +686,19 @@ error:
     goto cleanup;
 }
 
-/*
- * Attempt connection with old password (with all available authentication
- * protocols) and then the current password. If the old password fails, it will
- * never be tried again (unless the process is restarted). If the current
- * password fails, it won't be tried for N (=10) minutes to preven lockout.
- */
 static
-DWORD
+VMDIR_DC_CONNECTION_STATE
 _VmDirReplicationConnect(
-    PVMDIR_REPLICATION_CONTEXT      pContext,
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
-    PVMDIR_REPLICATION_CREDENTIALS  pCreds,
-    PVMDIR_REPLICATION_CONNECTION   pConnection
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
     )
 {
-    DWORD   dwError = 0;
-    LDAP*   pLd = NULL;
-    PSTR    pszPartnerHostName = NULL;
-    VMDIR_REPLICATION_PASSWORD  sPasswords[2];
-    DWORD   dwPasswords = 0;
-    DWORD   i = 0;
-    PSTR    pszErrorMsg = NULL;
-    time_t  currentTime = time(NULL);
-
-    dwError = VmDirReplURIToHostname(pReplAgr->ldapURI, &pszPartnerHostName);
-    if (dwError != 0)
+    if (DC_CONNECTION_STATE_NOT_CONNECTED == pReplAgr->dcConn.connState ||
+        DC_CONNECTION_STATE_FAILED        == pReplAgr->dcConn.connState)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "_vdirReplicationConnect: VmDirReplURIToHostname failed. %s",
-                pReplAgr->ldapURI);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        VmDirInitDCConnThread(&pReplAgr->dcConn);
     }
 
-    // Do we have a current password that has not failed recently?
-    if (pCreds->pszPassword != NULL &&
-        (pReplAgr->newPasswordFailTime == 0 ||
-         pReplAgr->newPasswordFailTime + (10 * SECONDS_IN_MINUTE) < currentTime))
-    {
-        sPasswords[dwPasswords].pszPassword = pCreds->pszPassword;
-        sPasswords[dwPasswords].pPasswordFailTime = &pReplAgr->newPasswordFailTime;
-        dwPasswords++;
-    }
-
-    // Do we have an old password and has it not failed?
-    if (pCreds->pszOldPassword != NULL &&
-        pReplAgr->oldPasswordFailTime == 0)
-    {
-        sPasswords[dwPasswords].pszPassword = pCreds->pszOldPassword;
-        sPasswords[dwPasswords].pPasswordFailTime = &pReplAgr->oldPasswordFailTime;
-        dwPasswords++;
-    }
-
-    /* Try all passwords that may work. Record time of invalid credentials
-     * so we don't keep trying and cause it to be locked out.
-     */
-    for (i = 0; i < dwPasswords; i++)
-    {
-        PCSTR pszPassword = sPasswords[i].pszPassword;
-
-        // Bind via SASL [srp] mech
-        dwError = VmDirSafeLDAPBindExt1(
-                &pLd, pszPartnerHostName, pCreds->pszUPN, pszPassword, gVmdirGlobals.dwLdapConnectTimeoutSec);
-
-#ifndef LIGHTWAVE_BUILD
-        if (dwError != 0)
-        {
-            // Use SSL and LDAP URI for 5.5 compatibility
-            dwError = VmDirSSLBind(
-                    &pLd, pReplAgr->ldapURI, pCreds->pszDN, pszPassword);
-        }
-#endif
-
-        if (dwError == VMDIR_ERROR_USER_INVALID_CREDENTIAL)
-        {
-            *(sPasswords[i].pPasswordFailTime) = currentTime;
-        }
-
-        if (dwError == 0)
-        {
-            break;
-        }
-    }
-
-    pConnection->pszPartnerHostName = pszPartnerHostName;
-    pszPartnerHostName = NULL;
-
-    pConnection->pLd = pLd;
-    pLd = NULL;
-
-error:
-    VMDIR_SAFE_FREE_STRINGA(pszErrorMsg);
-    VMDIR_SAFE_FREE_STRINGA(pszPartnerHostName);
-    VDIR_SAFE_UNBIND_EXT_S(pLd);
-    return dwError;
-}
-
-/*
- */
-static
-VOID
-_VmDirReplicationDisconnect(
-    PVMDIR_REPLICATION_CONNECTION pConnection
-    )
-{
-    if (pConnection)
-    {
-        VDIR_SAFE_UNBIND_EXT_S(pConnection->pLd);
-        VMDIR_SAFE_FREE_STRINGA(pConnection->pszPartnerHostName);
-    }
-}
-
-/*
- * Load credentials. If credentials are passed in and new information is
- * present, then the old credentials will be freed and *pbChanged set TRUE,
- * else FALSE.
- */
-static
-DWORD
-_VmDirReplicationLoadCredentials(
-    PVMDIR_REPLICATION_CREDENTIALS pCreds
-    )
-{
-    DWORD dwError = 0;
-    PSTR pszUPN = NULL;
-    PSTR pszDN = NULL;
-    PSTR pszPassword = NULL;
-    PSTR pszOldPassword = NULL;
-    BOOLEAN bChanged = FALSE;
-
-    if (pCreds == NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringA(gVmdirServerGlobals.dcAccountUPN.lberbv.bv_val, &pszUPN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA(gVmdirServerGlobals.dcAccountDN.lberbv.bv_val, &pszDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirReadDCAccountPassword(&pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirReadDCAccountOldPassword(&pszOldPassword);
-
-    if (pCreds->pszUPN == NULL ||
-        strcmp(pCreds->pszUPN, pszUPN) != 0)
-    {
-        bChanged = TRUE;
-    }
-
-    if (pCreds->pszDN == NULL ||
-        strcmp(pCreds->pszDN, pszDN) != 0)
-    {
-        bChanged = TRUE;
-    }
-
-    if (pCreds->pszPassword == NULL ||
-        strcmp(pCreds->pszPassword, pszPassword) != 0)
-    {
-        bChanged = TRUE;
-    }
-
-    if (bChanged)
-    {
-        _VmDirReplicationFreeCredentialsContents(pCreds);
-
-        pCreds->pszUPN = pszUPN;
-        pCreds->pszDN = pszDN;
-        pCreds->pszPassword = pszPassword;
-        pCreds->pszOldPassword = pszOldPassword;
-
-        pszUPN = NULL;
-        pszDN = NULL;
-        pszPassword = NULL;
-        pszOldPassword = NULL;
-    }
-
-    pCreds->bChanged = bChanged;
-
-cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszUPN);
-    VMDIR_SAFE_FREE_STRINGA(pszDN);
-    VMDIR_SECURE_FREE_STRINGA(pszPassword);
-    VMDIR_SECURE_FREE_STRINGA(pszOldPassword);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-/*
- */
-static
-VOID
-_VmDirReplicationFreeCredentialsContents(
-    PVMDIR_REPLICATION_CREDENTIALS pCreds
-    )
-{
-    if (pCreds != NULL)
-    {
-        VMDIR_SAFE_FREE_STRINGA(pCreds->pszUPN);
-        VMDIR_SAFE_FREE_STRINGA(pCreds->pszDN);
-        VMDIR_SAFE_FREE_STRINGA(pCreds->pszPassword);
-        VMDIR_SAFE_FREE_STRINGA(pCreds->pszOldPassword);
-    }
+    return pReplAgr->dcConn.connState;
 }
 
 DWORD
@@ -1243,8 +782,8 @@ static
 VOID
 _VmDirConsumePartner(
     PVMDIR_REPLICATION_CONTEXT      pContext,
-    PVMDIR_REPLICATION_AGREEMENT    replAgr,
-    PVMDIR_REPLICATION_CONNECTION   pConnection
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    PVMDIR_DC_CONNECTION            pConnection
     )
 {
     int retVal = LDAP_SUCCESS;
@@ -1266,7 +805,7 @@ _VmDirConsumePartner(
 
         bReTrialDesired = FALSE;
         bContinue = FALSE;
-        initUsn = VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+        initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
 
         if (bReplayEverything)
         {
@@ -1312,7 +851,7 @@ _VmDirConsumePartner(
 
             // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
             retVal = _VmDirFilterEmptyPageSyncDoneCtr(
-                    replAgr->lastLocalUsnProcessed.lberbv.bv_val,
+                    pReplAgr->lastLocalUsnProcessed.lberbv.bv_val,
                     &bervalSyncDoneCtrl,
                     &(pPage->searchResCtrls[0]->ldctl_value));
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
@@ -1322,12 +861,6 @@ _VmDirConsumePartner(
                     pPage->searchResCtrls[0]->ldctl_value.bv_val,
                     VMDIR_REPL_CONT_INDICATOR) ?
                             TRUE : FALSE;
-
-            // Check if we received a full page and need to continue
-            bContinue |= pPage->iEntriesRequested > 0 &&
-                         pPage->iEntriesReceived > 0 &&
-                         pPage->iEntriesReceived == pPage->iEntriesRequested;
-
         }
         while (bContinue);
 
@@ -1382,7 +915,7 @@ _VmDirConsumePartner(
             VMDIR_LOG_WARNING(
                     VMDIR_LOG_MASK_ALL,
                     "_VmDirConsumePartner: will retry consuming partner (%s)",
-                    pConnection->pszPartnerHostName);
+                    pConnection->pszRemoteDCHostName);
         }
     }
     while (bReTrialDesired);
@@ -1394,32 +927,32 @@ replcycledone:
         if (pPage && bervalSyncDoneCtrl.bv_val)
         {
             retVal = VmDirReplUpdateCookies(
-                    pContext->pSchemaCtx, &bervalSyncDoneCtrl, replAgr);
+                    pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             VmMetricsGaugeSet(
-                    replAgr->ReplMetrics.pReplUsn,
-                    VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10));
+                    pReplAgr->ReplMetrics.pReplUsn,
+                    VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10));
 
             VmMetricsCounterAdd(
-                    replAgr->ReplMetrics.pReplChanges,
-                    VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10) - initUsn);
+                    pReplAgr->ReplMetrics.pReplChanges,
+                    VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10) - initUsn);
 
             VMDIR_LOG_INFO(
                     VMDIR_LOG_MASK_ALL,
                     "Replication supplier %s USN range (%llu,%s) processed",
-                    replAgr->ldapURI,
+                    pReplAgr->ldapURI,
                     initUsn,
-                    replAgr->lastLocalUsnProcessed.lberbv_val);
+                    pReplAgr->lastLocalUsnProcessed.lberbv_val);
         }
         else
         {
-            VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
+            VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
         }
     }
     else
     {
-        VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
+        VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
     }
 
 cleanup:
@@ -1435,7 +968,7 @@ ldaperror:
             __FUNCTION__,
             retVal);
 
-    VmMetricsCounterIncrement(replAgr->ReplMetrics.pReplUnfinished);
+    VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
     goto cleanup;
 }
 
@@ -1498,10 +1031,10 @@ error:
 static
 int
 _VmDirFetchReplicationPage(
-    PVMDIR_REPLICATION_CONNECTION   pConnection,
-    USN                             lastSupplierUsnProcessed,
-    USN                             initUsn,
-    PVMDIR_REPLICATION_PAGE*        ppPage
+    PVMDIR_DC_CONNECTION        pConnection,
+    USN                         lastSupplierUsnProcessed,
+    USN                         initUsn,
+    PVMDIR_REPLICATION_PAGE*    ppPage
     )
 {
     int retVal = LDAP_SUCCESS;
@@ -1569,9 +1102,15 @@ _VmDirFetchReplicationPage(
                 LDAP_DEBUG_REPL,
                 "%s: partner (%s) is busy",
                 __FUNCTION__,
-                pConnection->pszPartnerHostName);
+                pConnection->pszRemoteDCHostName);
 
         bLogErr = FALSE;
+    }
+    else if (retVal == LDAP_SERVER_DOWN     ||
+             retVal == LDAP_CONNECT_ERROR   ||
+             retVal == LDAP_TIMEOUT)
+    {   // connection problem
+        pConnection->connState = DC_CONNECTION_STATE_NOT_CONNECTED;
     }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
@@ -1643,9 +1182,10 @@ _VmDirFetchReplicationPage(
     {
         VMDIR_LOG_INFO(
                 VMDIR_LOG_MASK_ALL,
-                "%s: filter: '%s' requested: %d received: %d usn: %" PRId64 " utd: '%s'",
+                "%s: filter: '%s' to '%s' requested: %d received: %d usn: %" PRId64 " utd: '%s'",
                 __FUNCTION__,
                 VDIR_SAFE_STRING(pPage->pszFilter),
+                VDIR_SAFE_STRING(pConnection->pszRemoteDCHostName),
                 pPage->iEntriesRequested,
                 pPage->iEntriesReceived,
                 initUsn,

@@ -37,6 +37,50 @@ ProcessReplicationAgreementEntry(
     VDIR_ENTRY *         pReplEntry
     );
 
+static
+DWORD
+_VmDirReplDCConnectInit(
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
+    );
+
+VOID
+VmDirInsertRAToCache(
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
+    )
+{
+    PVMDIR_REPLICATION_AGREEMENT    pCurrReplAgr = NULL;
+    BOOLEAN                         bInLock = FALSE;
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    // Insert replAgr in gVmdirReplAgrs if not already present.
+    // Note: 1st RA is created first in memory then in DB, so it would already exist in gVmdirReplAgrs
+    for (pCurrReplAgr = gVmdirReplAgrs; pCurrReplAgr != NULL; pCurrReplAgr = pCurrReplAgr->next )
+    {
+        if (pCurrReplAgr->isDeleted == FALSE &&
+            VmDirStringCompareA(pCurrReplAgr->ldapURI, pReplAgr->ldapURI, FALSE)  == 0)
+        {
+            // found a non-deleted match, mark pReplAgr deleted.
+            // pReplAgr will be released at the beginning of next cycle by replication thread.
+            pReplAgr->isDeleted = TRUE;
+        }
+    }
+
+    if (pCurrReplAgr == NULL) // match not found, insert it in front
+    {
+        pReplAgr->next = gVmdirReplAgrs;
+        gVmdirReplAgrs = pReplAgr;
+    }
+
+    // wake up replication thread waiting on the existence
+    // of a replication agreement.
+    VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
+
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    return;
+}
+
 DWORD
 VmDirReplAgrEntryToInMemory(
     PVDIR_ENTRY                     pEntry,
@@ -94,11 +138,14 @@ VmDirReplAgrEntryToInMemory(
         BAIL_ON_VMDIR_ERROR( dwError );
     }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,"Replication partner: (%s) lastLocalUsnProcessed: (%s)",
-                   pReplAgr->ldapURI, pReplAgr->lastLocalUsnProcessed.lberbv_val);
-
     dwError = VmDirReplNewPartnerMetricsInit(pReplAgr);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirReplDCConnectInit(pReplAgr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,"Replication partner: (%s) lastLocalUsnProcessed: (%s)",
+                   pReplAgr->ldapURI, pReplAgr->lastLocalUsnProcessed.lberbv_val);
 
     *ppReplAgr = pReplAgr;
 
@@ -158,6 +205,9 @@ VmDirConstructReplAgr(
     dwError = VmDirReplNewPartnerMetricsInit(pReplAgr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = _VmDirReplDCConnectInit(pReplAgr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppReplAgr = pReplAgr;
 
 cleanup:
@@ -202,17 +252,23 @@ error:
     goto cleanup;
 }
 
+/*
+ *  called by replication thread only
+ */
 VOID
 VmDirFreeReplicationAgreement(
     PVMDIR_REPLICATION_AGREEMENT    pReplAgr
     )
 {
-    if (pReplAgr)
+    if (pReplAgr && pReplAgr->dcConn.connState != DC_CONNECTION_STATE_CONNECTING)
     {
+        VmDirFreeDCConnContent(&pReplAgr->dcConn);
+
         if (VmDirReplPartnerMetricsDelete(pReplAgr) != 0)
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirFreeReplicationAgreement: Could not delete metrics");
         }
+
         VmDirFreeBervalContent( &(pReplAgr->lastLocalUsnProcessed) );
         VmDirFreeBervalContent( &(pReplAgr->dn) );
         VMDIR_SAFE_FREE_MEMORY( pReplAgr );
@@ -376,3 +432,36 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirReplDCConnectInit(
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
+    )
+{
+    DWORD   dwError = 0;
+
+    pReplAgr->dcConn.connType = DC_CONNECTION_TYPE_REPL;
+    pReplAgr->dcConn.creds.bUseDCAccountCreds = TRUE;
+    pReplAgr->dcConn.dwConnectTimeoutSec = gVmdirGlobals.dwLdapConnectTimeoutSec;
+
+    dwError = VmDirReplURIToHostname(pReplAgr->ldapURI, &pReplAgr->dcConn.pszRemoteDCHostName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // spawn background thread to handle connection
+    VmDirInitDCConnThread(&pReplAgr->dcConn);
+
+cleanup:
+    return dwError;
+
+error:
+    pReplAgr->isDeleted = TRUE;
+
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: %s error code (%d)",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pReplAgr->ldapURI),
+            dwError);
+
+    goto cleanup;
+}

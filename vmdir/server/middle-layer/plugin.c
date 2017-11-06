@@ -1514,9 +1514,7 @@ _VmDirPluginReplAgrPostAddCommit(
     DWORD            dwPriorResult)
 {
     DWORD                           dwError = 0;
-    PVMDIR_REPLICATION_AGREEMENT    replAgr = NULL;
-    PVMDIR_REPLICATION_AGREEMENT    pCurrReplAgr = NULL;
-    BOOLEAN                         bInLock = FALSE;
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
     PCSTR                           pszErrorContext = NULL;
 
     if ( gVmdirServerGlobals.serverObjDN.bvnorm_val != NULL) // Skip processing "initial" objects.
@@ -1538,41 +1536,19 @@ _VmDirPluginReplAgrPostAddCommit(
                      pEntry->dn.bvnorm_val + (pEntry->dn.bvnorm_len - gVmdirServerGlobals.serverObjDN.bvnorm_len), TRUE) == 0))
         {
             pszErrorContext = "Add Replication Agreement into cache";
-            if (VmDirReplAgrEntryToInMemory( pEntry, &replAgr ) != 0)
+            if (VmDirReplAgrEntryToInMemory( pEntry, &pReplAgr ) != 0)
             {
                 dwError = LDAP_OPERATIONS_ERROR;
                 BAIL_ON_VMDIR_ERROR( dwError );
             }
 
-            VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-            // Insert replAgr in gVmdirReplAgrs if not already present.
-            // Note: 1st RA is created first in memory then in DB, so it would already exist in gVmdirReplAgrs
-            for (pCurrReplAgr = gVmdirReplAgrs; pCurrReplAgr != NULL; pCurrReplAgr = pCurrReplAgr->next )
-            {
-                if (pCurrReplAgr->isDeleted == FALSE &&
-                    VmDirStringCompareA(pCurrReplAgr->ldapURI, replAgr->ldapURI, FALSE)  == 0)
-                {
-                    goto cleanup; // found a non-deleted match
-                }
-            }
-            if (pCurrReplAgr == NULL) // match not found, insert it in front
-            {
-                replAgr->next = gVmdirReplAgrs;
-                gVmdirReplAgrs = replAgr;
-                replAgr = NULL;
-            }
-
-            // wake up replication thread waiting on the existence
-            // of a replication agreement.
-            VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
-            VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+            VmDirInsertRAToCache(pReplAgr);
+            pReplAgr = NULL;  // gVmdirReplAgrs take over pReplAgr
         }
     }
 
 cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-    VmDirFreeReplicationAgreement(replAgr);
+    VmDirFreeReplicationAgreement(pReplAgr);
 
     return dwError;
 

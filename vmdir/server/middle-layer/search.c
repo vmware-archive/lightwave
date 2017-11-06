@@ -1087,6 +1087,7 @@ ProcessCandidateList(
     VDIR_ENTRY        srEntry = {0};
     VDIR_ENTRY *      pSrEntry = NULL;
     int               numSentEntries = 0;
+    BOOLEAN           bExternalSearch = FALSE;
     BOOLEAN           bInternalSearch = FALSE;
     BOOLEAN           bStoreRsltInMem = FALSE;
     BOOLEAN           bPageResultsCtrl = FALSE;
@@ -1110,11 +1111,12 @@ ProcessCandidateList(
         VmDirSortCandidateList(cl);  // sort candidate list if not yet sorted
     }
 
+    bExternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL;
+    bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
+    bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
+
     if (cl && cl->size > 0)
     {
-        bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
-        bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
-
         if (bInternalSearch || bStoreRsltInMem)
         {   //TODO, we should have a hard limit on the cl->size we handle
             VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
@@ -1124,11 +1126,17 @@ ProcessCandidateList(
         }
 
         for (i = 0, numSentEntries = 0;
-             (i < cl->size) && VmDirdState() != VMDIRD_STATE_SHUTDOWN &&
+             (i < cl->size) &&
              (pOperation->request.searchReq.sizeLimit == 0 /* unlimited */ ||
               numSentEntries < pOperation->request.searchReq.sizeLimit);
              i++)
         {
+            if (bExternalSearch && VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+            {
+                retVal = LDAP_UNAVAILABLE; // stop all external search ops, including replication pull
+                goto cleanup;
+            }
+
             if (!gVmdirGlobals.bPagedSearchReadAhead)
             {
                 //skip entries we sent before in sorted cl->eIds.
@@ -1234,6 +1242,9 @@ ProcessCandidateList(
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ProcessCandiateList may return none or paritial requested entries with sizelimit %d",
                         pOperation->request.searchReq.sizeLimit);
     }
+
+    // if full page sent to consumer, ask consumer to come back.
+    VmDirSetSyncDoneCtlbContinue(pOperation, numSentEntries);
 
 cleanup:
 

@@ -77,11 +77,6 @@ else
     echo "Likewise services already running"
 fi
 
-$LW_BIN_DIR/lwsm stop vmdir
-echo "Running schema patch"
-$VM_SBIN_DIR/vmdird -u -c -s -f $VM_CONFIG_DIR/vmdirschema.ldif
-echo "Schema patch finished"
-
 # Begin vdcupgrade
 if [ -z "$DOMAIN_NAME" ]; then
     # get domain name from registry
@@ -117,9 +112,6 @@ if [ -z "$PASSWORD" ]; then
     fi
 fi
 
-# Restart vmdir
-echo "Starting vmdir"
-$LW_BIN_DIR/lwsm start vmdir
 echo "Running vdcupgrade"
 echo "$PASSWORD" | $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN" \
                                           >$VM_LOG_DIR/vdcupgrade.log 2>&1

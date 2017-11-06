@@ -51,21 +51,6 @@ VmDirReplNewPartnerMetricsInit(
 
     VM_METRICS_LABEL partnerLabel[1] = {{"partner",pReplAgr->ldapURI}};
 
-    dwError = VmMetricsHistogramNew(pmContext,
-                            "vmdir_repl_connect_duration",
-                            partnerLabel, 1,
-                            "Replication connection duration per partner",
-                            buckets, 4,
-                            &pReplAgr->ReplMetrics.pReplConnectDuration);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmMetricsCounterNew(pmContext,
-                            "vmdir_repl_connect_failures",
-                            partnerLabel, 1,
-                            "Number of replication connection failures per partner",
-                            &pReplAgr->ReplMetrics.pReplConnectFailures);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmMetricsCounterNew(pmContext,
                             "vmdir_repl_unfinished",
                             partnerLabel, 1,
@@ -112,12 +97,6 @@ VmDirReplPartnerMetricsDelete(
     )
 {
     DWORD dwError = 0;
-
-    dwError = VmMetricsHistogramDelete(pmContext, pReplAgr->ReplMetrics.pReplConnectDuration);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmMetricsCounterDelete(pmContext, pReplAgr->ReplMetrics.pReplConnectFailures);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmMetricsCounterDelete(pmContext, pReplAgr->ReplMetrics.pReplUnfinished);
     BAIL_ON_VMDIR_ERROR(dwError);

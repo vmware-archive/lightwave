@@ -45,6 +45,11 @@ VmDirReplicationLibInit(
     VOID
     );
 
+VOID
+VmDirInsertRAToCache(
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
+    );
+
 DWORD
 VmDirReplAgrEntryToInMemory(
     PVDIR_ENTRY                     pEntry,

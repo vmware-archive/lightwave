@@ -103,6 +103,12 @@ ParseAndFreeSyncStateControl(
     USN*        pulPartnerUSN
     );
 
+VOID
+VmDirSetSyncDoneCtlbContinue(
+    PVDIR_OPERATION pOp,
+    DWORD           dwSentEntryCount
+    );
+
 int
 WriteSyncDoneControl(
     VDIR_OPERATION *     op,

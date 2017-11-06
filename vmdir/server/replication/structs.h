@@ -49,21 +49,6 @@ typedef struct _VMDIR_REPLICATION_PAGE
     int iEntriesOutOfSequence;
 } VMDIR_REPLICATION_PAGE, *PVMDIR_REPLICATION_PAGE;
 
-typedef struct _VMDIR_REPLICATION_PASSWORD
-{
-    PCSTR pszPassword;
-    time_t *pPasswordFailTime;
-} VMDIR_REPLICATION_PASSWORD, *PVMDIR_REPLICATION_PASSWORD;
-
-typedef struct _VMDIR_REPLICATION_CREDENTIALS
-{
-    PSTR pszUPN;
-    PSTR pszDN;
-    PSTR pszPassword;
-    PSTR pszOldPassword;
-    BOOLEAN bChanged;
-} VMDIR_REPLICATION_CREDENTIALS, *PVMDIR_REPLICATION_CREDENTIALS;
-
 typedef struct _VMDIR_REPLICATON_CONNECTION
 {
     LDAP*   pLd;
