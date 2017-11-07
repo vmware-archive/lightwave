@@ -1144,6 +1144,7 @@ Lightwave POST service
 
 %{_configdir}/lw-firewall-client.json
 %{_configdir}/setfirewallrules.py
+%{_configdir}/lightwave-syslog-logrotate.conf
 
 %{_servicedir}/firewall.service
 
