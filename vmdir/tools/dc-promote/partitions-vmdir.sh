@@ -39,4 +39,4 @@ whenChanged: 20170629191526.0Z
 whenCreated: 20151207212342.0Z
 NNNN
 
-ldapmodify -a -D cn=administrator,cn=users,dc=lightwave,dc=local -h `hostname -i` -w `cat /tmp/promote-pwd.txt` -f /tmp/partitions-configuraions.ldif
+ldapmodify -a -D cn=administrator,cn=users,dc=lightwave,dc=local -h `hostname -i` -w `cat /var/tmp/promote-pwd.txt` -f /tmp/partitions-configuraions.ldif

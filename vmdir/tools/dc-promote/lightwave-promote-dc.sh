@@ -8,7 +8,7 @@
 # Configure these constants to match your environment
 # ADMIN_PASSWORD must meet password complexity requirements of vmdir
 #                Upper/Lower/Number/Legal punctuation/ 9 < pwd_len <= 20
-LIGHTWAVE_AD=10.118.97.121
+LIGHTWAVE_AD=10.118.97.194
 ADMIN_PASSWORD="VMware123@"
 
 LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/likewise-open
@@ -143,6 +143,7 @@ ssh root@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
 #
 
 # 10 Additional DNS SRV records:
+echo debug 10.1
 ssh root@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local \
    --type SRV \
@@ -155,6 +156,7 @@ ssh root@$LIGHTWAVE_AD \
    --server localhost \
    --password `cat /var/tmp/promote-pwd.txt`'
 
+echo debug 10.2
 ssh root@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local \
    --type SRV \
@@ -169,49 +171,28 @@ ssh root@$LIGHTWAVE_AD \
 
 # 10a Missing _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.LIGHTWAVE.LOCAL
 #
-ssh root@$LIGHTWAVE_AD \
-  '/opt/vmware/bin/vmdns-cli add-zone  Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
-   --ns-host Default-First-Site \
-   --ns-ip $LIGHTWAVE_AD \
-   --type forward \
-   --server localhost \
-   --username Administrator \
-   --domain lightwave.local \
-   --password `cat /var/tmp/promote-pwd.txt`'
+#echo debug 10a.1
+#ssh root@$LIGHTWAVE_AD \
+#  '/opt/vmware/bin/vmdns-cli add-zone  Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
+#   --ns-host Default-First-Site \
+#   --ns-ip $LIGHTWAVE_AD \
+#   --type forward \
+#   --server localhost \
+#   --username Administrator \
+#   --domain lightwave.local \
+#   --password `cat /var/tmp/promote-pwd.txt`'
+#
 
-
+echo debug 10a.2
 ssh root@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local \
-   --type SRV \
-   --service _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
+   --type SRVFF \
+   --service-literal  _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
    --protocol tcp \
    --target photon-102-test \
    --priority 1 \
    --weight 1 \
    --port 389 \
-   --server localhost \
-   --domain lightwave.local \
-   --password `cat /var/tmp/promote-pwd.txt`'
-
-ssh root@$LIGHTWAVE_AD \
-  '/opt/vmware/bin/vmdns-cli add-record --zone Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
-   --type SRV \
-   --service ldap \
-   --protocol tcp \
-   --target photon-102-test \
-   --priority 1 \
-   --weight 1 \
-   --port 389 \
-   --server localhost \
-   --domain lightwave.local \
-   --password `cat /var/tmp/promote-pwd.txt`'
-
-# A record photon-102-test.Default-First-Site-Name._sites.dc._msdcs.lightwave.local
-ssh root@$LIGHTWAVE_AD \
-  '/opt/vmware/bin/vmdns-cli add-record --zone Default-First-Site-Name._sites.dc._msdcs.lightwave.local \
-   --type A \
-   --hostname photon-102-test \
-   --ip $LIGHTWAVE_AD \
    --server localhost \
    --domain lightwave.local \
    --password `cat /var/tmp/promote-pwd.txt`'
@@ -247,9 +228,7 @@ ssh root@$LIGHTWAVE_AD \
 #/opt/likewise/lib64/liblwbase.so.0.0.0.rpmorig
 #/opt/likewise/lib64/liblsa_srv.so.rpmorig
 #/opt/likewise/lib64/libsamr_srv.so.rpmorig
-
-# 15 Add partitions-containers to vmdird dseRoot
-echo "Update CN=photon-102-test,CN=Partitions,cn=configuration,dc=lightwave,dc=local"
+# 15 Add partitions-containers to vmdird dseRoot echo "Update CN=photon-102-test,CN=Partitions,cn=configuration,dc=lightwave,dc=local"
 scp $TOOLS_DIR/partitions-vmdir.sh abernstein@$LIGHTWAVE_AD:/var/tmp
 ssh root@$LIGHTWAVE_AD \
     /var/tmp/partitions-vmdir.sh 
@@ -263,6 +242,20 @@ ssh root@$LIGHTWAVE_AD sh /tmp/regshell-loadorder.sh
 
 # 15b Configure the dsapi.conf file to use vmdirdb.so plugin
 echo /opt/likewise/lib64/libvmdirdb.so | ssh root@$LIGHTWAVE_AD 'cat > /etc/likewise/dsapi.conf'
+
+# 15c Add netlogin RPC server to lsassd
+cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
+/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\lsass\Parameters\\RPCServers]' LoadOrder   lsarpc samr dssetup wkssvc netlogon
+/opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]'
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "HomeDirPrefix" REG_SZ "/home"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "LoginShellTemplate" REG_SZ "/bin/sh"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "LpcSocketPath" REG_SZ "/var/lib/likewise/rpc/lsass"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "Path" REG_SZ "/opt/likewise/lib64/libnetlogon_srv.so"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "RegisterTcpIp" REG_DWORD 0
+NNNN
+scp /tmp/regshell-rpcloadorder.sh root@$LIGHTWAVE_AD:/tmp
+ssh root@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
+
 
 # 16 Restart all lightwave services
 ssh root@$LIGHTWAVE_AD \
