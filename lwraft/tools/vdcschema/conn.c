@@ -85,6 +85,7 @@ VdcSchemaConnOpen(
     )
 {
     DWORD   dwError = 0;
+    PSTR    pszLeader = NULL;
 
     if (!pConn)
     {
@@ -101,14 +102,29 @@ VdcSchemaConnOpen(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSafeLDAPBind(&pConn->pLd,
-            pConn->pszHostName,
-            pConn->pszUPN,
-            pConn->pszPassword);
+    // Get the leader for this hostname
+    dwError = VmDirRaftLeader(pConn->pszHostName, &pszLeader);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pszLeader)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_LEADER);
+    }
+
+    // always connect to leader
+    dwError = VmDirSafeLDAPBindExt1(
+        &pConn->pLd,
+        pszLeader,
+        pConn->pszUPN,
+        pConn->pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-error:
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLeader);
     return dwError;
+
+error:
+    goto cleanup;
 }
 
 VOID

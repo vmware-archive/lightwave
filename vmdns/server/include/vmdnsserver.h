@@ -60,7 +60,7 @@ typedef struct _VMDNS_GLOBALS
     dcethread*                      pRPCServerThread;
     BOOLEAN                         bRegisterTcpEndpoint;
     BOOLEAN                         bEnableDNSProtocol;
-    PSTR                            pszRestListenPort;
+    DWORD                           dwRestListenPort;
 
 } VMDNS_GLOBALS, *PVMDNS_GLOBALS;
 

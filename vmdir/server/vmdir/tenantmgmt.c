@@ -86,6 +86,12 @@ VmDirSrvCreateTenant(
     dwError = VmDirDomainNameToDN(pszFQDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // can not create tenant under system domain tree
+    if (VmDirStringEndsWith(pszDomainDN, gVmdirServerGlobals.systemDomainDN.lberbv_val, FALSE))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    }
+
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -113,7 +119,9 @@ cleanup:
     return dwError;
 
 error:
-    VmDirLog(LDAP_DEBUG_ANY, "VmDirSrvCreateTenantInstance failed. Error(%u)", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "%s attempt to create tenant %s failed, error (%u)",
+        __FUNCTION__, VDIR_SAFE_STRING(pszFQDomainName), dwError);
     goto cleanup;
 }
 
@@ -124,8 +132,6 @@ VmDirSrvDeleteTenant(
 {
     DWORD dwError = 0;
     PSTR pszDomainDn = NULL;
-    PSTR pszParentDn = NULL;
-    PVDIR_ENTRY pEntry = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
     int iIdx = 0;
     int iCnt = 0;
@@ -133,13 +139,17 @@ VmDirSrvDeleteTenant(
     dwError = VmDirFQDNToDN(pszDomainName, &pszDomainDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pszParentDn = strchr(pszDomainDn, ',');
-    if (pszParentDn == NULL)
+    // can not touch system domain subtree.
+    if (VmDirStringEndsWith(pszDomainDn, gVmdirServerGlobals.systemDomainDN.lberbv_val, FALSE))
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
     }
-    pszParentDn++;
 
+    // ================================================================================
+    // Tenant delete IPC makes sure the caller has system domain administrator password
+    // and has root permission on this VM.
+    // We need a more controlled way to enforce tenant deletion privilege.
+    // ================================================================================
     dwError = VmDirFilterInternalSearch(pszDomainDn,
                                         LDAP_SCOPE_SUBTREE,
                                         "objectClass=*",
@@ -154,27 +164,15 @@ VmDirSrvDeleteTenant(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    //
-    // Now, try to delete the parent. This can fail if there are other tenants
-    // still in that root (e.g., we just deleted "pepsi.com" but "coke.com"
-    // is still around).
-    //
-    dwError = VmDirSimpleDNToEntry(pszParentDn, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirDeleteEntry(pEntry);
-    if (dwError == VMDIR_ERROR_NOT_ALLOWED_ON_NONLEAF)
-    {
-        dwError = 0;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszDomainDn);
     VmDirFreeEntryArrayContent(&entryArray);
-    VmDirFreeEntry(pEntry);
     return dwError;
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "%s attempt to delete tenant %s failed, error (%u)",
+        __FUNCTION__, VDIR_SAFE_STRING(pszDomainName), dwError);
+
     goto cleanup;
 }
 

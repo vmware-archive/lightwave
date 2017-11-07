@@ -8,10 +8,6 @@ files:
   - source: /
     destination: /var/vmware/lightwave
 hooks:
-  BeforeBlockTraffic:
-    - location: scripts/before_block_traffic.sh
-      timeout: 300
-      runas: root
   ApplicationStop:
     - location: scripts/application_stop.sh
       timeout: 300

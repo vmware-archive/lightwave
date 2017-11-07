@@ -253,7 +253,7 @@ _VdcadminClientTestSRPBind(
     DWORD   dwError = 0;
     LDAP *  pLD = NULL;
 
-    dwError = VmDirSASLSRPBind( &pLD, pszLDAPURI, pszDefaultBindUPN, pszDefaultPasswd );
+    dwError = VmDirSASLSRPBindExt1( &pLD, pszLDAPURI, pszDefaultBindUPN, pszDefaultPasswd, MAX_LDAP_CONNECT_NETWORK_TIMEOUT );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("%s SRP bind succeeded.\n\n", pszLDAPURI);

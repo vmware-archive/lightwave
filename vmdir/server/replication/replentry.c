@@ -119,6 +119,39 @@ _VmDirIsBenignReplConflict(
     PVDIR_ENTRY     pConsumerEntry
     );
 
+static
+VOID
+_VmDirLogReplAddEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
+    PVDIR_ENTRY                   pEntry
+    );
+
+static
+VOID
+_VmDirLogReplModifyEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
+    PVDIR_ENTRY                   pEntry
+    );
+
+static
+VOID
+_VmDirLogReplDeleteEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
+    PVDIR_ENTRY                   pEntry
+    );
+
+static
+VOID
+_VmDirLogReplEntryContent(
+    PVDIR_ENTRY                   pEntry
+    );
+
+static
+VOID
+_VmDirLogReplModifyModContent(
+    ModifyReq*  pModReq
+    );
+
 // Replicate Add Entry operation
 
 int
@@ -154,6 +187,8 @@ ReplAddEntry(
 
     retVal = VmDirParseEntry( &op );
     BAIL_ON_VMDIR_ERROR( retVal );
+
+    _VmDirLogReplAddEntryContent(pPageEntry, op.request.addReq.pEntry);
 
     op.pBEIF = VmDirBackendSelect(pEntry->dn.lberbv.bv_val);
     assert(op.pBEIF);
@@ -328,6 +363,8 @@ ReplDeleteEntry(
     retVal = ReplFixUpEntryDn(tmpAddOp.request.addReq.pEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    _VmDirLogReplDeleteEntryContent(pPageEntry, tmpAddOp.request.addReq.pEntry);
+
     if (VmDirBervalContentDup( &tmpAddOp.reqDn, &mr->dn ) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplDeleteEntry: BervalContentDup failed." );
@@ -435,6 +472,8 @@ ReplModifyEntry(
 
     retVal = ReplFixUpEntryDn(&e);
     BAIL_ON_VMDIR_ERROR( retVal );
+
+    _VmDirLogReplModifyEntryContent(pPageEntry, &e);
 
     if (VmDirBervalContentDup( &e.dn, &mr->dn ) != 0)
     {
@@ -551,6 +590,8 @@ txnretry:
 
         modOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
+        _VmDirLogReplModifyModContent(&modOp.request.modifyReq);
+
         // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
         // Should objectGuid, instead of DN, be used to uniquely identify an object?
         if ((retVal = VmDirInternalModifyEntry( &modOp )) != LDAP_SUCCESS)
@@ -581,6 +622,8 @@ txnretry:
         mr = &(modOp.request.modifyReq);
         if (mr->mods != NULL)
         {
+            _VmDirLogReplModifyModContent(&modOp.request.modifyReq);
+
             if ((retVal = VmDirInternalModifyEntry( &modOp )) != LDAP_SUCCESS)
             {
                 retVal = modOp.ldapResult.errCode;
@@ -1900,4 +1943,132 @@ cleanup:
 error:
     VmDirFreeBerval(pAVmeta);
     goto cleanup;
+}
+
+
+static
+VOID
+_VmDirLogReplEntryContent(
+    PVDIR_ENTRY                   pEntry
+    )
+{
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    int             iCnt = 0;
+
+    for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
+    {
+        for (iCnt=0; iCnt < pAttr->numVals; iCnt++)
+        {
+            PCSTR pszLogValue = (0 == VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
+                                  "XXX" : pAttr->vals[iCnt].lberbv_val;
+
+            if (iCnt < MAX_NUM_CONTENT_LOG)
+            {
+                VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR, "%s %s %d (%.*s)",
+                    __FUNCTION__,
+                    pAttr->type.lberbv.bv_val,
+                    iCnt+1,
+                    VMDIR_MIN(pAttr->vals[iCnt].lberbv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
+                    VDIR_SAFE_STRING(pszLogValue));
+            }
+            else if (iCnt == MAX_NUM_CONTENT_LOG)
+            {
+                VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR, "%s Total value count %d)", __FUNCTION__, pAttr->numVals);
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+}
+
+static
+VOID
+_VmDirLogReplAddEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
+    PVDIR_ENTRY                   pEntry
+    )
+{
+    VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR,
+              "%s, DN:%s, SYNC_STATE:ADD, partner USN:%" PRId64,
+              __FUNCTION__,
+              pPageEntry->pszDn,
+              pPageEntry->ulPartnerUSN);
+
+    if (VmDirLogLevelAndMaskTest(VMDIR_LOG_VERBOSE, LDAP_DEBUG_REPL_ATTR))
+    {
+        _VmDirLogReplEntryContent(pEntry);
+    }
+}
+
+static
+VOID
+_VmDirLogReplDeleteEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
+    PVDIR_ENTRY                   pEntry
+    )
+{
+    VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR,
+              "%s, DN:%s SYNC_STATE:Delete, partner USN:%" PRId64 " local DN: %s",
+              __FUNCTION__,
+              pPageEntry->pszDn,
+              pPageEntry->ulPartnerUSN,
+              pEntry->dn.lberbv_val);
+}
+
+static
+VOID
+_VmDirLogReplModifyEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
+    PVDIR_ENTRY                   pEntry
+    )
+{
+    VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR,
+              "%s, DN:%s, SYNC_STATE:Modify, partner USN:%" PRId64,
+              __FUNCTION__,
+              pPageEntry->pszDn,
+              pPageEntry->ulPartnerUSN);
+
+    _VmDirLogReplEntryContent(pEntry);
+}
+
+static
+VOID
+_VmDirLogReplModifyModContent(
+    ModifyReq*  pModReq
+    )
+{
+    PVDIR_MODIFICATION  pMod = pModReq->mods;
+    int                 iCnt = 0;
+
+    for (; pMod; pMod = pMod->next)
+    {
+        for (iCnt=0; iCnt < pMod->attr.numVals; iCnt++)
+        {
+            PCSTR pszLogValue = (0 == VmDirStringCompareA( pMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
+                                  "XXX" : pMod->attr.vals[iCnt].lberbv_val;
+
+            if (iCnt < MAX_NUM_CONTENT_LOG)
+            {
+                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+                    "%s MOD %d, %s, %s: (%.*s)",
+                    __FUNCTION__,
+                    iCnt+1,
+                    VmDirLdapModOpTypeToName(pMod->operation),
+                    VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                    VMDIR_MIN(pMod->attr.vals[iCnt].lberbv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
+                    VDIR_SAFE_STRING(pszLogValue));
+            }
+            else if (iCnt == MAX_NUM_CONTENT_LOG)
+            {
+                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+                    "%s Total value count %d)", __FUNCTION__, pMod->attr.numVals);
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
 }

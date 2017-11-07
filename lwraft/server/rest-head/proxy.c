@@ -247,8 +247,9 @@ VmDirRESTForwardRequest(
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
-            "Proxy forwarding done to leader: %s time taken: %d milliseconds",
-            pszLeader,
+            "Proxy forwarding done for client: %s to leader: %s time taken: %d ms",
+            VDIR_SAFE_STRING(pRestOp->pszClientIP),
+            VDIR_SAFE_STRING(pszLeader),
             VMDIR_RESPONSE_TIME(VmDirGetTimeInMilliSec()-uiStartTime));
     // set error
     dwCurlError = curl_easy_getinfo(pCurlHandle, CURLINFO_RESPONSE_CODE, &statusCode);
@@ -271,12 +272,13 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s Failed with error: %d curl error: %d, time taken %d for leader: %s",
+            "%s Failed with error: %d curl error: %d, time taken %d ms for client: %s to leader: %s",
             __FUNCTION__,
             dwError,
             dwCurlError,
             VMDIR_RESPONSE_TIME(VmDirGetTimeInMilliSec()-uiStartTime),
-            pszLeader ? pszLeader : "");
+            VDIR_SAFE_STRING(pRestOp->pszClientIP),
+            VDIR_SAFE_STRING(pszLeader));
     goto cleanup;
 
 curlerror:
@@ -424,6 +426,10 @@ _VmDirRESTProxyResultGetHttpCode(
     else if(pProxyResult->dwCurlError)
     {
         *pdwHttpCode = _VmDirRESTCurlToHttpCode(pProxyResult->dwCurlError);
+    }
+    else if(pProxyResult->dwError == VMDIR_ERROR_NO_LEADER)
+    {
+        *pdwHttpCode = 503;
     }
     else
     {
@@ -643,7 +649,6 @@ _VmDirRESTProxyReadRequest(
     DWORD   len = 0;
     DWORD   i = 0;
     PSTR    pszInput = NULL;
-    PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
     PSTR    pszVal = NULL;
 
@@ -655,16 +660,6 @@ _VmDirRESTProxyReadRequest(
     // request method
     dwError = VmRESTGetHttpMethod(pRequest, &pRestOp->pszMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    // request URI
-    dwError = VmRESTGetHttpURI(pRequest, &pRestOp->pszPath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pszTmp = VmDirStringChrA(pRestOp->pszPath, '?');
-    if (pszTmp)
-    {
-        *pszTmp = '\0';
-    }
 
     // auth header
     dwError = VmRESTGetHttpHeader(pRequest, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);

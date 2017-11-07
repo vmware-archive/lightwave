@@ -26,6 +26,7 @@ tdnf makecache
 tdnf install -y lightwave-post lightwave-client
 
 
+# TODO - this should not be necessary when DNS is stabilized
 echo "Step 4: Set proxy curl timeout"
 
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\post\Parameters]' CurlTimeoutSec REG_DWORD 10 || echo "CurTimeoutSec is already set"

@@ -884,6 +884,7 @@ typedef enum
 #define VMDIR_REG_KEY_HTTP_LISTEN_PORT        "RestListenHTTPPort"
 #define VMDIR_REG_KEY_HTTPS_LISTEN_PORT       "RestListenHTTPSPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
+#define VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC  "LdapConnectTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
 #define VMDIR_REG_KEY_DISABLE_VECS            "DisableVECSIntegration"
@@ -1604,6 +1605,15 @@ VmDirSASLSRPBind(
      );
 
 DWORD
+VmDirSASLSRPBindExt1(
+     LDAP**     ppLd,
+     PCSTR      pszURI,
+     PCSTR      pszUPN,
+     PCSTR      pszPass,
+     int        iTimeout
+     );
+
+DWORD
 VmDirSSLBind(
      LDAP**     ppLd,
      PCSTR      pszURI,
@@ -1620,12 +1630,22 @@ VmDirSafeLDAPBind(
     );
 
 DWORD
+VmDirSafeLDAPBindExt1(
+    LDAP**      ppLd,
+    PCSTR       pszHost,
+    PCSTR       pszUPN,
+    PCSTR       pszPassword,
+    int         iTimeout       // connection timeout
+    );
+
+DWORD
 VmDirSafeLDAPBindToPort(
     LDAP**      ppLd,
     PCSTR       pszHost,
     DWORD       dwPort,
     PCSTR       pszUPN,
-    PCSTR       pszPassword
+    PCSTR       pszPassword,
+    int         iTimeout
     );
 
 DWORD

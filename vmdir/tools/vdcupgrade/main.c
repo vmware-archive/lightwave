@@ -243,7 +243,7 @@ VmDirMain(
         VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN+1, FALSE);
     }
 
-    dwError = VmDirSafeLDAPBind(&pLd, pszServerName, pszAdminUPN, pszPasswordBuf);
+    dwError = VmDirSafeLDAPBindExt1(&pLd, pszServerName, pszAdminUPN, pszPasswordBuf, MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = getPSCVersion(

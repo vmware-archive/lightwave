@@ -766,10 +766,12 @@ _VmDirGetServersOnSite(
     dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszUserName, pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLd,
-                                 pszServerName,
-                                 bufUPN,
-                                 pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLd,
+        pszServerName,
+        bufUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //get all vmdir servers in the site.

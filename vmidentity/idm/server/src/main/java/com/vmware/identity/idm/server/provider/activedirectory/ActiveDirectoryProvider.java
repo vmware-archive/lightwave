@@ -1880,6 +1880,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                                      ? obtainDcInfoWithRediscover(domainName)
                                      : obtainDcInfo(domainName);
        String connStr;
+       PooledLdapConnectionIdentity identity = null;
        if (dcInfo != null)
        {
            if (!ServerUtils.isNullOrEmpty(dcInfo.domainFQDN))
@@ -1897,12 +1898,12 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            builder.setPassword(this.getStoreDataEx().getPassword());
            builder.setUseGCPort(bUseGC);
            builder.setTenantName(tenantName);
-           PooledLdapConnectionIdentity identity = builder.build();
+           identity = builder.build();
 
            conn = pool.borrowConnection(identity);
        }
 
-       return new PooledLdapConnection(conn, null, pool);
+       return new PooledLdapConnection(conn, identity, pool);
    }
 
    // Get a GC ldap connection to the registered AD provider domain

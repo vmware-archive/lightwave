@@ -16,11 +16,17 @@
 #define REST_API_SPEC               VMDNS_CONFIG_DIR VMDNS_PATH_SEPARATOR_STR "vmdns-rest.json"
 #define VMDNS_REST_DEBUGLOGFILE     "/var/log/lightwave/vmdns-rest.log"
 //#define VMDNS_REST_DEBUGLOGFILE     VMDNS_LOG_DIR    VMDNS_PATH_SEPARATOR_STR "vmdns-rest.log"    TODO use this when lightwave-first is complete
-#define VMDNS_REST_CLIENTCNT        "64"
-#define VMDNS_REST_WORKERTHCNT      "64"
+#define VMDNS_REST_CLIENTCNT         64
+#define VMDNS_REST_WORKERTHCNT       64
+
+#define VMDNS_REG_KEY_REST_LISTEN_PORT "RestListenHTTPPort"
+#define VMDNS_REST_CONN_TIMEOUT_SEC  30
+#define VMDNS_MAX_DATA_PER_CONN_MB   25
+#define VMDNS_HTTP_DAEMON_NAME       "vmdnsd-http";
+#define VMDNS_REST_STOP_TIMEOUT_SEC  10
 
 //Rest Listen Port Registry Key
-#define VMDNS_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
+#define DEFAULT_HTTP_PORT_NUM      7677
 #define VMDNS_REG_CONFIG_KEY_PATH             "Services\\vmdns\\Parameters"
 #define VDNS_SAFE_STRING(str) ((str) ? (str) : "")
 

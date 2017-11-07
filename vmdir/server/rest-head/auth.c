@@ -110,6 +110,11 @@ VmDirRESTAuthViaBasic(
     pszPasswd++;
 
     dwError = VmDirUPNToDN(pszDecode, &pszBindDN);
+    // we want this error to be mapped to invalid credentials
+    if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
+    {
+        dwError = VMDIR_ERROR_AUTH_BAD_DATA;
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirExternalOperationCreate(

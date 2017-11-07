@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+BOOL
+_VmDirRESTProcessLocally(
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
 /*
  * We provide this function as callback to c-rest-engine,
  * c-rest-engine will use this callback upon receiving a request
@@ -101,8 +107,13 @@ VmDirRESTRequestHandlerInternal(
     }
     else
     {
+        dwError = VmDirRESTOperationReadMetadata(pRestOp, pRequest);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         VmDirRaftGetRole(&role);
-        if (role == VDIR_RAFT_ROLE_LEADER)
+        // if node is leader or the request needs to be processed locally
+        if (role == VDIR_RAFT_ROLE_LEADER ||
+                _VmDirRESTProcessLocally(pRestOp) )
         {
             dwRestOpErr = VmDirRESTProcessRequest(
                     pRestOp, pRESTHandle, pRequest, paramsCount);
@@ -111,6 +122,7 @@ VmDirRESTRequestHandlerInternal(
                     pRestOp, pRESTHandle, ppResponse);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+        // else if follower proxy to leader
         else if (role == VDIR_RAFT_ROLE_FOLLOWER)
         {
             dwRestOpErr = VmDirRESTForwardRequest(
@@ -125,6 +137,12 @@ VmDirRESTRequestHandlerInternal(
             dwError = VmDirRESTWriteSimpleErrorResponse(
                     pRESTHandle, ppResponse, 503);  // 503 = Service Unavailable
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "Error: %d Node in invalid state no leader. Status returned: 503 to client: %s",
+                    VMDIR_ERROR_NO_LEADER,
+                    VDIR_SAFE_STRING(pRestOp->pszClientIP));
         }
     }
 
@@ -135,10 +153,11 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d), rest operation error (%d)",
+            "%s failed, error (%d), rest operation error (%d) for client: %s",
             __FUNCTION__,
             dwError,
-            dwRestOpErr);
+            dwRestOpErr,
+            pRestOp ? VDIR_SAFE_STRING(pRestOp->pszClientIP) : "");
 
     goto cleanup;
 }
@@ -176,6 +195,13 @@ VmDirRESTProcessRequest(
     dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Leader received REST request from: %s request type: %s request URI: %s",
+            VDIR_SAFE_STRING(pRestOp->pszClientIP),
+            VDIR_SAFE_STRING(pRestOp->pszMethod),
+            VDIR_SAFE_STRING(pRestOp->pszPath));
+
 cleanup:
     VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
     return dwError;
@@ -183,9 +209,10 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
+            "%s failed, error (%d) for client: %s",
             __FUNCTION__,
-            dwError);
+            dwError,
+            VDIR_SAFE_STRING(pRestOp->pszClientIP));
 
     goto cleanup;
 }
@@ -230,4 +257,32 @@ error:
             dwError);
 
     goto cleanup;
+}
+
+static
+BOOL
+_VmDirRESTProcessLocally(
+    PVDIR_REST_OPERATION    pRestOp
+    )
+{
+    BOOL    bReturn = FALSE;
+
+    if (!pRestOp || !pRestOp->pszPath)
+    {
+        // This is an invalid case, we will return true so that
+        // the error is handled locally in the upcoming calls
+        bReturn = TRUE;
+    }
+    else if (VmDirStringStartsWith(pRestOp->pszPath, VMDIR_V1_METRICS_RESOURCE, FALSE))
+    {
+        // currently only metrics API will be an exception
+        // Any more exceptions should be added here.
+        bReturn = TRUE;
+    }
+    else
+    {
+        bReturn = FALSE;
+    }
+
+    return bReturn;
 }

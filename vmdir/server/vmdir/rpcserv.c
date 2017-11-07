@@ -1164,7 +1164,7 @@ _VmDirRemoteDBCopyWhiteList(
     DWORD   dwError             = 0;
     int     i                   = 0;
     BOOLEAN bAccessAllowed      = FALSE;
-    PSTR    pszDBFileNames[]    = {"data.mdb", "lock.mdb"};
+    PSTR    pszDBFileNames[]    = {VMDIR_MDB_DATA_FILE_NAME, VMDIR_MDB_LOCK_FILE_NAME, VMDIR_MDB_XLOGS_DIR_NAME};
     PSTR    pszFullPathName     = NULL;
 #ifdef _WIN32
     CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = {0};
@@ -2009,9 +2009,9 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
             fclose(pFileHandle);
         }
     }
-    // Clear backend READ-ONLY mode when dbcp connection interrupted.
-    VmDirSetMdbBackendState(0, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, tmp_buf, sizeof(tmp_buf));
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: turn off keeping xlog flag on backend, xlognum: %d", dwXlogNum);
+    // Clear backend READ-ONLY/KeeXlog mode when dbcp connection interrupted.
+    VmDirSetMdbBackendState(MDB_STATE_CLEAR, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, tmp_buf, sizeof(tmp_buf));
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: MdbBackendState cleared, xlognum: %d", dwXlogNum);
 }
 
 UINT32

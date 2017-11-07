@@ -148,10 +148,12 @@ VmDirRefreshActPassword(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSafeLDAPBind( &pLD,
-                                 pszHost,
-                                 pszActUPN,
-                                 pszActPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLD,
+        pszHost,
+        pszActUPN,
+        pszActPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirDomainNameToDN( pszDomain, &pszDomainDN);
@@ -2871,10 +2873,12 @@ VmDirGetServers(
     dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszUserName, pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLd,
-                                 pszServerName,
-                                 bufUPN,
-                                 pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLd,
+        pszServerName,
+        bufUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //get all vmdir servers in the forest.
@@ -5162,10 +5166,12 @@ _VmDirCreateServerPLD(
     dwError = VmDirAllocateStringPrintf( &pszUPN, "%s@%s", pszUserName, pszDomain );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLD,
-                                 pszServerName,
-                                 pszUPN,
-                                 pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLD,
+        pszServerName,
+        pszUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppLD = pLD;
@@ -5260,10 +5266,12 @@ _VmDirModDcPassword(
     DWORD    dwError = 0;
     LDAP*    pLD     = NULL;
 
-    dwError = VmDirSafeLDAPBind(&pLD,
-                                pszHostName,
-                                pszUPN,
-                                pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLD,
+        pszHostName,
+        pszUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirLdapModReplaceAttribute(pLD,
@@ -5312,11 +5320,12 @@ VmDirGetDomainFunctionalLevel(
                 pszUserName, pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind(
+    dwError = VmDirSafeLDAPBindExt1(
                 &pLd,
                 pszHostName,
                 bufUPN,
-                pszPassword );
+                pszPassword,
+                MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetDomainFuncLvlInternal(
@@ -5399,11 +5408,12 @@ VmDirSetDomainFunctionalLevel(
     }
 
 
-    dwError = VmDirSafeLDAPBind(
+    dwError = VmDirSafeLDAPBindExt1(
                 &pLd,
                 pszHostName,
                 bufUPN,
-                pszPassword);
+                pszPassword,
+                MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Do not allow DFL downgrade.
@@ -5683,10 +5693,12 @@ VmDirPSCVersion(
                   pszUserName, pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLd,
-                                 pszHostName,
-                                 bufUPN,
-                                 pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLd,
+        pszHostName,
+        bufUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetPSCVersionInternal(

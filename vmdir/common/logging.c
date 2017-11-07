@@ -187,7 +187,23 @@ error:
     goto cleanup;
 }
 
+BOOLEAN
+VmDirLogLevelAndMaskTest(
+    VMDIR_LOG_LEVEL iLevel,
+    ULONG           iMask
+    )
+{
+    BOOLEAN bRtn = FALSE;
 
+    if (_gpVmDirLogCtx                      &&
+        _gpVmDirLogCtx->iLogLevel >= iLevel &&
+        iMask & _gpVmDirLogCtx->iLogMask)
+    {
+        bRtn = TRUE;
+    }
+
+    return bRtn;
+}
 
 void
 VmDirLog1(

@@ -60,7 +60,7 @@ public class TenantResource extends ClientResource {
     /**
      * Create a new tenant.
      *
-     * <p><b>Required Role:</b> {@code system administrator}.
+     * <p><b>Required Role:</b> {@code tenant operator}.
      *
      * @param tenant the new tenant to be created.
      * @return the newly created tenant.
@@ -100,7 +100,7 @@ public class TenantResource extends ClientResource {
     /**
      * Delete a tenant.
      *
-     * <p><b>Required Role:</b> {@code administrator}.
+     * <p><b>Required Role:</b> {@code tenant operator}.
      *
      * @param tenant the name of the tenant to delete.
      * @throws ClientException if a client side error occurs.

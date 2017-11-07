@@ -187,7 +187,7 @@ VmDnsStoreSaveForwarders(
     )
 {
     DWORD dwError = 0;
-    dwError = VmDnsDirSaveForwarders(dwCount, ppszForwarders);
+    dwError = VmDnsRegSaveForwarders(dwCount, (PCSTR*)ppszForwarders);
     return dwError;
 }
 
@@ -198,7 +198,7 @@ VmDnsStoreGetForwarders(
     )
 {
     DWORD dwError = 0;
-    dwError = VmDnsDirLoadForwarders(pdwCount, pppszForwarders);
+    dwError = VmDnsRegLoadForwarders(pdwCount, pppszForwarders);
     return dwError;
 }
 

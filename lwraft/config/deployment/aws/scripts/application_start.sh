@@ -7,11 +7,10 @@ echo "Step 1: Get domain, password, and existing partners from AWS"
 get_tag_value "LW_DOMAIN" LW_DOMAIN
 echo "LW_DOMAIN=${LW_DOMAIN}"
 
-get_tag_value "POST_PASSWORD" POST_PASSWORD
-echo "POST_PASSWORD=<censored>"
-
 find_post_partners PARTNERS
 echo "PARTNERS=${PARTNERS[*]}"
+
+get_post_password POST_PASSWORD
 
 
 echo "Step 2: Start POST"

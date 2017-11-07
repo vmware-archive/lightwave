@@ -6,6 +6,7 @@ lwraftconf_DATA = \
     saslpostd.conf \
     post-rest.json \
     post-telegraf.conf \
-    post-demote-deads.sh
+    post-demote-deads.sh \
+    refresh-resolve-conf.sh
 
 bin_SCRIPTS = 

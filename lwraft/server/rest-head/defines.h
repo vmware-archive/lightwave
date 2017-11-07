@@ -17,14 +17,21 @@
 #define VMDIR_HTTP_DEBUGLOGFILE      LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTP.log"
 #define VMDIR_HTTPS_DEBUGLOGFILE     LWRAFT_LOG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest-HTTPS.log"
 
-#define VMDIR_REST_CLIENTCNT        "64"
-#define VMDIR_REST_WORKERTHCNT      "64"
+#define VMDIR_REST_CLIENTCNT        64
+#define VMDIR_REST_WORKERTHCNT      64
+
+#define VMDIR_REST_CONN_TIMEOUT_SEC 30
+#define VMDIR_MAX_DATA_PER_CONN_MB  25
+#define VMDIR_HTTP_DAEMON_NAME      "postd-http";
+#define VMDIR_HTTPS_DAEMON_NAME     "postd-https";
+#define VMDIR_REST_STOP_TIMEOUT_SEC 10
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
 
 #define VMDIR_V1_LDAP_RESOURCE      "/v1/post/ldap"
 #define VMDIR_V1_OBJ_RESOURCE       "/v1/post/object"
 #define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
+#define VMDIR_V1_METRICS_RESOURCE   "/v1/post/metrics"
 
 // Lightwave
 #define VMDIR_REST_LIGHTWAVE_LDAP_PORT      389

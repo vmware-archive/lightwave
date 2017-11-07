@@ -48,6 +48,28 @@ set_tag_value() {
     aws autoscaling create-or-update-tags --region ${REGION} --tags "ResourceId=${ASG},ResourceType=auto-scaling-group,Key=${TAG},Value=${VALUE},PropagateAtLaunch=true"
 }
 
+# read a S3 file
+read_s3_file()
+{
+    S3_FILE=$1
+    TMP_FILE=/tmp/s3file-${RANDOM}
+    aws s3 cp ${S3_FILE} ${TMP_FILE}
+    CONTENT=$(cat ${TMP_FILE})
+    rm ${TMP_FILE}
+    eval "$2=${CONTENT}"
+}
+
+# retrieves post admin password
+get_post_password() {
+    get_tag_value "PASSWORD_PATH" PASSWORD_PATH
+    if [[ -z ${PASSWORD_PATH} ]]
+    then
+        PASSWORD_PATH=s3://cascade-passwords/post-password  # default path
+    fi
+    read_s3_file ${PASSWORD_PATH} PASSWORD
+    eval "$1=${PASSWORD}"
+}
+
 # lists IP of all nodes in the given autoscaling group
 get_asg_node_list() {
     get_current_region REGION

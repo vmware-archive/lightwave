@@ -21,6 +21,8 @@ import java.security.GeneralSecurityException;
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 
+import com.vmware.directory.rest.client.VmdirClient;
+import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.test.integration.IntegrationTestProperties;
 import com.vmware.identity.rest.idm.client.IdmClient;
@@ -34,6 +36,7 @@ public class IntegrationTestBase {
     protected static TenantDTO testTenant;
 
     protected static IdmClient systemAdminClient;
+    protected static VmdirClient systemAdminVmdirClient;
     protected static IdmClient testAdminClient;
 
     public static void init(boolean withTestTenant) throws IOException, GeneralSecurityException, ClientException, HttpException {
@@ -43,6 +46,12 @@ public class IntegrationTestBase {
                 properties.getSystemTenant(),
                 properties.getSystemAdminUsername(),
                 properties.getSystemDomain(),
+                properties.getSystemAdminPassword());
+
+        systemAdminVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
+                properties.getSystemTenant(),
+                UPNUtil.buildUPN(properties.getSystemAdminUsername(),
+                properties.getSystemDomain()),
                 properties.getSystemAdminPassword());
 
         if (withTestTenant) {
@@ -60,8 +69,8 @@ public class IntegrationTestBase {
     }
 
     public static void cleanup(boolean withTestTenant) throws ClientProtocolException, HttpException, ClientException, IOException {
-        if (withTestTenant && testAdminClient != null) {
-            testAdminClient.tenant().delete(testTenant.getName());
+        if (withTestTenant && systemAdminClient != null) {
+            systemAdminClient.tenant().delete(testTenant.getName());
         }
     }
 

@@ -8772,6 +8772,7 @@ int commit_xlog_txn(MDB_env *env, MDB_ID2L xlog_pgs, int start, int end)
                 char *s_pos = xlog_pgs[i+j].mptr;
                 pwrite(env->me_fd, s_pos, env->me_psize, d_offset);
             }
+            mdb_eassert(env, p->mp_pages > 0);
             i += p->mp_pages;
         } else if (F_ISSET(p->mp_flags, P_META))
         {
@@ -8853,7 +8854,7 @@ int mdb_rollforward_file(MDB_env *env, char * xlog_file)
             rc = ENOMEM;
             goto cleanup;
         }
-        p = malloc(env->me_psize);
+        p = aligned_alloc(env->me_psize, env->me_psize);
         if (p == NULL)
         {
             rc = ENOMEM;
@@ -8949,6 +8950,11 @@ int mdb_rollxlogs(MDB_env *env, int purge)
 #endif
 
     MDB_IDL xlog_ids = mdb_midl_alloc(MDB_IDL_UM_MAX);
+    if(!xlog_ids)
+    {
+        rc = ENOMEM;
+        goto done;
+    }
 
 #ifdef _WIN32
     sprintf(xlog_file_dir, "%s\\xlogs\\1*", env->me_path);
@@ -8967,12 +8973,7 @@ int mdb_rollxlogs(MDB_env *env, int purge)
         xlog_num=atol(ffd.cFileName);
         if(xlog_num>=XLOG_MIN_NUM && xlog_num <= XLOG_MAX_NUM)
         {
-            rc = mdb_midl_xappend(xlog_ids, xlog_num);
-            if (rc)
-            {
-                rc = ENOMEM;
-                goto done;
-            }
+            mdb_midl_xappend(xlog_ids, xlog_num);
         }
     }
     while (1)
@@ -9033,7 +9034,7 @@ int mdb_rollxlogs(MDB_env *env, int purge)
             mdb_eassert(env, rc == 0);
             goto done;
         }
-        DPRINTF(("MDB recover is needed; roll forward %ld transaction log files...", c));
+        DPRINTF(("MDB recover is needed; roll forward %ld transaction log files...", i));
     }
 
     for (; i; i--)
@@ -9174,6 +9175,7 @@ int wal_sync_meta(MDB_env *env, txnid_t tid)
 
     if (env->me_walstate.xlog_pages >= MAX_WAL_PGS)
     {
+        mdb_eassert(env, env->me_walstate.xlog_fd != INVALID_HANDLE_VALUE);
         close(env->me_walstate.xlog_fd);
         env->me_walstate.xlog_fd = INVALID_HANDLE_VALUE;
         env->me_walstate.xlog_num++;
@@ -9437,4 +9439,13 @@ fatal_error:
 }
 #endif
 
+unsigned long long
+mdb_env_get_lasttid(MDB_env *env)
+{
+    if (env->me_metas[1]->mm_txnid > env->me_metas[0]->mm_txnid)
+    {
+        return env->me_metas[1]->mm_txnid;
+    }
+    return env->me_metas[0]->mm_txnid;
+}
 /** @} */

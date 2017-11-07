@@ -49,7 +49,6 @@ import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
-import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 
 /**
@@ -151,7 +150,7 @@ public class OIDCClientITBase {
 
         // create a non-system tenant
         createTenant(regularTenant, regularTenantAdminUsername, regularTenantAdminPassword, properties.getProperty("tenant1.issuer"), idmClientForSystemTenant);
-        Thread.sleep(10 * 1000); // wait for tenant creation to finish
+        Thread.sleep(15 * 1000); // wait for tenant creation to finish
 
         // retrieve OIDC meta data from regular tenant
         metadataHelper = new MetadataHelper.Builder(domainControllerFQDN)
@@ -294,7 +293,7 @@ public class OIDCClientITBase {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        idmClientForRegularTenant.tenant().delete(regularTenant);
+        idmClientForSystemTenant.tenant().delete(regularTenant);
         vmdirClientForSystemTenant.user().delete(systemTenant, solutionUserName, systemTenant);
         vmdirClientForSystemTenant.user().delete(systemTenant, multiTenantSolutionUserName, systemTenant);
         idmClientForSystemTenant.oidcClient().delete(systemTenant, clientId.getValue());

@@ -39,6 +39,13 @@ public enum Role {
     TRUSTED_USER("TrustedUser"),
 
     /**
+     * A tenant operator with slightly elevated permissions.
+     *
+     * <p>This role should <b>only</b> be valid on the system tenant.
+     */
+    TENANT_OPERATOR("TenantOperator"),
+
+    /**
      * A configuration user with slightly elevated permissions.
      *
      * <p>This role should <b>only</b> be valid on the system tenant.
@@ -46,7 +53,7 @@ public enum Role {
     CONFIGURATION_USER("ConfigurationUser"),
 
     /**
-     * An administrative user with full permissions.
+     * An administrative user with full permissions on the tenant.
      */
     ADMINISTRATOR("Administrator");
 
@@ -97,4 +104,15 @@ public enum Role {
         return compareTo(other) >= 0;
     }
 
+    /**
+     * Checks if the role belongs to system domain.
+     *
+     * @return<tt>true</tt> if this role is in system domain
+     */
+    public boolean isSystemTenantDomain() {
+        if (this == TENANT_OPERATOR || this == CONFIGURATION_USER) {
+            return true;
+        }
+        return false;
+    }
 }

@@ -380,6 +380,12 @@ VmDirRESTOperationCreate(
     );
 
 DWORD
+VmDirRESTOperationReadMetadata(
+    PVDIR_REST_OPERATION    pRestOp,
+    PREST_REQUEST           pRequest
+    );
+
+DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
     PVMREST_HANDLE          pRESTHandle,

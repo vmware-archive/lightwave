@@ -30,6 +30,9 @@
 
 #include <vmdnsserver.h>
 
+#include <reg/lwreg.h>
+#include <reg/regutil.h>
+
 #else
 
 #pragma once

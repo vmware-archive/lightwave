@@ -46,7 +46,7 @@ extern "C" {
 #define DEFAULT_LDAPS_PORT_STR          "636"
 
 #define DEFAULT_HTTP_PORT_NUM           7477
-#define DEFAULT_HTTP_PORT_STR          "7477p"
+#define DEFAULT_HTTP_PORT_STR          "7477"
 
 #define DEFAULT_HTTPS_PORT_NUM           7478
 #define DEFAULT_HTTPS_PORT_STR          "7478"

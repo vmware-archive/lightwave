@@ -290,11 +290,12 @@ VmDirSetPassword(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSafeLDAPBind(
+    dwError = VmDirSafeLDAPBindExt1(
                 &pLd,
                 pszHostName,
                 pszAdminUPN,
-                pszAdminPassword);
+                pszAdminPassword,
+                MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirFindUserDN(
@@ -353,11 +354,12 @@ VmDirChangePassword(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSafeLDAPBind(
+    dwError = VmDirSafeLDAPBindExt1(
                 &pLd,
                 pszHostName,
                 pszUserUPN,
-                pszOldPassword);
+                pszOldPassword,
+                MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirFindUserDN(

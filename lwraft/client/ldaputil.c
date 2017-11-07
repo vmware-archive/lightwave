@@ -542,10 +542,12 @@ VmDirConnectLDAPServer(
     dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszUserName, pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSafeLDAPBind( &pLocalLd,
-                                 pszHostName,
-                                 pszUPN,
-                                 pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLocalLd,
+        pszHostName,
+        pszUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppLd = pLocalLd;

@@ -44,9 +44,7 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
-import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
-import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchCriteria;
@@ -61,7 +59,6 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
-import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
 import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
@@ -117,7 +114,7 @@ public class TenantResource extends BaseResource {
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role = Role.ADMINISTRATOR)
+    @RequiresRole(role = Role.TENANT_OPERATOR)
     public TenantDTO create(TenantDTO tenantDTO) {
         try {
             // Create tenant
@@ -261,7 +258,7 @@ public class TenantResource extends BaseResource {
      * <code> HTTP 500 {@link InternalServerErrorException} </code> Otherwise
      */
     @DELETE @Path(PathParameters.TENANT_NAME_VAR)
-    @RequiresRole(role = Role.ADMINISTRATOR)
+    @RequiresRole(role = Role.TENANT_OPERATOR)
     public void delete(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
         try {
             getIDMClient().deleteTenant(tenantName);

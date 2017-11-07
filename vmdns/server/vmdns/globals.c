@@ -51,5 +51,5 @@ VMDNS_GLOBALS gVmdnsGlobals =
         VMDNS_SF_INIT(.bEnableDNSProtocol, FALSE),
 
         //rest-head
-        VMDNS_SF_INIT(.pszRestListenPort, NULL)
+        VMDNS_SF_INIT(.dwRestListenPort, 0)
     };

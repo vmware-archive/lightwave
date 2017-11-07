@@ -125,10 +125,12 @@ VmDirRefreshActPassword(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSafeLDAPBind( &pLD,
-                                 pszHost,
-                                 pszActUPN,
-                                 pszActPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLD,
+        pszHost,
+        pszActUPN,
+        pszActPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirDomainNameToDN( pszDomain, &pszDomainDN);
@@ -2415,10 +2417,12 @@ _VmDirModDcPassword(
     DWORD    dwError = 0;
     LDAP*    pLD     = NULL;
 
-    dwError = VmDirSafeLDAPBind(&pLD,
-                                pszHostName,
-                                pszUPN,
-                                pszPassword);
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLD,
+        pszHostName,
+        pszUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirLdapModReplaceAttribute(pLD,

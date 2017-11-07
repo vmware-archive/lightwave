@@ -1,0 +1,7 @@
+#!/bin/bash
+
+docker network create \
+    --subnet=192.168.114.0/27 \
+    -o com.docker.network.bridge.enable_ip_masquerade=false \
+    lightwave
+

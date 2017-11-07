@@ -515,6 +515,60 @@ error:
 }
 #endif
 
+#ifndef _WIN32
+DWORD
+VMCAGetRegKeyValueDword(
+    PCSTR   pszConfigParamKeyPath,
+    PCSTR   pszKey,
+    PDWORD  pdwValue,
+    DWORD   dwDefaultValue
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwValue = 0;
+    REG_DATA_TYPE RegType = 0;
+
+    if (pszConfigParamKeyPath == NULL || pszKey == NULL || pdwValue == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    VMCA_LOG_VERBOSE("Reading Reg: %s", pszKey);
+
+    *pdwValue = dwDefaultValue;
+
+    dwError = RegUtilGetValue(
+                NULL,
+                HKEY_THIS_MACHINE,
+                NULL,
+                pszConfigParamKeyPath,
+                pszKey,
+                &RegType,
+                (PVOID*)&dwValue,
+                NULL);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    if (RegType != REG_DWORD)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    *pdwValue = dwValue;
+
+cleanup:
+    return dwError;
+
+error:
+    VMCA_LOG_VERBOSE(
+         "VmDirGetRegKeyValueDword failed with error (%u)(%s)",
+          dwError,
+          VMCA_SAFE_STRING(pszKey));
+    goto cleanup;
+}
+#endif
+
 DWORD
 VMCAGetSharedSecret(
     PWSTR* ppszSharedSecret

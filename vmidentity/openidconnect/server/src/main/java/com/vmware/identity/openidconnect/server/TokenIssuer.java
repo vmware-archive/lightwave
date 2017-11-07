@@ -219,7 +219,7 @@ public class TokenIssuer {
     }
 
     private boolean multiTenant() {
-        return (this.personUser == null) && (this.solutionUser != null) && (this.solutionUser.isMultuTenant());
+        return (this.personUser == null) && (this.solutionUser != null) && (this.solutionUser.isMultiTenant());
     }
 
     private List<String> audience() {

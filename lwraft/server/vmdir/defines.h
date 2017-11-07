@@ -178,24 +178,24 @@
     },                                                           \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_HTTP_LISTEN_PORT,   \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
-        /*.RegDataType    = */ REG_SZ,                           \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ DEFAULT_HTTP_PORT_NUM,            \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_HTTP_PORT_STR,            \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_HTTPS_LISTEN_PORT,  \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
-        /*.RegDataType    = */ REG_SZ,                           \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 0,                                \
-        /*.dwDefault      = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ DEFAULT_HTTPS_PORT_NUM,           \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_HTTPS_PORT_STR,           \
+        /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -205,6 +205,17 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 65535,                            \
         /*.dwDefault      = */ 180,                              \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ -1,                               \
+        /*.dwDefault      = */ 3,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -324,7 +335,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 200,                              \
         /*.dwMax          = */ 90000,                            \
-        /*.dwDefault      = */ 10000,                            \
+        /*.dwDefault      = */ 3500,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -335,7 +346,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 100,                              \
         /*.dwMax          = */ 30000,                            \
-        /*.dwDefault      = */ 3000,                             \
+        /*.dwDefault      = */ 1000,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

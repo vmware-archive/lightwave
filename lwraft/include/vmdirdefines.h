@@ -624,6 +624,8 @@ extern "C" {
 
 #define MAX_DEADLOCK_RETRIES      5
 
+#define MAX_LDAP_CONNECT_NETWORK_TIMEOUT 3
+
 #ifndef LDAP_DEBUG_ANY
 #define LDAP_DEBUG_ANY (-1)
 #endif

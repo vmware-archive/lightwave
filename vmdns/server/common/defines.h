@@ -85,6 +85,7 @@ extern "C" {
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters"
 #define VMDNS_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMwareDNSService\\Parameters"
 #endif
+#define VMDNS_MAX_CONFIG_VALUE_LENGTH   2048
 
 
 typedef enum
