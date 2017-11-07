@@ -113,3 +113,5 @@ VmDirApplyTopologyChanges
 VmDirFreeHATopologyData
 VmDirFreeHAServerInfo
 VmDirFreeHATopologyChanges
+VmDirServerReset
+VmDirSetupDefaultAccount

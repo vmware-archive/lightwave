@@ -216,3 +216,8 @@ VmDirGenRandomImpl(
     PDWORD pdwRandomNumber
     );
 
+DWORD
+VmDirInternalDeleteTree(
+    PCSTR pBaseDb
+    );
+
