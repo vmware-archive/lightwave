@@ -25,6 +25,9 @@ STSD_LOG_DIR="/var/log/vmware/sso"
 STSD_SERVICE_PID="$STSD_LOG_DIR/tcserver.pid"
 STSD_INITD_ERR_LOG="$STSD_LOG_DIR/utils/$SERVICE_NAME.err"
 
+ENABLE_DEBUG=0
+DEBUG_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+
 # Tomcat Catalina settings
 
 CATALINA_HOME=${CATALINA_HOME:-@TOMCAT_HOME@}
@@ -49,6 +52,10 @@ StartService()
 {
    # Set up catalina based env variables
    perform_pre_startup_actions
+
+   if [ "$ENABLE_DEBUG" == "1" ]; then
+        JAVA_OPTS="$DEBUG_OPTS $JAVA_OPTS"
+   fi
 
    # Start tomcat server
    $JSVC_BIN -procname $SERVICE_NAME \
@@ -103,6 +110,10 @@ StopService()
 if [ $# -lt 1 ]; then
     ShowUsage
     exit 1
+fi
+
+if [ $# -gt 1 -a "$2" == "--debug" ]; then
+    ENABLE_DEBUG=1
 fi
 
 rc=0
