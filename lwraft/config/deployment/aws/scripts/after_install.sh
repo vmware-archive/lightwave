@@ -63,7 +63,9 @@ if ! rpm -q filebeat; then
 fi
 
 # configuration steps referred from cascade controller codebase
-LOGSTASH_ELB=$(get_tag_value LOGSTASH_ELB)
+get_tag_value "LOGSTASH_ELB" LOGSTASH_ELB
+echo "LOGSTASH_ELB=${LOGSTASH_ELB}"
+
 cat > /etc/filebeat/filebeat.yml <<EOF
 filebeat.prospectors:
 - input_type: log
