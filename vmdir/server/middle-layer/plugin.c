@@ -987,7 +987,9 @@ _VmDirPluginGenericPreAdd(
         dwError = VmDirValidatePrincipalName( pAttrUPN, &pszLocalErrMsg );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
+#if 1 /* TBD:Adam-Safe to allow multi-valued SPN's? */
+    pAttrSPN = 0;
+#endif
     if ( pAttrSPN )
     {
         dwError = VmDirValidatePrincipalName( pAttrSPN, &pszLocalErrMsg );

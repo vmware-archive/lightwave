@@ -586,6 +586,32 @@ VmDirAllocateCStringFromSid(
                 RtlAllocateCStringFromSid(ppszStringSid,pSid));
 }
 
+ULONG
+VmDirAllocateSidBufferFromCString(
+    PCSTR pszSidString,
+    PCHAR *ppcSidBuffer,
+    ber_len_t *pSidBufferLen
+    )
+{
+    ULONG status = 0;
+    PSID pSid = NULL;
+
+    status =LwNtStatusToWin32Error(
+                RtlAllocateSidFromCString(&pSid,
+                                         (PCSTR)pszSidString));
+    if (status)
+    {
+        goto cleanup;
+    }
+
+    *ppcSidBuffer = (PUCHAR) pSid;
+    *pSidBufferLen = RtlLengthSid(pSid);
+
+cleanup:
+    return status;
+
+}
+
 VOID
 VmDirFreeTypeSpecContent(
     PVMW_TYPE_SPEC specInput,

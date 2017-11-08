@@ -904,6 +904,27 @@ WriteAttributes(
                         bSendAttribute = TRUE;
                     }
                 }
+#ifdef WINJOIN_CHECK_ENABLED_XXXXXXXXXXXX
+                else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_SID, FALSE) == 0)
+                {
+%%%
+                    ber_len_t sidLen = 0;
+                    PCHAR pcSidBuffer = NULL;
+
+                    /* Convert SID to binary */
+                    retVal = VmDirAllocateSidBufferFromCString(
+                                  pAttr->vals[0].lberbv.bv_val, /* this is the SID string */
+                                  &pcSidBuffer,
+                                  &sidLen);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                    VmDirFreeBervalContent(&pAttr->vals[0]);
+
+                    pAttr->vals[0].lberbv.bv_val = pcSidBuffer;
+                    pAttr->vals[0].lberbv.bv_len = sidLen;
+                    pAttr[0].type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
+                    bSendAttribute = TRUE;           // return all operational attributes - "+"
+                }
+#endif
                 else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_KRB_MASTER_KEY, FALSE) == 0)
                 {
                     //only return master key if all of following conditions are satisfied

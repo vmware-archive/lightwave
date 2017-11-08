@@ -979,6 +979,13 @@ ProcessUdpConnection(
      * TBD: Adam-All of these hard-coded values must be removed, and this 
      * data obtained from vmdird.
      */
+    /*
+     * Implement these ldap searches in code and the GUID/SITE name issue is solved
+     ldapsearch $logindata -b "" -s base "(objectclass=*)" msDS-SiteName objectGUID
+     msDS-SiteName: Default-first-site
+     objectGUID: 3c448826-516c-467a-adb9-f95252680c8a
+     */
+
 #endif
     char *DomainName = (char *) gVmdirKrbGlobals.pszRealm;
     char *forest = DomainName; /* "lightwave.local"; */

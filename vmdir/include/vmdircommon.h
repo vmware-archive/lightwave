@@ -345,6 +345,13 @@ VmDirAllocateCStringFromSid(
     PSID pSid
     );
 
+ULONG
+VmDirAllocateSidBufferFromCString(
+    PCSTR pszSidString,
+    PCHAR *ppcSidBuffer,
+    ber_len_t *pSidBufferLen
+    );
+
 VOID
 VmDirFreeTypeSpecContent(
     PVMW_TYPE_SPEC specInput,

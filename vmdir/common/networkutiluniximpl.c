@@ -104,6 +104,7 @@ VmDirOpenClientConnectionImpl(
 	int socket_fd = 0;
 	struct sockaddr_un address;
 	PVM_DIR_CONNECTION pConnection = NULL;
+        PSTR sockname = NULL;
 
 	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
 	if (socket_fd < 0){
@@ -120,6 +121,10 @@ VmDirOpenClientConnectionImpl(
              * is in use, so bind to the raft server socket.
              */
 	    snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH_POST);
+        }
+        else if ((sockname = getenv("VMDIR_ENV_VMDIR_IPC_SOCKET")))
+        {
+	    snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), sockname);
         }
         else
         {

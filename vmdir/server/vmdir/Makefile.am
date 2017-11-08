@@ -3,7 +3,7 @@ sbin_PROGRAMS = vmdird
 idl_srcdir=$(top_srcdir)/vmdir/idl
 
 if MSPAC_SUPPORT
-    PAC_SRC = krb-mspac.c ms_pac_cstub.c
+    PAC_SRC = krb.c krb-mspac.c ms_pac_cstub.c
     BUILT_SOURCES_PAC = ms_pac_h.h
     CLEAN_PAC = ms_pac_h.h ms_pac_cstub.c
 else
@@ -29,7 +29,6 @@ vmdird_SOURCES = \
     ipcserver.c \
     ipclocalapi.c \
     ipcapihandler.c \
-    krb.c \
     main.c \
     metricsinit.c \
     parseargs.c \

@@ -14,6 +14,7 @@
 
 #include "includes.h"
 
+#if 0 /* This exists in server/vmdir/krb.c */
 DWORD
 VmDirKrbRealmNameNormalize(
     PCSTR       pszName,
@@ -257,6 +258,7 @@ error:
 
     goto cleanup;
 }
+#endif
 
 static
 DWORD
@@ -350,9 +352,36 @@ VmDirKrbCreateAuthzInfo(
     /* UserId */
 
 #if 1
+    /* TBD:Adam-Is splitting the userRid out from the sid the UserId field? */
     ntStatus = RtlGetRidSid(&ulUserRid, pUserSid);
     BAIL_ON_VMDIR_ERROR(ntStatus);
     pInfo->UserId = ulUserRid;
+
+    /* TBD:Adam-I think this data was missing */
+    ntStatus = RtlDuplicateSid(
+                       (PSID *)&pInfo->LogonDomainId,
+                       pDomainSid);
+    BAIL_ON_VMDIR_ERROR(ntStatus);
+
+#if 0
+{ /* TBD:Adam-Debug Where is the S-1-5-21-2087275122-3024616724-2954882473-500 value coming from ?? */
+    PSTR sidstr = NULL;
+    NTSTATUS ntStatus = 0;
+
+    ntStatus = RtlAllocateCStringFromSid(&sidstr, pUserSid);
+    if (ntStatus == 0)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DEBUG VmDirKrbCreateAuthzInfo pUserSid=%s", sidstr);
+        RTL_FREE(&sidstr);
+    }
+    ntStatus = RtlAllocateCStringFromSid(&sidstr, (PSID) (pInfo->LogonDomainId));
+    if (ntStatus == 0)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DEBUG VmDirKrbCreateAuthzInfo pDomainSid=%s", sidstr);
+        RTL_FREE(&sidstr);
+    }
+}
+#endif /* if 1 */
 #else
     ntStatus = RtlDuplicateSid(
                        (PSID *)&pInfo->UserSid,
@@ -362,9 +391,12 @@ VmDirKrbCreateAuthzInfo(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #if 1
+    /* UNIX Account Info */
     /* PrimaryGroupId */
 
-   pInfo->PrimaryGroupId = 0;
+   pInfo->UserId = 1000;
+   pInfo->PrimaryGroupId = 1010;
+   pInfo->UserFlags = 0x03;
 #endif
 
     /* GroupCount */
@@ -383,7 +415,6 @@ VmDirKrbCreateAuthzInfo(
     dwError = LwNtStatusToWin32Error(ntStatus);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 1
     /* LogonDomainName */
 
     pInfo->LogonDomainName.Length = 0;
@@ -418,7 +449,6 @@ VmDirKrbCreateAuthzInfo(
     /* Reserved3 */
 
     pInfo->Reserved3 = 0;
-#endif
 
     /* SidCount */
 
@@ -428,7 +458,6 @@ VmDirKrbCreateAuthzInfo(
 
     pInfo->ExtraSids = pExtraSids;
 
-#if 1
     /* ResourceGroupDomainSid */
 
     pInfo->ResourceGroupDomainSid = NULL;
@@ -440,7 +469,6 @@ VmDirKrbCreateAuthzInfo(
     /* ResourceGroupIds */
 
     pInfo->ResourceGroupIds = NULL;
-#endif
 
     *ppInfo = pInfo;
 
@@ -522,6 +550,19 @@ VmDirKrbGetKerbValidationInfo(
                       &pDomainSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+#if 0 /* TBD: Adam-Debug display domain sid value */
+{
+PSTR sidstr = NULL;
+ntStatus = RtlAllocateCStringFromSid(&sidstr, pDomainSid);
+if (ntStatus == 0)
+{
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DEBUG: VmDirKrbGetKerbValidationInfo: pDomainSid=%s", sidstr);
+    RTL_FREE(&sidstr);
+
+}
+}
+#endif /* if 1 */
+
     dwError = VmDirFindMemberOfAttribute(
                       pEntry,
                       &pMemberOfAttr);
@@ -550,7 +591,7 @@ VmDirKrbGetKerbValidationInfo(
                               &pGroupSid);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 1 /* TBD: Adam-Debug */
+#if 0 /* TBD: Adam-Debug */
 
 {
 PSTR sidstr = NULL;

@@ -1081,6 +1081,12 @@ _VmDirExternalModsSanityCheck(
                  VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_SPN, FALSE) == 0 )
             {
                 retVal = VmDirValidatePrincipalName( &(pLocalMod->attr), &pszLocalErrMsg);
+#if 1 /* TBD:Adam-Safe to allow multi-valued SPN's? */
+                 if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_SPN, FALSE) == 0 )
+                 {
+                     retVal = LDAP_SUCCESS;
+                 }
+#endif
                 BAIL_ON_VMDIR_ERROR(retVal);
             }
             else if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
