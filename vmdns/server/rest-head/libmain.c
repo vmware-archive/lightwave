@@ -76,11 +76,11 @@ VmDnsRESTServerInit(
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
     config.pszSSLCipherList = NULL;
-    config.pszDebugLogFile = VMDNS_REST_DEBUGLOGFILE;
-    config.pszDaemonName = VMDNS_HTTP_DAEMON_NAME;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = VMDNS_DAEMON_NAME;
     config.isSecure = FALSE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
+    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
 
     dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMDNS_ERROR(dwError);

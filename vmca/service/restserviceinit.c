@@ -140,11 +140,11 @@ _VMCAHttpServiceStartup(
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
     config.pszSSLCipherList = NULL;
-    config.pszDebugLogFile = VMCA_HTTP_DEBUG_LOGFILE;
-    config.pszDaemonName = VMCA_HTTP_DAEMON_NAME;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = VMCA_DAEMON_NAME;
     config.isSecure = FALSE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
+    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
 
     dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMREST_ERROR(dwError);
@@ -214,11 +214,11 @@ _VMCAHttpsServiceStartup(
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
     config.pszSSLCipherList = NULL;
-    config.pszDebugLogFile = VMCA_HTTPS_DEBUG_LOGFILE;
-    config.pszDaemonName = VMCA_HTTPS_DAEMON_NAME;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = VMCA_DAEMON_NAME;
     config.isSecure = TRUE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
+    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
 
     //Get Certificate and Key from VECS and Set it to Rest Engine
     dwError = VMCAGetVecsMachineCert(&pszCert, &pszKey);
