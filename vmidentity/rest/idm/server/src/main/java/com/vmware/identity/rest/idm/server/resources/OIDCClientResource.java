@@ -76,10 +76,10 @@ public class OIDCClientResource extends BaseSubResource {
             getIDMClient().addOIDCClient(this.tenant, oidcClient);
             return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, clientId));
         } catch (NoSuchTenantException e) {
-            log.debug("Failed to add an OIDC client for tenant '{}' due to missing tenant", this.tenant, e);
+            log.error("Failed to add an OIDC client for tenant '{}' due to missing tenant", this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
-            log.debug("Failed to add an OIDC client for tenant '{}' due to a client side error", this.tenant, e);
+            log.error("Failed to add an OIDC client for tenant '{}' due to a client side error", this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.create.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to add an OIDC client for tenant '{}' due to a server side error", this.tenant, e);
@@ -97,12 +97,11 @@ public class OIDCClientResource extends BaseSubResource {
         try {
             Collection<OIDCClient> oidcClients = getIDMClient().getOIDCClients(this.tenant);
             return OIDCClientMapper.getOIDCClientDTOs(oidcClients);
-
         } catch (NoSuchTenantException e) {
-            log.debug("Failed to get OIDC clients from tenant '{}' due to missing tenant", this.tenant, e);
+            log.error("Failed to get OIDC clients from tenant '{}' due to missing tenant", this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
-            log.debug("Failed to get OIDC clients from tenant '{}' due to a client side error", this.tenant, e);
+            log.error("Failed to get OIDC clients from tenant '{}' due to a client side error", this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.getAll.failed", this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to get OIDC clients from tenant '{}' due to a server side error", this.tenant, e);
@@ -127,10 +126,10 @@ public class OIDCClientResource extends BaseSubResource {
 
             return oidcClientDTO;
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
-            log.debug("Failed to get an OIDC client '{}' from tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
+            log.error("Failed to get an OIDC client '{}' from tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
-            log.debug("Failed to get an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
+            log.error("Failed to get an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.get.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to get an OIDC client '{}' from tenant '{}' due to a server side error", clientId, this.tenant, e);
@@ -147,10 +146,10 @@ public class OIDCClientResource extends BaseSubResource {
         try {
             getIDMClient().deleteOIDCClient(this.tenant, clientId);
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
-            log.debug("Failed to delete an OIDC client '{}' from tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
+            log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException | InvalidPrincipalException e) {
-            log.debug("Failed to delete an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
+            log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.delete.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to a server side error", clientId, this.tenant, e);
@@ -174,10 +173,10 @@ public class OIDCClientResource extends BaseSubResource {
             getIDMClient().setOIDCClient(this.tenant, oidcClient);
             return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, oidcClient.getClientId()));
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
-            log.debug("Failed to update an OIDC client '{}' on tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
+            log.error("Failed to update an OIDC client '{}' on tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
-            log.debug("Failed to update an OIDC client '{}' on tenant '{}' due to a client side error", clientId, this.tenant, e);
+            log.error("Failed to update an OIDC client '{}' on tenant '{}' due to a client side error", clientId, this.tenant, e);
             throw new BadRequestException(this.sm.getString("res.oidcclient.update.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to update an OIDC client '{}' on tenant '{}' due to a server side error", clientId, this.tenant, e);

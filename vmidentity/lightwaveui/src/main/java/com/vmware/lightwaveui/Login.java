@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.DocumentBuilder;
+
+import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -80,16 +82,17 @@ public class Login extends HttpServlet {
 			response.getWriter().append("Error: ").append(uri + querystring + message);
 		}
 	}
-	
+
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		doGet(request, response);
 	}
-	
+
 	private String getClientId(String domain) throws ParserConfigurationException, IOException, SAXException, Exception {
 		String clientId = "";
+		String multiTenantClientId = "";
 		Boolean found = false;
 		File inputFile = new File("/opt/vmware/share/config/lightwave-ui-oidc.xml");
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -97,22 +100,30 @@ public class Login extends HttpServlet {
         Document doc = dBuilder.parse(inputFile);
         doc.getDocumentElement().normalize();
         NodeList nList = doc.getElementsByTagName("tenant");
-        
+
         if(nList != null){
 	        for (int i = 0; i < nList.getLength(); i++) {
 	        	Node node = nList.item(i);
 	        	NodeList children = node.getChildNodes();
-	        	String name = children.item(0).getTextContent();
-	        	
-	        	if(name.toLowerCase().equals(domain)){
+	        	String key = children.item(0).getNodeName();
+	        	String value = children.item(0).getTextContent();
+
+	        	if (key.equals("clientId")) {
+	        	    multiTenantClientId = value;
+	        	}
+
+	        	if(value.toLowerCase().equals(domain)){
 	        		clientId = children.item(1).getTextContent();
 	        		found = true;
 	        		break;
 	        	}
 	        }
         }
-        
+
         if(!found){
+            if (StringUtils.isNotEmpty(multiTenantClientId)) {
+                return multiTenantClientId;
+            }
         	throw new Exception("No OIDC client registered for tenant " + domain);
         }
         return clientId;

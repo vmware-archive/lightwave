@@ -19862,7 +19862,8 @@ objectClasses: (
           vmwOidcPostLogoutRedirectURI $
           vmwOidcLogoutURI $
           vmwOidcCertSubDN $
-          vmwOidcAuthnRequestClientAssertionLifetimeMS )
+          vmwOidcAuthnRequestClientAssertionLifetimeMS $
+          vmwSTSMultiTenant)
     )
 
 objectClasses: (

@@ -50,8 +50,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
-import sun.security.krb5.KrbException;
-
 import com.vmware.af.VmAfClientNativeException;
 import com.vmware.af.interop.VmAfAccessDeniedException;
 import com.vmware.af.interop.VmAfAlreadyJoinedException;
@@ -202,6 +200,8 @@ import com.vmware.identity.performanceSupport.IdmAuthStatus;
 import com.vmware.identity.performanceSupport.PerfBucketKey;
 import com.vmware.identity.performanceSupport.PerfDataSinkFactory;
 import com.vmware.identity.performanceSupport.PerfMeasurementPoint;
+
+import sun.security.krb5.KrbException;
 /**
  * User: snambakam
  * Date: 12/23/11
@@ -2093,6 +2093,10 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "tenantName");
             ValidateUtil.validateNotNull(oidcClient, "oidcClient");
 
+            if (oidcClient.isMultiTenant() && !ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                throw new InvalidArgumentException("Multi-tenant oidc client can only be registered in system tenant.");
+            }
+
             _configStore.addOIDCClient(tenantName, oidcClient);
         } catch (Exception ex) {
             logger.error(String.format("Failed to add OIDC client for tenant [%s]", tenantName));
@@ -2131,6 +2135,10 @@ public class IdentityManager implements IIdentityManager {
         try {
             ValidateUtil.validateNotEmpty(tenantName, "tenantName");
             ValidateUtil.validateNotNull(oidcClient, "oidcClient");
+
+            if (oidcClient.isMultiTenant() && !ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                throw new InvalidArgumentException("Multi-tenant oidc client can only be registered in system tenant.");
+            }
 
             _configStore.setOIDCClient(tenantName, oidcClient);
 
