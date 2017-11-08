@@ -40,6 +40,9 @@ cat > /etc/systemd/journald.conf <<EOF
 ForwardToSyslog=yes
 EOF
 
+# Install or upgrade syslog
+tdnf install -y syslog-ng
+
 # Remove the existing config of syslog-ng for lightwave
 # Everything will be written to /var/log/messages
 sed -i '/lightwave.conf.d/d' /etc/syslog-ng/syslog-ng.conf
