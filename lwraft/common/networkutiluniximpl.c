@@ -247,6 +247,10 @@ VmDirReadDataImpl(
                         dwError = LwErrnoToWin32Error(errno);
                         BAIL_ON_VMDIR_ERROR (dwError);
                 }
+                else if (dwBytesRead == 0)
+                {
+                    break;
+                }
 
                 dwTotalBytesRead += dwBytesRead;
                 pResponseCursor += dwBytesRead;

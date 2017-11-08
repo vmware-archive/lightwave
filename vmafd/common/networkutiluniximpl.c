@@ -207,7 +207,7 @@ VmAfdReadDataImpl(
     do
     {
         dwBytesRead = read(pConnection->fd, (PVOID)&dwBytesSent, sizeof(DWORD));
-    } while (dwBytesSent == -1 && errno == EINTR);
+    } while (dwBytesRead == -1 && errno == EINTR);
 
     if (dwBytesRead < sizeof(DWORD))
     {
@@ -248,6 +248,10 @@ VmAfdReadDataImpl(
         {
             dwError = LwErrnoToWin32Error(errno);
             BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else if (dwBytesRead == 0)
+        {
+            break;
         }
 
         dwTotalBytesRead += dwBytesRead;
