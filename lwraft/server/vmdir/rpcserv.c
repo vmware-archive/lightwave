@@ -1855,6 +1855,91 @@ error:
     goto cleanup;
 }
 
+UINT32
+Srv_RpcVmDirRaftFollowerInitiateVote(
+    /* [in] */ handle_t hBinding
+)
+{
+    DWORD  dwError = 0;
+
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRaftFollowerInitiateVoteSrv();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_RAFTREQUESTVOTE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "Srv_RpcVmDirRaftFollowerInitiateVote failed error: %d", dwError);
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirRaftStartVote(
+    /* [in] */ handle_t hBinding
+)
+{
+    DWORD   dwError = 0;
+
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRaftStartVoteSrv();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_RAFTREQUESTVOTE],
+                             VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "Srv_RpcVmDirRaftStartVote  failed with error : %d", dwError);
+    goto cleanup;
+}
+
+
 UINT32 Srv_RpcVmDirRaftAppendEntries(
     /* [in] */ handle_t hBinding,
     /* [in] */ UINT32 term,

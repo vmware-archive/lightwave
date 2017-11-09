@@ -227,7 +227,8 @@ RaftCliExecNodePrincipalRequest(
         PARSE_MODE_LIST,
         PARSE_MODE_DEMOTE,
         PARSE_MODE_PROMOTE,
-        PARSE_MODE_STATE
+        PARSE_MODE_STATE,
+        PARSE_MODE_STARTVOTE
     } PARSE_MODE;
 
     typedef enum
@@ -289,6 +290,11 @@ RaftCliExecNodePrincipalRequest(
                 {
                     command = LWRAFT_DIR_COMMAND_NODE_STATE;
                     mode = PARSE_MODE_STATE;
+                }
+                else if(!VmDirStringCompareA(pszArg, "startvote", TRUE))
+                {
+                    command = LWRAFT_DIR_COMMAND_NODE_STARTVOTE;
+                    mode = PARSE_MODE_STARTVOTE;
                 }
                 else
                 {
@@ -510,6 +516,54 @@ RaftCliExecNodePrincipalRequest(
 
                 break;
 
+            case PARSE_MODE_STARTVOTE:
+
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!VmDirStringCompareA(pszArg, "--login", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_USER_NAME;
+                        }
+                        else if (!VmDirStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else if (!VmDirStringCompareA(pszArg, "--server-name", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_SERVER_NAME;
+                        }
+                        else
+                        {
+                            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_SERVER_NAME:
+
+                        pszServerName = pszArg;
+                        submode = PARSE_SUB_MODE_OPEN;
+                        break;
+
+                    case PARSE_SUB_MODE_USER_NAME:
+
+                        pszLogin = pszArg;
+                        submode = PARSE_SUB_MODE_OPEN;
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+
+                        pszPassword = pszArg;
+                        submode = PARSE_SUB_MODE_OPEN;
+                        break;
+
+                    default:
+
+                        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_OPTION_INVALID);
+                        break;
+                }
+                break;
 
             default:
                 dwError = VMDIR_ERROR_INVALID_STATE;
@@ -563,6 +617,16 @@ RaftCliExecNodePrincipalRequest(
             printf("Persistent Objectstore Service instance created successfully\n");
             break;
 
+        case LWRAFT_DIR_COMMAND_NODE_STARTVOTE:
+
+            printf("Initializing vote on followers ... \n");
+
+            dwError = RaftCliStartVoteA(pszLogin, pszPassword, pszServerName);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            printf("New vote completed successfully\n");
+            break;
+
         default:
 
             dwError = VMDIR_ERROR_INVALID_STATE;
@@ -588,23 +652,27 @@ ShowUsage(
         stdout,
         "Usage: post-cli { arguments }\n\n"
         "Arguments:\n\n"
-        "\tnode list    --server-name      <host name>\n\n"
+        "\tnode list        --server-name      <host name>\n\n"
 
-        "\tnode state   --server-name      <host name>\n"
-        "\t             --login            <user@domain>\n"
-        "\t             --password         <password>\n\n"
+        "\tnode state       --server-name      <host name>\n"
+        "\t                 --login            <user@domain>\n"
+        "\t                 --password         <password>\n\n"
 
-        "\tnode promote --password         <password>\n"
- //       "\t            [--administrator    <user name> default to \"administrator\"]\n"
-        "\t            [--host-name        <host name> preferred Lightwave POST host name, can be FQDN or IP]\n"
-        "\t            [--domain-name      <domain name>      (for first node deployment)\n"
-        "\t             or \n"
-        "\t             --partner-name     <host of partner>  (for other nodes deployment)]\n\n"
+        "\tnode promote     --password         <password>\n"
+ //       "\t                [--administrator    <user name> default to \"administrator\"]\n"
+        "\t                 [--host-name        <host name> preferred Lightwave POST host name, can be FQDN or IP]\n"
+        "\t                 [--domain-name      <domain name>      (for first node deployment)\n"
+        "\t                 or \n"
+        "\t                 --partner-name     <host of partner>  (for other nodes deployment)]\n\n"
 
-        "\tnode demote  --server-name      <host name>\n"
-        "\t             --login            <user@domain>\n"
-        "\t             --password         <password>\n"
-        "\t             --demote-host-name <host to demote>]\n\n"
+        "\tnode demote      --server-name      <host name>\n"
+        "\t                 --login            <user@domain>\n"
+        "\t                 --password         <password>\n"
+        "\t                 --demote-host-name <host to demote>]\n\n"
+
+        "\tnode startvote   [--server-name      <host name>]\n"
+        "\t                 --login            <user@domain>\n"
+        "\t                 --password         <password>\n\n"
         "\thelp\n");
 }
 

@@ -324,6 +324,8 @@ the buffer size will always be adequate.
         "ACE not found"}, \
     {VMDIR_ERROR_NO_LEADER, \
         "No leader"}, \
+    {VMDIR_ERROR_INVALID_ROLE, \
+        "Invalid role of node"}, \
 };
 
 #define VMDIR_RPC_ERROR_TABLE_INITIALIZER \

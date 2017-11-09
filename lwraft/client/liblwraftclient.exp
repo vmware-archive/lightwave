@@ -58,3 +58,5 @@ VmDirRaftListCluster
 VmDirRaftShowClusterState
 VmDirRaftLeaveCluster
 VmDirFreeRaftCluster
+VmDirRaftStartVoteClient
+VmDirRaftFollowerInitiateVote

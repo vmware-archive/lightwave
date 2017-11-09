@@ -2932,3 +2932,68 @@ cleanup:
 error:
     goto cleanup;
 }
+
+/* RPC wrapper for the startvote tool */
+DWORD
+VmDirRaftStartVote(
+    handle_t    hBinding
+)
+{
+    DWORD   dwError = 0;
+
+    if (hBinding==NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_RPC_TRY
+    {
+        dwError =  RpcVmDirRaftStartVote( hBinding);
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/* Client wrapper for the initiate vote RPC
+ * call made to all followers */
+DWORD
+VmDirRaftFollowerInitiateVote(
+    PVMDIR_SERVER_CONTEXT hBinding
+)
+{
+    DWORD   dwError = 0;
+
+    if (hBinding==NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_RPC_TRY
+    {
+        dwError =  RpcVmDirRaftFollowerInitiateVote( hBinding->hBinding);
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
