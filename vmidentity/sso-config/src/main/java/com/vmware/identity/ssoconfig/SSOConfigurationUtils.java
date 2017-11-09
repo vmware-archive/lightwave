@@ -280,6 +280,10 @@ public class SSOConfigurationUtils {
         displayParamNameAndValue(paramName, String.valueOf(paramValue), DEFAULT_DISPLAY_WIDTH);
     }
 
+    static void displayParamNameAndValue(String paramName, long paramValue){
+        displayParamNameAndValue(paramName, String.valueOf(paramValue), DEFAULT_DISPLAY_WIDTH);
+    }
+
     static void displayParamNameAndValues(String paramName, Collection<String> paramValues) {
         if (paramValues == null) {
             return;

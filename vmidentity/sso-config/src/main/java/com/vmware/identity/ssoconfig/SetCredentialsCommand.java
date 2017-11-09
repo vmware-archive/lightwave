@@ -47,14 +47,14 @@ public class SetCredentialsCommand extends SSOConfigCommand {
                 FileWriter fw = new FileWriter(file.getPath());
                 fw.write(token);
                 fw.close();
-                logger.info("Successfully updated credentials with admoin username and password.");
+                logger.info("Successfully updated credentials with username and password.");
             }
         }
     }
 
     private String getBearerTokenByUsernamePwd(String adminUsername, String adminPwd) throws Exception {
         if (StringUtils.isEmpty(adminUsername) || StringUtils.isEmpty(adminPwd)) {
-            throw new IllegalStateException("Admin username and/or password is missing.");
+            throw new IllegalStateException("Username and/or password is missing.");
         }
 
         KeyStore keyStore = SSOConfigurationUtils.getKeyStore();
