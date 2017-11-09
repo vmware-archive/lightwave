@@ -81,12 +81,7 @@
 <body>
 
 <script type="text/javascript">
-    if (!isVCLogin()) {
-        document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/login_generic.css">');
-    }
-    else {
-        document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/login.css">');
-    }
+   document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/login_generic.css">');
 </script>
 
 
@@ -95,13 +90,12 @@
 //createVmrcPluginObject();
 //var _cspId = createCspPluginObject();
 
-if (isVCLogin()) {
-    document.write("<img id=\"topSplash\" src=\"../../resources/img/AppBgPattern.png\"/>");
-    document.write("<img id=\"brand\" src=\"../../resources/img/vmwareLogoBigger.png\" />");
+document.write("<p id=\"welcomeText\">Welcome to</p>");
+if (isBrandNameSet()) {
+    document.write("<p id=\"tenantBrand\">"+tenant_brandname+"</p>");
 }
 else {
-    document.write("<p id=\"welcomeText\">Welcome to</p>");
-    document.write("<p id=\"tenantBrand\">"+tenant_brandname+"</p>");
+    document.write("<p id=\"tenantBrand\">Lightwave Authentication Service</p>");
 }
 
 
@@ -139,11 +133,6 @@ else {
 <div id="dialogLogonBanner"></div>
 
 <div id="productName">
-   <script type="text/javascript">
-        if (isVCLogin()) {
-           document.write("<img id=\"VCSSO-Title\" src=\"../../resources/img/VCSSO-title.png\" />");
-           }
-   </script>
    <div id="response" style="display:none"></div>
    <div id="progressBar" style="display:none"><img src="../../resources/img/Marge-anim-progressbar.gif"></div>
 </div>
@@ -159,10 +148,5 @@ else {
    <span class="validation-message-text">${unsupportedBrowserWarning}</span>
 </div>
 
-<script type="text/javascript">
-   if (isVCLogin() && !isBrowserSupportedVC()) {
-      $(".browser-validation-banner").css("visibility","visible");
-   }
-</script>
 </body>
 </html>
