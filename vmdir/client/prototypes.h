@@ -717,15 +717,6 @@ VmDirLdapGetHighWatermark(
     );
 
 DWORD
-VmDirSetupDefaultAccount(
-    PCSTR pszDomainName,
-    PCSTR pszPartnerServerName,
-    PCSTR pszLdapHostName,
-    PCSTR pszBindUserName,
-    PCSTR pszBindPassword
-    );
-
-DWORD
 VmDirUpdateKeytabFile(
     PCSTR pszServerName,
     PCSTR pszDomainName,
@@ -733,4 +724,9 @@ VmDirUpdateKeytabFile(
     PCSTR pszUserName,
     PCSTR pszPassword,
     BOOLEAN bIsServer
+    );
+
+DWORD
+VmDirLocalServerReset(
+    UINT32  *pServerState
     );

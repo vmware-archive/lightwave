@@ -323,6 +323,11 @@ VmDirSrvGetServerState(
     PDWORD   pServerState
     );
 
+DWORD
+VmDirSrvServerReset(
+    PDWORD pServerResetState
+    );
+
 #ifndef _WIN32
 
 // signals.c
@@ -612,6 +617,15 @@ VmDirCreateHeartbeatThread(
 
 VOID
 VmDirKillHeartbeatThread(
+    );
+
+DWORD
+VmDirIpcServerReset(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
     );
 
 #ifdef __cplusplus

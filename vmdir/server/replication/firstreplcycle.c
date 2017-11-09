@@ -91,6 +91,7 @@ DWORD
 _VmDirMkdir(
     PCSTR path,
     int mode);
+
 int
 VmDirFirstReplicationCycle(
     PCSTR                           pszHostname,
@@ -797,5 +798,154 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirMkdir on dir %s failed (%u) errno: (%d)", path, dwError, errno);
+    goto cleanup;
+}
+
+/* This function re-instantiates the current vmdir instance with a
+ * foreign (MDB) database file. It is triggered by running vdcadmintool
+ * with option 8.  Before this action, a foreign database files must be copied
+ * onto diretory mdb_home_dir/partner/ which may include mdb WAL files under
+ * xlogs/. See PR 1995325 for the functional spec and use cases.
+ */
+DWORD
+VmDirSrvServerReset(
+    PDWORD pServerResetState
+    )
+{
+    int i = 0;
+    DWORD dwError = 0;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+    const char  *dbHomeDir = VMDIR_DB_DIR;
+    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
+    BOOLEAN bWriteInvocationId = FALSE;
+    PSTR pszConfigurationContainerDn = NULL;
+    PSTR pszDomainControllerContainerDn = NULL;
+    PSTR pszManagedServiceAccountContainerDn = NULL;
+    DEQUE computers = {0};
+    PSTR pszComputer = NULL;
+    PVDIR_ATTRIBUTE pAttrUPN = NULL;
+
+    //swap current vmdir database file with the foriegn one under partner/
+    dwError = _VmDirSwapDB(dbHomeDir);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //Delete Computers (domain controller accounts) under Domain Controller container
+    dwError = VmDirAllocateStringPrintf(&pszDomainControllerContainerDn, "ou=%s,%s",
+                VMDIR_DOMAIN_CONTROLLERS_RDN_VAL, gVmdirServerGlobals.systemDomainDN.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(pszDomainControllerContainerDn, LDAP_SCOPE_ONE,
+                ATTR_OBJECT_CLASS, OC_COMPUTER, &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if(entryArray.iSize > 0)
+    {
+        for (i = 0; i < entryArray.iSize; i++)
+        {
+            pAttrUPN = VmDirFindAttrByName(&entryArray.pEntry[i], ATTR_KRB_UPN);
+            if (pAttrUPN)
+            {
+               PSTR pPc = NULL;
+               dwError = VmDirAllocateStringA(pAttrUPN->vals[0].lberbv_val, &pPc);
+               dequePush(&computers, pPc);
+            }
+            dwError = VmDirDeleteEntry(&entryArray.pEntry[i]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    VmDirFreeEntryArrayContent(&entryArray);
+
+    /* Delete all entries in the subtree under Configuration container
+     *  (e.g. under cn=Configuration,dc=vmware,dc=com).
+     * This will remove the old replication topology
+     */
+    dwError = VmDirAllocateStringPrintf(&pszConfigurationContainerDn, "cn=%s,%s",
+                VMDIR_CONFIGURATION_CONTAINER_NAME, gVmdirServerGlobals.systemDomainDN.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(pszConfigurationContainerDn, LDAP_SCOPE_SUBTREE,
+                ATTR_OBJECT_CLASS, OC_DIR_SERVER, &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize > 0)
+    {
+        for (i = 0; i < entryArray.iSize; i++)
+        {
+            /* Delete all replication agreement entries for a server and
+             * the server it self under the configuration/site container
+             */
+            dwError = VmDirInternalDeleteTree(entryArray.pEntry[i].dn.lberbv_val);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    VmDirFreeEntryArrayContent(&entryArray);
+
+    //Delete ManagedServiceAccount entries that are associated with any of the domain controllers
+
+    dwError = VmDirAllocateStringPrintf(&pszManagedServiceAccountContainerDn, "cn=%s,%s",
+                VMDIR_MSAS_RDN_VAL, gVmdirServerGlobals.systemDomainDN.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(pszManagedServiceAccountContainerDn, LDAP_SCOPE_ONE,
+                ATTR_OBJECT_CLASS, OC_MANAGED_SERVICE_ACCOUNT, &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize > 0)
+    {
+        for (i = 0; i < entryArray.iSize; i++)
+        {
+            PDEQUE_NODE p = NULL;
+            pAttrUPN = VmDirFindAttrByName(&entryArray.pEntry[i], ATTR_KRB_UPN);
+            for(p = computers.pHead; p != NULL; p = p->pNext)
+            {
+                if (VmDirStringCaseStrA(pAttrUPN->vals[0].lberbv_val, p->pElement) != NULL)
+                {
+                    dwError = VmDirDeleteEntry(&entryArray.pEntry[i]);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                    break;
+                }
+            }
+        }
+    }
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateServerObj(pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //Create server and replication entries for the current instance
+    // on top of the (cleaned up) foreign database.
+    dwError = VmDirSrvCreateReplAgrsContainer(pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirPatchDSERoot(pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirSchemaCtxRelease(pSchemaCtx);
+    pSchemaCtx = NULL;
+
+    dwError = LoadServerGlobals(&bWriteInvocationId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    if (pSchemaCtx)
+    {
+        VmDirSchemaCtxRelease(pSchemaCtx);
+    }
+
+    VmDirFreeEntryArrayContent(&entryArray);
+
+    VMDIR_SAFE_FREE_MEMORY(pszConfigurationContainerDn);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainControllerContainerDn);
+
+    while(!dequeIsEmpty(&computers))
+    {
+        dequePopLeft(&computers, (PVOID*)&pszComputer);
+        VMDIR_SAFE_FREE_MEMORY(pszComputer);
+    }
+    return dwError;
+
+error:
     goto cleanup;
 }

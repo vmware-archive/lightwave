@@ -1379,3 +1379,62 @@ VmDirPVdirBValCmp(
         return memcmp((*ppBV1)->lberbv_val, (*ppBV2)->lberbv_val, (*ppBV1)->lberbv_len);
     }
 }
+
+// Delete all entries from a base DN and the base self
+DWORD
+VmDirInternalDeleteTree(PCSTR pBaseDn)
+{
+    DWORD dwError = 0;
+    int i = 0, j=0;
+    PSTR* ppDNArray = NULL;
+    PCSTR pDn = NULL;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+
+    dwError = VmDirFilterInternalSearch(pBaseDn, LDAP_SCOPE_SUBTREE,
+                "objectClass=*", 0, NULL, &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize < 1)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(PSTR)*entryArray.iSize, (PVOID*)&ppDNArray );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < entryArray.iSize; i++)
+    {
+        dwError = VmDirAllocateStringA(entryArray.pEntry[i].dn.lberbv_val, &(ppDNArray[i]));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    qsort(ppDNArray, entryArray.iSize, sizeof(PSTR), VmDirCompareStrByLen);
+
+    for (i=entryArray.iSize-1; i>=0; i--)
+    {
+       pDn = ppDNArray[i];
+       for (j=0; j<entryArray.iSize; j++)
+       {
+           if (VmDirStringCompareA(pDn, entryArray.pEntry[j].dn.lberbv_val, FALSE)==0)
+           {
+               dwError = VmDirDeleteEntry(&entryArray.pEntry[j]);
+               BAIL_ON_VMDIR_ERROR(dwError);
+               break;
+           }
+       }
+    }
+cleanup:
+    if (ppDNArray)
+    {
+        for (i = 0; i < entryArray.iSize; i++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppDNArray[i]);
+        }
+        VMDIR_SAFE_FREE_MEMORY(ppDNArray);
+    }
+    VmDirFreeEntryArrayContent(&entryArray);
+    return dwError;
+
+error:
+    goto cleanup;
+}

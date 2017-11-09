@@ -1836,6 +1836,34 @@ error:
     goto cleanup;
 }
 
+/* IPC call, needs root privileges */
+DWORD
+VmDirServerReset(
+    DWORD*      pState
+    )
+{
+    DWORD                   dwError = 0;
+
+    if ( !pState )
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLocalServerReset(
+                    pState
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirServerReset succeded");
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirServerReset failed (%u)", dwError );
+    goto cleanup;
+}
+
 /*
  * *ppByte will be null terminated
  */

@@ -739,6 +739,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_CREATE_TENANT        7
 #define VMDIR_IPC_DELETE_TENANT        8
 #define VMDIR_IPC_ENUMERATE_TENANTS    9
+#define VMDIR_IPC_SERVER_RESET         10
 
 //VERSIONS
 #define VER1_INPUT 0

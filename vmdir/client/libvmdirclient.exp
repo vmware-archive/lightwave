@@ -104,3 +104,5 @@ VmDirChangePNID
 VmDirCreateTenant
 VmDirDeleteTenant
 VmDirEnumerateTenants
+VmDirServerReset
+VmDirSetupDefaultAccount

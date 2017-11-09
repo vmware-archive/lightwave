@@ -2310,6 +2310,25 @@ VmDirGetServerName(
     PSTR* ppszServerName
     );
 
+DWORD
+VmDirInternalDeleteTree(
+    PCSTR pBaseDn
+    );
+
+DWORD
+VmDirServerReset(
+    DWORD*      pState
+    );
+
+DWORD
+VmDirSetupDefaultAccount(
+    PCSTR pszDomainName,
+    PCSTR pszPartnerServerName,
+    PCSTR pszLdapHostName,
+    PCSTR pszBindUserName,
+    PCSTR pszBindPassword
+    );
+
 #ifdef __cplusplus
 }
 #endif
