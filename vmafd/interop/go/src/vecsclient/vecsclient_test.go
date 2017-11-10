@@ -34,7 +34,7 @@ func generatePEMAndCert() (string, string) {
 
 	r, err := rand.Int(rand.Reader, big.NewInt(1000000))
 	if err != nil {
-		log.Fatal("kjkjfailed to generate random number")
+		log.Fatal("failed to generate random number")
 	}
 	tml := x509.Certificate{
 		NotBefore:    time.Now(),
