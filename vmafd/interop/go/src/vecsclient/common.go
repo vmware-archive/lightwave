@@ -9,6 +9,7 @@ package vecsclient
 import "C"
 
 import (
+	"errors"
 	"unsafe"
 )
 
