@@ -3,7 +3,7 @@
 echo "Step 1: Upgrade/install createrepo and its dependencies"
 
 tdnf makecache
-tdnf install -y sed zip unzip createrepo c-rest-engine-1.1-1.ph1
+tdnf install -y sed zip unzip createrepo c-rest-engine-1.1-2.ph1
 
 echo "Install patched version of cyrus-sasl"
 
