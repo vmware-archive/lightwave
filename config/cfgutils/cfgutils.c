@@ -348,7 +348,7 @@ VmwDeploySetupServerCommon(
     VMW_DEPLOY_LOG_INFO("Promoting directory service to be domain controller");
 
     dwError = VmAfdPromoteVmDirA(
-                    pszHostname,
+                    pParams->pszHostname,
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
