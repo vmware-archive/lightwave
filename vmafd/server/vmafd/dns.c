@@ -33,8 +33,10 @@ VmAfSrvGetLotusServerName(
 static
 DWORD
 VmAfdReverseZoneInitialize(
-    PVMDNS_SERVER_CONTEXT pServerContext,
-    PVMDNS_INIT_INFO pInitInfo
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszDcSrvName,
+    VMDNS_IP4_ADDRESS_ARRAY IpV4Addrs,
+    VMDNS_IP6_ADDRESS_ARRAY IpV6Addrs
     );
 
 DWORD
@@ -43,7 +45,8 @@ VmAfSrvConfigureDNSW(
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName         /* OPTIONAL */
     )
 {
     DWORD dwError = 0;
@@ -52,8 +55,9 @@ VmAfSrvConfigureDNSW(
     PSTR pszDomainName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
+    PSTR pszSiteName = NULL;
 
-    if (pwszTargetName)
+    if (!IsNullOrEmptyString(pwszTargetName))
     {
         dwError = VmAfdAllocateStringAFromW(
                       pwszTargetName,
@@ -81,12 +85,21 @@ VmAfSrvConfigureDNSW(
                   &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    if (!IsNullOrEmptyString(pwszSiteName))
+    {
+        dwError = VmAfdAllocateStringAFromW(
+                      pwszSiteName,
+                      &pszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfSrvConfigureDNSA(
                   pszTargetName,
                   pszServerName,
                   pszDomainName,
                   pszUserName,
-                  pszPassword);
+                  pszPassword,
+                  pszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:
@@ -96,6 +109,7 @@ error:
     VMAFD_SAFE_FREE_MEMORY(pszDomainName);
     VMAFD_SAFE_FREE_MEMORY(pszUserName);
     VMAFD_SAFE_FREE_MEMORY(pszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pszSiteName);
 
     return dwError;
 }
@@ -106,7 +120,8 @@ VmAfSrvConfigureDNSA(
     PCSTR   pszServerName,
     PCSTR   pszDomainName,
     PCSTR   pszUserName,
-    PCSTR   pszPassword
+    PCSTR   pszPassword,
+    PCSTR   pszSiteName         /* OPTIONAL */
     )
 {
     DWORD                   dwError = 0;
@@ -116,9 +131,11 @@ VmAfSrvConfigureDNSA(
     DWORD                   numV4Address = 0;
     PVMDNS_IP6_ADDRESS      pV6Addresses = NULL;
     DWORD                   numV6Address = 0;
-    VMDNS_INIT_INFO         initInfo = {0};
+    VMDNS_INIT_SITE_INFO    initSiteInfo = {0};
     CHAR                    szDomainFQDN[257] = {0};
     DWORD                   dwStrLen = 0;
+    VMDNS_IP4_ADDRESS_ARRAY IpV4Addresses = {0};
+    VMDNS_IP6_ADDRESS_ARRAY IpV6Addresses = {0};
 
     if (IsNullOrEmptyString(pszDomainName) || strlen(pszDomainName) > 254)
     {
@@ -132,6 +149,11 @@ VmAfSrvConfigureDNSA(
                           &pV6Addresses,
                           &numV6Address);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    IpV4Addresses.dwCount = numV4Address;
+    IpV4Addresses.Addrs = pV4Addresses;
+    IpV6Addresses.dwCount = numV6Address;
+    IpV6Addresses.Addrs = pV6Addresses;
 
     dwError = VmAfSrvGetLotusServerName(
                             pszServerName,
@@ -151,14 +173,6 @@ VmAfSrvConfigureDNSA(
         szDomainFQDN[dwStrLen + 1] = 0;
     }
 
-    initInfo.IpV4Addrs.Addrs = pV4Addresses;
-    initInfo.IpV4Addrs.dwCount = numV4Address;
-    initInfo.IpV6Addrs.Addrs = pV6Addresses;
-    initInfo.IpV6Addrs.dwCount = numV6Address;
-    initInfo.pszDcSrvName = pszCanonicalServerName;
-    initInfo.pszDomain = szDomainFQDN;
-    initInfo.wPort = VMDNS_DEFAULT_LDAP_PORT;
-
     dwError = VmDnsOpenServerA(
                 IsNullOrEmptyString(pszTargetName)
                     ? "localhost"
@@ -171,10 +185,21 @@ VmAfSrvConfigureDNSA(
                 &pServerContext);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDnsInitializeA(pServerContext, &initInfo);
+    initSiteInfo.IpV4Addrs = IpV4Addresses;
+    initSiteInfo.IpV6Addrs = IpV6Addresses;
+    initSiteInfo.pszDcSrvName = pszCanonicalServerName;
+    initSiteInfo.pszDomain = szDomainFQDN;
+    initSiteInfo.wPort = VMDNS_DEFAULT_LDAP_PORT;
+    initSiteInfo.pszSiteName = (PSTR) pszSiteName;
+
+    dwError = VmDnsInitializeWithSiteA(pServerContext, &initSiteInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdReverseZoneInitialize(pServerContext, &initInfo);
+    dwError = VmAfdReverseZoneInitialize(
+                pServerContext,
+                pszCanonicalServerName,
+                IpV4Addresses,
+                IpV6Addresses);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -211,13 +236,15 @@ error:
 DWORD
 VmAfdReverseZoneInitialize(
     PVMDNS_SERVER_CONTEXT pServerContext,
-    PVMDNS_INIT_INFO pInitInfo
+    PSTR                  pszDcSrvName,
+    VMDNS_IP4_ADDRESS_ARRAY IpV4Addrs,
+    VMDNS_IP6_ADDRESS_ARRAY IpV6Addrs
     )
 {
     DWORD dwError=0;
     VMDNS_ZONE_INFO revzoneInfo = {
             .pszName                = "in-addr.arpa.",
-            .pszPrimaryDnsSrvName   = pInitInfo->pszDcSrvName,
+            .pszPrimaryDnsSrvName   = pszDcSrvName,
             .pszRName               = "",
             .serial                 = 0,
             .refreshInterval        = VMAFD_DEFAULT_REFRESH_INTERVAL,
@@ -229,7 +256,7 @@ VmAfdReverseZoneInitialize(
 
     VMDNS_ZONE_INFO revzoneInfo6 = {
             .pszName                = "ip6.arpa.",
-            .pszPrimaryDnsSrvName   = pInitInfo->pszDcSrvName,
+            .pszPrimaryDnsSrvName   = pszDcSrvName,
             .pszRName               = "",
             .serial                 = 0,
             .refreshInterval        = VMAFD_DEFAULT_REFRESH_INTERVAL,
@@ -245,7 +272,7 @@ VmAfdReverseZoneInitialize(
                     .dwType = VMDNS_RR_TYPE_PTR,
                     .iClass = VMDNS_CLASS_IN,
                     .dwTtl = VMAFD_DEFAULT_TTL,
-                    .Data.PTR.pNameHost = pInitInfo->pszDcSrvName
+                    .Data.PTR.pNameHost = pszDcSrvName
             };
 
     VMDNS_RECORD revRecord6 =
@@ -254,7 +281,7 @@ VmAfdReverseZoneInitialize(
                     .dwType = VMDNS_RR_TYPE_PTR,
                     .iClass = VMDNS_CLASS_IN,
                     .dwTtl = VMAFD_DEFAULT_TTL,
-                    .Data.PTR.pNameHost = pInitInfo->pszDcSrvName
+                    .Data.PTR.pNameHost = pszDcSrvName
             };
 
     VMDNS_IP4_ADDRESS ip4 = 0;
@@ -268,7 +295,7 @@ VmAfdReverseZoneInitialize(
     dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    ip4 = htonl(pInitInfo->IpV4Addrs.Addrs[0]);
+    ip4 = htonl(IpV4Addrs.Addrs[0]);
     if(!(inet_ntop(AF_INET, &ip4, szAddr, sizeof(szAddr))))
     {
         VmAfdLog(VMAFD_DEBUG_DEBUG,"Error converting Ip address to text format");
@@ -288,10 +315,10 @@ VmAfdReverseZoneInitialize(
     dwError = (dwError == ERROR_ALREADY_EXISTS) ? ERROR_SUCCESS : dwError;
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (pInitInfo->IpV6Addrs.dwCount != 0)
+    if (IpV6Addrs.dwCount != 0)
     {
         CHAR szAddr6[INET6_ADDRSTRLEN] = {0};
-        if (!(inet_ntop(AF_INET6, &(pInitInfo->IpV6Addrs.Addrs[0].IP6Byte), szAddr6, sizeof(szAddr6))))
+        if (!(inet_ntop(AF_INET6, &(IpV6Addrs.Addrs[0].IP6Byte), szAddr6, sizeof(szAddr6))))
         {
             VmAfdLog(VMAFD_DEBUG_DEBUG,"Error converting Ip address to text format");
             dwError = ERROR_BAD_FORMAT;
@@ -325,7 +352,8 @@ VmAfSrvUnconfigureDNSW(
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     )
 {
     DWORD dwError = 0;
@@ -333,6 +361,7 @@ VmAfSrvUnconfigureDNSW(
     PSTR pszDomainName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
+    PSTR pszSiteName = NULL;
 
     dwError = VmAfdAllocateStringAFromW(
                         pwszServerName,
@@ -354,11 +383,17 @@ VmAfSrvUnconfigureDNSW(
                         &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdAllocateStringAFromW(
+                        pwszSiteName,
+                        &pszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     dwError = VmAfSrvUnconfigureDNSA(
                         pszServerName,
                         pszDomainName,
                         pszUserName,
-                        pszPassword);
+                        pszPassword,
+                        pszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:
@@ -376,7 +411,8 @@ VmAfSrvUnconfigureDNSA(
     PCSTR   pszServerName,
     PCSTR   pszDomainName,
     PCSTR   pszUserName,
-    PCSTR   pszPassword
+    PCSTR   pszPassword,
+    PCSTR   pszSiteName
     )
 {
     DWORD                   dwError = 0;
@@ -386,7 +422,7 @@ VmAfSrvUnconfigureDNSA(
     DWORD                   numV4Address = 0;
     PVMDNS_IP6_ADDRESS      pV6Addresses = NULL;
     DWORD                   numV6Address = 0;
-    VMDNS_INIT_INFO         initInfo = {0};
+    VMDNS_INIT_SITE_INFO    initInfo = {0};
     CHAR                    szDomainFQDN[257] = {0};
     DWORD                   dwStrLen = 0;
 
@@ -422,6 +458,7 @@ VmAfSrvUnconfigureDNSA(
     initInfo.pszDcSrvName = pszCanonicalServerName;
     initInfo.pszDomain = szDomainFQDN;
     initInfo.wPort = VMDNS_DEFAULT_LDAP_PORT;
+    initInfo.pszSiteName = (PSTR) pszSiteName;
 
     dwError = VmDnsOpenServerA(
                 "localhost", /* always promote with local DNS */
@@ -433,7 +470,7 @@ VmAfSrvUnconfigureDNSA(
                 &pServerContext);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDnsUninitializeA(pServerContext, &initInfo);
+    dwError = VmDnsUninitializeWithSiteA(pServerContext, &initInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:

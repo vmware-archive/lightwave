@@ -592,7 +592,6 @@ VmwDeploySetupClientWithDC(
         {
             VMW_DEPLOY_LOG_INFO(
                 "Failed to join to Lightwave. Retrying...");
-            dwError = 0;
             ++dwRetryCount;
             continue;
         }
@@ -755,14 +754,13 @@ VmwDeploySetupClient(
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
-                    NULL,
+                    pParams->pszSite,
                     uJoinFlags
                     );
         if (dwError)
         {
             VMW_DEPLOY_LOG_INFO(
                 "Failed to join to Lightwave. Retrying...");
-            dwError = 0;
             ++dwRetryCount;
             continue;
         }

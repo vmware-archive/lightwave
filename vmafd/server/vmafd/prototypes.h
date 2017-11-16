@@ -330,6 +330,7 @@ VmAfdGetDomainController(
     PCSTR pszDomain,
     PCSTR pszUserName,
     PCSTR pszPassword,
+    PCSTR pszSiteName,          /* OPTIONAL */
     PSTR* ppszHostname,
     PSTR* ppszDCAddress
     );
@@ -349,7 +350,8 @@ VmAfSrvConfigureDNSW(
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName         /* OPTIONAL */
     );
 
 DWORD
@@ -358,7 +360,8 @@ VmAfSrvConfigureDNSA(
     PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUserName,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    PCSTR pszSiteName         /* OPTIONAL */
     );
 
 DWORD
@@ -366,7 +369,8 @@ VmAfSrvUnconfigureDNSW(
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     );
 
 DWORD
@@ -374,7 +378,8 @@ VmAfSrvUnconfigureDNSA(
     PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUserName,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    PCSTR pszSiteName
     );
 
 DWORD

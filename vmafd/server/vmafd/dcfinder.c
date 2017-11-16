@@ -56,6 +56,7 @@ VmAfdGetDomainController(
     PCSTR pszDomain,
     PCSTR pszUserName,
     PCSTR pszPassword,
+    PCSTR pszSiteName,          /* OPTIONAL */
     PSTR* ppszHostname,
     PSTR* ppszNetworkAddress
     )
@@ -76,11 +77,23 @@ VmAfdGetDomainController(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdAllocateStringPrintf(
-                    &pszQuestion,
-                    "_ldap._tcp.%s",
-                    pszDomain);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (IsNullOrEmptyString(pszSiteName))
+    {
+        dwError = VmAfdAllocateStringPrintf(
+                            &pszQuestion,
+                            "_ldap._tcp.%s",
+                            pszDomain);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdAllocateStringPrintf(
+                            &pszQuestion,
+                            "_ldap._tcp.%s._sites.%s",
+                            pszSiteName,
+                            pszDomain);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = LWNetDnsSrvQueryByQuestion(
                     pszQuestion,

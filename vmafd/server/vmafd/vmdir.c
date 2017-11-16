@@ -321,7 +321,8 @@ VmAfSrvPromoteVmDir(
                               pwszPNID,
                               pwszDomainName,
                               pwszUserName,
-                              pwszPassword);
+                              pwszPassword,
+                              pwszSiteName);
 
             if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
             {
@@ -392,7 +393,8 @@ VmAfSrvPromoteVmDir(
                               pwszPNID,
                               pwszDomainName,
                               pwszUserName,
-                              pwszPassword);
+                              pwszPassword,
+                              pwszSiteName);
 
             if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
             {
@@ -451,7 +453,6 @@ VmAfSrvPromoteVmDir(
                            pwszLotusServerName);
     BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
-
 #if 0
     dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);
     if(dwError)
@@ -498,6 +499,7 @@ VmAfSrvDemoteVmDir(
     )
 {
     DWORD dwError = 0;
+    PWSTR pwszSiteName = NULL;
     PWSTR pwszServerNameLocal = pwszServerName;
     PWSTR pwszServerName1 = NULL;
     PSTR pszUserName = NULL;
@@ -533,11 +535,15 @@ VmAfSrvDemoteVmDir(
     dwError = VmAfSrvGetDomainName(&pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfSrvGetSiteName(&pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     dwError = VmAfSrvUnconfigureDNSW(
                         pwszServerNameLocal,
                         pwszDomainName,
                         pwszUserName,
-                        pwszPassword);
+                        pwszPassword,
+                        pwszSiteName);
     if (dwError)
     {
         VmAfdLog(
@@ -579,6 +585,7 @@ VmAfSrvDemoteVmDir(
 
 cleanup:
 
+    VMAFD_SAFE_FREE_STRINGW(pwszSiteName);
     VMAFD_SAFE_FREE_STRINGW(pwszDomainName);
     VMAFD_SAFE_FREE_STRINGW(pwszServerName1);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
@@ -626,6 +633,7 @@ VmAfSrvJoinValidateCredentials(
                     pszDomainName,
                     pszUserName,
                     pszPassword,
+                    NULL,
                     &pszDCHostname,
                     &pszDCAddress);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -819,7 +827,7 @@ VmAfSrvJoinVmDir2(
     PWSTR            pwszPassword,       /* IN            */
     PWSTR            pwszMachineName,    /* IN   OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
-    PWSTR            pwszSiteName,       /* IN            */
+    PWSTR            pwszSiteName,       /* IN   OPTIONAL */
     VMAFD_JOIN_FLAGS dwFlags             /* IN            */
     )
 {
@@ -831,6 +839,7 @@ VmAfSrvJoinVmDir2(
     PSTR pszOrgUnit = NULL;
     PSTR pszDefaultRealm = NULL;
     PSTR pszHostname = NULL;
+    PSTR pszSiteName = NULL;
     PSTR pszCanonicalHostName = NULL;
     PSTR pszDCHostname = NULL;
     PSTR pszDCAddress = NULL;
@@ -909,10 +918,18 @@ VmAfSrvJoinVmDir2(
     }
     else
     {
+
+        if (pwszSiteName)
+        {
+            dwError = VmAfdAllocateStringAFromW(pwszSiteName, &pszSiteName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
         dwError = VmAfdGetDomainController(
                         pszDomainName,
                         pszUserName,
                         pszPassword,
+                        pszSiteName,
                         &pszDCHostname,
                         &pszDCAddress);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -986,7 +1003,6 @@ VmAfSrvJoinVmDir2(
     {
         dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSite);
         BAIL_ON_VMAFD_ERROR(dwError);
-
         pwszSiteName = pwszSite;
     }
 
@@ -1082,6 +1098,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
     VMAFD_SAFE_FREE_MEMORY(pwszSite);
     VMAFD_SAFE_FREE_MEMORY(pszHostname);
+    VMAFD_SAFE_FREE_MEMORY(pszSiteName);
     VMAFD_SAFE_FREE_MEMORY(pszCanonicalHostName);
     VMAFD_SAFE_FREE_MEMORY(pszDCAddress);
     VMAFD_SAFE_FREE_MEMORY(pszDCHostname);

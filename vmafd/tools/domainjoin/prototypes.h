@@ -17,6 +17,7 @@
  * @param[in]          pszPassword Password of the account used to perform the
  *                                 join.
  * @param[in,optional] pszOrgUnit  Organizational Unit to contain machine account
+ * @param[in,optional] pszSiteName Specific Site or region to join to
  */
 DWORD
 VmAfdJoinDomain(
@@ -24,6 +25,28 @@ VmAfdJoinDomain(
     PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszOrgUnit
+    );
+
+/**
+ * @brief Joins the local system to the specified VMware directory domain at a
+ * specific site
+ *
+ * @param[in]          pszDomain   Name of the domain to join
+ * @param[in,optional] pszUsername Account to be used to perform the join.
+ *                                 The "Administrator" account is used as the
+ *                                 default.
+ * @param[in]          pszPassword Password of the account used to perform the
+ *                                 join.
+ * @param[in,optional] pszOrgUnit  Organizational Unit to contain machine account
+ * @param[in,optional] pszSiteName Specific Site or region to join to
+ */
+DWORD
+VmAfdJoinDomainWithSite(
+    PCSTR pszDomain,
+    PCSTR pszUsername,
+    PCSTR pszPassword,
+    PCSTR pszOrgUnit,
+    PCSTR pszSiteName
     );
 
 /**

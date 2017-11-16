@@ -4299,7 +4299,7 @@ VmAfdIpcJoinVmDir2(
     PWSTR pwszMachineName = NULL;
     PWSTR pwszDomainName = NULL;
     PWSTR pwszOrgUnit = NULL;
-    PWSTR pwszSite = NULL;
+    PWSTR pwszSiteName = NULL;
     VMAFD_JOIN_FLAGS dwFlags = 0;
     int idx = 0;
 
@@ -4336,7 +4336,7 @@ VmAfdIpcJoinVmDir2(
     pwszPassword    = input_spec[idx++].data.pWString;
     pwszMachineName = input_spec[idx++].data.pWString;
     pwszOrgUnit     = input_spec[idx++].data.pWString;
-    pwszSite        = input_spec[idx++].data.pWString;
+    pwszSiteName    = input_spec[idx++].data.pWString;
     dwFlags         = *input_spec[idx++].data.pUint32;
 
     if (IsNullOrEmptyString(pwszUserName) ||
@@ -4361,7 +4361,7 @@ VmAfdIpcJoinVmDir2(
                       pwszPassword,
                       pwszMachineName,
                       pwszOrgUnit,
-                      pwszSite,
+                      pwszSiteName,
                       dwFlags);
     LOG_URESULT_ERROR(uResult);
 
@@ -5684,7 +5684,8 @@ VmAfdIpcConfigureDNS(
                    pwszPNID,
                    pwszDomainName,
                    pwszUserName,
-                   pwszPassword);
+                   pwszPassword,
+                   NULL);
     LOG_URESULT_ERROR(uResult);
 
     // Allocate a buffer, marshall the response
