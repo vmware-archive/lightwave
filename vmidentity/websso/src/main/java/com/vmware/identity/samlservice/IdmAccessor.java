@@ -258,7 +258,7 @@ public interface IdmAccessor {
      * Return all external idps for the tenant.
      * @return
      */
-    Collection<IDPConfig> getExternalIdps();
+    Collection<IDPConfig> getExternalIdps(String protocol);
 
     /**
      * Return brand name for the tenant.

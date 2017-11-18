@@ -123,7 +123,7 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
 
                 for (String tenant:tenants) {
                     accessor.setTenant(tenant);
-                    Collection<IDPConfig> IdpConfigs = accessor.getExternalIdps();
+                    Collection<IDPConfig> IdpConfigs = accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0);
 
                     if (null == IdpConfigs || IdpConfigs.isEmpty()) {
                         break;

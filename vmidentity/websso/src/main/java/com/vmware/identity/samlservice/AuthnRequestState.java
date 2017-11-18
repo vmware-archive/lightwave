@@ -807,7 +807,7 @@ public class AuthnRequestState {
     }
 
     /**
-     * @param isExistRequest the isExistRequest to set
+     * @param isExistingRequest the isExistRequest to set
      */
     public void setIsExistingRequest(boolean isExistingRequest) {
     	this.isExistingRequest = isExistingRequest;
@@ -983,7 +983,12 @@ public class AuthnRequestState {
     public void createSession(String externalIDPsessionIndex, String externalIdpId) throws SamlServiceException {
 
         Session currentSession = this.sessionManager.createSession(
-                this.principalId,this.authnMethod, externalIDPsessionIndex,externalIdpId);
+                                                        this.principalId,
+                                                        this.authnMethod,
+                                                        externalIDPsessionIndex,
+                                                        externalIdpId,
+                                                        IDPConfig.IDP_PROTOCOL_SAML_2_0
+                                                        );
         this.setSessionId(currentSession.getId());
     }
 

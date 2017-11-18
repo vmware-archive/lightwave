@@ -19,6 +19,7 @@ package com.vmware.identity.idm.server.config.directory;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -4287,7 +4288,10 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
 
     public static final String PROPERTY_NAME = CN;
     public static final String PROPERTY_ENTITY_ID = "vmwSTSEntityId";
+    public static final String PROPERTY_PROTOCOL = "vmwSTSExternalIdpProtocol";
     public static final String PROPERTY_ALIAS = "vmwSTSAlias";
+    public static final String PROPERTY_CLIENT_ID = "vmwSTSExternalIdpClientId";
+    public static final String PROPERTY_PUBLIC_KEY = "vmwSTSPublicKey";
     public static final String PROPERTY_NAME_ID_FORMAT = "vmwSTSNameIDFormat";
     public static final String PROPERTY_JIT_FORMAT = "vmwSTSExternalIdpEnableJit";
     public static final String PROPERTY_UPN_SUFFIX = "vmwSTSExternalIdpUpnSuffix";
@@ -4336,6 +4340,24 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                 }
                         ),
                         new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_PROTOCOL,
+                                1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        //no-Op
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getProtocol());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
                                 PROPERTY_ALIAS,
                                 -1,
                                 true,
@@ -4351,6 +4373,25 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                     {
                                         ValidateUtil.validateNotNull(config, "config");
                                         return ServerUtils.getLdapValue(config.getAlias());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_CLIENT_ID,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                        idpConfig.setClientId(ServerUtils.getStringValue(value));
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getClientId());
                                     }
                                 }
                         ),
@@ -4410,6 +4451,25 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                         return ServerUtils.getLdapValue(config.getUpnSuffix());
                                     }
                                 }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_PUBLIC_KEY,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                        idpConfig.setPublicKey(ServerUtils.getPublicKeyValue(value));
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getPublicKey());
+                                    }
+                                }
                         )
                 }
             );
@@ -4421,11 +4481,18 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
     @Override
     protected IDPConfig createObject(List<LdapValue[]> ctorParams)
     {
-        if (ctorParams == null || ctorParams.size() != 1)
+        if (ctorParams == null || ctorParams.size() != 2)
         {
-            throw new IllegalArgumentException("size of ctorParams needs to be 1 for class IDPConfig");
+            throw new IllegalArgumentException("size of ctorParams needs to be 2 for class IDPConfig");
         }
-        return new IDPConfig(ServerUtils.getStringValue(ctorParams.get(0)));
+        String protocol = ServerUtils.getStringValue(ctorParams.get(1));
+        if (protocol == null || protocol.isEmpty()) {
+            return new IDPConfig(ServerUtils.getStringValue(ctorParams.get(0)));
+        } else {
+            return new IDPConfig(
+                    ServerUtils.getStringValue(ctorParams.get(0)), // Entity ID
+                    protocol);  // Protocol
+        }
     }
 }
 

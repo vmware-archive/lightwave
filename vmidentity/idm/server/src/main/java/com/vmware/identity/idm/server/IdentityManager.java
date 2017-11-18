@@ -7698,8 +7698,14 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "[tenantname]");
             ValidateUtil.validateNotNull(idpConfig, "[idpConfig]");
 
-            // validate IDP config has all the required meta data before registering..
-            ValidateUtil.validateNotEmpty(idpConfig.getSigningCertificateChain(), "[idpConfig.signingCertificates]");
+            String protocol = idpConfig.getProtocol();
+            IDPConfig.validateProtocol(protocol);
+            if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
+                // validate IDP config has all the required meta data before registering..
+                ValidateUtil.validateNotEmpty(idpConfig.getSigningCertificateChain(), "[idpConfig.signingCertificates]");
+            } else if (protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                ValidateUtil.validateNotNull(idpConfig.getPublicKey(), "[idpConfig.publicKey]");
+            }
 
             // validate groups exist in system domain before setting claim group mappings
             Map<TokenClaimAttribute, List<String>> claimGroupMappings = idpConfig.getTokenClaimGroupMappings();
@@ -7790,6 +7796,33 @@ public class IdentityManager implements IIdentityManager {
             throw e;
         }
             }
+
+    private
+    Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, String protocol)
+            throws Exception
+    {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotEmpty(protocol, "protocol");
+
+            TenantInformation tenantInfo = getTenantInfo(tenantName);
+            if (tenantInfo == null)
+            {
+                throw new NoSuchTenantException(String.format("Tenant [%s] not found", tenantName));
+            }
+            else
+            {
+                return tenantInfo.getExternalIdpConfigs(protocol);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error(String.format(
+                    "Failed to get all external IDP for tenant [%s]",
+                    tenantName));
+            throw e;
+        }
+    }
 
     private
     IDPConfig getExternalIdpForTenant(String tenantName,
@@ -11105,6 +11138,21 @@ public class IdentityManager implements IIdentityManager {
             try
             {
                 return this.getAllExternalIdpsForTenant(tenantName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, String protocol, IIdmServiceContext serviceContext) throws NoSuchTenantException, IDMException {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getAllExternalIdpsForTenant"))
+        {
+            try
+            {
+                return this.getAllExternalIdpsForTenant(tenantName, protocol);
             }
             catch(Exception ex)
             {

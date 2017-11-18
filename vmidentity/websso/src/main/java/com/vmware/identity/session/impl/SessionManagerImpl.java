@@ -102,7 +102,7 @@ public class SessionManagerImpl implements SessionManager {
      */
     @Override
     public Session createSession(PrincipalId principal, AuthnMethod authMethod,
-            String externalIDPSessionId, String idpEntId)
+            String externalIDPSessionId, String idpEntId, String protocol)
                     throws SamlServiceException {
 
         Validate.notNull(principal, "user principalId");
@@ -119,7 +119,7 @@ public class SessionManagerImpl implements SessionManager {
                 Validate.notEmpty(idpEntId, "Need idpEntId for creating external authenticated session");
 
                 currentSession.setUsingExtIDP(true);
-                currentSession.setExtIDPToUsed(new IDPConfig(idpEntId));
+                currentSession.setExtIDPToUsed(new IDPConfig(idpEntId, protocol));
                 currentSession.setExtIDPSessionID(externalIDPSessionId);
              }
             add(currentSession);

@@ -79,7 +79,7 @@ public class ExternalIDPResource extends BaseSubResource {
         Collection<ExternalIDPDTO> externalIDPs = null;
 
         try {
-            Collection<IDPConfig> configs = getIDMClient().getAllExternalIdpConfig(tenant);
+            Collection<IDPConfig> configs = getIDMClient().getAllExternalIdpConfig(tenant, IDPConfig.IDP_PROTOCOL_SAML_2_0);
             externalIDPs = ExternalIDPMapper.getExternalIDPDTOs(configs);
         } catch (NoSuchTenantException e) {
             log.warn("Failed to retrieve external identity providers for tenant '{}'", tenant, e);

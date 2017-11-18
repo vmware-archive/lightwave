@@ -609,11 +609,11 @@ public class CasIdmAccessor implements IdmAccessor {
     }
 
     @Override
-    public Collection<IDPConfig> getExternalIdps() {
+    public Collection<IDPConfig> getExternalIdps(String protocol) {
         logger.debug("getExternalIdps");
         Collection<IDPConfig> idps = Collections.emptyList();
         try {
-            idps = client.getAllExternalIdpConfig(tenant);
+            idps = client.getAllExternalIdpConfig(tenant, protocol);
         } catch (Exception e) {
             logger.debug("Caught exception ", e);
             throw new IllegalStateException("BadRequest", e);

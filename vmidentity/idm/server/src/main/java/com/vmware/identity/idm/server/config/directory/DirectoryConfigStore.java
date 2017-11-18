@@ -31,6 +31,7 @@ package com.vmware.identity.idm.server.config.directory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -1897,12 +1898,15 @@ public class DirectoryConfigStore implements IConfigStore {
 	    saveObjectsCollection(connection, ldapObjDN, ContainerLdapObject.CONTAINER_EXTERNAL_IDP_SLO_SERVICES,
 		    SingleLogoutServiceLdapObject.getInstance(), idpConfig.getSloServices(), null);
 
-	    TenantTrustedCertificateChain certChain = new TenantTrustedCertificateChain("TrustedCertChain",
-		    new ArrayList<Certificate>(idpConfig.getSigningCertificateChain()));
-	    // For now, only one trusted certificate chain in this container.
-	    Collection<TenantTrustedCertificateChain> chains = Arrays.asList(certChain);
-	    saveObjectsCollection(connection, ldapObjDN, ContainerLdapObject.CONTAINER_EXTERNAL_IDP_CERTIFICATE_CHAINS,
-		    TenantTrustedCertChainLdapObject.getInstance(), chains, null);
+		List<X509Certificate> signingCertificateChain = idpConfig.getSigningCertificateChain();
+		if (signingCertificateChain != null && !signingCertificateChain.isEmpty()) {
+			TenantTrustedCertificateChain certChain = new TenantTrustedCertificateChain("TrustedCertChain",
+					new ArrayList<Certificate>(signingCertificateChain));
+			// For now, only one trusted certificate chain in this container.
+			Collection<TenantTrustedCertificateChain> chains = Arrays.asList(certChain);
+			saveObjectsCollection(connection, ldapObjDN, ContainerLdapObject.CONTAINER_EXTERNAL_IDP_CERTIFICATE_CHAINS,
+					TenantTrustedCertChainLdapObject.getInstance(), chains, null);
+		}
 
 	    Collection<AttributeMapping> attributeMappings = new ArrayList<AttributeMapping>();
 
@@ -1997,16 +2001,19 @@ public class DirectoryConfigStore implements IConfigStore {
 				    ContainerLdapObject.CONTAINER_EXTERNAL_IDP_SLO_SERVICES,
 				    SingleLogoutServiceLdapObject.getInstance(), null));
 
-			    try {
-				idpConfig.setSigningCertificateChain(retrieveExternalIDPConfigSigningCertificates(
-					connection, idpConfigDN));
-			    } catch (IDMException ie) {
-				String message = "Signing certifiate chain retrieved from directory store"
-					+ "is invalid, most likely certs are out of required order"
-					+ "(user first, root cast last)";
-				logger.error(message);
-				throw new IllegalStateException(message);
-			    }
+			    String protocol = idpConfig.getProtocol();
+			    if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
+					try {
+						idpConfig.setSigningCertificateChain(retrieveExternalIDPConfigSigningCertificates(
+								connection, idpConfigDN));
+					} catch (IDMException ie) {
+						String message = "Signing certifiate chain retrieved from directory store"
+								+ "is invalid, most likely certs are out of required order"
+								+ "(user first, root cast last)";
+						logger.error(message);
+						throw new IllegalStateException(message);
+					}
+				}
 
 			    AttributeConfig[] subjectFormatMappings = retrieveSubjectFormatMap(connection, idpConfigDN);
 			    Map<TokenClaimAttribute, List<String>> tokenClaimGroupMappings = retrieveClaimGroupMap(

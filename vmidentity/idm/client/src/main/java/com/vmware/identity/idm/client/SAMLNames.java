@@ -108,8 +108,6 @@ public class SAMLNames
     public static final String XMLLANG = "xml:lang";
     public static final String ENGLISH = "en";
     public static final String PSE = "protocolSupportEnumeration";
-    public static final String REQUIREDPROTOCAL =
-            "urn:oasis:names:tc:SAML:2.0:protocol";
     public static final String FALSE = "false";
     public static final String TRUE = "true";
     public static final String NAME = "Name";

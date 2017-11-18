@@ -19418,6 +19418,38 @@ attributetypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.107
+    NAME 'vmwSTSExternalIdpProtocol'
+    DESC 'VMWare identity Service - External IDP Protocol'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.108
+    NAME 'vmwSTSExternalIdpClientId'
+    DESC 'VMWare identity Service - External IDP ClientId'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.109
+    NAME 'vmwSTSExternalIdpClientSecret'
+    DESC 'VMWare identity Service - External IDP ClientSecret'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.110
+    NAME 'vmwSTSPublicKey'
+    DESC 'VMWare identity Service - PublicKey'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19670,6 +19702,10 @@ objectClasses: (
          $ vmwSTSExternalIdpEnableJit
          $ vmwSTSExternalIdpUpnSuffix
          $ vmwSTSAlias
+         $ vmwSTSExternalIdpProtocol
+         $ vmwSTSExternalIdpClientId
+         $ vmwSTSExternalIdpClientSecret
+         $ vmwSTSPublicKey
        )
    )
 

@@ -667,6 +667,26 @@ public class CasIdmClient
     }
 
     /**
+     * Get all external IDP configurations for the specified tenant
+     *
+     * @param tenantName
+     *            Cannot be null or empty
+     * @return Collection of external IDP configuration for the tenant, empty if
+     *         none are found
+     * @throws Exception
+     * @throws IDMException
+     * @throws InvalidArgumentException
+     *             argument validation failed
+     * @throws NoSuchTenantException
+     *             tenant not found
+     */
+    public Collection<IDPConfig> getAllExternalIdpConfig(String tenantName, String protocol)
+            throws Exception
+    {
+        return getService().getAllExternalIdpsForTenant(tenantName, protocol, this.getServiceContext());
+    }
+
+    /**
      * Get trust anchors for all the IDP configurations of the specified tenant.
      *
      * @param tenantName cannot be null or empty
