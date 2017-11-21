@@ -44,6 +44,7 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
+import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
@@ -382,6 +383,7 @@ public class TenantResource extends BaseResource {
         ProviderPolicyDTO providerPolicy = configurationDTO.getProviderPolicy();
         BrandPolicyDTO brandPolicy = configurationDTO.getBrandPolicy();
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
+        LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
 
         try {
 
@@ -422,6 +424,12 @@ public class TenantResource extends BaseResource {
                 AuthnPolicy authnPolicy = AuthenticationPolicyMapper.getAuthenticationPolicy(authenticationPolicy);
                 getIDMClient().setAuthnPolicy(tenantName, authnPolicy);
                 configBuilder.withAuthenticationPolicy(getAuthenticationPolicy(tenantName));
+            }
+
+            if (lockoutPolicy != null) {
+                LockoutPolicy idmLockoutPolicy = LockoutPolicyMapper.getLockoutPolicy(lockoutPolicy);
+                getIDMClient().setLockoutPolicy(tenantName, idmLockoutPolicy);
+                configBuilder.withLockoutPolicy(getLockoutPolicy(tenantName));
             }
 
             return configBuilder.build();
@@ -575,7 +583,7 @@ public class TenantResource extends BaseResource {
     private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
         ProviderPolicyDTO providerPolicyDTO = null;
         Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
-        if (defaultProviders != null) {
+        if (defaultProviders != null && !defaultProviders.isEmpty()) {
             IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName,
                     defaultProviders.iterator().next());
             providerPolicyDTO = ProviderPolicyMapper.getProviderPolicyDTO(
