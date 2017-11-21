@@ -30,6 +30,7 @@ import com.vmware.identity.rest.idm.data.TokenClaimGroupDTO;
 public class ExternalIdpGenerator {
 
     private static final String TEST_IDP_NAME = "external.test.integration";
+    private static final String IDP_PROTOCOL_SAML_2_0 = "urn:oasis:names:tc:SAML:2.0:protocol";
 
     public static ExternalIDPDTO generateExternalIDP(CertificateDTO certificate) throws GeneralSecurityException, IOException {
         return new ExternalIDPDTO.Builder()
@@ -42,6 +43,7 @@ public class ExternalIdpGenerator {
         .withSubjectFormats(getSubjectFormats())
         .withNameIDFormats(getNameIDFormats())
         .withTokenClaimGroups(getTokenClaimGroups(TEST_IDP_NAME))
+        .withProtocol(IDP_PROTOCOL_SAML_2_0)
         .build();
     }
 
