@@ -48,15 +48,6 @@ _VmDirRESTFormEncodedParam(
     );
 
 static
-DWORD
-_VmDirRESTProxyReadRequest(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_REQUEST           pRequest,
-    DWORD                   dwParamCount
-    );
-
-static
 size_t
 _VmDirRESTWriteResponseCallback(
     PVOID   pMemPointer,
@@ -68,8 +59,15 @@ _VmDirRESTWriteResponseCallback(
 static
 DWORD
 _VmDirRESTCurlToHttpCode(
-        DWORD   dwCurlError
-        );
+    DWORD   dwCurlError
+    );
+
+static
+BOOL
+_VmDirRESTProxyIsRetriableError(
+    DWORD   dwCurlError,
+    DWORD   statusCode
+    );
 
 DWORD
 VmDirRESTForwardRequest(
@@ -83,6 +81,7 @@ VmDirRESTForwardRequest(
     DWORD                   dwError = 0;
     DWORD                   dwCurlError = 0;
     DWORD                   statusCode = 0;
+    DWORD                   dwNumRetry = 0;
     CURL*                   pCurlHandle = NULL;
     PSTR                    pszURL = NULL;
     PSTR                    pszLeader = NULL;
@@ -97,18 +96,6 @@ VmDirRESTForwardRequest(
     if (!pRestOp || !pRequest || !pRESTHandle)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = _VmDirRESTProxyReadRequest(
-            pRestOp, pRESTHandle, pRequest, dwParamCount);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Get the leader for forwarding if leader not set no use of proceeding
-    dwError = VmDirRaftGetLeader(&pszLeader);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    if (!pszLeader)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_LEADER);
     }
 
     pCurlHandle = curl_easy_init();
@@ -206,17 +193,6 @@ VmDirRESTForwardRequest(
         BAIL_ON_CURL_ERROR(dwCurlError);
     }
 
-    // set http URL
-    dwError = _VmDirRESTFormHttpURL(
-            pRestOp,
-            pszLeader,
-            bHttpRequest,
-            &pszURL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_URL, pszURL);
-    BAIL_ON_CURL_ERROR(dwCurlError);
-
     // set the appropiate method
     dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_CUSTOMREQUEST, pRestOp->pszMethod);
     BAIL_ON_CURL_ERROR(dwCurlError);
@@ -241,9 +217,56 @@ VmDirRESTForwardRequest(
             gVmdirGlobals.dwProxyCurlTimeout);
     BAIL_ON_CURL_ERROR(dwCurlError);
 
-    // send the request to leader
-    dwCurlError = curl_easy_perform(pCurlHandle);
-    BAIL_ON_CURL_ERROR(dwCurlError);
+    while (dwNumRetry++ < VMDIR_REST_MAX_RETRY)
+    {
+        statusCode = 0;
+
+        VMDIR_SAFE_FREE_MEMORY(pszLeader);
+        dwError = VmDirRaftGetLeader(&pszLeader);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pszLeader)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pszURL);
+            // set http URL
+            dwError = _VmDirRESTFormHttpURL(
+                    pRestOp,
+                    pszLeader,
+                    bHttpRequest,
+                    &pszURL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwCurlError = curl_easy_setopt(pCurlHandle, CURLOPT_URL, pszURL);
+            BAIL_ON_CURL_ERROR(dwCurlError);
+
+            // send the request to leader
+            dwCurlError = curl_easy_perform(pCurlHandle);
+
+            // if curl error is not set then get the status
+            if (!dwCurlError)
+            {
+                dwCurlError = curl_easy_getinfo(pCurlHandle, CURLINFO_RESPONSE_CODE, &statusCode);
+                BAIL_ON_CURL_ERROR(dwCurlError);
+            }
+
+            if (!_VmDirRESTProxyIsRetriableError(dwCurlError, statusCode))
+            {
+                break;
+            }
+
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "Proxy request failed. Will retry from %s to leader: %s",
+                    VDIR_SAFE_STRING(pRestOp->pszClientIP),
+                    pszLeader);
+        }
+        else
+        {
+            dwError = VMDIR_ERROR_NO_LEADER;
+        }
+
+        VmDirSleep(VMDIR_REST_RETRY_INTERVAL_MS);
+    }
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
@@ -251,9 +274,6 @@ VmDirRESTForwardRequest(
             VDIR_SAFE_STRING(pRestOp->pszClientIP),
             VDIR_SAFE_STRING(pszLeader),
             VMDIR_RESPONSE_TIME(VmDirGetTimeInMilliSec()-uiStartTime));
-    // set error
-    dwCurlError = curl_easy_getinfo(pCurlHandle, CURLINFO_RESPONSE_CODE, &statusCode);
-    BAIL_ON_CURL_ERROR(dwCurlError);
 
 cleanup:
     _VmDirSetProxyResult(
@@ -636,89 +656,6 @@ error:
 }
 
 static
-DWORD
-_VmDirRESTProxyReadRequest(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_REQUEST           pRequest,
-    DWORD                   dwParamCount
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   bytesRead = 0;
-    DWORD   len = 0;
-    DWORD   i = 0;
-    PSTR    pszInput = NULL;
-    PSTR    pszKey = NULL;
-    PSTR    pszVal = NULL;
-
-    if (!pRestOp || !pRESTHandle || !pRequest)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    // request method
-    dwError = VmRESTGetHttpMethod(pRequest, &pRestOp->pszMethod);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // auth header
-    dwError = VmRESTGetHttpHeader(pRequest, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // if-match
-    dwError = VmRESTGetHttpHeader(pRequest, VMDIR_REST_HEADER_IF_MATCH, &pRestOp->pszHeaderIfMatch);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Content-type
-    dwError = VmRESTGetHttpHeader(pRequest, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // read request input json
-    do
-    {
-        if (bytesRead || !pszInput)
-        {
-            dwError = VmDirReallocateMemoryWithInit(
-                    (PVOID)pszInput,
-                    (PVOID*)&pszInput,
-                    len + MAX_REST_PAYLOAD_LENGTH + 1,  // +1 for NULL char
-                    len);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        bytesRead = 0;
-        dwError = VmRESTGetData(
-                pRESTHandle, pRequest, pszInput + len, &bytesRead);
-
-        len += bytesRead;
-    }
-    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pRestOp->pszInput = pszInput;
-
-    // Read request params
-    for (i = 1; i <= dwParamCount; i++)
-    {
-        dwError = VmRESTGetParamsByIndex(pRequest, dwParamCount, i, &pszKey, &pszVal);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = LwRtlHashMapInsert(pRestOp->pParamMap, pszKey, pszVal, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pszKey = NULL;
-        pszVal = NULL;
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_STRINGA(pszInput);
-    goto cleanup;
-}
-
-static
 size_t
 _VmDirRESTWriteResponseCallback(
     PVOID   pMemPointer,
@@ -777,6 +714,10 @@ _VmDirRESTCurlToHttpCode(
 
     switch(dwCurlError)
     {
+        case CURLE_OK:
+            httpStatus = HTTP_OK;
+            break;
+
         case CURLE_COULDNT_RESOLVE_PROXY:
         case CURLE_COULDNT_RESOLVE_HOST:
         case CURLE_COULDNT_CONNECT:
@@ -796,4 +737,33 @@ _VmDirRESTCurlToHttpCode(
     }
 
     return httpStatus;
+}
+
+static
+BOOL
+_VmDirRESTProxyIsRetriableError(
+    DWORD   dwCurlError,
+    DWORD   statusCode
+    )
+{
+    DWORD   httpStatus = 0;
+    BOOL    bReturn = FALSE;
+
+    if (statusCode)
+    {
+        httpStatus = statusCode;
+    }
+    else
+    {
+        httpStatus = _VmDirRESTCurlToHttpCode(dwCurlError);
+    }
+
+    if (httpStatus == HTTP_REQUEST_TIMEOUT || // 408
+        httpStatus == HTTP_NETWORK_CONNECT_TIMEOUT_ERROR || // 599
+        httpStatus == HTTP_SERVICE_UNAVAILABLE) // 503
+    {
+        bReturn = TRUE;
+    }
+
+    return bReturn;
 }

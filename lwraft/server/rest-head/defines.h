@@ -30,6 +30,10 @@
 #define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
 #define VMDIR_V1_METRICS_RESOURCE   "/v1/post/metrics"
 
+// Retry for proxy
+#define VMDIR_REST_MAX_RETRY            4
+#define VMDIR_REST_RETRY_INTERVAL_MS    1000
+
 // Lightwave
 #define VMDIR_REST_LIGHTWAVE_LDAP_PORT      389
 
