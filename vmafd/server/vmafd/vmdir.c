@@ -993,13 +993,31 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfSrvSetSiteName(pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvSetDNSRecords(
+    if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_DISABLE_DNS))
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: Configuring DNS records",
+                 __FUNCTION__);
+        dwError = VmAfSrvSetDNSRecords(
                       pszDC,
                       pszDomainName,
                       pszUserName,
                       pszPassword,
                       pszMachineName);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        VmAfdLog(VMAFD_DEBUG_ERROR,
+                 "%s: Failed to configure DNS records with error: [%d]",
+                 __FUNCTION__,
+                 dwError);
+        dwError = 0;
+    }
+    else
+    {
+        dwError = VmAfdRegSetInteger(
+                              VMAFD_REG_KEY_ENABLE_DDNS,
+                              FALSE
+                              );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
 #if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_NSSWITCH))

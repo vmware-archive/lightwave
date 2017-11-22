@@ -34,6 +34,7 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
+    BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
@@ -200,6 +201,7 @@ ParseArgs(
     BOOLEAN bDisableAfdListener = FALSE;
     BOOLEAN bUseMachineAccount = FALSE;
     BOOLEAN bMachinePreJoined = FALSE;
+    BOOLEAN bDisableDNS = FALSE;
 
     enum PARSE_MODE
     {
@@ -244,6 +246,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--disable-afd-listener"))
                 {
                     bDisableAfdListener = TRUE;
+                }
+                else if (!strcmp(pszArg, "--disable-dns"))
+                {
+                    bDisableDNS = TRUE;
                 }
                 else if (!strcmp(pszArg, "--use-machine-account") ||
                          !strcmp(pszArg, "--use-machine-accout"))
@@ -378,6 +384,7 @@ ParseArgs(
                     pszPassword,
                     pszSubjectAltName,
                     bDisableAfdListener,
+                    bDisableDNS,
                     bUseMachineAccount,
                     bMachinePreJoined,
                     &pSetupParams);
@@ -411,6 +418,7 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
+    BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
@@ -491,6 +499,7 @@ VmwDeployBuildParams(
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     pSetupParams->bDisableAfdListener = bDisableAfdListener;
+    pSetupParams->bDisableDNS = bDisableDNS;
     pSetupParams->bUseMachineAccount = bUseMachineAccount;
     pSetupParams->bMachinePreJoined = bMachinePreJoined;
 
@@ -611,6 +620,7 @@ ShowUsage(
            "[--machine-account-name <preferred computer account name. default: <hostname>]\n"
            "[--org-unit <organizational unit. default: Computers]\n"
            "[--disable-afd-listener]\n"
+           "[--disable-dns]\n"
            "[--use-machine-accout] Use machine account credentials to join\n"
            "[--prejoined] Machine account is already created in directory \n"
            "[--password  <password to administrator account>]\n"

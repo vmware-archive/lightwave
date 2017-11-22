@@ -63,6 +63,7 @@ typedef struct _VMW_IC_SETUP_PARAMS
     PSTR pszSubjectAltName;
 
     BOOLEAN bDisableAfdListener;
+    BOOLEAN bDisableDNS;
     BOOLEAN bUseMachineAccount;
     BOOLEAN bMachinePreJoined;
 
