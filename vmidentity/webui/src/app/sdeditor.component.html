@@ -1,0 +1,194 @@
+<ng-template #ownerDropdown>
+   <clr-dropdown>
+       <button style="width:400px;" type="button" class="btn btn-outline-primary" clrDropdownTrigger>
+           {{selectedOwner}}<clr-icon shape="caret down"></clr-icon>
+       </button>
+       <clr-dropdown-menu *clrIfOpen>
+           <label class="dropdown-header">Choose User/Group</label>
+           <clr-dropdown>
+               <button type="button" clrDropdownTrigger>Well-known Accounts</button>
+               <clr-dropdown-menu>
+               <clr-datagrid style="height:280px;">
+                   <clr-dg-column>Well-known Accounts
+                       <clr-dg-string-filter [clrDgStringFilter]="builtinFilter"></clr-dg-string-filter>
+                   </clr-dg-column>
+                   <clr-dg-row *clrDgItems="let act of wellKnownActs">
+                       <clr-dg-cell clrDropdownItem (click)="selectedAcct = act; selectedOwner = act">{{act}}</clr-dg-cell>
+                   </clr-dg-row>
+               </clr-datagrid>
+               </clr-dropdown-menu>
+           </clr-dropdown>
+           <clr-dropdown>
+               <button type="button" clrDropdownTrigger>Users</button>
+               <clr-dropdown-menu>
+               <clr-datagrid style="height:280px;">
+                   <clr-dg-column>System Users
+                       <clr-dg-string-filter [clrDgStringFilter]="userFilter"></clr-dg-string-filter>
+                   </clr-dg-column>
+                   <clr-dg-row *clrDgItems="let user of usersArr">
+                       <clr-dg-cell clrDropdownItem (click)="selectedAcct = user;selectedOwner = user.dn">{{user.cn}}</clr-dg-cell>
+                   </clr-dg-row>
+               </clr-datagrid>
+               </clr-dropdown-menu>
+           </clr-dropdown>
+           <clr-dropdown>
+               <button type="button" clrDropdownTrigger>Groups</button>
+               <clr-dropdown-menu>
+               <clr-datagrid style="height:280px;">
+                   <clr-dg-column>System Groups
+                       <clr-dg-string-filter [clrDgStringFilter]="groupFilter"></clr-dg-string-filter>
+                   </clr-dg-column>
+                   <clr-dg-row *clrDgItems="let group of groupsArr">
+                       <clr-dg-cell clrDropdownItem (click)="selectedAcct = group; selectedOwner = group.dn">{{group.cn}}</clr-dg-cell>
+                   </clr-dg-row>
+               </clr-datagrid>
+               </clr-dropdown-menu>
+           </clr-dropdown>
+       </clr-dropdown-menu>
+   </clr-dropdown>
+   <div class='btn-group' *ngIf="isOwnerEdited" style="float:right;">
+       <button class="btn btn-outline btn-sm" (click)="isOwnerEdited = false;">
+           <clr-icon shape="times" class="is-solid is-error" style="width: 16px; height: 16px;"></clr-icon> Cancel
+       </button>
+       <button class="btn btn-primary btn-sm" (click)="setOwner(selectedAcct); isOwnerEdited = false;">
+           Submit
+       </button>
+   </div>
+</ng-template>
+
+<div class="card" *ngIf="display=='sdEditor';">
+   <div class="card-header">
+       {{rootDn}}
+   </div>
+   <div class="card-block">
+       <div class="card-text">
+           <table class="table table-vertical">
+               <tbody>
+                   <tr>
+                       <th width="15%" style="font-size:14px;">Owner</th>
+                       <td width="85%" *ngIf="!isOwnerEdited;else ownerDropdown" style="font-size:14px">{{owner}}
+                           <button *ngIf="true" class="btn btn-sm btn-outline" style="float:right;" (click)="isOwnerEdited = true;">
+                               <clr-icon shape="pencil" class="is-warning" style="width: 16px; height: 16px;"></clr-icon> Edit
+                           </button>
+                       </td>
+                   </tr>
+               <tbody>
+           </table>
+       </div>
+    </div>
+    <div class="card-block">
+        <div class="card-text">
+            <clr-datagrid id="daclgrid" [(clrDgSingleSelected)]="selectedAce" style="max=height:250px;overflow:auto;">
+                <clr-dg-action-bar>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-secondary" (click)="prepareNewAce();display='addAce';"><clr-icon shape="plus"></clr-icon> Add ACE</button>
+                    </div>
+                </clr-dg-action-bar>
+
+                <clr-dg-column style='width:96px;'>Type</clr-dg-column>
+                <clr-dg-column style='width:116px;'>Inherited from</clr-dg-column>
+                 <clr-dg-column style="width:350px;">Trustee</clr-dg-column>
+                <clr-dg-column>Applies To</clr-dg-column>
+                <clr-dg-row *clrDgItems="let ace of dacl.aces;" [clrDgItem]="ace" (click)="clickAce()">
+                    <clr-dg-cell>{{ace.type}}</clr-dg-cell>
+                    <clr-dg-cell>{{ace.inheritedFrom}}</clr-dg-cell>
+                    <clr-dg-cell>{{ace.account}}</clr-dg-cell>
+                    <clr-dg-cell>{{ace.appliesTo}}</clr-dg-cell>
+                </clr-dg-row>
+            </clr-datagrid>
+        </div>
+    </div>
+    <div class="card-block" *ngIf="selectedAce">
+        <div class="card-title">
+            Rights [{{selectedAce.account}}]
+            <div class="btn-group" style="float:right;">
+                <button *ngIf="!isRightsEdited" class="btn-sm btn btn-outline" (click)="isRightsEdited = true;">
+                    <clr-icon shape="pencil" class="is-warning" style="width: 16px; height: 16px;"></clr-icon> Edit
+                </button>
+                <button *ngIf="isRightsEdited" class="btn-sm btn btn-outline" (click)="isRightsEdited = false;">
+                    <clr-icon shape="times" class="is-solid is-error" style="width: 16px; height: 16px;"></clr-icon> Cancel
+                </button>
+                <button *ngIf="isRightsEdited" class="btn-sm btn btn-primary" (click)="onSubmit(selectedAce)">
+                     Submit
+               </button>
+            </div>
+        </div>
+        <div class="card-text" style="max-height:260px;overflow:auto;width:100%;">
+            <fieldset class='group'>
+              <form #sdform='ngForm'>
+                <div class="row">
+                    <div class="col-lg-4 col-md-6 col-sm-8 col-xs-8">
+                        <clr-checkbox [clrDisabled]="!isRightsEdited"  name="{{right}}" [(ngModel)]="selectedAce.rightsMap[right]" *ngFor="let right of allRights | slice:0:9" [clrInline]="false">{{right}}</clr-checkbox>
+                    </div>
+                    <div class="col-lg-4 col-md-6 col-sm-8 col-xs-8">
+                        <clr-checkbox name="{{right}}" [clrDisabled]="!isRightsEdited" [(ngModel)]="selectedAce.rightsMap[right]" *ngFor="let right of allRights | slice:9:18" [clrInline]="false">{{right}}</clr-checkbox>
+                    </div>
+                    <div class="col-lg-4 col-md-6 col-sm-8 col-xs-8">
+                        <clr-checkbox name="{{right}}" [clrDisabled]="!isRightsEdited" [(ngModel)]="selectedAce.rightsMap[right]" *ngFor="let right of allRights | slice:18:28" [clrInline]="false">{{right}}</clr-checkbox>
+                    </div>
+                 </div>
+               </form>
+             </fieldset>
+         </div>
+    </div>
+</div>
+<div class='card' *ngIf="display=='addAce'" style="min-width:350px;">
+     <div class="card-header">
+       New ACE for [{{rootDn}}]
+     </div>
+     <div class="card-block">
+       <div class="card-text">
+           <table class="table table-vertical">
+               <tbody>
+                   <tr>
+                       <th width="15%">Principal</th>
+                       <td width="85%" *ngIf="false; else ownerDropdown">{{owner}}
+                       </td>
+                   </tr>
+                   <tr>
+                       <th width="15%">Type</th>
+                           <clr-dropdown>
+                               <button style="width:400px;" type="button" class="btn btn-outline-primary" clrDropdownTrigger>
+                                  {{newAceType.display}}<clr-icon shape="caret down"></clr-icon>
+                               </button>
+                               <clr-dropdown-menu *clrIfOpen>
+                                   <button type="button" (click)="newAceType.value='A';newAceType.display = 'Allow'" clrDropdownItem>Allow</button>
+                                   <button type="button" (click)="newAceType.value='D';newAceType.display = 'Deny'" clrDropdownItem>Deny</button>
+                               </clr-dropdown-menu>
+                           </clr-dropdown>
+                   </tr>
+                   <tr>
+                       <th width="15%">Applies to</th>
+                           <clr-dropdown>
+                               <button style="width:400px;" type="button" class="btn btn-outline-primary" clrDropdownTrigger>
+                                  {{newAceInher.display}}<clr-icon shape="caret down"></clr-icon>
+                               </button>
+                               <clr-dropdown-menu *clrIfOpen>
+                                   <label class="dropdown-header">Choose Inheritance</label>
+                                   <button type="button" (click)="newAceInher.display='This object only'; newAceInher.value=''" clrDropdownItem>This object only</button>
+                                   <button type="button" (click)="newAceInher.display='This object and child objects';newAceInher.value='OI'" clrDropdownItem>This object and child objects</button>
+                                   <button type="button" (click)="newAceInher.display='This object and child containers';newAceInher.value='CI'" clrDropdownItem>This object and child containers</button>
+                                   <button type="button" (click)="newAceInher.display='This object and all descendant objects';newAceInher.value='CIOI'" clrDropdownItem>This object and all descendant objects</button>
+                               </clr-dropdown-menu>
+                           </clr-dropdown>
+                   </tr>
+               <tbody>
+           </table>
+       </div>
+    </div>
+    <div class="card-text">
+       <div class="row">
+           <div class="col-lg-4 col-md-6 col-sm-8 col-xs-8">
+               <clr-checkbox name="{{right}}" [(ngModel)]="newAce.rights.map[right]" *ngFor="let right of allRights | slice:0:9" [clrInline]="false">{{right}}</clr-checkbox>
+           </div>
+           <div class="col-lg-4 col-md-6 col-sm-8 col-xs-8">
+               <clr-checkbox name="{{right}}" [(ngModel)]="newAce.rights.map[right]" *ngFor="let right of allRights | slice:9:18" [clrInline]="false">{{right}}</clr-checkbox>
+           </div>
+           <div class="col-lg-4 col-md-6 col-sm-8 col-xs-8">
+              <clr-checkbox name="{{right}}" [(ngModel)]="newAce.rights.map[right]" *ngFor="let right of allRights | slice:18:28" [clrInline]="false">{{right}}</clr-checkbox>
+           </div>
+       </div>
+    </div>
+    <button style="float:right;" class="btn-sm btn btn-primary" (click)="submitNewAce(selectedAcct);display='sdEditor';">Submit</button>
+    <button style="float:right;" class="btn-sm btn btn-outline" (click)="display='sdEditor';"><clr-icon class='is-solid' shape="rewind"></clr-icon>{{' '}}Back</button>
+</div>

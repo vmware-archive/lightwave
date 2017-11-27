@@ -503,6 +503,8 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
+node/
+dist/
 
 # Typescript v1 declaration files
 typings/
