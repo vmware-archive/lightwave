@@ -295,6 +295,16 @@ VecsDbGetDbVersion(
     PDWORD pdwVersion
     );
 
+DWORD
+VmAfdDbSetUpgradeState(
+    DWORD dwUpgradeState
+    );
+
+DWORD
+VmAfdDbIsUpgradeInProgress(
+    PBOOL  pbIsUpgradeInProgress
+    );
+
 #ifdef __cplusplus
 }
 #endif

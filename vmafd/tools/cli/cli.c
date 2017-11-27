@@ -18,6 +18,12 @@
 
 static
 DWORD
+GetPassword(
+    PSTR *ppszPassword
+    );
+
+static
+DWORD
 VmAfdCliGetDomainState(
     PVM_AFD_CLI_CONTEXT pContext
     );
@@ -205,6 +211,24 @@ VmAfdCliRefreshSiteName(
 static
 DWORD
 VmAfdCliChangePNID(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+VmAfdCliCreateComputerAccount(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+VmAfdCliCreateComputerAccount(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+VmAfdCliBeginOrEndUpgrade(
     PVM_AFD_CLI_CONTEXT pContext
     );
 
@@ -403,6 +427,11 @@ VmAfdCliExecute(
         case VM_AFD_ACTION_CREATE_COMPUTER_ACCOUNT:
 
             dwError = VmAfdCliCreateComputerAccount(pContext);
+            break;
+
+        case VM_AFD_ACTION_BEGIN_UPGRADE:
+        case VM_AFD_ACTION_END_UPGRADE:
+            dwError = VmAfdCliBeginOrEndUpgrade(pContext);
             break;
 
         case VM_AFD_ACTION_ADD_PASSWORD_ENTRY:
@@ -1502,4 +1531,235 @@ VmAfdCliChangePNID(
 error:
     return dwError;
 }
+
+static
+DWORD
+VmAfdCliBeginOrEndUpgrade(
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAccount = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszDomainName = NULL;
+    BOOL bUsingIPC = FALSE;
+    PVMAFD_SERVER pServer = NULL;
+
+    if (!pContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdGetDomainNameA(NULL,&pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pContext->pszServerName))
+    {
+        bUsingIPC = TRUE;
+    }
+
+    if (bUsingIPC && !IsNullOrEmptyString(pContext->pszUserName))
+    {
+        printf ("Getting heartbeat status of local system\n"
+                "lightwave user-name will not be used\n"
+               );
+    }
+
+    if (!bUsingIPC)
+    {
+      //Factor domain name as well into this equation
+        if(IsNullOrEmptyString(pContext->pszUserName))
+        {
+            dwError = VmAfdGetMachineAccountInfoA(NULL, &pszAccount, &pszPassword);
+        }
+        else
+        {
+            if (VmAfdCaselessStrStrA(pContext->pszUserName, "@"))
+            {
+                dwError = VmAfdAllocateStringA(pContext->pszUserName, &pszAccount);
+            }
+            else
+            {
+                dwError = VmAfdAllocateStringPrintf(
+                                                  &pszAccount,
+                                                  "%s@%s",
+                                                  pContext->pszUserName,
+                                                  pszDomainName
+                                                  );
+            }
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            if (IsNullOrEmptyString(pContext->pszPassword))
+            {
+                dwError = GetPassword(&pszPassword);
+            }
+            else
+            {
+                dwError = VmAfdAllocateStringA(pContext->pszPassword, &pszPassword);
+            }
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdOpenServerA(
+                          pContext->pszServerName,
+                          pszAccount,
+                          pszPassword,
+                          &pServer
+                          );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pContext->action == VM_AFD_ACTION_BEGIN_UPGRADE)
+    {
+        dwError = VmAfdBeginUpgrade(pServer);
+        BAIL_ON_VMAFD_ERROR(dwError);
+        printf ("Begin upgrade state is set\n");
+    }
+    else if (pContext->action == VM_AFD_ACTION_END_UPGRADE)
+    {
+        dwError = VmAfdEndUpgrade(pServer);
+        BAIL_ON_VMAFD_ERROR(dwError);
+        printf ("End upgrade state is set\n");
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszAccount);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pszDomainName);
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+#ifndef _WIN32
+static
+DWORD
+GetPassword(
+    PSTR *ppszPassword
+    )
+{
+    CHAR pszPasswordBuff[100] = {0};
+    PSTR pszPassword = NULL;
+    DWORD dwError = 0;
+    struct termios tp, save;
+
+    fflush(stdout);
+
+    tcgetattr(0, &tp) ;
+    memcpy (&save, &tp, sizeof (struct termios));
+    save.c_lflag &= ~ECHO;                /* ECHO off, other bits unchanged */
+    tcsetattr(0, TCSANOW, &save);
+
+    if (!fgets(pszPasswordBuff, 100, stdin) && ferror(stdin))
+    {
+        dwError = LwErrnoToWin32Error(ferror(stdin));
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (pszPasswordBuff[strlen(pszPasswordBuff)-1] == '\n')
+    {
+        pszPasswordBuff[strlen(pszPasswordBuff)-1] = '\0';
+    }
+
+    dwError = VmAfdAllocateStringPrintf(
+                                        &pszPassword,
+                                        "%s",
+                                        pszPasswordBuff
+                                       );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *ppszPassword = pszPassword;
+
+cleanup:
+
+    tcsetattr(0, TCSANOW, &tp);
+
+    fflush (stdin);
+
+    return dwError;
+
+error:
+    if (ppszPassword)
+    {
+        *ppszPassword = NULL;
+    }
+
+    VMAFD_SAFE_FREE_MEMORY (pszPassword);
+
+    goto cleanup;
+}
+
+#else
+static
+DWORD
+GetPassword(
+    PSTR *ppszPassword
+    )
+{
+    CHAR pszPasswordBuff[100] = {0};
+    PSTR pszPassword = NULL;
+    DWORD dwError = 0;
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode = 0;
+    fflush(stdout);
+    if (!GetConsoleMode(hStdin, &mode))
+    {
+        dwError = GetLastError();
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    if (!SetConsoleMode(hStdin, mode & (~ENABLE_ECHO_INPUT)))
+    {
+        dwError = GetLastError();
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    if (!fgets(pszPasswordBuff, 100, stdin) && ferror(stdin))
+    {
+        dwError = GetLastError();
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (pszPasswordBuff[strlen(pszPasswordBuff)-1] == '\n')
+    {
+        pszPasswordBuff[strlen(pszPasswordBuff)-1] = '\0';
+    }
+
+    dwError = VmAfdAllocateStringPrintf(
+                                        &pszPassword,
+                                        "%s",
+                                        pszPasswordBuff
+                                       );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *ppszPassword = pszPassword;
+
+cleanup:
+
+    if (!SetConsoleMode(hStdin, mode))
+    {
+        dwError = GetLastError();
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    fflush (stdin);
+
+    return dwError;
+
+error:
+    if (ppszPassword)
+    {
+        *ppszPassword = NULL;
+    }
+
+    VMAFD_SAFE_FREE_MEMORY (pszPassword);
+
+    goto cleanup;
+}
+#endif
 

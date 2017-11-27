@@ -1488,6 +1488,24 @@ VmAfdIpcGetDCList(
     PDWORD pdwResponseSize
     );
 
+DWORD
+VmAfdIpcBeginUpgrade(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcEndUpgrade(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 //rpcserv_internal.c
 
 DWORD
@@ -2364,6 +2382,22 @@ VmAfdIpcCreateComputerAccount(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
+    );
+
+//ha_upgrade.c
+DWORD
+VmAfSrvBeginUpgrade(
+    VOID
+    );
+
+DWORD
+VmAfSrvEndUpgrade(
+    VOID
+    );
+
+DWORD
+VmAfSrvGetUpgradeState(
+    PBOOL pbIsUpgradeInProgress
     );
 
 #ifdef __cplusplus

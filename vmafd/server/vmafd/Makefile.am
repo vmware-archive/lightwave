@@ -18,6 +18,7 @@ vmafdd_SOURCES = \
     dns.c         \
     globals.c     \
     heartbeat.c     \
+    ha_upgrade.c     \
     ipcapihandler.c \
     ipclocalapi.c \
     ipcmarshalhelper.c \

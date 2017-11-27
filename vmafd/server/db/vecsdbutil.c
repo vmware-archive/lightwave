@@ -2338,3 +2338,147 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdDbSetUpgradeState(
+    DWORD dwUpgradeState
+    )
+{
+    DWORD dwError = 0;
+    PVECS_DB_CONTEXT pDbContext = NULL;
+    sqlite3_stmt* pDbQuery = NULL;
+
+    char szQuery[] = "INSERT INTO AfdProperties ("
+                     " Property,"
+                     " Value)"
+                     " VALUES(\"bIsUpgrading\", :upgradeState);";
+
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_WRITE);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = sqlite3_prepare_v2(
+                        pDbContext->pDb,
+                        szQuery,
+                        -1,
+                        &pDbQuery,
+                        NULL
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsBindDword(
+                        pDbQuery,
+                        ":upgradeState",
+                        dwUpgradeState
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsDbStepSql(pDbQuery);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    if (pDbQuery)
+    {
+        sqlite3_reset(pDbQuery);
+        sqlite3_finalize(pDbQuery);
+    }
+    if (pDbContext)
+    {
+        VecsDbReleaseContext(pDbContext);
+    }
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
+
+DWORD
+VmAfdDbIsUpgradeInProgress(
+    PBOOL  pbIsUpgradeInProgress
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIsUpgradeInProgress = 0;
+    BOOL bIsUpgradeInProgress = 0;
+    PVECS_DB_CONTEXT pDbContext = NULL;
+    sqlite3_stmt* pDbQuery = NULL;
+    DWORD bTableExists = 0;
+    DWORD dwCount = 0;
+
+    char szQuery[] = "SELECT Value from AfdProperties"
+                     " WHERE Property = \"bIsUpgrading\"";
+
+    if (!pbIsUpgradeInProgress)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_READ);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsCheckifTableExists(pDbContext->pDb, "AfdProperties", &bTableExists);
+    BAIL_ON_VECS_ERROR(dwError);
+
+    if (bTableExists)
+    {
+        dwError = sqlite3_prepare_v2(
+                            pDbContext->pDb,
+                            szQuery,
+                            -1,
+                            &pDbQuery,
+                            NULL
+                            );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VecsDbStepSql(pDbQuery);
+        if (dwError == SQLITE_ROW)
+        {
+            dwError = VecsDBGetColumnInt(
+                            pDbQuery,
+                            "Value",
+                            &dwIsUpgradeInProgress
+                            );
+            BAIL_ON_VMAFD_ERROR(dwError);
+            ++dwCount;
+        }
+        else if (dwError == SQLITE_DONE || !dwCount)
+        {
+            bIsUpgradeInProgress = FALSE;
+            dwError = 0;
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (dwIsUpgradeInProgress)
+        {
+            bIsUpgradeInProgress = TRUE;
+        }
+        else
+        {
+            bIsUpgradeInProgress = FALSE;
+        }
+    }
+
+    *pbIsUpgradeInProgress = bIsUpgradeInProgress;
+
+cleanup:
+
+    if (pDbQuery)
+    {
+        sqlite3_reset(pDbQuery);
+        sqlite3_finalize(pDbQuery);
+    }
+    if (pDbContext)
+    {
+        VecsDbReleaseContext(pDbContext);
+    }
+    return dwError;
+error:
+    if (pbIsUpgradeInProgress)
+    {
+        *pbIsUpgradeInProgress = FALSE;
+    }
+
+    goto cleanup;
+}

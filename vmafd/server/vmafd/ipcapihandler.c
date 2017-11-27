@@ -637,6 +637,28 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_BEGIN_UPGRADE:
+
+            dwError = VmAfdIpcBeginUpgrade(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+        case VMAFD_IPC_END_UPGRADE:
+
+            dwError = VmAfdIpcEndUpgrade(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         case CDC_IPC_GET_DC_NAME:
             dwError = CdcIpcGetDCName(
                             pConnectionContext,

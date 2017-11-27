@@ -145,6 +145,7 @@ VmAfSrvGetHeartbeatStatus(
     PVMAFD_HB_STATUS_W pHeartbeatStatus = NULL;
 
     BOOL bIsHoldingLock = FALSE;
+    BOOL bIsUpgradeInProgress = FALSE;
 
     DWORD dwEntriesCount = 0;
 
@@ -173,6 +174,12 @@ VmAfSrvGetHeartbeatStatus(
 
 
     VMAFD_LOCK_MUTEX_UNLOCK(&rwlockHeartbeatTable, bIsHoldingLock);
+
+    dwError = VmAfdDbIsUpgradeInProgress(&bIsUpgradeInProgress);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pHeartbeatStatus->bIsAlive =
+              pHeartbeatStatus->bIsAlive && !bIsUpgradeInProgress;
 
     pHeartbeatStatus->dwCount = dwEntriesCount;
 

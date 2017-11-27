@@ -368,4 +368,13 @@ typedef [context_handle] void *vecs_entry_enum_handle_t;
         [out] PVMAFD_HB_STATUS_W* ppHbStatus
         );
 
+    UINT32
+    VmAfdRpcBeginUpgrade(
+        [in] handle_t hBinding
+        );
+
+    UINT32
+    VmAfdRpcEndUpgrade(
+        [in] handle_t hBinding
+        );
 }
