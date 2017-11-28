@@ -577,7 +577,6 @@ VmDirDecodeMods(
     int                 j = 0;
     int                 nAttrs = 0;
     int                 nVals = 0;
-    VDIR_ATTRIBUTE *    attr = NULL;
     unsigned char *     strPtr = NULL;
     VDIR_BERVALUE *     bvPtr = NULL;
     PVDIR_MODIFICATION  pMods = NULL;
@@ -611,24 +610,21 @@ VmDirDecodeMods(
             prevMod->next = mod;
         }
 
-        dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID *)&attr);
-        BAIL_ON_VMDIR_ERROR( dwError );
-
         // set pATDesc
-        attr->pATDesc = VmDirSchemaAttrIdToDesc(pSchemaCtx, usIdMap);
+        mod->attr.pATDesc = VmDirSchemaAttrIdToDesc(pSchemaCtx, usIdMap);
 
         // type.bv_val always uses in-place storage
-        attr->type.lberbv.bv_val = attr->pATDesc->pszName;
-        attr->type.lberbv.bv_len = VmDirStringLenA(attr->type.lberbv.bv_val);
+        mod->attr.type.lberbv.bv_val = mod->attr.pATDesc->pszName;
+        mod->attr.type.lberbv.bv_len = VmDirStringLenA(mod->attr.type.lberbv.bv_val);
 
         // Get number of attribute values
         j = VmDirDecodeShort(&strPtr);
-        attr->numVals = j;
-       
+        mod->attr.numVals = j;
+
         dwError = VmDirAllocateMemory((j +1 )* sizeof( VDIR_BERVALUE ), (PVOID *)&bvPtr);
         BAIL_ON_VMDIR_ERROR( dwError );
 
-        attr->vals = bvPtr;
+        mod->attr.vals = bvPtr;
         mod->operation = *strPtr;
         strPtr++;
 
@@ -644,7 +640,7 @@ VmDirDecodeMods(
             dwError = VmDirBervalContentDup(&bv, bvPtr);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirSchemaBervalNormalize(pSchemaCtx, attr->pATDesc, bvPtr);
+            dwError = VmDirSchemaBervalNormalize(pSchemaCtx, mod->attr.pATDesc, bvPtr);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             strPtr += len + 1; // Skipping \0
@@ -655,7 +651,6 @@ VmDirDecodeMods(
         bvPtr->lberbv.bv_val = NULL;
         bvPtr->lberbv.bv_len = 0;
         bvPtr++;
-        mod->attr = *attr;
         prevMod = mod;
     }
 

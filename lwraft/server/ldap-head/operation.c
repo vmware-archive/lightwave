@@ -225,6 +225,11 @@ VmDirFreeOperationContent(
 
             case LDAP_REQ_DELETE:
                  VmDirFreeDeleteRequest(&op->request.deleteReq, FALSE);
+                 if (op->request.modifyReq.numMods > 0)
+                 {
+                     //A raft follower needs to create a modifyReq for Delete OP
+                     VmDirFreeModifyRequest(&op->request.modifyReq, FALSE);
+                 }
                  break;
 
             default:
