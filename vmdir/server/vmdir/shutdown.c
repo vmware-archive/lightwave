@@ -123,7 +123,7 @@ VmDirShutdown(
     * #endif
     */
 
-    VmMetricsDestroy(pmContext);
+    VmDirMetricsShutdown();
 
     (VOID)VmDirSetRegKeyValueDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,

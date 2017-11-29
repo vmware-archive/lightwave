@@ -77,19 +77,17 @@ ReplModifyEntry(
     PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
     );
 
+// metrics.c
 DWORD
 VmDirReplMetricsInit(
-    VOID
+    PSTR                        pszHostname,
+    PSTR                        pszSite,
+    PVMDIR_REPLICATION_METRICS* ppReplMetrics
     );
 
-DWORD
-VmDirReplNewPartnerMetricsInit(
-    PVMDIR_REPLICATION_AGREEMENT pReplAgr
-    );
-
-DWORD
-VmDirReplPartnerMetricsDelete(
-    PVMDIR_REPLICATION_AGREEMENT pReplAgr
+VOID
+VmDirFreeReplMetrics(
+    PVMDIR_REPLICATION_METRICS  pReplMetrics
     );
 
 #ifdef __cplusplus

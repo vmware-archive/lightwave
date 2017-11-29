@@ -61,3 +61,10 @@ typedef struct _VMDIR_REPLICATION_CONTEXT
     time_t              stLastTimeTriedToFillHoleInDirectory;
     PSTR                pszKrb5ErrorMsg;
 } VMDIR_REPLICATION_CONTEXT, *PVMDIR_REPLICATION_CONTEXT;
+
+typedef struct _VMDIR_REPLICATION_METRICS_CACHE
+{
+    PLW_HASHMAP     pHashMap;
+    PVMDIR_RWLOCK   pLock;
+
+} VMDIR_REPLICATION_METRICS_CACHE, PVMDIR_REPLICATION_METRICS_CACHE;

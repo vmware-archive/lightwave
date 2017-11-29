@@ -660,6 +660,12 @@ VmDirDomainNameToDN(
     );
 
 DWORD
+VmDirServerDNToSiteName(
+    PCSTR   pszServerDN,
+    PSTR*   ppszSiteName
+    );
+
+DWORD
 VmDirConnectLDAPServerWithMachineAccount(
     PCSTR  pszHostName,
     PCSTR  pszDomain,

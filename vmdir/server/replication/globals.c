@@ -12,4 +12,11 @@
  * under the License.
  */
 
-extern VMDIR_REPLICATION_METRICS_CACHE gVdirReplMetricsCache;
+#include "includes.h"
+
+VMDIR_REPLICATION_METRICS_CACHE gVdirReplMetricsCache =
+{
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pHashMap, NULL),
+        VMDIR_SF_INIT(.pLock, NULL)
+};
