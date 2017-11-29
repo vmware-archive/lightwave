@@ -71,7 +71,7 @@ public class Login extends HttpServlet {
 						  client_id +
 						  "&redirect_uri=" +
 						  redirect_uri +
-						  "&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server";
+						  "&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server%20rs_vmdir";
 			String authorizeUri = openIdConnectUri + args;
 			response.sendRedirect(authorizeUri);
 		} catch(Exception exc)
