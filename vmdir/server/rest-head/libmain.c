@@ -69,6 +69,10 @@ VmDirRESTServerInit(
         {NULL, NULL}
     };
 
+    // cache is only required for token auth
+    // vmdir should still handle simple auth
+    (VOID)VmDirRESTCacheInit(&gpVdirRestCache);
+
     /*
      * We can use the same REST_API_SPEC for both HTTP and HTTPS because vmdir
      * rest init code only refers to API definitions (which is common)
@@ -118,6 +122,7 @@ VmDirRESTServerShutdown(
     _VmDirRESTServerShutdownHTTP();
     _VmDirRESTServerShutdownHTTPS();
 
+    VmDirFreeRESTCache(gpVdirRestCache);
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 
