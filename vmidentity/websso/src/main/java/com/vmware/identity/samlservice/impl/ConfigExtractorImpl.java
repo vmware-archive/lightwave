@@ -54,7 +54,7 @@ public class ConfigExtractorImpl implements ConfigExtractor {
 
       ArrayList<List<Certificate>> allChains = new ArrayList<List<Certificate>>();
       allChains.addAll(validCerts);
-      Collection<IDPConfig> externalIdps = idmAccessor.getExternalIdps();
+      Collection<IDPConfig> externalIdps = idmAccessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0);
       if( externalIdps != null ) {
           for(IDPConfig c : externalIdps){
               ArrayList<Certificate> chain = new ArrayList<Certificate>();

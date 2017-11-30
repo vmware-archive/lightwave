@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -37,6 +38,7 @@ import java.security.cert.X509Certificate;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -677,6 +679,24 @@ public class ServerUtils
         return value;
     }
 
+    public static LdapValue[] getLdapValue(PublicKey key)
+    {
+        LdapValue[] value = null;
+        if( key != null)
+        {
+            byte[] bytes = key.getEncoded();
+
+            if ((bytes != null) && (bytes.length > 0) )
+            {
+                value = new LdapValue[] {
+                        new LdapValue( bytes )
+                };
+            }
+        }
+
+        return value;
+    }
+
     public static Integer getIntegerValue( LdapValue[] value )
     {
         Integer intValue = null;
@@ -760,6 +780,37 @@ public class ServerUtils
             }
         }
         return privateKey;
+    }
+
+    public static PublicKey getPublicKeyValue(LdapValue[] value)
+    {
+        PublicKey publicKey = null;
+
+        if( ( value != null ) && (value.length == 1) )
+        {
+            byte[] publicKeyBytes = value[0].getValue();
+            if (publicKeyBytes != null)
+            {
+                try
+                {
+                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+                    EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(
+                            publicKeyBytes);
+
+                    publicKey = keyFactory.generatePublic(publicKeySpec);
+                }
+                catch (NoSuchAlgorithmException ex1)
+                {
+                    throw new RuntimeException("No such algorithm");
+                }
+                catch (InvalidKeySpecException ex2)
+                {
+                    throw new RuntimeException("Invalid key spec");
+                }
+            }
+        }
+        return publicKey;
     }
 
     private static X509Certificate getCert(LdapValue value)

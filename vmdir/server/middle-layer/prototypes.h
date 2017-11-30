@@ -323,6 +323,23 @@ VmDirPagedSearchCacheRead(
     DWORD *pdwEntryCount
     );
 
+//pagesearch.c
+VOID
+VmDirPagedSearchContextFree(
+    VOID
+    );
+
+DWORD
+VmDirPagedSearchContextInit(
+    VOID
+    );
+
+DWORD
+VmDirProcessPagedSearch(
+    VDIR_OPERATION *  pOperation
+    );
+
+
 // saslsockbuf.c
 DWORD
 VmDirSASLSockbufInstall(

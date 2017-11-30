@@ -246,7 +246,8 @@ ProcessJoin(
         PARSE_MODE_OPEN = 0,
         PARSE_MODE_ACCOUNT,
         PARSE_MODE_PASSWORD,
-        PARSE_MODE_ORGUNIT
+        PARSE_MODE_ORGUNIT,
+        PARSE_MODE_SITENAME
     } PARSE_MODE;
 
     DWORD dwError = 0;
@@ -256,6 +257,7 @@ ProcessJoin(
     PSTR pszPasswordNew = NULL;
     PSTR pszDomain = NULL;
     PSTR pszOrgUnit = NULL;
+    PSTR pszSiteName = NULL;
     PARSE_MODE mode = PARSE_MODE_OPEN;
 
     if (!argc)
@@ -283,6 +285,10 @@ ProcessJoin(
                 else if (!VmAfdStringCompareA(pszArg, "--orgunit", TRUE))
                 {
                     mode = PARSE_MODE_ORGUNIT;
+                }
+                else if (!VmAfdStringCompareA(pszArg, "--site", TRUE))
+                {
+                    mode = PARSE_MODE_SITENAME;
                 }
                 else
                 {
@@ -320,6 +326,15 @@ ProcessJoin(
 
                 break;
 
+            case PARSE_MODE_SITENAME:
+
+                pszSiteName = pszArg;
+
+                mode = PARSE_MODE_OPEN;
+
+                break;
+
+
             default:
 
                 dwError = ERROR_INVALID_STATE;
@@ -354,7 +369,12 @@ ProcessJoin(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdJoinDomain(pszDomain, pszLogin, pszPassword, pszOrgUnit);
+    dwError = VmAfdJoinDomainWithSite(
+                pszDomain,
+                pszLogin,
+                pszPassword,
+                pszOrgUnit,
+                pszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -586,6 +606,7 @@ ShowUsage(
         "\t     [ --orgunit <organizational unit> ]\n"
         "\t     [ --username <account name> ]\n"
         "\t     [ --password <password> ]\n"
+        "\t     [ --site <sitename> ]\n"
         "\tleave\n"
         "\t     [ --username <account name> ]\n"
         "\t     [ --password <password> ]\n"

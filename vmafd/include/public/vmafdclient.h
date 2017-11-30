@@ -750,6 +750,16 @@ VmAfdChangePNIDW(
     PCWSTR pwszPNID
     );
 
+DWORD
+VmAfdBeginUpgrade(
+    PVMAFD_SERVER pServer
+    );
+
+DWORD
+VmAfdEndUpgrade(
+    PVMAFD_SERVER pServer
+    );
+
 #ifdef UNICODE
 
 #define VmAfdOpenServer                 VmAfdOpenServerW

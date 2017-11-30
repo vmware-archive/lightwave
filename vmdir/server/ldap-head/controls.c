@@ -264,6 +264,22 @@ DeleteControls(
    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "DeleteControls: End." );
 }
 
+VOID
+VmDirSetSyncDoneCtlbContinue(
+    PVDIR_OPERATION pOp,
+    DWORD           dwSentEntryCount
+    )
+{
+    if (pOp &&
+        pOp->syncDoneCtrl &&
+        pOp->request.searchReq.sizeLimit > 0 &&
+        pOp->request.searchReq.sizeLimit == dwSentEntryCount)
+    {   // replication pull full page request sent and there could be more changes pending
+        // ask consumer to come back.
+        pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
+    }
+}
+
 int
 WriteSyncDoneControl(
     VDIR_OPERATION *     op,
@@ -277,8 +293,6 @@ WriteSyncDoneControl(
     VDIR_BERVALUE           bvCtrlVal = VDIR_BERVALUE_INIT;
     VDIR_BERVALUE           syncDoneCtrlType = {
                                 {VmDirStringLenA( LDAP_CONTROL_SYNC_DONE ), LDAP_CONTROL_SYNC_DONE}, 0, 0, NULL };
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncDoneControl: Begin." );
 
     if ( op->syncDoneCtrl != NULL)
     {
@@ -348,7 +362,7 @@ WriteSyncDoneControl(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY( bvCtrlVal.lberbv.bv_val );
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncDoneControl: Begin." );
+
     return retVal;
 
 error:
@@ -941,8 +955,12 @@ ParseSyncRequestControlVal(
     else if (syncReqCtrlVal->bFirstPage)
     {
         /*
-         * When retry happens, send add requests instead of modify requests.
-         * If entries are not removed from hashtable, modify request will be sent.
+         * Consumer set syncReqCtrlVal->bFirstPage in the first page request of a
+         * 1. fresh cycle
+         * 2. retry per cycle (out of order)
+         * 3. retry from scratch (i.e. failed to fill hole in case 2 and high watermark == 0).
+         *
+         * In this case, we should cleanup phmSyncStateOneMap to derive proper SYNC_STATE.
          */
         LwRtlHashMapClear(op->conn->ReplConnState.phmSyncStateOneMap, VmDirSimpleHashMapPairFree, NULL);
         VMDIR_LOG_INFO(

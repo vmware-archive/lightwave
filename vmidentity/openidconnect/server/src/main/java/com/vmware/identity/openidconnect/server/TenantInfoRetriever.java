@@ -52,6 +52,9 @@ public class TenantInfoRetriever {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant"), e);
         }
 
+        if (tenantObject == null) {
+            throw new ServerException(ErrorObject.invalidRequest("non-existent tenant"));
+        }
         String tenant = tenantObject.getName(); // use tenant name as it appears in directory
 
         RSAPrivateKey privateKey;
@@ -61,6 +64,10 @@ public class TenantInfoRetriever {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant private key"), e);
         }
 
+        if (privateKey == null) {
+            throw new ServerException(ErrorObject.serverError("tenant signer key is not set"));
+        }
+
         List<Certificate> certChain;
         try {
             certChain = this.idmClient.getTenantCertificate(tenant);
@@ -68,8 +75,19 @@ public class TenantInfoRetriever {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant cert"), e);
         }
 
+        if ( ( certChain == null ) || (certChain.size() == 0) ) {
+            throw new ServerException(ErrorObject.serverError("tenant signing certs are not set"));
+        }
+
         X509Certificate certificate = (X509Certificate) certChain.get(0);
+        if ( certificate == null ) {
+            throw new ServerException(ErrorObject.serverError("tenant signing cert is not set"));
+        }
+
         RSAPublicKey publicKey = (RSAPublicKey) certificate.getPublicKey();
+        if ( publicKey == null ) {
+            throw new ServerException(ErrorObject.serverError("tenant signing cert does not have public key"));
+        }
 
         AuthnPolicy authnPolicy;
         String issuer;

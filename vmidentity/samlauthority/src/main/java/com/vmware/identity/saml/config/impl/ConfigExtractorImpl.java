@@ -86,7 +86,7 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
             .getMaximumHoKTokenLifetime(tenantName);
          clockTolerance = client.getClockTolerance(tenantName);
          signatureAlgorithm = client.getTenantSignatureAlgorithm(tenantName);
-         extIdps = client.getAllExternalIdpConfig(tenantName);
+         extIdps = client.getAllExternalIdpConfig(tenantName, IDPConfig.IDP_PROTOCOL_SAML_2_0);
          allValidCertChains.addAll(validCertificateChains);
          if( extIdps != null ) {
              for(IDPConfig conf : extIdps) {

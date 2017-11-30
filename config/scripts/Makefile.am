@@ -8,7 +8,8 @@ scriptsconf_SCRIPTS = \
  setfirewallrules.py \
  lw-firewall-server.json \
  lw-firewall-post.json \
- lw-firewall-client.json
+ lw-firewall-client.json \
+ lightwave-syslog-logrotate.conf
 
 systemd_SCRIPTS = firewall.service
 

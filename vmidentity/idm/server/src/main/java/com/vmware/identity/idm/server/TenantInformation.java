@@ -18,6 +18,7 @@ package com.vmware.identity.idm.server;
 
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -265,6 +266,21 @@ public class TenantInformation
     public Collection<IDPConfig> getExternalIdpConfigs()
     {
         return _externalIdpConfigs;
+    }
+
+    public Collection<IDPConfig> getExternalIdpConfigs(String protocol)
+    {
+        Collection<IDPConfig> result = new ArrayList<IDPConfig>();
+
+        if (_externalIdpConfigs != null) {
+            for (IDPConfig cfg : _externalIdpConfigs) {
+                if (cfg.getProtocol().equals(protocol)) {
+                    result.add(cfg);
+                }
+            }
+        }
+
+        return result;
     }
 
     public String getBrandName()

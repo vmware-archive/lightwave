@@ -133,6 +133,12 @@ public class TenantResource extends BaseResource {
                     PrivateKeyDTO tenantPrivateKey = tenantDTO.getCredentials().getPrivateKey();
                     getIDMClient().setTenantCredentials(tenantDTO.getName(), CertificateMapper.getCertificates(signatureCerts), tenantPrivateKey.getPrivateKey());
                 }
+                String tenantBrandName = getIDMClient().getBrandName(tenantDTO.getName());
+                if (tenantBrandName == null || tenantBrandName.isEmpty()){
+                    log.info("Attempting to set tenant brand name to default - system tenant brand name.");
+                    String systemTenantBrandName = getIDMClient().getBrandName(getIDMClient().getSystemTenant());
+                    getIDMClient().setBrandName(tenantDTO.getName(), systemTenantBrandName);
+                }
             } catch (Exception e) {
                 // Exception occurred while setting credentials - delete the tenant we created so it
                 // doesn't wind up in a bizarre state

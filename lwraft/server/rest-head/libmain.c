@@ -164,11 +164,11 @@ _VmDirRESTServerInitHTTP(
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
     config.pszSSLCipherList = NULL;
-    config.pszDebugLogFile = VMDIR_HTTP_DEBUGLOGFILE;
-    config.pszDaemonName = VMDIR_HTTP_DAEMON_NAME;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = VMDIR_DAEMON_NAME;
     config.isSecure = FALSE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
+    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
 
     dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -239,11 +239,11 @@ _VmDirRESTServerInitHTTPS(
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
     config.pszSSLCipherList = NULL;
-    config.pszDebugLogFile = VMDIR_HTTPS_DEBUGLOGFILE;
-    config.pszDaemonName = VMDIR_HTTPS_DAEMON_NAME;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = VMDIR_DAEMON_NAME;
     config.isSecure = TRUE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_INFO;
+    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
 
     dwError = VmRESTInit(&config, &pHTTPSHandle);
     BAIL_ON_VMDIR_ERROR(dwError);

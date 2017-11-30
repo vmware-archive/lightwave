@@ -1517,6 +1517,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/client/Makefile
                  lwraft/config/post.reg
                  lwraft/testing/Makefile
+                 lwraft/testing/auth/Makefile
                  lwraft/testing/query/Makefile
                  lwraft/testing/kerberos/Makefile
                  lwraft/testing/test_lib/Makefile

@@ -19,8 +19,13 @@ package com.vmware.identity.idm;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 
 //The semantic of OIDC client fields can be found in the following links:
 //OAUTH: https://tools.ietf.org/html/rfc6749#section-2
@@ -34,13 +39,17 @@ public class OIDCClient implements Serializable {
 
     // Client meta data
     private final List<String> redirectUris;
+    private final List<String> redirectUriTemplates;
     private final String tokenEndpointAuthMethod;
     private final String tokenEndpointAuthSigningAlg;
     private final String idTokenSignedResponseAlg;
     private final List<String> postLogoutRedirectUris;
+    private final List<String> postLogoutRedirectUriTemplates;
     private final String logoutUri;
+    private final String logoutUriTemplate;
     private final String certSubjectDN;
     private final long authnRequestClientAssertionLifetimeMS;
+    private final boolean isMultiTenant;
 
     private OIDCClient(Builder oidcClientBuilder) {
 
@@ -56,6 +65,10 @@ public class OIDCClient implements Serializable {
         this.logoutUri = oidcClientBuilder.logoutUri;
         this.certSubjectDN = oidcClientBuilder.certSubjectDN;
         this.authnRequestClientAssertionLifetimeMS = oidcClientBuilder.authnRequestClientAssertionLifetimeMS;
+        this.isMultiTenant = oidcClientBuilder.isMultiTenant;
+        this.redirectUriTemplates = oidcClientBuilder.redirectUriTemplates;
+        this.postLogoutRedirectUriTemplates = oidcClientBuilder.postLogoutRedirectUriTemplates;
+        this.logoutUriTemplate = oidcClientBuilder.logoutUriTemplate;
     }
 
     public String getClientId() {
@@ -64,6 +77,10 @@ public class OIDCClient implements Serializable {
 
     public List<String> getRedirectUris() {
         return this.redirectUris;
+    }
+
+    public List<String> getRedirectUriTemplates() {
+        return this.redirectUriTemplates;
     }
 
     public String getTokenEndpointAuthMethod() {
@@ -82,8 +99,16 @@ public class OIDCClient implements Serializable {
         return this.postLogoutRedirectUris;
     }
 
+    public List<String> getPostLogoutRedirectUriTemplates() {
+        return this.postLogoutRedirectUriTemplates;
+    }
+
     public String getLogoutUri() {
         return this.logoutUri;
+    }
+
+    public String getLogoutUriTemplate() {
+        return this.logoutUriTemplate;
     }
 
     public String getCertSubjectDN() {
@@ -94,21 +119,31 @@ public class OIDCClient implements Serializable {
         return this.authnRequestClientAssertionLifetimeMS;
     }
 
+    public boolean isMultiTenant() {
+        return this.isMultiTenant;
+    }
+
     // The builder class with additional data validation and defaults setting
     public static class Builder {
+
+        private static final String OIDC_TENANT_PLACEHOLDER = "{tenant}";
 
         // Client information fields
         private final String clientId;
 
         // Client meta data
         private List<String> redirectUris;
+        private List<String> redirectUriTemplates;
         private String tokenEndpointAuthMethod;
         private String tokenEndpointAuthSigningAlg;
         private String idTokenSignedResponseAlg;
         private List<String> postLogoutRedirectUris;
+        private List<String> postLogoutRedirectUriTemplates;
         private String logoutUri;
+        private String logoutUriTemplate;
         private String certSubjectDN;
         private long authnRequestClientAssertionLifetimeMS;
+        private boolean isMultiTenant;
 
         public Builder(String clientId) {
             // create client id as an UUID string if it is null.
@@ -121,6 +156,11 @@ public class OIDCClient implements Serializable {
 
         public Builder redirectUris(List<String> redirectUris) {
             this.redirectUris = redirectUris;
+            return this;
+        }
+
+        public Builder redirectUriTemplates(List<String> redirectUriTemplates) {
+            this.redirectUriTemplates = redirectUriTemplates;
             return this;
         }
 
@@ -144,8 +184,18 @@ public class OIDCClient implements Serializable {
             return this;
         }
 
+        public Builder postLogoutRedirectUriTemplates(List<String> postLogoutRedirectUriTemplates) {
+            this.postLogoutRedirectUriTemplates = postLogoutRedirectUriTemplates;
+            return this;
+        }
+
         public Builder logoutUri(String logoutUri) {
             this.logoutUri = logoutUri;
+            return this;
+        }
+
+        public Builder logoutUriTemplate(String logoutUriTemplate) {
+            this.logoutUriTemplate = logoutUriTemplate;
             return this;
         }
 
@@ -157,6 +207,15 @@ public class OIDCClient implements Serializable {
         public Builder authnRequestClientAssertionLifetimeMS(long authnRequestClientAssertionLifetimeMS) {
             this.authnRequestClientAssertionLifetimeMS = authnRequestClientAssertionLifetimeMS;
             return this;
+        }
+
+        public Builder multiTenant(Boolean isMultiTenant) {
+            this.isMultiTenant = isMultiTenant == null ? false : isMultiTenant;
+            return this;
+        }
+
+        public boolean isMultiTenant() {
+            return this.isMultiTenant;
         }
 
         public OIDCClient build() {
@@ -171,29 +230,37 @@ public class OIDCClient implements Serializable {
         // Validate and set OIDC meta data defaults
         // Refer OIDC SDK code for string representation of each fields
         private void validateAndSetDefaults() {
-            if (this.redirectUris == null || this.redirectUris.size() == 0) {
+            if (isEmptyList(this.redirectUris) && isEmptyList(this.redirectUriTemplates)) {
                 throw new IllegalArgumentException("Invalid client metadata: "
-                        + "Redirect URI is required.");
-            } else {
-                for (String uri : this.redirectUris) {
-                    if (!isValidUri(uri)) {
-                        throw new IllegalArgumentException("Invalid redirect URI: " + uri);
-                    }
-                }
+                        + "Redirect URI or template is required.");
+            }
+            if (this.isMultiTenant && isEmptyList(this.redirectUriTemplates)) {
+                throw new IllegalArgumentException("Invalid client metadata: "
+                        + "Redirect URI template is required for multi-tenant oidc client.");
             }
 
-            if (this.postLogoutRedirectUris != null) {
-                for (String uri : this.postLogoutRedirectUris) {
-                    if (!isValidUri(uri)) {
-                        throw new IllegalArgumentException("Invalid post logout redirect URI: " + uri);
-                    }
-                }
+            if (!isEmptyList(this.redirectUris)) {
+                    validateUris(this.redirectUris);
+            }
+
+            if (!isEmptyList(this.postLogoutRedirectUris)) {
+                validateUris(this.postLogoutRedirectUris);
             }
 
             if (this.logoutUri != null) {
-                if (!isValidUri(this.logoutUri)) {
-                    throw new IllegalArgumentException("Invalid logout URI: " + this.logoutUri);
-                }
+                validateUris(Arrays.asList(this.logoutUri));
+            }
+
+            if (!isEmptyList(this.redirectUriTemplates)) {
+                validateUriTemplates(this.redirectUriTemplates);
+            }
+
+            if (!isEmptyList(this.postLogoutRedirectUriTemplates)) {
+                validateUriTemplates(this.postLogoutRedirectUriTemplates);
+            }
+
+            if (this.logoutUriTemplate != null) {
+                validateUriTemplates(Arrays.asList(this.logoutUriTemplate));
             }
 
             if (this.authnRequestClientAssertionLifetimeMS < 0) {
@@ -234,6 +301,28 @@ public class OIDCClient implements Serializable {
             if (!this.idTokenSignedResponseAlg.equals("RS256")) {
                 throw new IllegalArgumentException("Invalid client metadata: "
                         + "Id token signed response algorithm must be RS256.");
+            }
+        }
+
+        private boolean isEmptyList(List<String> uriStrings) {
+            return uriStrings == null || uriStrings.isEmpty();
+        }
+
+        private void validateUriTemplates(List<String> uriTemplates) {
+            Validate.noNullElements(uriTemplates);
+            for (String uriTemplate : uriTemplates) {
+                if (!isValidUri(StringUtils.replace(uriTemplate, OIDC_TENANT_PLACEHOLDER, "tenant"))) {
+                    throw new IllegalArgumentException("Invalid oidc URI template: " + uriTemplate);
+                }
+            }
+        }
+
+        private void validateUris(List<String> uriStrings) {
+            Validate.noNullElements(uriStrings);
+            for (String uriString : uriStrings) {
+                if (!isValidUri(uriString)) {
+                    throw new IllegalArgumentException("Invalid oidc URI: " + uriString);
+                }
             }
         }
 

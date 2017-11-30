@@ -221,7 +221,8 @@ class SAMLImporter {
                                 SAMLNames.IDPSSODESCRIPTOR));
             }
             Element idpSSODescriptor = (Element) idpSSODescriptors.item(0);
-            validateRequiredProtocol(idpSSODescriptor);
+            String protocol = idpSSODescriptor.getAttribute(SAMLNames.PSE);
+            validateRequiredProtocol(protocol);
 
             List<Certificate> certs = getCertificates(idpSSODescriptor);
 
@@ -233,7 +234,7 @@ class SAMLImporter {
 
             Collection<URI> nameIDFormats = getNameIDFormats(idpSSODescriptor);
 
-            IDPConfig object = new IDPConfig(entityID);
+            IDPConfig object = new IDPConfig(entityID, protocol);
 
             // use organization name as alias
             String entityAlias = entityDescriptor.getAttribute(SAMLNames.ORGANIZATIONNAME);
@@ -368,7 +369,7 @@ class SAMLImporter {
     }
     /**
      * Validate organization name consistency with the provide entity name
-     * @param Element   must be Entity element.
+     * @param entityEle   must be Entity element.
      * @throws IDMException:
      * @return  void
      */
@@ -569,7 +570,7 @@ class SAMLImporter {
     }
     /**
      *
-     * @param IDPSSODecriptor element.
+     * @param idpSSOEle element.
      * @throws Exception:
      * @return  void
      * Note:void
@@ -595,9 +596,10 @@ class SAMLImporter {
         importADStores(extEle);
 
     }
+
     /**
      *  import local os store element in extensions element.
-     * @param Extensions element.
+     * @param extEle element.
      * @throws Exception:
      * @return  void
      */
@@ -639,7 +641,7 @@ class SAMLImporter {
 
     /**
      *  import active directory store element in extensions element.
-     * @param Extensions element.
+     * @param extEle element.
      * @throws Exception:
      * @return  void
      */
@@ -745,7 +747,7 @@ class SAMLImporter {
      * To import configurable Service provider settings to idm.
      * The following information will be imported: signing key and certificates
      * Meta data ignored: SSO/SLO bindings and location, IDP Attributes,etc
-     * @param SPSSODescriptor element.
+     * @param entity element.
      * @throws Exception:
      * @return  void
      */
@@ -784,7 +786,9 @@ class SAMLImporter {
                             true:false;
             rp.setAuthnRequestsSigned(authnReqSigned);
 
-            validateRequiredProtocol(spssoEle);
+            String protocol = spssoEle.getAttribute(SAMLNames.PSE);
+
+            validateRequiredProtocol(protocol);
             parseSPKeyDescriptor(spssoEle, rp);
             parseAssertionConsumerService(spssoEle, rp);
             parseSingleLogoutService(spssoEle, rp);
@@ -821,7 +825,7 @@ class SAMLImporter {
 
     /**
      * Create a new idm relying party by parsing "Organization" elment.
-     * @param EntityDescriptptor that suppose to contains SPSSODescriptor .
+     * @param entityEle that suppose to contains SPSSODescriptor .
      * @throws Exception:
      * @return  RelyingParty, or null if no organization element was found.
      */
@@ -1053,7 +1057,7 @@ class SAMLImporter {
 
     /**
      *
-     * @param KeyDescriptor element.
+     * @param spssoEle element.
      * @throws Exception:
      * @return  void
      * @throws CertificateException
@@ -1098,26 +1102,23 @@ class SAMLImporter {
 
     /**
      * make sure a required protocol is contained in protocalSupportEnumeration attribute.
-     * @param roleDescriptorElem element under examination -- could be any sub-type
+     * @param protocol element under examination -- could be any sub-type
      * @throws IDMException when attribute does not match required protocol for IDP
      */
     private
     void
-    validateRequiredProtocol(
-            Element roleDescriptorElem) throws IDMException
-            {
-        String protocols = roleDescriptorElem.getAttribute(SAMLNames.PSE);
-
-        if (!protocols.contains(SAMLNames.REQUIREDPROTOCAL)) {
+    validateRequiredProtocol(String protocol) throws IDMException {
+        if (!protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0) && !protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
             throw new IDMException(
                     String.format(
                             "SAML meta data error. Element's attribute %s=[%s]"
-                                    + "does not have required protocal declaration [%s]!",
+                                    + "does not have required protocol declaration {%s,%s}!",
                                     SAMLNames.PSE,
-                                    protocols,
-                                    SAMLNames.REQUIREDPROTOCAL));
+                                    protocol,
+                                    IDPConfig.IDP_PROTOCOL_SAML_2_0,
+                                    IDPConfig.IDP_PROTOCOL_OAUTH_2_0));
         }
-            }
+    }
 
     private
     PrivateKey

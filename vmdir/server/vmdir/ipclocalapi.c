@@ -1038,6 +1038,94 @@ error:
     goto cleanup;
 }
 
+/*
+ * Reset server identity with a copied MDB database
+ */
+DWORD
+VmDirIpcServerReset(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMDIR_IPC_SERVER_RESET;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    UINT32 uServerResetState = 0;
+    VMW_TYPE_SPEC output_spec[] = SERVER_RESET_PARAMS;
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcServerReset ");
+
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
+
+    dwError = VmDirUnMarshal (
+                    apiType,
+                    VER1_INPUT,
+                    noOfArgsIn,
+                    pRequest,
+                    dwRequestSize,
+                    NULL);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    uResult = VmDirSrvServerReset(&uServerResetState);
+
+    output_spec[0].data.pUint32 = &uResult;
+    output_spec[1].data.pUint32 = &uServerResetState;
+
+    dwError = VmDirMarshalResponse (
+                    apiType,
+                    output_spec,
+                    noOfArgsOut,
+                    &pResponse,
+                    &dwResponseSize);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Exiting VmDirIpcServerReset");
+
+cleanup:
+
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    return dwError;
+
+error:
+    VmDirHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                     "VmDirIpcGetServerState failed (%u)",
+                     dwError);
+
+    dwError = 0;
+    goto cleanup;
+}
+
 static
 VOID
 VmDirHandleError(

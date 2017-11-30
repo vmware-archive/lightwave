@@ -2057,3 +2057,81 @@ error:
     VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
+
+DWORD
+VmAfdLocalBeginUpgrade()
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_BEGIN_UPGRADE;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "VmAfdLocalBeginUpgrade failed. Error(%u)",
+        dwError
+        );
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalEndUpgrade()
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_END_UPGRADE;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "VmAfdEndUpgrade failed. Error(%u)",
+        dwError
+        );
+
+    goto cleanup;
+}
+
+

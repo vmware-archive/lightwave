@@ -72,4 +72,17 @@ typedef [context_handle] void *vmdir_raft_handle_t;
            [out]                    UINT32 * currentTerm,
            [out]                    UINT32 * voteGranted
       );
+
+      // RPC directed to follower to intiate voting
+      UINT32
+      RpcVmDirRaftFollowerInitiateVote(
+           [in]                     handle_t hBinding
+      );
+
+      // RPC initiated on the leader node by startvote tool
+      UINT32
+      RpcVmDirRaftStartVote(
+           [in]                     handle_t hBinding
+      );
+
 }

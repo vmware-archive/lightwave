@@ -348,7 +348,7 @@ VmwDeploySetupServerCommon(
     VMW_DEPLOY_LOG_INFO("Promoting directory service to be domain controller");
 
     dwError = VmAfdPromoteVmDirA(
-                    pszHostname,
+                    pParams->pszHostname,
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
@@ -490,6 +490,9 @@ VmwDeploySetupClientWithDC(
     PSTR pszPrivateKey = NULL;
     PSTR pszCACert = NULL;
     PSTR pszSSLCert = NULL;
+    UINT32 uJoinFlags = 0;
+    BOOLEAN bJoined = FALSE;
+    DWORD dwRetryCount = 0;
 
     VMW_DEPLOY_LOG_INFO(
             "Joining system to domain [%s] using controller at [%s]",
@@ -562,17 +565,41 @@ VmwDeploySetupClientWithDC(
             "Joining system to directory service at [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszServer));
 
-    dwError = VmAfdJoinVmDirWithSiteA(
+    if (pParams->bMachinePreJoined)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_CLIENT_PREJOINED;
+    }
+
+    if (pParams->bDisableDNS)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_DISABLE_DNS;
+    }
+
+    do
+    {
+        dwError = VmAfdJoinVmDirWithSiteA(
                     pParams->pszServer,
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
-                            pParams->pszMachineAccount : pParams->pszHostname,
+                        pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
                     NULL,
-                    pParams->bMachinePreJoined ?
-                        VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
+                    uJoinFlags
+                    );
+        if (dwError)
+        {
+            VMW_DEPLOY_LOG_INFO(
+                "Failed to join to Lightwave. Retrying...");
+            ++dwRetryCount;
+            continue;
+        }
+        else
+        {
+            bJoined = TRUE;
+        }
+    } while (!bJoined && (dwRetryCount<=VMW_DOMAIN_JOIN_MAX_RETRIES));
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(
@@ -640,6 +667,9 @@ VmwDeploySetupClient(
     PSTR pszCACert = NULL;
     PSTR pszSSLCert = NULL;
     PSTR pszDC = NULL;
+    UINT32 uJoinFlags = 0;
+    BOOLEAN bJoined = FALSE;
+    DWORD dwRetryCount = 0;
 
     VMW_DEPLOY_LOG_INFO(
             "Joining system to domain [%s]",
@@ -704,7 +734,19 @@ VmwDeploySetupClient(
 
     VMW_DEPLOY_LOG_INFO("Performing domain join operation");
 
-    dwError = VmAfdJoinVmDirWithSiteA(
+    if (pParams->bMachinePreJoined)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_CLIENT_PREJOINED;
+    }
+
+    if (pParams->bDisableDNS)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_DISABLE_DNS;
+    }
+
+    do
+    {
+        dwError = VmAfdJoinVmDirWithSiteA(
                     NULL,
                     pParams->pszDomainName,
                     pszUsername,
@@ -712,9 +754,21 @@ VmwDeploySetupClient(
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
-                    NULL,
-                    pParams->bMachinePreJoined ?
-                        VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
+                    pParams->pszSite,
+                    uJoinFlags
+                    );
+        if (dwError)
+        {
+            VMW_DEPLOY_LOG_INFO(
+                "Failed to join to Lightwave. Retrying...");
+            ++dwRetryCount;
+            continue;
+        }
+        else
+        {
+            bJoined = TRUE;
+        }
+    } while (!bJoined && (dwRetryCount<=VMW_DOMAIN_JOIN_MAX_RETRIES));
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(

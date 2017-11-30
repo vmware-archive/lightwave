@@ -44,6 +44,9 @@ VmDirMiddleLayerLibInit(
     dwError = VmDirPagedSearchCacheInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirPagedSearchContextInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirSASLInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -66,6 +69,7 @@ VmDirMiddleLayerLibShutdown(
     VMDIR_SAFE_FREE_MUTEX( gVdirLockoutCache.mutex );
 
     VmDirPagedSearchCacheFree();
+    VmDirPagedSearchContextFree();
 
     VmDirLog( LDAP_DEBUG_TRACE, "VmDirMiddleLayerLibShutdown: End" );
 }

@@ -64,6 +64,75 @@ VdcadminForceResetPassword(
 }
 
 VOID
+VdcServerReset(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwState = 0;
+    PBYTE pLocalByte = NULL;
+    DWORD dwByteSize = 0;
+    PCSTR pszAdministratorName = "administrator";
+    PSTR pszUPN = NULL;
+    DWORD dwCnt = 0;
+    char pszAdminPasswd[SIZE_256] = {0};
+    char localHostName[SIZE_256] = {0};
+    PSTR pszDomain = NULL;
+    PSTR pszServerName = NULL;
+
+    dwError = VmDirGetHostName(localHostName, sizeof(localHostName) - 1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetServerName(localHostName, &pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetDomainName(localHostName, &pszDomain );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirServerReset(&dwState );
+    if (dwError != 0)
+    {
+        printf("VmDirServerReset failed (%u)\n", dwError);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszAdministratorName, pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirForceResetPassword( pszUPN, &pLocalByte, &dwByteSize );
+    if (dwError != 0)
+    {
+        printf("New password for %s is -\n", pszUPN);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    memcpy(pszAdminPasswd, pLocalByte, dwByteSize);
+    dwError = VmDirSetupDefaultAccount(pszDomain, localHostName, pszServerName, pszAdministratorName, pszAdminPasswd);
+    if (dwError != 0)
+    {
+        printf("VmDirSetupDefaultAccount failed (%u)\n", dwError);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    printf("New password for %s is -\n", pszUPN);
+    for (dwCnt=0; dwCnt<dwByteSize; dwCnt++)
+    {
+            printf("%c", pLocalByte[dwCnt]);
+    }
+    printf("\n");
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+    VMDIR_SAFE_FREE_MEMORY(pszUPN);
+    return;
+
+error:
+    goto cleanup;
+}
+
+VOID
 VdcadminSetLogParameters(
     VOID
     )

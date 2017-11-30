@@ -38,5 +38,6 @@ final class TestConstants {
 
    static final String ISSUER = "issuer";
    static final String EXTERNAL_ISSUER = "externalIssuer";
+   static final String EXTERNAL_ISSUER_PROTOCOL = "urn:oasis:names:tc:SAML:2.0:protocol";
 
 }

@@ -99,6 +99,7 @@ import com.vmware.identity.rest.idm.server.test.util.TestDataGenerator;
 public class TenantResourceTest {
 
     private static final String TENANT_NAME = "test.vmware";
+    private static final String SYSTEM_TENANT_NAME = "system.tenant";
     private static final String TENANT_LONG_NAME = "test.vmware.long";
     private static final String TENANT_KEY = "tenant.key.random";
     private static final String DOMAIN = "test.vmare";
@@ -185,7 +186,11 @@ public class TenantResourceTest {
         TenantDTO tenantToCreate = getTestTenantDTO();
         mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         mockCasIdmClient.setTenantCredentials(eq(TENANT_NAME), isA(Collection.class), isA(PrivateKey.class));
+        mockCasIdmClient.setBrandName(eq(TENANT_NAME), eq(BRAND_NAME));
         expect(mockCasIdmClient.getTenant(TENANT_NAME)).andReturn(getTestTenant());
+        expect(mockCasIdmClient.getBrandName(TENANT_NAME)).andReturn(null);
+        expect(mockCasIdmClient.getSystemTenant()).andReturn(SYSTEM_TENANT_NAME);
+        expect(mockCasIdmClient.getBrandName(SYSTEM_TENANT_NAME)).andReturn(BRAND_NAME);
         mControl.replay();
 
         tenantResource.create(tenantToCreate);

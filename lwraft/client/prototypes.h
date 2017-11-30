@@ -724,3 +724,13 @@ VmDirGetDSERootAttribute(
     PCSTR pszAttrName,
     PSTR* ppszAttrValue
     );
+
+DWORD
+VmDirRaftStartVote(
+    handle_t    hBinding
+    );
+
+DWORD
+VmDirRaftFollowerInitiateVote(
+    PVMDIR_SERVER_CONTEXT   hBinding
+    );

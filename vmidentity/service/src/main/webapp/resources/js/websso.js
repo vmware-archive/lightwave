@@ -298,11 +298,11 @@
       return url ;
    };
 
-   var isVCLogin =   function isVCLogin() {
+   var isBrandNameSet =   function isBrandNameSet() {
       if (tenant_brandname == null || tenant_brandname == '') {
-         return true;
-      } else {
          return false;
+      } else {
+         return true;
       }
    };
 

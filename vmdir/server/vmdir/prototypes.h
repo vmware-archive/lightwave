@@ -321,6 +321,11 @@ VmDirSrvGetServerState(
     PDWORD   pServerState
     );
 
+DWORD
+VmDirSrvServerReset(
+    PDWORD pServerResetState
+    );
+
 #ifndef _WIN32
 
 // signals.c

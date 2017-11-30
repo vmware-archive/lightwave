@@ -542,12 +542,12 @@ extern "C" {
                                    Mask, "[file: %s][line: %d] " Format,\
                                    __FILE__, __LINE__, ##__VA_ARGS__ )
 
-#define VMDIR_SAFE_LDAP_UNBIND(pLd)                 \
-    do {                                            \
-        if ((pLd)) {                                \
-            ldap_unbind_ext_s( pLd, NULL, NULL);    \
-            (pLd) = NULL;                           \
-        }                                           \
+#define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
+    do {                                        \
+        if (pLd) {                              \
+            ldap_unbind_ext_s(pLd,NULL,NULL);   \
+            (pLd) = NULL;                       \
+        }                                       \
     } while(0)
 
 // if VDIR_CONNECTION has bind info in VDIR_ACCESS_INFO, use it; otherwise,
@@ -748,6 +748,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_CREATE_TENANT        7
 #define VMDIR_IPC_DELETE_TENANT        8
 #define VMDIR_IPC_ENUMERATE_TENANTS    9
+#define VMDIR_IPC_SERVER_RESET         10
 
 //VERSIONS
 #define VER1_INPUT 0

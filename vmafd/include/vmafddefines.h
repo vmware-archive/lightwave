@@ -304,6 +304,9 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_GET_DC_LIST                54
 #define VMAFD_IPC_CHANGE_PNID                55
 #define VMAFD_IPC_CREATE_COMPUTER_ACCOUNT    56
+#define VMAFD_IPC_BEGIN_UPGRADE              57
+#define VMAFD_IPC_END_UPGRADE                58
+
 
 #define CDC_IPC_ENABLE_DEFAULT_HA            60
 #define CDC_IPC_ENABLE_LEGACY_HA             61

@@ -39,7 +39,7 @@ import com.vmware.identity.rest.idm.server.mapper.ExternalIDPMapper;
 public class IDPConfigUtil {
 
     public static IDPConfig createIDPConfig() throws Exception {
-        IDPConfig config = new IDPConfig(getEntityID());
+        IDPConfig config = new IDPConfig(getEntityID(), getProtocol());
 
         config.setNameIDFormats(createFormats());
         config.setSsoServices(createSSOEndpoints());
@@ -59,6 +59,10 @@ public class IDPConfigUtil {
 
     private static String getEntityID() {
         return "entity";
+    }
+
+    private static String getProtocol() {
+        return "urn:oasis:names:tc:SAML:2.0:protocol";
     }
 
     private static List<String> createFormats() {

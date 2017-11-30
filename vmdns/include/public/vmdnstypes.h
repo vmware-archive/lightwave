@@ -662,6 +662,29 @@ typedef struct _VMDNS_INIT_INFO
     WORD                        wPad;
 } VMDNS_INIT_INFO, *PVMDNS_INIT_INFO;
 
+typedef struct _VMDNS_INIT_SITE_INFO
+{
+#ifdef _DCE_IDL_
+    [string]
+#endif
+    PSTR   pszDomain;
+#ifdef _DCE_IDL_
+    [string]
+#endif
+    PSTR   pszDcSrvName;
+#ifdef _DCE_IDL_
+    [string]
+#endif
+    PSTR   pszSiteName;
+    VMDNS_IP4_ADDRESS_ARRAY     IpV4Addrs;
+    VMDNS_IP6_ADDRESS_ARRAY     IpV6Addrs;
+    WORD                        wPriority;
+    WORD                        wWeight;
+    WORD                        wPort;
+    WORD                        wPad;
+} VMDNS_INIT_SITE_INFO, *PVMDNS_INIT_SITE_INFO;
+
+
 #ifdef _DCE_IDL_
     cpp_quote("#endif")
 #endif

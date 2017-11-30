@@ -60,9 +60,11 @@ public class AuthnRequestStateValidatorTest {
 		expect(authnRequestState.getAuthnRequest()).andReturn(authnRequest).anyTimes();
 
 		String extIdpEntityId_1 = "TestExternalIdpEntityId_1";
+		String extIdpEntityId_1_protocol = "urn:oasis:names:tc:SAML:2.0:protocol";
 		String extIdpEntityId_2 = "TestExternalIdpEntityId_2";
-		idpConfig_1 = new IDPConfig(extIdpEntityId_1);
-		idpConfig_2 = new IDPConfig(extIdpEntityId_2);
+		String extIdpEntityId_2_protocol = "urn:oasis:names:tc:SAML:2.0:protocol";
+		idpConfig_1 = new IDPConfig(extIdpEntityId_1, extIdpEntityId_1_protocol);
+		idpConfig_2 = new IDPConfig(extIdpEntityId_2, extIdpEntityId_2_protocol);
 	}
 
 	/**
@@ -71,7 +73,7 @@ public class AuthnRequestStateValidatorTest {
 	 */
 	@Test
 	public void TestValidateScopingLocalAuthN() throws Exception {
-		expect(accessor.getExternalIdps()).andReturn(null).once();
+		expect(accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0)).andReturn(null).once();
 		expect(authnRequestState.isIDPSelectionEnabled(tenant)).andReturn(true).once();
 		expect(authnRequestState.getProxyCount()).andReturn(null).times(2);
 		expect(authnRequestState.isProxying()).andReturn(false);
@@ -106,7 +108,7 @@ public class AuthnRequestStateValidatorTest {
 		Collection<IDPConfig> extIdps = new ArrayList<>();
 		extIdps.add(idpConfig_1);
 
-		expect(accessor.getExternalIdps()).andReturn(extIdps);
+		expect(accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0)).andReturn(extIdps);
 		expect(accessor.getExternalIdpConfigForTenant(tenant, idpConfig_1.getEntityID())).andReturn(idpConfig_1);
 		expect(authnRequestState.isIDPSelectionEnabled(tenant)).andReturn(false);
 		expect(authnRequestState.getProxyCount()).andReturn(null).times(2);
@@ -146,7 +148,7 @@ public class AuthnRequestStateValidatorTest {
 		extIdps.add(idpConfig_1);
 		extIdps.add(idpConfig_2);
 
-		expect(accessor.getExternalIdps()).andReturn(extIdps);
+		expect(accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0)).andReturn(extIdps);
 		expect(authnRequestState.isIDPSelectionEnabled(tenant)).andReturn(true);
 		expect(authnRequestState.getProxyCount()).andReturn(null).times(2);
 		expect(authnRequestState.isProxying()).andReturn(true);
@@ -189,7 +191,7 @@ public class AuthnRequestStateValidatorTest {
 		extIdps.add(idpConfig_1);
 		extIdps.add(idpConfig_2);
 
-		expect(accessor.getExternalIdps()).andReturn(extIdps);
+		expect(accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0)).andReturn(extIdps);
 		expect(accessor.getExternalIdpConfigForTenant(tenant, idpConfig_1.getEntityID())).andReturn(idpConfig_1);
 		expect(authnRequestState.isIDPSelectionEnabled(tenant)).andReturn(true);
 		expect(authnRequestState.getProxyCount()).andReturn(null).times(2);
@@ -230,7 +232,7 @@ public class AuthnRequestStateValidatorTest {
 		extIdps.add(idpConfig_1);
 		extIdps.add(idpConfig_2);
 
-		expect(accessor.getExternalIdps()).andReturn(extIdps);
+		expect(accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0)).andReturn(extIdps);
 		expect(accessor.getExternalIdpConfigForTenant(tenant, idpConfig_1.getEntityID())).andReturn(idpConfig_1);
 		expect(authnRequestState.isIDPSelectionEnabled(tenant)).andReturn(true);
 		expect(authnRequestState.getProxyCount()).andReturn(null).times(2);

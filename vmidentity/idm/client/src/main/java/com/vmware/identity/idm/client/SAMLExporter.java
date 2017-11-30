@@ -233,7 +233,7 @@ class SAMLExporter {
         spssodescriptor.setAttribute(SAMLNames.WANTASSERTIONSSIGNED,
                 Boolean.TRUE.toString());//of course!
 
-        spssodescriptor.setAttribute(SAMLNames.PSE, SAMLNames.REQUIREDPROTOCAL);
+        spssodescriptor.setAttribute(SAMLNames.PSE, IDPConfig.IDP_PROTOCOL_SAML_2_0);
 
         List<Certificate> certs = idmClient.getTenantCertificate(tenantName);
 
@@ -300,10 +300,10 @@ class SAMLExporter {
 
     private void appendIDPSSODescriptorForExternalIDPs(Element parent) throws Exception
     {
-        for (IDPConfig idpConfig : idmClient.getAllExternalIdpConfig(tenantName))
+        for (IDPConfig idpConfig : idmClient.getAllExternalIdpConfig(tenantName, IDPConfig.IDP_PROTOCOL_SAML_2_0))
         {
             Element idpssoDescriptor = doc.createElement(SAMLNames.IDPSSODESCRIPTOR);
-            idpssoDescriptor.setAttribute(SAMLNames.PSE, SAMLNames.REQUIREDPROTOCAL);
+            idpssoDescriptor.setAttribute(SAMLNames.PSE, IDPConfig.IDP_PROTOCOL_SAML_2_0);
             idpssoDescriptor.setAttribute(SAMLNames.WANTSIGNED, Boolean.FALSE.toString());
 
             //key descriptor, should be only one chain for signing
@@ -424,7 +424,7 @@ class SAMLExporter {
         Element spssoEle = doc.createElement(SAMLNames.SPSSODESCRIPTOR);
         spssoEle.setAttribute(SAMLNames.AUTHNREQUESTSIGNED,
                 new Boolean(rp.isAuthnRequestsSigned()).toString());
-        spssoEle.setAttribute(SAMLNames.PSE, SAMLNames.REQUIREDPROTOCAL);
+        spssoEle.setAttribute(SAMLNames.PSE, IDPConfig.IDP_PROTOCOL_SAML_2_0);
 
         List<Certificate> certs = Arrays.asList(rp.getCertificate());
         Element keyD = createSPKeyDescriptor(certs);
@@ -599,7 +599,7 @@ class SAMLExporter {
     private Element createIDPSSODescriptor(boolean exportPrivateData)
             throws Exception {
         Element idpssoD = doc.createElement(SAMLNames.IDPSSODESCRIPTOR);
-        idpssoD.setAttribute(SAMLNames.PSE, SAMLNames.REQUIREDPROTOCAL); // required
+        idpssoD.setAttribute(SAMLNames.PSE, IDPConfig.IDP_PROTOCOL_SAML_2_0); // required
         idpssoD.setAttribute(SAMLNames.WANTSIGNED, SAMLNames.FALSE);
 
         if (exportPrivateData) {

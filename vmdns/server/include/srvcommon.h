@@ -36,6 +36,8 @@ extern "C" {
 #define VMDNS_KERBEROS_SRV_NAME "_kerberos._tcp"
 #define VMDNS_LDAP_DC_SRV_NAME "_ldap._tcp.dc._msdcs"
 #define VMDNS_KERBEROS_DC_SRV_NAME "_kerberos._tcp.dc._msdcs"
+#define VMDNS_SRV_SITE_LABEL "_sites"
+#define VMDNS_SRV_MSDCS_SITE_LABEL "_sites.dc._msdcs"
 
 /*hash table*/
 
@@ -220,8 +222,18 @@ VmDnsSrvInitDomain(
     );
 
 DWORD
-VmDnsSrvCleanupDomain(
+VmDnsSrvInitDomainWithSite(
+    PVMDNS_INIT_SITE_INFO    pInitInfo
+    );
+
+DWORD
+VmDnsSrvUninitializeDomain(
     PVMDNS_INIT_INFO    pInitInfo
+    );
+
+DWORD
+VmDnsSrvUninitializeDomainWithSite(
+    PVMDNS_INIT_SITE_INFO    pInitInfo
     );
 
 DWORD

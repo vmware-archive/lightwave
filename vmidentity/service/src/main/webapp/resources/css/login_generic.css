@@ -48,6 +48,7 @@ input [type=checkbox] {
    margin-top: 24px;
    font-weight: 200;
    color: black;
+   max-width:30%;
 }
 
 #loginForm {

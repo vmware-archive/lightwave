@@ -47,6 +47,10 @@ public class OIDCClientMetadataDTO extends DTO {
     private final String logoutUri;
     private final String certSubjectDN;
     private final Long authnRequestClientAssertionLifetimeMS;
+    private final Boolean isMultiTenant;
+    private final List<String> redirectUriTemplates;
+    private final List<String> postLogoutRedirectUriTemplates;
+    private final String logoutUriTemplate;
 
     /**
      * Construct an {@code OIDCClientMetadataDTO} with its various details.
@@ -65,12 +69,43 @@ public class OIDCClientMetadataDTO extends DTO {
             String logoutUri,
             String certSubjectDN,
             Long authnRequestClientAssertionLifetimeMS) {
+        this(redirectUris, tokenEndpointAuthMethod, postLogoutRedirectUris, logoutUri, certSubjectDN, authnRequestClientAssertionLifetimeMS, null, null, null, null);
+    }
+
+    /**
+     * Construct an {@code OIDCClientMetadataDTO} with its various details.
+     *
+     * @param redirectUris the list of redirect URIs.
+     * @param tokenEndpointAuthMethod the authentication method for the token endpoint.
+     * @param postLogoutRedirectUris the list of post-logout redirect URIs.
+     * @param logoutUri the logout URI.
+     * @param certSubjectDN the certificate subject DN.
+     * @param authnRequestClientAssertionLifetimeMS lifetime of the client_assertion in authn requests
+     * @param isMultiTenant whether the oidc client is multi tenanted.
+     *          Multi-tenant oidc client can be registered only within system tenant.
+     *          Multi-tenant oidc client can be used in context of any registered tenant.
+     */
+    public OIDCClientMetadataDTO(
+            List<String> redirectUris,
+            String tokenEndpointAuthMethod,
+            List<String> postLogoutRedirectUris,
+            String logoutUri,
+            String certSubjectDN,
+            Long authnRequestClientAssertionLifetimeMS,
+            Boolean isMultitenant,
+            List<String> redirectUriTemplates,
+            List<String> postLogoutRedirectUriTemplates,
+            String logoutUriTemplate) {
         this.redirectUris = redirectUris;
         this.tokenEndpointAuthMethod = tokenEndpointAuthMethod;
         this.postLogoutRedirectUris = postLogoutRedirectUris;
         this.logoutUri = logoutUri;
         this.certSubjectDN = certSubjectDN;
         this.authnRequestClientAssertionLifetimeMS = authnRequestClientAssertionLifetimeMS;
+        this.isMultiTenant = isMultitenant;
+        this.redirectUriTemplates = redirectUriTemplates;
+        this.postLogoutRedirectUriTemplates = postLogoutRedirectUriTemplates;
+        this.logoutUriTemplate = logoutUriTemplate;
     }
 
     /**
@@ -122,6 +157,37 @@ public class OIDCClientMetadataDTO extends DTO {
         return this.authnRequestClientAssertionLifetimeMS;
     }
 
+    public Boolean isMultiTenant() {
+        return this.isMultiTenant;
+    }
+
+    /**
+     * Get the list of redirect URI templates for the multi-tenant OIDC Client.
+     *
+     * @return the list of redirect URI templates.
+     */
+    public List<String> getRedirectUriTemplates() {
+        return this.redirectUriTemplates;
+    }
+
+    /**
+     * Get the list of post-logout redirect URI templates for the multi-tenant OIDC client.
+     *
+     * @return the list of post-logout redirect URI templates.
+     */
+    public List<String> getPostLogoutRedirectUriTemplates() {
+        return this.postLogoutRedirectUriTemplates;
+    }
+
+    /**
+     * Get the logout URI template for the multi-tenant OIDC client.
+     *
+     * @return the logout URI template
+     */
+    public String getLogoutUriTemplate() {
+        return this.logoutUriTemplate;
+    }
+
     /**
      * Creates an instance of the {@link OIDCClientMetadataDTO.Builder} class.
      *
@@ -146,6 +212,10 @@ public class OIDCClientMetadataDTO extends DTO {
         private String logoutUri;
         private String certSubjectDN;
         private Long authnRequestClientAssertionLifetimeMS;
+        private Boolean isMultiTenant;
+        private List<String> redirectUriTemplates;
+        private List<String> postLogoutRedirectUriTemplates;
+        private String logoutUriTemplate;
 
         public Builder withRedirectUris(List<String> redirectUris) {
             this.redirectUris = redirectUris;
@@ -177,6 +247,26 @@ public class OIDCClientMetadataDTO extends DTO {
             return this;
         }
 
+        public Builder withMultiTenant(Boolean isMultiTenant) {
+            this.isMultiTenant = isMultiTenant;
+            return this;
+        }
+
+        public Builder withRedirectUriTemplates(List<String> redirectUriTemplates) {
+            this.redirectUriTemplates = redirectUriTemplates;
+            return this;
+        }
+
+        public Builder withPostLogoutRedirectUriTemplates(List<String> postLogoutRedirectUriTemplates) {
+            this.postLogoutRedirectUriTemplates = postLogoutRedirectUriTemplates;
+            return this;
+        }
+
+        public Builder withLogoutUriTemplate(String logoutUriTemplate) {
+            this.logoutUriTemplate = logoutUriTemplate;
+            return this;
+        }
+
         public OIDCClientMetadataDTO build() {
             return new OIDCClientMetadataDTO(
                     redirectUris,
@@ -184,8 +274,11 @@ public class OIDCClientMetadataDTO extends DTO {
                     postLogoutRedirectUris,
                     logoutUri,
                     certSubjectDN,
-                    authnRequestClientAssertionLifetimeMS);
+                    authnRequestClientAssertionLifetimeMS,
+                    isMultiTenant,
+                    redirectUriTemplates,
+                    postLogoutRedirectUriTemplates,
+                    logoutUriTemplate);
         }
     }
-
 }

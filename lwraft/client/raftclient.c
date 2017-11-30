@@ -412,6 +412,46 @@ VmDirFreeRaftCluster(
     }
 }
 
+DWORD
+VmDirRaftStartVoteClient(
+    PCSTR   pszLogin,
+    PCSTR   pszPassword,
+    PCSTR   pszServerName
+    )
+{
+    DWORD       dwError = 0;
+    DWORD       dwBindError = 0;
+    handle_t    hBinding = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszLogin) ||
+        IsNullOrEmptyString(pszPassword))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    // Create binding for this server name
+    dwError = VmDirCreateBindingHandleAuthA(
+            pszServerName,
+            NULL,
+            pszLogin,
+            NULL,
+            pszPassword,
+            &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Call RPC for starting vote
+    dwError = VmDirRaftStartVote(hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    rpc_binding_free(&hBinding, &dwBindError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirConnectToRaft(

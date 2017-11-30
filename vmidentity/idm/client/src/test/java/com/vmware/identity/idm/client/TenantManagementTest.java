@@ -338,6 +338,8 @@ public final class TenantManagementTest
 
     private final String CFG_KEY_EXTERNAL_IDP_1_ENTITY_ID =
             "idm.external-idp.1.entity-id";
+    private final String CFG_KEY_EXTERNAL_IDP_1_PROTOCOL =
+            "urn:oasis:names:tc:SAML:2.0:protocol";
     private final String CFG_KEY_EXTERNAL_IDP_1_NAME_ID_FORMATS =
             "idm.external-idp.1.name-id-formats";
 
@@ -364,6 +366,8 @@ public final class TenantManagementTest
 
     private final String CFG_KEY_EXTERNAL_IDP_2_ENTITY_ID =
             "idm.external-idp.2.entity-id";
+    private final String CFG_KEY_EXTERNAL_IDP_2_PROTOCOL =
+            "urn:oasis:names:tc:SAML:2.0:protocol";
     private final String CFG_KEY_EXTERNAL_IDP_2_NAME_ID_FORMATS =
             "idm.external-idp.2.name-id-formats";
 
@@ -407,12 +411,13 @@ public final class TenantManagementTest
         //setup externalIDP configuration for vsphere.local
         final String ISSUER_ID =
                 "https://etco-vm-vlan1301-dhcp-140-90.eng.vmware.com/websso/SAML2/Metadata/vsphere.local";
+        final String protocol = "urn:oasis:names:tc:SAML:2.0:protocol";
         CasIdmClient client = getIdmClient();
         Properties props = getTestProperties();
         String tenantName = "vsphere.local";
         IdmClientTestUtil.ensureTenantExists(client, tenantName);
         List<X509Certificate> x509Certs = buildExternalIdpSTSKeyCertificates();
-        IDPConfig idpConfig = new IDPConfig(ISSUER_ID);
+        IDPConfig idpConfig = new IDPConfig(ISSUER_ID, protocol);
         idpConfig.setNameIDFormats(Arrays.asList(props.getProperty(
                 CFG_KEY_EXTERNAL_IDP_1_NAME_ID_FORMATS).split(",")));
         idpConfig.setSsoServices(buildSSOServicesIdp1(props));
@@ -541,7 +546,7 @@ public final class TenantManagementTest
                     idmClient.importExternalIDPConfiguration(_impTenantName,
                             externalIDPDoc);
             Collection<IDPConfig> idpConfigs =
-                    idmClient.getAllExternalIdpConfig(_impTenantName);
+                    idmClient.getAllExternalIdpConfig(_impTenantName, IDPConfig.IDP_PROTOCOL_SAML_2_0);
             Assert.assertEquals(idpConfigs.size(), 1);
 
             //export
@@ -4834,6 +4839,7 @@ public final class TenantManagementTest
         IdmClientTestUtil.ensureTenantExists(client, tenantName);
 
         String entityId_1 = props.getProperty(CFG_KEY_EXTERNAL_IDP_1_ENTITY_ID);
+        String protocol = props.getProperty(CFG_KEY_EXTERNAL_IDP_1_PROTOCOL);
         String alias = "vsphere.local";
 
         List<String> nameIDFormats =
@@ -4859,7 +4865,7 @@ public final class TenantManagementTest
         mappings_2.put(new TokenClaimAttribute("http://schemas.xmlsoap.org/claims/group", "user"), groupList3);
 
         // setup two external IDP configurations with unique entityIDs but everything else the same.
-        IDPConfig idpConfig_1 = new IDPConfig(entityId_1);
+        IDPConfig idpConfig_1 = new IDPConfig(entityId_1, protocol);
         idpConfig_1.setAlias(alias);
         idpConfig_1.setNameIDFormats(nameIDFormats);
         idpConfig_1.setSsoServices(ssoServices);
@@ -4869,7 +4875,8 @@ public final class TenantManagementTest
         idpConfig_1.setTokenClaimGroupMappings(mappings_1);
 
         String entityId_2 = props.getProperty(CFG_KEY_EXTERNAL_IDP_2_ENTITY_ID);
-        IDPConfig idpConfig_2 = new IDPConfig(entityId_2);
+        String protocol_2 = props.getProperty(CFG_KEY_EXTERNAL_IDP_2_PROTOCOL);
+        IDPConfig idpConfig_2 = new IDPConfig(entityId_2, protocol);
         idpConfig_2.setAlias(alias);
         idpConfig_2.setNameIDFormats(nameIDFormats);
         idpConfig_2.setSsoServices(ssoServices);
@@ -4883,7 +4890,7 @@ public final class TenantManagementTest
 
         // check the result of query all
         Collection<IDPConfig> idpConfigs =
-                client.getAllExternalIdpConfig(tenantName);
+                client.getAllExternalIdpConfig(tenantName, IDPConfig.IDP_PROTOCOL_SAML_2_0);
         Assert.assertEquals(idpConfigs.size(), 2);
 
         // two configurations should have unique ids
@@ -5011,9 +5018,10 @@ public final class TenantManagementTest
 
         List<X509Certificate> x509Certs = buildExternalIdpSTSKeyCertificates();
         String entityId_1 = props.getProperty(CFG_KEY_EXTERNAL_IDP_1_ENTITY_ID);
+        String protocol = "urn:oasis:names:tc:SAML:2.0:protocol";
 
         // create original IDP configurations
-        IDPConfig idpConfig = new IDPConfig(entityId_1);
+        IDPConfig idpConfig = new IDPConfig(entityId_1, protocol);
         idpConfig.setNameIDFormats(Arrays.asList(props.getProperty(
                 CFG_KEY_EXTERNAL_IDP_1_NAME_ID_FORMATS).split(",")));
         idpConfig.setSsoServices(buildSSOServicesIdp1(props));
@@ -5060,7 +5068,8 @@ public final class TenantManagementTest
             {
                 IDPConfig sampleConfig =
                         new IDPConfig(
-                                props.getProperty(CFG_KEY_EXTERNAL_IDP_1_ENTITY_ID));
+                                props.getProperty(CFG_KEY_EXTERNAL_IDP_1_ENTITY_ID),
+                                props.getProperty(CFG_KEY_EXTERNAL_IDP_1_PROTOCOL));
                 List<String> nameIDFormats =
                         Arrays.asList(props.getProperty(
                                 CFG_KEY_EXTERNAL_IDP_1_NAME_ID_FORMATS).split(
@@ -5106,7 +5115,7 @@ public final class TenantManagementTest
             @Override
             public Void call() throws Exception
             {
-                client.getAllExternalIdpConfig(invalidTenantName);
+                client.getAllExternalIdpConfig(invalidTenantName, IDPConfig.IDP_PROTOCOL_SAML_2_0);
                 return null;
             }
         });

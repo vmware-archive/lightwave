@@ -45,13 +45,15 @@ public class ExternalIDPMapper {
     public static ExternalIDPDTO getExternalIDPDTO(IDPConfig config) {
         ExternalIDPDTO.Builder builder = ExternalIDPDTO.builder();
         builder.withEntityID(config.getEntityID());
+        builder.withProtocol(config.getProtocol());
         builder.withAlias(config.getAlias());
+        builder.withClientId(config.getClientId());
         builder.withNameIDFormats(config.getNameIDFormats());
         builder.withSsoServices(getServiceEndpointDTOs(config.getSsoServices()));
         builder.withSloServices(getServiceEndpointDTOs(config.getSloServices()));
 
         builder.withSigningCertificates(CertificateMapper.getCertificateChainDTO((List<Certificate>)(List<?>) config.getSigningCertificateChain()));
-
+        builder.withPublicKey(config.getPublicKey());
         builder.withSubjectFormats(getSubjectFormats(config.getSubjectFormatMappings()));
         builder.withTokenClaimGroups(getTokenClaimGroupDTOs(config.getTokenClaimGroupMappings()));
         builder.withJitEnabled(config.getJitAttribute());
@@ -172,7 +174,7 @@ public class ExternalIDPMapper {
     public static IDPConfig getIDPConfig(ExternalIDPDTO externalIDP) throws ExternalIDPExtraneousCertsInCertChainException, ExternalIDPCertChainInvalidTrustedPathException {
         IDPConfig config = null;
         try {
-            config = new IDPConfig(externalIDP.getEntityID());
+            config = new IDPConfig(externalIDP.getEntityID(), externalIDP.getProtocol());
             config.setAlias(externalIDP.getAlias());
             config.setNameIDFormats(externalIDP.getNameIDFormats());
             config.setSsoServices(getServiceEndpoints(externalIDP.getSsoServices()));

@@ -84,7 +84,7 @@ SanityCheckTenantDomain(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszUserDn);
     VMDIR_SAFE_FREE_STRINGA(pszUserSid);
-    VMDIR_SAFE_LDAP_UNBIND(pLd);
+    VDIR_SAFE_UNBIND_EXT_S(pLd);
     return dwError;
 error:
     goto cleanup;
@@ -160,7 +160,7 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszUserDn);
     VMDIR_SAFE_FREE_STRINGA(pszContainerDn);
 
-    VMDIR_SAFE_LDAP_UNBIND(pLd);
+    VDIR_SAFE_UNBIND_EXT_S(pLd);
     return dwError;
 error:
     goto cleanup;

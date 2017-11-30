@@ -406,7 +406,7 @@ public class AuthnRequestStateValidator implements
             // set extIDPToUse to the registered external IDP if
             // isProxying==true
             log.debug("IDPList not provided.  Choose from registered external IDP");
-            Collection<IDPConfig> extIdps = accessor.getExternalIdps();
+            Collection<IDPConfig> extIdps = accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0);
             if (extIdps != null && extIdps.size() > 0) {
                 for (IDPConfig idpConfig : extIdps) {
                     validExternalIdpList.add(idpConfig.getEntityID());
@@ -495,7 +495,7 @@ public class AuthnRequestStateValidator implements
 	    Validate.notNull(requestIdpList);
 	    Validate.notNull(accessor);
 	    List<String> retVal = new ArrayList<>();
-        Collection<IDPConfig> extIdps = accessor.getExternalIdps();
+        Collection<IDPConfig> extIdps = accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0);
 
         if (extIdps == null || extIdps.isEmpty()) {
             log.debug("No external IDP registered! ");

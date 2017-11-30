@@ -37,6 +37,7 @@ int _tmain(int argc, TCHAR *targv[])
             "5. Set vmdir state\n"
             "6. Get vmdir state\n"
             "7. Get vmdir log level and mask\n"
+            "8. Reinstantiate vmdir with a foreign database copy(e.g. /var/lib/vmware/vmdir/partner/data.mdb)\n"
 //            "99. Set SRP Authentication data\n"  do not want to expose this to users.  internal test only.
             "==================\n\n",
             pszChoice,
@@ -79,6 +80,10 @@ int _tmain(int argc, TCHAR *targv[])
           case 7:
               VdcadminGetLogParameters();
               break;
+
+          case 8:
+              VdcServerReset();
+              goto cleanup;
 
           case 99:
               VdcadminSetSRPAuthData();

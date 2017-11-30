@@ -50,8 +50,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
-import sun.security.krb5.KrbException;
-
 import com.vmware.af.VmAfClientNativeException;
 import com.vmware.af.interop.VmAfAccessDeniedException;
 import com.vmware.af.interop.VmAfAlreadyJoinedException;
@@ -202,6 +200,8 @@ import com.vmware.identity.performanceSupport.IdmAuthStatus;
 import com.vmware.identity.performanceSupport.PerfBucketKey;
 import com.vmware.identity.performanceSupport.PerfDataSinkFactory;
 import com.vmware.identity.performanceSupport.PerfMeasurementPoint;
+
+import sun.security.krb5.KrbException;
 /**
  * User: snambakam
  * Date: 12/23/11
@@ -1149,6 +1149,40 @@ public class IdentityManager implements IIdentityManager {
 
     private
     void
+    setTenantCredentials(
+            String                  tenantName
+    ) throws Exception
+    {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+
+            // check whether tenant exists, if not, throw NoSucnTenantException.
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            this.generateAndSetDefaultTenantCredentials(tenantName);
+
+            _tenantCache.deleteTenant(tenantName);
+
+            logger.info(String.format(
+                    "Default Credentials successfully set for tenant [%s]",
+                    tenantName));
+        }
+        catch(Exception ex)
+        {
+            logger.error(String.format(
+                    "Failed to set default credentials for tenant [%s]",
+                    tenantName));
+
+            throw ex;
+        }
+    }
+
+
+
+    private
+    void
     setTenantTrustedCertificateChain(
             String                  tenantName,
             Collection<Certificate> tenantCertificates
@@ -2059,6 +2093,10 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "tenantName");
             ValidateUtil.validateNotNull(oidcClient, "oidcClient");
 
+            if (oidcClient.isMultiTenant() && !ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                throw new InvalidArgumentException("Multi-tenant oidc client can only be registered in system tenant.");
+            }
+
             _configStore.addOIDCClient(tenantName, oidcClient);
         } catch (Exception ex) {
             logger.error(String.format("Failed to add OIDC client for tenant [%s]", tenantName));
@@ -2097,6 +2135,10 @@ public class IdentityManager implements IIdentityManager {
         try {
             ValidateUtil.validateNotEmpty(tenantName, "tenantName");
             ValidateUtil.validateNotNull(oidcClient, "oidcClient");
+
+            if (oidcClient.isMultiTenant() && !ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                throw new InvalidArgumentException("Multi-tenant oidc client can only be registered in system tenant.");
+            }
 
             _configStore.setOIDCClient(tenantName, oidcClient);
 
@@ -7058,7 +7100,7 @@ public class IdentityManager implements IIdentityManager {
                     _configStore.setSystemTenant(spDomain);
 
                     // call VMCA to create certs/private key and set tenant credentials
-                    setTenantCredentials(spDomain);
+                    generateAndSetDefaultTenantCredentials(spDomain);
 
                     // set default tenant settings
                     _configStore.setClockTolerance(spDomain, IConfigStore.DEFAULT_CLOCK_TOLERANCE);
@@ -7109,7 +7151,7 @@ public class IdentityManager implements IIdentityManager {
         return spTenant.getName();
     }
 
-    private void setTenantCredentials(String tenantName) throws Exception {
+    private void generateAndSetDefaultTenantCredentials(String tenantName) throws Exception {
         // VMCA time constants
         final int VMCA_DEFAULT_KEY_LENGTH = 2048;
         final long VMCA_TIME_SECS_PER_MINUTE = 60;
@@ -7656,8 +7698,14 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "[tenantname]");
             ValidateUtil.validateNotNull(idpConfig, "[idpConfig]");
 
-            // validate IDP config has all the required meta data before registering..
-            ValidateUtil.validateNotEmpty(idpConfig.getSigningCertificateChain(), "[idpConfig.signingCertificates]");
+            String protocol = idpConfig.getProtocol();
+            IDPConfig.validateProtocol(protocol);
+            if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
+                // validate IDP config has all the required meta data before registering..
+                ValidateUtil.validateNotEmpty(idpConfig.getSigningCertificateChain(), "[idpConfig.signingCertificates]");
+            } else if (protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                ValidateUtil.validateNotNull(idpConfig.getPublicKey(), "[idpConfig.publicKey]");
+            }
 
             // validate groups exist in system domain before setting claim group mappings
             Map<TokenClaimAttribute, List<String>> claimGroupMappings = idpConfig.getTokenClaimGroupMappings();
@@ -7748,6 +7796,33 @@ public class IdentityManager implements IIdentityManager {
             throw e;
         }
             }
+
+    private
+    Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, String protocol)
+            throws Exception
+    {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotEmpty(protocol, "protocol");
+
+            TenantInformation tenantInfo = getTenantInfo(tenantName);
+            if (tenantInfo == null)
+            {
+                throw new NoSuchTenantException(String.format("Tenant [%s] not found", tenantName));
+            }
+            else
+            {
+                return tenantInfo.getExternalIdpConfigs(protocol);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error(String.format(
+                    "Failed to get all external IDP for tenant [%s]",
+                    tenantName));
+            throw e;
+        }
+    }
 
     private
     IDPConfig getExternalIdpForTenant(String tenantName,
@@ -11063,6 +11138,21 @@ public class IdentityManager implements IIdentityManager {
             try
             {
                 return this.getAllExternalIdpsForTenant(tenantName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, String protocol, IIdmServiceContext serviceContext) throws NoSuchTenantException, IDMException {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getAllExternalIdpsForTenant"))
+        {
+            try
+            {
+                return this.getAllExternalIdpsForTenant(tenantName, protocol);
             }
             catch(Exception ex)
             {

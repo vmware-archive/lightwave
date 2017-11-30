@@ -149,13 +149,16 @@ VmDirSASLSRPBindExt1(
         retVal = ldap_set_option(pLd, LDAP_OPT_X_SASL_NOCANON, &iSaslNoCanon);
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-        // timeout connect
-        retVal = ldap_set_option(pLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        if (iTimeout > 0)
+        {
+            // timeout connect
+            retVal = ldap_set_option(pLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
+            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-        // timeout poll
-        retVal = ldap_set_option(pLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+            // timeout poll
+            retVal = ldap_set_option(pLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
+            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        }
 
         retVal = ldap_sasl_interactive_bind_s( pLd,
                                                 NULL,

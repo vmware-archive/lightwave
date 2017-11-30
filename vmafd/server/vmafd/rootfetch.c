@@ -305,6 +305,12 @@ cleanup:
 
 error :
 
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "Failed to fetch root certs from server [%s]: Error: [%u]",
+        (pArgs && !IsNullOrEmptyString(pArgs->pszDCName)) ? pArgs->pszDCName:"",
+        dwError
+        );
     goto cleanup;
 }
 

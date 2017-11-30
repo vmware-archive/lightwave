@@ -104,7 +104,7 @@ public class CertificateResource extends BaseSubResource {
                 // Get certificate chains of system provider, localos, and other directly registered external IDPs (AD or OpenLDAP)
             } else if (scope == CertificateScope.EXTERNAL_IDP) {
                 // Get certificate chains of externalIDPs (trusted) associated with tenant if any
-                Collection<IDPConfig> idpConfigs = getIDMClient().getAllExternalIdpConfig(tenant); // Retrieve configuration of all trusted external IDPs
+                Collection<IDPConfig> idpConfigs = getIDMClient().getAllExternalIdpConfig(tenant, IDPConfig.IDP_PROTOCOL_SAML_2_0); // Retrieve configuration of all trusted external IDPs
                 if (idpConfigs != null) {
                     for (IDPConfig idpConfig : idpConfigs) {
                         List<Certificate> certificates = new ArrayList<Certificate>();

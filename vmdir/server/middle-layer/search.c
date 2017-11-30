@@ -32,16 +32,28 @@ BuildCandidateList(
 
 static
 int
-ProcessCandidateList(
+VmDirProcessCandidateList(
+    VDIR_OPERATION *    pOperation
+    );
+
+static
+int
+_VmDirInternalNormalSearch(
+    VDIR_OPERATION *    pOperation
+    );
+
+static
+int
+_VmDirInternalPagedSearch(
     VDIR_OPERATION *    pOperation
     );
 
 static
 DWORD
 SetPagedSearchCookie(
-    PVDIR_OPERATION pOp,
-    ENTRYID eId,
-    DWORD dwCandidatesProcessed
+    PVDIR_OPERATION  pOp,
+    ENTRYID          eId,
+    DWORD            dwCandidatesProcessed
     );
 
 int
@@ -182,7 +194,6 @@ VmDirInternalSearch(
     BOOLEAN bUseOldSearch = TRUE;
     PSTR    pszLocalErrMsg = NULL;
     ENTRYID     eId = 0;
-    ENTRYID     eStartingId = 0;
     ENTRYID*    pValidatedEntries = NULL;
     PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
 
@@ -272,6 +283,9 @@ txnretry:
     retVal = AppendDNFilter( pOperation );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Appending DN filter failed.");
 
+    /*
+     * TODO cleanup During background thread implementation of page search
+     */
     if (gVmdirGlobals.bPagedSearchReadAhead)
     {
         if (pOperation->showPagedResultsCtrl != NULL &&
@@ -287,39 +301,27 @@ txnretry:
         }
     }
 
-    if (bUseOldSearch)
+    if (pOperation->showPagedResultsCtrl == NULL)
     {
-        retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, eStartingId);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
-
-        if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
-        {
-            retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                retVal,
-                pszLocalErrMsg,
-                "Full scan of Entry DB is required. Refine your search.");
-        }
-
-        retVal = ProcessCandidateList(pOperation);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal,
-            pszLocalErrMsg,
-            "ProcessCandidateList failed. (%u)(%s)",
-            retVal,
-            VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
+        retVal = _VmDirInternalNormalSearch(pOperation);
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
-    else if (pValidatedEntries != NULL)
+    else
+    {
+        retVal = _VmDirInternalPagedSearch(pOperation);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    /*
+     * TODO cleanup During background thread implementation of page search
+     */
+    if (pValidatedEntries != NULL)
     {
         retVal = ProcessPreValidatedEntries(
                     pOperation,
                     dwEntryCount,
                     pValidatedEntries);
         BAIL_ON_VMDIR_ERROR(retVal);
-    }
-    else if (pOperation->showPagedResultsCtrl != NULL)
-    {
-        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
     }
 
     retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
@@ -731,6 +733,106 @@ error:
     goto cleanup;
 }
 
+static
+int
+_VmDirInternalNormalSearch(
+    VDIR_OPERATION *    pOperation
+    )
+{
+    int     retVal = LDAP_SUCCESS;
+    PSTR    pszLocalErrMsg = NULL;
+    ENTRYID eStartingId = 0;
+
+    // should never happen - there are asserts in calling function
+    if (pOperation == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, eStartingId);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
+
+    if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
+    {
+        retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "Full scan of Entry DB is required. Refine your search.");
+    }
+
+    retVal = VmDirProcessCandidateList(pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+        retVal,
+        pszLocalErrMsg,
+        "VmDirProcessCandidateList failed. (%u)(%s)",
+        retVal,
+        VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error(%d)",
+            __FUNCTION__,
+            retVal);
+    goto cleanup;
+}
+
+static
+int
+_VmDirInternalPagedSearch(
+    VDIR_OPERATION *    pOperation
+    )
+{
+    int     retVal = LDAP_SUCCESS;
+    PSTR    pszLocalErrMsg = NULL;
+
+    // should never happen - there are asserts in calling function
+    if (pOperation == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    /*
+     * New page search
+     * TODO: Iterator logic and ranking algorithm will be added in next tasks
+     */
+    if (pOperation->showPagedResultsCtrl != NULL &&
+        IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
+    {
+        retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, 0);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
+
+        if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
+        {
+            retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrMsg,
+                "Full scan of Entry DB is required. Refine your search.");
+        }
+    }
+
+    retVal = VmDirProcessPagedSearch(pOperation);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error(%d)",
+            __FUNCTION__,
+            retVal);
+    goto cleanup;
+}
+
 /* BuildCandidateList: Process indexed attributes, and build a complete candidates list which is a super set of
  * the result set that we need to send back to the client.
  */
@@ -1065,7 +1167,7 @@ error:
     goto cleanup;
 }
 
-/* ProcessCandidateList: Goes thru the candidate list, constructed by processing the indexed attributes and logical
+/* VmDirProcessCandidateList: Goes thru the candidate list, constructed by processing the indexed attributes and logical
  * (AND/OR/NOT) relationship between them, and performs the following logic:
  *     - Read complete entry
  *     - Check if it passes the search filter
@@ -1077,7 +1179,7 @@ error:
 
 static
 int
-ProcessCandidateList(
+VmDirProcessCandidateList(
     VDIR_OPERATION * pOperation
     )
 {
@@ -1087,6 +1189,7 @@ ProcessCandidateList(
     VDIR_ENTRY        srEntry = {0};
     VDIR_ENTRY *      pSrEntry = NULL;
     int               numSentEntries = 0;
+    BOOLEAN           bExternalSearch = FALSE;
     BOOLEAN           bInternalSearch = FALSE;
     BOOLEAN           bStoreRsltInMem = FALSE;
     BOOLEAN           bPageResultsCtrl = FALSE;
@@ -1110,11 +1213,12 @@ ProcessCandidateList(
         VmDirSortCandidateList(cl);  // sort candidate list if not yet sorted
     }
 
+    bExternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL;
+    bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
+    bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
+
     if (cl && cl->size > 0)
     {
-        bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
-        bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
-
         if (bInternalSearch || bStoreRsltInMem)
         {   //TODO, we should have a hard limit on the cl->size we handle
             VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
@@ -1124,11 +1228,17 @@ ProcessCandidateList(
         }
 
         for (i = 0, numSentEntries = 0;
-             (i < cl->size) && VmDirdState() != VMDIRD_STATE_SHUTDOWN &&
+             (i < cl->size) &&
              (pOperation->request.searchReq.sizeLimit == 0 /* unlimited */ ||
               numSentEntries < pOperation->request.searchReq.sizeLimit);
              i++)
         {
+            if (bExternalSearch && VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+            {
+                retVal = LDAP_UNAVAILABLE; // stop all external search ops, including replication pull
+                goto cleanup;
+            }
+
             if (!gVmdirGlobals.bPagedSearchReadAhead)
             {
                 //skip entries we sent before in sorted cl->eIds.
@@ -1234,6 +1344,9 @@ ProcessCandidateList(
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ProcessCandiateList may return none or paritial requested entries with sizelimit %d",
                         pOperation->request.searchReq.sizeLimit);
     }
+
+    // if full page sent to consumer, ask consumer to come back.
+    VmDirSetSyncDoneCtlbContinue(pOperation, numSentEntries);
 
 cleanup:
 

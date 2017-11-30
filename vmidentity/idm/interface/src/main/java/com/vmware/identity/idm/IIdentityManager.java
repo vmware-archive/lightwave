@@ -619,6 +619,23 @@ public interface IIdentityManager
             throws  NoSuchTenantException, IDMException;
 
     /**
+     * Get all external IDP configurations for the specified tenant
+     *
+     * @param tenantName
+     *            Cannot be null or empty
+     * @param protocol
+     *            Cannot be null or empty
+     *            Supported protocols are {urn:oasis:names:tc:SAML:2.0:protocol,urn:oasis:names:tc:OAUTH:2.0:protocol }
+     * @return Collection of IDPConfiguration objects of the tenant, empty if not found
+     * @throws RemoteException
+     * @throws IDMException
+     * @throws NoSuchTenantException
+     *             tenant not found
+     */
+    public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, String protocol, IIdmServiceContext serviceContext)
+            throws  NoSuchTenantException, IDMException;
+
+    /**
      * Retrieve external IDP configuration per tenant name and entityId.
      *
      * @param tenantName

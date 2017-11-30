@@ -29,7 +29,9 @@
 package com.vmware.identity.idm.server.config.directory;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -48,9 +50,6 @@ import java.util.UUID;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -116,9 +115,13 @@ import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.interop.ldap.NoSuchAttributeLdapException;
 import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
 
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
+
 public class DirectoryConfigStore implements IConfigStore {
 
     private static final String SYSTEM_TENANT = "SystemTenant";
+    private static final String OIDC_TENANT_PLACEHOLDER = "{tenant}";
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(DirectoryConfigStore.class);
 
     public static final int FLAG_AUTHN_TYPE_ALLOW_NONE = 0x0;
@@ -1499,34 +1502,93 @@ public class DirectoryConfigStore implements IConfigStore {
 
     @Override
     public OIDCClient getOIDCClient(String tenantName, String clientID) throws Exception {
-	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
-	ValidateUtil.validateNotEmpty(clientID, "clientID");
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotEmpty(clientID, "clientID");
 
-	try (PooledLdapConnection pooledConnection = borrowConnection()) {
-	    ILdapConnectionEx connection = pooledConnection.getConnection();
-	    String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+        OIDCClient oidcClient = retrieveLdapOIDCClient(tenantName, clientID);
 
-	    OIDCClient oidcClient = null;
+        if (oidcClient == null) {
+            String systemTenant = getSystemTenant();
+            // check if the oidc client is multi tenanted
+            if (!tenantName.equalsIgnoreCase(systemTenant)) {
+                OIDCClient multiTenantOidcClient = retrieveLdapOIDCClient(systemTenant, clientID);
+                if (multiTenantOidcClient != null && multiTenantOidcClient.isMultiTenant()) {
+                    oidcClient = multiTenantOidcClient;
+                }
+            }
+        }
 
-	    ContainerLdapObject oidcClientsContainer = ContainerLdapObject.getInstance();
-	    String oidcClientsContainerDn = DirectoryConfigStore.ensureObjectExists(connection, tenantsRootDn,
-		    oidcClientsContainer, ContainerLdapObject.CONTAINER_OIDC_CLIENTS, false);
+        // throw NoSuchOIDCClientException if no client is found
+        if (oidcClient == null) {
+            throw new NoSuchOIDCClientException(String.format("The OIDC client %s does not exist on tenant %s",
+                clientID, tenantName));
+        }
 
-	    if (ServerUtils.isNullOrEmpty(oidcClientsContainerDn) == false) {
-		OIDCClientLdapObject oidcClientLdapObject = OIDCClientLdapObject.getInstance();
-
-		oidcClient = oidcClientLdapObject.retrieveObject(connection, oidcClientsContainerDn,
-			LdapScope.SCOPE_ONE_LEVEL, clientID);
-	    }
-
-	    // throw NoSuchOIDCClientException if no client is found
-	    if (oidcClient == null) {
-		throw new NoSuchOIDCClientException(String.format("The OIDC client %s does not exist on tenant %s",
-			clientID, tenantName));
-	    }
+        if (oidcClient.isMultiTenant()) {
+            oidcClient = convertToMultiTenantOidcMetaData(tenantName, oidcClient);
+        }
 
 	    return oidcClient;
-	}
+    }
+
+    private OIDCClient retrieveLdapOIDCClient(String tenantName, String clientID) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+
+            OIDCClient oidcClient = null;
+
+            ContainerLdapObject oidcClientsContainer = ContainerLdapObject.getInstance();
+            String oidcClientsContainerDn = DirectoryConfigStore.ensureObjectExists(connection, tenantsRootDn,
+                oidcClientsContainer, ContainerLdapObject.CONTAINER_OIDC_CLIENTS, false);
+
+            if (ServerUtils.isNullOrEmpty(oidcClientsContainerDn) == false) {
+            OIDCClientLdapObject oidcClientLdapObject = OIDCClientLdapObject.getInstance();
+
+            oidcClient = oidcClientLdapObject.retrieveObject(connection, oidcClientsContainerDn,
+                LdapScope.SCOPE_ONE_LEVEL, clientID);
+            }
+
+            return oidcClient;
+        }
+    }
+
+    private static OIDCClient convertToMultiTenantOidcMetaData(String tenantName, OIDCClient oidcClient) throws URISyntaxException {
+        // normalize to lower case for oidc uris since uri is case sensitive
+        tenantName = tenantName.toLowerCase();
+
+        return new OIDCClient.Builder(oidcClient.getClientId()).
+                redirectUris(replaceTenantName(oidcClient.getRedirectUriTemplates(), tenantName)).
+                tokenEndpointAuthMethod(oidcClient.getTokenEndpointAuthMethod()).
+                postLogoutRedirectUris(replaceTenantName(oidcClient.getPostLogoutRedirectUriTemplates(), tenantName)).
+                logoutUri(replaceTenantName(oidcClient.getLogoutUriTemplate(), tenantName)).
+                certSubjectDN(oidcClient.getCertSubjectDN()).
+                multiTenant(oidcClient.isMultiTenant()).
+                redirectUriTemplates(oidcClient.getRedirectUriTemplates()).
+                logoutUriTemplate(oidcClient.getLogoutUriTemplate()).
+                postLogoutRedirectUriTemplates(oidcClient.getPostLogoutRedirectUriTemplates()).build();
+    }
+
+    private static String replaceTenantName(String uriString, String tenantName) throws URISyntaxException {
+        if (StringUtils.isEmpty(uriString) || StringUtils.isEmpty(tenantName)) {
+            return uriString;
+        }
+
+        return StringUtils.replace(uriString, OIDC_TENANT_PLACEHOLDER, tenantName);
+    }
+
+    private static List<String> replaceTenantName(List<String> uris, String tenantName) throws URISyntaxException {
+        ValidateUtil.validateNotEmpty(uris, "oidcUris");
+        if (StringUtils.isEmpty(tenantName)) {
+            return uris;
+        }
+
+        List<String> newUris = new ArrayList<>();
+        for (String uriString : uris) {
+            newUris.add(replaceTenantName(uriString, tenantName));
+        }
+
+        return newUris;
     }
 
     @Override
@@ -1715,7 +1777,7 @@ public class DirectoryConfigStore implements IConfigStore {
 
     // Helper function for getOIDCClients method
     private static Collection<OIDCClient> getOIDCClients(DirectoryConfigStore directoryConfigStore,
-	    ILdapConnectionEx connection, String tenantName, String propertyFilter) {
+	    ILdapConnectionEx connection, String tenantName, String propertyFilter) throws URISyntaxException {
 	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
 
 	String tenantsRootDn = directoryConfigStore.ensureTenantExists(connection, tenantName);
@@ -1723,7 +1785,15 @@ public class DirectoryConfigStore implements IConfigStore {
 	Collection<OIDCClient> oidcClients = retrieveObjectsCollection(connection, tenantsRootDn,
 		ContainerLdapObject.CONTAINER_OIDC_CLIENTS, propertyFilter, OIDCClientLdapObject.getInstance(), null);
 
-	return oidcClients;
+	Collection<OIDCClient> convertedOidcClients = new ArrayList<>();
+	for (OIDCClient oidcClient : oidcClients) {
+	    if (oidcClient.isMultiTenant()) {
+	        convertedOidcClients.add(convertToMultiTenantOidcMetaData(tenantName, oidcClient));
+	    } else {
+	        convertedOidcClients.add(oidcClient);
+	    }
+	}
+	return convertedOidcClients;
     }
 
     @Override
@@ -1828,12 +1898,15 @@ public class DirectoryConfigStore implements IConfigStore {
 	    saveObjectsCollection(connection, ldapObjDN, ContainerLdapObject.CONTAINER_EXTERNAL_IDP_SLO_SERVICES,
 		    SingleLogoutServiceLdapObject.getInstance(), idpConfig.getSloServices(), null);
 
-	    TenantTrustedCertificateChain certChain = new TenantTrustedCertificateChain("TrustedCertChain",
-		    new ArrayList<Certificate>(idpConfig.getSigningCertificateChain()));
-	    // For now, only one trusted certificate chain in this container.
-	    Collection<TenantTrustedCertificateChain> chains = Arrays.asList(certChain);
-	    saveObjectsCollection(connection, ldapObjDN, ContainerLdapObject.CONTAINER_EXTERNAL_IDP_CERTIFICATE_CHAINS,
-		    TenantTrustedCertChainLdapObject.getInstance(), chains, null);
+		List<X509Certificate> signingCertificateChain = idpConfig.getSigningCertificateChain();
+		if (signingCertificateChain != null && !signingCertificateChain.isEmpty()) {
+			TenantTrustedCertificateChain certChain = new TenantTrustedCertificateChain("TrustedCertChain",
+					new ArrayList<Certificate>(signingCertificateChain));
+			// For now, only one trusted certificate chain in this container.
+			Collection<TenantTrustedCertificateChain> chains = Arrays.asList(certChain);
+			saveObjectsCollection(connection, ldapObjDN, ContainerLdapObject.CONTAINER_EXTERNAL_IDP_CERTIFICATE_CHAINS,
+					TenantTrustedCertChainLdapObject.getInstance(), chains, null);
+		}
 
 	    Collection<AttributeMapping> attributeMappings = new ArrayList<AttributeMapping>();
 
@@ -1928,16 +2001,19 @@ public class DirectoryConfigStore implements IConfigStore {
 				    ContainerLdapObject.CONTAINER_EXTERNAL_IDP_SLO_SERVICES,
 				    SingleLogoutServiceLdapObject.getInstance(), null));
 
-			    try {
-				idpConfig.setSigningCertificateChain(retrieveExternalIDPConfigSigningCertificates(
-					connection, idpConfigDN));
-			    } catch (IDMException ie) {
-				String message = "Signing certifiate chain retrieved from directory store"
-					+ "is invalid, most likely certs are out of required order"
-					+ "(user first, root cast last)";
-				logger.error(message);
-				throw new IllegalStateException(message);
-			    }
+			    String protocol = idpConfig.getProtocol();
+			    if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
+					try {
+						idpConfig.setSigningCertificateChain(retrieveExternalIDPConfigSigningCertificates(
+								connection, idpConfigDN));
+					} catch (IDMException ie) {
+						String message = "Signing certifiate chain retrieved from directory store"
+								+ "is invalid, most likely certs are out of required order"
+								+ "(user first, root cast last)";
+						logger.error(message);
+						throw new IllegalStateException(message);
+					}
+				}
 
 			    AttributeConfig[] subjectFormatMappings = retrieveSubjectFormatMap(connection, idpConfigDN);
 			    Map<TokenClaimAttribute, List<String>> tokenClaimGroupMappings = retrieveClaimGroupMap(

@@ -149,11 +149,16 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     PVDIR_FILTER pFilter;
 
     //
+    // cache the string representation of filter as well, in order to validaate
+    // subsequent page search request.
+    //
+    VDIR_BERVALUE bvStrFilter;
+
+    //
     // The queue of vetted ENTRYIDs. Each entry will be a page's worth of
     // IDs.
     //
     PDEQUE pQueue;
-    PVMDIR_MUTEX mutex;
     PVMDIR_COND pDataAvailable;
 
     //
@@ -178,6 +183,13 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     // thread know that it can exit.
     //
     BOOLEAN bSearchCompleted;
+
+    //
+    // Indicates search is in progress, protected by mutex
+    // To avoid processing multiple concurrent page search requests
+    //
+    PVMDIR_MUTEX mutex;
+    BOOLEAN bSearchInProgress;
 } VDIR_PAGED_SEARCH_RECORD, *PVDIR_PAGED_SEARCH_RECORD;
 
 typedef struct _VDIR_PAGED_SEARCH_CACHE
@@ -186,6 +198,18 @@ typedef struct _VDIR_PAGED_SEARCH_CACHE
     PVMDIR_MUTEX        mutex;
     PLW_HASHTABLE       pHashTbl;
 } VDIR_PAGED_SEARCH_CACHE, *PVDIR_PAGED_SEARCH_CACHE;
+
+/*
+ * TODO - Rename VDIR_PAGED_SEARCH_CONTEXT to VDIR_PAGED_SEARCH_CACHE
+ * Rename VDIR_PAGED_SEARCH_RECORD to VDIR_PAGED_SEARCH_CTX
+ * after the cleanup of paged search background thread related logic.
+ */
+typedef struct _VDIR_PAGED_SEARCH_CONTEXT
+{
+    // NOTE: order of fields MUST stay in sync with struct initializer...
+    PVMDIR_MUTEX        mutex;
+    PLW_HASHMAP         pHashMap;
+} VDIR_PAGED_SEARCH_CONTEXT, *PVDIR_PAGED_SEARCH_CONTEXT;
 
 typedef struct _VDIR_LOCKOUT_CACHE
 {

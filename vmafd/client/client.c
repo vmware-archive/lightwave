@@ -4933,6 +4933,85 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfdBeginUpgrade(
+    PVMAFD_SERVER pServer
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pServer)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (!pServer->hBinding)
+    {
+        dwError = VmAfdLocalBeginUpgrade();
+    }
+    else
+    {
+        DCETHREAD_TRY
+        {
+            dwError = VmAfdRpcBeginUpgrade(pServer->hBinding);
+        }
+        DCETHREAD_CATCH_ALL(THIS_CATCH)
+        {
+            dwError = VmAfdRpcGetErrorCode(THIS_CATCH);
+        }
+        DCETHREAD_ENDTRY;
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdEndUpgrade(
+    PVMAFD_SERVER pServer
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pServer)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (!pServer->hBinding)
+    {
+        dwError = VmAfdLocalEndUpgrade();
+    }
+    else
+    {
+        DCETHREAD_TRY
+        {
+            dwError = VmAfdRpcEndUpgrade(pServer->hBinding);
+        }
+        DCETHREAD_CATCH_ALL(THIS_CATCH)
+        {
+            dwError = VmAfdRpcGetErrorCode(THIS_CATCH);
+        }
+        DCETHREAD_ENDTRY;
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
 VOID
 VmAfdFreeString(
     PSTR pszString)

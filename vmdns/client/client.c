@@ -320,7 +320,6 @@ VmDnsDeleteForwarderA(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszForwarder, dwError);
-
     DCETHREAD_TRY
     {
         dwError = VmDnsRpcDeleteForwarder(
@@ -360,9 +359,50 @@ VmDnsInitializeA(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
     DCETHREAD_TRY
     {
         dwError = VmDnsRpcInitialize(
+                            pServerContext->hBinding,
+                            pInitInfo
+                            );
+    }
+    DCETHREAD_CATCH_ALL(THIS_CATCH)
+    {
+        dwError = VmDnsRpcGetErrorCode(THIS_CATCH);
+    }
+    DCETHREAD_ENDTRY;
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+VMDNS_API
+DWORD
+VmDnsInitializeWithSiteA(
+    PVMDNS_SERVER_CONTEXT     pServerContext,
+    PVMDNS_INIT_SITE_INFO     pInitInfo
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pServerContext ||
+        !pServerContext->hBinding ||
+        !pInitInfo)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    DCETHREAD_TRY
+    {
+        dwError = VmDnsRpcInitializeWithSite(
                             pServerContext->hBinding,
                             pInitInfo
                             );
@@ -403,6 +443,46 @@ VmDnsUninitializeA(
     DCETHREAD_TRY
     {
         dwError = VmDnsRpcUninitialize(
+                            pServerContext->hBinding,
+                            pInitInfo
+                            );
+    }
+    DCETHREAD_CATCH_ALL(THIS_CATCH)
+    {
+        dwError = VmDnsRpcGetErrorCode(THIS_CATCH);
+    }
+    DCETHREAD_ENDTRY;
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+VMDNS_API
+DWORD
+VmDnsUninitializeWithSiteA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_INIT_SITE_INFO   pInitInfo
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pServerContext ||
+        !pServerContext->hBinding ||
+        !pInitInfo)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    DCETHREAD_TRY
+    {
+        dwError = VmDnsRpcUninitializeWithSite(
                             pServerContext->hBinding,
                             pInitInfo
                             );

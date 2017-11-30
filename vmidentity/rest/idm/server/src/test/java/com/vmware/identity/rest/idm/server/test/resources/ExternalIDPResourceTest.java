@@ -73,7 +73,7 @@ public class ExternalIDPResourceTest {
     @Test
     public void testGetAllExternalIDPs() throws Exception {
         Collection<IDPConfig> configs = getIDPConfigs();
-        expect(client.getAllExternalIdpConfig(TENANT)).andReturn(configs);
+        expect(client.getAllExternalIdpConfig(TENANT, IDPConfig.IDP_PROTOCOL_SAML_2_0)).andReturn(configs);
         replay(client);
 
         Collection<ExternalIDPDTO> externalIDPs = resource.getAll();
@@ -84,7 +84,7 @@ public class ExternalIDPResourceTest {
 
     @Test(expected = NotFoundException.class)
     public void testGetAllExternalIDPs_NoSuchTenant() throws Exception {
-        expect(client.getAllExternalIdpConfig(TENANT)).andThrow(new NoSuchTenantException("No such tenant"));
+        expect(client.getAllExternalIdpConfig(TENANT, IDPConfig.IDP_PROTOCOL_SAML_2_0)).andThrow(new NoSuchTenantException("No such tenant"));
         replay(client);
 
         resource.getAll();
@@ -93,7 +93,7 @@ public class ExternalIDPResourceTest {
 
     @Test(expected = InternalServerErrorException.class)
     public void testGetAllExternalIDPs_ThrowsInternalServerError() throws Exception {
-        expect(client.getAllExternalIdpConfig(TENANT)).andThrow(new IDMException("IDM error"));
+        expect(client.getAllExternalIdpConfig(TENANT, IDPConfig.IDP_PROTOCOL_SAML_2_0)).andThrow(new IDMException("IDM error"));
         replay(client);
 
         resource.getAll();

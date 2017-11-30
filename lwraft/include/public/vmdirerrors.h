@@ -157,6 +157,7 @@
     VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 99) )
 
 #define VMDIR_ERROR_NO_LEADER                         (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 0 )   // 9500
+#define VMDIR_ERROR_INVALID_ROLE                      (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 1 )   // 9501
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)

@@ -50,9 +50,9 @@ error:
 }
 
 UINT32
-VmDnsRpcUninitialize(
-    handle_t            hBinding,
-    PVMDNS_INIT_INFO    pInitInfo
+VmDnsRpcInitializeWithSite(
+    handle_t                 hBinding,
+    PVMDNS_INIT_SITE_INFO    pInitInfo
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -60,7 +60,49 @@ VmDnsRpcUninitialize(
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsSrvCleanupDomain(pInitInfo);
+    dwError = VmDnsSrvInitDomainWithSite(pInitInfo);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+UINT32
+VmDnsRpcUninitialize(
+    handle_t         hBinding,
+    PVMDNS_INIT_INFO pInitInfo
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+
+    dwError = VmDnsCheckAccess(hBinding, TRUE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvUninitializeDomain(pInitInfo);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+UINT32
+VmDnsRpcUninitializeWithSite(
+    handle_t              hBinding,
+    PVMDNS_INIT_SITE_INFO pInitInfo
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+
+    dwError = VmDnsCheckAccess(hBinding, TRUE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvUninitializeDomainWithSite(pInitInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:

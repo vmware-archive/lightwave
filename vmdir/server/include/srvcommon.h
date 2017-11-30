@@ -561,6 +561,11 @@ typedef struct SyncDoneControlValue
 {
     USN                     intLastLocalUsnProcessed;
     PLW_HASHTABLE           htUtdVector;
+
+    // supplier asks consumer to come back if
+    // 1. there are out-standing uncommitted USN that needs further processing
+    //   (done in result.c/VmDirSendSearchEntry)
+    // 2. full page request sent and there could be more changes pending.
     BOOLEAN                 bContinue;
 } SyncDoneControlValue;
 
@@ -673,8 +678,6 @@ typedef struct _VDIR_THREAD_INFO
 
 typedef struct _VMDIR_REPLICATION_METRICS
 {
-    PVM_METRICS_HISTOGRAM       pReplConnectDuration;
-    PVM_METRICS_COUNTER         pReplConnectFailures;
     PVM_METRICS_COUNTER         pReplUnfinished;
     PVM_METRICS_GAUGE           pReplUsn;
     PVM_METRICS_COUNTER         pReplChanges;
@@ -682,14 +685,51 @@ typedef struct _VMDIR_REPLICATION_METRICS
 
 } VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;
 
+typedef enum _VMDIR_DC_CONNECTION_TYPE
+{
+    DC_CONNECTION_TYPE_BASIC,
+    DC_CONNECTION_TYPE_REPL,
+    DC_CONNECTION_TYPE_CLUSTER_STATE
+} VMDIR_DC_CONNECTION_TYPE;
+
+typedef enum _VMDIR_DC_CONNECTION_STATE
+{
+    DC_CONNECTION_STATE_NOT_CONNECTED,  // default not connected
+    DC_CONNECTION_STATE_CONNECTING,     // set by owner to transfer ownership to background thread
+    DC_CONNECTION_STATE_CONNECTED,      // set by background thread to transfer back ownership
+    DC_CONNECTION_STATE_FAILED          // set by background thread to transfer back ownership
+} VMDIR_DC_CONNECTION_STATE;
+
+typedef struct _VMDIR_CONNECTION_CREDS
+{
+    BOOLEAN bUseDCAccountCreds;
+    PSTR    pszUPN;
+    PSTR    pszPassword;
+    // old password if password change not yet converged in replication
+    PSTR    pszOldPassword;
+} VMDIR_CONNECTION_CREDS, *PVMDIR_CONNECTION_CREDS;
+
+typedef struct _VMDIR_DC_CONNECTION
+{
+    VMDIR_DC_CONNECTION_TYPE    connType;
+    VMDIR_DC_CONNECTION_STATE   connState;
+
+    PSTR                        pszRemoteDCHostName;
+    time_t                      iLastFailedTime;
+    DWORD                       dwlastFailedError;
+    DWORD                       dwConsecutiveFailAttempt;
+    DWORD                       dwConnectTimeoutSec;
+    LDAP*                       pLd;
+    VMDIR_CONNECTION_CREDS      creds;
+} VMDIR_DC_CONNECTION, *PVMDIR_DC_CONNECTION;
+
 typedef struct _VMDIR_REPLICATION_AGREEMENT
 {
     VDIR_BERVALUE               dn;
     char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
-    time_t                      oldPasswordFailTime;
-    time_t                      newPasswordFailTime;
+    VMDIR_DC_CONNECTION         dcConn;
     VMDIR_REPLICATION_METRICS   ReplMetrics;
 
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
@@ -717,6 +757,25 @@ typedef struct _VMDIR_SECURITY_DESCRIPTOR
     ULONG ulSecDesc;
     SECURITY_INFORMATION SecInfo;
 } VMDIR_SECURITY_DESCRIPTOR, *PVMDIR_SECURITY_DESCRIPTOR;
+
+// common/dcconnthr.c
+
+VOID
+VmDirFreeConnCredContent(
+    PVMDIR_CONNECTION_CREDS pCreds
+    );
+
+VOID
+VmDirFreeDCConnContent(
+    PVMDIR_DC_CONNECTION pDCConn
+    );
+
+DWORD
+VmDirInitDCConnThread(
+    PVMDIR_DC_CONNECTION pDCConn
+    );
+
+// vmdir/init.c
 
 DWORD
 VmDirInitBackend();

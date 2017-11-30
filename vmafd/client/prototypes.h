@@ -408,6 +408,16 @@ VmAfdLocalChangePNID(
     PCWSTR pwszPNID
     );
 
+DWORD
+VmAfdLocalBeginUpgrade(
+VOID
+);
+
+DWORD
+VmAfdLocalEndUpgrade(
+VOID
+);
+
 // cdclocalclient.c
 
 DWORD
