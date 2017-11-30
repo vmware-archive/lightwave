@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -15,41 +15,15 @@
 
 
 /*
- * Module Name: Replication
+ * Module Name: Lwraft replication
  *
- * Filename: libmain.c
+ * Filename: externs.h
  *
  * Abstract:
  *
- * Library Entry points
+ *
+ * Externs
  *
  */
 
-#include "includes.h"
-
-/*
- *
- */
-DWORD
-VmDirReplicationLibInit(
-    VOID
-    )
-{
-    DWORD       dwError = 0;
-
-    VmDirLog( LDAP_DEBUG_TRACE, "VmDirReplicationLibInit: Begin" );
-
-    // fire up replication thread
-    dwError = InitializeReplicationThread();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRaftMetricsInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirLog( LDAP_DEBUG_TRACE, "VmDirReplicationLibInit: End" );
-    return dwError;
-
-error:
-    goto cleanup;
-}
+extern PVM_METRICS_COUNTER pElectionTriggerCount;
