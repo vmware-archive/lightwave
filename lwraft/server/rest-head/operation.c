@@ -51,6 +51,11 @@ VmDirRESTOperationCreate(
     dwError = VmDirRESTCreateProxyResult(&pRestOp->pProxyResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMemory(
+            sizeof(VMDIR_THREAD_LOG_CONTEXT),
+            (PVOID*)&pRestOp->pThreadLogContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppRestOp = pRestOp;
 
 cleanup:
@@ -134,6 +139,13 @@ VmDirRESTOperationReadRequest(
 
     // Content-type
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pThreadLogContext->pszRequestId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // call the set context method to store request-id in TLS
+    dwError = VmDirSetThreadLogContextValue(pRestOp->pThreadLogContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
@@ -357,6 +369,10 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszClientIP);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszRequestId);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszSessionId);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszUserId);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

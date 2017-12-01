@@ -42,6 +42,28 @@ VmDirInitializeSynchCounterContent(
     PVMDIR_SYNCHRONIZE_COUNTER     pSyncCounter
     );
 
+// threadcontext.c
+DWORD
+VmDirInitThreadContext(VOID);
+
+DWORD
+VmDirGetThreadContext(
+    PVMDIR_THREAD_CONTEXT*  ppThreadContext
+    );
+
+DWORD
+VmDirGetThreadLogContextValue(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThreadLogContext
+    );
+
+DWORD
+VmDirSetThreadLogContextValue(
+    PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
+    );
+
+VOID
+VmDirFreeThreadContext(VOID);
+
 #else
 // All of this else section can eventually go away.
 
