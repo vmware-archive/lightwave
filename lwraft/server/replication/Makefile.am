@@ -4,6 +4,7 @@ noinst_LTLIBRARIES = libreplication.la
 libreplication_la_SOURCES = \
     libmain.c \
     firstreplcycle.c \
+    metricsinit.c \
     replentry.c \
     thread.c
 

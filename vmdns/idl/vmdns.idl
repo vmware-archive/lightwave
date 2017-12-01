@@ -35,21 +35,9 @@ interface vmdns
         );
 
     UINT32
-    VmDnsRpcInitializeWithSite(
-        [in] handle_t                hBinding,
-        [in] PVMDNS_INIT_SITE_INFO   pInitInfo
-        );
-
-    UINT32
     VmDnsRpcUninitialize(
         [in] handle_t           hBinding,
         [in] PVMDNS_INIT_INFO   pInitInfo
-        );
-
-    UINT32
-    VmDnsRpcUninitializeWithSite(
-        [in] handle_t                hBinding,
-        [in] PVMDNS_INIT_SITE_INFO   pInitInfo
         );
 
     UINT32
@@ -123,6 +111,18 @@ interface vmdns
     VmDnsRpcGetForwarders(
         [in]                        handle_t hBinding,
         [out]                       PVMDNS_FORWARDERS* ppDnsForwarders
+        );
+
+    UINT32
+    VmDnsRpcInitializeWithSite(
+        [in] handle_t                hBinding,
+        [in] PVMDNS_INIT_SITE_INFO   pInitInfo
+        );
+
+    UINT32
+    VmDnsRpcUninitializeWithSite(
+        [in] handle_t                hBinding,
+        [in] PVMDNS_INIT_SITE_INFO   pInitInfo
         );
 
     }

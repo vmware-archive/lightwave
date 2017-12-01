@@ -226,6 +226,9 @@ _VmDirRaftVoteSchdThread()
         }
 
 startVote:
+        // Reelection triggered, increment metrics counter
+        VmMetricsCounterIncrement(pElectionTriggerCount);
+
         // Stay in gRaftStateMutex
         do
         {

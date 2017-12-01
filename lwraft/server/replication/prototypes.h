@@ -217,6 +217,11 @@ VmDirRaftStartVoteSrv(VOID);
 DWORD
 VmDirRaftFollowerInitiateVoteSrv(VOID);
 
+DWORD
+VmDirRaftMetricsInit(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

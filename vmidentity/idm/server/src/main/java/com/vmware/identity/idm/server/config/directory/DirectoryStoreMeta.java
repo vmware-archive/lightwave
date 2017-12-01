@@ -4460,8 +4460,10 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                     @Override
                                     public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
                                     {
-                                        ValidateUtil.validateNotNull(idpConfig, "idpConfig");
-                                        idpConfig.setPublicKey(ServerUtils.getPublicKeyValue(value));
+                                        if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                                            ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                            idpConfig.setPublicKey(ServerUtils.getPublicKeyValue(value));
+                                        }
                                     }
                                     @Override
                                     public LdapValue[] GetLdapValue(IDPConfig config)
