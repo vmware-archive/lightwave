@@ -69,8 +69,8 @@ public class CertificateResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(CertificateResource.class);
 
-    public CertificateResource(String tenant, Locale locale, String correlationId, SecurityContext securityContext) {
-        super(tenant, locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
+    public CertificateResource(String tenant, Locale locale, SecurityContext securityContext) {
+        super(tenant, locale, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     public CertificateResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {

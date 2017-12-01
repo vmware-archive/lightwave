@@ -24,6 +24,7 @@ import javax.ws.rs.container.PreMatching;
 import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.MDC;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.rest.core.server.authorization.Config;
 
 /**
@@ -41,23 +42,27 @@ public class ContextFilter implements ContainerRequestFilter {
 
     /**
      * Sets the Correlation ID for the incoming request. Uses the value supplied
-     * in the "id" header or generates one and sets the header (so the resources
+     * in the "id" or "X-Request-Id" header or generates one and sets the header (so the resources
      * can make use of it).
      *
      * @param context request context
      */
     private void setCorrelationId(ContainerRequestContext context) {
-        String correlationId = context.getHeaderString(Config.CORRELATION_ID_HEADER);
+        String correlationId = context.getHeaderString(Config.X_REQUEST_ID_HEADER);
         if (correlationId == null || correlationId.isEmpty()) {
-            correlationId = UUID.randomUUID().toString();
-            // Set the header so we can pass it along to the resources
-            context.getHeaders().add(Config.CORRELATION_ID_HEADER, correlationId);
+            correlationId = context.getHeaderString(Config.CORRELATION_ID_HEADER);
+            if (correlationId == null || correlationId.isEmpty()) {
+                correlationId = UUID.randomUUID().toString();
+                // Set the header so we can pass it along to the resources
+                context.getHeaders().add(Config.CORRELATION_ID_HEADER, correlationId);
+            }
+            context.getHeaders().add(Config.X_REQUEST_ID_HEADER, correlationId);
         }
 
         // Set the correlation ID for both slf4j (used by Jersey) and
         // log4j2 (used by everything else)
         MDC.put(Config.CORRELATION_ID_HEADER, correlationId);
         ThreadContext.put(Config.CORRELATION_ID_HEADER, correlationId);
+        DiagnosticsContextFactory.addContext(Config.CorrelationIdMdcKey, correlationId);
     }
-
 }

@@ -57,8 +57,8 @@ public class ServerResource extends BaseResource {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
-    public ServerResource(Locale locale, String correlationId, SecurityContext securityContext) {
-        super(locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
+    public ServerResource(Locale locale, SecurityContext securityContext) {
+        super(locale, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**

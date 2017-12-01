@@ -14,6 +14,9 @@
 
 package com.vmware.identity.diagnostics;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -26,14 +29,28 @@ import org.apache.logging.log4j.util.MessageSupplier;
 import org.apache.logging.log4j.util.Supplier;
 
 class VMIdentityLogger extends IDiagnosticsLogger{
+
+    private static final long serialVersionUID = 7607601306494261885L;
     private final Logger _logger;
     private final Logger _evtLogger;
     private static final String _prefix = "vmevent.";
+    /**
+     * System's hostname property, which will use by log4j
+     */
+    private static final String HOSTNAME_PROPERTY_NAME = "hostname";
 
     public VMIdentityLogger(Class<?> theClass)
     {
         this._logger = LogManager.getLogger(theClass);
         this._evtLogger = LogManager.getLogger(_prefix + theClass.getName());
+        String hostname = System.getProperty(HOSTNAME_PROPERTY_NAME);
+        if ((hostname == null || hostname.isEmpty())) {
+            try {
+                System.setProperty(HOSTNAME_PROPERTY_NAME, InetAddress.getLocalHost().getHostName());
+            } catch (UnknownHostException e) {
+                this._logger.warn("Unable to set hostname system property. Hostname cannot be resolved.");
+            }
+        }
     }
 
     @Override

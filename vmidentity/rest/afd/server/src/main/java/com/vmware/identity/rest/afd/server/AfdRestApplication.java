@@ -15,15 +15,9 @@ package com.vmware.identity.rest.afd.server;
 
 import java.util.logging.Logger;
 
-import javax.ws.rs.ApplicationPath;
-
 import org.glassfish.jersey.filter.LoggingFilter;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import com.vmware.identity.rest.core.server.authorization.filter.AuthorizationRequestFilter;
-import com.vmware.identity.rest.core.server.filter.ContextFilter;
 import com.vmware.identity.rest.core.server.resources.BaseRestApplication;
 
 /**

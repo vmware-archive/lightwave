@@ -54,7 +54,10 @@ public class LoggerUtils {
 
     public static CorrelationID getCorrelationID(HttpRequest httpRequest) {
         Validate.notNull(httpRequest, "httpRequest");
-        String correlationIdParameter = httpRequest.getParameters().get("correlation_id");
-        return StringUtils.isEmpty(correlationIdParameter) ? new CorrelationID() : new CorrelationID(correlationIdParameter);
+        String correlationId = httpRequest.getHeaderValue("X-Request-Id");
+        if (StringUtils.isEmpty(correlationId)) {
+            correlationId = httpRequest.getParameters().get("correlation_id");
+        }
+        return StringUtils.isEmpty(correlationId) ? new CorrelationID() : new CorrelationID(correlationId);
     }
 }

@@ -71,6 +71,13 @@ filebeat.prospectors:
 - input_type: log
   paths:
     - /var/log/messages
+    - /var/log/vmware/sso/openidconnect.log
+    - /var/log/vmware/sso/vmware-rest-afd.log
+    - /var/log/vmware/sso/vmware-rest-idm.log
+    - /var/log/vmware/sso/vmware-rest-vmdir.log
+multiline.pattern: '^[[:space:]]+(at|\.{3})\b|^Caused by:'
+multiline.negate: false
+multiline.match: after
 output.logstash:
   hosts: ["$LOGSTASH_ELB:5043"]
 EOF

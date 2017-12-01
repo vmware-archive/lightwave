@@ -32,20 +32,24 @@ public class ClientFactory {
         return new CasIdmClient(host);
     }
 
-    public static CasIdmClient getClient(String correlationId) {
-        return new CasIdmClient(host, new ServiceContextProvider(correlationId));
+    public static CasIdmClient getClient(String correlationId, String userId, String sessionId) {
+        return new CasIdmClient(host, new ServiceContextProvider(correlationId, userId, sessionId));
     }
 
     private static class ServiceContextProvider extends IServiceContextProvider {
-        private String id;
+        private String correlationId;
+        private String userId;
+        private String sessionId;
 
-        public ServiceContextProvider(String id) {
-            this.id = id;
+        public ServiceContextProvider(String correlationId, String userId, String sessionId) {
+            this.correlationId = correlationId;
+            this.userId = userId;
+            this.sessionId = sessionId;
         }
 
         @Override
         public IIdmServiceContext getServiceContext() {
-            return IdmServiceContextFactory.getIdmServiceContext(id);
+            return IdmServiceContextFactory.getIdmServiceContext(correlationId, userId, sessionId);
         }
 
     }

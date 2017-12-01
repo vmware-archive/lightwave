@@ -214,7 +214,7 @@ public class IdentityManager implements IIdentityManager {
         @Override
         public void run()
         {
-            try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "bba76607-42b4-4a15-a3c2-7542f427d12c", "IdmCachePeriodicChecker") )
+            try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "IdmCachePeriodicChecker", "IdmCachePeriodicChecker", "", "") )
             {
             while(true)
             {
@@ -266,7 +266,7 @@ public class IdentityManager implements IIdentityManager {
         @Override
         public void run()
         {
-            try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "IdmCrlCachePeriodicChecker", "IdmCrlCachePeriodicChecker") )
+            try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "IdmCrlCachePeriodicChecker", "IdmCrlCachePeriodicChecker", "", "") )
             {
                 while(_crlCacheChecker == Thread.currentThread())
                 {
@@ -8336,21 +8336,25 @@ public class IdentityManager implements IIdentityManager {
    private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, IIdmServiceContext serviceContext, String operationName)
    {
       String correlationId = null;
+      String userId = "";
+      String sessionId = "";
       if(serviceContext != null)
       {
           correlationId = serviceContext.getCorrelationId();
+          userId = serviceContext.getUserId();
+          sessionId = serviceContext.getSessionId();
       }
       if (ServerUtils.isNullOrEmpty(correlationId))
       {
           correlationId = UUID.randomUUID().toString();
       }
-      return getDiagnosticsContext(tenantName, correlationId, operationName);
+      return getDiagnosticsContext(tenantName, correlationId, operationName, userId, sessionId);
    }
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, String correlationId, String operationName)
+   private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, String correlationId, String operationName, String userId, String sessionId)
    {
        // for now we don't use operationName, but can add support in the future
-       return DiagnosticsContextFactory.createContext(correlationId, tenantName);
+       return DiagnosticsContextFactory.createContext(correlationId, tenantName, userId, sessionId);
    }
 
     // ---------------------------------------------
