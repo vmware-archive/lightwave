@@ -43,7 +43,7 @@ public class GroupResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testCreateAndGet() throws ClientProtocolException, HttpException, ClientException, IOException {
+    public void testCreateAndGetGroup() throws ClientProtocolException, HttpException, ClientException, IOException {
 
         GroupDetailsDTO groupDetails = new GroupDetailsDTO.Builder().withDescription("test tenant group.").build();
         com.vmware.directory.rest.common.data.GroupDTO groupDTO = new com.vmware.directory.rest.common.data.GroupDTO.Builder()
@@ -52,8 +52,11 @@ public class GroupResourceIT extends IntegrationTestBase {
                 .withDetails(groupDetails)
                 .build();
         testVmdirClient.group().create(testTenant.getName(), groupDTO);
-        GroupDTO group = testAdminClient.group().get(testTenant.getName(), TEST_GROUP_NAME, testTenant.getName());
-
-        assertNotNull(group);
+        try {
+            GroupDTO group = testAdminClient.group().get(testTenant.getName(), TEST_GROUP_NAME, testTenant.getName());
+            assertNotNull(group);
+        } finally {
+            testVmdirClient.group().delete(testTenant.getName(), TEST_GROUP_NAME, testTenant.getName());
+        }
     }
 }
