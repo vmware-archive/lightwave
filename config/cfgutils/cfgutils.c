@@ -142,6 +142,25 @@ VmwDeployDeleteInstance(
     return dwError;
 }
 
+BOOL
+VmwDeployIsRetriableError(
+    DWORD dwError)
+{
+    BOOL bIsRetriable = FALSE;
+
+    switch (dwError)
+    {
+    case VMDIR_ERROR_SERVER_DOWN:
+    case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
+    case VMDIR_ERROR_NETWORK_TIMEOUT:
+    case ERROR_HOST_DOWN:
+        bIsRetriable = TRUE;
+        break;
+    }
+
+    return bIsRetriable;
+}
+
 VOID
 VmwDeployFreeSetupParams(
     PVMW_IC_SETUP_PARAMS pParams
@@ -590,8 +609,14 @@ VmwDeploySetupClientWithDC(
                     );
         if (dwError)
         {
+            if (!VmwDeployIsRetriableError(dwError))
+            {
+                BAIL_ON_DEPLOY_ERROR(dwError);
+            }
             VMW_DEPLOY_LOG_INFO(
-                "Failed to join to Lightwave. Retrying...");
+                "Failed to join to Lightwave (error %d). Retrying...",
+                dwError);
+            VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
             ++dwRetryCount;
             continue;
         }
@@ -599,7 +624,7 @@ VmwDeploySetupClientWithDC(
         {
             bJoined = TRUE;
         }
-    } while (!bJoined && (dwRetryCount<=VMW_DOMAIN_JOIN_MAX_RETRIES));
+    } while (!bJoined && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(
@@ -759,8 +784,14 @@ VmwDeploySetupClient(
                     );
         if (dwError)
         {
+            if (!VmwDeployIsRetriableError(dwError))
+            {
+                BAIL_ON_DEPLOY_ERROR(dwError);
+            }
             VMW_DEPLOY_LOG_INFO(
-                "Failed to join to Lightwave. Retrying...");
+                "Failed to join to Lightwave (error %d). Retrying...",
+                dwError);
+            VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
             ++dwRetryCount;
             continue;
         }
@@ -768,7 +799,7 @@ VmwDeploySetupClient(
         {
             bJoined = TRUE;
         }
-    } while (!bJoined && (dwRetryCount<=VMW_DOMAIN_JOIN_MAX_RETRIES));
+    } while (!bJoined && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(

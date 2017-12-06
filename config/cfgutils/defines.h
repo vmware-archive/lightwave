@@ -37,3 +37,5 @@ typedef VOID (*PFN_LOG_CALLBACK)(
             (bLocked) = FALSE; \
         }
 
+#define VMW_LDAP_CONNECT_MAX_RETRIES 2
+#define VMW_LDAP_CONNECT_RETRY_DELAY_SECS 3

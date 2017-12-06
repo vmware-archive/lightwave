@@ -182,6 +182,11 @@ VmwDeployGetHostname(
     PSTR* ppszHostname
     );
 
+VOID
+VmwDeploySleep(
+    DWORD dwMilliseconds
+    );
+
 BOOLEAN
 VmwDeployHaveAdminRights(
     VOID
