@@ -652,7 +652,7 @@ ShowUsage(
            "[--org-unit <organizational unit. default: Computers]\n"
            "[--disable-afd-listener]\n"
            "[--disable-dns]\n"
-           "[--use-machine-accout] Use machine account credentials to join\n"
+           "[--use-machine-account] Use machine account credentials to join\n"
            "[--prejoined] Machine account is already created in directory \n"
            "[--password  <password to administrator account>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"

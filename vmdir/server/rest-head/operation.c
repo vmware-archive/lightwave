@@ -119,7 +119,7 @@ VmDirRESTOperationReadRequest(
     }
 
     // read request authorization info
-    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHORIZATION, &pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params

@@ -172,6 +172,9 @@ VmDirRESTAuthViaToken(
     dwError = VmDirRESTAuthTokenParse(pAuthToken, pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirRESTAuthTokenValidate(pAuthToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // TODO (PR 2004701): Validate the proof of possession
     //   1) get hok and signature from HTTP request header
     //   2) get public key from HOK
