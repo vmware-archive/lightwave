@@ -29,8 +29,7 @@
         "../node_modules/@webcomponents/custom-elements/custom-elements.min.js",
         "../node_modules/clarity-icons/clarity-icons.min.js",
         "../node_modules/systemjs/dist/system.src.js",
-        "systemjs.config.js",
-        "js.sddl.js"
+        "systemjs.config.js"
       ],
       "environmentSource": "environments/environment.ts",
       "environments": {
