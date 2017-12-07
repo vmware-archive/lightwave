@@ -161,11 +161,20 @@
       </init-param>
     </servlet>
 
-        <servlet-mapping>
+    <servlet-mapping>
         <servlet-name>restvmdir</servlet-name>
         <url-pattern>/vmdir/*</url-pattern>
     </servlet-mapping>
 
+    <!-- Prometheus Exporter Servlet -->
+    <servlet>
+        <servlet-name>metrics</servlet-name>
+        <servlet-class>io.prometheus.client.exporter.MetricsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>metrics</servlet-name>
+        <url-pattern>/metrics/*</url-pattern>
+    </servlet-mapping>
 
     <security-constraint>
         <web-resource-collection>

@@ -44,6 +44,26 @@
       <version>${nimbusds.version}</version>
     </dependency>
 
+    <!--  Metrics Dependencies -->
+    <!-- The client -->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+    <!-- Hotspot JVM metrics-->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+    <!-- Exposition Servlet-->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_servlet</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+
     <!-- Logger Dependencies -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>

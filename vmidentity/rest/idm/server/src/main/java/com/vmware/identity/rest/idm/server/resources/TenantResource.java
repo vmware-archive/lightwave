@@ -88,6 +88,8 @@ import com.vmware.identity.rest.idm.server.mapper.TenantMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Tenant resource. Serves information specifically about tenants.
  *
@@ -98,6 +100,9 @@ import com.vmware.identity.rest.idm.server.util.Config;
 public class TenantResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(TenantResource.class);
+
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "TenantResource";
 
     public TenantResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -120,6 +125,8 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public TenantDTO create(TenantDTO tenantDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "create").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             // Create tenant
             Tenant tenantToCreate = TenantMapper.getTenant(tenantDTO);
@@ -148,8 +155,10 @@ public class TenantResource extends BaseResource {
 
         } catch (DuplicateTenantException | DTOMapperException | InvalidArgumentException e) {
             log.warn("Failed to create tenant '{}' due to a client side error", tenantDTO.getName(), e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.create.failed", tenantDTO.getName()), e);
         } catch (Exception e) {
+            responseStatus = HTTP_SERVER_ERROR;
             try {
                 getIDMClient().deleteTenant(tenantDTO.getName());
             } catch (Exception ex) {
@@ -159,6 +168,9 @@ public class TenantResource extends BaseResource {
             }
             log.error("Failed to create tenant '{}' due to a server side error", tenantDTO.getName(), e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "create").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -174,17 +186,25 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantDTO get(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantName));
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to retrieve tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.get.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to retrieve tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -213,18 +233,19 @@ public class TenantResource extends BaseResource {
             @DefaultValue("200") @QueryParam("limit") int limit,
             @DefaultValue("NAME") @QueryParam("searchBy") String searchBy,
             @DefaultValue("") @QueryParam("query") String query) {
-
-        validateMemberType(memberType.toUpperCase());
-        validateSearchBy(searchBy.toUpperCase());
-
-        MemberType requestedMemberType = MemberType.valueOf(memberType.toUpperCase());
-        SearchType requestedSearchType = SearchType.valueOf(searchBy.toUpperCase());
-
-        Set<UserDTO> users = null;
-        Set<GroupDTO> groups = null;
-        Set<SolutionUserDTO> solutionUsers = null;
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "searchMembers").startTimer();
+        String responseStatus = HTTP_OK;
 
         try {
+            validateMemberType(memberType.toUpperCase());
+            validateSearchBy(searchBy.toUpperCase());
+
+            MemberType requestedMemberType = MemberType.valueOf(memberType.toUpperCase());
+            SearchType requestedSearchType = SearchType.valueOf(searchBy.toUpperCase());
+
+            Set<UserDTO> users = null;
+            Set<GroupDTO> groups = null;
+            Set<SolutionUserDTO> solutionUsers = null;
             SearchCriteria criteria = new SearchCriteria(query, domain);
             if (requestedMemberType == MemberType.ALL) {
                 Map<MemberType, Integer> memberToLimit = computeSearchLimits(limit, MemberType.ALL);
@@ -250,13 +271,22 @@ public class TenantResource extends BaseResource {
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to search members on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to search members on tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException("");
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to search members on tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "searchMembers").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -273,17 +303,25 @@ public class TenantResource extends BaseResource {
     @Path(PathParameters.TENANT_NAME_VAR)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public void delete(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteTenant(tenantName);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to delete tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to delete tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.delete.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to delete tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -293,6 +331,8 @@ public class TenantResource extends BaseResource {
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantConfigurationDTO getConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
             @QueryParam("type") final List<String> configTypes) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getConfig").startTimer();
+        String responseStatus = HTTP_OK;
 
         Set<TenantConfigType> requestedConfigs = new HashSet<TenantConfigType>();
         for (String configType : configTypes) {
@@ -356,18 +396,23 @@ public class TenantResource extends BaseResource {
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve configuration details of tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (IllegalArgumentException | InvalidArgumentException e) {
             log.error("Failed to retrieve configuration details of tenant '{}' due to a client side error", tenantName,
                     e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(
                     sm.getString("res.ten.get.config.failed", Arrays.asList(requestedConfigs), tenantName), e);
         } catch (Exception e) {
             log.error("Failed to retrieve configuration details of tenant '{}' due to a server side error", tenantName,
                     e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getConfig").inc();
+            requestTimer.observeDuration();
         }
-
     }
 
     @PUT
@@ -377,6 +422,8 @@ public class TenantResource extends BaseResource {
     @RequiresRole(role = Role.ADMINISTRATOR)
     public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
             TenantConfigurationDTO configurationDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "updateConfig").startTimer();
+        String responseStatus = HTTP_OK;
 
         TenantConfigurationDTO.Builder configBuilder = TenantConfigurationDTO.builder();
         TokenPolicyDTO tokenPolicy = configurationDTO.getTokenPolicy();
@@ -436,15 +483,21 @@ public class TenantResource extends BaseResource {
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to update the configuration details for tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e) {
             log.error("Failed to update the configuration details for tenant '{}' due to a client side error",
                     tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.update.config.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to update the configuration details for tenant '{}' due to a server side error",
                     tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "updateConfig").inc();
+            requestTimer.observeDuration();
         }
     }
 

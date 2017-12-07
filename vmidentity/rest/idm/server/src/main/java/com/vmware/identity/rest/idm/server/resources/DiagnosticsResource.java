@@ -41,6 +41,8 @@ import com.vmware.identity.rest.idm.data.EventLogStatusDTO;
 import com.vmware.identity.rest.idm.server.mapper.EventLogMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Web service resource to manage all diagnostic operations for
  * a tenant.
@@ -52,6 +54,9 @@ public class DiagnosticsResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(DiagnosticsResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "DiagnosticsResource";
+
     public DiagnosticsResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
@@ -60,15 +65,22 @@ public class DiagnosticsResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public List<EventLogDTO> getEventLog(@Context UriInfo info) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getEventLog").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             List<IIdmAuthStat> stats = getIDMClient().getIdmAuthStats(tenant);
             return EventLogMapper.getEventLogs(stats);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve the event log from tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to retrieve the event log from tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getEventLog").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -76,21 +88,30 @@ public class DiagnosticsResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public EventLogStatusDTO getEventLogStatus() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getEventLogStatus").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             IIdmAuthStatus status = getIDMClient().getIdmAuthStatus(tenant);
             return EventLogMapper.getEventLogStatus(status);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve the event log status from tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to retrieve the event log status from tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getEventLogStatus").inc();
+            requestTimer.observeDuration();
         }
     }
 
     @POST @Path("/eventlog/start")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void startEventLog(@QueryParam("size") Integer size) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "startEventLog").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             if (size != null) {
                 getIDMClient().setIdmAuthStatsSize(tenant, size);
@@ -99,38 +120,57 @@ public class DiagnosticsResource extends BaseSubResource {
             getIDMClient().enableIdmAuthStats(tenant);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to start the event log for tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to start the event log for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "startEventLog").inc();
+            requestTimer.observeDuration();
         }
     }
 
     @POST @Path("/eventlog/stop")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void stopEventLog() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "stopEventLog").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().disableIdmAuthStats(tenant);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to stop the event log for tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to stop the event log for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "stopEventLog").inc();
+            requestTimer.observeDuration();
         }
     }
 
     @DELETE @Path("/eventlog")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void clearEventLog() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "clearEventLog").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().clearIdmAuthStats(tenant);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to clear the event log for tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to clear the event log for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "clearEventLog").inc();
+            requestTimer.observeDuration();
         }
     }
 

@@ -67,6 +67,8 @@ import com.vmware.identity.rest.core.server.exception.server.NotImplementedError
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.core.server.util.Validate;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Web service resource to manage all group operations.
  *
@@ -76,6 +78,9 @@ import com.vmware.identity.rest.core.server.util.Validate;
 public class GroupResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(GroupResource.class);
+
+    private static final String METRICS_COMPONENT = "vmdir";
+    private static final String METRICS_RESOURCE = "GroupResource";
 
     public GroupResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -94,13 +99,16 @@ public class GroupResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public GroupDTO create(GroupDTO groupDTO) {
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(groupDTO.getDomain()), sm.getString("valid.not.systemdomain", groupDTO.getDomain(), tenant));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "create").startTimer();
+        String responseStatus = HTTP_OK;
+
         // Alias not supported
         if (groupDTO.getAlias() != null) {
             throw new NotImplementedError("Creation of groups with alias is not supported");
         }
 
         try {
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(groupDTO.getDomain()), sm.getString("valid.not.systemdomain", groupDTO.getDomain(), tenant));
             GroupDetail groupDetail = GroupDetailsMapper.getGroupDetails(groupDTO.getDetails());
             PrincipalId groupId = getIDMClient().addGroup(tenant, groupDTO.getName(), groupDetail);
 
@@ -108,13 +116,22 @@ public class GroupResource extends BaseSubResource {
             return new GroupDTO(groupId.getName(), groupId.getDomain(), groupDTO.getDetails(), null, null);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to create group '{}' on tenant '{}'", groupDTO.getName(), tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | InvalidPrincipalException e) {
             log.warn("Failed to create group '{}' on tenant '{}' due to a client side error", groupDTO.getName(), tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.create.failed", groupDTO.getName(), tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to create group '{}' on tenant '{}' due to a server side error", groupDTO.getName(), tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -131,20 +148,31 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public GroupDTO get(@PathParam("groupName") String groupName) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
 
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
             Group group = getIDMClient().findGroup(tenant, id);
             return GroupMapper.getGroupDTO(group);
         } catch (InvalidPrincipalException | NoSuchTenantException | NoSuchIdpException e) {
             log.debug("Failed to retrieve group '{}' from tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve group '{}' from tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.get.failed", groupName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve group '{}' from tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -164,21 +192,23 @@ public class GroupResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public GroupDTO update(@PathParam("groupName") String groupName, GroupDTO group) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
-        if (group.getName() != null) {
-            throw new NotImplementedError("Group name replacement is not supported");
-        }
-
-        if (group.getDomain() != null) {
-            throw new NotImplementedError("Group domain replacement is not supported");
-        }
-
-        if (group.getAlias() != null) {
-            throw new NotImplementedError("Group alias replacement is not supported");
-        }
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
 
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
+            if (group.getName() != null) {
+                throw new NotImplementedError("Group name replacement is not supported");
+            }
+
+            if (group.getDomain() != null) {
+                throw new NotImplementedError("Group domain replacement is not supported");
+            }
+
+            if (group.getAlias() != null) {
+                throw new NotImplementedError("Group alias replacement is not supported");
+            }
             if (group.getDetails() != null) {
                 GroupDetail groupDetail = GroupDetailsMapper.getGroupDetails(group.getDetails());
                 getIDMClient().updateGroupDetail(tenant, id.getName(), groupDetail);
@@ -187,13 +217,22 @@ public class GroupResource extends BaseSubResource {
             return GroupMapper.getGroupDTO(getIDMClient().findGroup(tenant, id));
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to update group '{}' in tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (InvalidArgumentException e) {
+        } catch (InvalidArgumentException  e) {
             log.warn("Failed to update group '{}' in tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.update.failed", groupName, tenant), e);
+        } catch (BadRequestException | NotImplementedError e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to update group '{}' in tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -208,19 +247,30 @@ public class GroupResource extends BaseSubResource {
     @DELETE @Path("/{groupName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("groupName") String groupName) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
             getIDMClient().deletePrincipal(tenant, id.getName());
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to delete group '{}' from tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to delete group '{}' from tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.delete.failed", groupName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to delete group '{}' from tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -239,21 +289,32 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SearchResultDTO getMembers(@PathParam("groupName") String groupName, @DefaultValue("all") @QueryParam("type") String memberType, @DefaultValue("200") @QueryParam("limit") int limit) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-        MemberType type = getPrincipalType(memberType);
-        Validate.notNull(type, sm.getString("valid.invalid.type", "member type", Arrays.toString(MemberType.values())));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getMembers").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+            MemberType type = getPrincipalType(memberType);
+            Validate.notNull(type, sm.getString("valid.invalid.type", "member type", Arrays.toString(MemberType.values())));
             SearchCriteria searchCriteria = new SearchCriteria("", tenant);
             return findPrincipals(type, id, tenant, searchCriteria, limit);
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to retrieve principals for group '{}' in tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve principals for group '{}' in tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.get.failed", groupName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve principals for group '{}' in tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getMembers").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -271,14 +332,16 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<GroupDTO> getParents(@PathParam("groupName") String groupName, @DefaultValue("false") @QueryParam("nested") boolean nested) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-
-        if (nested) {
-            throw new NotImplementedError("Indirect parent group retrieval is not supported");
-        }
-
-        Set<GroupDTO> groups = new HashSet<GroupDTO>();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getParents").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+
+            if (nested) {
+                throw new NotImplementedError("Indirect parent group retrieval is not supported");
+            }
+
+            Set<GroupDTO> groups = new HashSet<GroupDTO>();
             // Add direct groups
             Set<Group> idmDirectGroups = getIDMClient().findDirectParentGroups(tenant, id);
             if (idmDirectGroups != null && !idmDirectGroups.isEmpty()) {
@@ -286,18 +349,27 @@ public class GroupResource extends BaseSubResource {
             }
             // Add indirect groups
             // TODO : Need to implement casIDMClient API. "Get parent groups associated indirectly to given group"
+
+            return groups;
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to retrieve parent groups of group '{}' in tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve parent groups of group '{}' in tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.get.parents.failed", groupName, tenant), e);
+        } catch (NotImplementedError e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve parent groups of group '{}' in tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getParents").inc();
+            requestTimer.observeDuration();
         }
-
-        return groups;
     }
 
     /**
@@ -315,14 +387,15 @@ public class GroupResource extends BaseSubResource {
     @PUT @Path("/{groupName}/members")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void addMembers(@PathParam("groupName") String groupName, @QueryParam("members") List<String> members, @QueryParam("type") String memberType) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
-        MemberType type = getPrincipalType(memberType);
-        Collection<PrincipalId> memberPrincipals = PrincipalUtil.fromNames(members);
-        Validate.notNull(type, sm.getString("valid.invalid.type", "type", Arrays.toString(MemberType.values())));
-        Validate.notEqual(type, MemberType.ALL, sm.getString("valid.not.equal", "type", MemberType.ALL, EnumSet.of(MemberType.USER, MemberType.GROUP, MemberType.SOLUTIONUSER)));
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addMembers").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
+            MemberType type = getPrincipalType(memberType);
+            Collection<PrincipalId> memberPrincipals = PrincipalUtil.fromNames(members);
+            Validate.notNull(type, sm.getString("valid.invalid.type", "type", Arrays.toString(MemberType.values())));
+            Validate.notEqual(type, MemberType.ALL, sm.getString("valid.not.equal", "type", MemberType.ALL, EnumSet.of(MemberType.USER, MemberType.GROUP, MemberType.SOLUTIONUSER)));
             if (type == MemberType.GROUP) {
                 addGroupsToGroup(id.getName(), memberPrincipals);
             } else if (type == MemberType.USER) {
@@ -332,17 +405,27 @@ public class GroupResource extends BaseSubResource {
             }
         } catch (NotImplementedError e) {
             // TODO remove this catch - only temporary while waiting for addSolutionUsersToGroup
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
             throw e;
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             // TODO Check if InvalidPrincipalException is thrown for both the group being removed from and the group to remove...
             log.debug("Failed to add members {} of type {} to group '{}' in tenant '{}'", members.toString(), memberType, groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | MemberAlreadyExistException e) {
             log.warn("Failed to add members {} of type {} to group '{}' in tenant '{}' due to a client side error", members.toString(), memberType, groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.add.groups.failed", groupName, tenant), e);
         } catch (Exception e) {
             log.error("Failed to add members {} of type {} to group '{}' in tenant '{}' due to a server side error", members.toString(), groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addMembers").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -361,31 +444,41 @@ public class GroupResource extends BaseSubResource {
     @DELETE @Path("/{groupName}/members")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void removeMembers(@PathParam("groupName") String groupName, @QueryParam("members") List<String> members, @QueryParam("type") String memberType) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-        MemberType type = getPrincipalType(memberType);
-        Collection<PrincipalId> memberPrincipals = PrincipalUtil.fromNames(members);
-
-        Validate.notNull(type, sm.getString("valid.invalid.type", "type", Arrays.toString(MemberType.values())));
-        Validate.notEqual(type, MemberType.ALL, sm.getString("valid.not.equal", "type", MemberType.ALL, EnumSet.of(MemberType.USER, MemberType.GROUP, MemberType.SOLUTIONUSER)));
-
-        if (type == MemberType.SOLUTIONUSER) {
-            throw new NotImplementedError("Removing solution users from a group is not yet implemented");
-        }
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "removeMembers").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+            MemberType type = getPrincipalType(memberType);
+            Collection<PrincipalId> memberPrincipals = PrincipalUtil.fromNames(members);
+
+            Validate.notNull(type, sm.getString("valid.invalid.type", "type", Arrays.toString(MemberType.values())));
+            Validate.notEqual(type, MemberType.ALL, sm.getString("valid.not.equal", "type", MemberType.ALL, EnumSet.of(MemberType.USER, MemberType.GROUP, MemberType.SOLUTIONUSER)));
+
+            if (type == MemberType.SOLUTIONUSER) {
+                throw new NotImplementedError("Removing solution users from a group is not yet implemented");
+            }
             for (PrincipalId memberId : memberPrincipals) {
                 getIDMClient().removeFromLocalGroup(tenant, memberId, id.getName());
             }
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             // TODO Check if InvalidPrincipalException is thrown for both the group being removed from and the group to remove...
             log.debug("Failed to add groups to group '{}' in tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to add groups to group '{}' in tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.add.groups.failed", groupName, tenant), e);
+        } catch (BadRequestException | NotImplementedError e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to add groups to group '{}' in tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "removeMembers").inc();
+            requestTimer.observeDuration();
         }
     }
 

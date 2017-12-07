@@ -40,6 +40,8 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.Validate;
 
+import io.prometheus.client.Histogram;
+
 /**
  * RESTful Web-service endpoints to perform operations on active directory. The operations to
  * perform includes joining, leaving and getting status of AD.
@@ -50,6 +52,9 @@ import com.vmware.identity.rest.core.server.util.Validate;
 public class ActiveDirectoryResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ActiveDirectoryResource.class);
+
+    private static final String METRICS_COMPONENT = "afd";
+    private static final String METRICS_RESOURCE = "ActiveDirectoryResource";
 
     public ActiveDirectoryResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -69,18 +74,28 @@ public class ActiveDirectoryResource extends BaseResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public ActiveDirectoryJoinInfoDTO joinActiveDirectory(ActiveDirectoryJoinRequestDTO joinRequest) {
-        Validate.notEmpty(joinRequest.getUsername(), "Missing username. Username is required to join AD");
-        Validate.notEmpty(joinRequest.getPassword(), "Missing password. Password is required to join AD");
-        Validate.notEmpty(joinRequest.getDomain(), "Domain name of AD is missing");
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "joinActiveDirectory").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            Validate.notEmpty(joinRequest.getUsername(), "Missing username. Username is required to join AD");
+            Validate.notEmpty(joinRequest.getPassword(), "Missing password. Password is required to join AD");
+            Validate.notEmpty(joinRequest.getDomain(), "Domain name of AD is missing");
             getIDMClient().joinActiveDirectory(joinRequest.getUsername(), joinRequest.getPassword(), joinRequest.getDomain(), joinRequest.getOU());
             return ActiveDirectoryInfoMapper.getActiveDirectoryDTO(getIDMClient().getActiveDirectoryJoinStatus());
         } catch (IllegalArgumentException e) {
             log.warn("Failed to join active directory on domain '{}' due to a client side error", e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.server.add.joinad.failed", joinRequest.getDomain()), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception ex) {
             log.error("Failed to join active directory on domain '{}' due to a server side error", joinRequest.getDomain(), ex);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), ex);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "joinActiveDirectory").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -98,16 +113,25 @@ public class ActiveDirectoryResource extends BaseResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public void leaveActiveDirectory(CredentialsDTO activeDirectoryCredentials) {
-        Validate.notEmpty(activeDirectoryCredentials.getUsername(), "Missing username. Username is required to leave AD");
-        Validate.notEmpty(activeDirectoryCredentials.getPassword(), "Missing password. Password is required to leave AD");
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "leaveActiveDirectory").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            Validate.notEmpty(activeDirectoryCredentials.getUsername(), "Missing username. Username is required to leave AD");
+            Validate.notEmpty(activeDirectoryCredentials.getPassword(), "Missing password. Password is required to leave AD");
             getIDMClient().leaveActiveDirectory(activeDirectoryCredentials.getUsername(), activeDirectoryCredentials.getPassword());
         } catch (IdmADDomainAccessDeniedException | ADIDSAlreadyExistException e) {
             log.warn("Failed to leave active directory due to a client side error", e);
             throw new BadRequestException(sm.getString("res.server.delete.leavead.failed"), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to leave active directory due to a server side error", e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "leaveActiveDirectory").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -122,6 +146,8 @@ public class ActiveDirectoryResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public ActiveDirectoryJoinInfoDTO getActiveDirectoryStatus() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getActiveDirectoryStatus").startTimer();
+        String responseStatus = HTTP_OK;
         ActiveDirectoryJoinInfoDTO adJoinInfoDTO = null;
         try {
             ActiveDirectoryJoinInfo joinInfo = getIDMClient().getActiveDirectoryJoinStatus();
@@ -129,7 +155,11 @@ public class ActiveDirectoryResource extends BaseResource {
             return adJoinInfoDTO;
         } catch (Exception ex) {
             log.error("Failed to retrieve join status of AD", ex);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), ex);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getActiveDirectoryStatus").inc();
+            requestTimer.observeDuration();
         }
     }
 

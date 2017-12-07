@@ -15,7 +15,6 @@ package com.vmware.directory.rest.server.resources;
 
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -62,6 +61,8 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.core.server.util.Validate;
+
+import io.prometheus.client.Histogram;
 /**
  * Web service resource to manage all person user operations.
  *
@@ -74,6 +75,9 @@ import com.vmware.identity.rest.core.server.util.Validate;
 public class UserResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResource.class);
+
+    private static final String METRICS_COMPONENT = "vmdir";
+    private static final String METRICS_RESOURCE = "UserResource";
 
     public UserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -88,8 +92,10 @@ public class UserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public UserDTO create(UserDTO user) {
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(user.getDomain()), sm.getString("valid.not.systemdomain", user.getDomain(), tenant));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "create").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(user.getDomain()), sm.getString("valid.not.systemdomain", user.getDomain(), tenant));
             boolean disabled = user.isDisabled() != null ? user.isDisabled() : false;
             boolean locked = user.isLocked() != null ? user.isLocked() : false;
             if (disabled && locked) {
@@ -108,13 +114,22 @@ public class UserResource extends BaseSubResource {
             return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, principal), true);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to create user '{}'", user.getName(), e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (PasswordPolicyViolationException | DTOMapperException | InvalidArgumentException | InvalidPrincipalException | NoSuchIdpException e) {
             log.debug("Failed to create user '{}' on tenant '{}' due to a client side error", user.getName(), tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.create.failed", user.getName(), tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to create user '{}' on tenant '{}' due to a server side error", user.getName(), tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -130,9 +145,10 @@ public class UserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public UserDTO get(@PathParam("userName") String name) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(name);
             PersonUser idmPersonUser = getIDMClient().findPersonUser(tenant, id);
             if (idmPersonUser == null) {
                 throw new InvalidPrincipalException(String.format("User '%s' does not exist in tenant '%s'", name, tenant), name);
@@ -140,13 +156,22 @@ public class UserResource extends BaseSubResource {
             return UserMapper.getUserDTO(idmPersonUser, includePasswordDetails(name));
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {
             log.debug("Failed to retrieve user '{}' from tenant '{}'", name, tenant);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to retrieve user '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.get.failed", name, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve user '{}' from tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -161,10 +186,10 @@ public class UserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<GroupDTO> getGroups(@PathParam("userName") String name, @DefaultValue("false") @QueryParam("nested") boolean nested) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-
-        Collection<GroupDTO> userAffiliatedGroups = Collections.emptySet();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getGroups").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(name);
             // Retrieve all the direct groups associated with user.
             Set<Group> idmGroups = getIDMClient().findDirectParentGroups(tenant, id);
 
@@ -174,19 +199,26 @@ public class UserResource extends BaseSubResource {
                 idmGroups.addAll(nestedParentGroups);
             }
 
-            userAffiliatedGroups = GroupMapper.getGroupDTOs(idmGroups);
+            return GroupMapper.getGroupDTOs(idmGroups);
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {
             log.debug("Failed to retrieve groups associated with user '{}' on tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to retrieve groups associated with user '{}' on tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.get.groups.failed", name, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve groups associated with user '{}' on tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE ,"getGroups").inc();
+            requestTimer.observeDuration();
         }
-
-       return userAffiliatedGroups;
     }
 
     /**
@@ -200,19 +232,30 @@ public class UserResource extends BaseSubResource {
     @DELETE @Path("/{userName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("userName") String name) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(name);
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
             getIDMClient().deletePrincipal(tenant, id.getName());
         } catch (NoSuchTenantException | InvalidPrincipalException e) {
             log.debug("Failed to delete user '{}' from tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.debug("Failed to delete user '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.delete.failed", name, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to delete user '{}' from tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -233,11 +276,12 @@ public class UserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public UserDTO update(@PathParam("userName") String name, UserDTO userDTO){
-        PrincipalId userId = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(userId.getDomain()), sm.getString("valid.not.systemdomain", userId.getDomain(), tenant));
-        UserDetailsDTO personDetailsToUpdate = userDTO.getDetails();
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId userId = PrincipalUtil.fromName(name);
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(userId.getDomain()), sm.getString("valid.not.systemdomain", userId.getDomain(), tenant));
+            UserDetailsDTO personDetailsToUpdate = userDTO.getDetails();
             if (personDetailsToUpdate != null) {
                 PersonDetail personDetail = UserDetailsMapper.getPersonDetail(personDetailsToUpdate);
                 getIDMClient().updatePersonUserDetail(tenant, userId.getName(), personDetail);
@@ -255,15 +299,24 @@ public class UserResource extends BaseSubResource {
             return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, userId), true);
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {
             log.debug("Failed to update user '{}' in tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to update user '{}' in tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.update.failed", name, tenant), e);
-        } catch (Exception e) {
-            log.error("Failed to update user '{}' in tenant '{}' due to a server side error", name, tenant, e);
-            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         }
-
+        catch (Exception e) {
+            log.error("Failed to update user '{}' in tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
+        }
     }
 
     /**
@@ -278,15 +331,17 @@ public class UserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @DynamicRole
     public UserDTO updatePassword(@PathParam("userName") String name, PasswordResetRequestDTO passwordResetRequest) {
-        PrincipalId userId = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(userId.getDomain()), sm.getString("valid.not.systemdomain", userId.getDomain(), tenant));
-        Validate.notEmpty(passwordResetRequest.getNewPassword(), sm.getString("valid.not.empty", "new password"));
-        boolean isAdmin = getSecurityContext().isUserInRole(Role.ADMINISTRATOR.name());
-        if (!isAdmin) {
-            // Validate if current password is provided by non-admin users
-            Validate.notEmpty(passwordResetRequest.getCurrentPassword(), sm.getString("valid.not.empty", "current password"));
-        }
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "updatePassword").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId userId = PrincipalUtil.fromName(name);
+            Validate.isTrue(getSystemDomain().equalsIgnoreCase(userId.getDomain()), sm.getString("valid.not.systemdomain", userId.getDomain(), tenant));
+            Validate.notEmpty(passwordResetRequest.getNewPassword(), sm.getString("valid.not.empty", "new password"));
+            boolean isAdmin = getSecurityContext().isUserInRole(Role.ADMINISTRATOR.name());
+            if (!isAdmin) {
+                // Validate if current password is provided by non-admin users
+                Validate.notEmpty(passwordResetRequest.getCurrentPassword(), sm.getString("valid.not.empty", "current password"));
+            }
             if (isAdmin) {
                 getIDMClient().setUserPassword(tenant, userId.getName(), passwordResetRequest.getNewPassword().toCharArray());
             } else {
@@ -295,13 +350,22 @@ public class UserResource extends BaseSubResource {
             return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, userId), includePasswordDetails(name));
         } catch (NoSuchTenantException e) {
             log.warn("Failed to update password for user '{}' in tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidPrincipalException | PasswordPolicyViolationException e) {
             log.warn("Failed to update password for user '{}' in tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.update.password.failed", name, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to update password for user '{}' in tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "updatePassword").inc();
+            requestTimer.observeDuration();
         }
     }
 

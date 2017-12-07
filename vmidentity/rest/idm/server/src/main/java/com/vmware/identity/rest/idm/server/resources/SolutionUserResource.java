@@ -42,6 +42,8 @@ import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Operations related to solution users. Solution users are nothing but services(virtual entities).
  *
@@ -51,6 +53,9 @@ import com.vmware.identity.rest.idm.server.util.Config;
 public class SolutionUserResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SolutionUserResource.class);
+
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "SolutionUserResource";
 
     public SolutionUserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -67,6 +72,8 @@ public class SolutionUserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SolutionUserDTO get(@PathParam("solnName") String name) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             SolutionUser idmSolutionUser = getIDMClient().findSolutionUser(tenant, name);
             if (idmSolutionUser == null) {
@@ -75,13 +82,19 @@ public class SolutionUserResource extends BaseSubResource {
             return SolutionUserMapper.getSolutionUserDTO(idmSolutionUser);
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to retrieve solution user '{}' from tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to retrieve solution user '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.soln.get.failed", name, tenant), e);
         } catch (Exception e) {
             log.error("Failed to retrieve solution user '{}' from tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -113,6 +126,12 @@ public class SolutionUserResource extends BaseSubResource {
 //            throw new InternalServerErrorException(sm.getString("ec.500"), e);
 //        }
 
-        throw new NotImplementedError(sm.getString("ec.501"));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getGroups").startTimer();
+        try {
+            throw new NotImplementedError(sm.getString("ec.501"));
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, "501", METRICS_RESOURCE, "getGroups").inc();
+            requestTimer.observeDuration();
+        }
     }
 }
