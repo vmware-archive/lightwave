@@ -136,3 +136,5 @@
                     pRestRslt, pLdapRslt, dwError, pszErrMsg);          \
         }                                                               \
     } while (0)
+
+#define VMDIR_IS_HTTP_STATUS_OK(dwHttpStatus) (dwHttpStatus == 200)

@@ -304,6 +304,7 @@ VmDirAddCondWriteCtrl(
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
+    DWORD*              pdwHttpStatus,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
     );
@@ -493,6 +494,7 @@ VmDirRESTUnknownSetResult(
 DWORD
 VmDirRESTUnknownGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
+    DWORD*              pdwHttpStatus,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
     );

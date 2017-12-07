@@ -238,6 +238,15 @@ VmDirRESTWriteSimpleErrorResponse(
             pRESTHandle, ppResponse, "", 0, &bytesWritten);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (! VMDIR_IS_HTTP_STATUS_OK(pHttpError->dwHttpStatus))
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s HTTP response status (%d), body (NULL)",
+                __FUNCTION__,
+                pHttpError->pszHttpStatus);
+    }
+
 cleanup:
     return dwError;
 

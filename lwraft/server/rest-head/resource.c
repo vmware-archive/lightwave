@@ -134,6 +134,7 @@ error:
 DWORD
 VmDirRESTUnknownGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
+    DWORD*              pdwHttpStatus,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
     )
@@ -142,7 +143,7 @@ VmDirRESTUnknownGetHttpError(
     int     httpStatus = 0;
     PVDIR_HTTP_ERROR    pHttpError = NULL;
 
-    if (!ppszHttpStatus || !ppszHttpReason)
+    if (!pdwHttpStatus || !ppszHttpStatus || !ppszHttpReason)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -165,6 +166,7 @@ VmDirRESTUnknownGetHttpError(
 
     pHttpError = VmDirRESTGetHttpError(httpStatus);
 
+    *pdwHttpStatus = pHttpError->dwHttpStatus;
     *ppszHttpStatus = pHttpError->pszHttpStatus;
     *ppszHttpReason = pHttpError->pszHttpReason;
 

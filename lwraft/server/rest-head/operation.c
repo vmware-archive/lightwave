@@ -260,6 +260,7 @@ VmDirRESTOperationWriteResponse(
 {
     DWORD   dwError = 0;
     DWORD   bytesWritten = 0;
+    DWORD   dwHttpStatus = 0;
     PSTR    pszHttpStatus = NULL;
     PSTR    pszHttpReason = NULL;
     PSTR    pszBody = NULL;
@@ -277,7 +278,7 @@ VmDirRESTOperationWriteResponse(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = pRestOp->pResource->pfnGetHttpError(
-            pRestOp->pResult, &pszHttpStatus, &pszHttpReason);
+            pRestOp->pResult, &dwHttpStatus, &pszHttpStatus, &pszHttpReason);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTSetHttpStatusCode(ppResponse, pszHttpStatus);
@@ -339,6 +340,16 @@ VmDirRESTOperationWriteResponse(
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (! VMDIR_IS_HTTP_STATUS_OK(dwHttpStatus))
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s HTTP response status (%d), body (%.*s)",
+                __FUNCTION__,
+                dwHttpStatus,
+                VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
+                pszBody);
+    }
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);
     VMDIR_SAFE_FREE_STRINGA(pszBodyLen);

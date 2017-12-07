@@ -328,12 +328,15 @@ _VmDirLog1(
 
     if (pThreadLogContextVal)
     {
-        sprintf(logMessage, "reqid:%s, ",
+        snprintf(logMessage, sizeof(logMessage), "reqid:%s, ",
                 pThreadLogContextVal->pszRequestId ? pThreadLogContextVal->pszRequestId : "");
         logLength = strlen(logMessage);
     }
 
-    vsnprintf( logMessage + logLength, sizeof(logMessage) - logLength, fmt, args );
+    if (sizeof(logMessage) > logLength)
+    {
+        vsnprintf( logMessage + logLength, sizeof(logMessage) - logLength, fmt, args );
+    }
     logMessage[sizeof(logMessage)-1] = '\0';
 
     if ( _gpVmDirLogCtx->bSyslog )

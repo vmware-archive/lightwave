@@ -51,6 +51,7 @@ typedef DWORD (*PFN_SET_RESULT)(
 
 typedef DWORD (*PFN_GET_HTTP_ERROR)(
         PVDIR_REST_RESULT   pRestRslt,
+        DWORD*              pdwHttpStatus,
         PSTR*               ppszHttpStatus,
         PSTR*               ppszHttpReason
         );
@@ -120,6 +121,7 @@ typedef struct _VDIR_REST_AUTH_TOKEN
 typedef struct _VDIR_HTTP_ERROR
 {
     int     httpStatus;
+    DWORD   dwHttpStatus;
     PSTR    pszHttpStatus;
     PSTR    pszHttpReason;
 
