@@ -904,10 +904,9 @@ WriteAttributes(
                         bSendAttribute = TRUE;
                     }
                 }
-#ifdef WINJOIN_CHECK_ENABLED_XXXXXXXXXXXX
+#ifdef WINJOIN_CHECK_ENABLED
                 else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_SID, FALSE) == 0)
                 {
-%%%
                     ber_len_t sidLen = 0;
                     PCHAR pcSidBuffer = NULL;
 
