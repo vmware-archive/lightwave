@@ -90,6 +90,47 @@ VmDirFreeReplMetrics(
     PVMDIR_REPLICATION_METRICS  pReplMetrics
     );
 
+// replqueue.c
+DWORD
+VmDirReplicationDecodeEntryForRetry(
+    PVDIR_SCHEMA_CTX                pSchemaCtx,
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
+    PVDIR_ENTRY                     pEntry
+    );
+
+VOID
+VmDirReplicationEncodeEntryForRetry(
+    PVDIR_ENTRY       pEntry,
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    );
+
+DWORD
+VmDirReplicationPushFailedEntriesToQueue(
+    PVMDIR_REPLICATION_CONTEXT     pContext,
+    PVMDIR_REPLICATION_PAGE_ENTRY  pPageEntry
+    );
+
+DWORD
+VmDirReplicationDupPageEntry(
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
+    PVMDIR_REPLICATION_PAGE_ENTRY*  ppPageEntryDup
+    );
+
+VOID
+VmDirReapplyFailedEntriesFromQueue(
+    PVMDIR_REPLICATION_CONTEXT     pContext
+    );
+
+VOID
+VmDirReplicationClearFailedEntriesFromQueue(
+    PVMDIR_REPLICATION_CONTEXT     pContext
+    );
+
+VOID
+VmDirReplicationFreePageEntry(
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    );
+
 #ifdef __cplusplus
 }
 #endif

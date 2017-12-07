@@ -447,6 +447,7 @@ WriteSyncStateControl(
     PVDIR_BERVALUE      pbvUSN = NULL;
     PSTR                pszLocalErrorMsg = NULL;
     BOOLEAN             bHasFinalSyncState = FALSE;
+    BOOLEAN             bPresentInSyncStateOneMap = FALSE;
     CHAR                pszIDBuf[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
     PSTR                pszEID = NULL;
     PSTR                pszUSNCreated = NULL;
@@ -466,6 +467,11 @@ WriteSyncStateControl(
      *  => may lead to various conflict resolution scenarios.
      */
 
+    retVal = VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    bPresentInSyncStateOneMap = (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, NULL, pszIDBuf) == 0);
+
     for (pAttr = pEntry->attrs ; pAttr != NULL; pAttr = pAttr->next)
     {
         if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
@@ -482,6 +488,16 @@ WriteSyncStateControl(
                  VmDirStringCompareA( pAttr->vals[0].lberbv.bv_val, VMDIR_IS_DELETED_TRUE_STR, FALSE ) == 0)
             {
                 entryState = LDAP_SYNC_DELETE;
+                /*
+                 * If corresponding entry is present in the hashmap then consumer has seen this entry
+                 * Send Sync State as Delete.
+                 * If consumer has not seen this entry, send sync state add of tombstone entry directly
+                 */
+                if (bPresentInSyncStateOneMap)
+                {
+                    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Avoiding add->delete race condition by sending sync state as delete", __FUNCTION__);
+                }
+                bHasFinalSyncState = bPresentInSyncStateOneMap;
                 continue; // Look if it is LDAP_SYNC_ADD case
             }
 
@@ -490,9 +506,7 @@ WriteSyncStateControl(
                 entryState = LDAP_SYNC_ADD;
                 bHasFinalSyncState = TRUE;
 
-                assert( VmDirStringNPrintFA(pszIDBuf, VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_MAX_I64_ASCII_STR_LEN, "%llu", pEntry->eId) == 0 );
-
-                if (LwRtlHashMapFindKey(op->conn->ReplConnState.phmSyncStateOneMap, NULL, pszIDBuf) != 0)
+                if (bPresentInSyncStateOneMap == FALSE)
                 {
                     retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
                     BAIL_ON_VMDIR_ERROR(retVal);

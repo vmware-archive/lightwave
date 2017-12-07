@@ -7,6 +7,7 @@ libreplication_la_SOURCES = \
     libmain.c \
     metrics.c \
     replentry.c \
+    replqueue.c \
     thread.c
 
 libreplication_la_CPPFLAGS = \

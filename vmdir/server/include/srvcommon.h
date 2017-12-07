@@ -1022,6 +1022,11 @@ VmDirSimpleEntryDeleteAttribute(
     );
 
 // util.c
+BOOLEAN
+VmDirIsDeletedContainer(
+    PCSTR   pszDN
+    );
+
 DWORD
 VmDirToLDAPError(
     DWORD   dwVmDirError
@@ -1261,7 +1266,8 @@ VmDirComputeEncodedEntrySize(
 DWORD
 VmDirEncodeEntry(
     PVDIR_ENTRY              pEntry,
-    VDIR_BERVALUE*           pEncodedBerval);
+    VDIR_BERVALUE*           pEncodedBerval,
+    BOOLEAN                  bValidateEntry);
 
 unsigned short
 VmDirDecodeShort(
@@ -1275,7 +1281,8 @@ VmDirEncodeShort(
 DWORD
 VmDirDecodeEntry(
    PVDIR_SCHEMA_CTX     pSchemaCtx,
-   PVDIR_ENTRY          pEntry);
+   PVDIR_ENTRY          pEntry,
+   PVDIR_BERVALUE       pbvDn);
 
 int
 VmDirGenOriginatingTimeStr(

@@ -54,7 +54,7 @@ VdirSchemaCtxAcquireInLock(
     assert(pCtx->pVdirSchema);
 
     VMDIR_LOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
-    pCtx->pVdirSchema->usRefCount++;
+    pCtx->pVdirSchema->dwRefCount++;
 
 error:
 
@@ -104,7 +104,7 @@ VmDirSchemaCtxClone(
     pCtx->pVdirSchema = pOrgCtx->pVdirSchema;
 
     VMDIR_LOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
-    pCtx->pVdirSchema->usRefCount++;
+    pCtx->pVdirSchema->dwRefCount++;
 
 cleanup:
 
@@ -128,8 +128,8 @@ VmDirSchemaCtxRelease(
     )
 {
     BOOLEAN    bInLock = FALSE;
-    USHORT     usRefCnt = 0;
-    USHORT     usSelfRef = 0;
+    DWORD      dwRefCnt = 0;
+    DWORD      dwSelfRef = 0;
 
     if ( pCtx )
     {
@@ -137,13 +137,13 @@ VmDirSchemaCtxRelease(
         {
             VMDIR_LOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
 
-            pCtx->pVdirSchema->usRefCount--;
-            usRefCnt = pCtx->pVdirSchema->usRefCount;
-            usSelfRef = pCtx->pVdirSchema->usNumSelfRef;
+            pCtx->pVdirSchema->dwRefCount--;
+            dwRefCnt = pCtx->pVdirSchema->dwRefCount;
+            dwSelfRef = pCtx->pVdirSchema->dwNumSelfRef;
 
             VMDIR_UNLOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
 
-            if (usRefCnt == usSelfRef)
+            if (dwRefCnt == dwSelfRef)
             {   // only self reference within pSchema exists, free pSchema itself.
                 // self references are established during init before normal references.
                 VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,

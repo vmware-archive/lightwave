@@ -137,7 +137,8 @@ error:
 DWORD
 VmDirEncodeEntry(
     PVDIR_ENTRY              pEntry,
-    VDIR_BERVALUE*           pEncodedBerval)
+    VDIR_BERVALUE*           pEncodedBerval,
+    BOOLEAN                  bValidateEntry)
 {
     DWORD            dwError = 0;
     int              i = 0;
@@ -148,8 +149,15 @@ VmDirEncodeEntry(
 
     VmDirLog( LDAP_DEBUG_TRACE, "=> EncodeEntry(%ld) Begin: %s", (long) pEntry->eId, pEntry->dn.lberbv.bv_val );
 
-    dwError = _VmDirEntrySanityCheck(pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (bValidateEntry)
+    {
+        /*
+         * TODO: Rely on VmDirSchemaCheck() already used in internalAdd/Modify.
+         * Retire this function after adding schema check to replication code path
+         */
+        dwError = _VmDirEntrySanityCheck(pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // Calculate required length for all the strings in e
     dwError = VmDirComputeEncodedEntrySize( pEntry, &nAttrs, &nVals, &(pEncodedBerval->lberbv.bv_len) );
@@ -220,7 +228,8 @@ error:
 DWORD
 VmDirDecodeEntry(
    PVDIR_SCHEMA_CTX     pSchemaCtx,
-   PVDIR_ENTRY          pEntry
+   PVDIR_ENTRY          pEntry,
+   PVDIR_BERVALUE       pbvDn
    )
 {
     DWORD               dwError = 0;
@@ -341,6 +350,15 @@ VmDirDecodeEntry(
     // reposition pEntry->attrs to the first kept attr
     pEntry->attrs = pBeginAttr;
     pEndAttr->next = NULL;
+
+    /*
+     * ReplModify and Some ReplDelete case
+     */
+    if (pEntry->dn.lberbv.bv_len == 0 && pbvDn)
+    {
+       dwError = VmDirBervalContentDup(pbvDn, &pEntry->dn);
+       BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirNormalizeDN( &(pEntry->dn), pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
