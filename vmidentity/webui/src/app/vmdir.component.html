@@ -20,7 +20,7 @@
                                        <ng-template clrIfExpanded>
                                            <lazy-loaded-level1 *clrIfExpanded
                                            [(rootDn)]=commonName.dn
-                                          (onChildSelected)="onChildSelected($event)"></lazy-loaded-level1>
+                                          (onChildSelected)="vmdirForm.reset();onChildSelected($event)"></lazy-loaded-level1>
                                        </ng-template>
                                    </clr-tree-node>
                                 </ng-template>
@@ -32,6 +32,7 @@
                         </div>
                         </th>
                         <td>
+                            <form #vmdirForm="ngForm">
                             <div *ngIf="showErrorAlert" class="alert alert-danger">
                                 <div class="alert-items">
                                     <div class="alert-item static">
@@ -60,7 +61,7 @@
                                         <button *ngIf="isEdited" class="btn btn-sm btn-outline" (click)="schemaMap.clear();getAttributes();isEdited = false;">
                                            <clr-icon shape="times" class="is-solid is-error" style="width: 16px; height: 16px;"></clr-icon> Cancel
                                         </button>
-                                        <button *ngIf="isEdited" class="btn btn-primary btn-sm" (click)="prepareUpdatedAttributesList();confirm = true;">
+                                        <button *ngIf="isEdited" class="btn btn-primary btn-sm" [disabled]="vmdirForm.form.pristine" (click)="prepareUpdatedAttributesList();confirm = true;">
                                            <clr-icon shape="check" class="is-solid is-success" style="width: 16px; height: 16px;"></clr-icon> Submit
                                         </button>
                                     </div>
@@ -76,7 +77,7 @@
                                                                <clr-signpost style="font-size:14px">
                                                                    {{ attr?.type }}
                                                                    <clr-icon shape="info" class="is-solid"
-                                                                   (click)="displayProperties(attr.type, 5, attribsArr, 0)" clrSignpostTrigger>
+                                                                   (click)="displayProperties(attr.type, 5, attribsArr[0])" clrSignpostTrigger>
                                                                    </clr-icon>
                                                                    <clr-signpost-content *ngIf='showSignPost'>
                                                                        <table class="table no-border">
@@ -121,7 +122,6 @@
                                <section id="panel1" role="tabpanel" aria-labelledby="tab1" *ngIf="tab==1">
                                <div [style.max-height.px]="cardHeight" style="overflow-y:hidden;" class="card-block">
                                    <div class="card-text">
-                                       <form #vmdirForm1="ngForm">
                                            <clr-datagrid>
                                                <clr-dg-column style="width:285px;">
                                                       Attribute Name
@@ -129,12 +129,12 @@
                                                </clr-dg-column>
     					       <clr-dg-column>Value</clr-dg-column>
 	                                       <clr-dg-row *clrDgItems="let schemaattr of setSchemaMustAttribsArr;let index = index;">
-                                                   <clr-dg-cell style="width:285px;">{{schemaattr?.attrType}}</clr-dg-cell>
+                                                   <clr-dg-cell style="width:285px;"><label class="required">{{schemaattr?.attrType}} *</label></clr-dg-cell>
                                                    <clr-dg-cell>
                                                                <div class="signpost-triggers-wrapper">
                                                                    <div class="signpost-item">
                                                                        <clr-signpost>
-                                                                           <input style="border-bottom:initial;"(click)="displayProperties(schemaattr.attrType, 1, setSchemaMustAttribsArr, index)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="setSchemaMustAttribsArr[index].value" clrSignpostTrigger>
+                                                                           <input required style="border-bottom:initial;"(click)="displayProperties(schemaattr.attrType, 1, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" clrSignpostTrigger>
                                                                            <clr-signpost-content *clrIfOpen>
                                                                                <table class="vertical no-border">
                                                                                    <tbody>
@@ -151,14 +151,12 @@
                                                     </clr-dg-cell>
                                                 </clr-dg-row>
                                             </clr-datagrid>
-                                        </form>
                                          </div>
                                       </div>
                                   </section>
                                   <section id="panel2" role="tabpanel" aria-labelledby="tab2" *ngIf="tab==2">
                                   <div class="card-block" [style.max-height.px]="cardHeight" style="overflow-y:hidden;">
                                    <div class="card-text">
-                                       <form #vmdirForm2="ngForm">
                                            <clr-datagrid [style.max-height.px]="datagridHeight">
                                                <clr-dg-column style="width:285px;">
                                                       Attribute Name
@@ -171,7 +169,7 @@
                                                                <div class="signpost-triggers-wrapper">
                                                                    <div class="signpost-item">
                                                                        <clr-signpost>
-                                                                         <input style="border-bottom:initial;" (click)="displayProperties(schemaattr.attrType, 3, setSchemaMayAttribsArr, index)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="setSchemaMayAttribsArr[index].value" (ngModelChange)="setSchemaMayAttribsArr[index].value=$event;" clrSignpostTrigger>
+                                                                         <input style="border-bottom:initial;" (click)="displayProperties(schemaattr.attrType, 3, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" clrSignpostTrigger>
                                                                          <clr-signpost-content *clrIfOpen>
                                                                              <table class="vertical no-border">
                                                                                  <tbody>
@@ -188,12 +186,12 @@
                                                     </clr-dg-cell>
                                                 </clr-dg-row>
                                             </clr-datagrid>
-                                 </form>
                               </div>
                           </div>
                           </section>
                         </div>
                      </div>
+                     </form>
                 </td>
             </tr>
         </tbody>

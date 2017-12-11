@@ -81,8 +81,7 @@ export class VmdirComponent  {
     updatedAttributesArr:any[];
     selectedDN:string;
     header:string;
-    @ViewChild('vmdirForm1') formReq: NgModel;
-    @ViewChild('vmdirForm2') formOpt: NgModel;
+    @ViewChild('vmdirForm') formReq: any;
     constructor(private renderer:Renderer2, private utilsService: UtilsService, private vmdirUtils: VmdirUtils, @Inject(DOCUMENT) private document: any, private vmdirSchemaService: VmdirSchemaService, private vmdirService: VmdirService, private authService: AuthService) {
        console.log("App component - vmdir");
        this.isEdited = false;
@@ -228,14 +227,15 @@ export class VmdirComponent  {
         dateStr = dateStr.replace(/[-:T]/g, '');
         if(this.formReq) {
             this.formReq['controls'][this.curSchema].setValue(dateStr);
-        }else if(this.formOpt) {
-            this.formOpt['controls'][this.curSchema].setValue(dateStr);
         }
     }
     updateView(valueArr:any[]) {
         let l:number = valueArr.length;
         if(l > 0 && valueArr[l-1].length == 0){
             valueArr.pop();
+        }
+        if(this.document.getElementById(this.curSchema).value != this.curSchemaValue.toString()){
+            this.formReq.form.markAsDirty();
         }
         this.document.getElementById(this.curSchema).value = this.curSchemaValue;
         this.isListEdited = false;
@@ -279,17 +279,21 @@ export class VmdirComponent  {
     }
 
 
-   displayProperties(attrType:string, arrId:number, arr:any[], index:number) {
+   displayProperties(attrType:string, arrId:number, attrValue:any) {
        this.getSchema(attrType, true);
        this.curSchema = attrType;
-       this.curSchemaValue = arr[index].value;
+       this.curSchemaValue = attrValue;
    }
 
    constructAttribsMap(attribsArr:any[]){
         this.attribsMap = new Map<string, any>();
+        let id = 0;
         for (let attr of attribsArr){
              if(attr.type == 'objectClass') {
                  attr.value.push('top');
+             }
+             if(attr.type == 'nTSecurityDescriptor'){
+                 attribsArr.splice(id, 1);
              }
              if(attr.type.includes('TimeStamp')){
                  if(attr.value && attr.value[0]){
@@ -298,6 +302,7 @@ export class VmdirComponent  {
                  }
              }
              this.attribsMap[attr.type] = attr.value;
+             id ++;
         }
         console.log(this.attribsMap);
     }
@@ -313,7 +318,7 @@ export class VmdirComponent  {
          }
     }
     getAttributes() {
-        console.log("getAttributes - component");
+        this.formReq.form.markAsPristine();
         this.updatedAttributes = new Map<string,any>();
         this.updatedAttributesArr = [];
         this.schemaMap.clear();
@@ -399,14 +404,11 @@ export class VmdirComponent  {
                   }
            } else if (attr.type == 'mustContain' || attr.type == 'systemMustContain') {
               for (var i = 0; i < attr.value.length; i ++) {
-                     let o:any = {};
-                     o.attrType = attr.value[i];
-                     if(this.attribsMap[o.attrType]) {
-                         o.value = this.attribsMap[o.attrType];
-                         this.setSchemaMustAttribsArr.push(o);
-                  } else {
-                      o.value = [];
-                      this.schemaMustAttribsArr.push(o);
+                  let o:any = {};
+                  o.attrType = attr.value[i];
+                  if(this.attribsMap[o.attrType] && o.attrType != 'nTSecurityDescriptor') {
+                      o.value = this.attribsMap[o.attrType];
+                      this.setSchemaMustAttribsArr.push(o);
                   }
               }
            }
@@ -434,8 +436,6 @@ export class VmdirComponent  {
         this.renderer.listen(selectElem, 'change', () => {
             if(this.formReq) {
                 this.formReq['controls'][schemaName].setValue(selectElem.value);
-            }else if(this.formOpt) {
-                this.formOpt['controls'][schemaName].setValue(selectElem.value);
             }
         });
         if(inputElem.value.length == 0){

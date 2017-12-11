@@ -39,7 +39,7 @@ export class UtilsService{
     }
     setIcon(cnObj: any){
        console.log(cnObj);
-       if(cnObj.displayName.indexOf("Users") != -1 || cnObj.displayName.indexOf("Administrators") != -1) {
+       if(cnObj.displayName.indexOf("Users") != -1 || cnObj.displayName.indexOf("Administrators") != -1 || cnObj.displayName.indexOf("Operators") != -1) {
            cnObj.iconShape = "user";
            cnObj.iconClass = "is-solid is-info";
        }
