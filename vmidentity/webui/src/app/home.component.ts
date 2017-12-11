@@ -32,6 +32,7 @@ export class HomeComponent  {
     tenantName:string = '';
     role:string = '';
     containerHeight;
+    displayComponents:boolean = false;
     allTenants:any;
     isSystemTenant:boolean = false;
     rightMenuOpen:boolean = false;
@@ -42,6 +43,7 @@ export class HomeComponent  {
        console.log(window.sessionStorage);
        if(window.sessionStorage.currentUser && window.sessionStorage.currentUser != 'logout'){
             console.log(window.sessionStorage.currentUser);
+            this.displayComponents = true;
             this.loadFromSession();
        }else{
            this.activatedRoute.queryParams.subscribe((params: Params) => {
@@ -74,6 +76,7 @@ export class HomeComponent  {
         let idmUri = "/lightwaveui/app/#/ssohome"
         window.location.href = idmUri;
     }
+
     readQueryParams(params:any){
        let idToken = params['id_token'];
        let accessToken = params['access_token'];
@@ -85,19 +88,30 @@ export class HomeComponent  {
           this.configService.currentUser = null;
        }else{
           if(curUser){
-             if(curUser == 'logout'){
-               this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
-             }else{
+             if(curUser == 'logout'){  // session invalid, load from query paramters
+               if(accessToken && idToken){
+                   this.displayComponents = true;
+                   this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
+               }else{ // query parameters unavailable, redirect to home page
+                   this.utilsService.redirectToLandingPage();
+               }
+             }else{ // session is valid, load from session.
                 curUser = JSON.parse(curUser);
+                this.displayComponents = true;
                 this.configService.currentUser = curUser;
                 this.loadFromSession();
                 this.redirectToSsoHome();
              }
-          }else{
-               this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
+          }else{ // No session in progress
+               if(accessToken && idToken){ // load from query parameters if available
+                   this.displayComponents = true;
+                   this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
+               }else{ // query parameters unavailable, redirect to home page.
+                   this.utilsService.redirectToLandingPage();
+               }
           }
        }
-     }
+    }
 
     loadFromSession(){
         let curSession = JSON.parse(window.sessionStorage.currentUser);

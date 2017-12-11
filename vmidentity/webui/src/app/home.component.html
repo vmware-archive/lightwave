@@ -25,7 +25,7 @@
     </header>
     <div class="content-container">
         <div class="content-area" [style.max-height.px]="containerHeight" style="overflow-y:hidden;padding:unset;">
-            <vmdir></vmdir>
+            <vmdir *ngIf="displayComponents"></vmdir>
         </div>
     </div>
 </div>

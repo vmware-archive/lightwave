@@ -144,12 +144,16 @@ export class UtilsService{
        finalStr += ('dc='+dm2);
        return encodeURIComponent(finalStr);
     }
-   handleError(error:any) {
+    redirectToLandingPage(){
+        let redirectUri = '/lightwaveui';
+        window.location.href = redirectUri;
+    }
+    handleError(error:any) {
         console.log(error);
         if((error) &&
         (error.status == 401 || (error.error && error.error.error == 'invalid_token'))){
                 var redirectUri = '/lightwaveui/Login?tenant=' + this.configService.currentUser.tenant;
-                localStorage.currentUser = 'logout';
+                sessionStorage.currentUser = 'logout';
                 window.location.href = redirectUri;
         }else{
             return Observable.throw(error);
