@@ -719,6 +719,8 @@ VmDnsForwardRequest(
                             );
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS FWD REQ: ", pQueryBuffer, dwQuerySize);
+
     dwError = VmDnsSockWrite(
                     pSocket,
                     NULL,

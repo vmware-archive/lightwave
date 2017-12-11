@@ -282,13 +282,13 @@ VmDnsTkeyRecordToString(
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
-                    "Name:              %s\n"
-                    "Type:              %s\n"
-                    "Algorithm:         %s\n"
-                    "Inception:         %u\n"
-                    "Expiration:        %u\n"
-                    "Mode:              %u\n"
-                    "Error:             %u\n",
+                    "Name: %s, "
+                    "Type: %s, "
+                    "Algorithm: %s, "
+                    "Inception: %u, "
+                    "Expiration: %u, "
+                    "Mode: %u, "
+                    "Error: %u",
                     pRecord->pszName,
                     pszType,
                     pRecord->Data.TKEY.pNameAlgorithm,
