@@ -1563,6 +1563,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/ldap-head/Makefile
                  vmdir/server/rest-head/Makefile
                  vmdir/server/replication/Makefile
+                 vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
                  vmdir/server/vmdir/Makefile
                  vmdir/client/Makefile

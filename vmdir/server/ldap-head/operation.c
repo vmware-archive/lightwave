@@ -169,6 +169,18 @@ VmDirFreeOperationContent(
             VmDirSchemaCtxRelease(op->pSchemaCtx);
         }
 
+        if(op->clusterStateCtrl)
+        {
+            VDIR_CLUSTER_STATE_CONTROL_VALUE *csv = &op->clusterStateCtrl->value.clusterStateCtrlVal;
+            VMDIR_SAFE_FREE_MEMORY(csv->pszFQDN);
+        }
+
+        if (op->clusterVoteCtrl)
+        {
+             VDIR_CLUSTER_VOTE_CONTROL_VALUE *cvv = &op->clusterVoteCtrl->value.clusterVoteCtrlVal;
+             VMDIR_SAFE_FREE_MEMORY(cvv->pszCandidateId);   
+        }
+
         if (op->reqControls)
         {
             DeleteControls(&(op->reqControls));

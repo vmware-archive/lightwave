@@ -213,6 +213,8 @@ vdirReplicationThrFun(
         goto cleanup;
     }
 
+    VmDirClusterLoadCache();
+
     if (VmDirSchemaCtxAcquire(&sContext.pSchemaCtx) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirSchemaCtxAcquire failed.");
