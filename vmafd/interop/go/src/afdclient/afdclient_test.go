@@ -3,26 +3,27 @@ package afdclient
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"flag"
-	"os"
 	"fmt"
-	"time"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"os"
 	"os/exec"
 	"strings"
-	"log"
+	"time"
 )
 
 const (
-	host     = "localhost"
-	service  = "Lightwave - Test Service"
-	account  = "administrator"
-	port     = 2000
-	timeout  = 31
+	host    = "localhost"
+	service = "Lightwave - Test Service"
+	account = "administrator"
+	port    = 2000
+	timeout = 31
 )
 
 var domain = flag.String("domain", "", "System tenant domain")
 var password = flag.String("password", "", "System tenant password")
+var otherDC = flag.String("dcname", "", "Other DC to affinitize to on force-refresh case")
 
 func init() {
 	flag.Parse()
@@ -113,7 +114,28 @@ func TestVmAfdGetDCName(t *testing.T) {
 	if err != nil {
 		assert.FailNow(t, "Error in getting DC Name", "Error: %+v", err)
 	}
-	assert.Equal(t, strings.Trim(string(out), "\n") , dcName, "Error: DC Name not as expected")
+	assert.Equal(t, strings.Trim(string(out), "\n"), dcName, "Error: DC Name not as expected")
+}
+
+func TestVmAfdForceRefreshDCName(t *testing.T) {
+	if *otherDC == "" {
+		log.Printf("Skipping ForceRefresh Test, dcname arg not passed in")
+		return
+	}
+
+	dcName, err := VmAfdGetDCName(host)
+	if err != nil {
+		assert.FailNow(t, "Error in getting DC Name", "Error: %+v", err)
+	}
+
+	refreshedName, err := VmAfdForceRefreshDCName()
+	if err != nil {
+		assert.FailNow(t, "Error in refreshing DC Name", "Error: %+v", err)
+	}
+
+	assert.NotEqual(t, dcName, refreshedName, "Error: DC name should change after force refresh")
+	assert.Equal(t, *otherDC, refreshedName, "Error: refreshed DC name is not %s", *otherDC)
+	log.Printf("DcName: %s, After Refresh: %s", dcName, refreshedName)
 }
 
 func getHbInfo(t *testing.T, status *VmAfdHbStatus, service string) *VmAfdHbInfo {
