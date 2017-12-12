@@ -634,12 +634,18 @@ VmwDeploySetupClientWithDC(
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
 
+    // As per https://tools.ietf.org/html/rfc6125
+    // CN portion of the certificate will ignored
+    // for certificate validation if SAN is present 
+    // CN has a limitation of 64 chars and 
+    // FQDN can be upto 256 chars. Passing a
+    // hard coded value machine ssl certificate 
     dwError = VmwDeployCreateMachineSSLCert(
                     pParams->pszServer,
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    "machine_ssl_cert",
                     pParams->pszSubjectAltName ?
                         pParams->pszSubjectAltName : pParams->pszHostname,
                     &pszPrivateKey,
@@ -817,7 +823,7 @@ VmwDeploySetupClient(
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    "machine_ssl_cert",
                     pParams->pszSubjectAltName ?
                         pParams->pszSubjectAltName : pParams->pszHostname,
                     &pszPrivateKey,

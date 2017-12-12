@@ -108,3 +108,63 @@ leave_lightwave() {
     # TODO - clean up DNS records, certs, and computer object
     # https://bugzilla.eng.vmware.com/show_bug.cgi?id=1977642
 }
+
+# generates SSL cert with SAN of ELB and adds to vecs
+generate_ssl_cert() {
+    set -x
+    VECS_DIR="/var/lib/vmware/vmafd/vecs"
+    SSL_STORE="MACHINE_SSL_CERT"
+    DEFAULT_CERT="__MACHINE_CERT"
+
+    get_current_region REGION
+    get_current_asg ASG
+    RES=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${ASG} --region ${REGION} --query AutoScalingGroups[].LoadBalancerNames[*] --output text)
+    ELB=$(aws elb describe-load-balancers --region ${REGION} --load-balancer-names ${RES} --query LoadBalancerDescriptions[].DNSName --output text)
+    echo "ELB is ${ELB}"
+
+    LW_DC=$(/opt/vmware/bin/vmafd-cli get-dc-name --server-name localhost)
+
+    if [ 0 -eq $(openssl x509 -in ${VECS_DIR}/cert.pem -noout -text | grep ${ELB} > /dev/null; echo $?) ]; then
+        echo "Cert already generated, skipping step"
+        return
+    fi
+
+    # Delete old cert
+    /opt/vmware/bin/vecs-cli entry delete --store ${SSL_STORE} --alias ${DEFAULT_CERT} -y
+
+    echo "Generating SSL cert for ELB name ${ELB}"
+    HOSTNAME=$(hostname -f)
+    # Generate the public/private key pair to prepare for certificate signing
+    /opt/vmware/bin/certool --genkey --privkey=${VECS_DIR}/key.pem --pubkey=${VECS_DIR}/pub_key.pem
+    # Make the certificate config file
+    echo "Country = US" > cert.cfg
+    echo "Name = CA" >> cert.cfg
+    echo "Organization = VMware" >> cert.cfg
+    echo "OrgUnit = VMware Engineering" >> cert.cfg
+    echo "State = CA" >> cert.cfg
+    echo "Locality = Palo Alto" >> cert.cfg
+    echo "IPAddress = 127.0.0.1" >> cert.cfg
+    echo "Hostname = ${ELB},localhost,${HOSTNAME}" >> cert.cfg
+
+    echo "Generating cert using server ${LW_DC}"
+    /opt/vmware/bin/certool --gencert --config=cert.cfg --cert=${VECS_DIR}/cert.pem --privkey=${VECS_DIR}/key.pem --server ${LW_DC}
+
+    echo "Adding cert to vecs store"
+    /opt/vmware/bin/vecs-cli entry create --store ${SSL_STORE} --alias ${DEFAULT_CERT} --cert ${VECS_DIR}/cert.pem --key ${VECS_DIR}/key.pem
+    rm cert.cfg
+    set +x
+}
+
+# uses vmafd-cli to set DC name to LW node specified by LW_AFFINITIZED_DC tag value
+set_dc_name() {
+    set -x
+    get_tag_value "LW_AFFINITIZED_DC" LW_DC
+
+    if [[ -n "${LW_DC}" ]]; then
+        echo "Setting DC Name to ${LW_DC}"
+        /opt/vmware/bin/vmafd-cli set-dc-name --server-name localhost --dc-name ${LW_DC}
+    else
+        echo "Could not find LW_AFFINITIZED_DC ASG Tag, skipping"
+    fi
+    set +x
+}

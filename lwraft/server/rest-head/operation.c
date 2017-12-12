@@ -51,6 +51,11 @@ VmDirRESTOperationCreate(
     dwError = VmDirRESTCreateProxyResult(&pRestOp->pProxyResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMemory(
+            sizeof(VMDIR_THREAD_LOG_CONTEXT),
+            (PVOID*)&pRestOp->pThreadLogContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppRestOp = pRestOp;
 
 cleanup:
@@ -134,6 +139,13 @@ VmDirRESTOperationReadRequest(
 
     // Content-type
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pThreadLogContext->pszRequestId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // call the set context method to store request-id in TLS
+    dwError = VmDirSetThreadLogContextValue(pRestOp->pThreadLogContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
@@ -248,6 +260,7 @@ VmDirRESTOperationWriteResponse(
 {
     DWORD   dwError = 0;
     DWORD   bytesWritten = 0;
+    DWORD   dwHttpStatus = 0;
     PSTR    pszHttpStatus = NULL;
     PSTR    pszHttpReason = NULL;
     PSTR    pszBody = NULL;
@@ -265,7 +278,7 @@ VmDirRESTOperationWriteResponse(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = pRestOp->pResource->pfnGetHttpError(
-            pRestOp->pResult, &pszHttpStatus, &pszHttpReason);
+            pRestOp->pResult, &dwHttpStatus, &pszHttpStatus, &pszHttpReason);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTSetHttpStatusCode(ppResponse, pszHttpStatus);
@@ -327,6 +340,16 @@ VmDirRESTOperationWriteResponse(
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (! VMDIR_IS_HTTP_STATUS_OK(dwHttpStatus))
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s HTTP response status (%d), body (%.*s)",
+                __FUNCTION__,
+                dwHttpStatus,
+                VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
+                pszBody);
+    }
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszBody);
     VMDIR_SAFE_FREE_STRINGA(pszBodyLen);
@@ -357,6 +380,10 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszClientIP);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszRequestId);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszSessionId);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszUserId);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

@@ -260,6 +260,9 @@ VmDirInit(
 #ifndef _WIN32
     dwError = InitializeResouceLimit();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInitThreadContext();
+    BAIL_ON_VMDIR_ERROR(dwError);
 #endif
 
     /* Override vmafd domain state to (1=infrastructure node) for gss plugin so that lwraftd

@@ -1,0 +1,91 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.vmware.identity</groupId>
+    <artifactId>vmware-identity</artifactId>
+    <version>1.3.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>webui</artifactId>
+  <packaging>war</packaging>
+  <name>Lightwave Web UI</name>
+
+  <build>
+    <plugins>
+      <!-- Step 1: Compile and build the angular2 webapp -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>1.0</version>
+        <configuration>
+          <installDirectory>.</installDirectory>
+        </configuration>
+        <executions>
+        <!-- It will install nodejs and npm -->
+        <execution>
+          <id>install node and npm</id>
+          <goals>
+            <goal>install-node-and-npm</goal>
+          </goals>
+          <configuration>
+            <nodeVersion>v7.7.4</nodeVersion>
+            <npmVersion>4.1.2</npmVersion>
+          </configuration>
+        </execution>
+        <!-- It will execute command "npm install" inside "/angular" directory -->
+        <execution>
+          <id>npm install</id>
+          <goals>
+            <goal>npm</goal>
+          </goals>
+          <configuration>
+            <installDirectory>.</installDirectory>
+            <arguments>install</arguments>
+          </configuration>
+        </execution>
+        <execution>
+           <id>npm run-script prod</id>
+           <phase>prepare-package</phase>
+           <goals>
+             <goal>npm</goal>
+           </goals>
+           <configuration>
+             <arguments>run-script prod</arguments>
+           </configuration>
+         </execution>
+       </executions>
+    </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>${maven.war.plugin.version}</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Specification-Title>${webui.title}</Specification-Title>
+              <Specification-Version>${webui.version}</Specification-Version>
+              <Specification-Vendor>${webui.vendor}</Specification-Vendor>
+              <Implementation-Title>${webui.title}</Implementation-Title>
+              <Implementation-Version>${webui.version}</Implementation-Version>
+              <Implementation-Vendor>${webui.vendor}</Implementation-Vendor>
+            </manifestEntries>
+          </archive>
+          <webResources>
+            <resource>
+              <directory>dist</directory>
+            </resource>
+          </webResources>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <properties>
+    <rootDirectory>${basedir}/..</rootDirectory>
+    <webui.title>webui</webui.title>
+    <webui.version>${vmware.version}</webui.version>
+    <webui.vendor>VMWare, Inc.</webui.vendor>
+  </properties>
+</project>

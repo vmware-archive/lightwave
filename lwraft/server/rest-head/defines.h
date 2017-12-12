@@ -46,6 +46,7 @@
 #define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 #define VMDIR_REST_HEADER_CONTENT_TYPE      "Content-Type"
+#define VMDIR_REST_HEADER_REQUESTID         "requestid"
 
 // HTTP STATUS CODES
 // 1xx Informational
@@ -135,3 +136,5 @@
                     pRestRslt, pLdapRslt, dwError, pszErrMsg);          \
         }                                                               \
     } while (0)
+
+#define VMDIR_IS_HTTP_STATUS_OK(dwHttpStatus) (dwHttpStatus == 200)

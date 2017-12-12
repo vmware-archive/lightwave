@@ -369,6 +369,7 @@ error:
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
+    DWORD*              pdwHttpStatus,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
     )
@@ -377,7 +378,7 @@ VmDirRESTLdapGetHttpError(
     int     httpStatus = 0;
     PVDIR_HTTP_ERROR    pHttpError = NULL;
 
-    if (!pRestRslt || !ppszHttpStatus || !ppszHttpReason)
+    if (!pRestRslt || !pdwHttpStatus || !ppszHttpStatus || !ppszHttpReason)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -437,6 +438,7 @@ VmDirRESTLdapGetHttpError(
 
     pHttpError = VmDirRESTGetHttpError(httpStatus);
 
+    *pdwHttpStatus = pHttpError->dwHttpStatus;
     *ppszHttpStatus = pHttpError->pszHttpStatus;
     *ppszHttpReason = pHttpError->pszHttpReason;
 
