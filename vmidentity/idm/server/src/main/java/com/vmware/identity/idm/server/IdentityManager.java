@@ -6285,6 +6285,18 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
+    private String generatePassword(String tenantName) throws Exception
+    {
+        TenantInformation tenantInfo = findTenant(tenantName);
+        ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+        ISystemDomainIdentityProvider provider =
+            tenantInfo.findSystemProvider();
+        ServerUtils.validateNotNullSystemIdp(provider, tenantName);
+
+        return provider.generatePassword();
+    }
+
     private
     void
     updateSystemDomainStorePasswordIfNeeded(String tenantName, String accountName, char[] newPassword)
@@ -10867,6 +10879,21 @@ public class IdentityManager implements IIdentityManager {
             try
             {
                 this.changeUserPassword(tenantName, userName, currentPassword, newPassword);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public String generatePassword(String tenantName, IIdmServiceContext serviceContext) throws IDMException {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "generatePassword"))
+        {
+            try
+            {
+                return this.generatePassword(tenantName);
             }
             catch(Exception ex)
             {

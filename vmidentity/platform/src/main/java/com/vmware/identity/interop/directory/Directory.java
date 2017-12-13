@@ -59,6 +59,17 @@ public final class Directory
 
     public static
     String
+    GeneratePassword(
+        String hostURI,
+        String upn,
+        String password
+    )
+    {
+        return library.GeneratePassword(hostURI, upn, password);
+    }
+
+    public static
+    String
     GetLocalLduGuid()
     {
         return library.GetLocalLduGuid();

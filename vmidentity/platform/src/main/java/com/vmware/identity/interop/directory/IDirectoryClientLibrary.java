@@ -57,6 +57,13 @@ public interface IDirectoryClientLibrary
     );
 
     String
+    GeneratePassword(
+        String hostURI,
+        String upn,
+        String pasword
+    );
+
+    String
     GetLocalLduGuid();
 
     void

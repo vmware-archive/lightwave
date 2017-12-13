@@ -161,4 +161,6 @@ public interface ISystemDomainIdentityProvider extends IIdentityProvider
     List<Group> findGroupObjectsForFsps(List<String> fspIds) throws Exception;
 
     List<VmHostData> getComputers(boolean getDCOnly) throws Exception;
+
+    String generatePassword() throws Exception;
 }
