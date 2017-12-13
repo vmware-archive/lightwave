@@ -499,6 +499,7 @@ CdcGetDomainControllers(
 {
       DWORD dwError       = 0;
       DWORD dwIndex       = 0;
+      DWORD dwDomainLen   = 0;
       PWSTR pwszDomain    = NULL;
       PSTR  pszDomain     = NULL;
       PSTR  pszDCName     = NULL;
@@ -574,6 +575,22 @@ CdcGetDomainControllers(
                           RPC_PING_TIMEOUT,
                           &pConnection);
       BAIL_ON_VMAFD_ERROR(dwError);
+
+      dwDomainLen = VmAfdStringLenA(pszDomain);
+      if (dwDomainLen == 0)
+      {
+          dwError = ERROR_INVALID_PARAMETER;
+          BAIL_ON_VMAFD_ERROR(dwError);
+      }
+
+      dwError = VmAfdReallocateMemory(
+                        pszDomain,
+                        (PVOID*)&pszDomain,
+                        dwDomainLen + 2);
+      BAIL_ON_VMAFD_ERROR(dwError);
+
+      pszDomain[dwDomainLen] = '.';
+      pszDomain[dwDomainLen + 1] = '\0';
 
       dwError = VmDnsQueryRecordsA(
                           pConnection,
