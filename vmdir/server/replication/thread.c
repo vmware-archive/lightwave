@@ -1106,10 +1106,8 @@ _VmDirFetchReplicationPage(
 
         bLogErr = FALSE;
     }
-    else if (retVal == LDAP_SERVER_DOWN     ||
-             retVal == LDAP_CONNECT_ERROR   ||
-             retVal == LDAP_TIMEOUT)
-    {   // connection problem
+    else if (retVal)
+    {   // for all other errors, force disconnect
         pConnection->connState = DC_CONNECTION_STATE_NOT_CONNECTED;
     }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
@@ -1216,6 +1214,11 @@ ldaperror:
     }
     _VmDirFreeReplicationPage(pPage);
     pPage = NULL;
+
+    if (pConnection->connState != DC_CONNECTION_STATE_CONNECTED)
+    {   // unbind after _VmDirFreeReplicationPage call
+        VDIR_SAFE_UNBIND_EXT_S(pConnection->pLd);
+    }
     goto cleanup;
 }
 

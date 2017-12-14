@@ -89,6 +89,9 @@ VmDirInitDCConnThread(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    // handle over pDCConn ownership to DCConnThread
+    pDCConn->connState = DC_CONNECTION_STATE_CONNECTING;
+
     dwError = VmDirCreateThread(
         &threadId,
         FALSE,  // no thread join
@@ -102,9 +105,19 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error %d", __FUNCTION__, dwError);
 
+    if (pDCConn)
+    {
+        pDCConn->connState = DC_CONNECTION_STATE_NOT_CONNECTED;
+    }
     goto cleanup;
 }
 
+/*
+ * Handle connection to a remote DC.
+ * At the end of this function, pDCConn->connState should be either
+ * 1. DC_CONNECTION_STATE_FAILED or
+ * 2. DC_CONNECTION_STATE_CONNECTED
+ */
 static
 DWORD
 _VmDirDCConnThreadFun(
@@ -114,11 +127,12 @@ _VmDirDCConnThreadFun(
     DWORD dwError = 0;
     DWORD dwSleepTimeSec = 0;
     DWORD dwThrStartTime = time(NULL);
+    BOOLEAN bHasConnection = FALSE;
     PVMDIR_DC_CONNECTION pDCConn = (PVMDIR_DC_CONNECTION)pArg;
 
-    pDCConn->connState = DC_CONNECTION_STATE_CONNECTING;
+    assert(pDCConn->connState == DC_CONNECTION_STATE_CONNECTING);
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
         "%s user (%s) connecting to (%s) started",
         __FUNCTION__,
         VDIR_SAFE_STRING(pDCConn->creds.pszUPN),
@@ -134,14 +148,13 @@ _VmDirDCConnThreadFun(
         dwError = _VmDirConnectToDC(pDCConn);
         if (dwError == 0)
         {
-            VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
                 "%s user (%s) connected to (%s) done",
                 __FUNCTION__,
                 VDIR_SAFE_STRING(pDCConn->creds.pszUPN),
                 VDIR_SAFE_STRING(pDCConn->pszRemoteDCHostName));
 
-            // have a live connection, transfer ownership back to owner
-            pDCConn->connState = DC_CONNECTION_STATE_CONNECTED;
+            bHasConnection = TRUE;
             goto cleanup;
         }
 
@@ -199,10 +212,19 @@ _VmDirDCConnThreadFun(
 cleanup:
     VmDirFreeConnCredContent(&pDCConn->creds);
 
+    // set connState before transfer pDCConn ownership back to calling thread
+    if (bHasConnection)
+    {
+        pDCConn->connState = DC_CONNECTION_STATE_CONNECTED;
+    }
+    else
+    {
+        pDCConn->connState = DC_CONNECTION_STATE_FAILED;
+    }
+
     return dwError;
 
 error:
-    pDCConn->connState = DC_CONNECTION_STATE_FAILED;
 
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
         "%s user (%s) connect to (%s) failed (%d), connection state set to failed",
