@@ -372,6 +372,9 @@ VmDirFreeRESTOperation(
 {
     if (pRestOp)
     {
+        // unset thread log context to safely free pRestOp->pThreadLogContext below
+        VmDirSetThreadLogContextValue(NULL); 
+
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
@@ -384,6 +387,7 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszSessionId);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszUserId);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext);
+
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);
