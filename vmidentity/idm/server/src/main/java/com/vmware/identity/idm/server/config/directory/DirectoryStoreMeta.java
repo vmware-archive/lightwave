@@ -4289,12 +4289,22 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
     public static final String PROPERTY_NAME = CN;
     public static final String PROPERTY_ENTITY_ID = "vmwSTSEntityId";
     public static final String PROPERTY_PROTOCOL = "vmwSTSExternalIdpProtocol";
+    public static final String PROPERTY_ISSUER_TYPE = "vmwSTSExternalIdpIssuerType";
     public static final String PROPERTY_ALIAS = "vmwSTSAlias";
     public static final String PROPERTY_CLIENT_ID = "vmwSTSExternalIdpClientId";
+    public static final String PROPERTY_CLIENT_SECRET = "vmwSTSExternalIdpClientSecret";
+    public static final String PROPERTY_CLIENT_REDIRECT_URL = "vmwSTSExternalIdpClientRedirectURL";
     public static final String PROPERTY_PUBLIC_KEY = "vmwSTSPublicKey";
     public static final String PROPERTY_NAME_ID_FORMAT = "vmwSTSNameIDFormat";
     public static final String PROPERTY_JIT_FORMAT = "vmwSTSExternalIdpEnableJit";
     public static final String PROPERTY_UPN_SUFFIX = "vmwSTSExternalIdpUpnSuffix";
+    public static final String PROPERTY_OIDC_METADATA_URI = "vmwOidcMetadataURI";
+    public static final String PROPERTY_OIDC_JWKS_URI = "vmwOidcJwksURI";
+    public static final String PROPERTY_OIDC_TOKEN_REDIRECT_URI = "vmwOidcTokenRedirectURI";
+    public static final String PROPERTY_OIDC_AUTHORIZE_REDIRECT_URI = "vmwOidcAuthorizeRedirectURI";
+    public static final String PROPERTY_OIDC_LOGOUT_URI = "vmwOidcLogoutURI";
+    public static final String PROPERTY_OIDC_POST_LOGOUT_URI = "vmwOidcPostLogoutRedirectURI";
+
 
     @SuppressWarnings("unchecked")
     private IDPConfigLdapObject()
@@ -4385,13 +4395,68 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                     public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
                                     {
                                         ValidateUtil.validateNotNull(idpConfig, "idpConfig");
-                                        idpConfig.setClientId(ServerUtils.getStringValue(value));
+                                        idpConfig.getOidcConfig().setClientId(ServerUtils.getStringValue(value));
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getClientId());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                            PROPERTY_ISSUER_TYPE,
+                            -1,
+                            true,
+                            new IPropertyGetterSetter<IDPConfig>() {
+                                @Override
+                                public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                {
+                                    ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                    idpConfig.getOidcConfig().setIssuerType(ServerUtils.getStringValue(value));
+                                }
+                                @Override
+                                public LdapValue[] GetLdapValue(IDPConfig config)
+                                {
+                                    return ServerUtils.getLdapValue(config.getOidcConfig().getIssuerType());
+                                }
+                            }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_CLIENT_SECRET,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                        idpConfig.getOidcConfig().setClientSecret(ServerUtils.getStringValue(value));
                                     }
                                     @Override
                                     public LdapValue[] GetLdapValue(IDPConfig config)
                                     {
                                         ValidateUtil.validateNotNull(config, "config");
-                                        return ServerUtils.getLdapValue(config.getClientId());
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getClientSecret());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_CLIENT_REDIRECT_URL,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                        idpConfig.getOidcConfig().setRedirectURI(ServerUtils.getStringValue(value));
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getRedirectURI());
                                     }
                                 }
                         ),
@@ -4453,7 +4518,7 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                 }
                         ),
                         new PropertyMapperMetaInfo<IDPConfig>(
-                                PROPERTY_PUBLIC_KEY,
+                                PROPERTY_OIDC_AUTHORIZE_REDIRECT_URI,
                                 -1,
                                 true,
                                 new IPropertyGetterSetter<IDPConfig>() {
@@ -4462,14 +4527,119 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                     {
                                         if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
                                             ValidateUtil.validateNotNull(idpConfig, "idpConfig");
-                                            idpConfig.setPublicKey(ServerUtils.getPublicKeyValue(value));
+                                            idpConfig.getOidcConfig().setAuthorizeRedirectURI(ServerUtils.getStringValue(value));
                                         }
                                     }
                                     @Override
                                     public LdapValue[] GetLdapValue(IDPConfig config)
                                     {
                                         ValidateUtil.validateNotNull(config, "config");
-                                        return ServerUtils.getLdapValue(config.getPublicKey());
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getAuthorizeRedirectURI());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_OIDC_JWKS_URI,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                                            ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                            idpConfig.getOidcConfig().setJwksURI(ServerUtils.getStringValue(value));
+                                        }
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getJwksURI());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_OIDC_LOGOUT_URI,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                                            ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                            idpConfig.getOidcConfig().setLogoutURI(ServerUtils.getStringValue(value));
+                                        }
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getLogoutURI());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_OIDC_METADATA_URI,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                                            ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                            idpConfig.getOidcConfig().setMetadataURI(ServerUtils.getStringValue(value));
+                                        }
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getMetadataURI());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_OIDC_POST_LOGOUT_URI,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                                            ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                            idpConfig.getOidcConfig().setPostLogoutURI(ServerUtils.getStringValue(value));
+                                        }
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getPostLogoutURI());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_OIDC_TOKEN_REDIRECT_URI,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        if (idpConfig.getProtocol().equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                                            ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                            idpConfig.getOidcConfig().setTokenRedirectURI(ServerUtils.getStringValue(value));
+                                        }
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        ValidateUtil.validateNotNull(config, "config");
+                                        return ServerUtils.getLdapValue(config.getOidcConfig().getTokenRedirectURI());
                                     }
                                 }
                         )
@@ -4481,10 +4651,8 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
      * @see com.vmware.identity.idm.server.config.directory.BaseLdapObject#createObject(java.util.List)
      */
     @Override
-    protected IDPConfig createObject(List<LdapValue[]> ctorParams)
-    {
-        if (ctorParams == null || ctorParams.size() != 2)
-        {
+    protected IDPConfig createObject(List<LdapValue[]> ctorParams) {
+        if (ctorParams == null || ctorParams.size() != 2) {
             throw new IllegalArgumentException("size of ctorParams needs to be 2 for class IDPConfig");
         }
         String protocol = ServerUtils.getStringValue(ctorParams.get(1));
@@ -4493,7 +4661,8 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
         } else {
             return new IDPConfig(
                     ServerUtils.getStringValue(ctorParams.get(0)), // Entity ID
-                    protocol);  // Protocol
+                    ServerUtils.getStringValue(ctorParams.get(1))  // Protocol
+            );
         }
     }
 }

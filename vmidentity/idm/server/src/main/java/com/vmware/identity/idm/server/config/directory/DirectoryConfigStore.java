@@ -83,6 +83,7 @@ import com.vmware.identity.idm.NoSuchRelyingPartyException;
 import com.vmware.identity.idm.NoSuchResourceServerException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.RSAAMInstanceInfo;
 import com.vmware.identity.idm.RSAAgentConfig;
@@ -2181,6 +2182,7 @@ public class DirectoryConfigStore implements IConfigStore {
     // validation has been done on IIdentityManager
     PooledLdapConnection pooledConnection = borrowConnection();
     ILdapConnectionEx connection = pooledConnection.getConnection();
+    Tenant tenant = this.getTenant(connection, tenantName);
     String tenantRootDn = lookupTenantsRootDn(connection, tenantName);
 
     if (tenantRootDn == null) {
@@ -2207,6 +2209,13 @@ public class DirectoryConfigStore implements IConfigStore {
       if (ldapObjectExists) {// delete existing object first before
         // setting the new configuration
         ldapObj.deleteObject(connection, ldapObjDN);
+      }
+      OidcConfig oidcConfig = idpConfig.getOidcConfig();
+      if (oidcConfig != null) {
+        String clientSecret = oidcConfig.getClientSecret();
+        if (clientSecret != null) {
+          oidcConfig.setClientSecret(getEncryptedPassword(tenant._tenantKey, clientSecret));
+        }
       }
       ldapObj.createObject(connection, ldapObjDN, idpConfig);
 
@@ -2274,9 +2283,14 @@ public class DirectoryConfigStore implements IConfigStore {
         }
       }
 
-      saveObjectsCollection(connection, ldapObjDN,
+      saveObjectsCollection(
+          connection,
+          ldapObjDN,
           ContainerLdapObject.CONTAINER_EXTERNAL_IDP_GROUP_ATTRIBUTE_MAPPINGS,
-          AttributeMappingLdapObject.getInstance(), attributeMappings, null);
+          AttributeMappingLdapObject.getInstance(),
+          attributeMappings,
+          null
+      );
     } finally {
       pooledConnection.close();
     }
@@ -2332,6 +2346,7 @@ public class DirectoryConfigStore implements IConfigStore {
     Collection<IDPConfig> idpConfigs = null;
     try (PooledLdapConnection pooledConnection = borrowConnection()) {
       ILdapConnectionEx connection = pooledConnection.getConnection();
+      final Tenant tenant = getTenant(connection, tenantName);
       String tenantConfigDN = lookupTenantsRootDn(connection, tenantName);
       if (StringUtils.isEmpty(tenantConfigDN)) {
         throw new NoSuchTenantException(String.format("tenant [%s] doesnot exist", tenantName));
@@ -2372,13 +2387,28 @@ public class DirectoryConfigStore implements IConfigStore {
                 if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
                   try {
                     idpConfig.setSigningCertificateChain(
-                        retrieveExternalIDPConfigSigningCertificates(connection, idpConfigDN));
+                        retrieveExternalIDPConfigSigningCertificates(connection, idpConfigDN)
+                    );
                   } catch (IDMException ie) {
                     String message = "Signing certifiate chain retrieved from directory store"
                         + "is invalid, most likely certs are out of required order"
                         + "(user first, root cast last)";
                     logger.error(message);
                     throw new IllegalStateException(message);
+                  }
+                } else if (protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                  OidcConfig oidcConfig = idpConfig.getOidcConfig();
+                  if (oidcConfig != null) {
+                    String clientSecret = oidcConfig.getClientSecret();
+                    if (clientSecret != null) {
+                      try {
+                        oidcConfig.setClientSecret(getDecryptedPassword(tenant._tenantKey, clientSecret));
+                      } catch (Exception ie) {
+                        String message = "Failed to decrypt client secret";
+                        logger.error(message);
+                        throw new IllegalStateException(message);
+                      }
+                    }
                   }
                 }
 
@@ -3342,7 +3372,7 @@ public class DirectoryConfigStore implements IConfigStore {
    *
    * @param ocspListContainerDn
    * @param connection
-   * @param ocspLists
+   * @param existingOcspLists
    * @param ocspList
    */
   private void updateOCSPList(String ocspListContainerDn, ILdapConnectionEx connection,
@@ -4888,20 +4918,42 @@ public class DirectoryConfigStore implements IConfigStore {
 
   private void enCryptPassword(String tenantKey, IIdentityStoreDataEx idsDataEx) throws Exception {
     if (idsDataEx != null) {
-      CryptoAESE cryptoAES = new CryptoAESE(tenantKey);
       String secret = idsDataEx.getPassword();
       if (secret != null) {
-        idsDataEx.setPassword(new BASE64Encoder().encode(cryptoAES.encrypt(secret)));
+        idsDataEx.setPassword(getEncryptedPassword(tenantKey, secret));
       }
     }
+  }
+
+  private static String getEncryptedPassword(String key, String secret) throws Exception {
+    if (secret != null) {
+      final CryptoAESE cryptoAES = new CryptoAESE(key);
+      return new BASE64Encoder().encode(cryptoAES.encrypt(secret));
+    }
+    return null;
   }
 
   private void deCryptPassword(CryptoAESE cryptoAES, IIdentityStoreDataEx idsDataEx) throws Exception {
     if (idsDataEx != null) {
       String secret = idsDataEx.getPassword();
       if (secret != null) {
-        idsDataEx.setPassword(cryptoAES.decrypt(new BASE64Decoder().decodeBuffer(secret)));
+        idsDataEx.setPassword(getDecryptedPassword(cryptoAES, secret));
       }
     }
+  }
+
+  private static String getDecryptedPassword(String key, String data) throws Exception {
+    if (data != null) {
+      final CryptoAESE cryptoAES = new CryptoAESE(key);
+      return getDecryptedPassword(cryptoAES, data);
+    }
+    return null;
+  }
+
+  private static String getDecryptedPassword(CryptoAESE cryptoAES, String data) throws Exception {
+    if (data != null) {
+      return cryptoAES.decrypt(new BASE64Decoder().decodeBuffer(data));
+    }
+    return null;
   }
 }

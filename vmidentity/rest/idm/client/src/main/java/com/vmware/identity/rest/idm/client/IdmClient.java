@@ -47,6 +47,7 @@ public class IdmClient extends BaseClient {
     private TenantResource tenant;
     private CertificateResource certificate;
     private ExternalIDPResource externalIdp;
+    private FederatedIDPResource federatedIdp;
     private GroupResource group;
     private IdentityProviderResource providers;
     private OidcClientResource oidcClient;
@@ -178,6 +179,16 @@ public class IdmClient extends BaseClient {
 
     /**
      * Get the subresource containing all of the commands related to a tenant's
+     * federated identity providers.
+     *
+     * @return the subresource containing all of the federated identity provider commands.
+     */
+    public FederatedIDPResource federatedIdp() {
+        return federatedIdp;
+    }
+
+    /**
+     * Get the subresource containing all of the commands related to a tenant's
      * identity providers.
      *
      * @return the subresource containing all of the identity provider commands.
@@ -250,6 +261,7 @@ public class IdmClient extends BaseClient {
         tenant = new TenantResource(this);
         certificate = new CertificateResource(this);
         externalIdp = new ExternalIDPResource(this);
+        federatedIdp = new FederatedIDPResource(this);
         group = new GroupResource(this);
         providers = new IdentityProviderResource(this);
         oidcClient = new OidcClientResource(this);

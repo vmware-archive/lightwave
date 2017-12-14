@@ -459,6 +459,11 @@ public class TenantResource extends BaseResource {
         return new ExternalIDPResource(tenantName, getRequest(), getSecurityContext());
     }
 
+    @Path(PathParameters.TENANT_NAME_VAR + "/federation")
+    public FederatedIdpResource getFederatedIdpSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        return new FederatedIdpResource(tenantName, getRequest(), getSecurityContext());
+    }
+
     @Path(PathParameters.TENANT_NAME_VAR + "/certificates")
     public CertificateResource getCertificateSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new CertificateResource(tenantName, getRequest(), getSecurityContext());

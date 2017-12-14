@@ -70,6 +70,13 @@
       <version>${commons.lang.version}</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>${json-smart.version}</version>
+    </dependency>
+
   </dependencies>
 
   <properties>
