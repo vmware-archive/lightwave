@@ -253,13 +253,13 @@ VmDnsSoaRecordToString(
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
-                    "Name:          %s\n"
-                    "Type:          %s\n"
-                    "Class:         %hu\n"
-                    "Default TTL:   %u\n"
-                    "Expire:        %u\n"
-                    "Retry:         %u\n"
-                    "Serial:        %u\n",
+                    "Name: %s, "
+                    "Type: %s, "
+                    "Class: %hu, "
+                    "Default TTL: %u, "
+                    "Expire: %u, "
+                    "Retry: %u, "
+                    "Serial: %u",
                     pRecord->pszName,
                     pszType,
                     pRecord->iClass,

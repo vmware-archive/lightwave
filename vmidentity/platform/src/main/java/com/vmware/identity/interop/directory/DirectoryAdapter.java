@@ -16,14 +16,18 @@ package com.vmware.identity.interop.directory;
 import com.sun.jna.Platform;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import com.sun.jna.ptr.IntByReference;
 import com.vmware.identity.interop.NativeAdapter;
+import com.vmware.identity.interop.PlatformUtils;
 import com.vmware.identity.interop.Validate;
 
 public class DirectoryAdapter extends NativeAdapter
                               implements IDirectoryClientLibrary
 {
+    private static final int VMDIR_ERROR_PASSWORD_TOO_LONG = 9230;
+
     private interface DirectoryClientLibrary extends Library
     {
         DirectoryClientLibrary INSTANCE =
@@ -65,6 +69,15 @@ public class DirectoryAdapter extends NativeAdapter
             String oldPassword,
             String newPassword
             );
+
+        int
+        VmDirGeneratePassword(
+            String hostURI,
+            String upn,
+            String password,
+            PointerByReference ppszPassword,
+            IntByReference pdwPasswordLength
+        );
 
         int
         VmDirGetLocalLduGuid(
@@ -126,6 +139,12 @@ public class DirectoryAdapter extends NativeAdapter
             String              password,
             String              domainName
         );
+
+        void
+        VmDirFreeMemory
+            (
+                Pointer pMemory
+            );
 
     }
     private static final DirectoryAdapter _instance = new DirectoryAdapter();
@@ -241,6 +260,51 @@ public class DirectoryAdapter extends NativeAdapter
                                                     userDN,
                                                     oldPassword,
                                                     newPassword));
+    }
+
+    @Override
+    public
+    String
+    GeneratePassword(
+        String hostURI,
+        String upn,
+        String password
+    )
+    {
+        Validate.validateNotEmpty(hostURI, "host uri");
+        Validate.validateNotEmpty(upn, "User Principal Name");
+        Validate.validateNotEmpty(password, "Password");
+
+        PointerByReference ppPassword = new PointerByReference(Pointer.NULL);
+        IntByReference pLength = new IntByReference();
+
+        try {
+            CheckError(
+                DirectoryClientLibrary.INSTANCE.VmDirGeneratePassword(
+                    hostURI,
+                    upn,
+                    password,
+                    ppPassword,
+                    pLength
+                )
+            );
+
+            if (pLength.getValue() <= 0) {
+                throw new DirectoryException(
+                    VMDIR_ERROR_PASSWORD_TOO_LONG,
+                    "Error: Failed to generate password");
+            }
+
+            return getString(ppPassword.getValue());
+        }
+        finally
+        {
+            if (ppPassword.getValue() != Pointer.NULL)
+            {
+                DirectoryClientLibrary.INSTANCE.VmDirFreeMemory(ppPassword.getValue());
+                ppPassword.setValue(Pointer.NULL);
+            }
+        }
     }
 
     @Override
@@ -397,5 +461,38 @@ public class DirectoryAdapter extends NativeAdapter
         {
             throw new DirectoryException(errorCode, String.format("VMware directory error [code: %d]", errorCode));
         }
+    }
+
+    private static String getString(Pointer p) {
+        String str = null;
+        if( ( p != null ) &&( p != Pointer.NULL ) )
+        {
+            if(!Platform.isWindows()) {
+                str = p.getString(0);
+            } else {
+                int bufLen = -1;
+                for (int i = 0; i < Integer.MAX_VALUE; i++)
+                {
+                    if (p.getByte(i) == 0) // check end of string
+                    {
+                        bufLen = i;
+                        break;
+                    }
+                }
+                if (bufLen == -1)
+                {
+                    throw new RuntimeException("Invalid native string.");
+                }
+                else if(bufLen == 0)
+                {
+                    str = "";
+                }
+                else
+                {
+                    str = new String(p.getByteArray( 0 , bufLen ), PlatformUtils.getLdapServerCharSet());
+                }
+            }
+        }
+        return str;
     }
 }

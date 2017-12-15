@@ -2904,6 +2904,14 @@ public class CasIdmClient
                 newPassword, this.getServiceContext());
     }
 
+    /**
+     *
+     */
+    public String generatePassword(String tenantName) throws Exception
+    {
+        return getService().generatePassword(tenantName, this.getServiceContext());
+    }
+
     public
     void
     updateSystemDomainStorePassword(String tenantName, char[] newPassword) throws Exception

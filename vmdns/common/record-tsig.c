@@ -282,15 +282,15 @@ VmDnsTsigRecordToString(
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
-                    "Name:              %s\n"
-                    "Type:              %s\n"
-                    "Algorithm:         %s\n"
-                    "Signed:            %s\n"
-                    "Fudge:             %u\n"
-                    "Sig Length:        %u\n"
+                    "Name: %s,"
+                    "Type: %s,"
+                    "Algorithm: %s,"
+                    "Signed: %s,"
+                    "Fudge: %u,"
+                    "Sig Length: %u,"
                     // TODO: Add way of printing blob
-                    "Sig                \n"
-                    "Error:             %u\n",
+                    "Sig: ,"
+                    "Error: %u",
                     pRecord->pszName,
                     pszType,
                     pRecord->Data.TSIG.pNameAlgorithm,

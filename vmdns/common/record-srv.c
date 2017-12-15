@@ -220,12 +220,12 @@ VmDnsSrvRecordToString(
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
-                    "Type:          %s\n"
-                    "Name:          %s\n"
-                    "Target:        %s\n"
-                    "Port:          %hu\n"
-                    "Priority:      %hu\n"
-                    "Weight:        %hu\n",
+                    "Type: %s, "
+                    "Name: %s, "
+                    "Target: %s, "
+                    "Port: %hu, "
+                    "Priority: %hu, "
+                    "Weight: %hu",
                     pszType,
                     pRecord->pszName,
                     pRecord->Data.SRV.pNameTarget,

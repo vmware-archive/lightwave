@@ -28,6 +28,7 @@
 
 package com.vmware.identity.idm.server.provider.vmwdirectory;
 
+import java.net.URI;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -88,6 +89,7 @@ import com.vmware.identity.idm.server.provider.NoSuchUserException;
 import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.UserSet;
+import com.vmware.identity.interop.directory.Directory;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.AttributeOrValueExistsLdapException;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
@@ -6238,7 +6240,21 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
        return systems;
     }
 
-    @Override
+  @Override
+  public String generatePassword() throws Exception {
+    Exception latestEx = null;
+    for (String uri : getStoreDataEx().getConnectionStrings()) {
+      try {
+        URI connectionUri = new URI(uri);
+        return Directory.GeneratePassword(connectionUri.getHost(), getUsername(), getPassword());
+      } catch (Exception e) {
+        latestEx = e;
+      }
+    }
+    throw latestEx;
+  }
+
+  @Override
     protected ILdapConnectionEx getConnection(Collection<String> connectStrs, boolean useGcPort)
           throws Exception
     {

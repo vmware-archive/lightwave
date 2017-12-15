@@ -991,7 +991,6 @@ Lightwave POST service
 %{_jarsdir}/nimbus-jose-jwt-4.12.jar
 
 %{_webappsdir}/lightwaveui.war
-%{_webappsdir}/webui.war
 %{_webappsdir}/ROOT.war
 
 %{_servicedir}/vmware-stsd.service

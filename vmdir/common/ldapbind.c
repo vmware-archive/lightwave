@@ -152,7 +152,7 @@ VmDirSASLSRPBindExt1(
         if (iTimeout > 0)
         {
             // timeout connect
-            retVal = ldap_set_option(pLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
+            retVal = ldap_set_option(pLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
         }
 
@@ -415,7 +415,7 @@ VmDirAnonymousLDAPBind(
     optTimeout.tv_sec = MAX_LDAP_CONNECT_NETWORK_TIMEOUT;
 
     // timeout connect
-    retVal = ldap_set_option(pLocalLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
+    retVal = ldap_set_option(pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     ldapBindPwd.bv_val = NULL;

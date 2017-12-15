@@ -479,6 +479,8 @@ public interface IIdentityManager
 
     public void changeUserPassword(String tenantName, String userName, char[] currentPassword, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public String generatePassword(String tenantName, IIdmServiceContext serviceContext) throws IDMException;
+
     public void updateSystemDomainStorePassword(String tenantName, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
     public PasswordPolicy getPasswordPolicy(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;

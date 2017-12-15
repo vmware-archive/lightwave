@@ -119,11 +119,7 @@ VmDirSetThreadLogContextValue(
 {
     DWORD dwError = 0;
 
-    if (!pThreadLogContext || !pThreadContext)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    assert(pThreadContext);
 
     dwError = pthread_setspecific(
             pThreadContext->threadLogContext,

@@ -205,11 +205,11 @@ VmDnsPtrRecordToString(
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
-                    "Type:          %s\n"
-                    "Name:          %s\n"
-                    "Class:         %hu\n"
-                    "TTL:           %u\n"
-                    "Server:        %s\n",
+                    "Type: %s, "
+                    "Name: %s,"
+                    "Class: %hu, "
+                    "TTL: %u, "
+                    "Server: %s",
                     pszType,
                     pRecord->pszName,
                     pRecord->iClass,
