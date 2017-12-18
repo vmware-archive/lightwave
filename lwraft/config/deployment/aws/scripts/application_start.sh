@@ -49,8 +49,8 @@ else
     echo "POST promoted successfully"
 fi
 
-echo "Step 4: Reaffinitize to DC"
-set_dc_name
+echo "Step 4: Enable Lightwave HA"
+/opt/vmware/bin/cdc-cli client-affinity default
 
 echo "Step 5: Generate SSL cert if it does not exist"
 generate_ssl_cert
