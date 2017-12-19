@@ -29,6 +29,7 @@ do
     let RETRY++
 done
 
-echo "Step 1: Stop POST"
+echo "Step 1: Stop POST and VmAfd"
 
 /opt/likewise/bin/lwsm stop post
+/opt/likewise/bin/lwsm stop vmafd

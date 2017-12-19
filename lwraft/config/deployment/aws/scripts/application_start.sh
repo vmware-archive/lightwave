@@ -13,7 +13,10 @@ echo "PARTNERS=${PARTNERS[*]}"
 get_post_password POST_PASSWORD
 
 
-echo "Step 2: Start POST"
+echo "Step 2: Start POST and VmAfd"
+
+/opt/likewise/bin/lwsm start vmafd
+echo "VmAfd started successfully"
 
 /opt/likewise/bin/lwsm start post
 echo "POST started successfully"
