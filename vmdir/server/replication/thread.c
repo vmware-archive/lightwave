@@ -962,11 +962,14 @@ cleanup:
     return;
 
 ldaperror:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error code (%d)",
-            __FUNCTION__,
-            retVal);
+    if (retVal != LDAP_BUSY)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s failed, error code (%d)",
+                __FUNCTION__,
+                retVal);
+    }
 
     VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
     goto cleanup;

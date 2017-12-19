@@ -184,14 +184,20 @@ VmDirSendLdapResult(
         pOperation->ldapResult.errCode != LDAP_BUSY &&
         pOperation->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
-                VmDirLdapReqCodeToName(pOperation->reqCode),
-                pOperation->ldapResult.errCode,
-                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
-                iNumSearchEntrySent,
-                VDIR_SAFE_STRING(pszSocketInfo));
+        // supress search request LDAP_NO_SUCH_OBJECT/32 error (-baseDN not found) return case as well
+        // to avoid log flooding.
+        if (! (pOperation->ldapResult.errCode == LDAP_NO_SUCH_OBJECT &&
+               pOperation->reqCode == LDAP_REQ_SEARCH))
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                    VmDirLdapReqCodeToName(pOperation->reqCode),
+                    pOperation->ldapResult.errCode,
+                    VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                    iNumSearchEntrySent,
+                    VDIR_SAFE_STRING(pszSocketInfo));
+        }
     }
     else if (pOperation->reqCode == LDAP_REQ_SEARCH)
     {
