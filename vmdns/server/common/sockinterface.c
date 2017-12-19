@@ -1090,7 +1090,7 @@ VmDnsOnUdpRequestDataRead(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS UDP REQ: ", pIoBuffer->pData, pIoBuffer->dwTotalBytesTransferred);
+    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS UDP REQ: ", pIoBuffer->pData, pIoBuffer->dwTotalBytesTransferred);
 
     dwError = VmDnsProcessRequest(
                         pIoBuffer->pData,
@@ -1133,7 +1133,7 @@ VmDnsOnUdpRequestDataRead(
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS UDP RESP: ", pResponse, dwDnsResponseSize);
+        (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS UDP RESP: ", pResponse, dwDnsResponseSize);
 
         dwError = VmDnsSockWrite(
                         pSocket,
@@ -1142,7 +1142,7 @@ VmDnsOnUdpRequestDataRead(
                         pIoNewBuffer
                     );
 
-        VMDNS_LOG_INFO("DNS RESP: Status: %d", dwError);
+        VMDNS_LOG_DEBUG("DNS RESP: Status: %d", dwError);
 
         if (dwError == ERROR_SUCCESS)
         {
@@ -1437,7 +1437,7 @@ VmDnsOnForwarderResponse(
                               &dwResponseCode
                               );
 
-    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS FWD RESP ", pResponse, dwResponseSize);
+    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS FWD RESP ", pResponse, dwResponseSize);
 
     if (dwResponseCode || dwError)
     {
@@ -1467,7 +1467,7 @@ VmDnsOnForwarderResponse(
                             );
             BAIL_ON_VMDNS_ERROR(dwError);
 
-            (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS FWD UDP RESP: ", pIoNewBuffer->pData, pIoNewBuffer->dwTotalBytesTransferred);
+            (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS FWD UDP RESP: ", pIoNewBuffer->pData, pIoNewBuffer->dwTotalBytesTransferred);
 
             dwError = VmDnsSockWrite(
                             pClientSocket,
@@ -1476,7 +1476,7 @@ VmDnsOnForwarderResponse(
                             pIoNewBuffer
                         );
 
-            VMDNS_LOG_INFO("DNS FWD UDP RESP: Status: %d", dwError);
+            VMDNS_LOG_DEBUG("DNS FWD UDP RESP: Status: %d", dwError);
 
             if (dwError == ERROR_SUCCESS)
             {
@@ -1534,7 +1534,7 @@ VmDnsOnForwarderResponse(
                 pIoSizeBuffer = NULL;
             }
 
-            (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS TCP RESP: ", pIoNewBuffer->pData, pIoNewBuffer->dwTotalBytesTransferred);
+            (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS TCP RESP: ", pIoNewBuffer->pData, pIoNewBuffer->dwTotalBytesTransferred);
 
             dwError = VmDnsSockWrite(
                             pClientSocket,
@@ -1543,7 +1543,7 @@ VmDnsOnForwarderResponse(
                             pIoNewBuffer
                             );
 
-            VMDNS_LOG_INFO("DNS TCP RESP: Status: %d", dwError);
+            VMDNS_LOG_DEBUG("DNS TCP RESP: Status: %d", dwError);
 
             if (dwError == ERROR_SUCCESS)
             {
