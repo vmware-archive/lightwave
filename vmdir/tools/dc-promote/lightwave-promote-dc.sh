@@ -17,6 +17,7 @@ UNPRIV_USER="abernstein"
 
 LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/likewise-open
 LIGHTWAVE_BASE=/home/abernstein/workspaces/git/lightwave/lightwave
+SASL_BASE=/home/abernstein/workspaces/wrk/cyrus-sasl-2.1.26
 
 echo_status()
 {
@@ -68,20 +69,20 @@ if [ -z "$ADMIN_PASSWORD" ]; then
   exit 1
 fi
 
-id=`ssh root@$LIGHTWAVE_AD hostname -i`
+id=`ssh $PRIV_USER@$LIGHTWAVE_AD hostname -i`
 if [ $? -ne 0 ]; then
-  echo "ERROR: 'ssh root@$LIGHTWAVE_AD' failed; fix IP or pub/priv keys"
+  echo "ERROR: 'ssh $PRIV_USER@$LIGHTWAVE_AD' failed; fix IP or pub/priv keys"
   exit 1
 fi
 
-id=`ssh abernstein@$LIGHTWAVE_AD hostname -i`
+id=`ssh $UNPRIV_USER@$LIGHTWAVE_AD hostname -i`
 if [ $? -ne 0 ]; then
-  echo "ERROR: 'ssh abernstein@$LIGHTWAVE_AD' failed; fix IP or pub/priv keys"
+  echo "ERROR: 'ssh $UNPRIV_USER@$LIGHTWAVE_AD' failed; fix IP or pub/priv keys"
   exit 1
 fi
 
 
-fqdn=`ssh abernstein@$LIGHTWAVE_AD hostname -f`
+fqdn=`ssh $UNPRIV_USER@$LIGHTWAVE_AD hostname -f`
 if [ "$fqdn" != "${DC_NAME}.${DC_DOMAIN}" ]; then
   echo "ERROR: Mismatch between promoted domain and local configuration"
   echo "       fix DC_NAME and DC_DOMAIN"
@@ -103,8 +104,13 @@ if [ `ls -1 $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm | wc -l` -eq 0 ]; t
   exit 1
 fi
 
+if [ `ls -1 $SASL_BASE/plugins/.libs/libgssspnego.so.3.0.0 | wc -l` -eq 0 ]; then
+  echo "ERROR '$SASL_BASE/plugins/.libs/libgssspnego.so.3.0.0' not found"
+  exit 1
+fi
+
 # Save Administrator password to a file on AD system
-echo -n "$ADMIN_PASSWORD" | ssh root@$LIGHTWAVE_AD 'cat > /var/tmp/promote-pwd.txt'
+echo -n "$ADMIN_PASSWORD" | ssh $PRIV_USER@$LIGHTWAVE_AD 'cat > /var/tmp/promote-pwd.txt'
 if [ $? -ne 0 ]; then
   echo "ERROR: Failed setting promote-pwd.txt file on '$LIGHTWAVE_AD' system"
   exit 1
@@ -120,12 +126,12 @@ scp $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm $LIGHTWAVE_AD:/tmp
 
 # 3 Install Likewise-Open
 echo_status "Install likewise-open"
-ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-?.x86_64.rpm
+ssh $PRIV_USER@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-?.x86_64.rpm
 
 
 # 4 Install Lightwave RPMs
 echo_status "Install lightwave"
-ssh root@$LIGHTWAVE_AD rpm -ivh /tmp/lightwave-1*.rpm /tmp/lightwave-client-1*.rpm /tmp/lightwave-server-1*.rpm
+ssh $PRIV_USER@$LIGHTWAVE_AD rpm -ivh /tmp/lightwave-1*.rpm /tmp/lightwave-client-1*.rpm /tmp/lightwave-server-1*.rpm
 
 # 5 Modify /etc/resolv.conf to point to self for DNS
 echo_status "Modify /etc/resolv.conf to point to self for DNS"
@@ -135,12 +141,12 @@ cat  $TOOLS_DIR/resolv-config.sh | \
 chmod +x /tmp/resolv-config-edited.sh 
 
 echo_status "copy and run resolv-config.sh to domain controller"
-scp /tmp/resolv-config-edited.sh abernstein@$LIGHTWAVE_AD:/var/tmp/resolv-config-edited.sh
-ssh root@$LIGHTWAVE_AD /var/tmp/resolv-config-edited.sh
+scp /tmp/resolv-config-edited.sh $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp/resolv-config-edited.sh
+ssh $PRIV_USER@$LIGHTWAVE_AD /var/tmp/resolv-config-edited.sh
 
 # 6 Promote Lightwave PSC
 echo_status "Promote Lightwave PSC"
-ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/configure-lightwave-server \
+ssh $PRIV_USER@$LIGHTWAVE_AD '/opt/vmware/bin/configure-lightwave-server \
   --domain '"$DC_DOMAIN"' --password `cat /var/tmp/promote-pwd.txt`'
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -148,21 +154,21 @@ ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/configure-lightwave-server \
 # Getting localhost vs FQDN of DC
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #
-cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-vmafd.sh
-/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]' DCName "`ssh root@$LIGHTWAVE_AD hostname -f`" > /dev/null 2>&1
+cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-vmafd.sh
+/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]' DCName "`ssh $PRIV_USER@$LIGHTWAVE_AD hostname -f`" > /dev/null 2>&1
 if [ \$? -ne 0 ]; then
-  /opt/likewise/bin/lwregshell add_value   '[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]' DCName REG_SZ "`ssh root@$LIGHTWAVE_AD hostname -f`"
+  /opt/likewise/bin/lwregshell add_value   '[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]' DCName REG_SZ "`ssh $PRIV_USER@$LIGHTWAVE_AD hostname -f`"
 fi
 NNNN
-scp /tmp/regshell-vmafd.sh root@$LIGHTWAVE_AD:/tmp
-ssh root@$LIGHTWAVE_AD sh /tmp/regshell-vmafd.sh
+scp /tmp/regshell-vmafd.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-vmafd.sh
 
 # 7 Start Likewise SMB services
-ssh root@$LIGHTWAVE_AD '( /opt/likewise/bin/lwsm start npfs && /opt/likewise/bin/lwsm start pvfs && 
+ssh $PRIV_USER@$LIGHTWAVE_AD '( /opt/likewise/bin/lwsm start npfs && /opt/likewise/bin/lwsm start pvfs && 
     /opt/likewise/bin/lwsm start rdr && /opt/likewise/bin/lwsm start srv )'
 
 # 8 Modify IP tables entries
-ssh root@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
+ssh $PRIV_USER@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
     iptables -I INPUT --proto udp --dport 53 -j ACCEPT &&
     iptables -I INPUT --proto tcp --dport 53 -j ACCEPT &&
     iptables -I INPUT --proto udp --dport 88 -j ACCEPT &&
@@ -176,13 +182,13 @@ ssh root@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
 ## 9 Add DNS forwarder
 ## Don't do this. Forwarder support is broken. Preserving 2nd/3rd entries in 
 ## resolv.conf accomplishes the same thing.
-#ssh root@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder 10.155.23.1 \
+#ssh $PRIV_USER@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder 10.155.23.1 \
 #    --server localhost --username Administrator --domain "$DC_DOMAIN" --password `cat /var/tmp/promote-pwd.txt`'
 #
 
 # 10 Additional DNS SRV records:
 echo_status "DNS kerberos-master SRV tcp record"
-ssh root@$LIGHTWAVE_AD \
+ssh $PRIV_USER@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone '"$DC_DOMAIN"' \
    --type SRV \
    --service kerberos-master \
@@ -195,7 +201,7 @@ ssh root@$LIGHTWAVE_AD \
    --password `cat /var/tmp/promote-pwd.txt`'
 
 echo_status "DNS kerberos-master SRV udp record"
-ssh root@$LIGHTWAVE_AD \
+ssh $PRIV_USER@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone '"$DC_DOMAIN"' \
    --type SRV \
    --service kerberos-master \
@@ -208,7 +214,7 @@ ssh root@$LIGHTWAVE_AD \
    --password `cat /var/tmp/promote-pwd.txt`'
 
 echo_status "DNS _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs SRV tcp record"
-ssh root@$LIGHTWAVE_AD \
+ssh $PRIV_USER@$LIGHTWAVE_AD \
   '/opt/vmware/bin/vmdns-cli add-record --zone '"$DC_DOMAIN"' \
    --type SRVFF \
    --service-literal  _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
@@ -224,26 +230,26 @@ ssh root@$LIGHTWAVE_AD \
 # 11  Add additional cifs entries to krb5.keytab
 echo_status "Add additional cifs entries to krb5.keytab"
 scp $TOOLS_DIR/add-keytab.sh $LIGHTWAVE_AD:/tmp
-ssh root@$LIGHTWAVE_AD \
+ssh $PRIV_USER@$LIGHTWAVE_AD \
   /tmp/add-keytab.sh
 
 # 12 Add gss-spnego plugin
 echo_status "Installing CyrusSASL gssspnego plugin"
-scp /home/abernstein/workspaces/wrk/cyrus-sasl-2.1.26/plugins/.libs/libgssspnego.so.3.0.0 abernstein@$LIGHTWAVE_AD:/var/tmp
-ssh root@$LIGHTWAVE_AD \
+scp $SASL_BASE/plugins/.libs/libgssspnego.so.3.0.0 $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD \
   '( mv /var/tmp/libgssspnego.so.3.0.0 /usr/lib/sasl2 && ln -s /usr/lib/sasl2/libgssspnego.so.3.0.0 /usr/lib/sasl2/libgssspnego.so )'
 
 # 13 Replace default GSSAPI plugin (built with GSS-SPNEGO disabled)
 echo_status "Configuring patched libgssapiv2.so plugin that disables gss-spnego"
-scp /home/abernstein/workspaces/wrk/cyrus-sasl-2.1.26/plugins/.libs/libgssapiv2.so.3.0.0 abernstein@$LIGHTWAVE_AD:/var/tmp
-ssh root@$LIGHTWAVE_AD \
+scp $SASL_BASE/plugins/.libs/libgssapiv2.so.3.0.0 $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD \
  '( mv -i /usr/lib/sasl2/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0.rpmorig &&
     mv /var/tmp/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0 )'
 
 # 14 Replace the default CyrusSASL library
 echo_status "Replace the default CyrusSASL library"
-scp /home/abernstein/workspaces/wrk/cyrus-sasl-2.1.26/./lib/.libs/libsasl2.so.3.0.0 abernstein@$LIGHTWAVE_AD:/var/tmp
-ssh root@$LIGHTWAVE_AD \
+scp $SASL_BASE/./lib/.libs/libsasl2.so.3.0.0 $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD \
     '( mv /usr/lib/libsasl2.so.3.0.0  /usr/lib/libsasl2.so.3.0.0.rpmorig &&
        mv /var/tmp/libsasl2.so.3.0.0 /usr/lib/libsasl2.so.3.0.0 )'
 
@@ -261,29 +267,29 @@ chmod +x /tmp/domain-attributes-edited.sh
 
 # 15b copy and run partitions script to domain controller
 echo_status "copy and run partitions script to domain controller"
-scp /tmp/partitions-vmdir-edited.sh abernstein@$LIGHTWAVE_AD:/var/tmp/partitions-vmdir-edited.sh
-ssh root@$LIGHTWAVE_AD /var/tmp/partitions-vmdir-edited.sh
+scp /tmp/partitions-vmdir-edited.sh $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp/partitions-vmdir-edited.sh
+ssh $PRIV_USER@$LIGHTWAVE_AD /var/tmp/partitions-vmdir-edited.sh
 
 echo_status "copy and run domain-attributes.sh to domain controller"
-scp /tmp/domain-attributes-edited.sh abernstein@$LIGHTWAVE_AD:/var/tmp/domain-attributes-edited.sh
-ssh root@$LIGHTWAVE_AD /var/tmp/domain-attributes-edited.sh
+scp /tmp/domain-attributes-edited.sh $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp/domain-attributes-edited.sh
+ssh $PRIV_USER@$LIGHTWAVE_AD /var/tmp/domain-attributes-edited.sh
 
 
 # 15a Get rid of the local provider; not relevant to a AD/DC
 echo_status "Get rid of the local provider; not relevant to a AD/DC"
-cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-loadorder.sh
+cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-loadorder.sh
 /opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\lsass\Parameters\\Providers]' LoadOrder   ActiveDirectory VmDir 
 NNNN
-scp /tmp/regshell-loadorder.sh root@$LIGHTWAVE_AD:/tmp
-ssh root@$LIGHTWAVE_AD sh /tmp/regshell-loadorder.sh
+scp /tmp/regshell-loadorder.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-loadorder.sh
 
 # 15b Configure the dsapi.conf file to use vmdirdb.so plugin
 echo_status "Configure the dsapi.conf file to use vmdirdb.so plugin"
-echo /opt/likewise/lib64/libvmdirdb.so | ssh root@$LIGHTWAVE_AD 'cat > /etc/likewise/dsapi.conf'
+echo /opt/likewise/lib64/libvmdirdb.so | ssh $PRIV_USER@$LIGHTWAVE_AD 'cat > /etc/likewise/dsapi.conf'
 
 # 15c Add netlogin RPC server to lsassd
 echo_status "Add netlogin RPC server to lsassd"
-cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
+cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
 /opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\lsass\Parameters\\RPCServers]' LoadOrder   lsarpc samr dssetup wkssvc netlogon
 /opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]'
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "HomeDirPrefix" REG_SZ "/home"
@@ -292,18 +298,18 @@ cat <<NNNN | ssh root@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "Path" REG_SZ "/opt/likewise/lib64/libnetlogon_srv.so"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "RegisterTcpIp" REG_DWORD 0
 NNNN
-scp /tmp/regshell-rpcloadorder.sh root@$LIGHTWAVE_AD:/tmp
-ssh root@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
+scp /tmp/regshell-rpcloadorder.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
 
 
 # 16 Restart all lightwave services
 echo_status "Restart all lightwave services"
-ssh root@$LIGHTWAVE_AD \
+ssh $PRIV_USER@$LIGHTWAVE_AD \
     /opt/likewise/bin/lwsm restart lwreg
 
 # 17 get a copy of the krb5.keytab from DC
 echo_status "get a copy of the krb5.keytab from DC"
-scp root@$LIGHTWAVE_AD:/etc/krb5.keytab /tmp/krb5-`date +%s`.keytab
+scp $PRIV_USER@$LIGHTWAVE_AD:/etc/krb5.keytab /tmp/krb5-`date +%s`.keytab
 
 # 18 Ready for domainjoin-cli/Windows to join this system
 echo_status "Ready for domainjoin-cli/Windows to join this system"
