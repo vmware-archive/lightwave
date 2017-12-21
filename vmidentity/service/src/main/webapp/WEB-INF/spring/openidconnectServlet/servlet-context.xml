@@ -25,4 +25,6 @@
 
     <beans:bean id="oidcSessionManager" class="com.vmware.identity.openidconnect.server.SessionManager"/>
 
+    <beans:bean id="cspProcessor" class="com.vmware.identity.openidconnect.server.CSPIdentityProcessor"/>
+
 </beans:beans>
