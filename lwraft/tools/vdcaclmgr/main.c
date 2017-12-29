@@ -33,6 +33,24 @@ _FreeCLStateContent(
     }
 }
 
+static
+VOID
+_FreeVdcACLMgrCTXContent(
+    PVDC_ACLMGR_CTX pCtx
+    )
+{
+    if (pCtx)
+    {
+        _FreeCLStateContent(&pCtx->paramState);
+
+        VdcFreeHashMap(&pCtx->pSidToUserMapping);
+        VmDirStringListFree(pCtx->pPermissionList);
+        VmDirStringListFree(pCtx->pAceFlagList);
+        VMDIR_SAFE_FREE_MEMORY(pCtx->pszTargetSID);
+        VDIR_SAFE_UNBIND_EXT_S(pCtx->pLd);
+    }
+}
+
 VOID
 VdcFreeHashMap(
     PLW_HASHMAP *ppHashMap
@@ -176,10 +194,7 @@ int
 VmDirMain(int argc, char* argv[])
 {
     DWORD dwError = 0;
-    LDAP *pLd = NULL;
-    COMMAND_LINE_PARAMETER_STATE State = { 0 };
-    PLW_HASHMAP pUserToSidMapping = NULL; // Used to store "user/group SID" => "display name" mapping.
-    PLW_HASHMAP pSidToUserMapping = NULL; // Used to store "display name" => "user/group SID" mapping.
+    VDC_ACLMGR_CTX    ctx = {0};
     CHAR pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = { 0 };
     PVMDIR_STRING_LIST pObjectDNs = NULL;
     DWORD dwStringIndex = 0;
@@ -187,17 +202,17 @@ VmDirMain(int argc, char* argv[])
 
     VMDIR_COMMAND_LINE_OPTION Options[] =
     {
-            {'H', "host", CL_STRING_PARAMETER, &State.pszServerName},
-            {'u', "username", CL_STRING_PARAMETER, &State.pszUserName},
-            {'w', "password", CL_STRING_PARAMETER, &State.pszPassword},
-            {'b', "basedn", CL_STRING_PARAMETER, &State.pszBaseDN},
-            {'o', "object", CL_STRING_PARAMETER, &State.pszObjectName},
-            {'g', "grant", CL_STRING_PARAMETER, &State.pszGrantParameter},
-            {'d', "delete", CL_STRING_PARAMETER, &State.pszRemoveParameter},
-            {'x', "password-file", CL_STRING_PARAMETER, &State.pszPasswordFile},
-            {'v', "verbose", CL_NO_PARAMETER, &State.bVerbose},
-            {'r', "recursive", CL_NO_PARAMETER, &State.bRecursive},
-            {'D', "dryrun", CL_NO_PARAMETER, &State.bDryrun},
+            {'H', "host", CL_STRING_PARAMETER, &ctx.paramState.pszServerName},
+            {'u', "username", CL_STRING_PARAMETER, &ctx.paramState.pszUserName},
+            {'w', "password", CL_STRING_PARAMETER, &ctx.paramState.pszPassword},
+            {'b', "basedn", CL_STRING_PARAMETER, &ctx.paramState.pszBaseDN},
+            {'o', "object", CL_STRING_PARAMETER, &ctx.paramState.pszObjectName},
+            {'g', "grant", CL_STRING_PARAMETER, &ctx.paramState.pszGrantParameter},
+            {'d', "delete", CL_STRING_PARAMETER, &ctx.paramState.pszRemoveParameter},
+            {'x', "password-file", CL_STRING_PARAMETER, &ctx.paramState.pszPasswordFile},
+            {'v', "verbose", CL_NO_PARAMETER, &ctx.paramState.bVerbose},
+            {'r', "recursive", CL_NO_PARAMETER, &ctx.paramState.bRecursive},
+            {'D', "dryrun", CL_NO_PARAMETER, &ctx.paramState.bDryrun},
 
             {0, 0, 0, 0}
     };
@@ -206,8 +221,16 @@ VmDirMain(int argc, char* argv[])
     {
             PostValidationRoutine,
             ShowUsage,
-            &State
+            &ctx.paramState
     };
+
+    dwError = LwRtlCreateHashMap(
+                &ctx.pSidToUserMapping,
+                LwRtlHashDigestPstr,
+                LwRtlHashEqualPstr,
+                NULL
+                );
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirParseArguments(
                 Options,
@@ -216,18 +239,15 @@ VmDirMain(int argc, char* argv[])
                 argv);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VdcGetUsersPassword(&State, pszPasswordBuf, VMDIR_ARRAY_SIZE(pszPasswordBuf));
+    dwError = VdcGetUsersPassword(&ctx.paramState, pszPasswordBuf, VMDIR_ARRAY_SIZE(pszPasswordBuf));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBindExt1(
-                &pLd,
-                State.pszServerName,
-                State.pszUserName,
+                &ctx.pLd,
+                ctx.paramState.pszServerName,
+                ctx.paramState.pszUserName,
                 pszPasswordBuf,
                 MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VdcLoadUsersAndGroups(pLd, State.pszBaseDN, &pUserToSidMapping, &pSidToUserMapping);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //
@@ -235,46 +255,41 @@ VmDirMain(int argc, char* argv[])
     // existing privileges on it.
     //
     dwError = VdcLdapEnumerateObjects(
-                pLd,
-                State.pszObjectName,
-                State.bRecursive ? LDAP_SCOPE_SUBTREE : LDAP_SCOPE_BASE,
+                ctx.pLd,
+                ctx.paramState.pszObjectName,
+                ctx.paramState.bRecursive ? LDAP_SCOPE_SUBTREE : LDAP_SCOPE_BASE,
                 &pObjectDNs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VdcParsePermissionStatement(&ctx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwStringIndex = 0; dwStringIndex < pObjectDNs->dwCount; ++dwStringIndex)
     {
-        if (State.pszGrantParameter)
+        if (ctx.paramState.pszGrantParameter)
         {
             dwError = VdcGrantPermissionToUser(
-                        pLd,
-                        pUserToSidMapping,
-                        pObjectDNs->pStringList[dwStringIndex],
-                        &State);
+                        &ctx,
+                        pObjectDNs->pStringList[dwStringIndex]);
 
         }
-        else if (State.pszRemoveParameter)
+        else if (ctx.paramState.pszRemoveParameter)
         {
             dwError = VdcRemovePermissionFromUser(
-                        pLd,
-                        pUserToSidMapping,
-                        pObjectDNs->pStringList[dwStringIndex],
-                        &State);
+                        &ctx,
+                        pObjectDNs->pStringList[dwStringIndex]);
         }
         else
         {
             dwError = VdcPrintSecurityDescriptorForObject(
-                        pLd,
-                        pSidToUserMapping,
-                        pObjectDNs->pStringList[dwStringIndex],
-                        State.bVerbose);
+                        &ctx,
+                        pObjectDNs->pStringList[dwStringIndex]);
         }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
-    VdcFreeHashMap(&pUserToSidMapping);
-    VdcFreeHashMap(&pSidToUserMapping);
-    _FreeCLStateContent(&State);
+    _FreeVdcACLMgrCTXContent(&ctx);
     VMDIR_SAFE_FREE_STRINGA(pszErrorMessage);
     return dwError;
 

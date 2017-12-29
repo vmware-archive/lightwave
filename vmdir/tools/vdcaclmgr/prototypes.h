@@ -44,6 +44,14 @@ VdcLdapReplaceAttributeValues(
     );
 
 DWORD
+VdcLdapCNToSid(
+    LDAP*   pLd,
+    PCSTR   pszBase,
+    PCSTR   pszCN,
+    PSTR*   ppszSid
+    );
+
+DWORD
 VdcLdapGetObjectSidMappings(
     LDAP *pLd,
     PCSTR pszBase,
@@ -122,19 +130,20 @@ VdcLdapUnbind(
 // ACL routines.
 //
 DWORD
+VdcParsePermissionStatement(
+    PVDC_ACLMGR_CTX   pCtx
+    );
+
+DWORD
 VdcGrantPermissionToUser(
-    LDAP*       pLd,
-    PLW_HASHMAP pUserToSidMapping,
-    PCSTR       pszObjectDN,
-    COMMAND_LINE_PARAMETER_STATE*   pState
+    PVDC_ACLMGR_CTX   pCtx,
+    PCSTR pszObjectDN
     );
 
 DWORD
 VdcRemovePermissionFromUser(
-    LDAP*       pLd,
-    PLW_HASHMAP pUserToSidMapping,
-    PCSTR       pszObjectDN,
-    COMMAND_LINE_PARAMETER_STATE*   pState
+    PVDC_ACLMGR_CTX   pCtx,
+    PCSTR       pszObjectDN
     );
 
 DWORD
@@ -147,8 +156,6 @@ VdcLoadUsersAndGroups(
 
 DWORD
 VdcPrintSecurityDescriptorForObject(
-    LDAP *pLd,
-    PLW_HASHMAP pSidToUserMapping,
-    PCSTR pszObjectDN,
-    BOOLEAN bVerbose
+    PVDC_ACLMGR_CTX   pCtx,
+    PCSTR pszObjectDN
     );
