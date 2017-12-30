@@ -1252,9 +1252,11 @@ VmDirProcessCandidateList(
               numSentEntries < pOperation->request.searchReq.sizeLimit);
              i++)
         {
-            if (bExternalSearch && VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+            if (bExternalSearch &&
+                VmDirdState() == VMDIRD_STATE_SHUTDOWN &&
+                pOperation->syncReqCtrl == NULL)
             {
-                retVal = LDAP_UNAVAILABLE; // stop all external search ops, including replication pull
+                retVal = LDAP_UNAVAILABLE; // stop all external search ops, except replication pull
                 goto cleanup;
             }
 

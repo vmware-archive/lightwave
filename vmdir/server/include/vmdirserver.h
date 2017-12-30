@@ -158,6 +158,9 @@ typedef struct _VMDIR_GLOBALS
 
     DWORD                           dwLdapRecvTimeoutSec;
     DWORD                           dwLdapConnectTimeoutSec;
+    DWORD                           dwOperationsThreadTimeoutInMilliSec;
+    DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
+
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
     PVDIR_THREAD_INFO               pSrvThrInfo;

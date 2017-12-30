@@ -297,6 +297,20 @@ VmDirSrvUpdateConfig(
         {
             gVmdirServerGlobals.dwMaxInternalSearchLimit = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_OPERATIONS_THREAD_TIMEOUT_IN_MILLI_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwOperationsThreadTimeoutInMilliSec = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_REPL_CONSUMER_THREAD_TIMEOUT_IN_MILLI_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwReplConsumerThreadTimeoutInMilliSec = pEntry->dwValue;
+        }
     }
 
 cleanup:

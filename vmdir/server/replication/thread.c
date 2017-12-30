@@ -80,6 +80,14 @@ VmDirSetGlobalServerId();
 
 static
 int
+_VmDirContinueReplicationCycle(
+    uint64_t *puiStartTimeInShutdown,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    struct berval   bervalSyncDoneCtrl
+    );
+
+static
+int
 _VmDirFetchReplicationPage(
     PVMDIR_DC_CONNECTION        pConnection,
     USN                         lastSupplierUsnProcessed,
@@ -779,6 +787,44 @@ error:
     goto cleanup;
 }
 
+/*
+ * Don't stop cycle even if there is nothing in the re-apply queue.
+ * because supplier may have other changes needed that could cause ordering issues
+ * if not consumed in same replication cycle.
+ */
+static
+int
+_VmDirContinueReplicationCycle(
+    uint64_t *puiStartTimeInShutdown,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    struct berval   bervalSyncDoneCtrl
+    )
+{
+    int retVal = LDAP_SUCCESS;
+
+    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+    {
+        if (*puiStartTimeInShutdown == 0)
+        {
+            *puiStartTimeInShutdown = VmDirGetTimeInMilliSec();
+        }
+        else if ((VmDirGetTimeInMilliSec() - *puiStartTimeInShutdown) >=
+                 gVmdirGlobals.dwReplConsumerThreadTimeoutInMilliSec)
+        {
+            VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s: Force quit cycle without updating cookies, supplier %s initUsn: %s syncdonectrl: %s",
+                __FUNCTION__,
+                pReplAgr->ldapURI,
+                VDIR_SAFE_STRING(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val),
+                VDIR_SAFE_STRING(bervalSyncDoneCtrl.bv_val));
+            retVal = LDAP_CANCELLED;
+        }
+    }
+
+    return retVal;
+}
+
 static
 VOID
 _VmDirConsumePartner(
@@ -797,32 +843,31 @@ _VmDirConsumePartner(
     PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
     uint64_t    uiStartTime = 0;
     uint64_t    uiEndTime = 0;
+    uint64_t    uiStartTimeInShutdown = 0;
 
     VMDIR_RWLOCK_WRITELOCK(bInReplLock, gVmdirGlobals.replRWLock, 0);
 
     uiStartTime = VmDirGetTimeInMilliSec();
+    /*
+     * Replication thread acquires lock while main thread is blocked
+     * to complete shutdown, don't perform replication cycle
+     */
+    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+    {
+        retVal = LDAP_CANCELLED;
+        goto cleanup;
+    }
 
     initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
     lastSupplierUsnProcessed = initUsn;
 
     do // do-while (bMoreUpdatesExpected == TRUE); paged results loop
     {
-        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-        {
-            if (dequeIsEmpty(pContext->pFailedEntriesQueue))
-            {   // no parent/child out of sequence so far, should update UTDVector before existing.
-                // this avoids create->modify(s) scenario lost modify(s) if cycle force ended by service shutdown.
-                // i.e. next cycle would receive SYNC_STATE(2)/modify instead of SYNC_STATE(1)/create.
-                goto replcycledone;
-            }
-
-            // this should be very rare after LW1.0/PSC6.6 where we switch to db copy for first replication cycle.
-            retVal = LDAP_CANCELLED;
-            goto cleanup;
-        }
-
         _VmDirFreeReplicationPage(pPage);
         pPage = NULL;
+
+        retVal = _VmDirContinueReplicationCycle(&uiStartTimeInShutdown, pReplAgr, bervalSyncDoneCtrl);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
         retVal = _VmDirFetchReplicationPage(
                 pConnection,
@@ -850,7 +895,6 @@ _VmDirConsumePartner(
     }
     while (bContinue);
 
-replcycledone:
     if (retVal == LDAP_SUCCESS)
     {
         // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.
