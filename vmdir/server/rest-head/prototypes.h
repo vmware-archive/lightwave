@@ -229,6 +229,19 @@ VmDirFreeRESTOperation(
     PVDIR_REST_OPERATION    pRestOp
     );
 
+//utils.c
+DWORD
+VmRESTSetCORSHeaders(
+    PVDIR_REST_OPERATION    pRestOp,
+    PREST_RESPONSE*         ppResponse
+    );
+
+DWORD
+VmRESTIsValidOrigin(
+    PSTR                    pRestOp,
+    BOOLEAN                 *isValidOrigin
+    );
+
 // param.c
 DWORD
 VmDirRESTGetStrParam(

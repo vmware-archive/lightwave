@@ -53,7 +53,7 @@ VmDirRESTRequestHandler(
                 pRestOp, pRESTHandle, pRequest, paramsCount);
 
         dwError = VmDirRESTOperationWriteResponse(
-                pRestOp, pRESTHandle, ppResponse);
+                    pRestOp, pRESTHandle, ppResponse);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -95,15 +95,19 @@ VmDirRESTProcessRequest(
     dwError = VmDirRESTAuth(pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = coapi_find_handler(
-            gpVdirRestApiDef,
-            pRestOp->pszPath,
-            pRestOp->pszMethod,
-            &pMethod);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    //Dont search for handler for pre-flighted HTTP OPTIONS request
+    if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_OPTIONS, FALSE) != 0)
+    {
+        dwError = coapi_find_handler(
+                gpVdirRestApiDef,
+                pRestOp->pszPath,
+                pRestOp->pszMethod,
+                &pMethod);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);

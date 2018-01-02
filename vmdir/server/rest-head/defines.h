@@ -17,7 +17,10 @@
 #define VMDIR_REST_CLIENTCNT        64
 #define VMDIR_REST_WORKERTHCNT      64
 
+#define HTTP_PROTOCOL_PREFIX        "https://"
 #define MAX_REST_PAYLOAD_LENGTH     4096
+#define MAX_HOSTNAME_LENGTH         1024
+#define MAX_ORIGIN_VALUE_LENGTH     2048
 
 #define VMDIR_REST_CONN_TIMEOUT_SEC  30
 #define VMDIR_MAX_DATA_PER_CONN_MB   25
@@ -33,6 +36,10 @@
 // HTTP headers
 #define VMDIR_REST_HEADER_AUTHORIZATION     "Authorization"
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
+#define VMDIR_REST_HEADER_ORIGIN            "Origin"
+
+// HTTP methods
+#define HTTP_METHOD_OPTIONS                 "OPTIONS"
 
 // HTTP STATUS CODES
 // 1xx Informational
