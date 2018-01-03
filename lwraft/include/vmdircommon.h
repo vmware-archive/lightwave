@@ -2288,6 +2288,14 @@ typedef struct _VMDIR_THREAD_LOG_CONTEXT
 DWORD
 VmDirInitThreadContext(VOID);
 
+VOID
+VmDirFreeThreadContext(VOID);
+
+VOID
+VmDirFreeThreadLogContext(
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext;
+    );
+
 DWORD
 VmDirGetThreadContext(
     PVMDIR_THREAD_CONTEXT*  ppThreadContext
@@ -2302,9 +2310,6 @@ DWORD
 VmDirSetThreadLogContextValue(
     PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
     );
-
-VOID
-VmDirFreeThreadContext(VOID);
 
 #ifdef __cplusplus
 }

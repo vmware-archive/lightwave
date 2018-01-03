@@ -48,8 +48,6 @@ VmDirShutdown(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop REST listening threads", __func__);
     VmDirRESTServerShutdown();
 
-    VmDirFreeThreadContext();
-
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();
 
@@ -121,6 +119,8 @@ VmDirShutdown(
     * #endif
     */
     VmMetricsDestroy(pmContext);
+
+    VmDirFreeThreadContext();
 
     (VOID)VmDirSetRegKeyValueDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
