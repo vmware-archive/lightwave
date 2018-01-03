@@ -511,6 +511,7 @@ VmDirEncodeMods(
     // Put Attributes
     for (pMod = pmods; pMod; pMod = pMod->next)
     {
+        i = 0;
         // Put id
         if (pMod->attr.pATDesc== NULL)
         {
@@ -526,27 +527,28 @@ VmDirEncodeMods(
             {
                 ;
             }
+        }
 
-            if (i > 0)
+        VmDirEncodeShort(&writer, attr->pATDesc->usAttrID);
+        // i = 0 when no vals
+        VmDirEncodeShort(&writer, i);
+        *writer = (unsigned char)pMod->operation;
+        writer++;
+
+        if (i > 0)
+        {
+            for (i=0; attr->vals[i].lberbv.bv_val; i++)
             {
-                VmDirEncodeShort(&writer, attr->pATDesc->usAttrID);
-                VmDirEncodeShort(&writer, i);
-                *writer = (unsigned char)pMod->operation;
-                writer++;
+                VmDirEncodeShort(&writer, attr->vals[i].lberbv.bv_len);
 
-                for (i=0; attr->vals[i].lberbv.bv_val; i++)
-                {
-                    VmDirEncodeShort(&writer, attr->vals[i].lberbv.bv_len);
+                // TODO: this needs to provide proper buffer size -
+                // i.e. what's left off of buffer, not whole original size
+                dwError = VmDirCopyMemory(writer, pEncodedBerval->lberbv.bv_len, attr->vals[i].lberbv.bv_val,
+                                          attr->vals[i].lberbv.bv_len);
+                BAIL_ON_VMDIR_ERROR( dwError );
 
-                    // TODO: this needs to provide proper buffer size -
-                    // i.e. what's left off of buffer, not whole original size
-                    dwError = VmDirCopyMemory(writer, pEncodedBerval->lberbv.bv_len, attr->vals[i].lberbv.bv_val,
-                                              attr->vals[i].lberbv.bv_len);
-                    BAIL_ON_VMDIR_ERROR( dwError );
-
-                    writer += attr->vals[i].lberbv.bv_len;
-                    *writer++ = '\0';
-                }
+                writer += attr->vals[i].lberbv.bv_len;
+                *writer++ = '\0';
             }
         }
     }
@@ -697,12 +699,14 @@ VmDirComputeEncodedModsSize(
         // NOTE: using bv_val != NULL check below causes compiler optimizer issue on windows => this check confuses the
         // "for" loop below
         pAttr = &pMod->attr;
-        if (pAttr->vals[0].lberbv.bv_len != 0) // at least one attribute value is present.
-        {
-            size += LEN_OF_LEN;        // store attribute id map in 2 bytes
 
-            size += LEN_OF_LEN;            // to store number of attribute values
-            size++;                        // to store mod operation
+        size += LEN_OF_LEN;        // store attribute id map in 2 bytes
+
+        size += LEN_OF_LEN;            // to store number of attribute values
+        size++;                        // to store mod operation
+        if (pAttr->vals && pAttr->vals[0].lberbv.bv_len != 0) // at least one attribute value is present.
+        {
+
             for (i = 0; pAttr->vals[i].lberbv.bv_val; i++, iLocalnVals++)
             {
                 if (pAttr->vals[i].lberbv.bv_len > (UINT16_MAX - 1))
@@ -714,8 +718,9 @@ VmDirComputeEncodedModsSize(
                 size += pAttr->vals[i].lberbv.bv_len + 1; // trailing NUL byte
             }
             iLocalnVals++;            // Empty (with bv_val = NULL) BerValue at the end
-            iLocalnAttrs++;
         }
+        // Increment even if vals are empty
+        iLocalnAttrs++;
     }
 
     *pEncodedEntrySize = size;
