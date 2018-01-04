@@ -35,7 +35,7 @@
 #define VMDIR_CUSTOMIZED_LDAP_ERROR_BASE  300
 #define VMDIR_SCHEMA_ERROR_BASE           600
 #define VMDIR_BACKEND_ERROR_BASE          700
-#define VMDIR_REST_ERROR_BASE             800
+#define VMDIR_REST_ERROR_BASE             900 /* Using the same REST error base as in lwraft */
 
 #define VMDIR_SUCCESS   0
 
@@ -205,12 +205,12 @@
 #define VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND   (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 8 )  // 9708
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// REST server error (range 9800 - 9899)
+// REST server error (range 9900 - 9999)
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #define IS_VMDIR_REST_ERROR_SPACE(n) \
     VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 99) )
 
-#define VMDIR_ERROR_REST_IP_UNKNOWN                   (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 0 )     // 9800
-#define VMDIR_ERROR_REST_HOSTNAME_UNKNOWN             (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 1 )     // 9801
+#define VMDIR_ERROR_REST_IP_UNKNOWN                   (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 0 )     // 9900
+#define VMDIR_ERROR_REST_HOSTNAME_UNKNOWN             (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 1 )     // 9901
 
 #endif /* __VDIR_ERRORCODE_H__ */

@@ -37,6 +37,7 @@
 #define VMDIR_SCHEMA_ERROR_BASE           600
 #define VMDIR_BACKEND_ERROR_BASE          700
 #define VMDIR_REST_PROXY_ERROR_BASE       800
+#define VMDIR_REST_ERROR_BASE             900
 
 #define VMDIR_SUCCESS   0
 
@@ -237,5 +238,12 @@
 #define VMDIR_ERROR_CURL_GENERIC_ERROR                (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 18 )  // 9818
 #define VMDIR_ERROR_CURL_NULLSLIST                    (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 19 )  // 9819
 
-#endif /* __VDIR_ERRORCODE_H__ */
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// REST server error (range 9900 - 9999)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+#define IS_VMDIR_REST_ERROR_SPACE(n) \
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 99) )
+#define VMDIR_ERROR_REST_IP_UNKNOWN                   (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 0 )     // 9900
+#define VMDIR_ERROR_REST_HOSTNAME_UNKNOWN             (VMDIR_ERROR_BASE + VMDIR_REST_ERROR_BASE + 1 )     // 9901
 
+#endif /* __VDIR_ERRORCODE_H__ */

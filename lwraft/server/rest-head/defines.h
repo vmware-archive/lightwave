@@ -14,6 +14,7 @@
 
 // C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
+#define HTTP_PROTOCOL_PREFIX        "https://"
 
 #define VMDIR_REST_CLIENTCNT        64
 #define VMDIR_REST_WORKERTHCNT      64
@@ -24,11 +25,13 @@
 #define VMDIR_REST_STOP_TIMEOUT_SEC 10
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
-
+#define MAX_HOSTNAME_LENGTH         1024
+#define MAX_ORIGIN_VALUE_LENGTH     2048
 #define VMDIR_V1_LDAP_RESOURCE      "/v1/post/ldap"
 #define VMDIR_V1_OBJ_RESOURCE       "/v1/post/object"
 #define VMDIR_V1_OBJ_RESOURCE_ALL   "/v1/post/object/*"
 #define VMDIR_V1_METRICS_RESOURCE   "/v1/post/metrics"
+#define VMDIR_V1_RESOURCE_IDP       "/v1/post/idp"
 
 // Retry for proxy
 #define VMDIR_REST_MAX_RETRY            4
@@ -41,12 +44,15 @@
 #define VMDIR_REST_OIDC_PORT                443
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_post"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
+#define VMDIR_REST_CONF_FILE_PATH           "/opt/vmware/share/config/oidc-client-id.conf"
+#define VMDIR_MAX_OIDC_CLIENTID_LEN         64
 
 // HTTP headers
 #define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 #define VMDIR_REST_HEADER_CONTENT_TYPE      "Content-Type"
-#define VMDIR_REST_HEADER_REQUESTID         "Requestid"
+#define VMDIR_REST_HEADER_REQUESTID         "requestid"
+#define VMDIR_REST_HEADER_ORIGIN            "Origin"
 
 // HTTP STATUS CODES
 // 1xx Informational

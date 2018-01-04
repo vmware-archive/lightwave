@@ -79,3 +79,63 @@ VmDirRESTUnloadVmAfdAPI(
         VMDIR_SAFE_FREE_MEMORY(pVmAfdApi);
     }
 }
+
+DWORD
+VmDirRESTGetDomainName(
+    PSTR *ppszDomainName
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwAFDError = 0;
+
+    if (!ppszDomainName)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwAFDError = gpVdirVmAfdApi->pfnGetDCName(NULL, ppszDomainName);
+    dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, vmafd error (%d)",
+            __FUNCTION__,
+            dwAFDError);
+    goto cleanup;
+}
+
+DWORD
+VmDirRESTGetDCName(
+    PSTR *ppszDCName
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwAFDError = 0;
+
+    if (!ppszDCName)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwAFDError = gpVdirVmAfdApi->pfnGetDCName(NULL, ppszDCName);
+    dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, vmafd error (%d)",
+            __FUNCTION__,
+            dwAFDError);
+    goto cleanup;
+}

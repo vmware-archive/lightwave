@@ -256,6 +256,18 @@ VmDirRESTGetHttpError(
     int httpStatus
     );
 
+// idpapi.c
+DWORD
+VmDirRESTGetIDPModule(
+    PREST_MODULE*   ppRestModule
+   );
+
+DWORD
+VmDirRESTGetIDP(
+    void*   pIn,
+    void**  ppOut
+    );
+
 // ldapapi.c
 DWORD
 VmDirRESTGetLdapModule(
@@ -559,6 +571,16 @@ VmDirRESTLoadVmAfdAPI(
 VOID
 VmDirRESTUnloadVmAfdAPI(
     PVDIR_VMAFD_API pVmAfdAPI
+    );
+
+DWORD
+VmDirRESTGetDCName(
+    PSTR *ppszDCName
+    );
+
+DWORD
+VmDirRESTGetDomainName(
+    PSTR *ppszDomainName
     );
 
 // proxy.c
