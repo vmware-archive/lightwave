@@ -9,6 +9,9 @@ usage()
   exit 1
 }
 
+top=$(cd `dirname $0` && pwd)
+cd $top
+
 while [ `echo "$1" | grep -c '^-'` -gt 0 ]; do
   if [ \( " $1" = " --help" \) -o \( " $1" = " -h" \) ]; then
     usage ""
@@ -21,12 +24,12 @@ while [ `echo "$1" | grep -c '^-'` -gt 0 ]; do
 done
 
 autoreconf -i -f \
-  -I./cmulocal \
-  -I./config \
-  -I./saslauthd/config
+  -I$top/cmulocal \
+  -I$top/config \
+  -I$top/saslauthd/config
 
 
-CFLAGS=$CDEBUGFLAGS  ./configure --prefix=/ \
+CFLAGS="$CDEBUGFLAGS"  ./configure --prefix=/ \
     --bindir=/usr/bin \
     --libdir=/usr/lib \
     --sysconfdir=/etc \
@@ -45,6 +48,9 @@ CFLAGS=$CDEBUGFLAGS  ./configure --prefix=/ \
     --disable-static \
     --enable-shared \
     --enable-fast-install \
-    --enable-krb4
+    --enable-krb4 \
+  &&
+make
 
-cp /usr/bin/libtool .
+
+cp /usr/bin/libtool $top
