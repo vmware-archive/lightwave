@@ -2351,7 +2351,6 @@ error:
 DWORD
 VmDnsDirSyncDeleted(
     DWORD                        dwLastChangedUSN,
-    DWORD                        dwNewUSN,
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpRemoveZoneProc,
     PVOID                        pData
     )
@@ -2383,11 +2382,9 @@ VmDnsDirSyncDeleted(
 
     dwError = VmDnsAllocateStringPrintfA(
                         &pszFilter,
-                        "(&(!(%s<=%d))(%s<=%d)(%s=%s))",
+                        "(&(%s>=%d)(%s=%s))",
                         VMDNS_LDAP_ATTR_USNCHANGED,
                         dwLastChangedUSN,
-                        VMDNS_LDAP_ATTR_USNCHANGED,
-                        dwNewUSN,
                         VMDNS_LDAP_ATTR_OBJECTCLASS,
                         VMDNS_LDAP_OC_DNSZONE
                         );
@@ -2488,7 +2485,6 @@ error:
 DWORD
 VmDnsDirSyncNewObjects(
     DWORD                        dwLastChangedUSN,
-    DWORD                        dwNewUSN,
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpSyncZoneProc,
     LPVMDNS_PURGE_RECORD_PROC    LpPurgeRecordProc,
     PVOID                        pData
@@ -2519,11 +2515,9 @@ VmDnsDirSyncNewObjects(
 
     dwError = VmDnsAllocateStringPrintfA(
                         &pszFilter,
-                        "(&(!(%s<=%d))(%s<=%d)(%s=%s))",
+                        "(&(%s>=%d)(%s=%s))",
                         VMDNS_LDAP_ATTR_USNCHANGED,
                         dwLastChangedUSN,
-                        VMDNS_LDAP_ATTR_USNCHANGED,
-                        dwNewUSN,
                         VMDNS_LDAP_ATTR_OBJECTCLASS,
                         VMDNS_LDAP_ATTR_DNSANY
                         );
