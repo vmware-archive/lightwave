@@ -462,6 +462,12 @@ MDBToBackendError(
         {
             dwError = dwToBEError;
         }
+        // check if the error is caused by one of raft callbacks
+        // if yes return the same error
+        else if (IS_VMDIR_ERROR_SPACE(dwMdbError))
+        {
+            dwError = dwMdbError;
+        }
         else
         {
             dwError = ERROR_BACKEND_ERROR;

@@ -392,10 +392,10 @@ VmDirRESTLdapGetHttpError(
 
     case LDAP_UNAVAILABLE:
     case LDAP_SERVER_DOWN:
+    case LDAP_UNWILLING_TO_PERFORM:
         httpStatus = HTTP_SERVICE_UNAVAILABLE;
         break;
 
-    case LDAP_UNWILLING_TO_PERFORM:
     case LDAP_INVALID_DN_SYNTAX:
     case LDAP_NO_SUCH_ATTRIBUTE:
     case LDAP_INVALID_SYNTAX:
