@@ -290,6 +290,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwLdapConnectTimeoutSec = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_MAX_INTERNAL_SEARCH,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwMaxInternalSearchLimit = pEntry->dwValue;
+        }
     }
 
 cleanup:

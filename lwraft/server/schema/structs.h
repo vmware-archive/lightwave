@@ -125,9 +125,9 @@ typedef struct _VDIR_SCHEMA_INSTANCE
     // lock to protect usRefCount
     PVMDIR_MUTEX mutex;
     // live schema has at least (1 + usNumSelfRef) count
-    USHORT      usRefCount;
+    DWORD       dwRefCount;
     // when usRefCount == usNumSelfRef, we can free this instance
-    USHORT      usNumSelfRef;
+    DWORD       dwNumSelfRef;
 
     BOOLEAN     bIsBootStrapSchema;
 

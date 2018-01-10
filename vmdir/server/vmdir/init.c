@@ -103,50 +103,58 @@ VmDirKrbInit(
     PSTR                pszLocalRealm = NULL;
     PSTR                pszLocalDomain = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
-    int                 iCnt = 0;
     BOOLEAN             bInLock = FALSE;
+    PVDIR_ATTRIBUTE     pAttrKrbMKey = NULL;
 
-    //TODO, use PERSISTED_DSE_ROOT_DN.ATTR_ROOT_DOMAIN_NAMING_CONTEXT instead of "/SUBTREE search?
-    // find domain entries (objectclass=dcobject)
+
+    if (!gVmdirServerGlobals.systemDomainDN.lberbv_val)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s, domain not yet promoted", __FUNCTION__);
+        goto cleanup; // system not yet promoted
+    }
+
     dwError = VmDirSimpleEqualFilterInternalSearch(
-                    "",
-                    LDAP_SCOPE_SUBTREE,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    LDAP_SCOPE_BASE,
                     ATTR_OBJECT_CLASS,
                     OC_DC_OBJECT,
                     &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
+    if (entryArray.iSize != 1)
     {
-        PVDIR_ATTRIBUTE pAttrKrbMKey = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_KRB_MASTER_KEY);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
 
-        if (pAttrKrbMKey)
-        {
-            VMDIR_LOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
+    pAttrKrbMKey = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_MASTER_KEY);
+    if (pAttrKrbMKey)
+    {
+        VMDIR_LOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
 
-            // BUGBUG BUGBUG, assume we only have one realm now
-            dwError = VmDirNormalizeDNWrapper( &(entryArray.pEntry[iCnt].dn) );
-            BAIL_ON_VMDIR_ERROR(dwError);
+        // BUGBUG BUGBUG, assume we only have one realm now
+        dwError = VmDirNormalizeDNWrapper(&(entryArray.pEntry[0].dn) );
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirAllocateStringA( entryArray.pEntry[iCnt].dn.bvnorm_val,
-                                            &pszLocalDomain );
-            BAIL_ON_VMDIR_ERROR(dwError);
-            gVmdirKrbGlobals.pszDomainDN = pszLocalDomain;  // gVmdirKrbGlobals takes over pszLocalDomain
-            pszLocalDomain = NULL;
+        dwError = VmDirAllocateStringA(entryArray.pEntry[0].dn.bvnorm_val,
+                                       &pszLocalDomain );
+        BAIL_ON_VMDIR_ERROR(dwError);
+        gVmdirKrbGlobals.pszDomainDN = pszLocalDomain;  // gVmdirKrbGlobals takes over pszLocalDomain
+        pszLocalDomain = NULL;
 
-            dwError = VmDirKrbSimpleDNToRealm( &(entryArray.pEntry[iCnt].dn), &pszLocalRealm);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            gVmdirKrbGlobals.pszRealm = pszLocalRealm;   // gVmdirKrbGlobals takes over pszLocalRealm
-            pszLocalRealm = NULL;
+        dwError = VmDirKrbSimpleDNToRealm(&(entryArray.pEntry[0].dn), &pszLocalRealm);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        gVmdirKrbGlobals.pszRealm = pszLocalRealm;   // gVmdirKrbGlobals takes over pszLocalRealm
+        pszLocalRealm = NULL;
 
-            dwError = VmDirBervalContentDup( &(pAttrKrbMKey->vals[0]), &gVmdirKrbGlobals.bervMasterKey);
-            BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirBervalContentDup(&(pAttrKrbMKey->vals[0]), &gVmdirKrbGlobals.bervMasterKey);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-            VmDirConditionSignal(gVmdirKrbGlobals.pcond);   // wake up VmKdcInitKdcServiceThread
-            VMDIR_UNLOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
-
-            break;
-        }
+        VmDirConditionSignal(gVmdirKrbGlobals.pcond);   // wake up VmKdcInitKdcServiceThread
+        VMDIR_UNLOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
+    }
+    else
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirKrbInit, REALM (%s)", VDIR_SAFE_STRING(gVmdirKrbGlobals.pszRealm));

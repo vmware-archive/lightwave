@@ -54,6 +54,10 @@ VdirSchemaCtxAcquireInLock(
     assert(pCtx->pVdirSchema);
 
     VMDIR_LOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
+    if (pCtx->pVdirSchema->dwRefCount + 1 < pCtx->pVdirSchema->dwRefCount)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INTERNAL_SIZE_LIMIT);
+    }
     pCtx->pVdirSchema->dwRefCount++;
 
 error:
@@ -104,6 +108,10 @@ VmDirSchemaCtxClone(
     pCtx->pVdirSchema = pOrgCtx->pVdirSchema;
 
     VMDIR_LOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
+    if (pCtx->pVdirSchema->dwRefCount + 1 < pCtx->pVdirSchema->dwRefCount)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INTERNAL_SIZE_LIMIT);
+    }
     pCtx->pVdirSchema->dwRefCount++;
 
 cleanup:
