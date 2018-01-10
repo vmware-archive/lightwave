@@ -60,6 +60,12 @@ typedef DWORD (*PFN_ADD_EVENT_QUEUE)(
                     PVM_SOCKET           pSocket
                     );
 
+typedef DWORD (*PFN_REARM_EVENT_QUEUE)(
+                    PVM_SOCK_EVENT_QUEUE pQueue,
+                    BOOL                 bOneShot,
+                    PVM_SOCKET           pSocket
+                    );
+
 typedef DWORD (*PFN_REMOVE_EVENT_QUEUE)(
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     PVM_SOCKET           pSocket
@@ -165,6 +171,7 @@ typedef struct _VM_SOCK_PACKAGE
     PFN_START_LISTENING    pfnStartListening;
     PFN_CREATE_EVENT_QUEUE pfnCreateEventQueue;
     PFN_ADD_EVENT_QUEUE    pfnAddEventQueue;
+    PFN_REARM_EVENT_QUEUE  pfnRearmEventQueue;
     PFN_REMOVE_EVENT_QUEUE pfnRemoveEventQueue;
     PFN_WAIT_FOR_EVENT     pfnWaitForEvent;
     PFN_SHUTDOWN_EVENT_QUEUE  pfnShutdownEventQueue;

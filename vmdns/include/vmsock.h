@@ -160,6 +160,21 @@ VmDnsSockEventQueueAdd(
     );
 
 /**
+ * @brief Rearms a socket to the event queue
+ *
+ * @param[in] pQueue  Pointer to Event queue
+ * @param[in] pSocket Pointer to Socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmDnsSockEventQueueRearm(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    BOOL                 bOneShot,
+    PVM_SOCKET           pSocket
+    );
+
+/**
  * @brief Waits for an event on the event queue
  *
  * @param[in] pQueue   Pointer to event queue

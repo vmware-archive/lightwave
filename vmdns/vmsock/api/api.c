@@ -112,6 +112,28 @@ error:
 }
 
 DWORD
+VmDnsSockEventQueueRearm(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    BOOL                 bOneShot,
+    PVM_SOCKET           pSocket
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pQueue || !pSocket)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMSOCK_ERROR(dwError);
+    }
+
+    dwError = gpVmDnsSockPackage->pfnRearmEventQueue(pQueue, bOneShot, pSocket);
+
+error:
+
+    return dwError;
+}
+
+DWORD
 VmDnsSockEventQueueRemove(
     PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
