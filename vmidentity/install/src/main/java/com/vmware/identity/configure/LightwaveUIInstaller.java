@@ -4,11 +4,15 @@
 
 package com.vmware.identity.configure;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -22,43 +26,16 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.lang.ProcessBuilder.Redirect;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 
 public class LightwaveUIInstaller implements IPlatformComponentInstaller {
 
     private static final String ID = "lightwave-ui";
     private static final String Name = "Lightwave UI";
     private static final String Description = "Lightwave UI OIDC Client regstiration";
+
     private VmIdentityParams params;
 
     public LightwaveUIInstaller() {
@@ -124,18 +101,19 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
         String redirectUriPattern = "\"https://%s/lightwaveui/Home\"";
         String logoutUriPattern = "\"https://%s/lightwaveui\"";
 
-        String redirectUris = "\"redirectUris\": [" + String.format(redirectUriPattern, pnid);
-        String postLogoutRedirectUris = "\"postLogoutRedirectUris\": [" + String.format(logoutUriPattern, pnid);
+        String redirectUriTemplates = "\"redirectUriTemplates\": [" + String.format(redirectUriPattern, pnid);
+        String postLogoutRedirectUriTemplates = "\"postLogoutRedirectUriTemplates\": [" + String.format(logoutUriPattern, pnid);
 
         if (subjectAltName != null && !subjectAltName.equalsIgnoreCase(pnid)) {
-               redirectUris += ", " + String.format(redirectUriPattern, subjectAltName);
-               postLogoutRedirectUris += ", " + String.format(logoutUriPattern, subjectAltName);
+               redirectUriTemplates += ", " + String.format(redirectUriPattern, subjectAltName);
+               postLogoutRedirectUriTemplates += ", " + String.format(logoutUriPattern, subjectAltName);
         }
 
-        String data = "{ " + redirectUris + "]," +
+        String data = "{ " + redirectUriTemplates + "]," +
               "\"tokenEndpointAuthMethod\": \"none\"," +
-              postLogoutRedirectUris + "]," +
-              "\"logoutUri\": " + String.format(logoutUriPattern, pnid) +
+              postLogoutRedirectUriTemplates + "]," +
+              "\"logoutUriTemplate\": " + String.format(logoutUriPattern, pnid) + "," +
+              "\"multiTenant\": " + "\"true\"" +
               " }";
         String response = doPost(oidcClientUri, data, token);
         return response;
@@ -186,7 +164,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
         return result;
     }
 
-    private Boolean saveToDisk(String domain, String clientId){
+    private Boolean saveToDisk(String clientId){
         String filePath = "/opt/vmware/share/config/lightwave-ui-oidc.xml";
         File f = new File(filePath);
         Boolean success = true;
@@ -194,7 +172,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
             success = createNewXml(filePath);
         }
         if(success){
-            success = addNewXmlNode(filePath, domain, clientId);
+            success = addNewXmlNode(filePath, clientId);
         }
         return success;
     }
@@ -215,7 +193,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
         }
     }
 
-    private Boolean addNewXmlNode(String xmlFile, String domain, String clientId){
+    private Boolean addNewXmlNode(String xmlFile, String clientId){
 
         try {
                 DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -223,11 +201,8 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
                 Document document = documentBuilder.parse(xmlFile);
                 Element root = document.getDocumentElement();
                 Element tenantNode = document.createElement("tenant");
-                Element name = document.createElement("name");
-                name.appendChild(document.createTextNode(domain));
                 Element clientIdNode = document.createElement("clientId");
                 clientIdNode.appendChild(document.createTextNode(clientId));
-                tenantNode.appendChild(name);
                 tenantNode.appendChild(clientIdNode);
                 root.appendChild(tenantNode);
                 writeXmlToDisk(xmlFile, document);
@@ -302,13 +277,13 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
             if(!found){
                 throw new Exception("Client ID for OIDC not found in response.");
             }
-            Boolean success = saveToDisk(domain, clientId);
+            Boolean success = saveToDisk(clientId);
             if(success){
-                System.out.println("Oidc has been saved into local store against tenant : " + domain);
+                System.out.println("Multi tenant oidc has been saved into local store.");
 
             }
             else {
-                System.out.println("Failed to save Oidc into local store against tenant : " + domain);
+                System.out.println("Failed to save multi tenant oidc into local store");
             }
         } catch(Exception exc){
             System.out.println("Lightwave UI OIDC Client registration failed ... ");

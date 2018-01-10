@@ -304,6 +304,7 @@ VmDirAddCondWriteCtrl(
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
+    DWORD*              pdwHttpStatus,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
     );
@@ -380,17 +381,16 @@ VmDirRESTOperationCreate(
     );
 
 DWORD
-VmDirRESTOperationReadMetadata(
-    PVDIR_REST_OPERATION    pRestOp,
-    PREST_REQUEST           pRequest
-    );
-
-DWORD
 VmDirRESTOperationReadRequest(
     PVDIR_REST_OPERATION    pRestOp,
     PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRestReq,
     DWORD                   dwParamCount
+    );
+
+DWORD
+VmDirRESTOperationLoadJson(
+    PVDIR_REST_OPERATION    pRestOp
     );
 
 DWORD
@@ -494,6 +494,7 @@ VmDirRESTUnknownSetResult(
 DWORD
 VmDirRESTUnknownGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
+    DWORD*              pdwHttpStatus,
     PSTR*               ppszHttpStatus,
     PSTR*               ppszHttpReason
     );

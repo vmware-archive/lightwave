@@ -49,23 +49,19 @@ public abstract class SSOConfigCommand {
      */
     public abstract String getShortDescription();
 
-    protected void setCommandAndParseArguments(String command, List<String> arguments) {
+    protected void setCommandAndParseArguments(String command, List<String> arguments) throws Exception {
         this.command = command;
         this.arguments = arguments;
-        try {
-            if (arguments.size() > 0 && arguments.get(0).equalsIgnoreCase(HELP_CMD)) {
-                arguments = arguments.subList(1, arguments.size());
-            }
 
-            parser = new CmdLineParser(this, getParserProperties());
-            parser.parseArgument(arguments);
+        if (arguments.size() > 0 && arguments.get(0).equalsIgnoreCase(HELP_CMD)) {
+            arguments = arguments.subList(1, arguments.size());
+        }
 
-            if (arguments.isEmpty()) {
-                printUsage(parser);
-                System.exit(1);
-            }
-        } catch (Exception e) {
-            logger.error("Encountered an error when parsing command.", e);
+        parser = new CmdLineParser(this, getParserProperties());
+        parser.parseArgument(arguments);
+
+        if (arguments.isEmpty()) {
+            printUsage(parser);
             System.exit(1);
         }
     }
@@ -96,8 +92,10 @@ public abstract class SSOConfigCommand {
                         Arrays.asList(
                             AuthnPolicyCommand.class,
                             ExternalIDPCommand.class,
+                            FederatedIdpCommand.class,
                             GetDomainJoinStatusCommand.class,
                             IdentityProviderCommand.class,
+                            OidcClientCommand.class,
                             RelyingPartyCommand.class,
                             SetCredentialsCommand.class,
                             TenantConfigurationCommand.class,
@@ -126,14 +124,19 @@ public abstract class SSOConfigCommand {
      * Print general help message. Provide a list of sub commands.
      *
      */
-    private static void printUsage() throws Exception {
+    private static void printUsage() {
         System.out.println(String.format("SSO Configuration Commands. Use %s for command line help.\n", HELP_CMD));
-        // display short description for each sub command
-        int displayWidth = 20;
-        for (Class<?> clazz : all()) {
-            SSOConfigCommand cmd = (SSOConfigCommand) clazz.newInstance();
-            SSOConfigurationUtils.displayParamNameAndValue(cmd.getCommandName(), cmd.getShortDescription(), displayWidth);
+        try {
+            // display short description for each sub command
+            int displayWidth = 20;
+            for (Class<?> clazz : all()) {
+                SSOConfigCommand cmd = (SSOConfigCommand) clazz.newInstance();
+                SSOConfigurationUtils.displayParamNameAndValue(cmd.getCommandName(), cmd.getShortDescription(), displayWidth);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
+
     }
 
     /**
@@ -187,25 +190,30 @@ public abstract class SSOConfigCommand {
         try {
             List<String> arguments = Arrays.asList(args);
 
-            if (arguments.isEmpty() || arguments.get(0).equalsIgnoreCase(HELP_CMD)) {
-                // print help message if arguments are not provided
+            if (arguments.isEmpty()) {
                 printUsage();
                 System.exit(1);
+            } else if (arguments.get(0).equalsIgnoreCase(HELP_CMD)) {
+                printUsage();
+                System.exit(0);
             }
 
             String cmdName = arguments.get(0);
             SSOConfigCommand cmd = SSOConfigCommand.clone(cmdName);
             if (cmd == null) {
-                System.err.println("Error: Invalid command [" + cmdName + "] specified.\n");
-                printUsage();
-                System.exit(1);
+                throw new UsageException("Error: Invalid command [" + cmdName + "] specified.\n");
             }
             cmd.setCommandAndParseArguments(cmdName, arguments.subList(1, arguments.size()));
             cmd.execute();
+        } catch (UsageException e) {
+            System.err.println(e.getMessage());
+            printUsage();
+            System.exit(1);
         } catch (com.vmware.identity.rest.core.client.exceptions.client.UnauthorizedException ue) {
             logger.error("Token expired. Please use set-credentials command to retrieve token with admin username and password.");
             System.exit(1);
         } catch (Exception e) {
+            System.err.println(e.getMessage());
             logger.error("Encountered an error when executing the command.", e);
             System.exit(1);
         } finally {

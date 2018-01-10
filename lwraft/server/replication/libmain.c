@@ -43,6 +43,9 @@ VmDirReplicationLibInit(
     dwError = InitializeReplicationThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirRaftMetricsInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
     VmDirLog( LDAP_DEBUG_TRACE, "VmDirReplicationLibInit: End" );
     return dwError;

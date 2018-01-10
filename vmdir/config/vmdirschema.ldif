@@ -19418,6 +19418,54 @@ attributetypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.107
+    NAME 'vmwSTSExternalIdpProtocol'
+    DESC 'VMWare identity Service - External IDP Protocol'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.108
+    NAME 'vmwSTSExternalIdpClientId'
+    DESC 'VMWare identity Service - External IDP ClientId'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.109
+    NAME 'vmwSTSExternalIdpClientSecret'
+    DESC 'VMWare identity Service - External IDP ClientSecret'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.110
+    NAME 'vmwSTSPublicKey'
+    DESC 'VMWare identity Service - PublicKey'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.111
+    NAME 'vmwSTSExternalIdpClientRedirectURL'
+    DESC 'VMWare identity Service - External IDP Client Redirect URL'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.112
+    NAME 'vmwSTSExternalIdpIssuerType'
+    DESC 'VMWare identity Service - External IDP Issuer Type'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19670,8 +19718,20 @@ objectClasses: (
          $ vmwSTSExternalIdpEnableJit
          $ vmwSTSExternalIdpUpnSuffix
          $ vmwSTSAlias
-       )
-   )
+         $ vmwSTSExternalIdpProtocol
+         $ vmwSTSExternalIdpIssuerType
+         $ vmwSTSExternalIdpClientId
+         $ vmwSTSExternalIdpClientSecret
+         $ vmwSTSExternalIdpClientRedirectURL
+         $ vmwSTSPublicKey
+         $ vmwOidcMetadataURI
+         $ vmwOidcJwksURI
+         $ vmwOidcTokenRedirectURI
+         $ vmwOidcAuthorizeRedirectURI
+         $ vmwOidcLogoutURI
+         $ vmwOidcPostLogoutRedirectURI
+        )
+    )
 
 objectClasses: (
     VMWare.STS.objectclass.25
@@ -19849,6 +19909,34 @@ attributeTypes: (
     SINGLE-VALUE
     )
 
+attributeTypes: (
+    VMWare.OIDC.attribute.12
+    NAME 'vmwOidcTokenRedirectURI'
+    DESC 'Token redirect URI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.13
+    NAME 'vmwOidcAuthorizeRedirectURI'
+    DESC 'Authorize redirect URI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.14
+    NAME 'vmwOidcMetadataURI'
+    DESC 'Metadata URI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.15
+    NAME 'vmwOidcJwksURI'
+    DESC 'JWKS URI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
 objectClasses: (
     VMWare.OIDC.objectclass.1
     NAME 'vmwOidcRelyingParty'
@@ -19862,7 +19950,8 @@ objectClasses: (
           vmwOidcPostLogoutRedirectURI $
           vmwOidcLogoutURI $
           vmwOidcCertSubDN $
-          vmwOidcAuthnRequestClientAssertionLifetimeMS )
+          vmwOidcAuthnRequestClientAssertionLifetimeMS $
+          vmwSTSMultiTenant)
     )
 
 objectClasses: (

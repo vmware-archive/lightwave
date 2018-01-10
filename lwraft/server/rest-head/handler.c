@@ -86,7 +86,6 @@ VmDirRESTRequestHandlerInternal(
     DWORD   dwError = 0;
     DWORD   dwRestOpErr = 0;    // don't bail on this
     PVDIR_REST_OPERATION    pRestOp = NULL;
-    VDIR_RAFT_ROLE  role = VDIR_RAFT_ROLE_CANDIDATE;
 
     if (!pRESTHandle || !pRequest || !ppResponse)
     {
@@ -107,13 +106,12 @@ VmDirRESTRequestHandlerInternal(
     }
     else
     {
-        dwError = VmDirRESTOperationReadMetadata(pRestOp, pRequest);
+        dwError = VmDirRESTOperationReadRequest(
+                pRestOp, pRESTHandle, pRequest, paramsCount);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirRaftGetRole(&role);
         // if node is leader or the request needs to be processed locally
-        if (role == VDIR_RAFT_ROLE_LEADER ||
-                _VmDirRESTProcessLocally(pRestOp) )
+        if ( _VmDirRESTProcessLocally(pRestOp) )
         {
             dwRestOpErr = VmDirRESTProcessRequest(
                     pRestOp, pRESTHandle, pRequest, paramsCount);
@@ -122,8 +120,7 @@ VmDirRESTRequestHandlerInternal(
                     pRestOp, pRESTHandle, ppResponse);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        // else if follower proxy to leader
-        else if (role == VDIR_RAFT_ROLE_FOLLOWER)
+        else
         {
             dwRestOpErr = VmDirRESTForwardRequest(
                     pRestOp, paramsCount, pRequest, pRESTHandle, bHttpRequest);
@@ -131,18 +128,6 @@ VmDirRESTRequestHandlerInternal(
             dwError = VmDirRESTWriteProxyResponse(
                     pRestOp, ppResponse, pRESTHandle);
             BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else  // role == VDIR_RAFT_ROLE_CANDIDATE
-        {
-            dwError = VmDirRESTWriteSimpleErrorResponse(
-                    pRESTHandle, ppResponse, 503);  // 503 = Service Unavailable
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            VMDIR_LOG_ERROR(
-                    VMDIR_LOG_MASK_ALL,
-                    "Error: %d Node in invalid state no leader. Status returned: 503 to client: %s",
-                    VMDIR_ERROR_NO_LEADER,
-                    VDIR_SAFE_STRING(pRestOp->pszClientIP));
         }
     }
 
@@ -178,8 +163,7 @@ VmDirRESTProcessRequest(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirRESTOperationReadRequest(
-            pRestOp, pRESTHandle, pRequest, paramsCount);
+    dwError = VmDirRESTOperationLoadJson(pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTAuth(pRestOp);
@@ -225,6 +209,7 @@ VmDirRESTWriteSimpleErrorResponse(
     )
 {
     DWORD   dwError = 0;
+    DWORD   bytesWritten = 0;
     PVDIR_HTTP_ERROR    pHttpError = NULL;
 
     if (!pRESTHandle || !ppResponse)
@@ -246,6 +231,22 @@ VmDirRESTWriteSimpleErrorResponse(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmRESTSetDataLength(ppResponse, "0");
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTSetData(
+            pRESTHandle, ppResponse, "", 0, &bytesWritten);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (! VMDIR_IS_HTTP_STATUS_OK(pHttpError->dwHttpStatus))
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s HTTP response status (%d), body (NULL)",
+                __FUNCTION__,
+                pHttpError->pszHttpStatus);
+    }
+
 cleanup:
     return dwError;
 
@@ -266,6 +267,9 @@ _VmDirRESTProcessLocally(
     )
 {
     BOOL    bReturn = FALSE;
+    VDIR_RAFT_ROLE  role = VDIR_RAFT_ROLE_CANDIDATE;
+
+    VmDirRaftGetRole(&role);
 
     if (!pRestOp || !pRestOp->pszPath)
     {
@@ -273,7 +277,11 @@ _VmDirRESTProcessLocally(
         // the error is handled locally in the upcoming calls
         bReturn = TRUE;
     }
-    else if (VmDirStringStartsWith(pRestOp->pszPath, VMDIR_V1_METRICS_RESOURCE, FALSE))
+    else if (role == VDIR_RAFT_ROLE_LEADER)
+    {
+        bReturn = TRUE;
+    }
+    else if (pRestOp->pResource->rscType == VDIR_REST_RSC_METRICS)
     {
         // currently only metrics API will be an exception
         // Any more exceptions should be added here.

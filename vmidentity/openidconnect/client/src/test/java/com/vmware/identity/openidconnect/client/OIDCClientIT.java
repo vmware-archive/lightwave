@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.client;
 
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.junit.Test;
 
 import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.rest.idm.client.IdmClient;
+import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 
 /**
  * OIDC Client Integration Test
@@ -290,6 +292,33 @@ public class OIDCClientIT extends OIDCClientITBase {
                 regClientWithoutAuthnForRegularTenant,
                 solutionUserCredentialsGrant,
                 withoutRefreshSpec);
+    }
+
+    @Test
+    public void testRegClientWithoutAuthnGetHOKWithouRefreshByMultiTenantOidcClient() throws Exception {
+        TestUtils.verifyTokens(
+                regClientWithoutAuthnForRegularTenantWithMultiTenant,
+                passwordGrantForRegularTenant,
+                withoutRefreshSpec);
+    }
+
+    @Test
+    public void testGetMultiTenantOIDCClientWithRegularTenantUserCredentials() throws Exception {
+        OIDCClientDTO oidcClient = idmClientForRegularTenant.oidcClient().get(regularTenant, clientIdWithMultiTenant.getValue());
+
+        verifyOidcUri(oidcClient.getOIDCClientMetadataDTO().getLogoutUri(), regularTenant);
+
+        for (String uriString : oidcClient.getOIDCClientMetadataDTO().getPostLogoutRedirectUris()) {
+            verifyOidcUri(uriString, regularTenant);
+        }
+
+        for (String uriString : oidcClient.getOIDCClientMetadataDTO().getRedirectUris()) {
+            verifyOidcUri(uriString, regularTenant);
+        }
+    }
+
+    private void verifyOidcUri(String uriString, String tenant) throws URISyntaxException {
+        Assert.assertTrue(uriString.endsWith(tenant));
     }
 
     @Test

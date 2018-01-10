@@ -36,7 +36,7 @@ VmDirMetricsInitialize(
     dwError = VmDirLdapMetricsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirReplMetricsInit();
+    dwError = VmDirReplMetricsCacheInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirRpcMetricsInit();
@@ -49,6 +49,15 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirMetricsInitialize failed (%d)", dwError);
 
     goto cleanup;
+}
+
+VOID
+VmDirMetricsShutdown(
+    VOID
+    )
+{
+    VmDirReplMetricsCacheShutdown();
+    VmMetricsDestroy(pmContext);
 }
 
 static

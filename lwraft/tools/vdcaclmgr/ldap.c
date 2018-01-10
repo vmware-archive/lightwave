@@ -175,6 +175,77 @@ error:
 }
 
 DWORD
+VdcLdapCNToSid(
+    LDAP*   pLd,
+    PCSTR   pszBase,
+    PCSTR   pszCN,
+    PSTR*   ppszSid
+    )
+{
+    DWORD dwError = 0;
+    PCSTR ppszAttrs[] = {ATTR_OBJECT_SID, NULL};
+    LDAPMessage *pResult = NULL;
+    PSTR pszObjectSid = NULL;
+    PSTR pszFilter = NULL;
+
+    // filter = "(&(cn=xxx)(|(objectclass=user)(objectclass=group)))",
+    dwError = VmDirAllocateStringPrintf(
+        &pszFilter,
+        "(&(%s=%s)(|(%s=%s)(%s=%s)))",
+        ATTR_CN, pszCN,
+        ATTR_OBJECT_CLASS, OC_USER,
+        ATTR_OBJECT_CLASS, OC_GROUP);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszBase,
+                LDAP_SCOPE_SUBTREE,
+                pszFilter,
+                (PSTR*)ppszAttrs,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                -1,
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldap_count_entries(pLd, pResult) < 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
+    }
+    else if (ldap_count_entries(pLd, pResult) > 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_TOO_MANY_ENTRY);
+    }
+    else
+    {
+        LDAPMessage* pEntry = ldap_first_entry(pLd, pResult);
+
+        dwError = _VdcGetAttributeFromEntry(pLd, pEntry, ATTR_OBJECT_SID, &pszObjectSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszSid = pszObjectSid;
+    pszObjectSid = NULL;
+
+cleanup:
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    VMDIR_SAFE_FREE_STRINGA(pszObjectSid);
+    VMDIR_SAFE_FREE_STRINGA(pszFilter);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VdcLdapGetObjectSidMappings(
     LDAP *pLd,
     PCSTR pszBase,

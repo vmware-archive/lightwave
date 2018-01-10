@@ -33,7 +33,9 @@ VmwDeployBuildParams(
     PCSTR pszOrgUnit,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
+    PCSTR pszSiteName,
     BOOLEAN bDisableAfdListener,
+    BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
@@ -197,9 +199,11 @@ ParseArgs(
     PSTR  pszOrgUnit = NULL;
     PSTR  pszSubjectAltName = NULL;
     PSTR  pszPassword = NULL;
+    PSTR  pszSiteName = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
     BOOLEAN bUseMachineAccount = FALSE;
     BOOLEAN bMachinePreJoined = FALSE;
+    BOOLEAN bDisableDNS = FALSE;
 
     enum PARSE_MODE
     {
@@ -209,7 +213,8 @@ ParseArgs(
         PARSE_MODE_PASSWORD,
         PARSE_MODE_MACHINE_ACCOUNT,
         PARSE_MODE_ORG_UNIT,
-        PARSE_MODE_SSL_SUBJECT_ALT_NAME
+        PARSE_MODE_SSL_SUBJECT_ALT_NAME,
+        PARSE_MODE_SITE
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -245,6 +250,10 @@ ParseArgs(
                 {
                     bDisableAfdListener = TRUE;
                 }
+                else if (!strcmp(pszArg, "--disable-dns"))
+                {
+                    bDisableDNS = TRUE;
+                }
                 else if (!strcmp(pszArg, "--use-machine-account") ||
                          !strcmp(pszArg, "--use-machine-accout"))
                 {
@@ -262,6 +271,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--ssl-subject-alt-name"))
                 {
                     parseMode = PARSE_MODE_SSL_SUBJECT_ALT_NAME;
+                }
+                else if (!strcmp(pszArg, "--site"))
+                {
+                    parseMode = PARSE_MODE_SITE;
                 }
                 else
                 {
@@ -355,6 +368,20 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_SITE:
+
+                if (pszSiteName)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszSiteName = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -377,7 +404,9 @@ ParseArgs(
                     pszOrgUnit,
                     pszPassword,
                     pszSubjectAltName,
+                    pszSiteName,
                     bDisableAfdListener,
+                    bDisableDNS,
                     bUseMachineAccount,
                     bMachinePreJoined,
                     &pSetupParams);
@@ -410,7 +439,9 @@ VmwDeployBuildParams(
     PCSTR pszOrgUnit,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
+    PCSTR pszSiteName,
     BOOLEAN bDisableAfdListener,
+    BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
@@ -487,10 +518,19 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pszSiteName))
+    {
+        dwError = VmwDeployAllocateStringA(
+                            pszSiteName,
+                            &pSetupParams->pszSite);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployAllocateStringA(pszPassword, &pSetupParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     pSetupParams->bDisableAfdListener = bDisableAfdListener;
+    pSetupParams->bDisableDNS = bDisableDNS;
     pSetupParams->bUseMachineAccount = bUseMachineAccount;
     pSetupParams->bMachinePreJoined = bMachinePreJoined;
 
@@ -611,8 +651,10 @@ ShowUsage(
            "[--machine-account-name <preferred computer account name. default: <hostname>]\n"
            "[--org-unit <organizational unit. default: Computers]\n"
            "[--disable-afd-listener]\n"
-           "[--use-machine-accout] Use machine account credentials to join\n"
+           "[--disable-dns]\n"
+           "[--use-machine-account] Use machine account credentials to join\n"
            "[--prejoined] Machine account is already created in directory \n"
            "[--password  <password to administrator account>]\n"
-           "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n");
+           "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
+           "[--site <sitename>] Specific region to join to\n");
 }

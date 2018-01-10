@@ -134,9 +134,23 @@ VmDnsInitializeA(
 
 VMDNS_API
 DWORD
+VmDnsInitializeWithSiteA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_INIT_SITE_INFO   pInitInfo
+    );
+
+VMDNS_API
+DWORD
 VmDnsUninitializeA(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PVMDNS_INIT_INFO        pInitInfo
+    PVMDNS_INIT_INFO   pInitInfo
+    );
+
+VMDNS_API
+DWORD
+VmDnsUninitializeWithSiteA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_INIT_SITE_INFO   pInitInfo
     );
 
 VMDNS_API

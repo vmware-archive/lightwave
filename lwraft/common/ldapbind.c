@@ -152,10 +152,6 @@ VmDirSASLSRPBindExt1(
         if (iTimeout > 0)
         {
             // timeout connect
-            retVal = ldap_set_option(pLd, LDAP_OPT_TIMEOUT, (void *)&optTimeout);
-            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-            // timeout poll
             retVal = ldap_set_option(pLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
         }
@@ -168,8 +164,7 @@ VmDirSASLSRPBindExt1(
                                                 LDAP_SASL_QUIET,
                                                 _VmDirSASLSRPInteraction,
                                                 &srpDefault);
-#ifndef LIGHTWAVE_BUILD
-        if (retVal == LDAP_SERVER_DOWN)
+        if (retVal == LDAP_SERVER_DOWN || retVal == LDAP_TIMEOUT)
         {
             VmDirSleep(50); // pause 50 ms
             if ( pLd )
@@ -180,7 +175,6 @@ VmDirSASLSRPBindExt1(
             continue;   // if transient network error, retry once.
         }
         else
-#endif
         {
             break;
         }
@@ -461,11 +455,7 @@ VmDirAnonymousLDAPBindWithTimeout(
         nettimeout.tv_sec = timeout;
 
         // timeout connect
-        retVal = ldap_set_option( pLocalLd, LDAP_OPT_TIMEOUT, (void *)&nettimeout);
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-        // timeout poll
-        retVal = ldap_set_option( pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&nettimeout);
+        retVal = ldap_set_option(pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&nettimeout);
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 

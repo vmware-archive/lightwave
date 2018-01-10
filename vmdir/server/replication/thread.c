@@ -193,10 +193,6 @@ vdirReplicationThrFun(
     BOOLEAN                         bExitThread = FALSE;
     int                             i = 0;
     VMDIR_REPLICATION_CONTEXT       sContext = {0};
-    uint64_t                        uiCycleStartTime = 0;
-    uint64_t                        uiCycleEndTime = 0;
-    uint64_t                        uiSyncStartTime = 0;
-    uint64_t                        uiSyncEndTime = 0;
 
     /*
      * This is to address the backend's writer mutex contention problem so that
@@ -215,9 +211,12 @@ vdirReplicationThrFun(
 
     if (VmDirSchemaCtxAcquire(&sContext.pSchemaCtx) != 0)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirSchemaCtxAcquire failed.");
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "vdirReplicationThrFun: VmDirSchemaCtxAcquire failed.");
+
         retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
     while (1)
@@ -233,8 +232,10 @@ vdirReplicationThrFun(
             continue;
         }
 
-        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Executing replication cycle %u.", gVmdirGlobals.dwReplCycleCounter + 1 );
-        uiCycleStartTime = VmDirGetTimeInMilliSec();
+        VMDIR_LOG_VERBOSE(
+                VMDIR_LOG_MASK_ALL,
+                "vdirReplicationThrFun: Executing replication cycle %u.",
+                gVmdirGlobals.dwReplCycleCounter + 1);
 
         // purge RAs that have been marked as isDeleted = TRUE
         VmDirRemoveDeletedRAsFromCache();
@@ -262,10 +263,14 @@ vdirReplicationThrFun(
                 sContext.pSchemaCtx = NULL;
                 if (VmDirSchemaCtxAcquire(&sContext.pSchemaCtx) != 0)
                 {
-                    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirSchemaCtxAcquire failed.");
+                    VMDIR_LOG_ERROR(
+                            VMDIR_LOG_MASK_ALL,
+                            "vdirReplicationThrFun: VmDirSchemaCtxAcquire failed.");
                     continue;
                 }
-                VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Acquires new schema context");
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "vdirReplicationThrFun: Acquires new schema context");
             }
 
             if (_VmDirReplicationConnect(pReplAgr) != DC_CONNECTION_STATE_CONNECTED)
@@ -273,24 +278,12 @@ vdirReplicationThrFun(
                 continue;
             }
 
-            uiSyncStartTime = VmDirGetTimeInMilliSec();
-
             _VmDirConsumePartner(&sContext, pReplAgr, &pReplAgr->dcConn);
-
-            uiSyncEndTime = VmDirGetTimeInMilliSec();
-
-            if (pReplAgr->ReplMetrics.pReplSyncDuration)
-            {
-                VmMetricsHistogramUpdate(pReplAgr->ReplMetrics.pReplSyncDuration,
-                            VMDIR_RESPONSE_TIME(uiSyncEndTime-uiSyncStartTime));
-            }
         }
 
-        uiCycleEndTime = VmDirGetTimeInMilliSec();
-        VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Done executing the replication cycle.");
-
-        VmMetricsHistogramUpdate(pReplCycleDuration,
-                VMDIR_RESPONSE_TIME(uiCycleEndTime-uiCycleStartTime));
+        VMDIR_LOG_DEBUG(
+                VMDIR_LOG_MASK_ALL,
+                "vdirReplicationThrFun: Done executing the replication cycle.");
 
         VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
         gVmdirGlobals.dwReplCycleCounter++;
@@ -303,16 +296,17 @@ vdirReplicationThrFun(
 
         if (VmDirdState() == VMDIRD_STATE_RESTORE)
         {
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-                "vdirReplicationThrFun: Done restoring the server by catching up with it's replication partner(s)." );
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "vdirReplicationThrFun: Done restoring the server by catching up with it's replication partner(s).");
             VmDirForceExit();
             break;
         }
 
         VMDIR_LOG_DEBUG(
-            VMDIR_LOG_MASK_ALL,
-            "vdirReplicationThrFun: Sleeping for the replication interval: %d seconds.",
-            gVmdirServerGlobals.replInterval );
+                VMDIR_LOG_MASK_ALL,
+                "vdirReplicationThrFun: Sleeping for the replication interval: %d seconds.",
+                gVmdirServerGlobals.replInterval);
 
         for (i=0; i<gVmdirServerGlobals.replInterval; i++)
         {
@@ -332,19 +326,17 @@ vdirReplicationThrFun(
     } // Endless replication loop
 
 cleanup:
-
     VmDirSchemaCtxRelease(sContext.pSchemaCtx);
     VMDIR_SAFE_FREE_STRINGA(sContext.pszKrb5ErrorMsg);
-
     VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
     VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
-
     return 0;
 
 error:
-    VmDirdStateSet( VMDIRD_STATE_FAILURE );
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "vdirReplicationThrFun: Replication has failed with unrecoverable error." );
+    VmDirdStateSet(VMDIRD_STATE_FAILURE);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "vdirReplicationThrFun: Replication has failed with unrecoverable error.");
     goto cleanup;
 }
 
@@ -787,17 +779,22 @@ _VmDirConsumePartner(
     )
 {
     int retVal = LDAP_SUCCESS;
+    int iPreviousCycleEntriesOutOfSequence = -1;
     USN initUsn = 0;
     USN lastSupplierUsnProcessed = 0;
-    PVMDIR_REPLICATION_PAGE pPage = NULL;
+    BOOLEAN bInReplLock = FALSE;
     BOOLEAN bReplayEverything = FALSE;
     BOOLEAN bReTrialDesired = FALSE;
     BOOLEAN bContinue = FALSE;
-    struct berval bervalSyncDoneCtrl = {0};
-    int iPreviousCycleEntriesOutOfSequence = -1;
-    BOOLEAN bInReplLock = FALSE;
+    PVMDIR_REPLICATION_PAGE pPage = NULL;
+    struct berval   bervalSyncDoneCtrl = {0};
+    PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
+    uint64_t    uiStartTime = 0;
+    uint64_t    uiEndTime = 0;
 
     VMDIR_RWLOCK_WRITELOCK(bInReplLock, gVmdirGlobals.replRWLock, 0);
+
+    uiStartTime = VmDirGetTimeInMilliSec();
 
     do // do-while ( bReTrialDesired )
     {
@@ -930,14 +927,6 @@ replcycledone:
                     pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            VmMetricsGaugeSet(
-                    pReplAgr->ReplMetrics.pReplUsn,
-                    VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10));
-
-            VmMetricsCounterAdd(
-                    pReplAgr->ReplMetrics.pReplChanges,
-                    VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv_val, NULL, 10) - initUsn);
-
             VMDIR_LOG_INFO(
                     VMDIR_LOG_MASK_ALL,
                     "Replication supplier %s USN range (%llu,%s) processed",
@@ -945,14 +934,24 @@ replcycledone:
                     initUsn,
                     pReplAgr->lastLocalUsnProcessed.lberbv_val);
         }
-        else
-        {
-            VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
-        }
     }
-    else
+
+collectmetrics:
+    uiEndTime = VmDirGetTimeInMilliSec();
+    if (VmDirReplMetricsCacheFind(pReplAgr->pszHostname, &pReplMetrics) == 0)
     {
-        VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
+        if (retVal == LDAP_SUCCESS)
+        {
+            VmMetricsHistogramUpdate(
+                    pReplMetrics->pTimeCycleSucceeded,
+                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+        }
+        else if (retVal != LDAP_BUSY)
+        {
+            VmMetricsHistogramUpdate(
+                    pReplMetrics->pTimeCycleFailed,
+                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+        }
     }
 
 cleanup:
@@ -962,14 +961,16 @@ cleanup:
     return;
 
 ldaperror:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error code (%d)",
-            __FUNCTION__,
-            retVal);
+    if (retVal != LDAP_BUSY)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s failed, error code (%d)",
+                __FUNCTION__,
+                retVal);
+    }
 
-    VmMetricsCounterIncrement(pReplAgr->ReplMetrics.pReplUnfinished);
-    goto cleanup;
+    goto collectmetrics;
 }
 
 /*
@@ -1106,10 +1107,8 @@ _VmDirFetchReplicationPage(
 
         bLogErr = FALSE;
     }
-    else if (retVal == LDAP_SERVER_DOWN     ||
-             retVal == LDAP_CONNECT_ERROR   ||
-             retVal == LDAP_TIMEOUT)
-    {   // connection problem
+    else if (retVal)
+    {   // for all other errors, force disconnect
         pConnection->connState = DC_CONNECTION_STATE_NOT_CONNECTED;
     }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
@@ -1216,6 +1215,11 @@ ldaperror:
     }
     _VmDirFreeReplicationPage(pPage);
     pPage = NULL;
+
+    if (pConnection->connState != DC_CONNECTION_STATE_CONNECTED)
+    {   // unbind after _VmDirFreeReplicationPage call
+        VDIR_SAFE_UNBIND_EXT_S(pConnection->pLd);
+    }
     goto cleanup;
 }
 

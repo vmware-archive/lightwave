@@ -27,6 +27,7 @@ public class Endpoints {
     public static final String AUTHENTICATION_CAC_RPROXY = "/oidc/cac_rproxy";
     public static final String AUTHENTICATION_CAC_TOMCAT = "/oidc/cac_tomcat";
     public static final String TOKEN = "/token";
+    public static final String FEDERATION = "/federate";
     public static final String LOGOUT = "/logout";
     public static final String JWKS = "/jwks";
     public static final String METADATA = "/.well-known/openid-configuration";

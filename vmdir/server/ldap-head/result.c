@@ -184,14 +184,20 @@ VmDirSendLdapResult(
         pOperation->ldapResult.errCode != LDAP_BUSY &&
         pOperation->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
-                VmDirLdapReqCodeToName(pOperation->reqCode),
-                pOperation->ldapResult.errCode,
-                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
-                iNumSearchEntrySent,
-                VDIR_SAFE_STRING(pszSocketInfo));
+        // supress search request LDAP_NO_SUCH_OBJECT/32 error (-baseDN not found) return case as well
+        // to avoid log flooding.
+        if (! (pOperation->ldapResult.errCode == LDAP_NO_SUCH_OBJECT &&
+               pOperation->reqCode == LDAP_REQ_SEARCH))
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                    VmDirLdapReqCodeToName(pOperation->reqCode),
+                    pOperation->ldapResult.errCode,
+                    VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                    iNumSearchEntrySent,
+                    VDIR_SAFE_STRING(pszSocketInfo));
+        }
     }
     else if (pOperation->reqCode == LDAP_REQ_SEARCH)
     {
@@ -284,6 +290,7 @@ VmDirSendSearchEntry(
     SearchReq *                 sr = &(pOperation->request.searchReq);
     int                         i = 0;
     BOOLEAN                     nonTrivialAttrsInReplScope = FALSE;
+    BOOLEAN                     bSendEntry = TRUE;
     uint32_t                    iSearchReqSpecialChars = 0;
     PATTRIBUTE_META_DATA_NODE   pAttrMetaData = NULL;
     int                         numAttrMetaData = 0;
@@ -323,6 +330,21 @@ VmDirSendSearchEntry(
             pOperation->request.searchReq.accessRequired);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+    // If this is a deleted entry, don't send it unless the request is either:
+    // 1. syncRequestCtrl search or
+    // 2. showDeletedObjsCtrl search
+    if (pOperation->syncReqCtrl == NULL && pOperation->showDeletedObjectsCtrl == NULL)
+    {
+        pAttr = VmDirEntryFindAttribute(ATTR_IS_DELETED, pSrEntry);
+        if (pAttr)
+        {
+            if (VmDirStringCompareA(pAttr->vals[0].lberbv.bv_val, VMDIR_IS_DELETED_TRUE_STR, FALSE) == 0)
+            {
+                bSendEntry = FALSE;
+            }
+        }
+    }
+
     if (pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL)
     {
         // This is an internal search operation.
@@ -336,22 +358,10 @@ VmDirSendSearchEntry(
         // store the result in memory instead of sending.
         // Set bSearchEntrySent = TRUE to indicate that ACL
         // check passed and should be included in the result.
-        pSrEntry->bSearchEntrySent = TRUE;
+        pSrEntry->bSearchEntrySent = bSendEntry;
     }
-    else
+    else if (bSendEntry)
     {
-        // If not replication, and showDeletedObjectsCtrl not present, => don't send back Deleted objects (tombstones).
-        if (pOperation->syncReqCtrl == NULL && pOperation->showDeletedObjectsCtrl == NULL)
-        {
-            pAttr = VmDirEntryFindAttribute(ATTR_IS_DELETED, pSrEntry);
-            if (pAttr)
-            {
-                if (VmDirStringCompareA((PSTR)pAttr->vals[0].lberbv.bv_val, VMDIR_IS_DELETED_TRUE_STR, FALSE) == 0)
-                {
-                    goto cleanup; // Don't send this entry
-                }
-            }
-        }
         // In case of replication request, skip certain updates
         if (pOperation->syncReqCtrl != NULL)
         {

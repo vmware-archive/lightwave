@@ -237,7 +237,13 @@ public class LogonProcessorImpl implements LogonProcessorEx {
 
                 Session currentSession = Shared.getSession(sessionManager, request, tenant);
                 if (currentSession == null) {
-                    currentSession = this.sessionManager.createSession(principal, AuthnMethod.ASSERTION, arg0.getSessionIndex(), arg0.getSource());
+                    currentSession = this.sessionManager.createSession(
+                                                            principal,
+                                                            AuthnMethod.ASSERTION,
+                                                            arg0.getSessionIndex(),
+                                                            arg0.getSource(),
+                                                           IDPConfig.IDP_PROTOCOL_SAML_2_0
+                                                            );
 
                     String tenantSessionCookieName = Shared.getTenantSessionCookieName(tenant);
                     log.trace("Setting cookie " + tenantSessionCookieName + " value " + currentSession.getId());
@@ -424,7 +430,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
      * selection and return null from this function. The user selection of RP
      * will come in as a new request.
      *
-     * @param tenant
+     * @param idmAccessor
      * @param request
      * @param response
      * @param locale
@@ -504,7 +510,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
      * user if the feature is on and the subject not found. 3. Update JIT user
      * attributes if it is existing JIT user.
      *
-     * @param tenant
+     * @param idmAccessor
      * @param arg0
      * @return PrincipalId or null if not able to link account to the incoming
      *         token
@@ -586,7 +592,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
         Validate.notNull(accessor, "accessor.");
 
         IDPConfig idpConfig = null;
-        Collection<IDPConfig> extIdps = accessor.getExternalIdps();
+        Collection<IDPConfig> extIdps = accessor.getExternalIdps(IDPConfig.IDP_PROTOCOL_SAML_2_0);
 
         Validate.notEmpty(extIdps, "No IDP registration found.");
 
@@ -630,7 +636,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
     /**
      * Helper function to decode HttpServletRequest to Response
      *
-     * @param parameter
+     * @param request
      * @return Response null possible.
      * @throws SecurityException
      * @throws NoSuchAlgorithmException
@@ -660,7 +666,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
      * AuthnRequestState for the original authentication request from relying
      * party. It also removes the AuthnRequestState and associated map entries.
      *
-     * @param response
+     * @param request
      *            HttpServletRequest that contain SAMLResponse
      * @return AuthnRequestState return null if unable to decode the response,
      *         or there is no inResponseTo attribute, or there was no match

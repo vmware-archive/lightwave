@@ -1332,13 +1332,12 @@ VmDnsReadStringFromBuffer(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
+
     dwError = VmDnsCheckMemory(pVmDnsBuffer, sizeof(UINT8));
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
-
-    dwStringLength  = *(PUINT8)pCurrentPos;
-
+    dwStringLength = *(PUINT8)pCurrentPos;
     pVmDnsBuffer->szCursor += sizeof(UINT8);
 
     if (dwStringLength)
@@ -1449,11 +1448,17 @@ VmDnsReadOffsetStringFromBuffer(
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pCurrentPos = pVmDnsBuffer->pMessage + unOffset;
-
     pszTempStringCursor = pszTempString;
 
+    pCurrentPos = pVmDnsBuffer->pMessage + unOffset;
+
     // Get the first part of the label
+    if ((pCurrentPos + sizeof(UINT8)) >
+        (pVmDnsBuffer->pMessage + pVmDnsBuffer->szLength))
+    {
+        dwError = ERROR_INSUFFICIENT_BUFFER;
+        BAIL_ON_VMDNS_ERROR(dwError)
+    }
     dwLabelLength = *(PUINT8)pCurrentPos;
     pCurrentPos += sizeof(UINT8);
 

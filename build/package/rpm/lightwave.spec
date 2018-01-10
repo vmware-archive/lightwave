@@ -1041,17 +1041,11 @@ Lightwave POST service
 
 %{_jarsdir}/samlauthority.jar
 %{_jarsdir}/vmware-identity-diagnostics.jar
-%{_jarsdir}/vmware-identity-idm-server.jar
-%{_jarsdir}/vmware-identity-rest-afd-server.jar
-%{_jarsdir}/vmware-identity-rest-core-server.jar
-%{_jarsdir}/vmware-identity-rest-idm-server.jar
-%{_jarsdir}/vmware-directory-rest-server.jar
 %{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-sso-config.jar
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-protocol.jar
-%{_jarsdir}/openidconnect-server.jar
 %{_jarsdir}/args4j-2.33.jar
 %{_jarsdir}/commons-codec-1.9.jar
 %{_jarsdir}/commons-lang-2.6.jar
@@ -1072,6 +1066,7 @@ Lightwave POST service
 %{_jarsdir}/nimbus-jose-jwt-4.12.jar
 
 %{_webappsdir}/lightwaveui.war
+%{_webappsdir}/webui.war
 %{_webappsdir}/ROOT.war
 
 %{_servicedir}/vmware-stsd.service

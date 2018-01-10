@@ -54,6 +54,8 @@ static DWORD _VmDirGetRaftQuorumOverride(BOOLEAN bForceKeyRead);
 static VOID _VmDirEvaluateVoteResult(UINT64 *waitTime);
 static VOID _VmDirPersistTerm(int term);
 
+DWORD VmDirRaftGetFollowers(PDEQUE followers);
+
 PVMDIR_MUTEX gRaftStateMutex = NULL;
 PVMDIR_MUTEX gRaftRpcReplyMutex = NULL;
 
@@ -224,6 +226,9 @@ _VmDirRaftVoteSchdThread()
         }
 
 startVote:
+        // Reelection triggered, increment metrics counter
+        VmMetricsCounterIncrement(pElectionTriggerCount);
+
         // Stay in gRaftStateMutex
         do
         {
@@ -299,6 +304,128 @@ done:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: shutdown completed.");
     return dwError;
+}
+
+/* Server implementation of RPC which initiates
+ * vote on the follower node
+ */
+DWORD
+VmDirRaftFollowerInitiateVoteSrv(VOID)
+{
+    DWORD   dwError = 0;
+    UINT64  now = 0;
+    BOOLEAN bLock = FALSE;
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
+    // if not a follower ignore the call
+    if (gRaftState.role != VDIR_RAFT_ROLE_FOLLOWER)
+    {
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL, "Ignoring initiate vote as role is not Follower");
+        goto cleanup;
+    }
+
+    // Set the last ping received to be older than timeout
+    now = VmDirGetTimeInMilliSec();
+    gRaftState.lastPingRecvTime = now - gVmdirGlobals.dwRaftElectionTimeoutMS;
+
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+    // signal the relection thread
+    VmDirConditionSignal(gRaftRequestVoteCond);
+
+cleanup:
+    // always unlock mutex
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    return dwError;
+
+}
+
+/* Server implementation of RPC initiated at a leader node to find
+ * followers and send initiate vote RPC to them
+ */
+DWORD
+VmDirRaftStartVoteSrv(VOID)
+{
+    DWORD   dwError = 0;
+    char    szHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
+    BOOLEAN bLock = FALSE;
+    BOOLEAN bRPCSucceeded = FALSE;
+    DEQUE   followers = {0};
+    PSTR    pszFollower = NULL;
+    PSTR    pszDcAccountPwd = NULL;
+    PVMDIR_SERVER_CONTEXT pServer = NULL;
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
+    // valid only if I am a leader
+    if (gRaftState.role != VDIR_RAFT_ROLE_LEADER)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_ROLE);
+    }
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+    dwError = VmDirRaftGetFollowers(&followers);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirReadDCAccountPassword(&pszDcAccountPwd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetHostName(szHostName, sizeof(szHostName)-1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (!dequeIsEmpty(&followers) && !bRPCSucceeded)
+    {
+        dequePopLeft(&followers, (PVOID*)&pszFollower);
+
+        dwError = VmDirOpenServerA(pszFollower, gVmdirServerGlobals.dcAccountUPN.lberbv_val,
+                NULL, pszDcAccountPwd, 0, NULL, &pServer);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Starting forced vote from node %s to node %s",
+                szHostName,
+                pszFollower);
+
+        // RPC call
+        dwError = VmDirRaftFollowerInitiateVote(pServer);
+        if (dwError)
+        {
+            // do not bail keep trying next follower
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "Initiate vote failed for %s, trying next follower",
+                    pszFollower);
+        }
+        else
+        {
+            // succeeded for one break from loop
+            bRPCSucceeded = TRUE;
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pszFollower);
+        VmDirCloseServer(pServer);
+        pServer = NULL;
+    }
+    // if none of the RPCs succeeded will bail here
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    // always unlock mutex
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    VMDIR_SAFE_FREE_MEMORY(pszDcAccountPwd);
+    dequeFreeStringContents(&followers);
+    return dwError;
+
+error:
+    if (pServer)
+    {
+        VmDirCloseServer( pServer);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszFollower);
+    goto cleanup;
 }
 
 /*

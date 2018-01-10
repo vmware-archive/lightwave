@@ -424,7 +424,7 @@ VmDnsSockWorkerThreadProc(
 
         if (dwError == ERROR_SHUTDOWN_IN_PROGRESS)
         {
-            VMDNS_LOG_DEBUG(
+            VMDNS_LOG_INFO(
                 "%s shutdown in progress, exit sock worker loop.",
                 __FUNCTION__);
             break;
@@ -1090,6 +1090,8 @@ VmDnsOnUdpRequestDataRead(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS UDP REQ: ", pIoBuffer->pData, pIoBuffer->dwTotalBytesTransferred);
+
     dwError = VmDnsProcessRequest(
                         pIoBuffer->pData,
                         pIoBuffer->dwTotalBytesTransferred,
@@ -1131,13 +1133,17 @@ VmDnsOnUdpRequestDataRead(
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
 
+        (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS UDP RESP: ", pResponse, dwDnsResponseSize);
 
         dwError = VmDnsSockWrite(
                         pSocket,
                         (struct sockaddr*)&pIoBuffer->clientAddr,
                         pIoBuffer->addrLen,
                         pIoNewBuffer
-                        );
+                    );
+
+        VMDNS_LOG_DEBUG("DNS RESP: Status: %d", dwError);
+
         if (dwError == ERROR_SUCCESS)
         {
             dwError = VmDnsOnUdpResponseDataWrite(
@@ -1220,6 +1226,12 @@ VmDnsOnUdpResponseDataWrite(
     )
 {
     DWORD dwError = 0;
+
+    VMDNS_LOG_DEBUG(
+            "Complete Event - Buffer Size: %d, Buffer Ptr: %p, Thread Ptr: %p",
+            pIoBuffer ? pIoBuffer->dwTotalBytesTransferred : 0,
+            pIoBuffer,
+            pthread_self());
 
     if (!pIoBuffer->dwTotalBytesTransferred)
     {
@@ -1425,6 +1437,8 @@ VmDnsOnForwarderResponse(
                               &dwResponseCode
                               );
 
+    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS FWD RESP ", pResponse, dwResponseSize);
+
     if (dwResponseCode || dwError)
     {
         dwForwardRequestError = VmDnsForwardRequest(
@@ -1453,12 +1467,17 @@ VmDnsOnForwarderResponse(
                             );
             BAIL_ON_VMDNS_ERROR(dwError);
 
+            (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS FWD UDP RESP: ", pIoNewBuffer->pData, pIoNewBuffer->dwTotalBytesTransferred);
+
             dwError = VmDnsSockWrite(
                             pClientSocket,
                             (struct sockaddr*)&pIoBuffer->clientAddr,
                             pIoBuffer->addrLen,
                             pIoNewBuffer
-                            );
+                        );
+
+            VMDNS_LOG_DEBUG("DNS FWD UDP RESP: Status: %d", dwError);
+
             if (dwError == ERROR_SUCCESS)
             {
                 dwError = VmDnsOnUdpResponseDataWrite(
@@ -1515,12 +1534,17 @@ VmDnsOnForwarderResponse(
                 pIoSizeBuffer = NULL;
             }
 
+            (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS TCP RESP: ", pIoNewBuffer->pData, pIoNewBuffer->dwTotalBytesTransferred);
+
             dwError = VmDnsSockWrite(
                             pClientSocket,
                             NULL,
                             0,
                             pIoNewBuffer
                             );
+
+            VMDNS_LOG_DEBUG("DNS TCP RESP: Status: %d", dwError);
+
             if (dwError == ERROR_SUCCESS)
             {
                 dwError = VmDnsOnTcpResponseDataWrite(
@@ -1617,5 +1641,3 @@ error:
 
     goto cleanup;
 }
-
-

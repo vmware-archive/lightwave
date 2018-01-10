@@ -51,6 +51,7 @@ typedef DWORD (*PFN_SET_RESULT)(
 
 typedef DWORD (*PFN_GET_HTTP_ERROR)(
         PVDIR_REST_RESULT   pRestRslt,
+        DWORD*              pdwHttpStatus,
         PSTR*               ppszHttpStatus,
         PSTR*               ppszHttpReason
         );
@@ -80,22 +81,23 @@ typedef struct _VDIR_PROXY_RESULT
 
 typedef struct _VDIR_REST_OPERATION
 {
-    DWORD                   dwPort;
-    PSTR                    pszAuth;
-    PSTR                    pszMethod;
-    PSTR                    pszPath;
-    PSTR                    pszSubPath;
-    PSTR                    pszHeaderIfMatch;
-    PSTR                    pszContentType;
-    PSTR                    pszInput;
-    PSTR                    pszClientIP;
-    json_t*                 pjInput;
-    PLW_HASHMAP             pParamMap;
-    VDIR_REST_AUTH_METHOD   authMthd;
-    PVDIR_CONNECTION        pConn;
-    PVDIR_REST_RESULT       pResult;
-    PVDIR_REST_RESOURCE     pResource;
-    PVDIR_PROXY_RESULT      pProxyResult;
+    DWORD                       dwPort;
+    PSTR                        pszAuth;
+    PSTR                        pszMethod;
+    PSTR                        pszPath;
+    PSTR                        pszSubPath;
+    PSTR                        pszHeaderIfMatch;
+    PSTR                        pszContentType;
+    PSTR                        pszInput;
+    PSTR                        pszClientIP;
+    json_t*                     pjInput;
+    PLW_HASHMAP                 pParamMap;
+    VDIR_REST_AUTH_METHOD       authMthd;
+    PVDIR_CONNECTION            pConn;
+    PVDIR_REST_RESULT           pResult;
+    PVDIR_REST_RESOURCE         pResource;
+    PVDIR_PROXY_RESULT          pProxyResult;
+    PVMDIR_THREAD_LOG_CONTEXT   pThreadLogContext;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
@@ -119,6 +121,7 @@ typedef struct _VDIR_REST_AUTH_TOKEN
 typedef struct _VDIR_HTTP_ERROR
 {
     int     httpStatus;
+    DWORD   dwHttpStatus;
     PSTR    pszHttpStatus;
     PSTR    pszHttpReason;
 

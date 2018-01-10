@@ -51,48 +51,49 @@ VmDirPluginGroupTypePreAdd(
     DWORD            dwPriorResult
     )
 {
-    DWORD               dwError = 0;
-    PSTR                pszLocalErrorMsg = NULL;
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrorMsg = NULL;
 
-    if ( pOperation->opType != VDIR_OPERATION_TYPE_REPL
-         &&
-         TRUE == VmDirEntryIsObjectclass(pEntry, OC_GROUP)
-       )
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL &&
+        VmDirEntryIsObjectclass(pEntry, OC_GROUP))
     {
         PVDIR_ATTRIBUTE pAttrGroupType = VmDirFindAttrByName(pEntry, ATTR_GROUPTYPE);
 
         if (pAttrGroupType == NULL)
         {
-            dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_GROUPTYPE, GROUPTYPE_GLOBAL_SCOPE);
+            dwError = VmDirEntryAddSingleValueStrAttribute(
+                    pEntry, ATTR_GROUPTYPE, GROUPTYPE_GLOBAL_SCOPE);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else
         {
-            if ( pAttrGroupType->numVals != 1       // grouptype is a single value attribute
-                 ||
-                 VmDirStringCompareA( VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val),
-                                       GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
-               )
+            if (pAttrGroupType->numVals != 1 || // grouptype is a single value attribute
+                VmDirStringCompareA(
+                        VDIR_SAFE_STRING(pAttrGroupType->vals[0].lberbv.bv_val),
+                        GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0)
             {
                 dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
-                                              VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrorMsg,
+                        "invalid or unsupported grouptype (%s)",
+                        VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
             }
         }
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
     return dwError;
 
 error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "Group check: (%d)(%s)", dwError, VDIR_SAFE_STRING(pszLocalErrorMsg));
+    VMDIR_LOG_ERROR(
+            LDAP_DEBUG_ANY,
+            "Group check: (%d)(%s)",
+            dwError,
+            VDIR_SAFE_STRING(pszLocalErrorMsg));
 
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszLocalErrorMsg);
-
     goto cleanup;
 }
 
@@ -108,43 +109,41 @@ VmDirPluginGroupTypePreModify(
     DWORD            dwPriorResult
     )
 {
-    DWORD               dwError = 0;
-    PSTR                pszLocalErrorMsg = NULL;
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrorMsg = NULL;
 
-    if ( pOperation->opType != VDIR_OPERATION_TYPE_REPL
-         &&
-         TRUE == VmDirEntryIsObjectclass(pEntry, OC_GROUP)
-       )
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL &&
+        VmDirEntryIsObjectclass(pEntry, OC_GROUP))
     {
         PVDIR_ATTRIBUTE pAttrGroupType = VmDirFindAttrByName(pEntry, ATTR_GROUPTYPE);
 
-        if ( pAttrGroupType == NULL             // grouptype is a must attribute
-             ||
-             pAttrGroupType->numVals != 1       // gruptype is a single value attribute
-             ||
-             VmDirStringCompareA( pAttrGroupType->vals[0].lberbv.bv_val , GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
-           )
+        if (pAttrGroupType == NULL ||       // grouptype is a must attribute
+            pAttrGroupType->numVals != 1 || // gruptype is a single value attribute
+            VmDirStringCompareA(
+                    pAttrGroupType->vals[0].lberbv.bv_val,
+                    GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0)
         {
             dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
-                                          VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    dwError,
+                    pszLocalErrorMsg,
+                    "invalid or unsupported grouptype (%s)",
+                    VDIR_SAFE_STRING(pAttrGroupType->vals[0].lberbv.bv_val));
         }
-
     }
 
-
 cleanup:
-
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
     return dwError;
 
 error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "Group check: (%d)(%s)", dwError, VDIR_SAFE_STRING(pszLocalErrorMsg));
+    VMDIR_LOG_ERROR(
+            LDAP_DEBUG_ANY,
+            "Group check: (%d)(%s)",
+            dwError,
+            VDIR_SAFE_STRING(pszLocalErrorMsg));
 
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszLocalErrorMsg);
-
     goto cleanup;
 }
 
@@ -260,7 +259,10 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
     goto cleanup;
 }

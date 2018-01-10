@@ -13,7 +13,10 @@ echo "PARTNERS=${PARTNERS[*]}"
 get_post_password POST_PASSWORD
 
 
-echo "Step 2: Start POST"
+echo "Step 2: Start POST and VmAfd"
+
+/opt/likewise/bin/lwsm start vmafd
+echo "VmAfd started successfully"
 
 /opt/likewise/bin/lwsm start post
 echo "POST started successfully"
@@ -45,3 +48,9 @@ else
     fi
     echo "POST promoted successfully"
 fi
+
+echo "Step 4: Reaffinitize to DC"
+set_dc_name
+
+echo "Step 5: Generate SSL cert if it does not exist"
+generate_ssl_cert

@@ -37,6 +37,9 @@ public class ExternalIDPCommand extends SSOConfigCommand {
     @Option(name = "--enable-jit", metaVar ="[True | False]", usage = "Jit provisioning switch.")
     private String jit;
 
+    @Option(name = "--set-client-id", metaVar ="[Client ID]", usage = "Client ID registered with External IDP")
+    private String clientId;
+
     @Option(name = "--delete", metaVar = "[Entity ID]", usage = "Delete the external IDP with the entity ID.")
     private String entityIdToDelete;
 
@@ -106,6 +109,9 @@ public class ExternalIDPCommand extends SSOConfigCommand {
 
         alias = SSOConfigurationUtils.checkString(alias, currentIdpConfig.getAlias());
         builder.withAlias(alias);
+
+        clientId = SSOConfigurationUtils.checkString(clientId, currentIdpConfig.getClientId());
+        builder.withClientId(clientId);
 
         upnSuffix = SSOConfigurationUtils.checkString(upnSuffix, currentIdpConfig.getUpnSuffix());
         builder.withUpnSuffix(upnSuffix);
@@ -192,7 +198,9 @@ public class ExternalIDPCommand extends SSOConfigCommand {
     private void displayExternalIdp(ExternalIDPDTO extIdp) {
         System.out.println("Configuration for entity ID: " + extIdp.getEntityID() + "\n");
         SSOConfigurationUtils.displayParamNameAndValue("Entity ID", extIdp.getEntityID());
+        SSOConfigurationUtils.displayParamNameAndValue("Protocol", extIdp.getProtocol());
         SSOConfigurationUtils.displayParamNameAndValue("Alias", extIdp.getAlias());
+        SSOConfigurationUtils.displayParamNameAndValue("Client ID", extIdp.getClientId());
         SSOConfigurationUtils.displayParamNameAndValue("Jit Enabled", extIdp.isJitEnabled());
         SSOConfigurationUtils.displayParamNameAndValue("UPN Suffix", extIdp.getUpnSuffix());
         if (extIdp.getSsoServices() != null) {

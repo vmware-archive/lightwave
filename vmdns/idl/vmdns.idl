@@ -113,5 +113,17 @@ interface vmdns
         [out]                       PVMDNS_FORWARDERS* ppDnsForwarders
         );
 
+    UINT32
+    VmDnsRpcInitializeWithSite(
+        [in] handle_t                hBinding,
+        [in] PVMDNS_INIT_SITE_INFO   pInitInfo
+        );
+
+    UINT32
+    VmDnsRpcUninitializeWithSite(
+        [in] handle_t                hBinding,
+        [in] PVMDNS_INIT_SITE_INFO   pInitInfo
+        );
+
     }
 

@@ -54,6 +54,8 @@ import com.vmware.identity.rest.idm.data.attributes.IdentityProviderType;
 import com.vmware.identity.rest.idm.server.mapper.IdentityProviderMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * All operations related to identity providers( aka identity sources) are implemented in this
  * class. All the operations implemented here are tenant based( i.e per tenant)
@@ -76,6 +78,9 @@ public class IdentityProviderResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(IdentityProviderResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "IdentityProviderResource";
+
     public IdentityProviderResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
@@ -90,19 +95,27 @@ public class IdentityProviderResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<IdentityProviderDTO> getAll() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        String responseStatus = HTTP_OK;
         Collection<IdentityProviderDTO> identityProviders = null;
         try {
             Collection<IIdentityStoreData> identitySources = getIDMClient().getProviders(tenant);
             identityProviders = IdentityProviderMapper.getIdentityProviderDTOs(identitySources);
         } catch (NoSuchTenantException e) {
             log.warn("Failed to retrieve identity providers for tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve identity providers for tenant {} due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.provider.get.all.failed"), e);
         } catch (Exception e) {
             log.error("Failed to retrieve identity providers for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            requestTimer.observeDuration();
         }
         return identityProviders;
     }
@@ -117,9 +130,11 @@ public class IdentityProviderResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public IdentityProviderDTO create(IdentityProviderDTO identityProvider, @DefaultValue("false") @QueryParam("probe") boolean probe) throws DTOMapperException {
-        validateProviderType(identityProvider.getType());
-        validateAuthenticationType(identityProvider.getType(), identityProvider.getAuthenticationType());
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "create").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            validateProviderType(identityProvider.getType());
+            validateAuthenticationType(identityProvider.getType(), identityProvider.getAuthenticationType());
             if (probe) {
                 // Currently, Probing AD as LDAP and OpenLDAP are supported only
                 validateProbeEssentials(identityProvider);
@@ -134,13 +149,22 @@ public class IdentityProviderResource extends BaseSubResource {
 
         } catch (NoSuchTenantException e) {
             log.warn("Failed to {} identity provider '{}' for tenant '{}'", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
+            responseStatus = "404";
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (MalformedURLException | InvalidProviderException | ADIDSAlreadyExistException | IDMLoginException e) {
             log.warn("Failed to {} identity provider '{}' for tenant '{}' due to a client side error", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.provider.add.failed", identityProvider.getName(), tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to {} identity provider '{}' for tenant '{}' due to a server side error", probe ? "probe" : "add", identityProvider.getName(), tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -153,6 +177,8 @@ public class IdentityProviderResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public IdentityProviderDTO get(@PathParam("providerName") String providerName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             IIdentityStoreData identitySource = getIDMClient().getProvider(tenant, providerName);
 
@@ -163,13 +189,19 @@ public class IdentityProviderResource extends BaseSubResource {
             return IdentityProviderMapper.getIdentityProviderDTO(identitySource);
         } catch (NoSuchTenantException | InvalidProviderException e) {
             log.warn("Failed to retrieve identity provider '{}' from tenant '{}'", providerName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve identity provider '{}' from tenant '{}' due to a client side error", providerName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.provider.get.failed", providerName, tenant), e);
         } catch (Exception e) {
             log.error("Failed to retrieve identity provider '{}' from tenant '{}' due to a server side error", providerName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -184,21 +216,32 @@ public class IdentityProviderResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public IdentityProviderDTO update(@PathParam("providerName") String providerName, IdentityProviderDTO identityProvider) {
-        validateProviderType(identityProvider.getType());
-        validateAuthenticationType(identityProvider.getType(), identityProvider.getAuthenticationType());
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            validateProviderType(identityProvider.getType());
+            validateAuthenticationType(identityProvider.getType(), identityProvider.getAuthenticationType());
             IIdentityStoreData identityStoreData = IdentityProviderMapper.getIdentityStoreData(identityProvider);
             getIDMClient().setProvider(tenant, identityStoreData);
             return IdentityProviderMapper.getIdentityProviderDTO(getIDMClient().getProvider(tenant, providerName));
         } catch (NoSuchTenantException e) {
             log.warn("Failed to update identity provider '{}' for tenant '{}'", providerName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | IDMLoginException | InvalidProviderException e) {
             log.warn("Failed to update identity provider '{}' for tenant {} due to a client side error", providerName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.provider.update.failed", providerName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to update identity provider '{}' for tenant '{}' due to a server side error", providerName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -212,17 +255,25 @@ public class IdentityProviderResource extends BaseSubResource {
     @DELETE @Path("/{providerName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("providerName") String providerName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteProvider(tenant, providerName);
         } catch (NoSuchTenantException e) {
             log.warn("Failed to remove identity provider '{}' from tenant '{}'", providerName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to remove identity provider '{}' from tenant '{}' due to a client side error", providerName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.provider.delete.failed", providerName, tenant), e);
         } catch (Exception e) {
             log.error("Failed to delete identity provider '{}' from tenant '{}' due to a server side error", providerName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 

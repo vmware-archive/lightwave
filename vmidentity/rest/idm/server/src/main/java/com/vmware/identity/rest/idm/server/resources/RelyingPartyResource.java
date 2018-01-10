@@ -53,6 +53,8 @@ import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
 import com.vmware.identity.rest.idm.server.mapper.RelyingPartyMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Web service resource to manage relying parties associated per tenant basis.
  *
@@ -65,6 +67,9 @@ public class RelyingPartyResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(RelyingPartyResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "RelyingPartyResource";
+
     public RelyingPartyResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
@@ -76,19 +81,27 @@ public class RelyingPartyResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public RelyingPartyDTO add(RelyingPartyDTO relyingParty) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addDTO").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             RelyingParty rp = RelyingPartyMapper.getRelyingParty(relyingParty);
             getIDMClient().addRelyingParty(tenant, rp);
             return RelyingPartyMapper.getRelyingPartyDTO(getIDMClient().getRelyingParty(tenant, relyingParty.getName()));
         } catch (NoSuchTenantException e) {
             log.debug("Failed to add a relying party for tenant '{}' due to missing tenant", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to add a relying party for tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.relyingparty.create.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to add a relying party for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addDTO").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -100,18 +113,26 @@ public class RelyingPartyResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void add(String relyingPartyXMLString) throws Exception {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addXML").startTimer();
+        String responseStatus = HTTP_OK;
         try{
             Document xmlDoc = parseToDocument(relyingPartyXMLString);
             getIDMClient().importTenantConfiguration(tenant, xmlDoc);
         }  catch (NoSuchTenantException e) {
             log.debug("Failed to add a relying party for tenant '{}' due to missing tenant", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to add a relying party for tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.relyingparty.create.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to add a relying party for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addXML").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -143,19 +164,26 @@ public class RelyingPartyResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<RelyingPartyDTO> getAll() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             Collection<RelyingParty> idmRelyingParties = getIDMClient().getRelyingParties(tenant);
             return RelyingPartyMapper.getRelyingPartyDTOs(idmRelyingParties);
-
         } catch (NoSuchTenantException e) {
             log.debug("Failed to get relying parties from tenant '{}' due to missing tenant", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to get relying parties from tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.relyingparty.getAll.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to get relying parties from tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -166,7 +194,8 @@ public class RelyingPartyResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public RelyingPartyDTO get(@PathParam("relyingPartyName") String relyingPartyName) {
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         RelyingPartyDTO relyingParty = null;
         try {
             RelyingParty idmRelyingParty = null;
@@ -179,13 +208,19 @@ public class RelyingPartyResource extends BaseSubResource {
             return relyingParty;
         } catch (NoSuchTenantException | NoSuchRelyingPartyException e) {
             log.debug("Failed to get a relying party '{}' from tenant '{}' due to missing tenant or a relying party", relyingPartyName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to get a relying party '{}' from tenant '{}' due to a client side error", relyingPartyName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.relyingparty.get.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to get a relying party '{}' from tenant '{}' due to a server side error", relyingPartyName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -195,17 +230,25 @@ public class RelyingPartyResource extends BaseSubResource {
     @DELETE @Path("/{relyingPartyName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("relyingPartyName") String relyingPartyName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteRelyingParty(tenant, relyingPartyName);
         } catch (NoSuchTenantException | NoSuchRelyingPartyException e) {
             log.debug("Failed to delete a relying party '{}' from tenant '{}' due to missing tenant or a relying party", relyingPartyName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException | InvalidPrincipalException e) {
             log.debug("Failed to delete a relying party '{}' from tenant '{}' due to a client side error", relyingPartyName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.relyingparty.delete.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to delete a relying party '{}' from tenant '{}' due to a server side error", relyingPartyName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -216,19 +259,27 @@ public class RelyingPartyResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public RelyingPartyDTO update(RelyingPartyDTO relyingParty) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             RelyingParty rpToUpdate = RelyingPartyMapper.getRelyingParty(relyingParty);
             getIDMClient().setRelyingParty(tenant, rpToUpdate);
             return RelyingPartyMapper.getRelyingPartyDTO(getIDMClient().getRelyingParty(tenant, relyingParty.getName()));
         } catch (NoSuchTenantException | NoSuchRelyingPartyException e) {
             log.debug("Failed to update a relying party '{}' on tenant '{}' due to missing tenant or a relying party", relyingParty.getName(), tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException  e) {
             log.debug("Failed to update a relying party '{}' on tenant '{}' due to a client side error", relyingParty.getName(), tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.relyingparty.update.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to update a relying party '{}' on tenant '{}' due to a server side error", relyingParty.getName(), tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
         }
     }
 }

@@ -479,6 +479,8 @@ public interface IIdentityManager
 
     public void changeUserPassword(String tenantName, String userName, char[] currentPassword, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public String generatePassword(String tenantName, IIdmServiceContext serviceContext) throws IDMException;
+
     public void updateSystemDomainStorePassword(String tenantName, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
     public PasswordPolicy getPasswordPolicy(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
@@ -616,6 +618,23 @@ public interface IIdentityManager
      *             tenant not found
      */
     public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, IIdmServiceContext serviceContext)
+            throws  NoSuchTenantException, IDMException;
+
+    /**
+     * Get all external IDP configurations for the specified tenant
+     *
+     * @param tenantName
+     *            Cannot be null or empty
+     * @param protocol
+     *            Cannot be null or empty
+     *            Supported protocols are {urn:oasis:names:tc:SAML:2.0:protocol,urn:oasis:names:tc:OAUTH:2.0:protocol }
+     * @return Collection of IDPConfiguration objects of the tenant, empty if not found
+     * @throws RemoteException
+     * @throws IDMException
+     * @throws NoSuchTenantException
+     *             tenant not found
+     */
+    public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, String protocol, IIdmServiceContext serviceContext)
             throws  NoSuchTenantException, IDMException;
 
     /**

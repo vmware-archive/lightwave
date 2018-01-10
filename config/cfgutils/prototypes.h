@@ -12,7 +12,12 @@
  * under the License.
  */
 
+// cfgutils.c
 
+BOOL
+VmwDeployIsRetriableError(
+    DWORD dwError
+    );
 
 // certificate.c
 

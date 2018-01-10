@@ -1,0 +1,31 @@
+<div class="main-container" id='outer-container' (click)='closeSideBar($event)'>
+    <header class="header header-4">
+       <div class="branding">
+           <a href="#">
+               <clr-icon shape="vm-bug"></clr-icon>
+               <span style="color:white;" class="w3-xlarge">Lightwave</span>
+           </a>
+       </div>
+       <div class="header-nav">
+           <a href="javascript://" class="active nav-link nav-text" style="font-size:18px;color:white;">Directory</a>
+           <a href="javascript://" class="nav-link nav-text" style="font-size:18px;color:white;" (click)="openIDM()">Identity Manager</a>
+       </div>
+       <div class="w3-sidebar w3-bar-block w3-card w3-animate-right" style="width:20%;display:none;right:0;background-color:#006a91;" id="rightMenu">
+           <p style="text-align:center;" class="w3-xlarge">{{signedInUser}}</p>
+           <p class='w3-xlarge'>{{tenantName}}
+               <span class='w3-small' *ngIf='isSystemTenant'>[System Tenant]</span>
+           </p>
+           <div class="fixed-bottom">
+               <button class="btn btn-outline" (click)="handleLogout()" style="background-color:white;width:85%;">Logout</button>
+           </div>
+       </div>
+       <div class="header-actions" (click)="openRightMenu()">
+          <button id='slideOut' class="w3-button w3-large w3-left" (click)="openRightMenu()">{{signedInUser}}<clr-icon (click)="openRightMenu()" dir="down" shape="caret" size="16" style="width: 16px; height: 16px;"></clr-icon></button>
+       </div>
+    </header>
+    <div class="content-container">
+        <div class="content-area" [style.max-height.px]="containerHeight" style="overflow-y:hidden;padding:unset;">
+            <vmdir *ngIf="displayComponents"></vmdir>
+        </div>
+    </div>
+</div>

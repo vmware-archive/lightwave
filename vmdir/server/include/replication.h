@@ -76,6 +76,35 @@ VmDirGetReplCycleCounter(
     VOID
     );
 
+/*
+ * Replication metrics cache
+ */
+DWORD
+VmDirReplMetricsCacheInit(
+    VOID
+    );
+
+DWORD
+VmDirReplMetricsCacheAdd(
+    PVDIR_ENTRY pServerEntry
+    );
+
+DWORD
+VmDirReplMetricsCacheFind(
+    PCSTR                       pszHostname,
+    PVMDIR_REPLICATION_METRICS* ppReplMetrics
+    );
+
+DWORD
+VmDirReplMetricsCacheRemove(
+    PCSTR   pszHostname
+    );
+
+VOID
+VmDirReplMetricsCacheShutdown(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

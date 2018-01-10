@@ -35,6 +35,7 @@
 #endif
 
 #include <vmdirclient.h>
+#include <vmdirerrors.h>
 #include <vmca.h>
 #include <vmdns.h>
 #include <vmafdclient.h>

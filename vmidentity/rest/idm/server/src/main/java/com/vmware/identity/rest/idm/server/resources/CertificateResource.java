@@ -59,6 +59,8 @@ import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Operations related to Single Sign On certificates
  *
@@ -69,8 +71,11 @@ public class CertificateResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(CertificateResource.class);
 
-    public CertificateResource(String tenant, Locale locale, String correlationId, SecurityContext securityContext) {
-        super(tenant, locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "CertificateResource";
+
+    public CertificateResource(String tenant, Locale locale, SecurityContext securityContext) {
+        super(tenant, locale, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     public CertificateResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
@@ -87,9 +92,11 @@ public class CertificateResource extends BaseSubResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Collection<CertificateChainDTO> getCertificates(@QueryParam("scope") String certificateScope, @DefaultValue("CHAIN") @QueryParam("granularity") String granularity) {
-        CertificateScope scope = validateCertificateScope(certificateScope);
-        CertificateGranularity certGranularity = validateCertificateGranularity(granularity);
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getCertificates").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            CertificateScope scope = validateCertificateScope(certificateScope);
+            CertificateGranularity certGranularity = validateCertificateGranularity(granularity);
             Collection<List<Certificate>> idmCertChains = new ArrayList<List<Certificate>>();
             if (scope == CertificateScope.TENANT) {
                     if(certGranularity == CertificateGranularity.LEAF) {
@@ -104,7 +111,7 @@ public class CertificateResource extends BaseSubResource {
                 // Get certificate chains of system provider, localos, and other directly registered external IDPs (AD or OpenLDAP)
             } else if (scope == CertificateScope.EXTERNAL_IDP) {
                 // Get certificate chains of externalIDPs (trusted) associated with tenant if any
-                Collection<IDPConfig> idpConfigs = getIDMClient().getAllExternalIdpConfig(tenant); // Retrieve configuration of all trusted external IDPs
+                Collection<IDPConfig> idpConfigs = getIDMClient().getAllExternalIdpConfig(tenant, IDPConfig.IDP_PROTOCOL_SAML_2_0); // Retrieve configuration of all trusted external IDPs
                 if (idpConfigs != null) {
                     for (IDPConfig idpConfig : idpConfigs) {
                         List<Certificate> certificates = new ArrayList<Certificate>();
@@ -128,13 +135,22 @@ public class CertificateResource extends BaseSubResource {
             return certChainsOfTenant;
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve certificates for tenant '{}'", tenant);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve certificates for tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.cert.get.public.cert.failed", tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve certificates for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getCertificates").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -148,17 +164,25 @@ public class CertificateResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public PrivateKeyDTO getPrivateKey() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getPrivateKey").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             return new PrivateKeyDTO(getTenantPrivateKey());
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve private key for tenant '{}'", tenant);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve private key for tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.cert.get.private.key.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to retrieve private key for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getPrivateKey").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -171,19 +195,27 @@ public class CertificateResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void setTenantCredentials(TenantCredentialsDTO tenantCredentialsDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "setTenantCredentials").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             PrivateKey privateKey = tenantCredentialsDTO.getPrivateKey().getPrivateKey();
             List<Certificate> certificates = CertificateMapper.getCertificates(tenantCredentialsDTO.getCertificates());
             getIDMClient().setTenantCredentials(tenant, certificates, privateKey);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to set private key for tenant '{}'", tenant);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to set private key for tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.cert.set.private.key.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to set private key for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "setTenantCredentials").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -205,18 +237,26 @@ public class CertificateResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void addCertificate(CertificateDTO certificate) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addCertificate").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             Certificate cert = certificate.getX509Certificate();
             getIDMClient().addCertificate(tenant, cert, CertificateType.STS_TRUST_CERT);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to add certificate to tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (CertificateException | InvalidArgumentException | DuplicateCertificateException e) {
             log.warn("Failed to add certificate to tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.cert.add.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to add certificate to tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addCertificate").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -232,19 +272,29 @@ public class CertificateResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@QueryParam("fingerprint") String fingerprint) {
-        Validate.notEmpty(fingerprint, sm.getString("valid.not.empty", "fingerprint"));
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            Validate.notEmpty(fingerprint, sm.getString("valid.not.empty", "fingerprint"));
             getIDMClient().deleteCertificate(tenant, fingerprint, CertificateType.STS_TRUST_CERT);
         } catch (NoSuchTenantException | NoSuchCertificateException e) {
             log.debug("Failed to delete certificate with fingerprint '{}' for tenant '{}' because the tenant does not exist", fingerprint, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | CertificateInUseException e) {
             log.warn("Failed to delete certificate with fingerprint '{}' from tenant '{}' due to a client side error", fingerprint, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.cert.delete.failed", fingerprint, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to delete certificate with fingerprint '{}' from tenant '{}' due to a server side error", fingerprint, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE,  "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 

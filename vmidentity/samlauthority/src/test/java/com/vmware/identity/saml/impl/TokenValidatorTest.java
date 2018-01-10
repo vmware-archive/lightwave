@@ -286,7 +286,7 @@ public class TokenValidatorTest {
 
        final Config config = new Config(
            samlAuthorityConfig, tokenRestrictions, validCerts, clockTolerance,
-           Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER)));
+           Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)));
 
        final ConfigExtractor configExtractor = createMock(ConfigExtractor.class);
 

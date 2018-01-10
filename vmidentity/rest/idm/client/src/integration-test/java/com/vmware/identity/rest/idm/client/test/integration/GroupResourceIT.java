@@ -14,21 +14,24 @@
 package com.vmware.identity.rest.idm.client.test.integration;
 
 import static org.junit.Assert.assertNotNull;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.vmware.directory.rest.common.data.GroupDetailsDTO;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 
 public class GroupResourceIT extends IntegrationTestBase {
 
     private static final String TEST_GROUP_NAME = "test.group";
-    private static final String TEST_GROUP_DOMAIN = "vsphere.local";
+
     @BeforeClass
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
         IntegrationTestBase.init(true);
@@ -40,12 +43,20 @@ public class GroupResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGet() throws ClientProtocolException, HttpException, ClientException, IOException {
+    public void testCreateAndGetGroup() throws ClientProtocolException, HttpException, ClientException, IOException {
 
-        GroupDTO group = testAdminClient.group().get(testTenant.getName(), TEST_GROUP_NAME, TEST_GROUP_DOMAIN);
-
-        assertNotNull(group);
-
+        GroupDetailsDTO groupDetails = new GroupDetailsDTO.Builder().withDescription("test tenant group.").build();
+        com.vmware.directory.rest.common.data.GroupDTO groupDTO = new com.vmware.directory.rest.common.data.GroupDTO.Builder()
+                .withName(TEST_GROUP_NAME)
+                .withDomain(testTenant.getName())
+                .withDetails(groupDetails)
+                .build();
+        testVmdirClient.group().create(testTenant.getName(), groupDTO);
+        try {
+            GroupDTO group = testAdminClient.group().get(testTenant.getName(), TEST_GROUP_NAME, testTenant.getName());
+            assertNotNull(group);
+        } finally {
+            testVmdirClient.group().delete(testTenant.getName(), TEST_GROUP_NAME, testTenant.getName());
+        }
     }
-
 }

@@ -45,6 +45,30 @@ VmDirFreeRESTAuthToken(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
     );
 
+// cache.c
+DWORD
+VmDirRESTCacheInit(
+    PVDIR_REST_HEAD_CACHE*  ppRestCache
+    );
+
+DWORD
+VmDirRESTCacheRefresh(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PCSTR                   pszDomainName
+    );
+
+DWORD
+VmDirRESTCacheGetOIDCSigningCertPEM(
+    PVDIR_REST_HEAD_CACHE   pRestCache,
+    PCSTR                   pszDomainName,
+    PSTR*                   ppszOIDCSigningCertPEM
+    );
+
+VOID
+VmDirFreeRESTCache(
+    PVDIR_REST_HEAD_CACHE   pRestCache
+    );
+
 // decode.c
 DWORD
 VmDirRESTDecodeAttributeNoAlloc(

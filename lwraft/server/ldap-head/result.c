@@ -40,18 +40,6 @@ WriteAttributes(
 
 static
 int
-WriteMetaDataAttribute(
-   VDIR_OPERATION *             op,
-   VDIR_ATTRIBUTE *             pAttr,
-   int                          numAttrMetaData,
-   PATTRIBUTE_META_DATA_NODE    pAttrMetaData,
-   BerElement *                 ber,
-   BOOLEAN *                    nonTrivialAttrsInReplScope,
-   PSTR*                        ppszErrorMsg
-   );
-
-static
-int
 WriteBerOnSocket(
    VDIR_CONNECTION * conn,
    BerElement *      ber );
@@ -252,13 +240,10 @@ VmDirSendSearchEntry(
     BerValue                    lberBervEntryBlob = {0};
     int                         nAttrs = 0;
     int                         nVals = 0;
-    BOOLEAN                     attrMetaDataReqd = FALSE;
     SearchReq *                 sr = &(pOperation->request.searchReq);
-    int                         i = 0;
     BOOLEAN                     nonTrivialAttrsInReplScope = FALSE;
     uint32_t                    iSearchReqSpecialChars = 0;
     PATTRIBUTE_META_DATA_NODE   pAttrMetaData = NULL;
-    int                         numAttrMetaData = 0;
     PVDIR_ATTRIBUTE             pAttr = NULL;
     USN                         usnChanged = 0;
     PSTR                        pszLocalErrorMsg = NULL;
@@ -414,62 +399,9 @@ VmDirSendSearchEntry(
             BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
                                             "Encoding msgId, RES_SEARCH_ENTRY, DN failed");
         }
-        // Determine if we need to send back the attribute metaData
-        if ( pOperation->syncReqCtrl != NULL ) // Replication
-        {
-            attrMetaDataReqd = TRUE;
-        }
-        else // check if attrMetaData attribute has been requested explicitly.
-        {
-            if (sr->attrs != NULL)
-            {
-                for (i = 0; sr->attrs[i].lberbv.bv_val != NULL; i++)
-                {
-                    if (VmDirStringCompareA( sr->attrs[i].lberbv.bv_val, ATTR_ATTR_META_DATA, FALSE) == 0)
-                    {
-                        attrMetaDataReqd = TRUE;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (attrMetaDataReqd)
-        {
-            if ((pOperation->pBEIF->pfnBEGetAllAttrsMetaData( pOperation->pBECtx, pSrEntry->eId, &pAttrMetaData,
-                                                              &numAttrMetaData )) != 0)
-            {
-                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendSearchEntry: pfnBEGetAllAttrsMetaData failed for entryId: %ld",
-                                   pSrEntry->eId);
-                retVal = LDAP_OPERATIONS_ERROR;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                "pfnBEGetAllAttrsMetaData failed.");
-            }
-
-            // SJ-TBD: Following double for loop to be optimized
-            // Copy attrMetaData to corresponding attributes
-            for (i=0; i<numAttrMetaData; i++)
-            {
-                for ( pAttr = pSrEntry->attrs; pAttr != NULL; pAttr = pAttr->next)
-                {
-                    if (pAttr->pATDesc->usAttrID == pAttrMetaData[i].attrID)
-                    {
-                        VmDirStringCpyA( pAttr->metaData, VMDIR_MAX_ATTR_META_DATA_LEN, pAttrMetaData[i].metaData );
-                        pAttrMetaData[i].metaData[0] = '\0';
-                    }
-                }
-            }
-        }
 
         retVal = WriteAttributes( pOperation, pSrEntry, iSearchReqSpecialChars , ber, &pszLocalErrorMsg );
         BAIL_ON_VMDIR_ERROR( retVal );
-
-        if (attrMetaDataReqd)
-        {
-            retVal = WriteMetaDataAttribute( pOperation, pSrEntry->attrs, numAttrMetaData, pAttrMetaData, ber,
-                                             &nonTrivialAttrsInReplScope, &pszLocalErrorMsg );
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
 
         if (ber_printf( ber, "N}N}" ) == -1)
         {
@@ -933,132 +865,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WriteAttributes failed (%u)(%s)",
                      retVal, VDIR_SAFE_STRING(pszLocalErrorMsg) );
 
-    goto cleanup;
-}
-
-static
-int
-WriteMetaDataAttribute(
-   VDIR_OPERATION *             op,
-   VDIR_ATTRIBUTE *             pAttr,
-   int                          numAttrMetaData,
-   PATTRIBUTE_META_DATA_NODE    pAttrMetaData,
-   BerElement *                 ber,
-   BOOLEAN *                    nonTrivialAttrsInReplScope,
-   PSTR*                        ppszErrorMsg
-   )
-{
-    int             retVal = LDAP_SUCCESS;
-    VDIR_BERVALUE   attrMetaData = { {ATTR_ATTR_META_DATA_LEN, ATTR_ATTR_META_DATA}, 0, 0, NULL };
-    int             i = 0;
-    VDIR_BERVALUE   berVal = VDIR_BERVALUE_INIT;
-    char            attrMetaDataVal[256 + VMDIR_MAX_ATTR_META_DATA_LEN];
-    PSTR            pszLocalErrorMsg = NULL;
-
-    *nonTrivialAttrsInReplScope = FALSE;
-
-    if (ber_printf( ber, "{O[", &(attrMetaData) ) == -1 )
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "WriteMetaDataAttribute: ber_printf (to print attribute name ...) failed" );
-        retVal = LDAP_OTHER;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "Encoding attribute type failed.");
-    }
-
-    for ( ; pAttr != NULL; pAttr = pAttr->next)
-    {
-        // By this time, we have already filtered out attributes that should be send back to replication consumer
-        // in prior WriteAttributes -> IsAttrInReplScope call.  They contain proper pAttr->metaData value.
-        if (pAttr->metaData[0] != '\0')
-        {
-            VmDirStringPrintFA( attrMetaDataVal, sizeof(attrMetaDataVal), "%.256s:%s", pAttr->type.lberbv.bv_val, pAttr->metaData);
-            berVal.lberbv.bv_val = attrMetaDataVal;
-            berVal.lberbv.bv_len = VmDirStringLenA( attrMetaDataVal );
-            if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFYTIMESTAMP, FALSE ) != 0 &&
-                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) != 0     &&
-                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE ) != 0)
-            {
-                // To prevent endless replication ping pong, supplier should send result only if there are changes
-                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP and ATTR_OBJECT_GUID.
-                *nonTrivialAttrsInReplScope = TRUE;
-            }
-            if (ber_printf( ber, "O", &berVal ) == -1 )
-            {
-                VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "WriteMetaDataAttribute: ber_printf (to print an attribute value ...) failed." );
-                retVal = LDAP_OTHER;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                "Encoding an attribute value failed.");
-            }
-        }
-    }
-    // include attrMetaData for the deleted attributes
-    for (i = 0; i<numAttrMetaData; i++)
-    {
-        if (pAttrMetaData[i].metaData[0] != '\0')
-        {
-            BOOLEAN                 bSendAttrMetaData = TRUE;
-            PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
-
-            if (op->syncReqCtrl != NULL) // Replication
-            {
-                retVal = IsAttrInReplScope( op, NULL, pAttrMetaData[i].metaData, &bSendAttrMetaData, &pszLocalErrorMsg );
-                BAIL_ON_VMDIR_ERROR( retVal );
-            }
-            else
-            {
-                bSendAttrMetaData = TRUE;
-            }
-            if (bSendAttrMetaData)
-            {
-                if ((pATDesc = VmDirSchemaAttrIdToDesc(op->pSchemaCtx, pAttrMetaData[i].attrID)) == NULL)
-                {
-                    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                              "WriteMetaDataAttribute: VmDirSchemaAttrIdToDesc failed for attribute id: %d.",
-                              pAttrMetaData[i].attrID  );
-                    retVal = LDAP_OTHER;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                    "WriteMetaDataAttribute: VmDirSchemaAttrIdToDesc failed.");
-                }
-                VmDirStringPrintFA( attrMetaDataVal, sizeof(attrMetaDataVal), "%.256s:%s", pATDesc->pszName, pAttrMetaData[i].metaData);
-                berVal.lberbv.bv_val = attrMetaDataVal;
-                berVal.lberbv.bv_len = VmDirStringLenA( attrMetaDataVal );
-                *nonTrivialAttrsInReplScope = TRUE;
-                if (ber_printf( ber, "O", &berVal ) == -1 )
-                {
-                    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "WriteMetaDataAttribute: ber_printf (to print an attribute value ...) failed." );
-                    retVal = LDAP_OTHER;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                    "Encoding an attribute value failed.");
-                }
-            }
-        }
-    }
-
-    if ( ber_printf( ber, "]N}" ) == -1 )
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "WriteMetaDataAttribute: ber_printf (to terminate an attribute's values ...) failed" );
-        retVal = LDAP_OTHER;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "Encoding terminating an attribute type failed.");
-    }
-
-cleanup:
-
-    if (ppszErrorMsg)
-    {
-        *ppszErrorMsg = pszLocalErrorMsg;
-    }
-    else
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    }
-
-    return( retVal );
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WriteMetaDataAttribute failed (%u)(%s)",
-                     retVal, VDIR_SAFE_STRING(pszLocalErrorMsg) );
     goto cleanup;
 }
 

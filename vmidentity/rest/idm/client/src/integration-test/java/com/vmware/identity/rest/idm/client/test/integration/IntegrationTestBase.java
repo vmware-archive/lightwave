@@ -38,6 +38,7 @@ public class IntegrationTestBase {
     protected static IdmClient systemAdminClient;
     protected static VmdirClient systemAdminVmdirClient;
     protected static IdmClient testAdminClient;
+    protected static VmdirClient testVmdirClient;
 
     public static void init(boolean withTestTenant) throws IOException, GeneralSecurityException, ClientException, HttpException {
         properties = new IntegrationTestProperties();
@@ -50,8 +51,7 @@ public class IntegrationTestBase {
 
         systemAdminVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
                 properties.getSystemTenant(),
-                UPNUtil.buildUPN(properties.getSystemAdminUsername(),
-                properties.getSystemDomain()),
+                UPNUtil.buildUPN(properties.getSystemAdminUsername(), properties.getSystemDomain()),
                 properties.getSystemAdminPassword());
 
         if (withTestTenant) {
@@ -62,6 +62,11 @@ public class IntegrationTestBase {
             assertTenantEquals(testTenant, created);
 
             testAdminClient = TestClientFactory.createClient(properties.getHost(),
+                    testTenant.getName(),
+                    testTenant.getUsername(),
+                    testTenant.getPassword());
+
+            testVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
                     testTenant.getName(),
                     testTenant.getUsername(),
                     testTenant.getPassword());

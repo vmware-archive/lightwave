@@ -15,6 +15,8 @@
 
 #include "includes.h"
 
+extern int  vmdns_syslog_level;
+
 static
 DWORD
 VmDnsExtractHeaderCodes(
@@ -67,6 +69,32 @@ VmDnsWriteZoneToBuffer(
     PVMDNS_MESSAGE_BUFFER   pMessageBuffer
     );
 
+static
+DWORD
+VmDnsPrintHeader(
+    PSTR                szBuffer,
+    DWORD               dwSize,
+    PVMDNS_HEADER       pDnsHeader,
+    PDWORD              pdwSizeWritten
+    );
+
+static
+DWORD
+VmDnsPrintQuestion(
+    PSTR                szBuffer,
+    DWORD               dwSize,
+    PVMDNS_QUESTION     pDnsQuestion,
+    PDWORD              pdwSizeWritten
+);
+
+static
+DWORD
+VmDnsPrintRecord(
+    PSTR                szBuffer,
+    DWORD               dwSize,
+    PVMDNS_RECORD       pDnsRecord,
+    PDWORD              pdwSizeWritten
+    );
 
 DWORD
 VmDnsReadDnsHeaderFromBuffer(
@@ -582,6 +610,126 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDnsLogDnsMessage(
+    VMDNS_LOG_LEVEL     level,
+    PCSTR               szPrefix,
+    PBYTE               pDnsBuffer,
+    DWORD               dwSize
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PVMDNS_HEADER pDnsHeader = NULL;
+    PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
+    PVMDNS_MESSAGE pDnsMessage = NULL;
+    char messageBufer[1024] = {0};
+    DWORD offset = 0;
+    DWORD dwSizeUsed = 0;
+
+    if (level <= vmdns_syslog_level)
+    {
+        if (!pDnsBuffer)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        dwError = VmDnsGetDnsMessageBuffer(
+                            pDnsBuffer,
+                            dwSize,
+                            &pDnsMessageBuffer
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsReadDnsHeaderFromBuffer(
+                            pDnsMessageBuffer,
+                            &pDnsHeader
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsPrintHeader(
+                            messageBufer,
+                            (DWORD)(sizeof(messageBufer) - offset),
+                            pDnsHeader,
+                            &dwSizeUsed
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        offset += dwSizeUsed;
+
+        dwError = VmDnsParseQueryMessage(
+                            pDnsMessageBuffer,
+                            pDnsHeader,
+                            &pDnsMessage
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pDnsHeader = NULL;
+
+        if (!pDnsMessage || !pDnsMessage->pHeader)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        if (pDnsMessage->pHeader->usQDCount > 0)
+        {
+            dwError = VmDnsPrintQuestion(
+                                messageBufer + offset,
+                                (DWORD)(sizeof(messageBufer) - offset),
+                                pDnsMessage->pQuestions[0],
+                                &dwSizeUsed
+                                );
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            offset += dwSizeUsed;
+        }
+
+        if (pDnsMessage->pHeader->usANCount > 0)
+        {
+            dwError = VmDnsPrintRecord(
+                                messageBufer + offset,
+                                (DWORD)(sizeof(messageBufer) - offset),
+                                pDnsMessage->pAnswers[0],
+                                &dwSizeUsed
+                                );
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            offset += dwSizeUsed;
+        }
+
+        if (offset < sizeof(messageBufer))
+        {
+            messageBufer[offset] = 0;
+        }
+        else
+        {
+            messageBufer[sizeof(messageBufer) - 1] = 0;
+        }
+
+        VMDNS_LOG_(level, "%s%s", szPrefix, messageBufer);
+    }
+
+cleanup:
+
+    if (pDnsMessageBuffer)
+    {
+       VmDnsFreeBufferStream(pDnsMessageBuffer);
+    }
+
+    VMDNS_SAFE_FREE_MEMORY(pDnsHeader);
+
+    if (pDnsMessage)
+    {
+        VmDnsFreeDnsMessage(pDnsMessage);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
 
 static
 DWORD
@@ -915,3 +1063,129 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmDnsPrintHeader(
+    PSTR                szBuffer,
+    DWORD               dwSize,
+    PVMDNS_HEADER       pDnsHeader,
+    PDWORD              pdwSizeWritten
+    )
+{
+    DWORD dwError = 0;
+    int nSizeWritten = 0;
+
+    if (!pDnsHeader || !pdwSizeWritten)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    nSizeWritten = snprintf(
+                        szBuffer,
+                        dwSize,
+                        " HEADER (%d, %d, %u) ",
+                        pDnsHeader->codes.opcode,
+                        pDnsHeader->codes.RCODE,
+                        pDnsHeader->usId
+                        );
+    if (nSizeWritten < 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }  
+
+    *pdwSizeWritten = (DWORD)nSizeWritten;
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsPrintQuestion(
+    PSTR                szBuffer,
+    DWORD               dwSize,
+    PVMDNS_QUESTION     pDnsQuestion,
+    PDWORD              pdwSizeWritten
+    )
+{
+    DWORD dwError = 0;
+    int nSizeWritten = 0;
+
+    if (!pDnsQuestion || !pdwSizeWritten)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    nSizeWritten = snprintf(
+                        szBuffer,
+                        dwSize,
+                        " QUESTION (%d, %s) ",
+                        pDnsQuestion->uQType,
+                        pDnsQuestion->pszQName
+                        );
+    if (nSizeWritten < 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    *pdwSizeWritten = (DWORD)nSizeWritten;
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsPrintRecord(
+    PSTR                szBuffer,
+    DWORD               dwSize,
+    PVMDNS_RECORD       pDnsRecord,
+    PDWORD              pdwSizeWritten
+    )
+{
+    DWORD dwError = 0;
+    int nSizeWritten = 0;
+    PSTR pRecordStr= NULL;
+
+    if (!pDnsRecord || !pdwSizeWritten)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsRecordToString(
+                        pDnsRecord,
+                        &pRecordStr);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    nSizeWritten = snprintf(
+                        szBuffer,
+                        dwSize,
+                        " ANSW (%s) ",
+                        pRecordStr);
+    if (nSizeWritten < 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    *pdwSizeWritten = (DWORD)nSizeWritten;
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pRecordStr);
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+

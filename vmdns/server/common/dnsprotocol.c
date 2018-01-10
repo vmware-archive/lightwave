@@ -358,10 +358,11 @@ response:
     VmDnsCleanupDnsMessage(&ResponseMessage);
 
     endTime = VmDnsGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(
-            gVmDnsHistogramMetrics[DNS_QUERY_DURATION],
-            VDNS_RESPONSE_TIME(endTime - startTime)
-            );
+
+    (VOID)VmMetricsHistogramUpdate(
+                        gVmDnsHistogramMetrics[DNS_QUERY_DURATION],
+                        VDNS_RESPONSE_TIME(endTime - startTime)
+                        );
 
     return dwError;
 

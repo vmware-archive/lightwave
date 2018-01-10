@@ -1189,6 +1189,18 @@ VmDirSrvSetupDomainInstance(
             pszDefaultPasswdLockoutPolicyDN, &SecDescFullAccess);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+
+    if (bFirstNodeBootstrap)
+    {
+        // allow DCClients group to read system domain policy.
+        // so machine act can auto refresh its password via VmDirRefreshActPassword
+        dwError = VmDirAppendAllowAceForDn(
+                    pszDefaultPasswdLockoutPolicyDN,
+                    gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val,
+                    VMDIR_RIGHT_DS_READ_PROP);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     if (pSecDescAnonymousReadOut)
     {
         *pSecDescAnonymousReadOut = SecDescAnonymousRead;

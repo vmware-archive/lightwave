@@ -12,8 +12,6 @@
  * under the License.
  */
 
-
-
 #include "includes.h"
 
 DWORD
@@ -304,11 +302,13 @@ VmwDeployValidatePartnerCredentials(
     DWORD dwError = 0;
     PSTR  pszLdapURI = NULL;
     PVMDIR_CONNECTION pConnection = NULL;
+    DWORD dwNumRetry = 0;
 
     VMW_DEPLOY_LOG_INFO(
             "Validating credentials to partner [%s] at domain [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszServer),
             VMW_DEPLOY_SAFE_LOG_STRING(pszDomain));
+
     if (IsNullOrEmptyString(pszServer) || !pszPassword)
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -321,7 +321,6 @@ VmwDeployValidatePartnerCredentials(
                     "ldaps://[%s]:636",
                     pszServer);
         BAIL_ON_DEPLOY_ERROR(dwError);
-
     }
     else
     {
@@ -331,12 +330,31 @@ VmwDeployValidatePartnerCredentials(
                     pszServer);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
+
     dwError = VmDirConnectionOpen(
                     pszLdapURI,
                     pszDomain,
                     pszUsername,
                     pszPassword,
                     &pConnection);
+
+    while (dwError && VmwDeployIsRetriableError(dwError) &&
+           dwNumRetry++ < VMW_LDAP_CONNECT_MAX_RETRIES)
+    {
+        VMW_DEPLOY_LOG_INFO(
+                "LDAP connection to %s failed (error %d). Will retry.",
+                VMW_DEPLOY_SAFE_LOG_STRING(pszServer),
+                dwError);
+
+        VmwDeploySleep(VMW_LDAP_CONNECT_RETRY_DELAY_SECS * 1000);
+
+        dwError = VmDirConnectionOpen(
+                        pszLdapURI,
+                        pszDomain,
+                        pszUsername,
+                        pszPassword,
+                        &pConnection);
+    }
     BAIL_ON_DEPLOY_ERROR(dwError);
 
 cleanup:
@@ -415,4 +433,3 @@ error:
 
     return dwError;
 }
-

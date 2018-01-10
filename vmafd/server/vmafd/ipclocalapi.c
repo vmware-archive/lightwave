@@ -4299,7 +4299,7 @@ VmAfdIpcJoinVmDir2(
     PWSTR pwszMachineName = NULL;
     PWSTR pwszDomainName = NULL;
     PWSTR pwszOrgUnit = NULL;
-    PWSTR pwszSite = NULL;
+    PWSTR pwszSiteName = NULL;
     VMAFD_JOIN_FLAGS dwFlags = 0;
     int idx = 0;
 
@@ -4336,7 +4336,7 @@ VmAfdIpcJoinVmDir2(
     pwszPassword    = input_spec[idx++].data.pWString;
     pwszMachineName = input_spec[idx++].data.pWString;
     pwszOrgUnit     = input_spec[idx++].data.pWString;
-    pwszSite        = input_spec[idx++].data.pWString;
+    pwszSiteName    = input_spec[idx++].data.pWString;
     dwFlags         = *input_spec[idx++].data.pUint32;
 
     if (IsNullOrEmptyString(pwszUserName) ||
@@ -4361,7 +4361,7 @@ VmAfdIpcJoinVmDir2(
                       pwszPassword,
                       pwszMachineName,
                       pwszOrgUnit,
-                      pwszSite,
+                      pwszSiteName,
                       dwFlags);
     LOG_URESULT_ERROR(uResult);
 
@@ -5684,7 +5684,8 @@ VmAfdIpcConfigureDNS(
                    pwszPNID,
                    pwszDomainName,
                    pwszUserName,
-                   pwszPassword);
+                   pwszPassword,
+                   NULL);
     LOG_URESULT_ERROR(uResult);
 
     // Allocate a buffer, marshall the response
@@ -6735,6 +6736,175 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfdIpcBeginUpgrade(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMAFD_IPC_BEGIN_UPGRADE;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
+
+    if (!pConnectionContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+
+    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    {
+        VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    dwError = VmAfdUnMarshal (
+                        apiType,
+                        VER1_INPUT,
+                        noOfArgsIn,
+                        pRequest,
+                        dwRequestSize,
+                        NULL
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    uResult = VmAfSrvRefreshSiteName();
+    LOG_URESULT_ERROR(uResult);
+
+    // Allocate a buffer, marshall the response
+    //
+    output_spec[0].data.pUint32 = &uResult;
+
+    dwError = VecsMarshalResponse(
+                            apiType,
+                            output_spec,
+                            noOfArgsOut,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+cleanup:
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    return dwError;
+
+error:
+    VmAfdHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+    dwError = 0;
+    goto cleanup;
+}
+
+DWORD
+VmAfdIpcEndUpgrade(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMAFD_IPC_END_UPGRADE;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
+
+    if (!pConnectionContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+
+    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    {
+        VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    dwError = VmAfdUnMarshal (
+                        apiType,
+                        VER1_INPUT,
+                        noOfArgsIn,
+                        pRequest,
+                        dwRequestSize,
+                        NULL
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    uResult = VmAfSrvRefreshSiteName();
+    LOG_URESULT_ERROR(uResult);
+
+    // Allocate a buffer, marshall the response
+    //
+    output_spec[0].data.pUint32 = &uResult;
+
+    dwError = VecsMarshalResponse(
+                            apiType,
+                            output_spec,
+                            noOfArgsOut,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+cleanup:
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    return dwError;
+
+error:
+    VmAfdHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+    dwError = 0;
+    goto cleanup;
+}
 
 static
 VOID

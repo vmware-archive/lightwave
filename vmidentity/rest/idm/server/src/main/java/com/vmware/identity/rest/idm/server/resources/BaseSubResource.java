@@ -42,8 +42,8 @@ public abstract class BaseSubResource extends BaseResource {
 
     protected String tenant;
 
-    public BaseSubResource(String tenant, Locale locale, String correlationId, String localizationPackage, SecurityContext securityContext) {
-        super(locale, correlationId, localizationPackage, securityContext);
+    public BaseSubResource(String tenant, Locale locale, String localizationPackage, SecurityContext securityContext) {
+        super(locale, localizationPackage, securityContext);
         this.tenant = tenant;
     }
 

@@ -13,6 +13,7 @@
  */
 package com.vmware.identity.rest.idm.data;
 
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +37,14 @@ import com.vmware.identity.rest.core.data.DTO;
 public class ExternalIDPDTO extends DTO {
 
     private final String entityID;
+    private final String protocol;
     private final String alias;
+    private final String clientId;
     private final Collection<String> nameIDFormats;
     private final Collection<ServiceEndpointDTO> ssoServices;
     private final Collection<ServiceEndpointDTO> sloServices;
     private final CertificateChainDTO signingCertificates;
+    private final PublicKey publicKey;
     private final Map<String, String> subjectFormats;
     private final List<TokenClaimGroupDTO> tokenClaimGroups;
     private final Boolean jitEnabled;
@@ -50,6 +54,7 @@ public class ExternalIDPDTO extends DTO {
      * Construct an {@code ExternalIDPDTO} with its various details.
      *
      * @param entityID the entity identifier.
+     * @param protocol the protocol used by this External IDP
      * @param alias the alias of the IDP.
      * @param nameIDFormats a collection of name identifier formats.
      * @param ssoServices a collection of endpoints to use for single sign-on.
@@ -60,16 +65,19 @@ public class ExternalIDPDTO extends DTO {
      * @param jitEnabled enable or disable just-in-time provisioning.
      * @param upnSuffix a UPN suffix to use for this identity provider.
      */
-    public ExternalIDPDTO(String entityID, String alias, Collection<String> nameIDFormats,
+    public ExternalIDPDTO(String entityID, String protocol, String alias, String clientId, Collection<String> nameIDFormats,
             Collection<ServiceEndpointDTO> ssoServices, Collection<ServiceEndpointDTO> sloServices,
-            CertificateChainDTO signingCertificates, Map<String, String> subjectFormats,
+            CertificateChainDTO signingCertificates, PublicKey publicKey, Map<String, String> subjectFormats,
             List<TokenClaimGroupDTO> tokenClaimGroups, Boolean jitEnabled, String upnSuffix) {
         this.entityID = entityID;
+        this.protocol = protocol;
         this.alias = alias;
+        this.clientId = clientId;
         this.nameIDFormats = nameIDFormats;
         this.ssoServices = ssoServices;
         this.sloServices = sloServices;
         this.signingCertificates = signingCertificates;
+        this.publicKey = publicKey;
         this.subjectFormats = subjectFormats;
         this.tokenClaimGroups = tokenClaimGroups;
         this.jitEnabled = jitEnabled;
@@ -86,12 +94,30 @@ public class ExternalIDPDTO extends DTO {
     }
 
     /**
+     * Get the protocol.
+     *
+     * @return the protocol.
+     */
+    public String getProtocol() {
+        return this.protocol;
+    }
+
+    /**
      * Get the alias.
      *
      * @return the alias.
      */
     public String getAlias() {
         return this.alias;
+    }
+
+    /**
+     * Get the client id.
+     *
+     * @return the client id.
+     */
+    public String getClientId() {
+        return this.clientId;
     }
 
     /**
@@ -129,6 +155,13 @@ public class ExternalIDPDTO extends DTO {
     public CertificateChainDTO getSigningCertificates() {
         return this.signingCertificates;
     }
+
+    /**
+     * Get the public key used to sign tokens
+     *
+     * @return the public key for the identity provider
+     */
+    public PublicKey getPublicKey() { return this.publicKey; }
 
     /**
      * Get the map of subjects to formats.
@@ -185,11 +218,14 @@ public class ExternalIDPDTO extends DTO {
     @JsonPOJOBuilder
     public static class Builder {
         private String entityID;
+        private String protocol;
         private String alias;
+        private String clientId;
         private Collection<String> nameIDFormats;
         private Collection<ServiceEndpointDTO> ssoServices;
         private Collection<ServiceEndpointDTO> sloServices;
         private CertificateChainDTO signingCertificates;
+        private PublicKey publicKey;
         private Map<String, String> subjectFormats;
         private List<TokenClaimGroupDTO> tokenClaimGroups;
         private Boolean jitEnabled;
@@ -200,8 +236,18 @@ public class ExternalIDPDTO extends DTO {
             return this;
         }
 
+        public Builder withProtocol(String protocol) {
+            this.protocol = protocol;
+            return this;
+        }
+
         public Builder withAlias(String alias) {
             this.alias = alias;
+            return this;
+        }
+
+        public Builder withClientId(String clientId) {
+            this.clientId = clientId;
             return this;
         }
 
@@ -222,6 +268,11 @@ public class ExternalIDPDTO extends DTO {
 
         public Builder withSigningCertificates(CertificateChainDTO signingCertificates) {
             this.signingCertificates = signingCertificates;
+            return this;
+        }
+
+        public Builder withPublicKey(PublicKey publicKey) {
+            this.publicKey = publicKey;
             return this;
         }
 
@@ -246,7 +297,7 @@ public class ExternalIDPDTO extends DTO {
         }
 
         public ExternalIDPDTO build() {
-            return new ExternalIDPDTO(entityID, alias, nameIDFormats, ssoServices, sloServices, signingCertificates, subjectFormats, tokenClaimGroups, jitEnabled, upnSuffix);
+            return new ExternalIDPDTO(entityID, protocol, alias, clientId, nameIDFormats, ssoServices, sloServices, signingCertificates, publicKey, subjectFormats, tokenClaimGroups, jitEnabled, upnSuffix);
         }
     }
 

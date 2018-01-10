@@ -192,3 +192,23 @@ error:
 
     goto cleanup;
 }
+
+
+VOID
+VmwDeploySleep(
+    DWORD dwMilliseconds
+)
+{
+#ifndef _WIN32
+    struct timespec req={0};
+    DWORD   dwSec = dwMilliseconds/1000;
+    DWORD   dwMS  = dwMilliseconds%1000;
+
+    req.tv_sec  = dwSec;
+    req.tv_nsec = dwMS*1000000;
+
+    nanosleep( &req, NULL ); // ignore error
+#else
+    Sleep( dwMilliseconds );
+#endif
+}

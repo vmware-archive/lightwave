@@ -31,7 +31,7 @@ public class IdmServiceContextProvider extends IServiceContextProvider {
         IIdmServiceContext serviceContext = null;
         IDiagnosticsContext context = DiagnosticsContextFactory.getCurrentDiagnosticsContext();
         if (context != null && !StringUtils.isEmpty(context.getCorrelationId())) {
-            serviceContext = IdmServiceContextFactory.getIdmServiceContext(context.getCorrelationId());
+            serviceContext = IdmServiceContextFactory.getIdmServiceContext(context.getCorrelationId(), context.getUserId(), context.getSessionId());
         }
         return serviceContext;
     }

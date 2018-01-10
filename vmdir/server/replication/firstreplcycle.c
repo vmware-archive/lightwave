@@ -99,10 +99,10 @@ VmDirFirstReplicationCycle(
     PCSTR                           pszHostname,
     VMDIR_REPLICATION_AGREEMENT *   pReplAgr)
 {
-    int                     retVal = LDAP_SUCCESS;
-    PSTR                    pszLocalErrorMsg = NULL;
-    BOOLEAN                 bWriteInvocationId = FALSE;
-    BOOLEAN                 bHasXlog = FALSE;
+    int retVal = LDAP_SUCCESS;
+    PSTR    pszLocalErrorMsg = NULL;
+    BOOLEAN bWriteInvocationId = FALSE;
+    BOOLEAN bHasXlog = FALSE;
 #ifndef _WIN32
     const char  *dbHomeDir = VMDIR_DB_DIR;
 #else
@@ -119,35 +119,62 @@ VmDirFirstReplicationCycle(
     }
 #endif
 
-    assert( gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB );
+    assert(gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB);
 
     retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir, &bHasXlog);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d", retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
+            retVal);
+
+    VmDirMetricsShutdown();
 
     retVal = _VmDirSwapDB(dbHomeDir, bHasXlog);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                "VmDirFirstReplicationCycle: _VmDirSwapDB() call failed, error: %d.", retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: _VmDirSwapDB() call failed, error: %d.",
+            retVal);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Remote DB copied from %s, and swapped successfully", pszHostname);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Remote DB copied from %s, and swapped successfully",
+            pszHostname);
 
     // Wrap up the 1st replication cycle by updating replication cookies.
-    retVal = _VmDirWrapUpFirstReplicationCycle( pszHostname, pReplAgr );
-
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-            "VmDirFirstReplicationCycle: _VmDirWrapUpFirstReplicationCycle() call failed, error: %d.", retVal );
+    retVal = _VmDirWrapUpFirstReplicationCycle(pszHostname, pReplAgr);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: _VmDirWrapUpFirstReplicationCycle() call failed, error: %d.",
+            retVal);
 
     retVal = LoadServerGlobals(&bWriteInvocationId);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: LoadServerGlobals call failed, error: %d.",
+            retVal);
 
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-            "VmDirFirstReplicationCycle: LoadServerGlobals call failed, error: %d.", retVal );
+    retVal = VmDirMetricsInitialize();
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: VmDirMetricsInitialize call failed, error: %d.",
+            retVal);
+
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return retVal;
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s",
+            VDIR_SAFE_STRING(pszLocalErrorMsg));
+
     goto cleanup;
 }
 
@@ -921,6 +948,8 @@ VmDirSrvServerReset(
 
     VmDirGetMdbWalEnable(&bMdbWalEnable);
 
+    VmDirMetricsShutdown();
+
     //swap current vmdir database file with the foriegn one under partner/
     dwError = _VmDirSwapDB(dbHomeDir, bMdbWalEnable);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1022,6 +1051,9 @@ VmDirSrvServerReset(
     pSchemaCtx = NULL;
 
     dwError = LoadServerGlobals(&bWriteInvocationId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMetricsInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

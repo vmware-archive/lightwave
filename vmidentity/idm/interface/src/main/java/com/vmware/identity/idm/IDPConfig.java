@@ -18,6 +18,7 @@ package com.vmware.identity.idm;
 
 import java.io.Serializable;
 import java.security.GeneralSecurityException;
+import java.security.PublicKey;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertPathBuilderException;
 import java.security.cert.CertPathBuilderResult;
@@ -43,16 +44,22 @@ public class IDPConfig implements Serializable
 {
     private static final long serialVersionUID = -6683353323177245758L;
 
+    public static final String IDP_PROTOCOL_SAML_2_0 = "urn:oasis:names:tc:SAML:2.0:protocol";
+    public static final String IDP_PROTOCOL_OAUTH_2_0 = "urn:oasis:names:tc:OAUTH:2.0:protocol";
+
     final String entityID;
+    final String protocol;
     String alias;
     Collection<String> nameIDFormats;
     Collection<ServiceEndpoint> ssoServices;
     Collection<ServiceEndpoint> sloServices;
     List<X509Certificate> signingCertificateChain;
+    PublicKey publicKey;
     AttributeConfig[] subjectFormatMappings;
     Map<TokenClaimAttribute,List<String>> tokenClaimGroupMappings;
     boolean isJitEnabled;
     String upnSuffix;
+    OidcConfig oidcConfig;
 
     /**
      *
@@ -61,10 +68,49 @@ public class IDPConfig implements Serializable
      */
     public IDPConfig(String aEntityId)
     {
-        Validate.notEmpty(aEntityId);
-        entityID = aEntityId;
+        this(aEntityId, IDPConfig.IDP_PROTOCOL_SAML_2_0);
     }
 
+    /**
+     *
+     * @param aEntityId
+     *            Cannot be null or empty
+     * @param protocol
+     *            must be one
+     */
+    public IDPConfig(String aEntityId, String protocol)
+    {
+        this(aEntityId, protocol, null);
+    }
+
+    /**
+     *
+     * @param aEntityId
+     *            Cannot be null or empty
+     * @param protocol
+     *            must be one
+     * @param oidcConfig
+     *
+     */
+    public IDPConfig(String aEntityId, String protocol, OidcConfig oidcConfig)
+    {
+        Validate.notEmpty(aEntityId);
+        validateProtocol(protocol);
+        entityID = aEntityId;
+        this.protocol = protocol;
+        this.oidcConfig = oidcConfig != null ? oidcConfig : new OidcConfig();
+    }
+
+
+    /**
+     *
+     * @return protocol
+     *         The Protocol is one of {websso, oidc...}
+     */
+    public String getProtocol()
+    {
+        return protocol;
+    }
 
     /**
      *
@@ -162,6 +208,21 @@ public class IDPConfig implements Serializable
 
     /**
      *
+     * @return the public key used to sign tokens
+     */
+    public PublicKey getPublicKey() { return publicKey; }
+
+    /**
+     *
+     * @param publicKey The public key used to sign the tokens
+     */
+    public void setPublicKey(PublicKey publicKey) {
+        Validate.notNull(publicKey);
+        this.publicKey = publicKey;
+    }
+
+    /**
+     *
      * @return list of name id formats
      */
     public Collection<String> getNameIDFormats()
@@ -250,6 +311,14 @@ public class IDPConfig implements Serializable
       this.tokenClaimGroupMappings = tokenClaimGroupMappings;
    }
 
+    public OidcConfig getOidcConfig() {
+        return oidcConfig;
+    }
+
+    public void setOidcConfig(OidcConfig oidcConfig) {
+        this.oidcConfig = oidcConfig;
+    }
+
     /**
      *
      * @param urlStr
@@ -275,6 +344,23 @@ public class IDPConfig implements Serializable
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @param protocol
+     * @return true if protocol matches one of
+     *  "urn:oasis:names:tc:SAML:2.0:protocol",
+     *  "urn:oasis:names:tc:OAUTH:2.0:protocol
+     */
+    public static void validateProtocol(String protocol)
+    {
+        if (protocol == null || protocol.isEmpty() ||
+                (!protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0) &&
+                        !protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)))
+        {
+            throw new RuntimeException("Error: Invalid value specified for protocol in IDP Config");
+        }
     }
 
     /**

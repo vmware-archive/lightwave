@@ -49,6 +49,7 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
     public static final String PROPERTY_OIDC_LOGOUT_URI = "vmwOidcLogoutURI";
     public static final String PROPERTY_OIDC_CERT_SUB_DN = "vmwOidcCertSubDN";
     public static final String PROPERTY_OIDC_AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS = "vmwOidcAuthnRequestClientAssertionLifetimeMS";
+    public static final String PROPERTY_OIDC_MULTI_TENANT = "vmwSTSMultiTenant";
 
     @SuppressWarnings("unchecked")
     private OIDCClientLdapObject() {
@@ -70,6 +71,24 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
                             }
                         },
                         false // cannot update in ldap
+                ),
+                new PropertyMapperMetaInfoBase<OIDCClient, OIDCClient.Builder>(PROPERTY_OIDC_MULTI_TENANT,
+                        1,
+                        true,
+                        new IPropertyGetterSetterBase<OIDCClient, OIDCClient.Builder>() {
+                            @Override
+                            public void SetLdapValue(OIDCClient.Builder builder, LdapValue[] value) {
+                                // no op
+                            }
+
+                            @Override
+                            public LdapValue[] GetLdapValue(OIDCClient oidcClient) {
+                                ValidateUtil.validateNotNull(oidcClient, "oidcClient");
+                                boolean s = oidcClient.isMultiTenant();
+                                return ServerUtils.getLdapValue(s);
+                            }
+                        },
+                        true
                 ),
                 new PropertyMapperMetaInfoBase<OIDCClient, OIDCClient.Builder>(PROPERTY_OIDC_CLIENT_ID,
                         -1,
@@ -96,13 +115,23 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
                             @Override
                             public void SetLdapValue(OIDCClient.Builder builder, LdapValue[] value) {
                                 ValidateUtil.validateNotNull(builder, "builder");
-                                builder.redirectUris(convertToList(ServerUtils.getMultiStringValue(value)));
+                                List<String> s = convertToList(ServerUtils.getMultiStringValue(value));
+                                if (builder.isMultiTenant()) {
+                                    builder.redirectUriTemplates(s);
+                                } else {
+                                    builder.redirectUris(s);
+                                }
                             }
 
                             @Override
                             public LdapValue[] GetLdapValue(OIDCClient oidcClient) {
                                 ValidateUtil.validateNotNull(oidcClient, "oidcClient");
-                                List<String> s = oidcClient.getRedirectUris();
+                                List<String> s = null;
+                                if (oidcClient.isMultiTenant()) {
+                                    s = oidcClient.getRedirectUriTemplates();
+                                } else {
+                                    s = oidcClient.getRedirectUris();
+                                }
                                 return ServerUtils.getLdapValue(s);
                             }
                         },
@@ -172,13 +201,23 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
                             @Override
                             public void SetLdapValue(OIDCClient.Builder builder, LdapValue[] value) {
                                 ValidateUtil.validateNotNull(builder, "builder");
-                                builder.postLogoutRedirectUris(convertToList(ServerUtils.getMultiStringValue(value)));
+                                List<String> s = convertToList(ServerUtils.getMultiStringValue(value));
+                                if (builder.isMultiTenant()) {
+                                    builder.postLogoutRedirectUriTemplates(s);
+                                } else {
+                                    builder.postLogoutRedirectUris(s);
+                                }
                             }
 
                             @Override
                             public LdapValue[] GetLdapValue(OIDCClient oidcClient) {
                                 ValidateUtil.validateNotNull(oidcClient, "oidcClient");
-                                List<String> s = oidcClient.getPostLogoutRedirectUris();
+                                List<String> s = null;
+                                if (oidcClient.isMultiTenant()) {
+                                    s = oidcClient.getPostLogoutRedirectUriTemplates();
+                                } else {
+                                    s = oidcClient.getPostLogoutRedirectUris();
+                                }
                                 return ServerUtils.getLdapValue(s);
                             }
                         },
@@ -191,13 +230,23 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
                             @Override
                             public void SetLdapValue(OIDCClient.Builder builder, LdapValue[] value) {
                                 ValidateUtil.validateNotNull(builder, "builder");
-                                builder.logoutUri(ServerUtils.getStringValue(value));
+                                String s = ServerUtils.getStringValue(value);
+                                if (builder.isMultiTenant()) {
+                                    builder.logoutUriTemplate(s);
+                                } else {
+                                    builder.logoutUri(s);
+                                }
                             }
 
                             @Override
                             public LdapValue[] GetLdapValue(OIDCClient oidcClient) {
                                 ValidateUtil.validateNotNull(oidcClient, "oidcClient");
-                                String s = oidcClient.getLogoutUri();
+                                String s = null;
+                                if (oidcClient.isMultiTenant()) {
+                                    s = oidcClient.getLogoutUriTemplate();
+                                } else {
+                                    s = oidcClient.getLogoutUri();
+                                }
                                 return ServerUtils.getLdapValue(s);
                             }
                         },
@@ -245,11 +294,14 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
 
     @Override
     protected Builder createObject(List<LdapValue[]> ctorParams) {
-        if ((ctorParams == null) || (ctorParams.size() != 1)) {
+        if ((ctorParams == null) || (ctorParams.size() != 2)) {
             throw new IllegalArgumentException("ctorParams");
         }
 
-        return new Builder(ServerUtils.getStringValue(ctorParams.get(0)));
+        Builder builder = new Builder(ServerUtils.getStringValue(ctorParams.get(0)));
+        builder.multiTenant(ServerUtils.getBooleanValue(ctorParams.get(1)));
+
+        return builder;
     }
 
     private static List<String> convertToList(String[] s) {

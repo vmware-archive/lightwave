@@ -579,6 +579,14 @@ VmDnsForwardResponse(
     PDWORD      pdwRCode
     );
 
+DWORD
+VmDnsLogDnsMessage(
+    VMDNS_LOG_LEVEL     level,
+    PCSTR               szPrefix,
+    PBYTE               pDnsBuffer,
+    DWORD               dwSize
+    );
+
 //dirfacade
 
 DWORD

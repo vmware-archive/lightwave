@@ -102,6 +102,7 @@
 #define VMDIR_ERROR_OIDC_UNAVAILABLE                  (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 34)      // 9134
 #define VMDIR_ERROR_ALREADY_PROMOTED                  (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 35)      // 9135
 #define VMDIR_ERROR_NETWORK_TIMEOUT                   (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 36)      // 9136
+#define VMDIR_ERROR_TOO_MANY_ENTRY                    (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 37)      // 9137
 
 // SID/ACL 9200 ~9229
 #define VMDIR_ERROR_RID_LIMIT_EXCEEDED                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 100 )    // 9200
@@ -157,6 +158,7 @@
     VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 99) )
 
 #define VMDIR_ERROR_NO_LEADER                         (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 0 )   // 9500
+#define VMDIR_ERROR_INVALID_ROLE                      (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 1 )   // 9501
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)

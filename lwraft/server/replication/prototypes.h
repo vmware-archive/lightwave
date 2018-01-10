@@ -211,6 +211,17 @@ VmDirRaftLogEntryId(
     unsigned long long LogIndex
     );
 
+DWORD
+VmDirRaftStartVoteSrv(VOID);
+
+DWORD
+VmDirRaftFollowerInitiateVoteSrv(VOID);
+
+DWORD
+VmDirRaftMetricsInit(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

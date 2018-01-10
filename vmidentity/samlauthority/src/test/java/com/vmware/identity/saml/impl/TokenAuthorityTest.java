@@ -1190,7 +1190,7 @@ public class TokenAuthorityTest {
          signInfo.getPrivateKey(), signatureAlgorithm),
          tokenRestrictions != null ? tokenRestrictions
             : defaultTokenRestrictions, validCerts, DEFAULT_CLOCK_TOLERANCE,
-            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER)));
+            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)));
       expect(configExtractor.getConfig()).andReturn(config).anyTimes();
 
       replay(configExtractor, configExtractorFactory);

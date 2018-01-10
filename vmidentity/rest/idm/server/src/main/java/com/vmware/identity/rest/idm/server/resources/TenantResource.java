@@ -44,6 +44,7 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
+import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
@@ -87,6 +88,8 @@ import com.vmware.identity.rest.idm.server.mapper.TenantMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Tenant resource. Serves information specifically about tenants.
  *
@@ -98,6 +101,9 @@ public class TenantResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(TenantResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "TenantResource";
+
     public TenantResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
@@ -105,119 +111,148 @@ public class TenantResource extends BaseResource {
     /**
      * Creates new tenant
      *
-     * @param tenant The new tenant to be created
-     * @return
-     * <code> 200 </code> If tenant was created successfully.
-     * <code> 500 </code> Otherwise
-     * @throws {@link BadRequestException} On bad requests (invalid input)
-     * @throws {@link InternalServerErrorException} Otherwise
+     * @param tenant
+     *            The new tenant to be created
+     * @return <code> 200 </code> If tenant was created successfully.
+     *         <code> 500 </code> Otherwise
+     * @throws {@link
+     *             BadRequestException} On bad requests (invalid input)
+     * @throws {@link
+     *             InternalServerErrorException} Otherwise
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public TenantDTO create(TenantDTO tenantDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "create").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             // Create tenant
             Tenant tenantToCreate = TenantMapper.getTenant(tenantDTO);
             PrincipalId adminId = PrincipalUtil.fromName(tenantDTO.getUsername());
             getIDMClient().addTenant(tenantToCreate, adminId.getName(), tenantDTO.getPassword().toCharArray());
-
-            try {
-                if (tenantDTO.getCredentials() == null || tenantDTO.getCredentials().getCertificates() == null || tenantDTO.getCredentials().getPrivateKey() == null) {
-                    log.info("Attempting to create tenant with no provided credentials - using root credentials instead");
-                    getIDMClient().setTenantCredentials(tenantDTO.getName());
-                } else {
-                    log.info("Attempting to create tenant with user provided credentials");
-                    // Set tenant credentials (signing + trusted certs) to above created tenant
-                    List<CertificateDTO> signatureCerts = tenantDTO.getCredentials().getCertificates();
-                    PrivateKeyDTO tenantPrivateKey = tenantDTO.getCredentials().getPrivateKey();
-                    getIDMClient().setTenantCredentials(tenantDTO.getName(), CertificateMapper.getCertificates(signatureCerts), tenantPrivateKey.getPrivateKey());
-                }
-            } catch (Exception e) {
-                // Exception occurred while setting credentials - delete the tenant we created so it
-                // doesn't wind up in a bizarre state
-                try {
-                    getIDMClient().deleteTenant(tenantDTO.getName());
-                } catch (Exception e1) {
-                    log.error("Failed to delete tenant '{}' after failed creation due to a server side error", tenantDTO.getName(), e1);
-                    throw new InternalServerErrorException(sm.getString("ec.500"), e1);
-                }
-
-                throw e;
+            if (tenantDTO.getCredentials() == null || tenantDTO.getCredentials().getCertificates() == null
+                    || tenantDTO.getCredentials().getPrivateKey() == null) {
+                log.info("Attempting to create tenant with no provided credentials - using root credentials instead");
+                getIDMClient().setTenantCredentials(tenantDTO.getName());
+            } else {
+                log.info("Attempting to create tenant with user provided credentials");
+                // Set tenant credentials (signing + trusted certs) to above created tenant
+                List<CertificateDTO> signatureCerts = tenantDTO.getCredentials().getCertificates();
+                PrivateKeyDTO tenantPrivateKey = tenantDTO.getCredentials().getPrivateKey();
+                getIDMClient().setTenantCredentials(tenantDTO.getName(),
+                        CertificateMapper.getCertificates(signatureCerts), tenantPrivateKey.getPrivateKey());
+            }
+            String tenantBrandName = getIDMClient().getBrandName(tenantDTO.getName());
+            if (tenantBrandName == null || tenantBrandName.isEmpty()) {
+                log.info("Attempting to set tenant brand name to default - system tenant brand name.");
+                String systemTenantBrandName = getIDMClient().getBrandName(getIDMClient().getSystemTenant());
+                getIDMClient().setBrandName(tenantDTO.getName(), systemTenantBrandName);
             }
 
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantDTO.getName()));
 
         } catch (DuplicateTenantException | DTOMapperException | InvalidArgumentException e) {
             log.warn("Failed to create tenant '{}' due to a client side error", tenantDTO.getName(), e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.create.failed", tenantDTO.getName()), e);
         } catch (Exception e) {
+            responseStatus = HTTP_SERVER_ERROR;
+            try {
+                getIDMClient().deleteTenant(tenantDTO.getName());
+            } catch (Exception ex) {
+                log.error("Failed to delete tenant '{}' after failed creation due to a server side error",
+                        tenantDTO.getName(), ex);
+                throw new InternalServerErrorException(sm.getString("ec.500"), ex);
+            }
             log.error("Failed to create tenant '{}' due to a server side error", tenantDTO.getName(), e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "create").inc();
+            requestTimer.observeDuration();
         }
     }
 
     /**
      * Get details of tenant
      *
-     * @param tenantName Name of tenant to retrieve details
+     * @param tenantName
+     *            Name of tenant to retrieve details
      * @return Details of Tenant. @see {@link Tenant}
      */
-    @GET @Path(PathParameters.TENANT_NAME_VAR)
+    @GET
+    @Path(PathParameters.TENANT_NAME_VAR)
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantDTO get(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantName));
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to retrieve tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.get.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to retrieve tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
     /**
      * Search principals(users, groups, solution users) on tenant
      *
-     * @param query search string used to find users. Matching users will be those that have this
-     *        particular string as a substring in their user principal name. If name is empty or
-     *        null, expect to return all users associated with tenant.
-     * @param limit Maximum number of users to be retrieved. No limit is set on negative value.
-     * @param domain name of domain to search principals on tenant
-     * @param searchBy semantics used to search members in tenant @see SearchType
+     * @param query
+     *            search string used to find users. Matching users will be those
+     *            that have this particular string as a substring in their user
+     *            principal name. If name is empty or null, expect to return all
+     *            users associated with tenant.
+     * @param limit
+     *            Maximum number of users to be retrieved. No limit is set on
+     *            negative value.
+     * @param domain
+     *            name of domain to search principals on tenant
+     * @param searchBy
+     *            semantics used to search members in tenant @see SearchType
      */
-    @GET @Path(PathParameters.TENANT_NAME_VAR + "/" + PathParameters.SEARCH)
+    @GET
+    @Path(PathParameters.TENANT_NAME_VAR + "/" + PathParameters.SEARCH)
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public SearchResultDTO searchMembers(@PathParam(PathParameters.TENANT_NAME) String tenantName,
-            @DefaultValue("all") @QueryParam("type") String memberType,
-            @QueryParam("domain") String domain,
+            @DefaultValue("all") @QueryParam("type") String memberType, @QueryParam("domain") String domain,
             @DefaultValue("200") @QueryParam("limit") int limit,
             @DefaultValue("NAME") @QueryParam("searchBy") String searchBy,
             @DefaultValue("") @QueryParam("query") String query) {
-
-        validateMemberType(memberType.toUpperCase());
-        validateSearchBy(searchBy.toUpperCase());
-
-        MemberType requestedMemberType = MemberType.valueOf(memberType.toUpperCase());
-        SearchType requestedSearchType = SearchType.valueOf(searchBy.toUpperCase());
-
-        Set<UserDTO> users = null;
-        Set<GroupDTO> groups = null;
-        Set<SolutionUserDTO> solutionUsers = null;
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "searchMembers").startTimer();
+        String responseStatus = HTTP_OK;
 
         try {
+            validateMemberType(memberType.toUpperCase());
+            validateSearchBy(searchBy.toUpperCase());
+
+            MemberType requestedMemberType = MemberType.valueOf(memberType.toUpperCase());
+            SearchType requestedSearchType = SearchType.valueOf(searchBy.toUpperCase());
+
+            Set<UserDTO> users = null;
+            Set<GroupDTO> groups = null;
+            Set<SolutionUserDTO> solutionUsers = null;
             SearchCriteria criteria = new SearchCriteria(query, domain);
             if (requestedMemberType == MemberType.ALL) {
                 Map<MemberType, Integer> memberToLimit = computeSearchLimits(limit, MemberType.ALL);
                 users = searchPersonUsers(tenantName, criteria, memberToLimit.get(MemberType.USER));
                 groups = searchGroups(tenantName, criteria, memberToLimit.get(MemberType.GROUP));
-                solutionUsers = searchSolutionUsers(tenantName, criteria, memberToLimit.get(MemberType.SOLUTIONUSER), requestedSearchType);
+                solutionUsers = searchSolutionUsers(tenantName, criteria, memberToLimit.get(MemberType.SOLUTIONUSER),
+                        requestedSearchType);
             } else {
                 switch (requestedMemberType) {
                 case GROUP:
@@ -231,54 +266,73 @@ public class TenantResource extends BaseResource {
                     break;
                 }
             }
-            return SearchResultDTO.builder()
-                    .withUsers(users)
-                    .withGroups(groups)
-                    .withSolutionUsers(solutionUsers)
+            return SearchResultDTO.builder().withUsers(users).withGroups(groups).withSolutionUsers(solutionUsers)
                     .build();
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to search members on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to search members on tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException("");
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to search members on tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "searchMembers").inc();
+            requestTimer.observeDuration();
         }
     }
 
     /**
      * Delete a tenant
      *
-     * @param tenantName Name of tenant to be deleted
-     * @return
-     * <code> HTTP 200 OK </code> If deletion is successful <br/>
-     * <code> HTTP 500 {@link InternalServerErrorException} </code> Otherwise
+     * @param tenantName
+     *            Name of tenant to be deleted
+     * @return <code> HTTP 200 OK </code> If deletion is successful <br/>
+     *         <code> HTTP 500 {@link InternalServerErrorException} </code>
+     *         Otherwise
      */
-    @DELETE @Path(PathParameters.TENANT_NAME_VAR)
+    @DELETE
+    @Path(PathParameters.TENANT_NAME_VAR)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public void delete(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteTenant(tenantName);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to delete tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to delete tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.delete.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to delete tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
-    @GET @Path(PathParameters.TENANT_NAME_VAR + "/config")
+    @GET
+    @Path(PathParameters.TENANT_NAME_VAR + "/config")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantConfigurationDTO getConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
             @QueryParam("type") final List<String> configTypes) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getConfig").startTimer();
+        String responseStatus = HTTP_OK;
 
         Set<TenantConfigType> requestedConfigs = new HashSet<TenantConfigType>();
         for (String configType : configTypes) {
@@ -336,38 +390,47 @@ public class TenantResource extends BaseResource {
                 }
             }
 
-            return TenantConfigurationDTO.builder()
-                    .withLockoutPolicy(lockoutPolicy)
-                    .withPasswordPolicy(passwordPolicy)
-                    .withTokenPolicy(tokenPolicy)
-                    .withProviderPolicy(providerPolicy)
-                    .withBrandPolicy(brandPolicy)
-                    .withAuthenticationPolicy(authenticationPolicy)
-                    .build();
+            return TenantConfigurationDTO.builder().withLockoutPolicy(lockoutPolicy).withPasswordPolicy(passwordPolicy)
+                    .withTokenPolicy(tokenPolicy).withProviderPolicy(providerPolicy).withBrandPolicy(brandPolicy)
+                    .withAuthenticationPolicy(authenticationPolicy).build();
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve configuration details of tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (IllegalArgumentException | InvalidArgumentException e) {
-            log.error("Failed to retrieve configuration details of tenant '{}' due to a client side error", tenantName, e);
-            throw new BadRequestException(sm.getString("res.ten.get.config.failed", Arrays.asList(requestedConfigs), tenantName), e);
+            log.error("Failed to retrieve configuration details of tenant '{}' due to a client side error", tenantName,
+                    e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(
+                    sm.getString("res.ten.get.config.failed", Arrays.asList(requestedConfigs), tenantName), e);
         } catch (Exception e) {
-            log.error("Failed to retrieve configuration details of tenant '{}' due to a server side error", tenantName, e);
+            log.error("Failed to retrieve configuration details of tenant '{}' due to a server side error", tenantName,
+                    e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getConfig").inc();
+            requestTimer.observeDuration();
         }
-
     }
 
-    @PUT @Path(PathParameters.TENANT_NAME_VAR + "/config")
-    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @PUT
+    @Path(PathParameters.TENANT_NAME_VAR + "/config")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
-    public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName, TenantConfigurationDTO configurationDTO) {
+    public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
+            TenantConfigurationDTO configurationDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "updateConfig").startTimer();
+        String responseStatus = HTTP_OK;
 
         TenantConfigurationDTO.Builder configBuilder = TenantConfigurationDTO.builder();
         TokenPolicyDTO tokenPolicy = configurationDTO.getTokenPolicy();
         ProviderPolicyDTO providerPolicy = configurationDTO.getProviderPolicy();
         BrandPolicyDTO brandPolicy = configurationDTO.getBrandPolicy();
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
+        LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
 
         try {
 
@@ -380,7 +443,8 @@ public class TenantResource extends BaseResource {
             // update provider policy configuration of tenant
             if (providerPolicy != null) {
                 getIDMClient().setDefaultProviders(tenantName, Arrays.asList(providerPolicy.getDefaultProvider()));
-                // TODO : Update default provider alias on provision of API. As interim, Can update on IdentityProviderResource
+                // TODO : Update default provider alias on provision of API. As interim, Can
+                // update on IdentityProviderResource
                 getIDMClient().setTenantIDPSelectionEnabled(tenantName, providerPolicy.isProviderSelectionEnabled());
                 configBuilder.withProviderPolicy(getProviderPolicy(tenantName));
             }
@@ -394,7 +458,8 @@ public class TenantResource extends BaseResource {
                     getIDMClient().setLogonBannerCheckboxFlag(tenantName, brandPolicy.isLogonBannerCheckboxEnabled());
                 }
 
-                boolean disableFlag = brandPolicy.isLogonBannerDisabled() == null ? false : brandPolicy.isLogonBannerDisabled();
+                boolean disableFlag = brandPolicy.isLogonBannerDisabled() == null ? false
+                        : brandPolicy.isLogonBannerDisabled();
                 if (disableFlag) {
                     getIDMClient().disableLogonBanner(tenantName);
                 }
@@ -408,28 +473,48 @@ public class TenantResource extends BaseResource {
                 configBuilder.withAuthenticationPolicy(getAuthenticationPolicy(tenantName));
             }
 
+            if (lockoutPolicy != null) {
+                LockoutPolicy idmLockoutPolicy = LockoutPolicyMapper.getLockoutPolicy(lockoutPolicy);
+                getIDMClient().setLockoutPolicy(tenantName, idmLockoutPolicy);
+                configBuilder.withLockoutPolicy(getLockoutPolicy(tenantName));
+            }
+
             return configBuilder.build();
 
         } catch (NoSuchTenantException e) {
-            log.debug("Failed to update the configuration details for tenant '{}'",tenantName, e);
-            throw new NotFoundException(sm.getString("ec.404"),e);
-        } catch( IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e){
-            log.error("Failed to update the configuration details for tenant '{}' due to a client side error", tenantName, e);
+            log.debug("Failed to update the configuration details for tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e) {
+            log.error("Failed to update the configuration details for tenant '{}' due to a client side error",
+                    tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.update.config.failed", tenantName), e);
-        } catch (Exception e){
-            log.error("Failed to update the configuration details for tenant '{}' due to a server side error", tenantName, e);
+        } catch (Exception e) {
+            log.error("Failed to update the configuration details for tenant '{}' due to a server side error",
+                    tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "updateConfig").inc();
+            requestTimer.observeDuration();
         }
     }
 
     @Path(PathParameters.TENANT_NAME_VAR + "/providers")
-    public IdentityProviderResource getIdentityProviderSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+    public IdentityProviderResource getIdentityProviderSubResource(
+            @PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new IdentityProviderResource(tenantName, getRequest(), getSecurityContext());
     }
 
     @Path(PathParameters.TENANT_NAME_VAR + "/externalidp")
     public ExternalIDPResource getExternalIDPSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new ExternalIDPResource(tenantName, getRequest(), getSecurityContext());
+    }
+
+    @Path(PathParameters.TENANT_NAME_VAR + "/federation")
+    public FederatedIdpResource getFederatedIdpSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        return new FederatedIdpResource(tenantName, getRequest(), getSecurityContext());
     }
 
     @Path(PathParameters.TENANT_NAME_VAR + "/certificates")
@@ -463,7 +548,8 @@ public class TenantResource extends BaseResource {
     }
 
     @Path(PathParameters.TENANT_NAME_VAR + "/resourceserver")
-    public ResourceServerResource getResourceServerSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+    public ResourceServerResource getResourceServerSubResource(
+            @PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new ResourceServerResource(tenantName, getRequest(), getSecurityContext());
     }
 
@@ -476,7 +562,8 @@ public class TenantResource extends BaseResource {
         try {
             TenantConfigType.valueOf(configName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            log.error("Invalid tenant configuration parameter '{}'. Valid values are {}", configName, Arrays.asList(TenantConfigType.values()), e);
+            log.error("Invalid tenant configuration parameter '{}'. Valid values are {}", configName,
+                    Arrays.asList(TenantConfigType.values()), e);
             throw new BadRequestException(sm.getString("valid.invalid.type", configName, TenantConfigType.values()), e);
         }
     }
@@ -485,7 +572,8 @@ public class TenantResource extends BaseResource {
         try {
             MemberType.valueOf(memberType);
         } catch (IllegalArgumentException e) {
-            log.error("Invalid tenant configuration parameter '{}'. Valid values are {}", memberType, Arrays.asList(MemberType.values()), e);
+            log.error("Invalid tenant configuration parameter '{}'. Valid values are {}", memberType,
+                    Arrays.asList(MemberType.values()), e);
             throw new BadRequestException(sm.getString("valid.invalid.type", memberType, MemberType.values()), e);
         }
     }
@@ -495,7 +583,8 @@ public class TenantResource extends BaseResource {
             SearchType.valueOf(searchBy);
         } catch (IllegalArgumentException | NullPointerException e) {
             log.debug("Invalid searchtype '{}'", searchBy);
-            throw new BadRequestException(sm.getString("valid.invalid.type", "type", Arrays.toString(SearchType.values())), e);
+            throw new BadRequestException(
+                    sm.getString("valid.invalid.type", "type", Arrays.toString(SearchType.values())), e);
         }
     }
 
@@ -540,28 +629,30 @@ public class TenantResource extends BaseResource {
     }
 
     private TokenPolicyDTO getTokenPolicy(String tenantName) throws Exception {
-        return TokenPolicyDTO.builder()
-                .withClockToleranceMillis(getClockTolerance(tenantName))
+        return TokenPolicyDTO.builder().withClockToleranceMillis(getClockTolerance(tenantName))
                 .withDelegationCount(getDelegationCount(tenantName))
                 .withMaxBearerTokenLifeTimeMillis(getBearerTokenLifetime(tenantName))
                 .withMaxHOKTokenLifeTimeMillis(getHOKTokenLifetime(tenantName))
                 .withMaxBearerRefreshTokenLifeTimeMillis(getBearerRefreshTokenLifetime(tenantName))
                 .withMaxHOKRefreshTokenLifeTimeMillis(getHoKRefreshTokenLifetime(tenantName))
-                .withRenewCount(getRenewCount(tenantName))
-                .build();
+                .withRenewCount(getRenewCount(tenantName)).build();
     }
 
-        private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
-                ProviderPolicyDTO providerPolicyDTO = null;
-                Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
-                if(defaultProviders != null) {
-                          IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName, defaultProviders.iterator().next());
-                          providerPolicyDTO = ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
-                                                defaultIdentitySource.getExtendedIdentityStoreData() != null ? defaultIdentitySource.getExtendedIdentityStoreData().getAlias() : null,
-                                                                  getIDMClient().isTenantIDPSelectionEnabled(tenantName));
-                        }
-                return providerPolicyDTO;
-            }
+    private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
+        ProviderPolicyDTO providerPolicyDTO = null;
+        Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
+        if (defaultProviders != null && !defaultProviders.isEmpty()) {
+            IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName,
+                    defaultProviders.iterator().next());
+            providerPolicyDTO = ProviderPolicyMapper.getProviderPolicyDTO(
+                    getIDMClient().getDefaultProviders(tenantName),
+                    defaultIdentitySource.getExtendedIdentityStoreData() != null
+                            ? defaultIdentitySource.getExtendedIdentityStoreData().getAlias()
+                            : null,
+                    getIDMClient().isTenantIDPSelectionEnabled(tenantName));
+        }
+        return providerPolicyDTO;
+    }
 
     private BrandPolicyDTO getBrandPolicy(String tenantName) throws Exception {
         String logonBannerTitle = getIDMClient().getLogonBannerTitle(tenantName);
@@ -570,13 +661,10 @@ public class TenantResource extends BaseResource {
         if (logonBannerTitle == null || logonBannerContent == null) {
             disableLogonBanner = true;
         }
-        return BrandPolicyDTO.builder()
-                .withName(getIDMClient().getBrandName(tenantName))
-                .withLogonBannerTitle(logonBannerTitle)
-                .withLogonBannerContent(logonBannerContent)
+        return BrandPolicyDTO.builder().withName(getIDMClient().getBrandName(tenantName))
+                .withLogonBannerTitle(logonBannerTitle).withLogonBannerContent(logonBannerContent)
                 .withLogonBannerCheckboxEnabled(getIDMClient().getLogonBannerCheckboxFlag(tenantName))
-                .withLogonBannerDisabled(disableLogonBanner)
-                .build();
+                .withLogonBannerDisabled(disableLogonBanner).build();
     }
 
     private void updateTokenPolicy(String tenantName, TokenPolicyDTO tokenPolicy) throws Exception {
@@ -597,11 +685,13 @@ public class TenantResource extends BaseResource {
         }
 
         if (tokenPolicy.getMaxBearerRefreshTokenLifeTimeMillis() != null) {
-            getIDMClient().setMaximumBearerRefreshTokenLifetime(tenantName, tokenPolicy.getMaxBearerRefreshTokenLifeTimeMillis());
+            getIDMClient().setMaximumBearerRefreshTokenLifetime(tenantName,
+                    tokenPolicy.getMaxBearerRefreshTokenLifeTimeMillis());
         }
 
         if (tokenPolicy.getMaxHOKRefreshTokenLifeTimeMillis() != null) {
-            getIDMClient().setMaximumHoKRefreshTokenLifetime(tenantName, tokenPolicy.getMaxHOKRefreshTokenLifeTimeMillis());
+            getIDMClient().setMaximumHoKRefreshTokenLifetime(tenantName,
+                    tokenPolicy.getMaxHOKRefreshTokenLifeTimeMillis());
         }
 
         if (tokenPolicy.getRenewCount() != null) {
@@ -628,13 +718,16 @@ public class TenantResource extends BaseResource {
     /**
      * Search solution users only with matching criteria
      */
-    private Set<SolutionUserDTO> searchSolutionUsers(String tenantName, SearchCriteria criteria, int limit, SearchType searchBy) throws Exception {
+    private Set<SolutionUserDTO> searchSolutionUsers(String tenantName, SearchCriteria criteria, int limit,
+            SearchType searchBy) throws Exception {
         Set<SolutionUserDTO> solutionUsers = new HashSet<SolutionUserDTO>();
         if (searchBy == SearchType.NAME) {
-            Set<SolutionUser> idmSolutionUsers = getIDMClient().findSolutionUsers(tenantName, criteria.getSearchString(), limit);
+            Set<SolutionUser> idmSolutionUsers = getIDMClient().findSolutionUsers(tenantName,
+                    criteria.getSearchString(), limit);
             solutionUsers = SolutionUserMapper.getSolutionUserDTOs(idmSolutionUsers);
         } else if (searchBy == SearchType.CERT_SUBJECTDN) {
-            SolutionUser idmSolutionUser = getIDMClient().findSolutionUserByCertDn(tenantName, criteria.getSearchString());
+            SolutionUser idmSolutionUser = getIDMClient().findSolutionUserByCertDn(tenantName,
+                    criteria.getSearchString());
             if (idmSolutionUser != null) {
                 solutionUsers.add(SolutionUserMapper.getSolutionUserDTO(idmSolutionUser));
             }
@@ -643,7 +736,8 @@ public class TenantResource extends BaseResource {
     }
 
     /**
-     * Search limit calculator that computes number of principal entities(users, groups and solution users) to be returned in search results
+     * Search limit calculator that computes number of principal entities(users,
+     * groups and solution users) to be returned in search results
      */
     private Map<MemberType, Integer> computeSearchLimits(int limit, MemberType memberType) {
         Map<MemberType, Integer> memberTypeToLimit = new HashMap<MemberType, Integer>();
@@ -652,7 +746,8 @@ public class TenantResource extends BaseResource {
             // Users + Groups
             limitPerPrincipalType = limit < 0 ? -1 : limit / (MemberType.values().length - 1);
             // Solution users
-            int solutionUserLimit = limitPerPrincipalType < 0 ? -1 : limitPerPrincipalType + (limit % (MemberType.values().length - 1));
+            int solutionUserLimit = limitPerPrincipalType < 0 ? -1
+                    : limitPerPrincipalType + (limit % (MemberType.values().length - 1));
             memberTypeToLimit.put(MemberType.USER, limitPerPrincipalType);
             memberTypeToLimit.put(MemberType.GROUP, limitPerPrincipalType);
             memberTypeToLimit.put(MemberType.SOLUTIONUSER, solutionUserLimit);

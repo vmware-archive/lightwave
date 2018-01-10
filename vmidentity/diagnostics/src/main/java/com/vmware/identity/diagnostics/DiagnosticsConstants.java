@@ -18,6 +18,8 @@ class DiagnosticsConstants
 {
     public static final String CorrelationIdMdcKey = "CorrelationIdMDCKey";
     public static final String TenantNameMdcKey = "TenantNameMDCKey";
+    public static final String UserIdMdcKey = "UserIdMDCKey";
+    public static final String SessionIdMdcKey = "SessionIdMDCKey";
     public static final String EventIdMarkerMdcKey = "EventIdMarkerMDCKey";
     public static final String VmEventSource = "VMware Identity Server";
 }

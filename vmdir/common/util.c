@@ -193,6 +193,52 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirServerDNToSiteName(
+    PCSTR   pszServerDN,
+    PSTR*   ppszSiteName
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PCSTR   pszTmp = NULL;
+    PSTR    pszSiteName = NULL;
+
+    if (!pszServerDN || !ppszSiteName)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    // server object is two level under site container
+    // e.g. cn=lw-t1,cn=Servers,cn=taipei,cn=Sites
+    pszTmp = pszServerDN;
+    while (*pszTmp != '\0')
+    {
+        if ((*pszTmp == ',') && ( ++dwCnt == 2))
+        {
+            break;
+        }
+        pszTmp++;
+    }
+
+    if (*pszTmp == '\0')
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwError = VmDirDnLastRDNToCn(pszTmp+1, &pszSiteName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszSiteName = pszSiteName;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszSiteName);
+    goto cleanup;
+}
+
 #if defined(_WIN32)
 static void uuid_unparse_lower(uuid_t uuid, char *str)
 {

@@ -16,7 +16,6 @@ package com.vmware.lightwaveui;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -38,7 +37,9 @@ import org.w3c.dom.Element;
 
 @WebServlet("/RegisterOidc")
 public class RegisterOidc extends HttpServlet {
-       
+
+    private static final long serialVersionUID = 173750762956158645L;
+
     /**
      * @see HttpServlet#HttpServlet()
      */

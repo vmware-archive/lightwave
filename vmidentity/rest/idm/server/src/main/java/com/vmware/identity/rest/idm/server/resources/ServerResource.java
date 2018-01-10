@@ -34,6 +34,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.VmHostData;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
+import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.Validate;
@@ -41,6 +42,8 @@ import com.vmware.identity.rest.idm.data.ServerDetailsDTO;
 import com.vmware.identity.rest.idm.data.attributes.ComputerType;
 import com.vmware.identity.rest.idm.server.mapper.ServerDetailsMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
+
+import io.prometheus.client.Histogram;
 
 /**
  * Server resource. Serves global information about the IDM server.
@@ -53,12 +56,15 @@ public class ServerResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ServerResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "ServerResource";
+
     public ServerResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
-    public ServerResource(Locale locale, String correlationId, SecurityContext securityContext) {
-        super(locale, correlationId, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
+    public ServerResource(Locale locale, SecurityContext securityContext) {
+        super(locale, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
 
     /**
@@ -75,11 +81,13 @@ public class ServerResource extends BaseResource {
     @RequiresRole(role = Role.CONFIGURATION_USER)
     public Collection<ServerDetailsDTO> getComputers(@DefaultValue("all") @QueryParam("type") String computerType)
     {
-        Collection<VmHostData> computers = new HashSet<VmHostData>();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getComputers").startTimer();
+        String responseStatus = HTTP_OK;
         String systemTenant = null;
-        ComputerType compType = getComputerType(computerType);
-        Validate.notNull(compType, sm.getString("valid.invalid.type", "type", Arrays.toString(ComputerType.values())));
         try {
+            Collection<VmHostData> computers = new HashSet<VmHostData>();
+            ComputerType compType = getComputerType(computerType);
+            Validate.notNull(compType, sm.getString("valid.invalid.type", "type", Arrays.toString(ComputerType.values())));
             systemTenant = getIDMClient().getSystemTenant();
             switch (compType) {
                 case DC:
@@ -103,9 +111,16 @@ public class ServerResource extends BaseResource {
                     break;
             }
             return ServerDetailsMapper.getServerDetailsDTOs(computers);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve computers from system tenant ('{}') due to a server side error", systemTenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getComputers").inc();
+            requestTimer.observeDuration();
         }
     }
 

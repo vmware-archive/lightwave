@@ -308,6 +308,14 @@ ParseArgsCreateComputerAccount(
     );
 
 static
+DWORD
+ParseArgsBeginOrEndUpgrade(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
 void
 ShowUsage(
     VOID
@@ -837,6 +845,24 @@ ParseArgs(
         pContext->action = VM_AFD_ACTION_CREATE_COMPUTER_ACCOUNT;
 
         dwError = ParseArgsCreateComputerAccount(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
+    else if (!strcmp(pszArg, "begin-upgrade"))
+    {
+        pContext->action = VM_AFD_ACTION_BEGIN_UPGRADE;
+
+        dwError = ParseArgsBeginOrEndUpgrade(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
+    else if (!strcmp(pszArg, "end-upgrade"))
+    {
+        pContext->action = VM_AFD_ACTION_END_UPGRADE;
+
+        dwError = ParseArgsBeginOrEndUpgrade(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL,
                         pContext);
@@ -3908,6 +3934,111 @@ error:
 }
 
 static
+DWORD
+ParseArgsBeginOrEndUpgrade(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_QUERY_OPEN = 0,
+        PARSE_MODE_QUERY_SERVER_NAME,
+        PARSE_MODE_QUERY_USER_NAME,
+        PARSE_MODE_QUERY_PASSWORD,
+    } PARSE_MODE_QUERY_AD;
+    PARSE_MODE_QUERY_AD parseMode = PARSE_MODE_QUERY_OPEN;
+    DWORD iArg = 0;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_QUERY_OPEN:
+                if (!strcmp(pszArg, "--server-name"))
+                {
+                    parseMode = PARSE_MODE_QUERY_SERVER_NAME;
+                }
+                else if (!strcmp(pszArg, "--user-name"))
+                {
+                    parseMode = PARSE_MODE_QUERY_USER_NAME;
+                }
+                else if (!strcmp(pszArg, "--password"))
+                {
+                    parseMode = PARSE_MODE_QUERY_PASSWORD;
+                }
+               else
+                {
+                    dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_QUERY_SERVER_NAME:
+
+                if (pContext->pszServerName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_USER_NAME:
+
+                if (pContext->pszUserName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszUserName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_PASSWORD:
+
+                if (pContext->pszPassword)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPassword);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_OPEN;
+
+                break;
+
+            default:
+
+                dwError = ERROR_INTERNAL_ERROR;
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                break;
+        }
+    }
+
+error:
+
+    return dwError;
+}
+
+
+static
 void
 ShowUsage(
     VOID
@@ -3952,5 +4083,7 @@ ShowUsage(
         "\tquery-ad --server-name <server name>\n"
         "\tget-dc-list --domain-name <domain name> --server-name <server name>\n"
         "\tcreate-computer-account --server-name <server name> --user-name <user name> --password <password> --machine-name <machine name> --org-unit <org unit>\n"
+        "\tbegin-upgrade [--server-name <server name> --user-name <user name> --password <password>]\n"
+        "\tend-upgrade [--server-name <server name> --user-name <user name> --password <password>]\n"
         "\thelp\n");
 }

@@ -281,6 +281,39 @@ error:
 }
 
 DWORD
+RaftCliStartVoteA(
+    PCSTR   pszLogin,
+    PCSTR   pszPassword,
+    PCSTR   pszServerName
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLeader = NULL;
+
+    if (IsNullOrEmptyString(pszLogin) ||
+            IsNullOrEmptyString(pszPassword))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirRaftLeader(
+            pszServerName ? pszServerName : "localhost",
+            &pszLeader);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // always target the leader node
+    dwError = VmDirRaftStartVoteClient(pszLogin, pszPassword, pszLeader);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLeader);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 RaftCliReadPassword(
     PCSTR pszUser,
     PCSTR pszDomain,

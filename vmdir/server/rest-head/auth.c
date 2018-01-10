@@ -172,11 +172,17 @@ VmDirRESTAuthViaToken(
     dwError = VmDirRESTAuthTokenParse(pAuthToken, pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pAuthToken->tokenType == VDIR_REST_AUTH_TOKEN_HOTK)
-    {
-        // TODO Validate the proof of possession
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
-    }
+    dwError = VmDirRESTAuthTokenValidate(pAuthToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // TODO (PR 2004701): Validate the proof of possession
+    //   1) get hok and signature from HTTP request header
+    //   2) get public key from HOK
+    //   3) validate signature with public key
+    //if (pAuthToken->tokenType == VDIR_REST_AUTH_TOKEN_HOTK)
+    //{
+    //    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
+    //}
 
     dwError = VmDirUPNToDN(pAuthToken->pszBindUPN, &pszBindDN);
     BAIL_ON_VMDIR_ERROR(dwError);

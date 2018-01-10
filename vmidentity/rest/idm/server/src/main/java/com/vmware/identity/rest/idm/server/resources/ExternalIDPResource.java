@@ -54,6 +54,8 @@ import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.server.mapper.ExternalIDPMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * All operations related to external identity providers are implemented in this
  * class. All of the operations are tenant-based.
@@ -68,6 +70,9 @@ public class ExternalIDPResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ExternalIDPResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "ExternalIDPResource";
+
     public ExternalIDPResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
@@ -76,39 +81,50 @@ public class ExternalIDPResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<ExternalIDPDTO> getAll() {
-        Collection<ExternalIDPDTO> externalIDPs = null;
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        String responseStatus = HTTP_OK;
         try {
-            Collection<IDPConfig> configs = getIDMClient().getAllExternalIdpConfig(tenant);
-            externalIDPs = ExternalIDPMapper.getExternalIDPDTOs(configs);
+            Collection<IDPConfig> configs = getIDMClient().getAllExternalIdpConfig(tenant, IDPConfig.IDP_PROTOCOL_SAML_2_0);
+            return ExternalIDPMapper.getExternalIDPDTOs(configs);
         } catch (NoSuchTenantException e) {
             log.warn("Failed to retrieve external identity providers for tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to retrieve identity providers for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            requestTimer.observeDuration();
         }
-
-        return externalIDPs;
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO register(ExternalIDPDTO externalIDP) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "register").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             IDPConfig config = ExternalIDPMapper.getIDPConfig(externalIDP);
             getIDMClient().setExternalIdpConfig(tenant, config);
             return ExternalIDPMapper.getExternalIDPDTO(getIDMClient().getExternalIdpConfigForTenant(tenant, config.getEntityID()));
         } catch (NoSuchTenantException e) {
             log.warn("Failed to register external identity provider '{}' for tenant '{}'", externalIDP.getEntityID(), tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | DTOMapperException e) {
             log.warn("Failed to register external identity provider '{}' for tenant '{}' due to a client side error", externalIDP.getEntityID(), tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.external.add.failed", externalIDP.getEntityID(), tenant), e);
         } catch (Exception e) {
             log.error("Failed to register external identity provider '{}' for tenant '{}' due to a server side error", externalIDP.getEntityID(), tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "register").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -121,18 +137,26 @@ public class ExternalIDPResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO registerWithMetadata(String externalIDPConfig) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "registerWithMetadata").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             String entityId = getIDMClient().importExternalIDPConfiguration(tenant, parseSAMLConfig(externalIDPConfig));
             return ExternalIDPMapper.getExternalIDPDTO(getIDMClient().getExternalIdpConfigForTenant(tenant, entityId));
         } catch (NoSuchTenantException e) {
             log.warn("Failed to register external identity provider for tenant '{}'", tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | DTOMapperException e) {
             log.warn("Failed to register external identity provider for tenant '{}' due to a client side error", tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.external.add.metadata.failed", tenant), e);
         } catch (Exception e) {
             log.error("Failed to register external identity provider for tenant '{}' due to a server side error", tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "registerWithMetadata").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -140,6 +164,8 @@ public class ExternalIDPResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO get(@PathParam("entityID") String entityID) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             IDPConfig config = getIDMClient().getExternalIdpConfigForTenant(tenant, entityID);
 
@@ -150,24 +176,36 @@ public class ExternalIDPResource extends BaseSubResource {
             return ExternalIDPMapper.getExternalIDPDTO(config);
         } catch (NoSuchTenantException | NoSuchExternalIdpConfigException e) {
             log.warn("Failed to retrieve external identity provider '{}' from tenant '{}'", entityID, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to retrieve external identity provider '{}' from tenant '{}' doe to a server side error", entityID, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
     @DELETE @Path("/{entityID}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("entityID") String entityID, @DefaultValue("false") @QueryParam("remove") Boolean removeJitUsers) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().removeExternalIdpConfig(tenant, entityID, removeJitUsers);
         } catch (NoSuchTenantException | NoSuchExternalIdpConfigException e) {
             log.warn("Failed to remove external identity provider '{}' from tenant '{}'", entityID, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (Exception e) {
             log.error("Failed to remove external identity provider '{}' from tenant '{}' due to a server side error", entityID, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 

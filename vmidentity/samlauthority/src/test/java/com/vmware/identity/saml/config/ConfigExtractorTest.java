@@ -54,6 +54,7 @@ public class ConfigExtractorTest {
 
    private static final String ISSUER = "issuer";
    private static final String EXTERNAL_ISSUER = "externalIssuer";
+   private static final String PROTOCOL = IDPConfig.IDP_PROTOCOL_SAML_2_0;
    private CasIdmClient client;
    private List<Certificate> signingCertChain;
    private PrivateKey authorityKey;
@@ -188,12 +189,12 @@ public class ConfigExtractorTest {
       for(Certificate c: stsCertChain){
           signingCertChain.add((X509Certificate)c);
       }
-      IDPConfig config = new IDPConfig(EXTERNAL_ISSUER);
+      IDPConfig config = new IDPConfig(EXTERNAL_ISSUER, PROTOCOL);
       config.setSigningCertificateChain(signingCertChain);
       ArrayList<IDPConfig> extIdps = new ArrayList<IDPConfig>();
       extIdps.add(config);
 
-      expect(identityManagerClient.getAllExternalIdpConfig(TENANT_NAME))
+      expect(identityManagerClient.getAllExternalIdpConfig(TENANT_NAME, IDPConfig.IDP_PROTOCOL_SAML_2_0))
       .andReturn(extIdps);
 
       replay(identityManagerClient);

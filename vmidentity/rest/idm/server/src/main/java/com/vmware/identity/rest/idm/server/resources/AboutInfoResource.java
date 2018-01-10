@@ -32,6 +32,8 @@ import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.idm.data.AboutInfoDTO;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 @Path("/")
 public class AboutInfoResource extends BaseResource {
 
@@ -40,6 +42,8 @@ public class AboutInfoResource extends BaseResource {
     private static final String IDENTITY_ROOT_KEY = "Software\\VMware\\Identity";
     private static final String RELEASE_KEY = "Release";
     private static final String VERSION_KEY = "Version";
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "AboutInfoResource";
 
     public AboutInfoResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -50,14 +54,19 @@ public class AboutInfoResource extends BaseResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public AboutInfoDTO getServiceInformation() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getServiceInformation").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             log.info("trying to get about info");
             return new AboutInfoDTO(read(RELEASE_KEY), read(VERSION_KEY), PRODUCT_NAME_IDM);
         } catch (Exception e) {
             log.error("Failed to provide information about the server due to a server side error", e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getServiceInformation").inc();
+            requestTimer.observeDuration();
         }
-
     }
 
     private String read(String key) throws Exception {

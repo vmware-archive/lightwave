@@ -2227,6 +2227,62 @@ error:
     goto cleanup;
 }
 
+UINT32
+Srv_VmAfdRpcBeginUpgrade(
+    rpc_binding_handle_t hBinding
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMAFD_RPC_FLAG_ALLOW_TCPIP
+                     | VMAFD_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                     | VMAFD_RPC_FLAG_REQUIRE_AUTHZ;
+
+    dwError = VmAfdRpcServerCheckAccess(hBinding, dwRpcFlags);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvBeginUpgrade();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+UINT32
+Srv_VmAfdRpcEndUpgrade(
+    rpc_binding_handle_t hBinding
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMAFD_RPC_FLAG_ALLOW_TCPIP
+                     | VMAFD_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                     | VMAFD_RPC_FLAG_REQUIRE_AUTHZ;
+
+    dwError = VmAfdRpcServerCheckAccess(hBinding, dwRpcFlags);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvEndUpgrade();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
 void
 vecs_store_handle_t_rundown(void *ctx)
 {

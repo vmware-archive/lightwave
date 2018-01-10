@@ -2271,6 +2271,46 @@ VmDirAppendRaftState(
     PCSTR hostName
     );
 
+// threadcontext.c
+typedef struct _VMDIR_THREAD_CONTEXT
+{
+    pthread_key_t   threadLogContext;
+    pthread_once_t  threadContextOnce;
+} VMDIR_THREAD_CONTEXT, *PVMDIR_THREAD_CONTEXT;
+
+typedef struct _VMDIR_THREAD_LOG_CONTEXT
+{
+    PSTR    pszRequestId;
+    PSTR    pszUserId;
+    PSTR    pszSessionId;
+} VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
+
+DWORD
+VmDirInitThreadContext(VOID);
+
+VOID
+VmDirFreeThreadContext(VOID);
+
+VOID
+VmDirFreeThreadLogContext(
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext;
+    );
+
+DWORD
+VmDirGetThreadContext(
+    PVMDIR_THREAD_CONTEXT*  ppThreadContext
+    );
+
+DWORD
+VmDirGetThreadLogContextValue(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThreadLogContext
+    );
+
+DWORD
+VmDirSetThreadLogContextValue(
+    PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
+    );
+
 #ifdef __cplusplus
 }
 #endif

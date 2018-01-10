@@ -25,6 +25,7 @@ public class Config {
 
     public static final String X_SSL_SECURE_HEADER = "X-SSL-SECURE";
     public static final String CORRELATION_ID_HEADER = "id";
+    public static final String X_REQUEST_ID_HEADER = "X-Request-Id";
     public static final String ACCESS_TOKEN_HEADER = "Authorization";
 
     public static final String ACCESS_TOKEN_PARAMETER = "access_token";
@@ -36,6 +37,11 @@ public class Config {
     public static final String JWT_GROUPS_FIELD = "groups";
     public static final String JWT_HOK_FIELD = "hotk";
     public static final String JWT_MUTITENANTED_FIELD = "multi_tenant";
+
+    public static final String CorrelationIdMdcKey = "CorrelationIdMDCKey";
+    public static final String TenantNameMdcKey = "TenantNameMDCKey";
+    public static final String UserIdMdcKey = "UserIdMDCKey";
+    public static final String SessionIdMdcKey = "SessionIdMDCKey";
 
     public static final String LOCALIZATION_PACKAGE_NAME = "i18n.authorization";
 

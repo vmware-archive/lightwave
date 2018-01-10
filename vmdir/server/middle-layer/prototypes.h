@@ -153,7 +153,7 @@ VmDirExecutePostDeleteCommitPlugins(
     DWORD               dwResult         // latest call return value
     );
 
-// index.c
+// indexplugin.c
 DWORD
 VmDirPluginIndexEntryPreAdd(
     PVDIR_OPERATION  pOperation,
@@ -277,7 +277,7 @@ VmDirSASLSessionClose(
     PVDIR_SASL_BIND_INFO    pSaslBindInfo
     );
 
-// group.c
+// groupplugin.c
 DWORD
 VmDirPluginGroupTypePreAdd(
     PVDIR_OPERATION  pOperation,
@@ -321,6 +321,51 @@ VmDirPagedSearchCacheRead(
     PCSTR pszCookie,
     ENTRYID **ppValidatedEntries,
     DWORD *pdwEntryCount
+    );
+
+// pagesearch.c
+VOID
+VmDirPagedSearchContextFree(
+    VOID
+    );
+
+DWORD
+VmDirPagedSearchContextInit(
+    VOID
+    );
+
+DWORD
+VmDirProcessPagedSearch(
+    VDIR_OPERATION *  pOperation
+    );
+
+// replplugin.c
+DWORD
+VmDirPluginReplAgrPostAddCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginReplAgrPostDeleteCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginServerEntryPostAddCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginServerEntryPostDeleteCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
     );
 
 // saslsockbuf.c

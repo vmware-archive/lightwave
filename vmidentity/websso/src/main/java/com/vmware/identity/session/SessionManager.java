@@ -34,7 +34,7 @@ public interface SessionManager {
      */
     public Session createSession(
             PrincipalId principal, AuthnMethod authMethod,
-            String externalIDPSessionId, String idpEntId) throws SamlServiceException;
+            String externalIDPSessionId, String idpEntId, String protocol) throws SamlServiceException;
 
 	/**
 	 * Add a session to store

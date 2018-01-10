@@ -82,7 +82,6 @@ public class TenantResourceIT extends IntegrationTestBase {
         assertNotNull(config.getBrandPolicy());
         assertNotNull(config.getLockoutPolicy());
         assertNotNull(config.getPasswordPolicy());
-        assertNotNull(config.getProviderPolicy());
         assertNotNull(config.getTokenPolicy());
     }
 

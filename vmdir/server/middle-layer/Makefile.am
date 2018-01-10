@@ -16,14 +16,16 @@ libmiddle_layer_la_SOURCES = \
     delete.c \
     dn.c \
     globals.c \
-    group.c \
-    index.c \
+    groupplugin.c \
+    indexplugin.c \
     krb.c \
     lockoutpolicy.c \
     modify.c \
+    pagedsearch.c \
     password.c \
     plugin.c \
     pscache.c \
+    replplugin.c \
     sasl.c \
     saslsockbuf.c \
     search.c \

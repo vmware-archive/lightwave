@@ -123,7 +123,7 @@ func (store *VecsStore) Close() (err error) {
 	if store.p != nil {
 		err := C.VecsCloseCertStore(store.p)
 		if err != 0 {
-			return fmt.Errorf("[ERROR] failed to close cert store (%s)", cErrorToGoError(e))
+			return fmt.Errorf("[ERROR] failed to close cert store (%s)", cErrorToGoError(err))
 		}
 		store.p = nil
 	}

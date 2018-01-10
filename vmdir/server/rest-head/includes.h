@@ -58,12 +58,13 @@
 #include <vmrest.h>
 
 #include <ssotypes.h>
+#include <ssoerrors.h>
 #include <oidc_types.h>
 #include <oidc.h>
 
 #include "defines.h"
-#include "externs.h"
 #include "structs.h"
+#include "externs.h"
 #include "prototypes.h"
 
 #endif

@@ -764,6 +764,8 @@ typedef struct _VM_SOCKET
                             );
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_DEBUG, "DNS FWD REQ: ", pQueryBuffer, dwQuerySize);
+
     dwError = VmDnsSockWrite(
                     pSocket,
                     NULL,

@@ -330,6 +330,7 @@ VmAfdGetDomainController(
     PCSTR pszDomain,
     PCSTR pszUserName,
     PCSTR pszPassword,
+    PCSTR pszSiteName,          /* OPTIONAL */
     PSTR* ppszHostname,
     PSTR* ppszDCAddress
     );
@@ -349,7 +350,8 @@ VmAfSrvConfigureDNSW(
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName         /* OPTIONAL */
     );
 
 DWORD
@@ -358,7 +360,8 @@ VmAfSrvConfigureDNSA(
     PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUserName,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    PCSTR pszSiteName         /* OPTIONAL */
     );
 
 DWORD
@@ -366,7 +369,8 @@ VmAfSrvUnconfigureDNSW(
     PCWSTR pwszServerName,
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     );
 
 DWORD
@@ -374,7 +378,8 @@ VmAfSrvUnconfigureDNSA(
     PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUserName,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    PCSTR pszSiteName
     );
 
 DWORD
@@ -1483,6 +1488,24 @@ VmAfdIpcGetDCList(
     PDWORD pdwResponseSize
     );
 
+DWORD
+VmAfdIpcBeginUpgrade(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcEndUpgrade(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 //rpcserv_internal.c
 
 DWORD
@@ -2359,6 +2382,22 @@ VmAfdIpcCreateComputerAccount(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
+    );
+
+//ha_upgrade.c
+DWORD
+VmAfSrvBeginUpgrade(
+    VOID
+    );
+
+DWORD
+VmAfSrvEndUpgrade(
+    VOID
+    );
+
+DWORD
+VmAfSrvGetUpgradeState(
+    PBOOL pbIsUpgradeInProgress
     );
 
 #ifdef __cplusplus

@@ -151,7 +151,7 @@ public class SamlAuthorityFactoryTest {
          new TokenRestrictions(DEFAULT_MAXIMUM_TOKEN_LIFETIME,
             DEFAULT_MAXIMUM_TOKEN_LIFETIME, TOKEN_DELEGATION_COUNT,
             TOKEN_RENEW_COUNT), validCerts, DEFAULT_CLOCK_TOLERANCE,
-            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER)));
+            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)));
       return config;
    }
 

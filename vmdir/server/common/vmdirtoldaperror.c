@@ -135,6 +135,8 @@ VmDirToLDAPError(
                 break;
 
             case VMDIR_ERROR_INVALID_REQUEST:
+            case VMDIR_ERROR_INVALID_PAGED_SEARCH_REQUEST:
+            case VMDIR_ERROR_NO_PAGED_SEARCH_CONTEXT:
                 dwError = LDAP_PROTOCOL_ERROR;
                 break;
 

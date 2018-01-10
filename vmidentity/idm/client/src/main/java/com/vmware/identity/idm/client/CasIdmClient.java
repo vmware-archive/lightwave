@@ -667,6 +667,26 @@ public class CasIdmClient
     }
 
     /**
+     * Get all external IDP configurations for the specified tenant
+     *
+     * @param tenantName
+     *            Cannot be null or empty
+     * @return Collection of external IDP configuration for the tenant, empty if
+     *         none are found
+     * @throws Exception
+     * @throws IDMException
+     * @throws InvalidArgumentException
+     *             argument validation failed
+     * @throws NoSuchTenantException
+     *             tenant not found
+     */
+    public Collection<IDPConfig> getAllExternalIdpConfig(String tenantName, String protocol)
+            throws Exception
+    {
+        return getService().getAllExternalIdpsForTenant(tenantName, protocol, this.getServiceContext());
+    }
+
+    /**
      * Get trust anchors for all the IDP configurations of the specified tenant.
      *
      * @param tenantName cannot be null or empty
@@ -2884,6 +2904,14 @@ public class CasIdmClient
                 newPassword, this.getServiceContext());
     }
 
+    /**
+     *
+     */
+    public String generatePassword(String tenantName) throws Exception
+    {
+        return getService().generatePassword(tenantName, this.getServiceContext());
+    }
+
     public
     void
     updateSystemDomainStorePassword(String tenantName, char[] newPassword) throws Exception
@@ -3073,6 +3101,30 @@ public class CasIdmClient
         Document doc = exporter.exportSaml2Metadata(tenantName);
 
         return doc;
+    }
+
+    /**
+     * import federated IDP configuration defined in the configuration JSON format
+     * into tenant.
+     *
+     * @param tenantName
+     *           Name of tenant.
+     * @param config
+     *           JSON content for the federated Idp.
+     * @return entityID of the imported configuration
+     * @throws Exception
+     * @throws AssertionError
+     *            the XML document validation fails
+     * @throws IDMException
+     * @throws ExternalIDPCertChainInvalidTrustedPathException
+     *            invalid certificate chain
+     * @throws ExternalIDPExtraneousCertsInCertChainException
+     *            extra certificates found outside of certificate chain.
+     */
+    public String importFederatedIdpConfiguration(String tenantName, String config)
+        throws ExternalIDPCertChainInvalidTrustedPathException,
+        ExternalIDPExtraneousCertsInCertChainException, Exception {
+        return new FederatedIdpImporter(this).importConfig(tenantName, config);
     }
 
     /**
