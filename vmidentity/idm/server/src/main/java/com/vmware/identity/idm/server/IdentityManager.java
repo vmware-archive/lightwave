@@ -536,21 +536,9 @@ public class IdentityManager implements IIdentityManager {
                 throw new IllegalArgumentException(errMsg);
             }
 
-            // Need to use the system tenant administrator to delete tenant instances...
-            Collection<IIdentityStoreData> stores = _configStore.getProviders(
-                    getSystemTenant(),
-                    EnumSet.of(DomainType.SYSTEM_DOMAIN),
-                    true);
-
-            if (stores.isEmpty())
-            {
-                logger.error("Unable to retrieve the system domain for system tenant");
-                throw new IllegalStateException("Unable to retrieve system domain for system tenant");
-            }
-
-            IIdentityStoreData systemDomainData = stores.iterator().next();
-            String username = systemDomainData.getExtendedIdentityStoreData().getUserName();
-            String password = systemDomainData.getExtendedIdentityStoreData().getPassword();
+            IdmServerConfig config = IdmServerConfig.getInstance();
+            String username = config.getDirectoryConfigStoreUserName();
+            String password = config.getDirectoryConfigStorePassword();
 
             unregisterTenant(name);
 
