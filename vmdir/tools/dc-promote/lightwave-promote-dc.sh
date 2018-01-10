@@ -13,11 +13,10 @@ DC_DOMAIN="lightwave.local"
 DC_NAME="photon-addc-test10"
 ADMIN_PASSWORD="VMware123@"
 PRIV_USER="root"
-UNPRIV_USER="abernstein"
 
 LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/likewise-open
 LIGHTWAVE_BASE=/home/abernstein/workspaces/git/lightwave/lightwave
-SASL_BASE=/home/abernstein/workspaces/wrk/cyrus-sasl-2.1.26
+SASL_BASE=$LIGHTWAVE_BASE/vmdir/thirdparty/cyrus-sasl-2.1.26
 
 echo_status()
 {
@@ -75,14 +74,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-id=`ssh $UNPRIV_USER@$LIGHTWAVE_AD hostname -i`
-if [ $? -ne 0 ]; then
-  echo "ERROR: 'ssh $UNPRIV_USER@$LIGHTWAVE_AD' failed; fix IP or pub/priv keys"
-  exit 1
-fi
-
-
-fqdn=`ssh $UNPRIV_USER@$LIGHTWAVE_AD hostname -f`
+fqdn=`ssh $PRIV_USER@$LIGHTWAVE_AD hostname -f`
 if [ "$fqdn" != "${DC_NAME}.${DC_DOMAIN}" ]; then
   echo "ERROR: Mismatch between promoted domain and local configuration"
   echo "       fix DC_NAME and DC_DOMAIN"
@@ -141,7 +133,7 @@ cat  $TOOLS_DIR/resolv-config.sh | \
 chmod +x /tmp/resolv-config-edited.sh 
 
 echo_status "copy and run resolv-config.sh to domain controller"
-scp /tmp/resolv-config-edited.sh $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp/resolv-config-edited.sh
+scp /tmp/resolv-config-edited.sh $PRIV_USER@$LIGHTWAVE_AD:/var/tmp/resolv-config-edited.sh
 ssh $PRIV_USER@$LIGHTWAVE_AD /var/tmp/resolv-config-edited.sh
 
 # 6 Promote Lightwave PSC
@@ -235,20 +227,20 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
 
 # 12 Add gss-spnego plugin
 echo_status "Installing CyrusSASL gssspnego plugin"
-scp $SASL_BASE/plugins/.libs/libgssspnego.so.3.0.0 $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp
+scp $SASL_BASE/plugins/.libs/libgssspnego.so.3.0.0 $PRIV_USER@$LIGHTWAVE_AD:/var/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
   '( mv /var/tmp/libgssspnego.so.3.0.0 /usr/lib/sasl2 && ln -s /usr/lib/sasl2/libgssspnego.so.3.0.0 /usr/lib/sasl2/libgssspnego.so )'
 
 # 13 Replace default GSSAPI plugin (built with GSS-SPNEGO disabled)
 echo_status "Configuring patched libgssapiv2.so plugin that disables gss-spnego"
-scp $SASL_BASE/plugins/.libs/libgssapiv2.so.3.0.0 $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp
+scp $SASL_BASE/plugins/.libs/libgssapiv2.so.3.0.0 $PRIV_USER@$LIGHTWAVE_AD:/var/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
  '( mv -i /usr/lib/sasl2/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0.rpmorig &&
     mv /var/tmp/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0 )'
 
 # 14 Replace the default CyrusSASL library
 echo_status "Replace the default CyrusSASL library"
-scp $SASL_BASE/./lib/.libs/libsasl2.so.3.0.0 $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp
+scp $SASL_BASE/./lib/.libs/libsasl2.so.3.0.0 $PRIV_USER@$LIGHTWAVE_AD:/var/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
     '( mv /usr/lib/libsasl2.so.3.0.0  /usr/lib/libsasl2.so.3.0.0.rpmorig &&
        mv /var/tmp/libsasl2.so.3.0.0 /usr/lib/libsasl2.so.3.0.0 )'
@@ -267,11 +259,11 @@ chmod +x /tmp/domain-attributes-edited.sh
 
 # 15b copy and run partitions script to domain controller
 echo_status "copy and run partitions script to domain controller"
-scp /tmp/partitions-vmdir-edited.sh $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp/partitions-vmdir-edited.sh
+scp /tmp/partitions-vmdir-edited.sh $PRIV_USER@$LIGHTWAVE_AD:/var/tmp/partitions-vmdir-edited.sh
 ssh $PRIV_USER@$LIGHTWAVE_AD /var/tmp/partitions-vmdir-edited.sh
 
 echo_status "copy and run domain-attributes.sh to domain controller"
-scp /tmp/domain-attributes-edited.sh $UNPRIV_USER@$LIGHTWAVE_AD:/var/tmp/domain-attributes-edited.sh
+scp /tmp/domain-attributes-edited.sh $PRIV_USER@$LIGHTWAVE_AD:/var/tmp/domain-attributes-edited.sh
 ssh $PRIV_USER@$LIGHTWAVE_AD /var/tmp/domain-attributes-edited.sh
 
 
