@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2017 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -13,6 +13,10 @@
  */
 package com.vmware.identity.openidconnect.server;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.openidconnect.common.ErrorObject;
@@ -21,11 +25,6 @@ import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 
 import net.minidev.json.JSONObject;
-import org.apache.commons.lang3.Validate;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLDecoder;
 
 public class FederationRelayState {
   private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(FederationRelayState.class);

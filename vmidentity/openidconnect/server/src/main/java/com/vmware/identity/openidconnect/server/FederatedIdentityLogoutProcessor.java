@@ -11,17 +11,17 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+
 package com.vmware.identity.openidconnect.server;
 
-import com.vmware.identity.idm.IDPConfig;
-import com.vmware.identity.openidconnect.protocol.HttpResponse;
+public interface FederatedIdentityLogoutProcessor {
 
-import javax.servlet.http.HttpServletRequest;
-
-public interface FederatedIdentityProcessor {
-  HttpResponse processRequest(
-                    HttpServletRequest request,
-                    FederationRelayState relayState,
-                    IDPConfig idpConfig
-                ) throws Exception ;
+    /**
+     * Process logging out from federated idp.
+     *
+     * @param federatedIdpInfo federated idp info
+     * @param session current login session
+     * @return a post logout redirect uri for external idp
+     */
+    public String process(FederatedIdentityProviderInfo federatedIdpInfo, SessionManager.Entry session) throws Exception;
 }

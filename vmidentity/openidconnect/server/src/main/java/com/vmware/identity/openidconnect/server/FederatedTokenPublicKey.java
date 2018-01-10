@@ -11,17 +11,14 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+
 package com.vmware.identity.openidconnect.server;
 
-import com.vmware.identity.idm.IDPConfig;
-import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import java.security.interfaces.RSAPublicKey;
 
-import javax.servlet.http.HttpServletRequest;
+public interface FederatedTokenPublicKey {
 
-public interface FederatedIdentityProcessor {
-  HttpResponse processRequest(
-                    HttpServletRequest request,
-                    FederationRelayState relayState,
-                    IDPConfig idpConfig
-                ) throws Exception ;
+    String getIssuer();
+
+    RSAPublicKey getPublicKey() throws Exception;
 }
