@@ -41,7 +41,7 @@
 #ifdef _WIN32
 #define BE_MDB_ENV_MAX_MEM_MAPSIZE    1073741824   // 1 GB for now, as MDB does preallocate on Windows
 #else
-#define BE_MDB_ENV_MAX_MEM_MAPSIZE    21474836480  // 20 GB - 20*1024*1024*1024
+#define BE_MDB_ENV_MAX_MEM_MAPSIZE    107374182400  // 100 GB - 100*1024*1024*1024
 #endif
 
 // MDB specific type mapping
