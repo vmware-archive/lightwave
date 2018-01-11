@@ -111,6 +111,13 @@ typedef struct _VMDIR_SERVER_GLOBALS
     DWORD                dwTombstoneExpirationPeriod;
     DWORD                dwTombstoneThreadFrequency;
     DWORD                dwMaxInternalSearchLimit;
+
+    // Flag that indicates whether this instance is promoted
+    // It is set at two places:
+    // 1) At the end of VmDirSrvSetupHostInstance for the 1st node
+    // 2) At the end of LoadServerGlobals for other nodes
+    BOOLEAN              bPromoted;
+
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

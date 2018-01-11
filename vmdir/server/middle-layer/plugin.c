@@ -156,6 +156,12 @@
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginLockoutCachePostModifyCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_OPERATION_TYPE_REPL),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginDCAccountPostModifyCommit), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE1: order of fields MUST stay in sync with struct definition...

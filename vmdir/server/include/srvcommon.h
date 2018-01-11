@@ -81,6 +81,7 @@ extern "C" {
 #define VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED_LEN   sizeof(VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED)
 
 #define GENERALIZED_TIME_STR_LEN       17
+#define GENERALIZED_TIME_STR_SIZE      GENERALIZED_TIME_STR_LEN + 1
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46
@@ -142,6 +143,7 @@ typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
 typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;
 typedef struct _VDIR_ACL_CTX*               PVDIR_ACL_CTX;
+typedef struct _VMDIR_BKGD_TASK_CTX*        PVMDIR_BKGD_TASK_CTX;
 
 typedef struct _VDIR_BERVALUE
 {
@@ -687,7 +689,7 @@ typedef struct _VMDIR_REPLICATION_METRICS
     PSTR                    pszDstHostname;
     PSTR                    pszDstSite;
     PVM_METRICS_GAUGE       pTimeConverge;
-    PVM_METRICS_HISTOGRAM   pTimeOnehop;
+    PVM_METRICS_GAUGE       pTimeOnehop;
     PVM_METRICS_HISTOGRAM   pTimeCycleSucceeded;
     PVM_METRICS_HISTOGRAM   pTimeCycleFailed;
     PVM_METRICS_HISTOGRAM   pUsnBehind;
@@ -1616,7 +1618,23 @@ VmDirKeySetGetKvno(
     PBYTE pUpnKeys,
     DWORD upnKeysLen,
     DWORD *kvno
-);
+    );
+
+// background.c
+DWORD
+VmDirBkgdThreadInitialize(
+    VOID
+    );
+
+VOID
+VmDirBkgdThreadShutdown(
+    VOID
+    );
+
+DWORD
+VmDirBkgdTaskUpdatePrevTime(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
 
 #ifdef __cplusplus
 }

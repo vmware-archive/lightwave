@@ -5,6 +5,7 @@ idl_srcdir=$(top_srcdir)/vmdir/idl
 vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
+    background.c \
     globals.c \
     heartbeat.c \
     index.c \

@@ -128,6 +128,8 @@ VmDirFirstReplicationCycle(
             "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
             retVal);
 
+    VmDirBkgdThreadShutdown();
+
     VmDirMetricsShutdown();
 
     retVal = _VmDirSwapDB(dbHomeDir, bHasXlog);
@@ -162,6 +164,13 @@ VmDirFirstReplicationCycle(
             retVal,
             pszLocalErrorMsg,
             "VmDirFirstReplicationCycle: VmDirMetricsInitialize call failed, error: %d.",
+            retVal);
+
+    retVal = VmDirBkgdThreadInitialize();
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: VmDirBkgdThreadInit call failed, error: %d.",
             retVal);
 
 cleanup:
@@ -948,6 +957,8 @@ VmDirSrvServerReset(
 
     VmDirGetMdbWalEnable(&bMdbWalEnable);
 
+    VmDirBkgdThreadShutdown();
+
     VmDirMetricsShutdown();
 
     //swap current vmdir database file with the foriegn one under partner/
@@ -1056,14 +1067,12 @@ VmDirSrvServerReset(
     dwError = VmDirMetricsInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirBkgdThreadInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
+    VmDirSchemaCtxRelease(pSchemaCtx);
     VmDirFreeEntryArrayContent(&entryArray);
-
     VMDIR_SAFE_FREE_MEMORY(pszConfigurationContainerDn);
     VMDIR_SAFE_FREE_MEMORY(pszDomainControllerContainerDn);
 

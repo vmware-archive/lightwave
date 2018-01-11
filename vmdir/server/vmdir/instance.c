@@ -606,6 +606,9 @@ VmDirSrvSetupHostInstance(
         VMDIR_LOCK_MUTEX(bInLockReplCycle, gVmdirGlobals.replCycleDoneMutex);
         VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
         VMDIR_UNLOCK_MUTEX(bInLockReplCycle, gVmdirGlobals.replCycleDoneMutex);
+
+        // set promoted flag to TRUE
+        gVmdirServerGlobals.bPromoted = TRUE;
     }
     else
     {

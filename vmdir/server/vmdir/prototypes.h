@@ -109,6 +109,32 @@ VmDirLoadIndex(
     BOOLEAN bFirstboot
     );
 
+// background.c
+DWORD
+VmDirBkgdThreadFun(
+    PVOID   pArg
+    );
+
+DWORD
+VmDirBkgdUpdateLocalDomainControllerObj(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdCreateNewIntegChkReport(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdCompareLastTwoIntegChkReports(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdPingMaxOrigUsn(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
 // init.c
 DWORD
 VmDirInit(

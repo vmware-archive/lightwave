@@ -368,6 +368,13 @@ VmDirPluginServerEntryPostDeleteCommit(
     DWORD            dwPriorResult
     );
 
+DWORD
+VmDirPluginDCAccountPostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
 // saslsockbuf.c
 DWORD
 VmDirSASLSockbufInstall(

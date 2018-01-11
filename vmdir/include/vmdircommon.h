@@ -2376,6 +2376,12 @@ VmDirGetServerName(
     PSTR* ppszServerName
     );
 
+DWORD
+VmDirConvertTimestampToEpoch(
+    PSTR    pszTimestamp,
+    PLONG   pEpoch
+    );
+
 #ifdef __cplusplus
 }
 #endif
