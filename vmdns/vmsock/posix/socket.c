@@ -1639,7 +1639,6 @@ error:
     goto cleanup;
 }
 
-
 VOID
 VmDnsSockPosixFreeIoBuffer(
     PVM_SOCK_IO_BUFFER     pIoBuffer

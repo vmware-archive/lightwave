@@ -565,17 +565,19 @@ VmDnsReleaseForwarderPacketContext(
 DWORD
 VmDnsForwardRequest(
     PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
-    BOOL                                 bUseUDP,
-    PVM_SOCK_IO_BUFFER                   pIoBuffer
+    PVM_SOCK_EVENT_QUEUE                 pEventQueue,
+    BOOL                                 bUseUDP
     );
 
 DWORD
-VmDnsForwardResponse(
-    BOOL        bUseUDP,
-    PVM_SOCKET  pSocket,
-    PBYTE*      ppResponse,
-    PDWORD      pdwResponseSize,
-    PDWORD      pdwRCode
+VmDnsCompleteForwardResponse(
+    BOOL                 bUseUDP,
+    PVM_SOCK_EVENT_QUEUE pEventQueue,
+    PVM_SOCKET           pSocket,
+    PVM_SOCK_IO_BUFFER   pIoDataResponse,
+    PBYTE*               ppResponse,
+    PDWORD               pdwResponseSize,
+    PDWORD               pdwRCode
     );
 
 DWORD
