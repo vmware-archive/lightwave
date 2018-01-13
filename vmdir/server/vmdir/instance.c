@@ -137,7 +137,7 @@ VmDirSrvCreateBuiltinContainer(
     PCSTR            pszContainerName
     );
 
-VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
+VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode = FIRST_REPL_CYCLE_MODE_NONE;
 
 //
 // Set security descriptor for objects that were created prior to the creation
@@ -412,6 +412,13 @@ VmDirSrvSetupHostInstance(
             &gVmdirServerGlobals.serverObjDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // set bvServerObjName
+    dwError = VmDirAllocateBerValueAVsnprintf(
+            &gVmdirServerGlobals.bvServerObjName,
+            "%s",
+            pszLowerCaseHostName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // set dcAccountDN
     dwError = VmDirAllocateBerValueAVsnprintf(
             &gVmdirServerGlobals.dcAccountDN,
@@ -638,6 +645,8 @@ VmDirSrvSetupHostInstance(
         VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
         VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
     }
+
+    VmDirAssertServerGlobals();
 
 cleanup:
     VmDirSchemaCtxRelease(pSchemaCtx);

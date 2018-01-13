@@ -1398,6 +1398,8 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     // Set promoted flag to TRUE
     gVmdirServerGlobals.bPromoted = TRUE;
 
+    VmDirAssertServerGlobals();
+
 cleanup:
 
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);

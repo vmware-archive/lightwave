@@ -1024,6 +1024,11 @@ VmDirSimpleEntryDeleteAttribute(
     );
 
 // util.c
+VOID
+VmDirAssertServerGlobals(
+    VOID
+    );
+
 BOOLEAN
 VmDirIsDeletedContainer(
     PCSTR   pszDN
