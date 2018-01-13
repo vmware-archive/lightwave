@@ -7,6 +7,7 @@ lwraftconf_DATA = \
     post-rest.json \
     post-telegraf.conf \
     post-demote-deads.sh \
-    refresh-resolve-conf.sh
+    refresh-resolve-conf.sh \
+    monitor-core-dump.sh
 
 bin_SCRIPTS = 
