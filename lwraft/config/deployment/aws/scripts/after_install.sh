@@ -51,6 +51,12 @@ tdnf install -y syslog-ng
 # Remove the existing config of syslog-ng for lightwave
 # Everything will be written to /var/log/messages
 sed -i '/lightwave.conf.d/d' /etc/syslog-ng/syslog-ng.conf
+if [[ -z $(grep "frac_digits(3)" /etc/syslog-ng/syslog-ng.conf) ]]
+then
+    echo "" >> /etc/syslog-ng/syslog-ng.conf
+    echo "options { frac_digits(3); };" >> /etc/syslog-ng/syslog-ng.conf
+    echo "" >> /etc/syslog-ng/syslog-ng.conf
+fi
 
 systemctl restart syslog-ng
 systemctl restart systemd-journald
