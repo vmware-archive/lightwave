@@ -31,6 +31,7 @@ VmwDeployBuildParams(
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
     PCSTR pszOrgUnit,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     PCSTR pszSiteName,
@@ -198,6 +199,7 @@ ParseArgs(
     PSTR  pszMachineAccount = NULL;
     PSTR  pszOrgUnit = NULL;
     PSTR  pszSubjectAltName = NULL;
+    PSTR  pszUsername = NULL;
     PSTR  pszPassword = NULL;
     PSTR  pszSiteName = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
@@ -210,6 +212,7 @@ ParseArgs(
         PARSE_MODE_OPEN = 0,
         PARSE_MODE_DOMAIN_CONTROLLER,
         PARSE_MODE_DOMAIN,
+        PARSE_MODE_USERNAME,
         PARSE_MODE_PASSWORD,
         PARSE_MODE_MACHINE_ACCOUNT,
         PARSE_MODE_ORG_UNIT,
@@ -226,7 +229,11 @@ ParseArgs(
         switch (parseMode)
         {
             case PARSE_MODE_OPEN:
-                if (!strcmp(pszArg, "--password"))
+                if (!strcmp(pszArg, "--username"))
+                {
+                    parseMode = PARSE_MODE_USERNAME;
+                }
+                else if (!strcmp(pszArg, "--password"))
                 {
                     parseMode = PARSE_MODE_PASSWORD;
                 }
@@ -281,6 +288,20 @@ ParseArgs(
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_DEPLOY_ERROR(dwError);
                 }
+
+                break;
+
+            case PARSE_MODE_USERNAME:
+
+                if (pszUsername)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszUsername = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
 
                 break;
 
@@ -402,6 +423,7 @@ ParseArgs(
                     pszDomain,
                     pszMachineAccount,
                     pszOrgUnit,
+                    pszUsername,
                     pszPassword,
                     pszSubjectAltName,
                     pszSiteName,
@@ -437,6 +459,7 @@ VmwDeployBuildParams(
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
     PCSTR pszOrgUnit,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     PCSTR pszSiteName,
@@ -496,10 +519,16 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (!pszUsername)
+    {
+        pszUsername = (bUseMachineAccount && pszMachineAccount)
+                                ? pszMachineAccount : VMW_ADMIN_NAME;
+    }
+
     if (!pszPassword)
     {
         pszUserNamePrompt = (bUseMachineAccount && pszMachineAccount)
-                                ? pszMachineAccount : "administrator";
+                                ? pszMachineAccount : pszUsername;
 
         dwError = VmwDeployReadPassword(
                         pszUserNamePrompt,
@@ -525,6 +554,9 @@ VmwDeployBuildParams(
                             &pSetupParams->pszSite);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
+
+    dwError = VmwDeployAllocateStringA(pszUsername, &pSetupParams->pszUsername);
+    BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmwDeployAllocateStringA(pszPassword, &pSetupParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -654,7 +686,8 @@ ShowUsage(
            "[--disable-dns]\n"
            "[--use-machine-account] Use machine account credentials to join\n"
            "[--prejoined] Machine account is already created in directory \n"
-           "[--password  <password to administrator account>]\n"
+           "[--username <username>]\n"
+           "[--password <password>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
            "[--site <sitename>] Specific region to join to\n");
 }
