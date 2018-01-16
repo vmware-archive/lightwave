@@ -2176,7 +2176,7 @@ CdcSrvEnableLegacyModeHA(
 
 DWORD
 CdcSrvForceRefreshCache(
-    PCDC_CONTEXT pContext
+    PCDC_CONTEXT pCdcContext
     );
 
 DWORD
@@ -2267,7 +2267,6 @@ CdcWakeupStateMachine(
       PCDC_STATE_MACHINE_CONTEXT pStateMachine,
       BOOLEAN                    bWaitForCompletion
       );
-
 
 //cdcupdate.c
 

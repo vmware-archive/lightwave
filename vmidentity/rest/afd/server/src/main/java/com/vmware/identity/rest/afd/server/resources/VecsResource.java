@@ -41,6 +41,8 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.provider.VecsLoadStoreParameter;
 
+import io.prometheus.client.Histogram;
+
 /**
  * A resource for vecs operations
  */
@@ -48,6 +50,9 @@ import com.vmware.provider.VecsLoadStoreParameter;
 public class VecsResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(VecsResource.class);
+
+    private static final String METRICS_COMPONENT = "afd";
+    private static final String METRICS_RESOURCE = "VecsResource";
 
     public VecsResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -57,6 +62,8 @@ public class VecsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/ssl")
     public Collection<CertificateDTO> getSSLCertificates() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getSSLCertificates").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             KeyStore keystore = KeyStore.getInstance("VKS");
             keystore.load(new VecsLoadStoreParameter("TRUSTED_ROOTS"));
@@ -74,8 +81,11 @@ public class VecsResource extends BaseResource {
             return sslCerts;
         } catch (CertificateException | IOException | KeyStoreException | NoSuchAlgorithmException e) {
             log.error("Error loading the VECS key store", e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getSSLCertificates").inc();
+            requestTimer.observeDuration();
         }
     }
-
 }

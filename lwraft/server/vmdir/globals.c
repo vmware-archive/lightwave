@@ -133,7 +133,8 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.initialNextUSN, 0),
         VMDIR_SF_INIT(.maxOriginatingUSN, 0),
         VMDIR_SF_INIT(.bvServerObjName, VDIR_BERVALUE_INIT),
-        VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT)
+        VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT),
+        VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0)
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;

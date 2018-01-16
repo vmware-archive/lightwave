@@ -1697,6 +1697,229 @@ error:
 }
 
 DWORD
+CdcDbGetClosestNewDCOnSite(
+     PCWSTR pwszCurrentDC,
+     PCWSTR pwszClientSiteName,
+     PCWSTR pwszDomainName,
+     PWSTR  *ppszDCName
+     )
+{
+    DWORD dwError = 0;
+    PVECS_DB_CONTEXT pDbContext = NULL;
+    sqlite3_stmt* pDbQuery = NULL;
+    PWSTR pwszDCName = NULL;
+    DWORD dwCount = 0;
+
+    char szQuery[] = "SELECT DCName FROM DCTable"
+                     " WHERE IsAlive = 1 AND"
+                     " Site = :site AND"
+                     " Domain = :domainName AND"
+                     " DCName != :dcName "
+                     " ORDER BY PingResponse,RANDOM()"
+                     " LIMIT 1;";
+
+    if (!ppszDCName ||
+        IsNullOrEmptyString(pwszClientSiteName) ||
+        IsNullOrEmptyString(pwszDomainName) ||
+        IsNullOrEmptyString(pwszCurrentDC))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_READ);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = sqlite3_prepare_v2(
+                              pDbContext->pDb,
+                              szQuery,
+                              -1,
+                              &pDbQuery,
+                              NULL
+                              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsBindWideString(
+                              pDbQuery,
+                              ":site",
+                              pwszClientSiteName
+                              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsBindWideString(
+                             pDbQuery,
+                             ":domainName",
+                             pwszDomainName
+                             );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsBindWideString(
+                             pDbQuery,
+                             ":dcName",
+                             pwszCurrentDC
+                             );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsDbStepSql(pDbQuery);
+
+    if (dwError == SQLITE_ROW)
+    {
+        dwError = VecsDBGetColumnString(
+                                  pDbQuery,
+                                  "DCName",
+                                  &pwszDCName
+                                  );
+        BAIL_ON_VMAFD_ERROR(dwError);
+        ++dwCount;
+    }
+    else if (dwError == SQLITE_DONE || !dwCount)
+    {
+        dwError = ERROR_OBJECT_NOT_FOUND;
+    }
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    *ppszDCName = pwszDCName;
+
+cleanup:
+
+    if (pDbQuery)
+    {
+        sqlite3_reset(pDbQuery);
+        sqlite3_finalize(pDbQuery);
+    }
+    if (pDbContext)
+    {
+        VecsDbReleaseContext(pDbContext);
+    }
+    return dwError;
+error:
+
+    if (ppszDCName)
+    {
+        *ppszDCName = NULL;
+    }
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    goto cleanup;
+}
+
+DWORD
+CdcDbGetClosestNewDC(
+     PCWSTR pwszCurrentDC,
+     PCWSTR pwszDomainName,
+     PWSTR *ppszDCName
+     )
+{
+    DWORD dwError = 0;
+    PVECS_DB_CONTEXT pDbContext = NULL;
+    sqlite3_stmt* pDbQuery = NULL;
+    PWSTR pwszDCName = NULL;
+    DWORD dwCount = 0;
+    DWORD dwHeartbeat = 0;
+    time_t tMinusLastState = 0;
+
+    char szQuery[] = "SELECT DCName FROM DCTable"
+                     " WHERE IsAlive = 1 AND"
+                     " Domain = :domainName AND"
+                     " DCName != :dcName "
+                     " ORDER BY PingResponse, RANDOM()"
+                     " LIMIT 1;";
+
+    if (!ppszDCName ||
+        IsNullOrEmptyString(pwszDomainName) ||
+        IsNullOrEmptyString(pwszCurrentDC))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_READ);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = sqlite3_prepare_v2(
+                              pDbContext->pDb,
+                              szQuery,
+                              -1,
+                              &pDbQuery,
+                              NULL
+                              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsBindWideString(
+                             pDbQuery,
+                             ":domainName",
+                             pwszDomainName
+                             );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VecsBindWideString(
+                             pDbQuery,
+                             ":dcName",
+                             pwszCurrentDC
+                             );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = CdcRegDbGetHeartBeatInterval(&dwHeartbeat);
+    if (dwError)
+    {
+        dwHeartbeat = CDC_DEFAULT_HEARTBEAT;
+        dwError = 0;
+    }
+
+    tMinusLastState = time(NULL) - dwHeartbeat;
+
+    /*
+     * TODO: Commenting this out till we fix CdcUpdateAndPing to wake up statemachine
+     *dwError = VecsBindDword(
+     *                    pDbQuery,
+     *                    ":time",
+     *                    tMinusLastState
+     *                    );
+     *BAIL_ON_VMAFD_ERROR(dwError);
+     */
+
+    dwError = VecsDbStepSql(pDbQuery);
+
+    if (dwError == SQLITE_ROW)
+    {
+        dwError = VecsDBGetColumnString(
+                                  pDbQuery,
+                                  "DCName",
+                                  &pwszDCName
+                                  );
+        BAIL_ON_VMAFD_ERROR(dwError);
+        ++dwCount;
+    }
+    else if (dwError == SQLITE_DONE || !dwCount)
+    {
+        dwError = ERROR_OBJECT_NOT_FOUND;
+    }
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    *ppszDCName = pwszDCName;
+
+cleanup:
+
+    if (pDbQuery)
+    {
+        sqlite3_reset(pDbQuery);
+        sqlite3_finalize(pDbQuery);
+    }
+    if (pDbContext)
+    {
+        VecsDbReleaseContext(pDbContext);
+    }
+    return dwError;
+error:
+
+    if (ppszDCName)
+    {
+        *ppszDCName = NULL;
+    }
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    goto cleanup;
+}
+
+DWORD
 CdcDbUpdateHeartbeatStatus(
     PCDC_DB_ENTRY_W pCdcDbEntry,
     PVMAFD_HB_STATUS_W pHeartbeatStatus

@@ -103,50 +103,58 @@ VmDirKrbInit(
     PSTR                pszLocalRealm = NULL;
     PSTR                pszLocalDomain = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
-    int                 iCnt = 0;
     BOOLEAN             bInLock = FALSE;
+    PVDIR_ATTRIBUTE     pAttrKrbMKey = NULL;
 
-    //TODO, use PERSISTED_DSE_ROOT_DN.ATTR_ROOT_DOMAIN_NAMING_CONTEXT instead of "/SUBTREE search?
-    // find domain entries (objectclass=dcobject)
+
+    if (!gVmdirServerGlobals.systemDomainDN.lberbv_val)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s, domain not yet promoted", __FUNCTION__);
+        goto cleanup; // system not yet promoted
+    }
+
     dwError = VmDirSimpleEqualFilterInternalSearch(
-                    "",
-                    LDAP_SCOPE_SUBTREE,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    LDAP_SCOPE_BASE,
                     ATTR_OBJECT_CLASS,
                     OC_DC_OBJECT,
                     &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
+    if (entryArray.iSize != 1)
     {
-        PVDIR_ATTRIBUTE pAttrKrbMKey = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_KRB_MASTER_KEY);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
 
-        if (pAttrKrbMKey)
-        {
-            VMDIR_LOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
+    pAttrKrbMKey = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_MASTER_KEY);
+    if (pAttrKrbMKey)
+    {
+        VMDIR_LOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
 
-            // BUGBUG BUGBUG, assume we only have one realm now
-            dwError = VmDirNormalizeDNWrapper( &(entryArray.pEntry[iCnt].dn) );
-            BAIL_ON_VMDIR_ERROR(dwError);
+        // BUGBUG BUGBUG, assume we only have one realm now
+        dwError = VmDirNormalizeDNWrapper(&(entryArray.pEntry[0].dn) );
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirAllocateStringA( entryArray.pEntry[iCnt].dn.bvnorm_val,
-                                            &pszLocalDomain );
-            BAIL_ON_VMDIR_ERROR(dwError);
-            gVmdirKrbGlobals.pszDomainDN = pszLocalDomain;  // gVmdirKrbGlobals takes over pszLocalDomain
-            pszLocalDomain = NULL;
+        dwError = VmDirAllocateStringA(entryArray.pEntry[0].dn.bvnorm_val,
+                                       &pszLocalDomain );
+        BAIL_ON_VMDIR_ERROR(dwError);
+        gVmdirKrbGlobals.pszDomainDN = pszLocalDomain;  // gVmdirKrbGlobals takes over pszLocalDomain
+        pszLocalDomain = NULL;
 
-            dwError = VmDirKrbSimpleDNToRealm( &(entryArray.pEntry[iCnt].dn), &pszLocalRealm);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            gVmdirKrbGlobals.pszRealm = pszLocalRealm;   // gVmdirKrbGlobals takes over pszLocalRealm
-            pszLocalRealm = NULL;
+        dwError = VmDirKrbSimpleDNToRealm(&(entryArray.pEntry[0].dn), &pszLocalRealm);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        gVmdirKrbGlobals.pszRealm = pszLocalRealm;   // gVmdirKrbGlobals takes over pszLocalRealm
+        pszLocalRealm = NULL;
 
-            dwError = VmDirBervalContentDup( &(pAttrKrbMKey->vals[0]), &gVmdirKrbGlobals.bervMasterKey);
-            BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirBervalContentDup(&(pAttrKrbMKey->vals[0]), &gVmdirKrbGlobals.bervMasterKey);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-            VmDirConditionSignal(gVmdirKrbGlobals.pcond);   // wake up VmKdcInitKdcServiceThread
-            VMDIR_UNLOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
-
-            break;
-        }
+        VmDirConditionSignal(gVmdirKrbGlobals.pcond);   // wake up VmKdcInitKdcServiceThread
+        VMDIR_UNLOCK_MUTEX(bInLock, gVmdirKrbGlobals.pmutex);
+    }
+    else
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirKrbInit, REALM (%s)", VDIR_SAFE_STRING(gVmdirKrbGlobals.pszRealm));
@@ -318,9 +326,6 @@ VmDirInit(
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirMetricsInitialize();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 #ifndef _WIN32
     dwError = InitializeResouceLimit();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -343,10 +348,13 @@ VmDirInit(
 
     // load server globals before any write operations
     dwError = LoadServerGlobals(&bWriteInvocationId);
-    if ( dwError == ERROR_BACKEND_ENTRY_NOTFOUND )
+    if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
     {
         dwError = 0;    // vmdir not yet promoted
     }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMetricsInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirKrbInit();
@@ -357,9 +365,10 @@ VmDirInit(
 
     if (!gVmdirGlobals.bPatchSchema && bLegacyDataLoaded)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
                 "Legacy data store is detected. "
-                "Run schema patch (-u option) before running in normal mode" );
+                "Run schema patch (-u option) before running in normal mode");
         dwError = ERROR_NO_SCHEMA;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -367,8 +376,9 @@ VmDirInit(
     {
         if (IsNullOrEmptyString(gVmdirGlobals.pszBootStrapSchemaFile))
         {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "Schema file must be provided in schema patch mode (-u option)" );
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "Schema file must be provided in schema patch mode (-u option)");
             dwError = VMDIR_ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -378,7 +388,9 @@ VmDirInit(
         dwError = VmDirCheckPortAvailability(DEFAULT_LDAP_PORT_NUM);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                ">>> Schema patch starts <<<");
 
         if (bLegacyDataLoaded)
         {
@@ -393,7 +405,9 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch ends <<<" );
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                ">>> Schema patch ends <<<");
 
         (VOID)VmDirSetAdministratorPasswordNeverExpires();
     }
@@ -406,13 +420,13 @@ VmDirInit(
         {
 
             dwError = _VmDirCheckPartnerDomainFunctionalLevel();
-            BAIL_ON_VMDIR_ERROR( dwError );
+            BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = VmDirRpcServerInit();
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = VmDirIpcServerInit();
-            BAIL_ON_VMDIR_ERROR (dwError);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = VmDirReplicationLibInit();
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -433,14 +447,14 @@ VmDirInit(
         {
             // TBD: What happens if server is started in restore mode even when it has not been promoted?
             dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
-            BAIL_ON_VMDIR_ERROR( dwError );
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
     if (bWriteInvocationId) // Logic for backward compatibility. Needs to come after schema patch logic.
     {
         dwError = _VmDirWriteBackInvocationId();
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     //Will not free gVmdirGlobals.pPortListenSyncCounter since it maybe accessed when
@@ -479,10 +493,16 @@ VmDirInit(
 
         if (bWaitTimeOut)
         {
-            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s: NOT all LDAP ports are ready for accepting services.", __func__);
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: NOT all LDAP ports are ready for accepting services.",
+                    __func__);
         } else
         {
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: all LDAP ports are ready for accepting services.", __func__);
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: all LDAP ports are ready for accepting services.",
+                    __func__);
         }
     }
     else
@@ -491,13 +511,21 @@ VmDirInit(
         (VOID) VmDirDestroyDefaultKRB5CC();
     }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Config MaxLdapOpThrs (%d)", gVmdirGlobals.dwMaxFlowCtrlThr );
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Config MaxLdapOpThrs (%d)",
+            gVmdirGlobals.dwMaxFlowCtrlThr);
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 

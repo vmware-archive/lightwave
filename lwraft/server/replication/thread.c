@@ -3116,6 +3116,8 @@ DWORD
 _VmDirRaftLogCompactThread()
 {
     BOOLEAN bLock = FALSE;
+    int     iLogsRemain = 0;
+    VDIR_RAFT_LOG_TRIM_SCORE   dwScore = RAFT_LOG_TRIM_SCORE_HIGH;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftLogCompactThread: started.");
 
@@ -3128,18 +3130,31 @@ _VmDirRaftLogCompactThread()
         VmDirSleep(2000);
 
 continue_compact:
+        dwScore = RAFT_LOG_TRIM_SCORE_HIGH;
+
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-        if ((gRaftState.role != VDIR_RAFT_ROLE_LEADER &&
-             gRaftState.role != VDIR_RAFT_ROLE_FOLLOWER) ||
-            gRaftState.opCounts > 0)
+        iLogsRemain = (int)(gRaftState.commitIndex - gRaftState.firstLogIndex);
+
+        if (iLogsRemain <= gVmdirGlobals.dwRaftKeeplogs)
         {
-            //gRaftState.opCounts detects whether there are update activities
-            // during the previous compact operatio and pause
-            gRaftState.opCounts = 0;
-            VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+            dwScore = RAFT_LOG_TRIM_SCORE_LOW;
+        }
+        else
+        {
+            if (gRaftState.opCounts > 0 &&  // has external write since last check
+                iLogsRemain < gVmdirGlobals.dwRaftKeeplogs * 2)
+            {   // yield to external write
+                dwScore = RAFT_LOG_TRIM_SCORE_LOW;
+                gRaftState.opCounts = 0;
+            }
+        }
+
+        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+        if (dwScore == RAFT_LOG_TRIM_SCORE_LOW)
+        {
             continue;
         }
-        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
         {
@@ -3147,12 +3162,7 @@ continue_compact:
         }
 
         _VmDirRaftCompactLogs(50); //compact at most 50 logs a time
-        VmDirSleep(100);
-        if (gRaftState.opCounts == 0)
-        {
-            goto continue_compact;
-            //Don't wait 2000ms if no updates during compact and 100ms pause
-        }
+        goto continue_compact;
     }
 
 done:
@@ -3172,12 +3182,9 @@ _VmDirRaftCompactLogs(int compactLogsUpto)
     time_t now = {0};
     int i = 0;
     VDIR_BERVALUE berFirstLog = VDIR_BERVALUE_INIT;
-
     DWORD dwError = 0;
-    int logsRemain = (int)(gRaftState.commitIndex - gRaftState.firstLogIndex);
 
-    if (VmDirdState() != VMDIRD_STATE_NORMAL ||
-        logsRemain < (gVmdirGlobals.dwRaftKeeplogs<<10))
+    if (VmDirdState() != VMDIRD_STATE_NORMAL)
     {
         goto cleanup;
     }

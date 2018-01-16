@@ -578,6 +578,14 @@ extern "C" {
                                    Mask, "[file: %s][line: %d] " Format,\
                                    __FILE__, __LINE__, ##__VA_ARGS__ )
 
+#define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
+    do {                                        \
+        if (pLd) {                              \
+            ldap_unbind_ext_s(pLd,NULL,NULL);   \
+            (pLd) = NULL;                       \
+        }                                       \
+    } while(0)
+
 // if VDIR_CONNECTION has bind info in VDIR_ACCESS_INFO, use it; otherwise,
 // this is an internal operation and hence uses default administrator DN
 #define VMDIR_CURRENT_AUTHENTICATED_DN( pAccessInfo )       \

@@ -352,7 +352,7 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_RAFT_KEEP_LOGS,     \
+        /*.pszName        = */ VMDIR_REG_KEY_RAFT_KEEP_LOGS_IN_K,\
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 50,                               \
@@ -373,6 +373,17 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                          \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_MAX_INTERNAL_SEARCH, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0xFFFFFFFF,                       \
+        /*.dwDefault      = */ 1000000,                          \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }
 
 typedef enum

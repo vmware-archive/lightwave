@@ -225,13 +225,19 @@
 }
 
 // NOTE 1: order of fields MUST stay in sync with struct definition...
-// NOTE 2: _VmDirPluginReplAgrPostAddCommit() plugin is called only when Add commit has succeeded.
+// NOTE 2: VmDirPluginReplAgrPostAddCommit() plugin is called only when Add commit has succeeded.
 #define VDIR_POST_ADD_COMMIT_PLUGIN_INITIALIZER                     \
 {                                                                   \
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostAddCommit),  \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginReplAgrPostAddCommit),   \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginServerEntryPostAddCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -242,7 +248,7 @@
     },                                                              \
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                            \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPostAdd),      \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
@@ -278,7 +284,13 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostDeleteCommit), \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginReplAgrPostDeleteCommit), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginServerEntryPostDeleteCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
 }
@@ -401,20 +413,6 @@ _VmDirPluginSchemaLibUpdatePreAdd(
 static
 DWORD
 _VmDirPluginSchemaLibUpdatePostAddCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginReplAgrPostAddCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginReplAgrPostDeleteCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -1502,119 +1500,6 @@ _VmDirPluginSchemaLibUpdatePostAddCommit(
 {
     return _VmDirPluginSchemaLibUpdatePostModifyCommit(
             pOperation, pEntry, dwResult);
-}
-
-// Handle (ADD to replication agreements in-memory cache) MY replication agreements.
-
-static
-DWORD
-_VmDirPluginReplAgrPostAddCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD                           dwError = 0;
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
-    PCSTR                           pszErrorContext = NULL;
-
-    if ( gVmdirServerGlobals.serverObjDN.bvnorm_val != NULL) // Skip processing "initial" objects.
-    {
-        if (pEntry->dn.bvnorm_val == NULL)
-        {
-            pszErrorContext = "Normalize DN";
-            dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx);
-            BAIL_ON_VMDIR_ERROR( dwError );
-        }
-
-        if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
-        {
-            VmDirClusterSetCacheReload(); //Recalculate Cluster State Cache for any replication topology change.
-        }
-
-        if(!VmDirEntryIsObjectclass(pEntry, OC_REPLICATION_AGREEMENT))
-        {
-            goto cleanup;
-        }
-
-        if ((pEntry->dn.bvnorm_len > gVmdirServerGlobals.serverObjDN.bvnorm_len) &&
-            (VmDirStringCompareA( gVmdirServerGlobals.serverObjDN.bvnorm_val,
-                     pEntry->dn.bvnorm_val + (pEntry->dn.bvnorm_len - gVmdirServerGlobals.serverObjDN.bvnorm_len), TRUE) == 0))
-        {
-            pszErrorContext = "Add Replication Agreement into cache";
-            if (VmDirReplAgrEntryToInMemory( pEntry, &pReplAgr ) != 0)
-            {
-                dwError = LDAP_OPERATIONS_ERROR;
-                BAIL_ON_VMDIR_ERROR( dwError );
-            }
-
-            VmDirInsertRAToCache(pReplAgr);
-            pReplAgr = NULL;  // gVmdirReplAgrs take over pReplAgr
-        }
-    }
-
-cleanup:
-    VmDirFreeReplicationAgreement(pReplAgr);
-
-    return dwError;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-
-    goto cleanup;
-}
-
-// Mark RA isDeleted = TRUE if present in gVmdirReplAgrs.
-
-static
-DWORD
-_VmDirPluginReplAgrPostDeleteCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD                           dwError = 0;
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
-    BOOLEAN                         bInLock = FALSE;
-    PCSTR                           pszErrorContext = NULL;
-
-    if (pEntry->dn.bvnorm_val == NULL)
-    {
-        pszErrorContext = "Normalize DN";
-        dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx);
-        BAIL_ON_VMDIR_ERROR( dwError );
-    }
-
-    if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
-    {
-        //Check whether to mark the node as inActive and reload Cluster State Cache
-        VmDirClusterDeleteNode(pEntry);
-    }
-
-    if(!VmDirEntryIsObjectclass(pEntry, OC_REPLICATION_AGREEMENT))
-    {
-        goto cleanup;
-    }
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-    for (pReplAgr = gVmdirReplAgrs; pReplAgr != NULL; pReplAgr = pReplAgr->next )
-    {
-        if (VmDirStringCompareA(pReplAgr->dn.bvnorm_val, pEntry->dn.bvnorm_val, TRUE)  == 0)
-        {
-            pReplAgr->isDeleted = TRUE;
-            break;
-        }
-    }
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-    return dwError;
-
-error:
-    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-    goto cleanup;
 }
 
 static

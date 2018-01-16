@@ -184,14 +184,20 @@ VmDirSendLdapResult(
         pOperation->ldapResult.errCode != LDAP_BUSY &&
         pOperation->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
-                VmDirLdapReqCodeToName(pOperation->reqCode),
-                pOperation->ldapResult.errCode,
-                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
-                iNumSearchEntrySent,
-                VDIR_SAFE_STRING(pszSocketInfo));
+        // supress search request LDAP_NO_SUCH_OBJECT/32 error (-baseDN not found) return case as well
+        // to avoid log flooding.
+        if (! (pOperation->ldapResult.errCode == LDAP_NO_SUCH_OBJECT &&
+               pOperation->reqCode == LDAP_REQ_SEARCH))
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                    VmDirLdapReqCodeToName(pOperation->reqCode),
+                    pOperation->ldapResult.errCode,
+                    VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                    iNumSearchEntrySent,
+                    VDIR_SAFE_STRING(pszSocketInfo));
+        }
     }
     else if (pOperation->reqCode == LDAP_REQ_SEARCH)
     {
@@ -557,8 +563,8 @@ VmDirSendSearchEntry(
 
         if ( pOperation->syncReqCtrl != NULL ) // Replication, => write Sync State Control
         {
-            retVal = WriteSyncStateControl( pOperation, pSrEntry, ber, &pszLocalErrorMsg );
-            BAIL_ON_VMDIR_ERROR( retVal );
+            retVal = WriteSyncStateControl(pOperation, pSrEntry, ber, &pszLocalErrorMsg);
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
 
         if (ber_printf( ber, "N}" ) == -1)
@@ -570,7 +576,8 @@ VmDirSendSearchEntry(
                                             "Encoding terminating the entry failed.");
         }
 
-        if ((pOperation->syncReqCtrl == NULL) || (pOperation->syncReqCtrl != NULL && nonTrivialAttrsInReplScope ))
+        if ((pOperation->syncReqCtrl == NULL) ||
+            (pOperation->syncReqCtrl != NULL && nonTrivialAttrsInReplScope))
         {
             if (WriteBerOnSocket( pOperation->conn, ber ) != 0)
             {
@@ -582,11 +589,11 @@ VmDirSendSearchEntry(
             pSrEntry->bSearchEntrySent = TRUE;
             sr->iNumEntrySent++;
 
-            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: Send entry: %s", pSrEntry->dn.lberbv.bv_val);
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "SendSearchEntry: Send entry: %s", pSrEntry->dn.lberbv.bv_val);
         }
         else
         {
-            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: NOT Sending entry: %s %p %d",
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "SendSearchEntry: NOT Sending entry: %s %p %d",
                             pSrEntry->dn.lberbv.bv_val, pOperation->syncReqCtrl, nonTrivialAttrsInReplScope);
         }
 
@@ -728,7 +735,7 @@ _VmDirIsUsnInScope(
         }
         else
         {
-            VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s skip prior usncreated %llu attr %s",
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s (add->modify) race condition avoided. skip prior usncreated %llu attr %s",
                                     __FUNCTION__, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
         }
 

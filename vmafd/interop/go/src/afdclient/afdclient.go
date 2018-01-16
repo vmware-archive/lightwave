@@ -8,6 +8,7 @@ package afdclient
 #include <stdlib.h>
 #include <vmafdtypes.h>
 #include <vmafdclient.h>
+#include <cdcclient.h>
 */
 import "C"
 
@@ -58,6 +59,7 @@ func (handle *VmAfdHbHandle) StopHeartbeat() {
 type VmAfdHbStatus struct {
 	p C.PVMAFD_HB_STATUS_A
 }
+
 // FreeHeartbeatStatus frees the memory for VmAfdHbStatus struct.
 // The caller must call FreeHeartbeatStatus() when VmAfdHbStatus is no longer needed.
 func (status *VmAfdHbStatus) FreeHeartbeatStatus() {
@@ -110,6 +112,7 @@ func (status *VmAfdHbInfo) IsAlive() (isAlive bool) {
 
 	return isAlive
 }
+
 // GetServiceName gets the name of the service specified by VmAfdHbInfo struct.
 func (status *VmAfdHbInfo) GetServiceName() string {
 	return cStringToGoString((*status.p).pszServiceName)
@@ -131,7 +134,7 @@ func VmAfdOpenServer(server, account, password string) (serverHandle *VmAfdServe
 		serverCStr,
 		accountCStr,
 		passwordCStr,
-		&s);
+		&s)
 	if e != 0 {
 		err = fmt.Errorf("[ERROR] Failed to connect to server (%s)", cErrorToGoError(e))
 		return
@@ -163,19 +166,41 @@ func VmAfdStartHeartbeat(serviceName string, servicePort uint32) (handle *VmAfdH
 
 // VmAfdGetDCName returns the DC name of the server specified by the argument.
 func VmAfdGetDCName(serverName string) (dcName string, err error) {
-	errStr := "[ERROR] Failed to get DC name (%s)"
-
 	dcNameCStr := goStringToCString(serverName)
 	defer freeCString(dcNameCStr)
 
 	var s C.PSTR = nil
 	var e C.DWORD = C.VmAfdGetDCName(dcNameCStr, &s)
 	if e != 0 {
-		err = fmt.Errorf(errStr, cErrorToGoError(e))
+		err = fmt.Errorf("[ERROR] Failed to get DC name (%s)", cErrorToGoError(e))
 		return
 	}
 
 	dcName = vmafdStringToGoString(s)
+	return
+}
+
+// VmAfdForceRefreshDCName forces refresh and gets DC Name of the server specified by the argument.
+func VmAfdForceRefreshDCName() (dcName string, err error) {
+	serverHandle, err := VmAfdOpenServer("", "", "") // Open connection to localhost
+	if err != nil {
+		err = fmt.Errorf("[ERROR] Failed to open connection to server (%s)", err.Error())
+		return
+	}
+	defer serverHandle.Close()
+
+	var domain C.PCSTR = nil
+	var site C.PCSTR = nil
+	var guid C.GUID_A = nil
+	var flags C.DWORD = 1 //Force refresh flag enabled
+	var info C.PCDC_DC_INFO_A = nil
+	var e C.DWORD = C.CdcGetDCNameA(serverHandle.p, domain, guid, site, flags, &info)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to force refresh DC name (%s)", cErrorToGoError(e))
+		return
+	}
+
+	dcName = vmafdStringToGoString(info.pszDCName)
 	return
 }
 

@@ -50,9 +50,14 @@ import com.vmware.identity.rest.core.server.exception.client.BadRequestException
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 
+import io.prometheus.client.Histogram;
+
 public class ConfigurationResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ConfigurationResource.class);
+
+    private static final String METRICS_COMPONENT = "vmdir";
+    private static final String METRICS_RESOURCE = "ConfigurationResource";
 
     public ConfigurationResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -63,7 +68,8 @@ public class ConfigurationResource extends BaseSubResource {
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantConfigurationDTO getConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
             @QueryParam("type") final List<String> configTypes) {
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getConfig").startTimer();
+        String responseStatus = HTTP_OK;
         Set<TenantConfigType> requestedConfigs = new HashSet<TenantConfigType>();
         for (String configType : configTypes) {
             validateConfigType(configType);
@@ -103,15 +109,20 @@ public class ConfigurationResource extends BaseSubResource {
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve configuration details of tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (IllegalArgumentException | InvalidArgumentException e) {
             log.error("Failed to retrieve configuration details of tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.get.config.failed", Arrays.asList(requestedConfigs), tenantName), e);
         } catch (Exception e) {
             log.error("Failed to retrieve configuration details of tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getConfig").inc();
+            requestTimer.observeDuration();
         }
-
     }
 
     @PUT
@@ -119,7 +130,8 @@ public class ConfigurationResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName, TenantConfigurationDTO configurationDTO) {
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "updateConfig").startTimer();
+        String responseStatus = HTTP_OK;
         TenantConfigurationDTO.Builder configBuilder = TenantConfigurationDTO.builder();
         LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
         PasswordPolicyDTO passwordPolicy = configurationDTO.getPasswordPolicy();
@@ -142,13 +154,19 @@ public class ConfigurationResource extends BaseSubResource {
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to update the configuration details for tenant '{}'",tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"),e);
         } catch( IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e){
             log.error("Failed to update the configuration details for tenant '{}' due to a client side error", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.update.config.failed", tenantName), e);
         } catch (Exception e){
             log.error("Failed to update the configuration details for tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "updateConfig").inc();
+            requestTimer.observeDuration();
         }
     }
 

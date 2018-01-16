@@ -92,6 +92,7 @@ public abstract class SSOConfigCommand {
                         Arrays.asList(
                             AuthnPolicyCommand.class,
                             ExternalIDPCommand.class,
+                            FederatedIdpCommand.class,
                             GetDomainJoinStatusCommand.class,
                             IdentityProviderCommand.class,
                             OidcClientCommand.class,

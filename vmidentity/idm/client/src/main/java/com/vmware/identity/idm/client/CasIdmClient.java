@@ -3104,6 +3104,30 @@ public class CasIdmClient
     }
 
     /**
+     * import federated IDP configuration defined in the configuration JSON format
+     * into tenant.
+     *
+     * @param tenantName
+     *           Name of tenant.
+     * @param config
+     *           JSON content for the federated Idp.
+     * @return entityID of the imported configuration
+     * @throws Exception
+     * @throws AssertionError
+     *            the XML document validation fails
+     * @throws IDMException
+     * @throws ExternalIDPCertChainInvalidTrustedPathException
+     *            invalid certificate chain
+     * @throws ExternalIDPExtraneousCertsInCertChainException
+     *            extra certificates found outside of certificate chain.
+     */
+    public String importFederatedIdpConfiguration(String tenantName, String config)
+        throws ExternalIDPCertChainInvalidTrustedPathException,
+        ExternalIDPExtraneousCertsInCertChainException, Exception {
+        return new FederatedIdpImporter(this).importConfig(tenantName, config);
+    }
+
+    /**
      * import external IDP configuration defined in the configuration DOM file
      * into tenant.
      *

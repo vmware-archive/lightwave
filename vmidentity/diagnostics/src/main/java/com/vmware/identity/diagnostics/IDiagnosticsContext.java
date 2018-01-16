@@ -16,4 +16,6 @@ package com.vmware.identity.diagnostics;
 public interface IDiagnosticsContext {
     public String getCorrelationId();
     public String getTenantName();
+    public String getUserId();
+    public String getSessionId();
 }

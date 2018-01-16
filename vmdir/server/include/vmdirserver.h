@@ -110,6 +110,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     // Data that controls the thread that cleans up deleted entries.
     DWORD                dwTombstoneExpirationPeriod;
     DWORD                dwTombstoneThreadFrequency;
+    DWORD                dwMaxInternalSearchLimit;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

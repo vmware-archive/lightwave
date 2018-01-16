@@ -126,6 +126,40 @@ VmDirRESTServerShutdown(
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 
+VMREST_LOG_LEVEL
+VmDirToCRestEngineLogLevel(
+    VOID
+    )
+{
+    VMDIR_LOG_LEVEL  vmdirLogLevel = VmDirLogGetLevel();
+    VMREST_LOG_LEVEL cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
+
+    switch (vmdirLogLevel)
+    {
+    case VMDIR_LOG_ERROR:
+        cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
+        break;
+
+    case VMDIR_LOG_WARNING:
+        cResetEngineLogLevel = VMREST_LOG_LEVEL_WARNING;
+        break;
+
+    case VMDIR_LOG_INFO:
+        cResetEngineLogLevel = VMREST_LOG_LEVEL_INFO;
+        break;
+
+    case VMDIR_LOG_VERBOSE:
+    case VMDIR_LOG_DEBUG:
+        cResetEngineLogLevel = VMREST_LOG_LEVEL_DEBUG;
+        break;
+
+    default:
+        cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
+    }
+
+    return cResetEngineLogLevel;
+}
+
 static
 DWORD
 _VmDirRESTServerInitHTTP(
@@ -164,7 +198,7 @@ _VmDirRESTServerInitHTTP(
     config.pszDaemonName = VMDIR_DAEMON_NAME;
     config.isSecure = FALSE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
+    config.debugLogLevel = VmDirToCRestEngineLogLevel();
 
     dwError = VmRESTInit(&config, &pHTTPHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -239,7 +273,7 @@ _VmDirRESTServerInitHTTPS(
     config.pszDaemonName = VMDIR_DAEMON_NAME;
     config.isSecure = TRUE;
     config.useSysLog = TRUE;
-    config.debugLogLevel = VMREST_LOG_LEVEL_ERROR;
+    config.debugLogLevel = VmDirToCRestEngineLogLevel();
 
     dwError = VmRESTInit(&config, &pHTTPSHandle);
     BAIL_ON_VMDIR_ERROR(dwError);

@@ -16,6 +16,8 @@
 package com.vmware.identity.idm;
 
 import java.lang.reflect.Array;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
@@ -101,6 +103,21 @@ public final class ValidateUtil {
 
         if (fieldValue != null) {
             logAndThrow(String.format("'%s' value should be NULL", fieldName));
+        }
+    }
+
+    /**
+     * Validates the given value forms a valid URI
+     * @param uri URI to be validated
+     * @param fieldName field name corresponding to the URI
+     * @throws IllegalArgumentException on validation failure
+     */
+    public static void validateURI(String uri, String fieldName) {
+        validateNotNull(uri, fieldName);
+        try {
+          URI test_uri = new URI(uri);
+        } catch (URISyntaxException e) {
+          logAndThrow(String.format("%s' URI is invalid - %s. %s", uri, fieldName, e.toString()));
         }
     }
 

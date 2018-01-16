@@ -84,7 +84,8 @@ VmDirInsertRAToCache(
 DWORD
 VmDirReplAgrEntryToInMemory(
     PVDIR_ENTRY                     pEntry,
-    PVMDIR_REPLICATION_AGREEMENT *  ppReplAgr)
+    PVMDIR_REPLICATION_AGREEMENT *  ppReplAgr
+    )
 {
     DWORD                           dwError = 0;
     PVMDIR_REPLICATION_AGREEMENT    pReplAgr;
@@ -93,39 +94,40 @@ VmDirReplAgrEntryToInMemory(
 
     if (!ppReplAgr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirAllocateMemory( sizeof( VMDIR_REPLICATION_AGREEMENT ), (PVOID *)&pReplAgr );
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = VmDirAllocateMemory(
+            sizeof(VMDIR_REPLICATION_AGREEMENT), (PVOID*)&pReplAgr);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
     {
         if (VmDirStringCompareA(pAttr->pATDesc->pszName, ATTR_LABELED_URI, FALSE) == 0)
         {
-            VmDirStringCpyA( pReplAgr->ldapURI, VMDIR_MAX_LDAP_URI_LEN, pAttr->vals[0].lberbv.bv_val );
-            continue;
-        }
-        if (VmDirStringCompareA(pAttr->pATDesc->pszName, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0)
-        {
-            dwError = VmDirBervalContentDup( &pAttr->vals[0], &pReplAgr->lastLocalUsnProcessed );
-            BAIL_ON_VMDIR_ERROR( dwError );
-            continue;
-        }
-        if (VmDirStringCompareA(pAttr->pATDesc->pszName, ATTR_DN, FALSE) == 0)
-        {
-            dwError = VmDirBervalContentDup( &pAttr->vals[0], &pReplAgr->dn );
-            BAIL_ON_VMDIR_ERROR( dwError );
+            dwError = VmDirStringCpyA(
+                    pReplAgr->ldapURI,
+                    VMDIR_MAX_LDAP_URI_LEN,
+                    pAttr->vals[0].lberbv.bv_val);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-            if (pReplAgr->dn.bvnorm_val == NULL)
-            {
-                assert( pEntry->pSchemaCtx );
-                dwError = VmDirNormalizeDN( &(pReplAgr->dn), pEntry->pSchemaCtx);
-                BAIL_ON_VMDIR_ERROR( dwError );
-            }
+            dwError = VmDirLdapURI2Host(
+                    pReplAgr->ldapURI, &pReplAgr->pszHostname);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(pAttr->pATDesc->pszName, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0)
+        {
+            dwError = VmDirBervalContentDup(
+                    &pAttr->vals[0], &pReplAgr->lastLocalUsnProcessed);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(pAttr->pATDesc->pszName, ATTR_DN, FALSE) == 0)
+        {
+            dwError = VmDirBervalContentDup(&pAttr->vals[0], &pReplAgr->dn);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-            continue;
+            dwError = VmDirNormalizeDN(&pReplAgr->dn, pEntry->pSchemaCtx);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 
@@ -134,18 +136,18 @@ VmDirReplAgrEntryToInMemory(
         bv.lberbv.bv_val = VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED;
         bv.lberbv.bv_len = VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED_LEN;
 
-        dwError = VmDirBervalContentDup( &bv, &pReplAgr->lastLocalUsnProcessed );
-        BAIL_ON_VMDIR_ERROR( dwError );
+        dwError = VmDirBervalContentDup(&bv, &pReplAgr->lastLocalUsnProcessed);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    dwError = VmDirReplNewPartnerMetricsInit(pReplAgr);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirReplDCConnectInit(pReplAgr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,"Replication partner: (%s) lastLocalUsnProcessed: (%s)",
-                   pReplAgr->ldapURI, pReplAgr->lastLocalUsnProcessed.lberbv_val);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Replication partner: (%s) lastLocalUsnProcessed: (%s)",
+            pReplAgr->ldapURI,
+            pReplAgr->lastLocalUsnProcessed.lberbv_val);
 
     *ppReplAgr = pReplAgr;
 
@@ -153,10 +155,7 @@ cleanup:
     return dwError;
 
 error:
-    *ppReplAgr = NULL;
-
     VmDirFreeReplicationAgreement(pReplAgr);
-
     goto cleanup;
 }
 
@@ -166,44 +165,49 @@ VmDirConstructReplAgr(
     PCSTR                           pszReplURI,
     PCSTR                           pszLastLocalUsnProcessed,
     PCSTR                           pszReplAgrDN,
-    PVMDIR_REPLICATION_AGREEMENT *  ppReplAgr)
+    PVMDIR_REPLICATION_AGREEMENT *  ppReplAgr
+    )
 {
-    DWORD                           dwError = 0;
+    DWORD   dwError = 0;
+    VDIR_BERVALUE   bv = VDIR_BERVALUE_INIT;
     PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
-    VDIR_BERVALUE                   bv = VDIR_BERVALUE_INIT;
 
-    if (!pSchemaCtx || IsNullOrEmptyString(pszReplURI) ||
-        IsNullOrEmptyString(pszLastLocalUsnProcessed) || IsNullOrEmptyString(pszReplAgrDN) || !ppReplAgr )
+    if (!pSchemaCtx ||
+        IsNullOrEmptyString(pszReplURI) ||
+        IsNullOrEmptyString(pszLastLocalUsnProcessed) ||
+        IsNullOrEmptyString(pszReplAgrDN) ||
+        !ppReplAgr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirAllocateMemory( sizeof( VMDIR_REPLICATION_AGREEMENT ), (PVOID *)&pReplAgr );
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = VmDirAllocateMemory(
+            sizeof(VMDIR_REPLICATION_AGREEMENT), (PVOID*)&pReplAgr);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirStringCpyA( pReplAgr->ldapURI, VMDIR_MAX_LDAP_URI_LEN, pszReplURI );
+    dwError = VmDirStringCpyA(pReplAgr->ldapURI, VMDIR_MAX_LDAP_URI_LEN, pszReplURI);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    bv.lberbv.bv_val = (PSTR) pszLastLocalUsnProcessed;
+    dwError = VmDirLdapURI2Host(pReplAgr->ldapURI, &pReplAgr->pszHostname);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bv.lberbv.bv_val = (PSTR)pszLastLocalUsnProcessed;
     bv.lberbv.bv_len = VmDirStringLenA(bv.lberbv.bv_val);
 
-    dwError = VmDirBervalContentDup( &bv, &pReplAgr->lastLocalUsnProcessed );
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = VmDirBervalContentDup(&bv, &pReplAgr->lastLocalUsnProcessed);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    bv.lberbv.bv_val = (PSTR) pszReplAgrDN;
+    bv.lberbv.bv_val = (PSTR)pszReplAgrDN;
     bv.lberbv.bv_len = VmDirStringLenA(bv.lberbv.bv_val);
 
-    dwError = VmDirBervalContentDup( &bv, &pReplAgr->dn );
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = VmDirBervalContentDup(&bv, &pReplAgr->dn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pReplAgr->dn.bvnorm_val == NULL)
     {
-        dwError = VmDirNormalizeDN( &(pReplAgr->dn), pSchemaCtx);
-        BAIL_ON_VMDIR_ERROR( dwError );
+        dwError = VmDirNormalizeDN(&pReplAgr->dn, pSchemaCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    dwError = VmDirReplNewPartnerMetricsInit(pReplAgr);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirReplDCConnectInit(pReplAgr);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -214,14 +218,7 @@ cleanup:
     return dwError;
 
 error:
-    *ppReplAgr = NULL;
-    if (pReplAgr)
-    {
-        VmDirFreeBervalContent( &pReplAgr->lastLocalUsnProcessed );
-        VmDirFreeBervalContent( &pReplAgr->dn );
-        VmDirReplPartnerMetricsDelete(pReplAgr);
-        VMDIR_SAFE_FREE_MEMORY( pReplAgr );
-    }
+    VmDirFreeReplicationAgreement(pReplAgr);
     goto cleanup;
 }
 
@@ -263,18 +260,11 @@ VmDirFreeReplicationAgreement(
     if (pReplAgr && pReplAgr->dcConn.connState != DC_CONNECTION_STATE_CONNECTING)
     {
         VmDirFreeDCConnContent(&pReplAgr->dcConn);
-
-        if (VmDirReplPartnerMetricsDelete(pReplAgr) != 0)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirFreeReplicationAgreement: Could not delete metrics");
-        }
-
-        VmDirFreeBervalContent( &(pReplAgr->lastLocalUsnProcessed) );
-        VmDirFreeBervalContent( &(pReplAgr->dn) );
-        VMDIR_SAFE_FREE_MEMORY( pReplAgr );
+        VmDirFreeBervalContent(&pReplAgr->lastLocalUsnProcessed);
+        VmDirFreeBervalContent(&pReplAgr->dn);
+        VMDIR_SAFE_FREE_MEMORY(pReplAgr->pszHostname);
+        VMDIR_SAFE_FREE_MEMORY(pReplAgr);
     }
-
-    return;
 }
 
 // VmDirRemoveDeletedRAsFromCache() Remove RAs from gVmdirReplAgrs that are marked as isDeleted = TRUE

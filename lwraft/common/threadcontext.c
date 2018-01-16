@@ -38,6 +38,26 @@ _VmDirInitThreadContextOnce(VOID)
     }
 }
 
+VOID
+VmDirFreeThreadContext(VOID)
+{
+    VMDIR_SAFE_FREE_MEMORY(pThreadContext);
+}
+
+VOID
+VmDirFreeThreadLogContext(
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext
+    )
+{
+    if (pThreadLogContext)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pThreadLogContext->pszRequestId);
+        VMDIR_SAFE_FREE_MEMORY(pThreadLogContext->pszSessionId);
+        VMDIR_SAFE_FREE_MEMORY(pThreadLogContext->pszUserId);
+        VMDIR_SAFE_FREE_MEMORY(pThreadLogContext);
+    }
+}
+
 DWORD
 VmDirInitThreadContext(VOID)
 {
@@ -133,10 +153,4 @@ error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL, "VmDirSetThreadLogContextValue failed (%d)", dwError);
     goto cleanup;
-}
-
-VOID
-VmDirFreeThreadContext(VOID)
-{
-    VMDIR_SAFE_FREE_MEMORY(pThreadContext);
 }

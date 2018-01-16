@@ -644,6 +644,11 @@ VmDirMetricsInitialize(
     VOID
     );
 
+VOID
+VmDirMetricsShutdown(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

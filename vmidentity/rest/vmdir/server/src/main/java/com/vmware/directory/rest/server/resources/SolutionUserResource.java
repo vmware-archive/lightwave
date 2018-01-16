@@ -51,6 +51,8 @@ import com.vmware.identity.rest.core.server.exception.server.NotImplementedError
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.core.util.CertificateHelper;
 
+import io.prometheus.client.Histogram;
+
 
 /**
  * Operations related to solution users. Solution users are nothing but services(virtual entities).
@@ -61,6 +63,9 @@ import com.vmware.identity.rest.core.util.CertificateHelper;
 public class SolutionUserResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SolutionUserResource.class);
+
+    private static final String METRICS_COMPONENT = "vmdir";
+    private static final String METRICS_RESOURCE = "SolutionUserResource";
 
     public SolutionUserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -77,11 +82,12 @@ public class SolutionUserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public SolutionUserDTO create(SolutionUserDTO user) {
-        Validate.notEmpty(user.getName(), sm.getString("valid.not.empty", "name"));
-        Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "certificate"));
-        Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "certificate#encoded"));
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "create").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            Validate.notEmpty(user.getName(), sm.getString("valid.not.empty", "name"));
+            Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "certificate"));
+            Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "certificate#encoded"));
             SolutionDetail solutionDetail = new SolutionDetail(
                     user.getCertificate().getX509Certificate(),
                     user.getDescription(),
@@ -90,13 +96,22 @@ public class SolutionUserResource extends BaseSubResource {
             return SolutionUserMapper.getSolutionUserDTO(getIDMClient().findSolutionUser(tenant, user.getName()));
         } catch (NoSuchTenantException e) {
             log.debug("Failed to create solution user '{}' on tenant '{}'", user.getName(), tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | InvalidPrincipalException | DuplicateCertificateException | CertificateException e) {
             log.error("Failed to create solution user '{}' on tenant '{}' due to a client side error", user.getName(), tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.soln.create.failed", user.getName(), tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to create solution user '{}' on tenant '{}' due to a server side error", user.getName(), tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -111,6 +126,8 @@ public class SolutionUserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SolutionUserDTO get(@PathParam("solnName") String name) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             SolutionUser idmSolutionUser = getIDMClient().findSolutionUser(tenant, name);
             if (idmSolutionUser == null) {
@@ -119,13 +136,19 @@ public class SolutionUserResource extends BaseSubResource {
             return SolutionUserMapper.getSolutionUserDTO(idmSolutionUser);
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to retrieve solution user '{}' from tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to retrieve solution user '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.soln.get.failed", name, tenant), e);
         } catch (Exception e) {
             log.error("Failed to retrieve solution user '{}' from tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -144,9 +167,10 @@ public class SolutionUserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public SolutionUserDTO update(@PathParam("solnName") String name, SolutionUserDTO user) {
-        Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "user certificate"));
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "user certificate"));
             SolutionDetail solutionDetail = new SolutionDetail(
                     CertificateHelper.convertToX509(user.getCertificate().getEncoded()),
                     user.getDescription(),
@@ -156,13 +180,23 @@ public class SolutionUserResource extends BaseSubResource {
             return SolutionUserMapper.getSolutionUserDTO(getIDMClient().findSolutionUser(tenant, user.getName()));
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to update solution user '{}' on tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (CertificateException | InvalidArgumentException e) {
             log.debug("Failed to update solution user '{}' in tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.soln.update.failed", name, tenant), e);
-        } catch (Exception e) {
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
+        }
+        catch (Exception e) {
             log.error("Failed to update solution user '{}' in tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -180,17 +214,25 @@ public class SolutionUserResource extends BaseSubResource {
     @DELETE @Path("/{solnName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("solnName") String name) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().deletePrincipal(tenant, name);
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to delete solution user '{}' from tenant '{}'", name, tenant);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.error("Failed to delete solution user '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.soln.delete.failed", name, tenant), e);
         } catch (Exception e) {
             log.error("Failed to delete solution user '{}' from tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -222,6 +264,12 @@ public class SolutionUserResource extends BaseSubResource {
 //            throw new InternalServerErrorException(sm.getString("ec.500"), e);
 //        }
 
-        throw new NotImplementedError(sm.getString("ec.501"));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        try {
+            throw new NotImplementedError(sm.getString("ec.501"));
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, "501", METRICS_RESOURCE, "getGroups").inc();
+            requestTimer.observeDuration();
+        }
     }
 }

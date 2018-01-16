@@ -1,8 +1,8 @@
 {
-  "name": "angular-io-example",
+  "name": "webui",
   "version": "1.0.0",
   "private": true,
-  "description": "Example project from an angular.io guide.",
+  "description": "Web interface for VMware Lightwave Services",
   "scripts": {
     "test:once": "karma start karma.conf.js --single-run",
     "build": "tsc -p src/",

@@ -58,6 +58,8 @@ import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Web service resource to manage all group operations.
  *
@@ -67,6 +69,9 @@ import com.vmware.identity.rest.idm.server.util.Config;
 public class GroupResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(GroupResource.class);
+
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "GroupResource";
 
     public GroupResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -85,6 +90,8 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public GroupDTO get(@PathParam("groupName") String groupName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         PrincipalId id = PrincipalUtil.fromName(groupName);
 
         try {
@@ -92,13 +99,19 @@ public class GroupResource extends BaseSubResource {
             return GroupMapper.getGroupDTO(group);
         } catch (InvalidPrincipalException | NoSuchTenantException | NoSuchIdpException e) {
             log.debug("Failed to retrieve group '{}' from tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve group '{}' from tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.get.failed", groupName, tenant), e);
         } catch (Exception e) {
             log.error("Failed to retrieve group '{}' from tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -117,21 +130,32 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SearchResultDTO getMembers(@PathParam("groupName") String groupName, @DefaultValue("all") @QueryParam("type") String memberType, @DefaultValue("200") @QueryParam("limit") int limit) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
-        MemberType type = getPrincipalType(memberType);
-        Validate.notNull(type, sm.getString("valid.invalid.type", "member type", Arrays.toString(MemberType.values())));
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getMembers").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+            MemberType type = getPrincipalType(memberType);
+            Validate.notNull(type, sm.getString("valid.invalid.type", "member type", Arrays.toString(MemberType.values())));
             SearchCriteria searchCriteria = new SearchCriteria("", tenant);
             return findPrincipals(type, id, tenant, searchCriteria, limit);
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to retrieve principals for group '{}' in tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve principals for group '{}' in tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.get.failed", groupName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve principals for group '{}' in tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getMembers").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -149,14 +173,17 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<GroupDTO> getParents(@PathParam("groupName") String groupName, @DefaultValue("false") @QueryParam("nested") boolean nested) {
-        PrincipalId id = PrincipalUtil.fromName(groupName);
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getParents").startTimer();
+        String responseStatus = HTTP_OK;
 
-        if (nested) {
-            throw new NotImplementedError("Indirect parent group retrieval is not supported");
-        }
-
-        Set<GroupDTO> groups = new HashSet<GroupDTO>();
         try {
+            PrincipalId id = PrincipalUtil.fromName(groupName);
+
+            if (nested) {
+                throw new NotImplementedError("Indirect parent group retrieval is not supported");
+            }
+
+            Set<GroupDTO> groups = new HashSet<GroupDTO>();
             // Add direct groups
             Set<Group> idmDirectGroups = getIDMClient().findDirectParentGroups(tenant, id);
             if (idmDirectGroups != null && !idmDirectGroups.isEmpty()) {
@@ -164,18 +191,27 @@ public class GroupResource extends BaseSubResource {
             }
             // Add indirect groups
             // TODO : Need to implement casIDMClient API. "Get parent groups associated indirectly to given group"
+
+            return groups;
         } catch (InvalidPrincipalException | NoSuchTenantException e) {
             log.debug("Failed to retrieve parent groups of group '{}' in tenant '{}'", groupName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException e) {
             log.warn("Failed to retrieve parent groups of group '{}' in tenant '{}' due to a client side error", groupName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.get.parents.failed", groupName, tenant), e);
+        } catch (BadRequestException | NotImplementedError e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve parent groups of group '{}' in tenant '{}' due to a server side error", groupName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getParents").inc();
+            requestTimer.observeDuration();
         }
-
-        return groups;
     }
 
     /**

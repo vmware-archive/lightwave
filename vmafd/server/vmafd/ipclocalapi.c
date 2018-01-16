@@ -6785,7 +6785,7 @@ VmAfdIpcBeginUpgrade(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    uResult = VmAfSrvRefreshSiteName();
+    uResult = VmAfSrvBeginUpgrade();
     LOG_URESULT_ERROR(uResult);
 
     // Allocate a buffer, marshall the response
@@ -6870,7 +6870,7 @@ VmAfdIpcEndUpgrade(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    uResult = VmAfSrvRefreshSiteName();
+    uResult = VmAfSrvEndUpgrade();
     LOG_URESULT_ERROR(uResult);
 
     // Allocate a buffer, marshall the response

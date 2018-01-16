@@ -991,6 +991,7 @@ Lightwave POST service
 %{_jarsdir}/nimbus-jose-jwt-4.12.jar
 
 %{_webappsdir}/lightwaveui.war
+%{_webappsdir}/webui.war
 %{_webappsdir}/ROOT.war
 
 %{_servicedir}/vmware-stsd.service
@@ -1166,8 +1167,9 @@ Lightwave POST service
 
 %{_configdir}/lw-firewall-post.json
 
-%config %attr(750, root, root) %{_datadir}/config/post-demote-deads.sh
 %config %attr(750, root, root) %{_datadir}/config/refresh-resolve-conf.sh
+%config %attr(750, root, root) %{_datadir}/config/post-demote-deads.sh
+%config %attr(750, root, root) %{_datadir}/config/monitor-core-dump.sh
 
 %files devel
 

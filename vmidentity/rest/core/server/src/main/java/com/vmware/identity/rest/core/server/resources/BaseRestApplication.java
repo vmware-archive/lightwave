@@ -20,6 +20,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.vmware.identity.rest.core.server.authorization.filter.AuthorizationRequestFilter;
 import com.vmware.identity.rest.core.server.filter.ContextFilter;
+import com.vmware.identity.rest.core.server.filters.LoggingContextResetFilter;
 import com.vmware.identity.rest.core.server.filters.VmIdentityCORSResponseFilter;
 
 /**
@@ -43,8 +44,10 @@ public class BaseRestApplication extends ResourceConfig {
         // Register Authorization Provider
         register(AuthorizationRequestFilter.class);
 
+        // Register logging filter
+        register(LoggingContextResetFilter.class);
+
         // Register CORS (Cross-Origin Resource Sharing) Provider
         register(VmIdentityCORSResponseFilter.class);
-
     }
 }

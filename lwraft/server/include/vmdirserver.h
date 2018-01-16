@@ -106,6 +106,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
                                              // excessive searching
     VDIR_BERVALUE        bvServerObjName;
     DWORD                dwDomainFunctionalLevel;
+    DWORD                dwMaxInternalSearchLimit;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

@@ -137,6 +137,11 @@ ProcessPreValidatedEntries(
             {
                 pOperation->internalSearchEntryArray.iSize++;
                 pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+
+                if (pOperation->internalSearchEntryArray.iSize > gVmdirServerGlobals.dwMaxInternalSearchLimit)
+                {
+                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INTERNAL_SEARCH_LIMIT);
+                }
             }
         }
 

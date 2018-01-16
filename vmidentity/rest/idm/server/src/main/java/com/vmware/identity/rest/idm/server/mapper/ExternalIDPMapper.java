@@ -47,7 +47,6 @@ public class ExternalIDPMapper {
         builder.withEntityID(config.getEntityID());
         builder.withProtocol(config.getProtocol());
         builder.withAlias(config.getAlias());
-        builder.withClientId(config.getClientId());
         builder.withNameIDFormats(config.getNameIDFormats());
         builder.withSsoServices(getServiceEndpointDTOs(config.getSsoServices()));
         builder.withSloServices(getServiceEndpointDTOs(config.getSloServices()));

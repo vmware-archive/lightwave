@@ -26,12 +26,6 @@ GenerateDeleteAttrsMods(
     VDIR_ENTRY *    pEntry
     );
 
-static
-BOOLEAN
-_VmDirIsDeletedContainer(
-    PCSTR   pszDN
-    );
-
 int
 VmDirMLDelete(
     PVDIR_OPERATION    pOperation
@@ -249,7 +243,7 @@ txnretry:
 
         // age off tombstone entry?
         if  (pEntry->pParentEntry &&
-             _VmDirIsDeletedContainer(pEntry->pParentEntry->dn.lberbv_val))
+             VmDirIsDeletedContainer(pEntry->pParentEntry->dn.lberbv_val))
         {
             bIsDeletedObj = TRUE;
             // Normalize index attribute, so mdb can cleanup index tables properly.
@@ -576,21 +570,4 @@ cleanup:
 
 error:
     goto cleanup;
-}
-
-static
-BOOLEAN
-_VmDirIsDeletedContainer(
-    PCSTR   pszDN
-    )
-{
-    BOOLEAN bRtn = FALSE;
-
-    if (pszDN &&
-        VmDirStringCompareA(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE) == 0)
-    {
-        bRtn = TRUE;
-    }
-
-    return bRtn;
 }

@@ -27,3 +27,13 @@ typedef struct
     BOOLEAN bDryrun;            // Do not make change to SD
                                 // and all objects below it.
 } COMMAND_LINE_PARAMETER_STATE, *PCOMMAND_LINE_PARAMETER_STATE;
+
+typedef struct
+{
+    COMMAND_LINE_PARAMETER_STATE    paramState;
+    LDAP*                           pLd;
+    PSTR                            pszTargetSID;   // SID of user/group to grant/remove permission.
+    PVMDIR_STRING_LIST              pPermissionList;
+    PVMDIR_STRING_LIST              pAceFlagList;
+    PLW_HASHMAP                     pSidToUserMapping;
+} VDC_ACLMGR_CTX, *PVDC_ACLMGR_CTX;

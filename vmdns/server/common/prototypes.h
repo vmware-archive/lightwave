@@ -254,7 +254,6 @@ VmDnsCacheRemoveZoneProc(
 DWORD
 VmDnsCacheSyncZones(
     DWORD                dwLastChangedUSN,
-    DWORD                dwNewUSN,
     PVMDNS_CACHE_CONTEXT pCacheContext
     );
 
@@ -704,7 +703,6 @@ VmDnsDirGetReplicationStatus(
 DWORD
 VmDnsDirSyncDeleted(
     DWORD                        pdwLastChangedUSN,
-    DWORD                        dwNewUSN,
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpRemoveZoneProc,
     PVOID                        pData
     );
@@ -712,7 +710,6 @@ VmDnsDirSyncDeleted(
 DWORD
 VmDnsDirSyncNewObjects(
     DWORD                        pdwLastChangedUSN,
-    DWORD                        dwNewUSN,
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpSyncZoneProc,
     LPVMDNS_PURGE_RECORD_PROC    LpPurgeRecordProc,
     PVOID                        pData
@@ -794,7 +791,6 @@ VmDnsStoreGetReplicationStatus(
 DWORD
 VmDnsStoreSyncDeleted(
     DWORD                        dwLastChangedUSN,
-    DWORD                        dwNewUSN,
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpRemoveZoneProc,
     PVOID                        pData
     );
@@ -802,7 +798,6 @@ VmDnsStoreSyncDeleted(
 DWORD
 VmDnsStoreSyncNewObjects(
     DWORD                        dwLastChangedUSN,
-    DWORD                        dwNewUSN,
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpSyncZoneProc,
     LPVMDNS_PURGE_RECORD_PROC    LpPurgeRecordProc,
     PVOID                        pData

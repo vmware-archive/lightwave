@@ -50,7 +50,6 @@ public class IDPConfig implements Serializable
     final String entityID;
     final String protocol;
     String alias;
-    String clientId;
     Collection<String> nameIDFormats;
     Collection<ServiceEndpoint> ssoServices;
     Collection<ServiceEndpoint> sloServices;
@@ -60,6 +59,7 @@ public class IDPConfig implements Serializable
     Map<TokenClaimAttribute,List<String>> tokenClaimGroupMappings;
     boolean isJitEnabled;
     String upnSuffix;
+    OidcConfig oidcConfig;
 
     /**
      *
@@ -80,10 +80,25 @@ public class IDPConfig implements Serializable
      */
     public IDPConfig(String aEntityId, String protocol)
     {
+        this(aEntityId, protocol, null);
+    }
+
+    /**
+     *
+     * @param aEntityId
+     *            Cannot be null or empty
+     * @param protocol
+     *            must be one
+     * @param oidcConfig
+     *
+     */
+    public IDPConfig(String aEntityId, String protocol, OidcConfig oidcConfig)
+    {
         Validate.notEmpty(aEntityId);
         validateProtocol(protocol);
         entityID = aEntityId;
         this.protocol = protocol;
+        this.oidcConfig = oidcConfig != null ? oidcConfig : new OidcConfig();
     }
 
 
@@ -125,27 +140,6 @@ public class IDPConfig implements Serializable
         if (alias != null)
             Validate.notEmpty(alias);
         this.alias = alias;
-    }
-
-    /**
-     *
-     * @return alias of the external Idp
-     */
-    public String getClientId()
-    {
-        return clientId;
-    }
-
-
-    /**
-     *
-     * @param clientId can be null, but otherwise cannot be empty
-     */
-    public void setClientId(String clientId)
-    {
-        if (clientId != null)
-            Validate.notEmpty(clientId);
-        this.clientId = clientId;
     }
 
     public boolean getJitAttribute()
@@ -316,6 +310,14 @@ public class IDPConfig implements Serializable
       Validate.noNullElements(tokenClaimGroupMappings.values(), "Token claim group mappings contains null group name list.");
       this.tokenClaimGroupMappings = tokenClaimGroupMappings;
    }
+
+    public OidcConfig getOidcConfig() {
+        return oidcConfig;
+    }
+
+    public void setOidcConfig(OidcConfig oidcConfig) {
+        this.oidcConfig = oidcConfig;
+    }
 
     /**
      *

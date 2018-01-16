@@ -172,6 +172,21 @@ CdcDbGetClosestDC(
      );
 
 DWORD
+CdcDbGetClosestNewDCOnSite(
+     PCWSTR pwszCurrentDC,
+     PCWSTR pwszClientSiteName,
+     PCWSTR pwszDomainName,
+     PWSTR  *ppszDCName
+     );
+
+DWORD
+CdcDbGetClosestNewDC(
+     PCWSTR pwszCurrentDC,
+     PCWSTR pwszDomainName,
+     PWSTR *ppszDCName
+     );
+
+DWORD
 CdcDbUpdateHeartbeatStatus(
     PCDC_DB_ENTRY_W pCdcDbEntry,
     PVMAFD_HB_STATUS_W pHeartbeatStatus

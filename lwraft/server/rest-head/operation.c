@@ -373,7 +373,7 @@ VmDirFreeRESTOperation(
     if (pRestOp)
     {
         // unset thread log context to safely free pRestOp->pThreadLogContext below
-        VmDirSetThreadLogContextValue(NULL); 
+        VmDirSetThreadLogContextValue(NULL);
 
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
@@ -383,10 +383,6 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszClientIP);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszRequestId);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszSessionId);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext->pszUserId);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pThreadLogContext);
 
         if (pRestOp->pjInput)
         {
@@ -397,6 +393,7 @@ VmDirFreeRESTOperation(
         VmDirDeleteConnection(&pRestOp->pConn);
         VmDirFreeRESTResult(pRestOp->pResult);
         VmDirFreeProxyResult(pRestOp->pProxyResult);
+        VmDirFreeThreadLogContext(pRestOp->pThreadLogContext);
         VMDIR_SAFE_FREE_MEMORY(pRestOp);
     }
 }

@@ -39,6 +39,7 @@ public class RequestFactory {
     private final static String DATE_HEADER = "Date";
     private final static ContentType APPLICATION_JSON_UTF8 = ContentType.create(ContentType.APPLICATION_JSON.getMimeType(), "UTF-8");
     private final static ContentType APPLICATION_XML_UTF8 = ContentType.create(ContentType.APPLICATION_XML.getMimeType(), "UTF-8");
+    private final static ContentType APPLICATION_FORM_ENCODED = ContentType.create(ContentType.APPLICATION_FORM_URLENCODED.getMimeType(), "UTF-8");
 
     public static HttpGet createGetRequest(URI uri) {
         return prepareRequest(new HttpGet(uri), null);
@@ -58,6 +59,10 @@ public class RequestFactory {
 
     public static HttpPost createPostRequestWithXml(URI uri, AccessToken token, String xml) throws ClientException {
         return prepareRequestWithXml(new HttpPost(uri), token, xml);
+    }
+
+    public static HttpPost createPostRequestWithFormEncodedString(URI uri, AccessToken token, String json) throws ClientException {
+        return prepareRequestWithFormEncodedString(new HttpPost(uri), token, json);
     }
 
     public static HttpPut createPutRequest(URI uri, AccessToken token) throws ClientException, JsonProcessingException {
@@ -124,6 +129,21 @@ public class RequestFactory {
 
         if (xml != null) {
             StringEntity entity = new StringEntity(xml, APPLICATION_XML_UTF8);
+            request.setEntity(entity);
+        }
+
+        return request;
+    }
+
+    private static <T extends HttpEntityEnclosingRequestBase> T prepareRequestWithFormEncodedString(T request, AccessToken token, String content) throws ClientException {
+        Date date = new Date();
+        request.setHeader(DATE_HEADER, RequestSigner.getHttpFormattedDate(date));
+        if (token != null) {
+            request.setHeader(new BasicHeader("Authorization", token.getType().getIdentifier() + " " + token.getToken()));
+        }
+
+        if (content != null) {
+            StringEntity entity = new StringEntity(content, APPLICATION_FORM_ENCODED);
             request.setEntity(entity);
         }
 

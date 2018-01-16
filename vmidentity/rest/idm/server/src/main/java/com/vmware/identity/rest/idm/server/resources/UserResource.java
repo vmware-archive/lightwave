@@ -50,6 +50,8 @@ import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Web service resource to manage all person user operations.
  *
@@ -62,6 +64,9 @@ import com.vmware.identity.rest.idm.server.util.Config;
 public class UserResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResource.class);
+
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "UserResource";
 
     public UserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -79,9 +84,10 @@ public class UserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public UserDTO get(@PathParam("userName") String name) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
+            PrincipalId id = PrincipalUtil.fromName(name);
             PersonUser idmPersonUser = getIDMClient().findPersonUser(tenant, id);
             if (idmPersonUser == null) {
                 throw new InvalidPrincipalException(String.format("User '%s' does not exist in tenant '%s'", name, tenant), name);
@@ -89,13 +95,22 @@ public class UserResource extends BaseSubResource {
             return UserMapper.getUserDTO(idmPersonUser, includePasswordDetails(name));
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {
             log.debug("Failed to retrieve user '{}' from tenant '{}'", name, tenant);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to retrieve user '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.get.failed", name, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve user '{}' from tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -110,10 +125,11 @@ public class UserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<GroupDTO> getGroups(@PathParam("userName") String name, @DefaultValue("false") @QueryParam("nested") boolean nested) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getGroups").startTimer();
+        String responseStatus = HTTP_OK;
         Collection<GroupDTO> userAffiliatedGroups = Collections.emptySet();
         try {
+            PrincipalId id = PrincipalUtil.fromName(name);
             // Retrieve all the direct groups associated with user.
             Set<Group> idmGroups = getIDMClient().findDirectParentGroups(tenant, id);
 
@@ -126,13 +142,22 @@ public class UserResource extends BaseSubResource {
             userAffiliatedGroups = GroupMapper.getGroupDTOs(idmGroups);
         } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {
             log.debug("Failed to retrieve groups associated with user '{}' on tenant '{}'", name, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to retrieve groups associated with user '{}' on tenant '{}' due to a client side error", name, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.user.get.groups.failed", name, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to retrieve groups associated with user '{}' on tenant '{}' due to a server side error", name, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getGroups").inc();
+            requestTimer.observeDuration();
         }
 
        return userAffiliatedGroups;

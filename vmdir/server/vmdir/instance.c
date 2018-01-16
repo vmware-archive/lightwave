@@ -676,13 +676,11 @@ error:
 
 //
 // Takes a DN of the form "dc=foo,dc=bar" and the respective admin DN (e.g.,
-// "cn=Administrator,cn=users,dc=foo,dc=bar") and gives that admin user read
-// access to the top-level portion of the domain. So, if "vsphere.local"
-// already exists and someone creates the tenant "secondary.local" we want
-// the secondary.local admin to be able to see "dc=local" in searches. Also,
-// we give the admin user permission to delete the top-level domain object.
-// (they'll only ever be able to do that if all domains in that TLD are gone,
-// so there's no security concern w.r.t. them deleting anything they shouldn't).
+// "cn=Administrator,cn=users,dc=foo,dc=bar")
+//
+// Also, grant system domainadmin 
+// VMDIR_ENTRY_WRITE_ACL | VMDIR_RIGHT_DS_WRITE_PROP | VMDIR_RIGHT_DS_DELETE_OBJECT 
+// permission to NON-LEAF domains.
 //
 DWORD
 _VmDirAclDomainObjects(
@@ -724,15 +722,18 @@ _VmDirAclDomainObjects(
                 // if it does not exist, set new SD
                 dwError = VmDirSetSecurityDescriptorForDn(pszDomainDN, pSecDesc);
                 BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else if (dwError == 0)
-            {
-                // if it already exists, update SD with ace for the new admin
-                dwError = VmDirAppendAllowAceForDn(
+
+                if (i != 0)
+                {
+                    // non-leaf domain
+                    dwError = VmDirAppendAllowAceForDn(
                         pszDomainDN,
-                        pszAdminUserDn,
-                        VMDIR_RIGHT_DS_READ_PROP | VMDIR_RIGHT_DS_DELETE_OBJECT);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                        gVmdirServerGlobals.bvDefaultAdminDN.lberbv_val,
+                          VMDIR_ENTRY_WRITE_ACL |
+                          VMDIR_RIGHT_DS_WRITE_PROP |
+                          VMDIR_RIGHT_DS_DELETE_OBJECT);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
             }
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -1188,6 +1189,18 @@ VmDirSrvSetupDomainInstance(
     dwError = VmDirSetSecurityDescriptorForDn(
             pszDefaultPasswdLockoutPolicyDN, &SecDescFullAccess);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    if (bFirstNodeBootstrap)
+    {
+        // allow DCClients group to read system domain policy.
+        // so machine act can auto refresh its password via VmDirRefreshActPassword
+        dwError = VmDirAppendAllowAceForDn(
+                    pszDefaultPasswdLockoutPolicyDN,
+                    gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val,
+                    VMDIR_RIGHT_DS_READ_PROP);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if (pSecDescAnonymousReadOut)
     {

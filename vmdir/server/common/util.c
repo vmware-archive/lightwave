@@ -1464,3 +1464,19 @@ cleanup:
 error:
     goto cleanup;
 }
+
+BOOLEAN
+VmDirIsDeletedContainer(
+    PCSTR   pszDN
+    )
+{
+    BOOLEAN bRtn = FALSE;
+
+    if (pszDN &&
+        VmDirStringCompareA(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE) == 0)
+    {
+        bRtn = TRUE;
+    }
+
+    return bRtn;
+}

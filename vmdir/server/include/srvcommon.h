@@ -695,10 +695,22 @@ typedef struct _VDIR_THREAD_INFO
 
 typedef struct _VMDIR_REPLICATION_METRICS
 {
-    PVM_METRICS_COUNTER         pReplUnfinished;
-    PVM_METRICS_GAUGE           pReplUsn;
-    PVM_METRICS_COUNTER         pReplChanges;
-    PVM_METRICS_HISTOGRAM       pReplSyncDuration;
+    /*
+     * Note this struct will be accessed by multiple threads
+     * concurrently so keep it concurrency-safe
+     */
+    PSTR                    pszSrcHostname;
+    PSTR                    pszSrcSite;
+    PSTR                    pszDstHostname;
+    PSTR                    pszDstSite;
+    PVM_METRICS_GAUGE       pTimeConverge;
+    PVM_METRICS_HISTOGRAM   pTimeOnehop;
+    PVM_METRICS_HISTOGRAM   pTimeCycleSucceeded;
+    PVM_METRICS_HISTOGRAM   pTimeCycleFailed;
+    PVM_METRICS_HISTOGRAM   pUsnBehind;
+    PVM_METRICS_COUNTER     pCountConflictResolved;
+    PVM_METRICS_COUNTER     pCountConflictPermanent;
+    BOOLEAN                 bActive;
 
 } VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;
 
@@ -744,10 +756,10 @@ typedef struct _VMDIR_REPLICATION_AGREEMENT
 {
     VDIR_BERVALUE               dn;
     char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
+    PSTR                        pszHostname;
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
     VMDIR_DC_CONNECTION         dcConn;
-    VMDIR_REPLICATION_METRICS   ReplMetrics;
 
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
 
@@ -1027,6 +1039,11 @@ VmDirSimpleEntryDeleteAttribute(
     );
 
 // util.c
+BOOLEAN
+VmDirIsDeletedContainer(
+    PCSTR   pszDN
+    );
+
 DWORD
 VmDirToLDAPError(
     DWORD   dwVmDirError
@@ -1266,7 +1283,8 @@ VmDirComputeEncodedEntrySize(
 DWORD
 VmDirEncodeEntry(
     PVDIR_ENTRY              pEntry,
-    VDIR_BERVALUE*           pEncodedBerval);
+    VDIR_BERVALUE*           pEncodedBerval,
+    BOOLEAN                  bValidateEntry);
 
 unsigned short
 VmDirDecodeShort(
@@ -1280,7 +1298,8 @@ VmDirEncodeShort(
 DWORD
 VmDirDecodeEntry(
    PVDIR_SCHEMA_CTX     pSchemaCtx,
-   PVDIR_ENTRY          pEntry);
+   PVDIR_ENTRY          pEntry,
+   PVDIR_BERVALUE       pbvDn);
 
 int
 VmDirGenOriginatingTimeStr(

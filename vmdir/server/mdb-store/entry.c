@@ -308,7 +308,7 @@ VmDirMDBAddEntry(
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
-    dwError = VmDirEncodeEntry( pEntry, &encodedEntry );
+    dwError = VmDirEncodeEntry(pEntry, &encodedEntry, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pEntry->eId != 0)    // Reserved entries have eId already
@@ -696,7 +696,7 @@ VmDirMDBEIdToEntry(
     pszBlob = NULL;
 
     pEntry->eId = eId;
-    dwError = VmDirDecodeEntry(pSchemaCtx, pEntry );
+    dwError = VmDirDecodeEntry(pSchemaCtx, pEntry, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -736,7 +736,7 @@ VmDirMDBModifyEntry(
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
-    dwError = VmDirEncodeEntry( pEntry, &newEncodedEntry );
+    dwError = VmDirEncodeEntry(pEntry, &newEncodedEntry, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_SAFE_FREE_MEMORY( pEntry->encodedEntry );

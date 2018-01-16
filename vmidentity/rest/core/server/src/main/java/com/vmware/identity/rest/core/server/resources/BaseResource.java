@@ -18,10 +18,13 @@ import java.util.Locale;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.util.ClientFactory;
 import com.vmware.identity.rest.core.util.StringManager;
+
+import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
 
 /**
  * Core Resource that be extended by other resources that perform identity management.
@@ -35,10 +38,26 @@ public abstract class BaseResource {
     private SecurityContext securityContext;
     private CasIdmClient idmClient;
     private String correlationId;
+    private String userId;
+    private String sessionId;
 
     protected StringManager sm;
+    protected static final String HTTP_OK = "200";
+    protected static final String HTTP_BAD_REQUEST = "400";
+    protected static final String HTTP_NOT_FOUND = "404";
+    protected static final String HTTP_SERVER_ERROR = "500";
 
-    protected BaseResource(Locale locale, String correlationId, String localizationPackage, SecurityContext securityContext) {
+    protected static final Counter totalRequests = Counter.build()
+            .name("sts_requests_total").help("Total requests.")
+            .labelNames("component", "tenant", "status", "resource", "operation")
+            .register();
+
+    protected static final Histogram requestLatency = Histogram.build()
+            .name("sts_requests_latency_seconds").help("Request latency in seconds.")
+            .labelNames("component", "tenant", "resource", "operation")
+            .register();
+
+    protected BaseResource(Locale locale, String localizationPackage, SecurityContext securityContext) {
         this.securityContext = securityContext;
 
         if (locale == null) {
@@ -46,16 +65,16 @@ public abstract class BaseResource {
         }
         StringManager.setThreadLocale(locale);
         this.sm = StringManager.getManager(localizationPackage);
-
-        this.correlationId = correlationId;
+        this.correlationId = DiagnosticsContextFactory.getCurrentDiagnosticsContext().getCorrelationId();
+        this.userId = DiagnosticsContextFactory.getCurrentDiagnosticsContext().getUserId();
+        this.sessionId = DiagnosticsContextFactory.getCurrentDiagnosticsContext().getSessionId();
     }
 
     public BaseResource(ContainerRequestContext request, String localizationPackage, SecurityContext securityContext) {
-        this(request.getLanguage(), request.getHeaderString(Config.CORRELATION_ID_HEADER), localizationPackage, securityContext);
+        this(request.getLanguage(), localizationPackage, securityContext);
 
         this.request = request;
     }
-
     /**
      * Lazily instantiate the IDM client so it is only connected
      * if it's necessary.
@@ -64,7 +83,7 @@ public abstract class BaseResource {
      */
     protected CasIdmClient getIDMClient() {
         if (this.idmClient == null) {
-            this.idmClient = ClientFactory.getClient(this.correlationId);
+            this.idmClient = ClientFactory.getClient(this.correlationId, this.userId, this.sessionId);
         }
 
         return this.idmClient;
@@ -80,6 +99,14 @@ public abstract class BaseResource {
 
     protected String getCorrelationId() {
         return correlationId;
+    }
+
+    protected String getUserId() {
+        return userId;
+    }
+
+    protected String getSessionId() {
+        return sessionId;
     }
 
     /**

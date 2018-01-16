@@ -2,10 +2,12 @@
 noinst_LTLIBRARIES = libreplication.la
 
 libreplication_la_SOURCES = \
+    firstreplcycle.c \
+    globals.c \
     libmain.c \
     metrics.c \
-    firstreplcycle.c \
     replentry.c \
+    replqueue.c \
     thread.c
 
 libreplication_la_CPPFLAGS = \

@@ -20,4 +20,8 @@ public abstract class IIdmServiceContext implements java.io.Serializable
     private static final long serialVersionUID = -2112288398175205744L;
 
     public abstract String getCorrelationId();
+
+    public abstract String getUserId();
+
+    public abstract String getSessionId();
 }

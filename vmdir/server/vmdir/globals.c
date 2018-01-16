@@ -145,6 +145,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT),
         VMDIR_SF_INIT(.dwTombstoneExpirationPeriod, 0),
         VMDIR_SF_INIT(.dwTombstoneThreadFrequency, 0),
+        VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;

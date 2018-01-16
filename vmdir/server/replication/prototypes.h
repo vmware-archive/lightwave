@@ -77,19 +77,58 @@ ReplModifyEntry(
     PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
     );
 
+// metrics.c
 DWORD
 VmDirReplMetricsInit(
-    VOID
+    PSTR                        pszHostname,
+    PSTR                        pszSite,
+    PVMDIR_REPLICATION_METRICS* ppReplMetrics
+    );
+
+VOID
+VmDirFreeReplMetrics(
+    PVMDIR_REPLICATION_METRICS  pReplMetrics
+    );
+
+// replqueue.c
+DWORD
+VmDirReplicationDecodeEntryForRetry(
+    PVDIR_SCHEMA_CTX                pSchemaCtx,
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
+    PVDIR_ENTRY                     pEntry
+    );
+
+VOID
+VmDirReplicationEncodeEntryForRetry(
+    PVDIR_ENTRY       pEntry,
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
 DWORD
-VmDirReplNewPartnerMetricsInit(
-    PVMDIR_REPLICATION_AGREEMENT pReplAgr
+VmDirReplicationPushFailedEntriesToQueue(
+    PVMDIR_REPLICATION_CONTEXT     pContext,
+    PVMDIR_REPLICATION_PAGE_ENTRY  pPageEntry
     );
 
 DWORD
-VmDirReplPartnerMetricsDelete(
-    PVMDIR_REPLICATION_AGREEMENT pReplAgr
+VmDirReplicationDupPageEntry(
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
+    PVMDIR_REPLICATION_PAGE_ENTRY*  ppPageEntryDup
+    );
+
+VOID
+VmDirReapplyFailedEntriesFromQueue(
+    PVMDIR_REPLICATION_CONTEXT     pContext
+    );
+
+VOID
+VmDirReplicationClearFailedEntriesFromQueue(
+    PVMDIR_REPLICATION_CONTEXT     pContext
+    );
+
+VOID
+VmDirReplicationFreePageEntry(
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
 #ifdef __cplusplus

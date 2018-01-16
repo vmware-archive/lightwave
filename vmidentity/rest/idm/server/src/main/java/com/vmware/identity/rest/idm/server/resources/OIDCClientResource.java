@@ -46,6 +46,8 @@ import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.server.mapper.OIDCClientMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
 
+import io.prometheus.client.Histogram;
+
 /**
  * Web service resource to manage OIDC clients associated per tenant basis.
  *
@@ -58,6 +60,9 @@ public class OIDCClientResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(OIDCClientResource.class);
 
+    private static final String METRICS_COMPONENT = "idm";
+    private static final String METRICS_RESOURCE = "OIDCClientResource";
+
     public OIDCClientResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
     }
@@ -69,6 +74,8 @@ public class OIDCClientResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO add(OIDCClientMetadataDTO oidcClientMetadataDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "add").startTimer();
+        String responseStatus = HTTP_OK;
         String clientId = null;
         try {
             OIDCClient oidcClient = OIDCClientMapper.getOIDCClient(oidcClientMetadataDTO);
@@ -77,13 +84,19 @@ public class OIDCClientResource extends BaseSubResource {
             return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, clientId));
         } catch (NoSuchTenantException e) {
             log.error("Failed to add an OIDC client for tenant '{}' due to missing tenant", this.tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.error("Failed to add an OIDC client for tenant '{}' due to a client side error", this.tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(this.sm.getString("res.oidcclient.create.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to add an OIDC client for tenant '{}' due to a server side error", this.tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "add").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -94,18 +107,26 @@ public class OIDCClientResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public Collection<OIDCClientDTO> getAll() {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addAll").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             Collection<OIDCClient> oidcClients = getIDMClient().getOIDCClients(this.tenant);
             return OIDCClientMapper.getOIDCClientDTOs(oidcClients);
         } catch (NoSuchTenantException e) {
             log.error("Failed to get OIDC clients from tenant '{}' due to missing tenant", this.tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.error("Failed to get OIDC clients from tenant '{}' due to a client side error", this.tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(this.sm.getString("res.oidcclient.getAll.failed", this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to get OIDC clients from tenant '{}' due to a server side error", this.tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addAll").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -116,6 +137,8 @@ public class OIDCClientResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO get(@PathParam("clientId") String clientId) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             OIDCClient oidcClient = getIDMClient().getOIDCClient(this.tenant, clientId);
 
@@ -127,13 +150,19 @@ public class OIDCClientResource extends BaseSubResource {
             return oidcClientDTO;
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
             log.error("Failed to get an OIDC client '{}' from tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.error("Failed to get an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(this.sm.getString("res.oidcclient.get.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to get an OIDC client '{}' from tenant '{}' due to a server side error", clientId, this.tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -143,17 +172,25 @@ public class OIDCClientResource extends BaseSubResource {
     @DELETE @Path("/{clientId}")
     @RequiresRole(role=Role.TRUSTED_USER)
     public void delete(@PathParam("clientId") String clientId) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteOIDCClient(this.tenant, clientId);
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
             log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException | InvalidPrincipalException e) {
             log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(this.sm.getString("res.oidcclient.delete.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to a server side error", clientId, this.tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            requestTimer.observeDuration();
         }
     }
 
@@ -164,6 +201,8 @@ public class OIDCClientResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO update(@PathParam("clientId") String clientId, OIDCClientMetadataDTO oidcClientMetadataDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
         try {
             OIDCClientDTO oidcClientDTO = new OIDCClientDTO.Builder().
                     withClientId(clientId).
@@ -174,13 +213,19 @@ public class OIDCClientResource extends BaseSubResource {
             return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, oidcClient.getClientId()));
         } catch (NoSuchTenantException | NoSuchOIDCClientException e) {
             log.error("Failed to update an OIDC client '{}' on tenant '{}' due to missing tenant or an OIDC client", clientId, this.tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.error("Failed to update an OIDC client '{}' on tenant '{}' due to a client side error", clientId, this.tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(this.sm.getString("res.oidcclient.update.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to update an OIDC client '{}' on tenant '{}' due to a server side error", clientId, this.tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
         }
     }
 }

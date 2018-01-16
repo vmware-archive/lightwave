@@ -13,6 +13,9 @@
  */
 package com.vmware.identity.rest.core.server.authorization.request;
 
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -20,6 +23,9 @@ import java.util.List;
 
 import javax.ws.rs.container.ContainerRequestContext;
 
+import org.apache.logging.log4j.ThreadContext;
+
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -242,6 +248,23 @@ public class ResourceAccessRequest {
         AccessToken token = builder.build(info);
 
         String tenant = getTenant(context, client);
+        // set log4j context for the incoming request
+        DiagnosticsContextFactory.addContext(Config.TenantNameMdcKey, tenant);
+
+        String subjectMd5Hash;
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(token.getSubject().getBytes());
+            // get md5 hash of the token subject
+            subjectMd5Hash = new BigInteger(1,md.digest()).toString(16);
+        } catch (NoSuchAlgorithmException e) {
+            subjectMd5Hash = token.getSubject();
+        }
+        DiagnosticsContextFactory.addContext(Config.UserIdMdcKey, subjectMd5Hash);
+        // use token issue epoch time as session_id
+        String issueInstant = String.valueOf(token.getIssueTime().getTime() / 1000);
+        DiagnosticsContextFactory.addContext(Config.SessionIdMdcKey, issueInstant);
+
         long skew = getSkew(tenant, client);
         Certificate cert = getSigningCert(tenant, client, requiredRole.isSystemTenantDomain());
 
