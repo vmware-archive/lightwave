@@ -55,6 +55,9 @@ if [ $# -gt 0 ]; then
                     "--hostname")
                       MODE="hostname"
                       ;;
+                    "--username")
+                      MODE="username"
+                      ;;
                     "--ssl-subject-alt-name")
                       MODE="ssl-subject-alt-name"
                       ;;
@@ -83,6 +86,10 @@ if [ $# -gt 0 ]; then
                 ;;
              "hostname")
                 LOTUS_HOSTNAME=$arg
+                MODE=open
+                ;;
+             "username")
+                LOTUS_ADMIN_DEFAULT=$arg
                 MODE=open
                 ;;
              "ssl-subject-alt-name")
