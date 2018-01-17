@@ -234,7 +234,9 @@ VmDirRESTForwardRequest(
 
     while (dwNumRetry++ < VMDIR_REST_MAX_RETRY)
     {
+        dwError = 0;
         statusCode = 0;
+        dwCurlError = 0;
 
         VMDIR_SAFE_FREE_MEMORY(pszLeader);
         dwError = VmDirRaftGetLeader(&pszLeader);
@@ -271,9 +273,8 @@ VmDirRESTForwardRequest(
 
             VMDIR_LOG_ERROR(
                     VMDIR_LOG_MASK_ALL,
-                    "Proxy request failed. Will retry from %s to leader: %s",
-                    VDIR_SAFE_STRING(pRestOp->pszClientIP),
-                    pszLeader);
+                    "Proxy request failed. Will retry from %s to leader: %s error code: %d http status code: %s",
+                    VDIR_SAFE_STRING(pRestOp->pszClientIP), pszLeader, dwCurlError, statusCode);
         }
         else
         {
@@ -282,6 +283,8 @@ VmDirRESTForwardRequest(
 
         VmDirSleep(VMDIR_REST_RETRY_INTERVAL_MS);
     }
+    BAIL_ON_CURL_ERROR(dwCurlError);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
