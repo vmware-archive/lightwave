@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -27,6 +27,7 @@ public class Endpoints {
     public static final String AUTHENTICATION_CAC_RPROXY = "/oidc/cac_rproxy";
     public static final String AUTHENTICATION_CAC_TOMCAT = "/oidc/cac_tomcat";
     public static final String TOKEN = "/token";
+    public static final String EXTERNAL_TOKEN = "/federate/external_token";
     public static final String FEDERATION = "/federate";
     public static final String LOGOUT = "/logout";
     public static final String JWKS = "/jwks";

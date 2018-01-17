@@ -13,21 +13,29 @@
  */
 package com.vmware.identity.openidconnect.server;
 
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.*;
-import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.*;
-import com.vmware.identity.openidconnect.protocol.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import java.io.IOException;
+import java.security.NoSuchProviderException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.security.NoSuchProviderException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.OidcConfig;
+import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 @Controller
 public class FederationTokenController {
@@ -35,6 +43,9 @@ public class FederationTokenController {
 
     @Autowired
     private CasIdmClient idmClient;
+
+    @Autowired
+    private SessionManager sessionManager;
 
     @Autowired
     private FederatedIdentityProcessor cspProcessor;
@@ -87,5 +98,36 @@ public class FederationTokenController {
             throw new NoSuchProviderException("Error: Unsupported Issuer Type - " + issuerType);
         }
         return cspProcessor;
+    }
+
+    @CrossOrigin(allowCredentials = "true")
+    @RequestMapping(value = Endpoints.BASE + Endpoints.EXTERNAL_TOKEN + "/{tenant:.*}", method = RequestMethod.GET)
+    public void acquireExternalTokens(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            @PathVariable("tenant") String tenant) throws IOException {
+        HttpResponse httpResponse;
+        IDiagnosticsContextScope context = null;
+
+        try {
+            HttpRequest httpRequest = HttpRequest.from(request);
+            context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
+            FederatedTokenRequestProcessor p = new FederatedTokenRequestProcessor(
+                    this.idmClient,
+                    this.sessionManager,
+                    httpRequest,
+                    tenant);
+            httpResponse = p.process();
+        } catch (Exception e) {
+            ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
+            LoggerUtils.logFailedRequest(logger, errorObject, e);
+            httpResponse = HttpResponse.createJsonResponse(errorObject);
+        } finally {
+            if (context != null) {
+                context.close();
+            }
+        }
+
+        httpResponse.applyTo(response);
     }
 }
