@@ -23,6 +23,7 @@ DATA_DIR=/opt/vmware/share
 LOG_DIR=/var/log/lightwave
 LOG_CONF_DIR=/etc/syslog-ng/lightwave.conf.d
 VMAFD_DB_DIR=/var/lib/vmware/vmafd
+VMAFD_RUN_DIR=/var/run/vmafd
 LIKEWISE_BIN_DIR=/opt/likewise/bin
 LIB64_DIR=/opt/vmware/lib64
 
@@ -51,6 +52,7 @@ if [ `grep -c  "#ntlm " $GSS_CONF_DIR/mech` -ge 1 ]; then
 fi
 
 /bin/mkdir -m 700 -p $VMAFD_DB_DIR
+/bin/mkdir -m 777 -p $VMAFD_RUN_DIR
 /bin/mkdir -m 700 -p $VMAFD_DB_DIR/vecs
 /bin/mkdir -m 700 -p $VMAFD_DB_DIR/clr
 
