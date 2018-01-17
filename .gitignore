@@ -287,6 +287,11 @@ $RECYCLE.BIN/
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# lwraft-ui
+ui/lwraft-ui/stage/
+lwraft-ui/target/
+lwraft-ui/src/app/*.js*
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
