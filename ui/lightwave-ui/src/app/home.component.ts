@@ -35,6 +35,7 @@ export class HomeComponent  {
     displayComponents:boolean = false;
     allTenants:any;
     isSystemTenant:boolean = false;
+    showOtherTenants:boolean = false;
     rightMenuOpen:boolean = false;
     constructor(@Inject(DOCUMENT) private document: any, private authService:AuthService, private vmdirService:VmdirService, private identitySourceService:IdentitySourceService, private utilsService: UtilsService, private configService: ConfigService, private activatedRoute: ActivatedRoute){
     }
@@ -77,6 +78,9 @@ export class HomeComponent  {
         window.location.href = idmUri;
     }
 
+    toggleTenants(){
+        this.showOtherTenants = !this.showOtherTenants;
+    }
     readQueryParams(params:any){
        let idToken = params['id_token'];
        let accessToken = params['access_token'];
@@ -154,8 +158,8 @@ export class HomeComponent  {
                     tlist = JSON.stringify(listing);
                     listingObj = JSON.parse(tlist);
                     this.utilsService.extractName(listingObj.result, false);
-                    this.allTenants = listingObj;
-                    console.log(listingObj);
+                    this.allTenants = listingObj.result;
+                    this.allTenants.shift();
                     },
                error => this.error = <any>error);
         }

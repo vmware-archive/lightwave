@@ -506,6 +506,10 @@ node_modules/
 node/
 dist/
 
+# lightwave web based UI applications
+lightwave-ui/stage/
+lightwave-ui/target/
+
 # Typescript v1 declaration files
 typings/
 
