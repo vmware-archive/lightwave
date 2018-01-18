@@ -112,10 +112,14 @@ VmDirRESTAuthTokenValidate(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
     )
 {
+    DWORD   i = 0;
     DWORD   dwError = 0;
     DWORD   dwOIDCError = 0;
+    size_t  numOfGroups = 0;
     BOOLEAN bCacheRefreshed = FALSE;
+    PSTR    pszTemp = NULL;
     PSTR    pszOIDCSigningCertPEM = NULL;
+    const PSTRING* ppGroupsArray = NULL;
     POIDC_ACCESS_TOKEN  pOidcAccessToken = NULL;
 
     if (!pAuthToken)
@@ -167,6 +171,31 @@ retry:
             OidcAccessTokenGetSubject(pOidcAccessToken),
             &pAuthToken->pszBindUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Log if the user belongs to LW admin group
+
+    OidcAccessTokenGetGroups(
+            pOidcAccessToken, &ppGroupsArray, &numOfGroups);
+
+    if (ppGroupsArray)
+    {
+        for (i = 0; i < numOfGroups; i++)
+        {
+            // Get string after domain name
+            pszTemp = VmDirStringChrA(ppGroupsArray[i], '\\');
+
+            if (pszTemp && ++pszTemp)
+            {
+                if (!VmDirStringCompareA(pszTemp, "Administrators",FALSE))
+                {
+                    VMDIR_LOG_INFO(
+                            VMDIR_LOG_MASK_ALL,
+                            "OIDC token for user: %s has lightwave admin group membership",
+                            pAuthToken->pszBindUPN);
+                }
+            }
+        }
+    }
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
