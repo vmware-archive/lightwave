@@ -94,7 +94,7 @@ VmDirRESTGetDomainName(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwAFDError = gpVdirVmAfdApi->pfnGetDCName(NULL, ppszDomainName);
+    dwAFDError = gpVdirVmAfdApi->pfnGetDomainName(NULL, ppszDomainName);
     dwError = dwAFDError ? VMDIR_ERROR_AFD_UNAVAILABLE : 0;
     BAIL_ON_VMDIR_ERROR(dwError);
 

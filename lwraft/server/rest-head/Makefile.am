@@ -28,7 +28,8 @@ librest_head_la_SOURCES += \
     proxy.c \
     resource.c \
     result.c \
-    vmafd.c
+    vmafd.c \
+    utils.c
 
 endif
 

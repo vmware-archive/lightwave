@@ -46,6 +46,7 @@ VmDirRESTOperationCreate(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pRestOp->pResource = VmDirRESTGetResourceByPath(NULL);
+    pRestOp->bisValidOrigin = FALSE;
 
     dwError = VmDirAllocateMemory(
             sizeof(VMDIR_THREAD_LOG_CONTEXT),
@@ -146,6 +147,15 @@ VmDirRESTOperationReadRequest(
     // call the set context method to store request-id in TLS
     dwError = VmDirSetThreadLogContextValue(pRestOp->pThreadLogContext);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pRestOp->pszOrigin)
+    {
+        dwError = VmDirRESTIsValidOrigin(pRestOp->pszOrigin, &pRestOp->bisValidOrigin);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // read request params
     for (i = 1; i <= dwParamCount; i++)
@@ -270,15 +280,18 @@ VmDirRESTOperationProcessRequest(
     dwError = VmDirRESTAuth(pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = coapi_find_handler(
-            gpVdirRestApiDef,
-            pRestOp->pszPath,
-            pRestOp->pszMethod,
-            &pRestOp->pMethod);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_OPTIONS, FALSE) != 0)
+    {
+        dwError = coapi_find_handler(
+                gpVdirRestApiDef,
+                pRestOp->pszPath,
+                pRestOp->pszMethod,
+                &pRestOp->pMethod);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
@@ -344,6 +357,9 @@ VmDirRESTOperationWriteResponse(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", pResource->pszContentType);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTSetCORSHeaders(pRestOp, ppResponse);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTResultGenerateResponseBody(pResult, pResource);
@@ -413,6 +429,7 @@ VmDirFreeRESTOperation(
 
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);

@@ -598,3 +598,16 @@ VmDirRESTProxyGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
     PVDIR_HTTP_ERROR*   ppHttpError
     );
+
+//utils.c
+DWORD
+VmDirRESTSetCORSHeaders(
+    PVDIR_REST_OPERATION    pRestOp,
+    PREST_RESPONSE*         ppResponse
+    );
+
+DWORD
+VmDirRESTIsValidOrigin(
+    PSTR                    pRestOp,
+    BOOLEAN                 *isValidOrigin
+    );

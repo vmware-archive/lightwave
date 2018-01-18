@@ -110,6 +110,8 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                        pszContentType;
     PSTR                        pszInput;
     PSTR                        pszClientIP;
+    PSTR                        pszOrigin;
+    BOOLEAN                     bisValidOrigin;
     json_t*                     pjInput;
     PLW_HASHMAP                 pParamMap;
     VDIR_REST_AUTH_METHOD       authMthd;
