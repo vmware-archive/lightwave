@@ -219,6 +219,14 @@ extern "C" {
 
 #endif
 
+#define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
+    do {                                        \
+        if (pLd) {                              \
+            ldap_unbind_ext_s(pLd,NULL,NULL);   \
+            (pLd) = NULL;                       \
+        }                                       \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_STRINGA(PTR)      \
     do {                                  \
         if ((PTR)) {                      \
@@ -548,6 +556,18 @@ extern "C" {
             ldap_unbind_ext_s(pLd,NULL,NULL);   \
             (pLd) = NULL;                       \
         }                                       \
+    } while(0)
+
+#define VMDIR_SAFE_FREE_VMDIR_FILTER(pfilter)       \
+    do {                                            \
+      DeleteFilter(pfilter);                        \
+    } while(0)
+
+#define VMDIR_SAFE_BER_MEMFREE(pBerMem)             \
+    do {                                            \
+        if ((pBerMem)) {                            \
+            ber_memfree(pBerMem);                   \
+        }                                           \
     } while(0)
 
 // if VDIR_CONNECTION has bind info in VDIR_ACCESS_INFO, use it; otherwise,

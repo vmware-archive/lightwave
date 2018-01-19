@@ -209,6 +209,8 @@ vdirReplicationThrFun(
         goto cleanup;
     }
 
+    VmDirClusterLoadCache();
+
     if (VmDirSchemaCtxAcquire(&sContext.pSchemaCtx) != 0)
     {
         VMDIR_LOG_ERROR(

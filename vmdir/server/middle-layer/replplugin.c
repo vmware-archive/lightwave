@@ -35,6 +35,11 @@ VmDirPluginReplAgrPostAddCommit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
+        {
+            VmDirClusterSetCacheReload(); //Recalculate Cluster State Cache for any replication topology change.
+        }
+
         if (!VmDirEntryIsObjectclass(pEntry, OC_REPLICATION_AGREEMENT))
         {
             goto cleanup;
@@ -83,6 +88,12 @@ VmDirPluginReplAgrPostDeleteCommit(
         pszErrorContext = "Normalize DN";
         dwError = VmDirNormalizeDN(&pEntry->dn, pEntry->pSchemaCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
+    {
+        //Check whether to mark the node as inActive and reload Cluster State Cache
+        VmDirClusterDeleteNode(pEntry);
     }
 
     if (!VmDirEntryIsObjectclass(pEntry, OC_REPLICATION_AGREEMENT))
