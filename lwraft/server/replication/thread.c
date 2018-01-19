@@ -206,6 +206,14 @@ _VmDirRaftVoteSchdThread()
             UINT64 waitTimeRemain = 0;
 
             now = VmDirGetTimeInMilliSec();
+            if (now < gRaftState.lastPingRecvTime)
+            {
+                //AppendEntries RPC handler may disable Ping timeout by setting lastPingRecvTime to future time.
+                waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
+                VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+                continue;
+            }
+
             waitTimeRemain = now - gRaftState.lastPingRecvTime;
             if (waitTimeRemain >= gVmdirGlobals.dwRaftElectionTimeoutMS)
             {
@@ -214,6 +222,7 @@ _VmDirRaftVoteSchdThread()
                 goto startVote;
             } else
             {
+                waitTime = waitTimeRemain;
                 VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
                 continue;
             }
@@ -1674,6 +1683,7 @@ cleanup:
         {
             gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec(); //Set for request vote timeout.
         }
+        VmDirConditionSignal(gRaftAppendEntryReachConsensusCond); //wake up thread waiting for commit consensus
     }
     if (iVoteGranted == 0)
     {
@@ -1724,6 +1734,7 @@ VmDirAppendEntriesGetReply(
     BOOLEAN bLockRpcReply = FALSE;
     int oldTerm = 0;
     int newTerm = 0;
+    int oldRole = VDIR_RAFT_ROLE_FOLLOWER;
     BOOLEAN bLogFound = FALSE;
     BOOLEAN bTermMatch = FALSE;
     VDIR_RAFT_LOG chgLog = {0};
@@ -1734,6 +1745,11 @@ VmDirAppendEntriesGetReply(
     BOOLEAN bFatalError = FALSE;
     unsigned long long priCommitIndex = 0;
     unsigned long long lastLogIndex = 0;
+    static long long latency_max = 0;
+    static long long latency_sum = 0;
+    static int latency_stat_cnt = 0;
+    UINT64 start_t = 0;
+    UINT64 end_t = 0;
 
     *status = 0;
     *currentTerm = 0;
@@ -1745,10 +1761,17 @@ VmDirAppendEntriesGetReply(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    start_t = VmDirGetTimeInMilliSec();
+    // Set lastPingRecvTime to a future time to prevent local transaction write
+    //   latency triggering false start voting event. Intentionally setting without
+    //   mutex since the mutex waiting might delay this setting.
+    gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec() + 3600000;
+
     VMDIR_LOCK_MUTEX(bLockRpcReply, gRaftRpcReplyMutex);
     //Serialize appendEntriesRpc, requestVoteRpc handlers and _VmDirEvaluateVoteResult
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    oldRole = gRaftState.role;
 
     if (gRaftState.leader.lberbv.bv_len == 0 ||
         VmDirStringCompareA(gRaftState.leader.lberbv.bv_val, leader, FALSE) !=0 )
@@ -1782,16 +1805,21 @@ VmDirAppendEntriesGetReply(
         //switch to follower, and let peer send a fresh appendEntries.
         *currentTerm = newTerm = gRaftState.currentTerm = term;
         gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
-        gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
+        gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec(); //Set for request vote timeout
+        VmDirConditionSignal(gRaftAppendEntryReachConsensusCond); //wake up thread waiting for commit consensus
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     //peer's term == my term, keep as a follower or switch to follower if not
     gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
-    gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
     *currentTerm = newTerm = gRaftState.currentTerm = term;
     lastLogIndex = gRaftState.lastLogIndex;
+    if (oldRole != VDIR_RAFT_ROLE_FOLLOWER)
+    {
+        gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec(); //Set for election timeout
+        VmDirConditionSignal(gRaftAppendEntryReachConsensusCond); //wake up thread waiting for commit consensus
+    }
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
     if (preLogIndex == 0)
@@ -1874,6 +1902,26 @@ cleanup:
     //Raft inconsistency may occur if fatal error detected.
     assert(!bFatalError);
 
+    if (dwError == 0)
+    {
+        end_t = VmDirGetTimeInMilliSec();
+        if((end_t - start_t) > latency_max)
+        {
+            latency_max = end_t - start_t;
+        }
+        latency_sum += end_t - start_t;
+        latency_stat_cnt++;
+        if (latency_stat_cnt > RPC_LATENCY_STATS_CNT)
+        {
+           VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: stats on latency: avg %.2f ms, max: %llu ms with %d operations",
+             __func__, (float)latency_sum/(float)RPC_LATENCY_STATS_CNT, latency_max, RPC_LATENCY_STATS_CNT);
+           latency_stat_cnt = 0;
+           latency_sum = 0;
+           latency_max = 0;
+        }
+    }
+    gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
+
     return dwError;
 
 error:
@@ -1930,7 +1978,7 @@ int VmDirRaftPrepareCommit(void **ppCtx)
     /* Use very large timeout value for new leader replicating no-op log entry so that a far
      * behind peer can catch up with the leader if that peer is needed for reaching consensus.
      */
-    waitTimeout = gLogEntry.requestCode == 0?LARGE_TIMEOUT_VALUE_MS:gVmdirGlobals.dwRaftElectionTimeoutMS;
+    waitTimeout = gLogEntry.requestCode == 0?LARGE_TIMEOUT_VALUE_MS:(gVmdirGlobals.dwRaftElectionTimeoutMS<<5);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (_VmDirGetRaftQuorumOverride(FALSE) || gRaftState.clusterSize < 2)
