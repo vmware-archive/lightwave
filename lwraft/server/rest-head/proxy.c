@@ -273,7 +273,7 @@ VmDirRESTForwardRequest(
 
             VMDIR_LOG_ERROR(
                     VMDIR_LOG_MASK_ALL,
-                    "Proxy request failed. Will retry from %s to leader: %s error code: %d http status code: %s",
+                    "Proxy request failed. Will retry from %s to leader: %s error code: %d http status code: %d",
                     VDIR_SAFE_STRING(pRestOp->pszClientIP), pszLeader, dwCurlError, statusCode);
         }
         else
@@ -752,6 +752,10 @@ _VmDirRESTCurlToHttpCode(
         case CURLE_COULDNT_RESOLVE_PROXY:
         case CURLE_COULDNT_RESOLVE_HOST:
         case CURLE_COULDNT_CONNECT:
+        case CURLE_SSL_CONNECT_ERROR:
+        case CURLE_SEND_ERROR:
+        case CURLE_RECV_ERROR:
+        case CURLE_NO_CONNECTION_AVAILABLE:
             httpStatus = HTTP_NETWORK_CONNECT_TIMEOUT_ERROR;
             break;
 
@@ -760,6 +764,7 @@ _VmDirRESTCurlToHttpCode(
             break;
 
         case CURLE_OPERATION_TIMEDOUT:
+        case CURLE_GOT_NOTHING:
             httpStatus = HTTP_REQUEST_TIMEOUT;
             break;
 
