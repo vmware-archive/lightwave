@@ -435,12 +435,6 @@ VmDirSendSearchEntry(
                           pSrEntry->dn.bvnorm_val );
                 goto cleanup; // Don't send this entry
             }
-            if (VmDirStringCompareA(RAFT_PERSIST_STATE_DN, pSrEntry->dn.bvnorm_val, FALSE)==0)
-            {
-                VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: Not sending modifications on Raft state entry: %s",
-                          pSrEntry->dn.bvnorm_val );
-                goto cleanup; // Don't send this entry
-            }
 
         }
 

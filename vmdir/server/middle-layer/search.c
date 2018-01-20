@@ -538,8 +538,13 @@ VmDirFilterInternalSearch(
 cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(showPagedResultsCtrl);
+
     VmDirFreeOperationContent(&searchOP);
-    VMDIR_SAFE_FREE_VMDIR_FILTER(pFilter);
+
+    if (pFilter)
+    {
+        DeleteFilter(pFilter);
+    }
 
     return dwError;
 

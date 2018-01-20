@@ -21,7 +21,6 @@ SUBDIRS = \
     rest-head \
     middle-layer \
     replication \
-    clusterstate \
     saslvmdirdb \
     schema \
     acl \

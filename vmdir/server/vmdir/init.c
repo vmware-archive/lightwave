@@ -234,9 +234,6 @@ VmDirInitBackend(
 
         dwError = _VmDirSrvCreatePersistedDSERoot();
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirInitRaftPsState();
-        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:

@@ -48,53 +48,6 @@ error:
     goto cleanup;
 }
 
-DWORD
-VmDirServerDNToSite(
-    PCSTR   pszServerDN,
-    PSTR*   ppszSite
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwCnt = 0;
-    PCSTR   pszTmp = NULL;
-    PSTR    pszLocalSite = NULL;
-
-    if (!pszServerDN || !ppszSite)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    // server object is two level under site container
-    // e.g. cn=lw-t1,cn=Servers,cn=taipei,cn=Sites
-    pszTmp = pszServerDN;
-    while (*pszTmp != '\0')
-    {
-        if ((*pszTmp == ',') && ( ++dwCnt == 2))
-        {
-            break;
-        }
-        pszTmp++;
-    }
-
-    if (*pszTmp == '\0')
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
-    }
-
-    dwError = VmDirDnLastRDNToCn(pszTmp+1, &pszLocalSite);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszSite = pszLocalSite;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalSite);
-
-    goto cleanup;
-}
-
 /*
  * Assumptions: tenant dn starts with "dc="
  */

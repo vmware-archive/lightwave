@@ -24,6 +24,7 @@ AttributeAppendBervArray(
     USHORT      usBervSize
     );
 
+static
 DWORD
 AttrListToEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
@@ -1344,6 +1345,7 @@ error:
  *                        "cn","my common name",
  *                         NULL};
  */
+static
 DWORD
 AttrListToEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,

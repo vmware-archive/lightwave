@@ -427,14 +427,4 @@ VmDirIsSearchForIntegrityCheckStatus(
     PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
     );
 
-BOOLEAN
-VmDirIsSearchForPing(
-    PVDIR_OPERATION                     pOp
-    );
-
-BOOLEAN
-VmDirIsSearchForVote(
-    PVDIR_OPERATION                     pOp
-    );
-
 #endif
