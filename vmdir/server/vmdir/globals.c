@@ -172,3 +172,5 @@ VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =
         VMDIR_SF_INIT(.pThrInfo, NULL),
         VMDIR_SF_INIT(.bShutdown, FALSE)
     };
+
+PVM_METRICS_HISTOGRAM gpRpcRequestDuration[METRICS_RPC_OP_COUNT];

@@ -20,3 +20,7 @@ PVMREST_HANDLE gpVdirRestHTTPHandle = NULL;
 PVMREST_HANDLE gpVdirRestHTTPSHandle = NULL;
 
 PVDIR_REST_HEAD_CACHE gpVdirRestCache = NULL;
+
+PVM_METRICS_HISTOGRAM gpRestLdapMetrics[METRICS_LDAP_OP_COUNT]
+                                        [METRICS_LDAP_ERROR_COUNT]
+                                         [METRICS_LAYER_COUNT];

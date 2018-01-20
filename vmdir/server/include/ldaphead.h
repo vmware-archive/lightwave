@@ -302,6 +302,12 @@ PCSTR
 VmDirGetOperationStringFromTag(
     ber_tag_t opTag);
 
+// metricsinit.c
+DWORD
+VmDirLdapMetricsInit(
+    VOID
+    );
+
 // vecs.c
 DWORD
 VmDirGetVecsMachineCert(

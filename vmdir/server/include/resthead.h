@@ -12,6 +12,7 @@
  * under the License.
  */
 
+// libmain.c
 DWORD
 VmDirRESTServerInit(
     VOID
@@ -19,5 +20,11 @@ VmDirRESTServerInit(
 
 VOID
 VmDirRESTServerShutdown(
+    VOID
+    );
+
+// metrics.c
+DWORD
+VmDirRestMetricsInit(
     VOID
     );

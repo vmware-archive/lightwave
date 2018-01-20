@@ -44,6 +44,7 @@
 #include <srvcommon.h>
 
 #include <middlelayer.h>
+#include <vmdirmetrics.h>
 #include <vmdirserver.h>
 #include <schema.h>
 #include <indexcfg.h>

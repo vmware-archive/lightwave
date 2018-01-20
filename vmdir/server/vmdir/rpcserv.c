@@ -272,7 +272,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GENERATEPASSWORD],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_GENERATEPASSWORD],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwAPIError;
@@ -366,7 +366,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETKEYTABRECBLOB],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_GETKEYTABRECBLOB],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwAPIError;
@@ -752,7 +752,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_CREATEUSER],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_CREATEUSER],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -802,7 +802,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_CREATEUSEREX],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_CREATEUSEREX],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -870,7 +870,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETLOGLEVEL],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SETLOGLEVEL],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -912,7 +912,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETLOGMASK],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SETLOGMASK],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1241,7 +1241,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1281,7 +1281,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGENABLE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGENABLE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1321,7 +1321,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGDISABLE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGDISABLE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1363,7 +1363,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_ISSUPERLOGENABLED],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_ISSUPERLOGENABLED],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1403,7 +1403,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGFLUSH],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGFLUSH],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1444,7 +1444,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGSETSIZE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGSETSIZE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1485,7 +1485,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGGETSIZE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGGETSIZE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1563,7 +1563,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1644,7 +1644,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_OPENDATABASEFILE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_OPENDATABASEFILE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1721,7 +1721,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_READDATABASEFILE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_READDATABASEFILE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1775,7 +1775,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_CLOSEDATABASEFILE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_CLOSEDATABASEFILE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1839,7 +1839,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_SETBACKENDSTATE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_SETBACKENDSTATE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1887,7 +1887,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETSTATE],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_GETSTATE],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1932,7 +1932,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETLOGLEVEL],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_GETLOGLEVEL],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;
@@ -1977,7 +1977,7 @@ cleanup:
     }
 
     uiEndTime = VmDirGetTimeInMilliSec();
-    VmMetricsHistogramUpdate(pRpcRequestDuration[METRICS_RPC_OP_GETLOGMASK],
+    VmMetricsHistogramUpdate(gpRpcRequestDuration[METRICS_RPC_OP_GETLOGMASK],
                              VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
 
     return dwError;

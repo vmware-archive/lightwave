@@ -17,7 +17,7 @@ vmdird_SOURCES = \
     ipcapihandler.c \
     krb.c \
     main.c \
-    metricsinit.c \
+    metrics.c \
     parseargs.c \
     regconfig.c \
     rpcserv.c \
@@ -63,6 +63,7 @@ vmdird_CPPFLAGS = \
 
 vmdird_LDADD = \
     $(top_builddir)/vmdir/server/vmkdc/libvmkdcserv.la \
+    $(top_builddir)/vmdir/server/metrics/libmetrics.la \
     $(top_builddir)/vmdir/server/ldap-head/libldap-head.la \
     $(top_builddir)/vmdir/server/rest-head/librest-head.la \
     $(top_builddir)/vmdir/server/indexcfg/libindexcfg.la \

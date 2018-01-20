@@ -468,6 +468,12 @@ VmDirIntegrityCheckShowStatus(
     PVDIR_ENTRY*    ppEntry
     );
 
+// metrics.c
+DWORD
+VmDirRpcMetricsInit(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif
