@@ -54,7 +54,7 @@
 #define VMDIR_REST_HEADER_AUTHENTICATION    "Authorization"
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 #define VMDIR_REST_HEADER_CONTENT_TYPE      "Content-Type"
-#define VMDIR_REST_HEADER_REQUESTID         "requestid"
+#define VMDIR_REST_HEADER_REQUESTID         "Requestid"
 #define VMDIR_REST_HEADER_ORIGIN            "Origin"
 
 // HTTP STATUS CODES

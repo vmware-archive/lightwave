@@ -36,6 +36,7 @@
 // HTTP headers
 #define VMDIR_REST_HEADER_AUTHORIZATION     "Authorization"
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
+#define VMDIR_REST_HEADER_REQUESTID         "Requestid"
 #define VMDIR_REST_HEADER_ORIGIN            "Origin"
 
 // HTTP methods

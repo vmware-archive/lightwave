@@ -38,8 +38,7 @@ VmDirRESTOperationCreate(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_CONNECTION), (PVOID*)&pRestOp->pConn);
+    dwError = VmDirAllocateConnection(&pRestOp->pConn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTResultCreate(&pRestOp->pResult);
@@ -47,11 +46,6 @@ VmDirRESTOperationCreate(
 
     pRestOp->pResource = VmDirRESTGetResourceByPath(NULL);
     pRestOp->bisValidOrigin = FALSE;
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VMDIR_THREAD_LOG_CONTEXT),
-            (PVOID*)&pRestOp->pThreadLogContext);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppRestOp = pRestOp;
 
@@ -140,12 +134,8 @@ VmDirRESTOperationReadRequest(
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read requestid
-    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pThreadLogContext->pszRequestId);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // call the set context method to store request-id in TLS
-    dwError = VmDirSetThreadLogContextValue(pRestOp->pThreadLogContext);
+    // read Requestid
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
@@ -424,9 +414,6 @@ VmDirFreeRESTOperation(
 {
     if (pRestOp)
     {
-        // unset thread log context to safely free pRestOp->pThreadLogContext below
-        VmDirSetThreadLogContextValue(NULL);
-
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
@@ -445,7 +432,6 @@ VmDirFreeRESTOperation(
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         VmDirDeleteConnection(&pRestOp->pConn);
         VmDirFreeRESTResult(pRestOp->pResult);
-        VmDirFreeThreadLogContext(pRestOp->pThreadLogContext);
         VMDIR_SAFE_FREE_MEMORY(pRestOp);
     }
 }

@@ -258,6 +258,7 @@ typedef struct _VDIR_CONNECTION
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX

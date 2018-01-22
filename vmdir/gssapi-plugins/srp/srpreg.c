@@ -74,7 +74,7 @@ _srp_reg_get_value(
             if (!pRetAccountDN)
             {
                 dwError = ERROR_NO_MEMORY;
-                BAIL_ON_VMDIR_ERROR(dwError);
+                BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
             }
         }
     }
@@ -90,7 +90,7 @@ _srp_reg_get_value(
                                      valueType,
                                      pRetAccountDN,
                                      &accountRetDNLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
     *pRetValue = pRetAccountDN;
     *pRetValueLen = accountRetDNLen;
 

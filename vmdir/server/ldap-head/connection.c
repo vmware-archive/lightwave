@@ -116,6 +116,41 @@ _VmDirPingAcceptThr(
     DWORD   dwPort
     );
 
+DWORD
+VmDirAllocateConnection(
+    PVDIR_CONNECTION* ppConn
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_CONNECTION    pConn = NULL;
+    PVMDIR_THREAD_LOG_CONTEXT pLocalLogCtx = NULL;
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_CONNECTION), (PVOID*)&pConn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetThreadLogContextValue(&pLocalLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pLocalLogCtx)
+    {   // no pThrLogCtx set yet
+        dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pConn->pThrLogCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSetThreadLogContextValue(pConn->pThrLogCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppConn = pConn;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirDeleteConnection (&pConn);
+    goto cleanup;
+}
+
 void
 VmDirDeleteConnection(
     VDIR_CONNECTION **conn
@@ -141,6 +176,12 @@ VmDirDeleteConnection(
             tcp_close((*conn)->sd);
         }
 
+
+        if ((*conn)->pThrLogCtx)
+        {
+            VmDirSetThreadLogContextValue(NULL);
+            VmDirFreeThreadLogContext((*conn)->pThrLogCtx);
+        }
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
         _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );
 
@@ -312,7 +353,7 @@ NewConnection(
     PVDIR_CONNECTION pConn = NULL;
     PSTR      pszLocalErrMsg = NULL;
 
-    if (VmDirAllocateMemory(sizeof(VDIR_CONNECTION), (PVOID *)&pConn) != 0)
+    if (VmDirAllocateConnection(&pConn) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection: VmDirAllocateMemory call failed");

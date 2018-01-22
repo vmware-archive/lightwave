@@ -64,11 +64,8 @@ VmDirInitStackOperation(
     dwError = VmDirAllocateMemory( sizeof( *pOp->pBECtx ), (PVOID) &(pOp->pBECtx) );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if ( pOp->opType == VDIR_OPERATION_TYPE_INTERNAL )
-    {   // needs dummy conn->VDIR_ACCESS_INFO for ACL check
-        dwError = VmDirAllocateMemory( sizeof( *pOp->conn), (PVOID) &(pOp->conn) );
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = VmDirAllocateConnection(&pOp->conn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pOp->pSchemaCtx = pLocalSchemaCtx;
     pLocalSchemaCtx = NULL;

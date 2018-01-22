@@ -32,6 +32,7 @@ libcommon_la_SOURCES = \
     stringlist.c \
     superlogutil.c \
     synchronizing.c  \
+    threadcontext.c  \
     threading.c  \
     tsstack.c \
     util.c \

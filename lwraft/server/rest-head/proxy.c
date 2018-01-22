@@ -166,12 +166,13 @@ VmDirRESTProxyForwardRequest(
         }
     }
     // requestid header
-    if (!IsNullOrEmptyString(pRestOp->pThreadLogContext->pszRequestId))
+    if (pRestOp->pConn->pThrLogCtx &&
+        !IsNullOrEmptyString(pRestOp->pConn->pThrLogCtx->pszRequestId))
     {
         dwError = VmDirAllocateStringPrintf(
                 &pszRequestIdHeader,
                 "%s: %s",
-                VMDIR_REST_HEADER_REQUESTID, pRestOp->pThreadLogContext->pszRequestId);
+                VMDIR_REST_HEADER_REQUESTID, pRestOp->pConn->pThrLogCtx->pszRequestId);
         BAIL_ON_VMDIR_ERROR(dwError);
         pHeaders = curl_slist_append(pHeaders, pszRequestIdHeader);
         if (!pHeaders)

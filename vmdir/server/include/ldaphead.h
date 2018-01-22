@@ -81,6 +81,11 @@ VmDirDeleteConnection(
     );
 
 DWORD
+VmDirAllocateConnection(
+    PVDIR_CONNECTION* PPConn
+    );
+
+DWORD
 VmDirWhichAddressPresent(
     BOOLEAN *pIPV4AddressPresent,
     BOOLEAN *pIPV6AddressPresent

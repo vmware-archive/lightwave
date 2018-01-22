@@ -200,6 +200,7 @@ typedef struct _VDIR_CONNECTION
     char                    szClientIP[INET6_ADDRSTRLEN];
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
+    PVMDIR_THREAD_LOG_CONTEXT pThrLogCtx;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -610,6 +611,7 @@ typedef struct _VDIR_OPERATION
     DWORD               dwSentEntries; // number of entries sent back to client
     BOOLEAN             bSuppressLogInfo;
     BOOLEAN             bNoRaftLog; //The operation is derived or in local server scope - don't generate Raft log
+
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
