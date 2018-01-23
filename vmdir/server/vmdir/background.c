@@ -50,7 +50,6 @@ VmDirBkgdThreadInitialize(
     DWORD   dwError = 0;
     DWORD   dwNumTasks = 0, i = 0;
     PSTR    pszTmp = NULL;
-    PVDIR_THREAD_INFO   pThrInfo = NULL;
 
     dwNumTasks = sizeof(tasks)/sizeof(tasks[0]);
 
@@ -70,13 +69,15 @@ VmDirBkgdThreadInitialize(
     // start background thread
     gVmdirBkgdGlobals.bShutdown = FALSE;
 
-    dwError = VmDirSrvThrInit(&pThrInfo, NULL, NULL, TRUE);
+    dwError = VmDirSrvThrInit(&gVmdirBkgdGlobals.pThrInfo, NULL, NULL, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCreateThread(&pThrInfo->tid, pThrInfo->bJoinThr, VmDirBkgdThreadFun, NULL);
+    dwError = VmDirCreateThread(
+            &gVmdirBkgdGlobals.pThrInfo->tid,
+            gVmdirBkgdGlobals.pThrInfo->bJoinThr,
+            VmDirBkgdThreadFun,
+            NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    gVmdirBkgdGlobals.pThrInfo = pThrInfo;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszTmp);
@@ -89,7 +90,6 @@ error:
             __FUNCTION__,
             dwError);
 
-    VmDirSrvThrFree(pThrInfo);
     goto cleanup;
 }
 
