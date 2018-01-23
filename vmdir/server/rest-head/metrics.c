@@ -80,3 +80,83 @@ error:
 
     goto cleanup;
 }
+
+VOID
+VmDirRestMetricsUpdate(
+    METRICS_LDAP_OPS    operation,
+    METRICS_LDAP_ERRORS error,
+    METRICS_LAYERS      layer,
+    uint64_t            iStartTime,
+    uint64_t            iEndTime
+    )
+{
+    PVM_METRICS_HISTOGRAM   pHistogram = NULL;
+
+    pHistogram = gpRestLdapMetrics[operation][error][layer];
+    if (pHistogram)
+    {
+        VmMetricsHistogramUpdate(
+                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+    }
+}
+
+VOID
+VmDirRestMetricsUpdateFromHandler(
+    PVDIR_REST_OPERATION    pRestOp,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
+    )
+{
+    METRICS_LDAP_OPS    operation = METRICS_LDAP_OP_IGNORE;
+    METRICS_LDAP_ERRORS error = METRICS_LDAP_OTHER;
+    METRICS_LAYERS      layer = METRICS_LAYER_PROTOCOL;
+
+    if (pRestOp && pRestOp->pMethod)
+    {
+        if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+        {
+            operation = METRICS_LDAP_OP_ADD;
+        }
+        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
+        {
+            operation = METRICS_LDAP_OP_MODIFY;
+        }
+        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
+        {
+            operation = METRICS_LDAP_OP_DELETE;
+        }
+        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
+        {
+            operation = METRICS_LDAP_OP_SEARCH;
+        }
+    }
+
+    if (pRestOp && pRestOp->pResult)
+    {
+        error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
+    }
+
+    if (operation != METRICS_LDAP_OP_IGNORE)
+    {
+        VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
+    }
+}
+
+VOID
+VmDirRestMetricsShutdown(
+    VOID
+    )
+{
+    DWORD   i = 0, j = 0, k = 0;
+
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
+    {
+        for (j = 0; j < METRICS_LDAP_ERROR_COUNT; j++)
+        {
+            for (k = 0; k < METRICS_LAYER_COUNT; k++)
+            {
+                gpRestLdapMetrics[i][j][k] = NULL;
+            }
+        }
+    }
+}

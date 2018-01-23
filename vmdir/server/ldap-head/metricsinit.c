@@ -85,3 +85,45 @@ error:
 
     goto cleanup;
 }
+
+VOID
+VmDirLdapMetricsUpdate(
+    METRICS_LDAP_OPS        operation,
+    METRICS_LDAP_OP_TYPES   opType,
+    METRICS_LDAP_ERRORS     error,
+    METRICS_LAYERS          layer,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
+    )
+{
+    PVM_METRICS_HISTOGRAM   pHistogram = NULL;
+
+    pHistogram = gpLdapMetrics[operation][opType][error][layer];
+    if (pHistogram)
+    {
+        VmMetricsHistogramUpdate(
+                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+    }
+}
+
+VOID
+VmDirLdapMetricsShutdown(
+    VOID
+    )
+{
+    DWORD   i = 0, j = 0, k = 0, l = 0;
+
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
+    {
+        for (j = 0; j < METRICS_LDAP_OP_TYPE_COUNT; j++)
+        {
+            for (k = 0; k < METRICS_LDAP_ERROR_COUNT; k++)
+            {
+                for (l = 0; l < METRICS_LAYER_COUNT; l++)
+                {
+                    gpLdapMetrics[i][j][k][l] = NULL;
+                }
+            }
+        }
+    }
+}

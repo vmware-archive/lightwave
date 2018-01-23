@@ -47,7 +47,6 @@
 #include <ldaphead.h>
 #include <resthead.h>
 #include <schema.h>
-#include <vmdirmetrics.h>
 #include <vmdirserver.h>
 
 #ifdef REST_ENABLED

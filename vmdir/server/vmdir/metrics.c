@@ -41,7 +41,7 @@ VmDirRpcMetricsInit(
                 labels, 1,
                 "Histogram for DCERPC Request Durations for different operations",
                 buckets, 5,
-                &gpRpcRequestDuration[i]);
+                &gpRpcMetrics[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -56,4 +56,34 @@ error:
             dwError);
 
     goto cleanup;
+}
+
+VOID
+VmDirRpcMetricsUpdate(
+    METRICS_RPC_OPS operation,
+    uint64_t        iStartTime,
+    uint64_t        iEndTime
+    )
+{
+    PVM_METRICS_HISTOGRAM   pHistogram = NULL;
+
+    pHistogram = gpRpcMetrics[operation];
+    if (pHistogram)
+    {
+        VmMetricsHistogramUpdate(
+                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+    }
+}
+
+VOID
+VmDirRpcMetricsShutdown(
+    VOID
+    )
+{
+    DWORD   i = 0;
+
+    for (i = 0; i < METRICS_RPC_OP_COUNT; i++)
+    {
+        gpRpcMetrics[i] = NULL;
+    }
 }

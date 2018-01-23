@@ -113,6 +113,36 @@ VmDirMetricsRpcOperationString(
     return pszRpcOperations[operation];
 }
 
+METRICS_LDAP_OP_TYPES
+VmDirMetricsMapLdapOpTypeToEnum(
+    VDIR_OPERATION_TYPE opType
+    )
+{
+    METRICS_LDAP_OP_TYPES   match = METRICS_LDAP_OP_TYPE_INTERNAL;
+
+    switch (opType)
+    {
+    case VDIR_OPERATION_TYPE_EXTERNAL:
+        match = METRICS_LDAP_OP_TYPE_EXTERNAL;
+        break;
+
+    case VDIR_OPERATION_TYPE_INTERNAL:
+        match = METRICS_LDAP_OP_TYPE_INTERNAL;
+        break;
+
+    case VDIR_OPERATION_TYPE_REPL:
+        match = METRICS_LDAP_OP_TYPE_REPL;
+        break;
+
+    default:
+        // default to internal type
+        match = METRICS_LDAP_OP_TYPE_INTERNAL;
+        break;
+    }
+
+    return match;
+}
+
 METRICS_LDAP_ERRORS
 VmDirMetricsMapLdapErrorToEnum(
     int error

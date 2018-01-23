@@ -23,7 +23,6 @@
 #include <vmdircommon.h>
 #include <srvcommon.h>
 
-#include <vmdirmetrics.h>
 #include <vmdirserver.h>
 #include <ldaphead.h>
 #include <resthead.h>

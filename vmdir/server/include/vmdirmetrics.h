@@ -130,6 +130,11 @@ VmDirMetricsRpcOperationString(
     METRICS_RPC_OPS operation
     );
 
+METRICS_LDAP_OP_TYPES
+VmDirMetricsMapLdapOpTypeToEnum(
+    VDIR_OPERATION_TYPE opType
+    );
+
 METRICS_LDAP_ERRORS
 VmDirMetricsMapLdapErrorToEnum(
     int error

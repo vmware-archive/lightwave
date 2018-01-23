@@ -56,6 +56,9 @@ VmDirMetricsShutdown(
     VOID
     )
 {
+    VmDirLdapMetricsShutdown();
+    VmDirRestMetricsShutdown();
+    VmDirRpcMetricsShutdown();
     VmDirReplMetricsCacheShutdown();
     VmMetricsDestroy(pmContext);
 }

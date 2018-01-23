@@ -434,4 +434,17 @@ VmDirIsSearchForIntegrityCheckStatus(
     PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
     );
 
+// util.c
+VOID
+VmDirInternalMetricsUpdate(
+    METRICS_LDAP_OPS        operation,
+    VDIR_OPERATION_PROTOCOL protocol,
+    VDIR_OPERATION_TYPE     opType,
+    int                     errCode,
+    uint64_t                iMLStartTime,
+    uint64_t                iMLEndTime,
+    uint64_t                iBEStartTime,
+    uint64_t                iBEEndTime
+    );
+
 #endif

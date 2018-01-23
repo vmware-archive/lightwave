@@ -614,7 +614,7 @@ ProcessAConnection(
     int              reTries = 0;
     BOOLEAN          bDownOpThrCount = FALSE;
     PVDIR_CONNECTION_CTX pConnCtx = NULL;
-    METRICS_LDAP_OPS metricsTag = METRICS_LDAP_OP_IGNORE;
+    METRICS_LDAP_OPS operationTag = METRICS_LDAP_OP_IGNORE;
     BOOLEAN          bReplSearch = FALSE;
     uint64_t         iStartTime = 0;
     uint64_t         iEndTime = 0;
@@ -775,7 +775,7 @@ ProcessAConnection(
         }
         BAIL_ON_VMDIR_ERROR(retVal);
 
-        metricsTag = METRICS_LDAP_OP_IGNORE;
+        operationTag = METRICS_LDAP_OP_IGNORE;
 
         switch (tag)
         {
@@ -789,12 +789,12 @@ ProcessAConnection(
 
         case LDAP_REQ_ADD:
             retVal = VmDirPerformAdd(pOperation);
-            metricsTag = METRICS_LDAP_OP_ADD;
+            operationTag = METRICS_LDAP_OP_ADD;
             break;
 
         case LDAP_REQ_SEARCH:
             retVal = VmDirPerformSearch(pOperation);
-            metricsTag = METRICS_LDAP_OP_SEARCH;
+            operationTag = METRICS_LDAP_OP_SEARCH;
             break;
 
         case LDAP_REQ_UNBIND:
@@ -803,12 +803,12 @@ ProcessAConnection(
 
         case LDAP_REQ_MODIFY:
             retVal = VmDirPerformModify(pOperation);
-            metricsTag = METRICS_LDAP_OP_MODIFY;
+            operationTag = METRICS_LDAP_OP_MODIFY;
             break;
 
         case LDAP_REQ_DELETE:
             retVal = VmDirPerformDelete(pOperation);
-            metricsTag = METRICS_LDAP_OP_DELETE;
+            operationTag = METRICS_LDAP_OP_DELETE;
             break;
 
         case LDAP_REQ_MODDN:
@@ -836,16 +836,17 @@ ProcessAConnection(
 
         iEndTime = VmDirGetTimeInMilliSec();
 
-        if (metricsTag != METRICS_LDAP_OP_IGNORE)
+        if (operationTag != METRICS_LDAP_OP_IGNORE)
         {
-            bReplSearch = metricsTag == METRICS_LDAP_OP_SEARCH && pOperation->syncReqCtrl;
+            bReplSearch = operationTag == METRICS_LDAP_OP_SEARCH && pOperation->syncReqCtrl;
 
-            VmMetricsHistogramUpdate(
-                    gpLdapMetrics[metricsTag]
-                                  [bReplSearch ? METRICS_LDAP_OP_TYPE_REPL : METRICS_LDAP_OP_TYPE_EXTERNAL]
-                                   [VmDirMetricsMapLdapErrorToEnum(pOperation->ldapResult.errCode)]
-                                    [METRICS_LAYER_PROTOCOL],
-                    VMDIR_RESPONSE_TIME(iEndTime-iStartTime));
+            VmDirLdapMetricsUpdate(
+                    operationTag,
+                    bReplSearch ? METRICS_LDAP_OP_TYPE_REPL : METRICS_LDAP_OP_TYPE_EXTERNAL,
+                    VmDirMetricsMapLdapErrorToEnum(pOperation->ldapResult.errCode),
+                    METRICS_LAYER_PROTOCOL,
+                    iStartTime,
+                    iEndTime);
         }
 
         // If this is a multi-stage operation don't overwrite the start time if it's already set.

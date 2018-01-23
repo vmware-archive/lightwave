@@ -605,14 +605,22 @@ typedef enum
     VDIR_OPERATION_TYPE_REPL = 4,
 } VDIR_OPERATION_TYPE;
 
+typedef enum
+{
+    VDIR_OPERATION_PROTOCOL_LDAP,
+    VDIR_OPERATION_PROTOCOL_REST
+
+} VDIR_OPERATION_PROTOCOL;
+
 typedef struct _VDIR_OPERATION
 {
-    VDIR_OPERATION_TYPE opType;
+    VDIR_OPERATION_TYPE     opType;
+    VDIR_OPERATION_PROTOCOL protocol;
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid only for EXTERNAL operation
     ///////////////////////////////////////////////////////////////////////////
-    ber_int_t           protocol;    // version of the LDAP protocol used by client
+    ber_int_t           protocolVer;    // version of the LDAP protocol used by client
     BerElement *        ber;         // ber of the request
     ber_int_t           msgId;       // msgid of the request
     PVDIR_CONNECTION    conn;        // Connection
@@ -1644,5 +1652,7 @@ VmDirBkgdTaskUpdatePrevTime(
 #ifdef __cplusplus
 }
 #endif
+
+#include <vmdirmetrics.h>
 
 #endif /* COMMON_INTERFACE_H_ */

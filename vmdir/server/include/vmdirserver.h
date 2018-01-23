@@ -474,6 +474,18 @@ VmDirRpcMetricsInit(
     VOID
     );
 
+VOID
+VmDirRpcMetricsUpdate(
+    METRICS_RPC_OPS operation,
+    uint64_t        iStartTime,
+    uint64_t        iEndTime
+    );
+
+VOID
+VmDirRpcMetricsShutdown(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

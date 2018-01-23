@@ -67,7 +67,6 @@
 #include <replication.h>
 #include <vmkdcserver.h>
 #include <vmdirserver.h>
-#include <vmdirmetrics.h>
 #include <ldaphead.h>
 #include <resthead.h>
 #include <vmevent.h>

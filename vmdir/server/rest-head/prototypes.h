@@ -191,6 +191,14 @@ VmDirRESTLdapGetHttpError(
     PSTR*               ppszHttpReason
     );
 
+// metrics.c
+VOID
+VmDirRestMetricsUpdateFromHandler(
+    PVDIR_REST_OPERATION    pRestOp,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
+    );
+
 // metricsapi.c
 DWORD
 VmDirRESTGetMetricsModule(

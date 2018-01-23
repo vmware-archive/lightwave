@@ -87,13 +87,19 @@ VmDirInternalAddEntry(
     PVDIR_OPERATION    pOperation
     )
 {
-    int             retVal = LDAP_SUCCESS;
-    int             deadLockRetries = 0;
-    BOOLEAN         bHasTxn = FALSE;
-    PSTR            pszLocalErrMsg = NULL;
-    PVDIR_ENTRY     pEntry = pOperation->request.addReq.pEntry;
+    int         retVal = LDAP_SUCCESS;
+    int         deadLockRetries = 0;
+    BOOLEAN     bHasTxn = FALSE;
+    PSTR        pszLocalErrMsg = NULL;
+    PVDIR_ENTRY pEntry = pOperation->request.addReq.pEntry;
+    uint64_t    iMLStartTime = 0;
+    uint64_t    iMLEndTime = 0;
+    uint64_t    iBEStartTime = 0;
+    uint64_t    iBEEndTime = 0;
 
     assert(pOperation && pOperation->pBECtx->pBE);
+
+    iMLStartTime = VmDirGetTimeInMilliSec();
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
@@ -184,6 +190,8 @@ txnretry:
             VmDirFreeEntryContent(pEntry->pParentEntry);
             VMDIR_SAFE_FREE_MEMORY(pEntry->pParentEntry);
         }
+
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
@@ -286,6 +294,8 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
+
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
     // ************************************************************************************
     // transaction retry loop end.
@@ -314,19 +324,30 @@ cleanup:
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);
 
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    // collect metrics
+    iMLEndTime = VmDirGetTimeInMilliSec();
+    VmDirInternalMetricsUpdate(
+            METRICS_LDAP_OP_ADD,
+            pOperation->protocol,
+            pOperation->opType,
+            pOperation->ldapResult.errCode,
+            iMLStartTime,
+            iMLEndTime,
+            iBEStartTime,
+            iBEEndTime);
 
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 
 error:
 
     if (bHasTxn)
     {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
+        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 
