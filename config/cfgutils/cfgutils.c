@@ -656,6 +656,13 @@ VmwDeploySetupClientWithDC(
     dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (pParams->bMachinePreJoined)
+    {
+        VMW_DEPLOY_LOG_INFO("Resetting Machine Account Credentials");
+        dwError = VmAfdLocalTriggerPasswordRefresh();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
 cleanup:
 
     if (pszPrivateKey)
@@ -829,6 +836,13 @@ VmwDeploySetupClient(
 
     dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->bMachinePreJoined)
+    {
+        VMW_DEPLOY_LOG_INFO("Resetting Machine Account Credentials");
+        dwError = VmAfdLocalTriggerPasswordRefresh();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
 cleanup:
 

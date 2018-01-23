@@ -57,6 +57,7 @@ VmDirConnectionGetLdap
 VmDirConnectionClose
 VmDirLeaveFederation
 VmDirRefreshActPassword
+VmDirResetActPassword
 VmDirResetMachineActCred
 VmDirSafeLDAPBind
 VmDirRegReadDCAccount

@@ -380,6 +380,11 @@ VmAfdLocalTriggerRootCertsRefresh(
 );
 
 DWORD
+VmAfdLocalTriggerPasswordRefresh(
+    VOID
+);
+
+DWORD
 VmAfdLocalRefreshSiteName(
     VOID
 );

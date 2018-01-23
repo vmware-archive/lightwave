@@ -116,6 +116,16 @@ _VmDirJoinPreCondition(
     PSTR*       ppszErrMsg
     );
 
+static
+DWORD
+_VmDirResetActPassword(
+    LDAP* pLD,
+    PCSTR pszHost,
+    PCSTR pszActUPN,
+    PCSTR pszActDN,
+    PCSTR pszActPassword,
+    PSTR* ppszNewPassword
+    );
 /*
  * Refresh account password before it expires.
  */
@@ -125,22 +135,53 @@ VmDirRefreshActPassword(
     PCSTR   pszDomain,
     PCSTR   pszActUPN,
     PCSTR   pszActDN,
-    PSTR    pszActPassword,
+    PSTR   pszActPassword,
     PSTR*   ppszNewPassword
     )
 {
-    DWORD       dwError=0;
-    LDAP*       pLD=NULL;
-    PSTR        pszExpInDays=NULL;
-    PSTR        pszLastChange=NULL;
-    PSTR        pszDomainDN=NULL;
-    PSTR        pszPolicyDN=NULL;
-    PBYTE       pByteDCAccountPasswd=NULL;
-    DWORD       dwDCAccountPasswdSize=0;
-    DWORD       dwLen=0;
+    DWORD dwError = 0;
+
+    dwError = VmDirResetActPassword(
+                    pszHost,
+                    pszDomain,
+                    pszActUPN,
+                    pszActDN,
+                    (PCSTR) pszActPassword,
+                    FALSE,
+                    ppszNewPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+/*
+ * Refresh account password before it expires or if forceRefresh flag passed in.
+ */
+DWORD
+VmDirResetActPassword(
+    PCSTR   pszHost,
+    PCSTR   pszDomain,
+    PCSTR   pszActUPN,
+    PCSTR   pszActDN,
+    PCSTR   pszActPassword,
+    BOOLEAN bRefreshPassword,
+    PSTR*   ppszNewPassword
+    )
+{
+    DWORD       dwError = 0;
+    LDAP*       pLD = NULL;
+    PSTR        pszExpInDays = NULL;
+    PSTR        pszLastChange = NULL;
+    PSTR        pszDomainDN = NULL;
+    PSTR        pszPolicyDN = NULL;
+    PSTR        pszNewPassword = NULL;
+    DWORD       dwLen = 0;
 
     int         iExpInDays=0;
-    int         iCnt=0;
 
     if ( !pszHost || !pszDomain || !pszActUPN || !pszActDN || !pszActPassword || !ppszNewPassword )
     {
@@ -149,92 +190,80 @@ VmDirRefreshActPassword(
     }
 
     dwError = VmDirSafeLDAPBindExt1(
-        &pLD,
-        pszHost,
-        pszActUPN,
-        pszActPassword,
-        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
+                &pLD,
+                pszHost,
+                pszActUPN,
+                pszActPassword,
+                MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirDomainNameToDN( pszDomain, &pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf( &pszPolicyDN,
-                                             "cn=%s,%s",
-                                             PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
-                                             pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // get policy expireInDays attribute
-    dwError = VmDirLdapGetSingleAttribute( pLD,
-                                           pszPolicyDN,
-                                           ATTR_PASS_EXP_IN_DAY,
-                                           (PBYTE*)&pszExpInDays,
-                                           &dwLen);
-
-    if (!dwError)
+    if (!bRefreshPassword)
     {
-        iExpInDays = atoi(pszExpInDays);
-    }
-    else if (dwError == LDAP_NO_SUCH_ATTRIBUTE ||
-             dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
-    {
-        dwError = 0;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // iExpInDays == 0 or no such value means never expire
-    if ( iExpInDays > 0 )
-    {
-        // get accunt last password change time
-        dwError = VmDirLdapGetSingleAttribute( pLD,
-                                               pszActDN,
-                                               ATTR_PWD_LAST_SET,
-                                               (PBYTE*)&pszLastChange,
-                                               &dwLen);
+        dwError = VmDirDomainNameToDN( pszDomain, &pszDomainDN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirAllocateStringPrintf(
+                            &pszPolicyDN,
+                            "cn=%s,%s",
+                            PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
+                            pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // get policy expireInDays attribute
+        dwError = VmDirLdapGetSingleAttribute(
+                                pLD,
+                                pszPolicyDN,
+                                ATTR_PASS_EXP_IN_DAY,
+                                (PBYTE*)&pszExpInDays,
+                                &dwLen);
+
+        if (!dwError)
         {
+            iExpInDays = atoi(pszExpInDays);
+        }
+        else if (dwError == LDAP_NO_SUCH_ATTRIBUTE ||
+                 dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
+        {
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // iExpInDays == 0 or no such value means never expire
+        if (iExpInDays > 0)
+        {
+            // get account last password change time
+            dwError = VmDirLdapGetSingleAttribute(
+                                  pLD,
+                                  pszActDN,
+                                  ATTR_PWD_LAST_SET,
+                                  (PBYTE*)&pszLastChange,
+                                  &dwLen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
             time_t  tNow = time(NULL);
             time_t  tPwdLastSet = VmDirStringToLA(pszLastChange, NULL, 10);
             time_t  tDiff = (iExpInDays * 24 * 60 * 60) / 2; // Attempt reset when halfway to expiration.
 
-            if ( (tNow - tPwdLastSet) >= tDiff )
+            if ((tNow - tPwdLastSet) >= tDiff)
             {
-                for (iCnt=0; iCnt < VMDIR_MAX_PASSWORD_RETRIES; iCnt++)
-                {
-                    VMDIR_SAFE_FREE_MEMORY(pByteDCAccountPasswd);
-                    dwError = VmDirGeneratePassword( pszHost,
-                                                     pszActUPN,
-                                                     pszActPassword,
-                                                     &pByteDCAccountPasswd,
-                                                     &dwDCAccountPasswdSize );
-                    BAIL_ON_VMDIR_ERROR(dwError);
-
-                    dwError = VmDirLdapModReplaceAttribute( pLD,
-                                                            pszActDN,
-                                                            ATTR_USER_PASSWORD,
-                                                            pByteDCAccountPasswd);
-                    if (dwError == LDAP_CONSTRAINT_VIOLATION)
-                    {
-                        continue;
-                    }
-                    BAIL_ON_VMDIR_ERROR(dwError);
-
-                    break;
-                }
-
-                if (iCnt == VMDIR_MAX_PASSWORD_RETRIES)
-                {
-                    dwError = LDAP_CONSTRAINT_VIOLATION;
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-
-                *ppszNewPassword = pByteDCAccountPasswd;
-                pByteDCAccountPasswd = NULL;
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Act (%s) password refreshed", pszActUPN);
+                bRefreshPassword = TRUE;
             }
         }
+    }
+
+    if (bRefreshPassword)
+    {
+        dwError = _VmDirResetActPassword(
+                       pLD,
+                       pszHost,
+                       pszActUPN,
+                       pszActDN,
+                       pszActPassword,
+                       &pszNewPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        *ppszNewPassword = pszNewPassword;
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Act (%s) password refreshed", pszActUPN);
     }
 
 cleanup:
@@ -242,7 +271,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLastChange);
     VMDIR_SAFE_FREE_MEMORY(pszExpInDays);
     VMDIR_SAFE_FREE_MEMORY(pszPolicyDN);
-    VMDIR_SAFE_FREE_MEMORY(pByteDCAccountPasswd);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
 
     if (pLD)
@@ -257,6 +285,7 @@ error:
 
     goto cleanup;
 }
+
 
 /*
  * Refresh account password of the node as well as all the partners
@@ -6360,3 +6389,69 @@ VmDirFreeHATopologyChanges(
 /*
  * APIs for HA Topology Management ends here
  */
+
+static
+DWORD
+_VmDirResetActPassword(
+    LDAP* pLD,
+    PCSTR pszHost,
+    PCSTR pszActUPN,
+    PCSTR pszActDN,
+    PCSTR pszActPassword,
+    PSTR* ppszNewPassword
+    )
+{
+    DWORD dwError = 0;
+    DWORD iCnt = 0;
+    DWORD dwDCAccountPasswdSize = 0;
+    PBYTE pByteDCAccountPasswd = NULL;
+
+    if (!pLD || !pszActDN || !pszActPassword || !ppszNewPassword)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (iCnt = 0; iCnt < VMDIR_MAX_PASSWORD_RETRIES; iCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pByteDCAccountPasswd);
+        dwError = VmDirGeneratePassword(
+                            pszHost,
+                            pszActUPN,
+                            pszActPassword,
+                            &pByteDCAccountPasswd,
+                            &dwDCAccountPasswdSize);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLdapModReplaceAttribute(
+                                pLD,
+                                pszActDN,
+                                ATTR_USER_PASSWORD,
+                                pByteDCAccountPasswd);
+        if (dwError == LDAP_CONSTRAINT_VIOLATION)
+        {
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        break;
+    }
+
+    if (iCnt == VMDIR_MAX_PASSWORD_RETRIES)
+    {
+        dwError = LDAP_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszNewPassword = pByteDCAccountPasswd;
+    pByteDCAccountPasswd = NULL;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pByteDCAccountPasswd);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
