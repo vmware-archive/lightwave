@@ -18,6 +18,7 @@ import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ErrorObject;
 
 public class FederatedIdentityProviderInfoRetriever {
 
@@ -28,18 +29,27 @@ public class FederatedIdentityProviderInfoRetriever {
         this.idmClient = idmClient;
     }
 
-    public FederatedIdentityProviderInfo retrieveInfo(String issuer) throws Exception {
-        Validate.notEmpty(issuer, "idp issuer");
-        String systemTenantName = idmClient.getSystemTenant();
-        Validate.notEmpty(systemTenantName, "system tenant name");
-        IDPConfig idpConfig = idmClient.getExternalIdpConfigForTenant(systemTenantName, issuer);
+    public FederatedIdentityProviderInfo retrieveInfo(String tenant, String issuer) throws Exception {
+        Validate.notEmpty(tenant, "tenant name");
+        IDPConfig idpConfig = idmClient.getExternalIdpConfigForTenant(tenant, issuer);
+        if (idpConfig == null) {
+            throw new ServerException(ErrorObject.serverError(
+                    String.format("failed to retrieve idp config for issuer [%s] in tenant [%s]", issuer, tenant)));
+        }
         String logoutUri = idpConfig.getOidcConfig().getLogoutURI();
         Validate.notEmpty(logoutUri, "external idp logout uri");
         String issuerType = idpConfig.getOidcConfig().getIssuerType();
-        FederatedIdentityProviderInfo federatedIdpInfo = new FederatedIdentityProviderInfo
-                .Builder(systemTenantName, issuer, logoutUri)
+        String jwkUri = idpConfig.getOidcConfig().getJwksURI();
+        Validate.notEmpty(jwkUri, "external idp jwk uri");
+        return new FederatedIdentityProviderInfo.Builder(tenant, issuer, logoutUri)
                 .issuerType(issuerType)
+                .jwkUri(jwkUri)
                 .build();
-        return federatedIdpInfo;
+    }
+
+    public FederatedIdentityProviderInfo retrieveInfo(String issuer) throws Exception {
+        Validate.notEmpty(issuer, "idp issuer");
+        String systemTenant = idmClient.getSystemTenant();
+        return retrieveInfo(systemTenant, issuer);
     }
 }

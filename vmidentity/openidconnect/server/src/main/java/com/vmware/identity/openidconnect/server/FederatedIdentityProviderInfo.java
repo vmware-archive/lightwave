@@ -22,6 +22,7 @@ public class FederatedIdentityProviderInfo {
     private final String tenant;
     private final String issuer;
     private final String logoutUri;
+    private String jwkUri;
     private IssuerType issuerType;
 
     public enum IssuerType {
@@ -38,11 +39,12 @@ public class FederatedIdentityProviderInfo {
         }
     }
 
-    private FederatedIdentityProviderInfo(String tenant, String issuer, String logoutUri, IssuerType issuerType) {
-        this.tenant = tenant;
-        this.issuer = issuer;
-        this.logoutUri = logoutUri;
-        this.issuerType = issuerType;
+    private FederatedIdentityProviderInfo(Builder builder) {
+        this.tenant = builder.tenant;
+        this.issuer = builder.issuer;
+        this.logoutUri = builder.logoutUri;
+        this.issuerType = builder.issuerType;
+        this.jwkUri = builder.jwkUri;
     }
 
     public String getTenant() {
@@ -57,6 +59,10 @@ public class FederatedIdentityProviderInfo {
         return this.logoutUri;
     }
 
+    public String getJwkURI() {
+        return this.jwkUri;
+    }
+
     public IssuerType getIssuerType() {
         return this.issuerType;
     }
@@ -66,6 +72,7 @@ public class FederatedIdentityProviderInfo {
         private final String tenant;
         private final String issuer;
         private final String logoutUri;
+        private String jwkUri;
         private IssuerType issuerType;
 
         public Builder(String tenant, String issuer, String logoutUri) {
@@ -75,6 +82,12 @@ public class FederatedIdentityProviderInfo {
             this.tenant = tenant;
             this.issuer = issuer;
             this.logoutUri = logoutUri;
+        }
+
+        public Builder jwkUri(String jwkUri) {
+            Validate.notEmpty(jwkUri, "idp jwk uri");
+            this.jwkUri = jwkUri;
+            return this;
         }
 
         public Builder issuerType(String issuerType) {
@@ -88,7 +101,8 @@ public class FederatedIdentityProviderInfo {
             if (this.issuerType == null) {
                 this.issuerType = IssuerType.CSP;
             }
-            return new FederatedIdentityProviderInfo(tenant, issuer, logoutUri, issuerType);
+
+            return new FederatedIdentityProviderInfo(this);
         }
     }
 }

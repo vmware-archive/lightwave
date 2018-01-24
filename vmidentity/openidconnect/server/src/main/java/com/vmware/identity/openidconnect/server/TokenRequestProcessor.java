@@ -16,9 +16,14 @@ package com.vmware.identity.openidconnect.server;
 
 import java.net.URI;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -40,6 +45,8 @@ import com.vmware.identity.openidconnect.protocol.AccessToken;
 import com.vmware.identity.openidconnect.protocol.AuthorizationCodeGrant;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
+import com.vmware.identity.openidconnect.protocol.FederationToken;
+import com.vmware.identity.openidconnect.protocol.FederationTokenGrant;
 import com.vmware.identity.openidconnect.protocol.GSSTicketGrant;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
@@ -54,6 +61,7 @@ import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
 import com.vmware.identity.openidconnect.protocol.TokenRequest;
 import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
+import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
 
 /**
  * @author Yehia Zayour
@@ -69,6 +77,13 @@ public class TokenRequestProcessor {
     private final UserInfoRetriever userInfoRetriever;
     private final PersonUserAuthenticator personUserAuthenticator;
     private final SolutionUserAuthenticator solutionUserAuthenticator;
+    private final FederatedIdentityProviderInfoRetriever federatedIdentityProviderInfoRetriever;
+
+    // in memory cache to store public key per issuer
+    private final HashMap<String, FederatedTokenPublicKey> publicKeyLookup;
+    private final ReadWriteLock keyLookupLock;
+    private final Lock readLockKeyLookup;
+    private final Lock writeLockKeyLookup;
 
     private final AuthorizationCodeManager authzCodeManager;
     private final HttpRequest httpRequest;
@@ -88,13 +103,18 @@ public class TokenRequestProcessor {
         this.userInfoRetriever = new UserInfoRetriever(idmClient);
         this.personUserAuthenticator = new PersonUserAuthenticator(idmClient);
         this.solutionUserAuthenticator = new SolutionUserAuthenticator(idmClient);
+        this.federatedIdentityProviderInfoRetriever = new FederatedIdentityProviderInfoRetriever(idmClient);
 
         this.authzCodeManager = authzCodeManager;
         this.httpRequest = httpRequest;
         this.tenant = tenant;
-
         this.tenantInfo = null;
         this.tokenRequest = null;
+
+        publicKeyLookup = new HashMap<String, FederatedTokenPublicKey>();
+        keyLookupLock = new ReentrantReadWriteLock();
+        readLockKeyLookup = keyLookupLock.readLock();
+        writeLockKeyLookup = keyLookupLock.writeLock();
     }
 
     public HttpResponse process() {
@@ -180,6 +200,9 @@ public class TokenRequestProcessor {
                 break;
             case REFRESH_TOKEN:
                 tokenSuccessResponse = processRefreshTokenGrant(solutionUser);
+                break;
+            case FEDERATION_TOKEN:
+                tokenSuccessResponse = processFederatedTokenGrant(solutionUser);
                 break;
             default:
                 throw new IllegalStateException("unrecognized grant type: " + grantType.getValue());
@@ -367,6 +390,29 @@ public class TokenRequestProcessor {
                 false /* refreshTokenAllowed */);
     }
 
+    private TokenSuccessResponse processFederatedTokenGrant(SolutionUser solutionUser) throws ServerException {
+        FederationTokenGrant federationTokenGrant = (FederationTokenGrant)this.tokenRequest.getAuthorizationGrant();
+        FederationToken federationToken = federationTokenGrant.getFederationToken();
+
+        validateFederationToken(federationToken, solutionUser);
+
+        PersonUser personUser;
+        try {
+            personUser = PersonUser.parse(federationToken.getUserId() + "@" + federationToken.getDomain() , this.tenant);
+        } catch (ParseException e) {
+            throw new ServerException(ErrorObject.invalidGrant("failed to parse subject into a PersonUser"), e);
+        }
+
+        return process(
+                personUser,
+                solutionUser,
+                this.tokenRequest.getClientID(),
+                this.tokenRequest.getScope(),
+                (Nonce)null,
+                (SessionID)(null),
+                false /* refreshTokenAllowed */);
+    }
+
     private TokenSuccessResponse process(
             PersonUser personUser,
             SolutionUser solutionUser,
@@ -453,6 +499,69 @@ public class TokenRequestProcessor {
         }
         if (now.after(notAfter)) {
             throw new ServerException(ErrorObject.invalidGrant("refresh_token has expired"));
+        }
+    }
+
+    private void validateFederationToken(FederationToken token, SolutionUser solutionUser) throws ServerException {
+        try {
+            RSAPublicKey key = getFederatedTokenPublicKey().getPublicKey();
+            if (!token.hasValidSignature(key)) {
+                throw new ServerException(ErrorObject.invalidGrant("federation token has an invalid signature"));
+            }
+        } catch (JOSEException e) {
+            throw new ServerException(ErrorObject.serverError("error while verifying federation token signature"), e);
+        }
+
+        Date now = new Date();
+        Date notBefore = new Date(token.getIssueTime().getTime() - this.tenantInfo.getClockToleranceMs());
+        Date notAfter = new Date(token.getExpirationTime().getTime() + this.tenantInfo.getClockToleranceMs());
+        if (now.before(notBefore)) {
+            throw new ServerException(ErrorObject.invalidGrant("federation token is not yet valid"));
+        }
+        if (now.after(notAfter)) {
+            throw new ServerException(ErrorObject.invalidGrant("federation token has expired"));
+        }
+    }
+
+    private FederatedTokenPublicKey getFederatedTokenPublicKey() throws ServerException {
+        FederatedTokenPublicKey key = null;
+        // TODO use current tenant
+        String systemTenant = this.tenantInfoRetriever.getSystemTenantName();
+        String issuer = this.tenantInfoRetriever.getTenantIssuer(this.tenant);
+        if (issuer == null || issuer.isEmpty()) {
+            throw new ServerException(ErrorObject.invalidGrant("federation IDP is not registered with tenant " + systemTenant));
+        }
+        readLockKeyLookup.lock();
+        try {
+          key = publicKeyLookup.get(issuer);
+        } finally {
+          readLockKeyLookup.unlock();
+        }
+
+        if (key == null) {
+          try {
+            key = getPublicKey(issuer);
+            writeKey(issuer, key);
+          } catch (Exception e) {
+              throw new ServerException(ErrorObject.serverError("error while retrieving federated idp public key"), e);
+          }
+        }
+
+        return key;
+    }
+
+    private FederatedTokenPublicKey getPublicKey(String issuer) throws Exception {
+        FederatedIdentityProviderInfo federatedIdpInfo =  this.federatedIdentityProviderInfoRetriever.retrieveInfo(issuer);
+        String publicKeyURL = federatedIdpInfo.getJwkURI();
+        return FederatedTokenPublicKeyFactory.build(publicKeyURL, IssuerType.CSP);
+    }
+
+    private void writeKey(String issuer, FederatedTokenPublicKey key) throws Exception {
+        try {
+            writeLockKeyLookup.lock();
+            publicKeyLookup.put(issuer, key);
+        } finally {
+            writeLockKeyLookup.unlock();
         }
     }
 }
