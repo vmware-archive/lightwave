@@ -15,6 +15,8 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.io.IOException;
+import java.security.NoSuchProviderException;
+import java.util.Collection;
 import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +36,8 @@ import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
@@ -57,6 +61,9 @@ public class AuthenticationController {
 
     @Autowired
     private MessageSource messageSource;
+
+    @Autowired
+    private FederatedIdentityProcessor cspProcessor;
 
     public AuthenticationController() {
     }
@@ -90,18 +97,30 @@ public class AuthenticationController {
             HttpRequest httpRequest = HttpRequest.from(request);
             context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
 
-            AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
-                    this.idmClient,
-                    this.authzCodeManager,
-                    this.sessionManager,
-                    this.messageSource,
-                    model,
-                    locale,
-                    httpRequest,
-                    tenant);
-            Pair<ModelAndView, HttpResponse> result = p.process();
-            page = result.getLeft();
-            httpResponse = result.getRight();
+            String issuer = this.idmClient.getIssuer(tenant);
+            if (issuer != null && !issuer.equalsIgnoreCase(idmClient.getOIDCEntityID(tenant))) {
+                IDPConfig idpConfig = findFederatedIDP();
+                final OidcConfig oidcConfig = idpConfig.getOidcConfig();
+                if (oidcConfig == null) {
+                    throw new ServerException(ErrorObject.invalidRequest("no oidc configuration found"));
+                }
+                final FederatedIdentityProcessor processor = findProcessor(oidcConfig.getIssuerType());
+                page = null;
+                httpResponse = processor.processAuthRequestForFederatedIDP(request, tenant, idpConfig);
+            } else {
+                AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
+                        this.idmClient,
+                        this.authzCodeManager,
+                        this.sessionManager,
+                        this.messageSource,
+                        model,
+                        locale,
+                        httpRequest,
+                        tenant);
+                Pair<ModelAndView, HttpResponse> result = p.process();
+                page = result.getLeft();
+                httpResponse = result.getRight();
+            }
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);
@@ -117,5 +136,27 @@ public class AuthenticationController {
             httpResponse.applyTo(response);
         }
         return page;
+    }
+
+    private IDPConfig findFederatedIDP() throws Exception {
+        String systemTenantName = idmClient.getSystemTenant();
+        Collection<IDPConfig> idpConfigs = idmClient.getAllExternalIdpConfig(systemTenantName);
+
+        if (idpConfigs != null) {
+            for (IDPConfig idpConfig : idpConfigs) {
+                if (idpConfig.getProtocol().equalsIgnoreCase(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
+                    return idpConfig;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private FederatedIdentityProcessor findProcessor(String issuerType) throws Exception {
+        if (issuerType == null || !issuerType.equalsIgnoreCase("csp")) {
+            throw new NoSuchProviderException("Error: Unsupported Issuer Type - " + issuerType);
+        }
+        return cspProcessor;
     }
 }

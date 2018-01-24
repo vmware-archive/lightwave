@@ -1482,6 +1482,33 @@ public class CasIdmClient
     }
 
     /**
+     * Sets the issuer associated with the tenant
+     *
+     * @param tenantName Name of tenant
+     * @param issuer   issuer of tenant
+     * @throws IDMException
+     * @throws Exception
+     */
+    public
+    void setIssuer(String tenantName, String issuer) throws Exception
+    {
+        getService().setIssuer(tenantName, issuer, this.getServiceContext());
+    }
+
+    /**
+     * Retrieves the issuerr associated with the tenant
+     *
+     * @param tenantName Name of tenant
+     * @return issuer issuer of tenant
+     * @throws IDMException
+     * @throws Exception
+     */
+    public String getIssuer(String tenantName) throws Exception
+    {
+        return getService().getIssuer(tenantName, this.getServiceContext());
+    }
+
+    /**
      * Retrieves the alias associated with the entityId of external identity provider.
      *
      * @param tenantName name of tenant, cannot be null or empty.

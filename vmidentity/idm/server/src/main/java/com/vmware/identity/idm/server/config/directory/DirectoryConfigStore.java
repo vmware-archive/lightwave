@@ -2932,6 +2932,24 @@ public class DirectoryConfigStore implements IConfigStore {
   }
 
   @Override
+  public void setIssuer(String tenantName, String issuer) throws Exception {
+    ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+    LdapValue[] value = ServerUtils.getLdapValue(issuer);
+
+    this.setTenantProperty(tenantName, TenantLdapObject.PROPERTY_ISSUER_NAME, value);
+  }
+
+  @Override
+  public String getIssuer(String tenantName) throws Exception {
+    ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+    LdapValue[] value = this.getTenantProperty(tenantName, TenantLdapObject.PROPERTY_ISSUER_NAME);
+
+    return ServerUtils.getStringValue(value);
+  }
+
+  @Override
   public boolean registerUpnSuffixForDomain(String tenantName, String domainName, String upnSuffix) throws Exception {
     ValidateUtil.validateNotEmpty(tenantName, "tenantName");
     ValidateUtil.validateNotEmpty(domainName, "domainName");

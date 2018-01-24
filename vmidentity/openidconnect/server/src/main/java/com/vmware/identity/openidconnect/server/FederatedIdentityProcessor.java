@@ -24,4 +24,9 @@ public interface FederatedIdentityProcessor {
                     FederationRelayState relayState,
                     IDPConfig idpConfig
                 ) throws Exception ;
+  HttpResponse processAuthRequestForFederatedIDP(
+          HttpServletRequest request,
+          String tenant,
+          IDPConfig idpConfig
+      ) throws Exception;
 }

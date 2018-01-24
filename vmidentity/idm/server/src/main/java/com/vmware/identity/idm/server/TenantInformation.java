@@ -60,6 +60,7 @@ public class TenantInformation
     private final Collection<Attribute> _attributeDefinitions;
     private final String _entityId;
     private final String _entityAlias;
+    private final String _issuer;
     private final Collection<String> _defaultProviders;
     private final AuthnPolicy _authnPolicy;
     private final boolean _enableIdpSelection;
@@ -91,6 +92,7 @@ public class TenantInformation
             Collection<Attribute> attributeDefinitions,
             String entityId,
             String alias,
+            String issuer,
             Collection<String> defaultProviders,
             AuthnPolicy authnPolicy,
             boolean idpSelectionFlag
@@ -119,6 +121,7 @@ public class TenantInformation
         _attributeDefinitions = attributeDefinitions;
         _entityId = entityId;
         _entityAlias = alias;
+        _issuer = issuer;
         _defaultProviders = defaultProviders;
         _authnPolicy = authnPolicy;
         _enableIdpSelection = idpSelectionFlag;
@@ -316,6 +319,11 @@ public class TenantInformation
     public String getEntityAlias()
     {
         return _entityAlias;
+    }
+
+    public String getIssuer()
+    {
+        return _issuer;
     }
 
     public Collection<String> getDefaultProviders()

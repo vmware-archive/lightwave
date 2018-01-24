@@ -24,8 +24,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -56,14 +57,25 @@ import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
+import com.vmware.identity.openidconnect.common.ResponseMode;
+import com.vmware.identity.openidconnect.common.ResponseType;
+import com.vmware.identity.openidconnect.common.ResponseTypeValue;
+import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.SessionID;
+import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 import com.vmware.identity.openidconnect.protocol.URIUtils;
 
@@ -82,12 +94,10 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   public static final String QUERY_PARAM_GRANT_TYPE = "grant_type";
 
   public static final String ROLE_CSP_ORG_OWNER = "csp:org_owner";
+  public static final String CSP_ORG_LINK = "/csp/gateway/am/api/orgs/";
 
   @Autowired
   private CasIdmClient idmClient;
-
-  @Autowired
-  private AuthorizationCodeManager authzCodeManager;
 
   @Autowired
   private SessionManager sessionManager;
@@ -102,6 +112,23 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     keyLookupLock = new ReentrantReadWriteLock();
     readLockKeyLookup = keyLookupLock.readLock();
     writeLockKeyLookup = keyLookupLock.writeLock();
+  }
+
+    @Override
+    public HttpResponse processAuthRequestForFederatedIDP(HttpServletRequest request, String tenant,
+            IDPConfig idpConfig) throws Exception {
+        HttpRequest httpRequest = HttpRequest.from(request);
+        AuthenticationRequest authnRequest = AuthenticationRequest.parse(httpRequest);
+        FederationRelayState.Builder builder = new FederationRelayState.Builder(idpConfig.getEntityID(),
+                authnRequest.getClientID().getValue(), authnRequest.getRedirectURI().toString());
+        final String orgLink = CSP_ORG_LINK + tenant;
+        builder.nonce(authnRequest.getNonce().getValue());
+        builder.scope(authnRequest.getScope().toString());
+        builder.spInitiatedState(authnRequest.getState().getValue());
+        builder.responseMode(authnRequest.getResponseMode().getValue());
+        builder.responseType(authnRequest.getResponseType().toString());
+        final FederationRelayState relayState = builder.build();
+        return processRequestPreAuth(request, relayState, orgLink, idpConfig);
   }
 
   @Override
@@ -251,15 +278,45 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
     Cookie sessionCookie = loggedInSessionCookie(tenantName, session);
     Cookie cspIssuerCookie = CSPIssuerCookie(tenantName, state.getIssuer());
-    sessionManager.update(session, new PersonUser(user, tenantName), LoginMethod.PASSWORD, clientInfo);
-
-    String redirectURI = String.format("%s/%s", state.getRedirectURL(), tenantName);
-    HttpResponse httpResponse = HttpResponse.createRedirectResponse(new URI(redirectURI));
+    PersonUser personUser = new PersonUser(user, tenantName);
+    sessionManager.update(session, personUser, LoginMethod.PASSWORD, clientInfo);
+    HttpResponse httpResponse;
+    if (StringUtils.isNotEmpty(state.getSPInitiatedState())) {
+        AuthenticationSuccessResponse authnSuccessResponse = processIDTokenResponse(tenantName, state, personUser, session);
+        httpResponse = authnSuccessResponse.toHttpResponse();
+    } else {
+        String redirectURI = String.format("%s/%s", state.getRedirectURI(), tenantName);
+        httpResponse = HttpResponse.createRedirectResponse(new URI(redirectURI));
+    }
     httpResponse.addCookie(sessionCookie);
     httpResponse.addCookie(cspIssuerCookie);
 
     return httpResponse;
   }
+
+    private AuthenticationSuccessResponse processIDTokenResponse(String tenant, FederationRelayState state,
+            PersonUser personUser, SessionID sessionId) throws Exception {
+        ServerInfoRetriever serverInfoRetriever = new ServerInfoRetriever(idmClient);
+        UserInfoRetriever userInfoRetriever = new UserInfoRetriever(idmClient);
+        Scope scope = Scope.parse(state.getScope());
+        Set<ResourceServerInfo> resourceServerInfos = serverInfoRetriever.retrieveResourceServerInfos(tenant, scope);
+        UserInfo userInfo = userInfoRetriever.retrieveUserInfo(personUser, scope, resourceServerInfos);
+        TenantInfoRetriever tenantInfoRetriever = new TenantInfoRetriever(idmClient);
+        TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
+
+        TokenIssuer tokenIssuer = new TokenIssuer(personUser, (SolutionUser) null, userInfo, tenantInfo, scope,
+                new Nonce(state.getNonce()), new ClientID(state.getClientId()), sessionId);
+
+        IDToken idToken = tokenIssuer.issueIDToken();
+        AccessToken accessToken = null;
+        if (ResponseType.parse(state.getResponseType()).contains(ResponseTypeValue.ACCESS_TOKEN)) {
+            accessToken = tokenIssuer.issueAccessToken();
+        }
+
+        return new AuthenticationSuccessResponse(ResponseMode.parse(state.getResponseMode()),
+                new URI(state.getRedirectURI()), State.parse(state.getSPInitiatedState()), false,
+                (AuthorizationCode) null, idToken, accessToken);
+    }
 
   private String getSystemDomainName(String tenantName) throws Exception {
     EnumSet<DomainType> domains = EnumSet.of(DomainType.SYSTEM_DOMAIN);
@@ -384,8 +441,8 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
           ErrorObject errorObject =
               ErrorObject.serverError(
                   String.format(
-                      "Failed to retrieve token from [%s]",
-                      target.toString()
+                      "Failed to retrieve token from [%s] with error content [%s]",
+                      target.toString(), EntityUtils.toString(response.getEntity())
                   )
               );
           LoggerUtils.logFailedRequest(logger, errorObject);
