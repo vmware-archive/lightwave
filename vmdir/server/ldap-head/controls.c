@@ -49,6 +49,24 @@ _ParseDigestControlVal(
     VDIR_LDAP_RESULT *                  lr                  // Output
     );
 
+static
+int
+_ParsePingControlVal(
+   VDIR_OPERATION *                        pOp,
+   BerValue *                              pControlBer,    // Input: control value encoded as ber
+   PVDIR_CLUSTER_STATE_CONTROL_VALUE       pCtrlVal,       // Output
+   VDIR_LDAP_RESULT *                      pLdapResult     // Output
+   );
+
+static
+int
+_ParseVoteControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    PVDIR_CLUSTER_VOTE_CONTROL_VALUE       pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -207,6 +225,34 @@ ParseRequestControls(
                                                   "ParseRequestControls: _ParseDigestControlVal failed.");
                 }
                 op->digestCtrl = *control;
+            }
+
+            if (VmDirStringCompareA( (*control)->type, LDAP_PING_CONTROL, TRUE ) == 0)
+            {
+                retVal = _ParsePingControlVal( op,
+                                                &lberBervCtlValue,
+                                                &((*control)->value.clusterStateCtrlVal),
+                                                lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParsePingControlVal failed.");
+                }
+                op->clusterStateCtrl = *control;
+            }
+
+            if (VmDirStringCompareA( (*control)->type, LDAP_VOTE_CONTROL, TRUE ) == 0)
+            {
+                retVal = _ParseVoteControlVal( op,
+                                                &lberBervCtlValue,
+                                                &((*control)->value.clusterVoteCtrlVal),
+                                                lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParseVoteControlVal failed.");
+                }
+                op->clusterVoteCtrl = *control;
             }
 
             if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
@@ -1070,6 +1116,129 @@ cleanup:
 
 error:
     VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
+    goto cleanup;
+}
+
+static
+int
+_ParsePingControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    PVDIR_CLUSTER_STATE_CONTROL_VALUE       pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf;
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    BerValue            localLeader = {0};
+    ber_int_t           localTerm = 0;
+    BerValue            localUSNBV = {0};
+
+    if (!pOp)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, pControlBer, LBER_USE_DER );
+
+    /*
+     * https://confluence.eng.vmware.com/display/LIG/XXXXXX TBD
+     *
+     * The PingControl is a null terminated STRING wrapping the BER-encoded version of the following SEQUENCE:
+     *
+     * ControlValue ::= SEQUENCE {
+     *        term                    Integer
+     *        Leader                  OCTET STRING
+     *        ClusterStateNodeSeenMyOrgUSN    OCTET STRING
+     *  }
+     */
+
+    if (ber_scanf(ber, "{imm}", &localTerm, &localLeader, &localUSNBV) == LBER_ERROR)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing filter value", __FUNCTION__);
+        pLdapResult->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading cluster state control filter");
+    }
+
+    retVal = VmDirAllocateStringA(localLeader.bv_val, &(pCtrlVal->pszFQDN));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirStringToUSN(localUSNBV.bv_val, &(pCtrlVal->hasSeenMyOrgUSN));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pCtrlVal->term = localTerm;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pLdapResult->pszErrMsg, pszLocalErrorMsg);
+    goto cleanup;
+}
+
+static
+int
+_ParseVoteControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    PVDIR_CLUSTER_VOTE_CONTROL_VALUE        pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf;
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    BerValue            localCandidateId = {0};
+    ber_int_t           localTerm = 0;
+
+    if (!pOp)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, pControlBer, LBER_USE_DER );
+
+    /*
+     * https://confluence.eng.vmware.com/display/LIG/XXXXXX TBD
+     *
+     * The VoteControl is a null terminated STRING wrapping the BER-encoded version of the following SEQUENCE:
+     *
+     * ControlValue ::= SEQUENCE {
+     *        term                    Integer
+     *        CandidateId             OCTET STRING
+     *  }
+     */
+
+    if (ber_scanf(ber, "{im}", &localTerm, &localCandidateId) == LBER_ERROR)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing filter value", __FUNCTION__);
+        pLdapResult->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading cluster state control filter");
+    }
+
+    retVal = VmDirAllocateStringA(localCandidateId.bv_val, &(pCtrlVal->pszCandidateId));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pCtrlVal->term = localTerm;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pLdapResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 

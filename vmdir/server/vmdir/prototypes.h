@@ -465,6 +465,18 @@ VmDirSetAdministratorPasswordNeverExpires(
     VOID
     );
 
+DWORD
+VmDirPingReplyEntry(
+    PVDIR_CLUSTER_STATE_CONTROL_VALUE pCscv,
+    PVDIR_ENTRY *ppEntry
+    );
+
+DWORD
+VmDirVoteReplyEntry(
+    PVDIR_CLUSTER_VOTE_CONTROL_VALUE pCvcv,
+    PVDIR_ENTRY *ppEntry
+    );
+
 //IPC
 
 //ipcserver.c
@@ -650,6 +662,17 @@ VmDirIpcGetSRPSecret(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
+    );
+
+// metricsinit.c
+DWORD
+VmDirMetricsInitialize(
+    VOID
+    );
+
+VOID
+VmDirMetricsShutdown(
+    VOID
     );
 
 #ifdef __cplusplus

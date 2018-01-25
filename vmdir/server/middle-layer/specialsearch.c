@@ -43,7 +43,10 @@ VmDirHandleSpecialSearch(
             "Server Status",
             "Replication Status",
             "Schema Repl Status",
-            "Integrity Check Status"
+            "Integrity Check Status",
+            "Cluster State Ping",
+            "Cluster Vote",
+            "Raft State"
     };
 
     if ( !pOp || !pLdapResult )
@@ -150,6 +153,39 @@ VmDirHandleSpecialSearch(
             {
                 pEntryArray->iSize = 1;
             }
+        }
+    }
+    else if (VmDirIsSearchForPing(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_CLUSTER_STATE;
+
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "CLUSTER_STATE CONTROL %s, %d, %"PRId64,
+            pOp->clusterStateCtrl->value.clusterStateCtrlVal.pszFQDN,
+            pOp->clusterStateCtrl->value.clusterStateCtrlVal.term,
+            pOp->clusterStateCtrl->value.clusterStateCtrlVal.hasSeenMyOrgUSN);
+
+        dwError = VmDirPingReplyEntry(&pOp->clusterStateCtrl->value.clusterStateCtrlVal, &pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pEntryArray->pEntry)
+        {
+            pEntryArray->iSize = 1;
+        }
+    }
+    else if (VmDirIsSearchForVote(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_CLUSTER_VOTE;
+
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "CLUSTER_VOTE CONTROL %s, %d",
+            pOp->clusterVoteCtrl->value.clusterVoteCtrlVal.pszCandidateId,
+            pOp->clusterVoteCtrl->value.clusterVoteCtrlVal.term);
+
+        dwError = VmDirVoteReplyEntry(&pOp->clusterVoteCtrl->value.clusterVoteCtrlVal, &pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pEntryArray->pEntry)
+        {
+            pEntryArray->iSize = 1;
         }
     }
 
@@ -454,6 +490,77 @@ VmDirIsSearchForIntegrityCheckStatus(
     else if (pSearchReq->scope == LDAP_SCOPE_ONELEVEL && pState )
     {
         *pState = INTEGRITY_CHECK_JOB_SHOW_SUMMARY;
+    }
+
+    return bRetVal;
+}
+
+/*
+ * For cluster state
+ * The search pattern is:
+ * BASE:    cn=clusterstate
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE
+ * Control: PVDIR_DIGEST_CONTROL_VALUE
+ *
+ */
+// should it be special write controL?
+BOOLEAN
+VmDirIsSearchForPing(
+    PVDIR_OPERATION                     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, LDAPRPC_PING_DN, FALSE) == 0             &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->clusterStateCtrl)
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
+}
+/*
+ * For cluster vote
+ * The search pattern is:
+ * BASE:    cn=clustevote
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE
+ * Control: PVDIR_DIGEST_CONTROL_VALUE
+ *
+ */
+// should it be special write controL?
+BOOLEAN
+VmDirIsSearchForVote(
+    PVDIR_OPERATION                     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, LDAPRPC_VOTE_DN, FALSE) == 0             &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->clusterVoteCtrl)
+    {
+        bRetVal = TRUE;
     }
 
     return bRetVal;
