@@ -191,12 +191,11 @@ txnretry:
             VMDIR_SAFE_FREE_MEMORY(pEntry->pParentEntry);
         }
 
-        iBEStartTime = VmDirGetTimeInMilliSec();
-
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
         // get parent entry
         if (pEntry->pdn.lberbv.bv_val)
@@ -294,7 +293,6 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
-
         iBEEndTime = VmDirGetTimeInMilliSec();
     }
     // ************************************************************************************

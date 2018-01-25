@@ -252,12 +252,11 @@ txnretry:
         }
         else
         {
-            iBEStartTime = VmDirGetTimeInMilliSec();
-
             retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
             BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                           retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
             bHasTxn = TRUE;
+            iBEStartTime = VmDirGetTimeInMilliSec();
 
             // Lookup in the DN index.
             retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
@@ -282,13 +281,11 @@ txnretry:
     // start txn if not has one already.
     if (! pOperation->pBECtx->pBEPrivate)
     {
-        iBEStartTime = VmDirGetTimeInMilliSec();
-
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
     }
 
     retVal = AppendDNFilter( pOperation );
@@ -339,7 +336,6 @@ txnretry:
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     bHasTxn = FALSE;
-
     iBEEndTime = VmDirGetTimeInMilliSec();
 
 cleanup:

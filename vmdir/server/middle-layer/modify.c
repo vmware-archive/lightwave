@@ -341,12 +341,11 @@ txnretry:
             pEntry = NULL;
         }
 
-        iBEStartTime = VmDirGetTimeInMilliSec();
-
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
         // Read current entry from DB
         retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(modReq->dn), &entryId);
@@ -399,7 +398,6 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
-
         iBEEndTime = VmDirGetTimeInMilliSec();
     }
     // ************************************************************************************
