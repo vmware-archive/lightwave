@@ -50,3 +50,8 @@ VMDIR_OPENSSL_GLOBALS gVmdirOpensslGlobals =
         VMDIR_SF_INIT(.dwMutexBufSize, 0),
         VMDIR_SF_INIT(.bSSLInitialized,FALSE),
     };
+
+PVM_METRICS_HISTOGRAM gpLdapMetrics[METRICS_LDAP_OP_COUNT]
+                                    [METRICS_LDAP_OP_TYPE_COUNT]
+                                     [METRICS_LDAP_ERROR_COUNT]
+                                      [METRICS_LAYER_COUNT];

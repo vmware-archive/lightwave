@@ -38,6 +38,7 @@ extern VOID VmDirSendLdapReferralResult( VDIR_OPERATION * op, PCSTR pszRefSuffix
 
 extern DWORD VmDirRaftGetLeader(PSTR *);
 
-extern PVM_METRICS_HISTOGRAM pLdapRequestDuration[];
-
-extern PVM_METRICS_COUNTER pLdapErrorCount[];
+extern PVM_METRICS_HISTOGRAM gpLdapMetrics[METRICS_LDAP_OP_COUNT]
+                                           [METRICS_LDAP_OP_TYPE_COUNT]
+                                            [METRICS_LDAP_ERROR_COUNT]
+                                             [METRICS_LAYER_COUNT];

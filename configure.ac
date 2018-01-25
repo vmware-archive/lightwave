@@ -1505,6 +1505,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/server/common/Makefile
                  lwraft/server/backend/Makefile
                  lwraft/server/mdb-store/Makefile
+                 lwraft/server/metrics/Makefile
                  lwraft/server/indexcfg/Makefile
                  lwraft/server/middle-layer/Makefile
                  lwraft/server/schema/Makefile

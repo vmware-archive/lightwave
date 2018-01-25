@@ -97,6 +97,7 @@ typedef struct _VDIR_REST_OPERATION
     PVDIR_CONNECTION            pConn;
     PVDIR_REST_RESULT           pResult;
     PVDIR_REST_RESOURCE         pResource;
+    PREST_API_METHOD            pMethod;
     PVDIR_PROXY_RESULT          pProxyResult;
     PVMDIR_THREAD_LOG_CONTEXT   pThreadLogContext;
 

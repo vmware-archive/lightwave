@@ -20,3 +20,7 @@ extern PVMREST_HANDLE gpVdirRestHTTPSHandle;
 extern PVDIR_VMAFD_API gpVdirVmAfdApi;
 
 extern PVDIR_REST_HEAD_CACHE gpVdirRestCache;
+
+extern PVM_METRICS_HISTOGRAM gpRestLdapMetrics[METRICS_LDAP_OP_COUNT]
+                                               [METRICS_LDAP_ERROR_COUNT]
+                                                [METRICS_LAYER_COUNT];

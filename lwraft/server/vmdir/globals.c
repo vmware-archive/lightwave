@@ -146,3 +146,5 @@ VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
         VMDIR_SF_INIT(.pCond, NULL),
         VMDIR_SF_INIT(.pTSStack, NULL)
     };
+
+PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

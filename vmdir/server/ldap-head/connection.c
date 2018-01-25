@@ -41,8 +41,8 @@ BindListenOnPort(
 static
 DWORD
 ProcessAConnection(
-   PVOID pArg
-   );
+    PVOID pArg
+    );
 
 static
 DWORD
@@ -601,8 +601,8 @@ error:
 static
 DWORD
 ProcessAConnection(
-   PVOID pArg
-   )
+    PVOID pArg
+    )
 {
     VDIR_CONNECTION* pConn = NULL;
     int              retVal = LDAP_SUCCESS;
