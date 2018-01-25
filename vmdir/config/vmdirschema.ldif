@@ -73,10 +73,6 @@ objectClasses: (
         $ msDS-SiteName
         $ vmwPlatformServicesControllerVersion
         $ vmwMaximumDomainFunctionalLevel
-        $ vmwRaftLeader
-        $ vmwRaftActiveFollower
-        $ vmwRaftMember
-        $ vmwRaftState
         )
     )
 
@@ -170,44 +166,6 @@ objectClasses: (
          $ vmwSTSSubjectDN
          )
     MAY ( vmwSTSMultiTenant )
-    )
-
-objectClasses: (
-    VMWare.DIR.objectclass.11
-    NAME 'vmwClusterState'
-    DESC 'VMWare Cluster Management'
-    SUP top
-    AUXILIARY
-    MUST ( cn
-         $ vmwRaftCurrentTerm
-         )
-    MAY ( vmwRaftStatus
-        $ vmwRaftVoteGranted
-        $ highestCommittedUSN
-        )
-    )
-
-objectClasses: (
-    VMWare.DIR.objectclass.12
-    NAME 'vmwRaftPersistState'
-    DESC 'Raft persistent state'
-    SUP top
-    STRUCTURAL
-    MUST ( cn
-         $ vmwRaftTerm
-         )
-    )
-
-objectClasses: (
-    VMWare.DIR.objectclass.13
-    NAME 'vmwRaftClusterState'
-    DESC 'Raft state of all memmbers'
-    SUP top
-    STRUCTURAL
-    MUST ( cn
-         )
-    MAY  ( vmwRaftState
-         )
     )
 
 attributeTypes: (
@@ -793,85 +751,6 @@ attributeTypes: (
     SINGLE-VALUE
     NO-USER-MODIFICATION
     USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.7
-    NAME 'vmwAttrUniquenessScope'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.8
-    NAME 'vmwRaftTerm'
-    DESC 'VMware Raft Election Term'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.9
-    NAME 'vmwRaftCurrentTerm'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.10
-    NAME 'vmwRaftStatus'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.11
-    NAME 'vmwRaftVoteGranted'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.12
-    NAME 'vmwRaftLeader'
-    DESC 'Raft Leader'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    SINGLE-VALUE
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.13
-    NAME 'vmwRaftActiveFollower'
-    DESC 'A list of active Raft Followers'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.14
-    NAME 'vmwRaftMember'
-    DESC 'A list of Raft cluster members'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    NO-USER-MODIFICATION
-    USAGE directoryOperation
-    )
-
-attributeTypes: (
-    VMWare.DIR.attribute.1.15
-    NAME 'vmwRaftState'
-    DESC 'Raft volatile state'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    NO-USER-MODIFICATION
     )
 
 ############################################################
@@ -1734,6 +1613,12 @@ attributeTypes: (
     NAME 'searchFlags'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.7
+    NAME 'vmwAttrUniquenessScope'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
     )
 
 attributeTypes: (

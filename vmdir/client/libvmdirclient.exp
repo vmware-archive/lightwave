@@ -115,4 +115,3 @@ VmDirFreeHAServerInfo
 VmDirFreeHATopologyChanges
 VmDirServerReset
 VmDirSetupDefaultAccount
-VmDirAppendRaftState

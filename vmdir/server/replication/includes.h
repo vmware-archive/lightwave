@@ -59,8 +59,8 @@
 #include <replication.h>
 #include <vmacl.h>
 
-#include "structs.h"
-#include "prototypes.h"
+#include <structs.h>
+#include <prototypes.h>
 #include "externs.h"
 
 #else

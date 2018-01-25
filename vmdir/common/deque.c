@@ -247,16 +247,3 @@ dequeIsEmpty(
     return pDeque == NULL || pDeque->pHead == NULL;
 }
 
-VOID
-dequeFreeStringContents(
-    PDEQUE pDeque
-    )
-{
-    PSTR pItem = NULL;
-
-    while(!dequeIsEmpty(pDeque))
-    {
-        dequePopLeft(pDeque, (PVOID*)&pItem);
-        VMDIR_SAFE_FREE_MEMORY(pItem);
-    }
-}

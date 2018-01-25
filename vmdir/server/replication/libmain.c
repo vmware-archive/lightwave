@@ -232,6 +232,8 @@ VmDirReplicationLibInit(
 {
     DWORD       dwError = 0;
 
+    VmDirLog( LDAP_DEBUG_TRACE, "VmDirReplicationLibInit: Begin" );
+
     dwError = LoadReplicationAgreements( );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -239,10 +241,8 @@ VmDirReplicationLibInit(
     dwError = InitializeReplicationThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirClusterLibInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
+    VmDirLog( LDAP_DEBUG_TRACE, "VmDirReplicationLibInit: End" );
     return dwError;
 
 error:
