@@ -476,6 +476,7 @@ extern "C" {
 #define VMDIR_DC_GROUP_NAME             "DCAdmins"
 #define VMDIR_DCCLIENT_GROUP_NAME       "DCClients"
 #define VMDIR_CERT_GROUP_NAME           "CAAdmins"
+#define VMDIR_DNS_GROUP_NAME            "DNSAdmins"
 #define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
 
 #define VDIR_SERVER_VERSION             "1.0"

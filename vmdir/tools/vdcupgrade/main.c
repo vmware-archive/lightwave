@@ -57,6 +57,13 @@ AddBuiltinCAAdminsGroup(
 
 static
 DWORD
+AddBuiltinDNSAdminsGroup(
+    LDAP* pLd,
+    PCSTR pszServerName
+    );
+
+static
+DWORD
 AccountDNToName(
     PCSTR pszDCAccountDN,
     PSTR* ppszDCAccount
@@ -333,6 +340,9 @@ UpgradeDirectory(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = AddBuiltinCAAdminsGroup(pLd, pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = AddBuiltinDNSAdminsGroup(pLd, pszServerName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = SetDCAccountRegistryKey();
@@ -678,6 +688,125 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszDomainName);
     VMDIR_SAFE_FREE_STRINGA(pszDomainDN);
     VMDIR_SAFE_FREE_STRINGA(pszCAAdminsGroupDN);
+    VMDIR_SAFE_FREE_STRINGA(pszDCAdminsGroupDN);
+    VMDIR_SAFE_FREE_STRINGA(pszDCClientsGroupDN);
+    VMDIR_SAFE_FREE_STRINGA(pszAdministratorDN);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+AddBuiltinDNSAdminsGroup(
+    LDAP* pLd,
+    PCSTR pszServerName
+    )
+{
+    DWORD  dwError = 0;
+    PSTR   pszDomainName = NULL;
+    PSTR   pszDomainDN = NULL;
+    PSTR   pszDnsAdminsGroupDN = NULL;
+    PSTR   pszAdministratorDN = NULL;
+    PSTR   pszDCAdminsGroupDN = NULL;
+    PSTR   pszDCClientsGroupDN = NULL;
+    PSTR   ppszVals [4] = { NULL, NULL, NULL, NULL };
+    if (!pLd)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetDomainName(
+                  pszServerName,
+                  &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirDomainNameToDN(
+                  pszDomainName,
+                  &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                  &pszDnsAdminsGroupDN, "cn=%s,cn=%s,%s",
+                  VMDIR_DNS_GROUP_NAME,
+                  VMDIR_BUILTIN_CONTAINER_NAME,
+                  pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                  &pszDCAdminsGroupDN, "cn=%s,cn=%s,%s",
+                  VMDIR_DC_GROUP_NAME,
+                  VMDIR_BUILTIN_CONTAINER_NAME,
+                  pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                  &pszDCClientsGroupDN, "cn=%s,cn=%s,%s",
+                  VMDIR_DCCLIENT_GROUP_NAME,
+                  VMDIR_BUILTIN_CONTAINER_NAME,
+                  pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                  &pszAdministratorDN, "cn=%s,cn=%s,%s",
+                  "Administrator",
+                  "Users",
+                  pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!VdcIfDNExist(pLd, pszDnsAdminsGroupDN))
+    {
+        dwError = VdcLdapAddGroup(
+                      pLd,
+                      pszDnsAdminsGroupDN,
+                      VMDIR_DNS_GROUP_NAME);
+        if (dwError)
+        {
+            printf("Failed to add group %s to directory (%d)\n",
+                   pszDnsAdminsGroupDN, dwError);
+        }
+        else
+        {
+            printf("Added group %s to directory.\n",
+                   pszDnsAdminsGroupDN);
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ppszVals[0] = pszAdministratorDN;
+        ppszVals[1] = pszDCAdminsGroupDN;
+        ppszVals[2] = pszDCClientsGroupDN;
+
+        dwError = VdcLdapAddAttributeValues(
+                    pLd,
+                    pszDnsAdminsGroupDN,
+                    ATTR_MEMBER,
+                    (PCSTR*) ppszVals);
+        if (dwError)
+        {
+            printf("Failed to add group members %s (%d)\n",
+                pszDnsAdminsGroupDN, dwError);
+        }
+        else
+        {
+            printf("Added group members to %s.\n",
+                pszDnsAdminsGroupDN);
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        printf("Group %s already exists, not added.\n",
+               pszDnsAdminsGroupDN);
+    }
+
+cleanup:
+
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainDN);
+    VMDIR_SAFE_FREE_STRINGA(pszDnsAdminsGroupDN);
     VMDIR_SAFE_FREE_STRINGA(pszDCAdminsGroupDN);
     VMDIR_SAFE_FREE_STRINGA(pszDCClientsGroupDN);
     VMDIR_SAFE_FREE_STRINGA(pszAdministratorDN);
