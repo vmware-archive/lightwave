@@ -115,3 +115,20 @@ typedef struct _VMDIR_INTEGRITY_JOB
 
 } VMDIR_INTEGRITY_JOB, *PVMDIR_INTEGRITY_JOB;
 
+typedef DWORD (*PFN_BKGD_TASK_FUNC)(PVMDIR_BKGD_TASK_CTX);
+
+typedef struct _VMDIR_BKGD_TASK_CTX
+{
+    PFN_BKGD_TASK_FUNC  pFunc;
+    DWORD               dwPeriod;
+    PSTR                pszPrevTimeKey;
+    char                pszPrevTime[GENERALIZED_TIME_STR_SIZE];
+
+} VMDIR_BKGD_TASK_CTX;
+
+typedef struct _VMDIR_BKGD_GLOBALS
+{
+    PVDIR_THREAD_INFO   pThrInfo;
+    BOOLEAN             bShutdown;
+
+} VMDIR_BKGD_GLOBALS, *PVMDIR_BKGD_GLOBALS;

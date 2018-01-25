@@ -40,9 +40,8 @@ VmDirPluginReplAgrPostAddCommit(
             goto cleanup;
         }
 
-        if ((pEntry->dn.bvnorm_len > gVmdirServerGlobals.serverObjDN.bvnorm_len) &&
-            (VmDirStringCompareA(gVmdirServerGlobals.serverObjDN.bvnorm_val,
-                    pEntry->dn.bvnorm_val + (pEntry->dn.bvnorm_len - gVmdirServerGlobals.serverObjDN.bvnorm_len), TRUE) == 0))
+        // check if it's a direct partner
+        if (VmDirStringEndsWith(pEntry->dn.bvnorm_val, gVmdirServerGlobals.serverObjDN.bvnorm_val, TRUE))
         {
             pszErrorContext = "Add Replication Agreement into cache";
             if (VmDirReplAgrEntryToInMemory(pEntry, &pReplAgr) != 0)
@@ -161,6 +160,96 @@ VmDirPluginServerEntryPostDeleteCommit(
     }
 
 cleanup:
+    return dwError;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
+    goto cleanup;
+}
+
+DWORD
+VmDirPluginDCAccountPostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    BOOLEAN bOnehop = FALSE;
+    PSTR    pszDCContainer = NULL;
+    PSTR    pszHostname = NULL;
+    PSTR    pszModifyTime = NULL;
+    PCSTR   pszErrorContext = NULL;
+    LONG    modified = 0;
+    LONG    now = 0;
+    LONG    duration = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    PVMDIR_REPLICATION_METRICS      pReplMetrics = NULL;
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszDCContainer,
+            "%s=%s,%s",
+            ATTR_OU,
+            VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
+            gVmdirServerGlobals.systemDomainDN.bvnorm_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (VmDirStringEndsWith(pEntry->dn.bvnorm_val, pszDCContainer, FALSE))
+    {
+        pszErrorContext = "Extracting hostname (cn) from DCAccount";
+
+        pAttr = VmDirFindAttrByName(pEntry, ATTR_CN);
+        dwError = pAttr ? 0 : VMDIR_ERROR_INVALID_ENTRY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszHostname = pAttr->vals[0].lberbv_val;
+
+        pszErrorContext = "Extracting modifyTimeStamp from DCAccount";
+
+        pAttr = VmDirFindAttrByName(pEntry, ATTR_MODIFYTIMESTAMP);
+        dwError = pAttr ? 0 : VMDIR_ERROR_INVALID_ENTRY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszModifyTime = pAttr->vals[0].lberbv_val;
+
+        pszErrorContext = "Convert timestamps to epoch";
+
+        dwError = VmDirConvertTimestampToEpoch(pszModifyTime, &modified);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirConvertTimestampToEpoch(NULL, &now);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszErrorContext = "Compute epoch difference and collect metrics";
+
+        duration = modified < now ? now - modified : 0;
+
+        if (VmDirReplMetricsCacheFind(pszHostname, &pReplMetrics) == 0)
+        {
+            VmMetricsGaugeSet(pReplMetrics->pTimeConverge, duration);
+
+            // collect one-hop time if direct partner
+            VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+            for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
+            {
+                if (pReplAgr->isDeleted == FALSE &&
+                    VmDirStringCompareA(pReplAgr->pszHostname, pszHostname, FALSE) == 0)
+                {
+                    bOnehop = TRUE;
+                    break;
+                }
+            }
+
+            VmMetricsGaugeSet(pReplMetrics->pTimeOnehop, bOnehop ? duration : 0);
+        }
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+    VMDIR_SAFE_FREE_MEMORY(pszDCContainer);
     return dwError;
 
 error:

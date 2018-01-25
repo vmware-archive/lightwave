@@ -28,6 +28,8 @@ VmDirRESTRequestHandler(
 {
     DWORD   dwError = 0;
     DWORD   dwRestOpErr = 0;    // don't bail on this
+    uint64_t    iStartTime = 0;
+    uint64_t    iEndTime = 0;
     PVDIR_REST_OPERATION    pRestOp = NULL;
 
     if (!pRESTHandle || !pRequest || !ppResponse)
@@ -39,6 +41,8 @@ VmDirRESTRequestHandler(
     {
         goto cleanup;
     }
+
+    iStartTime = VmDirGetTimeInMilliSec();
 
     dwRestOpErr = VmDirRESTOperationCreate(&pRestOp);
     if (dwRestOpErr)
@@ -58,6 +62,11 @@ VmDirRESTRequestHandler(
     }
 
 cleanup:
+
+    // collect metrics
+    iEndTime = VmDirGetTimeInMilliSec();
+    VmDirRestMetricsUpdateFromHandler(pRestOp, iStartTime, iEndTime);
+
     VmDirFreeRESTOperation(pRestOp);
     return dwError;
 
@@ -81,7 +90,6 @@ VmDirRESTProcessRequest(
     )
 {
     DWORD   dwError = 0;
-    PREST_API_METHOD    pMethod = NULL;
 
     if (!pRestOp || !pRESTHandle || !pRequest)
     {
@@ -95,15 +103,19 @@ VmDirRESTProcessRequest(
     dwError = VmDirRESTAuth(pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = coapi_find_handler(
-            gpVdirRestApiDef,
-            pRestOp->pszPath,
-            pRestOp->pszMethod,
-            &pMethod);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    //Dont search for handler for pre-flighted HTTP OPTIONS request
+    if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_OPTIONS, FALSE) != 0)
+    {
+        dwError = coapi_find_handler(
+                gpVdirRestApiDef,
+                pRestOp->pszPath,
+                pRestOp->pszMethod,
+                &pRestOp->pMethod);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);

@@ -175,6 +175,52 @@ public class TenantResource extends BaseResource {
     }
 
     /**
+     * Updates tenant
+     *
+     * @param tenant
+     *            The tenant to be updated
+     * @return <code> 200 </code> If tenant was created successfully.
+     *         <code> 500 </code> Otherwise
+     * @throws {@link
+     *             BadRequestException} On bad requests (invalid input)
+     * @throws {@link
+     *             InternalServerErrorException} Otherwise
+     */
+    @PUT
+    @Path(PathParameters.TENANT_NAME_VAR)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.TENANT_OPERATOR)
+    public TenantDTO update(TenantDTO tenantDTO) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "update").startTimer();
+        String responseStatus = HTTP_OK;
+        try {
+            String issuer = tenantDTO.getIssuer();
+            if (issuer == null) {
+                issuer = "";
+            }
+            getIDMClient().setIssuer(tenantDTO.getName(), issuer);
+            return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantDTO.getName()));
+        }  catch (NoSuchTenantException e) {
+            log.debug("Failed to update the tenant details for tenant '{}'", tenantDTO.getName(), e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e) {
+            log.error("Failed to update the tenant details for tenant '{}' due to a client side error",
+                    tenantDTO.getName(), e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.ten.update.failed", tenantDTO.getName()), e);
+        } catch (Exception e) {
+            responseStatus = HTTP_SERVER_ERROR;
+            log.error("Failed to update tenant '{}' due to a server side error", tenantDTO.getName(), e);
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+    /**
      * Get details of tenant
      *
      * @param tenantName

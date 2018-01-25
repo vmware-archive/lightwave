@@ -103,6 +103,10 @@ public interface IIdentityManager
 
     public String getEntityID(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public void setIssuer(String tenantName, String issuer, IIdmServiceContext serviceContext) throws  IDMException;
+
+    public String getIssuer(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
+
     public String getOIDCEntityID(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**

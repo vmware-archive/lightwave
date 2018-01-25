@@ -32,6 +32,9 @@ export class HomeComponent  {
     tenantName:string = '';
     role:string = '';
     containerHeight;
+    signedIn:boolean = false;
+    showError:boolean = false;
+    loginURL:string = '';
     displayComponents:boolean = false;
     allTenants:any;
     isSystemTenant:boolean = false;
@@ -46,7 +49,7 @@ export class HomeComponent  {
             this.displayComponents = true;
             this.loadFromSession();
        }else{
-           this.activatedRoute.queryParams.subscribe((params: Params) => {
+           this.activatedRoute.fragment.subscribe((params: any) => {
               console.log(params);
               this.readQueryParams(params);
            });
@@ -77,40 +80,59 @@ export class HomeComponent  {
         window.location.href = idmUri;
     }
 
-    readQueryParams(params:any){
-       let idToken = params['id_token'];
-       let accessToken = params['access_token'];
-       let tokenType = params['token_type'];
-       let expiresIn = params['expires_in'];
-       let state = params['state'];
+    readQueryParams(params:string){
        let curUser:any = sessionStorage.getItem('currentUser');
-       if(params['logout']){
-          this.configService.currentUser = null;
-       }else{
-          if(curUser){
-             if(curUser == 'logout'){  // session invalid, load from query paramters
-               if(accessToken && idToken){
-                   this.displayComponents = true;
-                   this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
-               }else{ // query parameters unavailable, redirect to home page
-                   this.utilsService.redirectToLandingPage();
-               }
-             }else{ // session is valid, load from session.
+       let paramsArr, idToken, accessToken, state, tokenType, expiresIn;
+       if(params){
+           let paramsArr = params.split('&');
+           idToken = paramsArr[1].split('=')[1];
+           accessToken = paramsArr[0].split('=')[1];
+           state = paramsArr[2].split('=')[1]; 
+           tokenType = paramsArr[3].split('=')[1];
+           expiresIn = paramsArr[4].split('=')[1];
+        }
+        if(curUser == 'logout'){
+            this.configService.currentUser = null;
+            if(accessToken && idToken){
+                this.displayComponents = true;
+                this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
+            }else{
+                this.redirectToSTSLogin();
+            }
+        }else{
+            if(curUser){// session is valid, load from session.
                 curUser = JSON.parse(curUser);
                 this.displayComponents = true;
                 this.configService.currentUser = curUser;
                 this.loadFromSession();
-                this.redirectToSsoHome();
-             }
-          }else{ // No session in progress
-               if(accessToken && idToken){ // load from query parameters if available
-                   this.displayComponents = true;
-                   this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
-               }else{ // query parameters unavailable, redirect to home page.
-                   this.utilsService.redirectToLandingPage();
-               }
-          }
-       }
+            }else{ // No session in progress
+                if(accessToken && idToken){ // load from query parameters if available
+                    this.displayComponents = true;
+                    this.setcontext(idToken, accessToken, tokenType, expiresIn, state);
+                }else{ // No fragments present either.
+                    this.redirectToSTSLogin();
+                }
+            }
+        }
+    }
+
+    // Fetch the STS login URL & redirect there
+    redirectToSTSLogin(){
+        let resObj:any;
+        let resStr:string; 
+        this.authService.getSTSLoginUrl()
+        .subscribe(
+            result => {
+                          resStr = JSON.stringify(result);
+                          resObj = JSON.parse(resStr);
+                          console.log(resObj.result)
+                          this.loginURL = resObj.result;
+                          window.location.href = this.loginURL;
+                       },
+              error => {
+                  this.configService.errors = error.data;
+                  this.showError = true;
+              });
     }
 
     loadFromSession(){
@@ -119,8 +141,12 @@ export class HomeComponent  {
         this.role = curSession.role;
         this.tenantName = curSession.tenant;
         this.configService.currentUser = curSession;
-        this.checkForSystemTenant();
+        if(window.location.href.indexOf('#') != -1){
+            window.location.href = window.location.href.split('#')[0];
+        }
+        this.signedIn = true;
     }
+
     setcontext(id_token, access_token, token_type, expires_in, state) {
             let decodedJwt:any = this.utilsService.decodeJWT(id_token);
             let decodedAccessJwt:any = this.utilsService.decodeJWT(access_token);
@@ -133,7 +159,7 @@ export class HomeComponent  {
             currentUser.username = decodedJwt.header.sub;
             currentUser.first_name = decodedJwt.header.given_name;
             currentUser.last_name = decodedJwt.header.family_name;
-            currentUser.role = decodedJwt.header.admin_server_role;
+            currentUser.role = decodedAccessJwt.header.admin_server_role;
             currentUser.token = {};
             currentUser.token.id_token = id_token;
             currentUser.token.access_token = access_token;
@@ -145,6 +171,7 @@ export class HomeComponent  {
             window.sessionStorage.currentUser = JSON.stringify(this.configService.currentUser);
             this.loadFromSession();
         }
+
         getAllTenants() {
        	     let tlist:any;
              let listingObj:any;
@@ -159,42 +186,25 @@ export class HomeComponent  {
                     },
                error => this.error = <any>error);
         }
-        checkForSystemTenant() {
-            let res;
-            this.identitySourceService
-                .GetAll(this.configService.currentUser)
-                .subscribe(
-                     result => {
-                           res = result;
-                           let identitySources = res;
-                           for (var i = 0; i < identitySources.length; i++) {
-                               if (identitySources[i].domainType == 'LOCAL_OS_DOMAIN') {
-                                   this.isSystemTenant = true;
-                                   break;
-                               }
-                           }
-                           if(this.isSystemTenant){
-                               this.getAllTenants();
-                           }
-                           this.redirectToSsoHome();
-                     },
-                     error => {
-                         this.configService.errors = error.data;
-                         this.redirectToSsoHome();
-                     });
-         }
-        handleLogout(){
-            this.authService.logout();
-        }
-        initSummary() {
-            ///TODO
-            //this.configService.vm.summarydataLoading = true;
-            //getIdentitySources();
-            //getRelyingParties();
-            //getIdentityProviders();
-        }
 
-        redirectToSsoHome(){
-            this.initSummary();
+        handleLogout(){
+            // get the IDP host
+            let resObj:any;
+            let resStr:string;
+            let idpHost:any;
+
+            this.authService.getSTSLoginUrl()
+            .subscribe(
+                result => {
+                          resStr = JSON.stringify(result);
+                          resObj = JSON.parse(resStr);
+                          idpHost = resObj.idp_host;
+                          this.authService.logout(idpHost);
+                       },
+              error => {
+                  this.configService.errors = error.data;
+                  this.showError = true;
+              });
+
         }
 }

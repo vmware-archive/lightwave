@@ -16,6 +16,8 @@
 
 #include <config.h>
 #include <vmdirsys.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
 
 #else
 

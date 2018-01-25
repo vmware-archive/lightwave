@@ -191,6 +191,14 @@ VmDirRESTLdapGetHttpError(
     PSTR*               ppszHttpReason
     );
 
+// metrics.c
+VOID
+VmDirRestMetricsUpdateFromHandler(
+    PVDIR_REST_OPERATION    pRestOp,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
+    );
+
 // metricsapi.c
 DWORD
 VmDirRESTGetMetricsModule(
@@ -227,6 +235,19 @@ VmDirRESTOperationWriteResponse(
 VOID
 VmDirFreeRESTOperation(
     PVDIR_REST_OPERATION    pRestOp
+    );
+
+//utils.c
+DWORD
+VmRESTSetCORSHeaders(
+    PVDIR_REST_OPERATION    pRestOp,
+    PREST_RESPONSE*         ppResponse
+    );
+
+DWORD
+VmRESTIsValidOrigin(
+    PSTR                    pRestOp,
+    BOOLEAN                 *isValidOrigin
     );
 
 // param.c

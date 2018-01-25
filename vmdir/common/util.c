@@ -4017,3 +4017,58 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirGetServerName failed with error (%u)", dwError);
     goto cleanup;
 }
+
+DWORD
+VmDirConvertTimestampToEpoch(
+    PSTR    pszTimestamp,
+    PLONG   pEpoch
+    )
+{
+    DWORD   dwError = 0;
+    time_t  tt = 0;
+    struct tm   ti = {0};
+
+    if (!pEpoch)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (IsNullOrEmptyString(pszTimestamp))
+    {
+        tt = time(NULL);
+    }
+    else
+    {
+        if (sscanf(
+                pszTimestamp,
+                "%04d%02d%02d%02d%02d%02d.0Z",
+                &ti.tm_year,
+                &ti.tm_mon,
+                &ti.tm_mday,
+                &ti.tm_hour,
+                &ti.tm_min,
+                &ti.tm_sec) != 6)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        }
+
+        ti.tm_year -= 1900;
+        ti.tm_mon -= 1;
+        tt = mktime(&ti);
+    }
+
+    *pEpoch = (LONG)tt;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed to parse timestamp (%s) with error (%d)",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pszTimestamp),
+            dwError);
+
+    goto cleanup;
+}

@@ -70,6 +70,10 @@ public final class JSONUtils {
         return stringValue;
     }
 
+    public static boolean hasKey(JSONObject json, String key) {
+        return (json != null && key != null ? (json.get(key) != null) : false);
+    }
+
     public static String[] getStringArray(JSONObject json, String key) throws ParseException {
         Validate.notNull(json, "json");
         Validate.notEmpty(key, "key");

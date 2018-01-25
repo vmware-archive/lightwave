@@ -76,6 +76,7 @@ VmDirRESTServerInit(
 
     MODULE_REG_MAP stRegMap[] =
     {
+        {"idp", VmDirRESTGetIDPModule},
         {"ldap", VmDirRESTGetLdapModule},
         {"object", VmDirRESTGetObjectModule},
         {"etcd", VmDirRESTGetEtcdModule},

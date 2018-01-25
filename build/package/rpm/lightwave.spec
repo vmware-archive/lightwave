@@ -105,6 +105,7 @@ VMware Lightwave Server
 %define _vmca_dbdir   %{_localstatedir}/vmca
 %define _vmdir_dbdir  %{_localstatedir}/vmdir
 %define _vmafd_dbdir  %{_localstatedir}/vmafd
+%define _vmafd_rundir /var/run/vmafd
 %define _vmsts_dbdir  %{_localstatedir}/vmsts
 
 %define _vecsdir %{_vmafd_dbdir}/vecs
@@ -471,6 +472,7 @@ Lightwave POST service
     fi
 
     /bin/mkdir -m 700 -p %{_vmafd_dbdir}
+    /bin/mkdir -m 777 -p %{_vmafd_rundir}
     /bin/mkdir -m 700 -p %{_vecsdir}
     /bin/mkdir -m 700 -p %{_crlsdir}
 
@@ -914,6 +916,11 @@ Lightwave POST service
             # Cleanup vmafd db and files
             if [ -d %{_vmafd_dbdir} ]; then
                 rm -rf %{_vmafd_dbdir}
+            fi
+
+            # Cleanup vmafd run dir
+            if [ -d %{_vmafd_rundir} ]; then
+                rm -rf %{_vmafd_rundir}
             fi
 
             ;;

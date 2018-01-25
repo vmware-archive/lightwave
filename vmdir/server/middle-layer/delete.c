@@ -72,19 +72,25 @@ VmDirInternalDeleteEntry(
     PVDIR_OPERATION    pOperation
     )
 {
-    int             retVal = LDAP_SUCCESS;
-    int             deadLockRetries = 0;
-    VDIR_ENTRY      entry = {0};
-    PVDIR_ENTRY     pEntry = NULL;
-    BOOLEAN         leafNode = FALSE;
-    DeleteReq *     delReq = &(pOperation->request.deleteReq);
-    ModifyReq *     modReq = &(pOperation->request.modifyReq);
-    BOOLEAN         bIsDomainObject = FALSE;
-    BOOLEAN         bHasTxn = FALSE;
-    BOOLEAN         bIsDeletedObj = FALSE;
-    PSTR            pszLocalErrMsg = NULL;
+    int         retVal = LDAP_SUCCESS;
+    int         deadLockRetries = 0;
+    VDIR_ENTRY  entry = {0};
+    PVDIR_ENTRY pEntry = NULL;
+    BOOLEAN     leafNode = FALSE;
+    DeleteReq*  delReq = &(pOperation->request.deleteReq);
+    ModifyReq*  modReq = &(pOperation->request.modifyReq);
+    BOOLEAN     bIsDomainObject = FALSE;
+    BOOLEAN     bHasTxn = FALSE;
+    BOOLEAN     bIsDeletedObj = FALSE;
+    PSTR        pszLocalErrMsg = NULL;
+    uint64_t    iMLStartTime = 0;
+    uint64_t    iMLEndTime = 0;
+    uint64_t    iBEStartTime = 0;
+    uint64_t    iBEEndTime = 0;
 
     assert(pOperation && pOperation->pBECtx->pBE);
+
+    iMLStartTime = VmDirGetTimeInMilliSec();
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
@@ -149,6 +155,7 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
         // Read current entry from DB
         retVal = pOperation->pBEIF->pfnBEDNToEntry(
@@ -352,6 +359,7 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                               retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
     // ************************************************************************************
     // transaction retry loop end.
@@ -383,26 +391,35 @@ cleanup:
         }
     }
 
+    // collect metrics
+    iMLEndTime = VmDirGetTimeInMilliSec();
+    VmDirInternalMetricsUpdate(
+            METRICS_LDAP_OP_DELETE,
+            pOperation->protocol,
+            pOperation->opType,
+            pOperation->ldapResult.errCode,
+            iMLStartTime,
+            iMLEndTime,
+            iBEStartTime,
+            iBEEndTime);
+
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
         // In case of replication, modReq is owned by the Replication thread/logic
         DeleteMods ( modReq );
     }
-
     VmDirFreeEntryContent ( &entry );
-
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
     return retVal;
 
 error:
     if (bHasTxn)
     {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
+        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -52,7 +52,10 @@ public final class LogoutErrorResponse extends LogoutResponse {
 
     private Map<String, String> toParameters() {
         Map<String, String> parameters = new HashMap<String, String>();
-        parameters.put("state", super.getState().getValue());
+        State state = super.getState();
+        if (state != null) {
+            parameters.put("state", state.getValue());
+        }
         parameters.put("error", this.errorObject.getErrorCode().getValue());
         parameters.put("error_description", this.errorObject.getDescription());
         return parameters;

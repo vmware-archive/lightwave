@@ -16,6 +16,7 @@ librest_head_la_SOURCES += \
     globals.c \
     handler.c \
     httperror.c \
+    idpapi.c \
     ldapapi.c \
     ldapcontrol.c \
     lightwave.c \
@@ -23,7 +24,7 @@ librest_head_la_SOURCES += \
     objectapi.c \
     operation.c \
     param.c \
-	proxy.c \
+    proxy.c \
     resource.c \
     result.c \
     vmafd.c

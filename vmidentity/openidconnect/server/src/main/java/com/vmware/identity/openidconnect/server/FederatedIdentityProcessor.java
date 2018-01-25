@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2017 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -24,4 +24,9 @@ public interface FederatedIdentityProcessor {
                     FederationRelayState relayState,
                     IDPConfig idpConfig
                 ) throws Exception ;
+  HttpResponse processAuthRequestForFederatedIDP(
+          HttpServletRequest request,
+          String tenant,
+          IDPConfig idpConfig
+      ) throws Exception;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -15,6 +15,7 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.net.URI;
+import java.security.NoSuchProviderException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -30,12 +31,14 @@ import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.SessionID;
+import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.LogoutErrorResponse;
 import com.vmware.identity.openidconnect.protocol.LogoutRequest;
 import com.vmware.identity.openidconnect.protocol.LogoutSuccessResponse;
+import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
 
 /**
  * @author Yehia Zayour
@@ -55,23 +58,32 @@ public class LogoutRequestProcessor {
 
     private TenantInfo tenantInfo;
     private ClientInfo clientInfo;
+    private FederatedIdentityLogoutProcessor federatedIdpLogoutProcessor;
+    private FederatedIdentityProviderInfoRetriever federatedIdpInfoRetriever;
+    private FederatedIdentityProviderInfo federatedIdpInfo;
     private LogoutRequest logoutRequest;
+    private URI postLogoutRedirectUri;
+    private State logoutState;
 
     public LogoutRequestProcessor(
             CasIdmClient idmClient,
             SessionManager sessionManager,
             HttpRequest httpRequest,
-            String tenant) {
+            String tenant) throws Exception {
         this.tenantInfoRetriever = new TenantInfoRetriever(idmClient);
         this.clientInfoRetriever = new ClientInfoRetriever(idmClient);
         this.solutionUserAuthenticator = new SolutionUserAuthenticator(idmClient);
-
         this.sessionManager = sessionManager;
         this.httpRequest = httpRequest;
         this.tenant = tenant;
-
         this.tenantInfo = null;
         this.logoutRequest = null;
+        String externalIdpIssuer = this.httpRequest.getCookieValue(SessionManager.getExternalIdpIssuerCookieName(this.tenant));
+        if (externalIdpIssuer != null) {
+            this.federatedIdpInfoRetriever = new FederatedIdentityProviderInfoRetriever(idmClient);
+            this.federatedIdpInfo = federatedIdpInfoRetriever.retrieveInfo(externalIdpIssuer);
+            this.federatedIdpLogoutProcessor = findLogoutProcessor();
+        }
     }
 
     public HttpResponse process() {
@@ -120,9 +132,13 @@ public class LogoutRequestProcessor {
 
             HttpResponse httpResponse = logoutSuccessResponse.toHttpResponse();
             httpResponse.addCookie(loggedOutSessionCookie());
+            if (this.federatedIdpInfo != null) {
+                httpResponse.addCookie(externalIdpLoggedoutSessionCookie());
+            }
             if (personUserCertificateLoggedOutCookie != null) {
                 httpResponse.addCookie(personUserCertificateLoggedOutCookie);
             }
+
             logger.info(
                     "subject [{}]",
                     this.logoutRequest.getIDTokenHint().getSubject().getValue());
@@ -130,14 +146,14 @@ public class LogoutRequestProcessor {
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e);
             LogoutErrorResponse logoutErrorResponse = new LogoutErrorResponse(
-                    this.logoutRequest.getPostLogoutRedirectURI(),
-                    this.logoutRequest.getState(),
+                    this.postLogoutRedirectUri,
+                    this.logoutState,
                     e.getErrorObject());
             return logoutErrorResponse.toHttpResponse();
         }
     }
 
-    private Pair<LogoutSuccessResponse, Cookie> processInternal() throws ServerException {
+    private Pair<LogoutSuccessResponse,Cookie> processInternal() throws ServerException {
         String sessionIdString = this.httpRequest.getCookieValue(SessionManager.getSessionCookieName(this.tenant));
         SessionID sessionId = null;
         SessionManager.Entry entry = null;
@@ -147,6 +163,19 @@ public class LogoutRequestProcessor {
         }
 
         validateIDToken(this.logoutRequest.getIDTokenHint(), entry);
+
+        // log out of external idp if the login session is created with external idp
+        if (this.federatedIdpInfo != null) {
+            try {
+                this.postLogoutRedirectUri = new URI(this.federatedIdpLogoutProcessor.process(this.federatedIdpInfo, entry));
+            } catch (Exception e) {
+                logger.error("Encountered an error when logging out of external idp.", e);
+                throw new ServerException(ErrorObject.serverError(String.format("error while logging out of external idp %s", this.federatedIdpInfo.getIssuer())), e);
+            }
+        } else {
+            this.postLogoutRedirectUri = this.logoutRequest.getPostLogoutRedirectURI();
+            this.logoutState = this.logoutRequest.getState();
+        }
 
         Cookie personUserCertificateLoggedOutCookie = null;
         if (entry != null) {
@@ -169,8 +198,8 @@ public class LogoutRequestProcessor {
         }
 
         LogoutSuccessResponse logoutSuccessResponse = new LogoutSuccessResponse(
-                this.logoutRequest.getPostLogoutRedirectURI(),
-                this.logoutRequest.getState(),
+                this.postLogoutRedirectUri,
+                this.logoutState,
                 sessionId,
                 logoutUris);
 
@@ -225,11 +254,27 @@ public class LogoutRequestProcessor {
         return cookie;
     }
 
+    private Cookie externalIdpLoggedoutSessionCookie() {
+        Cookie cookie = new Cookie(SessionManager.getExternalIdpIssuerCookieName(this.tenant), "");
+        cookie.setPath(Endpoints.BASE);
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0);
+        return cookie;
+    }
+
     private Cookie personUserCertificateLoggedOutCookie() {
         Cookie cookie = new Cookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(this.tenant), "");
         cookie.setPath(Endpoints.BASE);
         cookie.setSecure(true);
         cookie.setHttpOnly(true);
         return cookie;
+    }
+
+    private FederatedIdentityLogoutProcessor findLogoutProcessor() throws Exception {
+        if (this.federatedIdpInfo.getIssuerType() != IssuerType.CSP) {
+            throw new NoSuchProviderException("Error: Unsupported Issuer Type - " + this.federatedIdpInfo.getIssuerType().getType());
+        }
+        return new CSPLogoutProcessor();
     }
 }

@@ -179,7 +179,8 @@ typedef struct _VMDIR_KEYTAB_ENTRY
 
 typedef enum _VMDIR_FIRST_REPL_CYCLE_MODE
 {
-    FIRST_REPL_CYCLE_MODE_COPY_DB = 1,
+    FIRST_REPL_CYCLE_MODE_NONE = 0,
+    FIRST_REPL_CYCLE_MODE_COPY_DB,
     FIRST_REPL_CYCLE_MODE_USE_COPIED_DB,
     FIRST_REPL_CYCLE_MODE_OBJECT_BY_OBJECT,
 } VMDIR_FIRST_REPL_CYCLE_MODE;
@@ -2374,6 +2375,12 @@ DWORD
 VmDirGetServerName(
     PCSTR pszHostName,
     PSTR* ppszServerName
+    );
+
+DWORD
+VmDirConvertTimestampToEpoch(
+    PSTR    pszTimestamp,
+    PLONG   pEpoch
     );
 
 #ifdef __cplusplus

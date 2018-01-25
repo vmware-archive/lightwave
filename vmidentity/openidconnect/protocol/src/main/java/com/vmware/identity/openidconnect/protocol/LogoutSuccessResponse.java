@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -68,7 +68,10 @@ public final class LogoutSuccessResponse extends LogoutResponse {
 
     @Override
     public HttpResponse toHttpResponse() {
-        URI postLogoutRedirectUriWithState = URIUtils.appendQueryParameter(super.getPostLogoutRedirectURI(), "state", super.getState().getValue());
+        URI postLogoutRedirectUri = super.getPostLogoutRedirectURI();
+        if (this.getState() != null) {
+            postLogoutRedirectUri = URIUtils.appendQueryParameter(postLogoutRedirectUri, "state", super.getState().getValue());
+        }
 
         StringBuilder logoutUriLinks = new StringBuilder();
         for (URI logoutUri : this.logoutUris) {
@@ -76,7 +79,7 @@ public final class LogoutSuccessResponse extends LogoutResponse {
             logoutUriLinks.append(String.format("<iframe src=\"%s\">", logoutUriWithSid.toString()));
         }
 
-        String content = String.format(HTML_RESPONSE, postLogoutRedirectUriWithState, logoutUriLinks.toString());
+        String content = String.format(HTML_RESPONSE, postLogoutRedirectUri, logoutUriLinks.toString());
         return HttpResponse.createHtmlResponse(StatusCode.OK, content);
     }
 

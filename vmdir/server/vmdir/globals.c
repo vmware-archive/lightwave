@@ -146,6 +146,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwTombstoneExpirationPeriod, 0),
         VMDIR_SF_INIT(.dwTombstoneThreadFrequency, 0),
         VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
+        VMDIR_SF_INIT(.bPromoted, FALSE),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
@@ -164,3 +165,12 @@ VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck =
         VMDIR_SF_INIT(.pMutex, NULL),
         VMDIR_SF_INIT(.pJob, NULL)
     };
+
+VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pThrInfo, NULL),
+        VMDIR_SF_INIT(.bShutdown, FALSE)
+    };
+
+PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

@@ -601,7 +601,7 @@ _VmDirIntegrityCheckingThreadFun(
     gmtime_r(&pJob->startTime.tv_sec, &pJob->startTM);
 
     snprintf(timeBuf, sizeof(timeBuf) - 1,
-            "%4d%02d%02d%02d%02d%02d",
+            "%04d%02d%02d%02d%02d%02d.0Z",
             pJob->startTM.tm_year+1900,
             pJob->startTM.tm_mon+1,
             pJob->startTM.tm_mday,
@@ -683,6 +683,8 @@ _VmDirIntegrityCheckingThreadFun(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    // TODO persist curtime to generic DB only if key is provided
+
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s end integrity check job, %d entries processed", __FUNCTION__, pJob->dwNumProcessed);
 
 cleanup:
@@ -722,6 +724,11 @@ _VmDirIntegrityCheckFreeJobResource(
         {
             fclose(pJob->pJobctx[dwCnt].fp);
             pJob->pJobctx[dwCnt].fp = NULL;
+
+            if (pJob->pJobctx[dwCnt].state != INTEGRITY_CHECK_JOBCTX_VALID)
+            {
+                remove(pJob->pJobctx[dwCnt].pszRptFileName);
+            }
         }
     }
 }

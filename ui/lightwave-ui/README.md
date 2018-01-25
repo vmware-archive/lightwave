@@ -13,6 +13,12 @@ Run `ng generate component component-name` to generate a new component. You can 
 
 Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
 
+### Scripts
+   run 'npm run dev' to generate the development friendly bits
+       - To test your changes:
+             drop the 'dist' directory into /opt/vmware/vmware-sts/webapps directory of a lightwave server.
+   run 'npm run prod' for production bits.
+
 For Production:
 ng build --prod
 

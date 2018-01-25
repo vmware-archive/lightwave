@@ -53,6 +53,15 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         "error_message"
     },
     {
+        VDIR_REST_RSC_IDP,
+        VMDIR_V1_RESOURCE_IDP,
+        FALSE,
+        VmDirRESTUnknownSetResult,
+        VmDirRESTUnknownGetHttpError,
+        "error_code",
+        "error_message"
+    },
+    {
         VDIR_REST_RSC_UNKNOWN,
         NULL,
         FALSE,

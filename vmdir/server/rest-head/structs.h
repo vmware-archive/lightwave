@@ -63,12 +63,15 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                pszMethod;
     PSTR                pszPath;
     PSTR                pszSubPath;
+    PSTR                pszOrigin;
     PSTR                pszHeaderIfMatch; // lwraft only
     json_t*             pjInput;
+    BOOLEAN             bisValidOrigin;
     PLW_HASHMAP         pParamMap;
     PVDIR_CONNECTION    pConn;
     PVDIR_REST_RESULT   pResult;
     PVDIR_REST_RESOURCE pResource;
+    PREST_API_METHOD    pMethod;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 

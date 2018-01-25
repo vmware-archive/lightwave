@@ -439,6 +439,10 @@ VmDirInit(
 
             dwError = VmDirInitTombstoneReapingThread();
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            // TBD: Can other threads be turned into background tasks?
+            dwError = VmDirBkgdThreadInitialize();
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
         else if (targetState == VMDIRD_STATE_RESTORE)
         {
@@ -1390,6 +1394,11 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Domain Functional Level (%d)",
                     gVmdirServerGlobals.dwDomainFunctionalLevel);
+
+    // Set promoted flag to TRUE
+    gVmdirServerGlobals.bPromoted = TRUE;
+
+    VmDirAssertServerGlobals();
 
 cleanup:
 

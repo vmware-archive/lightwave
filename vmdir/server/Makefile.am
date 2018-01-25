@@ -17,6 +17,7 @@ SUBDIRS = \
     backend \
     $(STOREDIRS) \
     indexcfg \
+    metrics \
     ldap-head \
     rest-head \
     middle-layer \

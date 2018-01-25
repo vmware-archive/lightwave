@@ -625,7 +625,7 @@ VmDirReplicationStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        REPLICATION_STATUS_DN,
                                        ppszAttrList,
-                                       FALSE,
+                                       TRUE,  // this allows read permission to all in SD construction
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 

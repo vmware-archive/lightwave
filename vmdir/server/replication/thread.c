@@ -739,7 +739,7 @@ _VmDirWaitForReplicationAgreement(
         VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
 
         // When 1st RA is created for non-1st replica => try to perform special 1st replication cycle
-        if (gVmdirReplAgrs && gVmdirServerGlobals.serverId != 1)
+        if (gVmdirReplAgrs)
         {
             if ( gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB )
             {
@@ -758,6 +758,10 @@ _VmDirWaitForReplicationAgreement(
                 {
                     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirFirstReplicationCycle() SUCCEEDED." );
                 }
+            }
+            else if (gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_NONE)
+            {
+                // already promoted node and first partner added
             }
             else
             {

@@ -109,6 +109,32 @@ VmDirLoadIndex(
     BOOLEAN bFirstboot
     );
 
+// background.c
+DWORD
+VmDirBkgdThreadFun(
+    PVOID   pArg
+    );
+
+DWORD
+VmDirBkgdUpdateLocalDomainControllerObj(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdCreateNewIntegChkReport(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdCompareLastTwoIntegChkReports(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdPingMaxOrigUsn(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
 // init.c
 DWORD
 VmDirInit(
@@ -624,17 +650,6 @@ VmDirIpcGetSRPSecret(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
-    );
-
-// metricsinit.c
-DWORD
-VmDirMetricsInitialize(
-    VOID
-    );
-
-VOID
-VmDirMetricsShutdown(
-    VOID
     );
 
 #ifdef __cplusplus

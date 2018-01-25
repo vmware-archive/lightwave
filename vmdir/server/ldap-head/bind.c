@@ -49,7 +49,7 @@ VmDirPerformBind(
 
    memset( pBindReq, 0, sizeof( BindReq ));
 
-   if (ber_scanf( pOperation->ber, "{imt", &pOperation->protocol, &(pOperation->reqDn.lberbv), &pBindReq->method ) == LBER_ERROR )
+   if (ber_scanf( pOperation->ber, "{imt", &pOperation->protocolVer, &(pOperation->reqDn.lberbv), &pBindReq->method ) == LBER_ERROR )
    {
       VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "PerformBind: ber_scanf failed" );
 
@@ -60,10 +60,10 @@ VmDirPerformBind(
    VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS,
        "Bind Request (%s): Protocol version: %d, Bind DN: \"%s\", Method: %ld",
         pOperation->conn->szClientIP,
-        pOperation->protocol,
+        pOperation->protocolVer,
         pOperation->reqDn.lberbv.bv_val, pBindReq->method );
 
-   if (pOperation->protocol != LDAP_VERSION3)
+   if (pOperation->protocolVer != LDAP_VERSION3)
    {
       VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "PerformBind: Non-ldap-v3 version." );
       BAIL_ON_STATIC_LDAP_ERROR(    retVal, LDAP_PROTOCOL_ERROR, (pOperation->ldapResult.pszErrMsg),
@@ -121,7 +121,7 @@ VmDirPerformBind(
             "Bind Request Failed (%s) error %u: Protocol version: %d, Bind DN: \"%s\", Method: %s",
             pOperation->conn->szClientIP,
             retVal,
-            pOperation->protocol,
+            pOperation->protocolVer,
             VDIR_SAFE_STRING(pOperation->reqDn.lberbv.bv_val),
             pszBindMethod );
     }

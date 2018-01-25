@@ -80,6 +80,9 @@ VmDirShutdown(
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
     }
 
+    VmDirBkgdThreadShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
+
     VmDirStopSrvThreads();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: server threads stopped", __func__);
 

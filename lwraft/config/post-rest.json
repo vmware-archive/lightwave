@@ -30,9 +30,32 @@
         {
             "name": "metrics",
             "description": "Metrics module for publishing metrics data"
+        },
+        {
+            "name": "idp",
+            "description": "IDP module for obtaining the identity provider for authentication"
         }
     ],
     "paths": {
+        "/post/idp": {
+            "get": {
+                "summary": "Retrive the URL to authenticate with the server",
+                "Description": "Returns the URL used to login to server",
+                "consumes": [
+                    "application/json"
+                ],
+                "parameters": [
+                ],
+                "responses": {
+                    "default": {
+                        "description": "Login Endpoint Response",
+                        "schema": {
+                            "$ref": "#/definitions/LoginEndpointResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/post/ldap": {
             "put": {
                 "summary": "Add an LDAP entry",
@@ -561,6 +584,28 @@
                 },
                 "error_message": {
                     "type": "string"
+                }
+            }
+        },
+        "LoginEndpointResponse": {
+            "type": "object",
+            "properties": {
+                "error_code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "string"
+                },
+                "idp-host":{
+                    "type": "string"
+                },
+                "result_count": {
+                    "type": "integer",
+                    "format": "int32"
                 }
             }
         },

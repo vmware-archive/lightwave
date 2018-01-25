@@ -32,6 +32,7 @@ extern VMDIR_OP_STATISTIC_GLOBALS gVmdirOPStatisticGlobals;
 
 extern VMDIR_OPENSSL_GLOBALS gVmdirOpensslGlobals;
 
-extern PVM_METRICS_HISTOGRAM pLdapRequestDuration[];
-
-extern PVM_METRICS_COUNTER pLdapErrorCount[];
+extern PVM_METRICS_HISTOGRAM gpLdapMetrics[METRICS_LDAP_OP_COUNT]
+                                           [METRICS_LDAP_OP_TYPE_COUNT]
+                                            [METRICS_LDAP_ERROR_COUNT]
+                                             [METRICS_LAYER_COUNT];

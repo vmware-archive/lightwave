@@ -329,6 +329,10 @@ public interface IConfigStore
 
     public String getEntityID(String tenantName) throws Exception;
 
+    public void setIssuer(String tenantName, String issuer) throws Exception;
+
+    public String getIssuer(String tenantName) throws Exception;
+
     /**
      * External IDP
      */

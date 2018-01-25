@@ -27,4 +27,6 @@
 
 extern VMDIR_GLOBALS gVmdirGlobals;
 
-extern PVM_METRICS_HISTOGRAM pRpcRequestDuration[];
+extern VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals;
+
+extern PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

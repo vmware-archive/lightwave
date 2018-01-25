@@ -1,0 +1,171 @@
+<clr-wizard #wizard [(clrWizardOpen)]="isOpen" clrWizardSize="xl" (clrWizardOnCancel)="doCancel()" [clrWizardPreventDefaultCancel]="true">
+    <clr-wizard-title>New LDAP object</clr-wizard-title>
+    <clr-wizard-button class='btn btn-sm' [type]="'cancel'">Cancel</clr-wizard-button>
+    <clr-wizard-button class='btn btn-sm' [type]="'previous'">Back</clr-wizard-button>
+    <clr-wizard-button class='btn btn-sm' [type]="'next'">Next</clr-wizard-button>
+    <clr-wizard-button class='btn btn-sm btn-primary' (click)="createObject()">Create</clr-wizard-button>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle><pre style="font-size:14px;">@{{decodedRootDn}}</pre>Choose Object Class</ng-template>
+        <ng-template clrPageNavTitle>
+            Choose Object Class
+        </ng-template>
+        <clr-datagrid style="overflow-y:auto;max-height:100%;" *ngIf="classNamesObs|async;let classNames" [(clrDgSingleSelected)]="selectedClass">
+            <clr-dg-column>Structural Class Name
+                <clr-dg-string-filter [clrDgStringFilter]="classNameFilter"></clr-dg-string-filter>
+            </clr-dg-column>
+            <clr-dg-row *clrDgItems="let cls of classNames" [clrDgItem]="cls">
+                <clr-dg-cell>{{cls}}</clr-dg-cell>
+            </clr-dg-row>
+        </clr-datagrid>
+        <ng-template clrPageButtons>
+            <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
+            <button (click)="handleClassSelection(selectedClass)" type="button" class='btn btn-sm btn-primary'>next</button>
+        </ng-template>
+    </clr-wizard-page>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle><pre style="font-size:14px;">@{{decodedRootDn}}</pre>Choose Auxiliary Classes</ng-template>
+        <ng-template clrPageNavTitle>
+            Choose Auxiliary Classes
+        </ng-template>
+        <clr-datagrid [(clrDgSelected)]="sel">
+            <clr-dg-column>Auxiliary Class Name
+                <clr-dg-string-filter [clrDgStringFilter]="auxNameFilter"></clr-dg-string-filter>
+            </clr-dg-column>
+            <clr-dg-row *clrDgItems="let auxClass of auxClassNames" [clrDgItem]="auxClass">
+                <clr-dg-cell>{{auxClass}}</clr-dg-cell>
+            </clr-dg-row>
+             <clr-dg-footer>{{sel}} sel</clr-dg-footer>
+        </clr-datagrid>
+        <ng-template clrPageButtons>
+            <clr-wizard-button class='btn-sm' [type]="'previous'">Back</clr-wizard-button>
+            <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
+            <button (click)="handleAuxClassSel(sel)" type="button" class='btn-sm btn btn-primary'>next</button>
+        </ng-template>
+    </clr-wizard-page>
+
+    <clr-wizard-page #pageMustAttr [clrWizardPageNextDisabled]="!formMustAttr.valid">
+        <ng-template clrPageTitle><pre style="font-size:14px;">@{{decodedRootDn}}</pre>Mandatory Attributes</ng-template>
+        <ng-template clrPageNavTitle>
+            Mandatory Attributes
+        </ng-template>
+        <table class="table table-vertical table-noborder">
+           <tbody>
+              <tr>
+                 <form #formMustAttr="ngForm">
+                 <div *ngFor="let mustAttr of mustAttrArr;let index = index;">
+                         <td style="width:400px !important;">{{ mustAttr }}</td>
+                          <td>
+                              <div class="signpost-triggers-wrapper">
+                                  <div class="signpost-item">
+                                       <clr-signpost>
+                                            <input required minlength="1" (focus)="displayProperties(mustAttr);" id="{{mustAttr}}" name="{{mustAttr}}" type="text" size="45" [(ngModel)]="mustAttrMap[mustAttr]" #{{mustAttr}}="ngModel" [disabled]="(curSchema === mustAttr && curSchemaMap['readonly'] == true) || (opAttrMap[mustAttr] == true)" clrSignpostTrigger>
+                                                  <clr-signpost-content [clrPosition]="'left-bottom'" *clrIfOpen>
+                                                       <table class="vertical no-border">
+                                                             <tbody>
+                                                                 <tr *ngFor="let spAttr of signPostObj">
+                                                                     <th>{{spAttr?.type}}</th>
+                                                                     <td>{{spAttr?.value}}</td>
+                                                                 </tr>
+                                                             </tbody>
+                                                       </table>
+                                                  </clr-signpost-content>
+                                       </clr-signpost>
+                                  </div>
+                              </div>
+                               <span *ngIf="mustAttr?.touched">
+                                   touched!
+                               </span>
+                               <div *ngIf="mustAttr.invalid && (mustAttr.dirty || mustAttr.touched)">
+                                  <div *ngIf="mustAttr.errors.required">
+                                          {{mustAttr}} is required.
+                                  </div>
+                               </div>
+                          </td>
+                 </div>
+                 </form>
+	     </tr>
+         </tbody>
+      </table>
+      <ng-template clrPageButtons>
+          <clr-wizard-button class='btn-sm' [type]="'previous'">Back</clr-wizard-button>
+          <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
+          <button (click)="handleMustAttr()" type="button" class='btn-sm btn btn-primary'>next</button>
+      </ng-template>
+    </clr-wizard-page>
+
+    <clr-wizard-page #pageMayAttr style="overflow-y:hidden;">
+        <ng-template clrPageTitle><pre style="font-size:14px;">@{{decodedRootDn}}</pre>Optional Attributes</ng-template>
+        <ng-template [ngIf]="showError">    
+            <div *ngIf="showError" class="alert alert-danger">
+                <div class="alert-items">
+                    <div class="alert-item static">
+                        <div class="alert-icon-wrapper">
+                            <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+                        </div>
+                        <span style="text-align:center;" class="alert-text">
+                            {{errorMsg}}
+                        </span>
+                    </div>
+                 </div>
+                <button type="button" class="close" aria-label="Close">
+                    <clr-icon aria-hidden="true" (click)="showError = false;" shape="close"></clr-icon>
+                </button>
+            </div>
+        </ng-template>
+        <ng-template clrPageNavTitle>
+            Optional Attributes
+        </ng-template>
+        <form #formMayAttr="ngForm">
+        <table class="table table-vertical table-noborder" style="max-height:100%;overflow-y:auto;">
+           <tbody>
+              <tr>
+                 <div *ngFor="let mayAttr of mayAttrArr;let index = index;">
+                         <td style="width:400px !important;">{{ mayAttr }}</td>
+                          <td>
+                              <div class="signpost-triggers-wrapper">
+                                  <div class="signpost-item">
+                                       <clr-signpost>
+                                            <input required minlength="1" (focus)="displayProperties(mayAttr);" id="{{mayAttr}}" name="{{mayAttr}}" type="text" size="45" [(ngModel)]="mayAttrMap[mayAttr]" #{{mayAttr}}="ngModel" [disabled]="(curSchema === mayAttr && curSchemaMap['readonly'] == true) || (opAttrMap[mayAttr] == true)" clrSignpostTrigger>
+                                                  <clr-signpost-content [clrPosition]="'left-bottom'" *clrIfOpen>
+                                                       <table class="vertical no-border">
+                                                             <tbody>
+                                                                 <tr *ngFor="let spAttr of signPostObj">
+                                                                     <th>{{spAttr?.type}}</th>
+                                                                     <td>{{spAttr?.value}}</td>
+                                                                 </tr>
+                                                             </tbody>
+                                                       </table>
+                                                  </clr-signpost-content>
+                                       </clr-signpost>
+                                  </div>
+                              </div>
+                               <span *ngIf="mayAttr?.touched">
+                                   touched!
+                               </span>
+                               <div *ngIf="mayAttr.invalid && (mayAttr.dirty || mayAttr.touched)">
+                                  <div *ngIf="mayAttr.errors.required">
+                                          {{mayAttr}} is required.
+                                  </div>
+                               </div>
+                          </td>
+                     </div>
+                 </tr>
+              </tbody>
+          </table>
+      </form>
+      <ng-template clrPageButtons>
+          <clr-wizard-button class='btn-sm' [type]="'previous'">Back</clr-wizard-button>
+          <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
+          <clr-wizard-button class='btn btn-sm btn-primary' (click)="createObject()">Create</clr-wizard-button>
+      </ng-template>
+    </clr-wizard-page>
+
+    <!--clr-wizard-page *ngIf="allDone" #pageConfirm>
+        <ng-template clrPageTitle><font style="font-size:14px;">@{{decodedRootDn}}</font>Review</ng-template>
+        <ng-template clrPageNavTitle>
+            Review
+        </ng-template>
+    </clr-wizard-page-->
+</clr-wizard>

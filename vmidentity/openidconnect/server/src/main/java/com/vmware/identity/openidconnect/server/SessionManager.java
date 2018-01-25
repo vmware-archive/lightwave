@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -34,6 +34,11 @@ public class SessionManager {
         this.map = new SlidingWindowMap<SessionID, Entry>(LIFETIME_MS);
     }
 
+    public synchronized void add(SessionID sessionId) {
+        Validate.notNull(sessionId, "sessionId");
+        this.map.add(sessionId, new Entry());
+    }
+
     public synchronized void add(
             SessionID sessionId,
             PersonUser personUser,
@@ -45,6 +50,35 @@ public class SessionManager {
         Validate.notNull(client, "client");
 
         this.map.add(sessionId, new Entry(personUser, loginMethod, client));
+    }
+
+    public synchronized Entry setExternalJWTContent(SessionID sessionId, String externalJWTContent) {
+        Validate.notNull(sessionId, "sessionId");
+        Validate.notEmpty(externalJWTContent, "external token");
+
+        Entry entry = this.map.get(sessionId);
+        if (entry != null) {
+            entry.externalJWTContent = externalJWTContent;
+        }
+        return entry;
+    }
+
+    public synchronized Entry update(SessionID sessionId, PersonUser personUser, LoginMethod loginMethod, ClientInfo client) {
+        Validate.notNull(sessionId, "sessionId");
+
+        Entry entry = this.map.get(sessionId);
+        if (entry != null) {
+            if (personUser != null) {
+                entry.personUser = personUser;
+            }
+            if (loginMethod != null) {
+                entry.loginMethod = loginMethod;
+            }
+            if (client != null) {
+                entry.add(client);
+            }
+        }
+        return entry;
     }
 
     public synchronized Entry update(SessionID sessionId, ClientInfo client) {
@@ -73,16 +107,22 @@ public class SessionManager {
         return String.format("oidc_session_id-%s", tenant);
     }
 
+    public static String getExternalIdpIssuerCookieName(String tenant) {
+        Validate.notEmpty(tenant, "tenant");
+        return String.format("oidc_issuer-%s", tenant);
+    }
+
     public static String getPersonUserCertificateLoggedOutCookieName(String tenant) {
         Validate.notEmpty(tenant, "tenant");
         return String.format("oidc_person_user_certificate_logged_out-%s", tenant);
     }
 
     public static class Entry {
-        private final PersonUser personUser;
-        private final LoginMethod loginMethod;
-        private final Set<ClientInfo> clients;
-        private final Set<ClientID> clientIds;
+        private PersonUser personUser;
+        private LoginMethod loginMethod;
+        private Set<ClientInfo> clients;
+        private Set<ClientID> clientIds;
+        private String externalJWTContent;
 
         private Entry(PersonUser personUser, LoginMethod loginMethod, ClientInfo client) {
             this.personUser = personUser;
@@ -93,19 +133,36 @@ public class SessionManager {
             this.clientIds.add(client.getID());
         }
 
+        private Entry() {
+
+        }
+
         public PersonUser getPersonUser() {
+            Validate.notNull(this.personUser, "persion user");
             return this.personUser;
         }
 
         public LoginMethod getLoginMethod() {
+            Validate.notNull(this.loginMethod, "login method");
             return this.loginMethod;
         }
 
         public Set<ClientInfo> getClients() {
+            Validate.notNull(this.clients, "clients");
             return Collections.unmodifiableSet(this.clients);
         }
 
+        public String getExternalJWTContent() {
+            return this.externalJWTContent;
+        }
+
         private void add(ClientInfo client) {
+            if (this.clientIds == null) {
+                this.clientIds = new HashSet<ClientID>();
+            }
+            if (this.clients == null) {
+                this.clients = new HashSet<ClientInfo>();
+            }
             if (!this.clientIds.contains(client.getID())) {
                 this.clientIds.add(client.getID());
                 this.clients.add(client);
