@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -37,44 +37,6 @@ VOID
 _VmAfdSetLogLevel(
     );
 
-static
-DWORD
-_VmAfdCreateDirs(
-    PCSTR path)
-{
-    DWORD dwError = 0;
-    PSTR dir = NULL;
-    PSTR p = NULL;
-    int err = 0;
-
-    if (!path || !*path || path[0] != '/')
-    {
-        dwError = ERROR_NO_SUCH_FILE_OR_DIRECTORY;
-        BAIL_ON_VMAFD_LOG_ERROR(dwError);
-    }
-
-    dwError = VmAfdAllocateStringA(path, &dir);
-    BAIL_ON_VMAFD_LOG_ERROR(dwError);
-
-    p = dir + 1;
-    while ( (p = strchr(p, '/')) )
-    {
-        *p = '\0';
-        err = mkdir(dir, 0755);
-        if (err == -1 && errno != EEXIST)
-        {
-            dwError = ERROR_NO_SUCH_FILE_OR_DIRECTORY;
-            BAIL_ON_VMAFD_LOG_ERROR(dwError);
-        }
-        *p++ = '/';
-    }
-
-error:
-
-    VMAFD_SAFE_FREE_STRINGA(dir);
-
-    return 0;
-}
 
 DWORD
 VmAfdLogInitialize(
@@ -86,7 +48,7 @@ VmAfdLogInitialize(
 
     if (pszLogFileName)
     {
-        dwError = _VmAfdCreateDirs(pszLogFileName);
+        dwError = VmAfdCreateDirs(pszLogFileName);
         BAIL_ON_VMAFD_LOG_ERROR(dwError);
 
         dwError = VmAfdOpenFilePath(pszLogFileName, "a", &gVmafdLogFile, 0644);
