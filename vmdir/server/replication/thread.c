@@ -123,6 +123,12 @@ _VmDirFilterEmptyPageSyncDoneCtr(
     struct berval * pPageSyncDoneCtrl
     );
 
+static
+VOID
+_VmDirReplicationUpdateTombStoneEntrySyncState(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPage
+    );
+
 DWORD
 VmDirGetReplCycleCounter(
     VOID
@@ -1251,6 +1257,68 @@ _VmDirFreeReplicationPage(
     }
 }
 
+static
+VOID
+_VmDirReplicationUpdateTombStoneEntrySyncState(
+    PVMDIR_REPLICATION_PAGE_ENTRY pPage
+    )
+{
+    DWORD  dwError = 0;
+    PSTR   pszObjectGuid = NULL;
+    PSTR   pszTempString = NULL;
+    PSTR   pszContext = NULL;
+    PSTR   pszDupDn = NULL;
+    VDIR_ENTRY_ARRAY  entryArray = {0};
+    VDIR_BERVALUE     bvParentDn = VDIR_BERVALUE_INIT;
+    VDIR_BERVALUE     bvDn = VDIR_BERVALUE_INIT;
+
+    dwError = VmDirStringToBervalContent(pPage->pszDn, &bvDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetParentDN(&bvDn, &bvParentDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (VmDirIsDeletedContainer(bvParentDn.lberbv_val) &&
+        pPage->entryState == LDAP_SYNC_ADD)
+    {
+        dwError = VmDirAllocateStringA(pPage->pszDn, &pszDupDn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Tombstone DN format: cn=<cn value>#objectGUID:<objectguid value>,<DeletedObjectsContainer>
+        pszTempString = VmDirStringStrA(pszDupDn, "#objectGUID:");
+        pszObjectGuid = VmDirStringTokA(pszTempString, ",", &pszContext);
+        pszObjectGuid = pszObjectGuid + VmDirStringLenA("#objectGUID:");
+
+        dwError = VmDirSimpleEqualFilterInternalSearch("", LDAP_SCOPE_SUBTREE, ATTR_OBJECT_GUID, pszObjectGuid, &entryArray);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (entryArray.iSize == 1)
+        {
+            pPage->entryState = LDAP_SYNC_DELETE;
+            VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "%s: (tombstone handling) change sync state to delete: (%s)",
+                __FUNCTION__,
+                pPage->pszDn);
+        }
+    }
+
+cleanup:
+    VmDirFreeBervalContent(&bvParentDn);
+    VmDirFreeBervalContent(&bvDn);
+    VMDIR_SAFE_FREE_MEMORY(pszDupDn);
+    VmDirFreeEntryArrayContent(&entryArray);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: error = (%d)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
 /*
  * Perform Add/Modify/Delete on entries in page
  */
@@ -1270,21 +1338,25 @@ _VmDirProcessReplicationPage(
     for (i = 0; i < pPage->iEntriesReceived; i++)
     {
         int errVal = 0;
-        int entryState = pPage->pEntries[i].entryState;
+        int entryState = 0;
+
+        _VmDirReplicationUpdateTombStoneEntrySyncState(pPage->pEntries+i);
+
+        entryState = pPage->pEntries[i].entryState;
 
         if (entryState == LDAP_SYNC_ADD)
         {
-            errVal = ReplAddEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
+            errVal = ReplAddEntry(pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
             pContext->pSchemaCtx = pSchemaCtx ;
         }
         else if (entryState == LDAP_SYNC_MODIFY)
         {
-            errVal = ReplModifyEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
+            errVal = ReplModifyEntry(pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
             pContext->pSchemaCtx = pSchemaCtx ;
         }
         else if (entryState == LDAP_SYNC_DELETE)
         {
-            errVal = ReplDeleteEntry( pSchemaCtx, pPage->pEntries+i);
+            errVal = ReplDeleteEntry(pSchemaCtx, pPage->pEntries+i);
         }
         else
         {
