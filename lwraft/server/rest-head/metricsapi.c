@@ -56,9 +56,10 @@ VmDirRESTMetricsGet(
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
 
-    dwError = VmMetricsGetPrometheusData(pmContext,
-                        &pRestOp->pResult->pszData,
-                        &pRestOp->pResult->dwDataLen);
+    dwError = VmMetricsGetPrometheusData(
+            pmContext,
+            &pRestOp->pResult->pszBody,
+            &pRestOp->pResult->dwBodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

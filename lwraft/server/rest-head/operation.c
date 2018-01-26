@@ -24,8 +24,7 @@ VmDirRESTOperationCreate(
 
     if (!ppRestOp)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -46,10 +45,7 @@ VmDirRESTOperationCreate(
     dwError = VmDirRESTResultCreate(&pRestOp->pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pRestOp->pResource = VmDirRESTGetResource(NULL);
-
-    dwError = VmDirRESTCreateProxyResult(&pRestOp->pProxyResult);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    pRestOp->pResource = VmDirRESTGetResourceByPath(NULL);
 
     dwError = VmDirAllocateMemory(
             sizeof(VMDIR_THREAD_LOG_CONTEXT),
@@ -90,8 +86,7 @@ VmDirRESTOperationReadRequest(
 
     if (!pRestOp || !pRESTHandle || !pRestReq)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     // read request methods
@@ -113,7 +108,7 @@ VmDirRESTOperationReadRequest(
     }
 
     // determine resource
-    pRestOp->pResource = VmDirRESTGetResource(pRestOp->pszPath);
+    pRestOp->pResource = VmDirRESTGetResourceByPath(pRestOp->pszPath);
     if (pRestOp->pResource->rscType == VDIR_REST_RSC_UNKNOWN)
     {
         dwError = VMDIR_ERROR_INVALID_REQUEST;
@@ -129,6 +124,9 @@ VmDirRESTOperationReadRequest(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    // set resource-specifc http error mapping function
+    pRestOp->pfnGetHttpError = pRestOp->pResource->pfnGetHttpError;
+
     // read request authorization info
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -137,10 +135,11 @@ VmDirRESTOperationReadRequest(
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_IF_MATCH, &pRestOp->pszHeaderIfMatch);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Content-type
+    // read Content-type
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // read requestid
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pThreadLogContext->pszRequestId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -186,6 +185,13 @@ VmDirRESTOperationReadRequest(
     // Save the input in string format for proxy
     pRestOp->pszInput = pszInput;
 
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Received REST request from: %s request type: %s request URI: %s",
+            VDIR_SAFE_STRING(pRestOp->pszClientIP),
+            VDIR_SAFE_STRING(pRestOp->pszMethod),
+            VDIR_SAFE_STRING(pRestOp->pszPath));
+
 cleanup:
     return dwError;
 
@@ -200,7 +206,7 @@ error:
 }
 
 DWORD
-VmDirRESTOperationLoadJson(
+VmDirRESTOperationParseRequestPayload(
     PVDIR_REST_OPERATION    pRestOp
     )
 {
@@ -217,7 +223,8 @@ VmDirRESTOperationLoadJson(
         pRestOp->pjInput = json_loads(pRestOp->pszInput, 0, &jError);
         if (!pRestOp->pjInput)
         {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
                     "%s failed to parse json payload: "
                     "(text=%s), "
                     "(source=%s), "
@@ -248,6 +255,52 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirRESTOperationProcessRequest(
+    PVDIR_REST_OPERATION    pRestOp
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pRestOp)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirRESTAuth(pRestOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = coapi_find_handler(
+            gpVdirRestApiDef,
+            pRestOp->pszPath,
+            pRestOp->pszMethod,
+            &pRestOp->pMethod);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Locally processed REST request from: %s request type: %s request URI: %s",
+            VDIR_SAFE_STRING(pRestOp->pszClientIP),
+            VDIR_SAFE_STRING(pRestOp->pszMethod),
+            VDIR_SAFE_STRING(pRestOp->pszPath));
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d) for client: %s",
+            __FUNCTION__,
+            dwError,
+            VDIR_SAFE_STRING(pRestOp->pszClientIP));
+
+    goto cleanup;
+}
+
 /*
  * Set HTTP headers as well as payload
  */
@@ -260,62 +313,45 @@ VmDirRESTOperationWriteResponse(
 {
     DWORD   dwError = 0;
     DWORD   bytesWritten = 0;
-    DWORD   dwHttpStatus = 0;
-    PSTR    pszHttpStatus = NULL;
-    PSTR    pszHttpReason = NULL;
-    PSTR    pszBody = NULL;
+    PVDIR_REST_RESULT   pResult = NULL;
+    PVDIR_REST_RESOURCE pResource = NULL;
+    PVDIR_HTTP_ERROR    pHttpError = NULL;
     PSTR    pszBodyLen = NULL;
     size_t  bodyLen = 0;
     size_t  sentLen = 0;
 
     if (!pRestOp || !pRESTHandle || !ppResponse)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    pResult = pRestOp->pResult;
+    pResource = pRestOp->pResource;
 
     dwError = VmRESTSetHttpStatusVersion(ppResponse, "HTTP/1.1");
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pRestOp->pResource->pfnGetHttpError(
-            pRestOp->pResult, &dwHttpStatus, &pszHttpStatus, &pszHttpReason);
+    dwError = pRestOp->pfnGetHttpError(pResult, &pHttpError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTSetHttpStatusCode(ppResponse, pszHttpStatus);
+    dwError = VmRESTSetHttpStatusCode(ppResponse, pHttpError->pszHttpStatus);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTSetHttpReasonPhrase(ppResponse, pszHttpReason);
+    dwError = VmRESTSetHttpReasonPhrase(ppResponse, pHttpError->pszHttpReason);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pRestOp->pResult->pszData)
-    {
-        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "text/plain");
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", pResource->pszContentType);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateAndCopyMemory(
-                        (PVOID)pRestOp->pResult->pszData,
-                        pRestOp->pResult->dwDataLen,
-                        (PVOID*)&pszBody);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirRESTResultGenerateResponseBody(pResult, pResource);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        bodyLen = pRestOp->pResult->dwDataLen;
-    }
-    else
-    {
-        dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
-        BAIL_ON_VMDIR_ERROR(dwError);
+    bodyLen = pResult->dwBodyLen;
 
-        dwError = VmDirRESTResultToResponseBody(
-                pRestOp->pResult, pRestOp->pResource, &pszBody);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        bodyLen = VmDirStringLenA(VDIR_SAFE_STRING(pszBody));
-    }
-
-    dwError = VmDirAllocateStringPrintf(&pszBodyLen, "%ld", bodyLen);
+    dwError = VmDirAllocateStringPrintf(&pszBodyLen, "%u", bodyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTSetDataLength(
@@ -330,7 +366,7 @@ VmDirRESTOperationWriteResponse(
         dwError = VmRESTSetData(
                 pRESTHandle,
                 ppResponse,
-                VDIR_SAFE_STRING(pszBody) + sentLen,
+                VDIR_SAFE_STRING(pResult->pszBody) + sentLen,
                 chunkLen,
                 &bytesWritten);
 
@@ -340,18 +376,18 @@ VmDirRESTOperationWriteResponse(
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (! VMDIR_IS_HTTP_STATUS_OK(dwHttpStatus))
+    if (!VMDIR_IS_HTTP_STATUS_OK(pHttpError->dwHttpStatus))
     {
         VMDIR_LOG_WARNING(
                 VMDIR_LOG_MASK_ALL,
                 "%s HTTP response status (%d), body (%.*s)",
                 __FUNCTION__,
-                dwHttpStatus,
+                pHttpError->dwHttpStatus,
                 VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
-                pszBody);
+                pResult->pszBody);
     }
+
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszBody);
     VMDIR_SAFE_FREE_STRINGA(pszBodyLen);
     return dwError;
 
@@ -392,7 +428,6 @@ VmDirFreeRESTOperation(
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         VmDirDeleteConnection(&pRestOp->pConn);
         VmDirFreeRESTResult(pRestOp->pResult);
-        VmDirFreeProxyResult(pRestOp->pProxyResult);
         VmDirFreeThreadLogContext(pRestOp->pThreadLogContext);
         VMDIR_SAFE_FREE_MEMORY(pRestOp);
     }

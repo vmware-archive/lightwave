@@ -24,12 +24,14 @@ VmDirRESTResultCreate(
 
     if (!ppRestRslt)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
             sizeof(VDIR_REST_RESULT), (PVOID*)&pRestRslt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTProxyResultCreate(&pRestRslt->pProxyResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = LwRtlCreateHashMap(
@@ -68,8 +70,7 @@ VmDirRESTResultSetError(
 
     if (!pRestRslt)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (!pRestRslt->bErrSet && errCode)
@@ -105,8 +106,7 @@ VmDirRESTResultUnsetError(
 
     if (!pRestRslt)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
@@ -136,10 +136,9 @@ VmDirRESTResultSetStrData(
 {
     DWORD   dwError = 0;
 
-    if (IsNullOrEmptyString(pszVal))
+    if (!pRestRslt || IsNullOrEmptyString(pszKey) || IsNullOrEmptyString(pszVal))
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirRESTResultSetObjData(pRestRslt, pszKey, json_string(pszVal));
@@ -166,6 +165,11 @@ VmDirRESTResultSetIntData(
     )
 {
     DWORD   dwError = 0;
+
+    if (!pRestRslt || IsNullOrEmptyString(pszKey))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     dwError = VmDirRESTResultSetObjData(pRestRslt, pszKey, json_integer(iVal));
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -195,8 +199,7 @@ VmDirRESTResultSetObjData(
 
     if (!pRestRslt || IsNullOrEmptyString(pszKey) || !pjVal)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateStringA(pszKey, &pszKeyCp);
@@ -220,10 +223,9 @@ error:
 }
 
 DWORD
-VmDirRESTResultToResponseBody(
+VmDirRESTResultGenerateResponseBody(
     PVDIR_REST_RESULT   pRestRslt,
-    PVDIR_REST_RESOURCE pResource,
-    PSTR*               ppszBody
+    PVDIR_REST_RESOURCE pResource
     )
 {
     DWORD   dwError = 0;
@@ -233,12 +235,10 @@ VmDirRESTResultToResponseBody(
     json_t* pjData = NULL;
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
-    PSTR    pszBody = NULL;
 
-    if (!pRestRslt || !pResource || !ppszBody)
+    if (!pRestRslt || !pResource)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (pResource->rscType == VDIR_REST_RSC_UNKNOWN)
@@ -247,32 +247,35 @@ VmDirRESTResultToResponseBody(
         goto cleanup;
     }
 
-    pjBody = json_object();
-
-    if (pRestRslt->errCode)
+    if (VmDirStringCompareA(pResource->pszContentType, "application/json", FALSE) == 0)
     {
-        pjErrCode = json_integer(pRestRslt->errCode);
-        dwError = json_object_set_new(
-                pjBody, pResource->pszErrCodeKey, pjErrCode);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        pjBody = json_object();
 
-        pjErrMsg = json_string(VDIR_SAFE_STRING(pRestRslt->pszErrMsg));
-        dwError = json_object_set_new(
-                pjBody, pResource->pszErrMsgKey, pjErrMsg);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+        if (pRestRslt->errCode)
+        {
+            pjErrCode = json_integer(pRestRslt->errCode);
+            dwError = json_object_set_new(
+                    pjBody, pResource->pszErrCodeKey, pjErrCode);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (LwRtlHashMapIterate(pRestRslt->pDataMap, &iter, &pair))
-    {
-        pjData = (json_t*)pair.pValue;
-        dwError = json_object_set(pjBody, (PSTR)pair.pKey, pjData);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+            pjErrMsg = json_string(VDIR_SAFE_STRING(pRestRslt->pszErrMsg));
+            dwError = json_object_set_new(
+                    pjBody, pResource->pszErrMsgKey, pjErrMsg);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
-    if (json_object_size(pjBody))
-    {
-        pszBody = json_dumps(pjBody, JSON_COMPACT);
-        *ppszBody = pszBody;
+        while (LwRtlHashMapIterate(pRestRslt->pDataMap, &iter, &pair))
+        {
+            pjData = (json_t*)pair.pValue;
+            dwError = json_object_set(pjBody, (PSTR)pair.pKey, pjData);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (json_object_size(pjBody))
+        {
+            pRestRslt->pszBody = json_dumps(pjBody, JSON_COMPACT);
+            pRestRslt->dwBodyLen = VmDirStringLenA(pRestRslt->pszBody);
+        }
     }
 
 cleanup:
@@ -289,7 +292,6 @@ error:
             __FUNCTION__,
             dwError);
 
-    VMDIR_SAFE_FREE_MEMORY(pszBody);
     goto cleanup;
 }
 
@@ -316,9 +318,10 @@ VmDirFreeRESTResult(
     if (pRestRslt)
     {
         VMDIR_SAFE_FREE_MEMORY(pRestRslt->pszErrMsg);
+        VmDirFreeRESTProxyResult(pRestRslt->pProxyResult);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);
-        VMDIR_SAFE_FREE_STRINGA(pRestRslt->pszData);
+        VMDIR_SAFE_FREE_STRINGA(pRestRslt->pszBody);
         VMDIR_SAFE_FREE_MEMORY(pRestRslt);
     }
 }

@@ -15,15 +15,8 @@
 #include "includes.h"
 
 static
-DWORD
-_VmDirRESTProxyResultGetHttpCode(
-    PVDIR_PROXY_RESULT  pProxyResult,
-    DWORD*              pdwHttpCode
-    );
-
-static
 VOID
-_VmDirSetProxyResult(
+_VmDirRESTProxySetResult(
     PVDIR_REST_OPERATION    pRestOp,
     DWORD                   statusCode,
     DWORD                   dwInError,
@@ -70,11 +63,8 @@ _VmDirRESTProxyIsRetriableError(
     );
 
 DWORD
-VmDirRESTForwardRequest(
+VmDirRESTProxyForwardRequest(
     PVDIR_REST_OPERATION    pRestOp,
-    uint32_t                dwParamCount,
-    PREST_REQUEST           pRequest,
-    PVMREST_HANDLE          pRESTHandle,
     BOOLEAN                 bHttpRequest
     )
 {
@@ -94,10 +84,13 @@ VmDirRESTForwardRequest(
 
     uiStartTime = VmDirGetTimeInMilliSec();
 
-    if (!pRestOp || !pRequest || !pRESTHandle)
+    if (!pRestOp)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    // set proxy-specifc http error mapping function
+    pRestOp->pfnGetHttpError = VmDirRESTProxyGetHttpError;
 
     pCurlHandle = curl_easy_init();
     if (!pCurlHandle)
@@ -222,7 +215,7 @@ VmDirRESTForwardRequest(
     dwCurlError = curl_easy_setopt(
             pCurlHandle,
             CURLOPT_WRITEDATA,
-            pRestOp->pProxyResult);
+            pRestOp->pResult->pProxyResult);
     BAIL_ON_CURL_ERROR(dwCurlError);
 
     // Set timeout for curl request
@@ -294,7 +287,7 @@ VmDirRESTForwardRequest(
             VMDIR_RESPONSE_TIME(VmDirGetTimeInMilliSec()-uiStartTime));
 
 cleanup:
-    _VmDirSetProxyResult(
+    _VmDirRESTProxySetResult(
             pRestOp, statusCode, dwError, dwCurlError);
 
     curl_slist_free_all(pHeaders);
@@ -326,92 +319,7 @@ curlerror:
 }
 
 DWORD
-VmDirRESTWriteProxyResponse(
-    PVDIR_REST_OPERATION     pRestOp,
-    PREST_RESPONSE*          ppResponse,
-    PVMREST_HANDLE           pRESTHandle
-    )
-{
-    DWORD               dwError = 0;
-    DWORD               bytesWritten = 0;
-    DWORD               dwHttpErrorCode = 0;
-    PSTR                pszBodyLen = NULL;
-    PVDIR_HTTP_ERROR    pHttpError = NULL;
-    size_t              sentLen = 0;
-
-    if (!pRestOp || !ppResponse || !pRESTHandle )
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmRESTSetHttpStatusVersion(ppResponse, "HTTP/1.1");
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirRESTProxyResultGetHttpCode(pRestOp->pProxyResult, &dwHttpErrorCode);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pHttpError = VmDirRESTGetHttpError(dwHttpErrorCode);
-
-    dwError = VmRESTSetHttpStatusCode(ppResponse, pHttpError->pszHttpStatus);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetHttpReasonPhrase(ppResponse, pHttpError->pszHttpReason);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "application/json");
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf(&pszBodyLen, "%ld", pRestOp->pProxyResult->dwResponseLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetDataLength(
-            ppResponse,
-            pRestOp->pProxyResult->dwResponseLen > MAX_REST_PAYLOAD_LENGTH ? NULL : pszBodyLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    do
-    {
-        size_t chunkLen = pRestOp->pProxyResult->dwResponseLen > MAX_REST_PAYLOAD_LENGTH ?
-            MAX_REST_PAYLOAD_LENGTH : pRestOp->pProxyResult->dwResponseLen;
-
-        dwError = VmRESTSetData(
-                pRESTHandle,
-                ppResponse,
-                VDIR_SAFE_STRING(pRestOp->pProxyResult->pResponse) + sentLen,
-                chunkLen,
-                &bytesWritten);
-        sentLen += bytesWritten;
-        pRestOp->pProxyResult->dwResponseLen -= bytesWritten;
-    }
-    while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (! VMDIR_IS_HTTP_STATUS_OK(pHttpError->dwHttpStatus))
-    {
-        VMDIR_LOG_WARNING(
-                VMDIR_LOG_MASK_ALL,
-                "%s HTTP response status (%d), body (%.*s)",
-                __FUNCTION__,
-                pHttpError->dwHttpStatus,
-                VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
-                pRestOp->pProxyResult->pResponse
-                );
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszBodyLen);
-    return dwError;
-
-error:
-    goto cleanup;
-
-}
-
-DWORD
-VmDirRESTCreateProxyResult(
+VmDirRESTProxyResultCreate(
     PVDIR_PROXY_RESULT* ppProxyResult
     )
 {
@@ -427,7 +335,6 @@ VmDirRESTCreateProxyResult(
             sizeof(VDIR_PROXY_RESULT), (PVOID*)&pProxyResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pProxyResult->dwResponseLen = 0;
     *ppProxyResult = pProxyResult;
 
 cleanup:
@@ -440,12 +347,12 @@ error:
             __FUNCTION__,
             dwError);
 
-    VmDirFreeProxyResult(pProxyResult);
+    VmDirFreeRESTProxyResult(pProxyResult);
     goto cleanup;
 }
 
 VOID
-VmDirFreeProxyResult(
+VmDirFreeRESTProxyResult(
     PVDIR_PROXY_RESULT pProxyResult
     )
 {
@@ -456,47 +363,65 @@ VmDirFreeProxyResult(
     }
 }
 
-static
 DWORD
-_VmDirRESTProxyResultGetHttpCode(
-    PVDIR_PROXY_RESULT  pProxyResult,
-    DWORD*              pdwHttpCode
+VmDirRESTProxyGetHttpError(
+    PVDIR_REST_RESULT   pRestRslt,
+    PVDIR_HTTP_ERROR*   ppHttpError
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
+    DWORD   dwHttpStatus = 0;
+    PVDIR_PROXY_RESULT  pProxyResult = NULL;
 
-    if (!pProxyResult)
+    if (!pRestRslt || !ppHttpError)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    pProxyResult = pRestRslt->pProxyResult;
+
     if (pProxyResult->statusCode)
     {
-        *pdwHttpCode = pProxyResult->statusCode;
+        dwHttpStatus = pProxyResult->statusCode;
     }
     else if(pProxyResult->dwCurlError)
     {
-        *pdwHttpCode = _VmDirRESTCurlToHttpCode(pProxyResult->dwCurlError);
+        dwHttpStatus = _VmDirRESTCurlToHttpCode(pProxyResult->dwCurlError);
     }
     else if(pProxyResult->dwError == VMDIR_ERROR_NO_LEADER)
     {
-        *pdwHttpCode = 503;
+        dwHttpStatus = HTTP_SERVICE_UNAVAILABLE;
     }
     else
     {
-        *pdwHttpCode = 500;
+        dwHttpStatus = HTTP_INTERNAL_SERVER_ERROR;
     }
+
+    *ppHttpError = VmDirRESTGetHttpError(dwHttpStatus);
 
 cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed , error (%d)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
+/*
+ * Special set result logic for proxy
+ *  - take over pRestOp->pProxyResult content
+ *  - set pRestOp->pResult->bErrSet = TRUE
+ *  - don't set pRestOp->pResult->errCode
+ *  - don't set pRestOp->pResult->pszErrMsg
+ */
 static
 VOID
-_VmDirSetProxyResult(
+_VmDirRESTProxySetResult(
     PVDIR_REST_OPERATION    pRestOp,
     DWORD                   statusCode,
     DWORD                   dwInError,
@@ -504,15 +429,30 @@ _VmDirSetProxyResult(
     )
 {
     DWORD   dwError = 0;
+    PVDIR_REST_RESULT   pResult = NULL;
+    PVDIR_PROXY_RESULT  pProxyResult = NULL;
 
     if (!pRestOp)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    pRestOp->pProxyResult->dwError = dwInError;
-    pRestOp->pProxyResult->dwCurlError = dwCurlError;
-    pRestOp->pProxyResult->statusCode = statusCode;
+    pResult = pRestOp->pResult;
+    pProxyResult = pResult->pProxyResult;
+
+    pProxyResult->dwError = dwInError;
+    pProxyResult->dwCurlError = dwCurlError;
+    pProxyResult->statusCode = statusCode;
+
+    // take over proxy result content
+    pResult->pszBody = pProxyResult->pResponse;
+    pProxyResult->pResponse = NULL;
+
+    pResult->dwBodyLen = pProxyResult->dwResponseLen;
+    pProxyResult->dwResponseLen = 0;
+
+    // this is the final result state, set bErrSet to avoid result override
+    pResult->bErrSet = TRUE;
 
 cleanup:
     return;
@@ -520,8 +460,10 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "VmDirSetProxyResult failed : %d",
+            "%s failed, error (%d)",
+            __FUNCTION__,
             dwError);
+
     goto cleanup;
 }
 
@@ -610,6 +552,12 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     VMDIR_SAFE_FREE_STRINGA(pszEncodedParam);
     VMDIR_SAFE_FREE_STRINGA(pszURL);
     goto cleanup;
@@ -674,6 +622,7 @@ _VmDirRESTFormEncodedParam(
             pszKey,
             pEncodedValue);
     BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppEncodedParam = pEncodedParam;
 
 cleanup:
@@ -681,6 +630,12 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
     VMDIR_SAFE_FREE_MEMORY(pEncodedParam);
     goto cleanup;
 

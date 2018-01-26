@@ -58,8 +58,7 @@ VmDirRESTObjectPut(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -67,8 +66,7 @@ VmDirRESTObjectPut(
     // put request must have subpath (=objectpath)
     if (IsNullOrEmptyString(pRestOp->pszSubPath))
     {
-        dwError = VMDIR_ERROR_INVALID_REQUEST;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
     }
 
     dwError = VmDirExternalOperationCreate(
@@ -123,8 +121,7 @@ VmDirRESTObjectGet(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -222,8 +219,7 @@ VmDirRESTObjectPatch(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -296,8 +292,7 @@ VmDirRESTObjectDelete(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
