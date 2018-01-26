@@ -44,6 +44,47 @@ func (server *VmAfdServer) VmAfdGetHeartbeatStatus() (status *VmAfdHbStatus, err
 	return
 }
 
+// CdcEnumDCEntries gets the DC entries in client side cache. CDC client side affinity must be enabled.
+func (server *VmAfdServer) CdcEnumDCEntries() (dcEntries []string, err error) {
+	var s *C.PSTR = nil
+	var c C.DWORD = 0
+	var e C.DWORD = C.CdcEnumDCEntriesA(server.p, &s, (*C.LW_UINT32)(unsafe.Pointer(&c)))
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to enumerate DC Entries (%s)", cErrorToGoError(e))
+	}
+	defer C.CdcFreeStringArrayA(s, c)
+
+	count := int(c)
+	dcEntries = make([]string, count)
+	for i := 0; i < count; i++ {
+		dcEntries[i] = cStringToGoString((*[1 << 30]C.PSTR)(unsafe.Pointer(s))[i])
+	}
+
+	return
+}
+
+// CdcGetDCStatusInfo gets the DC status and heartbeat of a specific DC entry. CDC client side affinity must be enabed.
+// The caller must call FreeStatusInfo when CdcDcStatusInfo is no longer needed.
+// The caller must call FreeHeartbeatStatus when VmAfdHbStatus is no longer needed.
+func (server *VmAfdServer) CdcGetDCStatusInfo(dcName string) (info* CdcDcStatusInfo, hb* VmAfdHbStatus, err error) {
+	var s C.PSTR = goStringToCString(dcName)
+	defer freeCString(s)
+	var i C.PCDC_DC_STATUS_INFO_A = nil
+	var h C.PVMAFD_HB_STATUS_A = nil
+	var e C.DWORD = C.CdcGetDCStatusInfoA(server.p, s, nil, &i, &h)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to getDCStatusInfo of %s (%s)", dcName, cErrorToGoError(e))
+	}
+
+	info = &CdcDcStatusInfo{i}
+	hb = &VmAfdHbStatus{h}
+
+	runtime.SetFinalizer(info, cdcDCStatusInfoFinalize)
+	runtime.SetFinalizer(hb, vmAfdHbStatusFinalize)
+
+	return
+}
+
 // VmAfdHbHandle holds a C pointer to a VMAFD_HB_HANDLE struct.
 type VmAfdHbHandle struct {
 	p C.PVMAFD_HB_HANDLE
@@ -79,7 +120,7 @@ func (status *VmAfdHbStatus) IsAlive() (isAlive bool) {
 
 // GetCount returns the number of services registered by vmafd.
 func (status *VmAfdHbStatus) GetCount() (count int) {
-	count = int((*status.p).dwCount)
+	count = int((*(status.p)).dwCount)
 	return count
 }
 
@@ -114,8 +155,55 @@ func (status *VmAfdHbInfo) IsAlive() (isAlive bool) {
 }
 
 // GetServiceName gets the name of the service specified by VmAfdHbInfo struct.
-func (status *VmAfdHbInfo) GetServiceName() string {
-	return cStringToGoString((*status.p).pszServiceName)
+func (status *VmAfdHbInfo) GetServiceName() (serviceName string) {
+	serviceName = cStringToGoString((*(status.p)).pszServiceName)
+	return serviceName
+}
+
+// CdcDcStatusInfo holds a C pointer to a PCDC_DC_STATUS_INFO_A struct. It represents the status for a particular DC.
+type CdcDcStatusInfo struct {
+	p C.PCDC_DC_STATUS_INFO_A
+}
+
+// GetLastPing gets the time of the last ping.
+func (status *CdcDcStatusInfo) GetLastPing() (lastPing int) {
+	lastPing = int((*(status.p)).dwLastPing)
+	return lastPing
+}
+
+// GetLastResponseTime gets the time of the last response.
+func (status *CdcDcStatusInfo) GetLastResponseTime() (lastResponse int) {
+	lastResponse = int((*(status.p)).dwLastResponseTime)
+	return lastResponse
+}
+
+// GetLastError gets the code of the last error.
+func (status *CdcDcStatusInfo) GetLastError() (lastError int) {
+	lastError = int((*(status.p)).dwLastError)
+	return lastError
+}
+
+// IsAlive returns whether the DC is alive or not.
+func (status *CdcDcStatusInfo) IsAlive() (isAlive bool) {
+	if (*status.p).bIsAlive == 0 {
+		isAlive = false
+	} else {
+		isAlive = true
+	}
+
+	return isAlive
+}
+
+// GetSiteName returns the site name of the DC.
+func (status *CdcDcStatusInfo) GetSiteName() (siteName string) {
+	siteName = cStringToGoString((*(status.p)).pszSiteName)
+	return siteName
+}
+
+// FreeStatusInfo frees the CdcDcStatusInfo struct.
+// The caller must call this when CdcDcStatusInfo is no longer needed.
+func (status *CdcDcStatusInfo) FreeStatusInfo() {
+	C.CdcFreeDCStatusInfoA(status.p)
 }
 
 // VmAfdOpenServer opens a connection to the server specified by the arguments.
@@ -217,4 +305,9 @@ func vmAfdHbStatusFinalize(status *VmAfdHbStatus) {
 // vmAfdHeartbeatFinalize is a wrapper function to set the finalizer for VmAfdHbHandle
 func vmAfdHeartbeatFinalize(handle *VmAfdHbHandle) {
 	handle.StopHeartbeat()
+}
+
+// cdcDCStatusInfoFinalize is a wrapper function to set the finalizer for CdcDcStatusInfo
+func cdcDCStatusInfoFinalize(handle *CdcDcStatusInfo) {
+	handle.FreeStatusInfo()
 }
