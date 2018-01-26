@@ -6,20 +6,25 @@ package com.vmware.identity.configure;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.Inet6Address;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.vmware.af.PasswordCredential;
+import com.vmware.af.interop.VmAfClientAdapter;
 import com.vmware.identity.installer.ReleaseUtil;
+import com.vmware.identity.interop.ldap.DirectoryStoreProtocol;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
-import com.vmware.identity.interop.ldap.LdapBindMethod;
-import com.vmware.identity.interop.ldap.LdapConnectionFactoryEx;
+import com.vmware.identity.interop.ldap.ILdapConnectionExWithGetConnectionString;
+import com.vmware.identity.interop.ldap.LdapConnectionFactory;
 import com.vmware.identity.interop.ldap.LdapConstants;
 import com.vmware.identity.interop.ldap.LdapOption;
 import com.vmware.identity.interop.ldap.LdapScope;
+import com.vmware.identity.interop.ldap.LdapSetting;
 import com.vmware.identity.interop.registry.IRegistryAdapter;
 import com.vmware.identity.interop.registry.IRegistryKey;
 import com.vmware.identity.interop.registry.RegKeyAccess;
@@ -29,17 +34,13 @@ import com.vmware.identity.interop.vmafd.VmAfdStatus;
 
 public class VMIdentityController {
 
-    private DirectoryBindInformation _bindInformation = null;
     private IPlatformInstallObserver observer = null;
     private static String CONFIG_DIRECTORY_ROOT_KEY;
     private static String CONFIG_DIRECTORY_PARAMETERS_KEY;
-    private static final String CONFIG_DIRECTORY_DCACCOUNT_DN_VALUE =
-                                        "dcAccountDN";
-    private static String CONFIG_DIRECTORY_CREDS_ROOT_KEY;
-    private static final String CONFIG_DIRECTORY_DCACCOUNT_PASSWORD =
-                                    "dcAccountPassword";
     private static final String CONFIG_DIRECTORY_LDAP_PORT_VALUE =
                                     "LdapPort";
+    private static Integer port;
+    private static final long DEFAULT_LDAP_NETWORK_TIMEOUT = 30;
 
     public boolean setupInstanceStandalone(
             VmIdentityParams standaloneParams)
@@ -313,11 +314,10 @@ public class VMIdentityController {
 
         System.out.println("\n-----Checking Directory service-----");
         try{
-            DirectoryBindInformation bindInfo = getBindInformation();
             ILdapConnectionEx connection = null;
             try
             {
-                connection = getConnection(bindInfo);
+                connection = getConnection();
                 connection.search(
                     "",
                     LdapScope.SCOPE_BASE,
@@ -350,114 +350,40 @@ public class VMIdentityController {
 
         System.out.println("Authentication Service checked successfully.");
     }
-    private synchronized DirectoryBindInformation getBindInformation()
-    {
 
-        if (_bindInformation == null)
-        {
-            IRegistryAdapter regAdapter =
-                       RegistryAdapterFactory.getInstance().getRegistryAdapter();
+    private ILdapConnectionEx getConnection() {
+        if (port == null || port == 0) {
+            IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+            IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ);
 
-            IRegistryKey rootKey = regAdapter.openRootKey(
-                                           (int) RegKeyAccess.KEY_READ);
-
-            CONFIG_DIRECTORY_ROOT_KEY = InstallerUtils
-                    .getInstallerHelper().getConfigDirectoryRootKey();
-            CONFIG_DIRECTORY_CREDS_ROOT_KEY = CONFIG_DIRECTORY_ROOT_KEY;
+            CONFIG_DIRECTORY_ROOT_KEY = InstallerUtils.getInstallerHelper().getConfigDirectoryRootKey();
             CONFIG_DIRECTORY_PARAMETERS_KEY = CONFIG_DIRECTORY_ROOT_KEY + "\\Parameters";
-            try
-            {
-                String adminDN = regAdapter.getStringValue(
-                                                rootKey,
-                                                CONFIG_DIRECTORY_ROOT_KEY,
-                                                CONFIG_DIRECTORY_DCACCOUNT_DN_VALUE,
-                                                false);
 
-                Integer port = regAdapter.getIntValue(
-                        rootKey,
-                        CONFIG_DIRECTORY_PARAMETERS_KEY,
-                        CONFIG_DIRECTORY_LDAP_PORT_VALUE,
-                        true);
+            try {
+                port = regAdapter.getIntValue(rootKey, CONFIG_DIRECTORY_PARAMETERS_KEY,
+                        CONFIG_DIRECTORY_LDAP_PORT_VALUE, true);
                 // fall back to lotus default port
-                if (port == null || port == 0)
-                {
+                if (port == null || port == 0) {
                     port = LdapConstants.LDAP_PORT_LOTUS;
                 }
-
-                String adminPassword = regAdapter.getStringValue(
-                                                rootKey,
-                                                CONFIG_DIRECTORY_CREDS_ROOT_KEY,
-                                                CONFIG_DIRECTORY_DCACCOUNT_PASSWORD,
-                                                false);
-
-                _bindInformation = new DirectoryBindInformation(
-                                            adminDN,
-                                            adminPassword,
-                                            port);
-            }
-            finally
-            {
+            } finally {
                 rootKey.close();
             }
         }
 
-        return _bindInformation;
-    }
-    private static class DirectoryBindInformation
-    {
-        private final String  _bindDN;
-        private Integer _port;
-        private final String  _password;
-
-        public DirectoryBindInformation(String dn, String password, Integer port)
-        {
-            _bindDN = dn;
-            _password = password;
-            if (port == null || port == 0)
-            {
-                _port = LdapConstants.LDAP_PORT;
-            }
-            else
-            {
-                _port = port;
-            }
-        }
-
-        public String getBindDN()
-        {
-            return _bindDN;
-        }
-
-        public String getPassword()
-        {
-            return _password;
-        }
-
-        public int getPort()
-        {
-            return _port;
-        }
-    }
-
-    private ILdapConnectionEx getConnection(DirectoryBindInformation bindInfo ){
-        ILdapConnectionEx connection =
-                LdapConnectionFactoryEx.getInstance().getLdapConnection(
-                        "localhost",
-                        bindInfo.getPort());
-
-            connection.setOption(
-                    LdapOption.LDAP_OPT_PROTOCOL_VERSION,
-                    LdapConstants.LDAP_VERSION3);
-
-            connection.setOption(
-                    LdapOption.LDAP_OPT_REFERRALS,
-                    false);
-
-            connection.bindConnection(
-                    bindInfo.getBindDN(),
-                    bindInfo.getPassword(),
-                    LdapBindMethod.LDAP_BIND_SIMPLE);
-
+        URI uri = DirectoryStoreProtocol.LDAP.getUri("localhost", port);
+        List<LdapSetting> settings = new ArrayList<LdapSetting>();
+        settings.add(new LdapSetting(LdapOption.LDAP_OPT_PROTOCOL_VERSION, LdapConstants.LDAP_VERSION3));
+        settings.add(new LdapSetting(LdapOption.LDAP_OPT_REFERRALS, Boolean.FALSE));
+        settings.add(new LdapSetting(LdapOption.LDAP_OPT_NETWORK_TIMEOUT, DEFAULT_LDAP_NETWORK_TIMEOUT));
+        settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_SASL_NOCANON, LdapConstants.LDAP_OPT_ON));
+        List<LdapSetting> connOptions = Collections.unmodifiableList(settings);
+        ILdapConnectionEx connection = (ILdapConnectionEx) LdapConnectionFactory.getInstance().getLdapConnection(uri,
+                connOptions, true);
+        PasswordCredential creds = VmAfClientAdapter.getMachineAccountCredentials();
+        String domain = VmAfClientAdapter.getDomainName("localhost");
+        String upn = String.format("%s@%s", creds.getUserName(), domain);
+        ((ILdapConnectionExWithGetConnectionString) connection).bindSaslSrpConnection(upn, creds.getPassword());
         return connection;
     }
 }
