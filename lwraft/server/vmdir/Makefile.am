@@ -14,7 +14,7 @@ postd_SOURCES = \
     ipcserver.c \
     krb.c \
     main.c \
-    metricsinit.c \
+    metrics.c \
     parseargs.c \
     regconfig.c \
     rpc.c \
@@ -57,6 +57,7 @@ postd_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 postd_LDADD = \
+    $(top_builddir)/lwraft/server/metrics/libmetrics.la \
     $(top_builddir)/lwraft/server/ldap-head/libldap-head.la \
     $(top_builddir)/lwraft/server/rest-head/librest-head.la \
     $(top_builddir)/lwraft/server/indexcfg/libindexcfg.la \

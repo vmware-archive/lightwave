@@ -82,19 +82,19 @@ VmDirFirstReplicationCycle(
     PSTR pszHostname
     )
 {
-    int retVal = LDAP_SUCCESS;
-    PSTR  pszLocalErrorMsg = NULL;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
+    int     retVal = LDAP_SUCCESS;
     BOOLEAN bHasXlog = FALSE;
+    PSTR    pszLocalErrorMsg = NULL;
 #ifndef _WIN32
-    const char  *dbHomeDir = LWRAFT_DB_DIR;
+    const char* dbHomeDir = LWRAFT_DB_DIR;
 #else
     _TCHAR      dbHomeDir[MAX_PATH];
-    size_t last_char_pos = 0;
-    const char   fileSeperator = '\\';
+    size_t      last_char_pos = 0;
+    const char  fileSeperator = '\\';
 
     retVal = VmDirMDBGetHomeDir(dbHomeDir);
-    BAIL_ON_VMDIR_ERROR ( retVal );
+    BAIL_ON_VMDIR_ERROR (retVal);
+
     last_char_pos = strlen(dbHomeDir) - 1;
     if (dbHomeDir[last_char_pos] == fileSeperator)
     {
@@ -106,26 +106,44 @@ VmDirFirstReplicationCycle(
     _VmDirShutdownDB();
 
     retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir, &bHasXlog);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d", retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
+            retVal);
+
+    VmDirMetricsShutdown();
 
     retVal = _VmDirSwapDB(dbHomeDir, bHasXlog);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                "VmDirFirstReplicationCycle: _VmDirSwapDB() call failed, error: %d.", retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: _VmDirSwapDB() call failed, error: %d.",
+            retVal);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Remote DB copied from %s, and swapped successfully", pszHostname);
+    retVal = VmDirMetricsInitialize();
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: VmDirMetricsInitialize call failed, error: %d.",
+            retVal);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Remote DB copied from %s, and swapped successfully",
+            pszHostname);
 
 cleanup:
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return retVal;
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s",
+            VDIR_SAFE_STRING(pszLocalErrorMsg));
+
     goto cleanup;
 }
 

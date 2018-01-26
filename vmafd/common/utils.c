@@ -242,3 +242,43 @@ error:
     VMAFD_SAFE_FREE_MEMORY(pszName);
     goto cleanup;
 }
+
+DWORD
+VmAfdCreateDirs(
+    PCSTR path
+    )
+{
+    DWORD dwError = 0;
+    PSTR dir = NULL;
+    PSTR p = NULL;
+    int err = 0;
+
+    if (!path || !*path || path[0] != '/')
+    {
+        dwError = ERROR_NO_SUCH_FILE_OR_DIRECTORY;
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+    }
+
+    dwError = VmAfdAllocateStringA(path, &dir);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    p = dir + 1;
+    while ( (p = strchr(p, '/')) )
+    {
+        *p = '\0';
+        err = mkdir(dir, 0755);
+        if (err == -1 && errno != EEXIST)
+        {
+            dwError = ERROR_NO_SUCH_FILE_OR_DIRECTORY;
+            BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+        }
+        *p++ = '/';
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_STRINGA(dir);
+    return dwError;
+
+error:
+    goto cleanup;
+}

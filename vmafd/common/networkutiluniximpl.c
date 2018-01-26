@@ -43,6 +43,9 @@ VmAfdOpenServerConnectionImpl(
 		BAIL_ON_VMAFD_ERROR(dwError);
 	}
 
+	dwError = VmAfdCreateDirs(SOCKET_FILE_PATH);
+	BAIL_ON_VMAFD_ERROR(dwError);
+
 	unlink (SOCKET_FILE_PATH);
 
 	address.sun_family = AF_UNIX;

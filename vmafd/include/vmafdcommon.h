@@ -522,6 +522,11 @@ VmAfdOpenFilePath(
     );
 
 DWORD
+VmAfdCreateDirs(
+    PCSTR path
+    );
+
+DWORD
 VmAfdRestrictFilePermissionToSelf(
     PCSTR   pszFileName
     );

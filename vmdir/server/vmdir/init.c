@@ -1596,7 +1596,7 @@ InitializeGlobalVars(
     dwError = VmDirAllocateSyncCounter( &gVmdirGlobals.pOperationThrSyncCounter,
                                         0,
                                         SYNC_SIGNAL,
-                                        10000);  // wait time 10 seconds
+                                        gVmdirGlobals.dwOperationsThreadTimeoutInMilliSec);  // default wait time 10 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMutex(&gVmdirGlobals.pMutexIPCConnection);

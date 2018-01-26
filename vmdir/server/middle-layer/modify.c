@@ -440,7 +440,7 @@ cleanup:
             iBEStartTime,
             iBEEndTime);
 
-    VmDirFreeEntryContent (&entry);
+    VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 

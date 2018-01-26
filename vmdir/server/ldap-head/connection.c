@@ -41,8 +41,8 @@ BindListenOnPort(
 static
 DWORD
 ProcessAConnection(
-   PVOID pArg
-   );
+    PVOID pArg
+    );
 
 static
 DWORD
@@ -601,8 +601,8 @@ error:
 static
 DWORD
 ProcessAConnection(
-   PVOID pArg
-   )
+    PVOID pArg
+    )
 {
     VDIR_CONNECTION* pConn = NULL;
     int              retVal = LDAP_SUCCESS;
@@ -617,6 +617,7 @@ ProcessAConnection(
     METRICS_LDAP_OPS operationTag = METRICS_LDAP_OP_IGNORE;
     BOOLEAN          bReplSearch = FALSE;
     uint64_t         iStartTime = 0;
+    uint64_t         iStartSupplierTime = 0;
     uint64_t         iEndTime = 0;
 
     // increment operation thread counter
@@ -643,7 +644,26 @@ ProcessAConnection(
     {
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
         {
-            goto cleanup;
+            if (pConn->bInReplLock == FALSE)
+            {
+                goto cleanup;
+            }
+            else
+            {
+                if (iStartSupplierTime == 0)
+                {
+                    iStartSupplierTime = VmDirGetTimeInMilliSec();
+                }
+                else if ((VmDirGetTimeInMilliSec() - iStartSupplierTime) >=
+                         (gVmdirGlobals.dwOperationsThreadTimeoutInMilliSec - MSECS_IN_SECOND))
+                {
+                    VMDIR_LOG_WARNING(
+                            VMDIR_LOG_MASK_ALL,
+                            "%s: supplier timedout",
+                            __FUNCTION__);
+                    goto cleanup;
+                }
+            }
         }
 
         ber = ber_alloc();

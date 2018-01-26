@@ -406,9 +406,9 @@ cleanup:
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
         // In case of replication, modReq is owned by the Replication thread/logic
-        DeleteMods ( modReq );
+        DeleteMods(modReq);
     }
-    VmDirFreeEntryContent ( &entry );
+    VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 

@@ -86,6 +86,8 @@ VmDirRESTRequestHandlerInternal(
     DWORD   dwError = 0;
     DWORD   dwRestOpErr = 0;    // don't bail on this
     PVDIR_REST_OPERATION    pRestOp = NULL;
+    uint64_t    iStartTime = 0;
+    uint64_t    iEndTime = 0;
 
     if (!pRESTHandle || !pRequest || !ppResponse)
     {
@@ -96,6 +98,8 @@ VmDirRESTRequestHandlerInternal(
     {
         goto cleanup;
     }
+
+    iStartTime = VmDirGetTimeInMilliSec();
 
     dwRestOpErr = VmDirRESTOperationCreate(&pRestOp);
     if (dwRestOpErr)
@@ -132,6 +136,11 @@ VmDirRESTRequestHandlerInternal(
     }
 
 cleanup:
+
+    // collect metrics
+    iEndTime = VmDirGetTimeInMilliSec();
+    VmDirRestMetricsUpdateFromHandler(pRestOp, iStartTime, iEndTime);
+
     VmDirFreeRESTOperation(pRestOp);
     return dwError;
 
@@ -156,7 +165,6 @@ VmDirRESTProcessRequest(
     )
 {
     DWORD   dwError = 0;
-    PREST_API_METHOD    pMethod = NULL;
 
     if (!pRestOp || !pRESTHandle || !pRequest)
     {
@@ -173,10 +181,10 @@ VmDirRESTProcessRequest(
             gpVdirRestApiDef,
             pRestOp->pszPath,
             pRestOp->pszMethod,
-            &pMethod);
+            &pRestOp->pMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pMethod->pFnImpl((void*)pRestOp, NULL);
+    dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO(

@@ -20,6 +20,7 @@ librest_head_la_SOURCES += \
     ldapapi.c \
     ldapcontrol.c \
     lightwave.c \
+    metrics.c \
     metricsapi.c \
     objectapi.c \
     operation.c \
