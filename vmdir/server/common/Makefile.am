@@ -14,6 +14,7 @@ libsrvcommon_la_SOURCES = \
     dcconnthr.c           \
     entryencodedecode.c   \
     krbsrvutil.c          \
+    oidctovmdirerror.c    \
     oprequestutil.c       \
     security-sd.c         \
     srp.c                 \
@@ -34,6 +35,8 @@ libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@

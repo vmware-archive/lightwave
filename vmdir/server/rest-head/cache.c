@@ -80,8 +80,8 @@ VmDirRESTCacheRefresh(
             VMDIR_REST_OIDC_SERVER,
             VMDIR_REST_OIDC_PORT,
             pszDomainName,
-            NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
-    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
+            LIGHTWAVE_TLS_CA_PATH);
+    dwError = VmDirOidcToVmdirError(dwOIDCError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(

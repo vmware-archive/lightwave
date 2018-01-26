@@ -1667,6 +1667,12 @@ VmDirBkgdTaskUpdatePrevTime(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );
 
+// oidctovmdirerror.c
+DWORD
+VmDirOidcToVmdirError(
+    DWORD dwOidcError
+    );
+
 #ifdef __cplusplus
 }
 #endif

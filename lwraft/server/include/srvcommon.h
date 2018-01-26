@@ -1413,6 +1413,12 @@ VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle
     );
 
+// oidctovmdirerror.c
+DWORD
+VmDirOidcToVmdirError(
+    DWORD dwOidcError
+    );
+
 #ifdef __cplusplus
 }
 #endif
