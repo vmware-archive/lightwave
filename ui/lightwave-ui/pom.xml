@@ -3,12 +3,8 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>com.vmware.identity</groupId>
-    <artifactId>vmware-identity</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
-  </parent>
-  
+  <version>1.3.0-SNAPSHOT</version>
+  <groupId>com.vmware.identity</groupId>
   <artifactId>webui</artifactId>
   <packaging>war</packaging>
   <name>Lightwave Web UI</name>
@@ -87,5 +83,6 @@
     <webui.title>webui</webui.title>
     <webui.version>${vmware.version}</webui.version>
     <webui.vendor>VMWare, Inc.</webui.vendor>
+    <maven.war.plugin.version>3.0.0</maven.war.plugin.version>
   </properties>
 </project>

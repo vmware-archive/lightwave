@@ -512,8 +512,8 @@ node/
 dist/
 
 # lightwave web based UI applications
-lightwave-ui/stage/
-lightwave-ui/target/
+ui/lightwave-ui/stage/
+ui/lightwave-ui/target/
 
 # Typescript v1 declaration files
 typings/

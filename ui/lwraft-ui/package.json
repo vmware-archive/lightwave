@@ -57,7 +57,7 @@
     "w3-css": "4.0.4"
   },
   "devDependencies": {
-    "@angular/cli": "1.6.0",
+    "@angular/cli": "1.6.5",
     "@types/angular": "1.5.16",
     "@types/angular-animate": "1.5.5",
     "@types/angular-cookies": "1.4.2",
