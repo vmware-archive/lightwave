@@ -15,6 +15,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>authentication-framework</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-install</artifactId>
       <version>${vmware.version}</version>

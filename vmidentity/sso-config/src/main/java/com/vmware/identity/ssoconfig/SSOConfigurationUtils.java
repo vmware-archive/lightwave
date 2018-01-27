@@ -29,6 +29,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 
+import com.vmware.af.VmAfClient;
 import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -61,11 +62,8 @@ public class SSOConfigurationUtils {
             }
         });
 
-        try {
-            IDP_HOST_ADDRESS = InetAddress.getLocalHost().getCanonicalHostName();
-        } catch (UnknownHostException e) {
-            logger.error("Cannot resolve IDP FQDN. Using the default - " + IDP_HOST_ADDRESS);
-        }
+        VmAfClient afdClient = new VmAfClient("localhost");
+        IDP_HOST_ADDRESS = afdClient.getDomainController();
     }
 
     static final String DEFAULT_TENANT = "vsphere.local";
