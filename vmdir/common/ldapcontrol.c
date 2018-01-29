@@ -30,18 +30,15 @@ VmDirFreeCtrlContent(
 }
 
 int
-VmDirCreatePingCtrlContent(
+VmDirCreateRaftPingCtrlContent(
     PCSTR           pszLeader,
     uint32_t        term,
-    USN             maxOrgUSN,
     LDAPControl*    pPingCtrl
     )
 {
     int             retVal = LDAP_SUCCESS;
     BerElement*     pBer = NULL;
-    char            usnStr[VMDIR_MAX_USN_STR_LEN] = {0};
     BerValue        localLeaderBV = {0};
-    BerValue        localUSNBV = {0};
 
     if (!pszLeader || !pPingCtrl)
     {
@@ -56,20 +53,14 @@ VmDirCreatePingCtrlContent(
     localLeaderBV.bv_val = (char*)pszLeader;
     localLeaderBV.bv_len = VmDirStringLenA(pszLeader);
 
-    retVal = VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%"PRId64, maxOrgUSN);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    localUSNBV.bv_val = (char*)usnStr;
-    localUSNBV.bv_len = VmDirStringLenA(usnStr);
-
-    if ( ber_printf( pBer, "{iOO}", term, &localLeaderBV, &localUSNBV) == -1)
+    if ( ber_printf( pBer, "{iO}", term, &localLeaderBV) == -1)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_printf failed.", __FUNCTION__ );
         BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
     }
 
     memset( pPingCtrl, 0, sizeof( LDAPControl ));
-    pPingCtrl->ldctl_oid = LDAP_PING_CONTROL;
+    pPingCtrl->ldctl_oid = LDAP_RAFT_PING_CONTROL;
     pPingCtrl->ldctl_iscritical = '1';
     if (ber_flatten2(pBer, &pPingCtrl->ldctl_value, 1))
     {
@@ -90,7 +81,7 @@ error:
 }
 
 int
-VmDirCreateVoteCtrlContent(
+VmDirCreateRaftVoteCtrlContent(
     PCSTR           pszCandiateId,
     uint32_t        term,
     LDAPControl*    pVoteCtrl
@@ -120,7 +111,7 @@ VmDirCreateVoteCtrlContent(
     }
 
     memset( pVoteCtrl, 0, sizeof( LDAPControl ));
-    pVoteCtrl->ldctl_oid = LDAP_VOTE_CONTROL;
+    pVoteCtrl->ldctl_oid = LDAP_RAFT_VOTE_CONTROL;
     pVoteCtrl->ldctl_iscritical = '1';
     if (ber_flatten2(pBer, &pVoteCtrl->ldctl_value, 1))
     {

@@ -27,7 +27,7 @@
 
 typedef struct _VDIR_BACKEND_USN_LIST
 {
-    PVMDIR_MUTEX        pMutex;
+    PVMDIR_RWLOCK       pLock;
     size_t              iSize;
     USN*                pUSNAry;
     USN                 maxOutstandingUSN;  // max Outstanding USN

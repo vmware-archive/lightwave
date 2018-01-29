@@ -43,28 +43,37 @@ _ParseSyncStateControlVal(
 static
 int
 _ParseDigestControlVal(
-    VDIR_OPERATION *                    op,
-    BerValue *                          controlValue,       // Input: control value encoded as ber
-    VDIR_DIGEST_CONTROL_VALUE *         digestCtrlVal,      // Output
-    VDIR_LDAP_RESULT *                  lr                  // Output
+    VDIR_OPERATION *                op,
+    BerValue *                      controlValue,   // Input: control value encoded as ber
+    VDIR_DIGEST_CONTROL_VALUE *     digestCtrlVal,  // Output
+    VDIR_LDAP_RESULT *              lr              // Output
     );
 
 static
 int
-_ParsePingControlVal(
-   VDIR_OPERATION *                        pOp,
-   BerValue *                              pControlBer,    // Input: control value encoded as ber
-   PVDIR_CLUSTER_STATE_CONTROL_VALUE       pCtrlVal,       // Output
-   VDIR_LDAP_RESULT *                      pLdapResult     // Output
+_ParseRaftPingControlVal(
+   VDIR_OPERATION *                 pOp,
+   BerValue *                       pControlBer,    // Input: control value encoded as ber
+   PVDIR_RAFT_PING_CONTROL_VALUE    pCtrlVal,       // Output
+   VDIR_LDAP_RESULT *               pLdapResult     // Output
    );
 
 static
 int
-_ParseVoteControlVal(
-    VDIR_OPERATION *                        pOp,
-    BerValue *                              pControlBer,    // Input: control value encoded as ber
-    PVDIR_CLUSTER_VOTE_CONTROL_VALUE       pCtrlVal,       // Output
-    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+_ParseRaftVoteControlVal(
+    VDIR_OPERATION *                pOp,
+    BerValue *                      pControlBer,    // Input: control value encoded as ber
+    PVDIR_RAFT_VOTE_CONTROL_VALUE   pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *              pLdapResult     // Output
+    );
+
+static
+int
+_ParseStatePingControlVal(
+    VDIR_OPERATION*                 op,
+    BerValue*                       pControlValue,  // Input: control value encoded as ber
+    VDIR_STATE_PING_CONTROL_VALUE*  pPingCtrlVal,   // Output
+    VDIR_LDAP_RESULT*               lr              // Output
     );
 
 /*
@@ -104,163 +113,188 @@ ParseRequestControls(
     BerValue                lberBervCtlValue = {0};
     PSTR                    pszLocalErrorMsg = NULL;
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseRequestControls: Begin." );
-
     *control = NULL;
 
 #ifndef _WIN32
     if (ber_pvt_ber_remaining(op->ber) != 0)
 #else
-    if (LBER_DEFAULT != ber_peek_tag (op->ber, &len))
+    if (LBER_DEFAULT != ber_peek_tag(op->ber, &len))
 #endif
     {
-        if (ber_peek_tag( op->ber, &len ) != LDAP_TAG_CONTROLS )
+        if (ber_peek_tag(op->ber, &len) != LDAP_TAG_CONTROLS)
         {
             lr->errCode = LDAP_PROTOCOL_ERROR;
             retVal = LDAP_NOTICE_OF_DISCONNECT;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                           "ParseRequestControls: Request controls expected, but something else is there in the PDU.");
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrorMsg,
+                    "ParseRequestControls: Request controls expected, but something else is there in the PDU.");
         }
 
         // Get controls. ber_first_element => skip the sequence header, set the cursor at the 1st control in the SEQ of SEQ
-        for( tag = ber_first_element( op->ber, &len, &endOfCtrlsMarker ); tag != LBER_ERROR;
-             tag = ber_next_element( op->ber, &len, endOfCtrlsMarker ) )
+        for(tag = ber_first_element(op->ber, &len, &endOfCtrlsMarker); tag != LBER_ERROR;
+            tag = ber_next_element(op->ber, &len, endOfCtrlsMarker))
         {
             // m => in-place
-            if (ber_scanf( op->ber, "{m", &lberBervType ) == LBER_ERROR)
+            if (ber_scanf(op->ber, "{m", &lberBervType) == LBER_ERROR)
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
                 retVal = LDAP_NOTICE_OF_DISCONNECT;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                              "ParseRequestControls Error in reading control type from the PDU.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls Error in reading control type from the PDU.");
             }
-            if ( VmDirLogGetMask() & LDAP_DEBUG_ARGS)
-            {
-                VMDIR_LOG_INFO( LDAP_DEBUG_ARGS, "    Request Control: %s", lberBervType.bv_val );
-            }
-            if (VmDirAllocateMemory( sizeof( VDIR_LDAP_CONTROL), (PVOID *)control ) != 0)
+
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_ARGS,
+                    "    Request Control: %s",
+                    lberBervType.bv_val);
+
+            if (VmDirAllocateMemory(sizeof(VDIR_LDAP_CONTROL), (PVOID*)control) != 0)
             {
                 retVal = lr->errCode = LDAP_OPERATIONS_ERROR;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                "ParseRequestControls: VmDirAllocateMemory failed");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: VmDirAllocateMemory failed");
             }
+
             // type points into in-place ber and does NOT own its content
             (*control)->type = lberBervType.bv_val;
             (*control)->criticality = FALSE;
-            tag = ber_peek_tag( op->ber, &len );
+            tag = ber_peek_tag(op->ber, &len);
 
             if (tag == LBER_BOOLEAN)
             {
                 ber_int_t criticality;
-                if (ber_scanf( op->ber, "b", &criticality) == LBER_ERROR)
+                if (ber_scanf(op->ber, "b", &criticality) == LBER_ERROR)
                 {
                     lr->errCode = LDAP_PROTOCOL_ERROR;
                     retVal = LDAP_NOTICE_OF_DISCONNECT;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                            "ParseRequestControls: Error in reading control criticality from the PDU.");
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                            retVal,
+                            pszLocalErrorMsg,
+                            "ParseRequestControls: Error in reading control criticality from the PDU.");
                 }
                 if (criticality)
                 {
                     (*control)->criticality = TRUE;
                 }
-                tag = ber_peek_tag( op->ber, &len );
+                tag = ber_peek_tag(op->ber, &len);
             }
 
             if (tag == LBER_OCTETSTRING)
             {
-                if (ber_scanf( op->ber, "m", &lberBervCtlValue) == LBER_ERROR)
+                if (ber_scanf(op->ber, "m", &lberBervCtlValue) == LBER_ERROR)
                 {
                     lr->errCode = LDAP_PROTOCOL_ERROR;
                     retVal = LDAP_NOTICE_OF_DISCONNECT;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                             "ParseRequestControls: ber_scanf failed while parsing the control value.");
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                            retVal,
+                            pszLocalErrorMsg,
+                            "ParseRequestControls: ber_scanf failed while parsing the control value.");
                 }
             }
 
             // SJ-TBD: Make sure that the control appears only once in the request, and it is present only in a search
             // request
-            if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_SYNC, TRUE ) == 0)
+            if (VmDirStringCompareA((*control)->type, LDAP_CONTROL_SYNC, TRUE) == 0)
             {
-                if ((retVal = ParseSyncRequestControlVal( op, &lberBervCtlValue, &((*control)->value.syncReqCtrlVal),
-                                                          lr)) != LDAP_SUCCESS)
-                {
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                                  "ParseRequestControls: ParseSyncRequestControlVal failed.");
-                }
+                retVal = ParseSyncRequestControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.syncReqCtrlVal), lr);
+
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: ParseSyncRequestControlVal failed.");
+
                 op->syncReqCtrl = *control;
             }
-            if (VmDirStringCompareA( (*control)->type, VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS, TRUE ) == 0)
+
+            if (VmDirStringCompareA((*control)->type, VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS, TRUE) == 0)
             {
                 op->showDeletedObjectsCtrl = *control;
             }
 
-            if (VmDirStringCompareA( (*control)->type, VDIR_LDAP_CONTROL_SHOW_MASTER_KEY, TRUE ) == 0)
+            if (VmDirStringCompareA((*control)->type, VDIR_LDAP_CONTROL_SHOW_MASTER_KEY, TRUE) == 0)
             {
                 op->showMasterKeyCtrl = *control;
             }
 
-            if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_PAGEDRESULTS, TRUE ) == 0)
+            if (VmDirStringCompareA((*control)->type, LDAP_CONTROL_PAGEDRESULTS, TRUE) == 0)
             {
-                retVal = _ParsePagedResultControlVal( op,
-                                                &lberBervCtlValue,
-                                                &((*control)->value.pagedResultCtrlVal),
-                                                lr);
-                if (retVal != LDAP_SUCCESS)
-                {
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                                  "ParseRequestControls: _ParsePagedResultControlVal failed.");
-                }
+                retVal = _ParsePagedResultControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.pagedResultCtrlVal), lr);
+
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: _ParsePagedResultControlVal failed.");
+
                 op->showPagedResultsCtrl = *control;
             }
 
-            if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_DIGEST_SEARCH, TRUE ) == 0)
+            if (VmDirStringCompareA((*control)->type, LDAP_CONTROL_DIGEST_SEARCH, TRUE) == 0)
             {
-                retVal = _ParseDigestControlVal( op,
-                                                &lberBervCtlValue,
-                                                &((*control)->value.digestCtrlVal),
-                                                lr);
-                if (retVal != LDAP_SUCCESS)
-                {
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                                  "ParseRequestControls: _ParseDigestControlVal failed.");
-                }
+                retVal = _ParseDigestControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.digestCtrlVal), lr);
+
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: _ParseDigestControlVal failed.");
+
                 op->digestCtrl = *control;
             }
 
-            if (VmDirStringCompareA( (*control)->type, LDAP_PING_CONTROL, TRUE ) == 0)
+            if (VmDirStringCompareA((*control)->type, LDAP_RAFT_PING_CONTROL, TRUE) == 0)
             {
-                retVal = _ParsePingControlVal( op,
-                                                &lberBervCtlValue,
-                                                &((*control)->value.clusterStateCtrlVal),
-                                                lr);
-                if (retVal != LDAP_SUCCESS)
-                {
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                                  "ParseRequestControls: _ParsePingControlVal failed.");
-                }
-                op->clusterStateCtrl = *control;
+                retVal = _ParseRaftPingControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.raftPingCtrlVal), lr);
+
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: _ParseRaftPingControlVal failed.");
+
+                op->raftPingCtrl = *control;
             }
 
-            if (VmDirStringCompareA( (*control)->type, LDAP_VOTE_CONTROL, TRUE ) == 0)
+            if (VmDirStringCompareA((*control)->type, LDAP_RAFT_VOTE_CONTROL, TRUE) == 0)
             {
-                retVal = _ParseVoteControlVal( op,
-                                                &lberBervCtlValue,
-                                                &((*control)->value.clusterVoteCtrlVal),
-                                                lr);
-                if (retVal != LDAP_SUCCESS)
-                {
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                                  "ParseRequestControls: _ParseVoteControlVal failed.");
-                }
-                op->clusterVoteCtrl = *control;
+                retVal = _ParseRaftVoteControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.raftVoteCtrlVal), lr);
+
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: _ParseRaftVoteControlVal failed.");
+
+                op->raftVoteCtrl = *control;
             }
 
-            if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
+            if (VmDirStringCompareA((*control)->type, LDAP_STATE_PING_CONTROL, TRUE) == 0)
+            {
+                retVal = _ParseStatePingControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.statePingCtrlVal), lr);
+
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: _ParseStatePingControlVal failed.");
+
+                op->statePingCtrl = *control;
+            }
+
+            if (ber_scanf( op->ber, "}") == LBER_ERROR) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
                 retVal = LDAP_NOTICE_OF_DISCONNECT;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                              "ParseRequestControls: ber_scanf failed while parsing the end of control");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: ber_scanf failed while parsing the end of control");
 
             }
             control = &((*control)->next);
@@ -270,20 +304,19 @@ ParseRequestControls(
     }
 
 cleanup:
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseRequestControls: End." );
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
     return retVal;
 
 error:
     DeleteControls(&(op->reqControls));
-
     if (pszLocalErrorMsg)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, pszLocalErrorMsg);
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                pszLocalErrorMsg);
+
         VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
     }
-
     goto cleanup;
 }
 
@@ -1121,12 +1154,12 @@ error:
 
 static
 int
-_ParsePingControlVal(
-    VDIR_OPERATION *                        pOp,
-    BerValue *                              pControlBer,    // Input: control value encoded as ber
-    PVDIR_CLUSTER_STATE_CONTROL_VALUE       pCtrlVal,       // Output
-    VDIR_LDAP_RESULT *                      pLdapResult     // Output
-    )
+_ParseRaftPingControlVal(
+   VDIR_OPERATION *                 pOp,
+   BerValue *                       pControlBer,    // Input: control value encoded as ber
+   PVDIR_RAFT_PING_CONTROL_VALUE    pCtrlVal,       // Output
+   VDIR_LDAP_RESULT *               pLdapResult     // Output
+   )
 {
     int                 retVal = LDAP_SUCCESS;
     BerElementBuffer    berbuf;
@@ -1134,7 +1167,6 @@ _ParsePingControlVal(
     PSTR                pszLocalErrorMsg = NULL;
     BerValue            localLeader = {0};
     ber_int_t           localTerm = 0;
-    BerValue            localUSNBV = {0};
 
     if (!pOp)
     {
@@ -1156,7 +1188,7 @@ _ParsePingControlVal(
      *  }
      */
 
-    if (ber_scanf(ber, "{imm}", &localTerm, &localLeader, &localUSNBV) == LBER_ERROR)
+    if (ber_scanf(ber, "{im}", &localTerm, &localLeader) == LBER_ERROR)
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing filter value", __FUNCTION__);
         pLdapResult->errCode = LDAP_PROTOCOL_ERROR;
@@ -1166,9 +1198,6 @@ _ParsePingControlVal(
     }
 
     retVal = VmDirAllocateStringA(localLeader.bv_val, &(pCtrlVal->pszFQDN));
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    retVal = VmDirStringToUSN(localUSNBV.bv_val, &(pCtrlVal->hasSeenMyOrgUSN));
     BAIL_ON_VMDIR_ERROR(retVal);
 
     pCtrlVal->term = localTerm;
@@ -1185,11 +1214,11 @@ error:
 
 static
 int
-_ParseVoteControlVal(
-    VDIR_OPERATION *                        pOp,
-    BerValue *                              pControlBer,    // Input: control value encoded as ber
-    PVDIR_CLUSTER_VOTE_CONTROL_VALUE        pCtrlVal,       // Output
-    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+_ParseRaftVoteControlVal(
+    VDIR_OPERATION *                pOp,
+    BerValue *                      pControlBer,    // Input: control value encoded as ber
+    PVDIR_RAFT_VOTE_CONTROL_VALUE   pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *              pLdapResult     // Output
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -1245,10 +1274,10 @@ error:
 static
 int
 _ParseDigestControlVal(
-    VDIR_OPERATION *                    op,
-    BerValue *                          controlValue,       // Input: control value encoded as ber
-    VDIR_DIGEST_CONTROL_VALUE *         digestCtrlVal,      // Output
-    VDIR_LDAP_RESULT *                  lr                  // Output
+    VDIR_OPERATION *                op,
+    BerValue *                      controlValue,   // Input: control value encoded as ber
+    VDIR_DIGEST_CONTROL_VALUE *     digestCtrlVal,  // Output
+    VDIR_LDAP_RESULT *              lr              // Output
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -1298,6 +1327,102 @@ error:
     goto cleanup;
 }
 
+static
+int
+_ParseStatePingControlVal(
+    VDIR_OPERATION*                 op,
+    BerValue*                       pControlValue,  // Input: control value encoded as ber
+    VDIR_STATE_PING_CONTROL_VALUE*  pPingCtrlVal,   // Output
+    VDIR_LDAP_RESULT*               lr              // Output
+    )
+{
+    int     retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf;
+    BerElement*         ber = (BerElement*)&berbuf;
+    BerValue            berv = {0};
+    unsigned char*      reader = NULL;
+
+    // variables for decoding payload elements
+    int     n = 0;
+    int     i = 0;
+    int     len = 0;
+    PSTR    pszKey = NULL;
+    PSTR    pszVal = NULL;
+
+    // expected key strings
+    PCSTR   pszHostnameKey = "hostname";
+    PCSTR   pszInvocationIdKey = "invocationid";
+    PCSTR   pszMaxOrigUsnKey = "maxorigusn";
+
+    if (!op || !pControlValue || !pPingCtrlVal || !lr)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    ber_init2(ber, pControlValue, LBER_USE_DER);
+
+    /*
+     * The statePingControlValue is an OCTET STRING wrapping the BER-encoded version of the following SEQUENCE:
+     *
+     * statePingControlValue ::= SEQUENCE {
+     *        encoded_payload       OCTET STRING
+     *  }
+     */
+
+    if (ber_scanf(ber, "{m}", &berv) == LBER_ERROR)
+    {
+        lr->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    // decode payload
+    reader = berv.bv_val;
+
+    // first read the number of elements in the payload
+    n = VmDirDecodeShort(&reader);
+
+    // decode each element
+    for (i = 0; i < n; i++)
+    {
+        len = VmDirDecodeShort(&reader);
+        pszKey = reader;
+        reader += (len + 1); // skipping \0
+
+        len = VmDirDecodeShort(&reader);
+        pszVal = reader;
+        reader += (len + 1); // skipping \0
+
+        if (VmDirStringCompareA(pszKey, pszHostnameKey, FALSE) == 0)
+        {
+            retVal = VmDirAllocateStringA(pszVal, &pPingCtrlVal->pszFQDN);
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+        else if (VmDirStringCompareA(pszKey, pszInvocationIdKey, FALSE) == 0)
+        {
+            retVal = VmDirAllocateStringA(pszVal, &pPingCtrlVal->pszInvocationId);
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+        else if (VmDirStringCompareA(pszKey, pszMaxOrigUsnKey, FALSE) == 0)
+        {
+            retVal = VmDirStringToUSN(pszVal, &pPingCtrlVal->maxOrigUsn);
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+    }
+
+cleanup:
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "failed, error (%d)",
+            retVal);
+
+    goto cleanup;
+}
+
 int
 VmDirCreateDigestControlContent(
     PCSTR           pszDigest,
@@ -1324,16 +1449,21 @@ VmDirCreateDigestControlContent(
     localBV.bv_val = (char*)pszDigest;
     localBV.bv_len = dwDigestLen;
 
-    if ( ber_printf( pBer, "{O}", &localBV) == -1)
+    if (ber_printf(pBer, "{O}", &localBV) == -1)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_printf failed.", __FUNCTION__ );
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: ber_printf failed.",
+                __FUNCTION__);
+
         retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR( retVal );
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
-    memset( pDigestCtrl, 0, sizeof( LDAPControl ));
+    memset(pDigestCtrl, 0, sizeof(LDAPControl));
     pDigestCtrl->ldctl_oid = LDAP_CONTROL_DIGEST_SEARCH;
     pDigestCtrl->ldctl_iscritical = '1';
+
     if (ber_flatten2(pBer, &pDigestCtrl->ldctl_value, 1))
     {
         retVal = LDAP_OPERATIONS_ERROR;
@@ -1349,21 +1479,185 @@ cleanup:
     return retVal;
 
 ldaperror:
-    VmDirDeleteDigestControlContent(pDigestCtrl);
+    VmDirFreeCtrlContent(pDigestCtrl);
     goto cleanup;
 }
 
-VOID
-VmDirDeleteDigestControlContent(
-    LDAPControl*    pDigestCtrl
+int
+VmDirCreateStatePingControlContent(
+    LDAPControl*    pPingCtrl
     )
 {
-    if (pDigestCtrl)
+    int     retVal = LDAP_SUCCESS;
+    SIZE_T  sizeBuffer = VMDIR_MAX_CONTROL_PAYLOAD_SIZE;
+    SIZE_T  sizeRemain = sizeBuffer;
+    unsigned char   buffer[VMDIR_MAX_CONTROL_PAYLOAD_SIZE] = {0};   // encoded payload
+    unsigned char*  writer = buffer;
+    VDIR_BERVALUE   berVal = VDIR_BERVALUE_INIT;
+    BerElement*     pBer = NULL;
+
+    // variables for hostname
+    PCSTR   pszHostnameKey = "hostname";
+    SIZE_T  lenHostnameKey = VmDirStringLenA(pszHostnameKey);
+
+    // variables for invocationId
+    PCSTR   pszInvocationIdKey = "invocationid";
+    SIZE_T  lenInvocationIdKey = VmDirStringLenA(pszInvocationIdKey);
+
+    // variables for maxOrigUSN
+    VDIR_BACKEND_CTX    beCtx = {0};
+    PCSTR   pszMaxOrigUsnKey = "maxorigusn";
+    SIZE_T  lenMaxOrigUsnKey = VmDirStringLenA(pszMaxOrigUsnKey);
+    USN     maxOrigUsn = 0;
+    PSTR    pszMaxOrigUsnVal = NULL;
+    SIZE_T  lenMaxOrigUsnVal = 0;
+
+    if (!pPingCtrl)
     {
-        if (pDigestCtrl->ldctl_value.bv_val)
-        {
-            ber_memfree(pDigestCtrl->ldctl_value.bv_val);
-        }
-        memset(pDigestCtrl, 0, sizeof(LDAPControl));
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+    // write number of elements inside the payload (currently 3)
+    VmDirEncodeShort(&writer, 3);
+    sizeRemain -= 2;
+
+    // 1. hostname
+    VmDirEncodeShort(&writer, lenHostnameKey);
+    sizeRemain -= 2;
+
+    retVal = VmDirCopyMemory(
+            writer,
+            sizeRemain,
+            pszHostnameKey,
+            lenHostnameKey + 1);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    writer += lenHostnameKey;
+    *writer++ = '\0';
+    sizeRemain -= (lenHostnameKey + 1);
+
+    VmDirEncodeShort(&writer, gVmdirServerGlobals.bvServerObjName.lberbv.bv_len);
+    sizeRemain -= 2;
+
+    retVal = VmDirCopyMemory(
+            writer,
+            sizeRemain,
+            gVmdirServerGlobals.bvServerObjName.lberbv.bv_val,
+            gVmdirServerGlobals.bvServerObjName.lberbv.bv_len + 1);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    writer += gVmdirServerGlobals.bvServerObjName.lberbv.bv_len;
+    *writer++ = '\0';
+    sizeRemain -= (gVmdirServerGlobals.bvServerObjName.lberbv.bv_len + 1);
+
+    // 2. invocationId
+    VmDirEncodeShort(&writer, lenInvocationIdKey);
+    sizeRemain -= 2;
+
+    retVal = VmDirCopyMemory(
+            writer,
+            sizeRemain,
+            pszInvocationIdKey,
+            lenInvocationIdKey + 1);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    writer += lenInvocationIdKey;
+    *writer++ = '\0';
+    sizeRemain -= (lenInvocationIdKey + 1);
+
+    VmDirEncodeShort(&writer, gVmdirServerGlobals.invocationId.lberbv.bv_len);
+    sizeRemain -= 2;
+
+    retVal = VmDirCopyMemory(
+            writer,
+            sizeRemain,
+            gVmdirServerGlobals.invocationId.lberbv.bv_val,
+            gVmdirServerGlobals.invocationId.lberbv.bv_len + 1);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    writer += gVmdirServerGlobals.invocationId.lberbv.bv_len;
+    *writer++ = '\0';
+    sizeRemain -= (gVmdirServerGlobals.invocationId.lberbv.bv_len + 1);
+
+    // 3. maxOrigUSN
+    beCtx.pBE = VmDirBackendSelect(NULL);
+    maxOrigUsn = beCtx.pBE->pfnBEGetMaxOriginatingUSN(&beCtx);
+
+    retVal = VmDirAllocateStringPrintf(&pszMaxOrigUsnVal, "%" PRId64, maxOrigUsn);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    lenMaxOrigUsnVal = VmDirStringLenA(pszMaxOrigUsnVal);
+
+    VmDirEncodeShort(&writer, lenMaxOrigUsnKey);
+    sizeRemain -= 2;
+
+    retVal = VmDirCopyMemory(
+            writer,
+            sizeRemain,
+            pszMaxOrigUsnKey,
+            lenMaxOrigUsnKey + 1);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    writer += lenMaxOrigUsnKey;
+    *writer++ = '\0';
+    sizeRemain -= (lenMaxOrigUsnKey + 1);
+
+    VmDirEncodeShort(&writer, lenMaxOrigUsnVal);
+    sizeRemain -= 2;
+
+    retVal = VmDirCopyMemory(
+            writer,
+            sizeRemain,
+            pszMaxOrigUsnVal,
+            lenMaxOrigUsnVal + 1);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    writer += lenMaxOrigUsnVal;
+    *writer++ = '\0';
+    sizeRemain -= (lenMaxOrigUsnVal + 1);
+
+    // write the encoded payload to ber
+    berVal.lberbv.bv_val = buffer;
+    berVal.lberbv.bv_len = sizeBuffer - sizeRemain;
+
+    if (ber_printf(pBer, "{O}", &berVal) == -1)
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+    memset(pPingCtrl, 0, sizeof(LDAPControl));
+    pPingCtrl->ldctl_oid = LDAP_STATE_PING_CONTROL;
+    pPingCtrl->ldctl_iscritical = '1';
+
+    if (ber_flatten2(pBer, &pPingCtrl->ldctl_value, 1))
+    {
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
+
+cleanup:
+    if (pBer)
+    {
+        ber_free(pBer, 1);
+    }
+    VmDirBackendCtxContentFree(&beCtx);
+    VMDIR_SAFE_FREE_MEMORY(pszMaxOrigUsnVal);
+    return retVal;
+
+ldaperror:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "failed, error (%d)",
+            retVal);
+
+    VmDirFreeCtrlContent(pPingCtrl);
+    goto cleanup;
 }

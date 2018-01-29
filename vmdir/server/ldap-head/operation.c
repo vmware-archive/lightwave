@@ -162,21 +162,23 @@ VmDirFreeOperationContent(
 
     if (op)
     {
-        if (op->pSchemaCtx)
+        if(op->raftPingCtrl)
         {
-            VmDirSchemaCtxRelease(op->pSchemaCtx);
-        }
-
-        if(op->clusterStateCtrl)
-        {
-            VDIR_CLUSTER_STATE_CONTROL_VALUE *csv = &op->clusterStateCtrl->value.clusterStateCtrlVal;
+            VDIR_RAFT_PING_CONTROL_VALUE* csv = &op->raftPingCtrl->value.raftPingCtrlVal;
             VMDIR_SAFE_FREE_MEMORY(csv->pszFQDN);
         }
 
-        if (op->clusterVoteCtrl)
+        if (op->raftVoteCtrl)
         {
-             VDIR_CLUSTER_VOTE_CONTROL_VALUE *cvv = &op->clusterVoteCtrl->value.clusterVoteCtrlVal;
-             VMDIR_SAFE_FREE_MEMORY(cvv->pszCandidateId);
+            VDIR_RAFT_VOTE_CONTROL_VALUE* cvv = &op->raftVoteCtrl->value.raftVoteCtrlVal;
+            VMDIR_SAFE_FREE_MEMORY(cvv->pszCandidateId);
+        }
+
+        if (op->statePingCtrl)
+        {
+            VDIR_STATE_PING_CONTROL_VALUE* csv = &op->statePingCtrl->value.statePingCtrlVal;
+            VMDIR_SAFE_FREE_MEMORY(csv->pszFQDN);
+            VMDIR_SAFE_FREE_MEMORY(csv->pszInvocationId);
         }
 
         if (op->reqControls)
@@ -236,13 +238,14 @@ VmDirFreeOperationContent(
                  break;
         }
 
-        VmDirFreeEntryArrayContent(&(op->internalSearchEntryArray));
-        VmDirFreeBervalContent( &(op->reqDn) );
+        VmDirSchemaCtxRelease(op->pSchemaCtx);
+        VmDirFreeEntryArrayContent(&op->internalSearchEntryArray);
+        VmDirFreeBervalContent(&op->reqDn);
         VMDIR_SAFE_FREE_MEMORY(op->ldapResult.pszErrMsg);
         VmDirBackendCtxFree(op->pBECtx);
         VMDIR_SAFE_FREE_MEMORY(op->pszFilters);
 
-        if ( op->opType == VDIR_OPERATION_TYPE_INTERNAL )
+        if (op->opType == VDIR_OPERATION_TYPE_INTERNAL)
         {   // internal op owns dummy conn for ACL check
             VmDirDeleteConnection( &(op->conn)); // passing &conn to be freed seems a bit strange
         }

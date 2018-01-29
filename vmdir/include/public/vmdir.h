@@ -75,6 +75,7 @@ extern "C" {
 #define LDAPRPC_VOTE_DN                         "cn=vote,cn=ldaprpc"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define RAFT_CONTEXT_DN                         "cn=raftcontext"
+#define SERVER_STATE_PING_DN                    "cn=ping,cn=serverstate"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -373,6 +374,7 @@ extern "C" {
 #define OC_SUB_SCHEMA                       "subschema"
 #define OC_SUB_SCHEMA_LEN                   sizeof(OC_SUB_SCHEMA)-1
 #define OC_DIR_SERVER                       "vmwDirServer"
+#define OC_DIR_SERVER_LEN                   sizeof(OC_DIR_SERVER)-1
 #define OC_PKI_CA                           "pkiCA"
 #define OC_REPLICATION_AGREEMENT            "vmwReplicationAgreement"
 #define OC_REPLICATION_AGREEMENT_LEN        sizeof(OC_REPLICATION_AGREEMENT)-1
@@ -500,10 +502,12 @@ extern "C" {
 
 // vmw OID for Integrity Check Control Search
 #define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
-// vmw LDAP PING control OID for reginal single master
-#define LDAP_PING_CONTROL                       "1.3.6.1.4.1.6876.40.10.4"
-// vmw LDAP RequestVote control OID for reginal single master
-#define LDAP_VOTE_CONTROL                       "1.3.6.1.4.1.6876.40.10.5"
+// vmw LDAP RAFT PING control OID for reginal single master
+#define LDAP_RAFT_PING_CONTROL                  "1.3.6.1.4.1.6876.40.10.4"
+// vmw LDAP RAFT RequestVote control OID for reginal single master
+#define LDAP_RAFT_VOTE_CONTROL                  "1.3.6.1.4.1.6876.40.10.5"
+// vmw OID for server state ping
+#define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

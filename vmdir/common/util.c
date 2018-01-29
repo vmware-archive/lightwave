@@ -3160,6 +3160,30 @@ VmDirSimpleHashMapPairFree(
 }
 
 /*
+ * when hash map can use simple free function for key only.
+ */
+VOID
+VmDirSimpleHashMapPairFreeKeyOnly(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pPair->pKey);
+}
+
+/*
+ * when hash map can use simple free function for value only.
+ */
+VOID
+VmDirSimpleHashMapPairFreeValOnly(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pPair->pValue);
+}
+
+/*
  * remove heading/trailing spaces
  * compact consecutive spaces into a single one
  */

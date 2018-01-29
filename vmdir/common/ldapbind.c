@@ -574,21 +574,6 @@ ldaperror:
     goto cleanup;
 }
 
-VOID
-VmDirDeleteSyncRequestControl(
-    LDAPControl *           syncReqCtrl
-    )
-{
-    if (syncReqCtrl)
-    {
-        if (syncReqCtrl->ldctl_value.bv_val)
-        {
-            ber_memfree(syncReqCtrl->ldctl_value.bv_val);
-        }
-        memset(syncReqCtrl, 0, sizeof(LDAPControl));
-    }
-}
-
 DWORD
 VmDirMapLdapError(
     int ldapErrorCode

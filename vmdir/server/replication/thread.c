@@ -396,7 +396,9 @@ VmDirReplUpdateCookies(
 
     bvLastLocalUsnProcessed.lberbv.bv_val = syncDoneCtrlVal->bv_val;
     bvLastLocalUsnProcessed.lberbv.bv_len =
-                        VmDirStringChrA(bvLastLocalUsnProcessed.lberbv.bv_val, ',') - bvLastLocalUsnProcessed.lberbv.bv_val;
+            VmDirStringChrA(bvLastLocalUsnProcessed.lberbv.bv_val, ',') -
+            bvLastLocalUsnProcessed.lberbv.bv_val;
+
     // Note: We are effectively over-writing in ctrls[0]->ldctl_value.bv_val here, which should be ok.
     bvLastLocalUsnProcessed.lberbv.bv_val[bvLastLocalUsnProcessed.lberbv.bv_len] = '\0';
 
@@ -406,37 +408,39 @@ VmDirReplUpdateCookies(
     // if lastLocalUsnProcessed is different
     if (strcmp(bvLastLocalUsnProcessed.lberbv.bv_val, replAgr->lastLocalUsnProcessed.lberbv.bv_val) != 0)
     {
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirReplUpdateCookies: Replication cycle done. Updating cookies" );;
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "VmDirReplUpdateCookies: Replication cycle done. Updating cookies");
 
         // Update disk copy of utdVector
-        retVal = UpdateServerObject( pSchemaCtx, &utdVector, replAgr );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = UpdateServerObject(pSchemaCtx, &utdVector, replAgr);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of utdVector
-        VmDirFreeBervalContent( &gVmdirServerGlobals.utdVector );
-        if (VmDirBervalContentDup( &utdVector, &gVmdirServerGlobals.utdVector ) != 0)
-        {
-            retVal = LDAP_OPERATIONS_ERROR;
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirReplUpdateCookies: BervalContentDup failed." );
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
+        retVal = VmDirUTDVectorCacheUpdate(utdVector.lberbv.bv_val);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update disk copy of lastLocalUsnProcessed
-        retVal = UpdateReplicationAgreement( pSchemaCtx, replAgr, &bvLastLocalUsnProcessed );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = UpdateReplicationAgreement(pSchemaCtx, replAgr, &bvLastLocalUsnProcessed);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of lastLocalUsnProcessed
-        VmDirFreeBervalContent( &replAgr->lastLocalUsnProcessed );
-        if (VmDirBervalContentDup( &bvLastLocalUsnProcessed, &replAgr->lastLocalUsnProcessed ) != 0)
+        VmDirFreeBervalContent(&replAgr->lastLocalUsnProcessed);
+        if (VmDirBervalContentDup(&bvLastLocalUsnProcessed, &replAgr->lastLocalUsnProcessed) != 0)
         {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirReplUpdateCookies: BervalContentDup failed." );
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirReplUpdateCookies: BervalContentDup failed.");
+
             retVal = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR( retVal );
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
     }
     else
     {
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirReplUpdateCookies: Replication cycle done.. Skipping updating Replication cookies.");
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "VmDirReplUpdateCookies: Replication cycle done.. Skipping updating Replication cookies.");
     }
     retVal = LDAP_SUCCESS;
 
@@ -1020,6 +1024,7 @@ _VmDirFetchReplicationPage(
 {
     int retVal = LDAP_SUCCESS;
     BOOLEAN bLogErr = TRUE;
+    PSTR    pszUtdVector = NULL;
     LDAPControl*    srvCtrls[2] = {NULL, NULL};
     LDAPControl**   ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
@@ -1053,10 +1058,13 @@ _VmDirFetchReplicationPage(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
+    retVal = VmDirUTDVectorCacheToString(&pszUtdVector);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
     retVal = VmDirCreateSyncRequestControl(
             gVmdirServerGlobals.invocationId.lberbv.bv_val,
             initUsn,
-            gVmdirServerGlobals.utdVector.lberbv.bv_val,
+            pszUtdVector,
             initUsn == lastSupplierUsnProcessed || 0 == lastSupplierUsnProcessed, // it's fetching first page if TRUE
             &(pPage->syncReqCtrl));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
@@ -1169,7 +1177,7 @@ _VmDirFetchReplicationPage(
                 pPage->iEntriesRequested,
                 pPage->iEntriesReceived,
                 initUsn,
-                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+                VDIR_SAFE_STRING(pszUtdVector));
     }
 
 cleanup:
@@ -1178,6 +1186,7 @@ cleanup:
         ldap_controls_free(ctrls);
         ctrls = NULL;
     }
+    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
     return retVal;
 
 ldaperror:
@@ -1192,7 +1201,7 @@ ldaperror:
                 pPage->iEntriesRequested,
                 pPage->iEntriesReceived,
                 initUsn,
-                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+                VDIR_SAFE_STRING(pszUtdVector));
     }
     _VmDirFreeReplicationPage(pPage);
     pPage = NULL;
@@ -1236,7 +1245,7 @@ _VmDirFreeReplicationPage(
             ldap_msgfree(pPage->searchRes);
         }
 
-        VmDirDeleteSyncRequestControl(&pPage->syncReqCtrl);
+        VmDirFreeCtrlContent(&pPage->syncReqCtrl);
 
         VMDIR_SAFE_FREE_MEMORY(pPage);
     }

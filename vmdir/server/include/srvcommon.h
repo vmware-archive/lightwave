@@ -583,27 +583,34 @@ typedef struct _VDIR_DIGEST_CONTROL_VALUE
     CHAR                    sha1Digest[SHA_DIGEST_LENGTH+1];
 } VDIR_DIGEST_CONTROL_VALUE, *PVDIR_DIGEST_CONTROL_VALUE;
 
-typedef struct _VDIR_CLUSTER_STATE_CONTROL_VALUE
+typedef struct _VDIR_RAFT_PING_CONTROL_VALUE
 {
     PSTR                    pszFQDN;
     int                     term;
-    USN                     hasSeenMyOrgUSN;
-} VDIR_CLUSTER_STATE_CONTROL_VALUE, *PVDIR_CLUSTER_STATE_CONTROL_VALUE;
+} VDIR_RAFT_PING_CONTROL_VALUE, *PVDIR_RAFT_PING_CONTROL_VALUE;
 
-typedef struct _VDIR_CLUSTER_VOTE_CONTROL_VALUE
+typedef struct _VDIR_RAFT_VOTE_CONTROL_VALUE
 {
     PSTR                    pszCandidateId;
     int                     term;
-} VDIR_CLUSTER_VOTE_CONTROL_VALUE, *PVDIR_CLUSTER_VOTE_CONTROL_VALUE;
+} VDIR_RAFT_VOTE_CONTROL_VALUE, *PVDIR_RAFT_VOTE_CONTROL_VALUE;
+
+typedef struct _VDIR_STATE_PING_CONTROL_VALUE
+{
+    PSTR                    pszFQDN;
+    PSTR                    pszInvocationId;
+    USN                     maxOrigUsn;
+} VDIR_STATE_PING_CONTROL_VALUE, *PVDIR_STATE_PING_CONTROL_VALUE;
 
 typedef union LdapControlValue
 {
-    SyncRequestControlValue            syncReqCtrlVal;
-    SyncDoneControlValue               syncDoneCtrlVal;
-    VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
-    VDIR_DIGEST_CONTROL_VALUE          digestCtrlVal;
-    VDIR_CLUSTER_STATE_CONTROL_VALUE   clusterStateCtrlVal;
-    VDIR_CLUSTER_VOTE_CONTROL_VALUE    clusterVoteCtrlVal;
+    SyncRequestControlValue             syncReqCtrlVal;
+    SyncDoneControlValue                syncDoneCtrlVal;
+    VDIR_PAGED_RESULT_CONTROL_VALUE     pagedResultCtrlVal;
+    VDIR_DIGEST_CONTROL_VALUE           digestCtrlVal;
+    VDIR_RAFT_PING_CONTROL_VALUE        raftPingCtrlVal;
+    VDIR_RAFT_VOTE_CONTROL_VALUE        raftVoteCtrlVal;
+    VDIR_STATE_PING_CONTROL_VALUE       statePingCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -647,8 +654,10 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
     VDIR_LDAP_CONTROL *       digestCtrl;
-    VDIR_LDAP_CONTROL *       clusterStateCtrl;
-    VDIR_LDAP_CONTROL *       clusterVoteCtrl;
+    VDIR_LDAP_CONTROL *       raftPingCtrl;
+    VDIR_LDAP_CONTROL *       raftVoteCtrl;
+    VDIR_LDAP_CONTROL *       statePingCtrl;
+
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification

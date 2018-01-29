@@ -141,9 +141,9 @@ VmDirCreateDigestControlContent(
     LDAPControl*    pDigestCtrl
     );
 
-VOID
-VmDirDeleteDigestControlContent(
-    LDAPControl*    pDigestCtrl
+int
+VmDirCreateStatePingControlContent(
+    LDAPControl*    pPingCtrl
     );
 
 // delete.c

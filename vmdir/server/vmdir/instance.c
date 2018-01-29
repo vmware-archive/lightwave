@@ -444,15 +444,6 @@ VmDirSrvSetupHostInstance(
     gVmdirServerGlobals.replPageSize =
             VmDirStringToIA(VMDIR_DEFAULT_REPL_PAGE_SIZE);
 
-    // Set utdVector
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = "";
-    bv.lberbv.bv_len = 0;
-
-    dwError = VmDirBervalContentDup(
-            &bv, &gVmdirServerGlobals.utdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // Set delObjsContainerDN
     VmDirFreeBervalContent(&bv);
     bv.lberbv.bv_val = pszDelObjsContainerDN;

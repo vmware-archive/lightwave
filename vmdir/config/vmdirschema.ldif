@@ -183,7 +183,6 @@ objectClasses: (
          )
     MAY ( vmwRaftStatus
         $ vmwRaftVoteGranted
-        $ highestCommittedUSN
         )
     )
 

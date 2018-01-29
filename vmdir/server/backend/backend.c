@@ -223,11 +223,11 @@ VmDirBackendSetMaxOutstandingUSN(
 
     assert( pBECtx && pBECtx->pBE && pBECtx->pBE->pBEUSNList);
 
-    VMDIR_LOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+    VMDIR_RWLOCK_WRITELOCK(bInLock, pBECtx->pBE->pBEUSNList->pLock, 0);
 
     pBECtx->pBE->pBEUSNList->maxOutstandingUSN = maxOutstandingUSN;
 
-    VMDIR_UNLOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pBECtx->pBE->pBEUSNList->pLock);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "set max outstanding USN (%u)", maxOutstandingUSN);
 
@@ -254,7 +254,7 @@ VmDirBackendAddOutstandingUSN(
     {
         pUSNList = pBECtx->pBE->pBEUSNList;
 
-        VMDIR_LOCK_MUTEX(bInLock, pUSNList->pMutex);
+        VMDIR_RWLOCK_WRITELOCK(bInLock, pUSNList->pLock, 0);
 
         for (iCnt = 0; bFoundSlot == FALSE && iCnt < pUSNList->iSize; iCnt++)
         {
@@ -291,19 +291,16 @@ VmDirBackendAddOutstandingUSN(
             pUSNList->maxUsedMainUSN = pBECtx->wTxnUSN;
         }
 
-        VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
+        VMDIR_RWLOCK_UNLOCK(bInLock, pUSNList->pLock);
 
         VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "add outstanding USN (%u).",  pBECtx->wTxnUSN);
     }
 
 cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
-
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUSNList->pLock);
     return dwError;
 
 error:
-
     goto cleanup;
 }
 
@@ -330,7 +327,7 @@ VmDirBackendRemoveOutstandingUSN(
     {
         pUSNList = pBECtx->pBE->pBEUSNList;
 
-        VMDIR_LOCK_MUTEX(bInLock, pUSNList->pMutex);
+        VMDIR_RWLOCK_WRITELOCK(bInLock, pUSNList->pLock, 0);
 
         localMaxOutstandingUSN = pUSNList->maxOutstandingUSN;
 
@@ -359,7 +356,7 @@ VmDirBackendRemoveOutstandingUSN(
             localMaxOutstandingUSN = pUSNList->maxOutstandingUSN;
         }
 
-        VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
+        VMDIR_RWLOCK_UNLOCK(bInLock, pUSNList->pLock);
 
         VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "rm outstanding USN (%u)(%u)(%u)(%u)",
                   pBECtx->wTxnUSN, minPendingUSN, iPendingCnt, localMaxOutstandingUSN);
@@ -504,7 +501,7 @@ VmDirBackendLeastOutstandingUSN(
 
     pUSNList = pBECtx->pBE->pBEUSNList;
 
-    VMDIR_LOCK_MUTEX(bInLock, pUSNList->pMutex);
+    VMDIR_RWLOCK_READLOCK(bInLock, pUSNList->pLock, 0);
 
     for (iCnt = 0; iCnt < pUSNList->iSize; iCnt++)
     {
@@ -519,7 +516,7 @@ VmDirBackendLeastOutstandingUSN(
 
     maxOutstandingUSN = pUSNList->maxOutstandingUSN;
 
-    VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUSNList->pLock);
 
     return (pending || (minPendingUSN > 0)) ? minPendingUSN : maxOutstandingUSN;
 }
@@ -543,7 +540,7 @@ VmDirBackendHighestCommittedUSN(
 
     pUSNList = pBECtx->pBE->pBEUSNList;
 
-    VMDIR_LOCK_MUTEX(bInLock, pUSNList->pMutex);
+    VMDIR_RWLOCK_READLOCK(bInLock, pUSNList->pLock, 0);
 
     for (iCnt = 0; iCnt < pUSNList->iSize; iCnt++)
     {
@@ -558,7 +555,7 @@ VmDirBackendHighestCommittedUSN(
 
     maxOutstandingUSN = pUSNList->maxOutstandingUSN;
 
-    VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUSNList->pLock);
 
     return ((minPendingUSN > 0) ? minPendingUSN - 1 : maxOutstandingUSN - 1);
 }
@@ -574,11 +571,14 @@ VmDirBackendSetMaxOriginatingUSN(
 
     assert( pBECtx && pBECtx->pBE && pBECtx->pBE->pBEUSNList);
 
-    VMDIR_LOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+    VMDIR_RWLOCK_WRITELOCK(bInLock, pBECtx->pBE->pBEUSNList->pLock, 0);
 
-    pBECtx->pBE->pBEUSNList->maxOriginatingUSN = maxOriginatingUSN;
+    if (pBECtx->pBE->pBEUSNList->maxOriginatingUSN < maxOriginatingUSN)
+    {
+        pBECtx->pBE->pBEUSNList->maxOriginatingUSN = maxOriginatingUSN;
+    }
 
-    VMDIR_UNLOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pBECtx->pBE->pBEUSNList->pLock);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE,
                      "Set max originating USN (%u)",
@@ -598,11 +598,11 @@ VmDirBackendGetMaxOriginatingUSN(
 
     assert( pBECtx && pBECtx->pBE && pBECtx->pBE->pBEUSNList);
 
-    VMDIR_LOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+    VMDIR_RWLOCK_READLOCK(bInLock, pBECtx->pBE->pBEUSNList->pLock, 0);
 
     maxOriginatingUSN = pBECtx->pBE->pBEUSNList->maxOriginatingUSN;
 
-    VMDIR_UNLOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pBECtx->pBE->pBEUSNList->pLock);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE,
                      "Get max originating USN (%u)",
@@ -623,7 +623,7 @@ VmDirAllocateUSNList(
     dwError = VmDirAllocateMemory(sizeof(*pUSNList), (PVOID)&pUSNList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMutex(&pUSNList->pMutex);
+    dwError = VmDirAllocateRWLock(&pUSNList->pLock);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMemory(sizeof(USN) * BE_OUTSTANDING_USN_LIST_SIZE, (PVOID)&pUSNList->pUSNAry);
@@ -634,13 +634,10 @@ VmDirAllocateUSNList(
     pUSNList = NULL;
 
 cleanup:
-
     return dwError;
 
 error:
-
     VmDirFreeUSNList(pUSNList);
-
     goto cleanup;
 }
 
@@ -652,7 +649,7 @@ VmDirFreeUSNList(
 {
     if (pUSNList != NULL)
     {
-        VMDIR_SAFE_FREE_MUTEX(pUSNList->pMutex);
+        VMDIR_SAFE_FREE_RWLOCK(pUSNList->pLock);
         VMDIR_SAFE_FREE_MEMORY(pUSNList->pUSNAry);
         VMDIR_SAFE_FREE_MEMORY(pUSNList);
     }

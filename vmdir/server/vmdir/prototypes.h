@@ -141,19 +141,6 @@ VmDirInit(
     VOID
     );
 
-DWORD
-VmDirAllocateBerValueAVsnprintf(
-    PVDIR_BERVALUE pbvValue,
-    PCSTR pszFormat,
-    ...
-    );
-
-DWORD
-VmDirGetHostsInternal(
-    PSTR**  pppszServerInfo,
-    size_t* pdwInfoCount
-    );
-
 // instance.c
 
 DWORD
@@ -456,6 +443,19 @@ VmDirGetLogMaximumLogSize(
 /* utils.c */
 
 DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    );
+
+DWORD
+VmDirGetHostsInternal(
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
+    );
+
+DWORD
 VmDirSrvValidateUserCreateParams(
     PVMDIR_USER_CREATE_PARAMS_RPC pCreateParams
     );
@@ -467,13 +467,13 @@ VmDirSetAdministratorPasswordNeverExpires(
 
 DWORD
 VmDirPingReplyEntry(
-    PVDIR_CLUSTER_STATE_CONTROL_VALUE pCscv,
+    PVDIR_RAFT_PING_CONTROL_VALUE pCscv,
     PVDIR_ENTRY *ppEntry
     );
 
 DWORD
 VmDirVoteReplyEntry(
-    PVDIR_CLUSTER_VOTE_CONTROL_VALUE pCvcv,
+    PVDIR_RAFT_VOTE_CONTROL_VALUE pCvcv,
     PVDIR_ENTRY *ppEntry
     );
 
