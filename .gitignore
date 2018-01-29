@@ -290,7 +290,7 @@ $RECYCLE.BIN/
 # lwraft-ui
 ui/lwraft-ui/stage/
 lwraft-ui/target/
-lwraft-ui/src/app/*.js*
+ui/lwraft-ui/src/app/*.js*
 
 # Build results
 [Dd]ebug/
@@ -513,7 +513,9 @@ dist/
 
 # lightwave web based UI applications
 ui/lightwave-ui/stage/
+ui/lightwave-ui/src/app/*.js
 ui/lightwave-ui/target/
+ui/lightwave-ui/webui/
 
 # Typescript v1 declaration files
 typings/

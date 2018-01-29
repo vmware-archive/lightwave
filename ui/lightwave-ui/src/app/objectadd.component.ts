@@ -36,13 +36,17 @@ export class ObjectAddComponent  {
     isOpen:boolean;
     sel:string[]=[];
     classesArr:any[];
+    showError:boolean;
+    errorMsg:string='';
     auxClassMap:any;
     classNameFilter = new ClassNameFilter();
     auxNameFilter = new ClassNameFilter();
     mayAttrMap:any = {};
     mustAttrMap:any = {};
+    opAttrMap:any = {};
     signPostObj:any[] = [];
     curSchemaMap:any = {};
+    curSchema:string = '';
     mayAttrArr:string[] = [];
     allDone:boolean = false;
     mustAttrArr:string[] = [];
@@ -121,23 +125,30 @@ export class ObjectAddComponent  {
             }
         }
         if(!unfilledAttr){
+            this.stage = "MayAttributes";
             this.wizard.next();
         }
     }
 
     createObject(){
         let res:any ;
-        let cn:string = this.mustAttrMap['cn'].length?this.mustAttrMap['cn']:this.mayAttrMap['cn'];
+        let cn:string = '';
+        if(this.mustAttrMap['cn']){
+            cn = this.mustAttrMap['cn'];
+        }else if(this.mayAttrMap['cn']){
+            cn = this.mayAttrMap['cn'];
+        }
         if(cn.length){
-            let newRootDn:string = 'cn='+cn + ',' + this.decodedRootDn ;
-            this.vmdirService.addNewObject(newRootDn, this.mustAttrMap, this.mayAttrMap)
+            let newRootDn:string = 'cn='+cn + ',' + this.decodedRootDn;
+            this.vmdirService.addNewObject(newRootDn, this.mustAttrMap, this.mayAttrMap, this.opAttrMap)
             .subscribe(
             result => {
                res = result;
                this.handleClose();
             },
             error => {
-               console.log(error);
+               this.showError = true;
+               this.errorMsg = error.error.error_message;
             });
         }
     }
@@ -146,6 +157,7 @@ export class ObjectAddComponent  {
            this.getAllAttributes(aux);
            this.mustAttrMap['objectClass'] += ',' + (aux);
        }
+       this.stage = "MustAttributes"
        this.wizard.next();
    }
 
@@ -154,7 +166,8 @@ export class ObjectAddComponent  {
        for(let attr of attrArr){
            if(attr.type == 'systemMayContain' || attr.type == 'mayContain'){
                for(let may of attr.value){
-                   if(!(may in this.mayAttrMap)){
+                   if(!(may in this.mayAttrMap) &&
+                         (may != 'nTSecurityDescriptor' && may != 'cn')){
                        this.mayAttrArr.push(may)
                        this.mayAttrMap[may] = '';
                    }
@@ -164,18 +177,23 @@ export class ObjectAddComponent  {
                for(let must of attr.value){
                    if(!(must in this.mustAttrMap)){
                        this.mustAttrMap[must] = '';
-                       if(must != 'nTSecurityDescriptor'){
+                       if(must != 'nTSecurityDescriptor' && must != 'objectSid'){
                            this.mustAttrArr.push(must);
                        }
                    }
                }
            }
        }
+       if(!('cn' in this.mustAttrMap)){
+           this.mustAttrMap['cn'] = '';
+           this.mustAttrArr.push('cn');
+       }
    }
 
    displayProperties(propName:string){
       this.signPostObj = [];
       let schemaObj:any
+      this.curSchema = propName;
       this.vmdirSchemaService.getSchema(propName)
         .subscribe(
             schema => {
@@ -188,6 +206,19 @@ export class ObjectAddComponent  {
                         this.vmdirUtils.setAttributeDataType(this.signPostObj);
                         for(let schema of this.signPostObj){
                             this.curSchemaMap[schema.type] = schema.value;
+                            if(schema.type == 'vmwAttributeUsage'){
+                                if(schema.value >= 8){
+                                    this.curSchemaMap['readonly'] = true;
+                                    if(this.stage == "MayAttributes"){
+                                        this.mayAttrMap[this.curSchema] = 'Operational Attribute';
+                                    }else{
+                                        this.mustAttrMap[this.curSchema] = 'Operational Attribute';
+                                    }
+                                    this.opAttrMap[this.curSchema] = true;
+                                }else{
+                                    this.curSchemaMap['readonly'] = false;
+                                }
+                            }
                         }
                         console.log(this.curSchemaMap);
             },

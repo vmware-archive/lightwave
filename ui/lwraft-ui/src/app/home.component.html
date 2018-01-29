@@ -1,14 +1,24 @@
-<ng-template #loading>
+<ng-template #loading *ngIf="!showError">
     <div align="center" style="left:50%;top:50%">
         <span class="spinner">
             Loading...
         </span>
         <span>
-            loading, please wait
         </span>
     </div>
 </ng-template>
-
+<div *ngIf="showError" class="alert alert-danger">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+            </div>
+            <span class="alert-text">
+                Failed to retrieve the authorization endpoint.
+            </span>
+        </div>
+    </div>
+</div>
 <div class="main-container" id='outer-container' (click)='closeSideBar($event)' *ngIf="signedIn;else loading;">
     <header class="header header-4">
        <div class="branding">
@@ -21,16 +31,18 @@
            <a href="javascript://" class="active nav-link nav-text" style="font-size:18px;color:white;">Directory</a>
        </div>
        <div class="w3-sidebar w3-bar-block w3-card w3-animate-right" style="width:20%;display:none;right:0;background-color:#006a91;" id="rightMenu">
-           <p style="text-align:center;" class="w3-xlarge">{{signedInUser}}</p>
-           <p class='w3-xlarge'>{{tenantName}}
-               <span class='w3-small' *ngIf='isSystemTenant'>[System Tenant]</span>
-           </p>
+           <div class="w3-card">
+               <p style="text-align:center;" class="w3-xlarge">
+                   <u><clr-icon shape="user" size="30" class="is-solid"></clr-icon>{{signedInUser}}</u>
+               </p>
+           </div>
+           <p style="text-align:center;" class='w3-xlarge'><clr-icon size="25" shape="organization"></clr-icon>{{tenantName}}</p>
            <div class="fixed-bottom">
                <button class="btn btn-outline" (click)="handleLogout()" style="background-color:white;width:85%;">Logout</button>
            </div>
        </div>
        <div class="header-actions" (click)="openRightMenu()">
-          <button id='slideOut' class="w3-button w3-large w3-left" (click)="openRightMenu()">{{signedInUser}}<clr-icon (click)="openRightMenu()" dir="down" shape="caret" size="16" style="width: 16px; height: 16px;"></clr-icon></button>
+           <button id='slideOut' class="w3-button w3-large w3-left" (click)="openRightMenu()"><clr-icon shape="user" size="24" class="is-solid"></clr-icon>{{signedInUser}}<clr-icon dir="down" shape="caret" size="16" style="width: 16px; height: 16px;"></clr-icon></button>
        </div>
     </header>
     <div class="content-container">

@@ -44,21 +44,6 @@ export class VmdirService {
                .catch(err => this.utilsService.handleError(err))
     }
 
-    getAllTenants(tenantName:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
-        let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
-        let rootDn = encodeURIComponent('cn=Tenants,cn=IdentityManager,cn=Services,') + this.utilsService.getRootDnQuery(tenantName)
-        console.log("root DN:" + rootDn);
-        this.getUrl += '?scope=one&dn='+rootDn+'&attrs=dn';
-        console.log(this.getUrl);
-        return this.httpClient.get(this.getUrl, {headers})
-               .share()
-               .map((res: Response) => res)
-               .do(listing => this.listing = listing)
-               .catch(err => this.utilsService.handleError(err))
-    }
-
     getAttributes(rootDn:string): Observable<string[]> {
         this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();

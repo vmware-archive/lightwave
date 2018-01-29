@@ -15,7 +15,6 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { VmdirComponent } from './vmdir.component';
-import { LoginComponent }  from './login.component';
 import { HomeComponent }  from './home.component';
 
 const appRoutes: Routes = [
@@ -31,7 +30,6 @@ const appRoutes: Routes = [
 export class AppRoutingModule {}
 
 export const routableComponents = [
-    LoginComponent,
     VmdirComponent,
     HomeComponent
 ]
