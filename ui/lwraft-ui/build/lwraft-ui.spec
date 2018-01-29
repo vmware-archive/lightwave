@@ -22,7 +22,8 @@ npm run prod
 cd ../..
 mkdir -p %{buildroot}
 mkdir -p %{buildroot}/opt/vmware/lwraft/ui
-install -m644 build/nginx.conf %{buildroot}/opt/vmware/lwraft/ 
+install -m644 build/nginx.conf %{buildroot}/opt/vmware/lwraft/
+install -m755 build/oidc-client-utils %{buildroot}/opt/vmware/lwraft/
 install -m644 dist/* %{buildroot}/opt/vmware/lwraft/ui
 
 %post
@@ -31,6 +32,8 @@ mkdir /etc/vmware/vmware-vmafd
 mv /etc/nginx/nginx.conf /etc/nginx/nginx_orig.conf
 ln -s /opt/vmware/lwraft/nginx.conf /etc/nginx/nginx.conf
 systemctl restart nginx
+echo "Please register this POST node as OIDC client on lightwave server as shown below:"
+/opt/vmware/lwraft/oidc-client-utils register -e
 
 %postun
 rm /etc/nginx/nginx.conf
