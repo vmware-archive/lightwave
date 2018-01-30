@@ -43,6 +43,8 @@ echo "Step 6: Install filebeat, logrotate and configure journalctl"
 cat > /etc/systemd/journald.conf <<EOF
 [Journal]
 ForwardToSyslog=yes
+RateLimitBurst=0
+RateLimitIntervalSec=0
 EOF
 
 # Install or upgrade syslog
