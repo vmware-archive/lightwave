@@ -7760,8 +7760,6 @@ public class IdentityManager implements IIdentityManager {
             if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
                 // validate IDP config has all the required meta data before registering..
                 ValidateUtil.validateNotEmpty(idpConfig.getSigningCertificateChain(), "[idpConfig.signingCertificates]");
-            } else if (protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
-                ValidateUtil.validateNotNull(idpConfig.getPublicKey(), "[idpConfig.publicKey]");
             }
 
             // validate groups exist in system domain before setting claim group mappings
