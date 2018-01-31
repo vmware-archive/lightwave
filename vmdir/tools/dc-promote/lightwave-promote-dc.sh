@@ -11,6 +11,7 @@
 LIGHTWAVE_AD=10.118.96.62
 DC_DOMAIN="lightwave.local"
 DC_NAME="photon-addc-test10"
+DNS_FORWARDER="10.118.98.1"
 ADMIN_PASSWORD="VMware123@"
 PRIV_USER="root"
 
@@ -172,11 +173,8 @@ ssh $PRIV_USER@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
     iptables -I OUTPUT --proto tcp --dport 389 -j ACCEPT )'
 
 ## 9 Add DNS forwarder
-## Don't do this. Forwarder support is broken. Preserving 2nd/3rd entries in 
-## resolv.conf accomplishes the same thing.
-#ssh $PRIV_USER@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder 10.155.23.1 \
-#    --server localhost --username Administrator --domain "$DC_DOMAIN" --password `cat /var/tmp/promote-pwd.txt`'
-#
+ssh $PRIV_USER@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder $DNS_FORWARDER \
+    --server localhost --username Administrator --domain "$DC_DOMAIN" --password `cat /var/tmp/promote-pwd.txt`'
 
 # 10 Additional DNS SRV records:
 echo_status "DNS kerberos-master SRV tcp record"
@@ -293,6 +291,15 @@ NNNN
 scp /tmp/regshell-rpcloadorder.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
 
+# TBD:Adam
+# Add DNS "A" record for client who joined
+# This should be done in the actual lsassd code, 
+# temporary work-around
+echo_status "Adding DNS A record for joined client"
+ssh $PRIV_USER@$LIGHTWAVE_AD \
+/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
+  --hostname photon-102-test2 --ip 10.118.96.61  \
+  --server localhost --username Administrator --password VMware123@
 
 # 16 Restart all lightwave services
 echo_status "Restart all lightwave services"
