@@ -39,8 +39,7 @@ VmDirRESTOperationCreate(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_CONNECTION), (PVOID*)&pRestOp->pConn);
+    dwError = VmDirAllocateConnection(&pRestOp->pConn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTResultCreate(&pRestOp->pResult);
@@ -130,6 +129,9 @@ VmDirRESTOperationReadRequest(
         dwError = VmRESTIsValidOrigin(pRestOp->pszOrigin, &pRestOp->bisValidOrigin);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
     for (i = 1; i <= dwParamCount; i++)

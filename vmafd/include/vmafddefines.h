@@ -317,6 +317,7 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 
 #define VMAFD_IPC_POST_HEARTBEAT             70
 #define VMAFD_IPC_GET_HEARBEAT_STATUS        71
+#define VMAFD_IPC_TRIGGER_PASSWORD_REFRESH   72
 
 #define VMAFD_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define VMAFD_MAX(a, b) ((a) > (b) ? (a) : (b))

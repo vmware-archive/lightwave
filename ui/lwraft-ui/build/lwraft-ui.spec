@@ -7,6 +7,7 @@ URL:            http://vmware.github.io/lightwave
 Group:          Development/Tools
 Vendor:         VMware, Inc.
 BuildRequires:  nodejs
+Requires:       lightwave-post
 Requires:	nginx
 
 %description

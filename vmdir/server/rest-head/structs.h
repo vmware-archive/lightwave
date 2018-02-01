@@ -72,7 +72,6 @@ typedef struct _VDIR_REST_OPERATION
     PVDIR_REST_RESULT   pResult;
     PVDIR_REST_RESOURCE pResource;
     PREST_API_METHOD    pMethod;
-
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
 // authtoken.c

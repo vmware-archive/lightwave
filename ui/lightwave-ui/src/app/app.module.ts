@@ -21,7 +21,6 @@ import { HttpModule, JsonpModule }    from '@angular/http';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { AuthService } from './auth.service';
-import { LoginComponent }  from './login.component';
 import { LazyLoadedLevel1Component } from './vmdir.component';
 import { SdeditorComponent } from './sdeditor.component';
 import { ObjectAddComponent } from './objectadd.component';

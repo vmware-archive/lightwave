@@ -1,5 +1,5 @@
 <clr-wizard #wizard [(clrWizardOpen)]="isOpen" clrWizardSize="xl" (clrWizardOnCancel)="doCancel()" [clrWizardPreventDefaultCancel]="true">
-    <clr-wizard-title>Add new Entry</clr-wizard-title>
+    <clr-wizard-title>New LDAP Object</clr-wizard-title>
     <clr-wizard-button class='btn btn-sm' [type]="'cancel'">Cancel</clr-wizard-button>
     <clr-wizard-button class='btn btn-sm' [type]="'previous'">Back</clr-wizard-button>
     <clr-wizard-button class='btn btn-sm' [type]="'next'">Next</clr-wizard-button>
@@ -60,8 +60,8 @@
                               <div class="signpost-triggers-wrapper">
                                   <div class="signpost-item">
                                        <clr-signpost>
-                                            <input required minlength="1" (focus)="displayProperties(mustAttr);" id="{{mustAttr}}" name="{{mustAttr}}" type="text" size="45" [(ngModel)]="mustAttrMap[mustAttr]" #{{mustAttr}}="ngModel" clrSignpostTrigger>
-                                                  <clr-signpost-content *clrIfOpen>
+                                            <input required minlength="1" (focus)="displayProperties(mustAttr);" id="{{mustAttr}}" name="{{mustAttr}}" type="text" size="45" [(ngModel)]="mustAttrMap[mustAttr]" #{{mustAttr}}="ngModel" [readonly]="(curSchema === mustAttr && curSchemaMap['readonly'] == true) || (opAttrMap[mustAttr] == true)" clrSignpostTrigger>
+                                                 <clr-signpost-content *clrIfOpen>
                                                        <table class="vertical no-border">
                                                              <tbody>
                                                                  <tr *ngFor="let spAttr of signPostObj">
@@ -89,13 +89,31 @@
          </tbody>
       </table>
       <ng-template clrPageButtons>
-          <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
           <clr-wizard-button class='btn-sm' [type]="'previous'">Back</clr-wizard-button>
+          <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
           <button (click)="handleMustAttr()" type="button" class='btn-sm btn btn-primary'>next</button>
       </ng-template>
     </clr-wizard-page>
 
     <clr-wizard-page #pageMayAttr>
+        <ng-template [ngIf]="showError">
+            <div *ngIf="showError" class="alert alert-danger">
+                <div class="alert-items">
+                    <div class="alert-item static">
+                        <div class="alert-icon-wrapper">
+                            <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+                        </div>
+                        <span style="text-align:center;" class="alert-text">
+                            {{errorMsg}}
+                        </span>
+                    </div>
+                 </div>
+                <button type="button" class="close" aria-label="Close">
+                    <clr-icon aria-hidden="true" (click)="showError = false;" shape="close"></clr-icon>
+                </button>
+            </div>
+        </ng-template>
+
         <ng-template clrPageTitle><pre style="font-size:14px;">@{{decodedRootDn}}</pre>Optional Attributes</ng-template>
         <ng-template clrPageNavTitle>
             Optional Attributes
@@ -110,7 +128,7 @@
                               <div class="signpost-triggers-wrapper">
                                   <div class="signpost-item">
                                        <clr-signpost>
-                                            <input required minlength="1" (focus)="displayProperties(mayAttr);" id="{{mayAttr}}" name="{{mayAttr}}" type="text" size="45" [(ngModel)]="mayAttrMap[mayAttr]" #{{mayAttr}}="ngModel" clrSignpostTrigger>
+                                            <input required minlength="1" (focus)="displayProperties(mayAttr);" id="{{mayAttr}}" name="{{mayAttr}}" type="text" size="45" [(ngModel)]="mayAttrMap[mayAttr]" #{{mayAttr}}="ngModel" [readonly]="(curSchema === mayAttr && curSchemaMap['readonly'] == true) || (opAttrMap[mayAttr] == true)" clrSignpostTrigger>
                                                   <clr-signpost-content *clrIfOpen>
                                                        <table class="vertical no-border">
                                                              <tbody>
@@ -138,12 +156,10 @@
              </tr>
           </tbody>
       </table>
+      <ng-template clrPageButtons>
+          <clr-wizard-button class='btn-sm' [type]="'previous'">Back</clr-wizard-button>
+          <button (click)="doCancel()" type="button" class='btn btn-sm btn-outline'>cancel</button>
+          <clr-wizard-button class='btn btn-sm btn-primary' (click)="createObject()">Create</clr-wizard-button>
+      </ng-template>
     </clr-wizard-page>
-
-    <!--clr-wizard-page *ngIf="allDone" #pageConfirm>
-        <ng-template clrPageTitle><font style="font-size:14px;">@{{decodedRootDn}}</font>Review</ng-template>
-        <ng-template clrPageNavTitle>
-            Review
-        </ng-template>
-    </clr-wizard-page-->
 </clr-wizard>

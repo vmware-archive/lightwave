@@ -15,6 +15,7 @@ libcommon_la_SOURCES = \
     krbmisc.c \
     krbutil.c \
     ldapbind.c \
+    ldapcontrol.c \
     ldaputil.c \
     linkedlist.c \
     logging.c \
@@ -31,6 +32,7 @@ libcommon_la_SOURCES = \
     stringlist.c \
     superlogutil.c \
     synchronizing.c  \
+    threadcontext.c  \
     threading.c  \
     tsstack.c \
     util.c \

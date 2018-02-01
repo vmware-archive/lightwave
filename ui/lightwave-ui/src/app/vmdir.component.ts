@@ -61,6 +61,7 @@ export class VmdirComponent  {
     isListEdited: boolean;
     attribs: string;
     curSchema: string;
+    encodedRootDN:string;
     curSchemaValue: string[];
     confirm: boolean;
     attribsMap:Map<string, any>;
@@ -72,7 +73,7 @@ export class VmdirComponent  {
     schemaMustAttribsArr: any[];
     usersArr: any[];
     groupsArr: any[];
-    signPostObj:any;
+    signPostObj:any[];
     curSchemaMap:Map<string, any>;
     setSchemaMustAttribsArr:any[];
     setSchemaMayAttribsArr:any[];
@@ -92,7 +93,7 @@ export class VmdirComponent  {
        this.isListEdited = false;
        this.isSdEdited = false;
        this.isDateEdited = false;
-       this.showSignPost = true;
+       this.showSignPost = false;
     }
     ngOnInit() {
         this.attribsMap = new Map<string,any[]>();
@@ -108,6 +109,7 @@ export class VmdirComponent  {
         this.getDirListing();
         this.rootDN = this.authService.getRootDN();
         this.header = this.rootDN;
+        this.encodedRootDN = encodeURIComponent(this.rootDN);
         this.getRootAttributes();
         this.containerHeight = (90/100*window.innerHeight);
         this.cardHeight = (85/100*this.containerHeight);
@@ -278,12 +280,10 @@ export class VmdirComponent  {
         this.getAttributes();
     }
 
-
-   displayProperties(attrType:string, arrId:number, attrValue:any) {
-       this.getSchema(attrType, true);
+    displayProperties(attrType:string, attrValue:any) {
        this.curSchema = attrType;
-       this.curSchemaValue = attrValue;
-   }
+       this.getSchema(attrType, true, attrValue);
+    }
 
    constructAttribsMap(attribsArr:any[]){
         this.attribsMap = new Map<string, any>();
@@ -373,7 +373,7 @@ export class VmdirComponent  {
         this.setSchemaMustAttribsArr = [];
         this.setSchemaMayAttribsArr = [];
         for (let schemaType of this.attribsMap['objectClass']) {
-            this.getSchema(schemaType, false)
+            this.getSchema(schemaType, false, [])
         }
         this.attribsMapCopy = JSON.parse(JSON.stringify(this.attribsMap));
     }
@@ -418,6 +418,13 @@ export class VmdirComponent  {
         this.curSchemaMap = new Map<string, any>();
         for(let schema of schemaArr){
             this.curSchemaMap[schema.type] = schema.value;
+            if(schema.type == 'vmwAttributeUsage'){
+                if(schema.value >= 8){
+                    this.curSchemaMap['readonly'] = true;
+                }else{
+                    this.curSchemaMap['readonly'] = false;
+                }
+            }
         }
         this.schemaMap[schemaName] = this.curSchemaMap;
         console.log(this.schemaMap);
@@ -459,8 +466,8 @@ export class VmdirComponent  {
         let inputElem = this.document.getElementById('dateInput');
         inputElem.focus();
     }
-    getSchema(schemaName:string, forSignPost:boolean) {
-        this.showSignPost = true;
+
+    getSchema(schemaName:string, forSignPost:boolean, schemaValue:any) {
         console.log("getScemas - component");
         this.schemaMap.clear();
         this.vmdirSchemaService.getSchema(schemaName)
@@ -481,7 +488,6 @@ export class VmdirComponent  {
                         console.log(this.setSchemaMustAttribsArr);
                         console.log(this.setSchemaMayAttribsArr);
                     }else{ /* for signPost */
-                        this.signPostObj = {};
                         this.signPostObj = this.schemaObj.result[0].attributes;
                         /* remove stuff that need not be displayed */
                         this.signPostObj.splice(0, 2);
@@ -489,13 +495,16 @@ export class VmdirComponent  {
                         this.signPostObj.pop();
                         this.vmdirUtils.setAttributeDataType(this.signPostObj)
                         this.constructSchemaMap(schemaName, this.signPostObj);
-
+                        this.showSignPost = true;
                         /* Handle multi value attributes */
-                        if(this.isEdited && 'FALSE' == this.curSchemaMap['isSingleValued'][0]){
+                        if(this.isEdited && 'FALSE' == this.curSchemaMap['isSingleValued'][0] &&
+                           this.curSchemaMap['readonly'] == false){
                            this.isListEdited = true;
+                           this.curSchemaValue = schemaValue;
                         }
                         /* Handle Boolean Attributes */
-                        if(this.isEdited && 'ADSTYPE_BOOLEAN' == this.curSchemaMap['dataType']) {
+                        if(this.isEdited && 'ADSTYPE_BOOLEAN' == this.curSchemaMap['dataType'] &&
+                           this.curSchemaMap['readonly'] == false){
                             this.setBooleanElement(schemaName);
                         }
                         /* Handle Editing security descriptor */
@@ -504,7 +513,8 @@ export class VmdirComponent  {
                             this.showSignPost = false;
                         }
                         /* Handle Date Tiime attributes */
-                        if(this.isEdited && 'ADSTYPE_UTC_TIME' == this.curSchemaMap['dataType']){
+                        if(this.isEdited && 'ADSTYPE_UTC_TIME' == this.curSchemaMap['dataType'] &&
+                            this.curSchemaMap['readonly'] == false){
                             this.isDateEdited = true;
                             //this.setDateTimeElement(schemaName);
                         }

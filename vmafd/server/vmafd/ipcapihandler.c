@@ -593,6 +593,17 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_TRIGGER_PASSWORD_REFRESH:
+
+            dwError = VmAfdIpcTriggerPasswordRefresh(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         case VMAFD_IPC_REFRESH_SITE_NAME:
 
             dwError = VmAfdIpcRefreshSiteName(

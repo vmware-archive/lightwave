@@ -70,6 +70,8 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define VMDIR_MAX_PASSWORD_LEN         128 /* As specified in schema for userPassword and replBindPassword attributes */
 #define VMDIR_MAX_I64_ASCII_STR_LEN     (19 + 1 /* null byte terminator */) /* Max value for i64_t is 9,223,372,036,854,775,807 */
 
+#define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
+
 #define VMDIR_MAX_FILE_NAME_LEN        1024
 
 #define VMDIR_LOG_MAX_OLD_FILES (10)
@@ -680,6 +682,12 @@ VmDirStringToUSN(
     );
 
 DWORD
+VmDirServerDNToSite(
+    PCSTR   pszServerDN,
+    PSTR*   ppszSite
+    );
+
+DWORD
 VmDirGetDomainFuncLvlInternal(
     LDAP*  pLd,
     PCSTR  pszDomain,
@@ -989,6 +997,11 @@ typedef enum
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 30
+
+#define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
+#define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
+#define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
+#define VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER  "EnableRegionalMaster"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1750,6 +1763,20 @@ VmDirMapLdapError(
     int ldapErrorCode
     );
 
+// common/ldapcontrol.c
+int
+VmDirCreateClusterStateCtrlContent(
+    DWORD           dwVersion,
+    PCSTR           pszFQDN,
+    USN             maxOrgUSN,
+    LDAPControl*    pClusterStateCtrl
+    );
+
+VOID
+VmDirFreeCtrlContent(
+    LDAPControl*    pCtrl
+    );
+
 // common/ldaputil.c
 DWORD
 VmDirConvertUPNToDN(
@@ -2384,6 +2411,48 @@ DWORD
 VmDirConvertTimestampToEpoch(
     PSTR    pszTimestamp,
     PLONG   pEpoch
+    );
+
+// threadcontext.c
+typedef struct _VMDIR_THREAD_CONTEXT
+{
+    pthread_key_t   threadLogContext;
+    pthread_once_t  threadContextOnce;
+} VMDIR_THREAD_CONTEXT, *PVMDIR_THREAD_CONTEXT;
+
+typedef struct _VMDIR_THREAD_LOG_CONTEXT
+{
+    PSTR    pszRequestId;
+    PSTR    pszUserId;
+    PSTR    pszSessionId;
+    PCSTR   pszFuncName;  // we do not own this ptr
+    DWORD   dwFuncLine;
+} VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
+
+DWORD
+VmDirInitThreadContext(VOID);
+
+VOID
+VmDirFreeThreadContext(VOID);
+
+VOID
+VmDirFreeThreadLogContext(
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext;
+    );
+
+DWORD
+VmDirGetThreadContext(
+    PVMDIR_THREAD_CONTEXT*  ppThreadContext
+    );
+
+DWORD
+VmDirGetThreadLogContextValue(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThreadLogContext
+    );
+
+DWORD
+VmDirSetThreadLogContextValue(
+    PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
     );
 
 #ifdef __cplusplus

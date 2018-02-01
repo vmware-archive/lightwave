@@ -102,11 +102,11 @@ VmDirRegConfigHandleOpen(
     {
         dwError = ERROR_NO_MEMORY;
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
 
 #ifndef _WIN32
     dwError = RegOpenServer(&pCfgHandle->hConnection);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
 #endif
 
 #ifndef _WIN32
@@ -117,7 +117,7 @@ VmDirRegConfigHandleOpen(
                 0,
                 KEY_READ,
                 &pCfgHandle->hKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
 #else
         dwError = RegOpenKeyExA(
                 HKEY_LOCAL_MACHINE,
@@ -125,7 +125,7 @@ VmDirRegConfigHandleOpen(
                 0,
                 KEY_READ,
                 &pCfgHandle->hKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
 #endif
 
     *ppCfgHandle = pCfgHandle;
@@ -195,7 +195,7 @@ VmDirRegConfigGetValue(
                 NULL,
                 (PVOID) pRetValue,
                 pRetValueLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
 
 error:
     if (dwError)

@@ -20,21 +20,22 @@ import { Observable } from "rxjs/Rx";
 import './rxjs-operators';
 import {ConfigService} from './config.service';
 import { AuthService } from './auth.service';
+import { UtilsService } from './utils.service';
 
 @Injectable()
 export class VmdirSchemaService {
     getUrl:string
-    domain:string = '';
+    server :string = '';
     listing:any;
     error: any;
     schemaArr: any[];
     schema:string = '';
-    constructor(private configService:ConfigService, private authService: AuthService, private httpClient:HttpClient) {}
+    constructor(private utilsService:UtilsService, private configService:ConfigService, private authService: AuthService, private httpClient:HttpClient) {}
 
     getSchema(rootDn:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server  = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server  + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         console.log("root DN:" + rootDn);
         this.getUrl += '?dn='+encodeURIComponent('cn='+rootDn+',cn=schemacontext');
         console.log(this.getUrl);
@@ -42,15 +43,6 @@ export class VmdirSchemaService {
                .share()
                .map((res: Response) => res)
                .do(listing => this.listing = listing)
-               .catch(this.handleError)
-    }
-
-    private handleError(error:any) {
-        // In a real world app, we might use a remote logging infrastructure
-        // We'd also dig deeper into the error to get a better message
-        let errMsg = (error.message) ? error.message :
-            error.status ? `${error.status} - ${error.statusText}` : 'Server error';
-        console.error(errMsg); // log to console instead
-        return Observable.throw(errMsg);
+               .catch(err => this.utilsService.handleError(err))
     }
 }

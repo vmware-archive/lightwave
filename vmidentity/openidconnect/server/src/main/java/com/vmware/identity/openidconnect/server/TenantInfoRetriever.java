@@ -162,4 +162,28 @@ public class TenantInfoRetriever {
 
         return tenant;
     }
+
+    public String getTenantIssuer(String tenantName) throws ServerException {
+        try {
+            return this.idmClient.getIssuer(tenantName);
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving issuer name"), e);
+        }
+    }
+
+    public String getLocalOIDCEntityID(String tenantName) throws ServerException {
+        try {
+            return this.idmClient.getOIDCEntityID(tenantName);
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving local oidc entity id"), e);
+        }
+    }
+
+    public String getSystemTenantName() throws ServerException {
+        try {
+            return this.idmClient.getSystemTenant();
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving system tenant name"), e);
+        }
+    }
 }

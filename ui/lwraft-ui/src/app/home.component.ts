@@ -172,21 +172,6 @@ export class HomeComponent  {
             this.loadFromSession();
         }
 
-        getAllTenants() {
-       	     let tlist:any;
-             let listingObj:any;
-             this.vmdirService.getAllTenants(this.configService.currentUser.tenant)
-            .subscribe(
-                listing => {
-                    tlist = JSON.stringify(listing);
-                    listingObj = JSON.parse(tlist);
-                    this.utilsService.extractName(listingObj.result, false);
-                    this.allTenants = listingObj;
-                    console.log(listingObj);
-                    },
-               error => this.error = <any>error);
-        }
-
         handleLogout(){
             // get the IDP host
             let resObj:any;

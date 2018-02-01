@@ -54,8 +54,7 @@ VmDirRESTLdapAdd(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -111,8 +110,7 @@ VmDirRESTLdapSearch(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -209,8 +207,7 @@ VmDirRESTLdapModify(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -279,8 +276,7 @@ VmDirRESTLdapDelete(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -333,10 +329,10 @@ VmDirRESTLdapSetResult(
 
     if (!pRestRslt)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    // get ldap error code and message
     if (pLdapRslt)
     {
         err = pLdapRslt->errCode;
@@ -348,6 +344,7 @@ VmDirRESTLdapSetResult(
         msg = pszErrMsg;
     }
 
+    // set ldap error code and message
     if (IsNullOrEmptyString(msg))
     {
         dwError = VmDirRESTResultSetError(
@@ -377,19 +374,15 @@ error:
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
-    DWORD*              pdwHttpStatus,
-    PSTR*               ppszHttpStatus,
-    PSTR*               ppszHttpReason
+    PVDIR_HTTP_ERROR*   ppHttpError
     )
 {
     DWORD   dwError = 0;
     int     httpStatus = 0;
-    PVDIR_HTTP_ERROR    pHttpError = NULL;
 
-    if (!pRestRslt || !pdwHttpStatus || !ppszHttpStatus || !ppszHttpReason)
+    if (!pRestRslt || !ppHttpError)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     switch (pRestRslt->errCode)
@@ -444,11 +437,7 @@ VmDirRESTLdapGetHttpError(
         break;
     }
 
-    pHttpError = VmDirRESTGetHttpError(httpStatus);
-
-    *pdwHttpStatus = pHttpError->dwHttpStatus;
-    *ppszHttpStatus = pHttpError->pszHttpStatus;
-    *ppszHttpReason = pHttpError->pszHttpReason;
+    *ppHttpError = VmDirRESTGetHttpError(httpStatus);
 
 cleanup:
     return dwError;

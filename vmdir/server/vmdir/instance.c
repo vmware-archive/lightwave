@@ -113,7 +113,7 @@ _VmDirSrvCreateBuiltInGroup(
 
 static
 DWORD
-_VmDirSrvCreateBuiltInCertGroup(
+_VmDirSrvCreateBuiltInServiceGroup(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszGroupName,
     PCSTR            pszDN,
@@ -797,6 +797,7 @@ VmDirSrvSetupDomainInstance(
     PSTR pszDCGroupDN = NULL;
     PSTR pszDCClientGroupDN = NULL;
     PSTR pszCertGroupDN = NULL;
+    PSTR pszDnsGroupDN = NULL;
     PSTR pszTenantRealmName = NULL;
     PSTR pszTgtDN = NULL;
     PSTR pszKMDN = NULL;
@@ -1032,10 +1033,27 @@ VmDirSrvSetupDomainInstance(
                 pszBuiltInContainerDN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _VmDirSrvCreateBuiltInCertGroup(
+        dwError = _VmDirSrvCreateBuiltInServiceGroup(
                 pSchemaCtx,
                 VMDIR_CERT_GROUP_NAME,
                 pszCertGroupDN,
+                pszUserDN,           // member: default administrator
+                pszDCGroupDN,        // member: DCAdmins group
+                pszDCClientGroupDN); // member: DCClients group
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // create DNSAdmins Group
+        dwError = VmDirAllocateStringPrintf(
+                &pszDnsGroupDN,
+                "cn=%s,%s",
+                VMDIR_DNS_GROUP_NAME,
+                pszBuiltInContainerDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirSrvCreateBuiltInServiceGroup(
+                pSchemaCtx,
+                VMDIR_DNS_GROUP_NAME,
+                pszDnsGroupDN,
                 pszUserDN,           // member: default administrator
                 pszDCGroupDN,        // member: DCAdmins group
                 pszDCClientGroupDN); // member: DCClients group
@@ -1176,6 +1194,11 @@ VmDirSrvSetupDomainInstance(
                 pszCertGroupDN, &SecDescNoDelete, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // Set SD for BuiltIn DNS group
+        dwError = VmDirAppendSecurityDescriptorForDn(
+                pszDnsGroupDN, &SecDescNoDelete, TRUE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         // Set SD for kerberos users
         dwError = VmDirAppendSecurityDescriptorForDn(
                 pszTgtDN, &SecDescFullAccess, TRUE);
@@ -1238,6 +1261,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDCGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszDCClientGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszCertGroupDN);
+    VMDIR_SAFE_FREE_MEMORY(pszDnsGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszTenantRealmName);
 
     VMDIR_SAFE_FREE_MEMORY(SecDescFullAccess.pSecDesc);
@@ -1668,7 +1692,7 @@ error:
 
 static
 DWORD
-_VmDirSrvCreateBuiltInCertGroup(
+_VmDirSrvCreateBuiltInServiceGroup(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszGroupName,
     PCSTR            pszDN,

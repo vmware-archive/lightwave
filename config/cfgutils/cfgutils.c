@@ -289,7 +289,7 @@ VmwDeploySetupServerPartner(
 
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
-                    VMW_ADMIN_NAME,
+                    pParams->pszUsername,
                     pParams->pszPassword,
                     pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -334,7 +334,6 @@ VmwDeploySetupServerCommon(
     DWORD dwError = 0;
     PSTR  pszHostname = "localhost";
     PSTR  pszLdapURI = NULL;
-    PSTR  pszUsername = VMW_ADMIN_NAME;
     PSTR  pszCACert = NULL;
     PSTR  pszSSLCert = NULL;
     PSTR  pszPrivateKey = NULL;
@@ -373,7 +372,7 @@ VmwDeploySetupServerCommon(
     dwError = VmAfdPromoteVmDirA(
                     pParams->pszHostname,
                     pParams->pszDomainName,
-                    pszUsername,
+                    pParams->pszUsername,
                     pParams->pszPassword,
                     pParams->pszSite,
                     pParams->pszServer);
@@ -390,7 +389,7 @@ VmwDeploySetupServerCommon(
     dwError = VmDirSetupLdu(
                     pszLdapURI,
                     pParams->pszDomainName,
-                    pszUsername,
+                    pParams->pszUsername,
                     pParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -401,7 +400,7 @@ VmwDeploySetupServerCommon(
 
         dwError = VmwDeploySetForwarders(
                         pParams->pszDomainName,
-                        pszUsername,
+                        pParams->pszUsername,
                         pParams->pszPassword,
                         pParams->pszDNSForwarders);
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -412,7 +411,7 @@ VmwDeploySetupServerCommon(
     dwError = VmwDeployMakeRootCACert(
                     pParams->pszHostname,
                     pParams->pszDomainName,
-                    pszUsername,
+                    pParams->pszUsername,
                     pParams->pszPassword,
                     &pszCACert);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -428,7 +427,7 @@ VmwDeploySetupServerCommon(
     dwError = VmwDeployCreateMachineSSLCert(
                     pszHostname,
                     pParams->pszDomainName,
-                    pszUsername,
+                    pParams->pszUsername,
                     pParams->pszPassword,
                     pParams->pszHostname,
                     pParams->pszSubjectAltName ?
@@ -657,6 +656,13 @@ VmwDeploySetupClientWithDC(
     dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (pParams->bMachinePreJoined)
+    {
+        VMW_DEPLOY_LOG_INFO("Resetting Machine Account Credentials");
+        dwError = VmAfdLocalTriggerPasswordRefresh();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
 cleanup:
 
     if (pszPrivateKey)
@@ -830,6 +836,13 @@ VmwDeploySetupClient(
 
     dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->bMachinePreJoined)
+    {
+        VMW_DEPLOY_LOG_INFO("Resetting Machine Account Credentials");
+        dwError = VmAfdLocalTriggerPasswordRefresh();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
 cleanup:
 

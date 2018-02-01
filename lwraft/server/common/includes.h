@@ -54,6 +54,9 @@
 // curl error codes
 #include <curl/curl.h>
 
+// SSO errors
+#include <ssoerrors.h>
+
 #else
 
 #pragma once

@@ -84,7 +84,7 @@ VmDirRESTRequestHandlerInternal(
     )
 {
     DWORD   dwError = 0;
-    DWORD   dwRestOpErr = 0;    // don't bail on this
+    DWORD   dwRspErr = 0;   // don't bail on this
     PVDIR_REST_OPERATION    pRestOp = NULL;
     uint64_t    iStartTime = 0;
     uint64_t    iEndTime = 0;
@@ -96,107 +96,48 @@ VmDirRESTRequestHandlerInternal(
 
     if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
     {
-        goto cleanup;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
 
     iStartTime = VmDirGetTimeInMilliSec();
 
-    dwRestOpErr = VmDirRESTOperationCreate(&pRestOp);
-    if (dwRestOpErr)
+    dwError = VmDirRESTOperationCreate(&pRestOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTOperationReadRequest(
+            pRestOp, pRESTHandle, pRequest, paramsCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // if node is leader or the request needs to be processed locally
+    if (_VmDirRESTProcessLocally(pRestOp))
     {
-        dwError = VmDirRESTWriteSimpleErrorResponse(
-                pRESTHandle, ppResponse, 500);  // 500 = Internal Server Error
+        dwError = VmDirRESTOperationParseRequestPayload(pRestOp);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirRESTOperationProcessRequest(pRestOp);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
     {
-        dwError = VmDirRESTOperationReadRequest(
-                pRestOp, pRESTHandle, pRequest, paramsCount);
+        dwError = VmDirRESTProxyForwardRequest(pRestOp, bHttpRequest);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        // if node is leader or the request needs to be processed locally
-        if ( _VmDirRESTProcessLocally(pRestOp) )
-        {
-            dwRestOpErr = VmDirRESTProcessRequest(
-                    pRestOp, pRESTHandle, pRequest, paramsCount);
-
-            dwError = VmDirRESTOperationWriteResponse(
-                    pRestOp, pRESTHandle, ppResponse);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else
-        {
-            dwRestOpErr = VmDirRESTForwardRequest(
-                    pRestOp, paramsCount, pRequest, pRESTHandle, bHttpRequest);
-
-            dwError = VmDirRESTWriteProxyResponse(
-                    pRestOp, ppResponse, pRESTHandle);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
     }
 
 cleanup:
+    // write response
+    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
+    dwRspErr = VmDirRESTOperationWriteResponse(pRestOp, pRESTHandle, ppResponse);
 
     // collect metrics
     iEndTime = VmDirGetTimeInMilliSec();
     VmDirRestMetricsUpdateFromHandler(pRestOp, iStartTime, iEndTime);
 
+    // free memory
     VmDirFreeRESTOperation(pRestOp);
-    return dwError;
 
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d), rest operation error (%d) for client: %s",
-            __FUNCTION__,
-            dwError,
-            dwRestOpErr,
-            pRestOp ? VDIR_SAFE_STRING(pRestOp->pszClientIP) : "");
-
-    goto cleanup;
-}
-
-DWORD
-VmDirRESTProcessRequest(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_REQUEST           pRequest,
-    uint32_t                paramsCount
-    )
-{
-    DWORD   dwError = 0;
-
-    if (!pRestOp || !pRESTHandle || !pRequest)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirRESTOperationLoadJson(pRestOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTAuth(pRestOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = coapi_find_handler(
-            gpVdirRestApiDef,
-            pRestOp->pszPath,
-            pRestOp->pszMethod,
-            &pRestOp->pMethod);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "Leader received REST request from: %s request type: %s request URI: %s",
-            VDIR_SAFE_STRING(pRestOp->pszClientIP),
-            VDIR_SAFE_STRING(pRestOp->pszMethod),
-            VDIR_SAFE_STRING(pRestOp->pszPath));
-
-cleanup:
-    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
-    return dwError;
+    // if failed to write response, must return error to c-rest-engine
+    // we choose to return dwError over dwRspErr
+    return dwRspErr ? (dwError ? dwError : dwRspErr) : 0;
 
 error:
     VMDIR_LOG_ERROR(
@@ -204,66 +145,7 @@ error:
             "%s failed, error (%d) for client: %s",
             __FUNCTION__,
             dwError,
-            VDIR_SAFE_STRING(pRestOp->pszClientIP));
-
-    goto cleanup;
-}
-
-DWORD
-VmDirRESTWriteSimpleErrorResponse(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_RESPONSE* ppResponse,
-    int             httpStatus
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   bytesWritten = 0;
-    PVDIR_HTTP_ERROR    pHttpError = NULL;
-
-    if (!pRESTHandle || !ppResponse)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmRESTSetHttpStatusVersion(ppResponse, "HTTP/1.1");
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pHttpError = VmDirRESTGetHttpError(httpStatus);
-
-    dwError = VmRESTSetHttpStatusCode(ppResponse, pHttpError->pszHttpStatus);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetHttpReasonPhrase(ppResponse, pHttpError->pszHttpReason);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetDataLength(ppResponse, "0");
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRESTSetData(
-            pRESTHandle, ppResponse, "", 0, &bytesWritten);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (! VMDIR_IS_HTTP_STATUS_OK(pHttpError->dwHttpStatus))
-    {
-        VMDIR_LOG_WARNING(
-                VMDIR_LOG_MASK_ALL,
-                "%s HTTP response status (%d), body (NULL)",
-                __FUNCTION__,
-                pHttpError->pszHttpStatus);
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
+            pRestOp ? VDIR_SAFE_STRING(pRestOp->pszClientIP) : "");
 
     goto cleanup;
 }

@@ -21,35 +21,13 @@ import './rxjs-operators';
 import { UtilsService } from './utils.service';
 @Injectable()
 export class AuthService {
-    private domain:string;
+    private server:string;
     private header: HttpHeaders;
     private rootDNQuery: string;
     private rootDN: string;
+
     constructor(private utilsService:UtilsService, private httpClient:HttpClient, private configService: ConfigService) {}
-    getOIDCToken(tenant:string, username:string, password:string, tenantName:string):Observable<string[]> {
-       let tokensObj:any;
-       let tokensStr:string;
-       //const body = 'grant_type=password&username='+username+'&password='+password+'&scope=openid+rs_admin_server';
-       const body = 'grant_type=password&username='+username+'&password='+password+'&scope=openid+rs_vmdir+rs_admin_server+at_groups+id_groups+offline_access';
-       let oidcRequestUrl = 'https://' + tenant + '/openidconnect/token/' + tenantName ;
-//      oidcRequestUrl += '?' + body;
-      //let headers = new HttpHeaders().set('Content-Type', "application/json;charset=UTF-8");
-//      let headers = new HttpHeaders({ 'Content-Type': 'application/json;charset=UTF-8' });
-      let headers = new HttpHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' });
-      console.log("Getting INFO via http");
-      console.log(oidcRequestUrl);
-      return this.httpClient.post(oidcRequestUrl, body , {headers})
-               .share()
-               .map((res: Response) => res)
-               .do(tokens => {
-                               tokensStr = JSON.stringify(tokens);
-                               tokensObj = JSON.parse(tokensStr);
-                               console.log(tokensObj.access_token)
-                               this.constructAuthHeader(tenant, tokensObj.access_token);
-                               this.constructRootDNQuery(username);
-                             })
-               .catch(this.handleError)
-    }
+
     getAuthHeader():any {
         if(this.header){
             return this.header;
@@ -60,29 +38,41 @@ export class AuthService {
             return this.header;
         }
     }
-    getDomain() {
-        if(this.domain){
-            return this.domain;
+
+    getServer() {
+        if(this.server){
+            return this.server;
         }else{
             return this.configService.currentUser.server.host;
         }
     }
+
     getRootDnQuery() {
        return this.rootDNQuery;
     }
+
     getRootDN() {
        return this.rootDN;
     }
 
-    logout() {
+    invalidateLocalSession(){
+        this.configService.currentUser = 'logout';
+        window.sessionStorage.currentUser = this.configService.currentUser;
+    }
+
+    getLogoutUri():string{
         let logoutUri = "/lightwaveui/Logout?id_token="
             + this.configService.currentUser.token.id_token
             + "&state="
             + this.configService.currentUser.token.state
             + "&tenant="
             + this.configService.currentUser.tenant;
-        this.configService.currentUser = 'logout';
-        window.sessionStorage.currentUser = this.configService.currentUser;
+        return logoutUri;
+    }
+
+    logout() {
+        let logoutUri = this.getLogoutUri();
+        this.invalidateLocalSession();
         window.location.href = logoutUri;
     }
 
@@ -93,13 +83,13 @@ export class AuthService {
         this.rootDNQuery = this.utilsService.getRootDnQuery(dmn);
         console.log(this.rootDNQuery);
     }
+
     constructAuthHeader(tenant:string, token:string) {
-        this.domain = tenant;
+        this.server = tenant;
         this.header = new HttpHeaders({ 'Authorization': 'Bearer ' + token });
     }
+
     private handleError(error:any) {
-        // In a real world app, we might use a remote logging infrastructure
-        // We'd also dig deeper into the error to get a better message
         let errMsg = (error.message) ? error.message :
             error.status ? `${error.status} - ${error.statusText}` : 'Server error';
         console.log(error);

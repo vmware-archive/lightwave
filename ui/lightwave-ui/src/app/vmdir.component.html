@@ -1,4 +1,4 @@
-            <table class="table table-vertical table-noborder" width="100%" >
+            <table class="table table-vertical table-noborder no-margin" width="100%" >
                 <tbody>
                     <tr>
                         <th style="font-size:14px;width: 20%; font-weight:500;">
@@ -68,23 +68,22 @@
                                </div>
                                <div [style.max-height.px]="cardHeight" style="overflow-y:auto;" class="card-block" *ngIf="!isEdited">
                                    <div class="card-text">
-                                       <table class="table w3-striped">
+                                       <table class="table w3-striped no-margin">
                                            <tbody>
                                                <tr *ngFor="let attr of attribsArr">
                                                    <th style="font-weight:400;background-color:transparent;overflow:auto !important;width:240px !important;">
                                                        <div class="signpost-triggers-wrapper">
                                                            <div class="signpost-item">
-                                                               <clr-signpost style="font-size:14px">
-                                                                   {{ attr?.type }}
-                                                                   <clr-icon shape="info" class="is-solid"
-                                                                   (click)="displayProperties(attr.type, 5, attribsArr[0])" clrSignpostTrigger>
+                                                               <clr-signpost style="font-size:14px;margin-left:10px;">
+                                                                   {{ attr.type }}
+                                                                   <clr-icon shape="info" class="is-solid" (click)="displayProperties(attr.type, attribsArr[0])" clrSignpostTrigger>
                                                                    </clr-icon>
                                                                    <clr-signpost-content *ngIf='showSignPost'>
-                                                                       <table class="table no-border">
+                                                                       <table class="table no-border no-margin">
                                                                            <tbody>
                                                                                <tr *ngFor="let spAttr of signPostObj">
-                                                                                   <td style="font-weight:400;font-size:14px;background-color:white;">{{spAttr?.type}}</td>
-                                                                                   <td style="font-size:13px;background-color:white;">{{spAttr?.value}}</td>
+                                                                                   <td style="font-weight:400;font-size:14px;background-color:white;">{{spAttr.type}}</td>
+                                                                                   <td style="font-size:13px;background-color:white;">{{spAttr.value}}</td>
                                                                                </tr>
                                                                            </tbody>
                                                                       </table>
@@ -134,9 +133,9 @@
                                                                <div class="signpost-triggers-wrapper">
                                                                    <div class="signpost-item">
                                                                        <clr-signpost>
-                                                                           <input required style="border-bottom:initial;"(click)="displayProperties(schemaattr.attrType, 1, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" clrSignpostTrigger>
+                                                                           <input required style="border-bottom:initial;"(click)="displayProperties(schemaattr.attrType, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" [readonly]="schemaattr.attrType === curSchema && curSchemaMap['readonly'] == true" clrSignpostTrigger>
                                                                            <clr-signpost-content *clrIfOpen>
-                                                                               <table class="vertical no-border">
+                                                                               <table class="vertical no-border no-margin">
                                                                                    <tbody>
                                                                                        <tr *ngFor="let spAttr of signPostObj">
                                                                                           <th>{{spAttr?.type}}</th>
@@ -169,9 +168,9 @@
                                                                <div class="signpost-triggers-wrapper">
                                                                    <div class="signpost-item">
                                                                        <clr-signpost>
-                                                                         <input style="border-bottom:initial;" (click)="displayProperties(schemaattr.attrType, 3, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" clrSignpostTrigger>
+                                                                         <input style="border-bottom:initial;" (click)="displayProperties(schemaattr.attrType, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" [readonly]="schemaattr.attrType === curSchema && curSchemaMap['readonly'] == true" clrSignpostTrigger>
                                                                          <clr-signpost-content *clrIfOpen>
-                                                                             <table class="vertical no-border">
+                                                                             <table class="vertical no-border no-margin">
                                                                                  <tbody>
                                                                                      <tr *ngFor="let spAttr of signPostObj">
                                                                                          <th>{{spAttr?.type}}</th>

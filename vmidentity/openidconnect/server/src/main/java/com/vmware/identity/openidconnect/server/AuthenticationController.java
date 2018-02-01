@@ -89,25 +89,20 @@ public class AuthenticationController {
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
-        ModelAndView page;
-        HttpResponse httpResponse;
+        ModelAndView page = null;
+        HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
 
         try {
             HttpRequest httpRequest = HttpRequest.from(request);
             context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
-
-            String issuer = this.idmClient.getIssuer(tenant);
-            if (issuer != null && !issuer.equalsIgnoreCase(idmClient.getOIDCEntityID(tenant))) {
-                IDPConfig idpConfig = findFederatedIDP();
-                final OidcConfig oidcConfig = idpConfig.getOidcConfig();
-                if (oidcConfig == null) {
-                    throw new ServerException(ErrorObject.invalidRequest("no oidc configuration found"));
-                }
-                final FederatedIdentityProcessor processor = findProcessor(oidcConfig.getIssuerType());
-                page = null;
+            IDPConfig idpConfig = getFederatedIDPConfig(tenant);
+            if (idpConfig != null) {
+                // use federated idp login page
+                final FederatedIdentityProcessor processor = findProcessor(idpConfig.getOidcConfig().getIssuerType());
                 httpResponse = processor.processAuthRequestForFederatedIDP(request, tenant, idpConfig);
             } else {
+                // use lightwave idp login page
                 AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
                         this.idmClient,
                         this.authzCodeManager,
@@ -138,18 +133,18 @@ public class AuthenticationController {
         return page;
     }
 
-    private IDPConfig findFederatedIDP() throws Exception {
-        String systemTenantName = idmClient.getSystemTenant();
-        Collection<IDPConfig> idpConfigs = idmClient.getAllExternalIdpConfig(systemTenantName);
-
-        if (idpConfigs != null) {
-            for (IDPConfig idpConfig : idpConfigs) {
-                if (idpConfig.getProtocol().equalsIgnoreCase(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
-                    return idpConfig;
+    private IDPConfig getFederatedIDPConfig(String tenant) throws Exception {
+        String issuer = this.idmClient.getIssuer(tenant);
+        if (issuer != null && !issuer.isEmpty()) {
+            IDPConfig idpConfig =  idmClient.getExternalIdpConfigForTenant(idmClient.getSystemTenant(), issuer);
+            if (idpConfig != null) {
+                // validate IDP is using oidc protocol
+                if (idpConfig.getOidcConfig() == null) {
+                    throw new ServerException(ErrorObject.invalidRequest("no oidc configuration found"));
                 }
+                return idpConfig;
             }
         }
-
         return null;
     }
 

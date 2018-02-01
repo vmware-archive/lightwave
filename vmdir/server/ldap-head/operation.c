@@ -64,11 +64,8 @@ VmDirInitStackOperation(
     dwError = VmDirAllocateMemory( sizeof( *pOp->pBECtx ), (PVOID) &(pOp->pBECtx) );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if ( pOp->opType == VDIR_OPERATION_TYPE_INTERNAL )
-    {   // needs dummy conn->VDIR_ACCESS_INFO for ACL check
-        dwError = VmDirAllocateMemory( sizeof( *pOp->conn), (PVOID) &(pOp->conn) );
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = VmDirAllocateConnection(&pOp->conn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pOp->pSchemaCtx = pLocalSchemaCtx;
     pLocalSchemaCtx = NULL;
@@ -105,6 +102,7 @@ VmDirExternalOperationCreate(
    BAIL_ON_VMDIR_ERROR( retVal );
 
    pOperation->protocolVer = 0;
+   pOperation->protocol = 0;
    pOperation->reqCode = reqCode;
    pOperation->ber = ber;
    pOperation->msgId = msgId;
@@ -167,6 +165,18 @@ VmDirFreeOperationContent(
         if (op->pSchemaCtx)
         {
             VmDirSchemaCtxRelease(op->pSchemaCtx);
+        }
+
+        if(op->clusterStateCtrl)
+        {
+            VDIR_CLUSTER_STATE_CONTROL_VALUE *csv = &op->clusterStateCtrl->value.clusterStateCtrlVal;
+            VMDIR_SAFE_FREE_MEMORY(csv->pszFQDN);
+        }
+
+        if (op->clusterVoteCtrl)
+        {
+             VDIR_CLUSTER_VOTE_CONTROL_VALUE *cvv = &op->clusterVoteCtrl->value.clusterVoteCtrlVal;
+             VMDIR_SAFE_FREE_MEMORY(cvv->pszCandidateId);
         }
 
         if (op->reqControls)

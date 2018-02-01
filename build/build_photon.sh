@@ -12,3 +12,11 @@ autoreconf -vif .. \
  make \
   && \
  make package
+
+if [ $# -eq 1 ];then
+    if [ $1 = "--with-ui" ];then
+       make -C ../ui
+       cp ../ui/lwraft-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
+       cp ../ui/lightwave-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
+    fi
+fi

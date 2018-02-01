@@ -20,5 +20,5 @@ public interface FederatedTokenPublicKey {
 
     String getIssuer();
 
-    RSAPublicKey getPublicKey() throws Exception;
+    RSAPublicKey getPublicKey();
 }

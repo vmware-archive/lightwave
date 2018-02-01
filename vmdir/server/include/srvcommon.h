@@ -258,6 +258,7 @@ typedef struct _VDIR_CONNECTION
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -582,12 +583,27 @@ typedef struct _VDIR_DIGEST_CONTROL_VALUE
     CHAR                    sha1Digest[SHA_DIGEST_LENGTH+1];
 } VDIR_DIGEST_CONTROL_VALUE, *PVDIR_DIGEST_CONTROL_VALUE;
 
+typedef struct _VDIR_CLUSTER_STATE_CONTROL_VALUE
+{
+    PSTR                    pszFQDN;
+    int                     term;
+    USN                     hasSeenMyOrgUSN;
+} VDIR_CLUSTER_STATE_CONTROL_VALUE, *PVDIR_CLUSTER_STATE_CONTROL_VALUE;
+
+typedef struct _VDIR_CLUSTER_VOTE_CONTROL_VALUE
+{
+    PSTR                    pszCandidateId;
+    int                     term;
+} VDIR_CLUSTER_VOTE_CONTROL_VALUE, *PVDIR_CLUSTER_VOTE_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
     SyncRequestControlValue            syncReqCtrlVal;
     SyncDoneControlValue               syncDoneCtrlVal;
     VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
     VDIR_DIGEST_CONTROL_VALUE          digestCtrlVal;
+    VDIR_CLUSTER_STATE_CONTROL_VALUE   clusterStateCtrlVal;
+    VDIR_CLUSTER_VOTE_CONTROL_VALUE    clusterVoteCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -631,6 +647,8 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
     VDIR_LDAP_CONTROL *       digestCtrl;
+    VDIR_LDAP_CONTROL *       clusterStateCtrl;
+    VDIR_LDAP_CONTROL *       clusterVoteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
@@ -1647,6 +1665,12 @@ VmDirBkgdThreadShutdown(
 DWORD
 VmDirBkgdTaskUpdatePrevTime(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+// oidctovmdirerror.c
+DWORD
+VmDirOidcToVmdirError(
+    DWORD dwOidcError
     );
 
 #ifdef __cplusplus

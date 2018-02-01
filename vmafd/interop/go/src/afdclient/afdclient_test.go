@@ -47,17 +47,7 @@ func TestVmAfdGetHeartbeatStatus(t *testing.T) {
 	}
 	defer status.FreeHeartbeatStatus()
 
-	cmd := "/opt/vmware/bin/vmafd-cli get-heartbeat-status | sed -n 's/^.*:[ \\t]*//p'"
-	out, err := exec.Command("bash", "-c", cmd).Output()
-	if err != nil {
-		assert.FailNow(t, "Failed to get heartbeat status through afd cli", "Error: %v", err)
-	}
-
-	if strings.Trim(string(out), "\n") == "0" {
-		assert.False(t, status.IsAlive(), "Error: VmAfd Heartbeat status should be 0")
-	} else {
-		assert.True(t, status.IsAlive(), "Error: VmAfd Heartbeat status should be 1")
-	}
+	checkHeartbeatStatusAlive(t, status)
 }
 
 func TestVmAfdStartHeartbeat(t *testing.T) {
@@ -138,7 +128,40 @@ func TestVmAfdForceRefreshDCName(t *testing.T) {
 	log.Printf("DcName: %s, After Refresh: %s", dcName, refreshedName)
 }
 
+func TestCdcGetDCStatusInfo(t *testing.T) {
+	server, err := VmAfdOpenServer("", "", "") // Open connection to localhost
+	if err != nil {
+		assert.FailNowf(t, "Could not connect to localhost", "Error: %+v", err)
+	}
+	defer server.Close()
+
+	entries, err := server.CdcEnumDCEntries()
+	if err != nil {
+		assert.FailNowf(t, "Failed to enumerate DC Entries", "Error: %+v", err)
+	}
+
+	assert.NotZero(t, len(entries), "Entries is empty")
+	for _, entry := range entries {
+		assert.NotEmpty(t, entry, "Entry is empty")
+		info, hb, err := server.CdcGetDCStatusInfo(entry)
+		if err != nil {
+			assert.FailNowf(t, "Failed to get DC Status info", "DC: %s, Error: %+v", entry, err)
+		}
+
+		checkDCInfo(t, info, entry)
+		checkHeartbeatStatusAlive(t, hb)
+
+		info.FreeStatusInfo()
+		hb.FreeHeartbeatStatus()
+	}
+
+}
+
 func getHbInfo(t *testing.T, status *VmAfdHbStatus, service string) *VmAfdHbInfo {
+	if status == nil {
+		assert.FailNow(t, "Heartbeat Status is null")
+	}
+
 	for i := 0; i < status.GetCount(); i++ {
 		info := status.GetHeartbeatInfo(i)
 		if assert.NotNil(t, info, "Hearbeat Info index %i is null", i) && info.GetServiceName() == service {
@@ -147,4 +170,32 @@ func getHbInfo(t *testing.T, status *VmAfdHbStatus, service string) *VmAfdHbInfo
 	}
 
 	return nil
+}
+
+func checkHeartbeatStatusAlive(t *testing.T, status *VmAfdHbStatus) {
+	if status == nil {
+		assert.FailNow(t, "Heartbeat Status is null")
+	}
+
+	assert.True(t, status.IsAlive(), "Error: Heartbeat status isAlive is 0")
+	assert.NotZero(t, status.GetCount(), "Error: Number of services registered in status is 0")
+	for i := 0; i < status.GetCount(); i++ {
+		info := status.GetHeartbeatInfo(i)
+		if info == nil {
+			assert.FailNowf(t, "Heartbeat info is null", "Index in heartbeat status: %d", i)
+		}
+
+		assert.NotEmpty(t, info.GetServiceName(), "Service name index %d should not be empty", i)
+		assert.True(t, info.IsAlive(), "Service %s should be alive", info.GetServiceName())
+	}
+
+}
+
+func checkDCInfo(t *testing.T, info *CdcDcStatusInfo, name string) {
+	if info == nil {
+		assert.FailNowf(t, "DC Status info is null", "DC: %s", name)
+	}
+	assert.NotZero(t, info.GetLastPing(), "DC %s - LastPing should not be 0", name)
+	assert.True(t, info.IsAlive(), "DC %s should be alive", name)
+	fmt.Printf("[DEBUG DCInfo] DC: %s\n\tLastPing: %d\n\tSite: %s\n\tisAlive: %+v\n", name, info.GetLastPing(), info.GetSiteName(), info.IsAlive())
 }

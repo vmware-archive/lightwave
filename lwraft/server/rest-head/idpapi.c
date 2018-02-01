@@ -85,15 +85,17 @@ VmDirRESTGetIDP(
     dwError = VmDirAllocateStringPrintf(&pszRedirectUrl, "https://%s/ui",pszFQDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(&pszAuthorizeUrl, "https://%s/openidconnect/oidc/authorize/%s"
-                "?response_type=id_token%%20token"
-                "&response_mode=fragment&client_id=%s&redirect_uri=%s"
-                "&state=_state_lmn_&nonce=_nonce_lmn_"
-                "&scope=openid%%20rs_admin_server%%20rs_post",
-                pszDCName,
-                pszDomainName,
-                pszClientId,
-                pszRedirectUrl);
+    dwError = VmDirAllocateStringPrintf(
+            &pszAuthorizeUrl,
+            "https://%s/openidconnect/oidc/authorize/%s"
+            "?response_type=id_token%%20token"
+            "&response_mode=fragment&client_id=%s&redirect_uri=%s"
+            "&state=_state_lmn_&nonce=_nonce_lmn_"
+            "&scope=openid%%20rs_admin_server%%20rs_post",
+            pszDCName,
+            pszDomainName,
+            pszClientId,
+            pszRedirectUrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTResultSetStrData(pRestOp->pResult, "result", pszAuthorizeUrl);
@@ -102,10 +104,7 @@ VmDirRESTGetIDP(
     dwError = VmDirRESTResultSetStrData(pRestOp->pResult, "idp_host", pszDCName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTResultSetIntData(
-            pRestOp->pResult,
-            "result_count",
-            1);
+    dwError = VmDirRESTResultSetIntData(pRestOp->pResult, "result_count", 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

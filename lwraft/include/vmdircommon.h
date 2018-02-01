@@ -2284,6 +2284,8 @@ typedef struct _VMDIR_THREAD_LOG_CONTEXT
     PSTR    pszRequestId;
     PSTR    pszUserId;
     PSTR    pszSessionId;
+    PCSTR   pszFuncName;  // we do not own this ptr
+    DWORD   dwFuncLine;
 } VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
 
 DWORD

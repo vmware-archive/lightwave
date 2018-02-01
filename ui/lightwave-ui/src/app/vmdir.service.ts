@@ -25,12 +25,14 @@ import { UtilsService } from './utils.service';
 export class VmdirService {
     getUrl:string
     listing:any;
-    domain:string
+    server:string
+
     constructor(private utilsService:UtilsService, private configService:ConfigService, private authService: AuthService, private httpClient:HttpClient) {}
+
     getDirListing(rootDn:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         if(rootDn == null) {
             rootDn = this.authService.getRootDnQuery();
         }
@@ -41,12 +43,13 @@ export class VmdirService {
                .share()
                .map((res: Response) => res)
                .do(listing => this.listing = listing)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
+
     getAllTenants(tenantName:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let rootDn = encodeURIComponent('cn=Tenants,cn=IdentityManager,cn=Services,') + this.utilsService.getRootDnQuery(tenantName)
         console.log("root DN:" + rootDn);
         this.getUrl += '?scope=one&dn='+rootDn+'&attrs=dn';
@@ -55,13 +58,29 @@ export class VmdirService {
                .share()
                .map((res: Response) => res)
                .do(listing => this.listing = listing)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
+    }
+
+    getOIDCClients(tenantName:string): Observable<string[]> {
+        this.server = this.authService.getServer();
+        let headers = this.authService.getAuthHeader();
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        let rootDn = encodeURIComponent("cn=OIDCClients,cn=") + tenantName +
+                     encodeURIComponent(',cn=Tenants,cn=IdentityManager,cn=Services,') + this.utilsService.getRootDnQuery(tenantName)
+        console.log("root DN:" + rootDn);
+        this.getUrl += '?scope=sub&dn='+rootDn;
+        console.log(this.getUrl);
+        return this.httpClient.get(this.getUrl, {headers})
+               .share()
+               .map((res: Response) => res)
+               .do(listing => this.listing = listing)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     getAttributes(rootDn:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         if(rootDn == null) {
             rootDn = this.authService.getRootDnQuery();
         }
@@ -72,18 +91,18 @@ export class VmdirService {
                .share()
                .map((res: Response) => res)
                .do(listing => this.listing = listing)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     getACLString(rootDn:string): Observable<string[]> {
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let url = this.getUrl + '?scope=base&dn=' + rootDn + '&attrs=vmwaclstring';
         console.log(url);
         return this.httpClient.get(url, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError);
+               .catch(err => this.utilsService.handleError(err))
     }
     getJsonObjEntry(operation:string,attrType:string, attrValue:any):any{
         let jsonObjEntry:any={};
@@ -140,13 +159,13 @@ export class VmdirService {
     updateAttributes(rootDn:string, originalValMap:Map<string,any>, attribsArr:string[], modifiedAttributesMap:Map<string,any>, schemaMap:Map<string,any>): Observable<string[]> {
         let headers = this.authService.getAuthHeader();
         let body = this.constructJsonBody(originalValMap, attribsArr, modifiedAttributesMap, schemaMap);
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let updateUrl = this.getUrl + '?dn='+rootDn;
         console.log(updateUrl);
         return this.httpClient.patch(updateUrl, body, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     constructSDJsonBody(aclString:string):string{
@@ -166,127 +185,124 @@ export class VmdirService {
         obj.value=value.split(',');
         return obj;
     }
-    createAttrObjArray(attrMap:any, attrsArr:string[],  jsonObjAttrs:any[]){
+
+    createAttrObjArray(attrMap:any, attrsArr:string[],  opAttrMap:any, jsonObjAttrs:any[]){
         for(let i = 0;i < attrsArr.length; i ++){
             if(attrMap[attrsArr[i]].length){
-                jsonObjAttrs.push(this.createAttrObject(attrsArr[i], attrMap[attrsArr[i]]))
+                if(opAttrMap[attrsArr[i]] != true){
+                    jsonObjAttrs.push(this.createAttrObject(attrsArr[i], attrMap[attrsArr[i]]));
+                }
             }
         }
     }
 
-    constructObjectAddJsonBody(mustAttrMap:any, mayAttrMap:any):any[]{
+    constructObjectAddJsonBody(mustAttrMap:any, mayAttrMap:any, opAttrMap:any):any[]{
         let jsonObjAttrs:any[] = [];
         let mustAttrsArr:string[] = Object.keys(mustAttrMap);
         let mayAttrsArr:string[] = Object.keys(mayAttrMap);
-        this.createAttrObjArray(mustAttrMap, mustAttrsArr, jsonObjAttrs);
-        this.createAttrObjArray(mayAttrMap, mayAttrsArr, jsonObjAttrs);
-//        jsonObjAttrs.push(this.createAttrObject('nTSecurityDescriptor', ''));
+        this.createAttrObjArray(mustAttrMap, mustAttrsArr, opAttrMap, jsonObjAttrs);
+        this.createAttrObjArray(mayAttrMap, mayAttrsArr, opAttrMap, jsonObjAttrs);
         return jsonObjAttrs;
     }
 
-    addNewObject(rootDn:string, mustAttrMap:any, mayAttrMap:any): Observable<string[]> {
+    addNewObject(rootDn:string, mustAttrMap:any, mayAttrMap:any, opAttrMap:any): Observable<string[]> {
         let headers = this.authService.getAuthHeader();
         if(mustAttrMap['cn'] && mustAttrMap['cn'].length){
             mayAttrMap['cn'] = '';
         }
         let jsonObj:any = {};
         jsonObj.dn = rootDn;
-        jsonObj.attributes = this.constructObjectAddJsonBody(mustAttrMap, mayAttrMap);
+        jsonObj.attributes = this.constructObjectAddJsonBody(mustAttrMap, mayAttrMap, opAttrMap);
         let body = JSON.stringify(jsonObj);
-        let addUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        let addUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         console.log(addUrl);
         return this.httpClient.put(addUrl, body, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     updateAclString(rootDn:string, aclStrVal:string){
         let headers = this.authService.getAuthHeader();
         let body  = this.constructSDJsonBody(aclStrVal);
-        let url = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        let url = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         url += '?dn=' + encodeURIComponent(rootDn);
         console.log(url);
         return this.httpClient.patch(url, body, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     delete(rootDn:string) {
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap'
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap'
         let deleteUrl = this.getUrl +  '?dn='+rootDn;
         console.log(deleteUrl);
         return this.httpClient.delete(deleteUrl, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     getObjectBySID(objectSid:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectsid='+objectSid);
         console.log(url);
         return this.httpClient.get(url, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     getAllStrObjectClasses():Observable<any> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let url = this.getUrl + '?scope=one&dn=' + encodeURIComponent('cn=schemacontext') + '&filter=' + encodeURIComponent('objectclass=classschema') + '&attrs='+encodeURIComponent('subClassOf,cn,systemMustContain,systemMayContain,auxiliaryClass,mayContain,mustContain,objectClassCategory');
         console.log(url);
         return this.httpClient.get(url, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     getAuxObjectClass(objectClass:string):Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let url = this.getUrl + '?scope=base&dn=' + encodeURIComponent('cn='+objectClass+',cn=schemacontext') + '&attrs=auxiliaryClass';
         console.log(url);
         return this.httpClient.get(url, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
+               .catch(err => this.utilsService.handleError(err))
     }
 
     getAllUsersAndGroups(){
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectsid=*')+
                   '&attrs=objectsid,cn,objectclass';
         console.log(url);
         return this.httpClient.get(url, {headers})
            .share()
            .map((res: Response) => res)
-           .catch(this.handleError)
+           .catch(err => this.utilsService.handleError(err))
     }
 
     getObjectByGUID(objectGuid:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
+        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
         let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectguid='+objectGuid);
         console.log(url);
         return this.httpClient.get(url, {headers})
                .share()
                .map((res: Response) => res)
-               .catch(this.handleError)
-    }
-
-    private handleError(error:any) {
-        console.log(error);
-        return Observable.throw(error.error);
+               .catch(err => this.utilsService.handleError(err))
     }
 }

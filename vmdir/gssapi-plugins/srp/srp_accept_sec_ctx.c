@@ -274,7 +274,7 @@ _srp_gss_auth_create_machine_acct_binding(
                   0,
                   NULL,
                   &hServer);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR_NO_LINE(dwError);
 
     *hRetServer = hServer;
 

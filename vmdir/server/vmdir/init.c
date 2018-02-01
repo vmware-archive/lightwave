@@ -326,6 +326,9 @@ VmDirInit(
 #ifndef _WIN32
     dwError = InitializeResouceLimit();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInitThreadContext();
+    BAIL_ON_VMDIR_ERROR(dwError);
 #endif
 
     dwError = VmDirOpensslInit();

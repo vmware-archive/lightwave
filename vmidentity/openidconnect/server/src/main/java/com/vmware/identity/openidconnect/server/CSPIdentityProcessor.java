@@ -17,9 +17,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +32,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -69,15 +68,18 @@ import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.common.TokenClass;
 import com.vmware.identity.openidconnect.protocol.AccessToken;
 import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
 import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.FederationToken;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 import com.vmware.identity.openidconnect.protocol.URIUtils;
+import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
 
 import net.minidev.json.JSONObject;
 
@@ -182,14 +184,14 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     SessionID session = new SessionID();
     sessionManager.add(session);
     // Get the Token corresponding to the code
-    FederatedToken token = getToken(authenticode, relayState, idpConfig, session);
+    Pair<FederationToken, FederationToken> token = getToken(authenticode, relayState, idpConfig, session);
     // Process the response
     // TODO: Nonce and state handling
     return processResponse(token, idpConfig, relayState, session);
   }
 
-  private FederatedToken
-  getToken(String code, FederationRelayState relayState, IDPConfig idpConfig, SessionID session) throws Exception {
+  private Pair<FederationToken, FederationToken>
+  getToken( String code, FederationRelayState relayState, IDPConfig idpConfig, SessionID session) throws Exception {
     OidcConfig oidcConfig = idpConfig.getOidcConfig();
     URI target = new URI(oidcConfig.getTokenRedirectURI());
     Map<String, String> parameters = new HashMap<String, String>();
@@ -215,14 +217,16 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   private HttpResponse
-  processResponse(FederatedToken token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
-    String tenantName = token.getOrgId();
+  processResponse(Pair<FederationToken, FederationToken> token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
+    FederationToken idToken = token.getLeft();
+    FederationToken accessToken = token.getRight();
+    String tenantName = idToken.getOrgId();
     if (tenantName == null || tenantName.isEmpty()) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
       LoggerUtils.logFailedRequest(logger, errorObject);
       throw new ServerException(errorObject);
     }
-    String emailAddress = token.getEmailAddress();
+    String emailAddress = idToken.getEmailAddress();
     if (emailAddress == null || emailAddress.isEmpty()) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid email address");
       LoggerUtils.logFailedRequest(logger, errorObject);
@@ -231,7 +235,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
     TenantInfo tenantInfo = getTenantInfo(tenantName);
     if (tenantInfo == null) {
-      Set<String> permissions = token.getPermissions();
+      Set<String> permissions = accessToken.getPermissions();
       // Create the tenant only if the incoming user has an Organization Admin Role
       if (permissions.contains(ROLE_CSP_ORG_OWNER)) {
         String entityId = state.getIssuer();
@@ -266,7 +270,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
           emailAddress
       );
       // If the user is a service owner, add the user to the Administrators group
-      Set<String> permissions = token.getPermissions();
+      Set<String> permissions = accessToken.getPermissions();
       if (permissions.contains(ROLE_CSP_ORG_OWNER)) {
           this.idmClient.addUserToGroup(tenantName, user, "Administrators");
       }
@@ -334,8 +338,8 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       readLockKeyLookup.unlock();
     }
     if (key == null) {
-      String publicKeyURL = idpConfig.getOidcConfig().getJwksURI();
-      key = CSPTokenPublicKey.build(publicKeyURL);
+      String jwkUri = idpConfig.getOidcConfig().getJwksURI();
+      key = FederatedTokenPublicKeyFactory.build(jwkUri, IssuerType.CSP);
       writeLockKeyLookup.lock();
       try {
         publicKeyLookup.put(entityID, key);
@@ -410,8 +414,26 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     return getTenantInfo(tenantName);
   }
 
+  private void validateIssuer(FederationToken token, String expectedIssuer) throws Exception {
+      String issuer = token.getIssuer();
+      if (issuer == null || !issuer.equalsIgnoreCase(expectedIssuer)) {
+        ErrorObject errorObject = ErrorObject.accessDenied("Issuer does not match");
+        LoggerUtils.logFailedRequest(logger, errorObject);
+        throw new ServerException(errorObject);
+      }
+  }
 
-  public FederatedToken
+  private void validateExpiration(FederationToken token) throws Exception {
+      Date expiryTime = token.getExpirationTime();
+      Date now = new Date();
+      if (now.after(expiryTime)) {
+        ErrorObject errorObject = ErrorObject.accessDenied("token expired");
+        LoggerUtils.logFailedRequest(logger, errorObject);
+        throw new ServerException(errorObject);
+      }
+  }
+
+  private Pair<FederationToken, FederationToken>
   getToken(
       URI target,
       Map<String, String> headers,
@@ -538,160 +560,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
       // store the external jwt token content in the current session
       this.sessionManager.setExternalJWTContent(session, content);
-      FederatedToken token = new FederatedToken(idTokenJWT, accessTokenJWT);
+      FederationToken idToken = FederationToken.parse(idTokenJWT, TokenClass.ID_TOKEN);
+      FederationToken accessToken = FederationToken.parse(idTokenJWT, TokenClass.ACCESS_TOKEN);
 
-      token.validateIssuer(key.getIssuer());
-      token.validateExpiration();
+      validateIssuer(idToken, key.getIssuer());
+      validateExpiration(idToken);
 
-      return token;
-    }
-  }
-
-  static class CSPTokenPublicKey implements FederatedTokenPublicKey {
-    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(CSPTokenPublicKey.class);
-
-    private String _issuer;
-    private RSAPublicKey _publicKey;
-
-    public CSPTokenPublicKey(String issuer, RSAPublicKey publicKey) {
-      _issuer = issuer;
-      _publicKey = publicKey;
-    }
-
-    @Override
-    public String getIssuer() {
-      return _issuer;
-    }
-
-    @Override
-    public RSAPublicKey getPublicKey() throws Exception {
-      return _publicKey;
-    }
-
-    public static FederatedTokenPublicKey build(String publicKeyURL) throws Exception {
-      URI target = new URI(publicKeyURL);
-      HttpRequest request = HttpRequest.createGetRequest(target);
-      HttpRequestBase httpRequestBase = request.toHttpTask();
-
-      try (CloseableHttpClient client = HttpClients.createDefault();
-           CloseableHttpResponse response = client.execute(httpRequestBase);) {
-        int statusCodeInt = response.getStatusLine().getStatusCode();
-        StatusCode statusCode;
-        try {
-          statusCode = StatusCode.parse(statusCodeInt);
-          if (statusCode != StatusCode.OK) {
-            ErrorObject errorObject =
-                ErrorObject.serverError(
-                    String.format(
-                        "Failed to retrieve public key from [%s]",
-                        publicKeyURL
-                    )
-                );
-            LoggerUtils.logFailedRequest(logger, errorObject);
-            throw new ServerException(errorObject);
-          }
-        } catch (ParseException e) {
-          ErrorObject errorObject =
-              ErrorObject.serverError(
-                String.format(
-                    "failed to parse status code. %s:%s",
-                      e.getClass().getName(),
-                      e.getMessage()
-                )
-              );
-          throw new ServerException(errorObject);
-        }
-
-        HttpEntity httpEntity = response.getEntity();
-        if (httpEntity == null) {
-          ErrorObject errorObject =
-              ErrorObject.serverError(
-                      "failed to retrieve public key"
-              );
-          throw new ServerException(errorObject);
-        }
-
-        ContentType contentType;
-        try {
-          contentType = ContentType.get(httpEntity);
-        } catch (UnsupportedCharsetException | org.apache.http.ParseException e) {
-          ErrorObject errorObject =
-              ErrorObject.serverError(
-                  "Error in setting content type in HTTP response"
-              );
-          throw new ServerException(errorObject);
-        }
-
-        Charset charset = contentType.getCharset();
-        if (charset != null && !StandardCharsets.UTF_8.equals(charset)) {
-          ErrorObject errorObject =
-              ErrorObject.serverError(
-                  String.format("unsupported charset: %s", charset)
-              );
-          throw new ServerException(errorObject);
-        }
-
-        if (!ContentType.APPLICATION_JSON.getMimeType().equalsIgnoreCase(contentType.getMimeType())) {
-          ErrorObject errorObject =
-              ErrorObject.serverError(
-                  String.format(
-                      "unsupported mime type: %s",
-                      contentType.getMimeType()
-                  )
-              );
-          throw new ServerException(errorObject);
-        }
-
-        try {
-          String content = EntityUtils.toString(httpEntity);
-          JSONObject jsonContent = JSONUtils.parseJSONObject(content);
-          // Get the Issuer
-          String issuer = JSONUtils.getString(jsonContent, "issuer");
-          if (issuer == null || issuer.isEmpty()) {
-            ErrorObject errorObject = ErrorObject.serverError(
-                "Error: Invalid Issuer found for public key"
-            );
-            throw new ServerException(errorObject);
-          }
-          // Get the Algorithm
-          String alg = JSONUtils.getString(jsonContent, "alg");
-          if (alg == null || (!alg.equals("RSA") && !alg.equals("SHA256withRSA"))) {
-            ErrorObject errorObject = ErrorObject.serverError(
-                String.format(
-                    "Error: No Handler for enclosed Key's Algorithm (%s)",
-                    alg
-                )
-            );
-            throw new ServerException(errorObject);
-          }
-          // Get the key material
-          String val = JSONUtils.getString(jsonContent, "value");
-          if (val == null || val.isEmpty()) {
-            ErrorObject errorObject = ErrorObject.serverError(
-                    "Error: Invalid key material for public key"
-            );
-            throw new ServerException(errorObject);
-          }
-          val = val.replaceAll("-----BEGIN PUBLIC KEY-----", "")
-                   .replaceAll("-----END PUBLIC KEY-----", "")
-                   .replaceAll("[\n\r]", "")
-                   .trim();
-          byte[] decoded = Base64Utils.decodeToBytes(val);
-          X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
-          KeyFactory kf = KeyFactory.getInstance("RSA");
-          return new CSPTokenPublicKey(issuer, (RSAPublicKey) kf.generatePublic(spec));
-        } catch (ParseException e) {
-          ErrorObject errorObject = ErrorObject.serverError(
-              String.format(
-                  "failed to get public key from federatd IDP. %s:%s",
-                  e.getClass().getName(),
-                  e.getMessage()
-              )
-          );
-          LoggerUtils.logFailedRequest(logger, errorObject, e);
-          throw new ServerException(errorObject);
-        }
-      }
+      return Pair.of(idToken, accessToken);
     }
   }
 }

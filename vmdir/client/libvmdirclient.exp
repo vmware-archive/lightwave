@@ -57,6 +57,7 @@ VmDirConnectionGetLdap
 VmDirConnectionClose
 VmDirLeaveFederation
 VmDirRefreshActPassword
+VmDirResetActPassword
 VmDirResetMachineActCred
 VmDirSafeLDAPBind
 VmDirRegReadDCAccount
@@ -115,3 +116,4 @@ VmDirFreeHAServerInfo
 VmDirFreeHATopologyChanges
 VmDirServerReset
 VmDirSetupDefaultAccount
+VmDirAppendRaftState

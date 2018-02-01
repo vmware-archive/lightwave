@@ -118,6 +118,7 @@ typedef struct _VMAFD_CERT_THR_DATA
 
     BOOLEAN          bShutdown;
     BOOLEAN          forceFlush;
+    BOOLEAN          bForceRefresh;
 
 } VMAFD_CERT_THR_DATA, *PVMAFD_CERT_THR_DATA;
 

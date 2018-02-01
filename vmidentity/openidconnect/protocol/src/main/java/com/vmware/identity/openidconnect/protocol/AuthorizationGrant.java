@@ -69,6 +69,9 @@ public abstract class AuthorizationGrant {
             case REFRESH_TOKEN:
                 authzGrant = RefreshTokenGrant.parse(parameters);
                 break;
+            case FEDERATION_TOKEN:
+                authzGrant = FederationTokenGrant.parse(parameters);
+                break;
             default:
                 throw new IllegalStateException("unrecognized grant type: " + grantType.getValue());
         }

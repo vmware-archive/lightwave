@@ -1,6 +1,7 @@
 package com.vmware.identity.ssoconfig;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -9,11 +10,15 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.FileSystems;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -29,6 +34,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 
+import com.vmware.af.VmAfClient;
 import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -61,14 +67,11 @@ public class SSOConfigurationUtils {
             }
         });
 
-        try {
-            IDP_HOST_ADDRESS = InetAddress.getLocalHost().getCanonicalHostName();
-        } catch (UnknownHostException e) {
-            logger.error("Cannot resolve IDP FQDN. Using the default - " + IDP_HOST_ADDRESS);
-        }
+        VmAfClient afdClient = new VmAfClient("localhost");
+        IDP_HOST_ADDRESS = afdClient.getDomainController();
     }
 
-    static final String DEFAULT_TENANT = "vsphere.local";
+    static final String DEFAULT_TENANT = "lightwave.local";
     static final int DEFAULT_OP_PORT = 443;
 
     static final String CREDENTIALS_FILE = getTcStsInstanceConfDir() + "/oidc_token";
@@ -82,6 +85,7 @@ public class SSOConfigurationUtils {
     private static final String DISPLAY_PARAM_PASSWORD_AUTH = "IsPasswordAuthEnabled";
     private static final String DISPLAY_PARAM_WINDOWS_AUTH = "IsWindowsAuthEnabled";
     private static final String DISPLAY_PARAM_CERT_AUTH = "IsTLSClientCertAuthnEnabled";
+    private static final String SYSTEM_SSL_CERT_STORE = "/etc/ssl/certs";
     private static final int DEFAULT_DISPLAY_WIDTH = 100;
     private static final int LDAPS_PORT = 636;
 
@@ -157,7 +161,7 @@ public class SSOConfigurationUtils {
         keyStore = KeyStore.getInstance("JKS");
         keyStore.load(null, null);
         populateSSLCertificates(keyStore);
-	    return keyStore;
+        return keyStore;
     }
 
     private static void populateSSLCertificates(KeyStore keyStore) throws Exception {
@@ -176,6 +180,23 @@ public class SSOConfigurationUtils {
         for (CertificateDTO cert : certs) {
             keyStore.setCertificateEntry(String.format("VecsSSLCert%d", index), cert.getX509Certificate());
             index++;
+        }
+
+        // Add Trusted Root Certificates from the Operating System's standard SSL store
+        File trustedRootsPath = new File(SYSTEM_SSL_CERT_STORE);
+        if (trustedRootsPath.exists()) {
+            Pattern pemFilePattern = Pattern.compile(".*.pem");
+            final CertificateFactory factory = CertificateFactory.getInstance("X509");
+            for (File entry : trustedRootsPath.listFiles()) {
+                Matcher pemFileMatcher = pemFilePattern.matcher(entry.getName());
+                if (pemFileMatcher.matches()) {
+                    Collection<? extends Certificate> rootCerts = factory
+                            .generateCertificates(new FileInputStream(entry));
+                    for (Certificate cert : rootCerts) {
+                        keyStore.setCertificateEntry(String.format("OS-SSLCert%d", index++), cert);
+                    }
+                }
+            }
         }
     }
 
