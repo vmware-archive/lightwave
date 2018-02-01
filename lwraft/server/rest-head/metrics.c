@@ -14,6 +14,14 @@
 
 #include "includes.h"
 
+static
+VOID
+_VmDirRESTLogExpensiveOperation(
+    PVDIR_REST_OPERATION    pRestOp,
+    METRICS_LDAP_OPS        operation,
+    uint64_t                iRespTime
+    );
+
 DWORD
 VmDirRestMetricsInit(
     VOID
@@ -149,6 +157,11 @@ VmDirRestMetricsUpdateFromHandler(
     {
         VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
     }
+
+    if (pRestOp->pConn->AccessInfo.pAccessToken)   // process request locally
+    {
+        _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
+    }
 }
 
 VOID
@@ -167,5 +180,31 @@ VmDirRestMetricsShutdown(
                 gpRestLdapMetrics[i][j][k] = NULL;
             }
         }
+    }
+}
+
+static
+VOID
+_VmDirRESTLogExpensiveOperation(
+    PVDIR_REST_OPERATION    pRestOp,
+    METRICS_LDAP_OPS        operation,
+    uint64_t                iRespTime
+    )
+{
+    PVDIR_SUPERLOG_RECORD pSupLog = &pRestOp->pConn->SuperLogRec;
+
+    if (operation == METRICS_LDAP_OP_SEARCH &&
+        iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
+    {
+        VMDIR_LOG_WARNING(
+            VMDIR_LOG_MASK_ALL,
+            "Inefficient search %d MS - base=(%s), scope=%s, filter=%s, scan cnt=%d, return cnt=%d BindDN=(%s)",
+            iRespTime,
+            VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszBaseDN),
+            VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszScope),
+            VDIR_SAFE_STRING(pSupLog->pszOperationParameters),
+            pSupLog->opInfo.searchInfo.dwScanned,
+            pSupLog->opInfo.searchInfo.dwReturned,
+            VDIR_SAFE_STRING(pRestOp->pConn->AccessInfo.pszBindedDn));
     }
 }

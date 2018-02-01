@@ -141,6 +141,9 @@ VmDirRESTLdapSearch(
     dwError = VmDirMLSearch(pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirLogSearchParameters(pSearchOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // set operation result
     dwError = VmDirRESTEncodeEntryArray(
             &pSearchOp->internalSearchEntryArray,
