@@ -80,7 +80,7 @@ VmDirRESTCacheRefresh(
             VMDIR_REST_OIDC_SERVER,
             VMDIR_REST_OIDC_PORT,
             pszDomainName,
-            LIGHTWAVE_TLS_CA_PATH);
+            NULL/* TODO: Change to LIGHTWAVE_TLS_CA_PATH once tested */);
     dwError = VmDirOidcToVmdirError(dwOIDCError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
