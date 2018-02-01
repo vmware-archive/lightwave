@@ -17,7 +17,10 @@ PRIV_USER="root"
 
 LIKEWISE_BASE=/home/abernstein/workspaces/git/lightwave/likewise-open
 LIGHTWAVE_BASE=/home/abernstein/workspaces/git/lightwave/lightwave
-SASL_BASE=$LIGHTWAVE_BASE/vmdir/thirdparty/cyrus-sasl-2.1.26
+#SASL_BASE=$LIGHTWAVE_BASE/vmdir/thirdparty/cyrus-sasl-2.1.26 # checked in local change; broken
+
+SASL_BASE=/home/abernstein/workspaces/wrk/cyrus-sasl-2.1.26 # local change, okay
+
 
 echo_status()
 {
