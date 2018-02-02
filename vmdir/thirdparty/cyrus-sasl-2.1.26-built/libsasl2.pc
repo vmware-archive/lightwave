@@ -1,0 +1,8 @@
+libdir = /usr/lib
+
+Name: Cyrus SASL
+Description: Cyrus SASL implementation
+URL: http://www.cyrussasl.org/
+Version: 2.1.26
+Libs: -L${libdir} -lsasl2
+Libs.private:  -ldl -lresolv  

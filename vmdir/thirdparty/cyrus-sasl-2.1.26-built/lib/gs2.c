@@ -1,0 +1,1 @@
+../plugins/gs2.c
