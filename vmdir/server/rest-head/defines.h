@@ -28,7 +28,6 @@
 #define VMDIR_REST_STOP_TIMEOUT_SEC  10
 
 // OIDC
-#define VMDIR_REST_OIDC_SERVER              "localhost"
 #define VMDIR_REST_OIDC_PORT                443
 #define VMDIR_REST_DEFAULT_SCOPE            "rs_vmdir"
 #define VMDIR_REST_DEFAULT_CLOCK_TOLERANCE  60.0
