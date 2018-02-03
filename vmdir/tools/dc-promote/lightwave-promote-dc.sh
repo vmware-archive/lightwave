@@ -230,21 +230,25 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
 echo_status "Installing CyrusSASL gssspnego plugin"
 scp $SASL_BASE/plugins/.libs/libgssspnego.so.3.0.0 $PRIV_USER@$LIGHTWAVE_AD:/var/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
-  '( mv /var/tmp/libgssspnego.so.3.0.0 /usr/lib/sasl2 && ln -s /usr/lib/sasl2/libgssspnego.so.3.0.0 /usr/lib/sasl2/libgssspnego.so )'
+  '( mv /var/tmp/libgssspnego.so.3.0.0 /usr/lib/sasl2 &&
+     ln -s /usr/lib/sasl2/libgssspnego.so.3.0.0 /usr/lib/sasl2/libgssspnego.so &&
+     chmod 755 /usr/lib/sasl2/libgssspnego.so.3.0.0 )'
 
 # 13 Replace default GSSAPI plugin (built with GSS-SPNEGO disabled)
 echo_status "Configuring patched libgssapiv2.so plugin that disables gss-spnego"
 scp $SASL_BASE/plugins/.libs/libgssapiv2.so.3.0.0 $PRIV_USER@$LIGHTWAVE_AD:/var/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
  '( mv -i /usr/lib/sasl2/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0.rpmorig &&
-    mv /var/tmp/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0 )'
+    mv /var/tmp/libgssapiv2.so.3.0.0   /usr/lib/sasl2/libgssapiv2.so.3.0.0 &&
+    chmod 755 /usr/lib/sasl2/libgssapiv2.so.3.0.0 )'
 
 # 14 Replace the default CyrusSASL library
 echo_status "Replace the default CyrusSASL library"
 scp $SASL_BASE/./lib/.libs/libsasl2.so.3.0.0 $PRIV_USER@$LIGHTWAVE_AD:/var/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
     '( mv /usr/lib/libsasl2.so.3.0.0  /usr/lib/libsasl2.so.3.0.0.rpmorig &&
-       mv /var/tmp/libsasl2.so.3.0.0 /usr/lib/libsasl2.so.3.0.0 )'
+       mv /var/tmp/libsasl2.so.3.0.0 /usr/lib/libsasl2.so.3.0.0 &&
+       chmod 755  /usr/lib/libsasl2.so.3.0.0 )'
 
 # 15a Build correct name in partitions script
 echo_status "Build partitions script"
@@ -293,6 +297,12 @@ cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
 NNNN
 scp /tmp/regshell-rpcloadorder.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
+
+
+echo_status "Modify DSE Root supportedControl values for domain join"
+scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/supported-controls.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/supported-controls.sh 
+
 
 # TBD:Adam
 # Add DNS "A" record for client who joined

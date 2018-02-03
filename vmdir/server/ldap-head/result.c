@@ -453,6 +453,21 @@ VmDirSendSearchEntry(
         ber_init2( ber, &lberBervEntryBlob, LBER_USE_DER );  // ber takes over lberBervEntryBlob.lberbv.bv_val ownership
         bFreeBer = TRUE;
 
+#ifdef WINJOIN_CHECK_ENABLED
+        if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
+        {
+            struct berval empty_dn = {0};
+ 
+            if ( ber_printf( ber, "{it{O{", pOperation->msgId, LDAP_RES_SEARCH_ENTRY, &empty_dn ) == -1)
+            {
+                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendSearchEntry: ber_printf (to print msgId ...) failed" );
+                retVal = LDAP_OTHER;
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                                "Encoding msgId, RES_SEARCH_ENTRY, DN failed");
+            }
+        }
+        else
+#endif
         if ( ber_printf( ber, "{it{O{", pOperation->msgId, LDAP_RES_SEARCH_ENTRY, &pSrEntry->dn ) == -1)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendSearchEntry: ber_printf (to print msgId ...) failed" );

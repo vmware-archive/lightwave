@@ -56,7 +56,7 @@
  * ber_scanf() for a more correct implementation.
  */
 static int 
-matchBlob(unsigned char *blob, int bloblen, char *match)
+matchBlob(unsigned char *blob, int bloblen, char *match, char **foundPtr)
 {
     int found = 0;
     int i = 0;
@@ -75,6 +75,10 @@ matchBlob(unsigned char *blob, int bloblen, char *match)
             j++;
             if (m == match_len)
             {
+                if (foundPtr)
+                {
+                    *foundPtr = (char *) &blob[i+j];
+                }
                 found = 1;
                 goto done;
             }
@@ -734,7 +738,7 @@ int format_cldap_netlogon_response_msg(
     unsigned int type = 23;
     unsigned int flags = 0;
     unsigned char buf[512];
-    char NetBiosBuf[15] = {0};
+    char NetBiosBuf[16] = {0};
     unsigned int version = 5;
     unsigned short LMToken = 0xffff;
     unsigned short NtToken = 0xffff;
@@ -957,6 +961,48 @@ error:
     return sts;
 }
 
+static
+DWORD
+LookupDomainGuid(char **ppszDomainGuid)
+{
+    DWORD dwError = 0;
+    PVDIR_ATTRIBUTE pDomainGuid = NULL;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+    char *pszDomainGuid = NULL;
+    PSTR pszPageCookie = NULL;
+
+    dwError = VmDirFilterInternalSearch(
+                  "",
+                  LDAP_SCOPE_BASE,
+                  "(objectClass=*)",
+                  8,  /* ?? */
+                  &pszPageCookie,
+                  &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize == 1)
+    {
+        pDomainGuid = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_OBJECT_GUID);
+    }
+
+    dwError = VmDirAllocateMemory(pDomainGuid->vals->lberbv_len + 1,
+                                  (PVOID*)&pszDomainGuid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    memcpy(pszDomainGuid,
+           pDomainGuid->vals->lberbv_val,
+           pDomainGuid->vals->lberbv_len);
+    pszDomainGuid[pDomainGuid->vals->lberbv_len] = '\0';
+
+    *ppszDomainGuid = pszDomainGuid;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszDomainGuid);
+    goto cleanup;
+}
 
 /*
  *  Process UDP message; CLDAP requests are only supported so far.
@@ -968,47 +1014,31 @@ ProcessUdpConnection(
    )
 {
     PVDIR_CONNECTION_CTX pConnCtx = NULL;
-    int            retVal = LDAP_SUCCESS;
+    int retVal = LDAP_SUCCESS;
     ber_int_t messageId = 0;
     struct berval *flatten = NULL;
     struct berval in_ber_val = {0};
     BerElement *in_ber = NULL;
 
-#if 1
-    /*
-     * TBD: Adam-All of these hard-coded values must be removed, and this 
-     * data obtained from vmdird.
-     */
-    /*
-     * Implement these ldap searches in code and the GUID/SITE name issue is solved
-     ldapsearch $logindata -b "" -s base "(objectclass=*)" msDS-SiteName objectGUID
-     msDS-SiteName: Default-first-site
-     objectGUID: 3c448826-516c-467a-adb9-f95252680c8a
-     */
-
-#endif
     char *DomainName = (char *) gVmdirKrbGlobals.pszRealm;
-    char *forest = DomainName; /* "lightwave.local"; */
+    char *forest = DomainName;
     char HostName[128] = {0};
-    char *ptr = NULL;
-    char *user = HostName; /* "photon-psc-adam"; TBD: Adam-End name in '$'?? */
-    char *site = "Default-First-Site-Name";
-    unsigned char GUID[] = {
-        0x81, 0x2d, 0xe7, 0xdf, 0x97, 0x57, 0x4b, 0x40, 
-        0x95, 0x63, 0x88, 0xe8, 0xce, 0x1c, 0x39, 0x8f, };
+    char UserName[128] = {0};
+    int i = 0;
+    int UserNameLen = 0;
+    char *user = UserName; /* This is the "User" from the filter, not the DC name */
+    char *userPtr = NULL;
+    char *site = "Default-First-Site-Name"; /* TBD: maybe hard coded value to fix later */
+    char *pszGuid = NULL;
+    uuid_t GUID = {0};
     DWORD dwCldapResponseLen = 0;
     PVOID *pCldapResponse = NULL;
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection called");
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
 
+    /* This must be in NetBIOS name format; "ADAM-WIN2K8R2-D$" */
     gethostname(HostName, sizeof(HostName)-1);
-    ptr = strchr(HostName, '.');
-    if (ptr)
-    {
-        *ptr = '\0';
-    }
-
 
     in_ber_val.bv_val = pConnCtx->udp_buf;
     in_ber_val.bv_len = (ber_len_t) pConnCtx->udp_len;
@@ -1021,12 +1051,31 @@ ProcessUdpConnection(
         goto error;
     }
 
-    if (matchBlob(in_ber_val.bv_val, in_ber_val.bv_len, "Netlogon"))
+    /* Retrieve the domain Guid from DSE Root */
+    retVal = LookupDomainGuid(&pszGuid);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    /* Convert string Guid to binary array */
+    retVal = uuid_parse(pszGuid, GUID);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    if (matchBlob(in_ber_val.bv_val, in_ber_val.bv_len, "Netlogon", NULL))
     {
         if (matchBlob(in_ber_val.bv_val,
                       in_ber_val.bv_len,
-                      "User"))
+                      "User", &userPtr))
         {
+            if (userPtr && *userPtr == 0x04)
+            {
+                userPtr++;
+                UserNameLen = (int) *userPtr;
+                userPtr++;
+                for (i=0; i < UserNameLen; i++)
+                {
+                    user[i] = userPtr[i];
+                }
+                user[i] = '\0';
+            }
             retVal = format_cldap_netlogon_response_msg(
                         messageId,
                         forest,
@@ -1054,7 +1103,7 @@ ProcessUdpConnection(
                         &flatten);
         }
     }
-    else if (matchBlob(in_ber_val.bv_val, in_ber_val.bv_len, "currentTime"))
+    else if (matchBlob(in_ber_val.bv_val, in_ber_val.bv_len, "currentTime", NULL))
     {
         retVal = format_cldap_curtime_response_msg(
                     messageId,
@@ -1088,6 +1137,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pConnCtx->udp_addr_buf);
     VMDIR_SAFE_FREE_MEMORY(pConnCtx->udp_buf);
     VMDIR_SAFE_FREE_MEMORY(pConnCtx);
+    VMDIR_SAFE_FREE_MEMORY(pszGuid);
 
     return 0;
 
