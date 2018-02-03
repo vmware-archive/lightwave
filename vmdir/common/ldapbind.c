@@ -392,6 +392,7 @@ VmDirAnonymousLDAPBind(
 {
     DWORD       dwError = 0;
     int         retVal = 0;
+    int         iCnt = 0;
     const int   ldapVer = LDAP_VERSION3;
     BerValue    ldapBindPwd = {0};
     LDAP*       pLocalLd = NULL;
@@ -403,30 +404,46 @@ VmDirAnonymousLDAPBind(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    retVal = ldap_initialize( &pLocalLd, pszLdapURI);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    for (iCnt=0; iCnt<2; iCnt++)
+    {
+        retVal = ldap_initialize(&pLocalLd, pszLdapURI);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    retVal = ldap_set_option( pLocalLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        retVal = ldap_set_option(pLocalLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    optTimeout.tv_usec = 0;
-    optTimeout.tv_sec = MAX_LDAP_CONNECT_NETWORK_TIMEOUT;
+        optTimeout.tv_usec = 0;
+        optTimeout.tv_sec = MAX_LDAP_CONNECT_NETWORK_TIMEOUT;
 
-    // timeout connect
-    retVal = ldap_set_option(pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        // timeout connect
+        retVal = ldap_set_option(pLocalLd, LDAP_OPT_NETWORK_TIMEOUT, (void *)&optTimeout);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    ldapBindPwd.bv_val = NULL;
-    ldapBindPwd.bv_len = 0;
+        ldapBindPwd.bv_val = NULL;
+        ldapBindPwd.bv_len = 0;
 
-    retVal = ldap_sasl_bind_s(
-                               pLocalLd,
-                               "",
-                               LDAP_SASL_SIMPLE,
-                               &ldapBindPwd,  // no credentials
-                               NULL,
-                               NULL,
-                               NULL);
+        retVal = ldap_sasl_bind_s(pLocalLd,
+                                  "",
+                                  LDAP_SASL_SIMPLE,
+                                  &ldapBindPwd,  // no credentials
+                                  NULL,
+                                  NULL,
+                                  NULL);
+        if (retVal == LDAP_SERVER_DOWN || retVal == LDAP_TIMEOUT)
+        {
+            VmDirSleep(50); // pause 50 ms
+            if (pLocalLd)
+            {
+                ldap_unbind_ext_s(pLocalLd, NULL, NULL);
+                pLocalLd = NULL;
+            }
+            continue;   // if transient network error, retry once.
+        }
+        else
+        {
+            break;
+        }
+    }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     *ppLd = pLocalLd;
@@ -437,19 +454,19 @@ cleanup:
 
 ldaperror:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirAnonymousLDAPBind to (%s) failed. (%d)(%s)",
-                     VDIR_SAFE_STRING(pszLdapURI), retVal, ldap_err2string(retVal) );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirAnonymousLDAPBind to (%s) failed. (%d)(%s)",
+                     VDIR_SAFE_STRING(pszLdapURI), retVal, ldap_err2string(retVal));
     dwError = VmDirMapLdapError(retVal);
 
 error:
     if (retVal == 0)
     {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "VmDirAnonymousLDAPBind to (%s) failed. (%u)", VDIR_SAFE_STRING(pszLdapURI), dwError);
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VmDirAnonymousLDAPBind to (%s) failed. (%u)", VDIR_SAFE_STRING(pszLdapURI), dwError);
     }
 
     if (pLocalLd)
     {
-        ldap_unbind_ext_s( pLocalLd, NULL, NULL);
+        ldap_unbind_ext_s(pLocalLd, NULL, NULL);
     }
 
     goto cleanup;
