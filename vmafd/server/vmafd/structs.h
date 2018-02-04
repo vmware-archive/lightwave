@@ -118,6 +118,7 @@ typedef struct _VMAFD_CERT_THR_DATA
 
     BOOLEAN          bShutdown;
     BOOLEAN          forceFlush;
+    BOOLEAN          bForceRefresh;
 
 } VMAFD_CERT_THR_DATA, *PVMAFD_CERT_THR_DATA;
 
@@ -172,8 +173,10 @@ typedef struct _CDC_STATE_MACHINE_CONTEXT
     pthread_mutex_t           state_mutex;
     CDC_STATE_THREAD_STATE    cdcThrState;
     pthread_mutex_t           update_mutex;
+    pthread_mutex_t           run_mutex;
     pthread_cond_t            update_cond;
     volatile UINT32           bFirstRun;
+    volatile UINT32           bForceAffinitize;
 } CDC_STATE_MACHINE_CONTEXT, *PCDC_STATE_MACHINE_CONTEXT;
 
 typedef struct _CDC_CONTEXT

@@ -28,6 +28,7 @@ static
 DWORD
 VmwDeployBuildParams(
     PCSTR pszDomain,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
@@ -192,6 +193,7 @@ ParseArgs(
     DWORD dwError     = 0;
     PSTR  pszDomain   = NULL;
     PSTR  pszPartner  = NULL;
+    PSTR  pszUsername = NULL;
     PSTR  pszPassword = NULL;
     PSTR  pszSite     = NULL;
     PSTR  pszSubjectAltName = NULL;
@@ -202,7 +204,8 @@ ParseArgs(
         PARSE_MODE_PARTNER,
         PARSE_MODE_PASSWORD,
         PARSE_MODE_SITE,
-        PARSE_MODE_SSL_SUBJECT_ALT_NAME
+        PARSE_MODE_SSL_SUBJECT_ALT_NAME,
+        PARSE_MODE_USERNAME
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -217,6 +220,10 @@ ParseArgs(
                 if (!strcmp(pszArg, "--domain"))
                 {
                     parseMode = PARSE_MODE_DOMAIN;
+                }
+                else if (!strcmp(pszArg, "--username"))
+                {
+                    parseMode = PARSE_MODE_USERNAME;
                 }
                 else if (!strcmp(pszArg, "--password"))
                 {
@@ -244,6 +251,20 @@ ParseArgs(
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_DEPLOY_ERROR(dwError);
                 }
+
+                break;
+
+            case PARSE_MODE_USERNAME:
+
+                if (pszUsername)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszUsername = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
 
                 break;
 
@@ -328,6 +349,7 @@ ParseArgs(
 
     dwError = VmwDeployBuildParams(
                     pszDomain,
+                    pszUsername,
                     pszPassword,
                     pszPartner,
                     pszSite,
@@ -357,6 +379,7 @@ static
 DWORD
 VmwDeployBuildParams(
     PCSTR pszDomain,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
@@ -413,10 +436,15 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (!pszUsername)
+    {
+        pszUsername = VMW_ADMIN_NAME;
+    }
+
     if (!pszPassword)
     {
         dwError = VmwDeployReadPassword(
-                        "administrator",
+                        pszUsername,
                         pszDomain,
                         &pszPassword1);
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -431,6 +459,9 @@ VmwDeployBuildParams(
                         &pSetupParams->pszSubjectAltName);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
+
+    dwError = VmwDeployAllocateStringA(pszUsername, &pSetupParams->pszUsername);
+    BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmwDeployAllocateStringA(pszDomain, &pSetupParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -561,6 +592,7 @@ ShowUsage(
     printf("Usage : ic-promote { arguments }\n"
            "Arguments:\n"
            "[--domain   <fully qualified domain name. Default : vsphere.local>]\n"
+           "[--username <username>]\n"
            "--password  <password to administrator account>\n"
            "[--partner  <partner domain controller's hostname or IP Address>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"

@@ -1,0 +1,288 @@
+            <table class="table table-vertical table-noborder no-margin" width="100%" >
+                <tbody>
+                    <tr>
+                        <th style="font-size:14px;width: 20%; font-weight:500;">
+                          <div style="overflow:auto;" [style.max-height.px]="treeHeight">
+                            <clr-tree-node>
+                                <button   (click)="getRootAttributes();"
+                                      class="clr-treenode-link">
+                                    <clr-icon shape="organization" class="is-info is-solid"></clr-icon>
+                                    {{rootDN}}
+                                </button>
+                                <ng-template [clrIfExpanded]="true">
+                                    <clr-tree-node *ngFor="let commonName of listingObj?.result">
+                                        <button
+                                           (click)="selectedDN = commonName.encodedDN;getAttributes();"
+                                           class="clr-treenode-link">
+                                            <clr-icon [attr.shape]="commonName.iconShape" [attr.class]="commonName.iconClass"></clr-icon>
+                                            {{commonName.displayName}}
+                                       </button>
+                                       <ng-template clrIfExpanded>
+                                           <lazy-loaded-level1 *clrIfExpanded
+                                           [(rootDn)]=commonName.dn
+                                          (onChildSelected)="vmdirForm.reset();onChildSelected($event)"></lazy-loaded-level1>
+                                       </ng-template>
+                                   </clr-tree-node>
+                                </ng-template>
+                            </clr-tree-node>
+                        </div>
+                        <div class="btn-group" style="margin-left:22%;margin-top:20px">
+                            <button class="btn btn-primary btn-sm" (click)='isAddObject=true;'><clr-icon shape="plus"></clr-icon>Add</button>
+                            <button class="btn btn-primary btn-sm" (click)="confirmDel=true"><clr-icon class="is-error" shape="times"></clr-icon>Delete</button>
+                        </div>
+                        </th>
+                        <td>
+                            <form #vmdirForm="ngForm">
+                            <div *ngIf="showErrorAlert" class="alert alert-danger">
+                                <div class="alert-items">
+                                    <div class="alert-item static">
+                                        <div class="alert-icon-wrapper">
+                                            <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+                                        </div>
+                                        <span style="text-align:center;" class="alert-text">
+                                                 {{errorMsg}}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button type="button" class="close" aria-label="Close">
+                                    <clr-icon aria-hidden="true" (click)="showErrorAlert = false;" shape="close"></clr-icon>
+                                </button>
+                            </div>
+                            <div class="card" style="margin-top:unset;">
+                                <div class="card-header" style="background-color:#F3F6FA;">
+                                   {{header}}
+                                    <div class="btn-group" style="float:right">
+                                        <button *ngIf="!isEdited" class="btn btn-sm btn-outline" (click)="isSdEdited = true;">
+                                           <clr-icon shape="shield" class="is-error" style="width: 16px; height: 16px;"></clr-icon> Security
+                                        </button>
+                                        <button *ngIf="!isEdited" class="btn btn-sm btn-outline" (click)="tab = 1;isEdited = true;handleEdit()">
+                                           <clr-icon shape="pencil" class="is-warning" style="width: 16px; height: 16px;"></clr-icon> Edit
+                                        </button>
+                                        <button *ngIf="isEdited" class="btn btn-sm btn-outline" (click)="schemaMap.clear();getAttributes();isEdited = false;">
+                                           <clr-icon shape="times" class="is-solid is-error" style="width: 16px; height: 16px;"></clr-icon> Cancel
+                                        </button>
+                                        <button *ngIf="isEdited" class="btn btn-primary btn-sm" [disabled]="vmdirForm.form.pristine" (click)="prepareUpdatedAttributesList();confirm = true;">
+                                           <clr-icon shape="check" class="is-solid is-success" style="width: 16px; height: 16px;"></clr-icon> Submit
+                                        </button>
+                                    </div>
+                               </div>
+                               <div [style.max-height.px]="cardHeight" style="overflow-y:auto;" class="card-block" *ngIf="!isEdited">
+                                   <div class="card-text">
+                                       <table class="table w3-striped no-margin">
+                                           <tbody>
+                                               <tr *ngFor="let attr of attribsArr">
+                                                   <th style="font-weight:400;background-color:transparent;overflow:auto !important;width:240px !important;">
+                                                       <div class="signpost-triggers-wrapper">
+                                                           <div class="signpost-item">
+                                                               <clr-signpost style="font-size:14px;margin-left:10px;">
+                                                                   {{ attr.type }}
+                                                                   <clr-icon shape="info" class="is-solid"
+                                                                   (click)="displayProperties(attr.type, attribsArr[0])" clrSignpostTrigger>
+                                                                   </clr-icon>
+                                                                   <clr-signpost-content *ngIf="showSignPost">
+                                                                       <table class="table no-border no-margin">
+                                                                           <tbody>
+                                                                               <tr *ngFor="let spAttr of signPostObj">
+                                                                                   <td style="font-weight:400;font-size:14px;background-color:white;">{{spAttr.type}}</td>
+                                                                                   <td style="font-size:13px;background-color:white;">{{spAttr.value}}</td>
+                                                                               </tr>
+                                                                           </tbody>
+                                                                      </table>
+                                                                    </clr-signpost-content>
+                                                                 </clr-signpost>
+                                                             </div>
+                                                         </div>
+                                                     </th>
+                                                     <td *ngIf="!isEdited" style="overflow:auto !important;max-width:750px !important;">
+                                                         <ul *ngIf="attr.value.length > 1" class="list">
+                                                             <li *ngFor="let val of attr?.value" style="font-size:14px;">
+                                                                 {{val}}
+                                                             </li>
+                                                         </ul>
+                                                         <span *ngIf="attr.value.length == 1" style="font-size:13px;">
+                                                             {{attr.value[0]}}
+                                                         </span>
+                                                     </td>
+                                                   </tr>
+                                               </tbody>
+                                           </table>
+                                   </div>
+                               </div>
+                                   <ul *ngIf="isEdited" id="attrTabs" class="nav" role="tablist">
+                                       <li [ngClass]=" {'active-tab': tab==1 }" role="presentation" class="nav-item">
+                                           <button [ngClass]=" {'active': tab == 1}" id="tab1" (click)=" tab = 1;displayed = 'updates'; pkgMap = updatesMap; pkgNames = updatesPkgNames; " href="javascript:void(0)" class="btn btn-link nav-link" aria-controls="panel1"
+                aria-selected="true" type="button">Required</button>
+                                       </li>
+                                       <li [ngClass]=" {'active-tab': tab==2 }" role="presentation" class="nav-item">
+                                           <button [ngClass]=" {'active': tab == 2} " id="tab2" (click)=" tab = 2 " href="javascript:void(0)" class="btn btn-link nav-link" aria-controls="panel2"
+                                                       aria-selected="false" type="button">Optional</button>
+                                       </li>
+                                   </ul>
+                               <div style="overflow:auto;" *ngIf="isEdited">
+                               <section id="panel1" role="tabpanel" aria-labelledby="tab1" *ngIf="tab==1">
+                               <div [style.max-height.px]="cardHeight" style="overflow-y:hidden;" class="card-block">
+                                   <div class="card-text">
+                                           <clr-datagrid>
+                                               <clr-dg-column style="width:285px;">
+                                                      Attribute Name
+                                                      <clr-dg-string-filter [clrDgStringFilter]="mustAttrFilter"></clr-dg-string-filter>
+                                               </clr-dg-column>
+    					       <clr-dg-column>Value</clr-dg-column>
+	                                       <clr-dg-row *clrDgItems="let schemaattr of setSchemaMustAttribsArr;let index = index;">
+                                                   <clr-dg-cell style="width:285px;"><label class="required">{{schemaattr?.attrType}} *</label></clr-dg-cell>
+                                                   <clr-dg-cell>
+                                                               <div class="signpost-triggers-wrapper">
+                                                                   <div class="signpost-item">
+                                                                       <clr-signpost>
+                                                                           <input required style="border-bottom:initial;"(click)="displayProperties(schemaattr.attrType, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" [readonly]="schemaattr.attrType === curSchema && curSchemaMap['readonly'] == true" clrSignpostTrigger>
+                                                                           <clr-signpost-content *clrIfOpen>
+                                                                               <table class="vertical no-border no-margin">
+                                                                                   <tbody>
+                                                                                       <tr *ngFor="let spAttr of signPostObj">
+                                                                                          <th>{{spAttr?.type}}</th>
+                                                                                          <td>{{spAttr?.value}}</td>
+                                                                                       </tr>
+                                                                                   </tbody>
+                                                                               </table>
+                                                                           </clr-signpost-content>
+                                                                       </clr-signpost>
+                                                                   </div>
+                                                               </div>
+                                                    </clr-dg-cell>
+                                                </clr-dg-row>
+                                            </clr-datagrid>
+                                         </div>
+                                      </div>
+                                  </section>
+                                  <section id="panel2" role="tabpanel" aria-labelledby="tab2" *ngIf="tab==2">
+                                  <div class="card-block" [style.max-height.px]="cardHeight" style="overflow-y:hidden;">
+                                   <div class="card-text">
+                                           <clr-datagrid [style.max-height.px]="datagridHeight">
+                                               <clr-dg-column style="width:285px;">
+                                                      Attribute Name
+                                                      <clr-dg-string-filter [clrDgStringFilter]="mayAttrFilter"></clr-dg-string-filter>
+                                               </clr-dg-column>
+                                               <clr-dg-column>Value</clr-dg-column>
+                                               <clr-dg-row *clrDgItems="let schemaattr of setSchemaMayAttribsArr;let index = index;">
+                                                   <clr-dg-cell style="width:285px;">{{schemaattr?.attrType}}</clr-dg-cell>
+                                                   <clr-dg-cell>
+                                                               <div class="signpost-triggers-wrapper">
+                                                                   <div class="signpost-item">
+                                                                       <clr-signpost>
+                                                                         <input style="border-bottom:initial;" (click)="displayProperties(schemaattr.attrType, schemaattr.value)" name="{{schemaattr.attrType}}" id="{{schemaattr.attrType}}" type="text" size="45" [(ngModel)]="schemaattr.value" [readonly]="schemaattr.attrType === curSchema && curSchemaMap['readonly'] == true" clrSignpostTrigger>
+                                                                         <clr-signpost-content *clrIfOpen>
+                                                                             <table class="no-margin vertical no-border">
+                                                                                 <tbody>
+                                                                                     <tr *ngFor="let spAttr of signPostObj">
+                                                                                         <th>{{spAttr?.type}}</th>
+                                                                                         <td>{{spAttr?.value}}</td>
+                                                                                     </tr>
+                                                                                 </tbody>
+                                                                             </table>
+                                                                         </clr-signpost-content>
+                                                                     </clr-signpost>
+                                                                   </div>
+                                                               </div>
+                                                    </clr-dg-cell>
+                                                </clr-dg-row>
+                                            </clr-datagrid>
+                              </div>
+                          </div>
+                          </section>
+                        </div>
+                     </div>
+                     </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+<clr-modal *ngIf="!noUpdatesYet && confirm" [(clrModalOpen)]="confirm && !noUpdatesYet" [clrModalSize]="'xl'">
+    <h3 class="modal-title">Are you sure you want to update the following attributes[s] ?</h3>
+    <div class="modal-body">
+        <table>
+            <tbody>
+                <tr *ngFor="let attr of updatedAttributesArr">
+                    <th style="text-align:left;padding:0 15px 0 15px;width:25%"><ul><li style="width:100%;">{{attr}}</li></ul></th>
+                    <td style="padding:0 15px 0 15px;">{{updatedAttributes[attr].value}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="confirm = false;">No</button>
+        <button type="button" class="btn btn-primary" (click)="submitAttributeUpdates(); confirm = false;">Yes</button>
+    </div>
+   </clr-modal>
+   <clr-modal *ngIf="confirm && noUpdatesYet" [(clrModalOpen)]="confirm && noUpdatesYet" [clrModalClosable]="false">
+        <h3 class="modal-title">No attribute changes to submit</h3>
+        <div class="modal-body">
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" (click)="confirm = false;">Ok</button>
+        </div>
+   </clr-modal>
+   <clr-modal [(clrModalOpen)]="confirmDel">
+        <h3 class="modal-title">Are you sure you want to delete the LDAP Object?</h3>
+        <div class="modal-body">
+             {{header}}
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" (click)="deleteEntry();confirmDel = false;">Ok</button>
+            <button type="button" class="btn btn-primary" (click)="confirmDel = false;">Cancel</button>
+        </div>
+   </clr-modal>
+   <clr-modal [(clrModalOpen)]="isListEdited" [clrModalSize]="'xl'">
+        <div class="modal-body">
+             <h3 style="text-align:center;" class="modal-title">Multi-value attribute</h3>
+             <div class="card">
+                 <div class="card-header">
+                     {{curSchema}}
+                     <span style="font-size:12px !important;">({{curSchemaMap['dataType']}})</span>
+                     <button style="float:right;" class="btn btn-sm" (click)="handleListAdd(curSchemaValue);">
+                         <clr-icon shape="plus" class="is-info"></clr-icon>
+                         new
+                     </button>
+                 </div>
+                 <div class="card-block">
+                     <div class="card-title">
+                     </div>
+                     <div class = "card-text">
+                     <form #listForm="ngForm">
+                            <ul>
+                               <li *ngFor="let val of curSchemaValue; let index = index;trackBy:trackByFn">
+                                   <input type="text" name='{{schema}}{{index}}' size="45" [(ngModel)]="curSchemaValue[index]" />
+                                   <clr-icon shape="times-circle" class="is-solid is-error" (click)="handleListRemoval(curSchemaValue, index)"></clr-icon>
+                               </li>
+                            </ul>
+                     </form>
+                     </div>
+                  </div>
+             </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" (click)="updateView(curSchemaValue)">done</button>
+        </div>
+   </clr-modal>
+   <clr-modal *ngIf="isSdEdited" [(clrModalOpen)]="isSdEdited" [clrModalSize]="'xl'">
+       <div class="modal-body" style="max-height:unset;">
+           <h3 style="text-align:center;" class="modal-title">Security Descriptor</h3>
+           <sdeditor (notify)="onSdNotify($event)" [(usersArr)]="usersArr" [(groupsArr)]="groupsArr" [(aclString)]="aclString" [(rootDn)]="selectedDN"></sdeditor>
+       </div>
+   </clr-modal>
+   <clr-modal *ngIf="isDateEdited" [(clrModalOpen)]="isDateEdited" style='width:350px !important'>
+       <div id="datetimebody" class="modal-body" style='min-height:500px;'>
+           <h3 style="text-align:center;" class="modal-title">Pick Date/Time</h3>
+           <div class="card">
+                 <div class="card-header">
+                     {{curSchema}}
+                     <span style="font-size:12px !important;">({{curSchemaMap['dataType']}})</span>
+		 </div>
+                 <div class="card-block">
+                     <div class="card-text" style="min-height:400px;">
+                         <owl-date-time inputId="dateInput" [(ngModel)]="setDate" placeHolder="click here to pick a date/time" [autoClose]="false"></owl-date-time>
+                     </div>
+                 </div>
+           </div>
+       </div>
+   </clr-modal>
+   <objectadd [(rootDn)]="selectedDN" (notify)="onAddNotify($event)" *ngIf='isAddObject'></objectadd>

@@ -133,7 +133,9 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.initialNextUSN, 0),
         VMDIR_SF_INIT(.maxOriginatingUSN, 0),
         VMDIR_SF_INIT(.bvServerObjName, VDIR_BERVALUE_INIT),
-        VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT)
+        VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT),
+        VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
+        VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0)
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
@@ -145,3 +147,5 @@ VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
         VMDIR_SF_INIT(.pCond, NULL),
         VMDIR_SF_INIT(.pTSStack, NULL)
     };
+
+PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

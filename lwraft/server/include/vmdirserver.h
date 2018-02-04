@@ -106,6 +106,8 @@ typedef struct _VMDIR_SERVER_GLOBALS
                                              // excessive searching
     VDIR_BERVALUE        bvServerObjName;
     DWORD                dwDomainFunctionalLevel;
+    DWORD                dwMaxInternalSearchLimit;
+    DWORD                dwEfficientReadOpTimeMS;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -367,6 +369,24 @@ VmDirShutdown(
 VOID
 VmDirAddTrackLastLoginItem(
     PCSTR   pszDN
+    );
+
+// metrics.c
+DWORD
+VmDirRpcMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirRpcMetricsUpdate(
+    METRICS_RPC_OPS operation,
+    uint64_t        iStartTime,
+    uint64_t        iEndTime
+    );
+
+VOID
+VmDirRpcMetricsShutdown(
+    VOID
     );
 
 #ifdef __cplusplus

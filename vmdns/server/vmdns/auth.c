@@ -15,7 +15,7 @@
 
 #include "includes.h"
 
-#define VMDNS_ADMINISTRATORS_GROUP "cn=Administrators,cn=Builtin"
+#define VMDNS_ADMINISTRATORS_GROUP "cn=DNSAdmins,cn=Builtin"
 
 static BOOL
 VmDnsIsMemberOf(

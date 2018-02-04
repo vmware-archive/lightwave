@@ -479,7 +479,7 @@ cleanup:
         ldap_msgfree(pResult);
     }
 
-    VmDirDeleteSyncRequestControl(&syncReqCtrl);
+    VmDirFreeCtrlContent(&syncReqCtrl);
     if (pLd)
     {
         VmDirLdapUnbind(&pLd);
@@ -629,7 +629,7 @@ cleanup:
         searchResCtrls = NULL;
     }
 
-    VmDirDeleteSyncRequestControl(&syncReqCtrl);
+    VmDirFreeCtrlContent(&syncReqCtrl);
 
     return dwError;
 error:

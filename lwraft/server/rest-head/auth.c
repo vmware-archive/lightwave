@@ -239,6 +239,11 @@ VmDirRESTAuthViaToken(
     {
         if (RtlEqualSid(pGroups->Groups[i].Sid, pBuiltInAdminsGroupSid))
         {
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "Admin group access rights given to user: %s",
+                    VDIR_SAFE_STRING(pAuthToken->pszBindUPN));
+
             RtlReleaseAccessToken(&pAccessToken);
             pAccessToken = NULL;
 

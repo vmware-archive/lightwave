@@ -56,3 +56,54 @@ VmDirAuditWriteOp(
 error:
     return;
 }
+
+VOID
+VmDirInternalMetricsUpdate(
+    METRICS_LDAP_OPS        operation,
+    VDIR_OPERATION_PROTOCOL protocol,
+    VDIR_OPERATION_TYPE     opType,
+    int                     errCode,
+    uint64_t                iMLStartTime,
+    uint64_t                iMLEndTime,
+    uint64_t                iBEStartTime,
+    uint64_t                iBEEndTime
+    )
+{
+    if (operation != METRICS_LDAP_OP_IGNORE)
+    {
+        if (protocol == VDIR_OPERATION_PROTOCOL_LDAP)
+        {
+            VmDirLdapMetricsUpdate(
+                    operation,
+                    VmDirMetricsMapLdapOpTypeToEnum(opType),
+                    VmDirMetricsMapLdapErrorToEnum(errCode),
+                    METRICS_LAYER_MIDDLELAYER,
+                    iMLStartTime,
+                    iMLEndTime);
+
+            VmDirLdapMetricsUpdate(
+                    operation,
+                    VmDirMetricsMapLdapOpTypeToEnum(opType),
+                    VmDirMetricsMapLdapErrorToEnum(errCode),
+                    METRICS_LAYER_BACKEND,
+                    iBEStartTime,
+                    iBEEndTime);
+        }
+        else if (protocol == VDIR_OPERATION_PROTOCOL_REST)
+        {
+            VmDirRestMetricsUpdate(
+                    operation,
+                    VmDirMetricsMapLdapErrorToEnum(errCode),
+                    METRICS_LAYER_MIDDLELAYER,
+                    iMLStartTime,
+                    iMLEndTime);
+
+            VmDirRestMetricsUpdate(
+                    operation,
+                    VmDirMetricsMapLdapErrorToEnum(errCode),
+                    METRICS_LAYER_BACKEND,
+                    iBEStartTime,
+                    iBEEndTime);
+        }
+    }
+}

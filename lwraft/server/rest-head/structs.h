@@ -27,46 +27,20 @@ typedef enum
     VDIR_REST_RSC_ETCD,
     VDIR_REST_RSC_METRICS,
     VDIR_REST_RSC_UNKNOWN,
-    VDIR_REST_RSC_COUNT,
+    VDIR_REST_RSC_IDP,
+    VDIR_REST_RSC_COUNT
 
 } VDIR_REST_RESOURCE_TYPE;
 
-typedef struct _VDIR_REST_RESULT
+// httperror.c
+typedef struct _VDIR_HTTP_ERROR
 {
-    int         errCode;
-    PSTR        pszErrMsg;
-    PLW_HASHMAP pDataMap;
-    PSTR        pszData;
-    DWORD       dwDataLen;
-    BOOLEAN     bErrSet;
+    int     httpStatus;
+    DWORD   dwHttpStatus;
+    PSTR    pszHttpStatus;
+    PSTR    pszHttpReason;
 
-} VDIR_REST_RESULT, *PVDIR_REST_RESULT;
-
-typedef DWORD (*PFN_SET_RESULT)(
-        PVDIR_REST_RESULT   pRestRslt,
-        PVDIR_LDAP_RESULT   pLdapRslt,
-        DWORD               dwErr,
-        PSTR                pszErrMsg
-        );
-
-typedef DWORD (*PFN_GET_HTTP_ERROR)(
-        PVDIR_REST_RESULT   pRestRslt,
-        DWORD*              pdwHttpStatus,
-        PSTR*               ppszHttpStatus,
-        PSTR*               ppszHttpReason
-        );
-
-typedef struct _VDIR_REST_RESOURCE
-{
-    VDIR_REST_RESOURCE_TYPE rscType;
-    PCSTR                   pszEndpoint;
-    BOOLEAN                 bIsEndpointPrefix;
-    PFN_SET_RESULT          pfnSetResult;
-    PFN_GET_HTTP_ERROR      pfnGetHttpError;
-    PCSTR                   pszErrCodeKey;
-    PCSTR                   pszErrMsgKey;
-
-} VDIR_REST_RESOURCE, *PVDIR_REST_RESOURCE;
+} VDIR_HTTP_ERROR, *PVDIR_HTTP_ERROR;
 
 // proxy.c
 typedef struct _VDIR_PROXY_RESULT
@@ -79,6 +53,52 @@ typedef struct _VDIR_PROXY_RESULT
 
 } VDIR_PROXY_RESULT, *PVDIR_PROXY_RESULT;
 
+// result.c
+typedef struct _VDIR_REST_RESULT
+{
+    // error result
+    BOOLEAN             bErrSet;
+    int                 errCode;
+    PSTR                pszErrMsg;
+    PVDIR_HTTP_ERROR    pHttpError;
+
+    // proxy result
+    PVDIR_PROXY_RESULT  pProxyResult;
+
+    // result data
+    PLW_HASHMAP         pDataMap;
+    PSTR                pszBody;
+    DWORD               dwBodyLen;
+
+} VDIR_REST_RESULT, *PVDIR_REST_RESULT;
+
+// resource.c
+typedef DWORD (*PFN_SET_RESULT)(
+        PVDIR_REST_RESULT   pRestRslt,
+        PVDIR_LDAP_RESULT   pLdapRslt,
+        DWORD               dwErr,
+        PSTR                pszErrMsg
+        );
+
+typedef DWORD (*PFN_GET_HTTP_ERROR)(
+        PVDIR_REST_RESULT   pRestRslt,
+        PVDIR_HTTP_ERROR*   ppHttpStatus
+        );
+
+typedef struct _VDIR_REST_RESOURCE
+{
+    VDIR_REST_RESOURCE_TYPE rscType;
+    PCSTR                   pszEndpoint;
+    BOOLEAN                 bIsEndpointPrefix;
+    PFN_SET_RESULT          pfnSetResult;
+    PFN_GET_HTTP_ERROR      pfnGetHttpError;
+    PCSTR                   pszContentType;
+    PCSTR                   pszErrCodeKey;
+    PCSTR                   pszErrMsgKey;
+
+} VDIR_REST_RESOURCE, *PVDIR_REST_RESOURCE;
+
+// operation.c
 typedef struct _VDIR_REST_OPERATION
 {
     DWORD                       dwPort;
@@ -90,14 +110,19 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                        pszContentType;
     PSTR                        pszInput;
     PSTR                        pszClientIP;
+    PSTR                        pszOrigin;
+    BOOLEAN                     bisValidOrigin;
     json_t*                     pjInput;
     PLW_HASHMAP                 pParamMap;
     VDIR_REST_AUTH_METHOD       authMthd;
     PVDIR_CONNECTION            pConn;
     PVDIR_REST_RESULT           pResult;
     PVDIR_REST_RESOURCE         pResource;
-    PVDIR_PROXY_RESULT          pProxyResult;
-    PVMDIR_THREAD_LOG_CONTEXT   pThreadLogContext;
+    PREST_API_METHOD            pMethod;
+
+    // if leader, get it from resource.c
+    // otherwise, get it from proxy.c
+    PFN_GET_HTTP_ERROR          pfnGetHttpError;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
@@ -116,16 +141,6 @@ typedef struct _VDIR_REST_AUTH_TOKEN
     PSTR                        pszBindUPN;
 
 } VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
-
-// httperror.c
-typedef struct _VDIR_HTTP_ERROR
-{
-    int     httpStatus;
-    DWORD   dwHttpStatus;
-    PSTR    pszHttpStatus;
-    PSTR    pszHttpReason;
-
-} VDIR_HTTP_ERROR, *PVDIR_HTTP_ERROR;
 
 // vmafd.c
 typedef DWORD (*PFN_VMAFD_GET_DC_NAME)(

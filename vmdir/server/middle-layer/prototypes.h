@@ -368,6 +368,13 @@ VmDirPluginServerEntryPostDeleteCommit(
     DWORD            dwPriorResult
     );
 
+DWORD
+VmDirPluginDCAccountPostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
 // saslsockbuf.c
 DWORD
 VmDirSASLSockbufInstall(
@@ -425,6 +432,34 @@ BOOLEAN
 VmDirIsSearchForIntegrityCheckStatus(
     PVDIR_OPERATION                     pOp,
     PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
+    );
+
+// util.c
+VOID
+VmDirInternalMetricsUpdate(
+    METRICS_LDAP_OPS        operation,
+    VDIR_OPERATION_PROTOCOL protocol,
+    VDIR_OPERATION_TYPE     opType,
+    int                     errCode,
+    uint64_t                iMLStartTime,
+    uint64_t                iMLEndTime,
+    uint64_t                iBEStartTime,
+    uint64_t                iBEEndTime
+    );
+
+BOOLEAN
+VmDirIsSearchForRaftPing(
+    PVDIR_OPERATION     pOp
+    );
+
+BOOLEAN
+VmDirIsSearchForRaftVote(
+    PVDIR_OPERATION     pOp
+    );
+
+BOOLEAN
+VmDirIsSearchForStatePing(
+    PVDIR_OPERATION     pOp
     );
 
 #endif

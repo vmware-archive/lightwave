@@ -49,8 +49,44 @@ else
     echo "POST promoted successfully"
 fi
 
-echo "Step 4: Reaffinitize to DC"
+echo "Step 4a: Disable Lightwave HA"
+/opt/vmware/bin/cdc-cli client-affinity legacy
+echo "Step 4b: Affinitize to DC"
 set_dc_name
 
 echo "Step 5: Generate SSL cert if it does not exist"
 generate_ssl_cert
+
+echo "Step 6: Make sure all protocol heads are in accept state"
+# in AWS, we only care about IPV4 ports
+MAX_RETRY=2
+RETRY=1
+
+set +e
+while [[ ${RETRY} -le ${MAX_RETRY} ]]
+do
+    netcat -z -v localhost 38900
+    PORT38900=$?
+    netcat -z -v localhost 63600
+    PORT63600=$?
+    netcat -z -v localhost 7577
+    PORT7577=$?
+    netcat -z -v localhost 7578
+    PORT7578=$?
+
+    if  [ $PORT38900 -eq 0 -a  $PORT63600 -eq 0 -a  $PORT7577 -eq 0 -a  $PORT7578 -eq 0 ];
+    then
+        break
+    fi
+
+    /opt/likewise/bin/lwsm restart post
+    sleep 5
+    let RETRY++
+done
+
+if [ ${RETRY} -gt ${MAX_RETRY} ];
+then
+    exit 1
+fi
+
+set -e

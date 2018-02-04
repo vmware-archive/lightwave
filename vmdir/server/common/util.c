@@ -1464,3 +1464,39 @@ cleanup:
 error:
     goto cleanup;
 }
+
+BOOLEAN
+VmDirIsDeletedContainer(
+    PCSTR   pszDN
+    )
+{
+    BOOLEAN bRtn = FALSE;
+
+    if (pszDN &&
+        VmDirStringCompareA(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE) == 0)
+    {
+        bRtn = TRUE;
+    }
+
+    return bRtn;
+}
+
+// following gVmdirServerGlobals global variables must be initialized in a promoted server.
+VOID
+VmDirAssertServerGlobals(
+    VOID
+    )
+{
+    assert(gVmdirServerGlobals.systemDomainDN.lberbv_val);
+    assert(gVmdirServerGlobals.bvDCGroupDN.lberbv_val);
+    assert(gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val);
+    assert(gVmdirServerGlobals.bvServicesRootDN.lberbv_val);
+    assert(gVmdirServerGlobals.delObjsContainerDN.lberbv_val);
+    assert(gVmdirServerGlobals.serverObjDN.lberbv_val);
+    assert(gVmdirServerGlobals.bvServerObjName.lberbv_val);
+    assert(gVmdirServerGlobals.dcAccountDN.lberbv_val);
+    assert(gVmdirServerGlobals.dcAccountUPN.lberbv_val);
+    assert(gVmdirServerGlobals.invocationId .lberbv_val);
+    assert(gVmdirServerGlobals.bvDefaultAdminDN.lberbv_val);
+    assert(gVmdirServerGlobals.pszSiteName);
+}

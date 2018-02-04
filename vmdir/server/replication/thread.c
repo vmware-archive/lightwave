@@ -80,6 +80,14 @@ VmDirSetGlobalServerId();
 
 static
 int
+_VmDirContinueReplicationCycle(
+    uint64_t *puiStartTimeInShutdown,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    struct berval   bervalSyncDoneCtrl
+    );
+
+static
+int
 _VmDirFetchReplicationPage(
     PVMDIR_DC_CONNECTION        pConnection,
     USN                         lastSupplierUsnProcessed,
@@ -94,7 +102,7 @@ _VmDirFreeReplicationPage(
     );
 
 static
-int
+VOID
 _VmDirProcessReplicationPage(
     PVMDIR_REPLICATION_CONTEXT pContext,
     PVMDIR_REPLICATION_PAGE pPage
@@ -209,6 +217,8 @@ vdirReplicationThrFun(
         goto cleanup;
     }
 
+    VmDirClusterLoadCache();
+
     if (VmDirSchemaCtxAcquire(&sContext.pSchemaCtx) != 0)
     {
         VMDIR_LOG_ERROR(
@@ -218,6 +228,9 @@ vdirReplicationThrFun(
         retVal = LDAP_OPERATIONS_ERROR;
         BAIL_ON_VMDIR_ERROR(retVal);
     }
+
+    retVal = dequeCreate(&sContext.pFailedEntriesQueue);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     while (1)
     {
@@ -328,6 +341,8 @@ vdirReplicationThrFun(
 cleanup:
     VmDirSchemaCtxRelease(sContext.pSchemaCtx);
     VMDIR_SAFE_FREE_STRINGA(sContext.pszKrb5ErrorMsg);
+    VmDirReplicationClearFailedEntriesFromQueue(&sContext);
+    dequeFree(sContext.pFailedEntriesQueue);
     VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
     VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
     return 0;
@@ -381,7 +396,9 @@ VmDirReplUpdateCookies(
 
     bvLastLocalUsnProcessed.lberbv.bv_val = syncDoneCtrlVal->bv_val;
     bvLastLocalUsnProcessed.lberbv.bv_len =
-                        VmDirStringChrA(bvLastLocalUsnProcessed.lberbv.bv_val, ',') - bvLastLocalUsnProcessed.lberbv.bv_val;
+            VmDirStringChrA(bvLastLocalUsnProcessed.lberbv.bv_val, ',') -
+            bvLastLocalUsnProcessed.lberbv.bv_val;
+
     // Note: We are effectively over-writing in ctrls[0]->ldctl_value.bv_val here, which should be ok.
     bvLastLocalUsnProcessed.lberbv.bv_val[bvLastLocalUsnProcessed.lberbv.bv_len] = '\0';
 
@@ -391,37 +408,39 @@ VmDirReplUpdateCookies(
     // if lastLocalUsnProcessed is different
     if (strcmp(bvLastLocalUsnProcessed.lberbv.bv_val, replAgr->lastLocalUsnProcessed.lberbv.bv_val) != 0)
     {
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirReplUpdateCookies: Replication cycle done. Updating cookies" );;
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "VmDirReplUpdateCookies: Replication cycle done. Updating cookies");
 
         // Update disk copy of utdVector
-        retVal = UpdateServerObject( pSchemaCtx, &utdVector, replAgr );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = UpdateServerObject(pSchemaCtx, &utdVector, replAgr);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of utdVector
-        VmDirFreeBervalContent( &gVmdirServerGlobals.utdVector );
-        if (VmDirBervalContentDup( &utdVector, &gVmdirServerGlobals.utdVector ) != 0)
-        {
-            retVal = LDAP_OPERATIONS_ERROR;
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirReplUpdateCookies: BervalContentDup failed." );
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
+        retVal = VmDirUTDVectorCacheUpdate(utdVector.lberbv.bv_val);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update disk copy of lastLocalUsnProcessed
-        retVal = UpdateReplicationAgreement( pSchemaCtx, replAgr, &bvLastLocalUsnProcessed );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = UpdateReplicationAgreement(pSchemaCtx, replAgr, &bvLastLocalUsnProcessed);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of lastLocalUsnProcessed
-        VmDirFreeBervalContent( &replAgr->lastLocalUsnProcessed );
-        if (VmDirBervalContentDup( &bvLastLocalUsnProcessed, &replAgr->lastLocalUsnProcessed ) != 0)
+        VmDirFreeBervalContent(&replAgr->lastLocalUsnProcessed);
+        if (VmDirBervalContentDup(&bvLastLocalUsnProcessed, &replAgr->lastLocalUsnProcessed) != 0)
         {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirReplUpdateCookies: BervalContentDup failed." );
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirReplUpdateCookies: BervalContentDup failed.");
+
             retVal = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR( retVal );
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
     }
     else
     {
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirReplUpdateCookies: Replication cycle done.. Skipping updating Replication cookies.");
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "VmDirReplUpdateCookies: Replication cycle done.. Skipping updating Replication cookies.");
     }
     retVal = LDAP_SUCCESS;
 
@@ -734,7 +753,7 @@ _VmDirWaitForReplicationAgreement(
         VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
 
         // When 1st RA is created for non-1st replica => try to perform special 1st replication cycle
-        if (gVmdirReplAgrs && gVmdirServerGlobals.serverId != 1)
+        if (gVmdirReplAgrs)
         {
             if ( gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB )
             {
@@ -754,6 +773,10 @@ _VmDirWaitForReplicationAgreement(
                     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirFirstReplicationCycle() SUCCEEDED." );
                 }
             }
+            else if (gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_NONE)
+            {
+                // already promoted node and first partner added
+            }
             else
             {
                 assert(0);  // Lightwave server always use DB copy to bootstrap partner node.
@@ -770,6 +793,44 @@ error:
     goto cleanup;
 }
 
+/*
+ * Don't stop cycle even if there is nothing in the re-apply queue.
+ * because supplier may have other changes needed that could cause ordering issues
+ * if not consumed in same replication cycle.
+ */
+static
+int
+_VmDirContinueReplicationCycle(
+    uint64_t *puiStartTimeInShutdown,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    struct berval   bervalSyncDoneCtrl
+    )
+{
+    int retVal = LDAP_SUCCESS;
+
+    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+    {
+        if (*puiStartTimeInShutdown == 0)
+        {
+            *puiStartTimeInShutdown = VmDirGetTimeInMilliSec();
+        }
+        else if ((VmDirGetTimeInMilliSec() - *puiStartTimeInShutdown) >=
+                 gVmdirGlobals.dwReplConsumerThreadTimeoutInMilliSec)
+        {
+            VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s: Force quit cycle without updating cookies, supplier %s initUsn: %s syncdonectrl: %s",
+                __FUNCTION__,
+                pReplAgr->ldapURI,
+                VDIR_SAFE_STRING(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val),
+                VDIR_SAFE_STRING(bervalSyncDoneCtrl.bv_val));
+            retVal = LDAP_CANCELLED;
+        }
+    }
+
+    return retVal;
+}
+
 static
 VOID
 _VmDirConsumePartner(
@@ -779,145 +840,67 @@ _VmDirConsumePartner(
     )
 {
     int retVal = LDAP_SUCCESS;
-    int iPreviousCycleEntriesOutOfSequence = -1;
     USN initUsn = 0;
     USN lastSupplierUsnProcessed = 0;
     BOOLEAN bInReplLock = FALSE;
-    BOOLEAN bReplayEverything = FALSE;
-    BOOLEAN bReTrialDesired = FALSE;
     BOOLEAN bContinue = FALSE;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
     struct berval   bervalSyncDoneCtrl = {0};
     PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
     uint64_t    uiStartTime = 0;
     uint64_t    uiEndTime = 0;
+    uint64_t    uiStartTimeInShutdown = 0;
 
     VMDIR_RWLOCK_WRITELOCK(bInReplLock, gVmdirGlobals.replRWLock, 0);
 
     uiStartTime = VmDirGetTimeInMilliSec();
-
-    do // do-while ( bReTrialDesired )
+    /*
+     * Replication thread acquires lock while main thread is blocked
+     * to complete shutdown, don't perform replication cycle
+     */
+    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
     {
-        int iEntriesOutOfSequence = 0;
-
-        bReTrialDesired = FALSE;
-        bContinue = FALSE;
-        initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
-
-        if (bReplayEverything)
-        {
-            lastSupplierUsnProcessed = 0;
-            bReplayEverything = FALSE;
-        }
-        else
-        {
-            lastSupplierUsnProcessed = initUsn;
-        }
-
-        do // do-while (bMoreUpdatesExpected == TRUE); paged results loop
-        {
-            if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-            {
-                if (iEntriesOutOfSequence == 0)
-                {   // no parent/child out of sequence so far, should update UTDVector before existing.
-                    // this avoids create->modify(s) scenario lost modify(s) if cycle force ended by service shutdown.
-                    // i.e. next cycle would receive SYNC_STATE(2)/modify instead of SYNC_STATE(1)/create.
-                    goto replcycledone;
-                }
-
-                // this should be very rare after LW1.0/PSC6.6 where we switch to db copy for first replication cycle.
-                retVal = LDAP_CANCELLED;
-                goto cleanup;
-            }
-
-            _VmDirFreeReplicationPage(pPage);
-            pPage = NULL;
-
-            retVal = _VmDirFetchReplicationPage(
-                    pConnection,
-                    lastSupplierUsnProcessed, // used in search filter
-                    initUsn,                  // used in syncRequestCtrl to send(supplier) high watermark.
-                    &pPage);
-            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-            retVal = _VmDirProcessReplicationPage(pContext, pPage);
-            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-            lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
-            iEntriesOutOfSequence += pPage->iEntriesOutOfSequence;
-
-            // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
-            retVal = _VmDirFilterEmptyPageSyncDoneCtr(
-                    pReplAgr->lastLocalUsnProcessed.lberbv.bv_val,
-                    &bervalSyncDoneCtrl,
-                    &(pPage->searchResCtrls[0]->ldctl_value));
-            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-            // Check if sync done control contains explicit continue indicator
-            bContinue = VmDirStringStrA(
-                    pPage->searchResCtrls[0]->ldctl_value.bv_val,
-                    VMDIR_REPL_CONT_INDICATOR) ?
-                            TRUE : FALSE;
-        }
-        while (bContinue);
-
-        if (iEntriesOutOfSequence > 0)
-        {
-            // first time we need a retrial
-            if (iPreviousCycleEntriesOutOfSequence == -1)
-            {
-                iPreviousCycleEntriesOutOfSequence = iEntriesOutOfSequence;
-                bReTrialDesired = TRUE;
-            }
-            // we've made progress on reducing the number of missing parents
-            else if (iEntriesOutOfSequence < iPreviousCycleEntriesOutOfSequence)
-            {
-                iPreviousCycleEntriesOutOfSequence = iEntriesOutOfSequence;
-                bReTrialDesired = TRUE;
-            }
-            // we've made no progress on filling the hole...try from first USN
-            else
-            {
-                /*
-                 * If the directory has a hole in it, then reset the USN
-                 * back to a value that will lead to recovery.
-                 * If that doesn't work, prevent continuous replications that
-                 * will bog down the CPU and network, but yet retry on occasion.
-                 */
-                if (pContext->stLastTimeTriedToFillHoleInDirectory == 0 ||
-                    pContext->stLastTimeTriedToFillHoleInDirectory + (SECONDS_IN_HOUR) < time(NULL))
-                {
-                    VMDIR_LOG_ERROR(
-                            VMDIR_LOG_MASK_ALL,
-                            "_VmDirConsumePartner: Attempting to plug hole in directory");
-
-                    bReplayEverything = TRUE;
-                    bReTrialDesired = TRUE;
-                }
-                else
-                {
-                    VMDIR_LOG_ERROR(
-                            VMDIR_LOG_MASK_ALL,
-                            "_VmDirConsumePartner: Did not succesfully perform any updates");
-
-                    bReTrialDesired = FALSE; // Trying again probably won't help.
-                    retVal = LDAP_CANCELLED; // We need an error value.
-                }
-                time(&pContext->stLastTimeTriedToFillHoleInDirectory);
-            }
-        }
-
-        if (bReTrialDesired)
-        {
-            VMDIR_LOG_WARNING(
-                    VMDIR_LOG_MASK_ALL,
-                    "_VmDirConsumePartner: will retry consuming partner (%s)",
-                    pConnection->pszRemoteDCHostName);
-        }
+        retVal = LDAP_CANCELLED;
+        goto cleanup;
     }
-    while (bReTrialDesired);
 
-replcycledone:
+    initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+    lastSupplierUsnProcessed = initUsn;
+
+    do // do-while (bMoreUpdatesExpected == TRUE); paged results loop
+    {
+        _VmDirFreeReplicationPage(pPage);
+        pPage = NULL;
+
+        retVal = _VmDirContinueReplicationCycle(&uiStartTimeInShutdown, pReplAgr, bervalSyncDoneCtrl);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        retVal = _VmDirFetchReplicationPage(
+                pConnection,
+                lastSupplierUsnProcessed, // used in search filter
+                initUsn,                  // used in syncRequestCtrl to send(supplier) high watermark.
+                &pPage);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        _VmDirProcessReplicationPage(pContext, pPage);
+
+        lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
+
+        // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
+        retVal = _VmDirFilterEmptyPageSyncDoneCtr(
+                pReplAgr->lastLocalUsnProcessed.lberbv.bv_val,
+                &bervalSyncDoneCtrl,
+                &(pPage->searchResCtrls[0]->ldctl_value));
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        // Check if sync done control contains explicit continue indicator
+        bContinue = VmDirStringStrA(
+                   pPage->searchResCtrls[0]->ldctl_value.bv_val,
+                   VMDIR_REPL_CONT_INDICATOR) ?
+                   TRUE : FALSE;
+    }
+    while (bContinue);
+
     if (retVal == LDAP_SUCCESS)
     {
         // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.
@@ -955,6 +938,7 @@ collectmetrics:
     }
 
 cleanup:
+    VmDirReplicationClearFailedEntriesFromQueue(pContext);
     VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
     _VmDirFreeReplicationPage(pPage);
@@ -1040,6 +1024,7 @@ _VmDirFetchReplicationPage(
 {
     int retVal = LDAP_SUCCESS;
     BOOLEAN bLogErr = TRUE;
+    PSTR    pszUtdVector = NULL;
     LDAPControl*    srvCtrls[2] = {NULL, NULL};
     LDAPControl**   ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
@@ -1073,10 +1058,13 @@ _VmDirFetchReplicationPage(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
+    retVal = VmDirUTDVectorCacheToString(&pszUtdVector);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
     retVal = VmDirCreateSyncRequestControl(
             gVmdirServerGlobals.invocationId.lberbv.bv_val,
             initUsn,
-            gVmdirServerGlobals.utdVector.lberbv.bv_val,
+            pszUtdVector,
             initUsn == lastSupplierUsnProcessed || 0 == lastSupplierUsnProcessed, // it's fetching first page if TRUE
             &(pPage->syncReqCtrl));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
@@ -1148,6 +1136,7 @@ _VmDirFetchReplicationPage(
             {
                 pPage->pEntries[iEntries].dwDnLength = (DWORD)VmDirStringLenA(pPage->pEntries[iEntries].pszDn);
             }
+            pPage->pEntries[iEntries].pBervEncodedEntry = NULL;
 
             iEntries++;
         }
@@ -1188,7 +1177,7 @@ _VmDirFetchReplicationPage(
                 pPage->iEntriesRequested,
                 pPage->iEntriesReceived,
                 initUsn,
-                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+                VDIR_SAFE_STRING(pszUtdVector));
     }
 
 cleanup:
@@ -1197,6 +1186,7 @@ cleanup:
         ldap_controls_free(ctrls);
         ctrls = NULL;
     }
+    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
     return retVal;
 
 ldaperror:
@@ -1211,7 +1201,7 @@ ldaperror:
                 pPage->iEntriesRequested,
                 pPage->iEntriesReceived,
                 initUsn,
-                VDIR_SAFE_STRING(gVmdirServerGlobals.utdVector.lberbv.bv_val));
+                VDIR_SAFE_STRING(pszUtdVector));
     }
     _VmDirFreeReplicationPage(pPage);
     pPage = NULL;
@@ -1239,6 +1229,8 @@ _VmDirFreeReplicationPage(
             for (i = 0; i < pPage->iEntriesReceived; i++)
             {
                 VMDIR_SAFE_FREE_MEMORY(pPage->pEntries[i].pszDn);
+                VmDirFreeBerval(pPage->pEntries[i].pBervEncodedEntry);
+                VmDirFreeBervalContent(&pPage->pEntries[i].reqDn);
             }
             VMDIR_SAFE_FREE_MEMORY(pPage->pEntries);
         }
@@ -1253,7 +1245,7 @@ _VmDirFreeReplicationPage(
             ldap_msgfree(pPage->searchRes);
         }
 
-        VmDirDeleteSyncRequestControl(&pPage->syncReqCtrl);
+        VmDirFreeCtrlContent(&pPage->syncReqCtrl);
 
         VMDIR_SAFE_FREE_MEMORY(pPage);
     }
@@ -1263,13 +1255,12 @@ _VmDirFreeReplicationPage(
  * Perform Add/Modify/Delete on entries in page
  */
 static
-int
+VOID
 _VmDirProcessReplicationPage(
     PVMDIR_REPLICATION_CONTEXT pContext,
     PVMDIR_REPLICATION_PAGE pPage
     )
 {
-    int retVal = 0;
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
     size_t i = 0;
 
@@ -1285,31 +1276,15 @@ _VmDirProcessReplicationPage(
         {
             errVal = ReplAddEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
             pContext->pSchemaCtx = pSchemaCtx ;
-
-            if (errVal == LDAP_NO_SUCH_OBJECT)
-            {
-                // - out-of-sequence parent-child updates OR
-                // - parent deleted on one node, child added on another
-                pPage->iEntriesOutOfSequence++;
-            }
         }
         else if (entryState == LDAP_SYNC_MODIFY)
         {
             errVal = ReplModifyEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
-            if (errVal == LDAP_NOT_ALLOWED_ON_NONLEAF)
-            {
-                pPage->iEntriesOutOfSequence++;
-            }
-
             pContext->pSchemaCtx = pSchemaCtx ;
         }
         else if (entryState == LDAP_SYNC_DELETE)
         {
             errVal = ReplDeleteEntry( pSchemaCtx, pPage->pEntries+i);
-            if (errVal == LDAP_NOT_ALLOWED_ON_NONLEAF)
-            {
-                pPage->iEntriesOutOfSequence++;
-            }
         }
         else
         {
@@ -1319,6 +1294,10 @@ _VmDirProcessReplicationPage(
         if (errVal == LDAP_SUCCESS)
         {
             pPage->iEntriesProcessed++;
+        }
+        else
+        {
+            VmDirReplicationPushFailedEntriesToQueue(pContext, pPage->pEntries+i);
         }
 
         if (errVal)
@@ -1342,13 +1321,14 @@ _VmDirProcessReplicationPage(
         }
     }
 
+    pPage->iEntriesOutOfSequence = dequeGetSize(pContext->pFailedEntriesQueue);
+
     VMDIR_LOG_INFO(
         LDAP_DEBUG_REPL,
-        "%s: error %d "
+        "%s: "
         "filter: '%s' requested: %d received: %d last usn: %llu "
         "processed: %d out-of-sequence: %d ",
         __FUNCTION__,
-        retVal,
         VDIR_SAFE_STRING(pPage->pszFilter),
         pPage->iEntriesRequested,
         pPage->iEntriesReceived,
@@ -1356,7 +1336,9 @@ _VmDirProcessReplicationPage(
         pPage->iEntriesProcessed,
         pPage->iEntriesOutOfSequence);
 
-    return retVal;
+    VmDirReapplyFailedEntriesFromQueue(pContext);
+
+    return;
 }
 
 static

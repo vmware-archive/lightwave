@@ -104,7 +104,7 @@ VmDirExternalOperationCreate(
    retVal = VmDirAllocateMemory( sizeof(*pOperation), (PVOID *)&pOperation );
    BAIL_ON_VMDIR_ERROR( retVal );
 
-   pOperation->protocol = 0;
+   pOperation->protocolVer = 0;
    pOperation->reqCode = reqCode;
    pOperation->ber = ber;
    pOperation->msgId = msgId;

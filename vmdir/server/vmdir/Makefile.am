@@ -20,6 +20,7 @@ endif
 vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
+    background.c \
     globals.c \
     heartbeat.c \
     index.c \
@@ -30,7 +31,7 @@ vmdird_SOURCES = \
     ipclocalapi.c \
     ipcapihandler.c \
     main.c \
-    metricsinit.c \
+    metrics.c \
     parseargs.c \
     regconfig.c \
     rpcserv.c \
@@ -78,6 +79,7 @@ vmdird_CPPFLAGS = \
 
 vmdird_LDADD = \
     $(top_builddir)/vmdir/server/vmkdc/libvmkdcserv.la \
+    $(top_builddir)/vmdir/server/metrics/libmetrics.la \
     $(top_builddir)/vmdir/server/ldap-head/libldap-head.la \
     $(top_builddir)/vmdir/server/rest-head/librest-head.la \
     $(top_builddir)/vmdir/server/indexcfg/libindexcfg.la \
@@ -87,6 +89,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/server/backend/libbackend.la \
     $(VMDIRD_BACKEND_STORE) \
     $(top_builddir)/vmdir/server/replication/libreplication.la \
+    $(top_builddir)/vmdir/server/clusterstate/libclusterstate.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdir/server/common/libsrvcommon.la \
     $(top_builddir)/vmdir/common/libcommon.la \

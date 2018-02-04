@@ -328,8 +328,14 @@ _VmDirLog1(
 
     if (pThreadLogContextVal)
     {
-        snprintf(logMessage, sizeof(logMessage), "reqid:%s, ",
-                pThreadLogContextVal->pszRequestId ? pThreadLogContextVal->pszRequestId : "");
+        snprintf(logMessage, sizeof(logMessage), "reqid: %s [%s,%d] ",
+                VDIR_SAFE_STRING(pThreadLogContextVal->pszRequestId),
+                VDIR_SAFE_STRING(pThreadLogContextVal->pszFuncName),
+                pThreadLogContextVal->dwFuncLine);
+
+        pThreadLogContextVal->pszFuncName = NULL;
+        pThreadLogContextVal->dwFuncLine = 0;
+
         logLength = strlen(logMessage);
     }
 

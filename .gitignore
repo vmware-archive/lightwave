@@ -287,6 +287,11 @@ $RECYCLE.BIN/
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# lwraft-ui
+ui/lwraft-ui/stage/
+lwraft-ui/target/
+ui/lwraft-ui/src/app/*.js*
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -505,6 +510,12 @@ FakesAssemblies/
 node_modules/
 node/
 dist/
+
+# lightwave web based UI applications
+ui/lightwave-ui/stage/
+ui/lightwave-ui/src/app/*.js
+ui/lightwave-ui/target/
+ui/lightwave-ui/webui/
 
 # Typescript v1 declaration files
 typings/

@@ -31,7 +31,8 @@ public enum GrantType {
     SOLUTION_USER_CREDENTIALS   ("urn:vmware:grant_type:solution_user_credentials"),
     GSS_TICKET                  ("urn:vmware:grant_type:gss_ticket"),
     PERSON_USER_CERTIFICATE     ("urn:vmware:grant_type:person_user_certificate"),
-    SECURID                     ("urn:vmware:grant_type:securid");
+    SECURID                     ("urn:vmware:grant_type:securid"),
+    FEDERATION_TOKEN            ("urn:vmware:grant_type:federation_token");
 
     private static final Map<String, GrantType> stringToEnumMap = new HashMap<String, GrantType>();
     static {

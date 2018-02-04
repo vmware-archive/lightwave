@@ -200,6 +200,7 @@ typedef struct _VDIR_CONNECTION
     char                    szClientIP[INET6_ADDRSTRLEN];
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
+    PVMDIR_THREAD_LOG_CONTEXT pThrLogCtx;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -260,12 +261,11 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
-//SCW - strong consistency write
-typedef enum _VDIR_ENTRY_SCW_STATUS
+typedef enum _VDIR_RAFT_LOG_TRIM_SCORE
 {
-    VDIR_SCW_SUCCEEDED,
-    VDIR_SCW_FAILED
-} VDIR_ENTRY_SCW_STATUS;
+    RAFT_LOG_TRIM_SCORE_LOW = 0,
+    RAFT_LOG_TRIM_SCORE_HIGH
+} VDIR_RAFT_LOG_TRIM_SCORE;
 
 typedef struct _VDIR_ENTRY
 {
@@ -551,14 +551,22 @@ typedef enum
     VDIR_OPERATION_TYPE_REPL = 4,
 } VDIR_OPERATION_TYPE;
 
+typedef enum
+{
+    VDIR_OPERATION_PROTOCOL_LDAP,
+    VDIR_OPERATION_PROTOCOL_REST
+
+} VDIR_OPERATION_PROTOCOL;
+
 typedef struct _VDIR_OPERATION
 {
-    VDIR_OPERATION_TYPE opType;
+    VDIR_OPERATION_TYPE     opType;
+    VDIR_OPERATION_PROTOCOL protocol;
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid only for EXTERNAL operation
     ///////////////////////////////////////////////////////////////////////////
-    ber_int_t           protocol;    // version of the LDAP protocol used by client
+    ber_int_t           protocolVer;    // version of the LDAP protocol used by client
     BerElement *        ber;         // ber of the request
     ber_int_t           msgId;       // msgid of the request
     PVDIR_CONNECTION    conn;        // Connection
@@ -603,6 +611,7 @@ typedef struct _VDIR_OPERATION
     DWORD               dwSentEntries; // number of entries sent back to client
     BOOLEAN             bSuppressLogInfo;
     BOOLEAN             bNoRaftLog; //The operation is derived or in local server scope - don't generate Raft log
+
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
@@ -1404,8 +1413,16 @@ VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle
     );
 
+// oidctovmdirerror.c
+DWORD
+VmDirOidcToVmdirError(
+    DWORD dwOidcError
+    );
+
 #ifdef __cplusplus
 }
 #endif
+
+#include <vmdirmetrics.h>
 
 #endif /* COMMON_INTERFACE_H_ */

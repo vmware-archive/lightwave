@@ -43,7 +43,10 @@ VmDirHandleSpecialSearch(
             "Server Status",
             "Replication Status",
             "Schema Repl Status",
-            "Integrity Check Status"
+            "Integrity Check Status",
+            "Cluster State Ping",
+            "Cluster Vote",
+            "Raft State"
     };
 
     if ( !pOp || !pLdapResult )
@@ -152,10 +155,75 @@ VmDirHandleSpecialSearch(
             }
         }
     }
+    else if (VmDirIsSearchForRaftPing(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_RAFT_PING;
+
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_RPC,
+                "RAFT_PING CONTROL %s, %d",
+                pOp->raftPingCtrl->value.raftPingCtrlVal.pszFQDN,
+                pOp->raftPingCtrl->value.raftPingCtrlVal.term);
+
+        dwError = VmDirPingReplyEntry(&pOp->raftPingCtrl->value.raftPingCtrlVal, &pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pEntryArray->pEntry)
+        {
+            pEntryArray->iSize = 1;
+        }
+    }
+    else if (VmDirIsSearchForRaftVote(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_RAFT_VOTE;
+
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_RPC,
+                "RAFT_VOTE CONTROL %s, %d",
+                pOp->raftVoteCtrl->value.raftVoteCtrlVal.pszCandidateId,
+                pOp->raftVoteCtrl->value.raftVoteCtrlVal.term);
+
+        dwError = VmDirVoteReplyEntry(&pOp->raftVoteCtrl->value.raftVoteCtrlVal, &pEntryArray->pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pEntryArray->pEntry)
+        {
+            pEntryArray->iSize = 1;
+        }
+    }
+    else if (VmDirIsSearchForStatePing(pOp))
+    {
+        PVDIR_STATE_PING_CONTROL_VALUE pStatePing = &pOp->statePingCtrl->value.statePingCtrlVal;
+        PVMDIR_REPLICATION_METRICS pReplMetrics = NULL;
+        USN local = 0;
+
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_STATE_PING;
+        pEntryArray->iSize = 0; // don't send anything back
+
+        if (!IsNullOrEmptyString(pStatePing->pszFQDN) &&
+            !IsNullOrEmptyString(pStatePing->pszInvocationId) &&
+            VmDirReplMetricsCacheFind(pStatePing->pszFQDN, &pReplMetrics) == 0 &&
+            VmDirUTDVectorCacheLookup(pStatePing->pszInvocationId, &local) == 0)
+        {
+            if (pStatePing->maxOrigUsn >= local)
+            {
+                VmMetricsHistogramUpdate(pReplMetrics->pUsnBehind, pStatePing->maxOrigUsn - local);
+            }
+            else
+            {
+                VMDIR_LOG_WARNING(
+                        VMDIR_LOG_MASK_ALL,
+                        "received maxorigusn=%" PRId64 " from %s (%s) smaller than utdvector entry=%" PRId64,
+                        pStatePing->maxOrigUsn,
+                        pStatePing->pszFQDN,
+                        pStatePing->pszInvocationId,
+                        local);
+            }
+        }
+    }
 
     if (entryType != REGULAR_SEARCH_ENTRY_TYPE)
     {
-
         /*
          * Read txn for preventing server crash (PR 1634501)
          */
@@ -454,6 +522,113 @@ VmDirIsSearchForIntegrityCheckStatus(
     else if (pSearchReq->scope == LDAP_SCOPE_ONELEVEL && pState )
     {
         *pState = INTEGRITY_CHECK_JOB_SHOW_SUMMARY;
+    }
+
+    return bRetVal;
+}
+
+/*
+ * For cluster state
+ * The search pattern is:
+ * BASE:    cn=clusterstate
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE
+ * Control: PVDIR_RAFT_PING_CONTROL_VALUE
+ *
+ */
+// should it be special write controL?
+BOOLEAN
+VmDirIsSearchForRaftPing(
+    PVDIR_OPERATION     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, LDAPRPC_PING_DN, FALSE) == 0             &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->raftPingCtrl)
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
+}
+
+/*
+ * For cluster vote
+ * The search pattern is:
+ * BASE:    cn=clustevote
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE
+ * Control: PVDIR_RAFT_VOTE_CONTROL_VALUE
+ *
+ */
+// should it be special write controL?
+BOOLEAN
+VmDirIsSearchForRaftVote(
+    PVDIR_OPERATION     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, LDAPRPC_VOTE_DN, FALSE) == 0             &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->raftVoteCtrl)
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
+}
+
+/*
+ * For server state ping
+ * The search pattern is:
+ * BASE:    cn=ping,cn=serverstate
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE
+ * Control: PVDIR_STATE_PING_CONTROL_VALUE
+ */
+BOOLEAN
+VmDirIsSearchForStatePing(
+    PVDIR_OPERATION     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, SERVER_STATE_PING_DN, FALSE) == 0        &&
+        pSearchReq != NULL                                                  &&
+        pSearchReq->scope == LDAP_SCOPE_BASE                                &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->statePingCtrl)
+    {
+        bRetVal = TRUE;
     }
 
     return bRetVal;

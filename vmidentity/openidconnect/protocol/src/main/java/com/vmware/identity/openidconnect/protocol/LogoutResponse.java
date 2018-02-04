@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -30,7 +30,6 @@ public abstract class LogoutResponse extends ProtocolResponse {
 
     public LogoutResponse(URI postLogoutRedirectUri, State state) {
         Validate.notNull(postLogoutRedirectUri, "postLogoutRedirectUri");
-        Validate.notNull(state, "state");
         this.postLogoutRedirectUri = postLogoutRedirectUri;
         this.state = state;
     }

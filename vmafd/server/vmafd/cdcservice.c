@@ -255,14 +255,12 @@ CdcSrvForceRefreshCache(
 {
     DWORD dwError = 0;
     CDC_DB_ENUM_HA_MODE cdcHAMode = CDC_DB_ENUM_HA_MODE_UNDEFINED;
+    CDC_DC_STATE CdcEndingState = CDC_DC_STATE_UNDEFINED;
 
-    if (!pCdcContext)
+    if (!pCdcContext || !pCdcContext->pCdcStateMachineContext)
     {
+        VmAfdLog(VMAFD_DEBUG_ERROR,"Invalid CDC context received");
         dwError = ERROR_INVALID_PARAMETER;
-        VmAfdLog(
-             VMAFD_DEBUG_ERROR,
-             "Invalid CDC context received"
-             );
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -271,15 +269,20 @@ CdcSrvForceRefreshCache(
 
     if (cdcHAMode == CDC_DB_ENUM_HA_MODE_DEFAULT)
     {
-        (DWORD)CdcWakeupCdcCacheUpdate(
-                                pCdcContext->pCdcCacheUpdateContext,
-                                TRUE,
-                                TRUE
-                                );
-        (DWORD)CdcWakeupStateMachine(
-                                pCdcContext->pCdcStateMachineContext,
-                                TRUE
-                                );
+        pCdcContext->pCdcStateMachineContext->bForceAffinitize = TRUE;
+
+        dwError = CdcRunStateMachine(
+                    pCdcContext->pCdcStateMachineContext,
+                    &CdcEndingState);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (CdcEndingState == CDC_DC_STATE_NO_DCS_ALIVE)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ERROR,
+                "Error: No Alive DCs after force refresh");
+            dwError = ERROR_DC_NOT_FOUND;
+        }
     }
 
 cleanup:
@@ -325,7 +328,7 @@ CdcSrvGetDCName(
         }
         else
         {
-           dwError = CdcSrvForceRefreshCache(gVmafdGlobals.pCdcContext);
+            dwError = CdcSrvForceRefreshCache(gVmafdGlobals.pCdcContext);
         }
         BAIL_ON_VMAFD_ERROR(dwError);
     }
@@ -453,6 +456,10 @@ CdcSrvGetCurrentState(
 
             case CDC_DC_STATE_LEGACY:
               cdcState = CDC_DC_STATE_LEGACY;
+              break;
+
+            case CDC_DC_STATE_FORCE_REAFFINITIZE:
+              cdcState = CDC_DC_STATE_FORCE_REAFFINITIZE;
               break;
 
             default:
@@ -842,4 +849,3 @@ error:
 
     goto cleanup;
 }
-

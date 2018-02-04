@@ -30,7 +30,21 @@ VmAfdGetShutdownFlagThr(
 
 static
 VOID
+VmAfdSetForceRefreshFlagThr(
+    PVMAFD_CERT_THR_DATA pData,
+    BOOLEAN bFlag
+    );
+
+static
+BOOLEAN
+VmAfdGetForceRefreshFlagThr(
+    PVMAFD_CERT_THR_DATA pData
+    );
+
+static
+VOID
 VmAfdHandlePassRefresh(
+    BOOLEAN bForceRefresh
     );
 
 static
@@ -109,6 +123,31 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfdTriggerPassRefreshThread(
+    PVMAFD_THREAD pThread
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pThread || !pThread->pThread || !pThread->thrData.pCond)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    VmAfdSetForceRefreshFlagThr(&pThread->thrData, TRUE);
+
+    dwError = pthread_cond_signal(pThread->thrData.pCond);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 VOID
 VmAfdShutdownPassRefreshThread(
     PVMAFD_THREAD pThread
@@ -155,6 +194,7 @@ VmAfdPassRefreshWorker(
   )
 {
     DWORD   dwSleep8Hrs = 60 * 60 * 8;
+    BOOLEAN bForceRefresh = FALSE;
 
     PVMAFD_CERT_THR_DATA pThrArgs = (PVMAFD_CERT_THR_DATA)pData;
 
@@ -179,7 +219,14 @@ VmAfdPassRefreshWorker(
         {
             break;
         }
-        VmAfdHandlePassRefresh();
+
+        bForceRefresh = VmAfdGetForceRefreshFlagThr(pThrArgs);
+        VmAfdHandlePassRefresh(bForceRefresh);
+
+        if (bForceRefresh)
+        {
+            VmAfdSetForceRefreshFlagThr(pData, FALSE);
+        }
     }
 
     return NULL;
@@ -189,6 +236,7 @@ VmAfdPassRefreshWorker(
 static
 VOID
 VmAfdHandlePassRefresh(
+    BOOLEAN bForceRefresh
     )
 {
     DWORD   dwError = 0;
@@ -211,15 +259,17 @@ VmAfdHandlePassRefresh(
     dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDirRefreshActPassword( pszDCName,
-                                       pArgs->pszDomain,
-                                       pArgs->pszAccountUPN,
-                                       pArgs->pszAccountDN,
-                                       pArgs->pszPassword,
-                                       &pszActPassword);
+    dwError = VmDirResetActPassword(
+                    pszDCName,
+                    pArgs->pszDomain,
+                    pArgs->pszAccountUPN,
+                    pArgs->pszAccountDN,
+                    pArgs->pszPassword,
+                    bForceRefresh,
+                    &pszActPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (! IsNullOrEmptyString(pszActPassword))
+    if (!IsNullOrEmptyString(pszActPassword))
     {
         // store new password in registry
         dwError = VmAfdAllocateStringWFromA( pszActPassword, &pwszActPassword );
@@ -230,11 +280,11 @@ VmAfdHandlePassRefresh(
         VmAfdLog(VMAFD_DEBUG_ANY, "PassRefresh set reg password passed");
     }
 
-
 cleanup:
 
-    if(pArgs){
-        VmAfdFreeRegArgs( pArgs );
+    if (pArgs)
+    {
+        VmAfdFreeRegArgs(pArgs);
     }
     VMAFD_SAFE_FREE_MEMORY(pszActPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszActPassword);
@@ -263,6 +313,37 @@ error:
     }
     goto cleanup;
 
+}
+
+static
+VOID
+VmAfdSetForceRefreshFlagThr(
+    PVMAFD_CERT_THR_DATA pData,
+    BOOLEAN bFlag
+    )
+{
+    pthread_mutex_lock(pData->pMutex);
+
+    pData->bForceRefresh = bFlag;
+
+    pthread_mutex_unlock(pData->pMutex);
+}
+
+static
+BOOLEAN
+VmAfdGetForceRefreshFlagThr(
+    PVMAFD_CERT_THR_DATA pData
+    )
+{
+    BOOLEAN bForceRefresh = FALSE;
+
+    pthread_mutex_lock(pData->pMutex);
+
+    bForceRefresh = pData->bForceRefresh;
+
+    pthread_mutex_unlock(pData->pMutex);
+
+    return bForceRefresh;
 }
 
 static

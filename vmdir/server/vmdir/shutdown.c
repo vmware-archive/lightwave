@@ -80,6 +80,9 @@ VmDirShutdown(
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
     }
 
+    VmDirBkgdThreadShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
+
     VmDirStopSrvThreads();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: server threads stopped", __func__);
 
@@ -124,6 +127,8 @@ VmDirShutdown(
     */
 
     VmDirMetricsShutdown();
+
+    VmDirFreeThreadContext();
 
     (VOID)VmDirSetRegKeyValueDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
@@ -200,19 +205,19 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvDCClientGroupDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServicesRootDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.serverObjDN);
-    VmDirFreeBervalContent(&gVmdirServerGlobals.utdVector);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);
+    VmDirUTDVectorCacheShutdown();
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
 
-    VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );
-    VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replAgrsMutex );
-    VMDIR_SAFE_FREE_RWLOCK( gVmdirGlobals.replRWLock );
-    VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.pMutexIPCConnection );
-    VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.pFlowCtrlMutex );
-    VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.mutex );
+    VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.replCycleDoneMutex);
+    VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.replAgrsMutex);
+    VMDIR_SAFE_FREE_RWLOCK(gVmdirGlobals.replRWLock);
+    VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.pMutexIPCConnection);
+    VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.pFlowCtrlMutex);
+    VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.mutex);
 
     VMDIR_SAFE_FREE_CONDITION(gVmdirGlobals.replCycleDoneCondition);
     VMDIR_SAFE_FREE_CONDITION(gVmdirGlobals.replAgrsCondition);
@@ -222,13 +227,13 @@ VmDirCleanupGlobals(
     // Free vmdir plugin global 'gVmdirPluginGlobals'
     VmDirPluginShutdown();
 
-    VMDIR_SAFE_FREE_MUTEX( gVmdirKrbGlobals.pmutex );
+    VMDIR_SAFE_FREE_MUTEX(gVmdirKrbGlobals.pmutex);
     VMDIR_SAFE_FREE_CONDITION(gVmdirKrbGlobals.pcond);
 
-    VMDIR_SAFE_FREE_MUTEX( gVmdirTrackLastLoginTime.pMutex );
+    VMDIR_SAFE_FREE_MUTEX(gVmdirTrackLastLoginTime.pMutex);
     VMDIR_SAFE_FREE_CONDITION(gVmdirTrackLastLoginTime.pCond);
     // ignore gVmdirTrackLastLoginTime.pTSStack
 
-    VMDIR_SAFE_FREE_MUTEX( gVmdirIntegrityCheck.pMutex );
-    VMDIR_SAFE_FREE_MEMORY( gVmdirIntegrityCheck.pJob );
+    VMDIR_SAFE_FREE_MUTEX(gVmdirIntegrityCheck.pMutex);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirIntegrityCheck.pJob);
 }

@@ -48,6 +48,12 @@ VmAfdCliGetDomainName(
 
 static
 DWORD
+VmAfdCliGetMachineAccount(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
 VmAfdCliSetLDU(
     PVM_AFD_CLI_CONTEXT pContext
     );
@@ -434,8 +440,11 @@ VmAfdCliExecute(
             dwError = VmAfdCliBeginOrEndUpgrade(pContext);
             break;
 
-        case VM_AFD_ACTION_ADD_PASSWORD_ENTRY:
         case VM_AFD_ACTION_GET_MACHINE_ACCOUNT_INFO:
+            dwError = VmAfdCliGetMachineAccount(pContext);
+            break;
+
+        case VM_AFD_ACTION_ADD_PASSWORD_ENTRY:
         case VM_AFD_ACTION_SET_MACHINE_ACCOUNT_INFO:
         case VM_AFD_ACTION_GET_MACHINE_SSL_CERTIFICATES:
         case VM_AFD_ACTION_SET_MACHINE_SSL_CERTIFICATES:
@@ -500,6 +509,44 @@ VmAfdCliSetDomainName(
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmAfdCliGetMachineAccount(
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAccount = NULL;
+    PSTR pszPassword = NULL;
+
+    if (!pContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdGetMachineAccountInfoA(
+                    NULL,
+                    &pszAccount,
+                    &pszPassword);
+
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    printf("MachineAccount: %s\n", pszAccount);
+    printf("Password: %s\n", pszPassword);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszAccount);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword);
 
     return dwError;
 

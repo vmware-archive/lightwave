@@ -39,8 +39,7 @@ VmDirRESTOperationCreate(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_CONNECTION), (PVOID*)&pRestOp->pConn);
+    dwError = VmDirAllocateConnection(&pRestOp->pConn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTResultCreate(&pRestOp->pResult);
@@ -120,6 +119,18 @@ VmDirRESTOperationReadRequest(
 
     // read request authorization info
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHORIZATION, &pRestOp->pszAuth);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pRestOp->pszOrigin)
+    {
+        dwError = VmRESTIsValidOrigin(pRestOp->pszOrigin, &pRestOp->bisValidOrigin);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
@@ -235,6 +246,9 @@ VmDirRESTOperationWriteResponse(
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmRESTSetCORSHeaders(pRestOp, ppResponse);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (pRestOp->pResult->pszData)
     {
         dwError = VmRESTSetHttpHeader(ppResponse, "Content-Type", "text/plain");
@@ -308,6 +322,7 @@ VmDirFreeRESTOperation(
     if (pRestOp)
     {
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);

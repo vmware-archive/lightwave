@@ -128,7 +128,7 @@ VmDirRESTAuthTokenValidate(
     dwOIDCError = OidcAccessTokenParse(
             &pOidcAccessToken,
             pAuthToken->pszAccessToken);
-    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
+    dwError = VmDirOidcToVmdirError(dwOIDCError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pszDomainName = OidcAccessTokenGetTenant(pOidcAccessToken);
@@ -156,17 +156,7 @@ retry:
             NULL,
             VMDIR_REST_DEFAULT_SCOPE,
             VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
-
-    if (dwOIDCError == SSOERROR_TOKEN_INVALID_SIGNATURE ||
-        dwOIDCError == SSOERROR_TOKEN_INVALID_AUDIENCE ||
-        dwOIDCError == SSOERROR_TOKEN_EXPIRED)
-    {
-        dwError = VMDIR_ERROR_AUTH_BAD_DATA;
-    }
-    else if (dwOIDCError)
-    {
-        dwError = VMDIR_ERROR_OIDC_UNAVAILABLE;
-    }
+    dwError = VmDirOidcToVmdirError(dwOIDCError);
 
     // no need to refresh cache if user provided a bad token
     if (dwError && dwError != VMDIR_ERROR_AUTH_BAD_DATA && !bCacheRefreshed)

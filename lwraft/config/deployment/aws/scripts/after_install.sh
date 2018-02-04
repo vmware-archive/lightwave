@@ -26,18 +26,25 @@ echo "Step 3: Upgrade/install lightwave-post and lightwave-client"
 tdnf makecache
 tdnf install -y lightwave-post lightwave-client
 
+echo "Step 4: Set the default vmdir lsass provider bind protocol to SRP"
+
+/opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
+/opt/likewise/bin/lwsm restart lsass
+
 
 # TODO - this should not be necessary when DNS is stabilized
-echo "Step 4: Set proxy curl timeout"
+echo "Step 5: Set proxy curl timeout"
 
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\post\Parameters]' CurlTimeoutSec REG_DWORD 10 || echo "CurTimeoutSec is already set"
 
-echo "Step 5: Install filebeat, logrotate and configure journalctl"
+echo "Step 6: Install filebeat, logrotate and configure journalctl"
 
 # Change journalctl config to forward logs to syslog
 cat > /etc/systemd/journald.conf <<EOF
 [Journal]
 ForwardToSyslog=yes
+RateLimitBurst=0
+RateLimitIntervalSec=0
 EOF
 
 # Install or upgrade syslog
@@ -46,6 +53,12 @@ tdnf install -y syslog-ng
 # Remove the existing config of syslog-ng for lightwave
 # Everything will be written to /var/log/messages
 sed -i '/lightwave.conf.d/d' /etc/syslog-ng/syslog-ng.conf
+if [[ -z $(grep "frac_digits(3)" /etc/syslog-ng/syslog-ng.conf) ]]
+then
+    echo "" >> /etc/syslog-ng/syslog-ng.conf
+    echo "options { frac_digits(3); };" >> /etc/syslog-ng/syslog-ng.conf
+    echo "" >> /etc/syslog-ng/syslog-ng.conf
+fi
 
 systemctl restart syslog-ng
 systemctl restart systemd-journald

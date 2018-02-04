@@ -219,6 +219,14 @@ extern "C" {
 
 #endif
 
+#define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
+    do {                                        \
+        if (pLd) {                              \
+            ldap_unbind_ext_s(pLd,NULL,NULL);   \
+            (pLd) = NULL;                       \
+        }                                       \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_STRINGA(PTR)      \
     do {                                  \
         if ((PTR)) {                      \
@@ -333,24 +341,38 @@ extern "C" {
         }                                           \
     } while (0)
 
+#define BAIL_ON_VMDIR_ERROR_NO_LINE(dwError) \
+    if (dwError)                             \
+    {                                        \
+        goto error;                          \
+    }
+
 #define BAIL_WITH_VMDIR_ERROR(dwError, ERROR_CODE)                          \
     do {                                                                    \
         dwError = ERROR_CODE;                                               \
         assert(dwError != 0);                                               \
-        VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "[%s,%d]", __FILE__, __LINE__); \
+        PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
         goto error;                                                         \
     } while (0)
 
 #define BAIL_ON_VMDIR_ERROR(dwError) \
     if (dwError)                                                            \
-    {                                                                       \
-        VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "[%s,%d]", __FILE__, __LINE__); \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
         goto error;                                                         \
     }
 
 #define BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszErrMsg, Format, ... )      \
     if (dwError)                                                            \
-    {                                                                       \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
         if (pszErrMsg == NULL)                                              \
         {                                                                   \
             VmDirAllocateStringPrintf(                                      \
@@ -358,14 +380,15 @@ extern "C" {
                             Format,                                         \
                             ##__VA_ARGS__);                                 \
         }                                                                   \
-        VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "[%s,%d]",__FILE__, __LINE__); \
         goto error;                                                         \
     }
 
 #define BAIL_ON_VMDIR_ERROR_IF(condition) \
     if (condition)                                                          \
-    {                                                                       \
-        VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "[%s,%d]",__FILE__, __LINE__); \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
         goto error;                                                         \
     }
 
@@ -400,7 +423,10 @@ extern "C" {
  */
 #define BAIL_ON_LDAP_ERROR(dwError, ldapErrCode, ldapErrMsg, Format, ... ) \
     if (dwError)                                                    \
-    {                                                               \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
         do                                                          \
         {                                                           \
             if (ldapErrMsg == NULL)                                 \
@@ -420,7 +446,10 @@ extern "C" {
 
 #define BAIL_ON_SIMPLE_LDAP_ERROR(dwError)                          \
     if (dwError)                                                    \
-    {                                                               \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
         goto ldaperror;                                             \
     }
 
@@ -532,15 +561,30 @@ extern "C" {
                 VMDIR_LOG_GENERAL( VMDIR_LOG_WARNING, Mask, Format, ##__VA_ARGS__ )
 
 #define VMDIR_LOG_INFO( Mask, Format, ... )    \
-                VMDIR_LOG_GENERAL( VMDIR_LOG_INFO, Mask, Format, ##__VA_ARGS__ )
+        {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+            VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+            if (pThreadLogContext)                                              \
+            { pThreadLogContext->pszFuncName = NULL; pThreadLogContext->dwFuncLine = 0; } \
+            VMDIR_LOG_GENERAL( VMDIR_LOG_INFO, Mask, Format, ##__VA_ARGS__ );   \
+        }
 
 #define VMDIR_LOG_VERBOSE( Mask, Format, ... ) \
-                VMDIR_LOG_GENERAL( VMDIR_LOG_VERBOSE, Mask, Format, ##__VA_ARGS__ )
+        {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+            VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+            if (pThreadLogContext)                                              \
+            { pThreadLogContext->pszFuncName = NULL; pThreadLogContext->dwFuncLine = 0; } \
+            VMDIR_LOG_GENERAL( VMDIR_LOG_VERBOSE, Mask, Format, ##__VA_ARGS__ ); \
+        }
 
 #define VMDIR_LOG_DEBUG( Mask, Format, ... )   \
-                VMDIR_LOG_GENERAL( VMDIR_LOG_DEBUG,                     \
+        {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+            VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+            if (pThreadLogContext)                                              \
+            { pThreadLogContext->pszFuncName = NULL; pThreadLogContext->dwFuncLine = 0; } \
+            VMDIR_LOG_GENERAL( VMDIR_LOG_DEBUG,                         \
                                    Mask, "[file: %s][line: %d] " Format,\
-                                   __FILE__, __LINE__, ##__VA_ARGS__ )
+                                   __FILE__, __LINE__, ##__VA_ARGS__ ); \
+        }
 
 #define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
     do {                                        \
@@ -548,6 +592,18 @@ extern "C" {
             ldap_unbind_ext_s(pLd,NULL,NULL);   \
             (pLd) = NULL;                       \
         }                                       \
+    } while(0)
+
+#define VMDIR_SAFE_FREE_VMDIR_FILTER(pfilter)       \
+    do {                                            \
+      DeleteFilter(pfilter);                        \
+    } while(0)
+
+#define VMDIR_SAFE_BER_MEMFREE(pBerMem)             \
+    do {                                            \
+        if ((pBerMem)) {                            \
+            ber_memfree(pBerMem);                   \
+        }                                           \
     } while(0)
 
 // if VDIR_CONNECTION has bind info in VDIR_ACCESS_INFO, use it; otherwise,

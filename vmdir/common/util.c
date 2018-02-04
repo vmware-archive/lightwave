@@ -48,6 +48,53 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirServerDNToSite(
+    PCSTR   pszServerDN,
+    PSTR*   ppszSite
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PCSTR   pszTmp = NULL;
+    PSTR    pszLocalSite = NULL;
+
+    if (!pszServerDN || !ppszSite)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    // server object is two level under site container
+    // e.g. cn=lw-t1,cn=Servers,cn=taipei,cn=Sites
+    pszTmp = pszServerDN;
+    while (*pszTmp != '\0')
+    {
+        if ((*pszTmp == ',') && ( ++dwCnt == 2))
+        {
+            break;
+        }
+        pszTmp++;
+    }
+
+    if (*pszTmp == '\0')
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwError = VmDirDnLastRDNToCn(pszTmp+1, &pszLocalSite);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszSite = pszLocalSite;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalSite);
+
+    goto cleanup;
+}
+
 /*
  * Assumptions: tenant dn starts with "dc="
  */
@@ -3113,6 +3160,30 @@ VmDirSimpleHashMapPairFree(
 }
 
 /*
+ * when hash map can use simple free function for key only.
+ */
+VOID
+VmDirSimpleHashMapPairFreeKeyOnly(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pPair->pKey);
+}
+
+/*
+ * when hash map can use simple free function for value only.
+ */
+VOID
+VmDirSimpleHashMapPairFreeValOnly(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pPair->pValue);
+}
+
+/*
  * remove heading/trailing spaces
  * compact consecutive spaces into a single one
  */
@@ -4015,5 +4086,60 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszServerName);
 
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirGetServerName failed with error (%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirConvertTimestampToEpoch(
+    PSTR    pszTimestamp,
+    PLONG   pEpoch
+    )
+{
+    DWORD   dwError = 0;
+    time_t  tt = 0;
+    struct tm   ti = {0};
+
+    if (!pEpoch)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (IsNullOrEmptyString(pszTimestamp))
+    {
+        tt = time(NULL);
+    }
+    else
+    {
+        if (sscanf(
+                pszTimestamp,
+                "%04d%02d%02d%02d%02d%02d.0Z",
+                &ti.tm_year,
+                &ti.tm_mon,
+                &ti.tm_mday,
+                &ti.tm_hour,
+                &ti.tm_min,
+                &ti.tm_sec) != 6)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        }
+
+        ti.tm_year -= 1900;
+        ti.tm_mon -= 1;
+        tt = mktime(&ti);
+    }
+
+    *pEpoch = (LONG)tt;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed to parse timestamp (%s) with error (%d)",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pszTimestamp),
+            dwError);
+
     goto cleanup;
 }

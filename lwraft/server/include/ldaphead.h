@@ -81,6 +81,11 @@ VmDirDeleteConnection(
     );
 
 DWORD
+VmDirAllocateConnection(
+    PVDIR_CONNECTION* PPConn
+    );
+
+DWORD
 VmDirWhichAddressPresent(
     BOOLEAN *pIPV4AddressPresent,
     BOOLEAN *pIPV6AddressPresent
@@ -297,6 +302,27 @@ VmDirOPStatistic(
 PCSTR
 VmDirGetOperationStringFromTag(
     ber_tag_t opTag);
+
+// metricsinit.c
+DWORD
+VmDirLdapMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirLdapMetricsUpdate(
+    METRICS_LDAP_OPS        operation,
+    METRICS_LDAP_OP_TYPES   opType,
+    METRICS_LDAP_ERRORS     error,
+    METRICS_LAYERS          layer,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
+    );
+
+VOID
+VmDirLdapMetricsShutdown(
+    VOID
+    );
 
 // vecs.c
 DWORD

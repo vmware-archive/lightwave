@@ -14,77 +14,125 @@
 
 #include "includes.h"
 
-PVM_METRICS_HISTOGRAM pLdapRequestDuration[METRICS_LDAP_OP_COUNT];
-
-PVM_METRICS_COUNTER pLdapErrorCount[METRICS_LDAP_ERROR_COUNT];
-
 DWORD
 VmDirLdapMetricsInit(
     VOID
     )
 {
-    DWORD dwError = 0;
-    DWORD i = 0;
+    DWORD   dwError = 0;
+    DWORD   i = 0, j = 0, k = 0;
 
-    uint64_t buckets[5] = {1, 10, 100, 500, 1000};
+    // use identical bucket for all histograms
+    uint64_t    buckets[5] = {1, 10, 100, 500, 1000};
 
-    VM_METRICS_LABEL labelOps[METRICS_LDAP_OP_COUNT][1] = {{{"operation","bind"}},
-                                        {{"operation","search"}},
-                                        {{"operation","add"}},
-                                        {{"operation","modify"}},
-                                        {{"operation","delete"}},
-                                        {{"operation","unbind"}}};
-
-    VM_METRICS_LABEL labelErrors[METRICS_LDAP_ERROR_COUNT][1] = {{{"code","LDAP_SUCCESS"}},
-                                            {{"code","LDAP_UNAVAILABLE"}},
-                                            {{"code","LDAP_SERVER_DOWN"}},
-                                            {{"code","LDAP_UNWILLING_TO_PERFORM"}},
-                                            {{"code","LDAP_INVALID_DN_SYNTAX"}},
-                                            {{"code","LDAP_NO_SUCH_ATTRIBUTE"}},
-                                            {{"code","LDAP_INVALID_SYNTAX"}},
-                                            {{"code","LDAP_UNDEFINED_TYPE"}},
-                                            {{"code","LDAP_TYPE_OR_VALUE_EXISTS"}},
-                                            {{"code","LDAP_OBJECT_CLASS_VIOLATION"}},
-                                            {{"code","LDAP_ALREADY_EXISTS"}},
-                                            {{"code","LDAP_CONSTRAINT_VIOLATION"}},
-                                            {{"code","LDAP_NOT_ALLOWED_ON_NONLEAF"}},
-                                            {{"code","LDAP_PROTOCOL_ERROR"}},
-                                            {{"code","LDAP_INVALID_CREDENTIALS"}},
-                                            {{"code","LDAP_INSUFFICIENT_ACCESS"}},
-                                            {{"code","LDAP_AUTH_METHOD_NOT_SUPPORTED"}},
-                                            {{"code","LDAP_SASL_BIND_IN_PROGRESS"}},
-                                            {{"code","LDAP_TIMELIMIT_EXCEEDED"}},
-                                            {{"code","LDAP_SIZELIMIT_EXCEEDED"}},
-                                            {{"code","LDAP_NO_SUCH_OBJECT"}},
-                                            {{"code","LDAP_BUSY"}},
-                                            {{"code","LDAP_OTHER"}}};
-
-    for (i=0; i < METRICS_LDAP_ERROR_COUNT; i++)
+    // use this template to construct labels
+    VM_METRICS_LABEL    labels[3] =
     {
-        dwError = VmMetricsCounterNew(pmContext,
-                                "post_ldap_error_count",
-                                labelErrors[i], 1,
-                                "Counter for various LDAP errors",
-                                &pLdapErrorCount[i]);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+            {"operation",   NULL},
+            {"op_type",     NULL},
+            {"code",        NULL}
+    };
 
-    for (i=0; i < METRICS_LDAP_OP_COUNT; i++)
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
     {
-        dwError = VmMetricsHistogramNew(pmContext,
-                                "post_ldap_request_duration",
-                                labelOps[i], 1,
-                                "Histogram for LDAP Request Durations for different operations",
-                                buckets, 5,
-                                &pLdapRequestDuration[i]);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        for (j = 0; j < METRICS_LDAP_OP_TYPE_COUNT; j++)
+        {
+            for (k = 0; k < METRICS_LDAP_ERROR_COUNT; k++)
+            {
+                labels[0].pszValue = VmDirMetricsLdapOperationString(i);
+                labels[1].pszValue = VmDirMetricsLdapOpTypeString(j);
+                labels[2].pszValue = VmDirMetricsLdapErrorString(k);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "post_ldap",
+                        labels, 3,
+                        "Histogram for LDAP request durations in total",
+                        buckets, 5,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_PROTOCOL]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "post_ldap_middlelayer",
+                        labels, 3,
+                        "Histogram for LDAP request durations in the middle layer",
+                        buckets, 5,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_MIDDLELAYER]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "post_ldap_middlelayer_backend",
+                        labels, 3,
+                        "Histogram for LDAP request durations in the backend",
+                        buckets, 5,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_BACKEND]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "post_ldap_middlelayer_backend_raft",
+                        labels, 3,
+                        "Histogram for LDAP request durations in fulfilling RAFT consensus",
+                        buckets, 5,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_RAFT]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
     }
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirLdapMetricsInit failed (%d)", dwError);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
+}
+
+VOID
+VmDirLdapMetricsUpdate(
+    METRICS_LDAP_OPS        operation,
+    METRICS_LDAP_OP_TYPES   opType,
+    METRICS_LDAP_ERRORS     error,
+    METRICS_LAYERS          layer,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
+    )
+{
+    PVM_METRICS_HISTOGRAM   pHistogram = NULL;
+
+    pHistogram = gpLdapMetrics[operation][opType][error][layer];
+    if (pHistogram)
+    {
+        VmMetricsHistogramUpdate(
+                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+    }
+}
+
+VOID
+VmDirLdapMetricsShutdown(
+    VOID
+    )
+{
+    DWORD   i = 0, j = 0, k = 0, l = 0;
+
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
+    {
+        for (j = 0; j < METRICS_LDAP_OP_TYPE_COUNT; j++)
+        {
+            for (k = 0; k < METRICS_LDAP_ERROR_COUNT; k++)
+            {
+                for (l = 0; l < METRICS_LAYER_COUNT; l++)
+                {
+                    gpLdapMetrics[i][j][k][l] = NULL;
+                }
+            }
+        }
+    }
 }

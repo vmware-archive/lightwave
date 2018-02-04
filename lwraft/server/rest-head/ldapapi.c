@@ -54,8 +54,7 @@ VmDirRESTLdapAdd(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -63,6 +62,8 @@ VmDirRESTLdapAdd(
     dwError = VmDirExternalOperationCreate(
             NULL, -1, LDAP_REQ_ADD, pRestOp->pConn, &pAddOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAddOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
     dwError = VmDirRESTDecodeEntry(pRestOp->pjInput, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -109,8 +110,7 @@ VmDirRESTLdapSearch(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -118,6 +118,8 @@ VmDirRESTLdapSearch(
     dwError = VmDirExternalOperationCreate(
             NULL, -1, LDAP_REQ_SEARCH, pRestOp->pConn, &pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pSearchOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError)
@@ -137,6 +139,9 @@ VmDirRESTLdapSearch(
     pSearchOp->request.searchReq.bStoreRsltInMem = TRUE;
 
     dwError = VmDirMLSearch(pSearchOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLogSearchParameters(pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set operation result
@@ -205,8 +210,7 @@ VmDirRESTLdapModify(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -214,6 +218,8 @@ VmDirRESTLdapModify(
     dwError = VmDirExternalOperationCreate(
             NULL, -1, LDAP_REQ_MODIFY, pRestOp->pConn, &pModifyOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pModifyOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -273,8 +279,7 @@ VmDirRESTLdapDelete(
 
     if (!pIn)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pRestOp = (PVDIR_REST_OPERATION)pIn;
@@ -282,6 +287,8 @@ VmDirRESTLdapDelete(
     dwError = VmDirExternalOperationCreate(
             NULL, -1, LDAP_REQ_DELETE, pRestOp->pConn, &pDeleteOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pDeleteOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -325,10 +332,10 @@ VmDirRESTLdapSetResult(
 
     if (!pRestRslt)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    // get ldap error code and message
     if (pLdapRslt)
     {
         err = pLdapRslt->errCode;
@@ -340,6 +347,7 @@ VmDirRESTLdapSetResult(
         msg = pszErrMsg;
     }
 
+    // set ldap error code and message
     if (IsNullOrEmptyString(msg))
     {
         dwError = VmDirRESTResultSetError(
@@ -369,19 +377,15 @@ error:
 DWORD
 VmDirRESTLdapGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
-    DWORD*              pdwHttpStatus,
-    PSTR*               ppszHttpStatus,
-    PSTR*               ppszHttpReason
+    PVDIR_HTTP_ERROR*   ppHttpError
     )
 {
     DWORD   dwError = 0;
     int     httpStatus = 0;
-    PVDIR_HTTP_ERROR    pHttpError = NULL;
 
-    if (!pRestRslt || !pdwHttpStatus || !ppszHttpStatus || !ppszHttpReason)
+    if (!pRestRslt || !ppHttpError)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     switch (pRestRslt->errCode)
@@ -392,10 +396,10 @@ VmDirRESTLdapGetHttpError(
 
     case LDAP_UNAVAILABLE:
     case LDAP_SERVER_DOWN:
+    case LDAP_UNWILLING_TO_PERFORM:
         httpStatus = HTTP_SERVICE_UNAVAILABLE;
         break;
 
-    case LDAP_UNWILLING_TO_PERFORM:
     case LDAP_INVALID_DN_SYNTAX:
     case LDAP_NO_SUCH_ATTRIBUTE:
     case LDAP_INVALID_SYNTAX:
@@ -436,11 +440,7 @@ VmDirRESTLdapGetHttpError(
         break;
     }
 
-    pHttpError = VmDirRESTGetHttpError(httpStatus);
-
-    *pdwHttpStatus = pHttpError->dwHttpStatus;
-    *ppszHttpStatus = pHttpError->pszHttpStatus;
-    *ppszHttpReason = pHttpError->pszHttpReason;
+    *ppHttpError = VmDirRESTGetHttpError(httpStatus);
 
 cleanup:
     return dwError;

@@ -66,9 +66,9 @@ VmDirRESTCacheRefresh(
     DWORD   dwError = 0;
     DWORD   dwOIDCError = 0;
     BOOLEAN bInLock = FALSE;
+    PSTR    pszKey = NULL;
     PSTR    pszOIDCSigningCertPEM = NULL;
     POIDC_SERVER_METADATA   pOidcMetadata = NULL;
-    PSTR    pszKey = NULL;
 
     if (!pRestCache)
     {
@@ -77,11 +77,11 @@ VmDirRESTCacheRefresh(
 
     dwOIDCError = OidcServerMetadataAcquire(
             &pOidcMetadata,
-            VMDIR_REST_OIDC_SERVER,
+            VDIR_SAFE_STRING(gVmdirServerGlobals.bvServerObjName.lberbv_val),
             VMDIR_REST_OIDC_PORT,
             pszDomainName,
-            NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
-    dwError = dwOIDCError ? VMDIR_ERROR_OIDC_UNAVAILABLE : 0;
+            LIGHTWAVE_TLS_CA_PATH);
+    dwError = VmDirOidcToVmdirError(dwOIDCError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(

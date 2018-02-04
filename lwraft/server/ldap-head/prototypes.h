@@ -39,12 +39,6 @@ VmDirOPStatisticUpdate(
     uint64_t iThisTimeInMilliSecs
     );
 
-// ldapmetrics.c
-DWORD
-VmDirLdapMetricsInit(
-    VOID
-    );
-
 #ifdef __cplusplus
 }
 #endif

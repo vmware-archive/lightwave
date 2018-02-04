@@ -85,7 +85,15 @@ CdcHandleLegacyHAState(
 
 static
 DWORD
+CdcHandleReaffinitizeDC(
+    PCDC_STATE_MACHINE_CONTEXT pStateMachine,
+    PCDC_DC_STATE pCdcEndingState
+    );
+
+static
+DWORD
 CdcGetNewDC(
+    PWSTR pwszCurrentDC,
     PWSTR* ppszNewDCName,
     PCDC_DC_STATE pCdcNextState
     );
@@ -151,10 +159,12 @@ CdcInitStateMachine(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     pStateMachine->state_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    pStateMachine->run_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     pStateMachine->update_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     pStateMachine->update_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
     pStateMachine->cdcThrState = CDC_STATE_THREAD_STATE_UNDEFINED;
     pStateMachine->bFirstRun = 1;
+    pStateMachine->bForceAffinitize = 0;
 
     dwError = pthread_create(
                         &pStateMachine->pStateThrContext->thread,
@@ -260,6 +270,7 @@ CdcRunStateMachine(
     UINT64 iStart = 0;
     UINT64 iEnd = 0;
     PCDC_DC_INFO_W pCdcInfo = NULL;
+    BOOL bIsLocked = FALSE;
 
     if (!pStateMachine || !pCdcEndingState)
     {
@@ -267,9 +278,27 @@ CdcRunStateMachine(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    VMAFD_LOCK_MUTEX(bIsLocked, &pStateMachine->run_mutex);
+
     iStart = VmAfdGetTimeInMilliSec();
     dwError = CdcSrvGetCurrentState(&cdcCurrentState);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pStateMachine->bForceAffinitize == TRUE)
+    {
+        pStateMachine->bForceAffinitize = FALSE;
+
+        if (CdcIsValidTransition(cdcCurrentState,CDC_DC_STATE_FORCE_REAFFINITIZE))
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "CDC State transitioned from %s to %s",
+                CdcStateToString(cdcCurrentState),
+                CdcStateToString(CDC_DC_STATE_FORCE_REAFFINITIZE));
+
+            cdcCurrentState = CDC_DC_STATE_FORCE_REAFFINITIZE;
+        }
+    }
 
     dwError = CdcRegDbGetHAMode(&cdcHAMode);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -296,6 +325,10 @@ CdcRunStateMachine(
 
             case CDC_DC_STATE_LEGACY:
               dwError = CdcHandleLegacyHAState(pStateMachine, &cdcEndingState);
+              break;
+
+            case CDC_DC_STATE_FORCE_REAFFINITIZE:
+              dwError = CdcHandleReaffinitizeDC(pStateMachine, &cdcEndingState);
               break;
 
             default:
@@ -329,6 +362,8 @@ cleanup:
         VmAfdFreeDomainControllerInfoW(pCdcInfo);
     }
 
+    VMAFD_UNLOCK_MUTEX(bIsLocked, &pStateMachine->run_mutex);
+
     return dwError;
 error:
 
@@ -355,6 +390,8 @@ CdcShutdownStateMachine(
         }
 
         pthread_mutex_destroy(&pStateMachine->state_mutex);
+        pthread_mutex_destroy(&pStateMachine->update_mutex);
+        pthread_mutex_destroy(&pStateMachine->run_mutex);
     }
     VMAFD_SAFE_FREE_MEMORY(pStateMachine);
 }
@@ -418,7 +455,6 @@ error:
 
     goto cleanup;
 }
-
 
 static
 PVOID
@@ -800,10 +836,9 @@ CdcHandleSiteAffinitized(
     DWORD dwLogError = 0;
     PCDC_DC_INFO_W pCdcDCName = NULL;
     BOOL  bIsAlive = FALSE;
-    PWSTR pszNewDCName = NULL;
+    PWSTR pwszNewDCName = NULL;
+    PSTR pszDCName = NULL;
 
-    PSTR pszLogNewDCName = NULL;
-    PSTR pszLogOldDCName = NULL;
     CDC_DC_STATE cdcNextState = CDC_DC_STATE_UNDEFINED;
     UINT64 iStart = 0;
     UINT64 iEnd = 0;
@@ -821,33 +856,24 @@ CdcHandleSiteAffinitized(
         {
               CdcLogAffinitizedDCFailure(pCdcDCName);
         }
-        dwError = CdcGetNewDC(&pszNewDCName, &cdcNextState);
+
+        dwError = CdcGetNewDC(pCdcDCName->pszDCName, &pwszNewDCName, &cdcNextState);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         if (cdcNextState != CDC_DC_STATE_NO_DCS_ALIVE)
         {
-            dwError = CdcUpdateAffinitizedDC(pszNewDCName);
+            dwError = CdcUpdateAffinitizedDC(pwszNewDCName);
             BAIL_ON_VMAFD_ERROR(dwError);
 
             dwLogError = VmAfdAllocateStringAFromW(
-                                          pszNewDCName,
-                                          &pszLogNewDCName
-                                          ) ||
-                         VmAfdAllocateStringAFromW(
-                                          pCdcDCName->pszDCName,
-                                          &pszLogOldDCName
-                                          );
+                            pwszNewDCName,
+                            &pszDCName);
             if (!dwLogError)
             {
-                VmAfdLog(
-                    VMAFD_DEBUG_ANY,
-                    "Affinitized to [%s]. Previously affinitized to [%s]",
-                    pszLogNewDCName,
-                    pszLogOldDCName
-                    );
+                VmAfdLog(VMAFD_DEBUG_ANY, "Affinitizing to [%s]", pszDCName);
             }
         }
-        else if (cdcNextState == CDC_DC_STATE_NO_DCS_ALIVE)
+        else
         {
             CdcLogAllDCStates();
         }
@@ -873,9 +899,8 @@ cleanup:
     {
         VmAfdFreeDomainControllerInfoW(pCdcDCName);
     }
-    VMAFD_SAFE_FREE_MEMORY(pszLogOldDCName);
-    VMAFD_SAFE_FREE_MEMORY(pszLogNewDCName);
-    VMAFD_SAFE_FREE_MEMORY(pszNewDCName);
+    VMAFD_SAFE_FREE_MEMORY(pwszNewDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
     return dwError;
 error:
 
@@ -916,7 +941,7 @@ CdcHandleOffSite(
     dwError = CdcDbIsDCAlive(pCdcDCName, &bIsAlive);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = CdcGetNewDC(&pszNextDCName, &cdcNextState);
+    dwError = CdcGetNewDC(pCdcDCName->pszDCName, &pszNextDCName, &cdcNextState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     switch (cdcNextState)
@@ -1002,7 +1027,7 @@ CdcHandleNoDCsAlive(
 
     iStart = VmAfdGetTimeInMilliSec();
 
-    dwError = CdcGetNewDC(&pszNextDCName, &cdcNextState);
+    dwError = CdcGetNewDC(NULL, &pszNextDCName, &cdcNextState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (cdcNextState != CDC_DC_STATE_NO_DCS_ALIVE)
@@ -1115,10 +1140,80 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+CdcHandleReaffinitizeDC(
+    PCDC_STATE_MACHINE_CONTEXT pStateMachine,
+    PCDC_DC_STATE pCdcEndingState
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwLogError = 0;
+    PWSTR pwszNewDCName = NULL;
+    PSTR  pszDCName = NULL;
+    CDC_DC_STATE cdcNextState = CDC_DC_STATE_UNDEFINED;
+    PCDC_DC_INFO_W pCdcDCName = NULL;
+
+    if (!pStateMachine || !pCdcEndingState)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = CdcSrvGetDCName(NULL, 0, &pCdcDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = CdcGetNewDC(pCdcDCName->pszDCName, &pwszNewDCName, &cdcNextState);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (cdcNextState != CDC_DC_STATE_NO_DCS_ALIVE)
+    {
+        dwError = CdcUpdateAffinitizedDC(pwszNewDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwLogError = VmAfdAllocateStringAFromW(
+                        pwszNewDCName,
+                        &pszDCName);
+        if (!dwLogError)
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY, "Affinitizing to [%s]", pszDCName);
+        }
+    }
+    else
+    {
+        CdcLogAllDCStates();
+    }
+
+    dwError = CdcStateTransition(pStateMachine,cdcNextState);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *pCdcEndingState = cdcNextState;
+
+cleanup:
+
+    if (pCdcDCName)
+    {
+        VmAfdFreeDomainControllerInfoW(pCdcDCName);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pwszNewDCName);
+    return dwError;
+
+error:
+
+    VmAfdLog(
+        VMAFD_DEBUG_ERROR,
+        "Affinitizing to new DC failed with error [%d]",
+        dwError);
+
+    goto cleanup;
+}
 
 static
 DWORD
 CdcGetNewDC(
+    PWSTR pwszCurrentDC,
     PWSTR* ppszNewDCName,
     PCDC_DC_STATE pCdcNextState
     )
@@ -1129,26 +1224,51 @@ CdcGetNewDC(
     PWSTR pszDomainName = NULL;
     CDC_DC_STATE cdcNextState = CDC_DC_STATE_UNDEFINED;
 
+    if (!pCdcNextState || !ppszNewDCName)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfSrvGetDomainName(&pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = CdcGetClientSiteName(&pszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = CdcDbGetClosestDCOnSite(
-                                pszSiteName,
-                                pszDomainName,
-                                &pszNewDCName
-                                );
+    if (!IsNullOrEmptyString(pwszCurrentDC))
+    {
+        dwError = CdcDbGetClosestNewDCOnSite(
+                            pwszCurrentDC,
+                            pszSiteName,
+                            pszDomainName,
+                            &pszNewDCName);
+    }
+    else
+    {
+        dwError = CdcDbGetClosestDCOnSite(
+                            pszSiteName,
+                            pszDomainName,
+                            &pszNewDCName);
+    }
+
     if (dwError)
     {
 #ifndef CDC_DISABLE_OFFSITE
         VMAFD_SAFE_FREE_MEMORY(pszNewDCName);
 
-        dwError = CdcDbGetClosestDC(
-                                   pszDomainName,
-                                   &pszNewDCName
-                                   );
+        if (!IsNullOrEmptyString(pwszCurrentDC))
+        {
+            dwError = CdcDbGetClosestNewDC(
+                        pwszCurrentDC,
+                        pszDomainName,
+                        &pszNewDCName);
+        }
+        else
+        {
+            dwError = CdcDbGetClosestDC(pszDomainName, &pszNewDCName);
+        }
+
         if (dwError)
         {
             cdcNextState = CDC_DC_STATE_NO_DCS_ALIVE;
@@ -1303,6 +1423,10 @@ CdcStateToString(
           pszStateString = "CDC_DC_STATE_NO_DCS_ALIVE";
           break;
 
+        case CDC_DC_STATE_FORCE_REAFFINITIZE:
+          pszStateString = "CDC_DC_STATE_FORCE_REAFFINITIZE";
+          break;
+
         default:
           pszStateString = "CDC_DC_STATE_UNDEFINED";
           break;
@@ -1311,8 +1435,6 @@ CdcStateToString(
     return pszStateString;
 }
 
-
-static
 DWORD
 CdcStateTransition(
     PCDC_STATE_MACHINE_CONTEXT pStateMachine,
@@ -1380,45 +1502,58 @@ CdcIsValidTransition(
     CDC_DC_STATE cdcNewState
     )
 {
+
     BOOL bIsValidTransaction = FALSE;
 
     switch (cdcNewState)
     {
         case CDC_DC_STATE_LEGACY:
-          bIsValidTransaction = TRUE;
-          break;
+            bIsValidTransaction = TRUE;
+            break;
+
         case CDC_DC_STATE_NO_DC_LIST:
-          if (cdcCurrentState == CDC_DC_STATE_LEGACY)
-          {
-              bIsValidTransaction = TRUE;
-          }
-          break;
+            if (cdcCurrentState == CDC_DC_STATE_LEGACY)
+            {
+                bIsValidTransaction = TRUE;
+            }
+            break;
+
         case CDC_DC_STATE_SITE_AFFINITIZED:
-          if (cdcCurrentState == CDC_DC_STATE_NO_DC_LIST ||
+            if (cdcCurrentState == CDC_DC_STATE_NO_DC_LIST ||
 #ifndef CDC_DISABLE_OFFSITE
-              cdcCurrentState == CDC_DC_STATE_OFF_SITE ||
+                cdcCurrentState == CDC_DC_STATE_OFF_SITE ||
 #endif
-              cdcCurrentState == CDC_DC_STATE_NO_DCS_ALIVE
-             )
-          {
-              bIsValidTransaction = TRUE;
-          }
-          break;
+                cdcCurrentState == CDC_DC_STATE_NO_DCS_ALIVE ||
+                cdcCurrentState == CDC_DC_STATE_FORCE_REAFFINITIZE)
+            {
+                bIsValidTransaction = TRUE;
+            }
+            break;
 
 #ifndef CDC_DISABLE_OFFSITE
         case CDC_DC_STATE_OFF_SITE:
 #endif
+
         case CDC_DC_STATE_NO_DCS_ALIVE:
-          if (cdcCurrentState == CDC_DC_STATE_OFF_SITE ||
-              cdcCurrentState == CDC_DC_STATE_NO_DCS_ALIVE ||
-              cdcCurrentState == CDC_DC_STATE_SITE_AFFINITIZED
-             )
-          {
-              bIsValidTransaction = TRUE;
-          }
-          break;
+            if (cdcCurrentState == CDC_DC_STATE_OFF_SITE ||
+                cdcCurrentState == CDC_DC_STATE_NO_DCS_ALIVE ||
+                cdcCurrentState == CDC_DC_STATE_SITE_AFFINITIZED ||
+                cdcCurrentState == CDC_DC_STATE_FORCE_REAFFINITIZE)
+            {
+                bIsValidTransaction = TRUE;
+            }
+            break;
+
+        case CDC_DC_STATE_FORCE_REAFFINITIZE:
+            if (cdcCurrentState == CDC_DC_STATE_SITE_AFFINITIZED ||
+                cdcCurrentState == CDC_DC_STATE_OFF_SITE)
+            {
+                bIsValidTransaction = TRUE;
+            }
+            break;
+
         default:
-          break;
+            break;
     }
 
     if (cdcCurrentState == cdcNewState)

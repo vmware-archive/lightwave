@@ -71,12 +71,18 @@ extern "C" {
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
 #define INTEGRITY_CHECK_STATUS_DN               "cn=integritycheckstatus"
+#define LDAPRPC_PING_DN                         "cn=ping,cn=ldaprpc"
+#define LDAPRPC_VOTE_DN                         "cn=vote,cn=ldaprpc"
+#define REPLICATION_STATUS_DN                   "cn=replicationstatus"
+#define RAFT_CONTEXT_DN                         "cn=raftcontext"
+#define SERVER_STATE_PING_DN                    "cn=ping,cn=serverstate"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
 #define VMDIR_CA_CONTAINER_NAME                 "Certificate-Authorities"
+#define RAFT_CONTEXT_CONTAINER_NAME             "raftcontext"
 
 #define FSP_CONTAINER_RDN_ATTR                  "cn"
 #define FSP_CONTAINER_RDN_ATTR_VALUE            "ForeignSecurityPrincipals"
@@ -100,6 +106,8 @@ extern "C" {
 #define CFG_ORGANIZATION_ENTRY_ID      6
 #define DEL_ENTRY_CONTAINER_ENTRY_ID   7
 #define DEFAULT_ADMINISTRATOR_ENTRY_ID 8
+#define RAFT_CONTEXT_ENTRY_ID          9
+#define RAFT_CONTEXT_PS_ENTRY_ID       10
 
 // Schema related constants.
 
@@ -349,6 +357,17 @@ extern "C" {
 #define ATTR_MAYCONTAIN_LEN                 sizeof(ATTR_MAYCONTAIN)-1
 #define ATTR_AUXILIARY_CLASS                "auxiliaryclass"
 #define ATTR_AUXILIARY_CLASS_LEN            sizeof(ATTR_AUXILIARY_CLASS)-1
+//Raft attributes for intro-region single master
+#define ATTR_RAFT_TERM                      "vmwRaftTerm"
+#define ATTR_RAFT_VOTEDFOR_TERM             "vmwRaftVotedForTerm"
+#define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
+#define ATTR_RAFT_LEADER                    "vmwRaftLeader"
+#define ATTR_RAFT_FOLLOWERS                 "vmwRaftActiveFollower"
+#define ATTR_RAFT_MEMBERS                   "vmwRaftMember"
+#define ATTR_RAFT_STATE                     "vmwRaftState"
+#define ATTR_RAFT_CURRENT_TERM              "vmwRaftCurrentTerm"
+#define ATTR_RAFT_STATUS                    "vmwRaftStatus"
+#define ATTR_RAFT_VOTE_GRANTED              "vmwRaftVoteGranted"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -357,6 +376,7 @@ extern "C" {
 #define OC_SUB_SCHEMA                       "subschema"
 #define OC_SUB_SCHEMA_LEN                   sizeof(OC_SUB_SCHEMA)-1
 #define OC_DIR_SERVER                       "vmwDirServer"
+#define OC_DIR_SERVER_LEN                   sizeof(OC_DIR_SERVER)-1
 #define OC_PKI_CA                           "pkiCA"
 #define OC_REPLICATION_AGREEMENT            "vmwReplicationAgreement"
 #define OC_REPLICATION_AGREEMENT_LEN        sizeof(OC_REPLICATION_AGREEMENT)-1
@@ -400,6 +420,10 @@ extern "C" {
 #define OC_ATTRIBUTE_SCHEMA_LEN         sizeof(OC_ATTRIBUTE_SCHEMA)-1
 #define OC_CLASS_SCHEMA                 "classschema"
 #define OC_CLASS_SCHEMA_LEN             sizeof(OC_CLASS_SCHEMA)-1
+#define OC_CLUSTER_STATE                "vmwclusterstate"
+#define OC_CLUSTER_STATE_LEN            sizeof(OC_CLUSTER_STATE)-1
+#define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
+#define RAFT_CONTEXT_DN_MAX_LEN         64
 
 #define CM_COMPONENTMANAGER             "ComponentManager"
 #define CM_SITE                         "CMSites"
@@ -456,6 +480,7 @@ extern "C" {
 #define VMDIR_DC_GROUP_NAME             "DCAdmins"
 #define VMDIR_DCCLIENT_GROUP_NAME       "DCClients"
 #define VMDIR_CERT_GROUP_NAME           "CAAdmins"
+#define VMDIR_DNS_GROUP_NAME            "DNSAdmins"
 #define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
 
 #define VDIR_SERVER_VERSION             "1.0"
@@ -480,7 +505,13 @@ extern "C" {
 // #define LDAP_CONTROL_SYNC       LDAP_SYNC_OID ".1" defined in ldap.h
 
 // vmw OID for Integrity Check Control Search
-#define LDAP_CONTROL_DIGEST_SEARCH                "1.3.6.1.4.1.6876.40.10.2"
+#define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
+// vmw LDAP RAFT PING control OID for reginal single master
+#define LDAP_RAFT_PING_CONTROL                  "1.3.6.1.4.1.6876.40.10.4"
+// vmw LDAP RAFT RequestVote control OID for reginal single master
+#define LDAP_RAFT_VOTE_CONTROL                  "1.3.6.1.4.1.6876.40.10.5"
+// vmw OID for server state ping
+#define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

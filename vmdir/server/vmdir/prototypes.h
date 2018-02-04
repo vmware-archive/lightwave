@@ -109,23 +109,36 @@ VmDirLoadIndex(
     BOOLEAN bFirstboot
     );
 
+// background.c
+DWORD
+VmDirBkgdThreadFun(
+    PVOID   pArg
+    );
+
+DWORD
+VmDirBkgdUpdateLocalDomainControllerObj(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdCreateNewIntegChkReport(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdCompareLastTwoIntegChkReports(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdPingMaxOrigUsn(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
 // init.c
 DWORD
 VmDirInit(
     VOID
-    );
-
-DWORD
-VmDirAllocateBerValueAVsnprintf(
-    PVDIR_BERVALUE pbvValue,
-    PCSTR pszFormat,
-    ...
-    );
-
-DWORD
-VmDirGetHostsInternal(
-    PSTR**  pppszServerInfo,
-    size_t* pdwInfoCount
     );
 
 // instance.c
@@ -430,6 +443,19 @@ VmDirGetLogMaximumLogSize(
 /* utils.c */
 
 DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    );
+
+DWORD
+VmDirGetHostsInternal(
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
+    );
+
+DWORD
 VmDirSrvValidateUserCreateParams(
     PVMDIR_USER_CREATE_PARAMS_RPC pCreateParams
     );
@@ -437,6 +463,18 @@ VmDirSrvValidateUserCreateParams(
 DWORD
 VmDirSetAdministratorPasswordNeverExpires(
     VOID
+    );
+
+DWORD
+VmDirPingReplyEntry(
+    PVDIR_RAFT_PING_CONTROL_VALUE pCscv,
+    PVDIR_ENTRY *ppEntry
+    );
+
+DWORD
+VmDirVoteReplyEntry(
+    PVDIR_RAFT_VOTE_CONTROL_VALUE pCvcv,
+    PVDIR_ENTRY *ppEntry
     );
 
 //IPC

@@ -531,7 +531,18 @@ VmDirRefreshActPassword(
     PCSTR   pszDomain,
     PCSTR   pszActUPN,
     PCSTR   pszActDN,
-    PSTR    pszActPasswrod,
+    PSTR    pszActPassword,
+    PSTR*   ppszNewPassword
+    );
+
+DWORD
+VmDirResetActPassword(
+    PCSTR   pszHost,
+    PCSTR   pszDomain,
+    PCSTR   pszActUPN,
+    PCSTR   pszActDN,
+    PCSTR   pszActPassword,
+    BOOLEAN bRefreshPassword,
     PSTR*   ppszNewPassword
     );
 

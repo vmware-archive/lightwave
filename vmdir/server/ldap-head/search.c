@@ -145,20 +145,32 @@ error:
 }
 
 static
+BOOLEAN
+_VmDirSearchValidStateForReplication(
+    PVDIR_OPERATION     pOperation
+    )
+{
+    // Valid state to supply or in shutdown state and in the middle of supplying
+    return (VmDirdState() == VMDIRD_STATE_NORMAL ||
+            VmDirdState() == VMDIRD_STATE_READ_ONLY ||
+           (VmDirdState() == VMDIRD_STATE_SHUTDOWN && pOperation->conn->bInReplLock));
+}
+
+static
 DWORD
 _VmDirSearchPreCondition(
     PVDIR_OPERATION     pOperation,
     PVDIR_LDAP_RESULT   pResult
     )
 {
-    DWORD   dwError = 0;
-    PSTR    pszLocalErrorMsg = NULL;
+    DWORD    dwError = 0;
+    BOOLEAN  bHoldingReadLock = FALSE;
+    PSTR     pszLocalErrorMsg = NULL;
 
     // Is sync request operable?
     if (pOperation->syncReqCtrl)
     {
-        if (VmDirdState() != VMDIRD_STATE_NORMAL &&
-            VmDirdState() != VMDIRD_STATE_READ_ONLY)
+        if (_VmDirSearchValidStateForReplication(pOperation) == FALSE)
         {
             // Why block out-bound replication when catching up during restore mode?
             //
@@ -173,10 +185,14 @@ _VmDirSearchPreCondition(
                     "Server in not in normal mode, not allowing outward replication.");
         }
 
+        bHoldingReadLock = pOperation->conn->bInReplLock;
         // Sync request must acquire replication (read) lock
         VMDIR_RWLOCK_READLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock, 1000);
-        if (!pOperation->conn->bInReplLock)
+
+        if (!pOperation->conn->bInReplLock ||
+            (VmDirdState() == VMDIRD_STATE_SHUTDOWN && bHoldingReadLock == FALSE))//don't allow new sync req in shutdown state
         {
+            VMDIR_RWLOCK_UNLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock);
             dwError = pResult->errCode = LDAP_BUSY;
             BAIL_ON_VMDIR_ERROR(dwError);
         }

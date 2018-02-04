@@ -59,6 +59,7 @@ typedef enum
     VM_SOCK_EVENT_TYPE_UDP_FWD_REQUEST_DATA_WRITE,
     VM_SOCK_EVENT_TYPE_UDP_FWD_RESPONSE_DATA_READ,
     VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED,
+    VM_SOCK_EVENT_TYPE_QUERY,
     VM_SOCK_EVENT_TYPE_MAX,
 } VM_SOCK_EVENT_TYPE, *PVM_SOCK_EVENT_TYPE;
 
@@ -154,6 +155,21 @@ VmDnsSockCreateEventQueue(
  */
 DWORD
 VmDnsSockEventQueueAdd(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    BOOL                 bOneShot,
+    PVM_SOCKET           pSocket
+    );
+
+/**
+ * @brief Rearms a socket to the event queue
+ *
+ * @param[in] pQueue  Pointer to Event queue
+ * @param[in] pSocket Pointer to Socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmDnsSockEventQueueRearm(
     PVM_SOCK_EVENT_QUEUE pQueue,
     BOOL                 bOneShot,
     PVM_SOCKET           pSocket

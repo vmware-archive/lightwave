@@ -183,22 +183,36 @@ ReplAddEntry(
 
     pEntry = op.request.addReq.pEntry;  // init pEntry after VmDirInitStackOperation
 
-    op.ber = ldapMsg->lm_ber;
+    // non-retry case
+    if (pPageEntry->pBervEncodedEntry == NULL)
+    {
+        op.ber = ldapMsg->lm_ber;
 
-    retVal = VmDirParseEntry( &op );
-    BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = VmDirParseEntry( &op );
+        BAIL_ON_VMDIR_ERROR( retVal );
+
+        pEntry->pSchemaCtx = VmDirSchemaCtxClone(op.pSchemaCtx);
+
+        // Make sure Attribute has its ATDesc set
+        retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        VmDirReplicationEncodeEntryForRetry(pEntry, pPageEntry);
+    }
+    else // retry case
+    {
+        // Schema context will be cloned as part of the decode entry (VmDirDecodeEntry)
+        retVal = VmDirReplicationDecodeEntryForRetry(op.pSchemaCtx, pPageEntry, pEntry);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirBervalContentDup(&pPageEntry->reqDn, &op.reqDn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
     _VmDirLogReplAddEntryContent(pPageEntry, op.request.addReq.pEntry);
 
     op.pBEIF = VmDirBackendSelect(pEntry->dn.lberbv.bv_val);
     assert(op.pBEIF);
-
-    // SJ-TBD: For every replicated Add do we really need to clone the schema context??
-    pEntry->pSchemaCtx = VmDirSchemaCtxClone(op.pSchemaCtx);
-
-    // Make sure Attribute has its ATDesc set
-    retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
-    BAIL_ON_VMDIR_ERROR(retVal);
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "ReplAddEntry: next entry being replicated/Added is: %s", pEntry->dn.lberbv.bv_val);
 
@@ -355,10 +369,32 @@ ReplDeleteEntry(
                                       pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    tmpAddOp.ber = ldapMsg->lm_ber;
+     // non-retry case
+    if (pPageEntry->pBervEncodedEntry == NULL)
+    {
+        tmpAddOp.ber = ldapMsg->lm_ber;
 
-    retVal = VmDirParseEntry( &tmpAddOp );
-    BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = VmDirParseEntry( &tmpAddOp );
+        BAIL_ON_VMDIR_ERROR( retVal );
+
+       /*
+        * Encode entry requires schema description
+        * hence perform encode entry after VmDirSchemaCheckSetAttrDesc
+        */
+        retVal = VmDirSchemaCheckSetAttrDesc(pSchemaCtx, tmpAddOp.request.addReq.pEntry);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        VmDirReplicationEncodeEntryForRetry(tmpAddOp.request.addReq.pEntry, pPageEntry);
+    }
+    else // retry case
+    {
+        // schema context will be cloned as part of the decode entry (VmDirDecodeEntry)
+        retVal = VmDirReplicationDecodeEntryForRetry(pSchemaCtx, pPageEntry, tmpAddOp.request.addReq.pEntry);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirBervalContentDup(&pPageEntry->reqDn, &tmpAddOp.reqDn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
     retVal = ReplFixUpEntryDn(tmpAddOp.request.addReq.pEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
@@ -467,8 +503,44 @@ ReplModifyEntry(
                                       pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirParseBerToEntry(ldapMsg->lm_ber, &e, NULL, NULL);
-    BAIL_ON_VMDIR_ERROR( retVal );
+    // non-retry case
+    if (pPageEntry->pBervEncodedEntry == NULL)
+    {
+        retVal = VmDirParseBerToEntry(ldapMsg->lm_ber, &e, NULL, NULL);
+        BAIL_ON_VMDIR_ERROR( retVal );
+
+        // Do not allow modify to tombstone entries
+        if (VmDirIsDeletedContainer(e.dn.lberbv.bv_val))
+        {
+            VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: Modify Tombstone entries, dn: %s",
+                __FUNCTION__,
+                e.dn.lberbv.bv_val);
+
+            if (e.attrs != NULL)
+            {
+                _VmDirLogReplEntryContent(&e);
+            }
+
+            BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+        }
+
+       /*
+        * Encode entry requires schema description
+        * hence perform encode entry after VmDirSchemaCheckSetAttrDesc
+        */
+        retVal = VmDirSchemaCheckSetAttrDesc(pSchemaCtx, &e);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        VmDirReplicationEncodeEntryForRetry(&e, pPageEntry);
+    }
+    else  // retry case
+    {
+        // schema context will be cloned as part of the decode entry (VmDirDecodeEntry)
+        retVal = VmDirReplicationDecodeEntryForRetry(pSchemaCtx, pPageEntry, &e);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
     retVal = ReplFixUpEntryDn(&e);
     BAIL_ON_VMDIR_ERROR( retVal );
@@ -1135,6 +1207,17 @@ SetAttributesNewMetaData(
         if (VmDirStringCompareA( currAttr->type.lberbv.bv_val, ATTR_USN_CREATED, FALSE ) == 0 ||
             VmDirStringCompareA( currAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
         {
+            /*
+             * We can reach here in two cases
+             * 1) Retry flow
+             *     Bervalue present in the currAttr->vals is dynamically allocated
+             *     Before allocating memory free the existing contents
+             * 2) Non-retry flow
+             *     Bervalue present in currAttr->vals will be referencing to lm_ber (ldap message contents) and
+             *     bOwnBvVal will be false. VmDirFreeBervalContent will result in no-op.
+             */
+            VmDirFreeBervalContent(&currAttr->vals[0]);
+
             retVal = VmDirAllocateMemory( localUsnStrlen + 1, (PVOID*)&currAttr->vals[0].lberbv.bv_val );
             BAIL_ON_VMDIR_ERROR(retVal);
 

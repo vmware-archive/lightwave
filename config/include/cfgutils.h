@@ -52,6 +52,7 @@ typedef struct _VMW_IC_SETUP_PARAMS
     PSTR pszOrgUnit;
 
     PSTR pszDomainName;
+    PSTR pszUsername;
     PSTR pszPassword;
 
     VMW_DIR_SVC_MODE dir_svc_mode;

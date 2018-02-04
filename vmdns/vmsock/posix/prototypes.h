@@ -85,6 +85,21 @@ VmDnsSockPosixEventQueueAdd(
     );
 
 /**
+ * @brief Rearms a socket to the event queue
+ *
+ * @param[in] pQueue  Pointer to Event queue
+ * @param[in] pSocket Pointer to Socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmDnsSockPosixEventQueueRearm(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    BOOL                 bOneShot,
+    PVM_SOCKET           pSocket
+    );
+
+/**
  * @brief Removes a socket on the event queue
  *
  * @param[in] pQueue  Pointer to Event queue

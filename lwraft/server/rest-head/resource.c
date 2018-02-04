@@ -22,6 +22,7 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         FALSE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
+        "application/json",
         "error_code",
         "error_message"
     },
@@ -31,6 +32,7 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         TRUE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
+        "application/json",
         "error_code",
         "error_message"
     },
@@ -40,6 +42,7 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         TRUE,
         VmDirRESTLdapSetResult,
         VmDirRESTLdapGetHttpError,
+        "application/json",
         "code",
         "error"
     },
@@ -49,6 +52,17 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         FALSE,
         VmDirRESTUnknownSetResult,
         VmDirRESTUnknownGetHttpError,
+        "text/plain",
+        "error_code",
+        "error_message"
+    },
+    {
+        VDIR_REST_RSC_IDP,
+        VMDIR_V1_RESOURCE_IDP,
+        FALSE,
+        VmDirRESTUnknownSetResult,
+        VmDirRESTUnknownGetHttpError,
+        "application/json",
         "error_code",
         "error_message"
     },
@@ -59,12 +73,13 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         VmDirRESTUnknownSetResult,
         VmDirRESTUnknownGetHttpError,
         NULL,
+        NULL,
         NULL
     }
 };
 
 PVDIR_REST_RESOURCE
-VmDirRESTGetResource(
+VmDirRESTGetResourceByPath(
     PSTR    pszPath
     )
 {
@@ -111,8 +126,7 @@ VmDirRESTUnknownSetResult(
 
     if (!pRestRslt)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirRESTResultSetError(pRestRslt, (int)dwErr, pszErrMsg);
@@ -134,19 +148,15 @@ error:
 DWORD
 VmDirRESTUnknownGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
-    DWORD*              pdwHttpStatus,
-    PSTR*               ppszHttpStatus,
-    PSTR*               ppszHttpReason
+    PVDIR_HTTP_ERROR*   ppHttpError
     )
 {
     DWORD   dwError = 0;
     int     httpStatus = 0;
-    PVDIR_HTTP_ERROR    pHttpError = NULL;
 
-    if (!pdwHttpStatus || !ppszHttpStatus || !ppszHttpReason)
+    if (!pRestRslt || !ppHttpError)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     switch ((DWORD)pRestRslt->errCode)
@@ -159,16 +169,16 @@ VmDirRESTUnknownGetHttpError(
         httpStatus = HTTP_BAD_REQUEST;
         break;
 
+    case VMDIR_ERROR_UNAVAILABLE:
+        httpStatus = HTTP_SERVICE_UNAVAILABLE;
+        break;
+
     default:
         httpStatus = HTTP_INTERNAL_SERVER_ERROR;
         break;
     }
 
-    pHttpError = VmDirRESTGetHttpError(httpStatus);
-
-    *pdwHttpStatus = pHttpError->dwHttpStatus;
-    *ppszHttpStatus = pHttpError->pszHttpStatus;
-    *ppszHttpReason = pHttpError->pszHttpReason;
+    *ppHttpError = VmDirRESTGetHttpError(httpStatus);
 
 cleanup:
     return dwError;

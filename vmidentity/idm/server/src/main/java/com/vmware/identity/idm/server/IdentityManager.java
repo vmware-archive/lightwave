@@ -536,21 +536,9 @@ public class IdentityManager implements IIdentityManager {
                 throw new IllegalArgumentException(errMsg);
             }
 
-            // Need to use the system tenant administrator to delete tenant instances...
-            Collection<IIdentityStoreData> stores = _configStore.getProviders(
-                    getSystemTenant(),
-                    EnumSet.of(DomainType.SYSTEM_DOMAIN),
-                    true);
-
-            if (stores.isEmpty())
-            {
-                logger.error("Unable to retrieve the system domain for system tenant");
-                throw new IllegalStateException("Unable to retrieve system domain for system tenant");
-            }
-
-            IIdentityStoreData systemDomainData = stores.iterator().next();
-            String username = systemDomainData.getExtendedIdentityStoreData().getUserName();
-            String password = systemDomainData.getExtendedIdentityStoreData().getPassword();
+            IdmServerConfig config = IdmServerConfig.getInstance();
+            String username = config.getDirectoryConfigStoreUserName();
+            String password = config.getDirectoryConfigStorePassword();
 
             unregisterTenant(name);
 
@@ -6445,6 +6433,61 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
+    void
+    setIssuer(
+            String tenantName,
+            String issuer
+            ) throws Exception
+            {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotNull(issuer, "issuer");
+
+            _configStore.setIssuer(tenantName, issuer);
+
+            _tenantCache.deleteTenant(tenantName);
+
+            logger.info(String.format(
+                    "Issuer [%s] successfully set for tenant [%s]",
+                    issuer, tenantName));
+        }
+        catch(Exception ex)
+        {
+            logger.error(
+                    String.format(
+                            "Failed to set issuer [%s] in tenant [%s]",
+                            issuer,
+                            tenantName));
+
+            throw ex;
+        }
+            }
+
+    private
+    String getIssuer(String tenantName) throws Exception
+    {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            return tenantInfo.getIssuer();
+        }
+        catch(Exception ex)
+        {
+            logger.error(
+                    String.format(
+                            "Failed to get issuer for tenant [%s]",
+                            tenantName));
+
+            throw ex;
+        }
+    }
+
+    private
     String getLocalIDPAlias(String tenantName) throws Exception
     {
         try
@@ -6984,6 +7027,7 @@ public class IdentityManager implements IIdentityManager {
             int[] authnTypes = attrs.getAuthnTypes();
             AuthnPolicy authnPolicy = getAuthnPolicy(tenantName, authnTypes);
             boolean idpSelectionFlag = attrs.isIDPSelectionEnabled();
+            String issuer = _configStore.getIssuer(tenantName);
 
             List<Certificate> certificate = _configStore.getTenantCertificate(tenantName);
                     Collection<List<Certificate>> certChains = _configStore.getTenantCertChains(tenantName);
@@ -7016,6 +7060,7 @@ public class IdentityManager implements IIdentityManager {
                                     attrDefinitions,
                                     entityId,
                                     alias,
+                                    issuer,
                                     providersInfo != null ? providersInfo._defaultProviders : null,
                                     authnPolicy,
                                     idpSelectionFlag);
@@ -7496,7 +7541,10 @@ public class IdentityManager implements IIdentityManager {
     TenantInformation findTenant(String tenantName) throws Exception
     {
         TenantInformation tenantInfo = _tenantCache.findTenant(tenantName);
-        if (tenantInfo == null)
+        if (tenantInfo == null || tenantInfo.getTenantCertificate() == null
+                || tenantInfo.getTenantCertificate().isEmpty()
+                || tenantInfo.getTenantCertificate().get(0) == null
+                || tenantInfo.getPrivateKey() == null)
         {
             tenantInfo = loadTenant(tenantName);
         }
@@ -7715,8 +7763,6 @@ public class IdentityManager implements IIdentityManager {
             if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
                 // validate IDP config has all the required meta data before registering..
                 ValidateUtil.validateNotEmpty(idpConfig.getSigningCertificateChain(), "[idpConfig.signingCertificates]");
-            } else if (protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
-                ValidateUtil.validateNotNull(idpConfig.getPublicKey(), "[idpConfig.publicKey]");
             }
 
             // validate groups exist in system domain before setting claim group mappings
@@ -9087,6 +9133,46 @@ public class IdentityManager implements IIdentityManager {
             try
             {
                 return this.getEntityID(tenantName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setIssuer(String tenantName, String issuer,
+            IIdmServiceContext serviceContext) throws  IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setIssuer"))
+        {
+            try
+            {
+                this.setIssuer(tenantName, issuer);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getIssuer(String tenantName, IIdmServiceContext serviceContext)
+            throws  IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getIssuer"))
+        {
+            try
+            {
+                return this.getIssuer(tenantName);
             }
             catch(Exception ex)
             {

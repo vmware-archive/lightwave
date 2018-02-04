@@ -83,7 +83,7 @@ LOTUS_DNS_FORWARDERS=
 LOTUS_SSL_SUBJECT_ALT_NAME=
 DISABLE_DNS=0
 DISABLE_STS=0
-USAGE="configure-lightwave-server --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--disable-sts] [--config-file <configuration file>]"
+USAGE="configure-lightwave-server [--username <admin-username>] --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--disable-sts] [--config-file <configuration file>]"
 export SUPPORT_RHTTP_PROXY=0
 
 # Read passed parameters.
@@ -98,6 +98,9 @@ if [ $# -gt 0 ]; then
                 case "$arg" in
                     "--domain")
                       MODE="domain"
+                      ;;
+                    "--username")
+                      MODE="username"
                       ;;
                     "--password")
                       MODE="password"
@@ -136,6 +139,10 @@ if [ $# -gt 0 ]; then
                 ;;
              "domain")
                 LOTUS_DOMAIN_DEFAULT=$arg
+                MODE=open
+                ;;
+             "username")
+                LOTUS_ADMIN_DEFAULT=$arg
                 MODE=open
                 ;;
              "password")
@@ -375,6 +382,7 @@ else
         "partner")
             $BIN_DIR/ic-promote \
                 --domain $LOTUS_DOMAIN_DEFAULT \
+                --username $LOTUS_ADMIN_DEFAULT \
                 --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
                 --site $LOTUS_SITE_NAME \
                 --partner $LOTUS_PARTNER_HOSTNAME \
@@ -390,7 +398,7 @@ else
 case $DISABLE_STS in
     0)
         echo "Secure Token Service Installation - Started"
-	$BIN_DIR/configure-sts --domain $LOTUS_DOMAIN_DEFAULT  --password "$LOTUS_ADMIN_PASSWORD_DEFAULT"
+	$BIN_DIR/configure-sts --domain $LOTUS_DOMAIN_DEFAULT  --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" --username $LOTUS_ADMIN_DEFAULT
         if [ $? -ne 0 ]; then
             echo "Secure Token Service Installation - Failed"
             _exit 1

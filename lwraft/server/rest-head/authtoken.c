@@ -112,10 +112,14 @@ VmDirRESTAuthTokenValidate(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
     )
 {
+    DWORD   i = 0;
     DWORD   dwError = 0;
     DWORD   dwOIDCError = 0;
+    size_t  numOfGroups = 0;
     BOOLEAN bCacheRefreshed = FALSE;
+    PSTR    pszTemp = NULL;
     PSTR    pszOIDCSigningCertPEM = NULL;
+    const PSTRING* ppGroupsArray = NULL;
     POIDC_ACCESS_TOKEN  pOidcAccessToken = NULL;
 
     if (!pAuthToken)
@@ -140,17 +144,7 @@ retry:
             NULL,
             VMDIR_REST_DEFAULT_SCOPE,
             VMDIR_REST_DEFAULT_CLOCK_TOLERANCE);
-
-    if (dwOIDCError == SSOERROR_TOKEN_INVALID_SIGNATURE ||
-        dwOIDCError == SSOERROR_TOKEN_INVALID_AUDIENCE ||
-        dwOIDCError == SSOERROR_TOKEN_EXPIRED)
-    {
-        dwError = VMDIR_ERROR_AUTH_BAD_DATA;
-    }
-    else if (dwOIDCError)
-    {
-        dwError = VMDIR_ERROR_OIDC_UNAVAILABLE;
-    }
+    dwError = VmDirOidcToVmdirError(dwOIDCError);
 
     // no need to refresh cache if user provided a bad token
     if (dwError && dwError != VMDIR_ERROR_AUTH_BAD_DATA && !bCacheRefreshed)
@@ -167,6 +161,31 @@ retry:
             OidcAccessTokenGetSubject(pOidcAccessToken),
             &pAuthToken->pszBindUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Log if the user belongs to LW admin group
+
+    OidcAccessTokenGetGroups(
+            pOidcAccessToken, &ppGroupsArray, &numOfGroups);
+
+    if (ppGroupsArray)
+    {
+        for (i = 0; i < numOfGroups; i++)
+        {
+            // Get string after domain name
+            pszTemp = VmDirStringChrA(ppGroupsArray[i], '\\');
+
+            if (pszTemp && ++pszTemp)
+            {
+                if (!VmDirStringCompareA(pszTemp, "Administrators",FALSE))
+                {
+                    VMDIR_LOG_INFO(
+                            VMDIR_LOG_MASK_ALL,
+                            "OIDC token for user: %s has lightwave admin group membership",
+                            pAuthToken->pszBindUPN);
+                }
+            }
+        }
+    }
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);

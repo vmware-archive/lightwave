@@ -137,6 +137,11 @@ ProcessPreValidatedEntries(
             {
                 pOperation->internalSearchEntryArray.iSize++;
                 pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+
+                if (pOperation->internalSearchEntryArray.iSize > gVmdirServerGlobals.dwMaxInternalSearchLimit)
+                {
+                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INTERNAL_SEARCH_LIMIT);
+                }
             }
         }
 
@@ -169,18 +174,24 @@ VmDirInternalSearch(
     PVDIR_OPERATION pOperation
     )
 {
-    int        retVal = LDAP_SUCCESS;
-    ENTRYID    eId = 0;
-    int        deadLockRetries = 0;
-    BOOLEAN    bHasTxn = FALSE;
-    PSTR       pszLocalErrMsg = NULL;
-    PVDIR_LDAP_RESULT  pResult = &(pOperation->ldapResult);
-    ENTRYID eStartingId = 0;
-    ENTRYID *pValidatedEntries = NULL;
-    DWORD dwEntryCount = 0;
-    BOOLEAN bUseOldSearch = TRUE;
+    int         retVal = LDAP_SUCCESS;
+    ENTRYID     eId = 0;
+    int         deadLockRetries = 0;
+    BOOLEAN     bHasTxn = FALSE;
+    PSTR        pszLocalErrMsg = NULL;
+    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
+    ENTRYID     eStartingId = 0;
+    ENTRYID*    pValidatedEntries = NULL;
+    DWORD       dwEntryCount = 0;
+    BOOLEAN     bUseOldSearch = TRUE;
+    uint64_t    iMLStartTime = 0;
+    uint64_t    iMLEndTime = 0;
+    uint64_t    iBEStartTime = 0;
+    uint64_t    iBEEndTime = 0;
 
     assert(pOperation && pOperation->pBEIF);
+
+    iMLStartTime = VmDirGetTimeInMilliSec();
 
     // Normalize (base) DN
     retVal = VmDirNormalizeDN( &(pOperation->reqDn), pOperation->pSchemaCtx );
@@ -193,14 +204,6 @@ VmDirInternalSearch(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Special search failed - (%u)", retVal);
 
         goto cleanup;  // done special search
-    }
-
-    if (pOperation->syncReqCtrl != NULL) // Replication
-    {
-        pOperation->lowestPendingUncommittedUsn =
-                    pOperation->pBEIF->pfnBEGetLeastOutstandingUSN( pOperation->pBECtx, FALSE );
-
-        VmDirLog( LDAP_DEBUG_REPL, "Replication request USN (%u)",  pOperation->lowestPendingUncommittedUsn );
     }
 
     // If base is not ROOT, read lock the base object (DnToEntryId index entry) to make sure it exists, and it does
@@ -229,6 +232,7 @@ txnretry:
             BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                           retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
             bHasTxn = TRUE;
+            iBEStartTime = VmDirGetTimeInMilliSec();
 
             // Lookup in the DN index.
             retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
@@ -256,8 +260,8 @@ txnretry:
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
     }
 
     retVal = AppendDNFilter( pOperation );
@@ -331,25 +335,36 @@ txnretry:
     retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
     bHasTxn = FALSE;
+    iBEEndTime = VmDirGetTimeInMilliSec();
 
 cleanup:
 
-    VMDIR_SAFE_FREE_MEMORY(pValidatedEntries);
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+    // collect metrics
+    iMLEndTime = VmDirGetTimeInMilliSec();
+    VmDirInternalMetricsUpdate(
+            METRICS_LDAP_OP_SEARCH,
+            pOperation->protocol,
+            pOperation->opType,
+            pOperation->ldapResult.errCode,
+            iMLStartTime,
+            iMLEndTime,
+            iBEStartTime,
+            iBEEndTime);
 
+    VMDIR_SAFE_FREE_MEMORY(pValidatedEntries);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 
 error:
 
     if (bHasTxn)
     {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
+        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 

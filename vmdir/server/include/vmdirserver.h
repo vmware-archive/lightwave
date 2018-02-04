@@ -81,6 +81,14 @@ typedef struct _VMDIR_OP_PLUGIN_GLOBALS
 
 extern VMDIR_OP_PLUGIN_GLOBALS  gVmdirPluginGlobals;
 
+typedef struct _VMDIR_UTDVECTOR_CACHE
+{
+    PSTR            pszUtdVector;   // In string
+    PLW_HASHMAP     pUtdVectorMap;  // In hash map
+    PVMDIR_RWLOCK   pUtdVectorLock;
+
+} VMDIR_UTDVECTOR_CACHE, *PVMDIR_UTDVECTOR_CACHE;
+
 typedef struct _VMDIR_SERVER_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
@@ -98,18 +106,26 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        dcAccountUPN;  // Domain controller account UPN
     int                  replInterval;
     int                  replPageSize;
-    VDIR_BERVALUE        utdVector; // In string format, it is stored as: <serverId1>:<origUsn1>;<serverId2>:<origUsn2>;...
+
+    PVMDIR_UTDVECTOR_CACHE  pUtdVectorCache;
+
     PSTR                 pszSiteName;
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
     USN                  initialNextUSN; // used for server restore only
-    USN                  maxOriginatingUSN;  // Cache value to prevent
-                                             // excessive searching
     VDIR_BERVALUE        bvServerObjName;
     DWORD                dwDomainFunctionalLevel;
     // Data that controls the thread that cleans up deleted entries.
     DWORD                dwTombstoneExpirationPeriod;
     DWORD                dwTombstoneThreadFrequency;
+    DWORD                dwMaxInternalSearchLimit;
+
+    // Flag that indicates whether this instance is promoted
+    // It is set at two places:
+    // 1) At the end of VmDirSrvSetupHostInstance for the 1st node
+    // 2) At the end of LoadServerGlobals for other nodes
+    BOOLEAN              bPromoted;
+
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -150,6 +166,9 @@ typedef struct _VMDIR_GLOBALS
 
     DWORD                           dwLdapRecvTimeoutSec;
     DWORD                           dwLdapConnectTimeoutSec;
+    DWORD                           dwOperationsThreadTimeoutInMilliSec;
+    DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
+
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
     PVDIR_THREAD_INFO               pSrvThrInfo;
@@ -479,6 +498,24 @@ VmDirIntegrityCheckStop(
 DWORD
 VmDirIntegrityCheckShowStatus(
     PVDIR_ENTRY*    ppEntry
+    );
+
+// metrics.c
+DWORD
+VmDirRpcMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirRpcMetricsUpdate(
+    METRICS_RPC_OPS operation,
+    uint64_t        iStartTime,
+    uint64_t        iEndTime
+    );
+
+VOID
+VmDirRpcMetricsShutdown(
+    VOID
     );
 
 #ifdef __cplusplus

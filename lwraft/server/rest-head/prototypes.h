@@ -235,25 +235,22 @@ VmDirRESTRequestHandlerInternal(
     BOOLEAN         bHttpRequest
     );
 
-DWORD
-VmDirRESTProcessRequest(
-    PVDIR_REST_OPERATION    pRestOp,
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_REQUEST           pRequest,
-    uint32_t                paramsCount
-    );
-
-DWORD
-VmDirRESTWriteSimpleErrorResponse(
-    PVMREST_HANDLE  pRESTHandle,
-    PREST_RESPONSE* ppResponse,
-    int             httpStatus
-    );
-
 // httperror.c
 PVDIR_HTTP_ERROR
 VmDirRESTGetHttpError(
     int httpStatus
+    );
+
+// idpapi.c
+DWORD
+VmDirRESTGetIDPModule(
+    PREST_MODULE*   ppRestModule
+   );
+
+DWORD
+VmDirRESTGetIDP(
+    void*   pIn,
+    void**  ppOut
     );
 
 // ldapapi.c
@@ -294,19 +291,17 @@ VmDirRESTLdapSetResult(
     PSTR                pszErrMsg
     );
 
+DWORD
+VmDirRESTLdapGetHttpError(
+    PVDIR_REST_RESULT   pRestRslt,
+    PVDIR_HTTP_ERROR*   ppHttpError
+    );
+
 // ldapcontro.c
 DWORD
 VmDirAddCondWriteCtrl(
     PVDIR_OPERATION pOp,
     PCSTR           pszCondWriteFilter
-    );
-
-DWORD
-VmDirRESTLdapGetHttpError(
-    PVDIR_REST_RESULT   pRestRslt,
-    DWORD*              pdwHttpStatus,
-    PSTR*               ppszHttpStatus,
-    PSTR*               ppszHttpReason
     );
 
 // lightwave.c
@@ -330,6 +325,14 @@ VmDirRESTGetLightwaveBuiltInAdminsGroupSid(
     PCSTR   pszDCName,
     PCSTR   pszDomainName,
     PSID*   ppBuiltInAdminsGroupSid
+    );
+
+// metrics.c
+VOID
+VmDirRestMetricsUpdateFromHandler(
+    PVDIR_REST_OPERATION    pRestOp,
+    uint64_t                iStartTime,
+    uint64_t                iEndTime
     );
 
 // metricsapi.c
@@ -389,7 +392,12 @@ VmDirRESTOperationReadRequest(
     );
 
 DWORD
-VmDirRESTOperationLoadJson(
+VmDirRESTOperationParseRequestPayload(
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
+DWORD
+VmDirRESTOperationProcessRequest(
     PVDIR_REST_OPERATION    pRestOp
     );
 
@@ -479,7 +487,7 @@ VmDirRESTFilterObjectToDN(
 
 // resource.c
 PVDIR_REST_RESOURCE
-VmDirRESTGetResource(
+VmDirRESTGetResourceByPath(
     PSTR    pszPath
     );
 
@@ -494,9 +502,7 @@ VmDirRESTUnknownSetResult(
 DWORD
 VmDirRESTUnknownGetHttpError(
     PVDIR_REST_RESULT   pRestRslt,
-    DWORD*              pdwHttpStatus,
-    PSTR*               ppszHttpStatus,
-    PSTR*               ppszHttpReason
+    PVDIR_HTTP_ERROR*   ppHttpError
     );
 
 // result.c
@@ -539,10 +545,9 @@ VmDirRESTResultSetObjData(
     );
 
 DWORD
-VmDirRESTResultToResponseBody(
+VmDirRESTResultGenerateResponseBody(
     PVDIR_REST_RESULT   pRestRslt,
-    PVDIR_REST_RESOURCE pResource,
-    PSTR*               ppszBody
+    PVDIR_REST_RESOURCE pResource
     );
 
 VOID
@@ -561,29 +566,48 @@ VmDirRESTUnloadVmAfdAPI(
     PVDIR_VMAFD_API pVmAfdAPI
     );
 
+DWORD
+VmDirRESTGetDCName(
+    PSTR *ppszDCName
+    );
+
+DWORD
+VmDirRESTGetDomainName(
+    PSTR *ppszDomainName
+    );
+
 // proxy.c
 DWORD
-VmDirRESTForwardRequest(
+VmDirRESTProxyForwardRequest(
     PVDIR_REST_OPERATION    pRestOp,
-    uint32_t                dwParamCount,
-    PREST_REQUEST           pRequest,
-    PVMREST_HANDLE          pRESTHandle,
     BOOLEAN                 bHttpRequest
     );
 
 DWORD
-VmDirRESTWriteProxyResponse(
-    PVDIR_REST_OPERATION     pRestOp,
-    PREST_RESPONSE*          ppResponse,
-    PVMREST_HANDLE           pRESTHandle
-    );
-
-DWORD
-VmDirRESTCreateProxyResult(
-    PVDIR_PROXY_RESULT*      ppProxyresult
+VmDirRESTProxyResultCreate(
+    PVDIR_PROXY_RESULT*     ppProxyresult
     );
 
 VOID
-VmDirFreeProxyResult(
-    PVDIR_PROXY_RESULT       pProxyResult
+VmDirFreeRESTProxyResult(
+    PVDIR_PROXY_RESULT      pProxyResult
+    );
+
+DWORD
+VmDirRESTProxyGetHttpError(
+    PVDIR_REST_RESULT   pRestRslt,
+    PVDIR_HTTP_ERROR*   ppHttpError
+    );
+
+//utils.c
+DWORD
+VmDirRESTSetCORSHeaders(
+    PVDIR_REST_OPERATION    pRestOp,
+    PREST_RESPONSE*         ppResponse
+    );
+
+DWORD
+VmDirRESTIsValidOrigin(
+    PSTR                    pRestOp,
+    BOOLEAN                 *isValidOrigin
     );

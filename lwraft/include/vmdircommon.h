@@ -900,14 +900,16 @@ typedef enum
 #define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
 #define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
-#define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
+#define VMDIR_REG_KEY_RAFT_KEEP_LOGS_IN_K     "RaftKeepLogsInK"
 #define VMDIR_REG_KEY_RAFT_QUORUM_OVERRIDE    "RaftQuorumOverride"
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
 #define VMDIR_REG_KEY_CURL_TIMEOUT_SEC        "CurlTimeoutSec"
+#define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
+#define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
-#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 30
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 3
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -2283,6 +2285,8 @@ typedef struct _VMDIR_THREAD_LOG_CONTEXT
     PSTR    pszRequestId;
     PSTR    pszUserId;
     PSTR    pszSessionId;
+    PCSTR   pszFuncName;  // we do not own this ptr
+    DWORD   dwFuncLine;
 } VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
 
 DWORD

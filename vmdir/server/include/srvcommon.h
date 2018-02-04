@@ -81,6 +81,7 @@ extern "C" {
 #define VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED_LEN   sizeof(VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED)
 
 #define GENERALIZED_TIME_STR_LEN       17
+#define GENERALIZED_TIME_STR_SIZE      GENERALIZED_TIME_STR_LEN + 1
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46
@@ -142,6 +143,7 @@ typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
 typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;
 typedef struct _VDIR_ACL_CTX*               PVDIR_ACL_CTX;
+typedef struct _VMDIR_BKGD_TASK_CTX*        PVMDIR_BKGD_TASK_CTX;
 
 typedef struct _VDIR_BERVALUE
 {
@@ -256,6 +258,7 @@ typedef struct _VDIR_CONNECTION
     DWORD                   dwClientPort;
     VDIR_SUPERLOG_RECORD    SuperLogRec;
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -584,12 +587,34 @@ typedef struct _VDIR_DIGEST_CONTROL_VALUE
     CHAR                    sha1Digest[SHA_DIGEST_LENGTH+1];
 } VDIR_DIGEST_CONTROL_VALUE, *PVDIR_DIGEST_CONTROL_VALUE;
 
+typedef struct _VDIR_RAFT_PING_CONTROL_VALUE
+{
+    PSTR                    pszFQDN;
+    int                     term;
+} VDIR_RAFT_PING_CONTROL_VALUE, *PVDIR_RAFT_PING_CONTROL_VALUE;
+
+typedef struct _VDIR_RAFT_VOTE_CONTROL_VALUE
+{
+    PSTR                    pszCandidateId;
+    int                     term;
+} VDIR_RAFT_VOTE_CONTROL_VALUE, *PVDIR_RAFT_VOTE_CONTROL_VALUE;
+
+typedef struct _VDIR_STATE_PING_CONTROL_VALUE
+{
+    PSTR                    pszFQDN;
+    PSTR                    pszInvocationId;
+    USN                     maxOrigUsn;
+} VDIR_STATE_PING_CONTROL_VALUE, *PVDIR_STATE_PING_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
-    SyncRequestControlValue            syncReqCtrlVal;
-    SyncDoneControlValue               syncDoneCtrlVal;
-    VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
-    VDIR_DIGEST_CONTROL_VALUE          digestCtrlVal;
+    SyncRequestControlValue             syncReqCtrlVal;
+    SyncDoneControlValue                syncDoneCtrlVal;
+    VDIR_PAGED_RESULT_CONTROL_VALUE     pagedResultCtrlVal;
+    VDIR_DIGEST_CONTROL_VALUE           digestCtrlVal;
+    VDIR_RAFT_PING_CONTROL_VALUE        raftPingCtrlVal;
+    VDIR_RAFT_VOTE_CONTROL_VALUE        raftVoteCtrlVal;
+    VDIR_STATE_PING_CONTROL_VALUE       statePingCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -607,14 +632,22 @@ typedef enum
     VDIR_OPERATION_TYPE_REPL = 4,
 } VDIR_OPERATION_TYPE;
 
+typedef enum
+{
+    VDIR_OPERATION_PROTOCOL_LDAP,
+    VDIR_OPERATION_PROTOCOL_REST
+
+} VDIR_OPERATION_PROTOCOL;
+
 typedef struct _VDIR_OPERATION
 {
-    VDIR_OPERATION_TYPE opType;
+    VDIR_OPERATION_TYPE     opType;
+    VDIR_OPERATION_PROTOCOL protocol;
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid only for EXTERNAL operation
     ///////////////////////////////////////////////////////////////////////////
-    ber_int_t           protocol;    // version of the LDAP protocol used by client
+    ber_int_t           protocolVer;    // version of the LDAP protocol used by client
     BerElement *        ber;         // ber of the request
     ber_int_t           msgId;       // msgid of the request
     PVDIR_CONNECTION    conn;        // Connection
@@ -625,6 +658,10 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
     VDIR_LDAP_CONTROL *       digestCtrl;
+    VDIR_LDAP_CONTROL *       raftPingCtrl;
+    VDIR_LDAP_CONTROL *       raftVoteCtrl;
+    VDIR_LDAP_CONTROL *       statePingCtrl;
+
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
@@ -691,7 +728,7 @@ typedef struct _VMDIR_REPLICATION_METRICS
     PSTR                    pszDstHostname;
     PSTR                    pszDstSite;
     PVM_METRICS_GAUGE       pTimeConverge;
-    PVM_METRICS_HISTOGRAM   pTimeOnehop;
+    PVM_METRICS_GAUGE       pTimeOnehop;
     PVM_METRICS_HISTOGRAM   pTimeCycleSucceeded;
     PVM_METRICS_HISTOGRAM   pTimeCycleFailed;
     PVM_METRICS_HISTOGRAM   pUsnBehind;
@@ -1026,6 +1063,16 @@ VmDirSimpleEntryDeleteAttribute(
     );
 
 // util.c
+VOID
+VmDirAssertServerGlobals(
+    VOID
+    );
+
+BOOLEAN
+VmDirIsDeletedContainer(
+    PCSTR   pszDN
+    );
+
 DWORD
 VmDirToLDAPError(
     DWORD   dwVmDirError
@@ -1265,7 +1312,8 @@ VmDirComputeEncodedEntrySize(
 DWORD
 VmDirEncodeEntry(
     PVDIR_ENTRY              pEntry,
-    VDIR_BERVALUE*           pEncodedBerval);
+    VDIR_BERVALUE*           pEncodedBerval,
+    BOOLEAN                  bValidateEntry);
 
 unsigned short
 VmDirDecodeShort(
@@ -1279,7 +1327,8 @@ VmDirEncodeShort(
 DWORD
 VmDirDecodeEntry(
    PVDIR_SCHEMA_CTX     pSchemaCtx,
-   PVDIR_ENTRY          pEntry);
+   PVDIR_ENTRY          pEntry,
+   PVDIR_BERVALUE       pbvDn);
 
 int
 VmDirGenOriginatingTimeStr(
@@ -1613,10 +1662,34 @@ VmDirKeySetGetKvno(
     PBYTE pUpnKeys,
     DWORD upnKeysLen,
     DWORD *kvno
-);
+    );
+
+// background.c
+DWORD
+VmDirBkgdThreadInitialize(
+    VOID
+    );
+
+VOID
+VmDirBkgdThreadShutdown(
+    VOID
+    );
+
+DWORD
+VmDirBkgdTaskUpdatePrevTime(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+// oidctovmdirerror.c
+DWORD
+VmDirOidcToVmdirError(
+    DWORD dwOidcError
+    );
 
 #ifdef __cplusplus
 }
 #endif
+
+#include <vmdirmetrics.h>
 
 #endif /* COMMON_INTERFACE_H_ */

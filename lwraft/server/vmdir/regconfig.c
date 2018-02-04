@@ -233,10 +233,10 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_RAFT_KEEP_LOGS,
+                    VMDIR_REG_KEY_RAFT_KEEP_LOGS_IN_K,
                     TRUE))
         {
-            gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue;
+            gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue * 1024;  // reg key value in K
         }
         else if(!VmDirStringCompareA(
                     pEntry->pszName,
@@ -251,6 +251,20 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.dwLdapConnectTimeoutSec = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_MAX_INTERNAL_SEARCH,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwMaxInternalSearchLimit = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_EFFICIENT_READ_OP,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwEfficientReadOpTimeMS = pEntry->dwValue;
         }
     }
 

@@ -64,6 +64,8 @@ VmDirRESTLdapAdd(
             NULL, -1, LDAP_REQ_ADD, pRestOp->pConn, &pAddOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    pAddOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
+
     dwError = VmDirRESTDecodeEntry(pRestOp->pjInput, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -118,6 +120,8 @@ VmDirRESTLdapSearch(
     dwError = VmDirExternalOperationCreate(
             NULL, -1, LDAP_REQ_SEARCH, pRestOp->pConn, &pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pSearchOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError)
@@ -215,6 +219,8 @@ VmDirRESTLdapModify(
             NULL, -1, LDAP_REQ_MODIFY, pRestOp->pConn, &pModifyOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    pModifyOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
+
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -274,6 +280,8 @@ VmDirRESTLdapDelete(
     dwError = VmDirExternalOperationCreate(
             NULL, -1, LDAP_REQ_DELETE, pRestOp->pConn, &pDeleteOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pDeleteOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
     dwError = VmDirRESTGetStrParam(pRestOp, "dn", &pszDN, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);

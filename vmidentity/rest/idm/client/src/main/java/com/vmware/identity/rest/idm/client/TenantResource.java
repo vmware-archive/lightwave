@@ -78,6 +78,26 @@ public class TenantResource extends ClientResource {
     }
 
     /**
+     * Updates a tenant.
+     *
+     * <p><b>Required Role:</b> {@code tenant operator}.
+     *
+     * @param tenant the tenant to be updated.
+     * @return the updated tenant.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public TenantDTO update(TenantDTO tenant) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), TENANT_URI);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), tenant);
+        return execute(parent.getClient(), post, TenantDTO.class);
+    }
+
+    /**
      * Request a specific tenant.
      *
      * <p><b>Required Role:</b> {@code user}.

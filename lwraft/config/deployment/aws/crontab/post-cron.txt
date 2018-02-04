@@ -1,2 +1,3 @@
 */3 * * * *    /opt/vmware/share/config/post-demote-deads.sh
 */5 * * * *    /opt/vmware/share/config/refresh-resolve-conf.sh
+*/1 * * * *    /opt/vmware/share/config/monitor-core-dump.sh

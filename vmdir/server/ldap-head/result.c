@@ -572,8 +572,8 @@ VmDirSendSearchEntry(
 
         if ( pOperation->syncReqCtrl != NULL ) // Replication, => write Sync State Control
         {
-            retVal = WriteSyncStateControl( pOperation, pSrEntry, ber, &pszLocalErrorMsg );
-            BAIL_ON_VMDIR_ERROR( retVal );
+            retVal = WriteSyncStateControl(pOperation, pSrEntry, ber, &pszLocalErrorMsg);
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
 
         if (ber_printf( ber, "N}" ) == -1)
@@ -585,7 +585,8 @@ VmDirSendSearchEntry(
                                             "Encoding terminating the entry failed.");
         }
 
-        if ((pOperation->syncReqCtrl == NULL) || (pOperation->syncReqCtrl != NULL && nonTrivialAttrsInReplScope ))
+        if ((pOperation->syncReqCtrl == NULL) ||
+            (pOperation->syncReqCtrl != NULL && nonTrivialAttrsInReplScope))
         {
             if (WriteBerOnSocket( pOperation->conn, ber ) != 0)
             {
@@ -597,11 +598,11 @@ VmDirSendSearchEntry(
             pSrEntry->bSearchEntrySent = TRUE;
             sr->iNumEntrySent++;
 
-            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: Send entry: %s", pSrEntry->dn.lberbv.bv_val);
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "SendSearchEntry: Send entry: %s", pSrEntry->dn.lberbv.bv_val);
         }
         else
         {
-            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: NOT Sending entry: %s %p %d",
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "SendSearchEntry: NOT Sending entry: %s %p %d",
                             pSrEntry->dn.lberbv.bv_val, pOperation->syncReqCtrl, nonTrivialAttrsInReplScope);
         }
 
@@ -743,7 +744,7 @@ _VmDirIsUsnInScope(
         }
         else
         {
-            VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s skip prior usncreated %llu attr %s",
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s (add->modify) race condition avoided. skip prior usncreated %llu attr %s",
                                     __FUNCTION__, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
         }
 
@@ -793,7 +794,6 @@ IsAttrInReplScope(
     if ((attrType != NULL && (VmDirStringCompareA( attrType, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0 ||
                               VmDirStringCompareA( attrType, ATTR_UP_TO_DATE_VECTOR, FALSE) == 0 ||
                               VmDirStringCompareA( attrType, VDIR_ATTRIBUTE_SEQUENCE_RID, FALSE) == 0)))
-
     {
         // Reset metaData value so that we don't send local only attribute back.
         attrMetaData[0] = '\0';

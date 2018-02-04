@@ -335,7 +335,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 200,                              \
         /*.dwMax          = */ 90000,                            \
-        /*.dwDefault      = */ 3500,                             \
+        /*.dwDefault      = */ 4500,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -346,13 +346,13 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 100,                              \
         /*.dwMax          = */ 30000,                            \
-        /*.dwDefault      = */ 1000,                             \
+        /*.dwDefault      = */ 1500,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_RAFT_KEEP_LOGS,     \
+        /*.pszName        = */ VMDIR_REG_KEY_RAFT_KEEP_LOGS_IN_K,\
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 50,                               \
@@ -373,35 +373,26 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                          \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_MAX_INTERNAL_SEARCH, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0xFFFFFFFF,                       \
+        /*.dwDefault      = */ 1000000,                          \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_EFFICIENT_READ_OP,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5,                                \
+        /*.dwMax          = */ 10000,                            \
+        /*.dwDefault      = */ 50,                               \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }
-
-typedef enum
-{
-    METRICS_RPC_OP_GENERATEPASSWORD,
-    METRICS_RPC_OP_CREATEUSER,
-    METRICS_RPC_OP_CREATEUSEREX,
-    METRICS_RPC_OP_SETLOGLEVEL,
-    METRICS_RPC_OP_SETLOGMASK,
-    METRICS_RPC_OP_SETSTATE,
-    METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA,
-    METRICS_RPC_OP_SUPERLOGENABLE,
-    METRICS_RPC_OP_SUPERLOGDISABLE,
-    METRICS_RPC_OP_ISSUPERLOGENABLED,
-    METRICS_RPC_OP_SUPERLOGFLUSH,
-    METRICS_RPC_OP_SUPERLOGSETSIZE,
-    METRICS_RPC_OP_SUPERLOGGETSIZE,
-    METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION,
-    METRICS_RPC_OP_OPENDATABASEFILE,
-    METRICS_RPC_OP_READDATABASEFILE,
-    METRICS_RPC_OP_CLOSEDATABASEFILE,
-    METRICS_RPC_OP_SETBACKENDSTATE,
-    METRICS_RPC_OP_GETSTATE,
-    METRICS_RPC_OP_GETLOGLEVEL,
-    METRICS_RPC_OP_GETLOGMASK,
-    METRICS_RPC_OP_SETMODE,
-    METRICS_RPC_OP_GETMODE,
-    METRICS_RPC_OP_RAFTREQUESTVOTE,
-    METRICS_RPC_OP_RAFTAPPENDENTRIES,
-    METRICS_RPC_OP_COUNT
-
-} METRICS_RPC_OPS;

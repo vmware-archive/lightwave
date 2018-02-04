@@ -872,6 +872,11 @@ VmAfdShutdownPassRefreshThread(
     PVMAFD_THREAD pThread
     );
 
+DWORD
+VmAfdTriggerPassRefreshThread(
+    PVMAFD_THREAD pThread
+    );
+
 //IPC
 
 typedef struct _IDM_USER_IDENTITY_
@@ -1364,6 +1369,15 @@ VmAfdIpcSetCAPath(
 
 DWORD
 VmAfdIpcTriggerRootCertsRefresh(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcTriggerPasswordRefresh(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
     DWORD dwRequestSize,
@@ -2176,7 +2190,7 @@ CdcSrvEnableLegacyModeHA(
 
 DWORD
 CdcSrvForceRefreshCache(
-    PCDC_CONTEXT pContext
+    PCDC_CONTEXT pCdcContext
     );
 
 DWORD
@@ -2267,7 +2281,6 @@ CdcWakeupStateMachine(
       PCDC_STATE_MACHINE_CONTEXT pStateMachine,
       BOOLEAN                    bWaitForCompletion
       );
-
 
 //cdcupdate.c
 

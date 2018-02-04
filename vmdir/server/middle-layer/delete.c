@@ -26,12 +26,6 @@ GenerateDeleteAttrsMods(
     VDIR_ENTRY *    pEntry
     );
 
-static
-BOOLEAN
-_VmDirIsDeletedContainer(
-    PCSTR   pszDN
-    );
-
 int
 VmDirMLDelete(
     PVDIR_OPERATION    pOperation
@@ -47,24 +41,21 @@ VmDirMLDelete(
     if (pOperation->conn->bIsAnonymousBind || VmDirIsFailedAccessInfo(&pOperation->conn->AccessInfo))
     {
         dwError = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError,
+                pszLocalErrMsg,
+                "Not bind/authenticate yet");
     }
 
-    dwError = VmDirInternalDeleteEntry( pOperation );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
-                                                     pOperation->pBECtx->wTxnUSN);
-    }
+    dwError = VmDirInternalDeleteEntry(pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, dwError, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -78,19 +69,25 @@ VmDirInternalDeleteEntry(
     PVDIR_OPERATION    pOperation
     )
 {
-    int             retVal = LDAP_SUCCESS;
-    int             deadLockRetries = 0;
-    VDIR_ENTRY      entry = {0};
-    PVDIR_ENTRY     pEntry = NULL;
-    BOOLEAN         leafNode = FALSE;
-    DeleteReq *     delReq = &(pOperation->request.deleteReq);
-    ModifyReq *     modReq = &(pOperation->request.modifyReq);
-    BOOLEAN         bIsDomainObject = FALSE;
-    BOOLEAN         bHasTxn = FALSE;
-    BOOLEAN         bIsDeletedObj = FALSE;
-    PSTR            pszLocalErrMsg = NULL;
+    int         retVal = LDAP_SUCCESS;
+    int         deadLockRetries = 0;
+    VDIR_ENTRY  entry = {0};
+    PVDIR_ENTRY pEntry = NULL;
+    BOOLEAN     leafNode = FALSE;
+    DeleteReq*  delReq = &(pOperation->request.deleteReq);
+    ModifyReq*  modReq = &(pOperation->request.modifyReq);
+    BOOLEAN     bIsDomainObject = FALSE;
+    BOOLEAN     bHasTxn = FALSE;
+    BOOLEAN     bIsDeletedObj = FALSE;
+    PSTR        pszLocalErrMsg = NULL;
+    uint64_t    iMLStartTime = 0;
+    uint64_t    iMLEndTime = 0;
+    uint64_t    iBEStartTime = 0;
+    uint64_t    iBEEndTime = 0;
 
     assert(pOperation && pOperation->pBECtx->pBE);
+
+    iMLStartTime = VmDirGetTimeInMilliSec();
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
@@ -155,6 +152,7 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
         // Read current entry from DB
         retVal = pOperation->pBEIF->pfnBEDNToEntry(
@@ -249,7 +247,7 @@ txnretry:
 
         // age off tombstone entry?
         if  (pEntry->pParentEntry &&
-             _VmDirIsDeletedContainer(pEntry->pParentEntry->dn.lberbv_val))
+             VmDirIsDeletedContainer(pEntry->pParentEntry->dn.lberbv_val))
         {
             bIsDeletedObj = TRUE;
             // Normalize index attribute, so mdb can cleanup index tables properly.
@@ -358,6 +356,14 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                               retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
+        iBEEndTime = VmDirGetTimeInMilliSec();
+
+        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+        {
+            // update max orig usn
+            pOperation->pBEIF->pfnBESetMaxOriginatingUSN(
+                    pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
+        }
     }
     // ************************************************************************************
     // transaction retry loop end.
@@ -389,26 +395,35 @@ cleanup:
         }
     }
 
+    // collect metrics
+    iMLEndTime = VmDirGetTimeInMilliSec();
+    VmDirInternalMetricsUpdate(
+            METRICS_LDAP_OP_DELETE,
+            pOperation->protocol,
+            pOperation->opType,
+            pOperation->ldapResult.errCode,
+            iMLStartTime,
+            iMLEndTime,
+            iBEStartTime,
+            iBEEndTime);
+
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
         // In case of replication, modReq is owned by the Replication thread/logic
-        DeleteMods ( modReq );
+        DeleteMods(modReq);
     }
-
-    VmDirFreeEntryContent ( &entry );
-
+    VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
     return retVal;
 
 error:
     if (bHasTxn)
     {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
+        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -576,21 +591,4 @@ cleanup:
 
 error:
     goto cleanup;
-}
-
-static
-BOOLEAN
-_VmDirIsDeletedContainer(
-    PCSTR   pszDN
-    )
-{
-    BOOLEAN bRtn = FALSE;
-
-    if (pszDN &&
-        VmDirStringCompareA(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE) == 0)
-    {
-        bRtn = TRUE;
-    }
-
-    return bRtn;
 }

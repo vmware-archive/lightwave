@@ -21,6 +21,7 @@ VM_SOCK_PACKAGE gVmDnsSockPosixPackage =
     .pfnOpenServerSocket = &VmDnsSockPosixOpenServer,
     .pfnCreateEventQueue = &VmDnsSockPosixCreateEventQueue,
     .pfnAddEventQueue = &VmDnsSockPosixEventQueueAdd,
+    .pfnRearmEventQueue = &VmDnsSockPosixEventQueueRearm,
     .pfnRemoveEventQueue = &VmDnsSockPosixEventQueueRemove,
     .pfnWaitForEvent = &VmDnsSockPosixWaitForEvent,
     .pfnShutdownEventQueue = &VmDnsSockPosixShutdownEventQueue,

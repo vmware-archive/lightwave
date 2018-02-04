@@ -12,6 +12,7 @@
  * under the License.
  */
 
+// libmain.c
 DWORD
 VmDirRESTServerInit(
     VOID
@@ -19,5 +20,25 @@ VmDirRESTServerInit(
 
 VOID
 VmDirRESTServerShutdown(
+    VOID
+    );
+
+// metrics.c
+DWORD
+VmDirRestMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirRestMetricsUpdate(
+    METRICS_LDAP_OPS    operation,
+    METRICS_LDAP_ERRORS error,
+    METRICS_LAYERS      layer,
+    uint64_t            iStartTime,
+    uint64_t            iEndTime
+    );
+
+VOID
+VmDirRestMetricsShutdown(
     VOID
     );

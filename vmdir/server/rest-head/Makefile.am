@@ -16,11 +16,13 @@ librest_head_la_SOURCES += \
     handler.c \
     httperror.c \
     ldapapi.c \
+    metrics.c \
     metricsapi.c \
     operation.c \
     param.c \
     resource.c \
-    result.c
+    result.c \
+    utils.c
 
 endif
 

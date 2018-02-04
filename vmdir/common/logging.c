@@ -331,12 +331,34 @@ _VmDirLog1(
     )
 {
     char        extraLogMessage[EXTRA_LOG_MESSAGE_LEN] = {0};
-    char        logMessage[MAX_LOG_MESSAGE_LEN];
+    char        logMessage[MAX_LOG_MESSAGE_LEN] = {0};
     const char* logLevelTag = "";
     struct      timespec tspec = {0};
     struct      tm mytm = {0};
+    DWORD       dwError = 0;
+    DWORD       logLength = 0;
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContextVal = NULL;
 
-    vsnprintf( logMessage, sizeof(logMessage), fmt, args );
+    dwError = VmDirGetThreadLogContextValue(&pThreadLogContextVal);
+    // ignore error
+
+    if (pThreadLogContextVal)
+    {
+        snprintf(logMessage, sizeof(logMessage), "reqid: %s [%s,%d] ",
+                VDIR_SAFE_STRING(pThreadLogContextVal->pszRequestId),
+                VDIR_SAFE_STRING(pThreadLogContextVal->pszFuncName),
+                pThreadLogContextVal->dwFuncLine);
+
+        pThreadLogContextVal->pszFuncName = NULL;
+        pThreadLogContextVal->dwFuncLine = 0;
+
+        logLength = strlen(logMessage);
+    }
+
+    if (sizeof(logMessage) > logLength)
+    {
+        vsnprintf( logMessage + logLength, sizeof(logMessage) - logLength, fmt, args );
+    }
     logMessage[sizeof(logMessage)-1] = '\0';
 
     if ( _gpVmDirLogCtx->bSyslog )

@@ -39,7 +39,7 @@
 #define VMAFD_DEFAULT_LDAP_PORT         389
 
 #ifndef _WIN32
-#define SOCKET_FILE_PATH "/var/run/vmafd_socket"
+#define SOCKET_FILE_PATH "/var/run/vmafd/vmafd_socket"
 #define EVERYONE_UID -1
 #define MAX_GWTPWR_BUF_LENGTH 16384
 #endif

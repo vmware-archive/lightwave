@@ -53,24 +53,21 @@ VmDirMLAdd(
     if (pOperation->conn->bIsAnonymousBind || VmDirIsFailedAccessInfo(&pOperation->conn->AccessInfo))
     {
         dwError = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError,
+                pszLocalErrMsg,
+                "Not bind/authenticate yet");
     }
 
     dwError = VmDirInternalAddEntry(pOperation);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
-                                                     pOperation->pBECtx->wTxnUSN);
-    }
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, dwError, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -87,13 +84,19 @@ VmDirInternalAddEntry(
     PVDIR_OPERATION    pOperation
     )
 {
-    int             retVal = LDAP_SUCCESS;
-    int             deadLockRetries = 0;
-    BOOLEAN         bHasTxn = FALSE;
-    PSTR            pszLocalErrMsg = NULL;
-    PVDIR_ENTRY     pEntry = pOperation->request.addReq.pEntry;
+    int         retVal = LDAP_SUCCESS;
+    int         deadLockRetries = 0;
+    BOOLEAN     bHasTxn = FALSE;
+    PSTR        pszLocalErrMsg = NULL;
+    PVDIR_ENTRY pEntry = pOperation->request.addReq.pEntry;
+    uint64_t    iMLStartTime = 0;
+    uint64_t    iMLEndTime = 0;
+    uint64_t    iBEStartTime = 0;
+    uint64_t    iBEEndTime = 0;
 
     assert(pOperation && pOperation->pBECtx->pBE);
+
+    iMLStartTime = VmDirGetTimeInMilliSec();
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
@@ -189,6 +192,7 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
         // get parent entry
         if (pEntry->pdn.lberbv.bv_val)
@@ -286,6 +290,14 @@ txnretry:
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
+        iBEEndTime = VmDirGetTimeInMilliSec();
+
+        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+        {
+            // update max orig usn
+            pOperation->pBEIF->pfnBESetMaxOriginatingUSN(
+                    pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
+        }
     }
     // ************************************************************************************
     // transaction retry loop end.
@@ -314,19 +326,30 @@ cleanup:
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);
 
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    // collect metrics
+    iMLEndTime = VmDirGetTimeInMilliSec();
+    VmDirInternalMetricsUpdate(
+            METRICS_LDAP_OP_ADD,
+            pOperation->protocol,
+            pOperation->opType,
+            pOperation->ldapResult.errCode,
+            iMLStartTime,
+            iMLEndTime,
+            iBEStartTime,
+            iBEEndTime);
 
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 
 error:
 
     if (bHasTxn)
     {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
+        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
+        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 

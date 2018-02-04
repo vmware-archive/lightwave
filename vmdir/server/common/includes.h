@@ -51,6 +51,9 @@
 #include <backend.h>
 #include <middlelayer.h>
 
+// SSO errors
+#include <ssoerrors.h>
+
 #else
 
 #pragma once

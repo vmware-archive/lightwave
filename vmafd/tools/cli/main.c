@@ -3457,7 +3457,18 @@ ParseArgsGetMachineAccountInfo(
     PVM_AFD_CLI_CONTEXT pContext
     )
 {
-    return ERROR_CALL_NOT_IMPLEMENTED;
+    DWORD dwError = 0;
+
+    // not supposed to have any args
+    if (argc > 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+error:
+
+    return dwError;
 }
 
 static
@@ -4070,7 +4081,7 @@ ShowUsage(
         "\tget-machine-id --server-name <server name>\n"
         "\tset-machine-id --server-name <server name> --id <GUID>\n"
         "\tadd-password-entry --server-name <server name>\n"
-        "\tget-machine-account-info --server-name <server name>\n"
+        "\tget-machine-account-info\n"
         "\tset-machine-account-info --server-name <server name> --account-info <account info>\n"
         "\tget-machine-ssl-certificate --server-name <server name>\n"
         "\tset-machine-ssl-certificate --server-name <server name> --ssl-certification <ssl certificate>\n"

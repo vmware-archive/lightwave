@@ -55,6 +55,8 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwHTTPSListenPort, 0),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
+        VMDIR_SF_INIT(.dwOperationsThreadTimeoutInMilliSec, 0),
+        VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
@@ -135,16 +137,17 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dcAccountUPN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.replInterval, -1),
         VMDIR_SF_INIT(.replPageSize, -1),
-        VMDIR_SF_INIT(.utdVector, VDIR_BERVALUE_INIT),
+        VMDIR_SF_INIT(.pUtdVectorCache, NULL),
         VMDIR_SF_INIT(.pszSiteName, NULL),
         VMDIR_SF_INIT(.isIPV4AddressPresent, FALSE),
         VMDIR_SF_INIT(.isIPV6AddressPresent, FALSE),
         VMDIR_SF_INIT(.initialNextUSN, 0),
-        VMDIR_SF_INIT(.maxOriginatingUSN, 0),
         VMDIR_SF_INIT(.bvServerObjName, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT),
         VMDIR_SF_INIT(.dwTombstoneExpirationPeriod, 0),
         VMDIR_SF_INIT(.dwTombstoneThreadFrequency, 0),
+        VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
+        VMDIR_SF_INIT(.bPromoted, FALSE),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
@@ -163,3 +166,12 @@ VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck =
         VMDIR_SF_INIT(.pMutex, NULL),
         VMDIR_SF_INIT(.pJob, NULL)
     };
+
+VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pThrInfo, NULL),
+        VMDIR_SF_INIT(.bShutdown, FALSE)
+    };
+
+PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

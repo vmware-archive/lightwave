@@ -1553,6 +1553,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/server/common/Makefile
                  lwraft/server/backend/Makefile
                  lwraft/server/mdb-store/Makefile
+                 lwraft/server/metrics/Makefile
                  lwraft/server/indexcfg/Makefile
                  lwraft/server/middle-layer/Makefile
                  lwraft/server/schema/Makefile
@@ -1604,6 +1605,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/common/Makefile
                  vmdir/server/backend/Makefile
                  vmdir/server/mdb-store/Makefile
+                 vmdir/server/metrics/Makefile
                  vmdir/server/indexcfg/Makefile
                  vmdir/server/middle-layer/Makefile
                  vmdir/server/schema/Makefile
@@ -1611,6 +1613,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/ldap-head/Makefile
                  vmdir/server/rest-head/Makefile
                  vmdir/server/replication/Makefile
+                 vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
                  vmdir/server/vmdir/Makefile
                  vmdir/client/Makefile

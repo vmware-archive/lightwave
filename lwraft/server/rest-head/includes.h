@@ -16,6 +16,8 @@
 
 #include <config.h>
 #include <vmdirsys.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
 
 #include <ldap_log.h>
 
@@ -61,7 +63,7 @@
 #include <vmrest.h>
 
 #include <ssotypes.h>
-#include <ssoerrors.h>
+#include <ssocommon.h>
 #include <oidc_types.h>
 #include <oidc.h>
 

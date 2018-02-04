@@ -42,7 +42,7 @@ VmDirReplMetricsCacheInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // load server entries only if already promoted
-    if (gVmdirServerGlobals.systemDomainDN.lberbv_len)
+    if (gVmdirServerGlobals.bPromoted)
     {
         dwError = VmDirAllocateStringPrintf(
                 &pszSearchBaseDN,
@@ -66,6 +66,8 @@ VmDirReplMetricsCacheInit(
     }
 
 cleanup:
+    VmDirFreeEntryArrayContent(&entryArray);
+    VMDIR_SAFE_FREE_MEMORY(pszSearchBaseDN);
     return dwError;
 
 error:
@@ -183,7 +185,6 @@ VmDirReplMetricsCacheFind(
     }
 
     VMDIR_RWLOCK_READLOCK(bInLock, gVdirReplMetricsCache.pLock, 0);
-
 
     if (LwRtlHashMapFindKey(
             gVdirReplMetricsCache.pHashMap,
@@ -339,12 +340,11 @@ VmDirReplMetricsInit(
             &pReplMetrics->pTimeConverge);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmMetricsHistogramNew(
+    dwError = VmMetricsGaugeNew(
             pmContext,
             "vmdir_repl_time_onehop",
             labels, 4,
             "Time taken to replicate changes from direct partners to the destination server",
-            buckets, 4,
             &pReplMetrics->pTimeOnehop);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -432,7 +432,7 @@ VmDirFreeReplMetrics(
         VMDIR_SAFE_FREE_MEMORY(pReplMetrics->pszDstHostname);
         VMDIR_SAFE_FREE_MEMORY(pReplMetrics->pszDstSite);
         (VOID)VmMetricsGaugeDelete(pmContext, pReplMetrics->pTimeConverge);
-        (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pTimeOnehop);
+        (VOID)VmMetricsGaugeDelete(pmContext, pReplMetrics->pTimeOnehop);
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pTimeCycleSucceeded);
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pTimeCycleFailed);
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pUsnBehind);

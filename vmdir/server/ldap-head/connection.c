@@ -118,8 +118,8 @@ BindListenOnPort(
 static
 DWORD
 ProcessAConnection(
-   PVOID pArg
-   );
+    PVOID pArg
+    );
 
 static
 DWORD
@@ -193,11 +193,40 @@ _VmDirPingAcceptThr(
     DWORD   dwPort
     );
 
-static
-VOID
-_VmDirUpdateErrorCount(
-    DWORD dwErrCode
-    );
+DWORD
+VmDirAllocateConnection(
+    PVDIR_CONNECTION* ppConn
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_CONNECTION    pConn = NULL;
+    PVMDIR_THREAD_LOG_CONTEXT pLocalLogCtx = NULL;
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_CONNECTION), (PVOID*)&pConn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetThreadLogContextValue(&pLocalLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pLocalLogCtx)
+    {   // no pThrLogCtx set yet
+        dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pConn->pThrLogCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSetThreadLogContextValue(pConn->pThrLogCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppConn = pConn;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirDeleteConnection (&pConn);
+    goto cleanup;
+}
 
 void
 VmDirDeleteConnection(
@@ -224,6 +253,12 @@ VmDirDeleteConnection(
             tcp_close((*conn)->sd);
         }
 
+
+        if ((*conn)->pThrLogCtx)
+        {
+            VmDirSetThreadLogContextValue(NULL);
+            VmDirFreeThreadLogContext((*conn)->pThrLogCtx);
+        }
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
         _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );
 
@@ -395,7 +430,7 @@ NewConnection(
     PVDIR_CONNECTION pConn = NULL;
     PSTR      pszLocalErrMsg = NULL;
 
-    if (VmDirAllocateMemory(sizeof(VDIR_CONNECTION), (PVOID *)&pConn) != 0)
+    if (VmDirAllocateConnection(&pConn) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection: VmDirAllocateMemory call failed");
@@ -1151,256 +1186,313 @@ error:
 static
 DWORD
 ProcessAConnection(
-   PVOID pArg
-   )
+    PVOID pArg
+    )
 {
-   VDIR_CONNECTION *pConn = NULL;
-   int            retVal = LDAP_SUCCESS;
-   ber_tag_t      tag = LBER_ERROR;
-   ber_len_t      len = 0;
-   BerElement *   ber = NULL;
-   ber_int_t      msgid = -1;
-   PVDIR_OPERATION pOperation = NULL;
-   int            reTries = 0;
-   BOOLEAN                      bDownOpThrCount = FALSE;
-   PVDIR_CONNECTION_CTX pConnCtx = NULL;
-   int            metricsTag = -1;
-   uint64_t       iStartTime = 0;
-   uint64_t       iEndTime = 0;
+    VDIR_CONNECTION* pConn = NULL;
+    int              retVal = LDAP_SUCCESS;
+    ber_tag_t        tag = LBER_ERROR;
+    ber_len_t        len = 0;
+    BerElement *     ber = NULL;
+    ber_int_t        msgid = -1;
+    PVDIR_OPERATION  pOperation = NULL;
+    int              reTries = 0;
+    BOOLEAN          bDownOpThrCount = FALSE;
+    PVDIR_CONNECTION_CTX pConnCtx = NULL;
+    METRICS_LDAP_OPS operationTag = METRICS_LDAP_OP_IGNORE;
+    BOOLEAN          bReplSearch = FALSE;
+    uint64_t         iStartTime = 0;
+    uint64_t         iStartSupplierTime = 0;
+    uint64_t         iEndTime = 0;
 
-   // increment operation thread counter
-   retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
-   BAIL_ON_VMDIR_ERROR(retVal);
-   bDownOpThrCount = TRUE;
+    // increment operation thread counter
+    retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
+    BAIL_ON_VMDIR_ERROR(retVal);
+    bDownOpThrCount = TRUE;
 
-   pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
-   assert(pConnCtx);
+    pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
+    assert(pConnCtx);
 
-   retVal = NewConnection(pConnCtx->sockFd, &pConn, pConnCtx->pSockbuf_IO);
-   if (retVal != LDAP_SUCCESS)
-   {
-       VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: NewConnection [%d] failed with error: %d",
-                        __func__, pConnCtx->sockFd, retVal);
-       goto error;
-   }
+    retVal = NewConnection(pConnCtx->sockFd, &pConn, pConnCtx->pSockbuf_IO);
+    if (retVal != LDAP_SUCCESS)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: NewConnection [%d] failed with error: %d",
+                __func__,
+                pConnCtx->sockFd,
+                retVal);
+        goto error;
+    }
 
-   while (TRUE)
-   {
-       if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-       {
-           goto cleanup;
-       }
+    while (TRUE)
+    {
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+        {
+            if (pConn->bInReplLock == FALSE)
+            {
+                goto cleanup;
+            }
+            else
+            {
+                if (iStartSupplierTime == 0)
+                {
+                    iStartSupplierTime = VmDirGetTimeInMilliSec();
+                }
+                else if ((VmDirGetTimeInMilliSec() - iStartSupplierTime) >=
+                         (gVmdirGlobals.dwOperationsThreadTimeoutInMilliSec - MSECS_IN_SECOND))
+                {
+                    VMDIR_LOG_WARNING(
+                            VMDIR_LOG_MASK_ALL,
+                            "%s: supplier timedout",
+                            __FUNCTION__);
+                    goto cleanup;
+                }
+            }
+        }
 
-      ber = ber_alloc();
-      if (ber == NULL)
-      {
-          VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "ProcessAConnection: ber_alloc() failed.");
-          retVal = LDAP_NOTICE_OF_DISCONNECT;
-          BAIL_ON_VMDIR_ERROR(retVal);
-      }
+        ber = ber_alloc();
+        if (ber == NULL)
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "ProcessAConnection: ber_alloc() failed.");
 
-      /* An LDAP request message looks like:
-       * LDAPMessage ::= SEQUENCE {
-       *                    messageID       MessageID,
-       *                    protocolOp      CHOICE {
-       *                       bindRequest     BindRequest,
-       *                       unbindRequest   UnbindRequest,
-       *                       searchRequest   SearchRequest,
-       *                       ... },
-       *                       controls       [0] Controls OPTIONAL }
-       */
+            retVal = LDAP_NOTICE_OF_DISCONNECT;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+
+        /* An LDAP request message looks like:
+         * LDAPMessage ::= SEQUENCE {
+         *                    messageID       MessageID,
+         *                    protocolOp      CHOICE {
+         *                       bindRequest     BindRequest,
+         *                       unbindRequest   UnbindRequest,
+         *                       searchRequest   SearchRequest,
+         *                       ... },
+         *                       controls       [0] Controls OPTIONAL }
+         */
 
 
-      // reset retry count
-      reTries = 0;
-      // Read complete LDAP request message (tag, length, and real message).
-      while( reTries < MAX_NUM_OF_SOCK_READ_RETRIES )
-      {
-         if ((tag = ber_get_next( pConn->sb, &len, ber )) == LDAP_TAG_MESSAGE )
-         {
-            break;
-         }
+        // reset retry count
+        reTries = 0;
+        // Read complete LDAP request message (tag, length, and real message).
+        while (reTries < MAX_NUM_OF_SOCK_READ_RETRIES)
+        {
+            iStartTime = VmDirGetTimeInMilliSec();
+
+            if ((tag = ber_get_next(pConn->sb, &len, ber)) == LDAP_TAG_MESSAGE)
+            {
+                break;
+            }
 
 #ifdef _WIN32
-         // in ber_get_next (liblber) call, sock_errset() call WSASetLastError()
-         errno = WSAGetLastError();
-         if ( errno == EWOULDBLOCK || errno == EAGAIN || errno == WSAETIMEDOUT)
+            // in ber_get_next (liblber) call, sock_errset() call WSASetLastError()
+            errno = WSAGetLastError();
+            if (errno == EWOULDBLOCK || errno == EAGAIN || errno == WSAETIMEDOUT)
 #else
-         if ( errno == EWOULDBLOCK || errno == EAGAIN)
+            if (errno == EWOULDBLOCK || errno == EAGAIN)
 #endif
-         {
-            if (gVmdirGlobals.dwLdapRecvTimeoutSec > 0 && ber->ber_len == 0)
             {
-                VMDIR_LOG_INFO( LDAP_DEBUG_CONNS,
-                    "%s: disconnecting peer (%s), idle > %d seconds",
-                    __func__, pConn->szClientIP, gVmdirGlobals.dwLdapRecvTimeoutSec);
-                retVal = LDAP_NOTICE_OF_DISCONNECT;
-                BAIL_ON_VMDIR_ERROR( retVal );
+                if (gVmdirGlobals.dwLdapRecvTimeoutSec > 0 && ber->ber_len == 0)
+                {
+                    VMDIR_LOG_INFO(
+                            LDAP_DEBUG_CONNS,
+                            "%s: disconnecting peer (%s), idle > %d seconds",
+                            __func__,
+                            pConn->szClientIP,
+                            gVmdirGlobals.dwLdapRecvTimeoutSec);
+
+                    retVal = LDAP_NOTICE_OF_DISCONNECT;
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                }
+
+                //This may occur when not all data have recieved - set to EAGAIN/EWOULDBLOCK by ber_get_next,
+                // and in such case ber->ber_len > 0;
+                if (reTries > 0 && reTries % 5 == 0)
+                {
+                    VMDIR_LOG_WARNING(
+                            VMDIR_LOG_MASK_ALL,
+                            "%s: ber_get_next() failed with errno = %d, peer (%s), re-trying (%d)",
+                            __func__,
+                            errno,
+                            pConn->szClientIP,
+                            reTries);
+                }
+                VmDirSleep(200);
+                reTries++;
+                continue;
             }
 
-            //This may occur when not all data have recieved - set to EAGAIN/EWOULDBLOCK by ber_get_next,
-            // and in such case ber->ber_len > 0;
-            if (reTries > 0 && reTries % 5 == 0)
+            // Unexpected error case.
+            if (errno == 0)
             {
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() failed with errno = %d, peer (%s), re-trying (%d)",
-                                   __func__, errno , pConn->szClientIP, reTries);
+                VMDIR_LOG_INFO(
+                        LDAP_DEBUG_CONNS,
+                        "%s: ber_get_next() peer (%s) disconnected",
+                        __func__,
+                        pConn->szClientIP);
             }
-            VmDirSleep(200);
-            reTries++;
-            continue;
-         }
-         // Unexpected error case.
-         if (errno == 0)
-         {
-             VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: ber_get_next() peer (%s) disconnected",
-                 __func__, pConn->szClientIP);
-         }
-         else
-         {
-             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() call failed with errno = %d peer (%s)",
-                  __func__, errno, pConn->szClientIP);
-         }
-         retVal = LDAP_NOTICE_OF_DISCONNECT;
-         BAIL_ON_VMDIR_ERROR( retVal );
-      }
+            else
+            {
+                VMDIR_LOG_ERROR(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: ber_get_next() call failed with errno = %d peer (%s)",
+                        __func__,
+                        errno,
+                        pConn->szClientIP);
+            }
+            retVal = LDAP_NOTICE_OF_DISCONNECT;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
 
-      // Read LDAP request messageID (tag, length (not returned since it is implicit/integer), and messageID value)
-      if ( (tag = ber_get_int( ber, &msgid )) != LDAP_TAG_MSGID )
-      {
-         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessAConnection: ber_get_int() call failed." );
-         retVal = LDAP_NOTICE_OF_DISCONNECT;
-         BAIL_ON_VMDIR_ERROR( retVal );
-      }
+        // Read LDAP request messageID (tag, length (not returned since it is implicit/integer), and messageID value)
+        if ((tag = ber_get_int(ber, &msgid)) != LDAP_TAG_MSGID)
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "ProcessAConnection: ber_get_int() call failed.");
 
-      // Read protocolOp (tag) and length of the LDAP operation message, and leave the pointer at the beginning
-      // of the LDAP operation message (to be parsed by PerformXYZ methods).
-      if ( (tag = ber_peek_tag( ber, &len )) == LBER_ERROR )
-      {
-         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessAConnection: ber_peek_tag() call failed." );
-         retVal = LDAP_NOTICE_OF_DISCONNECT;
-         BAIL_ON_VMDIR_ERROR( retVal );
-      }
+            retVal = LDAP_NOTICE_OF_DISCONNECT;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
 
-      retVal = VmDirExternalOperationCreate(ber, msgid, tag, pConn, &pOperation);
-      if (retVal)
-      {
-          VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessAConnection: NewOperation() call failed." );
-          retVal = LDAP_OPERATIONS_ERROR;
-      }
-      BAIL_ON_VMDIR_ERROR( retVal );
+        // Read protocolOp (tag) and length of the LDAP operation message, and leave the pointer at the beginning
+        // of the LDAP operation message (to be parsed by PerformXYZ methods).
+        if ((tag = ber_peek_tag(ber, &len)) == LBER_ERROR)
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "ProcessAConnection: ber_peek_tag() call failed.");
 
-      //
-      // If this is a multi-stage operation don't overwrite the start time if it's already set.
-      //
-      pConn->SuperLogRec.iStartTime = pConn->SuperLogRec.iStartTime ? pConn->SuperLogRec.iStartTime : VmDirGetTimeInMilliSec();
+            retVal = LDAP_NOTICE_OF_DISCONNECT;
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
 
-      iStartTime = VmDirGetTimeInMilliSec();
+        retVal = VmDirExternalOperationCreate(ber, msgid, tag, pConn, &pOperation);
+        if (retVal)
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "ProcessAConnection: NewOperation() call failed.");
 
-      switch (tag)
-      {
-         case LDAP_REQ_BIND:
+            retVal = LDAP_OPERATIONS_ERROR;
+        }
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        operationTag = METRICS_LDAP_OP_IGNORE;
+
+        switch (tag)
+        {
+        case LDAP_REQ_BIND:
             retVal = VmDirPerformBind(pOperation);
             if (retVal != LDAP_SASL_BIND_IN_PROGRESS)
             {
                 _VmDirCollectBindSuperLog(pConn, pOperation); // ignore error
             }
-            metricsTag = METRICS_LDAP_OP_BIND;
-
             break;
 
-         case LDAP_REQ_ADD:
+        case LDAP_REQ_ADD:
             retVal = VmDirPerformAdd(pOperation);
-            metricsTag = METRICS_LDAP_OP_ADD;
+            operationTag = METRICS_LDAP_OP_ADD;
             break;
 
-         case LDAP_REQ_SEARCH:
+        case LDAP_REQ_SEARCH:
             retVal = VmDirPerformSearch(pOperation);
-            metricsTag = METRICS_LDAP_OP_SEARCH;
+            operationTag = METRICS_LDAP_OP_SEARCH;
             break;
 
-         case LDAP_REQ_UNBIND:
+        case LDAP_REQ_UNBIND:
             retVal = VmDirPerformUnbind(pOperation);
-            metricsTag = METRICS_LDAP_OP_UNBIND;
             break;
 
-         case LDAP_REQ_MODIFY:
+        case LDAP_REQ_MODIFY:
             retVal = VmDirPerformModify(pOperation);
-            metricsTag = METRICS_LDAP_OP_MODIFY;
+            operationTag = METRICS_LDAP_OP_MODIFY;
             break;
 
-         case LDAP_REQ_DELETE:
+        case LDAP_REQ_DELETE:
             retVal = VmDirPerformDelete(pOperation);
-            metricsTag = METRICS_LDAP_OP_DELETE;
+            operationTag = METRICS_LDAP_OP_DELETE;
             break;
 
-         case LDAP_REQ_MODDN:
-             retVal = VmDirPerformRename(pOperation);
-             break;
+        case LDAP_REQ_MODDN:
+            retVal = VmDirPerformRename(pOperation);
+            break;
 
-         case LDAP_REQ_COMPARE:
-         case LDAP_REQ_ABANDON:
-         case LDAP_REQ_EXTENDED:
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "ProcessAConnection: Operation is not yet implemented.." );
+        case LDAP_REQ_COMPARE:
+        case LDAP_REQ_ABANDON:
+        case LDAP_REQ_EXTENDED:
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "ProcessAConnection: Operation is not yet implemented.." );
+
             pOperation->ldapResult.errCode = retVal = LDAP_UNWILLING_TO_PERFORM;
             // ignore following VmDirAllocateStringA error.
-            VmDirAllocateStringA( "Operation is not yet implemented.", &pOperation->ldapResult.pszErrMsg);
-            VmDirSendLdapResult( pOperation );
+            VmDirAllocateStringA("Operation is not yet implemented.", &pOperation->ldapResult.pszErrMsg);
+            VmDirSendLdapResult(pOperation);
             break;
 
-         default:
+        default:
             pOperation->ldapResult.errCode = LDAP_PROTOCOL_ERROR;
             retVal = LDAP_NOTICE_OF_DISCONNECT;
             break;
-      }
+        }
 
-      iEndTime = VmDirGetTimeInMilliSec();
-      if (metricsTag >= 0)
-      {
-            VmMetricsHistogramUpdate(pLdapRequestDuration[metricsTag], VMDIR_RESPONSE_TIME(iEndTime-iStartTime));
-      }
+        iEndTime = VmDirGetTimeInMilliSec();
 
-      pConn->SuperLogRec.iEndTime = VmDirGetTimeInMilliSec();
+        if (operationTag != METRICS_LDAP_OP_IGNORE)
+        {
+            bReplSearch = operationTag == METRICS_LDAP_OP_SEARCH && pOperation->syncReqCtrl;
 
-      VmDirOPStatisticUpdate(tag, pConn->SuperLogRec.iEndTime - pConn->SuperLogRec.iStartTime);
+            VmDirLdapMetricsUpdate(
+                    operationTag,
+                    bReplSearch ? METRICS_LDAP_OP_TYPE_REPL : METRICS_LDAP_OP_TYPE_EXTERNAL,
+                    VmDirMetricsMapLdapErrorToEnum(pOperation->ldapResult.errCode),
+                    METRICS_LAYER_PROTOCOL,
+                    iStartTime,
+                    iEndTime);
+        }
 
-      if (tag != LDAP_REQ_BIND)
-      {
-         VmDirLogOperation(gVmdirGlobals.pLogger, tag, pConn, pOperation->ldapResult.errCode);
+        // If this is a multi-stage operation don't overwrite the start time if it's already set.
+        pConn->SuperLogRec.iStartTime = pConn->SuperLogRec.iStartTime ? pConn->SuperLogRec.iStartTime : iStartTime;
+        pConn->SuperLogRec.iEndTime = iEndTime;
 
-         _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
-      }
+        VmDirOPStatisticUpdate(tag, pConn->SuperLogRec.iEndTime - pConn->SuperLogRec.iStartTime);
 
-      _VmDirUpdateErrorCount(pOperation->ldapResult.errCode);
+        if (tag != LDAP_REQ_BIND)
+        {
+            VmDirLogOperation(gVmdirGlobals.pLogger, tag, pConn, pOperation->ldapResult.errCode);
+            _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
+        }
 
-      VmDirFreeOperation(pOperation);
-      pOperation = NULL;
+        VmDirFreeOperation(pOperation);
+        pOperation = NULL;
 
-      ber_free( ber, 1);
-      ber = NULL;
+        ber_free(ber, 1);
+        ber = NULL;
 
-      if (retVal == LDAP_NOTICE_OF_DISCONNECT) // returned as a result of protocol parsing error.
-      {
-         // RFC 4511, section 4.1.1: If the server receives an LDAPMessage from the client in which the LDAPMessage
-         // SEQUENCE tag cannot be recognized, the messageID cannot be parsed, the tag of the protocolOp is not
-         // recognized as a request, or the encoding structures or lengths of data fields are found to be incorrect,
-         // then the server **SHOULD** return the Notice of Disconnection, with the resultCode
-         // set to protocolError, and **MUST** immediately terminate the LDAP session as described in Section 5.3.
+        if (retVal == LDAP_NOTICE_OF_DISCONNECT) // returned as a result of protocol parsing error.
+        {
+            // RFC 4511, section 4.1.1: If the server receives an LDAPMessage from the client in which the LDAPMessage
+            // SEQUENCE tag cannot be recognized, the messageID cannot be parsed, the tag of the protocolOp is not
+            // recognized as a request, or the encoding structures or lengths of data fields are found to be incorrect,
+            // then the server **SHOULD** return the Notice of Disconnection, with the resultCode
+            // set to protocolError, and **MUST** immediately terminate the LDAP session as described in Section 5.3.
 
-         goto cleanup;
-      }
-   }
+            goto cleanup;
+        }
+    }
 
 cleanup:
-   if (retVal == LDAP_NOTICE_OF_DISCONNECT)
-   {
-      // Optionally send Notice of Disconnection with rs->err.
-   }
-   if (ber != NULL)
-   {
-      ber_free( ber, 1 );
-   }
+    if (retVal == LDAP_NOTICE_OF_DISCONNECT)
+    {
+        // Optionally send Notice of Disconnection with rs->err.
+    }
+    if (ber != NULL)
+    {
+        ber_free(ber, 1);
+    }
     VmDirDeleteConnection(&pConn);
     VMDIR_SAFE_FREE_MEMORY(pConnCtx);
     VmDirFreeOperation(pOperation);
@@ -2030,108 +2122,5 @@ _VmDirPingAcceptThr(
     _VmDirPingIPV4AcceptThr(dwPort);
     _VmDirPingIPV6AcceptThr(dwPort);
 
-    return;
-}
-
-static
-VOID
-_VmDirUpdateErrorCount(
-    DWORD dwErrCode
-    )
-{
-    switch (dwErrCode)
-    {
-        case LDAP_SUCCESS:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SUCCESS]);
-            break;
-
-        case LDAP_UNAVAILABLE:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNAVAILABLE]);
-            break;
-
-        case LDAP_SERVER_DOWN:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SERVER_DOWN]);
-            break;
-
-        case LDAP_UNWILLING_TO_PERFORM:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNWILLING_TO_PERFORM]);
-            break;
-
-        case LDAP_INVALID_DN_SYNTAX:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INVALID_DN_SYNTAX]);
-            break;
-
-        case LDAP_NO_SUCH_ATTRIBUTE:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NO_SUCH_ATTRIBUTE]);
-            break;
-
-        case LDAP_INVALID_SYNTAX:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INVALID_SYNTAX]);
-            break;
-
-        case LDAP_UNDEFINED_TYPE:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_UNDEFINED_TYPE]);
-            break;
-
-        case LDAP_TYPE_OR_VALUE_EXISTS:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_TYPE_OR_VALUE_EXISTS]);
-            break;
-
-        case LDAP_OBJECT_CLASS_VIOLATION:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_OBJECT_CLASS_VIOLATION]);
-            break;
-
-        case LDAP_ALREADY_EXISTS:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_ALREADY_EXISTS]);
-            break;
-
-        case LDAP_CONSTRAINT_VIOLATION:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_CONSTRAINT_VIOLATION]);
-            break;
-
-        case LDAP_NOT_ALLOWED_ON_NONLEAF:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NOT_ALLOWED_ON_NONLEAF]);
-            break;
-
-        case LDAP_PROTOCOL_ERROR:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_PROTOCOL_ERROR]);
-            break;
-
-        case LDAP_INVALID_CREDENTIALS:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INVALID_CREDENTIALS]);
-            break;
-
-        case LDAP_INSUFFICIENT_ACCESS:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_INSUFFICIENT_ACCESS]);
-            break;
-
-        case LDAP_AUTH_METHOD_NOT_SUPPORTED:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_AUTH_METHOD_NOT_SUPPORTED]);
-            break;
-
-        case LDAP_SASL_BIND_IN_PROGRESS:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SASL_BIND_IN_PROGRESS]);
-            break;
-
-        case LDAP_TIMELIMIT_EXCEEDED:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_TIMELIMIT_EXCEEDED]);
-            break;
-
-        case LDAP_SIZELIMIT_EXCEEDED:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_SIZELIMIT_EXCEEDED]);
-            break;
-
-        case LDAP_NO_SUCH_OBJECT:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_NO_SUCH_OBJECT]);
-            break;
-
-        case LDAP_BUSY:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_BUSY]);
-            break;
-
-        default:
-            VmMetricsCounterIncrement(pLdapErrorCount[METRICS_LDAP_OTHER]);
-            break;
-    }
     return;
 }

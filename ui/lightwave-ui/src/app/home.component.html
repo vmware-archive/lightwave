@@ -1,0 +1,56 @@
+<div class="main-container" id='outer-container'>
+    <header class="header header-4">
+       <div class="branding">
+           <a href="#">
+               <clr-icon shape="vm-bug"></clr-icon>
+               <span style="color:white;" class="w3-xlarge">Lightwave</span>
+           </a>
+       </div>
+       <div class="header-nav">
+           <a href="javascript://" class="active nav-link nav-text" style="font-size:18px;color:white;">Directory</a>
+           <a href="javascript://" class="nav-link nav-text" style="font-size:18px;color:white;" (click)="openIDM()">Identity Manager</a>
+       </div>
+       <div class="w3-sidebar w3-bar-block w3-card w3-animate-right" style="width:20%;display:none;right:0;background-color:#006a91;" id="rightMenu">
+           <div class="w3-card"><p style="text-align:center;" class="w3-xlarge"><u><clr-icon shape="user" size="30" class="is-solid"></clr-icon>{{signedInUser}}</u></p>
+               <p style="text-align:center;" *ngIf="isSystemTenant">
+                   <span class="label label-warning">System Tenant</span>
+               </p>
+           </div>
+           <p style="text-align:center;" class='w3-xlarge'><clr-icon size="25" shape="organization"></clr-icon>{{tenantName}}</p>
+           <div *ngIf="isSysTenantAdmin">
+               <p> <clr-icon shape="key" style="margin-right:5px" class="is-inverse is-solid"></clr-icon>Sign-in To...</p>
+               <button (click)="toggleTenants()" class="btn btn-inverse" style="width:100%;">
+                   Tenants
+                   <clr-icon *ngIf="!showOtherTenants" dir="down" shape="caret"></clr-icon>
+                   <clr-icon *ngIf="showOtherTenants" dir="up" shape="caret"></clr-icon>
+               </button>
+               <div *ngIf="showOtherTenants" class="w3-container w3-center">
+                   <a style="color:white;" href="#" (click)="openOtherTenant(tenant)" *ngFor="let tenant of allTenants" class="w3-button w3-block w3-left-align"><clr-icon shape="organization" class="is-inverse is-solid" style="margin-right:5px"></clr-icon>{{tenant.displayName}}</a>
+               </div>
+           </div>
+           <div *ngIf="isSysTenantAdmin">
+               <button (click)="togglePostNodes()" class="btn btn-inverse" style="width:100%;">
+                   Lightwave Post
+                   <clr-icon *ngIf="!showPostNodes" dir="down" shape="caret"></clr-icon>
+                   <clr-icon *ngIf="showPostNodes" dir="up" shape="caret"></clr-icon>
+               </button>
+               <div *ngIf="showPostNodes" class="w3-container w3-center">
+                   <a style="color:white;" href="#" (click)="openLwPost(node)" *ngFor="let node of postOIDCs" class="w3-button w3-block w3-left-align">
+                       <clr-icon shape="storage" class="is-inverse is-solid" style="margin-right:5px;"></clr-icon>{{node.host}}
+                   </a>
+               </div>
+           </div>
+           <div class="fixed-bottom">
+               <button class="btn btn-outline" (click)="handleLogout()" style="background-color:white;width:85%;">Logout</button>
+           </div>
+       </div>
+       <div class="header-actions" (click)="openRightMenu()">
+           <button id='slideOut' class="w3-button w3-large w3-left" (click)="openRightMenu()"><clr-icon shape="user" size="24" class="is-solid"></clr-icon>{{signedInUser}}<clr-icon (click)="openRightMenu()" dir="down" shape="caret" size="16" style="width: 16px; height: 16px;"></clr-icon></button>
+       </div>
+    </header>
+    <div class="content-container"  (click)='closeSideBar($event)'>
+        <div class="content-area" [style.max-height.px]="containerHeight" style="overflow-y:hidden;padding:unset;">
+            <vmdir *ngIf="displayComponents"></vmdir>
+        </div>
+    </div>
+</div>

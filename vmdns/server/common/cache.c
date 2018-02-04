@@ -651,7 +651,6 @@ VmDnsCacheRefreshThread(
             // Refresh LRU, Cache etc.
             dwError = VmDnsCacheSyncZones(
                             pCacheContext->dwLastUSN,
-                            newUSN,
                             pCacheContext
                             );
             if (dwError)
@@ -704,7 +703,6 @@ error:
 DWORD
 VmDnsCacheSyncZones(
     DWORD                dwLastChangedUSN,
-    DWORD                dwNewUSN,
     PVMDNS_CACHE_CONTEXT pCacheContext
     )
 {
@@ -712,7 +710,6 @@ VmDnsCacheSyncZones(
 
     dwError = VmDnsStoreSyncDeleted(
                         dwLastChangedUSN,
-                        dwNewUSN,
                         VmDnsCacheRemoveZoneProc,
                         (PVOID) pCacheContext
                         );
@@ -720,7 +717,6 @@ VmDnsCacheSyncZones(
 
     dwError = VmDnsStoreSyncNewObjects(
                         dwLastChangedUSN,
-                        dwNewUSN,
                         VmDnsCacheSyncZoneProc,
                         VmDnsCachePurgeRecordProc,
                         (PVOID) pCacheContext

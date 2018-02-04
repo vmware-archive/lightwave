@@ -408,31 +408,37 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_MAX_INTERNAL_SEARCH, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0xFFFFFFFF,                       \
+        /*.dwDefault      = */ 1000000,                          \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_OPERATIONS_THREAD_TIMEOUT_IN_MILLI_SEC, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5000,                             \
+        /*.dwMax          = */ 60000,                            \
+        /*.dwDefault      = */ 10000,                            \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REPL_CONSUMER_THREAD_TIMEOUT_IN_MILLI_SEC, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5000,                             \
+        /*.dwMax          = */ 60000,                            \
+        /*.dwDefault      = */ 10000,                            \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }
-
-typedef enum
-{
-    METRICS_RPC_OP_GENERATEPASSWORD,
-    METRICS_RPC_OP_GETKEYTABRECBLOB,
-    METRICS_RPC_OP_CREATEUSER,
-    METRICS_RPC_OP_CREATEUSEREX,
-    METRICS_RPC_OP_SETLOGLEVEL,
-    METRICS_RPC_OP_SETLOGMASK,
-    METRICS_RPC_OP_SUPERLOGQUERYSERVERDATA,
-    METRICS_RPC_OP_SUPERLOGENABLE,
-    METRICS_RPC_OP_SUPERLOGDISABLE,
-    METRICS_RPC_OP_ISSUPERLOGENABLED,
-    METRICS_RPC_OP_SUPERLOGFLUSH,
-    METRICS_RPC_OP_SUPERLOGSETSIZE,
-    METRICS_RPC_OP_SUPERLOGGETSIZE,
-    METRICS_RPC_OP_SUPERLOGGETENTRIESLDAPOPERATION,
-    METRICS_RPC_OP_OPENDATABASEFILE,
-    METRICS_RPC_OP_READDATABASEFILE,
-    METRICS_RPC_OP_CLOSEDATABASEFILE,
-    METRICS_RPC_OP_SETBACKENDSTATE,
-    METRICS_RPC_OP_GETSTATE,
-    METRICS_RPC_OP_GETLOGLEVEL,
-    METRICS_RPC_OP_GETLOGMASK,
-    METRICS_RPC_OP_COUNT
-
-} METRICS_RPC_OPS;
