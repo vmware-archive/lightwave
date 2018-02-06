@@ -354,7 +354,14 @@ VmDirPerformSearch(
 cleanup:
     if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
-        VmDirSendLdapResult( pOperation );
+        if (!pOperation->bLdapResDoneSent)
+        {
+            VmDirSendLdapResult( pOperation );
+        }
+        else
+        {
+            pOperation->bLdapResDoneSent = FALSE;
+	}
     }
     if (bSetAccessInfo)
     {

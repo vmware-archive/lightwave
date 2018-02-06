@@ -43,6 +43,7 @@ VmDirMLBind(
 {
     DWORD       dwError = 0;
     BOOLEAN     bSendResult = TRUE;
+    BOOLEAN     bSpnegoResult = FALSE;
     PSTR        pszLocalErrMsg = NULL;
 
     assert(pOperation->conn);
@@ -94,25 +95,26 @@ VmDirMLBind(
                 /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
                 {
                     if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val, 
-                        "GSS-SPNEGO", 
-                         pOperation->request.bindReq.bvMechanism.lberbv.bv_len) == 0)
+                                "GSS-SPNEGO", 
+                                 pOperation->request.bindReq.bvMechanism.lberbv.bv_len) == 0)
                     {
+                        bSpnegoResult = TRUE; /* TBD:Adam experiment */
                         VmDirSendSASLBindResponse(pOperation);
-VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' VmDirSendSASLBindResponse() called");
-if  (pOperation->conn)
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' pOperation->conn=%p", pOperation->conn);
-if  (pOperation->conn->pSaslInfo)
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' pOperation->conn->pSaslInfo=%p", pOperation->conn->pSaslInfo);
-if (pOperation->conn->pSaslInfo->pszBindUserName)
-{
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' pszBindUserName=%s",  pOperation->conn->pSaslInfo->pszBindUserName);
-    dwError = VmDirUPNToDNBerWrap( pOperation->conn->pSaslInfo->pszBindUserName, &pOperation->reqDn);
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' %d=VmDirUPNToDNBerWrap()", dwError);
 
-    dwError = VmDirInternalBindEntry(pOperation);
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "'GSS-SPNEGO' %d=VmDirInternalBindEntry()", dwError);
-}
+                        if (pOperation->conn->pSaslInfo->pszBindUserName)
+                        {
+                            dwError = VmDirUPNToDNBerWrap(
+                                          pOperation->conn->pSaslInfo->pszBindUserName,
+                                          &pOperation->reqDn);
+                            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                                            "'GSS-SPNEGO' %d=VmDirUPNToDNBerWrap()",
+                                            dwError);
 
+                            dwError = VmDirInternalBindEntry(pOperation);
+                            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                                            "'GSS-SPNEGO' %d=VmDirInternalBindEntry()",
+                                            dwError);
+                        }
                     }
                     else
                     {    // if SASL negotiation completes successfully, it sets pOpeartion->reqDn.
@@ -141,7 +143,10 @@ cleanup:
 
     if ( bSendResult )
     {
-        VmDirSendLdapResult( pOperation );
+        if (!bSpnegoResult) /*TBD:Adam-Experiment */
+        {
+            VmDirSendLdapResult( pOperation );
+        }
 
         if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
         {

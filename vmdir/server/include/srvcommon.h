@@ -697,7 +697,7 @@ typedef struct _VDIR_OPERATION
     // fields valid for REPLICATION operations
     ///////////////////////////////////////////////////////////////////////////
     USN                 ulPartnerUSN; // in replication, the partner USN been processed.
-
+    BOOLEAN             bLdapResDoneSent;
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO

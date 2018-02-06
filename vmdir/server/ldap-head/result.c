@@ -272,6 +272,121 @@ done:
     ber_free_buf(ber);
 }
 
+static
+void
+VmDirSendLdapResult_internal(
+    PVDIR_OPERATION pOperation,
+    BerElement *     ber
+    )
+{
+    ber_int_t        msgId = 0;
+    ber_tag_t        resCode = 0;
+    size_t           iNumSearchEntrySent = 0;
+    PCSTR            pszSocketInfo = NULL;
+
+    resCode = GetResultTag(pOperation->reqCode);
+    msgId = (resCode != LBER_SEQUENCE) ? pOperation->msgId : 0;
+
+    if (resCode == LDAP_RES_SEARCH_RESULT)
+    {
+        iNumSearchEntrySent = pOperation->request.searchReq.iNumEntrySent;
+    }
+
+    if (pOperation->conn)
+    {
+        pszSocketInfo = pOperation->conn->szClientIP;
+    }
+
+    if (pOperation->ldapResult.errCode &&
+        pOperation->ldapResult.errCode != LDAP_BUSY &&
+        pOperation->ldapResult.errCode != LDAP_SASL_BIND_IN_PROGRESS)
+    {
+        // supress search request LDAP_NO_SUCH_OBJECT/32 error (-baseDN not found) return case as well
+        // to avoid log flooding.
+        if (! (pOperation->ldapResult.errCode == LDAP_NO_SUCH_OBJECT &&
+               pOperation->reqCode == LDAP_REQ_SEARCH))
+        {
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                    VmDirLdapReqCodeToName(pOperation->reqCode),
+                    pOperation->ldapResult.errCode,
+                    VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                    iNumSearchEntrySent,
+                    VDIR_SAFE_STRING(pszSocketInfo));
+        }
+    }
+    else if (pOperation->reqCode == LDAP_REQ_SEARCH)
+    {
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_ARGS,
+                "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+                VmDirLdapReqCodeToName(pOperation->reqCode),
+                pOperation->ldapResult.errCode,
+                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg),
+                iNumSearchEntrySent,
+                VDIR_SAFE_STRING(pszSocketInfo));
+    }
+
+    if (ber_printf(
+            ber,
+            "{it{essN}",
+            msgId,
+            resCode,
+            pOperation->ldapResult.errCode,
+            "",
+            VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg)) == -1)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "SendLdapResult: ber_printf (to print msgId ...) failed");
+        goto done;
+    }
+
+    // If Search, Replication, and one or more entries were sent back => Send back Sync Done Control
+    if (pOperation->reqCode == LDAP_REQ_SEARCH && pOperation->syncReqCtrl && pOperation->syncDoneCtrl)
+    {
+        if (WriteSyncDoneControl(pOperation, ber) != LDAP_SUCCESS)
+        {
+            goto done;
+        }
+    }
+
+    if (pOperation->reqCode == LDAP_REQ_SEARCH && pOperation->showPagedResultsCtrl)
+    {
+        if (WritePagedSearchDoneControl(pOperation, ber) != LDAP_SUCCESS)
+        {
+            goto done;
+        }
+    }
+
+    if (ber_printf(ber, "N}") == -1)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "SendLdapResult: ber_printf (to print msgId ...) failed");
+        goto done;
+    }
+
+    if (WriteBerOnSocket(pOperation->conn, ber) != 0)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "SendLdapResult: WriteBerOnSocket failed");
+        goto done;
+    }
+
+done:
+    if (pOperation->syncDoneCtrl &&
+        !pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
+    {
+        // while in supplier role, we hold replication RLock.
+        // done with this supplier feed "cycle" - !syncDoneCtrlVal.bContinue.
+        // so it is safe to release replication RLock.
+        VMDIR_RWLOCK_UNLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock);
+    }
+}
+
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
@@ -588,11 +703,24 @@ VmDirSendSearchEntry(
         if ((pOperation->syncReqCtrl == NULL) ||
             (pOperation->syncReqCtrl != NULL && nonTrivialAttrsInReplScope))
         {
+#if 1
+/* zzz Create response message for DSE Root search */
+            if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
+            {
+                VmDirSendLdapResult_internal(pOperation, ber);
+            }
+#endif
+
             if (WriteBerOnSocket( pOperation->conn, ber ) != 0)
             {
                 VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendSearchEntry: WriteBerOnSocket failed." );
                 retVal = LDAP_UNAVAILABLE;
                 BAIL_ON_VMDIR_ERROR( retVal );
+            }
+
+            if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
+            {
+                pOperation->bLdapResDoneSent = TRUE;
             }
 
             pSrEntry->bSearchEntrySent = TRUE;
