@@ -13,6 +13,7 @@
  */
 package com.vmware.identity.rest.idm.server.resources;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+
+import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -252,6 +255,65 @@ public class TenantResource extends BaseResource {
             totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
+    }
+
+    @GET
+    @Path(PathParameters.TENANT_NAME_VAR + "/finder/principals")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.REGULAR_USER)
+    public List<String> findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName,
+            @QueryParam("id") final List<String> principalIds,
+            @QueryParam("domain") String domain,
+            @DefaultValue("200") @QueryParam("limit") int limit) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "normalizePrincipalIds").startTimer();
+        String responseStatus = HTTP_OK;
+
+        List<String> ids = new ArrayList<>();
+        try {
+            Validate.notEmpty(principalIds, "principal ids are missing from the query");
+            for (String id : principalIds) {
+                SearchCriteria searchCriteria = new SearchCriteria(id, domain);
+                Map<MemberType, Integer> memberToLimit = computeSearchLimits(limit, MemberType.ALL);
+
+                Set<PersonUser> users = getIDMClient().findPersonUsersByName(tenantName, searchCriteria, memberToLimit.get(MemberType.USER));
+                if (users != null) {
+                    for (PersonUser user : users) {
+                        ids.add(user.getDetail().getUserPrincipalName()); // user upn is in the format of userName@domainName
+                    }
+                }
+
+                Set<Group> groups = getIDMClient().findGroupsByName(tenantName, searchCriteria, memberToLimit.get(MemberType.GROUP));
+                if (groups != null) {
+                    for (Group group : groups) {
+                        ids.add(group.getNetbios()); // use netbios which is in the format of domainName/groupName
+                    }
+                }
+
+                Set<SolutionUser> solutionUsers = getIDMClient().findSolutionUsers(tenantName, id, memberToLimit.get(MemberType.SOLUTIONUSER));
+                if (solutionUsers != null) {
+                    for (SolutionUser solutionUser : solutionUsers) {
+                        ids.add(solutionUser.getId().getUPN()); // solution user is in the format of userName@domainName
+                    }
+                }
+            }
+        } catch (NoSuchTenantException e) {
+            log.warn("Failed to look up members on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to look up members on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.ten.search.failed"), e);
+        } catch (Exception e) {
+            log.error("Failed to look up members on tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "normalizePrincipalIds").inc();
+            requestTimer.observeDuration();
+        }
+
+        return ids;
     }
 
     /**
