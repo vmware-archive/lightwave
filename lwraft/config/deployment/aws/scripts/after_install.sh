@@ -26,11 +26,12 @@ echo "Step 3: Upgrade/install lightwave-post and lightwave-client"
 tdnf makecache
 tdnf install -y lightwave-post lightwave-client
 
-echo "Step 4: Set the default vmdir lsass provider bind protocol to SRP"
+echo "Step 4: Set the default vmdir lsass provider bind protocol to SRP and disable port 38900 simple bind"
 
 /opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
 /opt/likewise/bin/lwsm restart lsass
 
+/opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\services\post\parameters]' AllowInsecureAuthentication 0
 
 # TODO - this should not be necessary when DNS is stabilized
 echo "Step 5: Set proxy curl timeout"
