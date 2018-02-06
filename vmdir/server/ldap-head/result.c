@@ -272,6 +272,7 @@ done:
     ber_free_buf(ber);
 }
 
+#ifdef WINJOIN_CHECK_ENABLED
 static
 void
 VmDirSendLdapResult_internal(
@@ -386,6 +387,7 @@ done:
         VMDIR_RWLOCK_UNLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock);
     }
 }
+#endif
 
 int
 VmDirSendSearchEntry(
@@ -703,25 +705,25 @@ VmDirSendSearchEntry(
         if ((pOperation->syncReqCtrl == NULL) ||
             (pOperation->syncReqCtrl != NULL && nonTrivialAttrsInReplScope))
         {
-#if 1
-/* zzz Create response message for DSE Root search */
+#ifdef WINJOIN_CHECK_ENABLED
+            /* Create response message for DSE Root search */
             if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
             {
                 VmDirSendLdapResult_internal(pOperation, ber);
             }
 #endif
-
             if (WriteBerOnSocket( pOperation->conn, ber ) != 0)
             {
                 VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendSearchEntry: WriteBerOnSocket failed." );
                 retVal = LDAP_UNAVAILABLE;
                 BAIL_ON_VMDIR_ERROR( retVal );
             }
-
+#ifdef WINJOIN_CHECK_ENABLED
             if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
             {
                 pOperation->bLdapResDoneSent = TRUE;
             }
+#endif
 
             pSrEntry->bSearchEntrySent = TRUE;
             sr->iNumEntrySent++;

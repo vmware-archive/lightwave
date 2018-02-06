@@ -354,14 +354,18 @@ VmDirPerformSearch(
 cleanup:
     if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
+#ifndef WINJOIN_CHECK_ENABLED
+        VmDirSendLdapResult( pOperation );
+#else
         if (!pOperation->bLdapResDoneSent)
         {
-            VmDirSendLdapResult( pOperation );
+            VmDirSendLdapResult(pOperation);
         }
         else
         {
             pOperation->bLdapResDoneSent = FALSE;
 	}
+#endif
     }
     if (bSetAccessInfo)
     {

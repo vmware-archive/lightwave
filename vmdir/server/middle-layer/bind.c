@@ -92,15 +92,16 @@ VmDirMLBind(
                     BAIL_ON_VMDIR_ERROR(dwError);
                 }
 #else
-                /* TBD:Adam-This breaks promote; Send SASL response token; only return for GSS-SPNEGO */
                 {
-                    if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val, 
-                                "GSS-SPNEGO", 
+                    /* Special handling for GSS-SPNEGO */
+                    if (strncmp(pOperation->request.bindReq.bvMechanism.lberbv.bv_val,
+                                "GSS-SPNEGO",
                                  pOperation->request.bindReq.bvMechanism.lberbv.bv_len) == 0)
                     {
-                        bSpnegoResult = TRUE; /* TBD:Adam experiment */
+                        /* Don't send searchResDone when performing GSS-SPENGO; already in searchResEntry packet */
+                        bSpnegoResult = TRUE;
                         VmDirSendSASLBindResponse(pOperation);
-
+    
                         if (pOperation->conn->pSaslInfo->pszBindUserName)
                         {
                             dwError = VmDirUPNToDNBerWrap(
@@ -109,7 +110,7 @@ VmDirMLBind(
                             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                                             "'GSS-SPNEGO' %d=VmDirUPNToDNBerWrap()",
                                             dwError);
-
+    
                             dwError = VmDirInternalBindEntry(pOperation);
                             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                                             "'GSS-SPNEGO' %d=VmDirInternalBindEntry()",
@@ -143,7 +144,7 @@ cleanup:
 
     if ( bSendResult )
     {
-        if (!bSpnegoResult) /*TBD:Adam-Experiment */
+        if (!bSpnegoResult)
         {
             VmDirSendLdapResult( pOperation );
         }

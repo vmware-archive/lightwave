@@ -107,6 +107,7 @@ vmdird_LDADD = \
     @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
+    @LWADVAPI_LIBS@ \
     @GSSAPI_LIBS@ \
     @SASL_LIBS@ \
     @UUID_LIBS@ \

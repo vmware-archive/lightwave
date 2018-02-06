@@ -998,26 +998,40 @@ error:
 
 static
 DWORD
-LookupDomainGuid(char **ppszDomainGuid)
+LookupDomainGuid(char **ppszDomainGuid, char *pszDomain)
 {
     DWORD dwError = 0;
     PVDIR_ATTRIBUTE pDomainGuid = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
     char *pszDomainGuid = NULL;
     PSTR pszPageCookie = NULL;
+    PSTR pszDomainDn = NULL;
+    DWORD i = 0;
+
+    dwError = LwLdapConvertDomainToDN(pszDomain, &pszDomainDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirFilterInternalSearch(
-                  "",
-                  LDAP_SCOPE_BASE,
+                  pszDomainDn,
+                  LDAP_SCOPE_SUBTREE,
                   "(objectClass=*)",
-                  8,  /* ?? */
+                  32,  /* ?? */
                   &pszPageCookie,
                   &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (entryArray.iSize == 1)
+    for (i=0; i < entryArray.iSize; i++)
     {
-        pDomainGuid = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_OBJECT_GUID);
+        pDomainGuid = VmDirFindAttrByName(&(entryArray.pEntry[i]), ATTR_OBJECT_GUID);
+        if (pDomainGuid)
+        {
+            break;
+        }
+    }
+    if (!pDomainGuid)
+    {
+        dwError = LW_STATUS_NO_GUID_TRANSLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     dwError = VmDirAllocateMemory(pDomainGuid->vals->lberbv_len + 1,
@@ -1032,6 +1046,7 @@ LookupDomainGuid(char **ppszDomainGuid)
     *ppszDomainGuid = pszDomainGuid;
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDn);
     return dwError;
 
 error:
@@ -1087,7 +1102,7 @@ ProcessUdpConnection(
     }
 
     /* Retrieve the domain Guid from DSE Root */
-    retVal = LookupDomainGuid(&pszGuid);
+    retVal = LookupDomainGuid(&pszGuid, DomainName);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     /* Convert string Guid to binary array */
