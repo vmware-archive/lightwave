@@ -262,45 +262,46 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public List<String> findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName,
-            @QueryParam("id") final List<String> principalIds,
-            @QueryParam("domain") String domain,
-            @DefaultValue("200") @QueryParam("limit") int limit) {
+            @QueryParam("id") final List<String> principalIds) {
         Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "normalizePrincipalIds").startTimer();
         String responseStatus = HTTP_OK;
 
         List<String> ids = new ArrayList<>();
         try {
             Validate.notEmpty(principalIds, "principal ids are missing from the query");
-            for (String id : principalIds) {
-                SearchCriteria searchCriteria = new SearchCriteria(id, domain);
-                Map<MemberType, Integer> memberToLimit = computeSearchLimits(limit, MemberType.ALL);
+            for (String idString : principalIds) {
+                PrincipalId id = PrincipalUtil.fromName(idString);
+                String result = null;
 
-                Set<PersonUser> users = getIDMClient().findPersonUsersByName(tenantName, searchCriteria, memberToLimit.get(MemberType.USER));
-                if (users != null) {
-                    for (PersonUser user : users) {
-                        ids.add(user.getDetail().getUserPrincipalName()); // user upn is in the format of userName@domainName
+                PersonUser user = getIDMClient().findPersonUser(tenantName, id);
+                if (user != null) {
+                    result = user.getDetail().getUserPrincipalName(); // user upn is in the format of userName@domainName
+                }
+
+                if (result == null) {
+                    Group group = getIDMClient().findGroup(tenantName, id);
+                    if (group != null) {
+                        result = group.getNetbios(); // use netbios which is in the format of domainName/groupName
                     }
                 }
 
-                Set<Group> groups = getIDMClient().findGroupsByName(tenantName, searchCriteria, memberToLimit.get(MemberType.GROUP));
-                if (groups != null) {
-                    for (Group group : groups) {
-                        ids.add(group.getNetbios()); // use netbios which is in the format of domainName/groupName
+                if (result == null) {
+                    SolutionUser solutionUser = getIDMClient().findSolutionUser(tenantName, idString);
+                    if (solutionUser != null) {
+                        result = solutionUser.getId().getUPN(); // solution user is in the format of userName@domainName
                     }
                 }
 
-                Set<SolutionUser> solutionUsers = getIDMClient().findSolutionUsers(tenantName, id, memberToLimit.get(MemberType.SOLUTIONUSER));
-                if (solutionUsers != null) {
-                    for (SolutionUser solutionUser : solutionUsers) {
-                        ids.add(solutionUser.getId().getUPN()); // solution user is in the format of userName@domainName
-                    }
+                if (result == null) {
+                    throw new NotFoundException("Principal id " + idString + " is not found.");
                 }
+                ids.add(result);
             }
-        } catch (NoSuchTenantException e) {
+        } catch (NotFoundException | NoSuchTenantException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (IllegalArgumentException e) {
+        } catch (BadRequestException | IllegalArgumentException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.search.failed"), e);
