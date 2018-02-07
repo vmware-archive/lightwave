@@ -100,6 +100,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        delObjsContainerDN;
     VDIR_BERVALUE        bvDCGroupDN;
     VDIR_BERVALUE        bvDCClientGroupDN;
+    VDIR_BERVALUE        bvSchemaManagersGroupDN;
     VDIR_BERVALUE        bvServicesRootDN;
     VDIR_BERVALUE        serverObjDN;
     VDIR_BERVALUE        dcAccountDN;   // Domain controller account DN

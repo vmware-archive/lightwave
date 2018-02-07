@@ -203,6 +203,7 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.delObjsContainerDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvDCGroupDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvDCClientGroupDN);
+    VmDirFreeBervalContent(&gVmdirServerGlobals.bvSchemaManagersGroupDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServicesRootDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.serverObjDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);

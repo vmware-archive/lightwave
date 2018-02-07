@@ -472,18 +472,19 @@ extern "C" {
 #define SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_BLOB   "Class Mismatch In Blob"
 #define SCHEMA_REPL_STATUS_REFRESH_IN_PROGRESS      "Refresh In Progress"
 
-#define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
-#define VMDIR_SERVERS_CONTAINER_NAME    "Servers"
-#define VMDIR_SERVICES_CONTAINER_NAME   "Services"
-#define VMDIR_DC_GROUP_NAME             "DCAdmins"
-#define VMDIR_DCCLIENT_GROUP_NAME       "DCClients"
-#define VMDIR_CERT_GROUP_NAME           "CAAdmins"
-#define VMDIR_DNS_GROUP_NAME            "DNSAdmins"
-#define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
+#define VMDIR_REPL_AGRS_CONTAINER_NAME      "Replication Agreements"
+#define VMDIR_SERVERS_CONTAINER_NAME        "Servers"
+#define VMDIR_SERVICES_CONTAINER_NAME       "Services"
+#define VMDIR_DC_GROUP_NAME                 "DCAdmins"
+#define VMDIR_DCCLIENT_GROUP_NAME           "DCClients"
+#define VMDIR_SCHEMA_MANAGER_GROUP_NAME     "SchemaManagers"
+#define VMDIR_CERT_GROUP_NAME               "CAAdmins"
+#define VMDIR_DNS_GROUP_NAME                "DNSAdmins"
+#define VMDIR_BUILTIN_CONTAINER_NAME        "Builtin"
 
-#define VDIR_SERVER_VERSION             "1.0"
+#define VDIR_SERVER_VERSION                 "1.0"
 
-#define SASL_MECH                       "GSSAPI SRP"
+#define SASL_MECH                           "GSSAPI SRP"
 
 #define VDIR_LDAP_BOOLEN_SYNTAX_TRUE_STR    "TRUE"
 

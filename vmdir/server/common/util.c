@@ -1490,6 +1490,7 @@ VmDirAssertServerGlobals(
     assert(gVmdirServerGlobals.systemDomainDN.lberbv_val);
     assert(gVmdirServerGlobals.bvDCGroupDN.lberbv_val);
     assert(gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val);
+    assert(gVmdirServerGlobals.bvSchemaManagersGroupDN.lberbv_val);
     assert(gVmdirServerGlobals.bvServicesRootDN.lberbv_val);
     assert(gVmdirServerGlobals.delObjsContainerDN.lberbv_val);
     assert(gVmdirServerGlobals.serverObjDN.lberbv_val);
