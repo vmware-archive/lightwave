@@ -33,6 +33,13 @@
                 "porttype": "dst",
                 "port": "7578",
                 "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2011",
+                "portoffset": 0
             }
         ],
         "ip6_rules": [
@@ -62,6 +69,13 @@
                 "protocol": "tcp",
                 "porttype": "dst",
                 "port": "7578",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2011",
                 "portoffset": 0
             }
         ]
