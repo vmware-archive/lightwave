@@ -266,7 +266,7 @@ public class ResourceAccessRequest {
         DiagnosticsContextFactory.addContext(Config.SessionIdMdcKey, issueInstant);
 
         long skew = getSkew(tenant, client);
-        Certificate cert = getSigningCert(tenant, client, requiredRole.isSystemTenantDomain());
+        Certificate cert = getSigningCert(tenant, client, requiredRole == null ? false : requiredRole.isSystemTenantDomain());
 
         AccessTokenVerifier verifier = getAccessTokenVerifier(context, info, skew, cert);
 
