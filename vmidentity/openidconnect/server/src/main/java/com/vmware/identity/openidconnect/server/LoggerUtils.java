@@ -45,8 +45,7 @@ public class LoggerUtils {
         Validate.notNull(logger, "logger");
         Validate.notNull(errorObject, "errorObject");
         // nullable cause
-        logger.info(
-                "request failed: error_code [{}] error_description [{}] exception [{}]",
+        logger.info("request failed: error_code [{}] error_description [{}]",
                 errorObject.getErrorCode().getValue(),
                 errorObject.getDescription(),
                 cause);
