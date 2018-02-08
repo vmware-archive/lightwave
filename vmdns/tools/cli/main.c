@@ -1092,6 +1092,7 @@ ParseArgsAddRecord(
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_ADD_RECORD_OPEN;
+                pContext->record.dwType = VMDNS_RR_TYPE_SRVFF;
 
                 break;
 
@@ -1669,6 +1670,7 @@ ParseArgsDelRecord(
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_DEL_RECORD_OPEN;
+                pContext->record.dwType = VMDNS_RR_TYPE_SRVFF;
 
                 break;
 
