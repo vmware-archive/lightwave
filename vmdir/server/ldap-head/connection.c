@@ -773,7 +773,8 @@ int format_cldap_netlogon_response_msg(
     unsigned int type = 23;
     unsigned int flags = 0;
     unsigned char buf[512];
-    char NetBiosBuf[16] = {0};
+    char NBDomain[32] = {0};
+    char NBHost[32] = {0};
     unsigned int version = 5;
     unsigned short LMToken = 0xffff;
     unsigned short NtToken = 0xffff;
@@ -824,23 +825,23 @@ int format_cldap_netlogon_response_msg(
 
     /* hostname . domain */
     buf[off++] = DNS_NAME_COMPRESSION;
-    buf[off++] = off_forest; 
+    buf[off++] = off_forest;
 
     /* NetBios Domain */
     for (i=0, blen = 0; domainName[i] && i<15 && domainName[i] != '.'; i++, blen++)
     {
-        NetBiosBuf[i] = toupper((int) domainName[i]);
+        NBDomain[i] = (char) toupper((int) domainName[i]);
     }
-    NetBiosBuf[15] = '\0';
-    off = format_dns_name(buf, off, NetBiosBuf);
+    NBDomain[i] = '\0';
+    off = format_dns_name(buf, off, NBDomain);
 
     /* NetBios Hostname */
     for (i=0, blen = 0; hostName[i] && i<15; i++, blen++)
     {
-        NetBiosBuf[i] = toupper((int) hostName[i]);
+        NBHost[i] = (char) toupper((int) hostName[i]);
     }
-    NetBiosBuf[15] = '\0';
-    off = format_dns_name(buf, off, NetBiosBuf);
+    NBHost[i] = '\0';
+    off = format_dns_name(buf, off, NBHost);
 
     /* User */
     off = format_dns_name(buf, off, user);
@@ -1063,6 +1064,7 @@ ProcessUdpConnection(
    PVOID pArg
    )
 {
+    NTSTATUS status = 0;
     PVDIR_CONNECTION_CTX pConnCtx = NULL;
     int retVal = LDAP_SUCCESS;
     ber_int_t messageId = 0;
@@ -1071,7 +1073,8 @@ ProcessUdpConnection(
     BerElement *in_ber = NULL;
 
     char *DomainName = (char *) gVmdirKrbGlobals.pszRealm;
-    char *forest = DomainName;
+    char *DomainNameLc = NULL;
+    char *forest = DomainNameLc;
     char HostName[128] = {0};
     char UserName[128] = {0};
     int i = 0;
@@ -1086,6 +1089,16 @@ ProcessUdpConnection(
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection called");
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
+
+    status = LwRtlCStringDuplicate(&DomainNameLc,
+                                   DomainName);
+    BAIL_ON_VMDIR_ERROR(LwNtStatusToWin32Error(status));
+    forest = DomainNameLc;
+
+    for (i=0; DomainNameLc[i]; i++)
+    {
+        DomainNameLc[i] = (char) tolower((int) DomainNameLc[i]);
+    }
 
     /* This must be in NetBIOS name format; "ADAM-WIN2K8R2-D$" */
     gethostname(HostName, sizeof(HostName)-1);
@@ -1129,7 +1142,7 @@ ProcessUdpConnection(
             retVal = format_cldap_netlogon_response_msg(
                         messageId,
                         forest,
-                        DomainName,
+                        DomainNameLc,
                         HostName,
                         user,
                         site,
