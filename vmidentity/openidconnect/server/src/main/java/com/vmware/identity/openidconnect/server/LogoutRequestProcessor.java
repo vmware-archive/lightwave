@@ -32,13 +32,13 @@ import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.protocol.FederationIDPIssuerType;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.LogoutErrorResponse;
 import com.vmware.identity.openidconnect.protocol.LogoutRequest;
 import com.vmware.identity.openidconnect.protocol.LogoutSuccessResponse;
-import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
 
 /**
  * @author Yehia Zayour
@@ -272,7 +272,7 @@ public class LogoutRequestProcessor {
     }
 
     private FederatedIdentityLogoutProcessor findLogoutProcessor() throws Exception {
-        if (this.federatedIdpInfo.getIssuerType() != IssuerType.CSP) {
+        if (this.federatedIdpInfo.getIssuerType() != FederationIDPIssuerType.CSP) {
             throw new NoSuchProviderException("Error: Unsupported Issuer Type - " + this.federatedIdpInfo.getIssuerType().getType());
         }
         return new CSPLogoutProcessor();

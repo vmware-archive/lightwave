@@ -30,6 +30,7 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
+import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
@@ -45,6 +46,7 @@ import com.vmware.identity.openidconnect.protocol.AccessToken;
 import com.vmware.identity.openidconnect.protocol.AuthorizationCodeGrant;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
+import com.vmware.identity.openidconnect.protocol.FederationIDPIssuerType;
 import com.vmware.identity.openidconnect.protocol.FederationToken;
 import com.vmware.identity.openidconnect.protocol.FederationTokenGrant;
 import com.vmware.identity.openidconnect.protocol.GSSTicketGrant;
@@ -61,7 +63,6 @@ import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
 import com.vmware.identity.openidconnect.protocol.TokenRequest;
 import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
-import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
 
 /**
  * @author Yehia Zayour
@@ -77,7 +78,8 @@ public class TokenRequestProcessor {
     private final UserInfoRetriever userInfoRetriever;
     private final PersonUserAuthenticator personUserAuthenticator;
     private final SolutionUserAuthenticator solutionUserAuthenticator;
-    private final FederatedIdentityProviderInfoRetriever federatedIdentityProviderInfoRetriever;
+    private final FederatedIdentityProviderInfoRetriever federatedInfoRetriever;
+    private final FederatedIdentityProvider federatedIdentityProvider;
 
     // in memory cache to store public key per issuer
     private final HashMap<String, FederatedTokenPublicKey> publicKeyLookup;
@@ -96,20 +98,24 @@ public class TokenRequestProcessor {
             CasIdmClient idmClient,
             AuthorizationCodeManager authzCodeManager,
             HttpRequest httpRequest,
-            String tenant) {
+            String tenant) throws ServerException {
         this.tenantInfoRetriever = new TenantInfoRetriever(idmClient);
         this.clientInfoRetriever = new ClientInfoRetriever(idmClient);
         this.serverInfoRetriever = new ServerInfoRetriever(idmClient);
         this.userInfoRetriever = new UserInfoRetriever(idmClient);
         this.personUserAuthenticator = new PersonUserAuthenticator(idmClient);
         this.solutionUserAuthenticator = new SolutionUserAuthenticator(idmClient);
-        this.federatedIdentityProviderInfoRetriever = new FederatedIdentityProviderInfoRetriever(idmClient);
 
         this.authzCodeManager = authzCodeManager;
         this.httpRequest = httpRequest;
         this.tenant = tenant;
+        if (this.tenant == null) {
+            this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
+        }
         this.tenantInfo = null;
         this.tokenRequest = null;
+        this.federatedIdentityProvider = new FederatedIdentityProvider(this.tenant, idmClient);
+        this.federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(idmClient);
 
         publicKeyLookup = new HashMap<String, FederatedTokenPublicKey>();
         keyLookupLock = new ReentrantReadWriteLock();
@@ -127,9 +133,6 @@ public class TokenRequestProcessor {
         }
 
         try {
-            if (this.tenant == null) {
-                this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
-            }
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
             this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
 
@@ -393,14 +396,31 @@ public class TokenRequestProcessor {
     private TokenSuccessResponse processFederatedTokenGrant(SolutionUser solutionUser) throws ServerException {
         FederationTokenGrant federationTokenGrant = (FederationTokenGrant)this.tokenRequest.getAuthorizationGrant();
         FederationToken federationToken = federationTokenGrant.getFederationToken();
+        String issuer = this.tenantInfoRetriever.getTenantIssuer(this.tenant);
+        if (issuer == null || issuer.isEmpty()) {
+            throw new ServerException(ErrorObject.invalidGrant("federation IDP is not registered with tenant " + this.tenant));
+        }
 
-        validateFederationToken(federationToken, solutionUser);
+        FederatedIdentityProviderInfo federatedIdpInfo;
+        try {
+            federatedIdpInfo = this.federatedInfoRetriever.retrieveInfo(issuer);
+        } catch (Exception e1) {
+            throw new ServerException(ErrorObject.serverError("failed to retrieve federated idp info with issuer " + issuer));
+        }
+        validateFederationToken(issuer, federationToken, solutionUser, federatedIdpInfo);
 
         PersonUser personUser;
+        PrincipalId userId = new PrincipalId(federationToken.getUsername(), federationToken.getDomain());
         try {
-            personUser = PersonUser.parse(federationToken.getUserId() + "@" + federationToken.getDomain() , this.tenant);
-        } catch (ParseException e) {
-            throw new ServerException(ErrorObject.invalidGrant("failed to parse subject into a PersonUser"), e);
+            if (!federatedIdentityProvider.isFederationUserActive(userId)) {
+                federatedIdentityProvider.provisionFederationUser(issuer, userId);
+            }
+            federatedIdentityProvider.updateUserGroups(userId, federationToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings());
+            personUser = new PersonUser(userId, this.tenant);
+        } catch (Exception e) {
+            throw new ServerException(
+                    ErrorObject.invalidGrant(String.format("failed to provision federation subject %s for tenant %s",
+                            userId.getUPN(), this.tenant)), e);
         }
 
         return process(
@@ -502,9 +522,10 @@ public class TokenRequestProcessor {
         }
     }
 
-    private void validateFederationToken(FederationToken token, SolutionUser solutionUser) throws ServerException {
+    private void validateFederationToken(String issuer, FederationToken token, SolutionUser solutionUser,
+            FederatedIdentityProviderInfo federatedIdpInfo) throws ServerException {
         try {
-            RSAPublicKey key = getFederatedTokenPublicKey().getPublicKey();
+            RSAPublicKey key = getFederatedTokenPublicKey(issuer, federatedIdpInfo).getPublicKey();
             if (!token.hasValidSignature(key)) {
                 throw new ServerException(ErrorObject.invalidGrant("federation token has an invalid signature"));
             }
@@ -523,37 +544,31 @@ public class TokenRequestProcessor {
         }
     }
 
-    private FederatedTokenPublicKey getFederatedTokenPublicKey() throws ServerException {
+    private FederatedTokenPublicKey getFederatedTokenPublicKey(String issuer,
+            FederatedIdentityProviderInfo federatedIdpInfo) throws ServerException {
         FederatedTokenPublicKey key = null;
-        // TODO use current tenant
-        String systemTenant = this.tenantInfoRetriever.getSystemTenantName();
-        String issuer = this.tenantInfoRetriever.getTenantIssuer(this.tenant);
-        if (issuer == null || issuer.isEmpty()) {
-            throw new ServerException(ErrorObject.invalidGrant("federation IDP is not registered with tenant " + systemTenant));
-        }
         readLockKeyLookup.lock();
         try {
-          key = publicKeyLookup.get(issuer);
+            key = publicKeyLookup.get(issuer);
         } finally {
-          readLockKeyLookup.unlock();
+            readLockKeyLookup.unlock();
         }
 
         if (key == null) {
-          try {
-            key = getPublicKey(issuer);
-            writeKey(issuer, key);
-          } catch (Exception e) {
-              throw new ServerException(ErrorObject.serverError("error while retrieving federated idp public key"), e);
-          }
+            try {
+                key = getPublicKey(federatedIdpInfo);
+                writeKey(issuer, key);
+            } catch (Exception e) {
+                throw new ServerException(ErrorObject.serverError("error while retrieving federated idp public key"), e);
+            }
         }
 
         return key;
     }
 
-    private FederatedTokenPublicKey getPublicKey(String issuer) throws Exception {
-        FederatedIdentityProviderInfo federatedIdpInfo =  this.federatedIdentityProviderInfoRetriever.retrieveInfo(issuer);
+    private FederatedTokenPublicKey getPublicKey(FederatedIdentityProviderInfo federatedIdpInfo) throws Exception {
         String publicKeyURL = federatedIdpInfo.getJwkURI();
-        return FederatedTokenPublicKeyFactory.build(publicKeyURL, IssuerType.CSP);
+        return FederatedTokenPublicKeyFactory.build(publicKeyURL, FederationIDPIssuerType.CSP);
     }
 
     private void writeKey(String issuer, FederatedTokenPublicKey key) throws Exception {

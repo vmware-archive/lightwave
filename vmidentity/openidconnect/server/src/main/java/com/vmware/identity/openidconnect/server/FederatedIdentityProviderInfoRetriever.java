@@ -44,6 +44,7 @@ public class FederatedIdentityProviderInfoRetriever {
         return new FederatedIdentityProviderInfo.Builder(tenant, issuer, logoutUri)
                 .issuerType(issuerType)
                 .jwkUri(jwkUri)
+                .roleGroupMappings(idpConfig.getTokenClaimGroupMappings())
                 .build();
     }
 

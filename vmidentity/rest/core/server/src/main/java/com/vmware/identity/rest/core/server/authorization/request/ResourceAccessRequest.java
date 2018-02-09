@@ -19,7 +19,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.container.ContainerRequestContext;
 
@@ -172,8 +174,8 @@ public class ResourceAccessRequest {
         // the user should not have the permission
         if (requiredRole.isSystemTenantDomain()) {
             String userDomain = PrincipalUtil.fromName(token.getSubject()).getDomain();
-            String systemTenantDomain = roleMapper.getSystemTenantDomain();
-            if (!userDomain.equalsIgnoreCase(systemTenantDomain)) {
+            Set<String> trustedDomains = roleMapper.getTrustedDomains();
+            if (!trustedDomains.contains(userDomain.toLowerCase())) {
                 throw new InsufficientRoleException(sm.getString("auth.ise.wrong.role", requiredRole));
             }
         }
@@ -270,8 +272,13 @@ public class ResourceAccessRequest {
 
         AccessTokenVerifier verifier = getAccessTokenVerifier(context, info, skew, cert);
 
-
-        RoleMapper roleMapper = new RoleMapper(getSystemDomainOfTenant(tenant, client), getSystemDomainOfSystemTenant(client));
+        String systemDoaminOfTenant = getSystemDomainOfTenant(tenant, client);
+        String systemDomainOfSystemTenant = getSystemDomainOfSystemTenant(client);
+        Set<String> trustedDomains = new HashSet<>();
+        trustedDomains.add(systemDoaminOfTenant.toLowerCase());
+        trustedDomains.add(systemDomainOfSystemTenant.toLowerCase());
+        trustedDomains.addAll(getTrustedAliasDomainsOfTenant(tenant, client));
+        RoleMapper roleMapper = new RoleMapper(systemDoaminOfTenant, systemDomainOfSystemTenant, trustedDomains);
 
         return new ResourceAccessRequest(info.getStyle(), info.getType(), token, verifier, secure, roleMapper);
     }
@@ -461,6 +468,38 @@ public class ResourceAccessRequest {
         }
 
         return systemDomain;
+    }
+
+    /**
+     * Fetch the trusted alias domains for a tenant
+     *
+     * @param tenant the tenant to get the system domain of
+     * @param client the IDM client to communicate with
+     * @return the set of trusted domains for <tt>tenant</tt>
+     * @throws ServerException if there is a server error preventing the retrieval of the system domain
+     */
+    private static Set<String> getTrustedAliasDomainsOfTenant(String tenant, CasIdmClient client) throws ServerException {
+        Set<String> trustedDomains = new HashSet<>();
+        try {
+            Collection<IIdentityStoreData> stores = client.getProviders(tenant, EnumSet.of(DomainType.SYSTEM_DOMAIN));
+            if ((stores != null) && (stores.size() > 0)) {
+                IIdentityStoreData store = stores.iterator().next();
+                Set<String> upnSuffixes = store.getExtendedIdentityStoreData().getUpnSuffixes();
+                if (upnSuffixes != null) {
+                    for (String domain : store.getExtendedIdentityStoreData().getUpnSuffixes()) {
+                        trustedDomains.add(domain.toLowerCase());
+                    }
+                }
+                String alias = store.getExtendedIdentityStoreData().getAlias();
+                if (alias != null) {
+                    trustedDomains.add(alias.toLowerCase());
+                }
+            }
+        } catch (Exception e) {
+            throw new ServerException("An error occurred with the IDM client", e);
+        }
+
+        return trustedDomains;
     }
 
     /**

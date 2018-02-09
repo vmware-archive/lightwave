@@ -14,8 +14,15 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+
+import com.vmware.identity.idm.TokenClaimAttribute;
+import com.vmware.identity.openidconnect.protocol.FederationIDPIssuerType;
 
 public class FederatedIdentityProviderInfo {
 
@@ -23,21 +30,8 @@ public class FederatedIdentityProviderInfo {
     private final String issuer;
     private final String logoutUri;
     private String jwkUri;
-    private IssuerType issuerType;
-
-    public enum IssuerType {
-        CSP("csp");
-
-        private String type;
-
-        IssuerType(String type) {
-            this.type = type;
-        }
-
-        public String getType() {
-            return this.type;
-        }
-    }
+    private FederationIDPIssuerType issuerType;
+    private Map<TokenClaimAttribute, List<String>> roleGroupMappings;
 
     private FederatedIdentityProviderInfo(Builder builder) {
         this.tenant = builder.tenant;
@@ -45,6 +39,7 @@ public class FederatedIdentityProviderInfo {
         this.logoutUri = builder.logoutUri;
         this.issuerType = builder.issuerType;
         this.jwkUri = builder.jwkUri;
+        this.roleGroupMappings = builder.roleGroupMappings;
     }
 
     public String getTenant() {
@@ -63,8 +58,12 @@ public class FederatedIdentityProviderInfo {
         return this.jwkUri;
     }
 
-    public IssuerType getIssuerType() {
+    public FederationIDPIssuerType getIssuerType() {
         return this.issuerType;
+    }
+
+    public Map<TokenClaimAttribute, List<String>> getRoleGroupMappings() {
+        return this.roleGroupMappings;
     }
 
     public static class Builder {
@@ -73,7 +72,8 @@ public class FederatedIdentityProviderInfo {
         private final String issuer;
         private final String logoutUri;
         private String jwkUri;
-        private IssuerType issuerType;
+        private FederationIDPIssuerType issuerType;
+        private Map<TokenClaimAttribute, List<String>> roleGroupMappings;
 
         public Builder(String tenant, String issuer, String logoutUri) {
             Validate.notEmpty(tenant, "tenant name");
@@ -92,14 +92,23 @@ public class FederatedIdentityProviderInfo {
 
         public Builder issuerType(String issuerType) {
             if (StringUtils.isNotEmpty(issuerType)) {
-                this.issuerType = IssuerType.valueOf(issuerType.toUpperCase());
+                this.issuerType = FederationIDPIssuerType.valueOf(issuerType.toUpperCase());
+            }
+            return this;
+        }
+
+        public Builder roleGroupMappings(Map<TokenClaimAttribute, List<String>> roleGroupMappings) {
+            if (roleGroupMappings == null) {
+                this.roleGroupMappings = new HashMap<>();
+            } else {
+                this.roleGroupMappings = roleGroupMappings;
             }
             return this;
         }
 
         public FederatedIdentityProviderInfo build() {
             if (this.issuerType == null) {
-                this.issuerType = IssuerType.CSP;
+                this.issuerType = FederationIDPIssuerType.CSP;
             }
 
             return new FederatedIdentityProviderInfo(this);

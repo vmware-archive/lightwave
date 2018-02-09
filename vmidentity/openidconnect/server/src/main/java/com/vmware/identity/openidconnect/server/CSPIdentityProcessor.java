@@ -52,9 +52,7 @@ import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.OidcConfig;
-import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PrincipalId;
-import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
@@ -73,13 +71,14 @@ import com.vmware.identity.openidconnect.protocol.AccessToken;
 import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
 import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.CSPToken;
+import com.vmware.identity.openidconnect.protocol.FederationIDPIssuerType;
 import com.vmware.identity.openidconnect.protocol.FederationToken;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 import com.vmware.identity.openidconnect.protocol.URIUtils;
-import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
 
 import net.minidev.json.JSONObject;
 
@@ -184,13 +183,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     SessionID session = new SessionID();
     sessionManager.add(session);
     // Get the Token corresponding to the code
-    Pair<FederationToken, FederationToken> token = getToken(authenticode, relayState, idpConfig, session);
+    Pair<CSPToken, CSPToken> token = getToken(authenticode, relayState, idpConfig, session);
     // Process the response
     // TODO: Nonce and state handling
     return processResponse(token, idpConfig, relayState, session);
   }
 
-  private Pair<FederationToken, FederationToken>
+  private Pair<CSPToken, CSPToken>
   getToken( String code, FederationRelayState relayState, IDPConfig idpConfig, SessionID session) throws Exception {
     OidcConfig oidcConfig = idpConfig.getOidcConfig();
     URI target = new URI(oidcConfig.getTokenRedirectURI());
@@ -217,36 +216,23 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   private HttpResponse
-  processResponse(Pair<FederationToken, FederationToken> token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
-    FederationToken idToken = token.getLeft();
-    FederationToken accessToken = token.getRight();
+  processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
+    CSPToken idToken = token.getLeft();
+    CSPToken accessToken = token.getRight();
     String tenantName = idToken.getOrgId();
     if (tenantName == null || tenantName.isEmpty()) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
       LoggerUtils.logFailedRequest(logger, errorObject);
       throw new ServerException(errorObject);
     }
-    String emailAddress = idToken.getEmailAddress();
-    if (emailAddress == null || emailAddress.isEmpty()) {
-      ErrorObject errorObject = ErrorObject.invalidRequest("Invalid email address");
-      LoggerUtils.logFailedRequest(logger, errorObject);
-      throw new ServerException(errorObject);
-    }
 
     TenantInfo tenantInfo = getTenantInfo(tenantName);
     if (tenantInfo == null) {
-      Set<String> permissions = accessToken.getPermissions();
-      // Create the tenant only if the incoming user has an Organization Admin Role
-      if (permissions.contains(ROLE_CSP_ORG_OWNER)) {
-        String entityId = state.getIssuer();
-        createTenant(tenantName, entityId, idpConfig);
-      } else {
-        ErrorObject errorObject = ErrorObject.accessDenied(
-            String.format("Tenant [%s] does not exist", tenantName)
-        );
-        LoggerUtils.logFailedRequest(logger, errorObject);
-        throw new ServerException(errorObject);
-      }
+      ErrorObject errorObject = ErrorObject.accessDenied(
+          String.format("Tenant [%s] does not exist", tenantName)
+      );
+      LoggerUtils.logFailedRequest(logger, errorObject);
+      throw new ServerException(errorObject);
     }
 
     String systemDomain = getSystemDomainName(tenantName);
@@ -254,27 +240,16 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       throw new ServerException(ErrorObject.serverError("The system domain is invalid"));
     }
 
-    PrincipalId user = buildPrincipal(emailAddress, tenantName);
-    if (!isActive(tenantName, user)) {
-      String entityId = state.getIssuer();
-      this.idmClient.registerUpnSuffix(tenantName, systemDomain, user.getDomain());
-      // generate a unique user name in order not to conflict with local users
-      String userName = user.getName() + "-" + user.getDomain();
-      this.idmClient.addJitUser(
-          tenantName,
-          userName,
-          new PersonDetail.Builder()
-              .userPrincipalName(user.getUPN())
-              .description("A JIT user account created for federated IDP.").build(),
-          entityId,
-          emailAddress
-      );
-      // If the user is a service owner, add the user to the Administrators group
-      Set<String> permissions = accessToken.getPermissions();
-      if (permissions.contains(ROLE_CSP_ORG_OWNER)) {
-          this.idmClient.addUserToGroup(tenantName, user, "Administrators");
-      }
+    PrincipalId user = new PrincipalId(accessToken.getUsername(), accessToken.getDomain());
+    FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
+    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(state.getIssuer());
+
+    FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
+    if (!federatedIdp.isFederationUserActive(user)) {
+        federatedIdp.provisionFederationUser(state.getIssuer(), user);
     }
+
+    federatedIdp.updateUserGroups(user, accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings());
 
     ClientInfoRetriever clientInfoRetriever = new ClientInfoRetriever(idmClient);
     ClientID clientID = new ClientID(state.getClientId());
@@ -339,7 +314,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
     if (key == null) {
       String jwkUri = idpConfig.getOidcConfig().getJwksURI();
-      key = FederatedTokenPublicKeyFactory.build(jwkUri, IssuerType.CSP);
+      key = FederatedTokenPublicKeyFactory.build(jwkUri, FederationIDPIssuerType.CSP);
       writeLockKeyLookup.lock();
       try {
         publicKeyLookup.put(entityID, key);
@@ -368,25 +343,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       return cookie;
   }
 
-  private boolean isActive(String tenantName, PrincipalId user) {
-    try {
-      return this.idmClient.isActive(tenantName, user);
-    } catch (Exception ex) {
-      return false;
-    }
-  }
-
-  private PrincipalId buildPrincipal(String upn, String tenant) throws Exception {
-    int pos = upn.indexOf("@");
-    if (pos > 0) {
-      String upnSuffix = upn.substring(pos + 1);
-      // subject upn is the same as the upn is external token attribute
-      return new PrincipalId(upn.substring(0, pos), upnSuffix);
-    } else {
-      return new PrincipalId(upn, tenant);
-    }
-  }
-
   private TenantInfo getTenantInfo(String tenantName) {
     try {
       TenantInfoRetriever tenantInfoRetriever = new TenantInfoRetriever(this.idmClient);
@@ -394,24 +350,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     } catch (Exception e) {
       return null;
     }
-  }
-
-  private TenantInfo createTenant(String tenantName, String entityId, IDPConfig idpConfigSystem) throws Exception {
-    Tenant tenant = new Tenant(tenantName);
-    this.idmClient.addTenant(
-        tenant,
-        "Administrator",
-        this.idmClient.generatePassword(idmClient.getSystemTenant()).toCharArray()
-    );
-    this.idmClient.setTenantCredentials(tenantName);
-    IDPConfig idpConfig = new IDPConfig(
-        entityId,
-        IDPConfig.IDP_PROTOCOL_OAUTH_2_0
-    );
-    idpConfig.setOidcConfig(idpConfigSystem.getOidcConfig());
-    idpConfig.setJitAttribute(true);
-    this.idmClient.setExternalIdpConfig(tenantName, idpConfig);
-    return getTenantInfo(tenantName);
   }
 
   private void validateIssuer(FederationToken token, String expectedIssuer) throws Exception {
@@ -433,7 +371,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       }
   }
 
-  private Pair<FederationToken, FederationToken>
+  private Pair<CSPToken, CSPToken>
   getToken(
       URI target,
       Map<String, String> headers,
@@ -560,8 +498,8 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
       // store the external jwt token content in the current session
       this.sessionManager.setExternalJWTContent(session, content);
-      FederationToken idToken = FederationToken.parse(idTokenJWT, TokenClass.ID_TOKEN);
-      FederationToken accessToken = FederationToken.parse(idTokenJWT, TokenClass.ACCESS_TOKEN);
+      CSPToken idToken = new CSPToken(TokenClass.ID_TOKEN, idTokenJWT);
+      CSPToken accessToken = new CSPToken(TokenClass.ACCESS_TOKEN, idTokenJWT);
 
       validateIssuer(idToken, key.getIssuer());
       validateExpiration(idToken);
