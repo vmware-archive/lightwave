@@ -67,6 +67,15 @@ VmDirRestMetricsInit(
 
             dwError = VmMetricsHistogramNew(
                     pmContext,
+                    "post_rest_ldap_middlelayer_preplugins",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the pre-plugins",
+                    buckets, 5,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_PRE_PLUGINS]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
                     "post_rest_ldap_middlelayer_backend",
                     labels, 2,
                     "Histogram for REST LDAP request durations in the backend",
@@ -76,11 +85,29 @@ VmDirRestMetricsInit(
 
             dwError = VmMetricsHistogramNew(
                     pmContext,
-                    "post_rest_ldap_middlelayer_backend_raft",
+                    "post_rest_ldap_middlelayer_backend_txnbegin",
                     labels, 2,
-                    "Histogram for REST LDAP request durations in fulfilling RAFT consensus",
+                    "Histogram for REST LDAP request durations in the backend txnbegin",
                     buckets, 5,
-                    &gpRestLdapMetrics[i][j][METRICS_LAYER_RAFT]);
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_BACKEND_TXN_BEGIN]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_ldap_middlelayer_backend_txncommit",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the backend txncommit",
+                    buckets, 5,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_BACKEND_TXN_COMMIT]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_ldap_middlelayer_postplugins",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the post-plugins",
+                    buckets, 5,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_POST_PLUGINS]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -113,7 +140,7 @@ VmDirRestMetricsUpdate(
     if (pHistogram)
     {
         VmMetricsHistogramUpdate(
-                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+                pHistogram, VMDIR_RESPONSE_TIME(iStartTime, iEndTime));
     }
 }
 

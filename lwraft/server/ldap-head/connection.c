@@ -652,8 +652,6 @@ ProcessAConnection(
         // Read complete LDAP request message (tag, length, and real message).
         while (reTries < MAX_NUM_OF_SOCK_READ_RETRIES)
         {
-            iStartTime = VmDirGetTimeInMilliSec();
-
             if ((tag = ber_get_next(pConn->sb, &len, ber)) == LDAP_TAG_MESSAGE)
             {
                 break;
@@ -716,6 +714,8 @@ ProcessAConnection(
             retVal = LDAP_NOTICE_OF_DISCONNECT;
             BAIL_ON_VMDIR_ERROR( retVal );
         }
+
+        iStartTime = VmDirGetTimeInMilliSec();
 
         // Read LDAP request messageID (tag, length (not returned since it is implicit/integer), and messageID value)
         if ((tag = ber_get_int(ber, &msgid)) != LDAP_TAG_MSGID)
