@@ -68,6 +68,7 @@ import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
+import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
@@ -257,19 +258,19 @@ public class TenantResource extends BaseResource {
         }
     }
 
-    @GET
+    @POST
     @Path(PathParameters.TENANT_NAME_VAR + "/finder/principals")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
-    public List<String> findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName,
-            @QueryParam("id") final List<String> principalIds) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "normalizePrincipalIds").startTimer();
+    public PrincipalIdentifiersDTO findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName, PrincipalIdentifiersDTO principalIds) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "findPrincipalIds").startTimer();
         String responseStatus = HTTP_OK;
 
         List<String> ids = new ArrayList<>();
         try {
-            Validate.notEmpty(principalIds, "principal ids are missing from the query");
-            for (String idString : principalIds) {
+            Validate.notEmpty(principalIds.getIds(), "principal ids are missing from the request");
+            for (String idString : principalIds.getIds()) {
                 PrincipalId id = PrincipalUtil.fromName(idString);
                 String result = null;
 
@@ -297,6 +298,7 @@ public class TenantResource extends BaseResource {
                 }
                 ids.add(result);
             }
+            return new PrincipalIdentifiersDTO.Builder().withIds(ids).build();
         } catch (NotFoundException | NoSuchTenantException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
@@ -310,11 +312,9 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "normalizePrincipalIds").inc();
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "findPrincipalIds").inc();
             requestTimer.observeDuration();
         }
-
-        return ids;
     }
 
     /**
