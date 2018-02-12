@@ -13,6 +13,10 @@ echo "Install likewise-open"
 
 tdnf install -y likewise-open-6.2.11-7
 
+echo "Upgrade openssl"
+
+tdnf install -y openssl-1.0.2n-1.ph1
+
 echo "Step 2: Enable DNS caching"
 
 sed -i 's/hosts: files/hosts:files resolve/g' /etc/nsswitch.conf
