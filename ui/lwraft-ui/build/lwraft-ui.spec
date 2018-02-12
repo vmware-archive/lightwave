@@ -33,6 +33,7 @@ mv /etc/nginx/nginx.conf /etc/nginx/nginx_orig.conf
 ln -s /opt/vmware/lwraft/nginx.conf /etc/nginx/nginx.conf
 systemctl restart nginx
 echo "Please register this POST node as OIDC client on lightwave server as shown below:"
+echo "/opt/vmware/lwraft/oidc-client-utils"
 /opt/vmware/lwraft/oidc-client-utils register -e
 
 %postun
