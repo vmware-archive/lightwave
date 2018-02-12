@@ -1367,23 +1367,22 @@ _VmDirScrubSuperLogContent(
 {
     if (pSuperLogRec)
     {
+        // common to all operations
+        pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
+        VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
+
+        if (opTag == LDAP_REQ_SEARCH || opTag == LDAP_REQ_UNBIND)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
+        }
+
         if (opTag == LDAP_REQ_UNBIND)
         {
             VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszBindID);
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
-            memset( pSuperLogRec, 0, sizeof(VDIR_SUPERLOG_RECORD) );
-        }
-        else
-        {
-            if (opTag == LDAP_REQ_SEARCH)
-            {
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
-            }
-            pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
+            memset(pSuperLogRec, 0, sizeof(VDIR_SUPERLOG_RECORD));
         }
     }
 }

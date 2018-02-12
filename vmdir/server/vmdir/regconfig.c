@@ -201,6 +201,13 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
+                    VMDIR_REG_KEY_EFFICIENT_READ_OP,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwEfficientReadOpTimeMS = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
                     VMDIR_REG_KEY_SMALL_CANDIDATE_SET,
                     TRUE))
         {

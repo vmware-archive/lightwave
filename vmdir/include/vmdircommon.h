@@ -1026,6 +1026,8 @@ typedef enum
 #define VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC "CopyDbBlockWriteInSec"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
+#define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+
 //
 // The expiration period for deleted entries. Any entries older than this will
 // be permanently expunged once the reaping thread runs. The default is 45 days.

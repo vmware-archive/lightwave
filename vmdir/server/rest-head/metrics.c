@@ -14,6 +14,14 @@
 
 #include "includes.h"
 
+static
+VOID
+_VmDirRESTLogExpensiveOperation(
+    PVDIR_REST_OPERATION    pRestOp,
+    METRICS_LDAP_OPS        operation,
+    uint64_t                iRespTime
+    );
+
 DWORD
 VmDirRestMetricsInit(
     VOID
@@ -111,34 +119,42 @@ VmDirRestMetricsUpdateFromHandler(
     METRICS_LDAP_ERRORS error = METRICS_LDAP_OTHER;
     METRICS_LAYERS      layer = METRICS_LAYER_PROTOCOL;
 
-    if (pRestOp && pRestOp->pMethod)
+    if (pRestOp)
     {
-        if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+        if (pRestOp->pMethod)
         {
-            operation = METRICS_LDAP_OP_ADD;
+            if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+            {
+                operation = METRICS_LDAP_OP_ADD;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
+            {
+                operation = METRICS_LDAP_OP_MODIFY;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
+            {
+                operation = METRICS_LDAP_OP_DELETE;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
+            {
+                operation = METRICS_LDAP_OP_SEARCH;
+            }
         }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
-        {
-            operation = METRICS_LDAP_OP_MODIFY;
-        }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
-        {
-            operation = METRICS_LDAP_OP_DELETE;
-        }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
-        {
-            operation = METRICS_LDAP_OP_SEARCH;
-        }
-    }
 
-    if (pRestOp && pRestOp->pResult)
-    {
-        error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
-    }
+        if (pRestOp->pResult)
+        {
+            error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
+        }
 
-    if (operation != METRICS_LDAP_OP_IGNORE)
-    {
-        VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
+        if (operation != METRICS_LDAP_OP_IGNORE)
+        {
+            VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
+        }
+
+        if (pRestOp->pConn->AccessInfo.pAccessToken)   // process request locally
+        {
+            _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
+        }
     }
 }
 
@@ -158,5 +174,31 @@ VmDirRestMetricsShutdown(
                 gpRestLdapMetrics[i][j][k] = NULL;
             }
         }
+    }
+}
+
+static
+VOID
+_VmDirRESTLogExpensiveOperation(
+    PVDIR_REST_OPERATION    pRestOp,
+    METRICS_LDAP_OPS        operation,
+    uint64_t                iRespTime
+    )
+{
+    PVDIR_SUPERLOG_RECORD pSupLog = &pRestOp->pConn->SuperLogRec;
+
+    if (operation == METRICS_LDAP_OP_SEARCH &&
+        iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
+    {
+        VMDIR_LOG_WARNING(
+            VMDIR_LOG_MASK_ALL,
+            "Inefficient search %d MS - base=(%s), scope=%s, filter=%s, scan cnt=%d, return cnt=%d BindDN=(%s)",
+            iRespTime,
+            VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszBaseDN),
+            VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszScope),
+            VDIR_SAFE_STRING(pSupLog->pszOperationParameters),
+            pSupLog->opInfo.searchInfo.dwScanned,
+            pSupLog->opInfo.searchInfo.dwReturned,
+            VDIR_SAFE_STRING(pRestOp->pConn->AccessInfo.pszBindedDn));
     }
 }
