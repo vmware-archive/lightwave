@@ -128,39 +128,43 @@ VmDirRestMetricsUpdateFromHandler(
     METRICS_LDAP_ERRORS error = METRICS_LDAP_OTHER;
     METRICS_LAYERS      layer = METRICS_LAYER_PROTOCOL;
 
-    if (pRestOp && pRestOp->pMethod)
+    if (pRestOp)
     {
-        if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+        if (pRestOp->pMethod)
         {
-            operation = METRICS_LDAP_OP_ADD;
+            if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+            {
+                operation = METRICS_LDAP_OP_ADD;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
+            {
+                operation = METRICS_LDAP_OP_MODIFY;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
+            {
+                operation = METRICS_LDAP_OP_DELETE;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
+            {
+                operation = METRICS_LDAP_OP_SEARCH;
+            }
         }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
-        {
-            operation = METRICS_LDAP_OP_MODIFY;
-        }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
-        {
-            operation = METRICS_LDAP_OP_DELETE;
-        }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
-        {
-            operation = METRICS_LDAP_OP_SEARCH;
-        }
-    }
 
-    if (pRestOp && pRestOp->pResult)
-    {
-        error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
-    }
+        if (pRestOp->pResult)
+        {
+            error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
+        }
 
-    if (operation != METRICS_LDAP_OP_IGNORE)
-    {
-        VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
-    }
+        if (operation != METRICS_LDAP_OP_IGNORE)
+        {
+            VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
+        }
 
-    if (pRestOp->pConn->AccessInfo.pAccessToken)   // process request locally
-    {
-        _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
+        if (pRestOp->pConn &&
+            pRestOp->pConn->AccessInfo.pAccessToken)    // process request locally
+        {
+            _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
+        }
     }
 }
 
