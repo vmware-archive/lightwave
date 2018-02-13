@@ -301,18 +301,14 @@ _VMCARestFreeHandle(
 
     if (pHandle)
     {
-       /*
+        /*
         * REST library have detached threads, maximum time out specified is the max time
         * allowed for the threads to  finish their execution.
         * If finished early, it will return success.
         * If not able to finish in specified time, failure will be returned
         */
-       dwError = VmRESTStop(pHandle, VMCA_REST_STOP_TIMEOUT_SEC);
-
-        if (dwError != 0)
-        {
-            VMCA_LOG_WARNING("%s: rest server stop error:%d", __FUNCTION__, dwError);
-        }
+        dwError = VmRESTStop(pHandle, VMCA_REST_STOP_TIMEOUT_SEC);
+        BAIL_ON_VMREST_ERROR(dwError);
 
         endPointCnt = ARRAY_SIZE(restEndPoints);
         for (iter = 0; iter < endPointCnt; iter++)
@@ -323,6 +319,13 @@ _VMCARestFreeHandle(
         }
         VmRESTShutdown(pHandle);
     }
+
+cleanup:
+    return;
+
+error:
+    VMCA_LOG_WARNING("%s: rest server stop error:%d", __FUNCTION__, dwError);
+    goto cleanup;
 }
 
 #endif
