@@ -1,9 +1,17 @@
 #!/bin/bash -xe
 
+DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
+
 echo "Step 1: Upgrade/install createrepo and its dependencies"
 
 tdnf makecache
-tdnf install -y sed zip unzip createrepo c-rest-engine-1.1-10.ph1 netcat
+tdnf install -y sed zip unzip createrepo netcat
+
+if [ $DISTRO == "1.0" ]; then
+    tdnf install -y c-rest-engine-1.1-10.ph1
+else
+    tdnf install -y c-rest-engine-1.1-1.ph2
+fi
 
 echo "Install patched version of cyrus-sasl"
 
