@@ -44,7 +44,7 @@ main(
     BOOLEAN      bConsoleMode = FALSE;
     int          iLocalLogMask = 0;
     BOOLEAN      bVmDirInit = FALSE;
-    BOOLEAN      bWaitTimeOut = FALSE;
+    BOOLEAN      bVmDirStopped = FALSE;
 
     static PCSTR    pszRunMode[] = { VMDIR_RUN_MODE_NORMAL, VMDIR_RUN_MODE_STANDALONE, VMDIR_RUN_MODE_RESTORE };
 
@@ -111,10 +111,9 @@ cleanup:
     if (bVmDirInit)
     {
         VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
-        VmDirShutdown(&bWaitTimeOut);
-        if (bWaitTimeOut)
+        VmDirShutdown(&bVmDirStopped);
+        if (!bVmDirStopped)
         {
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: stop" );
             goto done;
         }
 

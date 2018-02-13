@@ -449,7 +449,7 @@ VmDirSrvGetSocketAcceptFd(
 // shutdown.c
 VOID
 VmDirShutdown(
-    PBOOLEAN pbWaitTimeOut
+    PBOOLEAN pbVmDirStopped
     );
 
 // tracklastlogin.c
