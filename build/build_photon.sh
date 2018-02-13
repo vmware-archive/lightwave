@@ -43,12 +43,36 @@ elif [ -f ".build_photon_opts" ]; then
   echo enable_winjoin=$enable_winjoin
 fi
 
+# Determine if system is photon 1 or 2
+photon_ver_string=`cat /etc/issue | awk '{print $4}'`
+if [ "$photon_ver_string" = "2.0" ]; then
+  photon_ver=2
+elif [ "$photon_ver_string" = "1.0" ]; then
+  photon_ver=1
+else
+  echo "ERROR: unable to determine photon OS build type"
+  exit 1
+fi
+
+# Fix up lightwave.spec file based on photon version
+echo "NOTICE: building photon version '$photon_ver'"
+if [ $photon_ver -eq 2 ]; then
+  if [ ! -s "package/rpm/lightwave.spec.orig" ]; then
+    echo "NOTICE: patching lightwave.spec file for photon version '$photon_ver'"
+    mv "package/rpm/lightwave.spec" "package/rpm/lightwave.spec.orig"
+    cat package/rpm/lightwave.spec.orig | \
+      sed -e 's|^BuildRequires: openjdk|BuildRequires: openjdk8|' \
+          -e 's|1\.60\.0|1.63.0|' >  package/rpm/lightwave.spec
+  fi
+fi
+
 IFS=%
 
 autoreconf -vif .. \
   && \
 ../configure \
     CFLAGS="$force_debug -Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare" \
+    LDFLAGS=-ldl \
     --prefix=/opt/vmware \
     --libdir=/opt/vmware/lib64 \
     --localstatedir=/var/lib/vmware \
