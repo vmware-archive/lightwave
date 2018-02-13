@@ -13,6 +13,8 @@
  */
 package com.vmware.identity.rest.idm.data;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -37,6 +39,7 @@ public class FederatedIdpDTO extends DTO {
     private final FederatedSamlConfigDTO samlConfig;
     private final Boolean jitEnabled;
     private final String upnSuffix;
+    private final List<TokenClaimGroupDTO> roleGroupMappings;
 
     /**
      * Construct an {@code FederatedIdpPDTO} with its various details.
@@ -46,6 +49,7 @@ public class FederatedIdpDTO extends DTO {
      * @param alias the alias of the IDP.
      * @param jitEnabled enable or disable just-in-time provisioning.
      * @param upnSuffix a UPN suffix to use for this identity provider.
+     * @param roleGroupMap role group mapping for this identity provider.
      */
     public FederatedIdpDTO(
             String entityID,
@@ -54,7 +58,8 @@ public class FederatedIdpDTO extends DTO {
             FederatedOidcConfigDTO oidcConfig,
             FederatedSamlConfigDTO samlConfig,
             Boolean jitEnabled,
-            String upnSuffix
+            String upnSuffix,
+            List<TokenClaimGroupDTO> roleGroupMappings
     ) {
         this.entityID = entityID;
         this.protocol = protocol;
@@ -63,6 +68,7 @@ public class FederatedIdpDTO extends DTO {
         this.samlConfig = samlConfig;
         this.jitEnabled = jitEnabled;
         this.upnSuffix = upnSuffix;
+        this.roleGroupMappings = roleGroupMappings;
     }
 
     /**
@@ -129,6 +135,13 @@ public class FederatedIdpDTO extends DTO {
     public FederatedSamlConfigDTO getSamlConfig() { return samlConfig; }
 
     /**
+     * Get the role group mappings for the idp.
+     *
+     * @return list of token role group mappings
+     */
+    public List<TokenClaimGroupDTO> getRoleGroupMappings (){ return roleGroupMappings; }
+
+    /**
      * Creates an instance of the {@link FederatedIdpDTO.Builder} class.
      *
      * @return a new {@code FederatedIdpPDTO.Builder}.
@@ -153,6 +166,7 @@ public class FederatedIdpDTO extends DTO {
         private FederatedSamlConfigDTO samlConfig;
         private Boolean jitEnabled;
         private String upnSuffix;
+        private List<TokenClaimGroupDTO> roleGroupMappings;
 
         public Builder withEntityID(String entityID) {
             this.entityID = entityID;
@@ -189,6 +203,11 @@ public class FederatedIdpDTO extends DTO {
             return this;
         }
 
+        public Builder withRoleGroupMappings(List<TokenClaimGroupDTO> roleGroupMappings) {
+            this.roleGroupMappings = roleGroupMappings;
+            return this;
+        }
+
         public FederatedIdpDTO build() {
             return new FederatedIdpDTO(
                             entityID,
@@ -197,7 +216,8 @@ public class FederatedIdpDTO extends DTO {
                             oidcConfig,
                             samlConfig,
                             jitEnabled,
-                            upnSuffix
+                            upnSuffix,
+                            roleGroupMappings
             );
         }
     }

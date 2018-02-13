@@ -1,18 +1,23 @@
 package com.vmware.identity.ssoconfig;
 
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.IDPConfig;
-import com.vmware.identity.rest.idm.client.IdmClient;
-import com.vmware.identity.rest.idm.data.*;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.args4j.Option;
-
 import java.io.File;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Scanner;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.args4j.Option;
+
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.rest.idm.client.IdmClient;
+import com.vmware.identity.rest.idm.data.FederatedIdpDTO;
+import com.vmware.identity.rest.idm.data.FederatedOidcConfigDTO;
+import com.vmware.identity.rest.idm.data.FederatedSamlConfigDTO;
+import com.vmware.identity.rest.idm.data.ServiceEndpointDTO;
+import com.vmware.identity.rest.idm.data.TokenClaimGroupDTO;
 
 /**
  * Federated IDP configuration Commands.
@@ -91,6 +96,7 @@ public class FederatedIdpCommand extends SSOConfigCommand {
 
         builder.withSamlConfig(currentIdpConfig.getSamlConfig());
         builder.withOidcConfig(currentIdpConfig.getOidcConfig());
+        builder.withRoleGroupMappings(currentIdpConfig.getRoleGroupMappings());
 
         boolean jitEnabled = SSOConfigurationUtils.checkBoolean(jit, currentIdpConfig.isJitEnabled());
         builder.withJitEnabled(jitEnabled);
@@ -171,15 +177,15 @@ public class FederatedIdpCommand extends SSOConfigCommand {
                     SSOConfigurationUtils.displayParamNameAndValue(e.getKey(), e.getValue());
                 }
             }
-            if (samlConfig.getTokenClaimGroups() != null && !samlConfig.getTokenClaimGroups().isEmpty()) {
-                System.out.println("\nToken claim/group mappings: ");
-                for (TokenClaimGroupDTO e : samlConfig.getTokenClaimGroups()) {
-                    SSOConfigurationUtils.displayParamNameAndValues(e.getClaimName() + "/" + e.getClaimValue(), e.getGroups());
-                }
-            }
         }
         SSOConfigurationUtils.displayParamNameAndValue("Jit Enabled", idp.isJitEnabled());
         SSOConfigurationUtils.displayParamNameAndValue("UPN Suffix", idp.getUpnSuffix());
+        if (idp.getRoleGroupMappings() != null && !idp.getRoleGroupMappings().isEmpty()) {
+            System.out.println("\nToken claim/group mappings: ");
+            for (TokenClaimGroupDTO e : idp.getRoleGroupMappings()) {
+                SSOConfigurationUtils.displayParamNameAndValues(e.getClaimName() + "/" + e.getClaimValue(), e.getGroups());
+            }
+        }
 
         SSOConfigurationUtils.displaySeparationLine();
     }
