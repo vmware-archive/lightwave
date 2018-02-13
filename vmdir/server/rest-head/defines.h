@@ -13,19 +13,19 @@
  */
 
 // C REST ENGINE CONFIG VALUES
-#define REST_API_SPEC                VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdir-rest.json"
-#define VMDIR_REST_CLIENTCNT        64
-#define VMDIR_REST_WORKERTHCNT      64
+#define REST_API_SPEC                   VMDIR_CONFIG_DIR VMDIR_PATH_SEP "vmdir-rest.json"
+#define VMDIR_REST_CLIENTCNT            64
+#define VMDIR_REST_WORKERTHCNT          64
 
-#define HTTP_PROTOCOL_PREFIX        "https://"
-#define MAX_REST_PAYLOAD_LENGTH     4096
-#define MAX_HOSTNAME_LENGTH         1024
-#define MAX_ORIGIN_VALUE_LENGTH     2048
+#define HTTP_PROTOCOL_PREFIX            "https://"
+#define MAX_REST_PAYLOAD_LENGTH         4096
+#define MAX_HOSTNAME_LENGTH             1024
+#define MAX_ORIGIN_VALUE_LENGTH         2048
 
-#define VMDIR_REST_CONN_TIMEOUT_SEC  30
-#define VMDIR_MAX_DATA_PER_CONN_MB   25
-#define VMDIR_DAEMON_NAME      "vmdird";
-#define VMDIR_REST_STOP_TIMEOUT_SEC  10
+#define VMDIR_REST_CONN_TIMEOUT_SEC     30
+#define VMDIR_MAX_DATA_PER_CONN_MB      25
+#define VMDIR_DAEMON_NAME               "vmdird"
+#define VMDIR_REST_STOP_TIMEOUT_SEC     10
 
 // OIDC
 #define VMDIR_REST_OIDC_PORT                443

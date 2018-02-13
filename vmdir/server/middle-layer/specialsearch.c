@@ -137,7 +137,7 @@ VmDirHandleSpecialSearch(
         if (integrityCheckStat == INTEGRITY_CHECK_JOB_START ||
             integrityCheckStat == INTEGRITY_CHECK_JOB_RECHECK)
         {
-            dwError = VmDirIntegrityCheckStart(integrityCheckStat);
+            dwError = VmDirIntegrityCheckStart(integrityCheckStat, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else if (integrityCheckStat == INTEGRITY_CHECK_JOB_STOP)

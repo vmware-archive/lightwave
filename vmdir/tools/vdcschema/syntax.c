@@ -143,7 +143,7 @@ VmDirSchemaValidateSyntaxes(
             dwError = VMDIR_ERROR_INVALID_SYNTAX;
         }
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 

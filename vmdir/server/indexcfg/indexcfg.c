@@ -296,7 +296,7 @@ VmDirIndexCfgCopy(
         BAIL_ON_VMDIR_ERROR(dwError);
         pszCpy = NULL;
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     pNode = pIndexCfg->pDelUniqScopes->pTail;
@@ -312,7 +312,7 @@ VmDirIndexCfgCopy(
         BAIL_ON_VMDIR_ERROR(dwError);
         pszCpy = NULL;
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     pNode = pIndexCfg->pBadUniqScopes->pTail;
@@ -328,7 +328,7 @@ VmDirIndexCfgCopy(
         BAIL_ON_VMDIR_ERROR(dwError);
         pszCpy = NULL;
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     pIndexCfgCpy->bDefaultIndex = pIndexCfg->bDefaultIndex;
@@ -381,7 +381,7 @@ VmDirIndexCfgAddUniqueScopeMod(
         while (pNode)
         {
             PSTR pszPendingScope = (PSTR)pNode->pElement;
-            pNext = pNode->pNext;
+            pNext = pNode->pPrev;
             if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
             {
                 BAIL_WITH_VMDIR_ERROR(dwError, ERROR_ALREADY_EXISTS);
@@ -401,7 +401,7 @@ VmDirIndexCfgAddUniqueScopeMod(
         while (pNode)
         {
             PSTR pszPendingScope = (PSTR)pNode->pElement;
-            pNext = pNode->pNext;
+            pNext = pNode->pPrev;
             if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
             {
                 dwError = VmDirLinkedListRemove(pDelScopes, pNode);
@@ -454,7 +454,7 @@ VmDirIndexCfgDeleteUniqueScopeMod(
         while (pNode)
         {
             PSTR pszPendingScope = (PSTR)pNode->pElement;
-            pNext = pNode->pNext;
+            pNext = pNode->pPrev;
             if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
             {
                 dwError = VmDirLinkedListRemove(pNewScopes, pNode);
@@ -473,7 +473,7 @@ VmDirIndexCfgDeleteUniqueScopeMod(
         while (pNode)
         {
             PSTR pszPendingScope = (PSTR)pNode->pElement;
-            pNext = pNode->pNext;
+            pNext = pNode->pPrev;
             if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
             {
                 BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
@@ -580,7 +580,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
         pNode = pNewScopes->pTail;
         while (pNode)
         {
-            PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+            PVDIR_LINKED_LIST_NODE pNextNode = pNode->pPrev;
             PSTR pszScope = (PSTR)pNode->pElement;
             PSTR pszDn = entry.dn.lberbv.bv_val;
 
@@ -671,7 +671,7 @@ VmDirIndexCfgApplyUniqueScopeMods(
     pNode = pNewScopes->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pPrev;
         PSTR pszScope = (PSTR)pNode->pElement;
 
         dwError = LwRtlHashMapInsert(
@@ -690,7 +690,7 @@ VmDirIndexCfgApplyUniqueScopeMods(
     pNode = pDelScopes->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pPrev;
         PSTR pszScope = (PSTR)pNode->pElement;
 
         dwError = LwRtlHashMapRemove(pIndexCfg->pUniqScopes, pszScope, &pair);
@@ -772,7 +772,7 @@ VmDirIndexCfgRevertBadUniqueScopeMods(
                 VmDirStringLenA(pszScope));
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     dwError = VmDirInternalModifyEntry(&ldapOp);
@@ -830,7 +830,7 @@ VmDirIndexCfgGetAllScopesInStrArray(
     {
         dwError = VmDirStringListAddStrClone((PSTR)pNode->pElement, pScopes);
         BAIL_ON_VMDIR_ERROR(dwError);
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     // hand over string array

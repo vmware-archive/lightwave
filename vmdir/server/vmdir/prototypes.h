@@ -126,7 +126,7 @@ VmDirBkgdCreateNewIntegChkReport(
     );
 
 DWORD
-VmDirBkgdCompareLastTwoIntegChkReports(
+VmDirBkgdCompareIntegChkReports(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );
 

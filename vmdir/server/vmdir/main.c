@@ -38,7 +38,7 @@ main(
     DWORD        dwError = 0;
     const char * logFileName = NULL;
     const char * pszBootstrapSchemaFile = NULL;
-    const char * pszStateDir = VMDIR_DB_DIR VMDIR_PATH_SEPARATOR_STR;
+    const char * pszStateDir = VMDIR_DB_DIR VMDIR_PATH_SEP;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bConsoleMode = FALSE;
     BOOLEAN      bPatchSchema = FALSE;

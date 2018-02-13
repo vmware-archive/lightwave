@@ -58,7 +58,7 @@ VmDirStringListInitialize(
         dwInitialCount = 4; // default to 4
     }
 
-    dwAllocationSize = dwInitialCount * sizeof(PSTR);
+    dwAllocationSize = (dwInitialCount + 1) * sizeof(PSTR);
     if (dwAllocationSize < dwInitialCount)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);

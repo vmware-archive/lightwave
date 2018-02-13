@@ -203,9 +203,10 @@ VmDirSchemaCtxRelease(
             if (dwRefCnt == dwSelfRef)
             {   // only self reference within pSchema exists, free pSchema itself.
                 // self references are established during init before normal references.
-                VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                                "Free unreferenced schema instance (%p)",
-                                pCtx->pVdirSchema);
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "Free unreferenced schema instance (%p)",
+                        pCtx->pVdirSchema);
 
                 VmDirFreeSchemaInstance(pCtx->pVdirSchema);
                 VmDirFreeLdapSchema(pCtx->pLdapSchema);

@@ -45,11 +45,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "failed, error (%d)",
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -111,11 +107,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "failed, error (%d)",
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -143,11 +135,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "failed, error (%d)",
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -179,11 +167,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "failed, error (%d)",
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 

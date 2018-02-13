@@ -71,12 +71,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed (%d)", dwError);
     VmDirReplMetricsCacheShutdown();
     goto cleanup;
 }
@@ -142,6 +137,9 @@ VmDirReplMetricsCacheAdd(
         dwError = VmDirReplMetricsInit(pszHostname, pszSite, &pReplMetrics);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // load persisted values from previous run
+        (VOID)VmDirReplMetricsLoadCountConflictPermanent(pReplMetrics);
+
         dwError = LwRtlHashMapInsert(
                 gVdirReplMetricsCache.pHashMap,
                 pReplMetrics->pszSrcHostname,
@@ -159,12 +157,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed (%d)", dwError);
     VmDirFreeReplMetrics(pReplMetrics);
     goto cleanup;
 }
@@ -203,12 +196,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed (%d)", dwError);
     goto cleanup;
 }
 
@@ -245,12 +233,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed (%d)", dwError);
     goto cleanup;
 }
 
@@ -385,7 +368,7 @@ VmDirReplMetricsInit(
             &pReplMetrics->pCountConflictResolved);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmMetricsCounterNew(
+    dwError = VmMetricsGaugeNew(
             pmContext,
             "vmdir_repl_count_conflict_permanent",
             labels, 2,
@@ -410,13 +393,82 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed (%d)", dwError);
     VmDirFreeReplMetrics(pReplMetrics);
+    goto cleanup;
+}
+
+DWORD
+VmDirReplMetricsPersistCountConflictPermanent(
+    PVMDIR_REPLICATION_METRICS  pReplMetrics,
+    DWORD                       dwCount
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszKey = NULL;
+    PSTR    pszVal = NULL;
+
+    if (!pReplMetrics)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszKey,
+            "replmetrics_count_conflict_permanent_%s_%s",
+            pReplMetrics->pszSrcHostname,
+            pReplMetrics->pszDstHostname);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(&pszVal, "%u", dwCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirBackendUniqKeySetValue(pszKey, pszVal, TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszKey);
+    VMDIR_SAFE_FREE_MEMORY(pszVal);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirReplMetricsLoadCountConflictPermanent(
+    PVMDIR_REPLICATION_METRICS  pReplMetrics
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszKey = NULL;
+    PSTR    pszVal = NULL;
+
+    if (!pReplMetrics)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszKey,
+            "replmetrics_count_conflict_permanent_%s_%s",
+            pReplMetrics->pszSrcHostname,
+            pReplMetrics->pszDstHostname);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirBackendUniqKeyGetValue(pszKey, &pszVal);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmMetricsGaugeSet(pReplMetrics->pCountConflictPermanent, VmDirStringToIA(pszVal));
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszKey);
+    VMDIR_SAFE_FREE_MEMORY(pszVal);
+    return dwError;
+
+error:
+    VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -437,7 +489,8 @@ VmDirFreeReplMetrics(
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pTimeCycleFailed);
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pUsnBehind);
         (VOID)VmMetricsCounterDelete(pmContext, pReplMetrics->pCountConflictResolved);
-        (VOID)VmMetricsCounterDelete(pmContext, pReplMetrics->pCountConflictPermanent);
+        (VOID)VmMetricsGaugeDelete(pmContext, pReplMetrics->pCountConflictPermanent);
+        VMDIR_SAFE_FREE_MEMORY(pReplMetrics);
     }
 }
 

@@ -454,7 +454,7 @@ _BuildAllValStrs(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_SAFE_FREE_MEMORY(pszTmp);
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pIndexCfg->pDelUniqScopes->pHead;
@@ -472,7 +472,7 @@ _BuildAllValStrs(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_SAFE_FREE_MEMORY(pszTmp);
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     *ppszStatusVal = pszStatusVal;

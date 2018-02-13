@@ -820,7 +820,7 @@ _SortClassDiffsByHierarchy(
         dwError = LwRtlHashMapInsert(pToSort, pDiff->pszCN, pDiff, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToAdd->pHead;
@@ -832,7 +832,7 @@ _SortClassDiffsByHierarchy(
                 pSortedDiffs, pSchema, pToSort, pDiff);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     VmDirFreeLinkedList(pSchemaDiff->classToAdd);
@@ -941,7 +941,7 @@ _FreeLdapSchemaObjectDiffList(
         {
             pObjDiff = (PVDIR_LDAP_SCHEMA_OBJECT_DIFF)pNode->pElement;
             VmDirFreeLdapSchemaObjectDiff(pObjDiff);
-            pNode = pNode->pPrev;
+            pNode = pNode->pNext;
         }
         VmDirFreeLinkedList(pLinkedList);
     }

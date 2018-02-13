@@ -104,6 +104,7 @@ VMware Lightwave Server
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
 %define _logdir /var/log/lightwave
+%define _integchkdir %{_logdir}/integrity
 %define _logconfdir /etc/syslog-ng/lightwave.conf.d
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
@@ -317,9 +318,14 @@ Lightwave POST service
     if [ $? -ne 0 ]; then
         echo "Firewall service not restarted"
     fi
-    # vmdir
 
+    # common
+    /bin/mkdir -m 755 -p %{_logdir}
+
+    # vmdir
     /bin/mkdir -m 700 -p %{_vmdir_dbdir}
+    /bin/mkdir -m 755 -p %{_integchkdir}/reports
+    /bin/mkdir -m 755 -p %{_integchkdir}/archive
 
     if [ -a %{_sasl2dir}/vmdird.conf ]; then
         /bin/rm %{_sasl2dir}/vmdird.conf
@@ -334,8 +340,7 @@ Lightwave POST service
     fi
     /bin/ln -s %{_datadir}/config/vmdird-syslog-ng.conf %{_logconfdir}/vmdird-syslog-ng.conf
 
-# vmdns
-
+    # vmdns
     /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmdnsd-syslog-ng.conf ]; then
@@ -343,8 +348,7 @@ Lightwave POST service
     fi
     /bin/ln -s %{_datadir}/config/vmdnsd-syslog-ng.conf %{_logconfdir}/vmdnsd-syslog-ng.conf
 
-# vmca
-
+    # vmca
     /bin/mkdir -m 700 -p %{_vmca_dbdir}
     /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
