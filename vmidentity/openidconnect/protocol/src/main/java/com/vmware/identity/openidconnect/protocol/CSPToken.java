@@ -54,7 +54,8 @@ public class CSPToken extends FederationToken {
         }
     }
 
-    public String getOrgId() {
+    @Override
+    public String getTenant() {
         return this.orgId;
     }
 

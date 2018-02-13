@@ -524,6 +524,9 @@ public class TokenRequestProcessor {
 
     private void validateFederationToken(String issuer, FederationToken token, SolutionUser solutionUser,
             FederatedIdentityProviderInfo federatedIdpInfo) throws ServerException {
+        if (!this.tenant.equalsIgnoreCase(token.getTenant())) {
+            throw new ServerException(ErrorObject.invalidGrant("Tenant of the request does not match the tenant in the federation token."));
+        }
         try {
             RSAPublicKey key = getFederatedTokenPublicKey(issuer, federatedIdpInfo).getPublicKey();
             if (!token.hasValidSignature(key)) {

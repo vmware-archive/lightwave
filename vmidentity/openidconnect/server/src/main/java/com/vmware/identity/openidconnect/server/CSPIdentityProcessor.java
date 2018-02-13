@@ -219,7 +219,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
     CSPToken idToken = token.getLeft();
     CSPToken accessToken = token.getRight();
-    String tenantName = idToken.getOrgId();
+    String tenantName = idToken.getTenant();
     if (tenantName == null || tenantName.isEmpty()) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
       LoggerUtils.logFailedRequest(logger, errorObject);

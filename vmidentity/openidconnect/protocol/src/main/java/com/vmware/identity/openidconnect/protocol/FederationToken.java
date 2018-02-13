@@ -97,6 +97,8 @@ public abstract class FederationToken {
 
     public abstract Collection<String> getPermissions();
 
+    public abstract String getTenant();
+
     public static FederationToken parse(JSONObject jsonObject, TokenClass tokenClass,
             FederationIDPIssuerType issuerType) throws ParseException {
         Validate.notNull(jsonObject, "jsonObject");
