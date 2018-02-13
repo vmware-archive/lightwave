@@ -1742,7 +1742,12 @@ VmDirSrvCreateDefaultPasswdPolicy(
         ATTR_ENABLED,               VDIR_LDAP_BOOLEN_SYNTAX_TRUE_STR,
         ATTR_PASS_RECYCLE_CNT,          "5",
         ATTR_PASS_EXP_IN_DAY,           "90",
+#ifdef WINJOIN_CHECK_ENABLED
+        /* W2K8 creates a 120 char long random password */
+        ATTR_PASS_MAX_SIZE,             "128",
+#else
         ATTR_PASS_MAX_SIZE,             "20",
+#endif
         ATTR_PASS_MIN_SIZE,             "8",
         ATTR_PASS_MIN_ALPHA_CHAR,       "2",
         ATTR_PASS_MIN_UPPER_CHAR,       "1",

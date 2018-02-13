@@ -206,7 +206,23 @@ VmDirKrbUPNKeySet(
                           &kvno);
         }
 
+#ifdef WINJOIN_CHECK_ENABLED
+{
+        int i = 0;
+        /* 
+         * The salt computation for the machine account is wrong unless
+         * the UPN is converted to all lower case.
+         */
         pszUpnName = pAttrUPN[0].vals[0].lberbv.bv_val;
+        while (pszUpnName[i])
+        {
+            pszUpnName[i] = (char) tolower((int) pszUpnName[i]);
+            i++;
+        }
+}
+#else
+        pszUpnName = pAttrUPN[0].vals[0].lberbv.bv_val;
+#endif
 
         /* Lookup UPN to obtain KRB_PRINCIPAL_KEY */
         dwError = VmDirSimpleEqualFilterInternalSearch(
