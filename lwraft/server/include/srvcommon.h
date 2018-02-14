@@ -208,6 +208,7 @@ typedef struct _VDIR_CONNECTION_CTX
 {
   ber_socket_t sockFd;
   Sockbuf_IO   *pSockbuf_IO;
+  BOOLEAN       bIsLdaps;
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;

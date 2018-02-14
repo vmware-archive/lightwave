@@ -67,9 +67,8 @@ vmdirConnAccept(
 static
 int
 NewConnection(
-    ber_socket_t    sfd,
-    VDIR_CONNECTION **conn,
-    Sockbuf_IO      *pSockbuf_IO
+    PVDIR_CONNECTION_CTX pConnCtx,
+    VDIR_CONNECTION **ppConnection
     );
 
 static
@@ -286,9 +285,8 @@ VmDirFreeAccessInfo(
 static
 int
 NewConnection(
-    ber_socket_t    sfd,
-    VDIR_CONNECTION **ppConnection,
-    Sockbuf_IO      *pSockbuf_IO
+    PVDIR_CONNECTION_CTX pConnCtx,
+    VDIR_CONNECTION **ppConnection
     )
 {
     int       retVal = LDAP_SUCCESS;
@@ -303,7 +301,9 @@ NewConnection(
     }
 
     pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
-    pConn->sd = sfd;                 // pConn takes over sfd
+    pConn->bIsLdaps = pConnCtx->bIsLdaps;
+    pConn->sd = pConnCtx->sockFd;    // pConn takes over sfd
+    pConnCtx->sockFd = -1;
 
     retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szClientIP, sizeof(pConn->szClientIP), &pConn->dwClientPort, true);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -325,7 +325,7 @@ NewConnection(
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_ctrl() failed while setting MAX_INCOMING", pConn->szClientIP);
     }
 
-    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&sfd) != 0)
+    if (ber_sockbuf_add_io(pConn->sb, pConnCtx->pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&pConn->sd) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_addd_io() failed while setting LEVEL_PROVIDER", pConn->szClientIP);
@@ -341,7 +341,11 @@ NewConnection(
     *ppConnection = pConn;
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
+    if (pConnCtx->sockFd != -1)
+    {
+        tcp_close(pConnCtx->sockFd);
+        pConnCtx->sockFd = -1;
+    }
     return retVal;
 
 error:
@@ -605,7 +609,7 @@ ProcessAConnection(
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
     assert(pConnCtx);
 
-    retVal = NewConnection(pConnCtx->sockFd, &pConn, pConnCtx->pSockbuf_IO);
+    retVal = NewConnection(pConnCtx, &pConn);
     if (retVal != LDAP_SUCCESS)
     {
         VMDIR_LOG_ERROR(
@@ -1065,6 +1069,7 @@ vmdirConnAccept(
         pConnCtx->sockFd  = newsockfd;
         newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
+        pConnCtx->bIsLdaps = bIsLdaps;
 
         retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)
