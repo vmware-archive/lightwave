@@ -21658,4 +21658,5 @@ ditstructurerules: (
 
 attributeIndices: (
     NAME 'vmwSTSTenantizedUserPrincipalName'
+    GLOBALLY-UNIQUE
     )
