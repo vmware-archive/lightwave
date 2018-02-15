@@ -208,11 +208,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             "(&(%1$s=%2$s)(objectClass=user))";
 
     private static final String USER_OR_SVC_PRINC_QUERY_BY_UPN_ATTRIBUTE =
-            "(&(" +
-                "(|" +
+            "(&(|" +
                    "(userPrincipalName=%1$s)" +
                    "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
-                ")" +
               ")(objectClass=user))";
 
     private static final String JIT_USER_QUERY =
