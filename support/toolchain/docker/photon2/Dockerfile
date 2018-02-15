@@ -1,4 +1,4 @@
-FROM vmware/photon2
+FROM vmware/photon2:20180214
 MAINTAINER "Dheeraj Shetty" <dheerajs@vmware.com>
 ENV container=docker
 ENV GOROOT=/usr/lib/golang
@@ -37,7 +37,7 @@ RUN tdnf update -qy  tdnf  && \
     tdnf install -qy copenapi-devel-0.0.2 && \
     tdnf install -qy c-rest-engine-devel-1.1 && \
     tdnf install -qy go-1.9.1 && \
-    tdnf install -qy curl-devel-7.56.1 && \
+    tdnf install -qy curl-devel-7.58.0 && \
     tdnf install -qy krb5-devel-1.16 && \
     tdnf install -qy sqlite-devel-3.21.0 && \
     echo 'ALL ALL=NOPASSWD: ALL' >>/etc/sudoers && \
