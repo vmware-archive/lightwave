@@ -11,7 +11,7 @@ tdnf makecache
 tdnf install -y sed zip unzip createrepo netcat
 
 if [ $DISTRO == "1.0" ]; then
-    tdnf install -y c-rest-engine-1.1-10.ph1
+    tdnf install -y c-rest-engine-1.1-7.ph1
 else
     tdnf install -y c-rest-engine-1.1-1.ph2
 fi
