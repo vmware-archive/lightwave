@@ -4,8 +4,10 @@ VmDirSetupHostInstance
 VmDirDemote
 VmDirJoin
 VmDirClientJoin
+VmDirClientJoinAtomic
 VmDirClientLeave
 VmDirCreateComputerAccount
+VmDirCreateComputerAccountAtomic
 VmDirSetupTenantInstance
 VmDirForceResetPassword
 VmDirSetPassword
@@ -117,3 +119,4 @@ VmDirFreeHATopologyChanges
 VmDirServerReset
 VmDirSetupDefaultAccount
 VmDirAppendRaftState
+VmDirClientFreeMachineInfo

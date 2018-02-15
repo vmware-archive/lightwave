@@ -468,6 +468,26 @@ VmAfdCreateComputerAccountW(
     );
 
 DWORD
+VmAfdCreateComputerAccountDCA(
+    PCSTR pszServerName,      /* IN              */
+    PCSTR pszUserName,        /* IN              */
+    PCSTR pszPassword,        /* IN              */
+    PCSTR pszMachineName,     /* IN              */
+    PCSTR pszOrgUnit,         /* IN     OPTIONAL */
+    PSTR* ppszOutPassword     /* OUT             */
+    );
+
+DWORD
+VmAfdCreateComputerAccountDCW(
+    PCWSTR pwszServerName,    /* IN              */
+    PCWSTR pwszUserName,      /* IN              */
+    PCWSTR pwszPassword,      /* IN              */
+    PCWSTR pwszMachineName,   /* IN              */
+    PCWSTR pwszOrgUnit,       /* IN     OPTIONAL */
+    PWSTR* ppwszOutPassword   /* OUT             */
+    );
+
+DWORD
 VmAfdJoinADA(
     PCSTR pszServerName,     /* IN     OPTIONAL */
     PCSTR pszUserName,       /* IN              */

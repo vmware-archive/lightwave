@@ -19,7 +19,7 @@
     version(1.4),
     pointer_default(unique)
 #if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
-    , endpoint("ncalrpc:[VMWareDirectoryService]") 
+    , endpoint("ncalrpc:[VMWareDirectoryService]")
 #endif // #ifdef _WIN32
 ]
 
@@ -87,6 +87,35 @@ typedef struct _VMDIR_USER_CREATE_PARAMS_RPC
 } VMDIR_USER_CREATE_PARAMS_RPC, *PVMDIR_USER_CREATE_PARAMS_RPC;
 cpp_quote("#endif")
 
+cpp_quote("#ifndef VMDIR_MACHINE_INFO_W_DEFINED")
+cpp_quote("#define VMDIR_MACHINE_INFO_W_DEFINED 1")
+typedef struct _VMDIR_MACHINE_INFO_W
+{
+    wstring pwszComputerDN;
+    wstring pwszPassword;
+    wstring pwszSiteName;
+    wstring pwszMachineGUID;
+}VMDIR_MACHINE_INFO_W, *PVMDIR_MACHINE_INFO_W;
+cpp_quote("#endif")
+
+cpp_quote("#ifndef VMDIR_KRB_INFO_DEFINED")
+cpp_quote("#define VMDIR_KRB_INFO_DEFINED 1")
+typedef struct _VMDIR_KRB_BLOB
+{
+    UINT32 dwCount;
+    [size_is(dwCount)]
+    unsigned char * krbBlob;
+}VMDIR_KRB_BLOB, *PVMDIR_KRB_BLOB;
+
+typedef struct _VMDIR_KRB_INFO
+{
+    UINT32 dwCount;
+    [size_is(dwCount)]
+    PVMDIR_KRB_BLOB pKrbBlobs;
+}VMDIR_KRB_INFO, *PVMDIR_KRB_INFO;
+cpp_quote("#endif")
+
+
     UINT32
     RpcVmDirGeneratePassword(
         [in]                 handle_t     hBinding,
@@ -122,7 +151,7 @@ cpp_quote("#endif")
         [in, string, unique] PWSTR pszUPNName,
         [in]                 unsigned char bRandKey
         );
-        
+
     UINT32
     RpcVmDirCreateUserEx(
         [in] handle_t                      hBinding,
@@ -146,4 +175,32 @@ cpp_quote("#endif")
 	[in]				UINT32	        vmdirLogMask
         );
 
+    UINT32
+    RpcVmDirGetComputerAccountInfo(
+    [in]                 handle_t                  hBinding,
+    [in, string, unique] PWSTR                     pszDomainName,
+    [in, string, unique] PWSTR                     pszPassword,
+    [in, string, unique] PWSTR                     pszMachineName,
+    [in, out]            PVMDIR_MACHINE_INFO_W     *ppMachineInfo,
+    [in, out]            PVMDIR_KRB_INFO           *ppKrbInfo
+    );
+
+    UINT32
+    RpcVmDirClientJoin(
+    [in]                  handle_t                hBinding,
+    [in, string, unique]  PWSTR                   pszDomainName,
+    [in, string, unique]  PWSTR                   pszMachineName,
+    [in, string, unique]  PWSTR                   pszOrgUnit,
+    [in, out]             PVMDIR_MACHINE_INFO_W   *ppMachineInfo,
+    [in, out]             PVMDIR_KRB_INFO         *ppKrbInfo
+    );
+
+    UINT32
+    RpcVmDirCreateComputerAccount(
+    [in]                  handle_t                hBinding,
+    [in, string, unique]  PWSTR                   pszDomainName,
+    [in, string, unique]  PWSTR                   pszMachineName,
+    [in, string, unique]  PWSTR                   pszOrgUnit,
+    [in, out]             PVMDIR_MACHINE_INFO_W   *ppMachineInfo
+    );
 }

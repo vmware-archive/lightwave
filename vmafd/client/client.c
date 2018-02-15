@@ -3191,7 +3191,8 @@ VmAfdCreateComputerAccountW(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdLocalCreateComputerAccount(
+    dwError = VmAfdCreateComputerAccountDCW(
+                  NULL,
                   pwszUserName,
                   pwszPassword,
                   pwszMachineName,
@@ -5011,6 +5012,140 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdCreateComputerAccountDCA(
+    PCSTR            pszServerName,     /* IN              */
+    PCSTR            pszUserName,       /* IN              */
+    PCSTR            pszPassword,       /* IN              */
+    PCSTR            pszMachineName,    /* IN              */
+    PCSTR            pszOrgUnit,        /* IN     OPTIONAL */
+    PSTR*            ppszOutPassword    /* OUT             */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
+    PWSTR pwszServerName = NULL;
+    PWSTR pwszOrgUnit = NULL;
+    PWSTR pwszOutPassword = NULL;
+    PSTR  pszOutPassword = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszMachineName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszServerName))
+    {
+        dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszOrgUnit)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszOrgUnit, &pwszOrgUnit);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdCreateComputerAccountDCW(
+                  pwszServerName,
+                  pwszUserName,
+                  pwszPassword,
+                  pwszMachineName,
+                  pwszOrgUnit,
+                  &pwszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(
+                  pwszOutPassword,
+                  &pszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (ppszOutPassword)
+    {
+        *ppszOutPassword = pszOutPassword;
+        pszOutPassword = NULL;
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszServerName);
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
+    VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszOutPassword);
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdCreateComputerAccountDCA failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdCreateComputerAccountDCW(
+    PCWSTR           pwszServerName,    /* IN            */
+    PCWSTR           pwszUserName,      /* IN            */
+    PCWSTR           pwszPassword,      /* IN            */
+    PCWSTR           pwszMachineName,   /* IN            */
+    PCWSTR           pwszOrgUnit,       /* IN   OPTIONAL */
+    PWSTR*           ppwszOutPassword   /* OUT           */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszOutPassword = NULL;
+
+    if (IsNullOrEmptyString(pwszUserName) ||
+        IsNullOrEmptyString(pwszPassword) ||
+        IsNullOrEmptyString(pwszMachineName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdLocalCreateComputerAccount(
+                  pwszServerName,
+                  pwszUserName,
+                  pwszPassword,
+                  pwszMachineName,
+                  pwszOrgUnit,
+                  &pwszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (ppwszOutPassword)
+    {
+        *ppwszOutPassword = pwszOutPassword;
+        pwszOutPassword = NULL;
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdCreateComputerAccountDCW failed. Error(%u)", dwError);
+    goto cleanup;
+}
+
 
 VOID
 VmAfdFreeString(

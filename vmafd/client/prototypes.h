@@ -313,6 +313,7 @@ VmAfdLocalLeaveVmDir(
 
 DWORD
 VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszMachineName,

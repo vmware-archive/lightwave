@@ -43,7 +43,11 @@ VmDirMLAdd(
     assert(pOperation->conn);
 
     // establish entry schema context association
-    pOperation->request.addReq.pEntry->pSchemaCtx = VmDirSchemaCtxClone(pOperation->pSchemaCtx);
+    dwError = VmDirSchemaCtxCloneIfDifferent(
+                                      pOperation->pSchemaCtx,
+                                      &pOperation->request.addReq.pEntry->pSchemaCtx
+                                      );
+    BAIL_ON_VMDIR_ERROR(dwError);
     assert(pOperation->request.addReq.pEntry->pSchemaCtx);
 
     pOperation->pBECtx->pBE = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);

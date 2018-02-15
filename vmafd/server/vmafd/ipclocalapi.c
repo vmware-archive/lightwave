@@ -4528,6 +4528,7 @@ VmAfdIpcCreateComputerAccount(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
 
+    PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
     PWSTR pwszMachineName = NULL;
@@ -4562,6 +4563,7 @@ VmAfdIpcCreateComputerAccount(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
+    pwszServerName    = input_spec[idx++].data.pWString;
     pwszUserName    = input_spec[idx++].data.pWString;
     pwszPassword    = input_spec[idx++].data.pWString;
     pwszMachineName = input_spec[idx++].data.pWString;
@@ -4581,6 +4583,7 @@ VmAfdIpcCreateComputerAccount(
     }
 
     uResult = VmAfSrvCreateComputerAccount(
+                      pwszServerName,
                       pwszUserName,
                       pwszPassword,
                       pwszMachineName,

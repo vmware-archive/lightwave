@@ -1218,6 +1218,7 @@ error:
 
 DWORD
 VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszMachineName,
@@ -1238,6 +1239,7 @@ VmAfdLocalCreateComputerAccount(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
+    input_spec[idx++].data.pWString = (PWSTR) pwszServerName;
     input_spec[idx++].data.pWString = (PWSTR) pwszUserName;
     input_spec[idx++].data.pWString = (PWSTR) pwszPassword;
     input_spec[idx++].data.pWString = (PWSTR) pwszMachineName;

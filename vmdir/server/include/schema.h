@@ -311,6 +311,12 @@ VmDirSchemaCtxClone(
     PVDIR_SCHEMA_CTX    pOrgCtx
     );
 
+DWORD
+VmDirSchemaCtxCloneIfDifferent(
+    PVDIR_SCHEMA_CTX     pInputCtx,
+    PVDIR_SCHEMA_CTX*    ppOutputCtx
+    );
+
 /*
  * Caller release schema context
  */

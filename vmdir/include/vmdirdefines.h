@@ -941,6 +941,15 @@ typedef enum
 #define GSSAPI_UNIX_CRED_OPT_PW_LEN  13
 #endif
 
+#ifndef VMDIR_MAX_PASSWORD_RETRIES
+#define VMDIR_MAX_PASSWORD_RETRIES 128
+#endif
+
+#define VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER { "ldap", "vmca", "host", "http", "DNS" }
+#define VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER { "host", "http" }
+
+#define ATTR_VMW_MACHINE_GUID "vmwMachineGUID"
+
 #ifdef __cplusplus
 }
 #endif

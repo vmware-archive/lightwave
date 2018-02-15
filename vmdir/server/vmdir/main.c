@@ -45,7 +45,7 @@ main(
     int          iLocalLogMask = 0;
     BOOLEAN      bVmDirInit = FALSE;
     BOOLEAN      bShutdownKDCService = FALSE;
-    BOOLEAN      bVmDirStopped = FALSE;
+    BOOLEAN      bWaitTimeOut = FALSE;
 
     dwError = VmDirSrvUpdateConfig();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -128,9 +128,10 @@ cleanup:
     if ( bVmDirInit )
     {
         VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
-        VmDirShutdown(&bVmDirStopped);
-        if (!bVmDirStopped)
+        VmDirShutdown(&bWaitTimeOut);
+        if (bWaitTimeOut)
         {
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: stop" );
             goto done;
         }
 

@@ -250,9 +250,40 @@ VmDirRpcFreeMemory(
     void *p
     );
 
+
+VOID
+VmDirSrvRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirSrvRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirSrvRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
+    );
+
 VOID
 VmDirRpcClientFreeMemory(
     void *p
+    );
+
+VOID
+VmDirClientRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirClientRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirClientRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
     );
 
 DWORD
@@ -354,6 +385,21 @@ VOID
 VmDirFreeTypeSpecContent(
     PVMW_TYPE_SPEC specInput,
     DWORD sizeOfArray
+    );
+
+VOID
+VmDirFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
     );
 
 ULONG
@@ -1010,6 +1056,8 @@ typedef enum
 #else
 #define VMDIR_DEFAULT_KRB5_CONF             "/etc/krb5.lotus.conf"
 #endif
+
+
 
 DWORD
 VmDirAllocateMutex(

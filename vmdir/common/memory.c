@@ -616,3 +616,50 @@ VmDirFreeTypeSpecContent(
       }
     }
 }
+
+VOID
+VmDirFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    )
+{
+    if (pMachineInfo)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pszComputerDN);
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pszPassword);
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pszSiteName);
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pszMachineGUID);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pMachineInfo);
+}
+
+VOID
+VmDirFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    )
+{
+    if (pMachineInfo)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pwszComputerDN);
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pwszPassword);
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pwszSiteName);
+        VMDIR_SAFE_FREE_MEMORY(pMachineInfo->pwszMachineGUID);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pMachineInfo);
+}
+
+VOID
+VmDirFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
+    )
+{
+    if (pKrbInfo)
+    {
+        DWORD dwIndex = 0;
+        for (; dwIndex < pKrbInfo->dwCount; ++dwIndex)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pKrbInfo->pKrbBlobs[dwIndex].krbBlob);
+        }
+        VMDIR_SAFE_FREE_MEMORY(pKrbInfo->pKrbBlobs);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pKrbInfo);
+}

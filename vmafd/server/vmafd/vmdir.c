@@ -467,6 +467,18 @@ VmAfSrvPromoteVmDir(
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
+    dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
+    if (dwError)
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to initiate HA. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
+    }
+
+
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGA(pszLotusServerName);
@@ -583,6 +595,12 @@ VmAfSrvDemoteVmDir(
         gVmafdGlobals.pCertUpdateThr = NULL;
     }
 
+    if (gVmafdGlobals.pCdcContext)
+    {
+        CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+    }
+
+
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGW(pwszSiteName);
@@ -673,6 +691,7 @@ VmAfSrvJoinVmDir(
     PSTR pszDefaultRealm = NULL;
     PWSTR pwszSiteName = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszServerName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
@@ -725,13 +744,15 @@ VmAfSrvJoinVmDir(
     dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDirClientJoin(
+    dwError = VmDirClientJoinAtomic(
                       pszServerName,
                       pszUserName,
                       pszPassword,
+                      pszDomainName,
                       pszMachineName,
                       pszOrgUnit,
-                      0);
+                      0,
+                      &pMachineInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = _CreateKrbConfig(
@@ -752,7 +773,10 @@ VmAfSrvJoinVmDir(
     dwError = VmAfSrvSetDCName(pwszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvGetSiteNameForDC(pwszServerName, &pwszSiteName);
+    dwError = VmAfdAllocateStringWFromA(
+                                pMachineInfo->pszSiteName,
+                                &pwszSiteName
+                                );
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetSiteName(pwszSiteName);
@@ -807,6 +831,11 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
     VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    if (pMachineInfo)
+    {
+        VmDirClientFreeMachineInfo(pMachineInfo);
+    }
 
     return dwError;
 
@@ -1335,6 +1364,7 @@ error:
 
 DWORD
 VmAfSrvCreateComputerAccount(
+    PCWSTR            pwszServerName,     /* IN            */
     PCWSTR            pwszUserName,       /* IN            */
     PCWSTR            pwszPassword,       /* IN            */
     PCWSTR            pwszMachineName,    /* IN            */
@@ -1349,8 +1379,10 @@ VmAfSrvCreateComputerAccount(
     PSTR pszOrgUnit = NULL;
     PWSTR pwszDCName = NULL;
     PSTR pszDCName = NULL;
+    PWSTR pwszDomain = NULL;
     PWSTR pwszOutPassword = NULL;
-    PSTR pszOutPassword = NULL;
+    PSTR pszDomainName = NULL;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
@@ -1371,22 +1403,40 @@ VmAfSrvCreateComputerAccount(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDCName(&pwszDCName);
+    if (IsNullOrEmptyString(pwszServerName))
+    {
+        dwError = VmAfSrvGetDCName(&pwszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfSrvGetDomainName(&pwszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
+    dwError = VmAfdAllocateStringAFromW(pwszDomain, &pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDirCreateComputerAccount(
+    dwError = VmDirCreateComputerAccountAtomic(
                   pszDCName,
                   pszUserName,
                   pszPassword,
+                  pszDomainName,
                   pszMachineName,
                   pszOrgUnit,
-                  &pszOutPassword);
+                  &pMachineInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringWFromA(pszOutPassword, &pwszOutPassword);
+    dwError = VmAfdAllocateStringWFromA(
+                                pMachineInfo->pszPassword, 
+                                &pwszOutPassword
+                                );
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (ppwszOutPassword)
@@ -1402,13 +1452,18 @@ VmAfSrvCreateComputerAccount(
 cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszDCName);
-    VMAFD_SAFE_FREE_STRINGA(pszOutPassword);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
     VMAFD_SAFE_FREE_STRINGA(pszDCName);
     VMAFD_SAFE_FREE_STRINGA(pszMachineName);
     VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
+    VMAFD_SAFE_FREE_STRINGA(pszDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomain);
 
+    if (pMachineInfo)
+    {
+        VmDirClientFreeMachineInfo(pMachineInfo);
+    }
     return dwError;
 
 error:

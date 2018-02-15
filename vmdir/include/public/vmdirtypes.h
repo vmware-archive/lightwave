@@ -479,6 +479,49 @@ typedef struct _MES_header
 
 #endif // VMDIR_ENABLE_PAC
 
+#ifndef VMDIR_MACHINE_INFO_W_DEFINED
+#define VMDIR_MACHINE_INFO_W_DEFINED 1
+typedef struct _VMDIR_MACHINE_INFO_W
+{
+    wstring pwszComputerDN;
+    wstring pwszPassword;
+    wstring pwszSiteName;
+    wstring pwszMachineGUID;
+}VMDIR_MACHINE_INFO_W, *PVMDIR_MACHINE_INFO_W;
+#endif
+
+#ifndef VMDIR_MACHINE_INFO_A_DEFINED
+#define VMDIR_MACHINE_INFO_A_DEFINED 1
+typedef struct _VMDIR_MACHINE_INFO_A
+{
+    PSTR pszComputerDN;
+    PSTR pszPassword;
+    PSTR pszSiteName;
+    PSTR pszMachineGUID;
+}VMDIR_MACHINE_INFO_A, *PVMDIR_MACHINE_INFO_A;
+#endif
+
+#ifndef VMDIR_KRB_INFO_DEFINED
+#define VMDIR_KRB_INFO_DEFINED 1
+typedef struct _VMDIR_KRB_BLOB
+{
+    UINT32 dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif
+    unsigned char * krbBlob;
+}VMDIR_KRB_BLOB, *PVMDIR_KRB_BLOB;
+
+typedef struct _VMDIR_KRB_INFO
+{
+    UINT32 dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif
+    PVMDIR_KRB_BLOB pKrbBlobs;
+}VMDIR_KRB_INFO, *PVMDIR_KRB_INFO;
+#endif
+
 #ifdef _DCE_IDL_
 cpp_quote("#endif")
 #endif

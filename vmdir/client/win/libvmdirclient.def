@@ -6,8 +6,10 @@ EXPORTS
     VmDirDemote
     VmDirJoin
     VmDirClientJoin
+    VmDirClientJoinAtomic
     VmDirClientLeave
     VmDirCreateComputerAccount
+    VmDirCreateComputerAccountAtomic
     VmDirSetupTenantInstance
     VmDirCreateTenant
     VmDirDeleteTenant
@@ -115,3 +117,4 @@ EXPORTS
     VmDirFreeHATopologyData
     VmDirFreeHAServerInfo
     VmDirFreeHATopologyChanges
+    VmDirClientFreeMachineInfo
