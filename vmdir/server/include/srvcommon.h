@@ -1201,6 +1201,13 @@ VmDirUPNToDN(
     );
 
 DWORD
+VmDirTenantizeUPNToDN(
+    PCSTR       pszTenant,
+    PCSTR       pszUPN,
+    PSTR*       ppszEntryDN
+    );
+
+DWORD
 VmDirUPNToDNBerWrap(
     PCSTR           pszUPN,
     PVDIR_BERVALUE  pBervDN

@@ -238,6 +238,8 @@ extern "C" {
 #define ATTR_VMWITUSERGUID_LEN              sizeof(ATTR_VMWITUSERGUID)-1
 #define ATTR_LASTLOGONTIMESTAMP             "lastLogonTimestamp"
 #define ATTR_LASTLOGONTIMESTAMP_LEN         sizeof(ATTR_LASTLOGONTIMESTAMP)-1
+#define ATTR_TENANTIZED_UPN                 "vmwSTSTenantizedUserPrincipalName"
+#define ATTR_TENANTIZED_UPN_LEN             sizeof(ATTR_TENANTIZED_UPN)-1
 
 #define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
 #define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"

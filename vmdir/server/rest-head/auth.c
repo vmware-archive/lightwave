@@ -185,6 +185,13 @@ VmDirRESTAuthViaToken(
     //}
 
     dwError = VmDirUPNToDN(pAuthToken->pszBindUPN, &pszBindDN);
+    if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
+    {
+        dwError = VmDirTenantizeUPNToDN(
+            pAuthToken->pszTenant,
+            pAuthToken->pszBindUPN,
+            &pszBindDN);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirExternalOperationCreate(
