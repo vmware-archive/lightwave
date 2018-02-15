@@ -206,8 +206,13 @@ VmDirKrbUPNKeySet(
                           &kvno);
         }
 
-#ifdef WINJOIN_CHECK_ENABLED
+#ifdef WINJOIN_CHECK_ENABLED_DISABLED
 {
+/*
+ * Lower casing all UPNs prevents domainjoin from working. But
+ * lower casing of the computer account is required for a host TGT
+ * to be issued.
+ */ 
         int i = 0;
         /* 
          * The salt computation for the machine account is wrong unless
@@ -252,6 +257,13 @@ VmDirKrbUPNKeySet(
 
         if ( pBervPasswd->lberbv.bv_len > 0 )
         {
+#if 0 /* TBD:Adam Debug */
+FILE *fp = fopen("/tmp/krb-password.txt", "a");
+fprintf(fp, "%*s\n", 
+        (int) pBervPasswd->lberbv.bv_len,
+        pBervPasswd->lberbv.bv_val);
+fclose(fp);
+#endif
             // create key blob
             dwError = _VmDirKrbCreateKeyBlob(
                             &(pAttrUPN->vals[0]),

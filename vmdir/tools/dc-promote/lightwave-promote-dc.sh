@@ -8,9 +8,9 @@
 # Configure these constants to match your environment
 # ADMIN_PASSWORD must meet password complexity requirements of vmdir
 #                Upper/Lower/Number/Legal punctuation/ 9 < pwd_len <= 20
-LIGHTWAVE_AD=10.118.96.62
+LIGHTWAVE_AD=10.118.96.198
 DC_DOMAIN="lightwave.local"
-DC_NAME="photon-addc-test10"
+DC_NAME="photon-addc2"
 DNS_FORWARDER="10.118.98.1"
 ADMIN_PASSWORD="VMware123@"
 PRIV_USER="root"
@@ -114,11 +114,11 @@ fi
 
 # 1 Copy custom build of Likewise-Open
 echo_status "Copy likewise-open to DC"
-scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-?.x86_64.rpm $LIGHTWAVE_AD:/tmp
+scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-?.x86_64.rpm $PRIV_USER@$LIGHTWAVE_AD:/tmp
 
 # 2 Copy Lightwave --enable-winjoin build
 echo_status "Copy lightwave to DC"
-scp $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm $LIGHTWAVE_AD:/tmp
+scp $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm $PRIV_USER@$LIGHTWAVE_AD:/tmp
 
 # 3 Install Likewise-Open
 echo_status "Install likewise-open"
@@ -222,7 +222,7 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
 
 # 11  Add additional cifs entries to krb5.keytab
 echo_status "Add additional cifs entries to krb5.keytab"
-scp $TOOLS_DIR/add-keytab.sh $LIGHTWAVE_AD:/tmp
+scp $TOOLS_DIR/add-keytab.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD \
   /tmp/add-keytab.sh
 
