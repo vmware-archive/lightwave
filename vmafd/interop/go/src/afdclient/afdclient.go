@@ -304,6 +304,36 @@ func VmAfdForceRefreshDCName() (dcName string, err error) {
 	return
 }
 
+//VmAfdCreateComputerAccountWithDC creates a machine account given the DC name, username, password, machine name, and (optional) orgunit
+func VmAfdCreateComputerAccountWithDC(serverName, userName, password, machineName, orgUnit string) (machinePassword string, err error) {
+	serverNameCStr := goStringToCString(serverName)
+	defer freeCString(serverNameCStr)
+	userNameCStr := goStringToCString(userName)
+	defer freeCString(userNameCStr)
+	passwordCStr := goStringToCString(password)
+	defer freeCString(passwordCStr)
+	machineNameCStr := goStringToCString(machineName)
+	defer freeCString(machineNameCStr)
+	orgUnitCStr := goStringToCString(orgUnit)
+	defer freeCString(orgUnitCStr)
+
+	var s C.PSTR = nil
+	var e C.DWORD = C.VmAfdCreateComputerAccountDCA(
+						serverNameCStr,
+						userNameCStr,
+						passwordCStr,
+						machineNameCStr,
+						orgUnitCStr,
+						&s)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to create Computer Account with DC (%s)", cErrorToGoError(e))
+		return
+	}
+
+	machinePassword = vmafdStringToGoString(s)
+	return
+}
+
 // vmAfdServerFinalize is a wrapper function to set the finalizer for VmAfdServer
 func vmAfdServerFinalize(server *VmAfdServer) {
 	server.Close()
