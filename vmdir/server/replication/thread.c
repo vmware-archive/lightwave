@@ -56,7 +56,8 @@ VOID
 _VmDirConsumePartner(
     PVMDIR_REPLICATION_CONTEXT      pContext,
     PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
-    PVMDIR_DC_CONNECTION            pConnection
+    PVMDIR_DC_CONNECTION            pConnection,
+    BOOLEAN                         *pbUpdateReplicationInterval
     );
 
 static
@@ -127,6 +128,12 @@ static
 VOID
 _VmDirReplicationUpdateTombStoneEntrySyncState(
     PVMDIR_REPLICATION_PAGE_ENTRY pPage
+    );
+
+static
+DWORD
+_VmDirUpdateReplicationInterval(
+    BOOLEAN   bUpdateReplicationInterval
     );
 
 DWORD
@@ -205,6 +212,8 @@ vdirReplicationThrFun(
     BOOLEAN                         bInReplAgrsLock = FALSE;
     BOOLEAN                         bInReplCycleDoneLock = FALSE;
     BOOLEAN                         bExitThread = FALSE;
+    BOOLEAN                         bUpdateReplicationInterval = FALSE;
+    DWORD                           dwReplicationIntervalInMilliSec = 0;
     int                             i = 0;
     VMDIR_REPLICATION_CONTEXT       sContext = {0};
 
@@ -256,6 +265,8 @@ vdirReplicationThrFun(
                 "vdirReplicationThrFun: Executing replication cycle %u.",
                 gVmdirGlobals.dwReplCycleCounter + 1);
 
+        bUpdateReplicationInterval = FALSE;
+
         // purge RAs that have been marked as isDeleted = TRUE
         VmDirRemoveDeletedRAsFromCache();
 
@@ -297,7 +308,7 @@ vdirReplicationThrFun(
                 continue;
             }
 
-            _VmDirConsumePartner(&sContext, pReplAgr, &pReplAgr->dcConn);
+            _VmDirConsumePartner(&sContext, pReplAgr, &pReplAgr->dcConn, &bUpdateReplicationInterval);
         }
 
         VMDIR_LOG_DEBUG(
@@ -340,7 +351,10 @@ vdirReplicationThrFun(
                 VmDirdSetReplNow(FALSE);
                 break;
             }
-            VmDirSleep( 1000 );
+
+            dwReplicationIntervalInMilliSec = _VmDirUpdateReplicationInterval(bUpdateReplicationInterval);
+
+            VmDirSleep(dwReplicationIntervalInMilliSec);
         }
     } // Endless replication loop
 
@@ -359,6 +373,29 @@ error:
             VMDIR_LOG_MASK_ALL,
             "vdirReplicationThrFun: Replication has failed with unrecoverable error.");
     goto cleanup;
+}
+
+static
+DWORD
+_VmDirUpdateReplicationInterval(
+    BOOLEAN   bUpdateReplicationInterval
+    )
+{
+    DWORD   dwReplicationTimeIntervalInMilliSec = 1000;
+
+    if (bUpdateReplicationInterval)
+    {
+        // Range 750 to 1250 milliseconds
+        dwReplicationTimeIntervalInMilliSec = ((rand() % 750) + 500);
+
+        VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s: Updated replication time interval (%d) milliseconds",
+            __FUNCTION__,
+            dwReplicationTimeIntervalInMilliSec);
+    }
+
+    return dwReplicationTimeIntervalInMilliSec;
 }
 
 static
@@ -842,7 +879,8 @@ VOID
 _VmDirConsumePartner(
     PVMDIR_REPLICATION_CONTEXT      pContext,
     PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
-    PVMDIR_DC_CONNECTION            pConnection
+    PVMDIR_DC_CONNECTION            pConnection,
+    BOOLEAN                         *pbUpdateReplicationInterval
     )
 {
     int retVal = LDAP_SUCCESS;
@@ -856,8 +894,18 @@ _VmDirConsumePartner(
     uint64_t    uiStartTime = 0;
     uint64_t    uiEndTime = 0;
     uint64_t    uiStartTimeInShutdown = 0;
+    uint64_t    uiStartTimeToConsume = 0;
+
+    uiStartTimeToConsume = VmDirGetTimeInMilliSec();
 
     VMDIR_RWLOCK_WRITELOCK(bInReplLock, gVmdirGlobals.replRWLock, 0);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s: start consuming partner: %s time taken to acquire lock: %" PRId64 " milliseconds",
+            __FUNCTION__,
+            pConnection->pszRemoteDCHostName,
+            (VmDirGetTimeInMilliSec() - uiStartTimeToConsume));
 
     uiStartTime = VmDirGetTimeInMilliSec();
     /*
@@ -944,6 +992,13 @@ collectmetrics:
     }
 
 cleanup:
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s: completed consuming partner: %s total time taken: %" PRId64 " milliseconds, status: %d",
+            __FUNCTION__,
+            pConnection->pszRemoteDCHostName,
+            (VmDirGetTimeInMilliSec() - uiStartTimeToConsume),
+            retVal);
     VmDirReplicationClearFailedEntriesFromQueue(pContext);
     VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
@@ -951,6 +1006,7 @@ cleanup:
     return;
 
 ldaperror:
+    *pbUpdateReplicationInterval = (*pbUpdateReplicationInterval || (retVal == LDAP_BUSY));
     if (retVal != LDAP_BUSY)
     {
         VMDIR_LOG_ERROR(
