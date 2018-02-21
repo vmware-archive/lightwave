@@ -143,27 +143,20 @@ VmDirSchemaCtxCloneIfDifferent(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (*ppOutputCtx)
+    if (!(*ppOutputCtx) ||
+        ((*ppOutputCtx)->pVdirSchema != pInputCtx->pVdirSchema)
+       )
     {
-        if ((*ppOutputCtx)->pVdirSchema != pInputCtx->pVdirSchema)
+        pCtx = VmDirSchemaCtxClone(pInputCtx);
+
+        if (!pCtx)
         {
-            pCtxToRelease = *ppOutputCtx;
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SCHEMA);
         }
-        else
-        {
-            goto cleanup;
-        }
+
+        pCtxToRelease = *ppOutputCtx;
+        *ppOutputCtx = pCtx;
     }
-
-   pCtx = VmDirSchemaCtxClone(pInputCtx);
-
-   if (!pCtx)
-   {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SCHEMA);
-   }
-
-    *ppOutputCtx = pCtx;
-    pCtx = NULL;
 
 cleanup:
 
@@ -175,11 +168,6 @@ cleanup:
 
 error:
 
-    if (ppOutputCtx)
-    {
-        *ppOutputCtx = pCtxToRelease;
-        pCtxToRelease = NULL;
-    }
     if (pCtx)
     {
         VmDirSchemaCtxRelease(pCtx);

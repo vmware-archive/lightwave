@@ -1287,7 +1287,7 @@ VmDirSrvSetupComputerAccount(
     PVDIR_CONNECTION pConnection,
     PCSTR pszDomainName,
     PCSTR pszComputerOU,
-    PCSTR pszComputerHostName,      // Self host name
+    PCSTR pszMachineAccountName,
     PVMDIR_MACHINE_INFO_A* ppMachineInfo
     );
 

@@ -51,7 +51,7 @@ _VmDirSrvLDAPSearch(
     PCSTR pszFilter,
     PCSTR ppszAttrs[],
     DWORD dwAttrCount,
-    PVDIR_ENTRY_ARRAY pEntryArray
+    PVDIR_ENTRY_ARRAY* ppEntryArray
     );
 
 static
@@ -264,14 +264,9 @@ VmDirSrvSetupComputerAccount(
     PVDIR_CONNECTION pConnection,
     PCSTR pszDomainName,
     PCSTR pszComputerOU,
-    PCSTR pszComputerHostName,      // Self host name
+    PCSTR pszMachineAccountName,
     PVMDIR_MACHINE_INFO_A* ppMachineInfo
     )
-/*
-    PBYTE* ppByteOutPassword,
-    PDWORD pdwOutPasswordSize
-    )
-    */
 {
     DWORD       dwError = 0;
     PSTR        pszComputerDN = NULL;
@@ -290,15 +285,14 @@ VmDirSrvSetupComputerAccount(
     PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
 
     char* modv_oc[] = {OC_COMPUTER, NULL};
-    char* modv_cn[] = {(PSTR)pszComputerHostName, NULL};
-    char* modv_sam[] = {(PSTR)pszComputerHostName, NULL};
+    char* modv_cn[] = {(PSTR)pszMachineAccountName, NULL};
+    char* modv_sam[] = {(PSTR)pszMachineAccountName, NULL};
     char* modv_site[] = {(PSTR)NULL, NULL};
     char* modv_machine[] = {(PSTR)NULL, NULL};
     char* modv_upn[] = {(PSTR)NULL, NULL};
     char* modv_passwd[] = {(PSTR)NULL, NULL};
 
     BerValue    bvPasswd = {0};
-   // BerValue*   pbvPasswd[2] = { NULL, NULL};
 
     LDAPMod modObjectClass = {0};
     LDAPMod modCn = {0};
@@ -322,7 +316,7 @@ VmDirSrvSetupComputerAccount(
 
     if (!pConnection ||
         IsNullOrEmptyString(pszDomainName) ||
-        IsNullOrEmptyString(pszComputerHostName))
+        IsNullOrEmptyString(pszMachineAccountName))
     {
         dwError =  VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -339,8 +333,6 @@ VmDirSrvSetupComputerAccount(
     modPwd.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
     modPwd.mod_type = ATTR_USER_PASSWORD;
     modPwd.mod_values = modv_passwd;
-    //modPwd.mod_bvalues = pbvPasswd;
-    //pbvPasswd[0] = &bvPasswd;
 
     modSamAccountName.mod_op = LDAP_MOD_ADD;
     modSamAccountName.mod_type = ATTR_SAM_ACCOUNT_NAME;
@@ -358,7 +350,7 @@ VmDirSrvSetupComputerAccount(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocASCIIUpperToLower(
-                    pszComputerHostName,
+                    pszMachineAccountName,
                     &pszLowerCaseComputerHostName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -847,7 +839,7 @@ VmDirSrvGetComputerAccountInfo(
     PSTR pszMachineGUID = NULL;
     PSTR pszSiteName = NULL;
 
-    if (!ppszComputerDN || !ppszMachineGUID)
+    if (!ppszComputerDN || !ppszMachineGUID || !ppszSiteName)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -867,15 +859,12 @@ VmDirSrvGetComputerAccountInfo(
                     &pszMachineGUID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (ppszSiteName)
-    {
-        dwError = VmDirAllocateStringA(
+    dwError = VmDirAllocateStringA(
                             gVmdirServerGlobals.pszSiteName,
                             &pszSiteName
                             );
-        BAIL_ON_VMDIR_ERROR(dwError);
-        *ppszSiteName = pszSiteName;
-    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppszComputerDN = pszComputerDN;
     *ppszMachineGUID = pszMachineGUID;
     *ppszSiteName = pszSiteName;
@@ -1092,7 +1081,7 @@ error:
     }
     if (pRpcKrbInfo)
     {
-        VmDirRpcFreeMemory(pRpcKrbInfo);
+        VmDirSrvRpcFreeKrbInfo(pRpcKrbInfo);
     }
     goto cleanup;
 }
@@ -1250,7 +1239,7 @@ _VmDirSrvLDAPSearch(
     PCSTR pszFilter,
     PCSTR ppszAttributes[],
     DWORD dwAttrCount,
-    PVDIR_ENTRY_ARRAY pEntryArray
+    PVDIR_ENTRY_ARRAY* ppEntryArray
     )
 {
     DWORD dwError = 0;
@@ -1258,8 +1247,9 @@ _VmDirSrvLDAPSearch(
     PVDIR_FILTER pFilter = NULL;
     PVDIR_BERVALUE pbvAttrs = NULL;
     DWORD dwIndex = 0;
+    PVDIR_ENTRY_ARRAY pEntryArray = NULL;
 
-    if (!pConnection || !pEntryArray)
+    if (!pConnection || !ppEntryArray)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1322,10 +1312,18 @@ _VmDirSrvLDAPSearch(
     dwError = VmDirMLSearch(pSearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMemory(
+                              sizeof(VDIR_ENTRY_ARRAY),
+                              (PVOID*)&pEntryArray
+                              );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     pEntryArray->iSize = pSearchOp->internalSearchEntryArray.iSize;
     pEntryArray->pEntry = pSearchOp->internalSearchEntryArray.pEntry;
     pSearchOp->internalSearchEntryArray.iSize = 0;
     pSearchOp->internalSearchEntryArray.pEntry = NULL;
+
+    *ppEntryArray = pEntryArray;
 
 cleanup:
 
@@ -1341,9 +1339,13 @@ cleanup:
     return dwError;
 error:
 
+    if (ppEntryArray)
+    {
+       *ppEntryArray = NULL;
+    }
     if (pEntryArray)
     {
-        VmDirFreeEntryArrayContent(pEntryArray);
+        VmDirFreeEntryArray(pEntryArray);
     }
     goto cleanup;
 }
@@ -1551,7 +1553,7 @@ _VmDirSrvConvertUPNToDN(
     PSTR            pszFilter = NULL;
     PSTR            pszOutDN = NULL;
     int             iCount = 0;
-    VDIR_ENTRY_ARRAY entryArray = {0};
+    PVDIR_ENTRY_ARRAY pEntryArray = NULL;
 
     if ( !pConnection || !pszUPN || !ppszOutDN )
     {
@@ -1571,11 +1573,11 @@ _VmDirSrvConvertUPNToDN(
                                 pszFilter,
                                 NULL,
                                 0,
-                                &entryArray
+                                &pEntryArray
                                 );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    iCount = entryArray.iSize;
+    iCount = pEntryArray->iSize;
 
     //GetDN
     // should have either 0 or 1 result
@@ -1589,7 +1591,7 @@ _VmDirSrvConvertUPNToDN(
     }
 
     dwError = VmDirAllocateStringA(
-                              entryArray.pEntry[0].dn.lberbv.bv_val,
+                              pEntryArray->pEntry[0].dn.lberbv.bv_val,
                               &pszOutDN
                               );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1598,7 +1600,10 @@ _VmDirSrvConvertUPNToDN(
 cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pszFilter);
-    VmDirFreeEntryArrayContent(&entryArray);
+    if (pEntryArray)
+    {
+        VmDirFreeEntryArray(pEntryArray);
+    }
     return dwError;
 error:
 
@@ -1675,7 +1680,8 @@ _VmDirSrvGetComputerGuidInternal(
     PSTR   pszAccountDN = NULL;
     PSTR   pszAttrMachineGUID = ATTR_VMW_MACHINE_GUID;
     PCSTR  ppszAttrs[] = { (PCSTR)pszAttrMachineGUID, NULL };
-    VDIR_ENTRY_ARRAY entryArray = {0};
+//    VDIR_ENTRY_ARRAY entryArray = {0};
+    PVDIR_ENTRY_ARRAY pEntryArray = NULL;
     VDIR_ENTRY pEntry = {0};
     PSTR  pszGUID = NULL;
     PVMDIR_STRING_LIST pAttributeList = NULL;
@@ -1696,11 +1702,11 @@ _VmDirSrvGetComputerGuidInternal(
                     pszFilter,
                     ppszAttrs,
                     1,
-                    &entryArray
+                    &pEntryArray
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    iCount = entryArray.iSize;
+    iCount = pEntryArray->iSize;
     //searching by name should yield just one
     if (iCount != 1)
     {
@@ -1708,7 +1714,7 @@ _VmDirSrvGetComputerGuidInternal(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pEntry = entryArray.pEntry[0];
+    pEntry = pEntryArray->pEntry[0];
 
     dwError = _VmDirSrvLDAPQueryAttrValues(
                                       &pEntry,
@@ -1734,7 +1740,10 @@ _VmDirSrvGetComputerGuidInternal(
 
 cleanup:
 
-    VmDirFreeEntryArrayContent(&entryArray);
+    if (pEntryArray)
+    {
+        VmDirFreeEntryArray(pEntryArray);
+    }
     if (pAttributeList)
     {
         VmDirStringListFree(pAttributeList);
