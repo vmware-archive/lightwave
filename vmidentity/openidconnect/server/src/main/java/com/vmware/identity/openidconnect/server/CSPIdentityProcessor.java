@@ -499,7 +499,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       // store the external jwt token content in the current session
       this.sessionManager.setExternalJWTContent(session, content);
       CSPToken idToken = new CSPToken(TokenClass.ID_TOKEN, idTokenJWT);
-      CSPToken accessToken = new CSPToken(TokenClass.ACCESS_TOKEN, idTokenJWT);
+      CSPToken accessToken = new CSPToken(TokenClass.ACCESS_TOKEN, accessTokenJWT);
 
       validateIssuer(idToken, key.getIssuer());
       validateExpiration(idToken);
