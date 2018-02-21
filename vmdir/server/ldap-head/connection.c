@@ -358,7 +358,6 @@ NewConnection(
     }
 
     pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
-    pConn->bIsLdaps = pConnCtx->bIsLdaps;
     pConn->sd = pConnCtx->sockFd;    // pConn takes over sfd
     pConnCtx->sockFd = -1;           // valid fd > 0
 
@@ -1153,7 +1152,6 @@ vmdirConnAccept(
         pConnCtx->sockFd  = newsockfd;
         newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
-        pConnCtx->bIsLdaps = bIsLdaps;
 
         retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)
