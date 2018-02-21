@@ -394,19 +394,23 @@ VmDirRESTLdapGetHttpError(
 
     case LDAP_UNAVAILABLE:
     case LDAP_SERVER_DOWN:
+    case LDAP_UNWILLING_TO_PERFORM:
         httpStatus = HTTP_SERVICE_UNAVAILABLE;
         break;
 
-    case LDAP_UNWILLING_TO_PERFORM:
+    case LDAP_ALREADY_EXISTS:
+        httpStatus = HTTP_CONFLICT;
+        break;
+
     case LDAP_INVALID_DN_SYNTAX:
     case LDAP_NO_SUCH_ATTRIBUTE:
     case LDAP_INVALID_SYNTAX:
     case LDAP_UNDEFINED_TYPE:
     case LDAP_TYPE_OR_VALUE_EXISTS:
     case LDAP_OBJECT_CLASS_VIOLATION:
-    case LDAP_ALREADY_EXISTS:
     case LDAP_CONSTRAINT_VIOLATION:
     case LDAP_NOT_ALLOWED_ON_NONLEAF:
+    case LDAP_NAMING_VIOLATION:
     case LDAP_PROTOCOL_ERROR:
         httpStatus = HTTP_BAD_REQUEST;
         break;
