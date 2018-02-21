@@ -420,7 +420,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.group.add.groups.failed", groupName, tenant), e);
         } catch (Exception e) {
-            log.error("Failed to add members {} of type {} to group '{}' in tenant '{}' due to a server side error", members.toString(), groupName, tenant, e);
+            log.error("Failed to add members {} of type {} to group '{}' in tenant '{}' due to a server side error", members.toString(), memberType, groupName, tenant, e);
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {

@@ -157,12 +157,13 @@ public class TenantResource extends BaseResource {
 
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantDTO.getName()));
 
-        } catch (DuplicateTenantException | DTOMapperException | InvalidArgumentException e) {
+        } catch (BadRequestException | DuplicateTenantException | DTOMapperException | InvalidArgumentException e) {
             log.warn("Failed to create tenant '{}' due to a client side error", tenantDTO.getName(), e);
             responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.create.failed", tenantDTO.getName()), e);
         } catch (Exception e) {
             responseStatus = HTTP_SERVER_ERROR;
+            log.error("Failed to create tenant '{}' due to a server side error", tenantDTO.getName(), e);
             try {
                 getIDMClient().deleteTenant(tenantDTO.getName());
             } catch (Exception ex) {
