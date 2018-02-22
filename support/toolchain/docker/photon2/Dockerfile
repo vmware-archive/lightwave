@@ -17,6 +17,9 @@ RUN tdnf update -qy  tdnf  && \
     tdnf install -qy autoconf-2.69 && \
     tdnf install -qy automake-1.15 && \
     tdnf install -qy libtool-2.4.6 && \
+    tdnf install -qy diffutils && \
+    tdnf install -qy findutils && \
+    tdnf install -qy file && \
     tdnf install -qy gcc-6.3.0 && \
     tdnf install -qy glibc-devel-2.26 && \
     tdnf install -qy linux-api-headers-4.9.74 && \
