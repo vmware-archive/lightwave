@@ -90,3 +90,33 @@ output.logstash:
 EOF
 
 systemctl start filebeat
+
+# install telegraph if the WAVEFRONT_PROXY tag is set
+get_tag_value "WAVEFRONT_PROXY" WAVEFRONT_PROXY
+
+if [[ -n "$WAVEFRONT_PROXY" ]]; then
+    echo "Step 6: Install and confiure telegraf for wavefront"
+    cat << EOF >/etc/yum.repos.d/wavefront_telegraf.repo
+[wavefront_telegraf]
+name=wavefront_telegraf
+baseurl=https://packagecloud.io/wavefront/telegraf/el/7/\$basearch
+repo_gpgcheck=0
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/wavefront/telegraf/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+EOF
+  tdnf makecache
+  # (PR 2021327) install 1.4.0 until we resolve issue with 1.5.0 installation
+  tdnf install -y telegraf-1.4.0~34b7a4c
+
+  sed '/User=telegraf/s/^/#/g' /usr/lib/telegraf/scripts/telegraf.service >/usr/lib/systemd/system/telegraf.service
+  sed "s/@@WAVEFRONT_PROXY@@/${WAVEFRONT_PROXY}/" /opt/vmware/share/config/telegraf.conf >/etc/telegraf/telegraf.conf
+
+  find /opt/vmware -name "*-telegraf.conf" | xargs cp -t /etc/telegraf/telegraf.d
+
+  systemctl daemon-reload
+  systemctl restart telegraf
+fi
