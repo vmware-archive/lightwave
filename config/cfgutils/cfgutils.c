@@ -154,6 +154,7 @@ VmwDeployIsRetriableError(
     case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
     case VMDIR_ERROR_NETWORK_TIMEOUT:
     case ERROR_HOST_DOWN:
+    case ERROR_ACCESS_DENIED:
         bIsRetriable = TRUE;
         break;
     }
@@ -513,6 +514,7 @@ VmwDeploySetupClientWithDC(
     PSTR pszSSLCert = NULL;
     UINT32 uJoinFlags = 0;
     BOOLEAN bJoined = FALSE;
+    BOOLEAN bAcquiredCertificate = FALSE;
     DWORD dwRetryCount = 0;
 
     VMW_DEPLOY_LOG_INFO(
@@ -629,26 +631,48 @@ VmwDeploySetupClientWithDC(
     VMW_DEPLOY_LOG_INFO(
             "Refreshing root certificates from VMware Certificate Authority");
 
-    VmAfdLocalTriggerRootCertsRefresh();
+    VmAfdTriggerRootCertsRefresh(NULL, NULL, NULL);
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
 
-    // As per https://tools.ietf.org/html/rfc6125
-    // CN portion of the certificate will ignored
-    // for certificate validation if SAN is present 
-    // CN has a limitation of 64 chars and 
-    // FQDN can be upto 256 chars. Passing a
-    // hard coded value machine ssl certificate 
-    dwError = VmwDeployCreateMachineSSLCert(
-                    pParams->pszServer,
-                    pParams->pszDomainName,
-                    pParams->pszUsername,
-                    pParams->pszPassword,
-                    "machine_ssl_cert",
-                    pParams->pszSubjectAltName ?
-                        pParams->pszSubjectAltName : pParams->pszHostname,
-                    &pszPrivateKey,
-                    &pszSSLCert);
+    dwRetryCount = 0;
+
+    do
+    {
+        // As per https://tools.ietf.org/html/rfc6125
+        // CN portion of the certificate will ignored
+        // for certificate validation if SAN is present 
+        // CN has a limitation of 64 chars and 
+        // FQDN can be upto 256 chars. Passing a
+        // hard coded value machine ssl certificate 
+        dwError = VmwDeployCreateMachineSSLCert(
+                        pParams->pszServer,
+                        pParams->pszDomainName,
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        "machine_ssl_cert",
+                        pParams->pszSubjectAltName ?
+                            pParams->pszSubjectAltName : pParams->pszHostname,
+                        &pszPrivateKey,
+                        &pszSSLCert);
+            if (dwError)
+            {
+                if (!VmwDeployIsRetriableError(dwError))
+                {
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+                VMW_DEPLOY_LOG_INFO(
+                    "Failed to get Certfificate from Lightwave (error %d). Retrying...",
+                    dwError);
+                VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
+                ++dwRetryCount;
+                continue;
+            }
+            else
+            {
+                bAcquiredCertificate = TRUE;
+            }
+    } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
@@ -705,6 +729,7 @@ VmwDeploySetupClient(
     PSTR pszDC = NULL;
     UINT32 uJoinFlags = 0;
     BOOLEAN bJoined = FALSE;
+    BOOLEAN bAcquiredCertificate = FALSE;
     DWORD dwRetryCount = 0;
 
     VMW_DEPLOY_LOG_INFO(
@@ -813,14 +838,17 @@ VmwDeploySetupClient(
     VMW_DEPLOY_LOG_INFO(
             "Refreshing root certificates from VMware Certificate Authority");
 
-    VmAfdLocalTriggerRootCertsRefresh();
+    VmAfdTriggerRootCertsRefresh(NULL, NULL, NULL);
 
     dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
 
-    dwError = VmwDeployCreateMachineSSLCert(
+    dwRetryCount = 0;
+    do
+    {
+        dwError = VmwDeployCreateMachineSSLCert(
                     pszDC,
                     pParams->pszDomainName,
                     pParams->pszUsername,
@@ -830,7 +858,25 @@ VmwDeploySetupClient(
                         pParams->pszSubjectAltName : pParams->pszHostname,
                     &pszPrivateKey,
                     &pszSSLCert);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+        if (dwError)
+        {
+            if (!VmwDeployIsRetriableError(dwError))
+            {
+                BAIL_ON_DEPLOY_ERROR(dwError);
+            }
+            VMW_DEPLOY_LOG_INFO(
+                "Failed to get Certificate from Lightwave (error %d). Retrying...",
+                dwError);
+            VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
+            ++dwRetryCount;
+            continue;
+        }
+        else
+        {
+            bAcquiredCertificate = TRUE;
+        }
+    } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
+
 
     VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
 

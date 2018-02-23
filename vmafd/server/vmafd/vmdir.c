@@ -877,6 +877,7 @@ VmAfSrvJoinVmDir2(
     PWSTR pwszSite = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
     DWORD dwDirJoinFlags = 0;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
@@ -995,13 +996,15 @@ VmAfSrvJoinVmDir2(
     dwDirJoinFlags = (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED)) ?
                             VMDIR_CLIENT_JOIN_FLAGS_PREJOINED : 0;
 
-    dwError = VmDirClientJoin(
+    dwError = VmDirClientJoinAtomic(
                       pszDCHostname,
                       pszUserName,
                       pszPassword,
+                      pszDomainName,
                       pszMachineName,
                       pszOrgUnit,
-                      dwDirJoinFlags);
+                      dwDirJoinFlags,
+                      &pMachineInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED))
@@ -1030,7 +1033,10 @@ VmAfSrvJoinVmDir2(
 
     if (!pwszSiteName)
     {
-        dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSite);
+        dwError = VmAfdAllocateStringWFromA(
+                              pMachineInfo->pszSiteName,
+                              &pwszSite
+                              );
         BAIL_ON_VMAFD_ERROR(dwError);
         pwszSiteName = pwszSite;
     }

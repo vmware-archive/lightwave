@@ -1193,7 +1193,8 @@ VmAfdCliCreateComputerAccount(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdCreateComputerAccountA(
+    dwError = VmAfdCreateComputerAccountDCA(
+                    pContext->pszServerName,
                     pContext->pszUserName,
                     pContext->pszPassword,
                     pContext->pszMachineName,
