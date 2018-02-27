@@ -624,13 +624,15 @@ DWORD
 VmAfSrvJoinValidateCredentials(
     PWSTR pwszDomainName,       /* IN            */
     PWSTR pwszUserName,         /* IN            */
-    PWSTR pwszPassword          /* IN            */
+    PWSTR pwszPassword,         /* IN            */
+    PWSTR pwszSiteName          /* IN   OPTIONAL */
     )
 {
     DWORD dwError = 0;
     PSTR pszDomainName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
+    PSTR pszSiteName = NULL;
     PSTR pszDCHostname = NULL;
     PSTR pszDCAddress = NULL;
 
@@ -647,11 +649,17 @@ VmAfSrvJoinValidateCredentials(
     dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    if (pwszSiteName)
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszSiteName, &pszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfdGetDomainController(
                     pszDomainName,
                     pszUserName,
                     pszPassword,
-                    NULL,
+                    pszSiteName,
                     &pszDCHostname,
                     &pszDCAddress);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -661,6 +669,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDomainName);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszSiteName);
     VMAFD_SAFE_FREE_STRINGA(pszDCHostname);
     VMAFD_SAFE_FREE_STRINGA(pszDCAddress);
 

@@ -4071,6 +4071,7 @@ VmAfdIpcJoinValidateCredentials(
     PWSTR pwszDomainName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
+    PWSTR pwszSiteName = NULL;
 
     VMW_TYPE_SPEC input_spec[] = JOIN_VALIDATE_CREDENTIALS_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -4102,6 +4103,7 @@ VmAfdIpcJoinValidateCredentials(
     pwszDomainName  = input_spec[0].data.pWString;
     pwszUserName    = input_spec[1].data.pWString;
     pwszPassword    = input_spec[2].data.pWString;
+    pwszSiteName    = input_spec[3].data.pWString;
 
     if (IsNullOrEmptyString(pwszDomainName) ||
         IsNullOrEmptyString(pwszUserName) ||
@@ -4121,7 +4123,8 @@ VmAfdIpcJoinValidateCredentials(
     uResult = VmAfSrvJoinValidateCredentials(
                       pwszDomainName,
                       pwszUserName,
-                      pwszPassword);
+                      pwszPassword,
+                      pwszSiteName);
 
     // Allocate a buffer, marshall the response
     //

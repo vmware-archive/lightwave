@@ -359,14 +359,16 @@ DWORD
 VmAfdJoinValidateDomainCredentialsW(
     PCWSTR pwszDomainName,  /* IN              */
     PCWSTR pwszUserName,    /* IN              */
-    PCWSTR pwszPassword     /* IN              */
+    PCWSTR pwszPassword,    /* IN              */
+    PCWSTR pwszSiteName     /* IN     OPTIONAL */
     );
 
 DWORD
 VmAfdJoinValidateDomainCredentialsA(
     PCSTR pszDomainName,     /* IN              */
     PCSTR pszUserName,       /* IN              */
-    PCSTR pszPassword        /* IN              */
+    PCSTR pszPassword,       /* IN              */
+    PCSTR pszSiteName        /* IN     OPTIONAL */
     );
 
 DWORD

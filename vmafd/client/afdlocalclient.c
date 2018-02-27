@@ -1021,10 +1021,11 @@ DWORD
 VmAfdLocalJoinValidateDomainCredentials(
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     )
 {
-	DWORD dwError = 0;
+    DWORD dwError = 0;
     UINT32 apiType = VMAFD_IPC_JOIN_VALIDATE_CREDENTIALS;
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
@@ -1037,6 +1038,7 @@ VmAfdLocalJoinValidateDomainCredentials(
     input_spec[0].data.pWString = (PWSTR) pwszDomainName;
     input_spec[1].data.pWString = (PWSTR) pwszUserName;
     input_spec[2].data.pWString = (PWSTR) pwszPassword;
+    input_spec[3].data.pWString = (PWSTR) pwszSiteName;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

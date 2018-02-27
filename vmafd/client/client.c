@@ -2576,13 +2576,15 @@ DWORD
 VmAfdJoinValidateDomainCredentialsA(
     PCSTR pszDomainName,     /* IN              */
     PCSTR pszUserName,       /* IN              */
-    PCSTR pszPassword        /* IN              */
+    PCSTR pszPassword,       /* IN              */
+    PCSTR pszSiteName        /* IN     OPTIONAL */
     )
 {
     DWORD dwError = 0;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
     PWSTR pwszDomainName = NULL;
+    PWSTR pwszSiteName = NULL;
 
     if (IsNullOrEmptyString(pszDomainName) ||
         IsNullOrEmptyString(pszUserName) ||
@@ -2601,10 +2603,17 @@ VmAfdJoinValidateDomainCredentialsA(
     dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    if (pszSiteName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszSiteName, &pwszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfdJoinValidateDomainCredentialsW(
                    pwszDomainName,
                    pwszUserName,
-                   pwszPassword);
+                   pwszPassword,
+                   pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -2612,6 +2621,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszUserName);
     VMAFD_SAFE_FREE_MEMORY(pwszPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
 
     return dwError;
 
@@ -2624,7 +2634,8 @@ DWORD
 VmAfdJoinValidateDomainCredentialsW(
     PCWSTR pwszDomainName,     /* IN              */
     PCWSTR pwszUserName,       /* IN              */
-    PCWSTR pwszPassword        /* IN              */
+    PCWSTR pwszPassword,       /* IN              */
+    PCWSTR pwszSiteName        /* IN     OPTIONAL */
     )
 {
     DWORD dwError = 0;
@@ -2640,7 +2651,8 @@ VmAfdJoinValidateDomainCredentialsW(
     dwError = VmAfdLocalJoinValidateDomainCredentials(
                       pwszDomainName,
                       pwszUserName,
-                      pwszPassword);
+                      pwszPassword,
+                      pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:

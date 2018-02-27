@@ -774,15 +774,27 @@ VmwDeploySetupClient(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    VMW_DEPLOY_LOG_INFO(
-            "Validating Domain credentials for user [%s@%s]",
-            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszUsername),
-            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
+    if (pParams->pszSite)
+    {
+        VMW_DEPLOY_LOG_INFO(
+                "Validating Domain credentials for user [%s@%s] in site [%s]",
+                VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszUsername),
+                VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName),
+                pParams->pszSite);
+    }
+    else
+    {
+        VMW_DEPLOY_LOG_INFO(
+                "Validating Domain credentials for user [%s@%s]",
+                VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszUsername),
+                VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
+    }
 
     dwError = VmAfdJoinValidateDomainCredentialsA(
                     pParams->pszDomainName,
                     pParams->pszUsername,
-                    pParams->pszPassword);
+                    pParams->pszPassword,
+                    pParams->pszSite);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO("Setting configuration values");

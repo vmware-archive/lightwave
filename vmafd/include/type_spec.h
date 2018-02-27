@@ -850,6 +850,11 @@ typedef struct _VMW_TYPE_SPEC_
     "Password",\
     VMW_IPC_TYPE_WSTRING,\
     {NULL}\
+  },\
+  {\
+    "Site Name",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
   }\
 }
 
