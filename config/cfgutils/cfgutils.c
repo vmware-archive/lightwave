@@ -594,6 +594,10 @@ VmwDeploySetupClientWithDC(
     {
         uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_DISABLE_DNS;
     }
+    if (pParams->bAtomicJoin)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_ATOMIC_JOIN;
+    }
 
     do
     {
@@ -812,6 +816,10 @@ VmwDeploySetupClient(
     if (pParams->bDisableDNS)
     {
         uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_DISABLE_DNS;
+    }
+    if (pParams->bAtomicJoin)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_ATOMIC_JOIN;
     }
 
     do

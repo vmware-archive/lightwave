@@ -1002,10 +1002,14 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+
     dwDirJoinFlags = (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED)) ?
                             VMDIR_CLIENT_JOIN_FLAGS_PREJOINED : 0;
 
-    dwError = VmDirClientJoinAtomic(
+
+    if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ATOMIC_JOIN))
+    {
+        dwError = VmDirClientJoinAtomic(
                       pszDCHostname,
                       pszUserName,
                       pszPassword,
@@ -1014,22 +1018,33 @@ VmAfSrvJoinVmDir2(
                       pszOrgUnit,
                       dwDirJoinFlags,
                       &pMachineInfo);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED))
+       BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
     {
-        dwError = _CreateKrbConfig(
-                        pszDefaultRealm,
-                        gVmafdGlobals.pszKrb5Config,
-                        gVmafdGlobals.pszKrb5Keytab,
-                        pszDCHostname,
-                        NULL);
+        dwError = VmDirClientJoin(
+                      pszDCHostname,
+                      pszUserName,
+                      pszPassword,
+                      pszMachineName,
+                      pszOrgUnit,
+                      dwDirJoinFlags
+                      );
         BAIL_ON_VMAFD_ERROR(dwError);
 
-#ifndef _WIN32
-        chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
-#endif
     }
+
+    dwError = _CreateKrbConfig(
+                    pszDefaultRealm,
+                    gVmafdGlobals.pszKrb5Config,
+                    gVmafdGlobals.pszKrb5Keytab,
+                    pszDCHostname,
+                    NULL);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+#ifndef _WIN32
+    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+#endif
 
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -1042,11 +1057,19 @@ VmAfSrvJoinVmDir2(
 
     if (!pwszSiteName)
     {
-        dwError = VmAfdAllocateStringWFromA(
-                              pMachineInfo->pszSiteName,
-                              &pwszSite
-                              );
-        BAIL_ON_VMAFD_ERROR(dwError);
+        if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ATOMIC_JOIN))
+        {
+              dwError = VmAfdAllocateStringWFromA(
+                                pMachineInfo->pszSiteName,
+                                &pwszSite
+                                );
+              BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+              dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSite);
+              BAIL_ON_VMAFD_ERROR(dwError);
+        }
         pwszSiteName = pwszSite;
     }
 

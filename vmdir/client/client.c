@@ -6514,9 +6514,9 @@ VmDirClientJoinAtomic(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirCopyFromRpcKrbInfo(
-                              pRpcKrbInfo,
-                              &pKrbInfo
-                              );
+                          pRpcKrbInfo,
+                          &pKrbInfo
+                          );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirWriteToKeyTabFile(pKrbInfo);

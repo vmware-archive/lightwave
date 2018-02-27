@@ -1997,17 +1997,18 @@ Srv_RpcVmDirGetComputerAccountInfo(
     )
 {
     DWORD dwError = 0;
-    PVMDIR_MACHINE_INFO_A  pMachineInfo = NULL;
-    PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
     PSTR paszDomainName = NULL;
     PSTR paszMachineName = NULL;
+    PSTR pszMachineUPN = NULL;
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP;
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    PVMDIR_SRV_ACCESS_TOKEN pAdminCheckAccessToken = NULL;
     PVDIR_CONNECTION pConnection = NULL;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
+    PVMDIR_MACHINE_INFO_W pRpcMachineInfo = NULL;
     PVMDIR_KRB_INFO pKrbInfo = NULL;
     PVMDIR_KRB_INFO pRpcKrbInfo = NULL;
 
@@ -2025,16 +2026,35 @@ Srv_RpcVmDirGetComputerAccountInfo(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
+                        pszMachineName,
+                        &paszMachineName
+                        );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
                         pszDomainName,
                         &paszDomainName
                         );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAFromW(
-                        pszMachineName,
-                        &paszMachineName
-                        );
+    dwError = VmDirAllocateStringPrintf(
+                            &pszMachineUPN,
+                            "%s@%s",
+                            paszMachineName,
+                            paszDomainName
+                            );
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (VmDirStringCompareA(pAccessToken->pszUPN, pszMachineUPN, FALSE))
+    {
+        dwError = _VmDirRPCCheckAccess(
+                                hBinding,
+                                dwRpcFlags | VMDIR_RPC_FLAG_REQUIRE_AUTHZ,
+                                &pAdminCheckAccessToken);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+
 
     dwError = VmDirAllocateMemory(
                             sizeof(VMDIR_MACHINE_INFO_A),
@@ -2101,8 +2121,17 @@ cleanup:
     {
         VmDirDeleteConnection(&pConnection);
     }
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    if (pAdminCheckAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAdminCheckAccessToken);
+    }
     VMDIR_SAFE_FREE_STRINGA(paszDomainName);
     VMDIR_SAFE_FREE_STRINGA(paszMachineName);
+    VMDIR_SAFE_FREE_STRINGA(pszMachineUPN);
     return dwError;
 
 error:
@@ -2315,6 +2344,7 @@ Srv_RpcVmDirCreateComputerAccount(
     )
 {
     DWORD dwError = 0;
+    DWORD dwIndex = 0;
     DWORD dwServiceTableLen = 0;
     PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
     PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
@@ -2393,6 +2423,24 @@ Srv_RpcVmDirCreateComputerAccount(
                                   &pMachineInfo
                                   );
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwIndex = 0; dwIndex < dwServiceTableLen; ++dwIndex)
+    {
+            dwError = VmDirSrvSetupServiceAccount(
+                            pConnection,
+                            paszDomainName,
+                            pszClientServiceTable[dwIndex],
+                            paszMachineName
+                            );
+            if (dwError == LDAP_ALREADY_EXISTS)
+            {
+                dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
+                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
+                                                        pszClientServiceTable[dwIndex] );
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
 
     dwError = VmDirSrvAllocateRpcMachineInfoWFromA(
                             pMachineInfo,

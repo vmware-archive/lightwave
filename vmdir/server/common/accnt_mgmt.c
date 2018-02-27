@@ -1451,23 +1451,23 @@ _VmDirSrvLDAPQueryAttrValues(
                     break;
                 }
             }
-            if (bReturn)
+        }
+        if (bReturn)
+        {
+            for (dwJIndex = 0; dwJIndex < pAttr->numVals; ++dwJIndex)
             {
-                for (dwJIndex = 0; dwJIndex < pAttr->numVals; ++dwJIndex)
                 {
-                    {
-                        dwError = VmDirAllocateStringA(
-                                              pAttr->vals[dwJIndex].lberbv_val,
-                                              &pszValue
-                                              );
-                        BAIL_ON_VMDIR_ERROR(dwError);
-
-                    }
-
-                    dwError = VmDirStringListAdd(pAttributeList, pszValue);
+                    dwError = VmDirAllocateStringA(
+                                          pAttr->vals[dwJIndex].lberbv_val,
+                                          &pszValue
+                                          );
                     BAIL_ON_VMDIR_ERROR(dwError);
-                    pszValue = NULL;
+
                 }
+
+                dwError = VmDirStringListAdd(pAttributeList, pszValue);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                pszValue = NULL;
             }
         }
     }
