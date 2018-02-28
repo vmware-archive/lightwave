@@ -112,6 +112,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
             .getLogger(VMwareDirectoryProvider.class);
 
+    private static final String ATTR_TENANTIZED_USER_PRINCIPAL_NAME = "vmwSTSTenantizedUserPrincipalName";
+
     private static final String SVC_PRINC_QUERY_BY_SUBJECT_DN =
         // at the moment vmwSTSSubjectDN is not indexed, so vmdir gurus say
         // query by objectClass first...
@@ -124,27 +126,50 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     /**
      * arg1 - userPrincipalName
+     * arg2 - tenantizedUserPrincipalName
      */
     private static final String SVC_PRINC_QUERY_BY_USER_PRINCIPAL =
-            "(&(userPrincipalName=%1$s)(objectClass=vmwServicePrincipal))";
+            "(&(|" +
+                 "(userPrincipalName=%1$s)" +
+                 "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
+               ")(objectClass=vmwServicePrincipal))";
     /**
      * arg1 - userPrincipalName
-     * arg2 - sAMAccountName
+     * arg2 - tenantizedUserPrincipalName
+     * arg3 - sAMAccountName
      */
     private static final String SVC_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCOUNT =
-            "(&(|(userPrincipalName=%1$s)(sAMAccountName=%2$s))(objectClass=vmwServicePrincipal))";
+            "(&(|" +
+                  "(userPrincipalName=%1$s)" +
+                 "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
+                  "(sAMAccountName=%3$s)" +
+               ")(objectClass=vmwServicePrincipal))";
 
     /**
      * arg1 - userPrincipalName
+     * arg2 - tenantizedUserPrincipalName
+     * arg3 - additional filter
      */
     private static final String USER_PRINC_QUERY_BY_USER_PRINCIPAL =
-            "(&(userPrincipalName=%1$s)(objectClass=user)(!(vmwSTSSubjectDN=*))%2$s)";
+        "(&" +
+            "(|" +
+                "(userPrincipalName=%1$s)" +
+                "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
+            ")" +
+            "(objectClass=user)(!(vmwSTSSubjectDN=*))%3$s)";
+
     /**
      * arg1 - userPrincipalName
      * arg2 - sAMAccountName
+     * arg3 - tenantizedUserPrincipalName
+     * arg4 - additional filter
      */
     private static final String USER_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCT =
-            "(&(|(userPrincipalName=%1$s)(sAMAccountName=%2$s))(objectClass=user)(!(vmwSTSSubjectDN=*))%3$s)";
+            "(&(|" +
+                  "(userPrincipalName=%1$s)" +
+                  "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%3$s)" +
+                  "(sAMAccountName=%2$s)" +
+               ")(objectClass=user)(!(vmwSTSSubjectDN=*))%4$s)";
 
     private static final String USER_PRINC_QUERY_BY_OBJECTSID =
             "(&(objectSid=%s)(objectClass=user)(!(vmwSTSSubjectDN=*)))";
@@ -160,34 +185,58 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
    /**
     * arg1 - userPrincipalName
+    * arg2 - tenantizedUserPrincipalName
     */
     private static final String USER_OR_SVC_PRINC_QUERY_BY_USER_PRINCIPAL =
-            "(&(userPrincipalName=%1$s)(objectClass=user))";
+            "(&(|" +
+                 "(userPrincipalName=%1$s)" +
+                  "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
+              ")(objectClass=user))";
     /**
      * arg1 - userPrincipalName
      * arg2 - sAMAccountName
+     * arg3 - tenantizedUserPrincipalName
      */
      private static final String USER_OR_SVC_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCOUNT =
-             "(&(|(userPrincipalName=%1$s)(sAMAccountName=%2$s))(objectClass=user))";
+             "(&(|" +
+                   "(userPrincipalName=%1$s)" +
+                   "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%3$s)" +
+                   "(sAMAccountName=%2$s)" +
+               ")(objectClass=user))";
 
     private static final String USER_OR_SVC_PRINC_QUERY_BY_ATTRIBUTE =
             "(&(%1$s=%2$s)(objectClass=user))";
+
+    private static final String USER_OR_SVC_PRINC_QUERY_BY_UPN_ATTRIBUTE =
+            "(&(|" +
+                   "(userPrincipalName=%1$s)" +
+                   "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
+              ")(objectClass=user))";
 
     private static final String JIT_USER_QUERY =
             "(&(vmwSTSEntityId=%1$s)(objectClass=vmwExternalIdpUser))";
 
     /**
     * arg1 - userPrincipalName
+    * arg2 - tenantizedUserPrincipalName
     */
     private static final String USER_OR_SVC_OR_GROUP_PRINC_QUERY_BY_USER_PRINCIPAL =
-            "(&(userPrincipalName=%1$s)(objectClass=user))";
+            "(&(|" +
+                "(userPrincipalName=%1$s)" +
+                "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%2$s)" +
+              ")" + "(objectClass=user))";
     /**
     * arg1 - userPrincipalName
     * arg2 - sAMAccountName
+    * arg3 - tenantizedUserPrincipalName
     */
     private static final String USER_OR_SVC_OR_GROUP_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCOUNT =
             "(|" +
-                "(&(|(userPrincipalName=%1$s)(sAMAccountName=%2$s))(objectClass=user))" +
+                "(&(|" +
+                     "(userPrincipalName=%1$s)" +
+                     "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%3$s)" +
+                     "(sAMAccountName=%2$s)" +
+                   ")(objectClass=user))" +
                 "(&(sAMAccountName=%2$s)(objectClass=group))" +
              ")";
 
@@ -195,24 +244,36 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     /**
     * arg1 - userPrincipalName1
     * arg2 - userPrincipalName2
-    * arg3 - samAccountName1
+    * arg3 - tenantizedUserPrincipalName1
+    * arg4 - tenantizedUserPrincipalName2
+    * arg5 - samAccountName1
     */
     private static final String PRINCIPAL_EXISTENCE_CHECK_CUSTOM_UPN_DOMAIN =
             "(|" +
-                "(&(|(userPrincipalName=%1$s)(userPrincipalName=%2$s))(objectClass=user))" +
-                "(&(sAMAccountName=%3$s)(|(objectClass=user)(objectClass=group)))" +
+                "(&(|" +
+                    "(userPrincipalName=%1$s)(userPrincipalName=%2$s)" +
+                    "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%3$s)" +
+                    "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%4$s)" +
+                  ")(objectClass=user))" +
+                "(&(sAMAccountName=%5$s)(|(objectClass=user)(objectClass=group)))" +
              ")";
 
     /**
     * arg1 - userPrincipalName1
     * arg2 - userPrincipalName2
-    * arg3 - samAccountName1
-    * arg4 - samAccountName2
+    * arg3 - tenantizedUserPrincipalName1
+    * arg4 - tenantizedUserPrincipalName2
+    * arg5 - samAccountName1
+    * arg6 - samAccountName2
     */
     private static final String PRINCIPAL_EXISTENCE_CHECK_DEFAULT_UPN_DOMAIN =
             "(|" +
-                "(&(|(userPrincipalName=%1$s)(userPrincipalName=%2$s))(objectClass=user))" +
-                "(&(|(sAMAccountName=%3$s)(sAMAccountName=%4$s))(|(objectClass=user)(objectClass=group)))" +
+                "(&(|"+
+                     "(userPrincipalName=%1$s)(userPrincipalName=%2$s)"+
+                     "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%3$s)" +
+                     "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%4$s)" +
+                   ")(objectClass=user))" +
+                "(&(|(sAMAccountName=%5$s)(sAMAccountName=%6$s))(|(objectClass=user)(objectClass=group)))" +
              ")";
 
 
@@ -225,7 +286,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             "(&(objectClass=user)(!(objectClass=computer))(!(vmwSTSSubjectDN=*)))";
 
     private static final String USER_ALL_BY_ACCOUNT_NAME =
-            "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName=%1$s*)(sn=%1$s*)(givenName=%1$s*)(cn=%1$s*)(mail=%1$s*)(userPrincipalName=%1$s*)))";
+            "(&(objectClass=user)(!(objectClass=computer))"+
+              "(|" +
+                  "(sAMAccountName=%1$s*)(sn=%1$s*)(givenName=%1$s*)(cn=%1$s*)(mail=%1$s*)" +
+                  "(userPrincipalName=%1$s*)" +
+                  "("+ ATTR_TENANTIZED_USER_PRINCIPAL_NAME +"=%1$s*)" +
+                "))";
 
     private static final String USER_ALL_QUERY =
             "(&(objectClass=user)(!(objectClass=computer)))";
@@ -320,11 +386,17 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final String ATTR_OBJECT_ID_PREFIX = "externalObjectId=";
 
     private static String[] GROUP_ALL_ATTRIBUTES = { ATTR_NAME_CN, ATTR_NAME_MEMBER, ATTR_DESCRIPTION, ATTR_NAME_OBJECTSID };
-    private static String[] USER_ALL_ATTRIBUTES = { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_FIRST_NAME, ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS, ATTR_DESCRIPTION, ATTR_NAME_ACCOUNT_FLAGS,  ATTR_NAME_OBJECTSID };
+    private static String[] USER_ALL_ATTRIBUTES = {
+        ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_FIRST_NAME, ATTR_LAST_NAME,
+        ATTR_EMAIL_ADDRESS, ATTR_DESCRIPTION, ATTR_NAME_ACCOUNT_FLAGS,  ATTR_NAME_OBJECTSID,
+        ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
     private static String[] GROUPS_BY_CRITERIA_ATTRIBUTES = { ATTR_NAME_CN, ATTR_DESCRIPTION };
     private static String[] GROUPS_BY_CRITERIA_FOR_NAME_ATTRIBUTES = { ATTR_NAME_CN, ATTR_DESCRIPTION };
-    private static String[] USERS_BY_CRITERIA_ATTRIBUTES = { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION };
-    private static String[] USERS_BY_CRITERIA_FOR_NAME_ATTRIBUTES = { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_FIRST_NAME, ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS };
+    private static String[] USERS_BY_CRITERIA_ATTRIBUTES = {
+        ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
+    private static String[] USERS_BY_CRITERIA_FOR_NAME_ATTRIBUTES = {
+        ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_FIRST_NAME, ATTR_LAST_NAME,
+        ATTR_EMAIL_ADDRESS, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
     private static Matcher containsMatcher = null;
     private static Matcher startsWithMatcher = null;
@@ -501,7 +573,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_FIRST_NAME, ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
                             ATTR_DESCRIPTION, ATTR_NAME_ACCOUNT_FLAGS,
-                            ATTR_NAME_OBJECTSID, ATTR_PWD_LAST_SET };
+                            ATTR_NAME_OBJECTSID, ATTR_PWD_LAST_SET, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             String filter = buildQueryByUserFilter(id);
 
@@ -556,9 +628,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getOptionalStringValue(entries[0]
                                 .getAttributeValues(ATTR_EMAIL_ADDRESS));
 
-                String upn =
-                        getOptionalStringValue(entries[0]
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entries[0]);
 
                 String description =
                         getOptionalStringValue(entries[0]
@@ -622,7 +692,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_FIRST_NAME, ATTR_LAST_NAME,
                             ATTR_EMAIL_ADDRESS, ATTR_DESCRIPTION,
                             ATTR_NAME_ACCOUNT_FLAGS, ATTR_NAME_OBJECTSID,
-                            ATTR_PWD_LAST_SET };
+                            ATTR_PWD_LAST_SET, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             String filter =
                     String.format(USER_PRINC_QUERY_BY_OBJECTSID, LdapFilterString.encode(userObjectSid));
@@ -671,9 +741,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     getOptionalStringValue(entries[0]
                             .getAttributeValues(ATTR_EMAIL_ADDRESS));
 
-            String upn =
-                    getOptionalStringValue(entries[0]
-                            .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+            String upn = GetUpnAttributeValue(entries[0]);
 
             String description =
                     getOptionalStringValue(entries[0]
@@ -745,7 +813,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_FIRST_NAME,
                             ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
-                            ATTR_NAME_ACCOUNT_FLAGS };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -789,9 +857,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                                 getStringValue(entry
                                         .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                        String upn =
-                                getOptionalStringValue(entry
-                                        .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                        String upn = GetUpnAttributeValue(entry);
 
                         String description =
                                 getOptionalStringValue(entry
@@ -1014,7 +1080,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_FIRST_NAME,
                             ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
-                            ATTR_NAME_ACCOUNT_FLAGS };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -1052,9 +1118,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             getStringValue(entry
                                     .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                    String upn =
-                            getOptionalStringValue(entry
-                                    .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                    String upn = GetUpnAttributeValue(entry);
 
                     String description =
                             getOptionalStringValue(entry
@@ -1129,7 +1193,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_FIRST_NAME,
                             ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
-                            ATTR_NAME_ACCOUNT_FLAGS };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -1164,9 +1228,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getStringValue(entry
                                 .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                String upn =
-                        getOptionalStringValue(entry
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entry);
 
                 String description =
                         getOptionalStringValue(entry
@@ -1258,7 +1320,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_NAME_CERT, ATTR_SVC_MULTITENANT };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_NAME_CERT, ATTR_SVC_MULTITENANT,
+                            ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -1287,9 +1350,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getStringValue(entry
                                 .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                String upn =
-                        getOptionalStringValue(entry
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entry);
 
                 String description =
                         getOptionalStringValue(entry
@@ -2165,38 +2226,41 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
                             String attrName = attrNames.get(iAttr);
 
-                            LdapValue[] values =
+                            if (ATTR_USER_PRINCIPAL_NAME.equalsIgnoreCase(attrName)) {
+
+                                String upn = GetUpnAttributeValue(entries[0]);
+
+                                // userPrincipalName and value un-set => set default
+                                if (ServerUtils.isNullOrEmpty(upn)) {
+                                    upn = accountName + "@" + this.getDomain();
+                                }
+                                pair.getValues().add(upn);
+                            }
+                            else
+                            {
+                                LdapValue[] values =
                                     entries[0].getAttributeValues(attrName);
 
-                            if (values != null)
-                            {
-                                for (LdapValue value : values)
+                                if (values != null)
                                 {
-                                    if (!value.isEmpty())
+                                    for (LdapValue value : values)
                                     {
-                                        String val = value.getString();
+                                        if (!value.isEmpty())
+                                        {
+                                            String val = value.getString();
 
-                                        if (attrName.equals(ATTR_NAME_MEMBEROF))
-                                        {
-                                            Group group = findGroupByDN(connection,val);
-                                            pair.getValues().add(group.getNetbios());
-                                            pairGroupSids.getValues().add(group.getObjectId());
-                                        } else
-                                        {
-                                            pair.getValues().add(val);
+                                            if (attrName.equals(ATTR_NAME_MEMBEROF))
+                                            {
+                                                Group group = findGroupByDN(connection,val);
+                                                pair.getValues().add(group.getNetbios());
+                                                pairGroupSids.getValues().add(group.getObjectId());
+                                            } else
+                                            {
+                                                pair.getValues().add(val);
+                                            }
                                         }
                                     }
                                 }
-                            }
-
-                            // userPrincipalName and value un-set => set default
-                            if (
-                                ( attrName.equalsIgnoreCase(ATTR_USER_PRINCIPAL_NAME) ) &&
-                                ( pair.getValues().size() == 0 )
-                               )
-                            {
-                                pair.getValues().add(
-                                        accountName + "@" + this.getDomain());
                             }
 
                             result.add(pair);
@@ -2493,7 +2557,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
+                      ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT,
+                      ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             String filter = buildQueryBySrvFilter(principal);
 
@@ -2521,9 +2586,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             "More than one object was found");
                 }
 
-                String upn =
-                        getOptionalStringValue(entries[0]
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entries[0]);
 
                 String username =
                         getStringValue(entries[0]
@@ -2610,7 +2673,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             // Lotus isn't supporting *substring* matching. It only
             // supports
@@ -2646,9 +2709,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getStringValue(entry
                                 .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                String upn =
-                        getOptionalStringValue(entry
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entry);
 
                 String description =
                         getOptionalStringValue(entry
@@ -2752,7 +2813,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                        String[] solutionAttrNames =
                                { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT,
                                        ATTR_SVC_DESCRIPTION,
-                                       ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
+                                       ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
                        // We only want solution user objects
                        String solutionFilter = SVC_ALL_PRINC_QUERY;
@@ -2789,9 +2850,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                                    getStringValue(solutionEntries[0]
                                            .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                           String upn =
-                                   getOptionalStringValue(solutionEntries[0]
-                                           .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                           String upn = GetUpnAttributeValue(solutionEntries[0]);
 
                            String description =
                                    getOptionalStringValue(solutionEntries[0]
@@ -2891,7 +2950,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             String filter =
                     String.format(MULTITENANT_SVC_PRINC_QUERY_BY_SUBJECT_DN,
@@ -2923,9 +2982,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getStringValue(entries[0]
                                 .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                String upn =
-                        getOptionalStringValue(entries[0]
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entries[0]);
 
                 principal = this.getPrincipalId(upn, username, getDomain());
 
@@ -2990,7 +3047,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_CERT, ATTR_SVC_DESCRIPTION,
-                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT };
+                            ATTR_NAME_ACCOUNT_FLAGS, ATTR_SVC_MULTITENANT, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             String filter =
                     String.format(SVC_PRINC_QUERY_BY_SUBJECT_DN,
@@ -3021,9 +3078,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         getStringValue(entries[0]
                                 .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                String upn =
-                        getOptionalStringValue(entries[0]
-                                .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                String upn = GetUpnAttributeValue(entries[0]);
 
                 principal = this.getPrincipalId(upn, username, getDomain());
 
@@ -3143,10 +3198,20 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             LdapMod attrPasswordSchema = null;
             LdapMod attrUpn = null;
 
-            objectClass =
-                    new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
-                            new LdapValue[] { LdapValue
-                                    .fromString(ATTR_NAME_USER), });
+            if (extIdpEntityId != null && !extIdpEntityId.isEmpty())
+            {
+                objectClass =
+                        new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
+                                new LdapValue[] {
+                                        LdapValue.fromString(ATTR_NAME_USER),
+                                        LdapValue.fromString(ATTR_NAME_JIT_USER)});
+            }
+            else {
+                objectClass =
+                        new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
+                                new LdapValue[] {
+                                        LdapValue.fromString(ATTR_NAME_USER)});
+            }
             attributeList.add(objectClass);
 
             attrName =
@@ -3159,13 +3224,27 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             new LdapValue[] { LdapValue.fromString(accountName) });
             attributeList.add(attrAccount);
 
-            attrUpn =
-               new LdapMod(LdapModOperation.ADD, ATTR_USER_PRINCIPAL_NAME,
-                  new LdapValue[] {
-                        LdapValue.fromString(
-                           doesUpnMatchRegisteredSuffix(newUserUpn) ? newUserUpn.getUPN() : GetUPN(newUserUpn)
-                        )
-                     });
+            if (extIdpEntityId != null && !extIdpEntityId.isEmpty())
+            {
+                // for external idp user set tenantized upn
+                attrUpn =
+                    new LdapMod(LdapModOperation.ADD, ATTR_TENANTIZED_USER_PRINCIPAL_NAME,
+                        new LdapValue[] {
+                            LdapValue.fromString(
+                                GetTenantizedUPN(doesUpnMatchRegisteredSuffix(newUserUpn) ? newUserUpn.getUPN() : GetUPN(newUserUpn))
+                            )
+                        });
+            }
+            else
+            {
+                attrUpn =
+                    new LdapMod(LdapModOperation.ADD, ATTR_USER_PRINCIPAL_NAME,
+                        new LdapValue[] {
+                            LdapValue.fromString(
+                                doesUpnMatchRegisteredSuffix(newUserUpn) ? newUserUpn.getUPN() : GetUPN(newUserUpn)
+                            )
+                    });
+            }
             attributeList.add(attrUpn);
 
             String lastName = detail.getLastName();
@@ -3233,23 +3312,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 attributeList.add(attrPassword);
             }
 
-            connection.addObject(dn,
-                    attributeList.toArray(new LdapMod[attributeList.size()]));
-
             if (extIdpEntityId != null && !extIdpEntityId.isEmpty()) {
-                ArrayList<LdapMod> additionalAttributeList = new ArrayList<LdapMod>();
                 // add vmwExternalIdpUser auxiliary class to jit user
-                LdapMod auxObjectClass =
-                        new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
-                                new LdapValue[] { LdapValue
-                                        .fromString(ATTR_NAME_JIT_USER) });
-                additionalAttributeList.add(auxObjectClass);
-
                 // add vmwSTSEntityId attribute to jit user
                 LdapMod extIdpEntityIdAttr =
                         new LdapMod(LdapModOperation.ADD, ATTR_EXTERNAL_IDP_ID,
                                 new LdapValue[] {LdapValue.fromString(extIdpEntityId)});
-                additionalAttributeList.add(extIdpEntityIdAttr);
+                attributeList.add(extIdpEntityIdAttr);
 
                 ValidateUtil.validateNotEmpty(extUserId, "External User Id must be provided for JIT provisioning.");
 
@@ -3257,11 +3326,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 LdapMod extUserIdAttr =
                         new LdapMod(LdapModOperation.ADD, ATTR_JIT_USER_ID,
                                 new LdapValue[] {LdapValue.fromString(extUserId)});
-                additionalAttributeList.add(extUserIdAttr);
-
-                connection.modifyObject(dn,
-                        additionalAttributeList.toArray(new LdapMod[additionalAttributeList.size()]));
+                attributeList.add(extUserIdAttr);
             }
+
+            connection.addObject(dn,
+                    attributeList.toArray(new LdapMod[attributeList.size()]));
 
             return this.getPrincipalId(GetUPN(newUserUpn), accountName, domainName);
         } catch (AlreadyExistsLdapException e)
@@ -4160,7 +4229,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String domainName = getDomain();
 
             final PrincipalId userId = new PrincipalId(accountName, domainName);
-            String[] attrNames = { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME };
+            String[] attrNames = { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
             String foundAccountName = null;
             String upn = null;
 
@@ -4178,7 +4247,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 // found the user
                 userDn = entries[0].getDN();
                 foundAccountName = getStringValue(entries[0].getAttributeValues(ATTR_NAME_ACCOUNT));
-                upn = getOptionalStringValue(entries[0].getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                upn = GetUpnAttributeValue(entries[0]);
             } else
             {
                 // The user doesn't exist.
@@ -5249,17 +5318,19 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(principalName, "principalName");
 
-        String escapedPrincipalName = LdapFilterString.encode(GetUPN(principalName));
+        String upn = GetUPN(principalName);
+        String escapedPrincipalName = LdapFilterString.encode(upn);
+        String escapedTenantizedPrincipalName = LdapFilterString.encode(GetTenantizedUPN(upn));
         if ( this.isSameDomainUpn(principalName) )
         {
             String escapedsAMAccountName = LdapFilterString.encode(principalName.getName());
             return String.format(USER_OR_SVC_OR_GROUP_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCOUNT,
-                    escapedPrincipalName, escapedsAMAccountName);
+                    escapedPrincipalName, escapedsAMAccountName, escapedTenantizedPrincipalName);
         }
         else
         {
             return String.format(USER_OR_SVC_OR_GROUP_PRINC_QUERY_BY_USER_PRINCIPAL,
-                    escapedPrincipalName);
+                    escapedPrincipalName, escapedTenantizedPrincipalName);
 
         }
     }
@@ -5268,19 +5339,27 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(principalName, "principalName");
 
-        String escapedPrincipalName = LdapFilterString.encode(GetUPN(principalName));
-        String escapedDefaultUpn = LdapFilterString.encode(GetUPN(new PrincipalId(userAccountName, this.getDomain())));
+        String upn = GetUPN(principalName);
+        String defaultUpn = GetUPN(new PrincipalId(userAccountName, this.getDomain()));
+        String escapedPrincipalName = LdapFilterString.encode(upn);
+        String escapedDefaultUpn = LdapFilterString.encode(defaultUpn);
+        String escapedTenantizedPrincipalName = LdapFilterString.encode(GetTenantizedUPN(upn));
+        String escapedTenantizedDefaultUpn = LdapFilterString.encode(GetTenantizedUPN(defaultUpn));
         String escapedAccountName = LdapFilterString.encode(userAccountName);
         if ( this.isSameDomainUpn(principalName) )
         {
             String escapedAccountNameFromUpn = LdapFilterString.encode(principalName.getName());
             return String.format(PRINCIPAL_EXISTENCE_CHECK_DEFAULT_UPN_DOMAIN,
-                    escapedPrincipalName, escapedDefaultUpn, escapedAccountName, escapedAccountNameFromUpn );
+                    escapedPrincipalName, escapedDefaultUpn,
+                    escapedTenantizedPrincipalName, escapedTenantizedDefaultUpn,
+                    escapedAccountName, escapedAccountNameFromUpn );
         }
         else
         {
             return String.format(PRINCIPAL_EXISTENCE_CHECK_CUSTOM_UPN_DOMAIN,
-                    escapedPrincipalName, escapedDefaultUpn, escapedAccountName);
+                    escapedPrincipalName, escapedDefaultUpn,
+                    escapedTenantizedPrincipalName, escapedTenantizedDefaultUpn,
+                    escapedAccountName);
 
         }
     }
@@ -5289,17 +5368,19 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(principalName, "principalName");
 
-        String escapedPrincipalName = LdapFilterString.encode(GetUPN(principalName));
+        String upn = GetUPN(principalName);
+        String escapedPrincipalName = LdapFilterString.encode(upn);
+        String escapedTenantizedPrincipalName = LdapFilterString.encode(GetTenantizedUPN(upn));
         if ( this.isSameDomainUpn(principalName) )
         {
             String escapedsAMAccountName = LdapFilterString.encode(principalName.getName());
             return String.format(USER_OR_SVC_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCOUNT,
-                    escapedPrincipalName, escapedsAMAccountName);
+                    escapedPrincipalName, escapedsAMAccountName, escapedTenantizedPrincipalName);
         }
         else
         {
             return String.format(USER_OR_SVC_PRINC_QUERY_BY_USER_PRINCIPAL,
-                escapedPrincipalName);
+                escapedPrincipalName, escapedTenantizedPrincipalName);
         }
     }
 
@@ -5312,17 +5393,19 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(principalName, "principalName");
 
-        String escapedPrincipalName = LdapFilterString.encode(GetUPN(principalName));
+        String upn = GetUPN(principalName);
+        String escapedPrincipalName = LdapFilterString.encode(upn);
+        String escapedTenantizedPrincipalName = LdapFilterString.encode(GetTenantizedUPN(upn));
         if ( this.isSameDomainUpn(principalName) )
         {
             String escapedsAMAccountName = LdapFilterString.encode(principalName.getName());
             return String.format(USER_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCT,
-                    escapedPrincipalName, escapedsAMAccountName, additionalFilter!=null? additionalFilter : "");
+                    escapedPrincipalName, escapedsAMAccountName, escapedTenantizedPrincipalName, additionalFilter!=null? additionalFilter : "");
         }
         else
         {
             return String.format(USER_PRINC_QUERY_BY_USER_PRINCIPAL,
-                    escapedPrincipalName, additionalFilter!=null? additionalFilter : "");
+                    escapedPrincipalName, escapedTenantizedPrincipalName, additionalFilter!=null? additionalFilter : "");
         }
     }
 
@@ -5330,17 +5413,19 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(principalName, "principalName");
 
-        String escapedPrincipalName = LdapFilterString.encode(GetUPN(principalName));
+        String upn = GetUPN(principalName);
+        String escapedPrincipalName = LdapFilterString.encode(upn);
+        String escapedTenantizedPrincipalName = LdapFilterString.encode(GetTenantizedUPN(upn));
         if ( this.isSameDomainUpn(principalName) )
         {
             String escapedsAMAccountName = LdapFilterString.encode(principalName.getName());
             return String.format(SVC_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCOUNT,
-                    escapedPrincipalName, escapedsAMAccountName);
+                    escapedPrincipalName, escapedTenantizedPrincipalName, escapedsAMAccountName);
         }
         else
         {
             return String.format(SVC_PRINC_QUERY_BY_USER_PRINCIPAL,
-                    escapedPrincipalName);
+                    escapedPrincipalName, escapedTenantizedPrincipalName);
         }
     }
 
@@ -5352,9 +5437,17 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private String buildQueryByAttributeFilter(String attribute, String attributeValue)
     {
-        return String.format(USER_OR_SVC_PRINC_QUERY_BY_ATTRIBUTE,
-                LdapFilterString.encode(attribute),
-                LdapFilterString.encode(attributeValue));
+        if (ATTR_USER_PRINCIPAL_NAME.equalsIgnoreCase(attribute))
+        {
+            return String.format(USER_OR_SVC_PRINC_QUERY_BY_UPN_ATTRIBUTE,
+                    LdapFilterString.encode(attributeValue),
+                    LdapFilterString.encode(GetTenantizedUPN(attributeValue)));
+        }
+        else {
+            return String.format(USER_OR_SVC_PRINC_QUERY_BY_ATTRIBUTE,
+                    LdapFilterString.encode(attribute),
+                    LdapFilterString.encode(attributeValue));
+        }
     }
 
     private String buildQueryByContainerName(String containerName) {
@@ -5519,9 +5612,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             getStringValue(userEntries[0]
                                     .getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                    String upn =
-                            getOptionalStringValue(userEntries[0]
-                                    .getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                    String upn = GetUpnAttributeValue(userEntries[0]);
 
                     String description =
                             getOptionalStringValue(userEntries[0]
@@ -5831,7 +5922,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         {
             ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
-                    { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_ACCOUNT_FLAGS };
+                    { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_ACCOUNT_FLAGS,
+                    ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
 
             filter = buildQueryByAttributeFilter(attributeName, attributeValue);
 
@@ -5857,8 +5949,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     String accountName =
                         getStringValue(entries[0].getAttributeValues(ATTR_NAME_ACCOUNT));
 
-                    String userPrincipalName =
-                            getOptionalStringValue(entries[0].getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+                    String userPrincipalName = GetUpnAttributeValue(entries[0]);
 
                     int currentFlag =
                         getOptionalIntegerValue(
@@ -6479,4 +6570,18 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
     }
 
+    private String GetUpnAttributeValue(ILdapEntry entry)
+    {
+        String upn =
+            getOptionalStringValue(
+                entry.getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+        if (ServerUtils.isNullOrEmpty(upn))
+        {
+            upn =
+                GetUPNFromTenantizedUpn(getOptionalStringValue(
+                    entry.getAttributeValues(ATTR_TENANTIZED_USER_PRINCIPAL_NAME)));
+        }
+
+        return upn;
+    }
 }

@@ -105,6 +105,35 @@ VmDirReplMetricsCacheShutdown(
     VOID
     );
 
+/*
+ * UTD vector cache
+ */
+DWORD
+VmDirUTDVectorCacheInit(
+    VOID
+    );
+
+DWORD
+VmDirUTDVectorCacheUpdate(
+    PCSTR   pszNewUTDVector
+    );
+
+DWORD
+VmDirUTDVectorCacheToString(
+    PSTR*   ppszUTDVector
+    );
+
+DWORD
+VmDirUTDVectorCacheLookup(
+    PCSTR   pszInvocationId,
+    USN*    pUsn
+    );
+
+VOID
+VmDirUTDVectorCacheShutdown(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

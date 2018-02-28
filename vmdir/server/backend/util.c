@@ -128,14 +128,11 @@ error:
 }
 
 // Check whether a given group has the specified member as 'pszTargetDN'
-// TODO: Wei will remove it if it is obsolete code in the future.
 DWORD
-VmDirIsGroupHasThisMember(
-    PVDIR_OPERATION    pOperation, /* Optional */
-    PSTR               pszGroupDN,
-    PSTR               pszTargetDN,
-    PVDIR_ENTRY        pGroupEntry, /* Optional */
-    PBOOLEAN           pbIsGroupMember
+VmDirIsMemberOfGroup(
+    PSTR        pszGroupDN,
+    PSTR        pszTargetDN,
+    PBOOLEAN    pbIsMember
     )
 {
     DWORD               dwError = ERROR_SUCCESS;
@@ -145,33 +142,25 @@ VmDirIsGroupHasThisMember(
     PVDIR_ATTRIBUTE     pAttrMembers = NULL;
     VDIR_BERVALUE       bvMemberDn = VDIR_BERVALUE_INIT;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
-    BOOLEAN             bIsGroupMember = FALSE;
+    BOOLEAN             bIsMember = FALSE;
 
-    if (IsNullOrEmptyString(pszGroupDN) || IsNullOrEmptyString(pszTargetDN))
+    if (IsNullOrEmptyString(pszGroupDN) || IsNullOrEmptyString(pszTargetDN) || !pbIsMember)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    if (!pGroupEntry)
-    {
-        dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        assert(pSchemaCtx);
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    assert(pSchemaCtx);
 
-        bvGrpDn.lberbv.bv_val = (PSTR)pszGroupDN;
-        bvGrpDn.lberbv.bv_len = VmDirStringLenA(bvGrpDn.lberbv.bv_val);
+    bvGrpDn.lberbv.bv_val = (PSTR)pszGroupDN;
+    bvGrpDn.lberbv.bv_len = VmDirStringLenA(bvGrpDn.lberbv.bv_val);
 
-        dwError = VmDirNormalizeDN(&bvGrpDn, pSchemaCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirNormalizeDN(&bvGrpDn, pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSimpleNormDNToEntry(BERVAL_NORM_VAL(bvGrpDn), &pGrpEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        pGrpEntry = pGroupEntry;
-    }
+    dwError = VmDirSimpleNormDNToEntry(BERVAL_NORM_VAL(bvGrpDn), &pGrpEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pAttrMembers = VmDirEntryFindAttribute(ATTR_MEMBER, pGrpEntry);
     if (pAttrMembers)
@@ -201,33 +190,23 @@ VmDirIsGroupHasThisMember(
                                     BERVAL_NORM_VAL(bvMemberDn),
                                     TRUE) == TRUE)
             {
-                bIsGroupMember = TRUE;
+                bIsMember = TRUE;
                 break;
             }
         }
     }
 
-    *pbIsGroupMember = bIsGroupMember;
+    *pbIsMember = bIsMember;
 
 cleanup:
-    if (pGrpEntry != pGroupEntry && pGrpEntry)
-    {
-        VmDirFreeEntry(pGrpEntry);
-    }
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
+    VmDirFreeEntry(pGrpEntry);
+    VmDirSchemaCtxRelease(pSchemaCtx);
     VmDirFreeBervalContent(&bvGrpDn);
     VmDirFreeBervalContent(&bvTarDn);
     VmDirFreeBervalContent(&bvMemberDn);
-
-
     return dwError;
 
 error:
-    *pbIsGroupMember = FALSE;
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", dwError);
     goto cleanup;
 }

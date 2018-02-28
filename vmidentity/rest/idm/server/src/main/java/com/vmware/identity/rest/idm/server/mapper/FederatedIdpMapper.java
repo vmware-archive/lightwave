@@ -53,6 +53,7 @@ public class FederatedIdpMapper {
         builder.withAlias(config.getAlias());
         builder.withJitEnabled(config.getJitAttribute());
         builder.withUpnSuffix(config.getUpnSuffix());
+        builder.withRoleGroupMappings(getTokenClaimGroupDTOs(config.getTokenClaimGroupMappings()));
         String protocol = config.getProtocol();
         if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
             builder.withSamlConfig(getSamlConfigDTO(config));
@@ -102,7 +103,6 @@ public class FederatedIdpMapper {
                 (List<Certificate>)(List<?>) config.getSigningCertificateChain())
         );
         samlConfigBuilder.withSubjectFormats(getSubjectFormats(config.getSubjectFormatMappings()));
-        samlConfigBuilder.withTokenClaimGroups(getTokenClaimGroupDTOs(config.getTokenClaimGroupMappings()));
 
         return samlConfigBuilder.build();
     }
@@ -233,12 +233,12 @@ public class FederatedIdpMapper {
                                 )
                 );
                 config.setSubjectFormatMappings(getAttributeConfigs(samlConfig.getSubjectFormats()));
-                config.setTokenClaimGroupMappings(getTokenClaimGroupMappings(samlConfig.getTokenClaimGroups()));
             } else if (protocol.equals(IDPConfig.IDP_PROTOCOL_OAUTH_2_0)) {
                 config.setOidcConfig(getOidcConfig(federatedIdp.getOidcConfig()));
             }
             config.setJitAttribute(federatedIdp.isJitEnabled() == null ? false : federatedIdp.isJitEnabled());
             config.setUpnSuffix(federatedIdp.getUpnSuffix());
+            config.setTokenClaimGroupMappings(getTokenClaimGroupMappings(federatedIdp.getRoleGroupMappings()));
         } catch (Exception e) {
             throw new DTOMapperException("Failed to map FederatedIdpDTO to IDPConfig", e);
         }

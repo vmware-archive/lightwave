@@ -35,12 +35,14 @@
 static
 DWORD
 InitializeCFGEntries(
-    PVDIR_SCHEMA_CTX    pSchemaCtx);
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
 
 static
 int
 InitializeVmdirdSystemEntries(
-    VOID);
+    VOID
+    );
 
 static
 DWORD
@@ -62,22 +64,32 @@ InitializeGlobalVars(
 
 static
 DWORD
-_VmDirWriteBackInvocationId(VOID);
+_VmDirWriteBackInvocationId(
+    VOID
+    );
 
 static
 DWORD
-_VmDirRestoreInstance(VOID);
+_VmDirRestoreInstance(
+    VOID
+    );
 
 static
 DWORD
-_VmDirGenerateInvocationId(VOID);
+_VmDirGenerateInvocationId(
+    VOID
+    );
 
 int
-LoadServerGlobals(BOOLEAN *pbWriteInvocationId);
+LoadServerGlobals(
+    BOOLEAN*    pbWriteInvocationId
+    );
 
 static
 DWORD
-_VmDirSrvCreatePersistedDSERoot(VOID);
+_VmDirSrvCreatePersistedDSERoot(
+    VOID
+    );
 
 static
 DWORD
@@ -539,7 +551,9 @@ error:
 
 static
 DWORD
-_VmDirSrvCreatePersistedDSERoot(VOID)
+_VmDirSrvCreatePersistedDSERoot(
+    VOID
+    )
 {
     DWORD dwError = 0;
     PSTR ppszPersistedDSERootAttrs[] =
@@ -573,11 +587,7 @@ _VmDirSrvCreatePersistedDSERoot(VOID)
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
+    VmDirSchemaCtxRelease(pSchemaCtx);
     return dwError;
 
 error:
@@ -599,41 +609,44 @@ _VmDirRestoreInstance(
     VOID
     )
 {
-    DWORD                   dwError = LDAP_SUCCESS;
-    size_t                  i = 0;
-    VDIR_OPERATION          op = {0};
-    VDIR_BERVALUE           newUtdVector = VDIR_BERVALUE_INIT;
-    USN                     nextUsn = 0;
-    USN                     restoredUsn = 0;
-    DWORD                   dwAdvanceRID = 1;  // as we advance nextUsn once before final nextUsn while loop
-    char                    nextUsnStr[VMDIR_MAX_USN_STR_LEN] = {0};
-    PSTR                    pszLocalErrMsg = NULL;
-    PSTR                    pszDCAccount = NULL;
-    PSTR*                   ppszServerInfo = NULL;
-    size_t                  dwInfoCount = 0;
+    DWORD   dwError = LDAP_SUCCESS;
+    size_t  i = 0;
+    VDIR_OPERATION  op = {0};
+    USN     nextUsn = 0;
+    USN     restoredUsn = 0;
+    DWORD   dwAdvanceRID = 1;  // as we advance nextUsn once before final nextUsn while loop
+    char    nextUsnStr[VMDIR_MAX_USN_STR_LEN] = {0};
+    PSTR    pszLocalErrMsg = NULL;
+    PSTR    pszUtdVector = NULL;
+    PSTR    pszNewUtdVector = NULL;
+    PSTR    pszDCAccount = NULL;
+    PSTR*   ppszServerInfo = NULL;
+    size_t  dwInfoCount = 0;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Restore Lotus Instance.");
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Restore Vmdir Instance.");
 
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetHostsInternal(&ppszServerInfo, &dwInfoCount);
-    if (dwError != 0)
-    {
-        printf("_VmDirRestoreInstance: fail to get hosts from topology: %d\n", dwError );
-    }
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: fail to get hosts from topology: %d", dwError );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: fail to get hosts from topology: %d",
+            dwError);
 
-    if ( dwInfoCount == 1 )
+    if (dwInfoCount == 1)
     {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Single node deployment topology, skip restore procedure.");
-        printf("Single node deployment topology, skip restore procedure.\n");
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Single node deployment topology, skip restore procedure.");
 
         dwError = VmDirSetRegKeyValueDword(
-                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
-                        VMDIR_REG_KEY_RESTORE_STATUS,
-                        VMDIR_RESTORE_NOT_REQUIRED);
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_RESTORE_STATUS,
+                VMDIR_RESTORE_NOT_REQUIRED);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         goto cleanup;
@@ -644,27 +657,31 @@ _VmDirRestoreInstance(
      *  to query up-to-date servers topology, and then follow those servers if they
      *  are partners of the local host, and get the highest USN.
      */
-    for (i=0; i<dwInfoCount; i++)
+    for (i = 0; i < dwInfoCount; i++)
     {
         if (VmDirStringCompareA(ppszServerInfo[i], pszDCAccount, FALSE) == 0)
         {
             //Don't try to query self for the uptodate topology.
             continue;
         }
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Trying to get topology from host %s ...", ppszServerInfo[i]);
-        printf("Trying to get topology from host %s ...\n", ppszServerInfo[i]);
+
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Trying to get topology from host %s ...",
+                ppszServerInfo[i]);
 
         dwError = VmDirGetUsnFromPartners(ppszServerInfo[i], &restoredUsn);
         if (dwError == 0)
         {
-             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Got topology from host %s", ppszServerInfo[i]);
-             printf("Topology obtained from host %s.\n", ppszServerInfo[i]);
+             VMDIR_LOG_INFO(
+                     VMDIR_LOG_MASK_ALL,
+                     "Got topology from host %s",
+                     ppszServerInfo[i]);
              break;
         }
     }
-    if (dwError !=0 || restoredUsn == 0)
+    if (dwError != 0 || restoredUsn == 0)
     {
-
         // Failed to contact partners.
         // Next server start needs to be in readonly.
         dwError = VmDirSetRegKeyValueDword(
@@ -673,137 +690,192 @@ _VmDirRestoreInstance(
                         VMDIR_RESTORE_READONLY);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        if (restoredUsn == 0 )
+        if (restoredUsn == 0)
         {
             dwError = VMDIR_ERROR_RESTORE_PARTNERS_UNAVAILABLE;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    dwError,
+                    pszLocalErrMsg,
+                    "_VmDirRestoreInstance: cannot get restored USN from partners, error code: %d.",
+                    dwError);
         }
-        printf("_VmDirRestoreInstance: failed to get restored USN from partners, error code: %d\n.", dwError );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: cannot get restored USN from partners, error code: %d.", dwError );
     }
 
-    dwError = VmDirInitStackOperation( &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: VmDirInitStackOperation failed with error code: %d.", dwError );
+    dwError = VmDirInitStackOperation(
+            &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: VmDirInitStackOperation failed with error code: %d.",
+            dwError);
 
     // Setup target DN
-
-    dwError = VmDirBervalContentDup( &gVmdirServerGlobals.serverObjDN, &op.reqDn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.", dwError );
+    dwError = VmDirBervalContentDup(&gVmdirServerGlobals.serverObjDN, &op.reqDn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.",
+            dwError);
 
     op.pBEIF = VmDirBackendSelect(op.reqDn.lberbv.bv_val);
     assert(op.pBEIF);
 
-    dwError = VmDirBervalContentDup( &op.reqDn, &op.request.modifyReq.dn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.", dwError );
+    dwError = VmDirBervalContentDup(&op.reqDn, &op.request.modifyReq.dn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.",
+            dwError);
 
     // Setup utdVector mod
-
     // create an entry for the old invocationID in the up-to-date vector
-
-    dwError = op.pBEIF->pfnBEGetNextUSN( op.pBECtx, &nextUsn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-            "_VmDirRestoreInstance: pfnBEGetNextUSN failed with error code: %d, error message: %s", dwError,
-            VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
+    dwError = op.pBEIF->pfnBEGetNextUSN(op.pBECtx, &nextUsn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: pfnBEGetNextUSN failed with error code: %d, error message: %s",
+            dwError,
+            VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg));
 
     //gVmdirServerGlobals.initialNextUSN was set by the first pfnBEGetNextUSN call.
     //It's value less 1 is the one that has been consumed by the server to be restored.
     nextUsn = gVmdirServerGlobals.initialNextUSN - 1;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %" PRId64 " local USN: %" PRId64,
-                   restoredUsn, nextUsn);
-    printf("Highest USN observed from partners %" PRId64 " local USN: %" PRId64 "\n", restoredUsn, nextUsn);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "_VmDirRestoreInstance: highest USN observed from partners %" PRId64 " local USN: %" PRId64,
+            restoredUsn,
+            nextUsn);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Utilize larger of %" PRId64 " and %" PRId64" new USN", restoredUsn, nextUsn );
-    printf("Utilize larger of %" PRId64 " and %" PRId64 " new USN \n", restoredUsn, nextUsn );
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Utilize larger of %" PRId64 " and %" PRId64" new USN",
+            restoredUsn,
+            nextUsn);
 
-    dwError = VmDirStringNPrintFA( nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%" PRId64, nextUsn);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirStringNPrintFA failed with error code: %d", dwError,
-                VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
+    dwError = VmDirStringNPrintFA(
+            nextUsnStr, sizeof(nextUsnStr), sizeof(nextUsnStr) - 1, "%" PRId64, nextUsn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: VmDirStringNPrintFA failed with error code: %d",
+            dwError,
+            VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg));
 
     // <existing up-to-date vector>,<old invocation ID>:<local USN>,
-    dwError = VmDirAllocateStringPrintf( &(newUtdVector.lberbv.bv_val), "%s%s:%s,",
-                                            gVmdirServerGlobals.utdVector.lberbv.bv_val,
-                                            gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                                            nextUsnStr);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAllocateStringPrintf failed with error code: %d", dwError,
-                VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
+    dwError = VmDirUTDVectorCacheToString(&pszUtdVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    newUtdVector.bOwnBvVal = TRUE;
+    dwError = VmDirAllocateStringPrintf(
+            &pszNewUtdVector,
+            "%s%s:%s,",
+            pszUtdVector,
+            gVmdirServerGlobals.invocationId.lberbv.bv_val,
+            nextUsnStr);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: VmDirAllocateStringPrintf failed with error code: %d",
+            dwError,
+            VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg));
 
-    newUtdVector.lberbv.bv_len = VmDirStringLenA(newUtdVector.lberbv.bv_val);
+    dwError = VmDirUTDVectorCacheUpdate(pszNewUtdVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirBervalContentDup( &newUtdVector, &(gVmdirServerGlobals.utdVector) );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: BervalContentDup failed with error code: %d.", dwError );
-
-    dwError = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_UP_TO_DATE_VECTOR, ATTR_UP_TO_DATE_VECTOR_LEN,
-                              gVmdirServerGlobals.utdVector.lberbv.bv_val, gVmdirServerGlobals.utdVector.lberbv.bv_len );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAppendAMod failed with error code: %d.", dwError );
+    dwError = VmDirAppendAMod(
+            &op,
+            MOD_OP_REPLACE,
+            ATTR_UP_TO_DATE_VECTOR,
+            ATTR_UP_TO_DATE_VECTOR_LEN,
+            pszNewUtdVector,
+            VmDirStringLenA(pszNewUtdVector));
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: VmDirAppendAMod failed with error code: %d.",
+            dwError);
 
     // Setup invocationId mod
-
     dwError = _VmDirGenerateInvocationId();
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: _VmDirGenerateInvocationId failed with error code: %d.", dwError );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: _VmDirGenerateInvocationId failed with error code: %d.",
+            dwError);
 
-    dwError = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_INVOCATION_ID, ATTR_INVOCATION_ID_LEN,
-                       gVmdirServerGlobals.invocationId.lberbv.bv_val, gVmdirServerGlobals.invocationId.lberbv.bv_len );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                "_VmDirRestoreInstance: VmDirAppendAMod failed with error code: %d.", dwError );
+    dwError = VmDirAppendAMod(
+            &op,
+            MOD_OP_REPLACE,
+            ATTR_INVOCATION_ID,
+            ATTR_INVOCATION_ID_LEN,
+            gVmdirServerGlobals.invocationId.lberbv.bv_val,
+            gVmdirServerGlobals.invocationId.lberbv.bv_len);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: VmDirAppendAMod failed with error code: %d.",
+            dwError);
 
-    dwError = VmDirInternalModifyEntry( &op );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "_VmDirRestoreInstance: InternalModifyEntry failed. DN: %s, "
-              "Error code: %d, Error string: %s", op.reqDn.lberbv.bv_val, dwError,
-              VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ) );
+    dwError = VmDirInternalModifyEntry(&op);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "_VmDirRestoreInstance: InternalModifyEntry failed. DN: %s, "
+            "Error code: %d, Error string: %s",
+            op.reqDn.lberbv.bv_val,
+            dwError,
+            VDIR_SAFE_STRING(op.ldapResult.pszErrMsg));
 
-    printf("Setup new invocationId [%s]\n", gVmdirServerGlobals.invocationId.lberbv.bv_val);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "New invocationId [%s]",
+            gVmdirServerGlobals.invocationId.lberbv.bv_val);
 
     // Advance the USN to the upToDateUsn passed in, which should be the maximum USN that has been seen by peer nodes.
     // This will avoid the situation where some new entries will be skipped in replication to peer nodes.
     // See Bug 1272548 for details.
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Advancing USN if neccessary, current: %" PRId64 ", goal to restore to: %" PRId64,
-                    nextUsn, restoredUsn );
-    while ( nextUsn < restoredUsn )
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Advancing USN if neccessary, current: %" PRId64 ", goal to restore to: %" PRId64,
+            nextUsn,
+            restoredUsn);
+
+    while (nextUsn < restoredUsn)
     {
         dwAdvanceRID++;
 
-        dwError = op.pBEIF->pfnBEGetNextUSN( op.pBECtx, &nextUsn );
-        BAIL_ON_VMDIR_ERROR( dwError );
+        dwError = op.pBEIF->pfnBEGetNextUSN(op.pBECtx, &nextUsn);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     // Advance RID for all realms, USN advance (all writes) should >= RID advance (new entries).
-    dwError = VmDirAdvanceDomainRID( dwAdvanceRID );
+    dwError = VmDirAdvanceDomainRID(dwAdvanceRID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set registry to indicate that restore succeeded
     dwError = VmDirSetRegKeyValueDword(
-                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
-                        VMDIR_REG_KEY_RESTORE_STATUS,
-                        VMDIR_RESTORE_NOT_REQUIRED);
+            VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+            VMDIR_REG_KEY_RESTORE_STATUS,
+            VMDIR_RESTORE_NOT_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    printf("Domain RID advanced count=%u\n", dwAdvanceRID);
-
-    printf("Lotus instance restore succeeded.\n");
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Vmdir instance restore succeeded "
+            "(Domain RID advanced count=%u)",
+            dwAdvanceRID);
 
 cleanup:
     VmDirFreeStrArray(ppszServerInfo);
-    VmDirFreeBervalContent(&newUtdVector);
     VmDirFreeOperationContent(&op);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
+    VMDIR_SAFE_FREE_MEMORY(pszNewUtdVector);
     VMDIR_SAFE_FREE_STRINGA(pszDCAccount);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, VDIR_SAFE_STRING(pszLocalErrMsg) );
-    printf("Lotus instance restore failed, error (%s)(%u)\n", VDIR_SAFE_STRING(pszLocalErrMsg), dwError );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, VDIR_SAFE_STRING(pszLocalErrMsg));
     goto cleanup;
 }
 
@@ -967,7 +1039,8 @@ error:
 static
 int
 InitializeVmdirdSystemEntries(
-    VOID)
+    VOID
+    )
 {
     int     iError = 0;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
@@ -996,7 +1069,9 @@ error:
 
 static
 DWORD
-_VmDirGenerateInvocationId(VOID)
+_VmDirGenerateInvocationId(
+    VOID
+    )
 {
     DWORD           dwError = 0;
     uuid_t          guid = {0};
@@ -1049,17 +1124,16 @@ error:
 //      the abnormal case).
 //  - There is no special handling of any of these scenarios in the function, code just flows. Only in the last abnormal
 //    case the new invocation ID needs to be generated here.
-
-
 int
-LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
+LoadServerGlobals(
+    BOOLEAN*    pbWriteInvocationId
+    )
 {
     DWORD               dwError = 0;
     VDIR_ENTRY          dseRoot = {0};
     VDIR_ENTRY          serverObj = {0};
     PVDIR_ATTRIBUTE     attr = NULL;
     VDIR_OPERATION      op = {0};
-    VDIR_BERVALUE       bv = VDIR_BERVALUE_INIT;
     BOOLEAN             bHasTxn = FALSE;
     VDIR_BERVALUE       serverGuid = VDIR_BERVALUE_INIT;
     PSTR                pszLocalErrMsg = NULL;
@@ -1067,189 +1141,244 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     PSTR                pszServerName = NULL;
     DWORD               dwCurrentDfl = VDIR_DFL_DEFAULT;
 
-    dwError = VmDirInitStackOperation( &op,
-                                       VDIR_OPERATION_TYPE_INTERNAL,
-                                       LDAP_REQ_SEARCH,
-                                       NULL );
+    dwError = VmDirInitStackOperation(
+            &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     op.pBEIF = VmDirBackendSelect(PERSISTED_DSE_ROOT_DN);
     assert(op.pBEIF);
 
-    dwError = op.pBEIF->pfnBETxnBegin( op.pBECtx, VDIR_BACKEND_TXN_READ);
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = op.pBEIF->pfnBETxnBegin(op.pBECtx, VDIR_BACKEND_TXN_READ);
+    BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = TRUE;
 
-    dwError = op.pBEIF->pfnBEIdToEntry( op.pBECtx, op.pSchemaCtx, DSE_ROOT_ENTRY_ID, &dseRoot, VDIR_BACKEND_TXN_READ);
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = op.pBEIF->pfnBEIdToEntry(
+            op.pBECtx,
+            op.pSchemaCtx,
+            DSE_ROOT_ENTRY_ID,
+            &dseRoot,
+            VDIR_BACKEND_TXN_READ);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     for (attr = dseRoot.attrs; attr; attr = attr->next)
     {
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_ROOT_DOMAIN_NAMING_CONTEXT, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.systemDomainDN ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.systemDomainDN) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed while copying system domain DN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed while copying system domain DN.");
             }
-            if (VmDirNormalizeDN( &gVmdirServerGlobals.systemDomainDN, op.pSchemaCtx) != 0)
+
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.systemDomainDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for system domain DN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for system domain DN.");
             }
 
             // set DomainControllerGroupDN (NOTE, this is a hard code name, same as in instance.c)
             dwError = VmDirAllocateBerValueAVsnprintf(
-                        &gVmdirServerGlobals.bvDCGroupDN,
-                        "cn=%s,cn=%s,%s",
-                        VMDIR_DC_GROUP_NAME,
-                        VMDIR_BUILTIN_CONTAINER_NAME,
-                        gVmdirServerGlobals.systemDomainDN.lberbv_val);
+                    &gVmdirServerGlobals.bvDCGroupDN,
+                    "cn=%s,cn=%s,%s",
+                    VMDIR_DC_GROUP_NAME,
+                    VMDIR_BUILTIN_CONTAINER_NAME,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCGroupDN), op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.bvDCGroupDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for bvDCGroupDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for bvDCGroupDN.");
             }
 
             // set DCClientGroupDN (NOTE, this is a hard code name, same as in instance.c)
             dwError = VmDirAllocateBerValueAVsnprintf(
-                        &gVmdirServerGlobals.bvDCClientGroupDN,
-                        "cn=%s,cn=%s,%s",
-                        VMDIR_DCCLIENT_GROUP_NAME,
-                        VMDIR_BUILTIN_CONTAINER_NAME,
-                        gVmdirServerGlobals.systemDomainDN.lberbv_val);
+                    &gVmdirServerGlobals.bvDCClientGroupDN,
+                    "cn=%s,cn=%s,%s",
+                    VMDIR_DCCLIENT_GROUP_NAME,
+                    VMDIR_BUILTIN_CONTAINER_NAME,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCClientGroupDN), op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.bvDCClientGroupDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for pszDCClientGroupDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for pszDCClientGroupDN.");
+            }
+
+            // set SchemaManagersGroupDN (NOTE, this is a hard code name, same as in instance.c)
+            dwError = VmDirAllocateBerValueAVsnprintf(
+                    &gVmdirServerGlobals.bvSchemaManagersGroupDN,
+                    "cn=%s,%s",
+                    VMDIR_SCHEMA_MANAGER_GROUP_NAME,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.bvSchemaManagersGroupDN, op.pSchemaCtx) != 0)
+            {
+                dwError = VMDIR_ERROR_GENERIC;
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for SchemaManagersGroupDN.");
             }
 
             // set ServicesRootDN (NOTE, this is a hard code name, same as in instance.c)
             dwError = VmDirAllocateBerValueAVsnprintf(
-                        &gVmdirServerGlobals.bvServicesRootDN,
-                        "cn=%s,%s",
-                        VMDIR_SERVICES_CONTAINER_NAME,
-                        gVmdirServerGlobals.systemDomainDN.lberbv_val);
+                    &gVmdirServerGlobals.bvServicesRootDN,
+                    "cn=%s,%s",
+                    VMDIR_SERVICES_CONTAINER_NAME,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvServicesRootDN), op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.bvServicesRootDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for pszServicesRootDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for pszServicesRootDN.");
             }
 
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_DEL_OBJS_CONTAINER, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.delObjsContainerDN ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.delObjsContainerDN) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed while copying deleted "
-                                               "objects container DN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed while copying deleted "
+                        "objects container DN.");
             }
-            if (VmDirNormalizeDN( &gVmdirServerGlobals.delObjsContainerDN, op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.delObjsContainerDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for deleted objects container DN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for deleted objects container DN.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_SERVER_NAME, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.serverObjDN ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.serverObjDN) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed while copying serverDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed while copying serverDN.");
             }
-            if (VmDirNormalizeDN( &(gVmdirServerGlobals.serverObjDN), op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.serverObjDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for server object DN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for server object DN.");
             }
 
             if (VmDirDnLastRDNToCn(attr->vals[0].lberbv_val, &pszServerName) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "%s: VmDirDnLastRDNToCn failed", __func__);
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirDnLastRDNToCn failed");
             }
             if (VmDirStringToBervalContent(pszServerName, &gVmdirServerGlobals.bvServerObjName) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "%s: VmDirStringToBervalContent failed", __func__);
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirStringToBervalContent failed");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_DC_ACCOUNT_DN, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.dcAccountDN ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.dcAccountDN) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed while copying dcAccountDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed while copying dcAccountDN.");
             }
-            if (VmDirNormalizeDN( &(gVmdirServerGlobals.dcAccountDN), op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.dcAccountDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for dcAccountDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for dcAccountDN.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_DC_ACCOUNT_UPN, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.dcAccountUPN ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.dcAccountUPN) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed while copying dcAccountUPN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed while copying dcAccountUPN.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_INVOCATION_ID, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.invocationId ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.invocationId) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed." );
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_DEFAULT_ADMIN_DN, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.bvDefaultAdminDN ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.bvDefaultAdminDN) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed." );
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed.");
             }
-            if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvDefaultAdminDN), op.pSchemaCtx) != 0)
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.bvDefaultAdminDN, op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirNormalizeDN failed for bvDefaultAdminDN.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for bvDefaultAdminDN.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_SITE_NAME, FALSE) == 0)
         {
-            dwError = VmDirAllocateStringA( attr->vals[0].lberbv.bv_val, &gVmdirServerGlobals.pszSiteName);
+            dwError = VmDirAllocateStringA(attr->vals[0].lberbv.bv_val, &gVmdirServerGlobals.pszSiteName);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             continue;
@@ -1277,74 +1406,84 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
             if (_VmDirGenerateInvocationId() != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "VmDirGenerateInvocationId() failed.");
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirGenerateInvocationId() failed.");
             }
         }
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     // Load Server object
-
     op.pBEIF = VmDirBackendSelect(gVmdirServerGlobals.serverObjDN.lberbv.bv_val);
     assert(op.pBEIF);
 
-    if (VmDirNormalizeDN( &(gVmdirServerGlobals.serverObjDN), op.pSchemaCtx ) != 0)
+    if (VmDirNormalizeDN(&gVmdirServerGlobals.serverObjDN, op.pSchemaCtx) != 0)
     {
         dwError = VMDIR_ERROR_GENERIC;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirNormalizeDN for serverObjDN failed. ");
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError,
+                pszLocalErrMsg,
+                "VmDirNormalizeDN for serverObjDN failed.");
     }
 
-    dwError = op.pBEIF->pfnBEDNToEntry(  op.pBECtx, op.pSchemaCtx, &(gVmdirServerGlobals.serverObjDN), &serverObj,
-                                         VDIR_BACKEND_ENTRY_LOCK_READ );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    bv.lberbv.bv_val = "";
-    bv.lberbv.bv_len = 0;
-    VmDirBervalContentDup( &bv, &gVmdirServerGlobals.utdVector );
+    dwError = op.pBEIF->pfnBEDNToEntry(
+            op.pBECtx,
+            op.pSchemaCtx,
+            &gVmdirServerGlobals.serverObjDN,
+            &serverObj,
+            VDIR_BACKEND_ENTRY_LOCK_READ);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     for (attr = serverObj.attrs; attr; attr = attr->next)
     {
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_SERVER_GUID, FALSE) == 0) // for data migration scenario
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &serverGuid ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &serverGuid) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed." );
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_INVOCATION_ID, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.invocationId ) != 0)
+            if (VmDirBervalContentDup(&attr->vals[0], &gVmdirServerGlobals.invocationId) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed." );
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "BervalContentDup failed.");
             }
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_REPL_INTERVAL, FALSE) == 0)
         {
-            gVmdirServerGlobals.replInterval = atoi( attr->vals[0].lberbv.bv_val );
+            gVmdirServerGlobals.replInterval = atoi(attr->vals[0].lberbv.bv_val);
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_REPL_PAGE_SIZE, FALSE) == 0)
         {
-            gVmdirServerGlobals.replPageSize = atoi( attr->vals[0].lberbv.bv_val );
+            gVmdirServerGlobals.replPageSize = atoi(attr->vals[0].lberbv.bv_val);
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_UP_TO_DATE_VECTOR, FALSE) == 0)
         {
-            if (VmDirBervalContentDup( &attr->vals[0], &gVmdirServerGlobals.utdVector ) != 0)
-            {
-                dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                              "BervalContentDup failed." );
-            }
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "UpdateToDate Vector: (%s)", gVmdirServerGlobals.utdVector.lberbv_val);
+            dwError = VmDirUTDVectorCacheUpdate(attr->vals[0].lberbv.bv_val);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    dwError,
+                    pszLocalErrMsg,
+                    "VmDirUTDVectorCacheUpdate failed.");
+
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "UpdateToDate Vector: (%s)",
+                    attr->vals[0].lberbv.bv_val);
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_SERVER_ID, FALSE) == 0)
@@ -1357,14 +1496,18 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
         if (serverGuid.lberbv.bv_len == 0) // for data migration scenario: not even serverGuid is present.
         {
             dwError = VMDIR_ERROR_GENERIC;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                          "Server object entry does NOT contain invocationId attribute.");
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    dwError,
+                    pszLocalErrMsg,
+                    "Server object entry does NOT contain invocationId attribute.");
         }
-        if (VmDirBervalContentDup( &serverGuid, &gVmdirServerGlobals.invocationId ) != 0)
+        if (VmDirBervalContentDup(&serverGuid, &gVmdirServerGlobals.invocationId) != 0)
         {
             dwError = VMDIR_ERROR_GENERIC;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                          "BervalContentDup failed." );
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    dwError,
+                    pszLocalErrMsg,
+                    "BervalContentDup failed.");
         }
         *pbWriteInvocationId = TRUE;
     }
@@ -1373,30 +1516,35 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
         *pbWriteInvocationId = FALSE;
     }
 
-    dwError = op.pBEIF->pfnBETxnCommit( op.pBECtx );
+    dwError = op.pBEIF->pfnBETxnCommit(op.pBECtx);
     bHasTxn = FALSE;
-    BAIL_ON_VMDIR_ERROR( dwError );
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Server ID (%d), InvocationID (%s)",
-                                        gVmdirServerGlobals.serverId,
-                                        gVmdirServerGlobals.invocationId.lberbv_val);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Server ID (%d), InvocationID (%s)",
+            gVmdirServerGlobals.serverId,
+            gVmdirServerGlobals.invocationId.lberbv_val);
 
    // Set the domain functional level
     dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if(dwCurrentDfl > VMDIR_MAX_DFL)
+    if (dwCurrentDfl > VMDIR_MAX_DFL)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                         "Server cannot support domain functional level (%d)",
-                         dwCurrentDfl);
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "Server cannot support domain functional level (%d)",
+                dwCurrentDfl);
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
     }
 
     gVmdirServerGlobals.dwDomainFunctionalLevel = dwCurrentDfl;
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Domain Functional Level (%d)",
-                    gVmdirServerGlobals.dwDomainFunctionalLevel);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "Domain Functional Level (%d)",
+            gVmdirServerGlobals.dwDomainFunctionalLevel);
 
     // Set promoted flag to TRUE
     gVmdirServerGlobals.bPromoted = TRUE;
@@ -1404,37 +1552,36 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     VmDirAssertServerGlobals();
 
 cleanup:
-
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     VMDIR_SAFE_FREE_MEMORY(pszServerName);
     VmDirFreeEntryContent( &dseRoot );
     VmDirFreeEntryContent( &serverObj );
     VmDirFreeBervalContent(&serverGuid);
-
     VmDirFreeOperationContent(&op);
-
     return dwError;
 
 error:
-
-    if ( dwError != ERROR_BACKEND_ENTRY_NOTFOUND )
+    if (dwError != ERROR_BACKEND_ENTRY_NOTFOUND)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "LoadServerGlobals: (%u)(%s)",
-                         dwError, VDIR_SAFE_STRING(pszLocalErrMsg));
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "LoadServerGlobals: (%u)(%s)",
+                dwError,
+                VDIR_SAFE_STRING(pszLocalErrMsg));
     }
-
     if (bHasTxn)
     {
-        op.pBEIF->pfnBETxnAbort( op.pBECtx );
+        op.pBEIF->pfnBETxnAbort(op.pBECtx);
     }
-
     goto cleanup;
 }
 
 static
 DWORD
-_VmDirWriteBackInvocationId(VOID)
+_VmDirWriteBackInvocationId(
+    VOID
+    )
 {
     DWORD                   dwError = LDAP_SUCCESS;
     PSTR                    pszLocalErrMsg = NULL;
@@ -1465,7 +1612,8 @@ error:
 static
 DWORD
 InitializeCFGEntries(
-    PVDIR_SCHEMA_CTX    pSchemaCtx)
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    )
 {
     DWORD   dwError = 0;
     static PSTR ppszCFG_ROOT[] = VDIR_CFG_ROOT_ENTRY_INITIALIZER;
@@ -1624,6 +1772,9 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirIntegrityCheck.pMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirUTDVectorCacheInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
 
     return dwError;
@@ -1632,97 +1783,6 @@ error:
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "InitializeGlobalVars failed (%d)", dwError );
 
-    goto cleanup;
-}
-
-/*
- * Lookup servers topology internally first. Then one of the servers
- * will be used to query uptoupdate servers topology
- */
-DWORD
-VmDirGetHostsInternal(
-    PSTR**  pppszServerInfo,
-    size_t* pdwInfoCount
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   i = 0;
-    PSTR    pszSearchBaseDN = NULL;
-    VDIR_ENTRY_ARRAY    entryArray = {0};
-    PVDIR_ATTRIBUTE     pAttr = NULL;
-    PSTR*   ppszServerInfo = NULL;
-
-    dwError = VmDirAllocateStringPrintf(
-            &pszSearchBaseDN,
-            "cn=Sites,cn=Configuration,%s",
-            gVmdirServerGlobals.systemDomainDN.bvnorm_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEqualFilterInternalSearch(
-            pszSearchBaseDN,
-            LDAP_SCOPE_SUBTREE,
-            ATTR_OBJECT_CLASS,
-            OC_DIR_SERVER,
-            &entryArray);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (entryArray.iSize == 0)
-    {
-        dwError = LDAP_NO_SUCH_OBJECT;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(PSTR) * (entryArray.iSize+1),
-            (PVOID*)&ppszServerInfo);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (i=0; i<entryArray.iSize; i++)
-    {
-         pAttr = VmDirEntryFindAttribute(ATTR_CN, entryArray.pEntry+i);
-         dwError = VmDirAllocateStringA(pAttr->vals[0].lberbv.bv_val, &ppszServerInfo[i]);
-         BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *pppszServerInfo = ppszServerInfo;
-    *pdwInfoCount = entryArray.iSize;
-
-cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszSearchBaseDN);
-    VmDirFreeEntryArrayContent(&entryArray);
-    return dwError;
-
-error:
-    VmDirFreeStrArray(ppszServerInfo);
-    goto cleanup;
-}
-
-DWORD
-VmDirAllocateBerValueAVsnprintf(
-    PVDIR_BERVALUE pbvValue,
-    PCSTR pszFormat,
-    ...
-    )
-{
-    DWORD dwError = 0;
-    PSTR pszValue = NULL;
-    va_list args;
-
-    va_start(args, pszFormat);
-    dwError = VmDirVsnprintf(&pszValue, pszFormat, args);
-    va_end(args);
-
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pbvValue->lberbv_val = pszValue;
-    pbvValue->lberbv_len = VmDirStringLenA(pszValue);
-    pbvValue->bOwnBvVal = TRUE;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszValue);
     goto cleanup;
 }
 

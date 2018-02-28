@@ -183,7 +183,6 @@ objectClasses: (
          )
     MAY ( vmwRaftStatus
         $ vmwRaftVoteGranted
-        $ highestCommittedUSN
         )
     )
 
@@ -19581,6 +19580,14 @@ attributetypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.113
+    NAME 'vmwSTSTenantizedUserPrincipalName'
+    DESC 'VMWare identity Service - User principal name including tenant: <upn>/tenant'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19856,6 +19863,7 @@ objectClasses: (
     MUST ( vmwSTSEntityId
          $ vmwSTSExternalIdpUserId
         )
+    MAY ( vmwSTSTenantizedUserPrincipalName )
     )
 
 objectClasses: (
@@ -21643,3 +21651,12 @@ ditstructurerules: (
     )
 
 # next structurerule id = 17
+
+############################################################
+# Indexes
+############################################################
+
+attributeIndices: (
+    NAME 'vmwSTSTenantizedUserPrincipalName'
+    GLOBALLY-UNIQUE
+    )

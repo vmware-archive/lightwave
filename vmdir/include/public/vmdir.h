@@ -75,6 +75,7 @@ extern "C" {
 #define LDAPRPC_VOTE_DN                         "cn=vote,cn=ldaprpc"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define RAFT_CONTEXT_DN                         "cn=raftcontext"
+#define SERVER_STATE_PING_DN                    "cn=ping,cn=serverstate"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -237,6 +238,8 @@ extern "C" {
 #define ATTR_VMWITUSERGUID_LEN              sizeof(ATTR_VMWITUSERGUID)-1
 #define ATTR_LASTLOGONTIMESTAMP             "lastLogonTimestamp"
 #define ATTR_LASTLOGONTIMESTAMP_LEN         sizeof(ATTR_LASTLOGONTIMESTAMP)-1
+#define ATTR_TENANTIZED_UPN                 "vmwSTSTenantizedUserPrincipalName"
+#define ATTR_TENANTIZED_UPN_LEN             sizeof(ATTR_TENANTIZED_UPN)-1
 
 #define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
 #define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"
@@ -373,6 +376,7 @@ extern "C" {
 #define OC_SUB_SCHEMA                       "subschema"
 #define OC_SUB_SCHEMA_LEN                   sizeof(OC_SUB_SCHEMA)-1
 #define OC_DIR_SERVER                       "vmwDirServer"
+#define OC_DIR_SERVER_LEN                   sizeof(OC_DIR_SERVER)-1
 #define OC_PKI_CA                           "pkiCA"
 #define OC_REPLICATION_AGREEMENT            "vmwReplicationAgreement"
 #define OC_REPLICATION_AGREEMENT_LEN        sizeof(OC_REPLICATION_AGREEMENT)-1
@@ -470,18 +474,19 @@ extern "C" {
 #define SCHEMA_REPL_STATUS_CLASS_MISMATCH_IN_BLOB   "Class Mismatch In Blob"
 #define SCHEMA_REPL_STATUS_REFRESH_IN_PROGRESS      "Refresh In Progress"
 
-#define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
-#define VMDIR_SERVERS_CONTAINER_NAME    "Servers"
-#define VMDIR_SERVICES_CONTAINER_NAME   "Services"
-#define VMDIR_DC_GROUP_NAME             "DCAdmins"
-#define VMDIR_DCCLIENT_GROUP_NAME       "DCClients"
-#define VMDIR_CERT_GROUP_NAME           "CAAdmins"
-#define VMDIR_DNS_GROUP_NAME            "DNSAdmins"
-#define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
+#define VMDIR_REPL_AGRS_CONTAINER_NAME      "Replication Agreements"
+#define VMDIR_SERVERS_CONTAINER_NAME        "Servers"
+#define VMDIR_SERVICES_CONTAINER_NAME       "Services"
+#define VMDIR_DC_GROUP_NAME                 "DCAdmins"
+#define VMDIR_DCCLIENT_GROUP_NAME           "DCClients"
+#define VMDIR_SCHEMA_MANAGER_GROUP_NAME     "SchemaManagers"
+#define VMDIR_CERT_GROUP_NAME               "CAAdmins"
+#define VMDIR_DNS_GROUP_NAME                "DNSAdmins"
+#define VMDIR_BUILTIN_CONTAINER_NAME        "Builtin"
 
-#define VDIR_SERVER_VERSION             "1.0"
+#define VDIR_SERVER_VERSION                 "1.0"
 
-#define SASL_MECH                       "GSSAPI SRP"
+#define SASL_MECH                           "GSSAPI SRP"
 
 #define VDIR_LDAP_BOOLEN_SYNTAX_TRUE_STR    "TRUE"
 
@@ -500,10 +505,12 @@ extern "C" {
 
 // vmw OID for Integrity Check Control Search
 #define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
-// vmw LDAP PING control OID for reginal single master
-#define LDAP_PING_CONTROL                       "1.3.6.1.4.1.6876.40.10.4"
-// vmw LDAP RequestVote control OID for reginal single master
-#define LDAP_VOTE_CONTROL                       "1.3.6.1.4.1.6876.40.10.5"
+// vmw LDAP RAFT PING control OID for reginal single master
+#define LDAP_RAFT_PING_CONTROL                  "1.3.6.1.4.1.6876.40.10.4"
+// vmw LDAP RAFT RequestVote control OID for reginal single master
+#define LDAP_RAFT_VOTE_CONTROL                  "1.3.6.1.4.1.6876.40.10.5"
+// vmw OID for server state ping
+#define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

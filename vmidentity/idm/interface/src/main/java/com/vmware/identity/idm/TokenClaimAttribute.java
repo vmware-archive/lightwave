@@ -29,11 +29,13 @@ public final class TokenClaimAttribute implements Serializable {
 
     private final String claimValue;
 
+    private static final String delimiter = "#";
+
     public TokenClaimAttribute (String claimName, String claimValue) {
         ValidateUtil.validateNotEmpty(claimName, "Claim name is null or empty");
         ValidateUtil.validateNotEmpty(claimValue, "Claim value is null or empty");
         // we use '#' to delimit claim name and value in internal identity store. Thus claim name should not contain '#'
-        if (claimName.contains("#")) {
+        if (claimName.contains(delimiter)) {
             throw new IllegalArgumentException(String.format("Encountered invalid claim name {%s}. Claim name contains '#'.",
                     claimName));
         }
@@ -47,6 +49,14 @@ public final class TokenClaimAttribute implements Serializable {
 
     public String getClaimValue() {
         return this.claimValue;
+    }
+
+    public static TokenClaimAttribute parse(String claim) {
+        String[] splits = claim.split(delimiter);
+        if (splits.length != 2) {
+            throw new IllegalArgumentException("Invalid claim " + claim);
+        }
+        return new TokenClaimAttribute(splits[0], splits[1]);
     }
 
     @Override

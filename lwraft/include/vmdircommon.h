@@ -906,9 +906,11 @@ typedef enum
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
 #define VMDIR_REG_KEY_CURL_TIMEOUT_SEC        "CurlTimeoutSec"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
+#define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 3
+#define VMDIR_REG_KEY_WTXN_OUTSTANDING_THRESH "WtxnOutstandingThresh"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"

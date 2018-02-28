@@ -174,6 +174,11 @@ retry:
             &pAuthToken->pszBindUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateStringA(
+            pszDomainName,
+            &pAuthToken->pszTenant);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszOIDCSigningCertPEM);
     OidcAccessTokenDelete(pOidcAccessToken);
@@ -198,6 +203,7 @@ VmDirFreeRESTAuthToken(
     {
         VMDIR_SAFE_FREE_MEMORY(pAuthToken->pszAccessToken);
         VMDIR_SAFE_FREE_MEMORY(pAuthToken->pszBindUPN);
+        VMDIR_SAFE_FREE_MEMORY(pAuthToken->pszTenant);
         VMDIR_SAFE_FREE_MEMORY(pAuthToken);
     }
 }

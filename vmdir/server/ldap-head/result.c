@@ -779,7 +779,6 @@ IsAttrInReplScope(
     if ((attrType != NULL && (VmDirStringCompareA( attrType, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0 ||
                               VmDirStringCompareA( attrType, ATTR_UP_TO_DATE_VECTOR, FALSE) == 0 ||
                               VmDirStringCompareA( attrType, VDIR_ATTRIBUTE_SEQUENCE_RID, FALSE) == 0)))
-
     {
         // Reset metaData value so that we don't send local only attribute back.
         attrMetaData[0] = '\0';

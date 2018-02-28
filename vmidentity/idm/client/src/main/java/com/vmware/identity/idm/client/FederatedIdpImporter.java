@@ -14,21 +14,23 @@
 
 package com.vmware.identity.idm.client;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.*;
+import com.vmware.identity.idm.IDMException;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.OidcConfig;
+import com.vmware.identity.idm.TokenClaimAttribute;
+import com.vmware.identity.idm.ValidateUtil;
+
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import java.net.URI;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class FederatedIdpImporter {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(FederatedIdpImporter.class);
@@ -81,6 +83,13 @@ public class FederatedIdpImporter {
             throw new IDMException("Error: No issuer specified for federated IDP");
         }
 
+        JSONObject jsonObj = (JSONObject) config.get(OidcNames.ROLE_GROUP_MAPPINGS);
+        Map<TokenClaimAttribute, List<String>> roleGroupMapping = new HashMap<>();
+        for (Entry<String, Object> entry : jsonObj.entrySet()) {
+            TokenClaimAttribute attribute = TokenClaimAttribute.parse(entry.getKey());
+            roleGroupMapping.put(attribute, toListOfString((JSONArray) entry.getValue()));
+        }
+
         OidcConfig oidcConfig = new OidcConfig()
                                         .setIssuerType((String)config.get(FederatedIdpConfigNames.ISSUER_TYPE))
                                         .setClientId((String)config.get(OidcNames.CLIENT_ID))
@@ -95,9 +104,20 @@ public class FederatedIdpImporter {
 
         IDPConfig idpConfig = new IDPConfig(entityId, IDPConfig.IDP_PROTOCOL_OAUTH_2_0);
         idpConfig.setOidcConfig(oidcConfig);
+        idpConfig.setTokenClaimGroupMappings(roleGroupMapping);
 
         idmClient.setExternalIdpConfig(tenantName, idpConfig);
+        logger.info("Federated oidc config successfully set for issuer {} in tenant {}", idpConfig.getEntityID(), tenantName);
 
         return entityId;
+    }
+
+    private static List<String> toListOfString(JSONArray jsonArray) {
+        ValidateUtil.validateNotNull(jsonArray, "jsonArray");
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            list.add((String) jsonArray.get(i));
+        }
+        return list;
     }
 }

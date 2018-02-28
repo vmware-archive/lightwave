@@ -387,8 +387,7 @@ _VmDirIntegrityCheckEntry(
 
 cleanup:
     ldap_msgfree(pSearchRes);
-    VmDirDeleteDigestControlContent(&digestCtl);
-
+    VmDirFreeCtrlContent(&digestCtl);
     return;
 
 error:

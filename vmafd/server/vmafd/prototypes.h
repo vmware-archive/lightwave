@@ -196,6 +196,7 @@ VmAfSrvLeaveVmDir(
 
 DWORD
 VmAfSrvCreateComputerAccount(
+    PCWSTR   pwszServerName,    /* IN            */
     PCWSTR   pwszUserName,      /* IN            */
     PCWSTR   pwszPassword,      /* IN            */
     PCWSTR   pwszMachineName,   /* IN            */
@@ -1256,7 +1257,8 @@ DWORD
 VmAfSrvJoinValidateCredentials(
     PWSTR pwszDomainName,       /* IN            */
     PWSTR pwszUserName,         /* IN            */
-    PWSTR pwszPassword          /* IN            */
+    PWSTR pwszPassword,         /* IN            */
+    PWSTR pwszSiteName          /* IN   OPTIONAL */
     );
 
 DWORD

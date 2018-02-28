@@ -198,9 +198,7 @@ error:
 
 /*
  * MLModify: Middle-layer modify functionality that sits between LDAP protocol head and the underlying DB.
- *
  */
-
 int
 VmDirMLModify(
     PVDIR_OPERATION pOperation
@@ -216,28 +214,25 @@ VmDirMLModify(
     if (pOperation->conn->bIsAnonymousBind || VmDirIsFailedAccessInfo(&pOperation->conn->AccessInfo))
     {
         dwError = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError,
+                pszLocalErrMsg,
+                "Not bind/authenticate yet");
     }
 
     // Mod request sanity check
-    dwError = _VmDirExternalModsSanityCheck( pOperation, pOperation->request.modifyReq.mods );
+    dwError = _VmDirExternalModsSanityCheck(pOperation, pOperation->request.modifyReq.mods);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirInternalModifyEntry( pOperation);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
-                                                     pOperation->pBECtx->wTxnUSN);
-    }
+    dwError = VmDirInternalModifyEntry(pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, dwError, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -399,6 +394,13 @@ txnretry:
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
         iBEEndTime = VmDirGetTimeInMilliSec();
+
+        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+        {
+            // update max orig usn
+            pOperation->pBEIF->pfnBESetMaxOriginatingUSN(
+                    pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
+        }
     }
     // ************************************************************************************
     // transaction retry loop end.
@@ -1081,15 +1083,32 @@ _VmDirExternalModsSanityCheck(
         }
 
         // Make sure attribute can be modified
-        if ( pLocalMod->attr.pATDesc->bNoUserModifiable == TRUE
-             &&
-             pOp->conn->AccessInfo.bindEID != DEFAULT_ADMINISTRATOR_ENTRY_ID // exempt default administrator
-           )
+        if (pLocalMod->attr.pATDesc->bNoUserModifiable &&
+            pOp->conn->AccessInfo.bindEID != DEFAULT_ADMINISTRATOR_ENTRY_ID) // exempt default administrator
         {
             retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrMsg),
-                                            "attribute (%s) can not be modified",
-                                            VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
+
+            if (VmDirStringEndsWith(pOp->reqDn.lberbv.bv_val, SCHEMA_NAMING_CONTEXT_DN, FALSE))
+            {
+                BOOLEAN bSchemaManager = FALSE;
+
+                retVal = VmDirIsMemberOfGroup(
+                        gVmdirServerGlobals.bvSchemaManagersGroupDN.lberbv.bv_val,
+                        pOp->conn->AccessInfo.pszBindedDn,
+                        &bSchemaManager);
+                BAIL_ON_VMDIR_ERROR(retVal);
+
+                if (bSchemaManager)
+                {
+                    retVal = 0; // Allow schema manager group to modify schema entries
+                }
+            }
+
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrMsg,
+                    "attribute (%s) can not be modified",
+                    VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
         }
 
         if ( pLocalMod->operation == MOD_OP_ADD ||
@@ -1128,15 +1147,11 @@ _VmDirExternalModsSanityCheck(
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
     return retVal;
 
 error:
-
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOp->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOp->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 

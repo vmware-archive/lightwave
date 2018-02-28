@@ -4071,6 +4071,7 @@ VmAfdIpcJoinValidateCredentials(
     PWSTR pwszDomainName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
+    PWSTR pwszSiteName = NULL;
 
     VMW_TYPE_SPEC input_spec[] = JOIN_VALIDATE_CREDENTIALS_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -4102,6 +4103,7 @@ VmAfdIpcJoinValidateCredentials(
     pwszDomainName  = input_spec[0].data.pWString;
     pwszUserName    = input_spec[1].data.pWString;
     pwszPassword    = input_spec[2].data.pWString;
+    pwszSiteName    = input_spec[3].data.pWString;
 
     if (IsNullOrEmptyString(pwszDomainName) ||
         IsNullOrEmptyString(pwszUserName) ||
@@ -4121,7 +4123,8 @@ VmAfdIpcJoinValidateCredentials(
     uResult = VmAfSrvJoinValidateCredentials(
                       pwszDomainName,
                       pwszUserName,
-                      pwszPassword);
+                      pwszPassword,
+                      pwszSiteName);
 
     // Allocate a buffer, marshall the response
     //
@@ -4528,6 +4531,7 @@ VmAfdIpcCreateComputerAccount(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
 
+    PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
     PWSTR pwszMachineName = NULL;
@@ -4562,6 +4566,7 @@ VmAfdIpcCreateComputerAccount(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
+    pwszServerName    = input_spec[idx++].data.pWString;
     pwszUserName    = input_spec[idx++].data.pWString;
     pwszPassword    = input_spec[idx++].data.pWString;
     pwszMachineName = input_spec[idx++].data.pWString;
@@ -4581,6 +4586,7 @@ VmAfdIpcCreateComputerAccount(
     }
 
     uResult = VmAfSrvCreateComputerAccount(
+                      pwszServerName,
                       pwszUserName,
                       pwszPassword,
                       pwszMachineName,

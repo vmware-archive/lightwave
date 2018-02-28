@@ -69,10 +69,8 @@ DWORD
 _VmDirPingReply(
     unsigned int term,
     PCSTR pLeader,
-    USN hasSeenMyOrgUSN,
     unsigned int *currentTerm,
-    unsigned long long  *status,
-    USN  *localUSN
+    unsigned long long  *status
     );
 
 static
@@ -436,10 +434,9 @@ _VmDirSendPingCtl(
     LDAPControl     ldapCtr = {0};
     LDAPControl*    srvCtrls[2] = {&ldapCtr, NULL};
 
-    dwError = VmDirCreatePingCtrlContent(
+    dwError = VmDirCreateRaftPingCtrlContent(
                 gpClusterState->pNodeSelf->pszFQDN,     //candiateId
                 gRaftState.currentTerm,
-                0,                                      //placeholder for USN
                 &ldapCtr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -637,7 +634,7 @@ error:
 
 DWORD
 VmDirPingReplyEntry(
-    PVDIR_CLUSTER_STATE_CONTROL_VALUE pCscv,
+    PVDIR_RAFT_PING_CONTROL_VALUE pCscv,
     PVDIR_ENTRY*    ppEntry
     )
 {
@@ -646,10 +643,8 @@ VmDirPingReplyEntry(
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
     unsigned int currentTerm = 0;
     unsigned long long status = {0};
-    USN localUSN = {0};
     char currentTermStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
     char statusStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
-    char localUsnStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
 
     if (gpClusterState == NULL || gpClusterState->bEnabled == FALSE)
     {
@@ -657,7 +652,7 @@ VmDirPingReplyEntry(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
     }
 
-    dwError = _VmDirPingReply(pCscv->term, pCscv->pszFQDN, pCscv->hasSeenMyOrgUSN, &currentTerm, &status, &localUSN);
+    dwError = _VmDirPingReply(pCscv->term, pCscv->pszFQDN, &currentTerm, &status);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
@@ -669,16 +664,12 @@ VmDirPingReplyEntry(
     dwError = VmDirStringPrintFA(statusStr, sizeof(statusStr), "%llu", status);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringPrintFA(localUsnStr, sizeof(localUsnStr), "%llu", localUSN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     {
         PSTR ppAttrs[] = {ATTR_DN, LDAPRPC_PING_DN,
                           ATTR_CN, "ping",
                           ATTR_OBJECT_CLASS, OC_CLUSTER_STATE,
                           ATTR_RAFT_CURRENT_TERM, currentTermStr,
                           ATTR_RAFT_STATUS, statusStr,
-                          ATTR_HIGHEST_COMMITTED_USN, localUsnStr,
                           NULL };
         dwError = VmDirAttrListToNewEntry(pSchemaCtx, LDAPRPC_PING_DN, ppAttrs, FALSE, &pEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -703,7 +694,7 @@ error:
 
 DWORD
 VmDirVoteReplyEntry(
-    PVDIR_CLUSTER_STATE_CONTROL_VALUE pCvcv,
+    PVDIR_RAFT_VOTE_CONTROL_VALUE pCvcv,
     PVDIR_ENTRY*    ppEntry
     )
 {
@@ -721,7 +712,7 @@ VmDirVoteReplyEntry(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
     }
 
-    dwError = _VmDirVoteReply(pCvcv->term, pCvcv->pszFQDN, &currentTerm, &voteGranted);
+    dwError = _VmDirVoteReply(pCvcv->term, pCvcv->pszCandidateId, &currentTerm, &voteGranted);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
@@ -770,10 +761,8 @@ DWORD
 _VmDirPingReply(
     unsigned int term,
     PCSTR pLeader,
-    USN hasSeenMyOrgUSN,
     unsigned int *currentTerm,
-    unsigned long long  *status,
-    USN  *localUSN
+    unsigned long long  *status
     )
 {
     DWORD dwError = 0;
@@ -813,7 +802,6 @@ _VmDirPingReply(
 
     *status = 0;
     *currentTerm = newTerm;
-    *localUSN = 0; //placeholder localUSN
 
 cleanup:
     VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
@@ -824,8 +812,8 @@ cleanup:
 
     if (!dwError && (got_ping_cnt++ % 20 == 0))
     {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: got Ping from %s, term %d newTerm %d, origUSN: %llu",
-          __func__, pLeader, term, newTerm, hasSeenMyOrgUSN);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: got Ping from %s, term %d newTerm %d",
+          __func__, pLeader, term, newTerm);
     }
     return dwError;
 
@@ -1260,7 +1248,7 @@ _VmDirSendVoteCtl(
     LDAPControl     ldapCtr = {0};
     LDAPControl*    srvCtrls[2] = {&ldapCtr, NULL};
 
-    dwError = VmDirCreateVoteCtrlContent(
+    dwError = VmDirCreateRaftVoteCtrlContent(
                 gpClusterState->pNodeSelf->pszFQDN,     // CandiateId
                 term,
                 &ldapCtr);

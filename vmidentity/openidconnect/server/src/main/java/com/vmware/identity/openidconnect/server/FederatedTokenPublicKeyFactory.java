@@ -14,12 +14,15 @@
 package com.vmware.identity.openidconnect.server;
 
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.server.FederatedIdentityProviderInfo.IssuerType;
+import com.vmware.identity.openidconnect.protocol.FederationIDPIssuerType;
 
 public class FederatedTokenPublicKeyFactory {
 
-    public static FederatedTokenPublicKey build(String jwkUri, IssuerType issuerType) throws Exception {
-        if (issuerType == IssuerType.CSP) {
+   private FederatedTokenPublicKeyFactory() {
+   }
+
+    public static FederatedTokenPublicKey build(String jwkUri, FederationIDPIssuerType issuerType) throws Exception {
+        if (issuerType == FederationIDPIssuerType.CSP) {
             return CSPTokenPublicKey.build(jwkUri);
         } else {
             throw new ServerException(ErrorObject.invalidRequest("unsupported federation idp issuer type " + issuerType.getType()));

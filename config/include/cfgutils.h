@@ -67,6 +67,7 @@ typedef struct _VMW_IC_SETUP_PARAMS
     BOOLEAN bDisableDNS;
     BOOLEAN bUseMachineAccount;
     BOOLEAN bMachinePreJoined;
+    BOOLEAN bAtomicJoin;
 
 } VMW_IC_SETUP_PARAMS, *PVMW_IC_SETUP_PARAMS;
 

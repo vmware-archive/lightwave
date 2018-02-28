@@ -307,23 +307,103 @@ VmDirBkgdPingMaxOrigUsn(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
+    size_t  iSrvsCnt = 0;
+    PSTR*   ppszSrvs = NULL;
+    PSTR    pszLocalSrv = NULL;
+    PSTR    pszDCAccountUPN = NULL;
+    PSTR    pszDCAccountPasswd = NULL;
+    PCSTR   pszFilter = "(objectclass=*)";
+    LDAP*           pLd = NULL;
+    LDAPControl     pingCtl = {0};
+    LDAPControl*    pCtrls[2] = {&pingCtl, NULL};
+    LDAPMessage*    pResult = NULL;
 
     if (!pTaskCtx)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    /* TODO (phase 3)
-    // for each partner
-    for (;;)
-    {
-        // send ping with current max orig usn
-    }
-    */
+    // get localhost server name
+    pszLocalSrv = gVmdirServerGlobals.bvServerObjName.lberbv_val;
 
-    // ping period is set to 0 - no need to keep track of prev time
+    // get dc account upn
+    pszDCAccountUPN = gVmdirServerGlobals.dcAccountUPN.lberbv_val;
+
+    // get dc account password
+    dwError = VmDirReadDCAccountPassword(&pszDCAccountPasswd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // create ping control
+    dwError = VmDirCreateStatePingControlContent(&pingCtl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // get list of all servers
+    dwError = VmDirGetHostsInternal(&ppszSrvs, &iSrvsCnt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < iSrvsCnt; i++)
+    {
+        if (VmDirStringCompareA(ppszSrvs[i], pszLocalSrv, FALSE) == 0)
+        {
+            // don't ping itself.
+            continue;
+        }
+
+        // (TODO) either move to REST or make this long lasting connection
+        VDIR_SAFE_UNBIND_EXT_S(pLd);
+        dwError = VmDirSafeLDAPBindExt1(
+                &pLd,
+                ppszSrvs[i],
+                pszDCAccountUPN,
+                pszDCAccountPasswd,
+                gVmdirGlobals.dwLdapConnectTimeoutSec);
+
+        if (dwError)
+        {
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s failed bind to %s, error (%d)",
+                    __FUNCTION__,
+                    ppszSrvs[i],
+                    dwError);
+            continue;
+        }
+
+        ldap_msgfree(pResult);
+        dwError = ldap_search_ext_s(
+                pLd,
+                SERVER_STATE_PING_DN,
+                LDAP_SCOPE_BASE,
+                pszFilter,
+                NULL,
+                FALSE,
+                pCtrls,
+                NULL,
+                NULL,
+                0,
+                &pResult);
+
+        if (dwError)
+        {
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s failed to send ping to %s, error (%d)",
+                    __FUNCTION__,
+                    ppszSrvs[i],
+                    dwError);
+            continue;
+        }
+    }
+
+    // ping period is 0 - no need to keep track of prev time
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDCAccountPasswd);
+    VmDirFreeCtrlContent(&pingCtl);
+    VmDirFreeStrArray(ppszSrvs);
+    VDIR_SAFE_UNBIND_EXT_S(pLd);
+    ldap_msgfree(pResult);
     return dwError;
 
 error:

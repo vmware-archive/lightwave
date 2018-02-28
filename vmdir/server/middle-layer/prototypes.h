@@ -448,13 +448,18 @@ VmDirInternalMetricsUpdate(
     );
 
 BOOLEAN
-VmDirIsSearchForPing(
-    PVDIR_OPERATION                     pOp
+VmDirIsSearchForRaftPing(
+    PVDIR_OPERATION     pOp
     );
 
 BOOLEAN
-VmDirIsSearchForVote(
-    PVDIR_OPERATION                     pOp
+VmDirIsSearchForRaftVote(
+    PVDIR_OPERATION     pOp
+    );
+
+BOOLEAN
+VmDirIsSearchForStatePing(
+    PVDIR_OPERATION     pOp
     );
 
 #endif

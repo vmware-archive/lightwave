@@ -285,7 +285,7 @@ VmDirRESTProxyForwardRequest(
             "Proxy forwarding done for client: %s to leader: %s time taken: %d ms",
             VDIR_SAFE_STRING(pRestOp->pszClientIP),
             VDIR_SAFE_STRING(pszLeader),
-            VMDIR_RESPONSE_TIME(VmDirGetTimeInMilliSec()-uiStartTime));
+            VMDIR_RESPONSE_TIME(uiStartTime, VmDirGetTimeInMilliSec()));
 
 cleanup:
     _VmDirRESTProxySetResult(
@@ -309,7 +309,7 @@ error:
             __FUNCTION__,
             dwError,
             dwCurlError,
-            VMDIR_RESPONSE_TIME(VmDirGetTimeInMilliSec()-uiStartTime),
+            VMDIR_RESPONSE_TIME(uiStartTime, VmDirGetTimeInMilliSec()),
             VDIR_SAFE_STRING(pRestOp->pszClientIP),
             VDIR_SAFE_STRING(pszLeader));
     goto cleanup;

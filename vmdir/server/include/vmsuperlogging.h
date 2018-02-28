@@ -107,6 +107,11 @@ VmDirSuperLoggingGetEntries(
     PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY *ppEntries
     );
 
+DWORD
+VmDirLogSearchParameters(
+    PVDIR_OPERATION pOperation
+    );
+
 VOID
 VmDirLogOperation(
     PVMSUPERLOGGING pLogger,

@@ -20,7 +20,8 @@
 #include <vmmetrics.h>
 extern PVM_METRICS_CONTEXT pmContext;
 
-#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+#define VMDIR_COLLECT_TIME(time) (time = time ? time : VmDirGetTimeInMilliSec())
+#define VMDIR_RESPONSE_TIME(start, end) ((start < end) ? (end - start) : 0)
 
 #ifdef __cplusplus
 extern "C" {
@@ -207,6 +208,7 @@ typedef struct _VDIR_CONNECTION_CTX
 {
   ber_socket_t sockFd;
   Sockbuf_IO   *pSockbuf_IO;
+  BOOLEAN       bIsLdaps;
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
@@ -558,30 +560,47 @@ typedef enum
 
 } VDIR_OPERATION_PROTOCOL;
 
+typedef struct _VDIR_OPERATION_ML_METRIC
+{
+    // times will be collected in this following order
+    uint64_t    iMLStartTime;
+    uint64_t    iPrePluginsStartTime;
+    uint64_t    iPrePlugunsEndTim;
+    uint64_t    iBETxnBeginStartTime;
+    uint64_t    iBETxnBeginEndTime;
+    uint64_t    iBETxnCommitStartTime;
+    uint64_t    iBETxnCommitEndTime;
+    uint64_t    iPostPluginsStartTime;
+    uint64_t    iPostPlugunsEndTime;
+    uint64_t    iMLEndTime;
+
+} VDIR_OPERATION_ML_METRIC, *PVDIR_OPERATION_ML_METRIC;
+
 typedef struct _VDIR_OPERATION
 {
-    VDIR_OPERATION_TYPE     opType;
-    VDIR_OPERATION_PROTOCOL protocol;
+    VDIR_OPERATION_TYPE         opType;
+    VDIR_OPERATION_PROTOCOL     protocol;
+    VDIR_OPERATION_ML_METRIC    MLMetrics;
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid only for EXTERNAL operation
     ///////////////////////////////////////////////////////////////////////////
-    ber_int_t           protocolVer;    // version of the LDAP protocol used by client
-    BerElement *        ber;         // ber of the request
-    ber_int_t           msgId;       // msgid of the request
-    PVDIR_CONNECTION    conn;        // Connection
-    VDIR_LDAP_CONTROL *       reqControls; // Request Controls, sent by client.
-    VDIR_LDAP_CONTROL *       syncReqCtrl; // Sync Request Control, points in reqControls list.
-    VDIR_LDAP_CONTROL *       syncDoneCtrl; // Sync Done Control.
-    VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
-    VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
-    VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
-    VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
-    VDIR_LDAP_CONTROL *       manageDsaITCtrl;
-    VDIR_LDAP_CONTROL *       pCondWriteCtrl;
+    ber_int_t               protocolVer;    // version of the LDAP protocol used by client
+    BerElement *            ber;         // ber of the request
+    ber_int_t               msgId;       // msgid of the request
+    PVDIR_CONNECTION        conn;        // Connection
+    VDIR_LDAP_CONTROL *     reqControls; // Request Controls, sent by client.
+    VDIR_LDAP_CONTROL *     syncReqCtrl; // Sync Request Control, points in reqControls list.
+    VDIR_LDAP_CONTROL *     syncDoneCtrl; // Sync Done Control.
+    VDIR_LDAP_CONTROL *     showDeletedObjectsCtrl; // points in reqControls list.
+    VDIR_LDAP_CONTROL *     showMasterKeyCtrl;
+    VDIR_LDAP_CONTROL *     showPagedResultsCtrl;
+    VDIR_LDAP_CONTROL *     strongConsistencyWriteCtrl;
+    VDIR_LDAP_CONTROL *     manageDsaITCtrl;
+    VDIR_LDAP_CONTROL *     pCondWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
-    DWORD               dwSchemaWriteOp; // this operation is schema modification
+    DWORD                   dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for both INTERNAL and EXTERNAL operations
@@ -590,7 +609,6 @@ typedef struct _VDIR_OPERATION
     ber_tag_t           reqCode;     // LDAP_REQ_ADD/MODIFY/DELETE/SEARCH....
     VDIR_LDAP_REQUEST   request;     // LDAP request (parameters)
     VDIR_LDAP_RESULT    ldapResult;
-
     PVDIR_SCHEMA_CTX    pSchemaCtx;
 
 #define pBEIF       pBECtx->pBE
@@ -601,13 +619,9 @@ typedef struct _VDIR_OPERATION
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for INTERNAL operations
     ///////////////////////////////////////////////////////////////////////////
-
     VDIR_ENTRY_ARRAY    internalSearchEntryArray; // internal search result
-
     USN                 lowestPendingUncommittedUsn; // recorded at the beginning of replication search operation.
-
     PSTR                pszFilters; // filter candidates' size recorded in string
-
     DWORD               dwSentEntries; // number of entries sent back to client
     BOOLEAN             bSuppressLogInfo;
     BOOLEAN             bNoRaftLog; //The operation is derived or in local server scope - don't generate Raft log

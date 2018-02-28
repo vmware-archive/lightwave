@@ -9,8 +9,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
+	"math/rand"
+	"strings"
 )
 
 const (
@@ -19,11 +20,13 @@ const (
 	account = "administrator"
 	port    = 2000
 	timeout = 31
+	threads = 15
 )
 
 var domain = flag.String("domain", "", "System tenant domain")
 var password = flag.String("password", "", "System tenant password")
 var otherDC = flag.String("dcname", "", "Other DC to affinitize to on force-refresh case")
+var loadBalancer = flag.String("elb", "", "Load balancer to use for machine account creation test")
 
 func init() {
 	flag.Parse()
@@ -32,22 +35,6 @@ func init() {
 		flag.Usage()
 		os.Exit(1)
 	}
-}
-
-func TestVmAfdGetHeartbeatStatus(t *testing.T) {
-	server, err := VmAfdOpenServer(host, account, *password)
-	if err != nil {
-		return
-	}
-	defer server.Close()
-
-	status, err := server.VmAfdGetHeartbeatStatus()
-	if err != nil {
-		assert.FailNow(t, "Error in getting Heartbeat Status", "Username: %s, Password: %s, Error: %+v", account, *password, err)
-	}
-	defer status.FreeHeartbeatStatus()
-
-	checkHeartbeatStatusAlive(t, status)
 }
 
 func TestVmAfdStartHeartbeat(t *testing.T) {
@@ -92,6 +79,22 @@ func TestVmAfdStartHeartbeat(t *testing.T) {
 		assert.False(t, info.IsAlive(), "Error: service %s should not be alive", service)
 	}
 	log.Printf("Verified service heartbeat stopped\n")
+}
+
+func TestVmAfdGetHeartbeatStatus(t *testing.T) {
+	server, err := VmAfdOpenServer(host, account, *password)
+	if err != nil {
+		return
+	}
+	defer server.Close()
+
+	status, err := server.VmAfdGetHeartbeatStatus()
+	if err != nil {
+		assert.FailNow(t, "Error in getting Heartbeat Status", "Username: %s, Password: %s, Error: %+v", account, *password, err)
+	}
+	defer status.FreeHeartbeatStatus()
+
+	checkHeartbeatStatusAlive(t, status)
 }
 
 func TestVmAfdGetDCName(t *testing.T) {
@@ -154,7 +157,104 @@ func TestCdcGetDCStatusInfo(t *testing.T) {
 		info.FreeStatusInfo()
 		hb.FreeHeartbeatStatus()
 	}
+}
 
+func TestCdcGetDcStatusInfoThreads(t *testing.T) {
+	fmt.Printf("[TEST] Testing getDCStatusInfo threads\n")
+	done := make(chan bool)
+	for i := 0; i < threads; i++ {
+		fmt.Printf("\t[DEBUG] Starting thread %d\n", i)
+		go func(t *testing.T, id int) {
+			run := 0
+			for ; run < 100; run++ {
+				TestCdcGetDCStatusInfo(t)
+			}
+			fmt.Printf("\t[THREAD %d] Finished\n", id)
+			done <- true
+		}(t, i)
+	}
+
+	for i := 0; i < threads; i++ {
+		<- done
+	}
+}
+
+func TestNilFree(t *testing.T) {
+	server := VmAfdServer{}
+	server.Close()
+
+	hb := VmAfdHbStatus{}
+	hb.FreeHeartbeatStatus()
+
+	handle := VmAfdHbHandle{}
+	handle.StopHeartbeat()
+
+	info := CdcDcStatusInfo{}
+	info.FreeStatusInfo()
+}
+
+func TestDoubleFree(t *testing.T) {
+	server, err := VmAfdOpenServer("", "", "") // Open connection to localhost
+	if err != nil {
+		assert.FailNowf(t, "Could not connect to localhost", "Error: %+v", err)
+	}
+	defer server.Close()
+
+	status, err := server.VmAfdGetHeartbeatStatus()
+	if err != nil {
+		assert.FailNow(t, "Error in getting Heartbeat Status", "Username: %s, Password: %s, Error: %+v", account, *password, err)
+	}
+	defer status.FreeHeartbeatStatus()
+
+	status.FreeHeartbeatStatus()
+	assert.Nilf(t, status.p, "HB Status should be freed and nil")
+
+	entries, err := server.CdcEnumDCEntries()
+	if err != nil {
+		assert.FailNowf(t, "Failed to enumerate DC Entries", "Error: %+v", err)
+	}
+
+	for _, entry := range entries {
+		assert.NotEmpty(t, entry, "Entry is empty")
+		info, hb, err := server.CdcGetDCStatusInfo(entry)
+		if err != nil {
+			assert.FailNowf(t, "Failed to get DC Status info", "DC: %s, Error: %+v", entry, err)
+		}
+
+		info.FreeStatusInfo()
+		assert.Nilf(t, info.p, "DC info should be freed and nil")
+		hb.FreeHeartbeatStatus()
+		assert.Nilf(t, hb.p, "HB Status should be freed and nil")
+
+		// Double free, Should not crash
+		info.FreeStatusInfo()
+		hb.FreeHeartbeatStatus()
+	}
+
+	// Double free, Should not crash
+	server.Close()
+}
+
+func TestVmAfdCreateComputerAccountWithDC(t *testing.T) {
+	if loadBalancer == nil || *loadBalancer == "" {
+		log.Printf("ELB not passed in, skipping CreateMachineAccount test")
+		return
+	}
+
+	// Create machine account
+	machineAccount := "machine" + randSeq(5) + "@" + *domain
+	machinePassword, err := VmAfdCreateComputerAccountWithDC(*loadBalancer, "Administrator", *password, machineAccount, "")
+	if err != nil {
+		assert.FailNow(t,"Error in creating machine account",	"Error: %+v, account: %s, password: %s, elb: %s, machine acc: %s",
+			err,
+			"Administrator",
+			*password,
+			*loadBalancer,
+			machineAccount)
+	}
+
+	assert.NotEmpty(t, machinePassword, "Machine password is empty")
+	fmt.Printf("Created Machine account %s with password %s", machineAccount, machinePassword)
 }
 
 func getHbInfo(t *testing.T, status *VmAfdHbStatus, service string) *VmAfdHbInfo {
@@ -197,5 +297,15 @@ func checkDCInfo(t *testing.T, info *CdcDcStatusInfo, name string) {
 	}
 	assert.NotZero(t, info.GetLastPing(), "DC %s - LastPing should not be 0", name)
 	assert.True(t, info.IsAlive(), "DC %s should be alive", name)
-	fmt.Printf("[DEBUG DCInfo] DC: %s\n\tLastPing: %d\n\tSite: %s\n\tisAlive: %+v\n", name, info.GetLastPing(), info.GetSiteName(), info.IsAlive())
+	//fmt.Printf("[DEBUG DCInfo] DC: %s\n\tLastPing: %d\n\tSite: %s\n\tisAlive: %+v\n", name, info.GetLastPing(), info.GetSiteName(), info.IsAlive())
+}
+
+func randSeq(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Int63() % int64(len(letters))]
+	}
+	return string(b)
 }

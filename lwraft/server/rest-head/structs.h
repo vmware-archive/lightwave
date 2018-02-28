@@ -119,7 +119,6 @@ typedef struct _VDIR_REST_OPERATION
     PVDIR_REST_RESULT           pResult;
     PVDIR_REST_RESOURCE         pResource;
     PREST_API_METHOD            pMethod;
-    PVMDIR_THREAD_LOG_CONTEXT   pThreadLogContext;
 
     // if leader, get it from resource.c
     // otherwise, get it from proxy.c

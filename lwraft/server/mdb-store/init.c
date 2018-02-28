@@ -52,6 +52,92 @@ MDBFreeMdbGlobals(
     VOID
     );
 
+#define W_TXNS_OUTSTANDING_THRESH_D 500;
+static int g_w_txns_outstanding = 0;
+static int g_w_txns_outstanding_thresh = W_TXNS_OUTSTANDING_THRESH_D;
+static PVMDIR_MUTEX g_w_txns_mutex = NULL;
+static UINT64 g_start_ts_ms = 0;
+static int g_stats_cnt = 0;
+
+static
+DWORD
+_VmDirWtxnStatsInit()
+{
+    DWORD dwWtxnOutstandingThresh = W_TXNS_OUTSTANDING_THRESH_D;
+    DWORD dwError = 0;
+
+    if (g_w_txns_mutex == NULL)
+    {
+        dwError = VmDirAllocateMutex(&g_w_txns_mutex);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+        VMDIR_REG_KEY_WTXN_OUTSTANDING_THRESH,
+        &dwWtxnOutstandingThresh, 0);
+
+    if (dwError == 0)
+    {
+       g_w_txns_outstanding_thresh = dwWtxnOutstandingThresh;
+    } else
+    {
+       //Use the default value.
+       dwError = 0;
+    }
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: W_TXNS_OUTSTANDING_THRESH = %d", __func__, g_w_txns_outstanding_thresh);
+
+done:
+    return dwError;
+
+error:
+    goto done;
+}
+
+//The log is to detect bursting traffic that
+// caused write transaction avg. latency to spike.
+VOID
+VmDirWtxnOutstandingInc()
+{
+   BOOLEAN bLock = FALSE;
+   double stats_peroid_ms = 0.0;
+   double offered_rate = 0.0;
+
+   VMDIR_LOCK_MUTEX(bLock, g_w_txns_mutex);
+   if (g_w_txns_outstanding == 0)
+   {
+      g_start_ts_ms = VmDirGetTimeInMilliSec();
+      g_stats_cnt = 0;
+   }
+   g_w_txns_outstanding++;
+   g_stats_cnt++;
+
+   if (g_w_txns_outstanding >= g_w_txns_outstanding_thresh && g_stats_cnt >= g_w_txns_outstanding_thresh)
+   {
+       stats_peroid_ms = (double)(VmDirGetTimeInMilliSec() - g_start_ts_ms);
+       if (stats_peroid_ms > 1) //avoid float point division overflow
+       {
+           offered_rate = (double)g_stats_cnt * 1000.0 / stats_peroid_ms;
+           VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: write transactions outstanding %d for peroid %.2g ms with offered rate %.3g on %d write requests",
+                       __func__,  g_w_txns_outstanding, stats_peroid_ms, offered_rate, g_stats_cnt);
+       }
+       g_stats_cnt = 0;
+       g_start_ts_ms = VmDirGetTimeInMilliSec();
+   }
+   VMDIR_UNLOCK_MUTEX(bLock, g_w_txns_mutex);
+}
+
+VOID
+VmDirWtxnOutstandingDec()
+{
+    BOOLEAN bLock = FALSE;
+
+    VMDIR_LOCK_MUTEX(bLock, g_w_txns_mutex);
+    g_w_txns_outstanding--;
+    VMDIR_UNLOCK_MUTEX(bLock, g_w_txns_mutex);
+}
+
 PVDIR_BACKEND_INTERFACE
 VmDirMDBBEInterface (
     VOID)
@@ -277,6 +363,9 @@ VmDirMDBInitializeDB(
     BAIL_ON_VMDIR_ERROR( dwError );
 
     VmDirLogDBStats();
+
+    dwError = _VmDirWtxnStatsInit();
+    BAIL_ON_VMDIR_ERROR( dwError );
 
 cleanup:
     VmDirLog( LDAP_DEBUG_TRACE, "MDBInitializeDB: End" );

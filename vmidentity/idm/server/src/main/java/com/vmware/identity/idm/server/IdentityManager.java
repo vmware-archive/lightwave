@@ -7541,7 +7541,10 @@ public class IdentityManager implements IIdentityManager {
     TenantInformation findTenant(String tenantName) throws Exception
     {
         TenantInformation tenantInfo = _tenantCache.findTenant(tenantName);
-        if (tenantInfo == null)
+        if (tenantInfo == null || tenantInfo.getTenantCertificate() == null
+                || tenantInfo.getTenantCertificate().isEmpty()
+                || tenantInfo.getTenantCertificate().get(0) == null
+                || tenantInfo.getPrivateKey() == null)
         {
             tenantInfo = loadTenant(tenantName);
         }

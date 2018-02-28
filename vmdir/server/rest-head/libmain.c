@@ -50,6 +50,12 @@ _VmDirRESTServerShutdownHTTPS(
     );
 
 static
+DWORD
+_VmDirStopRESTHandle(
+    PVMREST_HANDLE    pHandle
+    );
+
+static
 VOID
 _VmDirFreeRESTHandle(
     PVMREST_HANDLE    pHandle
@@ -104,7 +110,10 @@ cleanup:
     return dwError;
 
 error:
-    VmDirRESTServerShutdown();
+    if (VmDirRESTServerStop() == 0)
+    {
+        VmDirRESTServerShutdown();
+    }
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",
@@ -112,6 +121,20 @@ error:
             dwError);
 
     goto cleanup;
+}
+
+DWORD
+VmDirRESTServerStop(
+    VOID
+    )
+{
+    DWORD   dwStopHttp = 0;
+    DWORD   dwStopHttps = 0;
+
+    dwStopHttp  = _VmDirStopRESTHandle(gpVdirRestHTTPHandle);
+    dwStopHttps = _VmDirStopRESTHandle(gpVdirRestHTTPSHandle);
+
+    return dwStopHttp | dwStopHttps;
 }
 
 VOID
@@ -223,7 +246,10 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirFreeRESTHandle(pHTTPHandle);
+    if (_VmDirStopRESTHandle(pHTTPHandle) == 0)
+    {
+        _VmDirFreeRESTHandle(pHTTPHandle);
+    }
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",
@@ -298,7 +324,10 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirFreeRESTHandle(pHTTPSHandle);
+    if (_VmDirStopRESTHandle(pHTTPSHandle) == 0)
+    {
+        _VmDirFreeRESTHandle(pHTTPSHandle);
+    }
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",
@@ -329,13 +358,12 @@ _VmDirRESTServerShutdownHTTPS(
 }
 
 static
-VOID
-_VmDirFreeRESTHandle(
+DWORD
+_VmDirStopRESTHandle(
     PVMREST_HANDLE    pHandle
     )
 {
     DWORD dwError = 0;
-    PREST_API_MODULE  pModule = NULL;
 
     if (pHandle)
     {
@@ -346,7 +374,6 @@ _VmDirFreeRESTHandle(
          * If not able to finish in specified time, failure will be returned
          */
         dwError = VmRESTStop(pHandle, VMDIR_REST_STOP_TIMEOUT_SEC);
-
         if (dwError != 0)
         {
             VMDIR_LOG_WARNING(
@@ -355,7 +382,22 @@ _VmDirFreeRESTHandle(
                    __FUNCTION__,
                    dwError);
         }
+    }
 
+    return dwError;
+}
+
+
+static
+VOID
+_VmDirFreeRESTHandle(
+    PVMREST_HANDLE    pHandle
+    )
+{
+    PREST_API_MODULE  pModule = NULL;
+
+    if (pHandle)
+    {
         if (gpVdirRestApiDef)
         {
             pModule = gpVdirRestApiDef->pModules;

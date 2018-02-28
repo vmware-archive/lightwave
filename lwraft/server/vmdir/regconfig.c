@@ -259,6 +259,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirServerGlobals.dwMaxInternalSearchLimit = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_EFFICIENT_READ_OP,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwEfficientReadOpTimeMS = pEntry->dwValue;
+        }
     }
 
 cleanup:

@@ -444,15 +444,6 @@ VmDirSrvSetupHostInstance(
     gVmdirServerGlobals.replPageSize =
             VmDirStringToIA(VMDIR_DEFAULT_REPL_PAGE_SIZE);
 
-    // Set utdVector
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = "";
-    bv.lberbv.bv_len = 0;
-
-    dwError = VmDirBervalContentDup(
-            &bv, &gVmdirServerGlobals.utdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // Set delObjsContainerDN
     VmDirFreeBervalContent(&bv);
     bv.lberbv.bv_val = pszDelObjsContainerDN;
@@ -503,6 +494,18 @@ VmDirSrvSetupHostInstance(
 
     dwError = VmDirNormalizeDN(
             &gVmdirServerGlobals.bvDCClientGroupDN, pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // set SchemaManagersGroupDN for first,second+ host setup
+    dwError = VmDirAllocateBerValueAVsnprintf(
+            &gVmdirServerGlobals.bvSchemaManagersGroupDN,
+            "cn=%s,%s",
+            VMDIR_SCHEMA_MANAGER_GROUP_NAME,
+            pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirNormalizeDN(
+            &gVmdirServerGlobals.bvSchemaManagersGroupDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set ServicesRootDN for first,second+ host setup

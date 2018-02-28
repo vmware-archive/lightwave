@@ -13,6 +13,7 @@
  */
 package com.vmware.identity.rest.idm.server.resources;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+
+import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -65,6 +68,7 @@ import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
+import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
@@ -250,6 +254,65 @@ public class TenantResource extends BaseResource {
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
             totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+    @POST
+    @Path(PathParameters.TENANT_NAME_VAR + "/finder/principals")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.REGULAR_USER)
+    public PrincipalIdentifiersDTO findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName, PrincipalIdentifiersDTO principalIds) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "findPrincipalIds").startTimer();
+        String responseStatus = HTTP_OK;
+
+        List<String> ids = new ArrayList<>();
+        try {
+            Validate.notEmpty(principalIds.getIds(), "principal ids are missing from the request");
+            for (String idString : principalIds.getIds()) {
+                PrincipalId id = PrincipalUtil.fromName(idString);
+                String result = null;
+
+                PersonUser user = getIDMClient().findPersonUser(tenantName, id);
+                if (user != null) {
+                    result = user.getDetail().getUserPrincipalName(); // user upn is in the format of userName@domainName
+                }
+
+                if (result == null) {
+                    Group group = getIDMClient().findGroup(tenantName, id);
+                    if (group != null) {
+                        result = group.getNetbios(); // use netbios which is in the format of domainName/groupName
+                    }
+                }
+
+                if (result == null) {
+                    SolutionUser solutionUser = getIDMClient().findSolutionUser(tenantName, idString);
+                    if (solutionUser != null) {
+                        result = solutionUser.getId().getUPN(); // solution user is in the format of userName@domainName
+                    }
+                }
+
+                if (result == null) {
+                    throw new NotFoundException("Principal id " + idString + " is not found.");
+                }
+                ids.add(result);
+            }
+            return new PrincipalIdentifiersDTO.Builder().withIds(ids).build();
+        } catch (NotFoundException | NoSuchTenantException e) {
+            log.warn("Failed to look up members on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (BadRequestException | IllegalArgumentException e) {
+            log.warn("Failed to look up members on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.ten.search.failed"), e);
+        } catch (Exception e) {
+            log.error("Failed to look up members on tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "findPrincipalIds").inc();
             requestTimer.observeDuration();
         }
     }

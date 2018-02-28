@@ -107,6 +107,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        bvServerObjName;
     DWORD                dwDomainFunctionalLevel;
     DWORD                dwMaxInternalSearchLimit;
+    DWORD                dwEfficientReadOpTimeMS;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -361,7 +362,7 @@ VmDirSrvGetSocketAcceptFd(
 // shutdown.c
 VOID
 VmDirShutdown(
-    PBOOLEAN pbWaitTimeOut
+    PBOOLEAN pbVmDirStopped
     );
 
 // tracklastlogin.c

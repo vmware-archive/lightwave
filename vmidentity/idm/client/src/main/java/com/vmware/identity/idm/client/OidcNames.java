@@ -18,6 +18,7 @@ public class OidcNames {
     public static final String ISSUER = "issuer";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_SECRET = "client_secret";
+    public static final String ROLE_GROUP_MAPPINGS = "role_group_mappings";
     // Endpoints
     public static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
     public static final String TOKEN_ENDPOINT = "token_endpoint";

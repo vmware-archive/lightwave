@@ -83,68 +83,6 @@ error:
 }
 
 static
-DWORD
-_VmDirLogSearchParameters(
-    PVDIR_OPERATION pOperation
-    )
-{
-    DWORD dwError = 0;
-    PVDIR_CONNECTION pConn = pOperation->conn;
-    SearchReq sr = pOperation->request.searchReq;
-    VDIR_BERVALUE strFilter = VDIR_BERVALUE_INIT;
-    static PCSTR pcszScopeStr[] = { "BASE", "ONE", "SUB" };
-
-    dwError = FilterToStrFilter(sr.filter, &strFilter);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA(
-            VDIR_SAFE_STRING(strFilter.lberbv.bv_val),
-            &pConn->SuperLogRec.pszOperationParameters);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA(
-            VDIR_SAFE_STRING(pOperation->reqDn.lberbv.bv_val),
-            &pConn->SuperLogRec.opInfo.searchInfo.pszBaseDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA(
-            VDIR_SAFE_STRING(pOperation->pszFilters),
-            &pConn->SuperLogRec.opInfo.searchInfo.pszIndexResults);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (sr.scope < 0 || sr.scope > 2)
-    {
-        VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "_VmDirLogSearchParameters: Unknown search scope (%d)", sr.scope );
-        dwError = ERROR_INVALID_PARAMETER;
-    }
-    else
-    {
-        dwError = VmDirAllocateStringA(
-                pcszScopeStr[sr.scope],
-                &pConn->SuperLogRec.opInfo.searchInfo.pszScope);
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pConn->SuperLogRec.opInfo.searchInfo.dwReturned = pOperation->dwSentEntries;
-    if (pOperation->request.searchReq.filter->candidates)
-    {
-        pConn->SuperLogRec.opInfo.searchInfo.dwScanned = sr.filter->candidates->size;
-    }
-
-    if (VmDirLogGetLevel() >= VMDIR_LOG_VERBOSE && VmDirLogGetMask() & LDAP_DEBUG_ARGS)
-    {
-        VMDIR_LOG_VERBOSE(LDAP_DEBUG_ARGS, "    Filter: %s", pConn->SuperLogRec.pszOperationParameters);
-    }
-
-cleanup:
-    VmDirFreeBervalContent(&strFilter);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
 BOOLEAN
 _VmDirSearchValidStateForReplication(
     PVDIR_OPERATION     pOperation
@@ -348,7 +286,7 @@ VmDirPerformSearch(
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
-   retVal = _VmDirLogSearchParameters(pOperation);
+   retVal = VmDirLogSearchParameters(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:

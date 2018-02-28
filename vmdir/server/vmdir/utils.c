@@ -683,6 +683,97 @@ VmDirSrvValidateUserCreateParams(
     return dwError;
 }
 
+/*
+ * Lookup servers topology internally first. Then one of the servers
+ * will be used to query uptoupdate servers topology
+ */
+DWORD
+VmDirGetHostsInternal(
+    PSTR**  pppszServerInfo,
+    size_t* pdwInfoCount
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszSearchBaseDN = NULL;
+    VDIR_ENTRY_ARRAY    entryArray = {0};
+    PVDIR_ATTRIBUTE     pAttr = NULL;
+    PSTR*   ppszServerInfo = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszSearchBaseDN,
+            "cn=Sites,cn=Configuration,%s",
+            gVmdirServerGlobals.systemDomainDN.bvnorm_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(
+            pszSearchBaseDN,
+            LDAP_SCOPE_SUBTREE,
+            ATTR_OBJECT_CLASS,
+            OC_DIR_SERVER,
+            &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize == 0)
+    {
+        dwError = LDAP_NO_SUCH_OBJECT;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(PSTR) * (entryArray.iSize+1),
+            (PVOID*)&ppszServerInfo);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; i<entryArray.iSize; i++)
+    {
+         pAttr = VmDirEntryFindAttribute(ATTR_CN, entryArray.pEntry+i);
+         dwError = VmDirAllocateStringA(pAttr->vals[0].lberbv.bv_val, &ppszServerInfo[i]);
+         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pppszServerInfo = ppszServerInfo;
+    *pdwInfoCount = entryArray.iSize;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszSearchBaseDN);
+    VmDirFreeEntryArrayContent(&entryArray);
+    return dwError;
+
+error:
+    VmDirFreeStrArray(ppszServerInfo);
+    goto cleanup;
+}
+
+DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszValue = NULL;
+    va_list args;
+
+    va_start(args, pszFormat);
+    dwError = VmDirVsnprintf(&pszValue, pszFormat, args);
+    va_end(args);
+
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pbvValue->lberbv_val = pszValue;
+    pbvValue->lberbv_len = VmDirStringLenA(pszValue);
+    pbvValue->bOwnBvVal = TRUE;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszValue);
+    goto cleanup;
+}
+
 #ifdef _WIN32
 
 DWORD

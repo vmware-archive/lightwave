@@ -153,11 +153,7 @@ VmDnsFreeRESTHandle(
          * If not able to finish in specified time, failure will be returned
          */
         dwError = VmRESTStop(pHandle, VMDNS_REST_STOP_TIMEOUT_SEC);
-
-        if (dwError != 0)
-        {
-            VmDnsLog(VMDNS_LOG_LEVEL_WARNING,"%s: rest stop error: %d",__FUNCTION__, dwError);
-        }
+        BAIL_ON_VMDNS_ERROR(dwError);
 
         if (gpVdnsRestApiDef)
         {
@@ -174,6 +170,13 @@ VmDnsFreeRESTHandle(
         }
         VmRESTShutdown(pHandle);
     }
+
+cleanup:
+    return;
+
+error:
+    VmDnsLog(VMDNS_LOG_LEVEL_WARNING,"%s: rest stop error: %d",__FUNCTION__, dwError);
+    goto cleanup;
 }
 
 #else

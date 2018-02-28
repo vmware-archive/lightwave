@@ -1986,6 +1986,504 @@ error:
     goto cleanup;
 }
 
+UINT32
+Srv_RpcVmDirGetComputerAccountInfo(
+    handle_t                  hBinding,
+    PWSTR                     pszDomainName,
+    PWSTR                     pszPassword,
+    PWSTR                     pszMachineName,
+    PVMDIR_MACHINE_INFO_W     *ppMachineInfo,
+    PVMDIR_KRB_INFO           *ppKrbInfo
+    )
+{
+    DWORD dwError = 0;
+    PSTR paszDomainName = NULL;
+    PSTR paszMachineName = NULL;
+    PSTR pszMachineUPN = NULL;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    PVMDIR_SRV_ACCESS_TOKEN pAdminCheckAccessToken = NULL;
+    PVDIR_CONNECTION pConnection = NULL;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
+    PVMDIR_MACHINE_INFO_W pRpcMachineInfo = NULL;
+    PVMDIR_KRB_INFO pKrbInfo = NULL;
+    PVMDIR_KRB_INFO pRpcKrbInfo = NULL;
+
+    if (IsNullOrEmptyString(pszMachineName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        !ppMachineInfo || !ppKrbInfo
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                        pszMachineName,
+                        &paszMachineName
+                        );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                        pszDomainName,
+                        &paszDomainName
+                        );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                            &pszMachineUPN,
+                            "%s@%s",
+                            paszMachineName,
+                            paszDomainName
+                            );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (VmDirStringCompareA(pAccessToken->pszUPN, pszMachineUPN, FALSE))
+    {
+        dwError = _VmDirRPCCheckAccess(
+                                hBinding,
+                                dwRpcFlags | VMDIR_RPC_FLAG_REQUIRE_AUTHZ,
+                                &pAdminCheckAccessToken);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+
+
+    dwError = VmDirAllocateMemory(
+                            sizeof(VMDIR_MACHINE_INFO_A),
+                            (PVOID*)&pMachineInfo
+                            );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvGetConnectionObj(
+                                pAccessToken->pszUPN,
+                                &pConnection
+                                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvGetComputerAccountInfo(
+                                         pConnection,
+                                         paszDomainName,
+                                         paszMachineName,
+                                         &pMachineInfo->pszComputerDN,
+                                         &pMachineInfo->pszMachineGUID,
+                                         &pMachineInfo->pszSiteName
+                                         );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                                pszPassword,
+                                &pMachineInfo->pszPassword
+                                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvGetKeyTabInfoClient(
+                                  pConnection,
+                                  paszDomainName,
+                                  paszMachineName,
+                                  &pKrbInfo
+                                  );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvAllocateRpcKrbInfo(
+                                 pKrbInfo,
+                                 &pRpcKrbInfo
+                                 );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvAllocateRpcMachineInfoWFromA(
+                                            pMachineInfo,
+                                            &pRpcMachineInfo
+                                            );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppMachineInfo = pRpcMachineInfo;
+    *ppKrbInfo = pRpcKrbInfo;
+
+cleanup:
+
+    if (pMachineInfo)
+    {
+        VmDirFreeMachineInfoA(pMachineInfo);
+    }
+    if (pKrbInfo)
+    {
+        VmDirFreeKrbInfo(pKrbInfo);
+    }
+    if (pConnection)
+    {
+        VmDirDeleteConnection(&pConnection);
+    }
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    if (pAdminCheckAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAdminCheckAccessToken);
+    }
+    VMDIR_SAFE_FREE_STRINGA(paszDomainName);
+    VMDIR_SAFE_FREE_STRINGA(paszMachineName);
+    VMDIR_SAFE_FREE_STRINGA(pszMachineUPN);
+    return dwError;
+
+error:
+    if (ppMachineInfo)
+    {
+        *ppMachineInfo = NULL;
+    }
+    if (pRpcMachineInfo)
+    {
+        VmDirSrvRpcFreeMachineInfoW(pRpcMachineInfo);
+    }
+    if (ppKrbInfo)
+    {
+        *ppKrbInfo = NULL;
+    }
+    if (pRpcKrbInfo)
+    {
+        VmDirSrvRpcFreeKrbInfo(pKrbInfo);
+    }
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirClientJoin(
+    handle_t                hBinding,
+    PWSTR                   pszDomainName,
+    PWSTR                   pszMachineName,
+    PWSTR                   pszOrgUnit,
+    PVMDIR_MACHINE_INFO_W   *ppMachineInfo,
+    PVMDIR_KRB_INFO         *ppKrbInfo
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    DWORD dwServiceTableLen = 0;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
+    PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
+    PVMDIR_KRB_INFO pKrbInfo = NULL;
+    PVMDIR_KRB_INFO pRpcKrbInfo = NULL;
+    PSTR paszDomainName = NULL;
+    PSTR paszMachineName = NULL;
+    PSTR paszOrgUnit = NULL;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    PCSTR   pszClientServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
+    PVDIR_CONNECTION pConnection = NULL;
+
+    if (IsNullOrEmptyString(pszMachineName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        !ppMachineInfo ||
+        !ppKrbInfo
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwServiceTableLen = VMDIR_ARRAY_SIZE(pszClientServiceTable);;
+
+    dwError = VmDirAllocateStringAFromW(
+                        pszDomainName,
+                        &paszDomainName
+                        );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pszOrgUnit))
+    {
+        dwError = VmDirAllocateStringA(
+                              VMDIR_COMPUTERS_RDN_VAL,
+                              &paszOrgUnit
+                              );
+    }
+    else
+    {
+        dwError = VmDirAllocateStringAFromW(
+                              pszOrgUnit,
+                              &paszOrgUnit
+                              );
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                              pszMachineName,
+                              &paszMachineName
+                              );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvGetConnectionObj(
+                              pAccessToken->pszUPN,
+                              &pConnection
+                              );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateComputerOUContainer(
+                                          pConnection,
+                                          paszDomainName,
+                                          paszOrgUnit
+                                          );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvSetupComputerAccount(
+                                  pConnection,
+                                  paszDomainName,
+                                  paszOrgUnit,
+                                  paszMachineName,      // Self host name
+                                  &pMachineInfo
+                                  );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwIndex = 0; dwIndex < dwServiceTableLen; ++dwIndex)
+    {
+            dwError = VmDirSrvSetupServiceAccount(
+                            pConnection,
+                            paszDomainName,
+                            pszClientServiceTable[dwIndex],
+                            paszMachineName
+                            );
+            if (dwError == LDAP_ALREADY_EXISTS)
+            {
+                dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
+                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
+                                                        pszClientServiceTable[dwIndex] );
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+
+    dwError = VmDirSrvGetKeyTabInfoClient(
+                                  pConnection,
+                                  paszDomainName,
+                                  paszMachineName,
+                                  &pKrbInfo
+                                  );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvAllocateRpcKrbInfo(
+                                 pKrbInfo,
+                                 &pRpcKrbInfo
+                                 );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    dwError = VmDirSrvAllocateRpcMachineInfoWFromA(
+                            pMachineInfo,
+                            &pRpcMachineInfo
+                            );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    *ppMachineInfo = pRpcMachineInfo;
+    *ppKrbInfo = pRpcKrbInfo;
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(paszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(paszMachineName);
+    VMDIR_SAFE_FREE_MEMORY(paszOrgUnit);
+    if (pMachineInfo)
+    {
+        VmDirFreeMachineInfoA(pMachineInfo);
+    }
+    if (pKrbInfo)
+    {
+        VmDirFreeKrbInfo(pKrbInfo);
+    }
+    if (pConnection)
+    {
+        VmDirDeleteConnection(&pConnection);
+    }
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+error:
+
+    if (ppMachineInfo)
+    {
+      *ppMachineInfo = NULL;
+    }
+    if (ppKrbInfo)
+    {
+      *ppKrbInfo = NULL;
+    }
+    if (pRpcMachineInfo)
+    {
+        VmDirSrvRpcFreeMachineInfoW(pRpcMachineInfo);
+    }
+    if (pRpcKrbInfo)
+    {
+        VmDirSrvRpcFreeKrbInfo(pKrbInfo);
+    }
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirCreateComputerAccount(
+    handle_t                hBinding,
+    PWSTR                   pszDomainName,
+    PWSTR                   pszMachineName,
+    PWSTR                   pszOrgUnit,
+    PVMDIR_MACHINE_INFO_W   *ppMachineInfo
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    DWORD dwServiceTableLen = 0;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
+    PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
+    PSTR paszDomainName = NULL;
+    PSTR paszMachineName = NULL;
+    PSTR paszOrgUnit = NULL;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    PCSTR   pszClientServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
+    PVDIR_CONNECTION pConnection = NULL;
+
+    if (IsNullOrEmptyString(pszMachineName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        !ppMachineInfo
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwServiceTableLen = VMDIR_ARRAY_SIZE(pszClientServiceTable);;
+
+    dwError = VmDirAllocateStringAFromW(
+                        pszDomainName,
+                        &paszDomainName
+                        );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pszOrgUnit))
+    {
+        dwError = VmDirAllocateStringA(
+                              VMDIR_COMPUTERS_RDN_VAL,
+                              &paszOrgUnit
+                              );
+    }
+    else
+    {
+        dwError = VmDirAllocateStringAFromW(
+                              pszOrgUnit,
+                              &paszOrgUnit
+                              );
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                              pszMachineName,
+                              &paszMachineName
+                              );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvGetConnectionObj(
+                              pAccessToken->pszUPN,
+                              &pConnection
+                              );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateComputerOUContainer(
+                                          pConnection,
+                                          paszDomainName,
+                                          paszOrgUnit
+                                          );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvSetupComputerAccount(
+                                  pConnection,
+                                  paszDomainName,
+                                  paszOrgUnit,
+                                  paszMachineName,      // Self host name
+                                  &pMachineInfo
+                                  );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwIndex = 0; dwIndex < dwServiceTableLen; ++dwIndex)
+    {
+            dwError = VmDirSrvSetupServiceAccount(
+                            pConnection,
+                            paszDomainName,
+                            pszClientServiceTable[dwIndex],
+                            paszMachineName
+                            );
+            if (dwError == LDAP_ALREADY_EXISTS)
+            {
+                dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
+                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
+                                                        pszClientServiceTable[dwIndex] );
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+
+    dwError = VmDirSrvAllocateRpcMachineInfoWFromA(
+                            pMachineInfo,
+                            &pRpcMachineInfo
+                            );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    *ppMachineInfo = pRpcMachineInfo;
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(paszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(paszMachineName);
+    VMDIR_SAFE_FREE_MEMORY(paszOrgUnit);
+    if (pMachineInfo)
+    {
+        VmDirFreeMachineInfoA(pMachineInfo);
+    }
+    if (pConnection)
+    {
+        VmDirDeleteConnection(&pConnection);
+    }
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+error:
+
+    if (ppMachineInfo)
+    {
+      *ppMachineInfo = NULL;
+    }
+    if (pRpcMachineInfo)
+    {
+        VmDirSrvRpcFreeMachineInfoW(pRpcMachineInfo);
+    }
+    goto cleanup;
+}
+
+
+
 /*
  * Rundown function for vmdir_dbcp_handle data. Handle the case where the
  * client/server connection is lost and the existing connection handle (FILE *)

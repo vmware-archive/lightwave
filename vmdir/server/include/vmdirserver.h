@@ -81,6 +81,14 @@ typedef struct _VMDIR_OP_PLUGIN_GLOBALS
 
 extern VMDIR_OP_PLUGIN_GLOBALS  gVmdirPluginGlobals;
 
+typedef struct _VMDIR_UTDVECTOR_CACHE
+{
+    PSTR            pszUtdVector;   // In string
+    PLW_HASHMAP     pUtdVectorMap;  // In hash map
+    PVMDIR_RWLOCK   pUtdVectorLock;
+
+} VMDIR_UTDVECTOR_CACHE, *PVMDIR_UTDVECTOR_CACHE;
+
 typedef struct _VMDIR_SERVER_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
@@ -92,25 +100,27 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        delObjsContainerDN;
     VDIR_BERVALUE        bvDCGroupDN;
     VDIR_BERVALUE        bvDCClientGroupDN;
+    VDIR_BERVALUE        bvSchemaManagersGroupDN;
     VDIR_BERVALUE        bvServicesRootDN;
     VDIR_BERVALUE        serverObjDN;
     VDIR_BERVALUE        dcAccountDN;   // Domain controller account DN
     VDIR_BERVALUE        dcAccountUPN;  // Domain controller account UPN
     int                  replInterval;
     int                  replPageSize;
-    VDIR_BERVALUE        utdVector; // In string format, it is stored as: <serverId1>:<origUsn1>;<serverId2>:<origUsn2>;...
+
+    PVMDIR_UTDVECTOR_CACHE  pUtdVectorCache;
+
     PSTR                 pszSiteName;
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
     USN                  initialNextUSN; // used for server restore only
-    USN                  maxOriginatingUSN;  // Cache value to prevent
-                                             // excessive searching
     VDIR_BERVALUE        bvServerObjName;
     DWORD                dwDomainFunctionalLevel;
     // Data that controls the thread that cleans up deleted entries.
     DWORD                dwTombstoneExpirationPeriod;
     DWORD                dwTombstoneThreadFrequency;
     DWORD                dwMaxInternalSearchLimit;
+    DWORD                dwEfficientReadOpTimeMS;
 
     // Flag that indicates whether this instance is promoted
     // It is set at two places:

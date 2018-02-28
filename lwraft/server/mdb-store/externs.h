@@ -27,3 +27,11 @@
  */
 
 extern VDIR_MDB_GLOBALS gVdirMdbGlobals;
+
+VOID
+VmDirWtxnOutstandingInc(
+    );
+
+VOID
+VmDirWtxnOutstandingDec(
+    );

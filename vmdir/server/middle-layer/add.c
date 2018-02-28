@@ -43,7 +43,11 @@ VmDirMLAdd(
     assert(pOperation->conn);
 
     // establish entry schema context association
-    pOperation->request.addReq.pEntry->pSchemaCtx = VmDirSchemaCtxClone(pOperation->pSchemaCtx);
+    dwError = VmDirSchemaCtxCloneIfDifferent(
+                                      pOperation->pSchemaCtx,
+                                      &pOperation->request.addReq.pEntry->pSchemaCtx
+                                      );
+    BAIL_ON_VMDIR_ERROR(dwError);
     assert(pOperation->request.addReq.pEntry->pSchemaCtx);
 
     pOperation->pBECtx->pBE = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
@@ -53,24 +57,21 @@ VmDirMLAdd(
     if (pOperation->conn->bIsAnonymousBind || VmDirIsFailedAccessInfo(&pOperation->conn->AccessInfo))
     {
         dwError = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError,
+                pszLocalErrMsg,
+                "Not bind/authenticate yet");
     }
 
     dwError = VmDirInternalAddEntry(pOperation);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
-                                                     pOperation->pBECtx->wTxnUSN);
-    }
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, dwError, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -294,6 +295,13 @@ txnretry:
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
         iBEEndTime = VmDirGetTimeInMilliSec();
+
+        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+        {
+            // update max orig usn
+            pOperation->pBEIF->pfnBESetMaxOriginatingUSN(
+                    pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
+        }
     }
     // ************************************************************************************
     // transaction retry loop end.

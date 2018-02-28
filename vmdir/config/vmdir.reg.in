@@ -38,9 +38,9 @@
 }
 
 "AllowInsecureAuthentication" = {
-    default = dword:00000001
-    value   = dword:00000001
-    doc = "Set to '1' to allow clear-text password authentication."
+    default = dword:00000000
+    value   = dword:00000000
+    doc = "Set to '0' to disallow clear-text password authentication."
 }
 
 "KerberosPort" = {

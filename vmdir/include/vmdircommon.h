@@ -60,25 +60,27 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define VMDIR_SIZE_8192         8192
 #define VMDIR_SIZE_9216         9216
 
-#define MAX_PATH 260
-#define MAX_INSTALL_PARAMETER_LEN 260
+#define MAX_PATH                    260
+#define MAX_INSTALL_PARAMETER_LEN   260
 
-#define VMDIR_GUID_STR_LEN             (32 + 4 /* -s */ + 1 /* \0 */) // "%08x-%04x-%04x-%04x-%04x%08x"
+#define VMDIR_GUID_STR_LEN              (32 + 4 /* -s */ + 1 /* \0 */) // "%08x-%04x-%04x-%04x-%04x%08x"
 #define VMDIR_SSL_DISABLED_PROTOCOL_LEN 64
-#define VMDIR_SSL_CIPHER_SUITE_LEN     256
-#define VMDIR_MAX_DN_LEN               1024 // including \0
-#define VMDIR_MAX_PASSWORD_LEN         128 /* As specified in schema for userPassword and replBindPassword attributes */
+#define VMDIR_SSL_CIPHER_SUITE_LEN      256
+#define VMDIR_MAX_DN_LEN                1024 // including \0
+#define VMDIR_MAX_PASSWORD_LEN          128 /* As specified in schema for userPassword and replBindPassword attributes */
 #define VMDIR_MAX_I64_ASCII_STR_LEN     (19 + 1 /* null byte terminator */) /* Max value for i64_t is 9,223,372,036,854,775,807 */
 
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
 
-#define VMDIR_MAX_FILE_NAME_LEN        1024
+#define VMDIR_MAX_FILE_NAME_LEN         1024
 
-#define VMDIR_LOG_MAX_OLD_FILES (10)
+#define VMDIR_MAX_CONTROL_PAYLOAD_SIZE  1024
 
-#define VMDIR_LOG_MAX_SIZE_BYTES (1024*1024*10)
+#define VMDIR_LOG_MAX_OLD_FILES         (10)
 
-#define VMKDC_RANDPWD_MAX_RETRY 128 /* Prevents RpcVmDirCreateUser() from looping forever */
+#define VMDIR_LOG_MAX_SIZE_BYTES        (1024*1024*10)
+
+#define VMKDC_RANDPWD_MAX_RETRY         128 /* Prevents RpcVmDirCreateUser() from looping forever */
 
 // Versions and DFLs
 #define VMDIR_DFL_UNKNOWN "UNKNOWN"
@@ -248,9 +250,40 @@ VmDirRpcFreeMemory(
     void *p
     );
 
+
+VOID
+VmDirSrvRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirSrvRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirSrvRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
+    );
+
 VOID
 VmDirRpcClientFreeMemory(
     void *p
+    );
+
+VOID
+VmDirClientRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirClientRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirClientRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
     );
 
 DWORD
@@ -352,6 +385,21 @@ VOID
 VmDirFreeTypeSpecContent(
     PVMW_TYPE_SPEC specInput,
     DWORD sizeOfArray
+    );
+
+VOID
+VmDirFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
     );
 
 ULONG
@@ -978,6 +1026,8 @@ typedef enum
 #define VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC "CopyDbBlockWriteInSec"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
+#define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+
 //
 // The expiration period for deleted entries. Any entries older than this will
 // be permanently expunged once the reaping thread runs. The default is 45 days.
@@ -1008,6 +1058,8 @@ typedef enum
 #else
 #define VMDIR_DEFAULT_KRB5_CONF             "/etc/krb5.lotus.conf"
 #endif
+
+
 
 DWORD
 VmDirAllocateMutex(
@@ -1753,11 +1805,6 @@ VmDirCreateSyncRequestControl(
     LDAPControl*    syncReqCtrl
     );
 
-VOID
-VmDirDeleteSyncRequestControl(
-    LDAPControl *syncReqCtrl
-    );
-
 DWORD
 VmDirMapLdapError(
     int ldapErrorCode
@@ -1765,11 +1812,17 @@ VmDirMapLdapError(
 
 // common/ldapcontrol.c
 int
-VmDirCreateClusterStateCtrlContent(
-    DWORD           dwVersion,
-    PCSTR           pszFQDN,
-    USN             maxOrgUSN,
-    LDAPControl*    pClusterStateCtrl
+VmDirCreateRaftPingCtrlContent(
+    PCSTR           pszLeader,
+    uint32_t        term,
+    LDAPControl*    pPingCtrl
+    );
+
+int
+VmDirCreateRaftVoteCtrlContent(
+    PCSTR           pszCandiateId,
+    uint32_t        term,
+    LDAPControl*    pVoteCtrl
     );
 
 VOID
@@ -2276,6 +2329,18 @@ VmDirNoopHashMapPairFree(
 
 VOID
 VmDirSimpleHashMapPairFree(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    );
+
+VOID
+VmDirSimpleHashMapPairFreeKeyOnly(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    );
+
+VOID
+VmDirSimpleHashMapPairFreeValOnly(
     PLW_HASHMAP_PAIR    pPair,
     PVOID               pUnused
     );

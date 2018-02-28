@@ -10,6 +10,7 @@
 noinst_LTLIBRARIES = libsrvcommon.la
 
 libsrvcommon_la_SOURCES = \
+    accnt_mgmt.c          \
     candidates.c          \
     dcconnthr.c           \
     entryencodedecode.c   \

@@ -86,6 +86,7 @@ typedef struct _VDIR_REST_AUTH_TOKEN
 {
     VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
     PSTR                        pszAccessToken;
+    PSTR                        pszTenant;
     PSTR                        pszBindUPN;
 
 } VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;

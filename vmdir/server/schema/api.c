@@ -127,6 +127,55 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirSchemaCtxCloneIfDifferent(
+    PVDIR_SCHEMA_CTX     pInputCtx,
+    PVDIR_SCHEMA_CTX*    ppOutputCtx
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_SCHEMA_CTX    pCtx = NULL;
+    PVDIR_SCHEMA_CTX    pCtxToRelease = NULL;
+
+    if (!pInputCtx || !ppOutputCtx)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!(*ppOutputCtx) ||
+        ((*ppOutputCtx)->pVdirSchema != pInputCtx->pVdirSchema)
+       )
+    {
+        pCtx = VmDirSchemaCtxClone(pInputCtx);
+
+        if (!pCtx)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SCHEMA);
+        }
+
+        pCtxToRelease = *ppOutputCtx;
+        *ppOutputCtx = pCtx;
+    }
+
+cleanup:
+
+    if (pCtxToRelease)
+    {
+        VmDirSchemaCtxRelease(pCtxToRelease);
+    }
+    return dwError;
+
+error:
+
+    if (pCtx)
+    {
+        VmDirSchemaCtxRelease(pCtx);
+    }
+    goto cleanup;
+}
+
+
 /*
  * Caller release schema ctx
  */

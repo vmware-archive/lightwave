@@ -13,20 +13,25 @@ echo "PARTNERS=${PARTNERS[*]}"
 get_post_password POST_PASSWORD
 
 
-echo "Step 2: Start POST and VmAfd"
+echo "Step 2: Start VmAfd"
 
 /opt/likewise/bin/lwsm start vmafd
 echo "VmAfd started successfully"
+
+echo "Step 3: Generate SSL cert if it does not exist"
+generate_ssl_cert
+
+echo "Step 4: Start Post"
 
 /opt/likewise/bin/lwsm start post
 echo "POST started successfully"
 
 
-echo "Step 3: Promote POST if necessary"
+echo "Step 5: Promote POST if necessary"
 
 if [[ -n $(/opt/vmware/bin/post-cli node list --server-name localhost) ]]
 then
-    echo "Step 3-A: POST is already promoted - No action"
+    echo "Step 5-A: POST is already promoted - No action"
 else
     PROMOTED_PARTNER=""
     for PARTNER in ${PARTNERS[@]}
@@ -40,24 +45,21 @@ else
 
     if [[ -n ${PROMOTED_PARTNER} ]]
     then
-        echo "Step 3-B: Promote POST as a subsequent instance (partner=${PROMOTED_PARTNER})"
+        echo "Step 5-B: Promote POST as a subsequent instance (partner=${PROMOTED_PARTNER})"
         /opt/vmware/bin/post-cli node promote --partner-name ${PROMOTED_PARTNER} --password ${POST_PASSWORD}
     else
-        echo "Step 3-C: Promote POST as the first instance (domain=${LW_DOMAIN})"
+        echo "Step 5-C: Promote POST as the first instance (domain=${LW_DOMAIN})"
         /opt/vmware/bin/post-cli node promote --domain-name ${LW_DOMAIN} --password ${POST_PASSWORD}
     fi
     echo "POST promoted successfully"
 fi
 
-echo "Step 4a: Disable Lightwave HA"
+echo "Step 6a: Disable Lightwave HA"
 /opt/vmware/bin/cdc-cli client-affinity legacy
-echo "Step 4b: Affinitize to DC"
+echo "Step 6b: Affinitize to DC"
 set_dc_name
 
-echo "Step 5: Generate SSL cert if it does not exist"
-generate_ssl_cert
-
-echo "Step 6: Make sure all protocol heads are in accept state"
+echo "Step 7: Make sure all protocol heads are in accept state"
 # in AWS, we only care about IPV4 ports
 MAX_RETRY=2
 RETRY=1

@@ -26,7 +26,10 @@ type VmAfdServer struct {
 // Close closes the connection to VmAfdServer.
 // The caller must call Close() when the server handle is no longer needed.
 func (server *VmAfdServer) Close() {
-	C.VmAfdCloseServer(server.p)
+	if server.p != nil {
+		C.VmAfdCloseServer(server.p)
+		server.p = nil
+	}
 }
 
 // VmAfdGetHeartbeatStatus gets the heartbeat status of vmafd service running on the specified server.
@@ -93,7 +96,10 @@ type VmAfdHbHandle struct {
 // StopHeartbeat stops the heartbeat for the service and cleans up memory.
 // The caller must call StopHeartbeat when the service is exiting.
 func (handle *VmAfdHbHandle) StopHeartbeat() {
-	C.VmAfdStopHeartbeat(handle.p)
+	if handle.p != nil {
+		C.VmAfdStopHeartbeat(handle.p)
+		handle.p = nil
+	}
 }
 
 // VmAfdHbStatus holds a C pointer to a VMAFD_HB_STATUS_A struct. It has a pointer to an array of VmAfdHbInfo structs.
@@ -104,7 +110,10 @@ type VmAfdHbStatus struct {
 // FreeHeartbeatStatus frees the memory for VmAfdHbStatus struct.
 // The caller must call FreeHeartbeatStatus() when VmAfdHbStatus is no longer needed.
 func (status *VmAfdHbStatus) FreeHeartbeatStatus() {
-	C.VmAfdFreeHeartbeatStatusA(status.p)
+	if status.p != nil {
+		C.VmAfdFreeHeartbeatStatusA(status.p)
+		status.p = nil
+	}
 }
 
 // IsAlive returns whether the current machine is alive or not.
@@ -203,7 +212,10 @@ func (status *CdcDcStatusInfo) GetSiteName() (siteName string) {
 // FreeStatusInfo frees the CdcDcStatusInfo struct.
 // The caller must call this when CdcDcStatusInfo is no longer needed.
 func (status *CdcDcStatusInfo) FreeStatusInfo() {
-	C.CdcFreeDCStatusInfoA(status.p)
+	if status.p != nil {
+		C.CdcFreeDCStatusInfoA(status.p)
+		status.p = nil
+	}
 }
 
 // VmAfdOpenServer opens a connection to the server specified by the arguments.
@@ -289,6 +301,36 @@ func VmAfdForceRefreshDCName() (dcName string, err error) {
 	}
 
 	dcName = vmafdStringToGoString(info.pszDCName)
+	return
+}
+
+//VmAfdCreateComputerAccountWithDC creates a machine account given the DC name, username, password, machine name, and (optional) orgunit
+func VmAfdCreateComputerAccountWithDC(serverName, userName, password, machineName, orgUnit string) (machinePassword string, err error) {
+	serverNameCStr := goStringToCString(serverName)
+	defer freeCString(serverNameCStr)
+	userNameCStr := goStringToCString(userName)
+	defer freeCString(userNameCStr)
+	passwordCStr := goStringToCString(password)
+	defer freeCString(passwordCStr)
+	machineNameCStr := goStringToCString(machineName)
+	defer freeCString(machineNameCStr)
+	orgUnitCStr := goStringToCString(orgUnit)
+	defer freeCString(orgUnitCStr)
+
+	var s C.PSTR = nil
+	var e C.DWORD = C.VmAfdCreateComputerAccountDCA(
+						serverNameCStr,
+						userNameCStr,
+						passwordCStr,
+						machineNameCStr,
+						orgUnitCStr,
+						&s)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to create Computer Account with DC (%s)", cErrorToGoError(e))
+		return
+	}
+
+	machinePassword = vmafdStringToGoString(s)
 	return
 }
 

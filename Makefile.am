@@ -76,6 +76,7 @@ package: stage $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_anthome $(ANT_HOME)" \
               --define "_version $(LW_SERVER_MAJOR_VER).$(LW_SERVER_MINOR_VER).$(LW_SERVER_RELEASE_VER)" \
               --define "_patch $(LW_SERVER_PATCH_VER)" \
+              --define "_dist $(DIST)" \
               --buildroot $(STAGEDIR) \
               SPECS/$(PKG_SPEC)
 
