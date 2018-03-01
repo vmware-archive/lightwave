@@ -2090,13 +2090,14 @@ Srv_RpcVmDirGetComputerAccountInfo(
                                   paszMachineName,
                                   &pKrbInfo
                                   );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvAllocateRpcKrbInfo(
+    if (!dwError)
+    {
+        dwError = VmDirSrvAllocateRpcKrbInfo(
                                  pKrbInfo,
                                  &pRpcKrbInfo
                                  );
-    BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirSrvAllocateRpcMachineInfoWFromA(
                                             pMachineInfo,
@@ -2177,8 +2178,8 @@ Srv_RpcVmDirClientJoin(
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP;
+
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
     PCSTR   pszClientServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
     PVDIR_CONNECTION pConnection = NULL;
@@ -2344,8 +2345,6 @@ Srv_RpcVmDirCreateComputerAccount(
     )
 {
     DWORD dwError = 0;
-    DWORD dwIndex = 0;
-    DWORD dwServiceTableLen = 0;
     PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
     PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
     PSTR paszDomainName = NULL;
@@ -2354,10 +2353,9 @@ Srv_RpcVmDirCreateComputerAccount(
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
                        | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP;
+
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-    PCSTR   pszClientServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
     PVDIR_CONNECTION pConnection = NULL;
 
     if (IsNullOrEmptyString(pszMachineName) ||
@@ -2372,7 +2370,6 @@ Srv_RpcVmDirCreateComputerAccount(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwServiceTableLen = VMDIR_ARRAY_SIZE(pszClientServiceTable);;
 
     dwError = VmDirAllocateStringAFromW(
                         pszDomainName,
@@ -2423,24 +2420,6 @@ Srv_RpcVmDirCreateComputerAccount(
                                   &pMachineInfo
                                   );
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwIndex = 0; dwIndex < dwServiceTableLen; ++dwIndex)
-    {
-            dwError = VmDirSrvSetupServiceAccount(
-                            pConnection,
-                            paszDomainName,
-                            pszClientServiceTable[dwIndex],
-                            paszMachineName
-                            );
-            if (dwError == LDAP_ALREADY_EXISTS)
-            {
-                dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
-                                                        pszClientServiceTable[dwIndex] );
-            }
-            BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
 
     dwError = VmDirSrvAllocateRpcMachineInfoWFromA(
                             pMachineInfo,

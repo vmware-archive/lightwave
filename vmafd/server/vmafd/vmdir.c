@@ -1034,17 +1034,21 @@ VmAfSrvJoinVmDir2(
 
     }
 
-    dwError = _CreateKrbConfig(
+
+    if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED))
+    {
+        dwError = _CreateKrbConfig(
                     pszDefaultRealm,
                     gVmafdGlobals.pszKrb5Config,
                     gVmafdGlobals.pszKrb5Keytab,
                     pszDCHostname,
                     NULL);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
 #ifndef _WIN32
-    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+        chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
 #endif
+    }
 
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
