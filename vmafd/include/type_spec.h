@@ -986,6 +986,11 @@ typedef struct _VMW_TYPE_SPEC_
         "Organizational Unit",\
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
+    },\
+    { \
+        "Join Flags",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
     }\
 }
 

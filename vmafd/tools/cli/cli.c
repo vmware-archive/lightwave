@@ -1193,13 +1193,26 @@ VmAfdCliCreateComputerAccount(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdCreateComputerAccountDCA(
-                    pContext->pszServerName,
-                    pContext->pszUserName,
-                    pContext->pszPassword,
-                    pContext->pszMachineName,
-                    pContext->pszOrgUnit,
-                    &pszOutPassword);
+    if (pContext->bIsAtomic)
+    {
+        dwError = VmAfdCreateComputerAccountDCA(
+                        pContext->pszServerName,
+                        pContext->pszUserName,
+                        pContext->pszPassword,
+                        pContext->pszMachineName,
+                        pContext->pszOrgUnit,
+                        &pszOutPassword);
+    }
+    else
+    {
+        dwError = VmAfdCreateComputerAccount(
+                       pContext->pszUserName,
+                       pContext->pszPassword,
+                       pContext->pszMachineName,
+                       pContext->pszOrgUnit,
+                       &pszOutPassword
+                       );
+    }
     BAIL_ON_VMAFD_ERROR(dwError);
 
     printf("password: %s\n", pszOutPassword);
