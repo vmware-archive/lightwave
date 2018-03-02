@@ -6455,7 +6455,7 @@ VmDirClientJoinAtomic(
                               );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!IsNullOrEmptyString(pwszOrgUnit))
+    if (!IsNullOrEmptyString(pszOrgUnit))
     {
         dwError = VmDirAllocateStringWFromA(
                               pszOrgUnit,
@@ -6513,14 +6513,17 @@ VmDirClientJoinAtomic(
     VMDIR_RPC_ENDTRY;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirCopyFromRpcKrbInfo(
+    if (pRpcKrbInfo)
+    {
+        dwError = _VmDirCopyFromRpcKrbInfo(
                           pRpcKrbInfo,
                           &pKrbInfo
                           );
-    BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirWriteToKeyTabFile(pKrbInfo);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = _VmDirWriteToKeyTabFile(pKrbInfo);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = _VmDirCopyFromRpcMachineInfo(
                               pRpcMachineInfo,
@@ -6615,7 +6618,7 @@ VmDirCreateComputerAccountAtomic(
                               );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!IsNullOrEmptyString(pwszOrgUnit))
+    if (!IsNullOrEmptyString(pszOrgUnit))
     {
         dwError = VmDirAllocateStringWFromA(
                               pszOrgUnit,

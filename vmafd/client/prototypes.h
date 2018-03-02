@@ -319,6 +319,7 @@ VmAfdLocalCreateComputerAccount(
     PCWSTR pwszPassword,
     PCWSTR pwszMachineName,
     PCWSTR pwszOrgUnit,
+    VMAFD_JOIN_FLAGS dwFlags,
     PWSTR* ppwszOutPassword
 );
 

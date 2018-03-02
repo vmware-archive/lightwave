@@ -3203,12 +3203,13 @@ VmAfdCreateComputerAccountW(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdCreateComputerAccountDCW(
+    dwError = VmAfdLocalCreateComputerAccount(
                   NULL,
                   pwszUserName,
                   pwszPassword,
                   pwszMachineName,
                   pwszOrgUnit,
+                  0,
                   &pwszOutPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -5138,6 +5139,7 @@ VmAfdCreateComputerAccountDCW(
                   pwszPassword,
                   pwszMachineName,
                   pwszOrgUnit,
+                  VMAFD_JOIN_FLAGS_ATOMIC_JOIN,
                   &pwszOutPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 

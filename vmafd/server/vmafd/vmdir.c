@@ -1034,17 +1034,21 @@ VmAfSrvJoinVmDir2(
 
     }
 
-    dwError = _CreateKrbConfig(
+
+    if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED))
+    {
+        dwError = _CreateKrbConfig(
                     pszDefaultRealm,
                     gVmafdGlobals.pszKrb5Config,
                     gVmafdGlobals.pszKrb5Keytab,
                     pszDCHostname,
                     NULL);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
 #ifndef _WIN32
-    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+        chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
 #endif
+    }
 
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -1407,6 +1411,7 @@ VmAfSrvCreateComputerAccount(
     PCWSTR            pwszPassword,       /* IN            */
     PCWSTR            pwszMachineName,    /* IN            */
     PCWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
+    VMAFD_JOIN_FLAGS  dwFlags,            /* IN            */
     PWSTR*            ppwszOutPassword    /* OUT           */
     )
 {
@@ -1418,6 +1423,7 @@ VmAfSrvCreateComputerAccount(
     PWSTR pwszDCName = NULL;
     PSTR pszDCName = NULL;
     PWSTR pwszDomain = NULL;
+    PSTR pszOutPassword = NULL;
     PWSTR pwszOutPassword = NULL;
     PSTR pszDomainName = NULL;
     PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
@@ -1461,7 +1467,9 @@ VmAfSrvCreateComputerAccount(
     dwError = VmAfdAllocateStringAFromW(pwszDomain, &pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDirCreateComputerAccountAtomic(
+    if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ATOMIC_JOIN))
+    {
+        dwError = VmDirCreateComputerAccountAtomic(
                   pszDCName,
                   pszUserName,
                   pszPassword,
@@ -1469,13 +1477,33 @@ VmAfSrvCreateComputerAccount(
                   pszMachineName,
                   pszOrgUnit,
                   &pMachineInfo);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringWFromA(
+        dwError = VmAfdAllocateStringWFromA(
                                 pMachineInfo->pszPassword, 
                                 &pwszOutPassword
                                 );
-    BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+    }
+    else
+    {
+        dwError = VmDirCreateComputerAccount(
+                  pszDCName,
+                  pszUserName,
+                  pszPassword,
+                  pszMachineName,
+                  pszOrgUnit,
+                  &pszOutPassword);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringWFromA(
+                                  pszOutPassword,
+                                  &pwszOutPassword
+                                  );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
 
     if (ppwszOutPassword)
     {
@@ -1488,6 +1516,7 @@ VmAfSrvCreateComputerAccount(
              __FUNCTION__);
 
 cleanup:
+    VMAFD_SAFE_FREE_STRINGA(pszOutPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszDCName);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);

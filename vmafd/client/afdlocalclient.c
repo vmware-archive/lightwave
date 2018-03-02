@@ -1225,6 +1225,7 @@ VmAfdLocalCreateComputerAccount(
     PCWSTR pwszPassword,
     PCWSTR pwszMachineName,
     PCWSTR pwszOrgUnit,
+    VMAFD_JOIN_FLAGS  dwFlags,
     PWSTR* ppwszOutPassword
     )
 {
@@ -1246,6 +1247,7 @@ VmAfdLocalCreateComputerAccount(
     input_spec[idx++].data.pWString = (PWSTR) pwszPassword;
     input_spec[idx++].data.pWString = (PWSTR) pwszMachineName;
     input_spec[idx++].data.pWString = (PWSTR) pwszOrgUnit;
+    input_spec[idx++].data.pUint32  = (PDWORD)&dwFlags;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

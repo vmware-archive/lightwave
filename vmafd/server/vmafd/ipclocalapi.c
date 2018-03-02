@@ -4537,6 +4537,7 @@ VmAfdIpcCreateComputerAccount(
     PWSTR pwszMachineName = NULL;
     PWSTR pwszOrgUnit = NULL;
     PWSTR pwszOutPassword = NULL;
+    VMAFD_JOIN_FLAGS dwFlags = 0;
     int idx = 0;
 
     VMW_TYPE_SPEC input_spec[] = CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS;
@@ -4571,6 +4572,7 @@ VmAfdIpcCreateComputerAccount(
     pwszPassword    = input_spec[idx++].data.pWString;
     pwszMachineName = input_spec[idx++].data.pWString;
     pwszOrgUnit     = input_spec[idx++].data.pWString;
+    dwFlags         = *input_spec[idx++].data.pUint32;
 
     if (IsNullOrEmptyString(pwszMachineName))
     {
@@ -4591,6 +4593,7 @@ VmAfdIpcCreateComputerAccount(
                       pwszPassword,
                       pwszMachineName,
                       pwszOrgUnit,
+                      dwFlags,
                       &pwszOutPassword);
     LOG_URESULT_ERROR(uResult);
 

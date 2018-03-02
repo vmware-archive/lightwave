@@ -95,6 +95,7 @@ import com.vmware.identity.interop.ldap.AttributeOrValueExistsLdapException;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ILdapEntry;
 import com.vmware.identity.interop.ldap.ILdapMessage;
+import com.vmware.identity.interop.ldap.InsufficientRightsLdapException;
 import com.vmware.identity.interop.ldap.InvalidCredentialsLdapException;
 import com.vmware.identity.interop.ldap.LdapFilterString;
 import com.vmware.identity.interop.ldap.LdapMod;
@@ -2218,58 +2219,58 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
                   for (Attribute attr : regularAttrs)
                     {
-                        try
-                        {
-                            AttributeValuePair pair = new AttributeValuePair();
+                        AttributeValuePair pair = new AttributeValuePair();
 
-                            pair.setAttrDefinition(attr);
+                        pair.setAttrDefinition(attr);
 
-                            String attrName = attrNames.get(iAttr);
+                        String attrName = attrNames.get(iAttr);
 
-                            if (ATTR_USER_PRINCIPAL_NAME.equalsIgnoreCase(attrName)) {
+                        if (ATTR_USER_PRINCIPAL_NAME.equalsIgnoreCase(attrName)) {
 
-                                String upn = GetUpnAttributeValue(entries[0]);
+                            String upn = GetUpnAttributeValue(entries[0]);
 
-                                // userPrincipalName and value un-set => set default
-                                if (ServerUtils.isNullOrEmpty(upn)) {
-                                    upn = accountName + "@" + this.getDomain();
-                                }
-                                pair.getValues().add(upn);
+                            // userPrincipalName and value un-set => set default
+                            if (ServerUtils.isNullOrEmpty(upn)) {
+                                upn = accountName + "@" + this.getDomain();
                             }
-                            else
+                            pair.getValues().add(upn);
+                        }
+                        else
+                        {
+                            LdapValue[] values =
+                                entries[0].getAttributeValues(attrName);
+
+                            if (values != null)
                             {
-                                LdapValue[] values =
-                                    entries[0].getAttributeValues(attrName);
-
-                                if (values != null)
+                                for (LdapValue value : values)
                                 {
-                                    for (LdapValue value : values)
+                                    if (!value.isEmpty())
                                     {
-                                        if (!value.isEmpty())
-                                        {
-                                            String val = value.getString();
+                                        String val = value.getString();
 
-                                            if (attrName.equals(ATTR_NAME_MEMBEROF))
-                                            {
+                                        if (attrName.equals(ATTR_NAME_MEMBEROF))
+                                        {
+                                            try {
                                                 Group group = findGroupByDN(connection,val);
                                                 pair.getValues().add(group.getNetbios());
                                                 pairGroupSids.getValues().add(group.getObjectId());
-                                            } else
-                                            {
-                                                pair.getValues().add(val);
+                                            } catch (NoSuchGroupException ex) {
+                                                logger.warn("Group {} not found.", val);
+                                                continue;
                                             }
+                                        } else
+                                        {
+                                            pair.getValues().add(val);
                                         }
                                     }
                                 }
                             }
-
-                            result.add(pair);
-                        } catch (NoSuchGroupException ex)
-                        {
                         }
+
+                        result.add(pair);
                         iAttr++;
                     }
-                    result.add(pairGroupSids);
+                  result.add(pairGroupSids);
                 } else
                 {
                     throw new InvalidPrincipalException(
@@ -2315,15 +2316,15 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         String[] attrNames = { ATTR_NAME_CN, ATTR_NAME_OBJECTSID };
         String filter = "(objectClass=group)";
 
-        ILdapMessage message =
-                connection.search(groupDN, LdapScope.SCOPE_BASE, filter,
-                        attrNames, false);
-
+        ILdapMessage message = null;
         String groupName = null;
         String groupSid = null;
 
         try
         {
+            message =
+                    connection.search(groupDN, LdapScope.SCOPE_BASE, filter,
+                            attrNames, false);
             ILdapEntry[] entries = message.getEntries();
 
             if (entries == null || entries.length == 0)
@@ -2365,9 +2366,16 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     getStringValue(entries[0]
                             .getAttributeValues(ATTR_NAME_OBJECTSID));
 
+        } catch (InsufficientRightsLdapException | NoSuchObjectLdapException e)
+        {
+            logger.info("Unable to find a group with the DN {}", groupDN, e);
+            throw new NoSuchGroupException();
         } finally
         {
-            message.close();
+            if (message != null)
+            {
+                message.close();
+            }
         }
 
         // Also whether detail can be null or not
