@@ -119,11 +119,12 @@ write_files:
         LW_USER_PASSWORD_LOCATION=($(get_tag_value LW_USER_PASSWORD_LOCATION))
         LW_USER_PASSWORD=$(aws s3 cp ${LW_USER_PASSWORD_LOCATION} -)
         ASG_NAME=$(get_asg_name)
+        LW_AFFINITIZED_DC=($(get_tag_value LW_AFFINITIZED_DC))
 
         sed -i -e "s|https://dl.bintray.com/vmware/lightwave|https://vmware.bintray.com/lightwave-dev/photon/master|" /etc/yum.repos.d/lightwave.repo
         tdnf makecache
         tdnf install -y lightwave-client
-        /opt/vmware/bin/ic-join --domain $LW_DOMAIN_NAME --username $LW_USERNAME --password $LW_USER_PASSWORD --org-unit "$ASG_NAME" --site $SITE
+        /opt/vmware/bin/ic-join --domain $LW_DOMAIN_NAME --username $LW_USERNAME --password $LW_USER_PASSWORD --org-unit "$ASG_NAME" --site $SITE --domain-controller $LW_AFFINITIZED_DC --atomic
     owner: root:root
     permission: 0644
     path: /root/join-domain.sh
