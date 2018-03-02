@@ -47,6 +47,7 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
+import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PersonUser;
@@ -270,27 +271,40 @@ public class TenantResource extends BaseResource {
 
         List<String> ids = new ArrayList<>();
         try {
-            Validate.notEmpty(principalIds.getIds(), "principal ids are missing from the request");
+            Validate.notNull(ids, "principal ids paramter is missing");
+            Validate.notEmpty(principalIds.getIds(), "principal id list is empty");
             for (String idString : principalIds.getIds()) {
                 PrincipalId id = PrincipalUtil.fromName(idString);
                 String result = null;
 
-                PersonUser user = getIDMClient().findPersonUser(tenantName, id);
-                if (user != null) {
-                    result = user.getDetail().getUserPrincipalName(); // user upn is in the format of userName@domainName
+                try {
+                    PersonUser user = getIDMClient().findPersonUser(tenantName, id);
+                    if (user != null) {
+                        result = user.getDetail().getUserPrincipalName(); // user upn is in the format of userName@domainName
+                    }
+                } catch (InvalidPrincipalException e) {
+                    // continue searching
                 }
 
                 if (result == null) {
-                    Group group = getIDMClient().findGroup(tenantName, id);
-                    if (group != null) {
-                        result = group.getNetbios(); // use netbios which is in the format of domainName/groupName
+                    try {
+                        Group group = getIDMClient().findGroup(tenantName, id);
+                        if (group != null) {
+                            result = group.getNetbios(); // use netbios which is in the format of domainName/groupName
+                        }
+                    } catch (InvalidPrincipalException e) {
+                        // continue searching
                     }
                 }
 
                 if (result == null) {
-                    SolutionUser solutionUser = getIDMClient().findSolutionUser(tenantName, idString);
-                    if (solutionUser != null) {
-                        result = solutionUser.getId().getUPN(); // solution user is in the format of userName@domainName
+                    try {
+                        SolutionUser solutionUser = getIDMClient().findSolutionUser(tenantName, id.getName());
+                        if (solutionUser != null) {
+                            result = solutionUser.getId().getUPN(); // solution user is in the format of userName@domainName
+                        }
+                    } catch (InvalidPrincipalException e) {
+                        // continue searching
                     }
                 }
 
@@ -307,7 +321,7 @@ public class TenantResource extends BaseResource {
         } catch (BadRequestException | IllegalArgumentException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
-            throw new BadRequestException(sm.getString("res.ten.search.failed"), e);
+            throw new BadRequestException(String.format(sm.getString("res.ten.search.failed"), tenantName), e);
         } catch (Exception e) {
             log.error("Failed to look up members on tenant '{}' due to a server side error", tenantName, e);
             responseStatus = HTTP_SERVER_ERROR;

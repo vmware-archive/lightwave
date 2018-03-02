@@ -33,6 +33,7 @@ import com.vmware.identity.rest.core.client.RequestFactory;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
 import com.vmware.identity.rest.core.client.methods.HttpDeleteWithBody;
+import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
@@ -194,6 +195,26 @@ public class TenantResource extends ClientResource {
 
         HttpPut put = RequestFactory.createPutRequest(uri, parent.getToken(), config);
         return execute(parent.getClient(), put, TenantConfigurationDTO.class);
+    }
+
+    /**
+     * Find normalized principal ids from IDM.
+     *
+     * <p><b>Required Role:</b> {@code user}.
+     *
+     * @param tenant tenant name
+     * @param ids list of principal ids
+     * @return list of normalized principal ids
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public PrincipalIdentifiersDTO findPrincipalIds(String tenant, PrincipalIdentifiersDTO ids) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), TENANT_NAME_URI + "/finder/principals", tenant);
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), ids);
+        return execute(parent.getClient(), post, PrincipalIdentifiersDTO.class);
     }
 
     /**

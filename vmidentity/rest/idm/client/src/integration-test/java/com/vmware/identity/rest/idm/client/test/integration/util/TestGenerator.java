@@ -100,6 +100,9 @@ public class TestGenerator {
         return SolutionUserGenerator.generateSolutionUser(name, domain, description, certificate);
     }
 
+    public static com.vmware.directory.rest.common.data.SolutionUserDTO generateVmdirSolutionUser(String name, String domain, String description, CertificateDTO certificate) {
+        return SolutionUserGenerator.generateVmdirSolutionUser(name, domain, description, certificate);
+    }
     public static UserDTO generateUser(String name, String domain, String description) {
         return UserGenerator.generateUser(name, domain, description);
     }
@@ -112,6 +115,9 @@ public class TestGenerator {
         return UserGenerator.generateVmdirUser(name, domain, description);
     }
 
+    public static com.vmware.directory.rest.common.data.GroupDTO generateVmdirGroup(String name, String domain, String description) {
+        return GroupGenerator.generateVmdirGroup(name, domain, description);
+    }
     private static TenantCredentialsDTO generateTenantCredentials() throws GeneralSecurityException, IOException {
         return new TenantCredentialsDTO.Builder()
             .withCertificates(getTrustedCertificates())
