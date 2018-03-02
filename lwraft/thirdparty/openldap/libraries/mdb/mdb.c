@@ -1846,6 +1846,12 @@ mdb_page_alloc(MDB_cursor *mc, int num, MDB_page **mp)
 	MDB_cursor_op op;
 	MDB_cursor m2;
 
+        if (Paranoid && num > 4)
+        {
+            //Not aggresively searching for free pages when requested blocks > 4
+            retry = 10;
+        }
+
 	*mp = NULL;
 
 	/* If our dirty list is already full, we can't do anything */

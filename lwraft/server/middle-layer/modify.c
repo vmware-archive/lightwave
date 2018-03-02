@@ -430,8 +430,8 @@ VmDirInternalModifyEntry(
     {
         VMDIR_LOG_INFO(
                 VMDIR_LOG_MASK_ALL,
-                "Modify Entry (%s)",
-                VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+                "Modify Entry (%s) blob size %d",
+                VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->encodedSize);
     }
 
 cleanup:

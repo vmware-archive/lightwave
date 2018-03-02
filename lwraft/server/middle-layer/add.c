@@ -299,8 +299,8 @@ VmDirInternalAddEntry(
     {
         VMDIR_LOG_INFO(
                 VMDIR_LOG_MASK_ALL,
-                "Add Entry (%s)",
-                VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+                "Add Entry (%s) blob size %d",
+                VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->encodedSize);
     }
 
 cleanup:
