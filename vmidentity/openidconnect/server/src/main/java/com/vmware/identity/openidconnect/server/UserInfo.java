@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import com.vmware.identity.openidconnect.common.Subject;
+
 /**
  * @author Yehia Zayour
  */
@@ -27,13 +29,16 @@ public class UserInfo {
     private final String adminServerRole;
     private final String givenName;
     private final String familyName;
+    private final String upn;
 
     public UserInfo(
+            String upn,
             List<String> groupMembership,
             Set<String> groupMembershipFiltered,
             String adminServerRole,
             String givenName,
             String familyName) {
+        this.upn = upn;
         this.groupMembership = (groupMembership == null) ? null : Collections.unmodifiableList(groupMembership);
         this.groupMembershipFiltered = (groupMembershipFiltered == null) ? null : Collections.unmodifiableSet(groupMembershipFiltered);
         this.adminServerRole = adminServerRole;
@@ -59,5 +64,9 @@ public class UserInfo {
 
     public String getFamilyName() {
         return this.familyName;
+    }
+
+    public Subject getSubject() {
+        return new Subject(this.upn);
     }
 }
