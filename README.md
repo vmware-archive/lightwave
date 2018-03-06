@@ -22,21 +22,21 @@ Lightwave uses several existing open source packages. These include
 
 1.  OpenLDAP
 
-OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning
+- OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning
 MDB embedded database is used as the underlying LDAP store
 
-1.  Heimdal Kerberos
+2.  Heimdal Kerberos
 
-The Heimdal Kerberos stack is used as the Kerberos protocol head.
+- The Heimdal Kerberos stack is used as the Kerberos protocol head.
 
-1.  DCE/RPC
+3.  DCE/RPC
 
-DCE/RPC is used as the control infrastructure for configuration of the Lightwave
+- DCE/RPC is used as the control infrastructure for configuration of the Lightwave
 LDAP directory service
 
-1.  Likewise Open
+4.  Likewise Open
 
-The Likewise Open stack is used for its service control infrastructure, its
+- The Likewise Open stack is used for its service control infrastructure, its
 registry infrastructure and its NT Security Descriptor support. Likewise Open
 also provides a easy mechanism to provide ssh support for Lightwave clients
 
