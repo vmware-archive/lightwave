@@ -6411,7 +6411,7 @@ error:
 DWORD
 VmDirClientJoinAtomic(
     PCSTR                   pszServerName,
-    PCSTR                   pszSRPUPN,
+    PCSTR                   pszUserName,
     PCSTR                   pszPassword,
     PCSTR                   pszDomainName,
     PCSTR                   pszMachineName,
@@ -6426,13 +6426,15 @@ VmDirClientJoinAtomic(
     PVMDIR_KRB_INFO      pKrbInfo = NULL;
     PVMDIR_KRB_INFO      pRpcKrbInfo = NULL;
     handle_t hBinding = NULL;
+    PSTR pszSRPUPN = NULL;
+    PSTR pszSRPUPNAlloc = NULL;
     PWSTR pwszMachineName = NULL;
     PWSTR pwszDomainName = NULL;
     PWSTR pwszOrgUnit = NULL;
     PWSTR pwszPassword = NULL;
 
     if (IsNullOrEmptyString(pszServerName) ||
-        IsNullOrEmptyString(pszSRPUPN) ||
+        IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
         IsNullOrEmptyString(pszDomainName) ||
         IsNullOrEmptyString(pszMachineName) ||
@@ -6470,6 +6472,22 @@ VmDirClientJoinAtomic(
                               );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (!VmDirStringChrA(pszUserName, '@'))
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszSRPUPNAlloc,
+                    "%s@%s",
+                    pszUserName,
+                    pszDomainName
+                    );
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszSRPUPN = pszSRPUPNAlloc;
+    }
+    else
+    {
+        pszSRPUPN = (PSTR)pszUserName;
+    }
 
     dwError = VmDirCreateBindingHandleAuthA(
                     pszServerName,
@@ -6556,6 +6574,7 @@ cleanup:
     {
         VmDirClientRpcFreeMachineInfoW(pRpcMachineInfo);
     }
+    VMDIR_SAFE_FREE_MEMORY(pszSRPUPNAlloc);
     VMDIR_SAFE_FREE_MEMORY(pwszMachineName);
     VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
     VMDIR_SAFE_FREE_MEMORY(pwszOrgUnit);

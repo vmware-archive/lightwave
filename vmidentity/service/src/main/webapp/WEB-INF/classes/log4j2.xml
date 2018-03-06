@@ -22,7 +22,7 @@
                        filePattern="${sys:catalina.base}/logs/vmware-rest-idm-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:ss.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [REST-IDM] %-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [REST-IDM] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
            <DefaultRolloverStrategy max="10" />
@@ -32,7 +32,7 @@
                        filePattern="${sys:catalina.base}/logs/vmware-rest-afd-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:ss.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [REST-AFD] %-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [REST-AFD] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
             <DefaultRolloverStrategy max="10" />
@@ -42,7 +42,7 @@
                        filePattern="${sys:catalina.base}/logs/vmware-rest-vmdir-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:s.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [REST-VMDIR] %-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [REST-VMDIR] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
            <DefaultRolloverStrategy max="10" />
@@ -52,7 +52,7 @@
                        filePattern="${sys:catalina.base}/logs/vmware-rest-lookup-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:s.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [REST-LOOKUP]%-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [REST-LOOKUP] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
            <DefaultRolloverStrategy max="10" />
@@ -62,7 +62,7 @@
                        filePattern="${sys:catalina.base}/logs/openidconnect-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:s.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} [OIDC] %-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [OIDC] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
             <DefaultRolloverStrategy max="10" />
@@ -72,7 +72,7 @@
                        filePattern="${sys:catalina.base}/logs/websso-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:s.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} [WEBSSO] %-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [WEBSSO] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
             <DefaultRolloverStrategy max="10" />
@@ -82,7 +82,7 @@
                        filePattern="${sys:catalina.base}/logs/vmware-identity-sts-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
-              <pattern>%d{MMM dd yyyy, HH:mm:s.SSS} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} [WS-TRUST] %-5p %c %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [WS-TRUST] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
             <DefaultRolloverStrategy max="10" />
@@ -145,7 +145,7 @@
           <RollingFile name="Rolling-sts-default" fileName="${sys:catalina.base}/logs/vmware-identity-sts-default.log"
                        filePattern="${sys:catalina.base}/logs/vmware-identity-sts-default-%i.log.gz">
             <PatternLayout>
-              <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} %-5p %c] %m%n</pattern>
+              <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%-5p] [STS-DEFAULT] ${sys:hostname} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-30X{UserIdMDCKey} %-15X{SessionIdMDCKey} %-5p [%c] %m%n</pattern>
             </PatternLayout>
             <SizeBasedTriggeringPolicy size="50 MB" />
            <DefaultRolloverStrategy max="10" />

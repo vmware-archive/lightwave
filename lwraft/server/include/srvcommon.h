@@ -327,6 +327,7 @@ typedef struct _VDIR_ENTRY
 
    // Flag to indicate if the entry was sent back to client in the search result or not.
    BOOLEAN                      bSearchEntrySent;
+   UINT32                       encodedSize; //for logging the entryBlob size wth add/modify/delete
 
 } VDIR_ENTRY, *PVDIR_ENTRY;
 
