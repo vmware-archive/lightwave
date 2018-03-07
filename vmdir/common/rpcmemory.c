@@ -77,6 +77,55 @@ VmDirRpcFreeMemory(
 }
 
 VOID
+VmDirSrvRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    )
+{
+    if (pMachineInfo)
+    {
+        VmDirRpcFreeMemory(pMachineInfo->pszComputerDN);
+        VmDirRpcFreeMemory(pMachineInfo->pszMachineGUID);
+        VmDirRpcFreeMemory(pMachineInfo->pszPassword);
+        VmDirRpcFreeMemory(pMachineInfo->pszSiteName);
+        VmDirRpcFreeMemory(pMachineInfo);
+    }
+}
+
+VOID
+VmDirSrvRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    )
+{
+    if (pMachineInfo)
+    {
+        VmDirRpcFreeMemory(pMachineInfo->pwszComputerDN);
+        VmDirRpcFreeMemory(pMachineInfo->pwszMachineGUID);
+        VmDirRpcFreeMemory(pMachineInfo->pwszPassword);
+        VmDirRpcFreeMemory(pMachineInfo->pwszSiteName);
+        VmDirRpcFreeMemory(pMachineInfo);
+    }
+}
+
+VOID
+VmDirSrvRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
+    )
+{
+    if (pKrbInfo)
+    {
+       DWORD dwIndex = 0;
+
+       for (; dwIndex < pKrbInfo->dwCount; ++dwIndex)
+       {
+          VMDIR_KRB_BLOB krbBlobCurr = pKrbInfo->pKrbBlobs[dwIndex];
+          VmDirRpcFreeMemory(krbBlobCurr.krbBlob);
+       }
+
+       VmDirRpcFreeMemory(pKrbInfo);
+    }
+}
+
+VOID
 VmDirRpcClientFreeMemory(
     PVOID pMemory
     )
@@ -92,3 +141,53 @@ VmDirRpcClientFreeMemory(
         }
     }
 }
+
+VOID
+VmDirClientRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    )
+{
+    if (pMachineInfo)
+    {
+        VmDirRpcClientFreeMemory(pMachineInfo->pszComputerDN);
+        VmDirRpcClientFreeMemory(pMachineInfo->pszMachineGUID);
+        VmDirRpcClientFreeMemory(pMachineInfo->pszPassword);
+        VmDirRpcClientFreeMemory(pMachineInfo->pszSiteName);
+        VmDirRpcClientFreeMemory(pMachineInfo);
+    }
+}
+
+VOID
+VmDirClientRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    )
+{
+    if (pMachineInfo)
+    {
+        VmDirRpcClientFreeMemory(pMachineInfo->pwszComputerDN);
+        VmDirRpcClientFreeMemory(pMachineInfo->pwszMachineGUID);
+        VmDirRpcClientFreeMemory(pMachineInfo->pwszPassword);
+        VmDirRpcClientFreeMemory(pMachineInfo->pwszSiteName);
+        VmDirRpcClientFreeMemory(pMachineInfo);
+    }
+}
+
+VOID
+VmDirClientRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
+    )
+{
+    if (pKrbInfo)
+    {
+       DWORD dwIndex = 0;
+
+       for (; dwIndex < pKrbInfo->dwCount; ++dwIndex)
+       {
+          VMDIR_KRB_BLOB krbBlobCurr = pKrbInfo->pKrbBlobs[dwIndex];
+          VmDirRpcClientFreeMemory(krbBlobCurr.krbBlob);
+       }
+
+       VmDirRpcClientFreeMemory(pKrbInfo);
+    }
+}
+

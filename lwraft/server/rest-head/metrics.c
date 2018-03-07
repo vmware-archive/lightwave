@@ -67,6 +67,15 @@ VmDirRestMetricsInit(
 
             dwError = VmMetricsHistogramNew(
                     pmContext,
+                    "post_rest_ldap_middlelayer_preplugins",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the pre-plugins",
+                    buckets, 5,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_PRE_PLUGINS]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
                     "post_rest_ldap_middlelayer_backend",
                     labels, 2,
                     "Histogram for REST LDAP request durations in the backend",
@@ -76,11 +85,29 @@ VmDirRestMetricsInit(
 
             dwError = VmMetricsHistogramNew(
                     pmContext,
-                    "post_rest_ldap_middlelayer_backend_raft",
+                    "post_rest_ldap_middlelayer_backend_txnbegin",
                     labels, 2,
-                    "Histogram for REST LDAP request durations in fulfilling RAFT consensus",
+                    "Histogram for REST LDAP request durations in the backend txnbegin",
                     buckets, 5,
-                    &gpRestLdapMetrics[i][j][METRICS_LAYER_RAFT]);
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_BACKEND_TXN_BEGIN]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_ldap_middlelayer_backend_txncommit",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the backend txncommit",
+                    buckets, 5,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_BACKEND_TXN_COMMIT]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_ldap_middlelayer_postplugins",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the post-plugins",
+                    buckets, 5,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_POST_PLUGINS]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -113,7 +140,7 @@ VmDirRestMetricsUpdate(
     if (pHistogram)
     {
         VmMetricsHistogramUpdate(
-                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+                pHistogram, VMDIR_RESPONSE_TIME(iStartTime, iEndTime));
     }
 }
 
@@ -128,39 +155,43 @@ VmDirRestMetricsUpdateFromHandler(
     METRICS_LDAP_ERRORS error = METRICS_LDAP_OTHER;
     METRICS_LAYERS      layer = METRICS_LAYER_PROTOCOL;
 
-    if (pRestOp && pRestOp->pMethod)
+    if (pRestOp)
     {
-        if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+        if (pRestOp->pMethod)
         {
-            operation = METRICS_LDAP_OP_ADD;
+            if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapAdd)
+            {
+                operation = METRICS_LDAP_OP_ADD;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
+            {
+                operation = METRICS_LDAP_OP_MODIFY;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
+            {
+                operation = METRICS_LDAP_OP_DELETE;
+            }
+            else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
+            {
+                operation = METRICS_LDAP_OP_SEARCH;
+            }
         }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapModify)
-        {
-            operation = METRICS_LDAP_OP_MODIFY;
-        }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapDelete)
-        {
-            operation = METRICS_LDAP_OP_DELETE;
-        }
-        else if (pRestOp->pMethod->pFnImpl == VmDirRESTLdapSearch)
-        {
-            operation = METRICS_LDAP_OP_SEARCH;
-        }
-    }
 
-    if (pRestOp && pRestOp->pResult)
-    {
-        error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
-    }
+        if (pRestOp->pResult)
+        {
+            error = VmDirMetricsMapLdapErrorToEnum(pRestOp->pResult->errCode);
+        }
 
-    if (operation != METRICS_LDAP_OP_IGNORE)
-    {
-        VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
-    }
+        if (operation != METRICS_LDAP_OP_IGNORE)
+        {
+            VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
+        }
 
-    if (pRestOp->pConn->AccessInfo.pAccessToken)   // process request locally
-    {
-        _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
+        if (pRestOp->pConn &&
+            pRestOp->pConn->AccessInfo.pAccessToken)    // process request locally
+        {
+            _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
+        }
     }
 }
 

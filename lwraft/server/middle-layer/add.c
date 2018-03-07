@@ -44,30 +44,26 @@ VmDirMLAdd(
     if (pOperation->conn->bIsAnonymousBind || VmDirIsFailedAccessInfo(&pOperation->conn->AccessInfo))
     {
         dwError = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError, pszLocalErrMsg,
+                "Not bind/authenticate yet");
     }
 
     if (VmDirRaftDisallowUpdates("Add"))
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     dwError = VmDirInternalAddEntry(pOperation);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
-                                                     pOperation->pBECtx->wTxnUSN);
-    }
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&(pOperation->ldapResult), dwError, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -85,249 +81,255 @@ VmDirInternalAddEntry(
     )
 {
     int         retVal = LDAP_SUCCESS;
-    int         deadLockRetries = 0;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
     PVDIR_ENTRY pEntry = pOperation->request.addReq.pEntry;
-    uint64_t    iMLStartTime = 0;
-    uint64_t    iMLEndTime = 0;
-    uint64_t    iBEStartTime = 0;
-    uint64_t    iBEEndTime = 0;
+    PVDIR_OPERATION_ML_METRIC   pMLMetrics = NULL;
     extern DWORD    VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp);
 
     assert(pOperation && pOperation->pBECtx->pBE);
 
-    iMLStartTime = VmDirGetTimeInMilliSec();
+    pMLMetrics = &pOperation->MLMetrics;
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLStartTime);
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
         retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode");
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Server in read-only mode");
     }
 
     // make sure we have minimum DN length
     if (pEntry->dn.lberbv_len < 3)
     {
         retVal = VMDIR_ERROR_INVALID_REQUEST;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", pEntry->dn.lberbv_len);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Invalid DN length - (%u)",
+                pEntry->dn.lberbv_len);
     }
 
     // Make sure Attribute has its ATDesc set
     retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "%s",
-                                  VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "%s",
+            VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
 
     // Normalize DN
-    retVal = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-                                  retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
+    retVal = VmDirNormalizeDN(&(pEntry->dn), pEntry->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "DN normalization failed - (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
 
     // Acquire schema modification mutex
     retVal = VmDirSchemaModMutexAcquire(pOperation);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "Failed to lock schema mod mutex (%u)",
+            retVal);
 
     // Parse Parent DN
-    retVal = VmDirGetParentDN( &pEntry->dn, &pEntry->pdn );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Get ParentDn failed - (%u)",  retVal );
+    retVal = VmDirGetParentDN(&pEntry->dn, &pEntry->pdn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "Get ParentDn failed - (%u)",
+            retVal);
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsStartTime);
 
     retVal = VmDirExecutePreAddPlugins(pOperation, pEntry, retVal);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreAdd plugin failed - (%u)",  retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "PreAdd plugin failed - (%u)",
+            retVal);
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iPrePlugunsEndTim);
 
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
         // Entry schema check
         retVal = VmDirSchemaCheck(pEntry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "schema error - (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "schema error - (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
     }
 
     // Normalize all attribute value
     retVal = VmDirEntryAttrValueNormalize(pEntry, FALSE /*all attributes*/);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Attr value normalization failed - (%u)", retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "Attr value normalization failed - (%u)",
+            retVal);
 
     {
         PSTR pszDupAttributeName = NULL;
 
         // Make sure we have no duplicate attributes
         retVal = _VmDirEntryDupAttrValueCheck(pEntry, &pszDupAttributeName);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Invalid or duplicate (%s)",
-                                                             VDIR_SAFE_STRING(pszDupAttributeName));
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Invalid or duplicate (%s)",
+                VDIR_SAFE_STRING(pszDupAttributeName));
     }
 
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    if (bHasTxn)
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
+    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "txn begin (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+    bHasTxn = TRUE;
+
+    // get parent entry
+    if (pEntry->pdn.lberbv.bv_val)
     {
-        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        bHasTxn = FALSE;
-    }
+        PVDIR_ENTRY pParentEntry = NULL;
 
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-    else
-    {
-        if (pEntry->pParentEntry)
-        {
-            VmDirFreeEntryContent(pEntry->pParentEntry);
-            VMDIR_SAFE_FREE_MEMORY(pEntry->pParentEntry);
-        }
-
-        retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-        bHasTxn = TRUE;
-        iBEStartTime = VmDirGetTimeInMilliSec();
-
-        // get parent entry
-        if (pEntry->pdn.lberbv.bv_val)
-        {
-            PVDIR_ENTRY     pParentEntry = NULL;
-
-            retVal = VmDirAllocateMemory(sizeof(*pEntry), (PVOID)&pParentEntry);
-            BAIL_ON_VMDIR_ERROR(retVal);
-
-            retVal = pOperation->pBEIF->pfnBEDNToEntry(
-                                        pOperation->pBECtx,
-                                        pOperation->pSchemaCtx,
-                                        &pEntry->pdn,
-                                        pParentEntry,
-                                        VDIR_BACKEND_ENTRY_LOCK_READ);
-            if (retVal)
-            {
-                VmDirFreeEntryContent(pParentEntry);
-                VMDIR_SAFE_FREE_MEMORY(pParentEntry);
-
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    case VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "parent (%s) not found, (%s)",
-                                                              pEntry->pdn.lberbv_val,
-                                                              VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "parent (%s) lookup failed, (%s)",
-                                                              pEntry->pdn.lberbv_val,
-                                                              VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-                }
-            }
-
-            pEntry->pParentEntry = pParentEntry;        // pEntry takes over pParentEntry
-            pParentEntry = NULL;
-        }
-
-        // enforce schema structure rule
-        retVal = VmDirEntryCheckStructureRule(pOperation, pEntry);
+        retVal = VmDirAllocateMemory(sizeof(*pEntry), (PVOID)&pParentEntry);
         BAIL_ON_VMDIR_ERROR(retVal);
 
-        // only when there is parent Entry, ACL check is done
-        if (pEntry->pParentEntry)
+        retVal = pOperation->pBEIF->pfnBEDNToEntry(
+                pOperation->pBECtx,
+                pOperation->pSchemaCtx,
+                &pEntry->pdn,
+                pParentEntry,
+                VDIR_BACKEND_ENTRY_LOCK_READ);
+        if (retVal)
         {
-            retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pEntry->pParentEntry,
-                                          VMDIR_RIGHT_DS_CREATE_CHILD);
-            BAIL_ON_VMDIR_ERROR(retVal);
-        }
+            VmDirFreeEntryContent(pParentEntry);
+            VMDIR_SAFE_FREE_MEMORY(pParentEntry);
 
-        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
-        {
-            // Skip SD in case of a replication operation (SD should exist by then anyways)
-            // so that we do not manipulate data in replication operation (replicate 'purely')
-            retVal = VmDirComputeObjectSecurityDescriptor(&pOperation->conn->AccessInfo, pEntry, pEntry->pParentEntry);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Prepare object SD failed, (%u)", retVal );
-
-            // check and read lock dn referenced entries
-            retVal = pOperation->pBEIF->pfnBEChkDNReference( pOperation->pBECtx, pEntry );
-            if (retVal != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEChkDNRef (%u)(%s)",
-                                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-                }
-            }
-        }
-
-        // add vmwRaftLogChanged attribute
-        retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        retVal = pOperation->pBEIF->pfnBEEntryAdd( pOperation->pBECtx, pEntry );
-        if (retVal != 0)
-        {
             switch (retVal)
             {
+            case VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND:
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal, pszLocalErrMsg,
+                        "parent (%s) not found, (%s)",
+                        pEntry->pdn.lberbv_val,
+                        VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                case VMDIR_ERROR_BACKEND_PARENT_NOTFOUND:
-                    // SJ-TBD: Max matching object to be returned. Error codes need to be sorted out.
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryAdd (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+            default:
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal, pszLocalErrMsg,
+                        "parent (%s) lookup failed, (%s)",
+                        pEntry->pdn.lberbv_val,
+                        VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
             }
         }
 
-        retVal = VmDirAddRaftPreCommit(pEntry, pOperation);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "VmDirAddRaftPreCommit error (%u)", retVal);
-
-        retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-        bHasTxn = FALSE;
-        iBEEndTime = VmDirGetTimeInMilliSec();
+        pEntry->pParentEntry = pParentEntry;    // pEntry takes over pParentEntry
+        pParentEntry = NULL;
     }
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
+
+    // enforce schema structure rule
+    retVal = VmDirEntryCheckStructureRule(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    // only when there is parent Entry, ACL check is done
+    if (pEntry->pParentEntry)
+    {
+        retVal = VmDirSrvAccessCheck(
+                pOperation,
+                &pOperation->conn->AccessInfo,
+                pEntry->pParentEntry,
+                VMDIR_RIGHT_DS_CREATE_CHILD);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+    {
+        // Skip SD in case of a replication operation (SD should exist by then anyways)
+        // so that we do not manipulate data in replication operation (replicate 'purely')
+        retVal = VmDirComputeObjectSecurityDescriptor(
+                &pOperation->conn->AccessInfo, pEntry, pEntry->pParentEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Prepare object SD failed, (%u)",
+                retVal);
+
+        // check and read lock dn referenced entries
+        retVal = pOperation->pBEIF->pfnBEChkDNReference(pOperation->pBECtx, pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "BEChkDNRef (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+    }
+
+    // add vmwRaftLogChanged attribute
+    retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = pOperation->pBEIF->pfnBEEntryAdd(pOperation->pBECtx, pEntry);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "BEEntryAdd (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+
+    retVal = VmDirAddRaftPreCommit(pEntry, pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "VmDirAddRaftPreCommit error (%u)",
+            retVal);
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+
+    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "txn commit (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
+    bHasTxn = FALSE;
 
     if (!pOperation->bSuppressLogInfo)
     {
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Add Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Add Entry (%s) blob size %d",
+                VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->encodedSize);
     }
 
 cleanup:
     {
         int iPostCommitPluginRtn = 0;
 
+        VMDIR_COLLECT_TIME(pMLMetrics->iPostPluginsStartTime);
+
         // Execute post Add commit plugin logic
         iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(pOperation, pEntry, retVal);
-        if ( iPostCommitPluginRtn != LDAP_SUCCESS
-                &&
-                iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-        )
+        if (iPostCommitPluginRtn != LDAP_SUCCESS &&
+            iPostCommitPluginRtn != pOperation->ldapResult.errCode) // pass through
         {
-            VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins %s - code(%d)",
-                    pEntry->dn.lberbv_val, iPostCommitPluginRtn);
+            VMDIR_LOG_ERROR(
+                    LDAP_DEBUG_ANY,
+                    "InternalAddEntry: VdirExecutePostAddCommitPlugins %s - code(%d)",
+                    pEntry->dn.lberbv_val,
+                    iPostCommitPluginRtn);
         }
+
+        VMDIR_COLLECT_TIME(pMLMetrics->iPostPlugunsEndTime);
     }
 
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);
 
     // collect metrics
-    iMLEndTime = VmDirGetTimeInMilliSec();
-    VmDirInternalMetricsUpdate(
-            METRICS_LDAP_OP_ADD,
-            pOperation->protocol,
-            pOperation->opType,
-            pOperation->ldapResult.errCode,
-            iMLStartTime,
-            iMLEndTime,
-            iBEStartTime,
-            iBEEndTime);
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
+    VmDirInternalMetricsUpdate(pOperation);
 
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
@@ -336,8 +338,9 @@ error:
 
     if (bHasTxn)
     {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        iBEEndTime = VmDirGetTimeInMilliSec();
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
@@ -386,7 +389,7 @@ cleanup:
 
 error:
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&(pOperation->ldapResult), retVal, pszLocalErrMsg);
 
     goto cleanup;
 }
@@ -491,7 +494,7 @@ VmDirEntryAttrValueNormalize(
             if (pAttr->pATDesc == NULL)
             {
                 if ((pAttr->pATDesc = VmDirSchemaAttrNameToDesc(
-                        pEntry->pSchemaCtx, pAttr->type.lberbv.bv_val )) == NULL)
+                        pEntry->pSchemaCtx, pAttr->type.lberbv.bv_val)) == NULL)
                 {
                     dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
                     BAIL_ON_VMDIR_ERROR(dwError);

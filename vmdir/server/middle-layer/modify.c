@@ -1083,15 +1083,32 @@ _VmDirExternalModsSanityCheck(
         }
 
         // Make sure attribute can be modified
-        if ( pLocalMod->attr.pATDesc->bNoUserModifiable == TRUE
-             &&
-             pOp->conn->AccessInfo.bindEID != DEFAULT_ADMINISTRATOR_ENTRY_ID // exempt default administrator
-           )
+        if (pLocalMod->attr.pATDesc->bNoUserModifiable &&
+            pOp->conn->AccessInfo.bindEID != DEFAULT_ADMINISTRATOR_ENTRY_ID) // exempt default administrator
         {
             retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrMsg),
-                                            "attribute (%s) can not be modified",
-                                            VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
+
+            if (VmDirStringEndsWith(pOp->reqDn.lberbv.bv_val, SCHEMA_NAMING_CONTEXT_DN, FALSE))
+            {
+                BOOLEAN bSchemaManager = FALSE;
+
+                retVal = VmDirIsMemberOfGroup(
+                        gVmdirServerGlobals.bvSchemaManagersGroupDN.lberbv.bv_val,
+                        pOp->conn->AccessInfo.pszBindedDn,
+                        &bSchemaManager);
+                BAIL_ON_VMDIR_ERROR(retVal);
+
+                if (bSchemaManager)
+                {
+                    retVal = 0; // Allow schema manager group to modify schema entries
+                }
+            }
+
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrMsg,
+                    "attribute (%s) can not be modified",
+                    VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
         }
 
         if ( pLocalMod->operation == MOD_OP_ADD ||
@@ -1136,15 +1153,11 @@ _VmDirExternalModsSanityCheck(
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
     return retVal;
 
 error:
-
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOp->ldapResult), retVal, pszLocalErrMsg);
-
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOp->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 

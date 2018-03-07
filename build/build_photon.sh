@@ -24,6 +24,9 @@ while [ `echo "$1" | grep -c '^-'` -gt 0 ]; do
   elif [ " $1" = " --enable-winjoin" ]; then
     enable_winjoin="--enable-winjoin=yes"
     shift
+  elif [ " $1" = " --with-ui" ];then
+    enable_with_ui="1"
+    shift
   else
     usage "ERROR: unknown option $1" 
   fi
@@ -81,12 +84,17 @@ autoreconf -vif .. \
   && \
  make \
   && \
- make package
+ make package DIST=$DIST
 
-if [ $# -eq 1 ];then
-    if [ $1 = "--with-ui" ];then
-       make -C ../ui
-       cp ../ui/lwraft-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
-       cp ../ui/lightwave-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
-    fi
+DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
+if [ $DISTRO == "1.0" ]; then
+    DIST="%{nil}"
+else
+    DIST=".lwph2"
+fi
+
+if [ "$enable_with_ui" = "1" ]; then
+   make -C ../ui
+   cp ../ui/lwraft-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
+   cp ../ui/lightwave-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
 fi

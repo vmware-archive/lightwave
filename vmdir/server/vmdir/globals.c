@@ -131,6 +131,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.delObjsContainerDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.bvDCGroupDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.bvDCClientGroupDN, VDIR_BERVALUE_INIT),
+        VMDIR_SF_INIT(.bvSchemaManagersGroupDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.bvServicesRootDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.serverObjDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.dcAccountDN, VDIR_BERVALUE_INIT),
@@ -147,6 +148,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwTombstoneExpirationPeriod, 0),
         VMDIR_SF_INIT(.dwTombstoneThreadFrequency, 0),
         VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
+        VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
         VMDIR_SF_INIT(.bPromoted, FALSE),
     };
 

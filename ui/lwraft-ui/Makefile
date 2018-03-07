@@ -15,7 +15,7 @@ endif
 
 ng-cli: nodejs
 ifndef NGCLI
-	npm i -g @angular/cli@1.6.3
+	npm i -g @angular/cli@1.6.5
 endif
 
 rpm: ng-cli
@@ -23,4 +23,4 @@ rpm: ng-cli
 	rpmbuild --define "_topdir `pwd`/stage" -ba build/lwraft-ui.spec
 
 clean:
-	rm -rf stage
+	rm -rf stage dist

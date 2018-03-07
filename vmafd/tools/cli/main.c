@@ -3735,6 +3735,10 @@ ParseArgsCreateComputerAccount(
                 {
                     parseMode = PARSE_MODE_CREATE_COMPUTER_ACCOUNT_ORG_UNIT;
                 }
+                else if (!strcmp(pszArg, "--atomic"))
+                {
+                    pContext->bIsAtomic = TRUE;
+                }
                 else
                 {
                     dwError = ERROR_LOCAL_OPTION_UNKNOWN;
@@ -4093,7 +4097,7 @@ ShowUsage(
         "\tleave-ad --server-name <server name> --user-name <user-name> --password <password> --domain-name <domain name>\n"
         "\tquery-ad --server-name <server name>\n"
         "\tget-dc-list --domain-name <domain name> --server-name <server name>\n"
-        "\tcreate-computer-account --server-name <server name> --user-name <user name> --password <password> --machine-name <machine name> --org-unit <org unit>\n"
+        "\tcreate-computer-account --server-name <server name> --user-name <user name> --password <password> --machine-name <machine name> --org-unit <org unit> [--atomic]\n"
         "\tbegin-upgrade [--server-name <server name> --user-name <user name> --password <password>]\n"
         "\tend-upgrade [--server-name <server name> --user-name <user name> --password <password>]\n"
         "\thelp\n");

@@ -1204,6 +1204,13 @@ VmDirUPNToDN(
     );
 
 DWORD
+VmDirTenantizeUPNToDN(
+    PCSTR       pszTenant,
+    PCSTR       pszUPN,
+    PSTR*       ppszEntryDN
+    );
+
+DWORD
 VmDirUPNToDNBerWrap(
     PCSTR           pszUPN,
     PVDIR_BERVALUE  pBervDN
@@ -1263,6 +1270,73 @@ int
 VmDirPVdirBValCmp(
     const void *p1,
     const void *p2
+    );
+
+//accnt_mgmt.c
+DWORD
+VmDirSrvGetConnectionObj(
+    PCSTR  pszUPN,
+    PVDIR_CONNECTION* ppConnection
+    );
+
+DWORD
+VmDirSrvCreateComputerOUContainer(
+    PVDIR_CONNECTION pConnection,
+    PCSTR pszDomainName,
+    PCSTR pszOUContainer
+    );
+
+DWORD
+VmDirSrvSetupComputerAccount(
+    PVDIR_CONNECTION pConnection,
+    PCSTR pszDomainName,
+    PCSTR pszComputerOU,
+    PCSTR pszMachineAccountName,
+    PVMDIR_MACHINE_INFO_A* ppMachineInfo
+    );
+
+DWORD
+VmDirSrvSetupServiceAccount(
+    PVDIR_CONNECTION pConnection,
+    PCSTR            pszDomainName,
+    PCSTR            pszServiceName,
+    PCSTR            pszDCHostName         // Self host name
+    );
+
+DWORD
+VmDirSrvGetKeyTabInfoClient(
+    PVDIR_CONNECTION pConnection,
+    PCSTR            pszDomainName,
+    PCSTR            pszHostName,
+    PVMDIR_KRB_INFO* ppKrbInfo
+    );
+
+DWORD
+VmDirSrvGetComputerAccountInfo(
+    PVDIR_CONNECTION pConnection,
+    PCSTR            pszDomainName,
+    PCSTR            pszComputerHostName,
+    PSTR*            ppszComputerDN,
+    PSTR*            ppszMachineGUID,
+    PSTR*            ppszSiteName
+    );
+
+DWORD
+VmDirSrvAllocateRpcKrbInfo(
+    PVMDIR_KRB_INFO  pKrbInfoIn,
+    PVMDIR_KRB_INFO* ppRpcKrbInfo
+    );
+
+DWORD
+VmDirSrvAllocateRpcMachineInfoAFromW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo,
+    PVMDIR_MACHINE_INFO_A *ppRpcMachineInfo
+    );
+
+DWORD
+VmDirSrvAllocateRpcMachineInfoWFromA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo,
+    PVMDIR_MACHINE_INFO_W *ppRpcMachineInfo
     );
 
 // candidates.c

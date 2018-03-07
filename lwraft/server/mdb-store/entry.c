@@ -325,6 +325,7 @@ VmDirMDBAddEntry(
     dwError = VmDirEncodeEntry( pEntry, &encodedEntry );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    pEntry->encodedSize = encodedEntry.lberbv.bv_len;
     if (pEntry->eId != 0)    // Reserved entries have eId already
     {
         entryId = pEntry->eId;
@@ -670,6 +671,8 @@ VmDirMDBModifyEntry(
 
     dwError = VmDirEncodeEntry( pEntry, &newEncodedEntry );
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pEntry->encodedSize = newEncodedEntry.lberbv.bv_len;
 
     VMDIR_SAFE_FREE_MEMORY( pEntry->encodedEntry );
     // entry takes over the responsibility to free newEncodedEntry.lberbv.bv_val

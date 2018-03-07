@@ -1021,10 +1021,11 @@ DWORD
 VmAfdLocalJoinValidateDomainCredentials(
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     )
 {
-	DWORD dwError = 0;
+    DWORD dwError = 0;
     UINT32 apiType = VMAFD_IPC_JOIN_VALIDATE_CREDENTIALS;
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
@@ -1037,6 +1038,7 @@ VmAfdLocalJoinValidateDomainCredentials(
     input_spec[0].data.pWString = (PWSTR) pwszDomainName;
     input_spec[1].data.pWString = (PWSTR) pwszUserName;
     input_spec[2].data.pWString = (PWSTR) pwszPassword;
+    input_spec[3].data.pWString = (PWSTR) pwszSiteName;
 
     dwError = VecsLocalIPCRequest(
                     apiType,
@@ -1218,10 +1220,12 @@ error:
 
 DWORD
 VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszMachineName,
     PCWSTR pwszOrgUnit,
+    VMAFD_JOIN_FLAGS  dwFlags,
     PWSTR* ppwszOutPassword
     )
 {
@@ -1238,10 +1242,12 @@ VmAfdLocalCreateComputerAccount(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
+    input_spec[idx++].data.pWString = (PWSTR) pwszServerName;
     input_spec[idx++].data.pWString = (PWSTR) pwszUserName;
     input_spec[idx++].data.pWString = (PWSTR) pwszPassword;
     input_spec[idx++].data.pWString = (PWSTR) pwszMachineName;
     input_spec[idx++].data.pWString = (PWSTR) pwszOrgUnit;
+    input_spec[idx++].data.pUint32  = (PDWORD)&dwFlags;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

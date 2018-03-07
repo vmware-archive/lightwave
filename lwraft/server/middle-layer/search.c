@@ -57,7 +57,7 @@ cleanup:
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&(pOperation->ldapResult), retVal, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -105,9 +105,12 @@ ProcessPreValidatedEntries(
         if (dwError != 0)
         {
             // Ignore errors resolving ENTRYIDs.
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
                     "%s pfnBESimpleIdToEntry EID(%u), error (%u)",
-                    __FUNCTION__, pValidatedEntries[i], dwError);
+                    __FUNCTION__,
+                    pValidatedEntries[i],
+                    dwError);
             continue;
         }
 
@@ -149,10 +152,7 @@ ProcessPreValidatedEntries(
         pSrEntry = NULL;
     }
 
-    dwError = SetPagedSearchCookie(
-                pOperation,
-                pValidatedEntries[dwEntryCount - 1],
-                0);
+    dwError = SetPagedSearchCookie(pOperation, pValidatedEntries[dwEntryCount - 1], 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -176,7 +176,6 @@ VmDirInternalSearch(
 {
     int         retVal = LDAP_SUCCESS;
     ENTRYID     eId = 0;
-    int         deadLockRetries = 0;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
     PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
@@ -184,24 +183,26 @@ VmDirInternalSearch(
     ENTRYID*    pValidatedEntries = NULL;
     DWORD       dwEntryCount = 0;
     BOOLEAN     bUseOldSearch = TRUE;
-    uint64_t    iMLStartTime = 0;
-    uint64_t    iMLEndTime = 0;
-    uint64_t    iBEStartTime = 0;
-    uint64_t    iBEEndTime = 0;
+    PVDIR_OPERATION_ML_METRIC   pMLMetrics = NULL;
 
-    assert(pOperation && pOperation->pBEIF);
-
-    iMLStartTime = VmDirGetTimeInMilliSec();
+    pMLMetrics = &pOperation->MLMetrics;
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLStartTime);
 
     // Normalize (base) DN
-    retVal = VmDirNormalizeDN( &(pOperation->reqDn), pOperation->pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-                                  retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
+    retVal = VmDirNormalizeDN(&(pOperation->reqDn), pOperation->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "DN normalization failed - (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)));
 
-    if (VmDirHandleSpecialSearch( pOperation, pResult )) // TODO, add &pszLocalErrMsg
+    if (VmDirHandleSpecialSearch(pOperation, pResult)) // TODO, add &pszLocalErrMsg
     {
         retVal = pResult->errCode ? pResult->errCode : pResult->vmdirErrCode;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Special search failed - (%u)", retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Special search failed - (%u)",
+                retVal);
 
         goto cleanup;  // done special search
     }
@@ -210,62 +211,47 @@ VmDirInternalSearch(
     // not get deleted during this search processing.
     if (pOperation->reqDn.lberbv.bv_len != 0)
     {
-        // ************************************************************************************
-        // transaction retry loop begin.  make sure all function within are retry agnostic.
-        // ************************************************************************************
-txnretry:
-        if (bHasTxn)
-        {
-            pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
-            bHasTxn = FALSE;
-        }
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
 
-        deadLockRetries++;
-        if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-        {
-            retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
-        else
-        {
-            retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
-                                          retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            bHasTxn = TRUE;
-            iBEStartTime = VmDirGetTimeInMilliSec();
+        retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_READ);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "txn begin (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-            // Lookup in the DN index.
-            retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
-            if (retVal != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+        bHasTxn = TRUE;
 
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DNToEID (%u)(%s)",
-                                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-                }
-            }
-        }
-        // ************************************************************************************
-        // transaction retry loop end.
-        // ************************************************************************************
+        // Lookup in the DN index.
+        retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(pOperation->reqDn), &eId);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "DNToEID (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     }
 
     // start txn if not has one already.
-    if (! pOperation->pBECtx->pBEPrivate)
+    if (!pOperation->pBECtx->pBEPrivate)
     {
-        retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
+        retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_READ);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "txn begin (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
         bHasTxn = TRUE;
-        iBEStartTime = VmDirGetTimeInMilliSec();
     }
 
-    retVal = AppendDNFilter( pOperation );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Appending DN filter failed.");
+    retVal = AppendDNFilter(pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "Appending DN filter failed.");
 
     if (gVmdirGlobals.bPagedSearchReadAhead)
     {
@@ -273,10 +259,7 @@ txnretry:
             !IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
         {
             retVal = VmDirPagedSearchCacheRead(
-                        pOperation,
-                        &eStartingId,
-                        &pValidatedEntries,
-                        &dwEntryCount);
+                    pOperation, &eStartingId, &pValidatedEntries, &dwEntryCount);
             /*
              * If we didn't find any data for this cookie the cache must have
              * timed-out and been cleaned up. Let's continue the search using
@@ -299,32 +282,30 @@ txnretry:
 
     if (bUseOldSearch)
     {
-        retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, eStartingId);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
+        retVal = BuildCandidateList(
+                pOperation, pOperation->request.searchReq.filter, eStartingId);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "BuildCandidateList failed.");
 
         if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
         {
             retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
             BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                retVal,
-                pszLocalErrMsg,
+                retVal, pszLocalErrMsg,
                 "Full scan of Entry DB is required. Refine your search.");
         }
 
         retVal = ProcessCandidateList(pOperation);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal,
-            pszLocalErrMsg,
-            "ProcessCandidateList failed. (%u)(%s)",
-            retVal,
-            VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
+                retVal, pszLocalErrMsg,
+                "ProcessCandidateList failed. (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
     }
     else if (pValidatedEntries != NULL)
     {
-        retVal = ProcessPreValidatedEntries(
-                    pOperation,
-                    dwEntryCount,
-                    pValidatedEntries);
+        retVal = ProcessPreValidatedEntries(pOperation, dwEntryCount, pValidatedEntries);
         BAIL_ON_VMDIR_ERROR(retVal);
     }
     else if (pOperation->showPagedResultsCtrl != NULL)
@@ -332,26 +313,23 @@ txnretry:
         pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
     }
 
-    retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
-                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+
+    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "txn commit (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     bHasTxn = FALSE;
-    iBEEndTime = VmDirGetTimeInMilliSec();
 
 cleanup:
 
     // collect metrics
-    iMLEndTime = VmDirGetTimeInMilliSec();
-    VmDirInternalMetricsUpdate(
-            METRICS_LDAP_OP_SEARCH,
-            pOperation->protocol,
-            pOperation->opType,
-            pOperation->ldapResult.errCode,
-            iMLStartTime,
-            iMLEndTime,
-            iBEStartTime,
-            iBEEndTime);
-
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
+    VmDirInternalMetricsUpdate(pOperation);
     VMDIR_SAFE_FREE_MEMORY(pValidatedEntries);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
@@ -360,8 +338,9 @@ error:
 
     if (bHasTxn)
     {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        iBEEndTime = VmDirGetTimeInMilliSec();
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
@@ -373,11 +352,11 @@ error:
  */
 DWORD
 VmDirSimpleEqualFilterInternalSearch(
-        PCSTR               pszBaseDN,
-        int                 searchScope,
-        PCSTR               pszAttrName,
-        PCSTR               pszAttrValue,
-        PVDIR_ENTRY_ARRAY   pEntryArray
+    PCSTR               pszBaseDN,
+    int                 searchScope,
+    PCSTR               pszAttrName,
+    PCSTR               pszAttrValue,
+    PVDIR_ENTRY_ARRAY   pEntryArray
     )
 {
     DWORD           dwError = 0;
@@ -385,31 +364,31 @@ VmDirSimpleEqualFilterInternalSearch(
     VDIR_BERVALUE   bervDN = VDIR_BERVALUE_INIT;
     PVDIR_FILTER    pFilter = NULL;
 
-    if ( !pszBaseDN || !pszAttrName || !pszAttrValue || !pEntryArray )
+    if (!pszBaseDN || !pszAttrName || !pszAttrValue || !pEntryArray)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirInitStackOperation( &searchOP,
+    dwError = VmDirInitStackOperation(&searchOP,
                                        VDIR_OPERATION_TYPE_INTERNAL,
                                        LDAP_REQ_SEARCH,
-                                       NULL );
+                                       NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     bervDN.lberbv.bv_val = (PSTR)pszBaseDN;
     bervDN.lberbv.bv_len = VmDirStringLenA(pszBaseDN);
 
-    searchOP.pBEIF = VmDirBackendSelect( pszBaseDN );
+    searchOP.pBEIF = VmDirBackendSelect(pszBaseDN);
     assert(searchOP.pBEIF);
 
-    dwError = VmDirBervalContentDup( &bervDN, &searchOP.reqDn);
+    dwError = VmDirBervalContentDup(&bervDN, &searchOP.reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     searchOP.request.searchReq.scope = searchScope;
 
     {
-    dwError = VmDirAllocateMemory( sizeof( VDIR_FILTER ), (PVOID*)&pFilter );
+    dwError = VmDirAllocateMemory(sizeof(VDIR_FILTER), (PVOID*)&pFilter);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pFilter->choice = LDAP_FILTER_EQUALITY;
@@ -421,14 +400,14 @@ VmDirSimpleEqualFilterInternalSearch(
     if (pFilter->filtComp.ava.pATDesc == NULL)
     {
         dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     pFilter->filtComp.ava.value.lberbv.bv_val = (PSTR)pszAttrValue;
     pFilter->filtComp.ava.value.lberbv.bv_len = VmDirStringLenA(pszAttrValue);
     dwError = VmDirSchemaBervalNormalize(               // TODO, may want to have filter code to do this?
                     searchOP.pSchemaCtx,                // so caller does not have to handle this.
                     pFilter->filtComp.ava.pATDesc,
-                    &(pFilter->filtComp.ava.value) );
+                    &(pFilter->filtComp.ava.value));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pFilter->next = NULL;
@@ -439,7 +418,7 @@ VmDirSimpleEqualFilterInternalSearch(
     pFilter  = NULL; // search request takes over pFilter
 
 
-    dwError = VmDirInternalSearch( &searchOP );
+    dwError = VmDirInternalSearch(&searchOP);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // caller takes over searchOP.internalSearchEntryArray contents
@@ -470,12 +449,12 @@ error:
  */
 DWORD
 VmDirFilterInternalSearch(
-        PCSTR               pszBaseDN,
-        int                 searchScope,
-        PCSTR               pszFilter,
-        unsigned long       ulPageSize,
-        PSTR                *ppszPageCookie,
-        PVDIR_ENTRY_ARRAY   pEntryArray
+    PCSTR               pszBaseDN,
+    int                 searchScope,
+    PCSTR               pszFilter,
+    unsigned long       ulPageSize,
+    PSTR                *ppszPageCookie,
+    PVDIR_ENTRY_ARRAY   pEntryArray
     )
 {
     DWORD           dwError = 0;
@@ -485,7 +464,7 @@ VmDirFilterInternalSearch(
     PVDIR_LDAP_CONTROL showPagedResultsCtrl = NULL;
     PSTR pszPageCookie = NULL;
 
-    if ( !pszBaseDN || !pszFilter || !pEntryArray ||
+    if (!pszBaseDN || !pszFilter || !pEntryArray ||
         (ulPageSize != 0 && ppszPageCookie == NULL))
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
@@ -494,7 +473,7 @@ VmDirFilterInternalSearch(
 
     if (ulPageSize != 0)
     {
-        dwError = VmDirAllocateMemory( sizeof(VDIR_LDAP_CONTROL), (PVOID *)&showPagedResultsCtrl );
+        dwError = VmDirAllocateMemory(sizeof(VDIR_LDAP_CONTROL), (PVOID *)&showPagedResultsCtrl);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize = ulPageSize;
@@ -511,19 +490,19 @@ VmDirFilterInternalSearch(
         }
     }
 
-    dwError = VmDirInitStackOperation( &searchOP,
+    dwError = VmDirInitStackOperation(&searchOP,
                                        VDIR_OPERATION_TYPE_INTERNAL,
                                        LDAP_REQ_SEARCH,
-                                       NULL );
+                                       NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     bervDN.lberbv.bv_val = (PSTR)pszBaseDN;
     bervDN.lberbv.bv_len = VmDirStringLenA(pszBaseDN);
 
-    searchOP.pBEIF = VmDirBackendSelect( pszBaseDN );
+    searchOP.pBEIF = VmDirBackendSelect(pszBaseDN);
     assert(searchOP.pBEIF);
 
-    dwError = VmDirBervalContentDup( &bervDN, &searchOP.reqDn);
+    dwError = VmDirBervalContentDup(&bervDN, &searchOP.reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     searchOP.request.searchReq.scope = searchScope;
@@ -536,7 +515,7 @@ VmDirFilterInternalSearch(
 
     searchOP.showPagedResultsCtrl = showPagedResultsCtrl;
 
-    dwError = VmDirInternalSearch( &searchOP );
+    dwError = VmDirInternalSearch(&searchOP);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // caller takes over searchOP.internalSearchEntryArray contents
@@ -627,14 +606,14 @@ VmDirIsDirectMemberOf(
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VmDirIsDirectMemberOf: internal search for dn %s op %d",
           pszBindDN, getAccessInfo);
 
-    dwError = VmDirSimpleEqualFilterInternalSearch( pszGroupDN,
+    dwError = VmDirSimpleEqualFilterInternalSearch(pszGroupDN,
                                                     LDAP_SCOPE_BASE,
                                                     ATTR_MEMBER,
                                                     pszBindDN,
                                                     &entryResultArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if ( entryResultArray.iSize > 0)
+    if (entryResultArray.iSize > 0)
     {
         bIsMemberOf = TRUE;
     }
@@ -705,8 +684,8 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s,%d failed, error(%d)", __FUNCTION__, __LINE__, dwError );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+            "%s,%d failed, error(%d)", __FUNCTION__, __LINE__, dwError);
     goto cleanup;
 }
 
@@ -730,7 +709,7 @@ BuildCandidateList(
         goto cleanup;
     }
 
-    switch ( f->choice )
+    switch (f->choice)
     {
         case LDAP_FILTER_AND:
         {
@@ -740,7 +719,7 @@ BuildCandidateList(
             BOOLEAN         bGotPositiveCandidateSet = f->bAncestorGotPositiveCandidateSet;
             SearchReq *     sr = &pOperation->request.searchReq;
 
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: AND" );
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_FILTER, "Filter choice: AND");
 
             pOperation->pBECtx->iMaxScanForSizeLimit = 0;
             if (pOperation->showPagedResultsCtrl == 0 && sr->sizeLimit > 0)
@@ -757,7 +736,7 @@ BuildCandidateList(
             for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
             {
                 if (nextFilter->choice == LDAP_FILTER_GE &&
-                    VmDirStringCompareA( nextFilter->filtComp.ava.type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
+                    VmDirStringCompareA(nextFilter->filtComp.ava.type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE) == 0)
                 {
                     specialFilter = nextFilter;
                     continue; //keep looking for equality match filter on a unique attribute
@@ -773,7 +752,7 @@ BuildCandidateList(
                             nextFilter->filtComp.ava.type.lberbv.bv_val,
                             VDIR_INDEX_READ,
                             &pIndexCfg);
-                    BAIL_ON_VMDIR_ERROR( retVal );
+                    BAIL_ON_VMDIR_ERROR(retVal);
 
                     bFoundGlobalUniqIdx = pIndexCfg && pIndexCfg->bGlobalUniq;
                     VmDirIndexCfgRelease(pIndexCfg);
@@ -799,11 +778,11 @@ BuildCandidateList(
                 retVal = LDAP_SUCCESS;
 
             }
-            BAIL_ON_VMDIR_ERROR( retVal );
+            BAIL_ON_VMDIR_ERROR(retVal);
 
-            if ( specialFilter->candidates != NULL )
+            if (specialFilter->candidates != NULL)
             {
-                if ( specialFilter->candidates->size <= iSmallCandidateSet )
+                if (specialFilter->candidates->size <= iSmallCandidateSet)
                 {
                     goto candidate_build_done;
                 }
@@ -817,21 +796,21 @@ first_pass:
             // The loop stop once we have a small good positive filter/candidate.
             // Will not attempt second pass if we got any good positive candidate set.
             //////////////////////////////////////////////////////////////////////
-            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
             {
-                if ( nextFilter == specialFilter || nextFilter->choice == LDAP_FILTER_AND || nextFilter->choice == LDAP_FILTER_OR )
+                if (nextFilter == specialFilter || nextFilter->choice == LDAP_FILTER_AND || nextFilter->choice == LDAP_FILTER_OR)
                 {
                     continue;
                 }
 
                 nextFilter->iMaxIndexScan = iMaxIndexScan;
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
 
-                if ( nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
-                     nextFilter->candidates->positive == TRUE )
+                if (nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
+                     nextFilter->candidates->positive == TRUE)
                 {
-                    if (nextFilter->candidates->size <= iSmallCandidateSet )
+                    if (nextFilter->candidates->size <= iSmallCandidateSet)
                     {
                         // We have a small, positive, candidate set, stop evaluating remaining filters in the AND component
                         goto candidate_build_done;
@@ -846,21 +825,21 @@ first_pass:
             // otherwise, do not attempt the second pass if got any good positive candidate set.
             // It passes in current bGotPositiveCandidateSet to the composit filters, so that
             // their evaluations will not go through second pass when bGotPositiveCandidateSet is true.
-            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
             {
-                if ( nextFilter->choice != LDAP_FILTER_AND && nextFilter->choice != LDAP_FILTER_OR )
+                if (nextFilter->choice != LDAP_FILTER_AND && nextFilter->choice != LDAP_FILTER_OR)
                 {
                     continue;
                 }
 
                 nextFilter->bAncestorGotPositiveCandidateSet = bGotPositiveCandidateSet;
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
 
-                if ( nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
+                if (nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
                      nextFilter->candidates->positive == TRUE)
                 {
-                    if (nextFilter->candidates->size <= iSmallCandidateSet )
+                    if (nextFilter->candidates->size <= iSmallCandidateSet)
                     {
                         // We have a small, positive, candidate set, stop evaluating remaining filters in the AND component
                         goto candidate_build_done;
@@ -870,7 +849,7 @@ first_pass:
                 }
             }
 
-            if ( bGotPositiveCandidateSet )
+            if (bGotPositiveCandidateSet)
             {
                 goto candidate_build_done;
             }
@@ -879,11 +858,11 @@ first_pass:
             // Second pass - get here when failing to get any positive candidate set
             // Run through all filters w/o index scan limit.
             //////////////////////////////////////////////////////////////////////
-            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
             {
                 nextFilter->iMaxIndexScan = 0;
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
 
 candidate_build_done:
@@ -892,7 +871,7 @@ candidate_build_done:
             {
                 if (nextFilter->candidates == NULL || nextFilter->candidates->positive == TRUE)
                 {
-                    AndFilterResults( nextFilter, f);
+                    AndFilterResults(nextFilter, f);
                 }
             }
             // Second, "AND" "negative" candidates lists.
@@ -900,7 +879,7 @@ candidate_build_done:
             {
                 if (nextFilter->candidates != NULL && nextFilter->candidates->positive == FALSE)
                 {
-                    AndFilterResults( nextFilter, f);
+                    AndFilterResults(nextFilter, f);
                 }
             }
 
@@ -908,21 +887,21 @@ candidate_build_done:
         }
 
         case LDAP_FILTER_OR:
-          VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: OR" );
+          VMDIR_LOG_VERBOSE(LDAP_DEBUG_FILTER, "Filter choice: OR");
 
           for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
           {
               //nextFilter inherents the bAncestorGotPositiveCandidateSet
               nextFilter->bAncestorGotPositiveCandidateSet = f->bAncestorGotPositiveCandidateSet;
               retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
-              BAIL_ON_VMDIR_ERROR( retVal );
+              BAIL_ON_VMDIR_ERROR(retVal);
           }
           // First, "OR" no candidates lists or "positive" candidates lists
           for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
           {
               if (nextFilter->candidates == NULL || nextFilter->candidates->positive == TRUE)
               {
-                  OrFilterResults( nextFilter, f);
+                  OrFilterResults(nextFilter, f);
               }
           }
           /// Second, "OR" "negative" candidates lists.
@@ -930,19 +909,19 @@ candidate_build_done:
           {
               if (nextFilter->candidates != NULL && nextFilter->candidates->positive == FALSE)
               {
-                  OrFilterResults( nextFilter, f);
+                  OrFilterResults(nextFilter, f);
               }
           }
           break;
 
         case LDAP_FILTER_NOT:
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: NOT" );
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_FILTER, "Filter choice: NOT");
 #if 0
             nextFilter = f->filtComp.complex;
-            retVal = BuildCandidateList( pOperation, nextFilter);
-            BAIL_ON_VMDIR_ERROR( retVal );
+            retVal = BuildCandidateList(pOperation, nextFilter);
+            BAIL_ON_VMDIR_ERROR(retVal);
 
-            NotFilterResults( nextFilter, f );
+            NotFilterResults(nextFilter, f);
 #endif
             //The nextFilter above may contain a super set of valid candidates
             //substracting it from filter f may result in an incorrect result set.
@@ -960,7 +939,7 @@ candidate_build_done:
           retVal = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, eStartingId);
           if (retVal != 0)
           {
-              if ( retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND ) // SJ-TBD: What about DB_DEADLOCK error ??
+              if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND) // SJ-TBD: What about DB_DEADLOCK error ??
               {
                   retVal = LDAP_SUCCESS;
               }
@@ -971,23 +950,23 @@ candidate_build_done:
               PSTR pszCandList = NULL;
 
               retVal = _GetFilterCandidateLabel(f, &pszCand);
-              BAIL_ON_VMDIR_ERROR( retVal );
+              BAIL_ON_VMDIR_ERROR(retVal);
 
               retVal = VmDirAllocateStringPrintf(&pszCandList, "%s%s%s:%d",
                       pOperation->pszFilters ? pOperation->pszFilters : "",
                       pOperation->pszFilters ? ", " : "",
                       VDIR_SAFE_STRING(pszCand),
                       f->candidates->size);
-              BAIL_ON_VMDIR_ERROR( retVal );
+              BAIL_ON_VMDIR_ERROR(retVal);
 
               VMDIR_SAFE_FREE_STRINGA(pOperation->pszFilters);
               pOperation->pszFilters = pszCandList;
           }
-          BAIL_ON_VMDIR_ERROR( retVal );
+          BAIL_ON_VMDIR_ERROR(retVal);
           break;
 
         case LDAP_FILTER_PRESENT:
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: PRESENT" );
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_FILTER, "Filter choice: PRESENT");
 
             f->computeResult = FILTER_RES_TRUE; // SJ-TBD: Just for now, not always, needs to be looked into
             f->candidates = NULL;
@@ -1001,8 +980,8 @@ cleanup:
     return retVal;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s,%d failed, error(%d)", __FUNCTION__, __LINE__, retVal );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+            "%s,%d failed, error(%d)", __FUNCTION__, __LINE__, retVal);
     goto cleanup;
 }
 
@@ -1080,7 +1059,7 @@ ProcessCandidateList(
     if (pOperation->showPagedResultsCtrl && (pOperation->request.searchReq.sizeLimit == 0 ||
             pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize < (DWORD)pOperation->request.searchReq.sizeLimit))
     {
-        VmDirLog( LDAP_DEBUG_TRACE, "showPagedResultsCtrl applies to this query." );
+        VmDirLog(LDAP_DEBUG_TRACE, "showPagedResultsCtrl applies to this query.");
 
         bPageResultsCtrl = TRUE;
         dwPageSize = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize;
@@ -1098,7 +1077,7 @@ ProcessCandidateList(
         if (bInternalSearch || bStoreRsltInMem)
         {   //TODO, we should have a hard limit on the cl->size we handle
             VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
-            retVal = VmDirAllocateMemory(   sizeof(VDIR_ENTRY) * cl->size,
+            retVal = VmDirAllocateMemory(sizeof(VDIR_ENTRY) * cl->size,
                                             (PVOID*)&pOperation->internalSearchEntryArray.pEntry);
             BAIL_ON_VMDIR_ERROR(retVal);
         }
@@ -1131,7 +1110,7 @@ ProcessCandidateList(
             if (retVal)
             {
                 // Ignore BdbEIdToEntry errors.
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
                         "ProcessCandiateList BEIdToEntry EID(%u), error (%u)",
                         cl->eIds[i], retVal);
 
@@ -1140,19 +1119,19 @@ ProcessCandidateList(
 
             if (CheckIfEntryPassesFilter(pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
             {
-                retVal = VmDirBuildComputedAttribute( pOperation, pSrEntry );
-                BAIL_ON_VMDIR_ERROR( retVal );
+                retVal = VmDirBuildComputedAttribute(pOperation, pSrEntry);
+                BAIL_ON_VMDIR_ERROR(retVal);
 
-                retVal = VmDirSendSearchEntry( pOperation, pSrEntry );
+                retVal = VmDirSendSearchEntry(pOperation, pSrEntry);
                 if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
                 {
-                    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                    VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
                             "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)\n",
                             __FILE__, __LINE__, pOperation->conn->AccessInfo.pszBindedDn, pSrEntry->dn.lberbv.bv_val);
                     // make sure search continues
                     retVal = 0;
                 }
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
 
                 if (pSrEntry->bSearchEntrySent)
                 {
@@ -1173,14 +1152,14 @@ ProcessCandidateList(
                 break;
             }
 
-            VmDirFreeEntryContent( pSrEntry );
+            VmDirFreeEntryContent(pSrEntry);
             pSrEntry = NULL; // Reset to NULL so that DeleteEntry is no-op.
         }
 
-        VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "(%d) candiates processed and (%d) entries sent", cl->size, numSentEntries);
+        VMDIR_LOG_VERBOSE(LDAP_DEBUG_FILTER, "(%d) candiates processed and (%d) entries sent", cl->size, numSentEntries);
     }
 
-    if ( pOperation->request.searchReq.sizeLimit && numSentEntries < pOperation->request.searchReq.sizeLimit &&
+    if (pOperation->request.searchReq.sizeLimit && numSentEntries < pOperation->request.searchReq.sizeLimit &&
          pOperation->pBECtx->iPartialCandidates)
     {
         retVal = LDAP_UNWILLING_TO_PERFORM;
@@ -1191,12 +1170,12 @@ ProcessCandidateList(
 cleanup:
 
     pOperation->dwSentEntries = numSentEntries;
-    VmDirFreeEntryContent( pSrEntry );
+    VmDirFreeEntryContent(pSrEntry);
 
     return retVal;
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessCandiateList failed. (%u)", retVal);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ProcessCandiateList failed. (%u)", retVal);
     goto cleanup;
 }

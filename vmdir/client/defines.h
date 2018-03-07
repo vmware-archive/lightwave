@@ -21,9 +21,7 @@
 #define GROUP_CMADMINISTRATORS "cn=ComponentManager.Administrators"
 #define GROUP_SOLUTIONUSERS "cn=SolutionUsers"
 
-#define ATTR_VMW_MACHINE_GUID "vmwMachineGUID"
 
-#define VMDIR_MAX_PASSWORD_RETRIES 128
 
 #define VMDIR_MAX_CONFIG_VALUE_LENGTH 2048
 
@@ -107,8 +105,6 @@ the buffer size will always be adequate.
     } \
 }
 
-#define VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER { "ldap", "vmca", "host", "http", "DNS" }
-#define VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER { "host", "http" }
 
 // Error handling
 // vmdir ldap error space using macros defined in ldap.h

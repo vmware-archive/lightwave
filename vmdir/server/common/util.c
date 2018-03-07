@@ -1020,6 +1020,78 @@ error:
     goto cleanup;
 }
 
+/*
+ * Given a tenant and UPN, return entry DN
+ */
+DWORD
+VmDirTenantizeUPNToDN(
+    PCSTR       pszTenant,
+    PCSTR       pszUPN,
+    PSTR*       ppszEntryDN
+    )
+{
+    DWORD               dwError = 0;
+    VDIR_ENTRY_ARRAY    entryResultArray = {0};
+    PSTR                pszLocalDN = NULL;
+    PSTR                pszLocalTenantDN = NULL;
+    PSTR                pszLocalTenantizedUPN = NULL;
+
+    if (IsNullOrEmptyString(pszTenant) || IsNullOrEmptyString(pszUPN) || !ppszEntryDN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirDomainNameToDN(pszTenant, &pszLocalTenantDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+        &pszLocalTenantizedUPN,
+        "%s/%s",
+        pszUPN,
+        pszTenant);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(
+        pszLocalTenantDN,
+        LDAP_SCOPE_SUBTREE,
+        ATTR_TENANTIZED_UPN,
+        pszLocalTenantizedUPN,
+        &entryResultArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryResultArray.iSize == 1)
+    {
+        dwError = VmDirAllocateStringA(
+            entryResultArray.pEntry[0].dn.lberbv.bv_val,
+            &pszLocalDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (entryResultArray.iSize == 0)
+    {
+        dwError = VMDIR_ERROR_ENTRY_NOT_FOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszEntryDN = pszLocalDN;
+    pszLocalDN = NULL;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalDN);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalTenantDN);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalTenantizedUPN);
+    VmDirFreeEntryArrayContent(&entryResultArray);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 DWORD
 VmDirUPNToDNBerWrap(
     PCSTR           pszUPN,
@@ -1490,6 +1562,7 @@ VmDirAssertServerGlobals(
     assert(gVmdirServerGlobals.systemDomainDN.lberbv_val);
     assert(gVmdirServerGlobals.bvDCGroupDN.lberbv_val);
     assert(gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val);
+    assert(gVmdirServerGlobals.bvSchemaManagersGroupDN.lberbv_val);
     assert(gVmdirServerGlobals.bvServicesRootDN.lberbv_val);
     assert(gVmdirServerGlobals.delObjsContainerDN.lberbv_val);
     assert(gVmdirServerGlobals.serverObjDN.lberbv_val);

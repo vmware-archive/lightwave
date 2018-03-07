@@ -265,6 +265,17 @@ VmDirClientJoin(
     DWORD    dwJoinFlags);
 
 DWORD
+VmDirClientJoinAtomic(
+    PCSTR                   pszServerName,
+    PCSTR                   pszSRPUPN,
+    PCSTR                   pszPassword,
+    PCSTR                   pszDomainName,
+    PCSTR                   pszMachineName,
+    PCSTR                   pszOrgUnit,
+    DWORD                   dwFlags,
+    PVMDIR_MACHINE_INFO_A   *ppMachineInfo);
+
+DWORD
 VmDirClientLeave(
     PCSTR    pszServerName,
     PCSTR    pszUserName,
@@ -280,6 +291,16 @@ VmDirCreateComputerAccount(
     PCSTR pszOrgUnit,
     PSTR* ppszOutPassword
     );
+
+DWORD
+VmDirCreateComputerAccountAtomic(
+    PCSTR                   pszServerName,
+    PCSTR                   pszSRPUPN,
+    PCSTR                   pszPassword,
+    PCSTR                   pszDomainName,
+    PCSTR                   pszMachineName,
+    PCSTR                   pszOrgUnit,
+    PVMDIR_MACHINE_INFO_A   *ppMachineInfo);
 
 DWORD
 VmDirSetupTenantInstance(
@@ -856,6 +877,16 @@ VmDirChangePNID(
     PSTR    pszUsername,
     PSTR    pszPassword,
     PSTR    pszNewPNID
+    );
+
+VOID
+VmDirClientFreeMachineInfo(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirClientFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
     );
 
 #ifdef __cplusplus

@@ -39,6 +39,7 @@ VmwDeployBuildParams(
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
+    BOOLEAN bAtomicJoin,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
 
@@ -206,6 +207,7 @@ ParseArgs(
     BOOLEAN bUseMachineAccount = FALSE;
     BOOLEAN bMachinePreJoined = FALSE;
     BOOLEAN bDisableDNS = FALSE;
+    BOOLEAN bAtomicJoin = FALSE;
 
     enum PARSE_MODE
     {
@@ -269,6 +271,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--prejoined"))
                 {
                     bMachinePreJoined = TRUE;
+                }
+                else if (!strcmp(pszArg, "--atomic"))
+                {
+                    bAtomicJoin = TRUE;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -431,6 +437,7 @@ ParseArgs(
                     bDisableDNS,
                     bUseMachineAccount,
                     bMachinePreJoined,
+                    bAtomicJoin,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -467,6 +474,7 @@ VmwDeployBuildParams(
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
+    BOOLEAN bAtomicJoin,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
@@ -565,6 +573,7 @@ VmwDeployBuildParams(
     pSetupParams->bDisableDNS = bDisableDNS;
     pSetupParams->bUseMachineAccount = bUseMachineAccount;
     pSetupParams->bMachinePreJoined = bMachinePreJoined;
+    pSetupParams->bAtomicJoin = bAtomicJoin;
 
     *ppSetupParams = pSetupParams;
 

@@ -278,7 +278,8 @@ DWORD
 VmAfdLocalJoinValidateDomainCredentials(
     PCWSTR pwszDomainName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     );
 
 DWORD
@@ -313,10 +314,12 @@ VmAfdLocalLeaveVmDir(
 
 DWORD
 VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszMachineName,
     PCWSTR pwszOrgUnit,
+    VMAFD_JOIN_FLAGS dwFlags,
     PWSTR* ppwszOutPassword
 );
 

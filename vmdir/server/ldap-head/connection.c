@@ -144,9 +144,8 @@ vmdirConnAccept(
 static
 int
 NewConnection(
-    ber_socket_t    sfd,
-    VDIR_CONNECTION **conn,
-    Sockbuf_IO      *pSockbuf_IO
+    PVDIR_CONNECTION_CTX pConnCtx,
+    VDIR_CONNECTION **conn
     );
 
 static
@@ -420,9 +419,8 @@ VmDirFreeAccessInfo(
 static
 int
 NewConnection(
-    ber_socket_t    sfd,
-    VDIR_CONNECTION **ppConnection,
-    Sockbuf_IO      *pSockbuf_IO
+    PVDIR_CONNECTION_CTX pConnCtx,
+    VDIR_CONNECTION **ppConnection
     )
 {
     int       retVal = LDAP_SUCCESS;
@@ -437,8 +435,8 @@ NewConnection(
     }
 
     pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
-    pConn->sd = sfd;                 // pConn takes over sfd
-    sfd = -1;                        // valid fd > 0
+    pConn->sd = pConnCtx->sockFd;    // pConn takes over sfd
+    pConnCtx->sockFd = -1;           // valid fd > 0
 
     retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szClientIP, sizeof(pConn->szClientIP), &pConn->dwClientPort, true);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -460,7 +458,7 @@ NewConnection(
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_ctrl() failed while setting MAX_INCOMING", pConn->szClientIP);
     }
 
-    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&pConn->sd) != 0)
+    if (ber_sockbuf_add_io(pConn->sb, pConnCtx->pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&pConn->sd) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_addd_io() failed while setting LEVEL_PROVIDER", pConn->szClientIP);
@@ -476,9 +474,10 @@ NewConnection(
     *ppConnection = pConn;
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    if (sfd != -1)
+    if (pConnCtx->sockFd != -1)
     {
-        tcp_close(sfd);
+        tcp_close(pConnCtx->sockFd);
+        pConnCtx->sockFd = -1;
     }
 
     return retVal;
@@ -1241,7 +1240,7 @@ ProcessAConnection(
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
     assert(pConnCtx);
 
-    retVal = NewConnection(pConnCtx->sockFd, &pConn, pConnCtx->pSockbuf_IO);
+    retVal = NewConnection(pConnCtx, &pConn);
     if (retVal != LDAP_SUCCESS)
     {
         VMDIR_LOG_ERROR(
@@ -2012,23 +2011,22 @@ _VmDirScrubSuperLogContent(
 {
     if (pSuperLogRec)
     {
+        // common to all operations
+        pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
+        VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
+
+        if (opTag == LDAP_REQ_SEARCH || opTag == LDAP_REQ_UNBIND)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
+        }
+
         if (opTag == LDAP_REQ_UNBIND)
         {
             VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszBindID);
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
-            memset( pSuperLogRec, 0, sizeof(VDIR_SUPERLOG_RECORD) );
-        }
-        else
-        {
-            if (opTag == LDAP_REQ_SEARCH)
-            {
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
-                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
-            }
-            pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
+            memset(pSuperLogRec, 0, sizeof(VDIR_SUPERLOG_RECORD));
         }
     }
 }

@@ -55,4 +55,5 @@ add: accountExpires
 accountExpires: 0
 NNNN
 
-ldapmodify $LDAP_LOGIN_DATA -w `cat /var/tmp/promote-pwd.txt` -f /var/tmp/add-ad-user.ldif
+ldapmodify -Y GSSAPI -a -f /var/tmp/add-ad-user.ldif
+

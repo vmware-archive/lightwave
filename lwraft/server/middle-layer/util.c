@@ -16,51 +16,113 @@
 
 VOID
 VmDirInternalMetricsUpdate(
-    METRICS_LDAP_OPS        operation,
-    VDIR_OPERATION_PROTOCOL protocol,
-    VDIR_OPERATION_TYPE     opType,
-    int                     errCode,
-    uint64_t                iMLStartTime,
-    uint64_t                iMLEndTime,
-    uint64_t                iBEStartTime,
-    uint64_t                iBEEndTime
+    PVDIR_OPERATION pOp
     )
 {
-    if (operation != METRICS_LDAP_OP_IGNORE)
+    if (pOp)
     {
-        if (protocol == VDIR_OPERATION_PROTOCOL_LDAP)
-        {
-            VmDirLdapMetricsUpdate(
-                    operation,
-                    VmDirMetricsMapLdapOpTypeToEnum(opType),
-                    VmDirMetricsMapLdapErrorToEnum(errCode),
-                    METRICS_LAYER_MIDDLELAYER,
-                    iMLStartTime,
-                    iMLEndTime);
+        PVDIR_OPERATION_ML_METRIC pMLMetrics = &pOp->MLMetrics;
+        VDIR_OPERATION_PROTOCOL protocol = pOp->protocol;
+        METRICS_LDAP_OPS operation = VmDirMetricsMapLdapOperationToEnum(pOp->reqCode);
+        VDIR_OPERATION_TYPE opType = VmDirMetricsMapLdapOpTypeToEnum(pOp->opType);
+        int errCode = VmDirMetricsMapLdapErrorToEnum(pOp->ldapResult.errCode);
 
-            VmDirLdapMetricsUpdate(
-                    operation,
-                    VmDirMetricsMapLdapOpTypeToEnum(opType),
-                    VmDirMetricsMapLdapErrorToEnum(errCode),
-                    METRICS_LAYER_BACKEND,
-                    iBEStartTime,
-                    iBEEndTime);
-        }
-        else if (protocol == VDIR_OPERATION_PROTOCOL_REST)
+        if (operation != METRICS_LDAP_OP_IGNORE)
         {
-            VmDirRestMetricsUpdate(
-                    operation,
-                    VmDirMetricsMapLdapErrorToEnum(errCode),
-                    METRICS_LAYER_MIDDLELAYER,
-                    iMLStartTime,
-                    iMLEndTime);
+            if (protocol == VDIR_OPERATION_PROTOCOL_LDAP)
+            {
+                VmDirLdapMetricsUpdate(
+                        operation,
+                        opType,
+                        errCode,
+                        METRICS_LAYER_MIDDLELAYER,
+                        pMLMetrics->iMLStartTime,
+                        pMLMetrics->iMLEndTime);
 
-            VmDirRestMetricsUpdate(
-                    operation,
-                    VmDirMetricsMapLdapErrorToEnum(errCode),
-                    METRICS_LAYER_BACKEND,
-                    iBEStartTime,
-                    iBEEndTime);
+                VmDirLdapMetricsUpdate(
+                        operation,
+                        opType,
+                        errCode,
+                        METRICS_LAYER_PRE_PLUGINS,
+                        pMLMetrics->iPrePluginsStartTime,
+                        pMLMetrics->iPrePlugunsEndTim);
+
+                VmDirLdapMetricsUpdate(
+                        operation,
+                        opType,
+                        errCode,
+                        METRICS_LAYER_BACKEND,
+                        pMLMetrics->iBETxnBeginStartTime,
+                        pMLMetrics->iBETxnCommitEndTime);
+
+                VmDirLdapMetricsUpdate(
+                        operation,
+                        opType,
+                        errCode,
+                        METRICS_LAYER_BACKEND_TXN_BEGIN,
+                        pMLMetrics->iBETxnBeginStartTime,
+                        pMLMetrics->iBETxnBeginEndTime);
+
+                VmDirLdapMetricsUpdate(
+                        operation,
+                        opType,
+                        errCode,
+                        METRICS_LAYER_BACKEND_TXN_COMMIT,
+                        pMLMetrics->iBETxnCommitStartTime,
+                        pMLMetrics->iBETxnCommitEndTime);
+
+                VmDirLdapMetricsUpdate(
+                        operation,
+                        opType,
+                        errCode,
+                        METRICS_LAYER_POST_PLUGINS,
+                        pMLMetrics->iPostPluginsStartTime,
+                        pMLMetrics->iPostPlugunsEndTime);
+            }
+            else if (protocol == VDIR_OPERATION_PROTOCOL_REST)
+            {
+                VmDirRestMetricsUpdate(
+                        operation,
+                        errCode,
+                        METRICS_LAYER_MIDDLELAYER,
+                        pMLMetrics->iMLStartTime,
+                        pMLMetrics->iMLEndTime);
+
+                VmDirRestMetricsUpdate(
+                        operation,
+                        errCode,
+                        METRICS_LAYER_PRE_PLUGINS,
+                        pMLMetrics->iPrePluginsStartTime,
+                        pMLMetrics->iPrePlugunsEndTim);
+
+                VmDirRestMetricsUpdate(
+                        operation,
+                        errCode,
+                        METRICS_LAYER_BACKEND,
+                        pMLMetrics->iBETxnBeginStartTime,
+                        pMLMetrics->iBETxnCommitEndTime);
+
+                VmDirRestMetricsUpdate(
+                        operation,
+                        errCode,
+                        METRICS_LAYER_BACKEND_TXN_BEGIN,
+                        pMLMetrics->iBETxnBeginStartTime,
+                        pMLMetrics->iBETxnBeginEndTime);
+
+                VmDirRestMetricsUpdate(
+                        operation,
+                        errCode,
+                        METRICS_LAYER_BACKEND_TXN_COMMIT,
+                        pMLMetrics->iBETxnCommitStartTime,
+                        pMLMetrics->iBETxnCommitEndTime);
+
+                VmDirRestMetricsUpdate(
+                        operation,
+                        errCode,
+                        METRICS_LAYER_POST_PLUGINS,
+                        pMLMetrics->iPostPluginsStartTime,
+                        pMLMetrics->iPostPlugunsEndTime);
+            }
         }
     }
 }

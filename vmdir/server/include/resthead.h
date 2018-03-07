@@ -18,6 +18,11 @@ VmDirRESTServerInit(
     VOID
     );
 
+DWORD
+VmDirRESTServerStop(
+    VOID
+    );
+
 VOID
 VmDirRESTServerShutdown(
     VOID

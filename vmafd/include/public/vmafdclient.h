@@ -359,14 +359,16 @@ DWORD
 VmAfdJoinValidateDomainCredentialsW(
     PCWSTR pwszDomainName,  /* IN              */
     PCWSTR pwszUserName,    /* IN              */
-    PCWSTR pwszPassword     /* IN              */
+    PCWSTR pwszPassword,    /* IN              */
+    PCWSTR pwszSiteName     /* IN     OPTIONAL */
     );
 
 DWORD
 VmAfdJoinValidateDomainCredentialsA(
     PCSTR pszDomainName,     /* IN              */
     PCSTR pszUserName,       /* IN              */
-    PCSTR pszPassword        /* IN              */
+    PCSTR pszPassword,       /* IN              */
+    PCSTR pszSiteName        /* IN     OPTIONAL */
     );
 
 DWORD
@@ -460,6 +462,26 @@ VmAfdCreateComputerAccountA(
 
 DWORD
 VmAfdCreateComputerAccountW(
+    PCWSTR pwszUserName,      /* IN              */
+    PCWSTR pwszPassword,      /* IN              */
+    PCWSTR pwszMachineName,   /* IN              */
+    PCWSTR pwszOrgUnit,       /* IN     OPTIONAL */
+    PWSTR* ppwszOutPassword   /* OUT             */
+    );
+
+DWORD
+VmAfdCreateComputerAccountDCA(
+    PCSTR pszServerName,      /* IN              */
+    PCSTR pszUserName,        /* IN              */
+    PCSTR pszPassword,        /* IN              */
+    PCSTR pszMachineName,     /* IN              */
+    PCSTR pszOrgUnit,         /* IN     OPTIONAL */
+    PSTR* ppszOutPassword     /* OUT             */
+    );
+
+DWORD
+VmAfdCreateComputerAccountDCW(
+    PCWSTR pwszServerName,    /* IN              */
     PCWSTR pwszUserName,      /* IN              */
     PCWSTR pwszPassword,      /* IN              */
     PCWSTR pwszMachineName,   /* IN              */

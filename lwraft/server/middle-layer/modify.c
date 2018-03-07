@@ -20,7 +20,8 @@ static
 int
 AddAttrToEntryStruct(
    VDIR_ENTRY *     e,
-   VDIR_ATTRIBUTE * attr);
+   VDIR_ATTRIBUTE * attr
+   );
 
 static
 DWORD
@@ -28,7 +29,8 @@ AddAttrValsToEntryStruct(
    VDIR_ENTRY *     e,
    VDIR_ATTRIBUTE * eAttr,
    VDIR_ATTRIBUTE * modAttr,
-   PSTR*            ppszErrMsg);
+   PSTR*            ppszErrMsg
+   );
 
 static
 int
@@ -59,7 +61,8 @@ static
 void
 RemoveAttrVals(
    VDIR_ATTRIBUTE * eAttr,
-   VDIR_ATTRIBUTE * modAttr);
+   VDIR_ATTRIBUTE * modAttr
+   );
 
 static int
 VmDirGenerateRenameAttrsMods(
@@ -96,57 +99,71 @@ VmDirModifyEntryCoreLogic(
     PVDIR_ATTRIBUTE pAttrMemberOf = NULL;
     extern DWORD VmDirModifyRaftPreCommit(PVDIR_SCHEMA_CTX, ENTRYID, char *, PVDIR_MODIFICATION, PVDIR_OPERATION);
 
-    retVal = pOperation->pBEIF->pfnBEIdToEntry( pOperation->pBECtx,
-                                                pOperation->pSchemaCtx,
-                                                entryId,
-                                                pEntry,
-                                                VDIR_BACKEND_ENTRY_LOCK_WRITE );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = pOperation->pBEIF->pfnBEIdToEntry(
+            pOperation->pBECtx,
+            pOperation->pSchemaCtx,
+            entryId,
+            pEntry,
+            VDIR_BACKEND_ENTRY_LOCK_WRITE);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     if (pOperation->pCondWriteCtrl)
     {
         retVal = VmDirMatchEntryWithFilter(
-                    pOperation,
-                    pEntry,
-                    pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                    "Conditional Write pre-conditions (%s) failed - (%d)",
-                    VDIR_SAFE_STRING(pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter),
-                    retVal);
+                pOperation,
+                pEntry,
+                pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Conditional Write pre-conditions (%s) failed - (%d)",
+                VDIR_SAFE_STRING(pOperation->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter),
+                retVal);
     }
 
     if (modReq->dn.lberbv.bv_val == NULL) // If not already set by the caller
     {   // e.g. delete membership case via index lookup to get EID.
         retVal = VmDirBervalContentDup(&pEntry->dn, &modReq->dn);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                      "VmDirBervalContentDup failed - (%d)", retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "VmDirBervalContentDup failed - (%d)",
+                retVal);
     }
 
-    retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pEntry, VMDIR_RIGHT_DS_WRITE_PROP);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                  "VmDirSrvAccessCheck failed - (%u)", retVal);
+    retVal = VmDirSrvAccessCheck(
+            pOperation,
+            &pOperation->conn->AccessInfo,
+            pEntry,
+            VMDIR_RIGHT_DS_WRITE_PROP);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "VmDirSrvAccessCheck failed - (%u)",
+            retVal);
 
     // update vmwRaftLogChanged attribute
     retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // Apply modify operations to the current entry (in pack format)
-    retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &bDnModified, &pszLocalErrMsg );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                  "ApplyModsToEntryStruct failed - (%d)(%s)", retVal, pszLocalErrMsg);
+    retVal = VmDirApplyModsToEntryStruct(
+            pOperation->pSchemaCtx, modReq, pEntry, &bDnModified, &pszLocalErrMsg);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "ApplyModsToEntryStruct failed - (%d)(%s)",
+            retVal,
+            pszLocalErrMsg);
 
     if (bDnModified)
     {
         retVal = pOperation->pBEIF->pfnBEChkIsLeafEntry(
-                                        pOperation->pBECtx,
-                                        entryId,
-                                        &bLeafNode);
+                pOperation->pBECtx, entryId, &bLeafNode);
         BAIL_ON_VMDIR_ERROR(retVal);
 
         if (bLeafNode == FALSE)
         {
             retVal = LDAP_NOT_ALLOWED_ON_NONLEAF;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Rename of a non-leaf node is not allowed." );
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal, pszLocalErrMsg,
+                    "Rename of a non-leaf node is not allowed.");
         }
 
         // Verify not a member of any groups
@@ -154,7 +171,9 @@ VmDirModifyEntryCoreLogic(
         if (pAttrMemberOf && pAttrMemberOf->numVals > 0)
         {
             retVal = LDAP_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Rename of a node with memberships is not allowed." );
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal, pszLocalErrMsg,
+                    "Rename of a node with memberships is not allowed.");
         }
     }
 
@@ -162,48 +181,66 @@ VmDirModifyEntryCoreLogic(
     {
         // Schema check
         retVal = VmDirSchemaCheck(pEntry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Schema check failed - (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Schema check failed - (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
 
         // check and read lock dn referenced entries
-        retVal = pOperation->pBEIF->pfnBEChkDNReference( pOperation->pBECtx, pEntry );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECheckDnRef, (%u)(%s)", retVal,
-                                      VDIR_SAFE_STRING(pOperation->pBECtx->pszBEErrorMsg) );
+        retVal = pOperation->pBEIF->pfnBEChkDNReference(pOperation->pBECtx, pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "BECheckDnRef, (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBECtx->pszBEErrorMsg));
     }
 
     // Execute plugin logic that require final entry image.  (Do this for both normal and repl routes)
     retVal = VmDirExecutePreModifyPlugins(pOperation, pEntry, retVal);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModifyPlugins failed - (%u)", retVal);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "PreModifyPlugins failed - (%u)",
+            retVal);
 
     // Update DB
-    retVal = pOperation->pBEIF->pfnBEEntryModify( pOperation->pBECtx, modReq->mods, pEntry );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryModify, (%u)(%s)", retVal,
-                                  VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
+    retVal = pOperation->pBEIF->pfnBEEntryModify(pOperation->pBECtx, modReq->mods, pEntry);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "BEEntryModify, (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
     if (bNoRaftLog == FALSE)
     {
-        //Generate raft log only on the orignal Add/Modify/Delete, but not on the derived operation.
+        // Generate raft log only on the orignal Add/Modify/Delete, but not on the derived operation.
         // For instance, a delete may cause a Modify on the referenced entry which shouldn't
         //     initiate a raft log generation.
-        retVal = VmDirModifyRaftPreCommit(pEntry->pSchemaCtx, entryId, modReq->dn.bvnorm_val,  modReq->mods, pOperation);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "VmDirModifyRaftPreCommit, (%u)(%s)", retVal,
-                                  VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
+        retVal = VmDirModifyRaftPreCommit(
+                pEntry->pSchemaCtx, entryId, modReq->dn.bvnorm_val,  modReq->mods, pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "VmDirModifyRaftPreCommit, (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     }
 
 cleanup:
 
     VmDirFreeAttribute(pAttrMemberOf);
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
     return retVal;
 
 error:
 
-    VmDirLog( LDAP_DEBUG_ANY, "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
-                               VDIR_SAFE_STRING( modReq->dn.lberbv.bv_val ),
-                               retVal, VDIR_SAFE_STRING(pszLocalErrMsg) );
+    VMDIR_LOG_ERROR(
+            LDAP_DEBUG_ANY,
+            "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
+            VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
+            retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
 
-    if ( pOperation->ldapResult.pszErrMsg == NULL )
+    if (pOperation->ldapResult.pszErrMsg == NULL)
     {
         pOperation->ldapResult.pszErrMsg = pszLocalErrMsg;
         pszLocalErrMsg = NULL;
@@ -232,34 +269,30 @@ VmDirMLModify(
     if (pOperation->conn->bIsAnonymousBind || VmDirIsFailedAccessInfo(&pOperation->conn->AccessInfo))
     {
         dwError = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError, pszLocalErrMsg,
+                "Not bind/authenticate yet");
     }
 
     if (VmDirRaftDisallowUpdates("Modify"))
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     // Mod request sanity check
-    dwError = _VmDirExternalModsSanityCheck( pOperation, pOperation->request.modifyReq.mods );
+    dwError = _VmDirExternalModsSanityCheck(pOperation, pOperation->request.modifyReq.mods);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirInternalModifyEntry( pOperation);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
-                                                     pOperation->pBECtx->wTxnUSN);
-    }
+    dwError = VmDirInternalModifyEntry(pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return pOperation->ldapResult.errCode;
 
 error:
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&(pOperation->ldapResult), dwError, pszLocalErrMsg);
     goto cleanup;
 }
 
@@ -275,26 +308,25 @@ VmDirInternalModifyEntry(
     )
 {
     int         retVal = LDAP_SUCCESS;
-    int         deadLockRetries = 0;
     VDIR_ENTRY  entry = {0};
     PVDIR_ENTRY pEntry = NULL;
     ModifyReq*  modReq = NULL;
     ENTRYID     entryId = 0;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
-    uint64_t    iMLStartTime = 0;
-    uint64_t    iMLEndTime = 0;
-    uint64_t    iBEStartTime = 0;
-    uint64_t    iBEEndTime = 0;
+    PVDIR_OPERATION_ML_METRIC   pMLMetrics = NULL;
 
     assert(pOperation && pOperation->pBEIF);
 
-    iMLStartTime = VmDirGetTimeInMilliSec();
+    pMLMetrics = &pOperation->MLMetrics;
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLStartTime);
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
         retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Server in read-only mode");
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Server in read-only mode");
     }
 
     modReq = &(pOperation->request.modifyReq);
@@ -303,109 +335,103 @@ VmDirInternalModifyEntry(
     if (modReq->dn.lberbv_len < 3)
     {
         retVal = VMDIR_ERROR_INVALID_REQUEST;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Invalid DN length - (%u)", modReq->dn.lberbv_len);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "Invalid DN length - (%u)",
+                modReq->dn.lberbv_len);
     }
 
     // Normalize DN
-    retVal = VmDirNormalizeDN( &(modReq->dn), pOperation->pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-                                  retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
+    retVal = VmDirNormalizeDN(&(modReq->dn), pOperation->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "DN normalization failed - (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)));
 
     // Acquire schema modification mutex
     retVal = VmDirSchemaModMutexAcquire(pOperation);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );
-
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "Failed to lock schema mod mutex",
+            retVal);
 
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
         // Generate mods based on MODN request
-        retVal = VmDirGenerateRenameAttrsMods( pOperation );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
+        retVal = VmDirGenerateRenameAttrsMods(pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal, pszLocalErrMsg,
+                "GenerateDeleteAttrsMods failed - (%u)",
+                retVal);
     }
 
     // Execute pre modify plugin logic
+    VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsStartTime);
+
     retVal = VmDirExecutePreModApplyModifyPlugins(pOperation, NULL, retVal);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyModify plugin failed - (%u)",  retVal );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "PreModApplyModify plugin failed - (%u)",
+            retVal);
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iPrePlugunsEndTim);
 
     // Normalize attribute values in mods
-    retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirNormalizeMods(pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    if (bHasTxn)
-    {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx);
-        bHasTxn = FALSE;
-    }
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
 
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-    else
-    {
-        if (pEntry)
-        {
-            VmDirFreeEntryContent(pEntry);
-            memset(pEntry, 0, sizeof(VDIR_ENTRY));
-            pEntry = NULL;
-        }
+    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "txn begin (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-        retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-        bHasTxn = TRUE;
-        iBEStartTime = VmDirGetTimeInMilliSec();
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+    bHasTxn = TRUE;
 
-        // Read current entry from DB
-        retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(modReq->dn), &entryId);
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
+    // Read current entry from DB
+    retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(modReq->dn), &entryId);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "BEEntryModify (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryModify (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
+    pEntry = &entry;
 
-        pEntry = &entry;
+    retVal = VmDirModifyEntryCoreLogic(
+            pOperation,
+            &pOperation->request.modifyReq,
+            entryId,
+            pOperation->bNoRaftLog,
+            pEntry);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "CoreLogicModifyEntry failed. (%u)",
+            retVal);
 
-        if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId,
-                                                 pOperation->bNoRaftLog, pEntry )) != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_LOCK_DEADLOCK:
-                    goto txnretry; // Possible retry.
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
 
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                                  "CoreLogicModifyEntry failed. (%u)", retVal );
-            }
-        }
+    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg,
+            "txn commit (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-        retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-        bHasTxn = FALSE;
-        iBEEndTime = VmDirGetTimeInMilliSec();
-    }
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
+    bHasTxn = FALSE;
 
     if (!pOperation->bSuppressLogInfo)
     {
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Modify Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Modify Entry (%s) blob size %d",
+                VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->encodedSize);
     }
 
 cleanup:
@@ -413,32 +439,28 @@ cleanup:
     {
         int iPostCommitPluginRtn = 0;
 
+        VMDIR_COLLECT_TIME(pMLMetrics->iPostPluginsStartTime);
+
         // Execute post modify plugin logic
         iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(pOperation, &entry, retVal);
-        if ( iPostCommitPluginRtn != LDAP_SUCCESS
-             &&
-             iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-           )
+        if (iPostCommitPluginRtn != LDAP_SUCCESS &&
+            iPostCommitPluginRtn != pOperation->ldapResult.errCode) // pass through
         {
-            VmDirLog( LDAP_DEBUG_ANY, "InternalModifyEntry: VdirExecutePostModifyCommitPlugins - code(%d)",
-                      iPostCommitPluginRtn);
+            VMDIR_LOG_ERROR(
+                    LDAP_DEBUG_ANY,
+                    "InternalModifyEntry: VdirExecutePostModifyCommitPlugins - code(%d)",
+                    iPostCommitPluginRtn);
         }
+
+        VMDIR_COLLECT_TIME(pMLMetrics->iPostPlugunsEndTime);
     }
 
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);
 
     // collect metrics
-    iMLEndTime = VmDirGetTimeInMilliSec();
-    VmDirInternalMetricsUpdate(
-            METRICS_LDAP_OP_MODIFY,
-            pOperation->protocol,
-            pOperation->opType,
-            pOperation->ldapResult.errCode,
-            iMLStartTime,
-            iMLEndTime,
-            iBEStartTime,
-            iBEEndTime);
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
+    VmDirInternalMetricsUpdate(pOperation);
 
     VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -448,8 +470,9 @@ error:
 
     if (bHasTxn)
     {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        iBEEndTime = VmDirGetTimeInMilliSec();
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
@@ -481,16 +504,14 @@ VmDirInternalEntryAttributeReplace(
     VDIR_OPERATION      ldapOp = {0};
     PVDIR_MODIFICATION  pMod = NULL;
 
-    if ( !pszNormDN || !pszAttrName || !pBervAttrValue)
+    if (!pszNormDN || !pszAttrName || !pBervAttrValue)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirInitStackOperation( &ldapOp,
-                                       VDIR_OPERATION_TYPE_INTERNAL,
-                                       LDAP_REQ_MODIFY,
-                                       pSchemaCtx );
+    dwError = VmDirInitStackOperation(
+            &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     ldapOp.pBEIF = VmDirBackendSelect(NULL);
@@ -499,19 +520,17 @@ VmDirInternalEntryAttributeReplace(
     ldapOp.reqDn.lberbv.bv_val = (PSTR)pszNormDN;
     ldapOp.reqDn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
 
-    dwError = VmDirAllocateMemory(
-                    sizeof(*pMod)*1,
-                    (PVOID)&pMod);
+    dwError = VmDirAllocateMemory(sizeof(*pMod)*1, (PVOID)&pMod);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMod->next = NULL;
     pMod->operation = MOD_OP_REPLACE;
     dwError = VmDirModAddSingleValueAttribute(
-                    pMod,
-                    ldapOp.pSchemaCtx,
-                    pszAttrName,
-                    pBervAttrValue->lberbv.bv_val,
-                    pBervAttrValue->lberbv.bv_len);
+            pMod,
+            ldapOp.pSchemaCtx,
+            pszAttrName,
+            pBervAttrValue->lberbv.bv_val,
+            pBervAttrValue->lberbv.bv_len);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     ldapOp.request.modifyReq.dn.lberbv.bv_val = (PSTR)pszNormDN;
@@ -550,7 +569,7 @@ VmDirAddModSingleAttributeReplace(
     DWORD               dwError = 0;
     PVDIR_MODIFICATION  pMod = NULL;
 
-    if ( !pszNormDN || !pszAttrName || !pBervAttrValue)
+    if (!pszNormDN || !pszAttrName || !pBervAttrValue)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -559,16 +578,16 @@ VmDirAddModSingleAttributeReplace(
     pLdapOp->reqDn.lberbv.bv_val = (PSTR)pszNormDN;
     pLdapOp->reqDn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
 
-    dwError = VmDirAllocateMemory( sizeof(*pMod)*1, (PVOID)&pMod);
+    dwError = VmDirAllocateMemory(sizeof(*pMod)*1, (PVOID)&pMod);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMod->operation = MOD_OP_REPLACE;
     dwError = VmDirModAddSingleValueAttribute(
-                    pMod,
-                    pLdapOp->pSchemaCtx,
-                    pszAttrName,
-                    pBervAttrValue->lberbv.bv_val,
-                    pBervAttrValue->lberbv.bv_len);
+            pMod,
+            pLdapOp->pSchemaCtx,
+            pszAttrName,
+            pBervAttrValue->lberbv.bv_val,
+            pBervAttrValue->lberbv.bv_len);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pLdapOp->request.modifyReq.dn.lberbv.bv_val = (PSTR)pszNormDN;
@@ -612,49 +631,49 @@ _VmDirPatchBadMemberData(
     PVDIR_ENTRY         pLocalEntry = NULL;
     PSTR*               ppList = NULL;
 
-    pAttrMembers = VmDirEntryFindAttribute(ATTR_MEMBER, pEntry );
-    if ( pAttrMembers != NULL )
+    pAttrMembers = VmDirEntryFindAttribute(ATTR_MEMBER, pEntry);
+    if (pAttrMembers != NULL)
     {
-        retVal = VmDirAllocateMemory( sizeof(PSTR) * pAttrMembers->numVals, (PVOID)&ppList);
-        BAIL_ON_VMDIR_ERROR( retVal);
+        retVal = VmDirAllocateMemory(sizeof(PSTR) * pAttrMembers->numVals, (PVOID)&ppList);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
-        for ( iCnt=0; iCnt<pAttrMembers->numVals; iCnt++ )
+        for (iCnt=0; iCnt<pAttrMembers->numVals; iCnt++)
         {
-            retVal = VmDirNormalizeDN( &(pAttrMembers->vals[iCnt]), pEntry->pSchemaCtx);
-            BAIL_ON_VMDIR_ERROR( retVal );
+            retVal = VmDirNormalizeDN(&(pAttrMembers->vals[iCnt]), pEntry->pSchemaCtx);
+            BAIL_ON_VMDIR_ERROR(retVal);
 
-            VmDirFreeEntry( pLocalEntry );
+            VmDirFreeEntry(pLocalEntry);
             pLocalEntry = NULL;
 
-            retVal = VmDirSimpleDNToEntry( pAttrMembers->vals[iCnt].bvnorm_val, &pLocalEntry );
-            if (retVal == 0 )
+            retVal = VmDirSimpleDNToEntry(pAttrMembers->vals[iCnt].bvnorm_val, &pLocalEntry);
+            if (retVal == 0)
             {
                 ppList[iMatch++] = pAttrMembers->vals[iCnt].lberbv_val;
             }
-            else if ( retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND )
+            else if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
             {
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "Bad member [%s] in group [%s]",
+                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "Bad member [%s] in group [%s]",
                                    pAttrMembers->vals[iCnt].lberbv_val,
                                    pEntry->dn.lberbv_val);
             }
             else
             {
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
         }
     }
 
-    if ( ppList && iMatch < pAttrMembers->numVals )
+    if (ppList && iMatch < pAttrMembers->numVals)
     {
-        retVal = VmDirAttributeAllocate( ATTR_MEMBER,
+        retVal = VmDirAttributeAllocate(ATTR_MEMBER,
                                          iMatch,
                                          pEntry->pSchemaCtx,
                                          &pLocalAttr);
-        BAIL_ON_VMDIR_ERROR( retVal );
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         for (iCnt = 0; iCnt < iMatch; iCnt++)
         {
-            retVal = VmDirAllocateStringA( ppList[iCnt],
+            retVal = VmDirAllocateStringA(ppList[iCnt],
                                            &(pLocalAttr->vals[iCnt].lberbv_val));
             BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -663,20 +682,20 @@ _VmDirPatchBadMemberData(
         }
 
         // replace pAttrMembers with pLocalAttr
-        retVal = VmDirEntryReplaceAttribute( pEntry, pLocalAttr );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = VmDirEntryReplaceAttribute(pEntry, pLocalAttr);
+        BAIL_ON_VMDIR_ERROR(retVal);
         pLocalAttr = NULL;
     }
 
 cleanup:
-    VmDirFreeEntry( pLocalEntry );
-    VmDirFreeAttribute( pLocalAttr );
-    VMDIR_SAFE_FREE_MEMORY( ppList );
+    VmDirFreeEntry(pLocalEntry);
+    VmDirFreeAttribute(pLocalAttr);
+    VMDIR_SAFE_FREE_MEMORY(ppList);
 
     return retVal;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s:%d failed, error (%d)", __FUNCTION__, __LINE__,retVal );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s:%d failed, error (%d)", __FUNCTION__, __LINE__,retVal);
 
     goto cleanup;
 }
@@ -706,7 +725,7 @@ VmDirApplyModsToEntryStruct(
     VDIR_MODIFICATION * prevMod = NULL;
     PSTR                pszLocalErrorMsg = NULL;
 
-    if ( pSchemaCtx == NULL || modReq == NULL || pEntry == NULL || ppszErrorMsg == NULL)
+    if (pSchemaCtx == NULL || modReq == NULL || pEntry == NULL || ppszErrorMsg == NULL)
     {
         retVal = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(retVal);
@@ -714,14 +733,14 @@ VmDirApplyModsToEntryStruct(
 
     if (pEntry->allocType == ENTRY_STORAGE_FORMAT_PACK)
     {
-        retVal = VmDirEntryUnpack( pEntry );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+        retVal = VmDirEntryUnpack(pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                         "EntryUnpack failed failed (%s)",
                                         VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
     }
 
-    retVal = _VmDirPatchBadMemberData( pSchemaCtx, pEntry );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+    retVal = _VmDirPatchBadMemberData(pSchemaCtx, pEntry);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                     "Patch Bad member data failed (%s)",
                                     VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
 
@@ -731,21 +750,21 @@ VmDirApplyModsToEntryStruct(
         {
             case MOD_OP_ADD:
             {
-                PVDIR_ATTRIBUTE attr = VmDirFindAttrByName( pEntry, currMod->attr.type.lberbv.bv_val);
+                PVDIR_ATTRIBUTE attr = VmDirFindAttrByName(pEntry, currMod->attr.type.lberbv.bv_val);
 
                 if (attr == NULL) // New attribute case
                 {
-                    retVal = AddAttrToEntryStruct( pEntry, &(currMod->attr) );
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                    retVal = AddAttrToEntryStruct(pEntry, &(currMod->attr));
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                                     "AddAttrToEntryStruct failed (%s)",
                                                     VDIR_SAFE_STRING(currMod->attr.type.lberbv.bv_val));
                 }
                 else // Add values to an existing attribute case.
                 {
                     retVal = CheckIfAnAttrValAlreadyExists(pSchemaCtx, attr, &(currMod->attr), &pszLocalErrorMsg);
-                    BAIL_ON_VMDIR_ERROR( retVal );
+                    BAIL_ON_VMDIR_ERROR(retVal);
 
-                    retVal = AddAttrValsToEntryStruct( pEntry, attr, &(currMod->attr), &pszLocalErrorMsg );
+                    retVal = AddAttrValsToEntryStruct(pEntry, attr, &(currMod->attr), &pszLocalErrorMsg);
                     BAIL_ON_VMDIR_ERROR(retVal);
                 }
                 prevMod = currMod;
@@ -754,30 +773,30 @@ VmDirApplyModsToEntryStruct(
             }
             case MOD_OP_DELETE:
             {
-                PVDIR_ATTRIBUTE attr = VmDirFindAttrByName( pEntry, currMod->attr.type.lberbv.bv_val);
+                PVDIR_ATTRIBUTE attr = VmDirFindAttrByName(pEntry, currMod->attr.type.lberbv.bv_val);
                 if (attr == NULL) // Attribute to be deleted does not exist in the entry
                 {
-                    if ( currMod->attr.numVals == 0 ) // If whole attribute is to be deleted, ignore this mod.
+                    if (currMod->attr.numVals == 0) // If whole attribute is to be deleted, ignore this mod.
                     {
                         currMod->ignore = TRUE;
                     }
                     else // If some specific attribute values are to be deleted from the attribute => error case
                     {
                         retVal = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                                         "Attribute (%s) being deleted does not exists.",
                                                         VDIR_SAFE_STRING(currMod->attr.type.lberbv.bv_val));
                     }
                 }
                 else
                 {
-                    retVal = DelAttrValsFromEntryStruct(pSchemaCtx, pEntry, &(currMod->attr), &pszLocalErrorMsg );
+                    retVal = DelAttrValsFromEntryStruct(pSchemaCtx, pEntry, &(currMod->attr), &pszLocalErrorMsg);
                     if ((retVal == VMDIR_ERROR_NO_SUCH_ATTRIBUTE) &&
                         (VmDirStringCompareA(currMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE) == 0))
                     {   // for user password change, the old password supplied != existing record
                         retVal = VMDIR_ERROR_USER_INVALID_CREDENTIAL;
                     }
-                    BAIL_ON_VMDIR_ERROR( retVal );
+                    BAIL_ON_VMDIR_ERROR(retVal);
                 }
                 prevMod = currMod;
                 currMod = currMod->next;
@@ -798,7 +817,7 @@ VmDirApplyModsToEntryStruct(
                 else
                 {
                     VDIR_MODIFICATION * newDelMod = NULL;
-                    PVDIR_ATTRIBUTE attr = VmDirFindAttrByName( pEntry, currMod->attr.type.lberbv.bv_val);
+                    PVDIR_ATTRIBUTE attr = VmDirFindAttrByName(pEntry, currMod->attr.type.lberbv.bv_val);
 
                     if (attr == NULL) // New attribute case
                     {
@@ -824,8 +843,8 @@ VmDirApplyModsToEntryStruct(
 
                         currMod->operation = MOD_OP_ADD;
 
-                        retVal = VmDirAllocateMemory( sizeof(VDIR_MODIFICATION), (PVOID *)&newDelMod );
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "no memory");
+                        retVal = VmDirAllocateMemory(sizeof(VDIR_MODIFICATION), (PVOID *)&newDelMod);
+                        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "no memory");
 
                         newDelMod->operation = MOD_OP_DELETE;
                         newDelMod->attr.pATDesc = currMod->attr.pATDesc;
@@ -849,7 +868,7 @@ VmDirApplyModsToEntryStruct(
                 break;
             }
             default:
-                assert( FALSE );
+                assert(FALSE);
         }
     }
 
@@ -888,10 +907,10 @@ AddAttrToEntryStruct(
     VDIR_ATTRIBUTE * attrCopy = NULL;
     int         retVal = 0;
 
-    assert( e->allocType == ENTRY_STORAGE_FORMAT_NORMAL );
+    assert(e->allocType == ENTRY_STORAGE_FORMAT_NORMAL);
     // make a copy of the attribute.
-    retVal = VmDirAttributeDup( attr, &attrCopy );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirAttributeDup(attr, &attrCopy);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     // Go to the last attribute.
     for (currAttr = e->attrs; currAttr->next != NULL; currAttr = currAttr->next)
@@ -929,20 +948,20 @@ VmDirNormalizeMods(
 
     for (pMod = pMods; pMod != NULL; pMod = pMod->next)
     {
-        if ( pMod->attr.pATDesc == NULL
+        if (pMod->attr.pATDesc == NULL
              &&
-             (pMod->attr.pATDesc = VmDirSchemaAttrNameToDesc( pSchemaCtx, pMod->attr.type.lberbv.bv_val)) == NULL
+             (pMod->attr.pATDesc = VmDirSchemaAttrNameToDesc(pSchemaCtx, pMod->attr.type.lberbv.bv_val)) == NULL
            )
         {
             retVal = VMDIR_ERROR_UNDEFINED_TYPE;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                             "Undefined attribute (%s)",
                                             VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val));
         }
         for (i=0; i < pMod->attr.numVals; i++)
         {
-            retVal = VmDirSchemaBervalNormalize( pSchemaCtx, pMod->attr.pATDesc, &pMod->attr.vals[i]);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+            retVal = VmDirSchemaBervalNormalize(pSchemaCtx, pMod->attr.pATDesc, &pMod->attr.vals[i]);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                         "attribute value normalization failed (%s)(%.*s)",
                         VDIR_SAFE_STRING(pMod->attr.pATDesc->pszName),
                         VMDIR_MIN(pMod->attr.vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
@@ -951,7 +970,7 @@ VmDirNormalizeMods(
 
         // Make sure we have no duplicate value in mod->attr
         retVal = VmDirAttributeDupValueCheck(&pMod->attr, &pszDupAttributeName);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                         "attribute (%s) has duplicate value",
                                         VDIR_SAFE_STRING(pszDupAttributeName));
     }
@@ -976,7 +995,7 @@ error:
 /*
  * Mod request sanity check
  * 1. modify attribute is defined
- * 2. attribute can be modified ( we only enforce this for external operation )
+ * 2. attribute can be modified (we only enforce this for external operation)
  */
 static
 int
@@ -991,38 +1010,38 @@ _VmDirExternalModsSanityCheck(
 
     for (pLocalMod = pMods; pLocalMod != NULL; pLocalMod = pLocalMod->next)
     {
-        if ( pLocalMod->attr.pATDesc == NULL
+        if (pLocalMod->attr.pATDesc == NULL
              &&
-             (pLocalMod->attr.pATDesc = VmDirSchemaAttrNameToDesc( pOp->pSchemaCtx,
+             (pLocalMod->attr.pATDesc = VmDirSchemaAttrNameToDesc(pOp->pSchemaCtx,
                                                                    pLocalMod->attr.type.lberbv.bv_val)) == NULL
            )
         {
             retVal = VMDIR_ERROR_UNDEFINED_TYPE;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrMsg),
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrMsg),
                                             "Undefined attribute (%s)",
                                             VDIR_SAFE_STRING(pLocalMod->attr.type.lberbv.bv_val));
         }
 
         // Make sure attribute can be modified
-        if ( pLocalMod->attr.pATDesc->bNoUserModifiable == TRUE
+        if (pLocalMod->attr.pATDesc->bNoUserModifiable == TRUE
              &&
              pOp->conn->AccessInfo.bindEID != DEFAULT_ADMINISTRATOR_ENTRY_ID // exempt default administrator
            )
         {
             retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrMsg),
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrMsg),
                                             "attribute (%s) can not be modified",
                                             VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
         }
 
-        if ( pLocalMod->operation == MOD_OP_ADD ||
-             pLocalMod->operation == MOD_OP_REPLACE )
+        if (pLocalMod->operation == MOD_OP_ADD ||
+             pLocalMod->operation == MOD_OP_REPLACE)
         {
             // ADD or REPLACE principal name, validate its syntax.
-            if ( VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_UPN, FALSE) == 0 ||
-                 VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_SPN, FALSE) == 0 )
+            if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_UPN, FALSE) == 0 ||
+                 VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_SPN, FALSE) == 0)
             {
-                retVal = VmDirValidatePrincipalName( &(pLocalMod->attr), &pszLocalErrMsg);
+                retVal = VmDirValidatePrincipalName(&(pLocalMod->attr), &pszLocalErrMsg);
                 BAIL_ON_VMDIR_ERROR(retVal);
             }
             else if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
@@ -1058,7 +1077,7 @@ cleanup:
 
 error:
 
-    VMDIR_SET_LDAP_RESULT_ERROR( &(pOp->ldapResult), retVal, pszLocalErrMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(&(pOp->ldapResult), retVal, pszLocalErrMsg);
 
     goto cleanup;
 }
@@ -1083,27 +1102,27 @@ AddAttrValsToEntryStruct(
     DWORD   dwError = ERROR_SUCCESS;
     PSTR    pszErrMsg = NULL;
 
-    assert( e->allocType == ENTRY_STORAGE_FORMAT_NORMAL );
+    assert(e->allocType == ENTRY_STORAGE_FORMAT_NORMAL);
 
-    if ( (size_t)eAttr->numVals + (size_t)modAttr->numVals > UINT16_MAX)
+    if ((size_t)eAttr->numVals + (size_t)modAttr->numVals > UINT16_MAX)
     {
         dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszErrMsg),
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszErrMsg),
                                       "Too many %s attribute values, max %u allowed.",
                                       VDIR_SAFE_STRING(eAttr->type.lberbv_val), UINT16_MAX);
     }
 
-    dwError = VmDirReallocateMemoryWithInit( eAttr->vals, (PVOID*)(&(eAttr->vals)),
-                                             (eAttr->numVals + modAttr->numVals + 1) * sizeof( VDIR_BERVALUE ),
-                                             (eAttr->numVals + 1) * sizeof( VDIR_BERVALUE ) );
+    dwError = VmDirReallocateMemoryWithInit(eAttr->vals, (PVOID*)(&(eAttr->vals)),
+                                             (eAttr->numVals + modAttr->numVals + 1) * sizeof(VDIR_BERVALUE),
+                                             (eAttr->numVals + 1) * sizeof(VDIR_BERVALUE));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i = 0, j = eAttr->numVals; i < modAttr->numVals; i++, j++)
     {
-        dwError = VmDirBervalContentDup( &modAttr->vals[i], &eAttr->vals[j] );
+        dwError = VmDirBervalContentDup(&modAttr->vals[i], &eAttr->vals[j]);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    memset( &(eAttr->vals[j]), 0, sizeof(VDIR_BERVALUE) ); // set last BerValue.lberbv.bv_val to NULL;
+    memset(&(eAttr->vals[j]), 0, sizeof(VDIR_BERVALUE)); // set last BerValue.lberbv.bv_val to NULL;
     eAttr->numVals += modAttr->numVals;
 
 cleanup:
@@ -1141,9 +1160,9 @@ CheckIfAnAttrValAlreadyExists(
 
     for (i=0; i < eAttr->numVals; i++)
     {
-        retVal = VmDirSchemaBervalNormalize( pSchemaCtx, modAttr->pATDesc, // Assumption: modAttr type is same as eAttr type
+        retVal = VmDirSchemaBervalNormalize(pSchemaCtx, modAttr->pATDesc, // Assumption: modAttr type is same as eAttr type
                                               &eAttr->vals[i]) ;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                 "normalize (%s)(%.*s)",
                                 VDIR_SAFE_STRING(modAttr->pATDesc->pszName),
                                 VMDIR_MIN(eAttr->vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
@@ -1152,10 +1171,10 @@ CheckIfAnAttrValAlreadyExists(
         for (j = 0; j < modAttr->numVals; j++)
         {
             // modAttr values are already normalized.
-            assert( modAttr->vals[j].bvnorm_val );
+            assert(modAttr->vals[j].bvnorm_val);
 
             if (eAttr->vals[i].bvnorm_len == modAttr->vals[j].bvnorm_len &&
-                memcmp( eAttr->vals[i].bvnorm_val, modAttr->vals[j].bvnorm_val, modAttr->vals[j].bvnorm_len) == 0)
+                memcmp(eAttr->vals[i].bvnorm_val, modAttr->vals[j].bvnorm_val, modAttr->vals[j].bvnorm_len) == 0)
             {
                 break;
             }
@@ -1163,7 +1182,7 @@ CheckIfAnAttrValAlreadyExists(
         if (j != modAttr->numVals) // found a match in middle
         {
             retVal = VMDIR_ERROR_TYPE_OR_VALUE_EXISTS;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                     "Attribute (%s) value (%.*s) exists",
                                     VDIR_SAFE_STRING(modAttr->pATDesc->pszName),
                                     VMDIR_MIN(eAttr->vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
@@ -1210,26 +1229,26 @@ DelAttrValsFromEntryStruct(
     unsigned int        j = 0;
     PSTR                pszLocalErrorMsg = NULL;
 
-    assert( e->allocType == ENTRY_STORAGE_FORMAT_NORMAL );
+    assert(e->allocType == ENTRY_STORAGE_FORMAT_NORMAL);
 
     // Locate which attribute (values) we are trying to delete
     for (currAttr = e->attrs; currAttr != NULL; prevAttr = currAttr, currAttr = currAttr->next)
     {
-        if (VmDirStringCompareA( modAttr->type.lberbv.bv_val, currAttr->type.lberbv.bv_val, FALSE) == 0)
+        if (VmDirStringCompareA(modAttr->type.lberbv.bv_val, currAttr->type.lberbv.bv_val, FALSE) == 0)
         {
             break;
         }
     }
 
-    assert( currAttr != NULL );
+    assert(currAttr != NULL);
 
     eAttr = currAttr;
 
     // Normalize eAttr values
     for (i = 0; i < eAttr->numVals; i++)
     {
-        retVal = VmDirSchemaBervalNormalize( pSchemaCtx, eAttr->pATDesc, &eAttr->vals[i] );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+        retVal = VmDirSchemaBervalNormalize(pSchemaCtx, eAttr->pATDesc, &eAttr->vals[i]);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                             "normalize (%s)(%.*s)",
                             VDIR_SAFE_STRING(eAttr->pATDesc->pszName),
                             VMDIR_MIN(eAttr->vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
@@ -1256,13 +1275,13 @@ DelAttrValsFromEntryStruct(
         // Make a copy of BerValues into modAttr so that these values can be used to delete from the index,
         // if it is an indexed attribute.
 
-        VMDIR_SAFE_FREE_MEMORY( modAttr->vals );
-        retVal = VmDirAllocateMemory( (eAttr->numVals + 1) * sizeof( VDIR_BERVALUE ), (PVOID *)&modAttr->vals);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "no memory");
+        VMDIR_SAFE_FREE_MEMORY(modAttr->vals);
+        retVal = VmDirAllocateMemory((eAttr->numVals + 1) * sizeof(VDIR_BERVALUE), (PVOID *)&modAttr->vals);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "no memory");
 
         for (i = 0; i < eAttr->numVals; i++)
         {
-            VmDirBervalContentDup( &eAttr->vals[i], &modAttr->vals[i] );
+            VmDirBervalContentDup(&eAttr->vals[i], &modAttr->vals[i]);
         }
         modAttr->numVals = eAttr->numVals;
 
@@ -1277,7 +1296,7 @@ DelAttrValsFromEntryStruct(
             prevAttr->next = eAttr->next;
         }
 
-        VmDirFreeAttribute( eAttr );
+        VmDirFreeAttribute(eAttr);
     }
     else // Specific attribute values need to be deleted.
     {
@@ -1285,15 +1304,15 @@ DelAttrValsFromEntryStruct(
         for (i=0; i < modAttr->numVals; i++)
         {
             // modAttr values are already normalized.
-            assert( modAttr->vals[i].bvnorm_val );
+            assert(modAttr->vals[i].bvnorm_val);
 
             for (j = 0; j < eAttr->numVals; j++)
             {
                 // eAttr values are already normalized.
-                assert( eAttr->vals[j].bvnorm_val );
+                assert(eAttr->vals[j].bvnorm_val);
 
                 if (modAttr->vals[i].bvnorm_len == eAttr->vals[j].bvnorm_len &&
-                    memcmp( modAttr->vals[i].bvnorm_val, eAttr->vals[j].bvnorm_val, modAttr->vals[i].bvnorm_len) == 0)
+                    memcmp(modAttr->vals[i].bvnorm_val, eAttr->vals[j].bvnorm_val, modAttr->vals[i].bvnorm_len) == 0)
                 {
                     break;
                 }
@@ -1301,7 +1320,7 @@ DelAttrValsFromEntryStruct(
             if (j == eAttr->numVals) // did not find a match
             {
                 retVal = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
                                         "Attribute (%s) value (%.*s) being deleted does not exist.",
                                         VDIR_SAFE_STRING(modAttr->type.lberbv.bv_val),
                                         VMDIR_MIN(modAttr->vals[i].lberbv.bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
@@ -1321,7 +1340,7 @@ DelAttrValsFromEntryStruct(
             {
                 prevAttr->next = eAttr->next;
             }
-            VmDirFreeAttribute( eAttr );
+            VmDirFreeAttribute(eAttr);
         }
         else
         {
@@ -1365,15 +1384,15 @@ RemoveAttrVals(
     for (i=0; i < eAttr->numVals; i++)
     {
         // eAttr values are already normalized.
-        assert( eAttr->vals[i].bvnorm_val );
+        assert(eAttr->vals[i].bvnorm_val);
 
         for (j = 0; j < modAttr->numVals; j++)
         {
             // modAttr values are already normalized.
-            assert( modAttr->vals[j].bvnorm_val );
+            assert(modAttr->vals[j].bvnorm_val);
 
             if (eAttr->vals[i].bvnorm_len == modAttr->vals[j].bvnorm_len &&
-                memcmp( eAttr->vals[i].bvnorm_val, modAttr->vals[j].bvnorm_val, modAttr->vals[j].bvnorm_len) == 0)
+                memcmp(eAttr->vals[i].bvnorm_val, modAttr->vals[j].bvnorm_val, modAttr->vals[j].bvnorm_len) == 0)
             {
                 break;
             }
@@ -1384,11 +1403,11 @@ RemoveAttrVals(
         }
         else // current value (i th) is being deleted
         {
-            VmDirFreeBervalContent( &eAttr->vals[i] );
+            VmDirFreeBervalContent(&eAttr->vals[i]);
         }
     }
     eAttr->numVals = k;
-    memset( &(eAttr->vals[k]), 0, sizeof(VDIR_BERVALUE) ); // set last BerValue.lberbv.bv_val to NULL;
+    memset(&(eAttr->vals[k]), 0, sizeof(VDIR_BERVALUE)); // set last BerValue.lberbv.bv_val to NULL;
 
     return;
 }
@@ -1427,9 +1446,7 @@ VmDirGenerateRenameAttrsMods(
 
     if (modReq->newSuperior.lberbv.bv_len)
     {
-        retVal = VmDirNormalizeDN( &(modReq->newSuperior), pOperation->pSchemaCtx);
-        //BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-        //                              retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
+        retVal = VmDirNormalizeDN(&(modReq->newSuperior), pOperation->pSchemaCtx);
         BAIL_ON_VMDIR_ERROR(retVal)
 
         retVal = VmDirCatDN(&modReq->newrdn, &modReq->newSuperior, &NewDn);
@@ -1444,10 +1461,8 @@ VmDirGenerateRenameAttrsMods(
         BAIL_ON_VMDIR_ERROR(retVal);
     }
 
-    retVal = VmDirNormalizeDN( &NewDn, pOperation->pSchemaCtx);
-    //BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-    //                              retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirNormalizeDN(&NewDn, pOperation->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirGetRdn(&NewDn, &NewRdn);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -1463,7 +1478,7 @@ VmDirGenerateRenameAttrsMods(
 
     // Change DN
     retVal = VmDirAppendAMod(pOperation, MOD_OP_REPLACE, ATTR_DN, ATTR_DN_LEN, NewDn.bvnorm_val, NewDn.bvnorm_len);
-    BAIL_ON_VMDIR_ERROR( retVal );
+    BAIL_ON_VMDIR_ERROR(retVal);
 
 
     if (strcmp(pszNewRdnAttrName, pszOldRdnAttrName) == 0)
@@ -1475,11 +1490,11 @@ VmDirGenerateRenameAttrsMods(
             if (modReq->bDeleteOldRdn)
             {
                 retVal = VmDirAppendAMod(pOperation, MOD_OP_DELETE, pszOldRdnAttrName, (int) VmDirStringLenA(pszOldRdnAttrName), pszOldRdnAttrVal, VmDirStringLenA(pszOldRdnAttrVal));
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
 
             retVal = VmDirAppendAMod(pOperation, MOD_OP_ADD, pszNewRdnAttrName, (int)VmDirStringLenA(pszNewRdnAttrName), pszNewRdnAttrVal, VmDirStringLenA(pszNewRdnAttrVal));
-            BAIL_ON_VMDIR_ERROR( retVal );
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
     }
     else
@@ -1487,12 +1502,12 @@ VmDirGenerateRenameAttrsMods(
         // If change was like CN=User1,... to OU=MyOU,... then
         // need to add attribute OU=MyOu and potentially delete attribute CN=User1
         retVal = VmDirAppendAMod(pOperation, MOD_OP_ADD, pszNewRdnAttrName, (int)VmDirStringLenA(pszNewRdnAttrName), pszNewRdnAttrVal, VmDirStringLenA(pszNewRdnAttrVal));
-        BAIL_ON_VMDIR_ERROR( retVal );
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         if (modReq->bDeleteOldRdn)
         {
             retVal = VmDirAppendAMod(pOperation, MOD_OP_DELETE, pszOldRdnAttrName,(int) VmDirStringLenA(pszOldRdnAttrName), NULL, 0);
-            BAIL_ON_VMDIR_ERROR( retVal );
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
     }
 

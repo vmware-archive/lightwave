@@ -92,7 +92,7 @@
                 "direction": "inbound",
                 "protocol": "tcp",
                 "porttype": "dst",
-                "port": "2012",
+                "port": "2013",
                 "portoffset": 0
             }
         ],
@@ -101,7 +101,7 @@
                 "direction": "inbound",
                 "protocol": "tcp",
                 "porttype": "dst",
-                "port": "2012",
+                "port": "2013",
                 "portoffset": 0
             }
         ]
@@ -241,6 +241,13 @@
                 "porttype": "dst",
                 "port": "7478",
                 "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2012",
+                "portoffset": 0
             }
         ],
         "ip6_rules": [
@@ -284,6 +291,13 @@
                 "protocol": "tcp",
                 "porttype": "dst",
                 "port": "7478",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "2012",
                 "portoffset": 0
             }
         ]

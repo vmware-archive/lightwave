@@ -231,8 +231,10 @@ public class UserInfoRetriever {
 
     private static Set<String> toLowerCase(Collection<String> collection) {
         Set<String> result = new HashSet<String>();
-        for (String element : collection) {
-            result.add(element.toLowerCase());
+        if (collection != null) {
+            for (String element : collection) {
+                result.add(element.toLowerCase());
+            }
         }
         return result;
     }

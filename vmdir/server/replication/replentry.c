@@ -294,7 +294,7 @@ ReplAddEntry(
                 break;
 
             case LDAP_NO_SUCH_OBJECT:
-                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                VMDIR_LOG_WARNING(LDAP_DEBUG_REPL,
                           "ReplAddEntryVmDirInternalAddEntry: %d (Parent object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s' "
                           "NOT resolving this possible replication CONFLICT or out-of-parent-child-order replication scenario. "
@@ -427,18 +427,17 @@ ReplDeleteEntry(
         switch (retVal)
         {
             case LDAP_NO_SUCH_OBJECT:
-                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                VMDIR_LOG_WARNING(LDAP_DEBUG_REPL,
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
                           "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, mr->mods->attr.metaData,
                           pPageEntry->ulPartnerUSN);
-                retVal = LDAP_SUCCESS;
                 break;
 
             case LDAP_NOT_ALLOWED_ON_NONLEAF:
-                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                VMDIR_LOG_WARNING(LDAP_DEBUG_REPL,
                           "ReplDeleteEntry/VmDirInternalDeleteEntry: %d (Operation not allowed on non-leaf). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "NOT resolving this possible replication CONFLICT. "
@@ -493,6 +492,7 @@ ReplModifyEntry(
     PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
     VDIR_ENTRY          e = {0};
     PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
+    VDIR_BERVALUE       bvParentDn = VDIR_BERVALUE_INIT;
     USN                 localUsn = {0};
     ENTRYID             entryId = 0;
     LDAPMessage *       ldapMsg = pPageEntry->entry;
@@ -509,8 +509,11 @@ ReplModifyEntry(
         retVal = VmDirParseBerToEntry(ldapMsg->lm_ber, &e, NULL, NULL);
         BAIL_ON_VMDIR_ERROR( retVal );
 
+        retVal = VmDirGetParentDN(&e.dn, &bvParentDn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
         // Do not allow modify to tombstone entries
-        if (VmDirIsDeletedContainer(e.dn.lberbv.bv_val))
+        if (VmDirIsDeletedContainer(bvParentDn.lberbv.bv_val))
         {
             VMDIR_LOG_ERROR(
                 VMDIR_LOG_MASK_ALL,
@@ -522,7 +525,6 @@ ReplModifyEntry(
             {
                 _VmDirLogReplEntryContent(&e);
             }
-
             BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
         }
 
@@ -630,7 +632,7 @@ txnretry:
         switch (retVal)
         {
             case LDAP_NO_SUCH_OBJECT:
-                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                VMDIR_LOG_WARNING(LDAP_DEBUG_REPL,
                           "ReplModifyEntry/SetupReplModifyRequest: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "Possible replication CONFLICT. Object will get deleted from the system. "
@@ -742,6 +744,7 @@ txnretry:
 
 cleanup:
     // Release schema modification mutex
+    VmDirFreeBervalContent(&bvParentDn);
     (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
     VmDirFreeEntryContent(&e);

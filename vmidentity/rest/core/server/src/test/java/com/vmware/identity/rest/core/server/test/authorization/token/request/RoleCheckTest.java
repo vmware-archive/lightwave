@@ -17,6 +17,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import org.junit.BeforeClass;
@@ -83,7 +84,7 @@ public class RoleCheckTest {
 
     @Test
     public void testGroupsField() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local");
+        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local", new HashSet<String>());
 
         List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.ADMINISTRATOR).getGroupNetbios() } );
 
@@ -106,7 +107,7 @@ public class RoleCheckTest {
 
     @Test(expected = InsufficientRoleException.class)
     public void testGroupsField_WrongRole() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local");
+        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local", new HashSet<String>());
 
         List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.CONFIGURATION_USER).getGroupNetbios() } );
 
@@ -126,7 +127,7 @@ public class RoleCheckTest {
 
     @Test
     public void testSystemConfigurationRole_DomainDiffers() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "system.local");
+        RoleMapper mapper = new RoleMapper("vsphere.local", "system.local", new HashSet<String>());
 
         List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.CONFIGURATION_USER).getGroupNetbios() } );
 
@@ -146,7 +147,7 @@ public class RoleCheckTest {
 
     @Test(expected = InsufficientRoleException.class)
     public void testSystemConfigurationRole_WrongDomain() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "system.local");
+        RoleMapper mapper = new RoleMapper("vsphere.local", "system.local", new HashSet<String>());
 
         List<String> groups = Arrays.asList( new String[] { new RoleGroup(Role.CONFIGURATION_USER, Role.CONFIGURATION_USER.getRoleName(), "vsphere.local").getGroupNetbios() } );
 

@@ -27,6 +27,8 @@ import java.lang.annotation.Target;
  * This allows APIs to have differing behavior by the caller's role.
  * Role checking must be done manually by the API through the injected
  * security context.
+ *
+ * Dynamic role does not have system tenant domain role privileges.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -13,15 +13,13 @@
  */
 package com.vmware.identity.rest.idm.data;
 
+import java.util.Collection;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-
-import java.security.PublicKey;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The {@code FederatedSamlConfigDTO} represents Configuration for a Federated SAML
@@ -38,7 +36,6 @@ public class FederatedSamlConfigDTO {
     private final Collection<ServiceEndpointDTO> sloServices;
     private final CertificateChainDTO signingCertificates;
     private Map<String, String> subjectFormats;
-    private List<TokenClaimGroupDTO> tokenClaimGroups;
 
     /**
      * Construct an {@code ExternalIDPDTO} with its various details.
@@ -48,22 +45,19 @@ public class FederatedSamlConfigDTO {
      * @param sloServices a collection of endpoints to use for single log-off.
      * @param signingCertificates a chain of signing certificates.
      * @param subjectFormats a map of subject names to formats.
-     * @param tokenClaimGroups a list of token claim groups.
      */
     public FederatedSamlConfigDTO(
             Collection<String> nameIDFormats,
             Collection<ServiceEndpointDTO> ssoServices,
             Collection<ServiceEndpointDTO> sloServices,
             CertificateChainDTO signingCertificates,
-            Map<String, String> subjectFormats,
-            List<TokenClaimGroupDTO> tokenClaimGroups
+            Map<String, String> subjectFormats
             ) {
         this.nameIDFormats = nameIDFormats;
         this.ssoServices = ssoServices;
         this.sloServices = sloServices;
         this.signingCertificates = signingCertificates;
         this.subjectFormats = subjectFormats;
-        this.tokenClaimGroups = tokenClaimGroups;
     }
 
     /**
@@ -112,16 +106,6 @@ public class FederatedSamlConfigDTO {
     }
 
     /**
-     * Get the list of token claim groups.
-     *
-     * @return the list of token claim groups.
-     */
-    public List<TokenClaimGroupDTO> getTokenClaimGroups() {
-        return this.tokenClaimGroups;
-    }
-
-
-    /**
      * Creates an instance of the {@link FederatedSamlConfigDTO.Builder} class.
      *
      * @return a new {@code FederatedOidcConfigDTO.Builder}.
@@ -141,7 +125,6 @@ public class FederatedSamlConfigDTO {
     public static class Builder {
         private Collection<String> nameIDFormats;
         private Map<String, String> subjectFormats;
-        private List<TokenClaimGroupDTO> tokenClaimGroups;
         private Collection<ServiceEndpointDTO> ssoServices;
         private Collection<ServiceEndpointDTO> sloServices;
         private CertificateChainDTO signingCertificates;
@@ -171,19 +154,13 @@ public class FederatedSamlConfigDTO {
             return this;
         }
 
-        public FederatedSamlConfigDTO.Builder withTokenClaimGroups(List<TokenClaimGroupDTO> tokenClaimGroups) {
-            this.tokenClaimGroups = tokenClaimGroups;
-            return this;
-        }
-
         public FederatedSamlConfigDTO build() {
             return new FederatedSamlConfigDTO(
                             nameIDFormats,
                             ssoServices,
                             sloServices,
                             signingCertificates,
-                            subjectFormats,
-                            tokenClaimGroups
+                            subjectFormats
                         );
         }
     }

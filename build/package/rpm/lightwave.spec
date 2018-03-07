@@ -1,22 +1,29 @@
 Name:    lightwave
 Summary: VMware Lightwave
 Version: %{_version}
-Release: %{_patch}
+Release: %{_patch}%{_dist}
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, c-rest-engine = 1.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0, lightwave-server = %{_version}, lightwave-client = %{_version}
-BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, boost-devel = 1.60.0, c-rest-engine-devel = 1.1
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, c-rest-engine = 1.1, gawk >= 4.1.3, lightwave-server = %{_version}, lightwave-client = %{_version}
+BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, c-rest-engine-devel = 1.1
 
 %if 0%{?fedora} >= 21
-Requires: java-1.8.0-openjdk >= 1.8.0.131, krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15
-BuildRequires: java-1.8.0-openjdk >= 1.8.0.131, ant >= 1.9.4, maven >= 3.3.9
+Requires: likewise-open >= 6.2.11, boost = 1.60.0, java-1.8.0-openjdk >= 1.8.0.131, krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15
+BuildRequires: boost-devel = 1.60.0, java-1.8.0-openjdk >= 1.8.0.131, ant >= 1.9.4, maven >= 3.3.9
 %else
-Requires: openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14, apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
-BuildRequires: openjdk >= 1.8.0.131, apache-ant >= 1.9.4, apache-maven >= 3.3.9
+Requires: apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
+BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
+%if "%{_dist}" == ".lwph2"
+Requires:  likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
+BuildRequires: boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
+%else
+Requires: likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
+BuildRequires: boost-devel = 1.60.0,  openjdk >= 1.8.0.131
+%endif
 %endif
 
 %description
@@ -112,12 +119,19 @@ VMware Lightwave Server
 
 %package client
 Summary: Lightwave Client
-Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, likewise-open >= 6.2.11, gawk >= 4.1.3, boost = 1.60.0
+
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, gawk >= 4.1.3
 %if 0%{?fedora} >= 21
-Requires: krb5-libs >= 1.14, sqlite >= 3.14
+Requires: krb5-libs >= 1.14, sqlite >= 3.14, boost = 1.60.0, likewise-open >= 6.2.11
 %else
-Requires: krb5 >= 1.14, sqlite-autoconf >= 3.14
+Requires: krb5 >= 1.14
+%if "%{_dist}" == ".lwph2"
+Requires:  boost = 1.63.0, likewise-open = 6.2.11, sqlite-devel >= 3.19.3
+%else
+Requires:  boost = 1.60.0, likewise-open >= 6.2.11, sqlite-autoconf >= 3.14
 %endif
+%endif
+
 %description client
 Client libraries to communicate with Lightwave services
 

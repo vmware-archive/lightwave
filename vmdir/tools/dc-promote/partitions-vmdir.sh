@@ -1,4 +1,6 @@
 #!/bin/sh
+cat /var/tmp/promote-pwd.txt | kinit Administrator@DC_DOMAIN_UC
+
 cat <<NNNN> /tmp/partitions-configuraions.ldif
 version: 1
 dn: CN=Partitions,cn=configuration,DOMAIN_DN
@@ -39,4 +41,4 @@ whenChanged: 20170629191526.0Z
 whenCreated: 20151207212342.0Z
 NNNN
 
-ldapmodify -a -D cn=administrator,cn=users,DOMAIN_DN -h `hostname -i` -w `cat /var/tmp/promote-pwd.txt` -f /tmp/partitions-configuraions.ldif
+ldapmodify -Y GSSAPI -a -f /tmp/partitions-configuraions.ldif

@@ -250,9 +250,40 @@ VmDirRpcFreeMemory(
     void *p
     );
 
+
+VOID
+VmDirSrvRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirSrvRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirSrvRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
+    );
+
 VOID
 VmDirRpcClientFreeMemory(
     void *p
+    );
+
+VOID
+VmDirClientRpcFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirClientRpcFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirClientRpcFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
     );
 
 DWORD
@@ -361,6 +392,21 @@ VOID
 VmDirFreeTypeSpecContent(
     PVMW_TYPE_SPEC specInput,
     DWORD sizeOfArray
+    );
+
+VOID
+VmDirFreeMachineInfoA(
+    PVMDIR_MACHINE_INFO_A pMachineInfo
+    );
+
+VOID
+VmDirFreeMachineInfoW(
+    PVMDIR_MACHINE_INFO_W pMachineInfo
+    );
+
+VOID
+VmDirFreeKrbInfo(
+    PVMDIR_KRB_INFO pKrbInfo
     );
 
 ULONG
@@ -987,6 +1033,8 @@ typedef enum
 #define VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC "CopyDbBlockWriteInSec"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
+#define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+
 //
 // The expiration period for deleted entries. Any entries older than this will
 // be permanently expunged once the reaping thread runs. The default is 45 days.
@@ -1017,6 +1065,8 @@ typedef enum
 #else
 #define VMDIR_DEFAULT_KRB5_CONF             "/etc/krb5.lotus.conf"
 #endif
+
+
 
 DWORD
 VmDirAllocateMutex(

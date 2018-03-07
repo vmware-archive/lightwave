@@ -100,6 +100,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     VDIR_BERVALUE        delObjsContainerDN;
     VDIR_BERVALUE        bvDCGroupDN;
     VDIR_BERVALUE        bvDCClientGroupDN;
+    VDIR_BERVALUE        bvSchemaManagersGroupDN;
     VDIR_BERVALUE        bvServicesRootDN;
     VDIR_BERVALUE        serverObjDN;
     VDIR_BERVALUE        dcAccountDN;   // Domain controller account DN
@@ -119,6 +120,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     DWORD                dwTombstoneExpirationPeriod;
     DWORD                dwTombstoneThreadFrequency;
     DWORD                dwMaxInternalSearchLimit;
+    DWORD                dwEfficientReadOpTimeMS;
 
     // Flag that indicates whether this instance is promoted
     // It is set at two places:

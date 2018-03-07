@@ -1226,6 +1226,23 @@ LoadServerGlobals(
                         "VmDirNormalizeDN failed for pszDCClientGroupDN.");
             }
 
+            // set SchemaManagersGroupDN (NOTE, this is a hard code name, same as in instance.c)
+            dwError = VmDirAllocateBerValueAVsnprintf(
+                    &gVmdirServerGlobals.bvSchemaManagersGroupDN,
+                    "cn=%s,%s",
+                    VMDIR_SCHEMA_MANAGER_GROUP_NAME,
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (VmDirNormalizeDN(&gVmdirServerGlobals.bvSchemaManagersGroupDN, op.pSchemaCtx) != 0)
+            {
+                dwError = VMDIR_ERROR_GENERIC;
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        dwError,
+                        pszLocalErrMsg,
+                        "VmDirNormalizeDN failed for SchemaManagersGroupDN.");
+            }
+
             // set ServicesRootDN (NOTE, this is a hard code name, same as in instance.c)
             dwError = VmDirAllocateBerValueAVsnprintf(
                     &gVmdirServerGlobals.bvServicesRootDN,

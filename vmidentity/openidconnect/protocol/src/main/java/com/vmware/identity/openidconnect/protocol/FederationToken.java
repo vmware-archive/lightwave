@@ -15,12 +15,9 @@
 package com.vmware.identity.openidconnect.protocol;
 
 import java.security.interfaces.RSAPublicKey;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
 
@@ -34,29 +31,18 @@ import com.vmware.identity.openidconnect.common.TokenClass;
 
 import net.minidev.json.JSONObject;
 
-public class FederationToken {
+public abstract class FederationToken {
 
-    private static final String CLAIM_CONTEXT_NAME = "context_name";
-    private static final String CLAIM_USER_NAME = "username";
-    private static final String CLAIM_DOMAIN = "domain";
-    private static final String CLAIM_EMAIL = "email";
-    private static final String CLAIM_PERMS = "perms";
-
-    private final TokenClass tokenClass;
+    protected final TokenClass tokenClass;
     private final String jwtId;
     private final String issuer;
     private final String subject;
     private final Date issueTime;
     private final Date expirationTime;
-    private String orgId;
-    private String userId;
-    private String domain;
-    private String emailId;
-    private final Set<String> permissions;
 
     private SignedJWT signedJwt;
 
-    private FederationToken(TokenClass tokenClass, SignedJWT signedJwt) throws ParseException {
+    protected FederationToken(TokenClass tokenClass, SignedJWT signedJwt) throws ParseException {
         Validate.notNull(tokenClass, "tokenClass");
         Validate.notNull(signedJwt, "signedJwt");
         this.tokenClass = tokenClass;
@@ -66,24 +52,6 @@ public class FederationToken {
         this.issuer = claims.getIssuer();
         this.issueTime = claims.getIssueTime();
         this.expirationTime = claims.getExpirationTime();
-        if (claims.getClaims().containsKey(CLAIM_CONTEXT_NAME)) {
-            this.orgId = JWTUtils.getString(claims, tokenClass, CLAIM_CONTEXT_NAME);
-        }
-        if (claims.getClaims().containsKey(CLAIM_USER_NAME)) {
-            this.userId = JWTUtils.getString(claims, tokenClass, CLAIM_USER_NAME);
-        }
-        if (claims.getClaims().containsKey(CLAIM_DOMAIN)) {
-            this.domain = JWTUtils.getString(claims, tokenClass, CLAIM_DOMAIN);
-        }
-        if (claims.getClaims().containsKey(CLAIM_EMAIL)) {
-            this.emailId = JWTUtils.getString(claims, tokenClass, CLAIM_EMAIL);
-        }
-        if (claims.getClaims().containsKey(CLAIM_PERMS)) {
-            String[] permissions = JWTUtils.getStringArray(claims, tokenClass, CLAIM_PERMS);
-            this.permissions = new HashSet<>(Arrays.asList(permissions));
-        } else {
-            this.permissions = Collections.emptySet();
-        }
         this.subject = claims.getSubject();
     }
 
@@ -119,47 +87,43 @@ public class FederationToken {
         return this.expirationTime;
     }
 
-    public String getOrgId() throws ParseException {
-    	return this.orgId;
-    }
-
-    public String getUserId() throws ParseException {
-    	return this.userId;
-    }
-
-    public String getDomain() throws ParseException {
-    	return this.domain;
-    }
-
-    public String getEmailAddress() throws ParseException {
-        return this.emailId;
-    }
-
-    public Set<String> getPermissions() throws Exception {
-        return this.permissions;
-    }
-
     public String serialize() throws IllegalArgumentException {
         return this.signedJwt.serialize();
     }
 
-    public static FederationToken parse(JSONObject jsonObject, TokenClass tokenClass) throws ParseException {
-      Validate.notNull(jsonObject, "jsonObject");
-      return new FederationToken(tokenClass, JSONUtils.getSignedJWT(jsonObject, tokenClass.getValue()));
+    public abstract String getUsername();
+
+    public abstract String getDomain();
+
+    public abstract Collection<String> getPermissions();
+
+    public abstract String getTenant();
+
+    public static FederationToken parse(JSONObject jsonObject, TokenClass tokenClass,
+            FederationIDPIssuerType issuerType) throws ParseException {
+        Validate.notNull(jsonObject, "jsonObject");
+        return parse(JSONUtils.getSignedJWT(jsonObject, tokenClass.getValue()), tokenClass, issuerType);
     }
 
-    public static FederationToken parse( Map<String, String> parameters,  TokenClass tokenClass) throws ParseException {
-      Validate.notNull(parameters, "parameters");
-      return new FederationToken(tokenClass, ParameterMapUtils.getSignedJWT(parameters, tokenClass.getValue()));
+    public static FederationToken parse(Map<String, String> parameters, TokenClass tokenClass,
+            FederationIDPIssuerType issuerType) throws ParseException {
+        Validate.notNull(parameters, "parameters");
+        return parse(ParameterMapUtils.getSignedJWT(parameters, tokenClass.getValue()), tokenClass, issuerType);
     }
 
-    public static FederationToken parse(String signedJwtString, TokenClass tokenClass) throws ParseException {
-      Validate.notEmpty(signedJwtString, "signedJwtString");
-      return new FederationToken(tokenClass, JWTUtils.parseSignedJWT(signedJwtString));
+    public static FederationToken parse(String signedJwtString, TokenClass tokenClass,
+            FederationIDPIssuerType issuerType) throws ParseException {
+        Validate.notEmpty(signedJwtString, "signedJwtString");
+        return parse(JWTUtils.parseSignedJWT(signedJwtString), tokenClass, issuerType);
     }
 
-    public static FederationToken parse(SignedJWT signedJwt, TokenClass tokenClass) throws ParseException {
-      Validate.notNull(signedJwt, "signedJwt");
-      return new FederationToken(tokenClass, signedJwt);
+    public static FederationToken parse(SignedJWT signedJwt, TokenClass tokenClass, FederationIDPIssuerType issuerType)
+            throws ParseException {
+        Validate.notNull(signedJwt, "signedJwt");
+        if (issuerType == FederationIDPIssuerType.CSP) {
+            return new CSPToken(tokenClass, signedJwt);
+        } else {
+            throw new IllegalArgumentException("unsupported federation idp issuer type " + issuerType.getType());
+        }
     }
   }

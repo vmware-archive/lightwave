@@ -81,4 +81,5 @@ typedef struct _VM_AFD_CLI_CONTEXT
     VMAFD_DOMAIN_STATE domainState;
     VMAFD_STATUS       status;
     DWORD              dwLeaveFlags;
+    BOOLEAN            bIsAtomic;
 } VM_AFD_CLI_CONTEXT, *PVM_AFD_CLI_CONTEXT;

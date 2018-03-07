@@ -441,4 +441,15 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_EFFICIENT_READ_OP,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5,                                \
+        /*.dwMax          = */ 10000,                            \
+        /*.dwDefault      = */ 50,                               \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }

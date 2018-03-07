@@ -7356,12 +7356,11 @@ public class IdentityManager implements IIdentityManager {
     private void initializeTenantCache() throws Exception
     {
         Collection<String> allTenantNames = this.getAllTenants();
-        assert(allTenantNames != null && allTenantNames.size() > 0);
+        ValidateUtil.validateNotEmpty(allTenantNames, "tenant names");
 
         for (String tenantName : allTenantNames)
         {
-            TenantInformation tenantInfo = loadTenant(tenantName);
-            assert(tenantInfo != null);
+            loadTenant(tenantName);
         }
     }
 

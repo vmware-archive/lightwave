@@ -56,7 +56,7 @@ public class FederationTokenGrant extends AuthorizationGrant {
       throw new ParseException("unexpected grant_type: " + grantType.getValue());
     }
 
-    FederationToken federationToken = FederationToken.parse(parameters, TokenClass.ACCESS_TOKEN);
+    FederationToken federationToken = FederationToken.parse(parameters, TokenClass.ACCESS_TOKEN, FederationIDPIssuerType.CSP);
 
     return new FederationTokenGrant(federationToken);
   }

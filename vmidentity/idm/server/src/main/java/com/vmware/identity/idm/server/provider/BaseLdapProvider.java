@@ -493,6 +493,33 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         }
     }
 
+    protected String GetTenantizedUPN(PrincipalId id)
+    {
+        return  GetTenantizedUPN(GetUPN(id));
+    }
+    protected String GetTenantizedUPN(String upn)
+    {
+        return upn + "/" + this.tenantName.toLowerCase();
+    }
+
+    protected String GetUPNFromTenantizedUpn(String upn)
+    {
+        String res = null;
+        if (ServerUtils.isNullOrEmpty(upn) == false)
+        {
+            int i = upn.lastIndexOf("/" + this.tenantName.toLowerCase());
+            if (i == -1)
+            {
+                res = upn;
+            }
+            else
+            {
+                res = upn.substring(0, i);
+            }
+        }
+        return res;
+    }
+
     protected boolean belongsToThisIdentityProvider( String principalDomainName )
     {
         return ( ( this.isSameDomainUpn(principalDomainName ) ) ||

@@ -850,6 +850,11 @@ typedef struct _VMW_TYPE_SPEC_
     "Password",\
     VMW_IPC_TYPE_WSTRING,\
     {NULL}\
+  },\
+  {\
+    "Site Name",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
   }\
 }
 
@@ -958,6 +963,11 @@ typedef struct _VMW_TYPE_SPEC_
 #define CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS \
 {\
     {\
+        "Server Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
         "UserName",\
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
@@ -975,6 +985,11 @@ typedef struct _VMW_TYPE_SPEC_
     {\
         "Organizational Unit",\
         VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    { \
+        "Join Flags",\
+        VMW_IPC_TYPE_UINT32,\
         {NULL}\
     }\
 }

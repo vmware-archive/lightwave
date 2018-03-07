@@ -37,11 +37,18 @@ VmDirMDBTxnBegin(
     if (txnMode == VDIR_BACKEND_TXN_READ)
     {
         iMDBFlag |= MDB_RDONLY;
+    } else
+    {
+        VmDirWtxnOutstandingInc();
     }
 
     dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, BE_DB_PARENT_TXN_NULL, iMDBFlag, &pTxn );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (txnMode != VDIR_BACKEND_TXN_READ)
+    {
+        VmDirWtxnOutstandingDec();
+    }
     pBECtx->pBEPrivate = (PVOID) pTxn;
     pBECtx->iBEPrivateRef++;
 

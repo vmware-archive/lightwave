@@ -2,8 +2,6 @@
 #
 # Add supportedControls present in Samba4, not present in lightwave
 #
-LDAP_LOGIN_DATA="-D CN=Administrator,CN=Users,DC=lightwave,DC=local -H ldap://10.118.96.62 -w VMware123@"
-
 cat <<NNNN> /var/tmp/supported-control.ldif
 version: 1
 dn: cn=DSE Root
@@ -59,4 +57,5 @@ supportedControl: 1.3.6.1.4.1.4203.1.9.1.2
 delete: supportedControl
 supportedControl: 1.3.6.1.4.1.4203.1.9.1.3
 NNNN
-ldapmodify $LDAP_LOGIN_DATA -w `cat /var/tmp/promote-pwd.txt` -f  /var/tmp/supported-control.ldif 
+ldapmodify -Y GSSAPI -a -f /var/tmp/supported-control.ldif
+

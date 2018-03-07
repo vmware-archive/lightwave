@@ -5,4 +5,5 @@ changetype: modify
 add: maxPwdAge
 maxPwdAge: 14
 NNNN
-ldapmodify -a -D cn=administrator,cn=users,dc=lightwave,dc=local -f /tmp/domain-attributes.ldif -h localhost -w VMware123@
+ldapmodify -Y GSSAPI -a -f /tmp/domain-attributes.ldif
+

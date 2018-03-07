@@ -889,12 +889,10 @@ VmDirSimpleDNToEntry(
     );
 
 DWORD
-VmDirIsGroupHasThisMember(
-    PVDIR_OPERATION    pOperation, /* Optional */
-    PSTR               pszGroupDN,
-    PSTR               pszTargetDN,
-    PVDIR_ENTRY        pGroupEntry, /* Optional */
-    PBOOLEAN           pbIsGroupMember
+VmDirIsMemberOfGroup(
+    PSTR        pszGroupDN,
+    PSTR        pszTargetDN,
+    PBOOLEAN    pbIsMember
     );
 
 

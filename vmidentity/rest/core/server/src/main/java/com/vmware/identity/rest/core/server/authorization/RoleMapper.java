@@ -13,6 +13,8 @@
  */
 package com.vmware.identity.rest.core.server.authorization;
 
+import java.util.Set;
+
 /**
  * A mapper that ties each role to a specific domain.
  *
@@ -28,10 +30,12 @@ public class RoleMapper {
 
     private String tenantDomain;
     private String systemTenantDomain;
+    private Set<String> trustedDomains;
 
-    public RoleMapper(String tenantDomain, String systemTenantDomain) {
+    public RoleMapper(String tenantDomain, String systemTenantDomain, Set<String> trustedDomains) {
         this.tenantDomain = tenantDomain;
         this.systemTenantDomain = systemTenantDomain;
+        this.trustedDomains = trustedDomains;
     }
 
     public String getTenantDomain() {
@@ -40,6 +44,10 @@ public class RoleMapper {
 
     public String getSystemTenantDomain() {
         return systemTenantDomain;
+    }
+
+    public Set<String> getTrustedDomains() {
+        return this.trustedDomains;
     }
 
     public RoleGroup getRoleGroup(Role role) { return getRoleGroup(role, false); }
