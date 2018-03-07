@@ -136,6 +136,10 @@ _VmDirUpdateReplicationInterval(
     BOOLEAN   bUpdateReplicationInterval
     );
 
+static
+BOOLEAN
+_VmDirSkipReplicationCycle();
+
 DWORD
 VmDirGetReplCycleCounter(
     VOID
@@ -281,7 +285,7 @@ vdirReplicationThrFun(
                 goto cleanup;
             }
 
-            if (pReplAgr->isDeleted) // skip deleted RAs
+            if (pReplAgr->isDeleted || _VmDirSkipReplicationCycle()) // skip deleted RAs
             {
                 continue;
             }
@@ -373,6 +377,14 @@ error:
             VMDIR_LOG_MASK_ALL,
             "vdirReplicationThrFun: Replication has failed with unrecoverable error.");
     goto cleanup;
+}
+
+static
+BOOLEAN
+_VmDirSkipReplicationCycle()
+{
+    return (VmDirdState() == VMDIRD_STATE_READ_ONLY_DEMOTE ||
+            VmDirdState() == VMDIRD_STATE_READ_ONLY);
 }
 
 static
@@ -869,6 +881,10 @@ _VmDirContinueReplicationCycle(
                 VDIR_SAFE_STRING(bervalSyncDoneCtrl.bv_val));
             retVal = LDAP_CANCELLED;
         }
+    }
+    else if (_VmDirSkipReplicationCycle())
+    {
+        retVal = LDAP_CANCELLED;
     }
 
     return retVal;
