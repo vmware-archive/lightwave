@@ -226,6 +226,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       throw new ServerException(errorObject);
     }
 
+    if (accessToken.getPermissions() == null || accessToken.getPermissions().isEmpty()) {
+        ErrorObject errorObject = ErrorObject.accessDenied(String.format("User %s does not have permissions with tenant %s ",
+                accessToken.getUsername(), idToken.getTenant()));
+        LoggerUtils.logFailedRequest(logger, errorObject);
+        throw new ServerException(errorObject);
+    }
+
     TenantInfo tenantInfo = getTenantInfo(tenantName);
     if (tenantInfo == null) {
       ErrorObject errorObject = ErrorObject.accessDenied(
