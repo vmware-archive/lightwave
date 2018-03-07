@@ -15,6 +15,12 @@
 #ifndef _STRUCTS_H_
 #define _STRUCTS_H_
 
+typedef struct OIDC_CLIENT_GLOBALS
+{
+    int bIsCurlInitialized;
+    // TODO (shahneel): ADD LOCK AND MAKE THREAD SAFE
+} OIDC_CLIENT_GLOBALS;
+
 typedef struct OIDC_CLIENT
 {
     PSTRING pszServer;

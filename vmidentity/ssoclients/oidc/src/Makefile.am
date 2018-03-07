@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libssooidc.la
 
 libssooidc_la_SOURCES = \
+    oidc_globals.c \
     oidc_client.c \
     oidc_server_metadata.c \
     oidc_token.c \
