@@ -1,0 +1,37 @@
+*** src/heimdal-1.5.2/lib/Makefile.am	2012-01-10 13:53:51.000000000 -0800
+--- patch/heimdal-1.5.2/lib/Makefile.am	2012-06-21 13:33:34.000000000 -0700
+***************
+*** 23,45 ****
+  
+  SUBDIRS = \
+  	roken \
+  	vers \
+! 	$(dir_editline) \
+! 	$(dir_com_err) \
+! 	sl \
+! 	wind \
+! 	asn1 \
+! 	$(dir_sqlite) \
+! 	$(dir_hcrypto) \
+! 	ipc \
+! 	hx509 \
+! 	krb5 \
+! 	ntlm \
+! 	kafs \
+! 	gssapi \
+! 	hdb \
+! 	kadm5 \
+! 	$(dir_otp) \
+! 	$(dir_dce)
+  
+! EXTRA_DIST = NTMakefile heimdal
+\ No newline at end of file
+--- 23,30 ----
+  
+  SUBDIRS = \
+  	roken \
+  	vers \
+!         com_err \
+! 	asn1
+  
+! EXTRA_DIST = NTMakefile heimdal

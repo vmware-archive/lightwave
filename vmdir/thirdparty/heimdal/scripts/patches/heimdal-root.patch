@@ -1,0 +1,28 @@
+*** src/heimdal-1.5.2/Makefile.am	2012-01-10 13:53:51.000000000 -0800
+--- patch/heimdal-1.5.2/Makefile.am	2012-06-21 12:45:07.000000000 -0700
+***************
+*** 5,18 ****
+  if KCM
+  kcm_dir = kcm
+  endif
+  
+! SUBDIRS=  include base lib kuser kdc admin kadmin kpasswd 
+! SUBDIRS+= $(kcm_dir) appl tools tests packages etc po
+! 
+! if HEIMDAL_DOCUMENTATION
+! SUBDIRS+= doc
+! endif
+  
+  
+  
+  ## ACLOCAL = @ACLOCAL@ -I cf
+--- 5,13 ----
+  if KCM
+  kcm_dir = kcm
+  endif
+  
+! SUBDIRS=  include lib 
+  
+  
+  
+  ## ACLOCAL = @ACLOCAL@ -I cf

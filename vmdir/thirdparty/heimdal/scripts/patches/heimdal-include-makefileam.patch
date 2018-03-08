@@ -1,0 +1,23 @@
+*** src/heimdal-1.5.2/include/Makefile.am	2012-01-10 13:53:51.000000000 -0800
+--- patch/heimdal-1.5.2/include/Makefile.am	2012-06-22 13:41:42.000000000 -0700
+***************
+*** 1,9 ****
+  # $Id$
+  
+  include $(top_srcdir)/Makefile.am.common
+  
+! SUBDIRS = kadm5 hcrypto gssapi
+  
+  noinst_PROGRAMS = bits
+  CHECK_LOCAL = no-check-local
+  
+--- 1,9 ----
+  # $Id$
+  
+  include $(top_srcdir)/Makefile.am.common
+  
+! # SUBDIRS = kadm5 hcrypto gssapi
+  
+  noinst_PROGRAMS = bits
+  CHECK_LOCAL = no-check-local
+  

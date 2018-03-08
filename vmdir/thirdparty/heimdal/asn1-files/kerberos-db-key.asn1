@@ -1,0 +1,65 @@
+-- This attribute holds the principal's key (krbPrincipalKey) that is encrypted with
+-- the master key (krbMKey). 
+-- The attribute is ASN.1 encoded.
+--
+-- The format of the value for this attribute is explained below,
+KERBEROS5DBKEY DEFINITIONS ::=
+BEGIN
+EXPORTS
+	KrbKeySet,
+	KrbKey,
+	KrbSalt,
+	EncryptionKeyLdapDb,
+        MasterKey,
+        KrbMKey
+	;
+
+--UInt16 ::= INTEGER (0..65535)
+-- Really want this to be the range 0 -> 65535, but rejected
+-- by Heimdal ASN.1 compiler compiler. *Should* be fine
+-- using 2^31-1, so long as the encoded value never exceeds 
+-- 2^16-1.
+
+UInt16 ::= INTEGER (0..2147483647)
+UInt32 ::= INTEGER (0..4294967295)
+Int32 ::= INTEGER (-2147483648..2147483647)
+
+EncryptionKeyLdapDb ::= SEQUENCE {
+keytype   [0] Int32,
+keyvalue  [1] OCTET STRING
+}
+
+
+KrbSalt ::= SEQUENCE {
+type      [0] Int32,
+salt      [1] OCTET STRING OPTIONAL
+}
+
+KrbKey ::= SEQUENCE {
+salt      [0] KrbSalt OPTIONAL,
+key       [1] EncryptionKeyLdapDb,
+s2kparams [2] OCTET STRING OPTIONAL,
+...
+}
+
+KrbKeySet ::= SEQUENCE {
+attribute-major-vno       [0] UInt16,
+attribute-minor-vno       [1] UInt16,
+kvno                      [2] UInt32,
+mkvno                     [3] UInt32 OPTIONAL,
+keys                      [4] SEQUENCE OF KrbKey,
+...
+}
+
+MasterKey ::= SEQUENCE {
+keytype         [0] Int32,
+keyvalue        [1] OCTET STRING
+}
+
+KrbMKey ::= SEQUENCE {
+kvno    [0] UInt32,
+key     [1] MasterKey
+}
+
+
+END

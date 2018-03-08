@@ -1,0 +1,25 @@
+-- ASN.1 encoder for PA-DATA PA-ENC-TYPE-INFO2
+-- Error data value returned for a ERR-PREAUTH-REQUIRED. This error
+-- is interpreted by the client to mean the salt value used in the
+-- String2Key() call may not have been correct. The KDC returns this
+-- salt data, for encryption types which are salted, allowing
+-- the client to compute the correct keyblock for the password /
+-- salt input data.
+--
+-- The format of the value for this attribute is explained below,
+
+KRB5ETYPEINFO2 DEFINITIONS ::=
+BEGIN
+EXPORTS EtypeInfo2Entry 
+        ;
+
+KerberosString  ::= GeneralString
+Int32 ::= INTEGER (-2147483648..2147483647)
+
+EtypeInfo2Entry ::= SEQUENCE {
+        etype           [0] Int32,
+        salt            [1] KerberosString OPTIONAL,
+        s2kparams       [2] OCTET STRING OPTIONAL
+}
+
+END

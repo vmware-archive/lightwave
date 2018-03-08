@@ -1,0 +1,107 @@
+*** src/heimdal-1.5.2/configure.ac	2012-01-10 13:53:51.000000000 -0800
+--- patch/heimdal-1.5.2/configure.ac	2012-06-22 13:46:04.000000000 -0700
+***************
+*** 2,10 ****
+  AC_REVISION($Revision$)
+  AC_PREREQ(2.62)
+  test -z "$CFLAGS" && CFLAGS="-g"
+  AC_INIT([Heimdal],[1.5.2],[heimdal-bugs@h5l.org])
+- AC_CONFIG_SRCDIR([kuser/kinit.c])
+  AC_CONFIG_HEADERS(include/config.h)
+  AC_CONFIG_MACRO_DIR([cf])
+  
+  AM_INIT_AUTOMAKE([foreign 1.10.3])
+--- 2,9 ----
+***************
+*** 606,681 ****
+  		[if you want disable to heimdal documentation]))
+  AM_CONDITIONAL(HEIMDAL_DOCUMENTATION, test "$enable_heimdal_documentation" != no)
+  
+  AC_CONFIG_FILES(Makefile 		\
+- 	etc/Makefile			\
+  	include/Makefile		\
+- 	include/gssapi/Makefile		\
+- 	include/hcrypto/Makefile	\
+- 	include/kadm5/Makefile		\
+  	lib/Makefile			\
+- 	base/Makefile			\
+  	lib/asn1/Makefile		\
+  	lib/com_err/Makefile		\
+- 	lib/hcrypto/Makefile		\
+- 	lib/hx509/Makefile		\
+- 	lib/gssapi/Makefile		\
+- 	lib/ntlm/Makefile		\
+- 	lib/hdb/Makefile		\
+- 	lib/ipc/Makefile		\
+- 	lib/kadm5/Makefile		\
+- 	lib/kafs/Makefile		\
+- 	lib/kdfs/Makefile		\
+- 	lib/krb5/Makefile		\
+- 	lib/otp/Makefile		\
+  	lib/roken/Makefile		\
+! 	lib/sl/Makefile			\
+! 	lib/sqlite/Makefile		\
+! 	lib/vers/Makefile		\
+! 	lib/wind/Makefile		\
+! 	po/Makefile			\
+! 	kuser/Makefile			\
+! 	kpasswd/Makefile		\
+! 	kadmin/Makefile			\
+! 	admin/Makefile			\
+! 	kcm/Makefile			\
+! 	kdc/Makefile			\
+! 	appl/Makefile			\
+! 	appl/afsutil/Makefile		\
+! 	appl/ftp/Makefile		\
+! 	appl/ftp/common/Makefile	\
+! 	appl/ftp/ftp/Makefile		\
+! 	appl/ftp/ftpd/Makefile		\
+! 	appl/gssmask/Makefile		\
+! 	appl/kx/Makefile		\
+! 	appl/login/Makefile		\
+! 	appl/otp/Makefile		\
+! 	appl/popper/Makefile		\
+! 	appl/push/Makefile		\
+! 	appl/rsh/Makefile		\
+! 	appl/rcp/Makefile		\
+! 	appl/su/Makefile		\
+! 	appl/xnlock/Makefile		\
+! 	appl/telnet/Makefile		\
+! 	appl/telnet/libtelnet/Makefile	\
+! 	appl/telnet/telnet/Makefile	\
+! 	appl/telnet/telnetd/Makefile	\
+! 	appl/test/Makefile		\
+! 	appl/kf/Makefile		\
+! 	appl/dceutils/Makefile		\
+! 	tests/Makefile			\
+! 	tests/bin/Makefile		\
+! 	tests/can/Makefile		\
+! 	tests/db/Makefile		\
+! 	tests/kdc/Makefile		\
+! 	tests/ldap/Makefile		\
+! 	tests/gss/Makefile		\
+! 	tests/java/Makefile		\
+! 	tests/plugin/Makefile		\
+! 	packages/Makefile		\
+! 	packages/mac/Makefile		\
+! 	doc/Makefile			\
+! 	tools/Makefile			\
+  )
+  
+  AC_OUTPUT
+  
+--- 605,618 ----
+  		[if you want disable to heimdal documentation]))
+  AM_CONDITIONAL(HEIMDAL_DOCUMENTATION, test "$enable_heimdal_documentation" != no)
+  
+  AC_CONFIG_FILES(Makefile 		\
+  	include/Makefile		\
+  	lib/Makefile			\
+  	lib/asn1/Makefile		\
+  	lib/com_err/Makefile		\
+  	lib/roken/Makefile		\
+! 	lib/vers/Makefile
+  )
+  
+  AC_OUTPUT
+  
