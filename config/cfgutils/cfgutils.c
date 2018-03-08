@@ -635,12 +635,38 @@ VmwDeploySetupClientWithDC(
     VMW_DEPLOY_LOG_INFO(
             "Refreshing root certificates from VMware Certificate Authority");
 
-    VmAfdTriggerRootCertsRefresh(NULL, NULL, NULL);
+    do
+    {
+        dwError = VmAfdTriggerRootCertsRefresh(NULL, NULL, NULL);
+        if (dwError)
+        {
+            if (!VmwDeployIsRetriableError(dwError))
+            {
+                break;
+            }
+            VMW_DEPLOY_LOG_INFO(
+                "Failed to get fetch root certificates from Lightwave (error %d). Retrying...",
+                dwError);
+            VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
+            ++dwRetryCount;
+        }
+        else
+        {
+            bAcquiredCertificate = TRUE;
+        }
+    } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
+    if (dwError)
+    {
+        VMW_DEPLOY_LOG_INFO(
+            "Failed to fetch root certificates from Lightwave: ERROR [%d]",
+            dwError);
+        dwError = 0;
+    }
 
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
 
     dwRetryCount = 0;
-
+    bAcquiredCertificate = FALSE;
     do
     {
         // As per https://tools.ietf.org/html/rfc6125
@@ -858,7 +884,34 @@ VmwDeploySetupClient(
     VMW_DEPLOY_LOG_INFO(
             "Refreshing root certificates from VMware Certificate Authority");
 
-    VmAfdTriggerRootCertsRefresh(NULL, NULL, NULL);
+    dwRetryCount = 0;
+    do
+    {
+        dwError = VmAfdTriggerRootCertsRefresh(NULL, NULL, NULL);
+        if (dwError)
+        {
+            if (!VmwDeployIsRetriableError(dwError))
+            {
+                break;
+            }
+            VMW_DEPLOY_LOG_INFO(
+                "Failed to get fetch root certificates from Lightwave (error %d). Retrying...",
+                dwError);
+            VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
+            ++dwRetryCount;
+        }
+        else
+        {
+            bAcquiredCertificate = TRUE;
+        }
+    } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
+    if (dwError)
+    {
+        VMW_DEPLOY_LOG_INFO(
+            "Failed to fetch root certificates from Lightwave: ERROR [%d]",
+            dwError);
+        dwError = 0;
+    }
 
     dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -866,6 +919,7 @@ VmwDeploySetupClient(
     VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
 
     dwRetryCount = 0;
+    bAcquiredCertificate = FALSE;
     do
     {
         dwError = VmwDeployCreateMachineSSLCert(
@@ -896,6 +950,7 @@ VmwDeploySetupClient(
             bAcquiredCertificate = TRUE;
         }
     } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
+    BAIL_ON_DEPLOY_ERROR(dwError);
 
 
     VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
