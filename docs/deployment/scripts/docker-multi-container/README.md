@@ -30,7 +30,7 @@ Use following steps to prepare your MacBook to run the scripts listed above.
 * `docker-machine create -d virtualbox --virtualbox-memory 4096 default`
 * `eval $(docker-machine eval default)`
 * `docker-machine scp ./prepare-docker-machine.sh default:/tmp`
-* `docker-machien ssh default:/tmp/prepare-docker-machine.sh`
+* `docker-machine ssh default:/tmp/prepare-docker-machine.sh`
 
 # Multi-Host Multi-Container Lightwave cluster in three VMs.
 To create all containers in different VMs and create overlay network for docker containers,
