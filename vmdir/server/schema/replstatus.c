@@ -207,7 +207,7 @@ VmDirSchemaReplStatusEntriesRetrieve(
                     (PVDIR_SCHEMA_REPL_STATE)pNode->pElement);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            pNode = pNode->pNext;
+            pNode = pNode->pPrev;
         }
     }
 
@@ -321,7 +321,7 @@ VmDirSchemaReplStatusEntriesRefreshThread(
         dwError = VmDirSchemaReplStateLog(pReplState);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s completed", __FUNCTION__ );

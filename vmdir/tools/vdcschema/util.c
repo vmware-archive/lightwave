@@ -93,7 +93,7 @@ VmDirSchemaPrintDiff(
                 printf("%s: %s\n", pMod->pszType, pMod->pVals->pStringList[i]);
             }
         }
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->attrToModify->pHead;
@@ -117,7 +117,7 @@ VmDirSchemaPrintDiff(
             }
             bDiv = TRUE;
         }
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToAdd->pHead;
@@ -137,7 +137,7 @@ VmDirSchemaPrintDiff(
                 printf("%s: %s\n", pMod->pszType, pMod->pVals->pStringList[i]);
             }
         }
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToModify->pHead;
@@ -161,7 +161,7 @@ VmDirSchemaPrintDiff(
             }
             bDiv = TRUE;
         }
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 }
 

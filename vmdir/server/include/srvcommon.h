@@ -729,7 +729,7 @@ typedef struct _VMDIR_REPLICATION_METRICS
     PVM_METRICS_HISTOGRAM   pTimeCycleFailed;
     PVM_METRICS_HISTOGRAM   pUsnBehind;
     PVM_METRICS_COUNTER     pCountConflictResolved;
-    PVM_METRICS_COUNTER     pCountConflictPermanent;
+    PVM_METRICS_GAUGE       pCountConflictPermanent;
     BOOLEAN                 bActive;
 
 } VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;

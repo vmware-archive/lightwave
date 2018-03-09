@@ -136,8 +136,8 @@ typedef struct _DEQUE
 typedef struct _VDIR_LINKED_LIST_NODE
 {
     PVOID                           pElement;
-    struct _VDIR_LINKED_LIST_NODE*  pPrev;
     struct _VDIR_LINKED_LIST_NODE*  pNext;
+    struct _VDIR_LINKED_LIST_NODE*  pPrev;
     struct _VDIR_LINKED_LIST*       pList;
 
 } VDIR_LINKED_LIST_NODE, *PVDIR_LINKED_LIST_NODE;
@@ -2476,6 +2476,12 @@ DWORD
 VmDirConvertTimestampToEpoch(
     PSTR    pszTimestamp,
     PLONG   pEpoch
+    );
+
+DWORD
+VmDirListFiles(
+    PCSTR               pszDir,
+    PVMDIR_STRING_LIST* ppFiles
     );
 
 // threadcontext.c

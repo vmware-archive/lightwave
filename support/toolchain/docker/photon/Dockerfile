@@ -34,7 +34,7 @@ RUN tdnf update -y --refresh rpm-4.13.0.1 tdnf && \
     tdnf install -y openssl-devel && \
     tdnf install -y likewise-open-devel-6.2.11 && \
     tdnf install -y copenapi-devel-0.0.1 && \
-    tdnf install -y c-rest-engine-devel-1.1 && \
+    tdnf install -y c-rest-engine-devel-1.2 && \
     tdnf install -y go-1.8.1 && \
     echo 'ALL ALL=NOPASSWD: ALL' >>/etc/sudoers && \
     chmod -R o+r /opt/likewise/include

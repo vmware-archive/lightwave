@@ -534,9 +534,11 @@ ThreadFunction(
     PVOID pArgs
     )
 {
-    DWORD dwError = ERROR_SUCCESS;
-    PVMDIR_START_ROUTINE pThreadStart = NULL;
-    PVOID pThreadArgs = NULL;
+    DWORD   dwError = 0;
+    PVMDIR_START_ROUTINE    pThreadStart = NULL;
+    PVOID                   pThreadArgs = NULL;
+    PVMDIR_THREAD_LOG_CONTEXT   pLogCtx = NULL;
+
     union
     {
         DWORD dwError;
@@ -544,29 +546,38 @@ ThreadFunction(
     } retVal;
 
     memset(&retVal, 0, sizeof(retVal));
-    if( pArgs == NULL)
+    if (pArgs == NULL)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pThreadStart = ((PVMDIR_THREAD_START_INFO)pArgs)->pStartRoutine;
     pThreadArgs = ((PVMDIR_THREAD_START_INFO)pArgs)->pArgs;
 
-    if( pThreadStart == NULL )
+    if (pThreadStart == NULL)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    VMDIR_SAFE_FREE_MEMORY( pArgs );
+    VMDIR_SAFE_FREE_MEMORY(pArgs);
 
-    dwError = pThreadStart( pThreadArgs );
+    // set thread log context so error logs will show function name and line number
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetThreadLogContextValue(pLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // run the start routine
+    dwError = pThreadStart(pThreadArgs);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
+    // unset and free thread log context
+    VmDirSetThreadLogContextValue(NULL);
+    VmDirFreeThreadLogContext(pLogCtx);
 
-    VMDIR_SAFE_FREE_MEMORY( pArgs );
+    VMDIR_SAFE_FREE_MEMORY(pArgs);
 
     retVal.dwError = dwError;
     return retVal.pvRet;

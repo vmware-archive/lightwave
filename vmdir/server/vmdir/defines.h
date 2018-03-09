@@ -129,6 +129,9 @@
 #define ACTIVE_LDAPS_PORT_STR  DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000"
 #endif
 
+#define VMDIR_INTEG_CHK_REPORTS_DIR     VMDIR_LOG_DIR VMDIR_PATH_SEP "integrity" VMDIR_PATH_SEP "reports"
+#define VMDIR_INTEG_CHK_ARCHIVE_DIR     VMDIR_LOG_DIR VMDIR_PATH_SEP "integrity" VMDIR_PATH_SEP "archive"
+
 /*
  * Table to define and initialize VMDIR configuration data.
  *

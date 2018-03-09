@@ -1,5 +1,16 @@
 #!/bin/bash -e
 
+
+# Workaround for Photon 2.0 not showing CodeDeploy parameters
+# Assumes code deploy runs under /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}
+if [[ ! $DEPLOYMENT_GROUP_ID ]] ; then
+  DEPLOYMENT_GROUP_ID=$(realpath $0 | cut -d "/" -f5)
+fi
+
+if [[ ! $DEPLOYMENT_ID ]] ; then
+  DEPLOYMENT_ID=$(realpath $0 | cut -d "/" -f6)
+fi
+
 LOGDIR="/opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}/logs"
 export LOGDIR
 export PATH=$PATH:/root/.local/bin

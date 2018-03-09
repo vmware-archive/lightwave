@@ -106,6 +106,20 @@ VmDirReplMetricsCacheShutdown(
     );
 
 /*
+ * Replication metrics util
+ */
+DWORD
+VmDirReplMetricsPersistCountConflictPermanent(
+    PVMDIR_REPLICATION_METRICS  pReplMetrics,
+    DWORD                       dwCount
+    );
+
+DWORD
+VmDirReplMetricsLoadCountConflictPermanent(
+    PVMDIR_REPLICATION_METRICS  pReplMetrics
+    );
+
+/*
  * UTD vector cache
  */
 DWORD

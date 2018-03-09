@@ -175,7 +175,7 @@ VmDirPatchLocalSchemaObjects(
                 (PVDIR_LDAP_SCHEMA_OBJECT_DIFF)pNode->pElement);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->attrToModify->pHead;
@@ -185,7 +185,7 @@ VmDirPatchLocalSchemaObjects(
                 (PVDIR_LDAP_SCHEMA_OBJECT_DIFF)pNode->pElement);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToAdd->pHead;
@@ -195,7 +195,7 @@ VmDirPatchLocalSchemaObjects(
                 (PVDIR_LDAP_SCHEMA_OBJECT_DIFF)pNode->pElement);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToModify->pHead;
@@ -205,7 +205,7 @@ VmDirPatchLocalSchemaObjects(
                 (PVDIR_LDAP_SCHEMA_OBJECT_DIFF)pNode->pElement);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
 error:

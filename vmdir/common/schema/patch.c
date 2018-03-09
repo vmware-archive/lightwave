@@ -122,7 +122,7 @@ VmDirPatchRemoteSchemaObjects(
 
         _FreeLDAPModArray(mods);
         mods = NULL;
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->attrToModify->pHead;
@@ -138,7 +138,7 @@ VmDirPatchRemoteSchemaObjects(
 
         _FreeLDAPModArray(mods);
         mods = NULL;
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToAdd->pHead;
@@ -154,7 +154,7 @@ VmDirPatchRemoteSchemaObjects(
 
         _FreeLDAPModArray(mods);
         mods = NULL;
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
     pNode = pSchemaDiff->classToModify->pHead;
@@ -170,7 +170,7 @@ VmDirPatchRemoteSchemaObjects(
 
         _FreeLDAPModArray(mods);
         mods = NULL;
-        pNode = pNode->pPrev;
+        pNode = pNode->pNext;
     }
 
 error:

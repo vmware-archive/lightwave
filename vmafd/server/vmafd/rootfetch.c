@@ -247,6 +247,8 @@ VmAfdRootFetchTask(
     dwError = VmAfdGetThreadArgs(&pArgs);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    VMAFD_LOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
+
     dwError = VmAfdLDAPConnect(
                 pArgs->pszDCName,
                 pArgs->nPort,
@@ -254,8 +256,6 @@ VmAfdRootFetchTask(
                 pArgs->pszPassword,
                 &pLotus);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VMAFD_LOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
 
     dwError = VmAfdQueryCACerts(pLotus, NULL, TRUE, &pCACerts);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -271,11 +271,8 @@ VmAfdRootFetchTask(
     dwError = VecsSrvFlushSSLCertFromDB(bLogOnDuplicate);
     BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
-    VMAFD_UNLOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
-
 cleanup:
 
-    VMAFD_UNLOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
     if (pCACerts)
     {
         VecsFreeCACertArray(pCACerts);
@@ -295,6 +292,8 @@ cleanup:
     {
         VmAfdLdapClose(pLotus);
     }
+
+    VMAFD_UNLOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
 
     if (pArgs)
     {
