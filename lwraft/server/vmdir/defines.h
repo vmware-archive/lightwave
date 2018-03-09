@@ -395,4 +395,26 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REST_WORKER,        \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 16,                               \
+        /*.dwMax          = */ 1024,                             \
+        /*.dwDefault      = */ 64,                               \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REST_LOG_LEVEL_OVERRIDE,   \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 32,                               \
+        /*.dwDefault      = */ 32,                               \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }

@@ -178,7 +178,7 @@ retry:
             {
                 if (!VmDirStringCompareA(pszTemp, "Administrators",FALSE))
                 {
-                    VMDIR_LOG_INFO(
+                    VMDIR_LOG_VERBOSE(
                             VMDIR_LOG_MASK_ALL,
                             "OIDC token for user: %s has lightwave admin group membership",
                             pAuthToken->pszBindUPN);
