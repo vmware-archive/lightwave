@@ -15,6 +15,9 @@
 #ifndef _OIDC_TYPES_H_
 #define _OIDC_TYPES_H_
 
+typedef       struct OIDC_CLIENT_GLOBALS*   POIDC_CLIENT_GLOBALS;
+typedef const struct OIDC_CLIENT_GLOBALS*   PCOIDC_CLIENT_GLOBALS;
+
 typedef       struct OIDC_CLIENT*  POIDC_CLIENT;
 typedef const struct OIDC_CLIENT* PCOIDC_CLIENT;
 

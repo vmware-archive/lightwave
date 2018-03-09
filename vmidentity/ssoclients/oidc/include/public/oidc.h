@@ -18,7 +18,12 @@
 // OIDC_CLIENT
 
 /*
- * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * IMPORTANT:
+ * You do not need to call this function from consuming applications as the GCC constructor attribute will
+ * guarantee its execution.  This attribute will also enforce that the function is called when the consuming
+ * application is running with only a single thread.  Read further for details regarding why this is necessary.
+ * If you must call this function in a consuming application, ensure it is done at process startup while there
+ * is only a single thread running.
  * This is a wrapper for curl_global_init, from its documentation:
  * This function is not thread safe.
  * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
@@ -27,10 +32,21 @@
  * it could conflict with any other thread that uses these other libraries.
  */
 SSOERROR
+__attribute__((constructor))
 OidcClientGlobalInit();
 
-// this function is not thread safe. Call it right before process exit
+/*
+ * IMPORTANT:
+ * You do not need to call this function from consuming applications as the GCC destructor attribute will
+ * guarantee its execution.  The attribute will also enfoce that the function is called when the consuming
+ * application is running with only a single thread.
+ * If you must call this function in a consuming application, ensure it is done at process exit when there
+ * is only a single thread running.
+ * This function is not thread safe. Call it right before process exit as the curl_global_cleanup
+ * documentation states.
+ */
 void
+__attribute__((destructor))
 OidcClientGlobalCleanup();
 
 // make sure you call OidcClientGlobalInit once per process before calling this

@@ -30,7 +30,7 @@ SSOHttpClientSetCurlOptionInt(
     if (code != CURLE_OK)
     {
         e = SSOERROR_CURL_FAILURE;
-        BAIL_ON_ERROR(e);
+        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
     }
 
 error:
@@ -50,7 +50,7 @@ SSOHttpClientSetCurlOptionPointer(
     if (code != CURLE_OK)
     {
         e = SSOERROR_CURL_FAILURE;
-        BAIL_ON_ERROR(e);
+        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
     }
 
 error:
@@ -128,7 +128,7 @@ SSOHttpClientGlobalInit()
     if (code != CURLE_OK)
     {
         e = SSOERROR_CURL_INIT_FAILURE;
-        BAIL_ON_ERROR(e);
+        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
     }
 
 error:
@@ -274,18 +274,30 @@ SSOHttpClientSend(
         BAIL_ON_ERROR(e);
     }
 
+    char errbuf[CURL_ERROR_SIZE];
+    /* provide a buffer to store errors in */
+    curl_easy_setopt(p->pCurl, CURLOPT_ERRORBUFFER, errbuf);
+    /* set the error buffer as empty before performing a request */
+    errbuf[0] = 0;
     code = curl_easy_perform(p->pCurl);
     if (code != CURLE_OK)
     {
         e = SSOERROR_HTTP_SEND_FAILURE;
-        BAIL_ON_ERROR(e);
+        size_t len = strlen(errbuf);
+        if(len)
+        {
+          BAIL_AND_LOG_ON_ERROR(e, errbuf);
+        }
+        else
+        {
+          BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
+        }
     }
-
     code = curl_easy_getinfo(p->pCurl, CURLINFO_RESPONSE_CODE, &statusCode);
     if (code != CURLE_OK)
     {
         e = SSOERROR_CURL_FAILURE;
-        BAIL_ON_ERROR(e);
+        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
     }
 
     pszHttpClientResponse = SSOHttpClientResponseGetString(pHttpClientResponse);
