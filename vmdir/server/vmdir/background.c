@@ -35,6 +35,12 @@ static VMDIR_BKGD_TASK_CTX tasks[] =
                 {0}
         },
         {
+                VmDirBkgdCountClosedConnections,
+                60, // every minute
+                "bkgdprevtime_replmetrics_countclosedconnections",
+                {0}
+        },
+        {
                 VmDirBkgdPingMaxOrigUsn,
                 0,  // every time
                 "bkgdprevtime_replmetrics_pingmaxorigusn",
@@ -336,6 +342,46 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszReportPath);
     VmDirFreeIntegrityReport(pNewReport);
     VmDirFreeIntegrityReportList(pReportsByPartner);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirBkgdCountClosedConnections(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
+    PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
+    {
+        if (VmDirReplMetricsCacheFind(pReplAgr->pszHostname, &pReplMetrics) == 0)
+        {
+            if (pReplAgr->dcConn.connState == DC_CONNECTION_STATE_CONNECTED)
+            {
+                VmMetricsGaugeSet(pReplMetrics->pCountConnectionClosed, 0);
+            }
+            else
+            {
+                VmMetricsGaugeSet(pReplMetrics->pCountConnectionClosed, 1);
+            }
+        }
+    }
+
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
     return dwError;
 
 error:

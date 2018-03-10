@@ -920,7 +920,7 @@ _VmDirConsumePartner(
             VMDIR_LOG_MASK_ALL,
             "%s: start consuming partner: %s time taken to acquire lock: %" PRId64 " milliseconds",
             __FUNCTION__,
-            pConnection->pszRemoteDCHostName,
+            pConnection->pszHostname,
             (VmDirGetTimeInMilliSec() - uiStartTimeToConsume));
 
     uiStartTime = VmDirGetTimeInMilliSec();
@@ -999,7 +999,11 @@ collectmetrics:
                     pReplMetrics->pTimeCycleSucceeded,
                     VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
         }
-        else if (retVal != LDAP_BUSY)
+        // avoid collecting benign error counts
+        else if (retVal != LDAP_BUSY &&         // role exclusion
+                 retVal != LDAP_UNAVAILABLE &&  // server in mid-shutdown
+                 retVal != LDAP_SERVER_DOWN &&  // connection lost
+                 retVal != LDAP_TIMEOUT)        // connection lost
         {
             VmMetricsHistogramUpdate(
                     pReplMetrics->pTimeCycleFailed,
@@ -1012,7 +1016,7 @@ cleanup:
             VMDIR_LOG_MASK_ALL,
             "%s: completed consuming partner: %s total time taken: %" PRId64 " milliseconds, status: %d",
             __FUNCTION__,
-            pConnection->pszRemoteDCHostName,
+            pConnection->pszHostname,
             (VmDirGetTimeInMilliSec() - uiStartTimeToConsume),
             retVal);
     VmDirReplicationClearFailedEntriesFromQueue(pContext);
@@ -1169,7 +1173,7 @@ _VmDirFetchReplicationPage(
                 LDAP_DEBUG_REPL,
                 "%s: partner (%s) is busy",
                 __FUNCTION__,
-                pConnection->pszRemoteDCHostName);
+                pConnection->pszHostname);
 
         bLogErr = FALSE;
     }
@@ -1204,6 +1208,10 @@ _VmDirFetchReplicationPage(
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             retVal = ParseAndFreeSyncStateControl(&ctrls, &entryState, &ulPartnerUSN);
+            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+            retVal = VmDirAllocateStringA(
+                    pConnection->pszHostname, &pPage->pEntries[iEntries].pszPartner);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             pPage->pEntries[iEntries].entry = entry;
@@ -1251,7 +1259,7 @@ _VmDirFetchReplicationPage(
                 "%s: filter: '%s' to '%s' requested: %d received: %d usn: %" PRId64 " utd: '%s'",
                 __FUNCTION__,
                 VDIR_SAFE_STRING(pPage->pszFilter),
-                VDIR_SAFE_STRING(pConnection->pszRemoteDCHostName),
+                VDIR_SAFE_STRING(pConnection->pszHostname),
                 pPage->iEntriesRequested,
                 pPage->iEntriesReceived,
                 initUsn,
@@ -1306,9 +1314,7 @@ _VmDirFreeReplicationPage(
             int i = 0;
             for (i = 0; i < pPage->iEntriesReceived; i++)
             {
-                VMDIR_SAFE_FREE_MEMORY(pPage->pEntries[i].pszDn);
-                VmDirFreeBerval(pPage->pEntries[i].pBervEncodedEntry);
-                VmDirFreeBervalContent(&pPage->pEntries[i].reqDn);
+                VmDirReplicationFreePageEntryContent(&pPage->pEntries[i]);
             }
             VMDIR_SAFE_FREE_MEMORY(pPage->pEntries);
         }

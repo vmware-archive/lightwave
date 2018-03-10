@@ -262,6 +262,7 @@ VmDirReplMetricsInit(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
     PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
 
     // use identical bucket for all histograms
@@ -360,12 +361,12 @@ VmDirReplMetricsInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // create count metrics
-    dwError = VmMetricsCounterNew(
+    dwError = VmMetricsGaugeNew(
             pmContext,
-            "vmdir_repl_count_conflict_resolved",
+            "vmdir_repl_count_connection_closed",
             labels, 2,
-            "Number of conflicts that are resolved during replication cycles",
-            &pReplMetrics->pCountConflictResolved);
+            "Number of closed connections to replication partners",
+            &pReplMetrics->pCountConnectionClosed);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmMetricsGaugeNew(
@@ -376,16 +377,31 @@ VmDirReplMetricsInit(
             &pReplMetrics->pCountConflictPermanent);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    /*
-     * TODO need a counter per error code
     dwError = VmMetricsCounterNew(
             pmContext,
-            "vmdir_repl_count_error",
+            "vmdir_repl_count_conflict_resolved",
             labels, 2,
-            "Number of errors during replication cycles",
-            &pReplMetrics->pCountError);
+            "Number of conflicts that are resolved during replication cycles",
+            &pReplMetrics->pCountConflictResolved);
     BAIL_ON_VMDIR_ERROR(dwError);
-     */
+
+    dwError = VmDirAllocateMemory(
+            sizeof(PVM_METRICS_COUNTER) * METRICS_LDAP_ERROR_COUNT,
+            (PVOID*)&pReplMetrics->pCountError);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < METRICS_LDAP_ERROR_COUNT; i++)
+    {
+        labels[2].pszValue = VmDirMetricsLdapErrorString(i);
+
+        dwError = VmMetricsCounterNew(
+                pmContext,
+                "vmdir_repl_count_error",
+                labels, 3,
+                "Number of errors during replication cycles",
+                &pReplMetrics->pCountError[i]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     *ppReplMetrics = pReplMetrics;
 
@@ -477,6 +493,8 @@ VmDirFreeReplMetrics(
     PVMDIR_REPLICATION_METRICS  pReplMetrics
     )
 {
+    DWORD   i = 0;
+
     if (pReplMetrics)
     {
         VMDIR_SAFE_FREE_MEMORY(pReplMetrics->pszSrcHostname);
@@ -488,8 +506,19 @@ VmDirFreeReplMetrics(
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pTimeCycleSucceeded);
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pTimeCycleFailed);
         (VOID)VmMetricsHistogramDelete(pmContext, pReplMetrics->pUsnBehind);
-        (VOID)VmMetricsCounterDelete(pmContext, pReplMetrics->pCountConflictResolved);
+        (VOID)VmMetricsGaugeDelete(pmContext, pReplMetrics->pCountConnectionClosed);
         (VOID)VmMetricsGaugeDelete(pmContext, pReplMetrics->pCountConflictPermanent);
+        (VOID)VmMetricsCounterDelete(pmContext, pReplMetrics->pCountConflictResolved);
+
+        if (pReplMetrics->pCountError)
+        {
+            for (i = 0; i < METRICS_LDAP_ERROR_COUNT; i++)
+            {
+                (VOID)VmMetricsCounterDelete(pmContext, pReplMetrics->pCountError[i]);
+            }
+            VMDIR_SAFE_FREE_MEMORY(pReplMetrics->pCountError);
+        }
+
         VMDIR_SAFE_FREE_MEMORY(pReplMetrics);
     }
 }

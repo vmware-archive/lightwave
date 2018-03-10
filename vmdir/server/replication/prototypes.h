@@ -100,14 +100,14 @@ VmDirReplicationDecodeEntryForRetry(
 
 VOID
 VmDirReplicationEncodeEntryForRetry(
-    PVDIR_ENTRY       pEntry,
+    PVDIR_ENTRY                     pEntry,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
 DWORD
 VmDirReplicationPushFailedEntriesToQueue(
-    PVMDIR_REPLICATION_CONTEXT     pContext,
-    PVMDIR_REPLICATION_PAGE_ENTRY  pPageEntry
+    PVMDIR_REPLICATION_CONTEXT      pContext,
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
 DWORD
@@ -118,16 +118,21 @@ VmDirReplicationDupPageEntry(
 
 VOID
 VmDirReapplyFailedEntriesFromQueue(
-    PVMDIR_REPLICATION_CONTEXT     pContext
+    PVMDIR_REPLICATION_CONTEXT      pContext
     );
 
 VOID
 VmDirReplicationClearFailedEntriesFromQueue(
-    PVMDIR_REPLICATION_CONTEXT     pContext
+    PVMDIR_REPLICATION_CONTEXT      pContext
     );
 
 VOID
 VmDirReplicationFreePageEntry(
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    );
+
+VOID
+VmDirReplicationFreePageEntryContent(
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
