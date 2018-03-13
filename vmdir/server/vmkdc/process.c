@@ -211,6 +211,64 @@ error:
 
 static
 DWORD
+VmKdcMakeSaltForEtype(
+    PSTR          pszPrincName,
+    VMKDC_ENCTYPE etype,
+    PSTR          *ppszSaltString)
+{
+    DWORD dwError = 0;
+    PSTR pszDupPrincName = NULL;
+    PSTR pszRetSaltString = NULL;
+    PSTR pszSaltDomain = NULL;
+    PSTR pszSaltUser = NULL;
+    PSTR pszTmp = NULL;
+
+    /* Construct correct salt type for etype */
+
+    switch (etype)
+    {
+        case ENCTYPE_AES256_CTS_HMAC_SHA1_96:
+            dwError = VmDirAllocateStringPrintf(
+                          &pszDupPrincName,
+                          "%s",
+                          pszPrincName);
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            pszSaltUser = pszDupPrincName;
+
+            pszTmp = VmKdcStringChrA(pszDupPrincName, (int) '@');
+            if (!pszTmp)
+            {
+                /* Nothing to do */
+                goto cleanup;
+            }
+            *pszTmp++ = '\0';
+            pszSaltDomain = pszTmp;
+
+            dwError = VmDirAllocateStringPrintf(
+                          &pszRetSaltString,
+                          "%s%s",
+                          pszSaltDomain,
+                          pszSaltUser);
+            BAIL_ON_VMKDC_ERROR(dwError);
+        break;
+        default:
+        break;
+    }
+    *ppszSaltString = pszRetSaltString;
+
+cleanup:
+
+    VMKDC_SAFE_FREE_STRINGA(pszDupPrincName);
+    return dwError;
+
+error:
+    VMKDC_SAFE_FREE_STRINGA(pszRetSaltString);
+    goto cleanup;
+}
+
+static
+DWORD
 VmKdcProcessAsReq(
     PVMKDC_CONTEXT pContext,
     PVMKDC_DATA *ppKrbMsg)
@@ -248,6 +306,11 @@ VmKdcProcessAsReq(
 #else
     PVOID pAuthzData = NULL;
 #endif
+    DWORD dwSaltStringLen = 0;
+    PSTR pszSaltString = NULL;
+    PSTR pszSaltStringClientName = NULL;
+    PVMKDC_SALT pSalt = NULL;
+    DWORD bSaltMatch = FALSE;
 
     dwError = VmKdcAllocateData(
                   pContext->pRequest->requestBuf,
@@ -364,7 +427,7 @@ VmKdcProcessAsReq(
              pszClientName);
 
     /*
-     * Get the client key
+     * Get the client key and case-sensitive UPN name
      */
     dwError = VmKdcSearchDirectory(
                   pContext,
@@ -380,6 +443,29 @@ VmKdcProcessAsReq(
         if (asRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
         {
             etype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+            dwError = VmKdcMakeSaltForEtype(
+                          pClientEntry->princName,
+                          etype,
+                          &pszSaltString);
+            BAIL_ON_VMKDC_ERROR(dwError);
+            dwSaltStringLen = VmKdcStringLenA(pszSaltString);
+
+            dwError = VmKdcMakeSaltForEtype(
+                          pszClientName,
+                          etype,
+                          &pszSaltStringClientName);
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            /* Test Canonicalized salt and presented UPN for case match */
+            if (pszSaltString && pszSaltStringClientName)
+            {
+                bSaltMatch = VmKdcStringCompareA(
+                                 pszSaltString,
+                                 pszSaltStringClientName,
+                                 TRUE);
+                BAIL_ON_VMKDC_ERROR(dwError);
+            }
+
             break;
         }
         if (asRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
@@ -413,9 +499,17 @@ VmKdcProcessAsReq(
      * Verify the preauthentication data.
      */
     dwError = VmKdcVerifyAsReqPaData(pContext, asRequest, pCKey);
-    if (dwError == ERROR_NO_PREAUTH)
+    if (dwError == ERROR_NO_PREAUTH ||
+        (dwError == ERROR_FAILED_PREAUTH && !bSaltMatch))
     {
-        dwError2 = VmKdcBuildKrbErrorEData(pCKey, &e_data);
+        dwError2 = VmKdcMakeSalt(
+                       etype,
+                       dwSaltStringLen,
+                       pszSaltString,
+                       &pSalt);
+        BAIL_ON_VMKDC_ERROR(dwError2);
+
+        dwError2 = VmKdcBuildKrbErrorEData(pCKey, pSalt, NULL, &e_data);
         BAIL_ON_VMKDC_ERROR(dwError2);
     }
     BAIL_ON_VMKDC_ERROR(dwError);
@@ -582,6 +676,8 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszClientName);
+    VMKDC_SAFE_FREE_STRINGA(pszSaltString);
+    VMKDC_SAFE_FREE_STRINGA(pszSaltStringClientName);
 #if defined(VMDIR_ENABLE_PAC) || defined(WINJOIN_CHECK_ENABLED)
     VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
 #endif

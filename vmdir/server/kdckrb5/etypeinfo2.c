@@ -130,7 +130,7 @@ VmKdcEncodeEtypeInfo2(
         /* salt (optional) */
         if (pEtypeInfo2->entry[i]->salt && pEtypeInfo2->entry[i]->salt->data)
         {
-            heimInfo.val[i].salt = VMKDC_GET_PTR_DATA(pEtypeInfo2->entry[i]->salt->data);
+            heimInfo.val[i].salt = (KerberosString *) &VMKDC_GET_PTR_DATA(pEtypeInfo2->entry[i]->salt->data);
         }
 
         /* s2kparams (optional) */

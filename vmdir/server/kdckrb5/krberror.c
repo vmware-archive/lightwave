@@ -112,6 +112,8 @@ error:
 DWORD
 VmKdcBuildKrbErrorEData(
     IN  PVMKDC_KEY pKey,
+    IN PVMKDC_SALT pSalt,      /* OPTIONAL */
+    IN PVMKDC_DATA pS2Kparams, /* OPTIONAL */
     OUT PVMKDC_DATA *ppRetData)
 {
     DWORD dwError = 0;
@@ -126,7 +128,7 @@ VmKdcBuildKrbErrorEData(
     /*
      * Construct an ETYPE-INFO2 preauth data
      */
-    dwError = VmKdcMakeEtypeInfo2Entry(pKey->type, NULL, NULL, &pEtypeInfo2Entry);
+    dwError = VmKdcMakeEtypeInfo2Entry(pKey->type, pSalt, pS2Kparams, &pEtypeInfo2Entry); 
     BAIL_ON_VMKDC_ERROR(dwError);
 
     dwError = VmKdcAllocateMemory(sizeof(VMKDC_ETYPE_INFO2),
