@@ -120,9 +120,10 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
             IDPConfig idpConfig) throws Exception {
         HttpRequest httpRequest = HttpRequest.from(request);
         AuthenticationRequest authnRequest = AuthenticationRequest.parse(httpRequest);
-        FederationRelayState.Builder builder = new FederationRelayState.Builder(tenant, idpConfig.getEntityID(),
+        FederationRelayState.Builder builder = new FederationRelayState.Builder(idpConfig.getEntityID(),
                 authnRequest.getClientID().getValue(), authnRequest.getRedirectURI().toString());
         final String orgLink = CSP_ORG_LINK + tenant;
+        builder.tenant(tenant);
         builder.nonce(authnRequest.getNonce().getValue());
         builder.scope(authnRequest.getScope().toString());
         builder.spInitiatedState(authnRequest.getState().getValue());
@@ -141,7 +142,18 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   ) throws Exception {
     final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
     if (orgLink != null && !orgLink.isEmpty()) {
-      return processRequestPreAuth(request, relayState, orgLink, idpConfig);
+      FederationRelayState.Builder builder = new FederationRelayState.Builder(relayState.getIssuer(),
+                relayState.getClientId(), relayState.getRedirectURI());
+      int index = orgLink.lastIndexOf("/") + 1;
+      String orgId = orgLink.substring(index);
+      if (StringUtils.isNotEmpty(relayState.getTenant())
+              && !StringUtils.equalsIgnoreCase(relayState.getTenant(), orgId)) {
+          ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
+          LoggerUtils.logFailedRequest(logger, errorObject);
+          throw new ServerException(errorObject);
+      }
+      builder.tenant(orgId);
+      return processRequestPreAuth(request, builder.build(), orgLink, idpConfig);
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
@@ -220,7 +232,8 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     CSPToken idToken = token.getLeft();
     CSPToken accessToken = token.getRight();
     String tenantName = idToken.getTenant();
-    if (tenantName == null || tenantName.isEmpty() || !tenantName.equalsIgnoreCase(state.getTenant())) {
+    if (StringUtils.isEmpty(tenantName) || StringUtils.isEmpty(state.getTenant())
+            || !StringUtils.equalsIgnoreCase(tenantName, state.getTenant())) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
       LoggerUtils.logFailedRequest(logger, errorObject);
       throw new ServerException(errorObject);
