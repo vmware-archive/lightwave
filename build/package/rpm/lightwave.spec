@@ -995,9 +995,9 @@ Lightwave POST service
 %{_jarsdir}/commons-lang3-3.3.2.jar
 %{_jarsdir}/commons-logging-1.2.jar
 %{_jarsdir}/jersey-media-json-jackson-2.25.1.jar
-%{_jarsdir}/jackson-core-2.8.4.jar
-%{_jarsdir}/jackson-databind-2.8.4.jar
-%{_jarsdir}/jackson-annotations-2.8.4.jar
+%{_jarsdir}/jackson-core-2.9.4.jar
+%{_jarsdir}/jackson-databind-2.9.4.jar
+%{_jarsdir}/jackson-annotations-2.9.4.jar
 %{_jarsdir}/jna-4.2.1.jar
 %{_jarsdir}/json-smart-1.3.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar
