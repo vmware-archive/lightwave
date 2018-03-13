@@ -20,7 +20,8 @@ DWORD
 _VmKdcGetKrbUPNKey(
     PSTR        pszUpnName,
     PBYTE*      ppKeyBlob,
-    DWORD*      pSize
+    DWORD*      pSize,
+    PSTR*       ppszUpnNameCanon
     );
 
 VOID
@@ -83,7 +84,8 @@ VmKdcInitializeDirectory(
         dwError = _VmKdcGetKrbUPNKey(
                       pszMasterName,
                       &pPrincKeyBlob,
-                      &dwPrincKeySize);
+                      &dwPrincKeySize,
+                      NULL);
         BAIL_ON_VMKDC_ERROR(dwError);
 
         /*
@@ -155,6 +157,7 @@ VmKdcSearchDirectory(
     PSTR pszPrincName = NULL;
     PSTR pszUPN = NULL;
     PSTR pszDN = NULL;
+    PSTR pszPrincNameCanon = NULL;
     PVMKDC_KEYSET princKeySet = NULL;
     PVMKDC_DIRECTORY_ENTRY pDirectoryEntry = NULL;
     PVMKDC_DATA princAsn1KeyData = NULL;
@@ -194,7 +197,11 @@ VmKdcSearchDirectory(
             {
                 /* krbtgt service for default realm, look up the key from krbtgt user */
 
-                dwError = _VmKdcGetKrbUPNKey(pszPrincName, &pPrincAsn1KeyBlob, &dwPrincAsn1KeySize);
+                dwError = _VmKdcGetKrbUPNKey(
+                              pszPrincName,
+                              &pPrincAsn1KeyBlob,
+                              &dwPrincAsn1KeySize,
+                              &pszPrincNameCanon);
                 BAIL_ON_VMKDC_ERROR(dwError);
             }
             else
@@ -262,7 +269,11 @@ VmKdcSearchDirectory(
     else
     {
         /* request for a non-krbtgt service */
-        dwError = _VmKdcGetKrbUPNKey(pszPrincName, &pPrincAsn1KeyBlob, &dwPrincAsn1KeySize);
+        dwError = _VmKdcGetKrbUPNKey(
+                      pszPrincName,
+                      &pPrincAsn1KeyBlob,
+                      &dwPrincAsn1KeySize,
+                      &pszPrincNameCanon);
         BAIL_ON_VMKDC_ERROR(dwError);
     }
 
@@ -284,11 +295,12 @@ VmKdcSearchDirectory(
                                   (PVOID*)&pDirectoryEntry);
     BAIL_ON_VMKDC_ERROR(dwError);
 
-    pDirectoryEntry->princName = pszPrincName;
+    pDirectoryEntry->princName = pszPrincNameCanon;
     pDirectoryEntry->keyset = princKeySet;
     *ppRetDirectoryEntry = pDirectoryEntry;
 
 cleanup:
+    VMKDC_SAFE_FREE_STRINGA(pszPrincName);
     VMKDC_SAFE_FREE_STRINGA(pszUPN);
     VMKDC_SAFE_FREE_STRINGA(pszDN);
     VMKDC_SAFE_FREE_DATA(princAsn1KeyData);
@@ -303,7 +315,6 @@ error:
                     dwError);
 
     VMKDC_SAFE_FREE_KEYSET(princKeySet);
-    VMKDC_SAFE_FREE_STRINGA(pszPrincName);
     VMKDC_SAFE_FREE_MEMORY(pDirectoryEntry);
     goto cleanup;
 }
@@ -352,11 +363,14 @@ DWORD
 _VmKdcGetKrbUPNKey(
     PSTR        pszUpnName,
     PBYTE*      ppKeyBlob,
-    DWORD*      pSize
+    DWORD*      pSize,
+    PSTR*       ppszUpnNameCanon
     )
 {
     DWORD               dwError = 0;
     PVDIR_ATTRIBUTE     pKrbUPNKey = NULL;
+    PVDIR_ATTRIBUTE     pVmdirUpnName = NULL;
+    PSTR                pszRetUpnName = NULL;
     PBYTE               pRetUPNKey = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
 
@@ -394,6 +408,24 @@ _VmKdcGetKrbUPNKey(
                         );
         BAIL_ON_VMKDC_ERROR(dwError);
 
+        /* Return UPN name with case as stored in vmdir; used to generate salt */
+        pVmdirUpnName = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_UPN);
+        if (ppszUpnNameCanon && pVmdirUpnName)
+        {
+            dwError = VmKdcAllocateMemory(
+                          pVmdirUpnName[0].vals[0].lberbv.bv_len * sizeof(CHAR) + 1,
+                          (PVOID*)&pszRetUpnName);
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            dwError = VmKdcStringCpyA(
+                          pszRetUpnName,
+                          pVmdirUpnName[0].vals[0].lberbv.bv_len + 1,
+                          pVmdirUpnName[0].vals[0].lberbv.bv_val);
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            *ppszUpnNameCanon = pszRetUpnName;
+        }
+
         *ppKeyBlob = pRetUPNKey;
         *pSize     = (DWORD) pKrbUPNKey->vals[0].lberbv.bv_len;
         pRetUPNKey = NULL;
@@ -415,6 +447,7 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmKdcGetKrbUPNKey: failed (%u)(%s)", dwError, VDIR_SAFE_STRING(pszUpnName));
 
     VMKDC_SAFE_FREE_MEMORY(pRetUPNKey);
+    VMKDC_SAFE_FREE_STRINGA(pszRetUpnName);
 
     // keep error code space to KDC specific
     dwError = ERROR_NO_PRINC;
