@@ -57,7 +57,8 @@ vmstswebapps_DATA= \
 sbin_SCRIPTS = \
     @top_srcdir@/vmidentity/websso/src/main/resources/sso-config.sh \
     @top_builddir@/vmidentity/config/vmware-stsd.sh \
-    @top_builddir@/vmidentity/config/configure-build.sh
+    @top_builddir@/vmidentity/config/configure-build.sh \
+    @top_builddir@/vmidentity/config/configure-pwd-policy.sh
 
 vmstsconf_DATA = \
     @top_builddir@/vmidentity/config/server.xml \

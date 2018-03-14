@@ -979,6 +979,7 @@ Lightwave POST service
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
 %{_sbindir}/sso-config.sh
+%{_sbindir}/configure-pwd-policy.sh
 
 %{_datadir}/config/idm/*
 
