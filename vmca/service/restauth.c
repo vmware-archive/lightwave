@@ -193,6 +193,11 @@ VMCAGetAccessTokenFromParameter(
        {
           pAuthorization->tokenType = VMCA_AUTHORIZATION_TOKEN_TYPE_KRB;
        }
+
+       if (!VMCAStringCompareA(pszTokenType, "hot-pk", FALSE))
+       {
+          pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_HOTK_TOKEN;
+       }
     } else
     {
         dwError = ERROR_INVALID_PARAMETER; 
