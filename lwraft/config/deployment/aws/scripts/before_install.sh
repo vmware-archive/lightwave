@@ -18,13 +18,13 @@ if [ $DISTRO == "1.0" ]; then
     tdnf install -y createrepo \
     c-rest-engine-1.2-3.ph1 \
     cyrus-sasl-2.1.26-10.ph1 \
-    likewise-open-6.2.11-7 \
+    likewise-open-6.2.11-8 \
     openssl-1.0.2n
 else
     tdnf install -y createrepo_c \
     c-rest-engine-1.1-1.ph2 \
     cyrus-sasl-2.1.26 \
-    likewise-open-6.2.11 \
+    likewise-open-6.2.11-8.lwph2 \
     openssl-1.0.2n
 fi
 
