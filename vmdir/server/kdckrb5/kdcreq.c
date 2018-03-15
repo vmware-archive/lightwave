@@ -142,7 +142,7 @@ VmKdcDecodeKdcReq(
     pKdcReq->msg_type = heimReq.msg_type;
 
     /* method-data (optional) */
-    if (heimReq.padata)
+    if (heimReq.padata && heimReq.padata->len)
     {
         dwError = VmKdcAllocateMethodData(heimReq.padata->len,
                                           &pKdcReq->padata);
