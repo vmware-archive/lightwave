@@ -15,6 +15,8 @@
 #include "includes.h"
 
 OIDC_CLIENT_GLOBALS gOidcClientGlobals = {
-    .bIsCurlInitialized = 0
+    .bIsCurlInitialized = 0,
+    .pCurlInitCtx = NULL
 };
+
 POIDC_CLIENT_GLOBALS gpOidcClientContext = &gOidcClientGlobals;

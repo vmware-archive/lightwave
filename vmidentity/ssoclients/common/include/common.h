@@ -17,6 +17,12 @@
 
 // SSO_HTTP_CLIENT
 
+void
+SSOClientSSLLock(
+    int         mode,
+    pthread_mutex_t* pMutex
+    );
+
 /*
  * IMPORTANT: you must call this function at process startup while there is only a single thread running
  * This is a wrapper for curl_global_init, from its documentation:
@@ -27,11 +33,14 @@
  * it could conflict with any other thread that uses these other libraries.
  */
 SSOERROR
-SSOHttpClientGlobalInit();
+SSOHttpClientGlobalInit(
+    PFN_SSO_CLIENT_SSL_LOCK_CLBK pLockCallBack,
+    PSSO_CLIENT_CURL_INIT_CTX *ppCurlInitCtx);
 
 // this function is not thread safe. Call it right before process exit
 void
-SSOHttpClientGlobalCleanup();
+SSOHttpClientGlobalCleanup(
+    PSSO_CLIENT_CURL_INIT_CTX pCurlInitCtx);
 
 // make sure you call SSOHttpClientGlobalInit once per process before calling this
 SSOERROR

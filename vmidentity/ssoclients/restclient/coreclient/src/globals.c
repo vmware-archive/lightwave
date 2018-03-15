@@ -12,37 +12,10 @@
  * under the License.
  */
 
-#ifndef INCLUDES_H_
-#define INCLUDES_H_
+#include "includes.h"
 
-// system headers
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-
-// third party headers
-
-// common headers
-#include "ssotypes.h"
-#include "defines.h"
-#include "common_types.h"
-#include "common.h"
-#include "ssoerrors.h"
-#include "ssocommon.h"
-
-// project headers
-#include "ssocoreclient.h"
-#include "coreclient_structs.h"
-#include "coreclient_prototypes.h"
-#include "coreclient_debug.h"
-
-// local headers
-#include "structs.h"
-#include "externs.h"
-
-
-#endif /* INCLUDES_H_ */
+REST_CLIENT_GLOBALS gRestClientGlobals = {
+    .bIsCurlInitialized = 0,
+    .pCurlInitCtx = NULL
+};
+PREST_CLIENT_GLOBALS gpRestClientContext = &gRestClientGlobals;

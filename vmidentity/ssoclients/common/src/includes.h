@@ -30,6 +30,7 @@
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
+#include <pthread.h>
 
 // project public headers
 #include "ssotypes.h"

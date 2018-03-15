@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <pthread.h>
 
 #include "ssotypes.h"
 #include "defines.h"
@@ -86,4 +87,6 @@ TestSignatureVerifySuccess();
 bool
 TestSignatureVerifyFail();
 
+bool
+TestSSLRandomGenerator();
 #endif

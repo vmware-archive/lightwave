@@ -14,6 +14,21 @@
 
 #include "includes.h"
 
+static
+void
+RestClientSSLLockCallback(
+    int         mode,
+    int         lockNum,
+    const char *file,
+    int         line)
+{
+
+    SSOClientSSLLock(
+                  mode,
+                  &(gpRestClientContext->pCurlInitCtx->pMutexBuffer[lockNum]));
+}
+
+
 /*
  * IMPORTANT: you must call this function at process startup while there is only a single thread running
  * This is a wrapper for curl_global_init, from its documentation:
@@ -26,14 +41,30 @@
 SSOERROR
 RestClientGlobalInit()
 {
-    return SSOHttpClientGlobalInit();
+    SSOERROR e = SSOERROR_NONE;
+
+    if (!gpRestClientContext->bIsCurlInitialized)
+    {
+        e = SSOHttpClientGlobalInit(RestClientSSLLockCallback, 
+                                    &gpRestClientContext->pCurlInitCtx);
+        BAIL_ON_ERROR(e);
+
+        gpRestClientContext->bIsCurlInitialized = 1;
+    }
+
+error:
+    return e;
 }
 
 // this function is not thread safe. Call it right before process exit
 void
 RestClientGlobalCleanup()
 {
-    SSOHttpClientGlobalCleanup();
+    if (gpRestClientContext->bIsCurlInitialized)
+    {
+        SSOHttpClientGlobalCleanup(gpRestClientContext->pCurlInitCtx);
+        gpRestClientContext->bIsCurlInitialized = 0;
+    }
 }
 
 // make sure you call RestClientGlobalInit once per process before calling this
