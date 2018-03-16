@@ -120,9 +120,10 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
             IDPConfig idpConfig) throws Exception {
         HttpRequest httpRequest = HttpRequest.from(request);
         AuthenticationRequest authnRequest = AuthenticationRequest.parse(httpRequest);
-        FederationRelayState.Builder builder = new FederationRelayState.Builder(tenant, idpConfig.getEntityID(),
+        FederationRelayState.Builder builder = new FederationRelayState.Builder(idpConfig.getEntityID(),
                 authnRequest.getClientID().getValue(), authnRequest.getRedirectURI().toString());
         final String orgLink = CSP_ORG_LINK + tenant;
+        builder.tenant(tenant);
         builder.nonce(authnRequest.getNonce().getValue());
         builder.scope(authnRequest.getScope().toString());
         builder.spInitiatedState(authnRequest.getState().getValue());
@@ -141,7 +142,17 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   ) throws Exception {
     final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
     if (orgLink != null && !orgLink.isEmpty()) {
-      return processRequestPreAuth(request, relayState, orgLink, idpConfig);
+      FederationRelayState.Builder builder = new FederationRelayState.Builder(relayState.getIssuer(),
+                relayState.getClientId(), relayState.getRedirectURI());
+      int index = orgLink.lastIndexOf("/") + 1;
+      String orgId = orgLink.substring(index);
+      if (StringUtils.isNotEmpty(relayState.getTenant())
+              && !StringUtils.equalsIgnoreCase(relayState.getTenant(), orgId)) {
+          ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
+          throw new ServerException(errorObject);
+      }
+      builder.tenant(orgId);
+      return processRequestPreAuth(request, builder.build(), orgLink, idpConfig);
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
@@ -220,16 +231,15 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     CSPToken idToken = token.getLeft();
     CSPToken accessToken = token.getRight();
     String tenantName = idToken.getTenant();
-    if (tenantName == null || tenantName.isEmpty() || !tenantName.equalsIgnoreCase(state.getTenant())) {
+    if (StringUtils.isEmpty(tenantName) || StringUtils.isEmpty(state.getTenant())
+            || !StringUtils.equalsIgnoreCase(tenantName, state.getTenant())) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
-      LoggerUtils.logFailedRequest(logger, errorObject);
       throw new ServerException(errorObject);
     }
 
     if (accessToken.getPermissions() == null || accessToken.getPermissions().isEmpty()) {
         ErrorObject errorObject = ErrorObject.accessDenied(String.format("User %s does not have permissions with tenant %s ",
                 accessToken.getUsername(), idToken.getTenant()));
-        LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
     }
 
@@ -238,7 +248,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       ErrorObject errorObject = ErrorObject.accessDenied(
           String.format("Tenant [%s] does not exist", tenantName)
       );
-      LoggerUtils.logFailedRequest(logger, errorObject);
       throw new ServerException(errorObject);
     }
 
@@ -412,7 +421,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                       target.toString(), EntityUtils.toString(response.getEntity())
                   )
               );
-          LoggerUtils.logFailedRequest(logger, errorObject);
           throw new ServerException(errorObject);
         }
       } catch (ParseException e) {
@@ -423,14 +431,12 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                 e.getMessage()
             )
         );
-        LoggerUtils.logFailedRequest(logger, errorObject, e);
         throw new ServerException(errorObject);
       }
       JSONObject jsonContent = null;
       HttpEntity httpEntity = response.getEntity();
       if (httpEntity == null) {
         ErrorObject errorObject = ErrorObject.serverError("Failed to find http entity");
-        LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
       }
 
@@ -445,7 +451,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                 e.getMessage()
             )
         );
-        LoggerUtils.logFailedRequest(logger, errorObject, e);
         throw new ServerException(errorObject);
       }
       // TODO: Request CSP to include charset
@@ -457,7 +462,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                 charset
             )
         );
-        LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
       }
       if (!ContentType.APPLICATION_JSON.getMimeType().equalsIgnoreCase(contentType.getMimeType())) {
@@ -467,7 +471,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                 contentType.getMimeType()
             )
         );
-        LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
       }
       String content = EntityUtils.toString(httpEntity);
@@ -481,7 +484,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                 e.getMessage()
             )
         );
-        LoggerUtils.logFailedRequest(logger, errorObject, e);
         throw new ServerException(errorObject);
       }
       JWSVerifier verifier = new RSASSAVerifier(key.getPublicKey());
@@ -490,7 +492,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       boolean idTokenVerified = idTokenJWT.verify(verifier);
       if (!idTokenVerified) {
         ErrorObject errorObject = ErrorObject.invalidGrant("Error: Unverifiable ID Token");
-        LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
       }
 
@@ -499,7 +500,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       boolean accessTokenVerified = accessTokenJWT.verify(verifier);
       if (!accessTokenVerified) {
         ErrorObject errorObject = ErrorObject.invalidGrant("Error: Unverifiable Access Token");
-        LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
       }
 

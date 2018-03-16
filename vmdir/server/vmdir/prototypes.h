@@ -131,6 +131,11 @@ VmDirBkgdCompareIntegChkReports(
     );
 
 DWORD
+VmDirBkgdCountClosedConnections(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
 VmDirBkgdPingMaxOrigUsn(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );

@@ -27,7 +27,8 @@ libssocommon_la_CPPFLAGS = \
 libssocommon_la_LIBADD = \
     @JANSSON_LIBS@ \
     @CURL_LIBS@ \
-    @CRYPTO_LIBS@
+    @CRYPTO_LIBS@ \
+    @PTHREAD_LIBS@
 
 libssocommon_la_LDFLAGS = \
     @JANSSON_LDFLAGS@ \

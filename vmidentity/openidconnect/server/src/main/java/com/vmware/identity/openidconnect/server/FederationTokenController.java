@@ -68,6 +68,9 @@ public class FederationTokenController {
             }
             final FederatedIdentityProcessor processor = findProcessor(oidcConfig.getIssuerType());
             httpResponse = processor.processRequest(request, state, idpConfig);
+        } catch (ServerException e) {
+            LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
+            httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.invalidRequest(
                     String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
@@ -87,7 +90,6 @@ public class FederationTokenController {
             ErrorObject errorObject = ErrorObject.serverError(
                 String.format("Failed to find federated OIDC IDP config for issuer: %s", issuer)
             );
-            LoggerUtils.logFailedRequest(logger, errorObject);
             throw new ServerException(errorObject);
         }
         return result;

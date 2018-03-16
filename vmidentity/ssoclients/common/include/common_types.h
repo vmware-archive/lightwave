@@ -64,4 +64,12 @@ typedef struct
     bool (*function)();
 } TEST_CASE;
 
+typedef void (*PFN_SSO_CLIENT_SSL_LOCK_CLBK) (int mode, int lockNum, const char* , int line);
+
+typedef struct _SSO_CLIENT_CURL_INIT
+{
+    pthread_mutex_t* pMutexBuffer;
+    unsigned int dwMutexBufSize;
+} SSO_CLIENT_CURL_INIT_CTX, *PSSO_CLIENT_CURL_INIT_CTX;
+
 #endif

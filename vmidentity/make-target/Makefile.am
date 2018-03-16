@@ -35,9 +35,9 @@ vmstsjars_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang-2.6.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang3-3.3.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jersey-media-json-jackson-2.25.1.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-core-2.8.4.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-databind-2.8.4.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-annotations-2.8.4.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-core-2.9.4.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-databind-2.9.4.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-annotations-2.9.4.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jna-4.2.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/json-smart-1.3.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-logging-1.2.jar \
@@ -57,7 +57,8 @@ vmstswebapps_DATA= \
 sbin_SCRIPTS = \
     @top_srcdir@/vmidentity/websso/src/main/resources/sso-config.sh \
     @top_builddir@/vmidentity/config/vmware-stsd.sh \
-    @top_builddir@/vmidentity/config/configure-build.sh
+    @top_builddir@/vmidentity/config/configure-build.sh \
+    @top_builddir@/vmidentity/config/configure-pwd-policy.sh
 
 vmstsconf_DATA = \
     @top_builddir@/vmidentity/config/server.xml \

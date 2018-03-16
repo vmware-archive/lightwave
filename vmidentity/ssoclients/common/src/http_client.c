@@ -110,6 +110,97 @@ error:
     return e;
 }
 
+static
+unsigned long
+SSOClientSSLIdCallback()
+{
+#ifdef _WIN32
+    return ((unsigned long) (pthread_self().p));
+#else
+    return ((unsigned long) pthread_self());
+#endif
+}
+
+static
+SSOERROR
+SSOHttpClientSSLLocksInit(
+    pthread_mutex_t** ppMutexBuffer,
+    unsigned int* pdwMutexBuffSize)
+{
+    SSOERROR e = SSOERROR_NONE;
+
+    pthread_mutex_t* pMutexBuffer = NULL;
+    unsigned int dwMutexBufSize = 0;
+    unsigned int dwIndex = 0;
+
+    if (!ppMutexBuffer || !pdwMutexBuffSize)
+    {
+        e = SSOERROR_INVALID_ARGUMENT;
+        BAIL_ON_ERROR(e);
+    }
+
+    e = SSOMemoryAllocate( CRYPTO_num_locks() * sizeof(pthread_mutex_t),
+                           (void*) &pMutexBuffer
+                         );
+    BAIL_ON_ERROR(e);
+
+    dwMutexBufSize = CRYPTO_num_locks();
+
+    for (;dwIndex < dwMutexBufSize; ++dwIndex)
+    {
+        pthread_mutex_init(&pMutexBuffer[dwIndex], NULL);
+    }
+
+
+    *ppMutexBuffer = pMutexBuffer;
+    *pdwMutexBuffSize = dwIndex;
+
+cleanup:
+    return e;
+error:
+    if (ppMutexBuffer)
+    {
+        *ppMutexBuffer = NULL;
+    }
+    if (pdwMutexBuffSize)
+    {
+        *pdwMutexBuffSize = 0;
+    }
+    goto cleanup;
+}
+
+static
+void
+SSOHttpClientFreeCurlInitCtx(
+      PSSO_CLIENT_CURL_INIT_CTX pCurlInitCtx)
+{
+    if (pCurlInitCtx)
+    {
+        unsigned int dwIndex = 0;
+
+        for (; dwIndex < pCurlInitCtx->dwMutexBufSize; ++dwIndex)
+        {
+           pthread_mutex_destroy(&pCurlInitCtx->pMutexBuffer[dwIndex]);
+        }
+
+        SSOMemoryFree(pCurlInitCtx, sizeof(SSO_CLIENT_CURL_INIT_CTX));
+    }
+}
+
+void
+SSOClientSSLLock(
+    int         mode,
+    pthread_mutex_t* pMutex
+    )
+{
+    if (mode & CRYPTO_LOCK) {
+        pthread_mutex_lock(pMutex);
+    } else {
+        pthread_mutex_unlock(pMutex);
+    }
+}
+
+
 /*
  * IMPORTANT: you must call this function at process startup while there is only a single thread running
  * This is a wrapper for curl_global_init, from its documentation:
@@ -120,9 +211,23 @@ error:
  * it could conflict with any other thread that uses these other libraries.
  */
 SSOERROR
-SSOHttpClientGlobalInit()
+SSOHttpClientGlobalInit(
+      PFN_SSO_CLIENT_SSL_LOCK_CLBK pLockCallBack,
+      PSSO_CLIENT_CURL_INIT_CTX *ppCurlInitCtx)
 {
     SSOERROR e = SSOERROR_NONE;
+    PSSO_CLIENT_CURL_INIT_CTX pCurlInitCtx = NULL;
+
+    if (!ppCurlInitCtx)
+    {
+        e = SSOERROR_INVALID_ARGUMENT;
+        BAIL_ON_ERROR(e);
+    }
+
+    e = SSOMemoryAllocate(sizeof(SSO_CLIENT_CURL_INIT_CTX),
+                          (void*)&pCurlInitCtx
+                          );
+    BAIL_ON_ERROR(e);
 
     CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
     if (code != CURLE_OK)
@@ -131,15 +236,43 @@ SSOHttpClientGlobalInit()
         BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
     }
 
-error:
+    e = SSOHttpClientSSLLocksInit(&pCurlInitCtx->pMutexBuffer,
+                                  &pCurlInitCtx->dwMutexBufSize);
+    BAIL_ON_ERROR(e);
+
+
+    CRYPTO_set_locking_callback(pLockCallBack);
+    CRYPTO_set_id_callback(SSOClientSSLIdCallback);
+
+    *ppCurlInitCtx = pCurlInitCtx;
+
+cleanup:
     return e;
+
+error:
+
+    if (ppCurlInitCtx)
+    {
+        *ppCurlInitCtx = NULL;
+    }
+    if (pCurlInitCtx)
+    {
+        SSOHttpClientFreeCurlInitCtx(pCurlInitCtx);
+    }
+    goto cleanup;
 }
 
 // this function is not thread safe. Call it right before process exit
 void
-SSOHttpClientGlobalCleanup()
+SSOHttpClientGlobalCleanup(
+    PSSO_CLIENT_CURL_INIT_CTX pCurlInitCtx)
 {
-    curl_global_cleanup();
+    if (pCurlInitCtx)
+    {
+        CRYPTO_set_locking_callback(NULL);
+        curl_global_cleanup();
+        SSOHttpClientFreeCurlInitCtx(pCurlInitCtx);
+    }
 }
 
 // make sure you call SSOHttpClientGlobalInit once per process before calling this

@@ -18,7 +18,7 @@
 typedef struct OIDC_CLIENT_GLOBALS
 {
     int bIsCurlInitialized;
-    // TODO (shahneel): ADD LOCK AND MAKE THREAD SAFE
+    PSSO_CLIENT_CURL_INIT_CTX pCurlInitCtx;
 } OIDC_CLIENT_GLOBALS;
 
 typedef struct OIDC_CLIENT

@@ -14,6 +14,19 @@
 
 #include "includes.h"
 
+static
+void
+OidcClientSSLLockCallback(
+    int         mode,
+    int         lockNum,
+    const char *file,
+    int         line)
+{
+    SSOClientSSLLock(
+                  mode,
+                  &(gpOidcClientContext->pCurlInitCtx->pMutexBuffer[lockNum]));
+}
+
 /*
  * IMPORTANT:
  * You do not need to call this function from consuming applications as the GCC constructor attribute will
@@ -35,10 +48,14 @@ OidcClientGlobalInit()
 
     if (!gpOidcClientContext->bIsCurlInitialized)
     {
-        e = SSOHttpClientGlobalInit();
-        gpOidcClientContext->bIsCurlInitialized = (e == SSOERROR_NONE);
+        e = SSOHttpClientGlobalInit(OidcClientSSLLockCallback,
+                                    &gpOidcClientContext->pCurlInitCtx);
+        BAIL_ON_ERROR(e);
+
+        gpOidcClientContext->bIsCurlInitialized = 1;
     }
 
+error:
     return e;
 }
 
@@ -57,7 +74,8 @@ OidcClientGlobalCleanup()
 {
     if (gpOidcClientContext->bIsCurlInitialized)
     {
-        SSOHttpClientGlobalCleanup();
+
+        SSOHttpClientGlobalCleanup(gpOidcClientContext->pCurlInitCtx);
         gpOidcClientContext->bIsCurlInitialized = 0;
     }
 }

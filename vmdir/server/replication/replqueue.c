@@ -16,7 +16,7 @@
 
 VOID
 VmDirReplicationEncodeEntryForRetry(
-    PVDIR_ENTRY pEntry,
+    PVDIR_ENTRY                     pEntry,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     )
 {
@@ -125,8 +125,8 @@ error:
 
 DWORD
 VmDirReplicationPushFailedEntriesToQueue(
-    PVMDIR_REPLICATION_CONTEXT     pContext,
-    PVMDIR_REPLICATION_PAGE_ENTRY  pPageEntry
+    PVMDIR_REPLICATION_CONTEXT      pContext,
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     )
 {
     DWORD  dwError = 0;
@@ -196,6 +196,9 @@ VmDirReplicationDupPageEntry(
     pTempPageEntry->pBervEncodedEntry = pPageEntry->pBervEncodedEntry;
     pPageEntry->pBervEncodedEntry = NULL; // transfer ownership
 
+    dwError = VmDirAllocateStringA(pPageEntry->pszPartner, &pTempPageEntry->pszPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirBervalContentDup(&pPageEntry->reqDn, &pTempPageEntry->reqDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -216,33 +219,41 @@ error:
 
 VOID
 VmDirReplicationClearFailedEntriesFromQueue(
-    PVMDIR_REPLICATION_CONTEXT     pContext
+    PVMDIR_REPLICATION_CONTEXT      pContext
     )
 {
-    PVMDIR_REPLICATION_PAGE_ENTRY  pPageEntry = NULL;
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry = NULL;
+    PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
 
     while (dequePop(pContext->pFailedEntriesQueue, (PVOID*)&pPageEntry) == 0)
     {
         if (pPageEntry->errVal == LDAP_ALREADY_EXISTS)
         {
             VMDIR_LOG_WARNING(
-                VMDIR_LOG_MASK_ALL,
-                "%s: Entry already exists sync_state = (%d) dn = (%s) error = (%d)",
-                 __FUNCTION__,
-                 pPageEntry->entryState,
-                 VDIR_SAFE_STRING(pPageEntry->reqDn.lberbv.bv_val),
-                 pPageEntry->errVal);
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: Entry already exists sync_state = (%d) dn = (%s) error = (%d)",
+                    __FUNCTION__,
+                    pPageEntry->entryState,
+                    VDIR_SAFE_STRING(pPageEntry->reqDn.lberbv.bv_val),
+                    pPageEntry->errVal);
         }
         else
         {
             VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: Failure could result in data inconsistency sync_state = (%d) dn = (%s) error = (%d)",
-                 __FUNCTION__,
-                 pPageEntry->entryState,
-                 VDIR_SAFE_STRING(pPageEntry->reqDn.lberbv.bv_val),
-                 pPageEntry->errVal);
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: Failure could result in data inconsistency sync_state = (%d) dn = (%s) error = (%d)",
+                    __FUNCTION__,
+                    pPageEntry->entryState,
+                    VDIR_SAFE_STRING(pPageEntry->reqDn.lberbv.bv_val),
+                    pPageEntry->errVal);
         }
+
+        if (VmDirReplMetricsCacheFind(pPageEntry->pszPartner, &pReplMetrics) == 0)
+        {
+            METRICS_LDAP_ERRORS err = VmDirMetricsMapLdapErrorToEnum(pPageEntry->errVal);
+            VmMetricsCounterIncrement(pReplMetrics->pCountError[err]);
+        }
+
         VmDirReplicationFreePageEntry(pPageEntry);
         pPageEntry = NULL;
     }
@@ -255,16 +266,28 @@ VmDirReplicationFreePageEntry(
 {
     if (pPageEntry)
     {
-        VmDirFreeBerval(pPageEntry->pBervEncodedEntry);
-        VmDirFreeBervalContent(&pPageEntry->reqDn);
-        VmDirFreeStringA(pPageEntry->pszDn);
+        VmDirReplicationFreePageEntryContent(pPageEntry);
         VMDIR_SAFE_FREE_MEMORY(pPageEntry);
     }
 }
 
 VOID
+VmDirReplicationFreePageEntryContent(
+    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    )
+{
+    if (pPageEntry)
+    {
+        VmDirFreeBerval(pPageEntry->pBervEncodedEntry);
+        VmDirFreeBervalContent(&pPageEntry->reqDn);
+        VmDirFreeStringA(pPageEntry->pszDn);
+        VmDirFreeStringA(pPageEntry->pszPartner);
+    }
+}
+
+VOID
 VmDirReapplyFailedEntriesFromQueue(
-    PVMDIR_REPLICATION_CONTEXT     pContext
+    PVMDIR_REPLICATION_CONTEXT      pContext
     )
 {
     DWORD  dwQueueSize = 0;
