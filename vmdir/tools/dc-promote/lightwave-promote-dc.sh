@@ -172,6 +172,7 @@ ssh $PRIV_USER@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
     iptables -I INPUT --proto tcp --dport 88 -j ACCEPT &&
     iptables -I INPUT --proto udp --dport 389 -j ACCEPT &&
     iptables -I INPUT --proto tcp --dport 445 -j ACCEPT &&
+    iptables -I INPUT --proto tcp --dport 135 -j ACCEPT &&
     iptables -I INPUT --proto tcp --dport 139 -j ACCEPT &&
     iptables -I INPUT --proto tcp --dport 389 -j ACCEPT &&
     iptables -I OUTPUT --proto tcp --dport 389 -j ACCEPT )'
@@ -312,11 +313,24 @@ ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/supported-controls.sh
 # Add DNS "A" record for client who joined
 # This should be done in the actual lsassd code, 
 # temporary work-around
-echo_status "Adding DNS A record for joined client"
+echo_status "Adding DNS A record for joined client photon-102-test2"
 ssh $PRIV_USER@$LIGHTWAVE_AD \
 /opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
   --hostname photon-102-test2 --ip 10.118.96.61  \
-  --server localhost --username Administrator --password VMware123@
+  --server localhost --username Administrator --password $ADMIN_PASSWORD
+
+echo_status "Adding DNS A record for joined client ADAM-WIN2K8R2-D"
+ssh $PRIV_USER@$LIGHTWAVE_AD \
+/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
+  --hostname ADAM-WIN2K8R2-D --ip 10.118.96.151  \
+  --server localhost --username Administrator --password $ADMIN_PASSWORD
+
+echo_status "Adding SRV record for Default-First-Site-Name..."
+ssh $PRIV_USER@$LIGHTWAVE_AD \
+/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type SRV \
+  --service-literal _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
+  --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
+  --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
 
 # 16 Restart all lightwave services
 echo_status "Restart all lightwave services"

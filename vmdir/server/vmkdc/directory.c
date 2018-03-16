@@ -380,6 +380,8 @@ _VmKdcGetKrbUPNKey(
     PVDIR_ATTRIBUTE     pVmdirUpnName = NULL;
     PSTR                pszRetUpnName = NULL;
     PBYTE               pRetUPNKey = NULL;
+    PSTR                pszAttrArray[] = { ATTR_KRB_UPN, ATTR_KRB_SPN, NULL, };
+    DWORD               iArray = 0;
     VDIR_ENTRY_ARRAY    entryArray = {0};
 
     if (IsNullOrEmptyString(pszUpnName)
@@ -391,58 +393,66 @@ _VmKdcGetKrbUPNKey(
         BAIL_ON_VMKDC_ERROR(dwError);
     }
 
-    dwError = VmDirSimpleEqualFilterInternalSearch(
-                    "",
-                    LDAP_SCOPE_SUBTREE,
-                    ATTR_KRB_UPN,
-                    pszUpnName,
-                    &entryArray);
-    BAIL_ON_VMKDC_ERROR(dwError);
-
-    if (entryArray.iSize == 1)
+    for (iArray = 0; pszAttrArray[iArray]; iArray++)
     {
-        pKrbUPNKey = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_PRINCIPAL_KEY);
+        dwError = VmDirSimpleEqualFilterInternalSearch(
+                        "",
+                        LDAP_SCOPE_SUBTREE,
+                        pszAttrArray[iArray],
+                        pszUpnName,
+                        &entryArray);
+        BAIL_ON_VMKDC_ERROR(dwError);
 
-        if (!pKrbUPNKey)
+        if (entryArray.iSize == 1)
         {
+            pKrbUPNKey = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_PRINCIPAL_KEY);
+
+            if (!pKrbUPNKey)
+            {
+                dwError = ERROR_NO_PRINC;
+                BAIL_ON_VMKDC_ERROR(dwError);
+            }
+
+            dwError = VmDirAllocateAndCopyMemory(
+                            pKrbUPNKey->vals[0].lberbv.bv_val,
+                            pKrbUPNKey->vals[0].lberbv.bv_len,
+                            (PVOID*)& pRetUPNKey
+                            );
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            /* Return UPN name with case as stored in vmdir; used to generate salt */
+            pVmdirUpnName = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_UPN);
+            if (ppszUpnNameCanon && pVmdirUpnName)
+            {
+                dwError = VmKdcAllocateMemory(
+                              pVmdirUpnName[0].vals[0].lberbv.bv_len * sizeof(CHAR) + 1,
+                              (PVOID*)&pszRetUpnName);
+                BAIL_ON_VMKDC_ERROR(dwError);
+
+                dwError = VmKdcStringCpyA(
+                              pszRetUpnName,
+                              pVmdirUpnName[0].vals[0].lberbv.bv_len + 1,
+                              pVmdirUpnName[0].vals[0].lberbv.bv_val);
+                BAIL_ON_VMKDC_ERROR(dwError);
+
+                *ppszUpnNameCanon = pszRetUpnName;
+            }
+
+            *ppKeyBlob = pRetUPNKey;
+            *pSize     = (DWORD) pKrbUPNKey->vals[0].lberbv.bv_len;
+            pRetUPNKey = NULL;
+            break;
+        }
+        else
+        {
+            if (pszAttrArray[iArray + 1])
+            {
+                /* Try next search attribute, if there is one */
+                continue;
+            }
             dwError = ERROR_NO_PRINC;
             BAIL_ON_VMKDC_ERROR(dwError);
         }
-
-
-        dwError = VmDirAllocateAndCopyMemory(
-                        pKrbUPNKey->vals[0].lberbv.bv_val,
-                        pKrbUPNKey->vals[0].lberbv.bv_len,
-                        (PVOID*)& pRetUPNKey
-                        );
-        BAIL_ON_VMKDC_ERROR(dwError);
-
-        /* Return UPN name with case as stored in vmdir; used to generate salt */
-        pVmdirUpnName = VmDirFindAttrByName(&(entryArray.pEntry[0]), ATTR_KRB_UPN);
-        if (ppszUpnNameCanon && pVmdirUpnName)
-        {
-            dwError = VmKdcAllocateMemory(
-                          pVmdirUpnName[0].vals[0].lberbv.bv_len * sizeof(CHAR) + 1,
-                          (PVOID*)&pszRetUpnName);
-            BAIL_ON_VMKDC_ERROR(dwError);
-
-            dwError = VmKdcStringCpyA(
-                          pszRetUpnName,
-                          pVmdirUpnName[0].vals[0].lberbv.bv_len + 1,
-                          pVmdirUpnName[0].vals[0].lberbv.bv_val);
-            BAIL_ON_VMKDC_ERROR(dwError);
-
-            *ppszUpnNameCanon = pszRetUpnName;
-        }
-
-        *ppKeyBlob = pRetUPNKey;
-        *pSize     = (DWORD) pKrbUPNKey->vals[0].lberbv.bv_len;
-        pRetUPNKey = NULL;
-    }
-    else
-    {
-        dwError = ERROR_NO_PRINC;
-        BAIL_ON_VMKDC_ERROR(dwError);
     }
 
 cleanup:
