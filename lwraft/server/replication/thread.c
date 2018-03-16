@@ -53,6 +53,7 @@ static VOID _VmDirRemovePeerInLock(PCSTR pHostname);
 static DWORD _VmDirGetRaftQuorumOverride(BOOLEAN bForceKeyRead);
 static VOID _VmDirEvaluateVoteResult(UINT64 *waitTime);
 static VOID _VmDirPersistTerm(int term);
+static VOID _VmDirFixLogsForDR();
 
 DWORD VmDirRaftGetFollowers(PDEQUE followers);
 
@@ -920,6 +921,8 @@ _VmDirReplicationThrFun(
 
     dwError = _VmDirStartProxies();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    (VOID)_VmDirFixLogsForDR();
 
     dwError = VmDirSrvThrInit(
             &pRaftVoteSchdThreadInfo,
@@ -3691,3 +3694,30 @@ _VmDirGetRaftQuorumOverride(BOOLEAN bForceKeyRead)
 done:
     return gQuorumOverride;
 }
+
+
+/*
+ * Fix log precedure is invoked during or after disaster recovery (DR) at server startup.
+ * In normal case, gRaftState.lastLogIndex could be greater than gRaftState.commitIndex,
+ * but is not allowed when current server is the only node in cluster or during DR
+ * where gQuorumOverride is turned on. In such case we need to apply all those logs.
+ */
+static
+VOID
+_VmDirFixLogsForDR()
+{
+    if (gQuorumOverride || (gRaftState.clusterSize == 1 &&
+        gRaftState.lastLogIndex > gRaftState.commitIndex))
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: apply logs from %llu to %llu",
+          __func__, gRaftState.lastLogIndex, gRaftState.commitIndex + 1);
+        _VmDirApplyLogsUpto(gRaftState.lastLogIndex);
+        if ( gRaftState.lastLogIndex != gRaftState.commitIndex)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+              "%s: fail to apply logs up to lastLogIndex %llu, commitIndex %llu",
+              __func__, gRaftState.lastLogIndex, gRaftState.commitIndex);
+        }
+    }
+}
+
