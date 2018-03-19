@@ -437,7 +437,7 @@ _VmDirReplDCConnectInit(
     pReplAgr->dcConn.creds.bUseDCAccountCreds = TRUE;
     pReplAgr->dcConn.dwConnectTimeoutSec = gVmdirGlobals.dwLdapConnectTimeoutSec;
 
-    dwError = VmDirReplURIToHostname(pReplAgr->ldapURI, &pReplAgr->dcConn.pszRemoteDCHostName);
+    dwError = VmDirAllocateStringA(pReplAgr->pszHostname, &pReplAgr->dcConn.pszHostname);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // spawn background thread to handle connection

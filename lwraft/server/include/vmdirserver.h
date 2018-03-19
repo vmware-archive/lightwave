@@ -108,6 +108,8 @@ typedef struct _VMDIR_SERVER_GLOBALS
     DWORD                dwDomainFunctionalLevel;
     DWORD                dwMaxInternalSearchLimit;
     DWORD                dwEfficientReadOpTimeMS;
+    DWORD                dwRESTWorker;
+    DWORD                dwRESTLogLevelOverride;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

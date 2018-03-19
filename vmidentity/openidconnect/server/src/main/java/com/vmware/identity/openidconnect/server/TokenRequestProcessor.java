@@ -408,6 +408,7 @@ public class TokenRequestProcessor {
             throw new ServerException(ErrorObject.serverError("failed to retrieve federated idp info with issuer " + issuer));
         }
         validateFederationToken(issuer, federationToken, solutionUser, federatedIdpInfo);
+        federatedIdentityProvider.validateUserPermissions(federationToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());
 
         PersonUser personUser;
         PrincipalId userId = new PrincipalId(federationToken.getUsername(), federationToken.getDomain());

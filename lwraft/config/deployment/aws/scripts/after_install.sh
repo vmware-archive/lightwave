@@ -1,30 +1,38 @@
 #!/bin/bash -xe
 source $(dirname $(realpath $0))/common.sh
 
+# Check if this is Photon 2.0 and update to our internal repo if needed
+DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
+
 echo "Step 1: Create symlinks in /tmp/vmware/lightwave to rpm files"
 
 rm -rf /tmp/vmware/lightwave
 mkdir -p /tmp/vmware/lightwave/x86_64
 
 # sort by time for re-deployment cases
-ls -rt `find /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/ -name "*.rpm"` | while read org
+if [ $DISTRO != "1.0" ]; then
+  ls -rt `find /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/ -name "*lwph2*.rpm"` > org
+else
+  ls -rt `find /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/ -name "*.rpm" ! -name "*lwph2*"` > org
+fi
+
+while read org
 do
     f=`awk -F'/' '{ print $NF; }' <<< ${org}`
     tgt="/tmp/vmware/lightwave/x86_64/${f}"
     ln -nfs ${org} ${tgt}
-done
-
+done < ./org
 
 echo "Step 2: Create lightwave yum repo in /tmp/vmware/lightwave"
 
-sed -i -e "s|https://vmware.bintray.com/lightwave-dev/photon/master|file:///tmp/vmware/lightwave|" -e "s|gpgcheck=1|gpgcheck=0|" /etc/yum.repos.d/lightwave.repo
+sed -i -e "s|https://.*|file:///tmp/vmware/lightwave|" -e "s|gpgcheck=1|gpgcheck=0|" /etc/yum.repos.d/lightwave.repo
 createrepo "/tmp/vmware/lightwave"
 
 
 echo "Step 3: Upgrade/install lightwave-post and lightwave-client"
 
 tdnf makecache
-tdnf install -y lightwave-post lightwave-client
+tdnf install -y lightwave-post-1.3.1 lightwave-client-1.3.1
 
 echo "Step 4: Set the default vmdir lsass provider bind protocol to SRP and disable port 38900 simple bind"
 

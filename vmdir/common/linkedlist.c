@@ -109,8 +109,8 @@ VmDirLinkedListInsertHead(
 
     if (pLinkedList->pHead)
     {
-        pHead->pPrev = pLinkedList->pHead;
-        pLinkedList->pHead->pNext = pHead;
+        pHead->pNext = pLinkedList->pHead;
+        pLinkedList->pHead->pPrev = pHead;
     }
     else
     {
@@ -159,8 +159,8 @@ VmDirLinkedListInsertTail(
 
     if (pLinkedList->pTail)
     {
-        pTail->pNext = pLinkedList->pTail;
-        pLinkedList->pTail->pPrev = pTail;
+        pTail->pPrev = pLinkedList->pTail;
+        pLinkedList->pTail->pNext = pTail;
     }
     else
     {
@@ -197,21 +197,21 @@ VmDirLinkedListRemove(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pNode->pNext)
-    {
-        pNode->pNext->pPrev = pNode->pPrev;
-    }
     if (pNode->pPrev)
     {
         pNode->pPrev->pNext = pNode->pNext;
     }
+    if (pNode->pNext)
+    {
+        pNode->pNext->pPrev = pNode->pPrev;
+    }
     if (pNode == pLinkedList->pHead)
     {
-        pLinkedList->pHead = pNode->pPrev;
+        pLinkedList->pHead = pNode->pNext;
     }
     if (pNode == pLinkedList->pTail)
     {
-        pLinkedList->pTail = pNode->pNext;
+        pLinkedList->pTail = pNode->pPrev;
     }
     VMDIR_SAFE_FREE_MEMORY(pNode);
 

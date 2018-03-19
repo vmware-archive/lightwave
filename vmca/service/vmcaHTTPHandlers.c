@@ -132,6 +132,7 @@ VMCARESTCheckGroupPermissions(
 
     switch(pAccessToken->tokenType)
     {
+        case VMCA_AUTHORIZATION_TYPE_HOTK_TOKEN:
         case VMCA_AUTHORIZATION_TYPE_BEARER_TOKEN:
             if (!pAccessToken->pszGroups ||
                 pAccessToken->dwGroupSize == 0
@@ -178,7 +179,8 @@ error:
 DWORD
 VMCARESTCheckAccess(
     PREST_REQUEST pRESTRequest,
-    VMCA_HTTP_REQ_OBJ* pVMCARequest
+    VMCA_HTTP_REQ_OBJ* pVMCARequest,
+    BOOL bNeedAdminPrivilege
     )
 {
     DWORD dwError = 0;
@@ -187,8 +189,11 @@ VMCARESTCheckAccess(
     dwError = VMCARESTGetAccessToken(pRESTRequest, &pAccessToken);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VMCARESTCheckGroupPermissions(pAccessToken);
-    BAIL_ON_VMREST_ERROR(dwError);
+    if (bNeedAdminPrivilege)
+    {
+        dwError = VMCARESTCheckGroupPermissions(pAccessToken);
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
     pVMCARequest->pAccessToken = pAccessToken;
     pAccessToken = NULL;
@@ -261,7 +266,7 @@ VMCARESTHandleRootRequest(
 
     } else if (!strcmp(pVMCARequest->pszMethod,"POST"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest);
+        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTAddRootCertificate(
@@ -272,7 +277,7 @@ VMCARESTHandleRootRequest(
         BAIL_ON_VMREST_ERROR(dwError);
     } else if (!strcmp(pVMCARequest->pszMethod,"PUT"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest);
+        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTAddRootCertificate(
@@ -314,7 +319,7 @@ VMCARESTHandleCertRequest(
 
     if (!strcmp(pVMCARequest->pszMethod,"GET"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest);
+        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VmRESTGetParamsByIndex(pRESTRequest, 2, 1, &pszKey2, &pszVal2);
@@ -343,7 +348,7 @@ VMCARESTHandleCertRequest(
         BAIL_ON_VMREST_ERROR(dwError);
     } else if (!strcmp(pVMCARequest->pszMethod,"PUT"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest);
+        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, false);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTGetSignedCertificate(
@@ -354,7 +359,7 @@ VMCARESTHandleCertRequest(
         BAIL_ON_VMREST_ERROR(dwError);
     } else if (!strcmp(pVMCARequest->pszMethod,"DELETE"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest);
+        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTRevokeCertificate(

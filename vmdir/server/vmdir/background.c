@@ -24,14 +24,20 @@ static VMDIR_BKGD_TASK_CTX tasks[] =
         },
         {
                 VmDirBkgdCreateNewIntegChkReport,
-                60 * 60 * 3, // every 3 hours
+                60 * 60 * 6, // every 6 hours
                 "bkgdprevtime_replmetrics_createnewintegchkreport",
                 {0}
         },
         {
-                VmDirBkgdCompareLastTwoIntegChkReports,
-                60 * 60, // every hour
+                VmDirBkgdCompareIntegChkReports,
+                60 * 60 * 24, // every day
                 "bkgdprevtime_replmetrics_comparelasttwointegchkreports",
+                {0}
+        },
+        {
+                VmDirBkgdCountClosedConnections,
+                60, // every minute
+                "bkgdprevtime_replmetrics_countclosedconnections",
                 {0}
         },
         {
@@ -84,12 +90,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -131,12 +132,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -220,12 +216,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -241,9 +232,8 @@ VmDirBkgdCreateNewIntegChkReport(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    // TODO (phase 4)
-//    dwError = VmDirIntegrityCheckStart(INTEGRITY_CHECK_JOB_START);
-//    BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirIntegrityCheckStart(INTEGRITY_CHECK_JOB_START, pTaskCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // NOT updating prev time here - will be updated by integrity check thread
 
@@ -251,39 +241,142 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
 DWORD
-VmDirBkgdCompareLastTwoIntegChkReports(
+VmDirBkgdCompareIntegChkReports(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
+    PCSTR   pszReportDir = VMDIR_INTEG_CHK_REPORTS_DIR;
+    PCSTR   pszArchiveDir = VMDIR_INTEG_CHK_ARCHIVE_DIR;
+    PSTR    pszReportPath = NULL;
+    PSTR    pszArchivePath = NULL;
+    PVMDIR_STRING_LIST  pReportFiles = NULL;
+    PVMDIR_INTEGRITY_REPORT pOrgReport = NULL;
+    PVMDIR_INTEGRITY_REPORT pNewReport = NULL;
+    PVMDIR_INTEGRITY_REPORT pFnlReport = NULL;
+    PVDIR_LINKED_LIST       pReportsByPartner = NULL;
+    PVDIR_LINKED_LIST_NODE  pTail = NULL;
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
 
     if (!pTaskCtx)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    /* TODO (phase 4)
-    // for each partner
-    for (;;)
+    dwError = VmDirListFiles(pszReportDir, &pReportFiles);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&pReportsByPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < pReportFiles->dwCount; i++)
     {
-        // read all reports for partner
-        // find entries which appears in all reports
+        VMDIR_SAFE_FREE_MEMORY(pszReportPath);
+        dwError = VmDirAllocateStringPrintf(
+                &pszReportPath,
+                "%s%s%s",
+                pszReportDir,
+                VMDIR_PATH_SEP,
+                pReportFiles->pStringList[i]);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        // collect metrics
+        VmDirFreeIntegrityReport(pNewReport);
+        dwError = VmDirIntegrityReportCreate(&pNewReport);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        // move all reports to subdir except for the latest one (for next time)
+        // if not able to load from file (e.g. not a report file) just ignore
+        if (VmDirIntegrityReportLoadFile(pNewReport, pszReportPath) == 0)
+        {
+            // if previous and current reports are from the same partner, compute the intersect
+            pOrgReport = pTail ? (PVMDIR_INTEGRITY_REPORT)pTail->pElement : NULL;
+            if (pOrgReport && VmDirStringCompareA(pOrgReport->pszPartner, pNewReport->pszPartner, FALSE) == 0)
+            {
+                dwError = VmDirIntegrityReportRemoveNonOverlaps(pOrgReport, pNewReport);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else // otherwise, update the linked list
+            {
+                dwError = VmDirLinkedListInsertTail(pReportsByPartner, pNewReport, &pTail);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                pNewReport = NULL;
+            }
+
+            // move file to archive directory
+            dwError = VmDirStringReplaceAll(pszReportPath, pszReportDir, pszArchiveDir, &pszArchivePath);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            rename(pszReportPath, pszArchivePath);
+            VMDIR_SAFE_FREE_MEMORY(pszArchivePath);
+        }
     }
-    */
+
+    // iterate final reports and collect counts
+    pNode = pReportsByPartner->pHead;
+    while (pNode)
+    {
+        pFnlReport = (PVMDIR_INTEGRITY_REPORT)pNode->pElement;
+        if (VmDirReplMetricsCacheFind(pFnlReport->pszPartner, &pReplMetrics) == 0)
+        {
+            DWORD dwTotalCnt = pFnlReport->dwMismatchCnt + pFnlReport->dwMissingCnt;
+
+            VmMetricsGaugeSet(pReplMetrics->pCountConflictPermanent, dwTotalCnt);
+
+            // persist value in db so it can be retrieved after restart
+            (VOID)VmDirReplMetricsPersistCountConflictPermanent(pReplMetrics, dwTotalCnt);
+        }
+        pNode = pNode->pNext;
+    }
+
+    dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirStringListFree(pReportFiles);
+    VMDIR_SAFE_FREE_MEMORY(pszReportPath);
+    VmDirFreeIntegrityReport(pNewReport);
+    VmDirFreeIntegrityReportList(pReportsByPartner);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirBkgdCountClosedConnections(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
+    PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
+    {
+        if (VmDirReplMetricsCacheFind(pReplAgr->pszHostname, &pReplMetrics) == 0)
+        {
+            if (pReplAgr->dcConn.connState == DC_CONNECTION_STATE_CONNECTED)
+            {
+                VmMetricsGaugeSet(pReplMetrics->pCountConnectionClosed, 0);
+            }
+            else
+            {
+                VmMetricsGaugeSet(pReplMetrics->pCountConnectionClosed, 1);
+            }
+        }
+    }
+
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
 
     dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -292,12 +385,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -352,26 +440,19 @@ VmDirBkgdPingMaxOrigUsn(
 
         // (TODO) either move to REST or make this long lasting connection
         VDIR_SAFE_UNBIND_EXT_S(pLd);
-        dwError = VmDirSafeLDAPBindExt1(
+        if (VmDirSafeLDAPBindExt1(
                 &pLd,
                 ppszSrvs[i],
                 pszDCAccountUPN,
                 pszDCAccountPasswd,
-                gVmdirGlobals.dwLdapConnectTimeoutSec);
-
-        if (dwError)
+                gVmdirGlobals.dwLdapConnectTimeoutSec))
         {
-            VMDIR_LOG_WARNING(
-                    VMDIR_LOG_MASK_ALL,
-                    "%s failed bind to %s, error (%d)",
-                    __FUNCTION__,
-                    ppszSrvs[i],
-                    dwError);
+            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "failed bind to %s, error (%d)", ppszSrvs[i], dwError);
             continue;
         }
 
         ldap_msgfree(pResult);
-        dwError = ldap_search_ext_s(
+        if (ldap_search_ext_s(
                 pLd,
                 SERVER_STATE_PING_DN,
                 LDAP_SCOPE_BASE,
@@ -382,16 +463,9 @@ VmDirBkgdPingMaxOrigUsn(
                 NULL,
                 NULL,
                 0,
-                &pResult);
-
-        if (dwError)
+                &pResult))
         {
-            VMDIR_LOG_WARNING(
-                    VMDIR_LOG_MASK_ALL,
-                    "%s failed to send ping to %s, error (%d)",
-                    __FUNCTION__,
-                    ppszSrvs[i],
-                    dwError);
+            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "failed to send ping to %s, error (%d)", ppszSrvs[i], dwError);
             continue;
         }
     }
@@ -407,11 +481,6 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }

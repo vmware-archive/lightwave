@@ -1817,6 +1817,7 @@ VmDirGeneratePassword(
     handle_t                hBinding = NULL;
     VMDIR_DATA_CONTAINER    dataContainer = {0};
     PBYTE                   pLocalByte = NULL;
+    DWORD                   dwRetryCount = 0;
 
     if ( !ppByte || !pSize )
     {
@@ -1846,18 +1847,31 @@ VmDirGeneratePassword(
                         &hBinding);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_RPC_TRY
+        do
         {
-            dwError = RpcVmDirGeneratePassword(
-                            hBinding,
-                            &dataContainer
-                            );
-        }
-        VMDIR_RPC_CATCH
-        {
-            VMDIR_RPC_GETERROR_CODE(dwError);
-        }
-        VMDIR_RPC_ENDTRY;
+            VMDIR_SAFE_FREE_MEMORY(dataContainer.data);
+            VMDIR_RPC_TRY
+            {
+                dwError = RpcVmDirGeneratePassword(
+                                hBinding,
+                                &dataContainer
+                                );
+            }
+            VMDIR_RPC_CATCH
+            {
+                VMDIR_RPC_GETERROR_CODE(dwError);
+            }
+            VMDIR_RPC_ENDTRY;
+
+            if (dwError)
+            {
+                VMDIR_LOG_ERROR(
+                      VMDIR_LOG_MASK_ALL,
+                      "VmDirGeneratePassword failed (%u). Retrying",
+                      dwError );
+                VmDirSleep(VMDIR_CLIENT_RPC_SLEEP_SECONDS*1000);
+            }
+        }while (dwError && (dwRetryCount++ < VMDIR_MAX_CLIENT_RPC_RETRY));
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirAllocateMemory(

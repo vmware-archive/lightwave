@@ -7,6 +7,7 @@ libssocoreclient_la_SOURCES = \
     certificate_data.c \
     credentials_data.c \
     debug.c \
+    globals.c \
     integer_data.c \
     json_utils.c \
     long_data.c \

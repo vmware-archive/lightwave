@@ -12,27 +12,34 @@ hooks:
     - location: scripts/application_stop.sh
       timeout: 300
       runas: root
+      sudo: true
   BeforeInstall:
     - location: scripts/before_install.sh
       timeout: 300
       runas: root
+      sudo: true
   AfterInstall:
     - location: scripts/after_install.sh
       timeout: 300
       runas: root
+      sudo: true
   ApplicationStart:
     - location: scripts/application_start.sh
-      timeout: 300
+      timeout: 1800
       runas: root
+      sudo: true
   ValidateService:
     - location: scripts/validate_service.sh
       timeout: 300
       runas: root
+      sudo: true
   BeforeAllowTraffic:
     - location: scripts/before_allow_traffic.sh
       timeout: 300
       runas: root
+      sudo: true
   AfterAllowTraffic:
     - location: scripts/after_allow_traffic.sh
       timeout: 300
       runas: root
+      sudo: true

@@ -79,7 +79,8 @@ _VmDirIntegrityCheckComposeStatus(
  */
 DWORD
 VmDirIntegrityCheckStart(
-    VMDIR_INTEGRITY_CHECK_JOB_STATE jobState
+    VMDIR_INTEGRITY_CHECK_JOB_STATE jobState,
+    PVMDIR_BKGD_TASK_CTX            pBkgdTaskCtx    // if triggered by background thread
     )
 {
     DWORD       dwError = 0;
@@ -126,11 +127,11 @@ VmDirIntegrityCheckStart(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     gVmdirIntegrityCheck.pJob->state = jobState;
+    gVmdirIntegrityCheck.pJob->pBkgdTaskCtx = pBkgdTaskCtx;
     _VmDirInitIntegrityCheckThread(gVmdirIntegrityCheck.pJob);
 
 error:
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirIntegrityCheck.pMutex);
-
     return dwError;
 }
 
@@ -184,7 +185,6 @@ VmDirIntegrityCheckShowStatus(
 
 error:
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirIntegrityCheck.pMutex);
-
     return dwError;
 }
 
@@ -255,7 +255,6 @@ VmDirEntrySHA1Digest(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(ppVdirBV);
-
     return dwError;
 
 error:
@@ -287,9 +286,7 @@ cleanup:
     return dwError;
 
 error:
-
     VmDirSrvThrFree(pThrInfo);
-
     goto cleanup;
 }
 
@@ -313,16 +310,20 @@ _VmDirIntegrityCheckEntry(
     memset(sha1Digest, 0, SHA_DIGEST_LENGTH);
     VmDirEntrySHA1Digest(pEntry, sha1Digest); // ignore error
 
-    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "%s, iterate (%llu)(%020s)(%s)",
-                       __FUNCTION__, pEntry->eId, sha1Digest, pEntry->dn.lberbv.bv_val);
+    VMDIR_LOG_VERBOSE(
+            VMDIR_LOG_MASK_ALL,
+            "iterate (%llu)(%020s)(%s)",
+            pEntry->eId,
+            sha1Digest,
+            pEntry->dn.lberbv.bv_val);
 
     memset(&digestCtl, 0, sizeof(digestCtl));
     dwError = VmDirCreateDigestControlContent(sha1Digest, SHA_DIGEST_LENGTH, &digestCtl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (dwNodeCnt=0; dwNodeCnt < pJob->dwNumJobCtx; dwNodeCnt++)
+    for (dwNodeCnt = 0; dwNodeCnt < pJob->dwNumJobCtx; dwNodeCnt++)
     {
-        PVMDIR_INTEGRITY_JOB_CTX    pJobCtx = pJob->pJobctx+dwNodeCnt;
+        PVMDIR_INTEGRITY_JOB_CTX pJobCtx = pJob->pJobctx + dwNodeCnt;
 
         if ( pJobCtx->state != INTEGRITY_CHECK_JOBCTX_VALID )
         {
@@ -348,32 +349,26 @@ _VmDirIntegrityCheckEntry(
 
         if (dwError == 0)
         {
-            if ( ldap_count_entries(pJobCtx->pLd, pSearchRes) > 0 )
+            if (ldap_count_entries(pJobCtx->pLd, pSearchRes) > 0)
             {
                 // digest mismatch, partner send entry content back.
-                pJobCtx->dwFailedDigestCnt++;
-
-                if (fprintf(pJobCtx->fp, "I %s\n", pEntry->dn.lberbv_val) < 0)
+                if (VmDirIntegrityReportAddMismatch(pJobCtx->pReport, pEntry->dn.lberbv_val))
                 {
                     pJobCtx->state = INTEGRITY_CHECK_JOBCTX_ABORT;
                 }
 
-                VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "%s, %s digest mismatch",
-                                       __FUNCTION__, pJobCtx->pszPartnerName);
+                VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "%s digest mismatch", pJobCtx->pszPartnerName);
                 // TODO, identify out of sync attributes/values.
             }
         }
         else if (dwError == LDAP_NO_SUCH_OBJECT)
         {
-            pJobCtx->dwMissedEntryCnt++;
-
-            if (fprintf(pJobCtx->fp, "M %s\n", pEntry->dn.lberbv_val) < 0)
+            if (VmDirIntegrityReportAddMissing(pJobCtx->pReport, pEntry->dn.lberbv_val))
             {
                 pJobCtx->state = INTEGRITY_CHECK_JOBCTX_ABORT;
             }
 
-            VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "%s, %s entry missing",
-                                                       __FUNCTION__, pJobCtx->pszPartnerName);
+            VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "%s entry missing", pJobCtx->pszPartnerName);
         }
         else if (dwError == LDAP_SERVER_DOWN)
         {
@@ -381,7 +376,7 @@ _VmDirIntegrityCheckEntry(
         }
         else
         {
-            VMDIR_LOG_WARNING( LDAP_DEBUG_TRACE,"%s failed, error (%d)", __FUNCTION__, dwError );
+            VMDIR_LOG_WARNING(LDAP_DEBUG_TRACE, "failed, error (%d)", dwError);
         }
     }
 
@@ -391,6 +386,7 @@ cleanup:
     return;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -453,15 +449,12 @@ _VmDirIntegrityCheckJobStart(
     }
 
 cleanup:
-
     pBE->pfnBEEntryBlobIteratorFree(pIterator);
     VmDirFreeEntryContent(&entry);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,"%s failed, error (%d)(%d)", __FUNCTION__, dwError, pJob->state );
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)(%d)", dwError, pJob->state);
     goto cleanup;
 }
 
@@ -473,9 +466,10 @@ _VmDirIntegrityCheckJobRecheck(
 {
     DWORD       dwError = 0;
     DWORD       dwCnt = 9;
-    FILE*       fp = NULL;
     CHAR        fileNameBuf[MAX_PATH] = {0};
-    CHAR        lineBuf[VMDIR_MAX_DN_LEN + 3] = {0};
+    PVMDIR_INTEGRITY_REPORT pOldReport = NULL;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
     PVDIR_ENTRY pEntry = NULL;
 
     for (dwCnt=0; dwCnt < pJob->dwNumJobCtx; dwCnt++)
@@ -487,40 +481,49 @@ _VmDirIntegrityCheckJobRecheck(
 
         memset(fileNameBuf, 0, sizeof(fileNameBuf));
 
-        dwError = VmDirStringPrintFA(fileNameBuf, sizeof(fileNameBuf) - 1,
-                    "%s/Integrity.%s.%s",
-                    VMDIR_LOG_DIR,
-                    pJob->pJobctx[dwCnt].pszPartnerName,
-                    pJob->finishedTimebuf);
+        dwError = VmDirStringPrintFA(
+                fileNameBuf,
+                sizeof(fileNameBuf) - 1,
+                "%s%sIntegrity_%s %s",
+                VMDIR_INTEG_CHK_REPORTS_DIR,
+                VMDIR_PATH_SEP,
+                pJob->pJobctx[dwCnt].pszPartnerName,
+                pJob->finishedTimebuf);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        if (fp)
+        dwError = VmDirIntegrityReportCreate(&pOldReport);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // (TODO) what if it's a new partner so there's no previous report?
+        dwError = VmDirIntegrityReportLoadFile(pOldReport, fileNameBuf);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // iterate mismatch map
+        while (LwRtlHashMapIterate(pOldReport->pMismatchMap, &iter, &pair))
         {
-            fclose(fp);
-            fp = NULL;
-        }
-
-        if (!(fp = fopen(fileNameBuf, "r")))
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s open file %s failed %d",
-                             __FUNCTION__, fileNameBuf, errno);
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
-        }
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s open file %s", __FUNCTION__, fileNameBuf);
-
-        while (fgets(lineBuf, sizeof(lineBuf), fp))
-        {
-            size_t len = VmDirStringLenA(lineBuf) - 1;
-            if (lineBuf[len] == '\n')
-            {
-                lineBuf[len] = '\0';
-            }
-
             VmDirFreeEntry(pEntry);
             pEntry = NULL;
 
-            dwError = VmDirSimpleDNToEntry(lineBuf+2, &pEntry); // skip first two chars "I|M " for DN
+            dwError = VmDirSimpleDNToEntry((PCSTR)pair.pKey, &pEntry);
+            if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
+            {
+                dwError = 0;
+                continue;
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            ++pJob->dwNumProcessed;
+            _VmDirIntegrityCheckEntry(pJob, pEntry);
+        }
+
+        // iterate missing map
+        LwRtlHashMapResetIter(&iter);
+        while (LwRtlHashMapIterate(pOldReport->pMissingMap, &iter, &pair))
+        {
+            VmDirFreeEntry(pEntry);
+            pEntry = NULL;
+
+            dwError = VmDirSimpleDNToEntry((PCSTR)pair.pKey, &pEntry);
             if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
             {
                 dwError = 0;
@@ -534,18 +537,12 @@ _VmDirIntegrityCheckJobRecheck(
     }
 
 cleanup:
-    if (fp)
-    {
-        fclose(fp);
-    }
-
+    VmDirFreeIntegrityReport(pOldReport);
     VmDirFreeEntry(pEntry);
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,"%s failed, error (%d)(%d)", __FUNCTION__, dwError, pJob->state );
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)(%d)", dwError, pJob->state);
     goto cleanup;
 }
 
@@ -624,6 +621,14 @@ _VmDirIntegrityCheckingThreadFun(
         dwError = VmDirAllocateStringA(ppszServerInfo[pJob->dwNumJobCtx], &pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirIntegrityReportCreate(&pJob->pJobctx[pJob->dwNumJobCtx].pReport);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIntegrityReportSetPartner(
+                pJob->pJobctx[pJob->dwNumJobCtx].pReport,
+                pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         dwError = VmDirSafeLDAPBindExt1(
                     &pJob->pJobctx[pJob->dwNumJobCtx].pLd,
                     pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName,
@@ -640,25 +645,23 @@ _VmDirIntegrityCheckingThreadFun(
         }
 
         dwError = VmDirAllocateStringPrintf(
-                    &(pJob->pJobctx[pJob->dwNumJobCtx].pszRptFileName),
-                    "%s/Integrity.%s.%s",
-                    VMDIR_LOG_DIR,
-                    pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName,
-                    timeBuf);
+                &pJob->pJobctx[pJob->dwNumJobCtx].pszRptFileName,
+                "%s%sIntegrity_%s %s",
+                VMDIR_INTEG_CHK_REPORTS_DIR,
+                VMDIR_PATH_SEP,
+                pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName,
+                timeBuf);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        pJob->pJobctx[pJob->dwNumJobCtx].fp = fopen(pJob->pJobctx[pJob->dwNumJobCtx].pszRptFileName, "w+");
-        if (!pJob->pJobctx[pJob->dwNumJobCtx].fp)
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s open file %s failed %d",
-                             __FUNCTION__, pJob->pJobctx[pJob->dwNumJobCtx].pszPartnerName, errno);
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
-        }
 
         dwValidJobs++;
     }
 
-    if (dwValidJobs > 0)
+    if (dwValidJobs == 0)
+    {
+        // not able to connect any partner - nothing to do
+        pJob->state = INTEGRITY_CHECK_JOB_NONE;
+    }
+    else
     {
         if (pJob->state == INTEGRITY_CHECK_JOB_START)
         {
@@ -678,13 +681,33 @@ _VmDirIntegrityCheckingThreadFun(
         pJob->state = INTEGRITY_CHECK_JOB_FINISH;
         clock_gettime(CLOCK_REALTIME, &pJob->endTime);
 
+        // iterate jobs and write reports to files
+        for (pJob->dwNumJobCtx=0 ; pJob->dwNumJobCtx<dwInfoCount; pJob->dwNumJobCtx++)
+        {
+            if (pJob->pJobctx[pJob->dwNumJobCtx].state == INTEGRITY_CHECK_JOBCTX_VALID)
+            {
+                dwError = VmDirIntegrityReportWriteToFile(
+                        pJob->pJobctx[pJob->dwNumJobCtx].pReport,
+                        pJob->pJobctx[pJob->dwNumJobCtx].pszRptFileName);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
         dwError = VmDirCopyMemory(pJob->finishedTimebuf, MAX_PATH, timeBuf, MAX_PATH);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    // TODO persist curtime to generic DB only if key is provided
+    if (pJob->pBkgdTaskCtx)
+    {
+        // update background task's previous timestamp
+        dwError = VmDirBkgdTaskUpdatePrevTime(pJob->pBkgdTaskCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s end integrity check job, %d entries processed", __FUNCTION__, pJob->dwNumProcessed);
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "end integrity check job, %d entries processed",
+            pJob->dwNumProcessed);
 
 cleanup:
     _VmDirIntegrityCheckFreeJobResource(pJob);
@@ -696,10 +719,8 @@ cleanup:
     return dwError;
 
 error:
-
     pJob->state = INTEGRITY_CHECK_JOB_INVALID;
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s integrity check job failed, error (%d)", __FUNCTION__, dwError );
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -717,17 +738,6 @@ _VmDirIntegrityCheckFreeJobResource(
         {
             ldap_unbind_ext_s(pJob->pJobctx[dwCnt].pLd, NULL, NULL);
             pJob->pJobctx[dwCnt].pLd = NULL;
-        }
-
-        if (pJob->pJobctx[dwCnt].fp)
-        {
-            fclose(pJob->pJobctx[dwCnt].fp);
-            pJob->pJobctx[dwCnt].fp = NULL;
-
-            if (pJob->pJobctx[dwCnt].state != INTEGRITY_CHECK_JOBCTX_VALID)
-            {
-                remove(pJob->pJobctx[dwCnt].pszRptFileName);
-            }
         }
     }
 }
@@ -747,13 +757,9 @@ _VmDirIntegrityCheckFreeJobContent(
             ldap_unbind_ext_s(pJob->pJobctx[dwCnt].pLd, NULL, NULL);
         }
 
-        if (pJob->pJobctx[dwCnt].fp)
-        {
-            fclose(pJob->pJobctx[dwCnt].fp);
-        }
-
         VMDIR_SAFE_FREE_MEMORY(pJob->pJobctx[dwCnt].pszPartnerName);
         VMDIR_SAFE_FREE_MEMORY(pJob->pJobctx[dwCnt].pszRptFileName);
+        VmDirFreeIntegrityReport(pJob->pJobctx[dwCnt].pReport);
     }
 
     VMDIR_SAFE_FREE_MEMORY(pJob->pJobctx);
@@ -857,8 +863,8 @@ _VmDirIntegrityCheckComposeStatus(
                         "%s partner %s, digest mismatch (%d), missing entry (%d)",
                         (pJob->pJobctx[dwCnt].state == INTEGRITY_CHECK_JOBCTX_VALID) ? "Valid" :"Invalid",
                         pJob->pJobctx[dwCnt].pszPartnerName,
-                        pJob->pJobctx[dwCnt].dwFailedDigestCnt,
-                        pJob->pJobctx[dwCnt].dwMissedEntryCnt);
+                        pJob->pJobctx[dwCnt].pReport->dwMismatchCnt,
+                        pJob->pJobctx[dwCnt].pReport->dwMissingCnt);
             BAIL_ON_VMDIR_ERROR(dwError);
 
         }
@@ -939,27 +945,13 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszEstimatedEndTime);
     VMDIR_SAFE_FREE_MEMORY(pszEndTime);
     VMDIR_SAFE_FREE_MEMORY(pszStartTime);
-    VmDirBackendCtxContentFree( &backendCtx );
-
-    if (ppszAttrList != NULL)
-    {
-        VmDirFreeStringArrayA(ppszAttrList);
-        VMDIR_SAFE_FREE_MEMORY(ppszAttrList);
-    }
-
-    if (pSchemaCtx != NULL)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
+    VmDirBackendCtxContentFree(&backendCtx);
+    VmDirFreeStrArray(ppszAttrList);
+    VmDirSchemaCtxRelease(pSchemaCtx);
     return dwError;
 
 error:
-
-    if (pEntry != NULL)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    VmDirFreeEntry(pEntry);
     goto cleanup;
 }

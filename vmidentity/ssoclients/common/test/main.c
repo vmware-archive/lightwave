@@ -35,6 +35,7 @@ static const TEST_CASE testCases[] =
     { "TestJwkParseFail",                   &TestJwkParseFail },
     { "TestSignatureVerifySuccess",         &TestSignatureVerifySuccess },
     { "TestSignatureVerifyFail",            &TestSignatureVerifyFail },
+    { "TestRandomGeneratorMTSSL",           &TestSSLRandomGenerator },
 };
 
 int

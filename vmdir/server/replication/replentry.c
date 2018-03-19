@@ -158,7 +158,8 @@ int
 ReplAddEntry(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx)
+    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
+    )
 {
     int                 retVal = LDAP_SUCCESS;
     VDIR_OPERATION      op = {0};
@@ -240,6 +241,10 @@ ReplAddEntry(
     retVal = _VmDirDetatchValueMetaData(&op, pEntry, &pAttrAttrValueMetaData);
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    // need these before DetectAndResolveAttrsConflicts
+    op.pszPartner = pPageEntry->pszPartner;
+    op.ulPartnerUSN = pPageEntry->ulPartnerUSN;
+
     retVal = SetAttributesNewMetaData(&op, pEntry, localUsnStr, &pAttrAttrMetaData, 0, &consumerEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
@@ -272,8 +277,6 @@ ReplAddEntry(
 
     retVal = _VmDirPatchData( &op );
     BAIL_ON_VMDIR_ERROR( retVal );
-
-    op.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
     if ((retVal = VmDirInternalAddEntry( &op )) != LDAP_SUCCESS)
     {
@@ -411,11 +414,13 @@ ReplDeleteEntry(
     delOp.pBEIF = VmDirBackendSelect(mr->dn.lberbv.bv_val);
     assert(delOp.pBEIF);
 
+    // need these before DetectAndResolveAttrsConflicts
+    delOp.pszPartner = pPageEntry->pszPartner;
+    delOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
+
     // SJ-TBD: What about if one or more attributes were meanwhile added to the entry? How do we purge them?
     retVal = SetupReplModifyRequest( &delOp, tmpAddOp.request.addReq.pEntry, &localUsn, 0);
     BAIL_ON_VMDIR_ERROR( retVal );
-
-    delOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
     // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
     // Should objectGuid, instead of DN, be used to uniquely identify an object?
@@ -481,7 +486,8 @@ int
 ReplModifyEntry(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx)
+    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
+    )
 {
     int                 retVal = LDAP_SUCCESS;
     VDIR_OPERATION      modOp = {0};
@@ -627,6 +633,10 @@ txnretry:
     retVal = _VmDirDetatchValueMetaData(&modOp, &e, &pAttrAttrValueMetaData);
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    // need these before DetectAndResolveAttrsConflicts
+    modOp.pszPartner = pPageEntry->pszPartner;
+    modOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
+
     if ((retVal = SetupReplModifyRequest(&modOp, &e, &localUsn, entryId)) != LDAP_SUCCESS)
     {
         switch (retVal)
@@ -661,8 +671,6 @@ txnretry:
     {
         retVal = _VmDeleteOldValueMetaData(&modOp, mr->mods, entryId);
         BAIL_ON_VMDIR_ERROR( retVal );
-
-        modOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
         _VmDirLogReplModifyModContent(&modOp.request.modifyReq);
 
@@ -931,10 +939,12 @@ DetectAndResolveAttrsConflicts(
     PVDIR_ENTRY         pConsumerEntry
     )
 {
-    int             retVal = LDAP_SUCCESS;
-    int             dbRetVal = 0;
+    int retVal = LDAP_SUCCESS;
+    int dbRetVal = 0;
+    int i = 0;
+    DWORD   dwConflictCnt = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
-    int             i = 0;
+    PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
 
     assert( pOperation && pOperation->pSchemaCtx && pAttrAttrSupplierMetaData );
 
@@ -942,17 +952,14 @@ DetectAndResolveAttrsConflicts(
     {
         // Format is: <attr name>:<local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
         char * metaData = VmDirStringChrA( pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val, ':');
-        assert( metaData != NULL);
+        assert(metaData != NULL);
 
         // metaData now points to <local USN>...
         metaData++;
 
         *(metaData - 1) = '\0';
-        if (pAttr)
-        {
-            VmDirFreeAttribute( pAttr );
-            pAttr = NULL;
-        }
+        VmDirFreeAttribute(pAttr);
+        pAttr = NULL;
 
         if (VmDirStringCompareA(pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val, ATTR_OBJECT_GUID, FALSE) == 0)
         {
@@ -1030,6 +1037,7 @@ DetectAndResolveAttrsConflicts(
                     *metaData = '\0';
                 }
                 pAttrAttrSupplierMetaData->vals[i].lberbv.bv_len = strlen(pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val);
+                dwConflictCnt++;
             }
             else // supplierVersionNum = consumerVersionNum, compare serverIds, lexicographically larger one wins
             {
@@ -1067,7 +1075,7 @@ DetectAndResolveAttrsConflicts(
                         *metaData = '\0';
                     }
                     pAttrAttrSupplierMetaData->vals[i].lberbv.bv_len = strlen(pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val);
-               }
+                }
                 else
                 {
                     if (!bIsSameAttrValue)
@@ -1078,7 +1086,17 @@ DetectAndResolveAttrsConflicts(
                             pSupplierEntry->dn.lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
                     }
                 }
+                dwConflictCnt++;
             }
+        }
+    }
+
+    // collect how many conflicts were detected
+    if (dwConflictCnt > 0)
+    {
+        if (VmDirReplMetricsCacheFind(pOperation->pszPartner, &pReplMetrics) == 0)
+        {
+            VmMetricsCounterAdd(pReplMetrics->pCountConflictResolved, dwConflictCnt);
         }
     }
 

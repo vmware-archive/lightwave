@@ -71,7 +71,7 @@ VmDirFreeDCConnContent(
     if (pDCConn)
     {
         VmDirFreeConnCredContent(&pDCConn->creds);
-        VMDIR_SAFE_FREE_STRINGA(pDCConn->pszRemoteDCHostName);
+        VMDIR_SAFE_FREE_STRINGA(pDCConn->pszHostname);
         VDIR_SAFE_UNBIND_EXT_S(pDCConn->pLd);
     }
 }
@@ -136,7 +136,7 @@ _VmDirDCConnThreadFun(
         "%s user (%s) connecting to (%s) started",
         __FUNCTION__,
         VDIR_SAFE_STRING(pDCConn->creds.pszUPN),
-        VDIR_SAFE_STRING(pDCConn->pszRemoteDCHostName));
+        VDIR_SAFE_STRING(pDCConn->pszHostname));
 
     while (TRUE)
     {
@@ -152,7 +152,7 @@ _VmDirDCConnThreadFun(
                 "%s user (%s) connected to (%s) done",
                 __FUNCTION__,
                 VDIR_SAFE_STRING(pDCConn->creds.pszUPN),
-                VDIR_SAFE_STRING(pDCConn->pszRemoteDCHostName));
+                VDIR_SAFE_STRING(pDCConn->pszHostname));
 
             bHasConnection = TRUE;
             goto cleanup;
@@ -186,7 +186,7 @@ _VmDirDCConnThreadFun(
             __FUNCTION__,
             _VmDirDCConnType(pDCConn->connType),
             VDIR_SAFE_STRING(pDCConn->creds.pszUPN),
-            VDIR_SAFE_STRING(pDCConn->pszRemoteDCHostName),
+            VDIR_SAFE_STRING(pDCConn->pszHostname),
             pDCConn->dwConsecutiveFailAttempt,
             pDCConn->dwlastFailedError,
             dwSleepTimeSec);
@@ -230,7 +230,7 @@ error:
         "%s user (%s) connect to (%s) failed (%d), connection state set to failed",
         __FUNCTION__,
         VDIR_SAFE_STRING(pDCConn->creds.pszUPN),
-        VDIR_SAFE_STRING(pDCConn->pszRemoteDCHostName),
+        VDIR_SAFE_STRING(pDCConn->pszHostname),
         dwError);
 
     goto cleanup;
@@ -275,7 +275,7 @@ _VmDirConnectToDC(
 
     dwError = VmDirSafeLDAPBindExt1(
             &pLocalLd,
-            pDCConn->pszRemoteDCHostName,
+            pDCConn->pszHostname,
             pDCConn->creds.pszUPN,
             pDCConn->creds.pszPassword,
             pDCConn->dwConnectTimeoutSec);
@@ -285,7 +285,7 @@ _VmDirConnectToDC(
     {
         dwError = VmDirSafeLDAPBindExt1(
                 &pLocalLd,
-                pDCConn->pszRemoteDCHostName,
+                pDCConn->pszHostname,
                 pDCConn->creds.pszUPN,
                 pDCConn->creds.pszOldPassword,
                 pDCConn->dwConnectTimeoutSec);

@@ -90,28 +90,29 @@ typedef struct _VMDIR_LOGIN_TIME
 
 typedef struct _VMDIR_INTEGRITY_JOB_CTX
 {
-    PSTR        pszPartnerName;
-    LDAP*       pLd;
-    PSTR        pszRptFileName;
-    FILE*       fp;
-    DWORD       dwFailedDigestCnt;
-    DWORD       dwMissedEntryCnt;
-    VMDIR_INTEGRITY_CHECK_JOBCTX_STATE state;
+    LDAP*                               pLd;
+    PSTR                                pszPartnerName;
+    PSTR                                pszRptFileName;
+    PVMDIR_INTEGRITY_REPORT             pReport;
+    VMDIR_INTEGRITY_CHECK_JOBCTX_STATE  state;
 
 } VMDIR_INTEGRITY_JOB_CTX, *PVMDIR_INTEGRITY_JOB_CTX;
 
 typedef struct _VMDIR_INTEGRITY_JOB
 {
-    struct timespec             startTime;
-    struct tm                   startTM;
-    struct timespec             endTime;
-    CHAR                        finishedTimebuf[MAX_PATH];
-    ENTRYID                     maxEntryID;
-    ENTRYID                     currentEntryID;
-    DWORD                       dwNumProcessed;
-    PVMDIR_INTEGRITY_JOB_CTX    pJobctx;
-    DWORD                       dwNumJobCtx;
+    struct timespec                 startTime;
+    struct tm                       startTM;
+    struct timespec                 endTime;
+    CHAR                            finishedTimebuf[MAX_PATH];
+    ENTRYID                         maxEntryID;
+    ENTRYID                         currentEntryID;
+    DWORD                           dwNumProcessed;
+    PVMDIR_INTEGRITY_JOB_CTX        pJobctx;
+    DWORD                           dwNumJobCtx;
     VMDIR_INTEGRITY_CHECK_JOB_STATE state;
+
+    // it's set when triggered by background thread
+    PVMDIR_BKGD_TASK_CTX            pBkgdTaskCtx;
 
 } VMDIR_INTEGRITY_JOB, *PVMDIR_INTEGRITY_JOB;
 

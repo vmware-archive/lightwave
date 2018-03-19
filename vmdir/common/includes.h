@@ -23,6 +23,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <dce/rpc.h>
+#include <dirent.h>
 
 #include <vmdirsys.h>
 #include <sys/types.h>

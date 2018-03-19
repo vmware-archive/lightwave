@@ -18,6 +18,13 @@
 #define BAIL_ON_ERROR(x) \
     { if ((x) != 0) { fprintf(stderr, "error [%u] in function [%s] at line [%d]\n", x, __FUNCTION__, __LINE__); goto error; } }
 
+#define BAIL_AND_LOG_ON_ERROR(x, str) \
+    if ((x) != 0)                                            \
+    {                                                        \
+        fprintf(stderr, "error [%u] in file [%s] function [%s] at line [%d] with message [%s]\n", x, __FILE__, __FUNCTION__, __LINE__, str); \
+        goto error;                                          \
+    }
+
 #define BAIL_ON_NULL_ARGUMENT(x) \
     { if (NULL == (x)) { fprintf(stderr, "NULL argument! variable [%s] in function [%s]", #x, __FUNCTION__); e = SSOERROR_INVALID_ARGUMENT; goto error; } }
 

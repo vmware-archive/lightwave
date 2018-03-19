@@ -8,8 +8,8 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 
-Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, c-rest-engine = 1.1, gawk >= 4.1.3, lightwave-server = %{_version}, lightwave-client = %{_version}
-BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, c-rest-engine-devel = 1.1
+Requires: openssl >= 1.0.2, coreutils >= 8.22, cyrus-sasl >= 2.1, c-rest-engine >= 1.1, gawk >= 4.1.3, lightwave-server = %{_version}, lightwave-client = %{_version}
+BuildRequires: openssl-devel >= 1.0.2, coreutils >= 8.22, likewise-open-devel >= 6.2.11, python2-devel >= 2.7.8, c-rest-engine-devel >= 1.1
 
 %if 0%{?fedora} >= 21
 Requires: likewise-open >= 6.2.11, boost = 1.60.0, java-1.8.0-openjdk >= 1.8.0.131, krb5-libs >= 1.14, sqlite >= 3.14, tomcat >= 8.5.16, apache-commons-daemon >= 1.0.15, apache-commons-daemon-jsvc >= 1.0.15
@@ -104,6 +104,7 @@ VMware Lightwave Server
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
 %define _logdir /var/log/lightwave
+%define _integchkdir %{_logdir}/integrity
 %define _logconfdir /etc/syslog-ng/lightwave.conf.d
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir %{_javahome}/jre/lib/ext
@@ -354,9 +355,14 @@ Lightwave POST service
     if [ $? -ne 0 ]; then
         echo "Firewall service not restarted"
     fi
-    # vmdir
 
+    # common
+    /bin/mkdir -m 755 -p %{_logdir}
+
+    # vmdir
     /bin/mkdir -m 700 -p %{_vmdir_dbdir}
+    /bin/mkdir -m 755 -p %{_integchkdir}/reports
+    /bin/mkdir -m 755 -p %{_integchkdir}/archive
 
     if [ -a %{_sasl2dir}/vmdird.conf ]; then
         /bin/rm %{_sasl2dir}/vmdird.conf
@@ -371,11 +377,7 @@ Lightwave POST service
     fi
     /bin/ln -s %{_datadir}/config/vmdird-syslog-ng.conf %{_logconfdir}/vmdird-syslog-ng.conf
 
-
-
-
-# vmdns
-
+    # vmdns
     /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmdnsd-syslog-ng.conf ]; then
@@ -383,8 +385,7 @@ Lightwave POST service
     fi
     /bin/ln -s %{_datadir}/config/vmdnsd-syslog-ng.conf %{_logconfdir}/vmdnsd-syslog-ng.conf
 
-# vmca
-
+    # vmca
     /bin/mkdir -m 700 -p %{_vmca_dbdir}
     /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
@@ -1050,6 +1051,7 @@ Lightwave POST service
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
 %{_sbindir}/sso-config.sh
+%{_sbindir}/configure-pwd-policy.sh
 
 %{_datadir}/config/idm/*
 
@@ -1066,9 +1068,9 @@ Lightwave POST service
 %{_jarsdir}/commons-lang3-3.3.2.jar
 %{_jarsdir}/commons-logging-1.2.jar
 %{_jarsdir}/jersey-media-json-jackson-2.25.1.jar
-%{_jarsdir}/jackson-core-2.8.4.jar
-%{_jarsdir}/jackson-databind-2.8.4.jar
-%{_jarsdir}/jackson-annotations-2.8.4.jar
+%{_jarsdir}/jackson-core-2.9.4.jar
+%{_jarsdir}/jackson-databind-2.9.4.jar
+%{_jarsdir}/jackson-annotations-2.9.4.jar
 %{_jarsdir}/jna-4.2.1.jar
 %{_jarsdir}/json-smart-1.3.1.jar
 %{_jarsdir}/httpclient-4.5.1.jar

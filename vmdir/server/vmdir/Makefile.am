@@ -27,6 +27,7 @@ vmdird_SOURCES = \
     init.c \
     instance.c \
     integritychk.c \
+    integrityrpt.c \
     ipcserver.c \
     ipclocalapi.c \
     ipcapihandler.c \

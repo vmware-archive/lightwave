@@ -33,6 +33,7 @@ import net.minidev.json.JSONObject;
 public class FederationRelayState {
   private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(FederationRelayState.class);
 
+  private static final String PARAM_TENANT = "tenant";
   private static final String PARAM_ISSUER = "issuer";
   private static final String PARAM_CLIENT_ID = "client_id";
   private static final String PARAM_REDIRECT_URI = "redirect_uri";
@@ -42,6 +43,7 @@ public class FederationRelayState {
   private static final String PARAM_RESPONSE_TYPE = "response_type";
   private static final String PARAM_RESPONSE_MODE = "response_mode";
 
+  private String tenant;
   private String issuer;
   private String redirectURL;
   private String clientId;
@@ -53,6 +55,7 @@ public class FederationRelayState {
   private String encodedValue;
 
   private FederationRelayState(Builder builder) {
+      this.tenant = builder.tenant;
       this.issuer = builder.issuer;
       this.clientId = builder.clientId;
       this.redirectURL = builder.redirectURL;
@@ -62,6 +65,10 @@ public class FederationRelayState {
       this.scope = builder.scope;
       this.responseMode = builder.responseMode;
       this.responseType = builder.responseType;
+  }
+
+  public String getTenant() {
+      return tenant;
   }
 
   public String getIssuer() {
@@ -107,6 +114,7 @@ public class FederationRelayState {
               Base64Utils.decodeToString(
                   urlDecodedState
               ));
+
       String issuer = JSONUtils.getString(jsonContent, PARAM_ISSUER);
       if (issuer == null || issuer.isEmpty()) {
         throw new ServerException(ErrorObject.invalidRequest("Issuer is invalid"));
@@ -134,6 +142,11 @@ public class FederationRelayState {
       }
 
       Builder builder = new Builder(issuer, clientId, redirectURL);
+
+      if (JSONUtils.hasKey(jsonContent, PARAM_TENANT)) {
+          String tenant = JSONUtils.getString(jsonContent, PARAM_TENANT);
+          builder.tenant(tenant);
+      }
 
       if (JSONUtils.hasKey(jsonContent, PARAM_NONCE)) {
           String nonce = JSONUtils.getString(jsonContent, PARAM_NONCE);
@@ -168,6 +181,7 @@ public class FederationRelayState {
   }
 
   public static class Builder {
+      private String tenant;
       private String issuer;
       private String redirectURL;
       private String clientId;
@@ -182,9 +196,15 @@ public class FederationRelayState {
           Validate.notEmpty(issuer, "issuer");
           Validate.notEmpty(clientId, "clientId");
           Validate.notEmpty(redirectURL, "redirect url");
+
           this.issuer = issuer;
           this.clientId = clientId;
           this.redirectURL = redirectURL;
+      }
+
+      public Builder tenant(String tenant) {
+          this.tenant = tenant;
+          return this;
       }
 
       public Builder nonce(String nonce) {
@@ -223,6 +243,10 @@ public class FederationRelayState {
           json.put(PARAM_ISSUER, issuer);
           json.put(PARAM_CLIENT_ID, clientId);
           json.put(PARAM_REDIRECT_URI, redirectURL);
+
+          if(StringUtils.isNotEmpty(tenant)) {
+              json.put(PARAM_TENANT, tenant);
+          }
 
           if(StringUtils.isNotEmpty(nonce)) {
               json.put(PARAM_NONCE, nonce);

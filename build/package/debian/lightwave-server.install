@@ -39,6 +39,7 @@ opt/vmware/lib64/sasl2/libsaslvmdirdb.so
 opt/vmware/lib64/sasl2/libsaslvmdirdb.so.0
 opt/vmware/lib64/sasl2/libsaslvmdirdb.so.0.0.0
 opt/vmware/sbin/configure-build.sh
+opt/vmware/sbin/configure-pwd-policy.sh
 opt/vmware/sbin/sso-config.sh
 opt/vmware/sbin/vmafdd
 opt/vmware/sbin/vmcad

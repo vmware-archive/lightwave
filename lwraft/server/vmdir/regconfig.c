@@ -266,6 +266,20 @@ VmDirSrvUpdateConfig(
         {
             gVmdirServerGlobals.dwEfficientReadOpTimeMS = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_REST_WORKER,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwRESTWorker = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_REST_LOG_LEVEL_OVERRIDE,
+                    TRUE))
+        {
+            gVmdirServerGlobals.dwRESTLogLevelOverride = pEntry->dwValue;
+        }
     }
 
 cleanup:

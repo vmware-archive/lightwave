@@ -2102,13 +2102,13 @@ VmDirCertificateFileNameFromHostName(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
                                       "VmDirAllocateStringPrintf(pszLocalRsaServerCertFileName) failed" );
 
-        pszSlash = VmDirStringRChrA(pszLocalRsaServerCertFileName, VMDIR_PATH_SEPARATOR_STR[0]);
+        pszSlash = VmDirStringRChrA(pszLocalRsaServerCertFileName, VMDIR_PATH_SEP[0]);
 
         if (pszSlash == NULL)
         {
             dwError = VMDIR_ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                          "No VMDIR_PATH_SEPARATOR_STR[0] in pszLocalRsaServerCertFileName (%s) ",
+                                          "No VMDIR_PATH_SEP[0] in pszLocalRsaServerCertFileName (%s) ",
                                           pszLocalRsaServerCertFileName  );
         }
 
@@ -4136,10 +4136,66 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "%s failed to parse timestamp (%s) with error (%d)",
-            __FUNCTION__,
+            "failed to parse timestamp (%s) with error (%d)",
             VDIR_SAFE_STRING(pszTimestamp),
             dwError);
 
+    goto cleanup;
+}
+
+DWORD
+VmDirListFiles(
+    PCSTR               pszDir,
+    PVMDIR_STRING_LIST* ppFiles
+    )
+{
+    DWORD   dwError = 0;
+    struct dirent **filelist;
+    int     filecnt = 0, i = 0;
+    PVMDIR_STRING_LIST  pFiles = NULL;
+
+    if (IsNullOrEmptyString(pszDir) || !ppFiles)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    filecnt = scandir(pszDir, &filelist, 0, alphasort);
+    if (filecnt < 0)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "scandir failed %d", errno);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_FILE_OPEN);
+    }
+
+    dwError = VmDirStringListInitialize(&pFiles, filecnt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < filecnt; i++)
+    {
+        // ignore hidden files and . and ..
+        if (filelist[i]->d_name[0] != '.')
+        {
+            dwError = VmDirStringListAddStrClone(filelist[i]->d_name, pFiles);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    *ppFiles = pFiles;
+
+cleanup:
+    for (i = 0; i < filecnt; i++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(filelist[i]);
+    }
+    VMDIR_SAFE_FREE_MEMORY(filelist);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "failed to list %s with error (%d)",
+            VDIR_SAFE_STRING(pszDir),
+            dwError);
+
+    VmDirStringListFree(pFiles);
     goto cleanup;
 }

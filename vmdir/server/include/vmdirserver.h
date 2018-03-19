@@ -293,6 +293,16 @@ typedef enum
     INTEGRITY_CHECK_JOBCTX_ABORT
 } VMDIR_INTEGRITY_CHECK_JOBCTX_STATE, *PVMDIR_INTEGRITY_CHECK_JOBCTX_STATE;
 
+typedef struct _VMDIR_INTEGRITY_REPORT
+{
+    PSTR        pszPartner;
+    PLW_HASHMAP pMismatchMap;
+    PLW_HASHMAP pMissingMap;
+    DWORD       dwMismatchCnt;
+    DWORD       dwMissingCnt;
+
+} VMDIR_INTEGRITY_REPORT, *PVMDIR_INTEGRITY_REPORT;
+
 // krb.c
 DWORD
 VmDirKrbRealmNameNormalize(
@@ -489,7 +499,8 @@ VmDirEntrySHA1Digest(
 
 DWORD
 VmDirIntegrityCheckStart(
-    VMDIR_INTEGRITY_CHECK_JOB_STATE jobState
+    VMDIR_INTEGRITY_CHECK_JOB_STATE jobState,
+    PVMDIR_BKGD_TASK_CTX            pBkgdTaskCtx    // if triggered by background thread
     );
 
 VOID
@@ -500,6 +511,40 @@ VmDirIntegrityCheckStop(
 DWORD
 VmDirIntegrityCheckShowStatus(
     PVDIR_ENTRY*    ppEntry
+    );
+
+// integrityrpt.c
+DWORD
+VmDirIntegrityReportCreate(
+    PVMDIR_INTEGRITY_REPORT*    ppReport
+    );
+
+DWORD
+VmDirIntegrityReportLoadFile(
+    PVMDIR_INTEGRITY_REPORT pReport,
+    PCSTR                   pszFilePath
+    );
+
+DWORD
+VmDirIntegrityReportWriteToFile(
+    PVMDIR_INTEGRITY_REPORT pReport,
+    PCSTR                   pszFilePath
+    );
+
+DWORD
+VmDirIntegrityReportRemoveNonOverlaps(
+    PVMDIR_INTEGRITY_REPORT pReport,    // this gets modified
+    PVMDIR_INTEGRITY_REPORT pUpdate
+    );
+
+VOID
+VmDirFreeIntegrityReport(
+    PVMDIR_INTEGRITY_REPORT pReport
+    );
+
+VOID
+VmDirFreeIntegrityReportList(
+    PVDIR_LINKED_LIST   pReports
     );
 
 // metrics.c

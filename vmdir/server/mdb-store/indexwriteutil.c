@@ -495,7 +495,7 @@ MdbValidateAttrUniqueness(
                     }
                 }
 
-                pNode = pNode->pNext;
+                pNode = pNode->pPrev;
             }
         }
 

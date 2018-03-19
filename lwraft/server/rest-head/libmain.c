@@ -162,27 +162,35 @@ VmDirToCRestEngineLogLevel(
     VMDIR_LOG_LEVEL  lwraftLogLevel = VmDirLogGetLevel();
     VMREST_LOG_LEVEL cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
 
-    switch (lwraftLogLevel)
+    if (gVmdirServerGlobals.dwRESTLogLevelOverride >= VMREST_LOG_LEVEL_ERROR &&
+        gVmdirServerGlobals.dwRESTLogLevelOverride <= VMREST_LOG_LEVEL_DEBUG)
     {
-    case VMDIR_LOG_ERROR:
-        cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
-        break;
+        cResetEngineLogLevel = gVmdirServerGlobals.dwRESTLogLevelOverride;
+    }
+    else
+    {
+        switch (lwraftLogLevel)
+        {
+        case VMDIR_LOG_ERROR:
+            cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
+            break;
 
-    case VMDIR_LOG_WARNING:
-        cResetEngineLogLevel = VMREST_LOG_LEVEL_WARNING;
-        break;
+        case VMDIR_LOG_WARNING:
+            cResetEngineLogLevel = VMREST_LOG_LEVEL_WARNING;
+            break;
 
-    case VMDIR_LOG_INFO:
-        cResetEngineLogLevel = VMREST_LOG_LEVEL_INFO;
-        break;
+        case VMDIR_LOG_INFO:
+            cResetEngineLogLevel = VMREST_LOG_LEVEL_INFO;
+            break;
 
-    case VMDIR_LOG_VERBOSE:
-    case VMDIR_LOG_DEBUG:
-        cResetEngineLogLevel = VMREST_LOG_LEVEL_DEBUG;
-        break;
+        case VMDIR_LOG_VERBOSE:
+        case VMDIR_LOG_DEBUG:
+            cResetEngineLogLevel = VMREST_LOG_LEVEL_DEBUG;
+            break;
 
-    default:
-        cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
+        default:
+            cResetEngineLogLevel = VMREST_LOG_LEVEL_ERROR;
+        }
     }
 
     return cResetEngineLogLevel;
@@ -216,8 +224,8 @@ _VmDirRESTServerInitHTTP(
     config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
     config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
     config.pSSLContext = NULL;
-    config.nWorkerThr = VMDIR_REST_WORKERTHCNT;
-    config.nClientCnt = VMDIR_REST_CLIENTCNT;
+    config.nWorkerThr = gVmdirServerGlobals.dwRESTWorker;
+    config.nClientCnt = gVmdirServerGlobals.dwRESTWorker;
     config.SSLCtxOptionsFlag = 0;
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
@@ -294,8 +302,8 @@ _VmDirRESTServerInitHTTPS(
     config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
     config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
     config.pSSLContext = gVmdirGlobals.gpVdirSslCtx;
-    config.nWorkerThr = VMDIR_REST_WORKERTHCNT;
-    config.nClientCnt = VMDIR_REST_CLIENTCNT;
+    config.nWorkerThr = gVmdirServerGlobals.dwRESTWorker;
+    config.nClientCnt = gVmdirServerGlobals.dwRESTWorker;
     config.SSLCtxOptionsFlag = 0;
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;

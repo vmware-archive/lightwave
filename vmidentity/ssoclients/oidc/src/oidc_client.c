@@ -14,8 +14,26 @@
 
 #include "includes.h"
 
+static
+void
+OidcClientSSLLockCallback(
+    int         mode,
+    int         lockNum,
+    const char *file,
+    int         line)
+{
+    SSOClientSSLLock(
+                  mode,
+                  &(gpOidcClientContext->pCurlInitCtx->pMutexBuffer[lockNum]));
+}
+
 /*
- * IMPORTANT: you must call this function at process startup while there is only a single thread running
+ * IMPORTANT:
+ * You do not need to call this function from consuming applications as the GCC constructor attribute will
+ * guarantee its execution.  This attribute will also enforce that the function is called when the consuming
+ * application is running with only a single thread.  Read further for details regarding why this is necessary.
+ * If you must call this function in a consuming application, ensure it is done at process startup while there
+ * is only a single thread running.
  * This is a wrapper for curl_global_init, from its documentation:
  * This function is not thread safe.
  * You must not call it when any other thread in the program (i.e. a thread sharing the same memory) is running.
@@ -26,14 +44,40 @@
 SSOERROR
 OidcClientGlobalInit()
 {
-    return SSOHttpClientGlobalInit();
+    SSOERROR e = SSOERROR_NONE;
+
+    if (!gpOidcClientContext->bIsCurlInitialized)
+    {
+        e = SSOHttpClientGlobalInit(OidcClientSSLLockCallback,
+                                    &gpOidcClientContext->pCurlInitCtx);
+        BAIL_ON_ERROR(e);
+
+        gpOidcClientContext->bIsCurlInitialized = 1;
+    }
+
+error:
+    return e;
 }
 
-// this function is not thread safe. Call it right before process exit
+/*
+ * IMPORTANT:
+ * You do not need to call this function from consuming applications as the GCC destructor attribute will
+ * guarantee its execution.  The attribute will also enfoce that the function is called when the consuming
+ * application is running with only a single thread.
+ * If you must call this function in a consuming application, ensure it is done at process exit when there
+ * is only a single thread running.
+ * This function is not thread safe. Call it right before process exit as the curl_global_cleanup
+ * documentation states.
+ */
 void
 OidcClientGlobalCleanup()
 {
-    SSOHttpClientGlobalCleanup();
+    if (gpOidcClientContext->bIsCurlInitialized)
+    {
+
+        SSOHttpClientGlobalCleanup(gpOidcClientContext->pCurlInitCtx);
+        gpOidcClientContext->bIsCurlInitialized = 0;
+    }
 }
 
 // make sure you call OidcClientGlobalInit once per process before calling this

@@ -27,14 +27,15 @@
 
 typedef struct _VMDIR_REPLICATION_PAGE_ENTRY
 {
-    LDAPMessage        *entry;// not valid during retry
-    int                entryState;
-    USN                ulPartnerUSN;
-    PSTR               pszDn;
-    DWORD              dwDnLength;
-    int                errVal;
-    PVDIR_BERVALUE     pBervEncodedEntry; // valid only during retry
-    VDIR_BERVALUE      reqDn;
+    LDAPMessage*    entry;// not valid during retry
+    int             entryState;
+    PSTR            pszPartner;
+    USN             ulPartnerUSN;
+    PSTR            pszDn;
+    DWORD           dwDnLength;
+    int             errVal;
+    PVDIR_BERVALUE  pBervEncodedEntry; // valid only during retry
+    VDIR_BERVALUE   reqDn;
 } VMDIR_REPLICATION_PAGE_ENTRY, *PVMDIR_REPLICATION_PAGE_ENTRY;
 
 typedef struct _VMDIR_REPLICATION_PAGE

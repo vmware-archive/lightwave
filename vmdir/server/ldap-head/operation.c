@@ -47,7 +47,7 @@ VmDirInitStackOperation(
     }
 
     if ( pSchemaCtx )
-    {   // TODO, dwError = VmDirSchemaCtxClone( pSchemaCtx, &pLocalCtx );
+    {
         pLocalSchemaCtx = VmDirSchemaCtxClone( pSchemaCtx );
         if ( !pLocalSchemaCtx )
         {
@@ -67,6 +67,7 @@ VmDirInitStackOperation(
     dwError = VmDirAllocateConnection(&pOp->conn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    pOp->bOwnConn = TRUE;
     pOp->pSchemaCtx = pLocalSchemaCtx;
     pLocalSchemaCtx = NULL;
 
@@ -107,6 +108,7 @@ VmDirExternalOperationCreate(
    pOperation->ber = ber;
    pOperation->msgId = msgId;
    pOperation->conn = pConn;
+   pOperation->bOwnConn = FALSE;
    pOperation->opType = VDIR_OPERATION_TYPE_EXTERNAL;
 
    retVal = VmDirAllocateMemory( sizeof(*pOperation->pBECtx), (PVOID)&(pOperation->pBECtx));
@@ -245,9 +247,9 @@ VmDirFreeOperationContent(
         VmDirBackendCtxFree(op->pBECtx);
         VMDIR_SAFE_FREE_MEMORY(op->pszFilters);
 
-        if (op->opType == VDIR_OPERATION_TYPE_INTERNAL)
-        {   // internal op owns dummy conn for ACL check
-            VmDirDeleteConnection( &(op->conn)); // passing &conn to be freed seems a bit strange
+        if (op->bOwnConn)
+        {
+            VmDirDeleteConnection(&op->conn);
         }
    }
 }

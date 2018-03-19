@@ -228,7 +228,7 @@ VmDirIndexingTaskPopulateIndices(
                 pIndexCfgs, pIndexCfg->pszAttrName, pIndexCfg, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     dwError = pBE->pfnBEIndexPopulate(
@@ -282,7 +282,7 @@ VmDirIndexingTaskValidateScopes(
         dwError = VmDirIndexCfgRevertBadUniqueScopeMods(pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
 cleanup:
@@ -333,7 +333,7 @@ VmDirIndexingTaskDeleteIndices(
             VmDirIndexCfgClear(pIndexCfg);
         }
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
 cleanup:
@@ -420,7 +420,7 @@ VmDirIndexingTaskRecordProgress(
                     "%s (%ld)", pszStatus, gVdirIndexGlobals.offset );
         }
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     pNode = pTask->pIndicesToValidate->pTail;
@@ -436,7 +436,7 @@ VmDirIndexingTaskRecordProgress(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     pNode = pTask->pIndicesToDelete->pTail;
@@ -458,7 +458,7 @@ VmDirIndexingTaskRecordProgress(
             VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszStatus );
         }
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     pNode = pTask->pIndicesCompleted->pTail;
@@ -480,7 +480,7 @@ VmDirIndexingTaskRecordProgress(
             VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszStatus );
         }
 
-        pNode = pNode->pNext;
+        pNode = pNode->pPrev;
     }
 
     dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);

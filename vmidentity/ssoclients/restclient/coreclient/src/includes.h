@@ -40,4 +40,9 @@
 #include "coreclient_prototypes.h"
 #include "coreclient_debug.h"
 
+// local headers
+#include "structs.h"
+#include "externs.h"
+
+
 #endif /* INCLUDES_H_ */

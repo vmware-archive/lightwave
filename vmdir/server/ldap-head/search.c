@@ -118,7 +118,7 @@ _VmDirSearchPreCondition(
             // high-water-marks, that partners remember, will not get replicated out (even if the invocationId
             // has been fixed/changed).
 
-            dwError = pResult->errCode = LDAP_UNWILLING_TO_PERFORM;
+            dwError = pResult->errCode = LDAP_UNAVAILABLE;
             BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg,
                     "Server in not in normal mode, not allowing outward replication.");
         }

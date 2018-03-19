@@ -39,9 +39,9 @@ write_files:
   - content: |
         #!/bin/bash -xe
         echo "Installing tooling"
-        tdnf install -y bindutils less gawk wget groff
-        wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && rm -rf get-pip.py
-        pip install --upgrade --user awscli
+        tdnf install -y bindutils less gawk wget groff python2 python3
+        wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm -rf get-pip.py
+        pip3 install --upgrade --user awscli
         echo ""
         #
         # Docker causes DNS resolution issues with Lightwave
@@ -57,12 +57,12 @@ write_files:
   - content: |
         #!/bin/bash -xe
         # SSM allows users to execute remote commands against the VM
-        # need to be able to download the RPM and install RPM through yum
-        tdnf install -y wget yum
+        # need to be able to download the RPM and install RPM
+        tdnf install -y wget
         # the default version of curl is too old and will fail installation of the RPM
         tdnf update -y curl
         wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-        yum install -y amazon-ssm-agent.rpm
+        rpm -i amazon-ssm-agent.rpm
         rm -rf amazon-ssm-agent.rpm
         systemctl enable amazon-ssm-agent
         systemctl start amazon-ssm-agent
@@ -71,11 +71,12 @@ write_files:
     path: /root/install-ssm.sh
   - content: |
         #!/bin/bash -xe
-        tdnf install -y ruby-2.3.0 chkconfig cronie wget gawk yum less
-        tdnf update -y curl
-        wget https://aws-codedeploy-us-west-2.s3.amazonaws.com/latest/install
-        chmod +x install
-        ./install rpm
+        tdnf install -y ruby chkconfig cronie wget gawk less
+        source /root/get_info.sh
+        CODEDEPLOY_INSTALLER_LOCATION=($(get_tag_value CODEDEPLOY_INSTALLER_LOCATION))
+        aws s3 cp $CODEDEPLOY_INSTALLER_LOCATION /tmp/codedeploy-install
+        chmod +x /tmp/codedeploy-install
+        /tmp/codedeploy-install rpm
         chmod +x /usr/bin/service
         echo ""
     owner: root:root
@@ -121,9 +122,25 @@ write_files:
         ASG_NAME=$(get_asg_name)
         LW_AFFINITIZED_DC=($(get_tag_value LW_AFFINITIZED_DC))
 
-        sed -i -e "s|https://dl.bintray.com/vmware/lightwave|https://vmware.bintray.com/lightwave-dev/photon/master|" /etc/yum.repos.d/lightwave.repo
+        PHOTON_VERSION=$(cat /etc/photon-release | grep 'Photon OS' | awk '{print $4}')
+        if [[ $PHOTON_VERSION == "2.0" ]]; then
+          REPO_URL=https://vmware.bintray.com/lightwave-dev/photon_$PHOTON_VERSION/master
+          LW_VERSION='-1.3.1'
+        else
+          REPO_URL=https://vmware.bintray.com/lightwave-dev/photon/master
+        fi
+
+        cat <<EOF >/etc/yum.repos.d/lightwave.repo
+        [lightwave]
+        name=VMware Lightwave for Photon $PHOTON_VERSION (x86_64)
+        baseurl=$REPO_URL
+        gpgcheck=0
+        enabled=1
+        skip_if_unavailable=True
+        EOF
+
         tdnf makecache
-        tdnf install -y lightwave-client
+        tdnf install -y lightwave-client$LW_VERSION
         /opt/vmware/bin/ic-join --domain $LW_DOMAIN_NAME --username $LW_USERNAME --password $LW_USER_PASSWORD --org-unit "$ASG_NAME" --site $SITE --domain-controller $LW_AFFINITIZED_DC --atomic
     owner: root:root
     permission: 0644

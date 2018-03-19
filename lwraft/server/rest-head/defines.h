@@ -16,9 +16,6 @@
 #define REST_API_SPEC               LWRAFT_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "post-rest.json"
 #define HTTP_PROTOCOL_PREFIX        "https://"
 
-#define VMDIR_REST_CLIENTCNT        64
-#define VMDIR_REST_WORKERTHCNT      64
-
 #define VMDIR_REST_CONN_TIMEOUT_SEC 30
 #define VMDIR_MAX_DATA_PER_CONN_MB  25
 #define VMDIR_DAEMON_NAME      "postd";

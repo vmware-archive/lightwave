@@ -651,6 +651,8 @@ typedef struct _VDIR_OPERATION
     BerElement *        ber;         // ber of the request
     ber_int_t           msgId;       // msgid of the request
     PVDIR_CONNECTION    conn;        // Connection
+    BOOLEAN             bOwnConn;    // true if own connection
+
     VDIR_LDAP_CONTROL *       reqControls; // Request Controls, sent by client.
     VDIR_LDAP_CONTROL *       syncReqCtrl; // Sync Request Control, points in reqControls list.
     VDIR_LDAP_CONTROL *       syncDoneCtrl; // Sync Done Control.
@@ -684,18 +686,15 @@ typedef struct _VDIR_OPERATION
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for INTERNAL operations
     ///////////////////////////////////////////////////////////////////////////
-
     VDIR_ENTRY_ARRAY    internalSearchEntryArray; // internal search result
-
     USN                 lowestPendingUncommittedUsn; // recorded at the beginning of replication search operation.
-
     PSTR                pszFilters; // filter candidates' size recorded in string
-
     DWORD               dwSentEntries; // number of entries sent back to client
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for REPLICATION operations
     ///////////////////////////////////////////////////////////////////////////
+    PCSTR               pszPartner;
     USN                 ulPartnerUSN; // in replication, the partner USN been processed.
     BOOLEAN             bLdapResDoneSent;
 } VDIR_OPERATION, *PVDIR_OPERATION;
@@ -732,8 +731,10 @@ typedef struct _VMDIR_REPLICATION_METRICS
     PVM_METRICS_HISTOGRAM   pTimeCycleSucceeded;
     PVM_METRICS_HISTOGRAM   pTimeCycleFailed;
     PVM_METRICS_HISTOGRAM   pUsnBehind;
+    PVM_METRICS_GAUGE       pCountConnectionClosed;
+    PVM_METRICS_GAUGE       pCountConflictPermanent;
     PVM_METRICS_COUNTER     pCountConflictResolved;
-    PVM_METRICS_COUNTER     pCountConflictPermanent;
+    PVM_METRICS_COUNTER*    pCountError;
     BOOLEAN                 bActive;
 
 } VMDIR_REPLICATION_METRICS, *PVMDIR_REPLICATION_METRICS;
@@ -767,7 +768,7 @@ typedef struct _VMDIR_DC_CONNECTION
     VMDIR_DC_CONNECTION_TYPE    connType;
     VMDIR_DC_CONNECTION_STATE   connState;
 
-    PSTR                        pszRemoteDCHostName;
+    PSTR                        pszHostname;
     time_t                      iLastFailedTime;
     DWORD                       dwlastFailedError;
     DWORD                       dwConsecutiveFailAttempt;

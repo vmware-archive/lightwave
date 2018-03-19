@@ -214,8 +214,8 @@ extern "C" {
 #ifndef _WIN32
 
 //TODO, make cert/key configurable via registry
-#define RSA_SERVER_CERT VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdircert.pem"
-#define RSA_SERVER_KEY  VMDIR_CONFIG_DIR VMDIR_PATH_SEPARATOR_STR "vmdirkey.pem"
+#define RSA_SERVER_CERT VMDIR_CONFIG_DIR VMDIR_PATH_SEP "vmdircert.pem"
+#define RSA_SERVER_KEY  VMDIR_CONFIG_DIR VMDIR_PATH_SEP "vmdirkey.pem"
 
 #endif
 
@@ -761,14 +761,14 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 
 #ifdef _WIN32
 
-#define VMDIR_PATH_SEPARATOR_STR "\\"
+#define VMDIR_PATH_SEP "\\"
 #define VMDIR_ADDR_INFO_NEXT( ai ) ai->ai_next
 #define VMDIR_ADDR_INFO_FLAGS( ai ) ai->ai_flags
 #define VMDIR_ADDR_INFO_ADDR( ai ) ai->ai_addr
 
 #else
 
-#define VMDIR_PATH_SEPARATOR_STR "/"
+#define VMDIR_PATH_SEP "/"
 #define VMDIR_ADDR_INFO_NEXT( ifa ) ifa->ifa_next
 #define VMDIR_ADDR_INFO_FLAGS( ifa ) ifa->ifa_flags
 #define VMDIR_ADDR_INFO_ADDR( ifa ) ifa->ifa_addr
