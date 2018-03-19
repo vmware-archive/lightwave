@@ -72,6 +72,8 @@ extern "C" {
 #define RAFT_LOGS_CONTAINER_DN                  "cn=logs,cn=raftcontext"
 #define RAFT_PERSIST_STATE_DN                   "cn=persiststate,cn=raftcontext"
 #define RAFT_STATE_DN                           "cn=raftstate"
+#define RAFT_LDAPRPC_APPEND_ENTRIES_DN          "cn=appendentries,cn=raftldaprpc"
+#define RAFT_LDAPRPC_REQUEST_VOTE_DN            "cn=requestvote,cn=raftldaprpc"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Raft Clusters"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -489,6 +491,11 @@ extern "C" {
 #define LDAP_CONTROL_DIGEST_SEARCH              "1.3.6.1.4.1.6876.40.10.2"
 // vmw OID for Conditional Write
 #define LDAP_CONTROL_CONDITIONAL_WRITE          "1.3.6.1.4.1.6876.40.10.3"
+
+// vmw LDAP Raft AppendEntries control OID,  the gap is to avoid colliding with vmdir controls
+#define LDAP_APPEND_ENTRIES_CONTROL             "1.3.6.1.4.1.6876.40.10.9"
+// vmw LDAP RequestVote control OID
+#define LDAP_REQUEST_VOTE_CONTROL               "1.3.6.1.4.1.6876.40.10.10"
 
 #ifndef _WIN32
 #define LWRAFT_NCALRPC_END_POINT "postsvc"

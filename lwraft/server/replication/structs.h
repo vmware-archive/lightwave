@@ -146,6 +146,7 @@ typedef struct _VMDIR_PEER_PROXY
     char raftPeerHostname[VMDIR_MAX_LDAP_URI_LEN];
     BOOLEAN bLogReplicated;
     UINT64 matchIndex;
+    LDAP* pLd;
     struct _VMDIR_PEER_PROXY *pNext;
 } VMDIR_PEER_PROXY, *PVMDIR_PEER_PROXY;
 

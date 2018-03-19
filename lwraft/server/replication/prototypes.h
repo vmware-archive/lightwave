@@ -69,11 +69,6 @@ VmDirFirstReplicationCycle(
     PSTR pPeerHostURI
     );
 
-BOOLEAN
-_VmDirRaftPeerIsReady(
-    PCSTR pPeerHostName
-    );
-
 DWORD
 VmDirInitRaftPsState(
     VOID
@@ -221,6 +216,41 @@ VmDirRaftFollowerInitiateVoteSrv(VOID);
 DWORD
 VmDirRaftMetricsInit(
     VOID
+    );
+
+DWORD
+VmDirLdapRpcConnect(
+    PVMDIR_PEER_PROXY pProxySelf
+    );
+
+DWORD
+VmDirRaftLdapRpcAppendEntries(
+    PVMDIR_PEER_PROXY pProxySelf,
+    int term,
+    PSTR leader,
+    unsigned long long preLogIndex,
+    int preLogTerm,
+    unsigned long long leaderCommit,
+    int entrySize,
+    PSTR entries,
+    int *currentTerm,
+    unsigned long long *status
+    );
+
+DWORD
+VmDirRaftLdapRpcRequestVote(
+    PVMDIR_PEER_PROXY pProxySelf,
+    int term,
+    PSTR candidateId,
+    unsigned long long lastLogIndex,
+    int lastLogTerm,
+    int * currentTerm,
+    int * voteGranted
+    );
+
+VOID
+VmDirPersistTerm(
+    int term
     );
 
 #ifdef __cplusplus

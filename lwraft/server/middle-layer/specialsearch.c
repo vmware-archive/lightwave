@@ -28,6 +28,18 @@ _VmDirIsSearchForRaftState(
     PVDIR_OPERATION     pOp
     );
 
+static
+BOOLEAN
+VmDirIsSearchForAppendEntries(
+    PVDIR_OPERATION                     pOp
+    );
+
+static
+BOOLEAN
+VmDirIsSearchForRequestVote(
+    PVDIR_OPERATION                     pOp
+    );
+
 /*
  * Return TRUE if search request require special handling.
  * If TRUE, the request will be served within this function.
@@ -49,7 +61,11 @@ VmDirHandleSpecialSearch(
     {
             "DSE Root",
             "Schema Entry",
-            "Server Status"
+            "Server Status",
+            "Raft Status",
+            "Request Vote",
+            "Append Entries",
+            NULL
     };
 
     if ( !pOp || !pLdapResult )
@@ -95,6 +111,28 @@ VmDirHandleSpecialSearch(
         dwError = VmDirRaftStateEntry(&pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                 "%s Entry search failed.", pszEntryType[entryType]);
+    }
+    else if (VmDirIsSearchForAppendEntries(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_APPEND_ENTRIES;
+
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "AppendEntris Control %s, %d, %"PRId64,
+            pOp->appendEntriesCtrl->value.appendEntriesCtrlVal.leader,
+            pOp->appendEntriesCtrl->value.appendEntriesCtrlVal.term);
+
+        dwError = VmDirAppendEntriesReplyEntry(&pOp->appendEntriesCtrl->value.appendEntriesCtrlVal, &pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (VmDirIsSearchForRequestVote(pOp))
+    {
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_REQUEST_VOTE;
+
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "RequestVote Control %s, %d",
+            pOp->requestVoteCtrl->value.requestVoteCtrlVal.candidateId,
+            pOp->requestVoteCtrl->value.requestVoteCtrlVal.term);
+
+        dwError = VmDirRequestVoteReplyEntry(&pOp->requestVoteCtrl->value.requestVoteCtrlVal, &pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     if (entryType != REGULAR_SEARCH_ENTRY_TYPE)
@@ -284,6 +322,59 @@ _VmDirIsSearchForRaftState(
          pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN &&
          pFilter->filtComp.present.lberbv.bv_val != NULL &&
          VmDirStringNCompareA( ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0))
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
+}
+
+BOOLEAN
+VmDirIsSearchForAppendEntries(
+    PVDIR_OPERATION                     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, RAFT_LDAPRPC_APPEND_ENTRIES_DN, FALSE) == 0             &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->appendEntriesCtrl)
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
+}
+
+static
+BOOLEAN
+VmDirIsSearchForRequestVote(
+    PVDIR_OPERATION                     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, RAFT_LDAPRPC_REQUEST_VOTE_DN, FALSE) == 0             &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+        pOp->requestVoteCtrl)
     {
         bRetVal = TRUE;
     }

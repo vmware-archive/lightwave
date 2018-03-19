@@ -26,4 +26,8 @@
  *
  */
 
+extern PVMDIR_MUTEX gRaftStateMutex;
+extern PVMDIR_COND gRaftNewLogCond;
+extern PVMDIR_MUTEX gRaftRpcReplyMutex;
 extern PVM_METRICS_COUNTER pElectionTriggerCount;
+extern PVMDIR_COND gRaftAppendEntryReachConsensusCond;
