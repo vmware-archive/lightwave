@@ -411,16 +411,16 @@ _VmDirIntegrityCheckJobStart(
 
     while (pIterator->bHasNext)
     {
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN || (pJob->state != INTEGRITY_CHECK_JOB_START))
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+        }
+
         dwError = pBE->pfnBEEntryBlobIterate(pIterator, &eId);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         if (++pJob->dwNumProcessed % VDIR_INTEGRITY_CHECK_BATCH == 0) // reset txn per 1000 iteration
         {
-            if (VmDirdState() == VMDIRD_STATE_SHUTDOWN || (pJob->state != INTEGRITY_CHECK_JOB_START))
-            {
-                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
-            }
-
             pBE->pfnBEEntryBlobIteratorFree(pIterator);
             dwError = pBE->pfnBEEntryBlobIteratorInit(eId, &pIterator);
             BAIL_ON_VMDIR_ERROR(dwError);
