@@ -24,6 +24,7 @@ import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.test.util.CertificateGenerator;
 import com.vmware.identity.rest.core.test.util.KeyPairUtil;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
+import com.vmware.identity.rest.idm.data.FederatedIdpDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.data.PrincipalDTO;
@@ -76,6 +77,9 @@ public class TestGenerator {
         return ExternalIdpGenerator.generateExternalIDP(certificate);
     }
 
+    public static FederatedIdpDTO generateFederatedIdp() throws GeneralSecurityException, IOException {
+        return FederatedIdpGenerator.generateFederatedIdpDTO();
+    }
     public static CertificateDTO generateCertificate(String dn) throws GeneralSecurityException, IOException {
         return new CertificateDTO(CertificateGenerator.generateSelfSignedCertificate(getKeyPair(), CertificateGenerator.AlgorithmName.SHA256_WITH_RSA, dn));
     }
