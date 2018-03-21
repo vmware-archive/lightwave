@@ -253,17 +253,6 @@
       <version>${commons.lang.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.owasp.esapi</groupId>
-      <artifactId>esapi</artifactId>
-      <version>${esapi.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-beanutils</groupId>
-          <artifactId>commons-beanutils-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>
       <version>${jcip.version}</version>

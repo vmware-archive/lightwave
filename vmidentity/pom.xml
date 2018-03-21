@@ -354,7 +354,6 @@
     <commons.logging.version>1.2</commons.logging.version>
     <commons.pool2.version>2.4.2</commons.pool2.version>
     <easymock.version>3.2</easymock.version>
-    <esapi.version>2.1.0.1</esapi.version>
     <gmbal-api-only.version>3.1.0-b001</gmbal-api-only.version>
     <ha-api.version>3.1.9</ha-api.version>
     <httpclient.version>4.5.1</httpclient.version>
