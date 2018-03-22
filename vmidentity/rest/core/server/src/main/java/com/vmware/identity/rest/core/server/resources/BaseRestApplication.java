@@ -15,6 +15,8 @@ package com.vmware.identity.rest.core.server.resources;
 
 import javax.ws.rs.ApplicationPath;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -43,6 +45,9 @@ public class BaseRestApplication extends ResourceConfig {
 
         // Register Authorization Provider
         register(AuthorizationRequestFilter.class);
+
+        register(JacksonFeature.class);
+        register(JacksonJsonProvider.class);
 
         // Register logging filter
         register(LoggingContextResetFilter.class);
