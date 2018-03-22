@@ -16,11 +16,9 @@ package com.vmware.identity.rest.idm.client.test.integration;
 import static com.vmware.identity.rest.idm.client.test.integration.util.Assert.assertTenantEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,9 +29,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.vmware.directory.rest.common.data.GroupDTO;
 import com.vmware.directory.rest.common.data.MemberType;
-import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.directory.rest.common.data.UserDTO;
 import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
@@ -43,7 +39,6 @@ import com.vmware.identity.rest.idm.client.test.integration.util.TestClientFacto
 import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.client.test.integration.util.UserGenerator;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
-import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 
@@ -51,9 +46,6 @@ public class TenantResourceIT extends IntegrationTestBase {
 
     private static UserDTO testUserWithPriviledge;
     private static UserDTO testUserWithoutPriviledge;
-    private static UserDTO testUser;
-    private static GroupDTO testGroup;
-    private static SolutionUserDTO testSolutionUser;
     private static String systemTenant;
     private static String testTenantName1 = TenantResourceIT.class.getSimpleName() + ".tenant1";
     private static String testTenantName2 = TenantResourceIT.class.getSimpleName() + ".tenant2";
@@ -66,15 +58,6 @@ public class TenantResourceIT extends IntegrationTestBase {
         List<String> members = Arrays.asList(UPNUtil.buildUPN(testUserWithPriviledge.getName() ,testUserWithPriviledge.getDomain()));
         systemAdminVmdirClient.group().addMembers(systemTenant, "TenantOperators", systemTenant, members, MemberType.USER);
         testUserWithoutPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser2", systemTenant, "Test user without tenant operator priviledge."));
-
-        testUser = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser(
-                "testUser", systemTenant, "Test user for tenant resource IT."));
-        testGroup = systemAdminVmdirClient.group().create(systemTenant, TestGenerator.generateVmdirGroup(
-                "testGroup", systemTenant, "Test group for tenant resource IT."));
-        testSolutionUser = systemAdminVmdirClient.solutionUser().create(systemTenant,
-                TestGenerator.generateVmdirSolutionUser("testSolutionUser", systemTenant,
-                        "Test solution user for tenant resource IT.",
-                        TestGenerator.generateCertificate("C=US, ST=WA, L=Bellevue, O=VMware, OU=SSO, CN=junkcert")));
     }
 
     @AfterClass
@@ -82,9 +65,6 @@ public class TenantResourceIT extends IntegrationTestBase {
         IntegrationTestBase.cleanup(true);
         systemAdminVmdirClient.user().delete(systemTenant, testUserWithPriviledge.getName(), testUserWithPriviledge.getDomain());
         systemAdminVmdirClient.user().delete(systemTenant, testUserWithoutPriviledge.getName(), testUserWithoutPriviledge.getDomain());
-        systemAdminVmdirClient.user().delete(systemTenant, testUser.getName(), testUser.getDomain());
-        systemAdminVmdirClient.group().delete(systemTenant, testGroup.getName(), testGroup.getDomain());
-        systemAdminVmdirClient.solutionUser().delete(systemTenant, testSolutionUser.getName());
     }
 
     @Test
@@ -156,28 +136,5 @@ public class TenantResourceIT extends IntegrationTestBase {
         Assert.assertTrue(ex instanceof ForbiddenException);
 
         idmClientWithPrviledge.tenant().delete(testTenantName1);
-    }
-
-    @Test
-    public void testFindPrincipalIds() throws Exception {
-        List<String> pricipalIds = new ArrayList<>();
-        pricipalIds.add("testUser"+ '@' + systemTenant);
-        pricipalIds.add("testGroup" + '@' + systemTenant);
-        pricipalIds.add("testSolutionUser" + '@' + systemTenant);
-
-        List<String> expectedPrincipalIds = new ArrayList<>();
-        expectedPrincipalIds.add(testUser.getName() + "@" + testUser.getDomain());
-        expectedPrincipalIds.add(testGroup.getDomain() + "\\" + testGroup.getName());
-        expectedPrincipalIds.add(testSolutionUser.getName() + "@" + testSolutionUser.getDomain());
-
-        PrincipalIdentifiersDTO principalIdsDTO = new PrincipalIdentifiersDTO.Builder().withIds(pricipalIds).build();
-        PrincipalIdentifiersDTO normalizedPricipalIdsDTO = systemAdminClient.tenant().findPrincipalIds(systemTenant, principalIdsDTO);
-
-        assertNotNull(normalizedPricipalIdsDTO);
-        assertNotNull(normalizedPricipalIdsDTO.getIds());
-        assertEquals(normalizedPricipalIdsDTO.getIds().size(), expectedPrincipalIds.size());
-        for (String id : expectedPrincipalIds) {
-            assertTrue("Expected id: " + id, normalizedPricipalIdsDTO.getIds().contains(id));
-        }
     }
 }

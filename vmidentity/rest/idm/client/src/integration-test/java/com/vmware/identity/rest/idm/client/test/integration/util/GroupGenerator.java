@@ -32,11 +32,4 @@ public class GroupGenerator {
             .build();
     }
 
-    public static com.vmware.directory.rest.common.data.GroupDTO generateVmdirGroup(String name, String domain, String description) {
-        return  new com.vmware.directory.rest.common.data.GroupDTO.Builder()
-                .withName(name)
-                .withDomain(domain)
-                .withDetails(new com.vmware.directory.rest.common.data.GroupDetailsDTO.Builder().withDescription(description).build())
-                .build();
-    }
 }
