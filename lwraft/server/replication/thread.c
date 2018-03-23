@@ -1239,7 +1239,7 @@ _VmDirAppendEntriesRpc(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxy
 
         startLogIndex = gEntries->index;
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-        dwError = _VmDirGetPrevLogArgs(&args.preLogIndex, &args.preLogTerm, gEntries->index - 1, __LINE__);
+        dwError = _VmDirGetPrevLogArgs(&args.preLogIndex, &args.preLogTerm, startLogIndex - 1, __LINE__);
         BAIL_ON_VMDIR_ERROR(dwError);
     } else if (cmd == ExecPing)
     {
