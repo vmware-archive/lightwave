@@ -165,16 +165,16 @@ ssh $PRIV_USER@$LIGHTWAVE_AD '( /opt/likewise/bin/lwsm start npfs && /opt/likewi
     /opt/likewise/bin/lwsm start rdr && /opt/likewise/bin/lwsm start srv )'
 
 # 8 Modify IP tables entries
-ssh $PRIV_USER@$LIGHTWAVE_AD '( iptables -I INPUT --proto icmp -j ACCEPT &&
-    iptables -I INPUT --proto udp --dport 53 -j ACCEPT &&
-    iptables -I INPUT --proto tcp --dport 53 -j ACCEPT &&
-    iptables -I INPUT --proto udp --dport 88 -j ACCEPT &&
-    iptables -I INPUT --proto tcp --dport 88 -j ACCEPT &&
-    iptables -I INPUT --proto udp --dport 389 -j ACCEPT &&
-    iptables -I INPUT --proto tcp --dport 445 -j ACCEPT &&
-    iptables -I INPUT --proto tcp --dport 135 -j ACCEPT &&
-    iptables -I INPUT --proto tcp --dport 139 -j ACCEPT &&
-    iptables -I INPUT --proto tcp --dport 389 -j ACCEPT &&
+ssh $PRIV_USER@$LIGHTWAVE_AD '( iptables -I LIGHTWAVE --proto icmp -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto udp --dport 53 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto tcp --dport 53 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto udp --dport 88 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto tcp --dport 88 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto udp --dport 389 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto tcp --dport 445 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto tcp --dport 135 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto tcp --dport 139 -j ACCEPT &&
+    iptables -I LIGHTWAVE --proto tcp --dport 389 -j ACCEPT &&
     iptables -I OUTPUT --proto tcp --dport 389 -j ACCEPT )'
 
 ## 9 Add DNS forwarder
