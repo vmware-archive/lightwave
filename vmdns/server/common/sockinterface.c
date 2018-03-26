@@ -207,6 +207,12 @@ VmDnsOnForwarderRequest(
     PVM_SOCK_IO_BUFFER   pIoBuffer
     );
 
+static
+VOID
+VmDnsMetricsRcodeUpdate(
+   UCHAR rCode
+   );
+
 typedef DWORD
 (*PVMDNS_SOCK_EVENT_HANDLER)(
     PVM_SOCK_EVENT_QUEUE pEventQueue,
@@ -1157,6 +1163,10 @@ cleanup:
         VMDNS_LOG_IO_RELEASE(pIoNewBuffer);
         VmDnsSockReleaseIoBuffer(pIoNewBuffer);
     }
+    if (bQueryInZone || dwFrwdError)
+    {
+        VmDnsMetricsRcodeUpdate(rCode);
+    }
 
     VMDNS_SAFE_FREE_MEMORY(pResponse);
     return dwError;
@@ -1269,6 +1279,10 @@ cleanup:
     {
         VMDNS_LOG_IO_RELEASE(pIoNewBuffer);
         VmDnsSockReleaseIoBuffer(pIoNewBuffer);
+    }
+    if (bQueryInZone || dwFrwdError)
+    {
+        VmDnsMetricsRcodeUpdate(rCode);
     }
 
     VMDNS_SAFE_FREE_MEMORY(pResponse);
@@ -1579,6 +1593,7 @@ VmDnsOnForwarderResponse(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
     DWORD dwResponseCode = 0;
+    BOOL bUpdateRCodeMetric = FALSE;
 
     if (!pSocket || !pIoBuffer)
     {
@@ -1630,6 +1645,7 @@ VmDnsOnForwarderResponse(
     }
     if (!dwResponseCode || dwForwardRequestError)
     {
+        bUpdateRCodeMetric = TRUE;
         if (bUseUDP)
         {
             dwError = VmDnsSockAllocateIoBuffer(
@@ -1766,6 +1782,10 @@ cleanup:
     {
         VMDNS_LOG_IO_RELEASE(pIoSizeBuffer);
         VmDnsSockReleaseIoBuffer(pIoSizeBuffer);
+    }
+    if (bUpdateRCodeMetric)
+    {
+        VmDnsMetricsRcodeUpdate(dwResponseCode);
     }
 
     return dwError;
@@ -1966,4 +1986,28 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+static
+VOID
+VmDnsMetricsRcodeUpdate(
+ UCHAR rCode
+ )
+{
+    if (rCode ==  VM_DNS_RCODE_NAME_ERROR)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_NXDOMAIN_ERR_COUNT]);
+    }
+    else if (rCode == VM_DNS_RCODE_NOT_IMPLEMENTED)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_NOT_IMPLEMENTED_COUNT]);
+    }
+    else if (rCode == VM_DNS_RCODE_SERVER_FAILURE)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_UNKNOWN_COUNT]);
+    }
+    else if (rCode == VM_DNS_RCODE_NOERROR)
+    {
+        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_NO_ERROR]);
+    }
 }
