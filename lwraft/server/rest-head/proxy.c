@@ -79,6 +79,7 @@ VmDirRESTProxyForwardRequest(
     PSTR                    pszIfMatchHeader = NULL;
     PSTR                    pszContentHeader = NULL;
     PSTR                    pszRequestIdHeader = NULL;
+    PSTR                    pszConnectionHeader = NULL;
     struct curl_slist*      pHeaders = NULL;
     uint64_t                uiStartTime = 0;
 
@@ -180,6 +181,21 @@ VmDirRESTProxyForwardRequest(
             BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_NULLSLIST);
         }
     }
+    if (!IsNullOrEmptyString(pRestOp->pszHeaderConnection))
+    {
+        dwError = VmDirAllocateStringPrintf(
+                &pszConnectionHeader,
+                "%s: %s",
+                VMDIR_REST_HEADER_CONNECTION,
+                pRestOp->pszHeaderConnection);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pHeaders = curl_slist_append(pHeaders, pszConnectionHeader);
+        if (!pHeaders)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CURL_NULLSLIST);
+        }
+    }
+
     dwCurlError = curl_easy_setopt(
             pCurlHandle,
             CURLOPT_HTTPHEADER,
@@ -300,6 +316,7 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszIfMatchHeader);
     VMDIR_SAFE_FREE_STRINGA(pszContentHeader);
     VMDIR_SAFE_FREE_STRINGA(pszRequestIdHeader);
+    VMDIR_SAFE_FREE_STRINGA(pszConnectionHeader);
     return dwError;
 
 error:

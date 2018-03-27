@@ -111,6 +111,7 @@ typedef struct _VDIR_REST_OPERATION
     PSTR                        pszInput;
     PSTR                        pszClientIP;
     PSTR                        pszOrigin;
+    PSTR                        pszHeaderConnection;
     BOOLEAN                     bisValidOrigin;
     json_t*                     pjInput;
     PLW_HASHMAP                 pParamMap;
