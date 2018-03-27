@@ -32,7 +32,7 @@
 
    </script>
    <script type="text/javascript" src="../../resources/js/Base64.js"></script>
-   <script type="text/javascript" src="../../resources/js/jquery-2.1.4.min.js"></script>
+   <script type="text/javascript" src="../../resources/js/jquery-3.0.0.min.js"></script>
    <script type="text/javascript" src="../../resources/js/RPSelection.js"></script>
 </head>
 <body>
