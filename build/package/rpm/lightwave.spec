@@ -1172,6 +1172,8 @@ Lightwave POST service
 %{_bindir}/postadmintool
 %{_bindir}/postaclmgr
 %{_bindir}/post-cli
+%{_bindir}/mdb_stat
+%{_bindir}/mdb_verify_checksum
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
 
