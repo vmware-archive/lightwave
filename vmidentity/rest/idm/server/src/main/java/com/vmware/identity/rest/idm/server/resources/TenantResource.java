@@ -263,7 +263,7 @@ public class TenantResource extends BaseResource {
     @Path(PathParameters.TENANT_NAME_VAR + "/finder/principals")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role = Role.REGULAR_USER)
+    @RequiresRole(role = Role.GUEST_USER)
     public PrincipalIdentifiersDTO findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName, PrincipalIdentifiersDTO principalIds) {
         Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "findPrincipalIds").startTimer();
         String responseStatus = HTTP_OK;
