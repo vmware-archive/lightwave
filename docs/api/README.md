@@ -20,11 +20,6 @@ VMware Lightwave consists of the following sets of APIs.
 - [C](vmdns-c-api.md)
 - [REST](vmdns-rest-api.md)
 
-4.  VMware Authentication Framework Daemon/Service (vmafd)
-- [Module Intro](vmafd-intro.md)
-- [C](vmafd-c-api.md)
-- [REST](vmafd-rest-api.md)
-
-5.  VMware Secure Token Service (OpenID Connect - OIDC) (vmware-sts)
+4.  VMware Secure Token Service (OpenID Connect - OIDC) (vmware-sts)
 - [Module Intro](oidc-intro.md)
 - [REST](oidc-rest.md)
