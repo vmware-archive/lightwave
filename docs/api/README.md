@@ -27,5 +27,4 @@ VMware Lightwave consists of the following sets of APIs.
 
 5.  VMware Secure Token Service (OpenID Connect - OIDC) (vmware-sts)
 - [Module Intro](oidc-intro.md)
-- [C](oidc-c-api.md)
-- [Java](vmdir-java-api.md)
+- [REST](oidc-rest.md)
