@@ -214,6 +214,67 @@ error:
 }
 
 DWORD
+VmDirStringListReverse(
+    PVMDIR_STRING_LIST pStrList
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    DWORD j = 0;
+    PSTR pszTemp = NULL;
+
+    if (!pStrList)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pStrList->dwCount > 1)
+    {
+        for (i = 0, j = pStrList->dwCount-1; i < j; ++i, --j)
+        {
+            pszTemp = (PSTR)pStrList->pStringList[i];
+            pStrList->pStringList[i] = (PSTR)pStrList->pStringList[j];
+            pStrList->pStringList[j] = pszTemp;
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirStringListRemoveLast(
+    PVMDIR_STRING_LIST pStrList
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pStrList || pStrList->dwCount == 0)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pStrList->dwCount--;
+
+    if (pStrList->pStringList[pStrList->dwCount])
+    {
+        VmDirFreeStringA((PSTR)pStrList->pStringList[pStrList->dwCount]);
+        pStrList->pStringList[pStrList->dwCount] = NULL;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmDirStringListFromMultiString(
     PCSTR pszMultiString,
     DWORD dwCountHint, // 0 if caller doesn't know

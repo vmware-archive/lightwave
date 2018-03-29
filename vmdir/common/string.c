@@ -741,5 +741,77 @@ error:
     goto cleanup;
 }
 
-#endif //#ifndef _WIN32
+DWORD
+VmDirTokenListToString(
+    PVMDIR_STRING_LIST pStrList,
+    PCSTR pszDelimiter,
+    PSTR *ppszStr
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszStr = NULL;
+    DWORD i = 0;
+    DWORD dwStrLen = 0;
+    DWORD dwDelimiterLen = 0;
+    PSTR pszPtr = NULL;
 
+    if (!pStrList || !pszDelimiter || !ppszStr)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwDelimiterLen = VmDirStringLenA(pszDelimiter);
+
+    for (i = 0; i < pStrList->dwCount; i++)
+    {
+        dwStrLen += VmDirStringLenA(pStrList->pStringList[i]);
+        if (i < pStrList->dwCount - 1)
+        {
+            dwStrLen += dwDelimiterLen;
+        }
+    }
+
+    dwError = VmDirAllocateMemory(
+                  sizeof(char) * (dwStrLen + 1),
+                  (PVOID*)&pszStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszPtr = pszStr;
+    for (i = 0; i < pStrList->dwCount; i++)
+    {
+        dwStrLen = VmDirStringLenA(pStrList->pStringList[i]);
+
+        dwError = VmDirStringNCpyA(
+                      pszPtr,
+                      dwStrLen + 1,
+                      pStrList->pStringList[i],
+                      dwStrLen);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszPtr += dwStrLen;
+
+        if (i < pStrList->dwCount - 1)
+        {
+            dwError = VmDirStringNCpyA(
+                          pszPtr,
+                          dwDelimiterLen + 1,
+                          pszDelimiter,
+                          dwDelimiterLen);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pszPtr += dwDelimiterLen;
+        }
+    }
+    *pszPtr = '\0';
+
+    *ppszStr = pszStr;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszStr);
+    goto cleanup;
+}
+#endif //#ifndef _WIN32

@@ -2271,6 +2271,16 @@ VmDirStringListAddStrClone(
     PVMDIR_STRING_LIST  pStrList
     );
 
+DWORD
+VmDirStringListReverse(
+    PVMDIR_STRING_LIST pStrList
+    );
+
+DWORD
+VmDirStringListRemoveLast(
+    PVMDIR_STRING_LIST pStrList
+    );
+
 int
 VmDirQsortCaseExactCompareString(
     const void* ppStr1,
@@ -2388,6 +2398,13 @@ VmDirStringToTokenListExt(
     PCSTR pszStr,
     PCSTR pszDelimiter,
     PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirTokenListToString(
+    PVMDIR_STRING_LIST pStrList,
+    PCSTR pszDelimiter,
+    PSTR *ppszStr
     );
 
 DWORD
