@@ -1,0 +1,1 @@
+Lightwave Directory Service - standards based, multi-tenant, multi-master, highly scalable LDAP v3 directory service enables an enterprise’s infrastructure to be used by the most-demanding applications as well as by multiple teams.
