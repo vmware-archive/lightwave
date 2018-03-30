@@ -19,21 +19,21 @@ The VmDnsOpenServerA opens a handle to DNS server
 
 ```C
 DWORD
-VmDnsOpenServerW(
-    PCWSTR                  pwszNetworkAddress,
-    PCWSTR                  pwszUserName,
-    PCWSTR                  pwszDomain,
-    PCWSTR                  pwszPassword,
+VmDnsOpenServerA(
+    PCSTR                   pszNetworkAddress,
+    PCSTR                   pszUserName,
+    PCSTR                   pszDomain,
+    PCSTR                   pszPassword,
     DWORD                   dwFlags,
     PVOID                   pReserved,
     PVMDNS_SERVER_CONTEXT   *pServerContext
     );
 ```
 
-* pwszNetworkAddress    - Server FQDN or IP
-* pwszUserName          - Lightwave user name
-* pwszDomain            - Lightwave domain name
-* pwszPassword          - Lightwave password
+* pszNetworkAddress    - Server FQDN or IP
+* pszUserName          - Lightwave user name
+* pszDomain            - Lightwave domain name
+* pszPassword          - Lightwave password
 * dwFlags               - Open Flags (not used)
 * pReserved             - Not used
 * pServerContext        - handle to the DNS server
@@ -51,12 +51,64 @@ VmDnsCloseServer(
 * pServerContext        - Handle to the remote server.
 
 ## Zone Management APIs
-DNS Zone management APIs
+DNS Zone management APIs help to create/delete/update and list DNS zones.
 
 ### VmDnsCreateZoneA
+Create a new DNS zone
+
+```C
+DWORD
+VmDnsCreateZoneA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_ZONE_INFO        pZoneInfo
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pZoneInfo - Zone informartion
+
 ### VmDnsUpdateZoneA
+Updates the DNS zone
+
+```C
+DWORD
+VmDnsUpdateZoneA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_ZONE_INFO        pZoneInfo
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pZoneInfo - Zone informartion
+
 ### VmDnsListZoneA
+List configured zones in the DNS
+
+```C
+DWORD
+VmDnsListZoneA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_ZONE_INFO_ARRAY *ppZoneInfo
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* ppZoneInfo - List of zones
+
 ### VmDnsDeleteZoneA
+Delete zone from the DNS server
+
+```C
+DWORD
+VmDnsDeleteZoneA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR pszZone
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszZone - Zone name to delete
+
 ### VmDnsFreeZoneInfo
 ### VmDnsFreeZoneInfoArray
 
