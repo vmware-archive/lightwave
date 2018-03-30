@@ -69,29 +69,12 @@ Example access_token JSON body:
 }
 ```
 
-### refresh_token ###
-The Client uses this token to get a new access_token (and id_token) when the original access_token expires (as reported by a Resource Server).
-
-Example refresh_token JSON body:
-```
-{
-  "sub": "administrator@lw-testdom.com",
-  "aud": "administrator@lw-testdom.com",
-  "scope": "at_groups rs_admin_server openid offline_access id_groups",
-  "iss": "https://photon-63mciz57.lw-testdom.com/openidconnect/LW-TESTDOM.COM",
-  "token_class": "refresh_token",
-  "token_type": "Bearer",
-  "exp": 1501723483,
-  "iat": 1501694683,
-  "jti": "tKtIlifxWfgt8YpDZ0mwq8uF2xYxANlDnucHIOn7IAI",
-  "tenant": "LW-TESTDOM.COM"
-}
-```
-
 ## Supported Flows ##
 
 ### Authz Code Flow ###
 Sequence diagram:
+
+![picture alt](images/oidc_authzflow.png)
 
 
 Sample request/response:
@@ -143,6 +126,9 @@ Token Response
 ### Implicit Flow ###
 Sequence diagram:
 
+![picture alt](images/oidc_implicitflow.png)
+
+
 Sample request/response:
 ```
 Authn Request
@@ -163,8 +149,10 @@ Authn Response
 ```
 
 ## Password Flow ##
-
 Sequence diagram:
+
+![picture alt](images/oidc_passwordflow.png)
+
 
 Sample request/response:
 ```
@@ -195,8 +183,10 @@ Token Response
 ```
 
 ### Refresh Token Flow ###
-
 Sequence diagram:
+
+![picture alt](images/oidc_refreshflow.png)
+
 
 Sample request/response:
 ```
@@ -326,6 +316,8 @@ Implemented according to [OpenID Connect Session Management 1.0 "RP-Initiated Lo
 
 Sequence diagram:
 
+![picture alt](images/oidc_logoutflow.png)
+
 
 Sample request/response:
 ```
@@ -349,5 +341,50 @@ Implemented according to [OpenID Connect HTTP-Based Logout 1.0](http://openid.ne
 
 When Authz Server receives a logout request, it returns an html page with iframe tags whose source is the logout_uri of all the Clients the user has logged into.
 The browser will make HTTP GET requests and include session cookies which will allow the Client to logout the user.
+
+## Specs ##
+
+### Endpoints ###
+
+Supported Endpoints    | Usage
+-----------------------|------------------------
+authorization_endpoint | interactive user login
+token_endpoint         | obtain id_token, access_token, refresh_token
+userinfo_endpoint      | obtain user profile information
+jwks_uri               | obtain public key corresponding to private signing key per tenant
+discovery              | OIDC Discovery
+end_session_endpoint   | Logout
+
+### Grant Types ###
+
+Supported Grant Types    | Usage
+-------------------------|------------------------
+authorization_code       | authz code flow
+implicit                 | implicit flow
+password                 | password flow
+refresh_token            | refresh token flow
+certificate              | extension grant type
+gss ticket               | extension grant type
+securid                  | extension grant type
+person user certificate  | extension grant type
+client_credentials       | client credentials flow
+
+### Supported Client Authentication methods ###
+* private_key_jwt
+
+### Supported JWT signature algorithms ###
+* RS256
+
+### Returned Error Codes ###
+OAuth2.0 Errors:
+* invalid_request
+* unauthorized_client
+* invalid_client
+* invalid_scope
+* unsupported_response_type
+* unsuppported_grant_type
+* invalid_grant
+* access_denied
+* server_error
 
 
