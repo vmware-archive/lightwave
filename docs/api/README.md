@@ -8,7 +8,7 @@ VMware Lightwave consists of the following sets of APIs.
 1.  VMware Directory Service (vmdir)
 - [Module Intro](vmdir-intro.md)
 - [C](vmdir-c-api.md)
-- [REST](vmdir-rest-api.md)
+- [REST](http://vmware.github.io/lightwave/docs/vmdir-rest-api.html)
 
 2.  VMware Certificate Authority (vmca)
 - [Module Intro](vmca-intro.md)
