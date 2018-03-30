@@ -2,9 +2,11 @@ package oidc
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"gopkg.in/square/go-jose.v2"
+	"strings"
 	"time"
 )
 
@@ -47,6 +49,36 @@ type jwt interface {
 	IdpSessionID() (string, bool)
 	Audience() ([]string, bool)
 	Claim(claimName string) (interface{}, bool)
+}
+
+func parseTenantInToken(token string) (string, error) {
+	var tenant string
+
+	parts := strings.Split(strings.TrimSpace(token), ".")
+	if len(parts) != 3 {
+		return "", OIDCTokenInvalidError.MakeError("A valid token must have 3 parts", nil)
+	}
+
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", OIDCTokenInvalidError.MakeError("Error when decoding token payload", err)
+	}
+
+	rawClaims, err := decodePayload(payload)
+	if err != nil {
+		return "", err
+	}
+
+	claim, ok := rawClaims["tenant"]
+	if !ok {
+		return "", OIDCTokenInvalidError.MakeError("No tenant claim in token", nil)
+	}
+
+	if tenant, ok = claim.(string); !ok {
+		return "", OIDCTokenInvalidError.MakeError("Invalid tenant claim in token", nil)
+	}
+
+	return tenant, nil
 }
 
 func parseAccessToken(
@@ -396,8 +428,6 @@ func (c *tokensImpl) ExpiresIn() int {
 	return c.ExpiresInField
 }
 
-// jwt interface
-
 type jwtImpl struct {
 	claims map[string]interface{}
 }
@@ -437,11 +467,9 @@ func parseSignedToken(token string, issuer string, keySet *jose.JSONWebKeySet, c
 			"Token signature invalid.", err)
 	}
 
-	var tokenBody map[string]interface{}
-
-	jsonDecoder := json.NewDecoder(bytes.NewReader(payload))
-	if err := jsonDecoder.Decode(&tokenBody); err != nil {
-		return nil, OIDCTokenInvalidError.MakeError("Unable to unmarshal jwt token", err)
+	tokenBody, err := decodePayload(payload)
+	if err != nil {
+		return nil, err
 	}
 
 	// validate and normalize expected claims.
@@ -538,4 +566,15 @@ func (s *signersImpl) Combine(signers ...IssuerSigners) IssuerSigners {
 	}
 
 	return &signersImpl{signers: res}
+}
+
+func decodePayload(payload []byte) (map[string]interface{}, error) {
+	var tokenBody map[string]interface{}
+
+	jsonDecoder := json.NewDecoder(bytes.NewReader(payload))
+	if err := jsonDecoder.Decode(&tokenBody); err != nil {
+		return nil, OIDCTokenInvalidError.MakeError("Unable to unmarshal jwt token", err)
+	}
+
+	return tokenBody, nil
 }

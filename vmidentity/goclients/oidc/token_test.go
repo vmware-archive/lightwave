@@ -90,6 +90,10 @@ func TestParseSignedToken(t *testing.T) {
 	assert.Nil(t, err, "No error expected: %+v", err)
 	assert.NotNil(t, jwt, "Token should not be nil")
 
+	jwt, err = parseSignedToken("  "+strTok+" ", client.Issuer(), s.signers, defaultClockToleranceSecs)
+	assert.Nil(t, err, "No error expected: %+v", err)
+	assert.NotNil(t, jwt, "Token should not be nil")
+
 	jwt, err = parseSignedToken(strTok+"a", client.Issuer(), s.signers, defaultClockToleranceSecs)
 	if assert.NotNil(t, err, "Error expected when parsing malformed token") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidSignatureError.Name(), "Wrong Error code: %+v", err)
@@ -101,4 +105,37 @@ func TestParseSignedToken(t *testing.T) {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "Wrong Error code: %+v", err)
 	}
 	assert.Nil(t, jwt, "No token expected")
+}
+
+func TestParseTenantInToken(t *testing.T) {
+	testInvalidTokens(t, "")
+	testInvalidTokens(t, "  .  .  ")
+	testInvalidTokens(t, "..")
+	testInvalidTokens(t, "aaaaa.bbbbb.cccc")
+	// Multi tenant claim
+	testInvalidTenantInToken(t, "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE1MjI0MzczNDgsImV4cCI6MTU1Mzk3MzM0OCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoiZXhhbXBsZSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsInRlbmFudCI6WyJ0ZW5hbnQxIiwidGVuYW50MiJdLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.GYpTmNd1jLsBZhRBmMvaHNbqW-nZJuUWsXPbBt6j2Bc")
+	// No tenant claim
+	testInvalidTenantInToken(t, "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE1MjI0MzczNDgsImV4cCI6MTU1Mzk3MzM0OCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoiZXhhbXBsZSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIkVtYWlsIjoianJvY2tldEBleGFtcGxlLmNvbSIsIlJvbGUiOlsiTWFuYWdlciIsIlByb2plY3QgQWRtaW5pc3RyYXRvciJdfQ.ID96zlMw6_JtRz91QZSPg9iwQRiNRXEjo43WYOCpt-8")
+	// Valid tenant claim
+	tenant, err := ParseTenantInToken("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE1MjI0MzczNDgsImV4cCI6MTU1Mzk3MzM0OCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoiZXhhbXBsZSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIkVtYWlsIjoianJvY2tldEBleGFtcGxlLmNvbSIsIlJvbGUiOlsiTWFuYWdlciIsIlByb2plY3QgQWRtaW5pc3RyYXRvciJdLCJ0ZW5hbnQiOiJ0ZXN0LXRlbmFudCJ9.-7E3nnZOARCWbgFdxlYYw61Atddnc-3MxwvTdNQqc5I")
+	require.Nil(t, err, "No error is expected when parsing valid token")
+	assert.Equal(t, "test-tenant", tenant, "Tenant in claim does not match")
+}
+
+func testInvalidTokens(t *testing.T, token string) {
+	testInvalidTenantInToken(t, token)
+
+	jwt, err := parseSignedToken(token, "issuer1", nil, defaultClockToleranceSecs)
+	assert.Nil(t, jwt, "Token should be nil")
+	if assert.NotNil(t, err, "Error is expected when using bad token") {
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name())
+	}
+}
+
+func testInvalidTenantInToken(t *testing.T, token string) {
+	tenant, err := ParseTenantInToken(token)
+	assert.Empty(t, tenant, "Tenant should not be returned")
+	if assert.NotNil(t, err, "Error is expected when using bad token") {
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name())
+	}
 }
