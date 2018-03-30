@@ -1,0 +1,548 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Lightwave VmDir API</title>
+    <style type="text/css">
+      body {
+	font-family: Trebuchet MS, sans-serif;
+	font-size: 15px;
+	color: #444;
+	margin-right: 24px;
+}
+
+h1	{
+	font-size: 25px;
+}
+h2	{
+	font-size: 20px;
+}
+h3	{
+	font-size: 16px;
+	font-weight: bold;
+}
+hr	{
+	height: 1px;
+	border: 0;
+	color: #ddd;
+	background-color: #ddd;
+}
+
+.app-desc {
+  clear: both;
+  margin-left: 20px;
+}
+.param-name {
+  width: 100%;
+}
+.license-info {
+  margin-left: 20px;
+}
+
+.license-url {
+  margin-left: 20px;
+}
+
+.model {
+  margin: 0 0 0px 20px;
+}
+
+.method {
+  margin-left: 20px;
+}
+
+.method-notes	{
+	margin: 10px 0 20px 0;
+	font-size: 90%;
+	color: #555;
+}
+
+pre {
+  padding: 10px;
+  margin-bottom: 2px;
+}
+
+.http-method {
+ text-transform: uppercase;
+}
+
+pre.get {
+  background-color: #0f6ab4;
+}
+
+pre.post {
+  background-color: #10a54a;
+}
+
+pre.put {
+  background-color: #c5862b;
+}
+
+pre.delete {
+  background-color: #a41e22;
+}
+
+.huge	{
+	color: #fff;
+}
+
+pre.example {
+  background-color: #f3f3f3;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+code {
+  white-space: pre;
+}
+
+.nickname {
+  font-weight: bold;
+}
+
+.method-path {
+  font-size: 1.5em;
+  background-color: #0f6ab4;
+}
+
+.up {
+  float:right;
+}
+
+.parameter {
+  width: 500px;
+}
+
+.param {
+  width: 500px;
+  padding: 10px 0 0 20px;
+  font-weight: bold;
+}
+
+.param-desc {
+  width: 700px;
+  padding: 0 0 0 20px;
+  color: #777;
+}
+
+.param-type {
+  font-style: italic;
+}
+
+.param-enum-header {
+width: 700px;
+padding: 0 0 0 60px;
+color: #777;
+font-weight: bold;
+}
+
+.param-enum {
+width: 700px;
+padding: 0 0 0 80px;
+color: #777;
+font-style: italic;
+}
+
+.field-label {
+  padding: 0;
+  margin: 0;
+  clear: both;
+}
+
+.field-items	{
+	padding: 0 0 15px 0;
+	margin-bottom: 15px;
+}
+
+.return-type {
+  clear: both;
+  padding-bottom: 10px;
+}
+
+.param-header {
+  font-weight: bold;
+}
+
+.method-tags {
+  text-align: right;
+}
+
+.method-tag {
+  background: none repeat scroll 0% 0% #24A600;
+  border-radius: 3px;
+  padding: 2px 10px;
+  margin: 2px;
+  color: #FFF;
+  display: inline-block;
+  text-decoration: none;
+}
+
+    </style>
+  </head>
+  <body>
+  <h1>Lightwave VmDir API</h1>
+    <div class="app-desc">Lightwave Version: 1.3.0</div>
+    <div class="app-desc">BasePath:/v1</div>
+  <h2>Access</h2>
+
+  <h2><a name="__Methods">Methods</a></h2>
+  [ Jump to <a href="#__Models">Models</a> ]
+
+  <h3>Table of Contents </h3>
+  <div class="method-summary"></div>
+  <h4><a href="#Ldap">Ldap</a></h4>
+  <ul>
+  <li><a href="#vmdirLdapDelete"><code><span class="http-method">delete</span> /vmdir/ldap</code></a></li>
+  <li><a href="#vmdirLdapGet"><code><span class="http-method">get</span> /vmdir/ldap</code></a></li>
+  <li><a href="#vmdirLdapPatch"><code><span class="http-method">patch</span> /vmdir/ldap</code></a></li>
+  <li><a href="#vmdirLdapPut"><code><span class="http-method">put</span> /vmdir/ldap</code></a></li>
+  </ul>
+  <h4><a href="#Metrics">Metrics</a></h4>
+  <ul>
+  <li><a href="#vmdirMetricsGet"><code><span class="http-method">get</span> /vmdir/metrics</code></a></li>
+  </ul>
+
+  <h1><a name="Ldap">Ldap</a></h1>
+  <div class="method"><a name="vmdirLdapDelete"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="delete"><code class="huge"><span class="http-method">delete</span> /vmdir/ldap</code></pre></div>
+    <div class="method-summary">Delete an LDAP entry (<span class="nickname">vmdirLdapDelete</span>)</div>
+    <div class="method-notes">Delete an LDAP entry</div>
+
+
+
+
+
+    <h3 class="field-label">Query parameters</h3>
+    <div class="field-items">
+      <div class="param">dn (required)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div>
+    </div>  <!-- field-items -->
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#GenericResponse">GenericResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "error_message" : "error_message",
+  "error_code" : 0
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="heaader">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+      <li><code>text/plain</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    Generic LDAP response
+        <a href="#GenericResponse">GenericResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="vmdirLdapGet"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /vmdir/ldap</code></pre></div>
+    <div class="method-summary">Search for LDAP entries (<span class="nickname">vmdirLdapGet</span>)</div>
+    <div class="method-notes">Search for LDAP entries</div>
+
+
+
+
+
+    <h3 class="field-label">Query parameters</h3>
+    <div class="field-items">
+      <div class="param">dn (required)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div><div class="param">scope (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div><div class="param">filter (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div><div class="param">attrs (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div><div class="param">page_size (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  format: int32</div><div class="param">paged_results_cookie (optional)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div>
+    </div>  <!-- field-items -->
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#LDAPSearchResponse">LDAPSearchResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "error_message" : "error_message",
+  "result" : [ {
+    "dn" : "dn",
+    "attributes" : [ {
+      "type" : "type",
+      "value" : [ "value", "value" ]
+    }, {
+      "type" : "type",
+      "value" : [ "value", "value" ]
+    } ]
+  }, {
+    "dn" : "dn",
+    "attributes" : [ {
+      "type" : "type",
+      "value" : [ "value", "value" ]
+    }, {
+      "type" : "type",
+      "value" : [ "value", "value" ]
+    } ]
+  } ],
+  "error_code" : 0,
+  "result_count" : 6,
+  "paged_results_cookie" : "paged_results_cookie"
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="heaader">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    Generic LDAP response with an array of LDAP entries
+        <a href="#LDAPSearchResponse">LDAPSearchResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="vmdirLdapPatch"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="patch"><code class="huge"><span class="http-method">patch</span> /vmdir/ldap</code></pre></div>
+    <div class="method-summary">Modify an LDAP entry (<span class="nickname">vmdirLdapPatch</span>)</div>
+    <div class="method-notes">Modify an LDAP entry</div>
+
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="heaader">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">mods <a href="#LDAPMod">LDAPMod</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash;  </div>
+
+    </div>  <!-- field-items -->
+
+
+    <h3 class="field-label">Query parameters</h3>
+    <div class="field-items">
+      <div class="param">dn (required)</div>
+
+      <div class="param-desc"><span class="param-type">Query Parameter</span> &mdash;  </div>
+    </div>  <!-- field-items -->
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#GenericResponse">GenericResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "error_message" : "error_message",
+  "error_code" : 0
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="heaader">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+      <li><code>text/plain</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    Generic LDAP response
+        <a href="#GenericResponse">GenericResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <div class="method"><a name="vmdirLdapPut"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="put"><code class="huge"><span class="http-method">put</span> /vmdir/ldap</code></pre></div>
+    <div class="method-summary">Add an LDAP entry (<span class="nickname">vmdirLdapPut</span>)</div>
+    <div class="method-notes">Add an LDAP entry</div>
+
+
+    <h3 class="field-label">Consumes</h3>
+    This API call consumes the following media types via the <span class="heaader">Content-Type</span> request header:
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Request body</h3>
+    <div class="field-items">
+      <div class="param">entry <a href="#LDAPEntry">LDAPEntry</a> (required)</div>
+
+      <div class="param-desc"><span class="param-type">Body Parameter</span> &mdash;  </div>
+
+    </div>  <!-- field-items -->
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#GenericResponse">GenericResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "error_message" : "error_message",
+  "error_code" : 0
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="heaader">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+      <li><code>text/plain</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    Generic LDAP response
+        <a href="#GenericResponse">GenericResponse</a>
+  </div> <!-- method -->
+  <hr/>
+  <h1><a name="Metrics">Metrics</a></h1>
+  <div class="method"><a name="vmdirMetricsGet"/>
+    <div class="method-path">
+    <a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /vmdir/metrics</code></pre></div>
+    <div class="method-summary">Get metrics data (<span class="nickname">vmdirMetricsGet</span>)</div>
+    <div class="method-notes">Get metrics data in Prometheus format</div>
+
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#MetricsResponse">MetricsResponse</a>
+      
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: </div>
+    <pre class="example"><code></code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="heaader">Content-Type</span> response header.
+    <ul>
+      <li><code>text/plain</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    Metrics Response
+        <a href="#MetricsResponse">MetricsResponse</a>
+  </div> <!-- method -->
+  <hr/>
+
+  <h2><a name="__Models">Models</a></h2>
+  [ Jump to <a href="#__Methods">Methods</a> ]
+
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#GenericResponse"><code>GenericResponse</code> - </a></li>
+    <li><a href="#LDAPAttribute"><code>LDAPAttribute</code> - </a></li>
+    <li><a href="#LDAPEntry"><code>LDAPEntry</code> - </a></li>
+    <li><a href="#LDAPMod"><code>LDAPMod</code> - </a></li>
+    <li><a href="#LDAPSearchResponse"><code>LDAPSearchResponse</code> - </a></li>
+    <li><a href="#MetricsResponse"><code>MetricsResponse</code> - </a></li>
+  </ol>
+
+  <div class="model">
+    <h3><a name="GenericResponse"><code>GenericResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">error_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">error_message (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="LDAPAttribute"><code>LDAPAttribute</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">value (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="LDAPEntry"><code>LDAPEntry</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">dn (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">attributes (optional)</div><div class="param-desc"><span class="param-type"><a href="#LDAPAttribute">array[LDAPAttribute]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="LDAPMod"><code>LDAPMod</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">operation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">attribute (optional)</div><div class="param-desc"><span class="param-type"><a href="#LDAPAttribute">LDAPAttribute</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="LDAPSearchResponse"><code>LDAPSearchResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+      <div class="param">error_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">error_message (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">paged_results_cookie (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">result_count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">result (optional)</div><div class="param-desc"><span class="param-type"><a href="#LDAPEntry">array[LDAPEntry]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="MetricsResponse"><code>MetricsResponse</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class='model-description'></div>
+    <div class="field-items">
+          </div>  <!-- field-items -->
+  </div>
+  </body>
+</html>
