@@ -359,6 +359,9 @@ public class UserResource extends BaseSubResource {
         } catch (BadRequestException e) {
             responseStatus = HTTP_BAD_REQUEST;
             throw e;
+        } catch (NotFoundException e) {
+            responseStatus = HTTP_NOT_FOUND;
+            throw e;
         } catch (Exception e) {
             log.error("Failed to update password for user '{}' in tenant '{}' due to a server side error", name, tenant, e);
             responseStatus = HTTP_SERVER_ERROR;

@@ -28,6 +28,7 @@ function TenantService(Configuration, HttpService, HandleHttpResponse) {
     service.GetConfiguration = GetConfiguration;
     service.UpdateConfiguration = UpdateConfiguration;
     service.UpdateDirConfiguration = UpdateDirConfiguration;
+    service.GetSecurityDomains = GetSecurityDomains;
     return service;
 
     function GetConfiguration(context, policies) {
@@ -68,6 +69,13 @@ function TenantService(Configuration, HttpService, HandleHttpResponse) {
         var endpoint = Configuration.getTenantCleanupEndpoint(context.server, context.tenant);
         return HttpService
             .getResponse(endpoint, 'GET', null, false, "text/html")
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function GetSecurityDomains(context) {
+        var endpoint = Configuration.getSecurityDomainsEndpoint(context.server, context.tenant);
+        return HttpService
+            .getResponse(endpoint, 'GET', context.token)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }

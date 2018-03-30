@@ -175,7 +175,6 @@ function Configuration() {
         return groupsEndpoint + "/" + name;
     }
 
-
     // Group membership endpoint
     function getGroupMembership(server, tenant, upn, members, type){
         var groupEndpoint = getIdmGroupEndpoint(server, tenant, upn);
@@ -186,6 +185,12 @@ function Configuration() {
     function getAllIdentitySourcesEndpoint(server, tenant) {
         var tenantEndpoint = getTenantEndpoint(server, tenant);
         return tenantEndpoint + '/providers';
+    }
+
+    // Security Domains endpoint
+    function getSecurityDomainsEndpoint(server, tenant) {
+        var tenantEndpoint = getTenantEndpoint(server, tenant);
+        return tenantEndpoint + '/securitydomains';
     }
 
     // Identity source endpoint
@@ -286,6 +291,7 @@ function Configuration() {
     service.getRelyingPartiesEndpoint = getRelyingPartiesEndpoint;
     service.getIdentityProviderEndpoint = getIdentityProviderEndpoint;
     service.getIdentityProvidersEndpoint = getIdentityProvidersEndpoint;
+    service.getSecurityDomainsEndpoint = getSecurityDomainsEndpoint;
     service.getOpenIdConnectClientEndpoint = getOpenIdConnectClientEndpoint;
     service.getOpenIdConnectClientsEndpoint = getOpenIdConnectClientsEndpoint;
     service.getPrivateKeysEndpoint = getPrivateKeysEndpoint;

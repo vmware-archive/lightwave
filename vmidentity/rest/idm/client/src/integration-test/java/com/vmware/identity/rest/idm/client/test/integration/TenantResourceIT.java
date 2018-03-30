@@ -44,6 +44,7 @@ import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.client.test.integration.util.UserGenerator;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
+import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 
@@ -179,5 +180,16 @@ public class TenantResourceIT extends IntegrationTestBase {
         for (String id : expectedPrincipalIds) {
             assertTrue("Expected id: " + id, normalizedPricipalIdsDTO.getIds().contains(id));
         }
+    }
+
+    @Test
+    public void testGetSecurityDomains() throws Exception {
+        List<SecurityDomainDTO> secDomains = testAdminClient.tenant().getSecurityDoimains(testTenant.getName());
+        assertTrue(secDomains != null);
+        assertTrue(secDomains.size() > 0);
+
+        secDomains = systemAdminClient.tenant().getSecurityDoimains(systemTenantName);
+        assertTrue(secDomains != null);
+        assertTrue(secDomains.size() > 0);
     }
 }

@@ -43,6 +43,7 @@ import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
+import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.ServerDetailsDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
@@ -103,6 +104,13 @@ public class PostResource extends BaseResource {
                                  @DefaultValue("NAME") @QueryParam("searchBy") String searchBy,
                                  @DefaultValue("") @QueryParam("query") String query) {
         return new TenantResource(getRequest(), getSecurityContext()).searchMembers(tenantName, memberType, domain, limit, searchBy, query);
+    }
+
+    @POST @Path("/tenant/{tenantName}/securitydomains")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.REGULAR_USER)
+    public Collection<SecurityDomainDTO> getSecurityDomains(@PathParam("tenantName") String tenantName) {
+        return new TenantResource(getRequest(), getSecurityContext()).getSecurityDomains(tenantName);
     }
 
     @POST @Path("/tenant/{tenantName}/config")
