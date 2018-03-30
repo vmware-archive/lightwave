@@ -12,6 +12,7 @@ Include file `vmdns.h` in your source file:
 On your linker command, add vmdnsclient as a dependency library, e.g. `-vmdnsclient` for gcc.
 
 ## Connection Management APIs
+Following APIs helps to establish and close secure sessions to a DNS server
 
 ### VmDnsOpenServerA
 The VmDnsOpenServerA opens a handle to DNS server
@@ -35,10 +36,22 @@ VmDnsOpenServerW(
 * pwszPassword          - Lightwave password
 * dwFlags               - Open Flags (not used)
 * pReserved             - Not used
+* pServerContext        - handle to the DNS server
 
 ### VmDnsCloseServer
+VmDnsCloseServer closes the connection handle to a DNS server
+
+```C
+VOID
+VmDnsCloseServer(
+    PVMDNS_SERVER_CONTEXT   pServerContext
+    );
+```
+
+* pServerContext        - Handle to the remote server.
 
 ## Zone Management APIs
+DNS Zone management APIs
 
 ### VmDnsCreateZoneA
 ### VmDnsUpdateZoneA
