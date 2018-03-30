@@ -29,7 +29,12 @@ VmDnsOpenServerW(
     );
 ```
 
-* pwszNetworkAddress
+* pwszNetworkAddress    - Server FQDN or IP
+* pwszUserName          - Lightwave user name
+* pwszDomain            - Lightwave domain name
+* pwszPassword          - Lightwave password
+* dwFlags               - Open Flags (not used)
+* pReserved             - Not used
 
 ### VmDnsCloseServer
 
