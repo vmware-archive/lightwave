@@ -308,6 +308,9 @@ VmDnsProcessQuery(
         }
 
         bQueryInZone = TRUE;
+
+        // Authoritative answer for zone
+        ResponseHeader.codes.AA = 1;
         dwError = VmDnsSrvQueryRecords(
                             pZoneObject,
                             pQuestion->pszQName,

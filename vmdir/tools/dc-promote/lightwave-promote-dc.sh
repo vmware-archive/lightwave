@@ -292,13 +292,20 @@ echo /opt/likewise/lib64/libvmdirdb.so | ssh $PRIV_USER@$LIGHTWAVE_AD 'cat > /et
 # 15c Add netlogin RPC server to lsassd
 echo_status "Add netlogin RPC server to lsassd"
 cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
-/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\lsass\Parameters\\RPCServers]' LoadOrder   lsarpc samr dssetup wkssvc netlogon
+/opt/likewise/bin/lwregshell set_value   '[HKEY_THIS_MACHINE\\Services\\lsass\Parameters\\RPCServers]' LoadOrder   lsarpc samr dssetup wkssvc netlogon drsuapi
 /opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]'
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "HomeDirPrefix" REG_SZ "/home"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "LoginShellTemplate" REG_SZ "/bin/sh"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "LpcSocketPath" REG_SZ "/var/lib/likewise/rpc/lsass"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "Path" REG_SZ "/opt/likewise/lib64/libnetlogon_srv.so"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "RegisterTcpIp" REG_DWORD 0
+# drsuapi RPC service
+/opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]'
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "HomeDirPrefix" REG_SZ "/home"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "LoginShellTemplate" REG_SZ "/bin/sh"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "LpcSocketPath" REG_SZ "/var/lib/likewise/rpc/lsass"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "Path" REG_SZ "/opt/likewise/lib64/libdrsuapi_srv.so"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "RegisterTcpIp" REG_DWORD 1
 NNNN
 scp /tmp/regshell-rpcloadorder.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
@@ -331,6 +338,9 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
   --service-literal _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
   --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
   --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
+
+echo_status "Copy drsuapi firewall script to DC"
+scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/firewall-drsuapi.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 
 # 16 Restart all lightwave services
 echo_status "Restart all lightwave services"
