@@ -1,3 +1,5 @@
+# VMware Domain Name Service Overview
+
 Directory integrated domain name service to ensure Kerberos Authentication to the Directory Service and Authentication Service (STS). It also support for site-affinity using SRV records as well as DNS Forwarders.
 
 VMware DNS server supports secure dynamic update using GSS-TSIG protocol (RFC 3645).
