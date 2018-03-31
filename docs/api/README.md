@@ -18,7 +18,7 @@ VMware Lightwave consists of the following sets of APIs.
 3.  VMware Domain Name Service (vmdns)
 - [Module Intro](vmdns-intro.md)
 - [C](vmdns-c-api.md)
-- [REST](vmdns-rest-api.md)
+- [REST](http://vmware.github.io/lightwave/docs/vmdns-rest-api.html)
 
 4.  VMware Secure Token Service (OpenID Connect - OIDC) (vmware-sts)
 - [Module Intro](oidc-intro.md)
