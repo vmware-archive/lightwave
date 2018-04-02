@@ -443,7 +443,10 @@ _VmDirIntegrityCheckJobStart(
             continue;
         }
 
-        _VmDirIntegrityCheckEntry(pJob, &entry);
+        if (!VmDirIsTombStoneObject(entry.dn.lberbv_val))
+        {
+            _VmDirIntegrityCheckEntry(pJob, &entry);
+        }
 
         VmDirFreeEntryContent(&entry);
     }

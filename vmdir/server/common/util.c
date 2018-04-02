@@ -1553,6 +1553,22 @@ VmDirIsDeletedContainer(
     return bRtn;
 }
 
+BOOLEAN
+VmDirIsTombStoneObject(
+    PCSTR   pszDN
+    )
+{
+    BOOLEAN bRtn = FALSE;
+
+    if (pszDN &&
+        VmDirStringEndsWith(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE))
+    {
+        bRtn = TRUE;
+    }
+
+    return bRtn;
+}
+
 // following gVmdirServerGlobals global variables must be initialized in a promoted server.
 VOID
 VmDirAssertServerGlobals(

@@ -1071,6 +1071,11 @@ VmDirIsDeletedContainer(
     PCSTR   pszDN
     );
 
+BOOLEAN
+VmDirIsTombStoneObject(
+    PCSTR   pszDN
+    );
+
 DWORD
 VmDirToLDAPError(
     DWORD   dwVmDirError

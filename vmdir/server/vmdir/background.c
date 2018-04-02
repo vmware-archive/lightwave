@@ -226,11 +226,29 @@ VmDirBkgdCreateNewIntegChkReport(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwJobInterval = 0;
 
     if (!pTaskCtx)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    dwError = VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+        VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC,
+        &dwJobInterval,
+        0);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE) // key not set, default to disable.
+    {
+        dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        goto cleanup;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwJobInterval  = VMDIR_MAX(60 * 60 * 1, dwJobInterval);
+    pTaskCtx->dwPeriod = dwJobInterval;
 
     dwError = VmDirIntegrityCheckStart(INTEGRITY_CHECK_JOB_START, pTaskCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -251,6 +269,7 @@ VmDirBkgdCompareIntegChkReports(
     )
 {
     DWORD   dwError = 0;
+    DWORD   dwJobInterval = 0;
     DWORD   i = 0;
     PCSTR   pszReportDir = VMDIR_INTEG_CHK_REPORTS_DIR;
     PCSTR   pszArchiveDir = VMDIR_INTEG_CHK_ARCHIVE_DIR;
@@ -269,6 +288,23 @@ VmDirBkgdCompareIntegChkReports(
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    dwError = VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+        VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC,
+        &dwJobInterval,
+        0);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE) // key not set, default to disable.
+    {
+        dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        goto cleanup;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwJobInterval  = VMDIR_MAX(60 * 60 * 12, dwJobInterval);
+    pTaskCtx->dwPeriod = dwJobInterval;
 
     dwError = VmDirListFiles(pszReportDir, &pReportFiles);
     BAIL_ON_VMDIR_ERROR(dwError);
