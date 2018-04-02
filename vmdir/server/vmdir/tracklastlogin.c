@@ -283,6 +283,15 @@ _VmDirModifyLastLogonTimeStamp(
                 "%s:%d: VmDirAppendAMod failed with error code: %d.",
                 __FUNCTION__, __LINE__, dwError );
 
+    dwError = VmDirAppendAMod( &op, MOD_OP_REPLACE,
+                               ATTR_MODIFIERS_NAME,
+                               ATTR_MODIFIERS_NAME_LEN,
+                               pLoginTime->pszDN,
+                               VmDirStringLenA(pLoginTime->pszDN) );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                "%s:%d: VmDirAppendAMod failed with error code: %d.",
+                __FUNCTION__, __LINE__, dwError );
+
     dwError = VmDirInternalModifyEntry( &op );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
                 "%s:%d: InternalModifyEntry failed. DN: %s, Error code: %d, Error string: %s",

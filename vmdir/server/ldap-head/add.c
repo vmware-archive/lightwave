@@ -274,6 +274,10 @@ VmDirParseEntry(
         pAttr = NULL;
     }
 
+    retVal = ParseRequestControls(op, pResult);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
+                                 "Add request control parsing failed");
+
     if ( ber_scanf( op->ber, "}") == LBER_ERROR )
     {
         VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "ParseEntry: ber_scanf failed" );

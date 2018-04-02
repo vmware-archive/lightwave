@@ -108,7 +108,8 @@ _VmDirIsInternalEntry(
     PVDIR_ENTRY pEntry
     )
 {
-    return pEntry->eId < ENTRY_ID_SEQ_INITIAL_VALUE;
+    // allow deletion of legcay schema blob but no other default entries
+    return pEntry->eId < ENTRY_ID_SEQ_INITIAL_VALUE && pEntry->eId != SUB_SCEHMA_SUB_ENTRY_ID;
 }
 
 /*

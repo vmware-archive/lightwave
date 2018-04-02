@@ -660,6 +660,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       raftPingCtrl;
     VDIR_LDAP_CONTROL *       raftVoteCtrl;
     VDIR_LDAP_CONTROL *       statePingCtrl;
+    VDIR_LDAP_CONTROL *       passblobCtrl;
 
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
