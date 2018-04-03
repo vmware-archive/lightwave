@@ -10,6 +10,7 @@ librest_head_la_SOURCES += \
     auth.c \
     authtoken.c \
     cache.c \
+    curlhandlecache.c \
     decode.c \
     encode.c \
     etcdapi.c \

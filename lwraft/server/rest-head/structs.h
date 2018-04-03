@@ -177,3 +177,10 @@ typedef struct _VDIR_REST_HEAD_CACHE
     PSID            pBuiltInAdminsGroupSid;
 
 } VDIR_REST_HEAD_CACHE, *PVDIR_REST_HEAD_CACHE;
+
+// curlhandlecache.c
+typedef struct _VDIR_REST_CURL_HANDLE_CACHE
+{
+    PVMDIR_MUTEX    pCacheMutex;
+    PLW_HASHMAP     pCurlHandleMap;
+} VDIR_REST_CURL_HANDLE_CACHE, *PVDIR_REST_CURL_HANDLE_CACHE;
