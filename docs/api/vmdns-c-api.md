@@ -93,7 +93,7 @@ VmDnsListZoneA(
 ```
 
 * pServerContext - DNS server context obtained using VmDnsOpenServerA
-* ppZoneInfo - List of zones
+* ppZoneInfo - VMDNS_ZONE_INFO_ARRAY structure contains List of zones
 
 ### VmDnsDeleteZoneA
 Delete zone from the DNS server
@@ -110,20 +110,165 @@ VmDnsDeleteZoneA(
 * pszZone - Zone name to delete
 
 ### VmDnsFreeZoneInfo
+Free Zone info obtained from list zones
+
+```C
+VOID
+VmDnsFreeZoneInfo(
+    PVMDNS_ZONE_INFO        pZoneInfo
+    );
+```
+
+* pZoneInfo - Zone info obtained using VmDnsListZoneA
+
 ### VmDnsFreeZoneInfoArray
+Free Zone info array obtained from list zones
+
+```C
+VOID
+VmDnsFreeZoneInfoArray(
+    PVMDNS_ZONE_INFO_ARRAY  pZoneInfoArray
+    );
+```
+
+* pZoneInfoArray - Zone info array obtained using VmDnsListZoneA
 
 ## Forwarder Management APIs
+Forwarder management API used to manageme add/remove/list external DNSs
+
+If there is no authorized zone exists in VMware DNS, DNS forwards the requests to the configured extenrnal DNS one by one
 
 ### VmDnsAddForwarderA
+Add new forwarder to VMware DNS.
+
+```C
+DWORD
+VmDnsAddForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszForwarder
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszForwarder  - IP address of the external DNS
+
 ### VmDnsDeleteForwarderA
+Deletes a configured forwarder form VMwareDNS
+
+```C
+DWORD
+VmDnsDeleteForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszForwarder
+    );
+```
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszForwarder  - IP address of the external DNS to delete
+
 ### VmDnsGetForwardersA
+Get the list of forwarders from DNS server
+
+```C
+DWORD
+VmDnsGetForwardersA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_FORWARDERS*      ppForwarders
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* ppForwarders  - List of forwarders in the DNS server
+
 ### VmDnsFreeForwarders
+Free list of forwarders returned from VmDnsGetForwardersA
+
+```C
+VOID
+VmDnsFreeForwarders(
+    PVMDNS_FORWARDERS       pForwarders
+    );
+```
+* pForwarders  - List of forwarders in the DNS server
 
 ## Resource Record Management APIs
+Add/Remove/Update resource records in the DNS
 
 ### VmDnsAddRecordA
+Add new A record to a DNS zone
+
+```C
+DWORD
+VmDnsAddRecordA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszZone,
+    PVMDNS_RECORD           pRecord
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszZone - zone in which resource record needs to be added
+* pRecord - Resource record needs to be added
+
 ### VmDnsDeleteRecordA
+Delete reource record from a DNS zone
+
+```C
+DWORD
+VmDnsDeleteRecordA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszZone,
+    PVMDNS_RECORD           pRecord
+    );
+```
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszZone - zone in which resource record needs to be added
+* pRecord - Resource record needs to be added
+
 ### VmDnsQueryRecordsA
+Query DNS server for records
+
+```C
+DWORD
+VmDnsQueryRecordsA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszZone,
+    PSTR                    pszName,
+    VMDNS_RR_TYPE           dwType,
+    DWORD                   dwOptions,
+    PVMDNS_RECORD_ARRAY *   ppRecordArray
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszZone - zone in which resource record needs to be added
+* pszName - Name needs to be queried
+* dwType - RR type needs to queried (refer RFC)
+* dwOptions - Not used
+* ppRecordArray - Resource record list returned
+
 ### VmDnsListRecordsA
-### VmDnsFreeRecords
+List DNS RR records in from a give zone
+
+```C
+DWORD
+VmDnsListRecordsA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PSTR                    pszZone,
+    PVMDNS_RECORD_ARRAY *   ppRecordArray
+    );
+```
+
+* pServerContext - DNS server context obtained using VmDnsOpenServerA
+* pszZone - zone in which resource record needs to be added
+* ppRecordArray - Resource record list returned
+
 ### VmDnsFreeRecordArray
+Free RR record list obtained
+
+```C
+VOID
+VmDnsFreeRecordArray(
+    PVMDNS_RECORD_ARRAY     pRecordArray
+    );
+```
+* ppRecordArray - Resource record list returned
