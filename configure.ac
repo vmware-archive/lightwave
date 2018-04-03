@@ -1533,6 +1533,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/tools/vdcaclmgr/Makefile
                  lwraft/tools/vdcadmintool/Makefile
                  lwraft/tools/vdcschema/Makefile
+                 lwraft/tools/mdb_walflush/Makefile
                  lwraft/thirdparty/Makefile
                  lwraft/thirdparty/openldap/Makefile
                  lwraft/thirdparty/openldap/libraries/Makefile

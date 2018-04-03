@@ -28,6 +28,11 @@ else
     openssl-1.0.2n
 fi
 
+if [ ! -f /usr/bin/mdb_copy ]; then
+    wget https://vmware.bintray.com/photon_publish_rpms/x86_64/lmdb-0.9.21-1.ph2.x86_64.rpm
+    rpm -i lmdb-0.9.21-1.ph2.x86_64.rpm
+fi
+
 echo "Step 2: Enable DNS caching"
 
 sed -i 's/hosts: files/hosts:files resolve/g' /etc/nsswitch.conf

@@ -14,6 +14,7 @@ static volatile sig_atomic_t gotsig;
 int alldbs = 0, envflags = 0, list = 0;
 char *subname = NULL;
 int nenv = 1;
+size_t mapsize = 107374182400;
 
 static void dumpsig( int sig )
 {
@@ -51,6 +52,7 @@ static void usage(char *prog)
     fprintf(stderr, "usage: %s [-l] [-n] [-a|-s subdb] dbpath [dbpath2]\n", prog);
     fprintf(stderr, "-l: List the names of subDBs\n-n: Use MDB_NOSUBDIR flag\n");
     fprintf(stderr, "-a: Iterate through all subDBs\n-s: Iterate through subDB provided in argument\n");
+    fprintf(stderr, "-m: Memory map size in bytes. Default is 100 GB.\n");
     exit(EXIT_FAILURE);
 }
 
@@ -68,7 +70,7 @@ static void parse_args(int argc, char *argv[])
      * -n: use NOSUBDIR flag on env_open
      * (default) parse only the main DB
      */
-    while ((i = getopt(argc, argv, "alns:")) != EOF) {
+    while ((i = getopt(argc, argv, "alns:m:")) != EOF) {
         switch(i) {
             case 'l':
                 list = 1;
@@ -84,6 +86,9 @@ static void parse_args(int argc, char *argv[])
                 if (alldbs)
                     usage(prog);
                 subname = optarg;
+                break;
+            case 'm':
+                mapsize = atol(optarg);
                 break;
             default:
                 usage(prog);
@@ -136,14 +141,21 @@ int main(int argc, char *argv[])
         }
 
         if (alldbs || subname) {
-            rc = mdb_env_set_maxdbs(env, 2);
+            rc = mdb_env_set_maxdbs(env, 100);
             if (rc) {
-                fprintf(stderr, "mdb_env_open failed, error %d %s\n", rc, mdb_strerror(rc));
+                fprintf(stderr, "mdb_env_set_maxdbs failed, error %d %s\n", rc, mdb_strerror(rc));
                 goto env_close;
             }
         }
 
-        rc = mdb_env_open(env, envname, envflags | MDB_RDONLY, 0664);
+        /*This step can be removed if we upgrade to MDB >= 0.9.14*/
+        rc = mdb_env_set_mapsize(env, mapsize);
+        if (rc) {
+            fprintf(stderr, "mdb_env_set_mapsize failed, error %d %s\n", rc, mdb_strerror(rc));
+            goto env_close;
+        }
+
+        rc = mdb_env_open(env, envname, envflags | MDB_RDONLY, 0600);
         if (rc) {
             fprintf(stderr, "mdb_env_open failed, error %d %s\n", rc, mdb_strerror(rc));
             goto env_close;
