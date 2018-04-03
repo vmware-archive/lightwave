@@ -446,6 +446,8 @@ VmDnsSecProcessTkeyQuery(
     DWORD dwError = 0;
     DWORD dwIndex = 0;
     DWORD dwTkeyCount = 0;
+    DWORD dwCurrentTime = 0;
+    DWORD dwCreateTime = 0;
     BOOL bAuthSuccess = FALSE;
     BOOL bIsVerified = FALSE;
     PVMDNS_RECORD *pAdditionalRRs = NULL;
@@ -520,6 +522,16 @@ VmDnsSecProcessTkeyQuery(
                                 &pResponse->pAnswers
                                 );
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwCurrentTime = (DWORD) time(NULL);
+        dwCreateTime = pRequest->pAdditional[0]->Data.TKEY.dwCreateTime;
+        if (dwCurrentTime > dwCreateTime)
+        {
+            dwCreateTime = dwCurrentTime;
+        }
+        pResponse->pAnswers[0]->Data.TKEY.dwCreateTime = dwCreateTime;
+        pResponse->pAnswers[0]->Data.TKEY.dwExpireTime =
+            dwCreateTime + VMDNS_TIME_DAY_IN_SECS;
 
         pResponse->pHeader->usANCount++;
 
