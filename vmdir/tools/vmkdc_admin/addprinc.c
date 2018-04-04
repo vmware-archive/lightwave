@@ -44,7 +44,7 @@ VmKdcAdminAddPrinc(int argc, char *argv[], PROG_ARGS *args)
 
     if (!bRandKey && !pszPassword)
     {
-        ShowUsage(VmKdc_argv0, "no password or random key option specified");
+        pszPassword = getpass("password: ");
     }
 
     if ( argc != 1 || IsNullOrEmptyString(argv[0]) ||

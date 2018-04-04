@@ -681,7 +681,7 @@ _RpcVmDirCreateUserInternal(
     dwError = VmDirSrvCreateDN("users", pszDnDomain, &pszDnUsers);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSrvCreateDN(pszUPNName, pszDnUsers, &pszDnUpn);
+    dwError = VmDirSrvCreateDN(pszUserName, pszDnUsers, &pszDnUpn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateAccount(
