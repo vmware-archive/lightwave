@@ -679,6 +679,7 @@ ProcessAConnection(
                 retVal);
         goto error;
     }
+    pConn->bIsLdaps = pConnCtx->bIsLdaps;
 
     while (TRUE)
     {
@@ -1152,6 +1153,7 @@ vmdirConnAccept(
         pConnCtx->sockFd  = newsockfd;
         newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
+        pConnCtx->bIsLdaps = bIsLdaps;
 
         retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)

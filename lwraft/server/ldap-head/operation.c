@@ -195,6 +195,17 @@ VmDirFreeOperationContent(
             VMDIR_SAFE_FREE_MEMORY(op->pCondWriteCtrl->value.condWriteCtrlVal.pszFilter);
         }
 
+        if (op->appendEntriesCtrl)
+        {
+             VMDIR_SAFE_FREE_MEMORY(op->appendEntriesCtrl->value.appendEntriesCtrlVal.entries.lberbv_val);
+             VMDIR_SAFE_FREE_MEMORY(op->appendEntriesCtrl->value.appendEntriesCtrlVal.leader);
+        }
+
+        if (op->requestVoteCtrl)
+        {
+            VMDIR_SAFE_FREE_MEMORY(op->requestVoteCtrl->value.requestVoteCtrlVal.candidateId);
+        }
+
         if (op->reqControls)
         {
             DeleteControls(&(op->reqControls));

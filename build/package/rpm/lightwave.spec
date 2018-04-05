@@ -995,7 +995,7 @@ Lightwave POST service
 %{_jarsdir}/commons-lang-2.6.jar
 %{_jarsdir}/commons-lang3-3.3.2.jar
 %{_jarsdir}/commons-logging-1.2.jar
-%{_jarsdir}/jersey-media-json-jackson-2.25.1.jar
+%{_jarsdir}/jackson-jaxrs-json-provider-2.9.4.jar
 %{_jarsdir}/jackson-core-2.9.4.jar
 %{_jarsdir}/jackson-databind-2.9.4.jar
 %{_jarsdir}/jackson-annotations-2.9.4.jar
@@ -1172,6 +1172,8 @@ Lightwave POST service
 %{_bindir}/postadmintool
 %{_bindir}/postaclmgr
 %{_bindir}/post-cli
+%{_bindir}/mdb_stat
+%{_bindir}/mdb_verify_checksum
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
 

@@ -158,7 +158,7 @@ newParentIdIndexIterator:
                 // Log, but otherwise ignore, any error encountered while removing
                 // tombstones.
                 //
-                VMDIR_LOG_ERROR(
+                VMDIR_LOG_VERBOSE(
                     VMDIR_LOG_MASK_ALL,
                     "Deleting entry %s failed, error (%d)",
                     VDIR_SAFE_STRING(entry.dn.lberbv.bv_val),

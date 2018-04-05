@@ -39,12 +39,14 @@ public class IntegrationTestBase {
     protected static VmdirClient systemAdminVmdirClient;
     protected static IdmClient testAdminClient;
     protected static VmdirClient testVmdirClient;
+    protected static String systemTenantName;
 
     public static void init(boolean withTestTenant) throws IOException, GeneralSecurityException, ClientException, HttpException {
         properties = new IntegrationTestProperties();
+        systemTenantName = properties.getSystemTenant();
 
         systemAdminClient = TestClientFactory.createClient(properties.getHost(),
-                properties.getSystemTenant(),
+                systemTenantName,
                 properties.getSystemAdminUsername(),
                 properties.getSystemDomain(),
                 properties.getSystemAdminPassword());

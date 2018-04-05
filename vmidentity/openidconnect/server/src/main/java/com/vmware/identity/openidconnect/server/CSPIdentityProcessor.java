@@ -32,6 +32,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -49,10 +50,14 @@ import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.DomainType;
+import com.vmware.identity.idm.DuplicateTenantException;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.InvalidPrincipalException;
+import com.vmware.identity.idm.MemberAlreadyExistException;
 import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
@@ -94,8 +99,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   public static final String QUERY_PARAM_STATE = "state";
   public static final String QUERY_PARAM_GRANT_TYPE = "grant_type";
 
-  public static final String ROLE_CSP_ORG_OWNER = "csp:org_owner";
-  public static final String CSP_ORG_LINK = "/csp/gateway/am/api/orgs/";
+  private static final String ROLE_CSP_ORG_OWNER = "csp:org_owner";
+  private static final String ADMIN_GROUP_NAME = "Administrators";
+  private static final String CSP_ORG_LINK = "/csp/gateway/am/api/orgs/";
 
   @Autowired
   private CasIdmClient idmClient;
@@ -237,18 +243,22 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       throw new ServerException(errorObject);
     }
 
-    if (accessToken.getPermissions() == null || accessToken.getPermissions().isEmpty()) {
-        ErrorObject errorObject = ErrorObject.accessDenied(String.format("User %s does not have permissions with tenant %s ",
-                accessToken.getUsername(), idToken.getTenant()));
-        throw new ServerException(errorObject);
-    }
-
     TenantInfo tenantInfo = getTenantInfo(tenantName);
+    PrincipalId user = new PrincipalId(accessToken.getUsername(), accessToken.getDomain());
+    FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
+    boolean isOrgOwner = accessToken.getPermissions().contains(ROLE_CSP_ORG_OWNER);
     if (tenantInfo == null) {
-      ErrorObject errorObject = ErrorObject.accessDenied(
-          String.format("Tenant [%s] does not exist", tenantName)
-      );
-      throw new ServerException(errorObject);
+      if (isOrgOwner) {
+          // Multiple requests to /federate endpoint can happen at the same time.
+          // Multiple lightwave servers are in the picture which serve requests at the same time.
+          // There is potential race condition for creating tenant.
+          createTenant(tenantName, state.getIssuer());
+          createOrgOwnerAccount(tenantName, federatedIdp, state.getIssuer(), user);
+      } else {
+          ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] does not exist", tenantName));
+          LoggerUtils.logFailedRequest(logger, errorObject);
+          throw new ServerException(errorObject);
+      }
     }
 
     String systemDomain = getSystemDomainName(tenantName);
@@ -256,13 +266,21 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       throw new ServerException(ErrorObject.serverError("The system domain is invalid"));
     }
 
-    PrincipalId user = new PrincipalId(accessToken.getUsername(), accessToken.getDomain());
     FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
-    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(state.getIssuer());
+    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, state.getIssuer());
 
-    FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
+    // validate perms in the access token against the configured perm roles in the federated idp
+    federatedIdp.validateUserPermissions(accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());
+
     if (!federatedIdp.isFederationUserActive(user)) {
         federatedIdp.provisionFederationUser(state.getIssuer(), user);
+        if (isOrgOwner) {
+            try {
+                idmClient.addUserToGroup(tenantName, user, ADMIN_GROUP_NAME);
+            } catch (Exception e) {
+                logger.warn("Failed to add org owner {} to admin group.", user.getUPN());
+            }
+        }
     }
 
     federatedIdp.updateUserGroups(user, accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings());
@@ -384,6 +402,69 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
         ErrorObject errorObject = ErrorObject.accessDenied("token expired");
         LoggerUtils.logFailedRequest(logger, errorObject);
         throw new ServerException(errorObject);
+      }
+  }
+
+  private void createTenant(String tenantName, String entityId) throws ServerException {
+        Validate.notEmpty(tenantName, "tenant name must not be empty");
+        Validate.notEmpty(entityId, "csp issuer must not be empty");
+
+        try {
+            idmClient.addTenant(new Tenant(tenantName), "Administrator",
+                    idmClient.generatePassword(idmClient.getSystemTenant()).toCharArray());
+            idmClient.setTenantCredentials(tenantName);
+            idmClient.setIssuer(tenantName, entityId);
+            logger.info("Successfully created CSP tenant {}", tenantName);
+        } catch (DuplicateTenantException e) {
+            ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] already exists.", tenantName));
+            throw new ServerException(errorObject, e);
+        } catch (Exception e) {
+            try {
+                logger.error("Failed to create csp tenant {}. Deleting tenant...", tenantName);
+                idmClient.deleteTenant(tenantName);
+            } catch (Exception ex) {
+                ErrorObject errorObject = ErrorObject.serverError(String.format(
+                        "Tenant % provision failure.", tenantName));
+                throw new ServerException(errorObject, ex);
+            }
+            ErrorObject errorObject = ErrorObject.serverError(String.format(
+                    "Tenant % provision failure.", tenantName));
+            throw new ServerException(errorObject, e);
+        }
+  }
+
+  private void createOrgOwnerAccount(String tenantName, FederatedIdentityProvider federatedIdp,
+          String issuer, PrincipalId user) throws ServerException {
+      Validate.notEmpty(tenantName, "tenant name must not be empty");
+      Validate.notNull(federatedIdp, "federated idp must not be null.");
+      Validate.notEmpty(issuer, "csp issuer must not be empty");
+      Validate.notNull(user, "user principal id must not be null.");
+
+      try {
+          federatedIdp.provisionFederationUser(issuer, user);
+          try {
+              idmClient.addUserToGroup(tenantName, user, ADMIN_GROUP_NAME); // org owner has admin privilege
+          } catch (MemberAlreadyExistException e) {
+              logger.info("Csp org owner {} is already added to the admin group.", user.getUPN());
+          }
+      } catch (InvalidPrincipalException e) {
+          ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Org owner [%s] already exists.", user.getUPN()));
+          throw new ServerException(errorObject, e);
+      } catch (Exception e) {
+          logger.error("Failed to provision the first csp org owner [{}] to tenant [{}]. Deleting tenant...",
+                  user.getUPN(), tenantName, e);
+          try {
+              // we need at least one admin user for the newly created tenant
+              // delete the tenant if admin account cannot be added
+              idmClient.deleteTenant(tenantName);
+          } catch (Exception ex) {
+              ErrorObject errorObject = ErrorObject.serverError(String.format(
+                      "Tenant % provision failure.", tenantName));
+              throw new ServerException(errorObject, ex);
+          }
+          ErrorObject errorObject = ErrorObject.serverError(String.format(
+                  "Tenant % provision failure.", tenantName));
+          throw new ServerException(errorObject, e);
       }
   }
 

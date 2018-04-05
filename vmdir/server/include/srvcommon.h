@@ -265,6 +265,7 @@ typedef struct _VDIR_CONNECTION_CTX
 {
   ber_socket_t sockFd;
   Sockbuf_IO   *pSockbuf_IO;
+  BOOLEAN      bIsLdaps;
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
@@ -659,6 +660,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       raftPingCtrl;
     VDIR_LDAP_CONTROL *       raftVoteCtrl;
     VDIR_LDAP_CONTROL *       statePingCtrl;
+    VDIR_LDAP_CONTROL *       passblobCtrl;
 
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
@@ -1067,6 +1069,11 @@ VmDirAssertServerGlobals(
 
 BOOLEAN
 VmDirIsDeletedContainer(
+    PCSTR   pszDN
+    );
+
+BOOLEAN
+VmDirIsTombStoneObject(
     PCSTR   pszDN
     );
 

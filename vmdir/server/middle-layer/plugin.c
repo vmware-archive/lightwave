@@ -1042,7 +1042,12 @@ _VmDirPluginPasswordHashPreAdd(
 
     if (pAttrPasswd)
     {
-        if (pAttrSchemeName)
+        if (VMDIR_IS_OP_CTRL_PASSBLOB(pOperation))
+        {
+            // import blob as is.
+            goto cleanup;
+        }
+        else if (pAttrSchemeName)
         {   // during data migration, we allow client to specify which hash scheme is used in their data
             if (VmDirStringCompareA(
                     pAttrSchemeName->vals[0].lberbv.bv_val, PASSWD_SCHEME_VMDIRD, FALSE) == 0)
@@ -1937,6 +1942,9 @@ error:
  * after a password modify -
  * 1. if self change failed, trigger a password fail event
  * 2. if admin reset succeed, unset user account control flag and clean up lockout cache record
+ *
+ *
+ * TBD, this should be done by a BG job instead of operation thr PostModifyCommit hook/plugin
  */
 static
 DWORD
@@ -1976,15 +1984,20 @@ _VmDirpluginPasswordPostModifyCommit(
         }
         else if (pEntry->eId != 0 && dwPriorResult == 0)
         {   // ignore error for post modify handling
-            // if reset password succeeded (either by admin or self), clear out
-            //     USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG and
-            //     USER_ACCOUNT_CONTROL_LOCKOUT_FLAG flags.
-            VdirUserActCtlFlagUnset(pEntry, USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG |
-                                            USER_ACCOUNT_CONTROL_LOCKOUT_FLAG );
+            if (!pOperation->conn->AccessInfo.pszNormBindedDn   ||
+                VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn),
+                                    pOperation->conn->AccessInfo.pszNormBindedDn,
+                                    FALSE) != 0
+               )
+            {
+                // if reset password succeeded by admin, clear out
+                //     USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG and
+                //     USER_ACCOUNT_CONTROL_LOCKOUT_FLAG flags.
+                VdirUserActCtlFlagUnset(pEntry, USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG |
+                                                USER_ACCOUNT_CONTROL_LOCKOUT_FLAG );
 
-            VdirLockoutCacheRemoveRec(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn));
-
-            dwError = 0;
+                VdirLockoutCacheRemoveRec(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn));
+            }
 
             VMDIR_LOG_INFO(
                 VMDIR_LOG_MASK_ALL,

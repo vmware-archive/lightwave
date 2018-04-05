@@ -54,6 +54,7 @@ public class FederatedIdpMapper {
         builder.withJitEnabled(config.getJitAttribute());
         builder.withUpnSuffix(config.getUpnSuffix());
         builder.withRoleGroupMappings(getTokenClaimGroupDTOs(config.getTokenClaimGroupMappings()));
+        builder.withMultiTenant(config.isMultiTenant());
         String protocol = config.getProtocol();
         if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
             builder.withSamlConfig(getSamlConfigDTO(config));
@@ -239,6 +240,7 @@ public class FederatedIdpMapper {
             config.setJitAttribute(federatedIdp.isJitEnabled() == null ? false : federatedIdp.isJitEnabled());
             config.setUpnSuffix(federatedIdp.getUpnSuffix());
             config.setTokenClaimGroupMappings(getTokenClaimGroupMappings(federatedIdp.getRoleGroupMappings()));
+            config.setMultiTenant(federatedIdp.isMultiTenant());
         } catch (Exception e) {
             throw new DTOMapperException("Failed to map FederatedIdpDTO to IDPConfig", e);
         }

@@ -14,12 +14,15 @@
 package com.vmware.identity.rest.idm.client.test.integration.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.util.List;
 
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
+import com.vmware.identity.rest.idm.data.FederatedIdpDTO;
+import com.vmware.identity.rest.idm.data.FederatedOidcConfigDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
@@ -27,6 +30,7 @@ import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
+import com.vmware.identity.rest.idm.data.TokenClaimGroupDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
 
 public class Assert {
@@ -112,6 +116,50 @@ public class Assert {
         assertEquals(expected.getSubjectFormats(), actual.getSubjectFormats());
         assertEquals(expected.isJitEnabled(), actual.isJitEnabled());
         assertEquals(expected.getUpnSuffix(), actual.getUpnSuffix());
+    }
+
+    public static void assertFederatedIDPsEqual(FederatedIdpDTO expected, FederatedIdpDTO actual) {
+        assertNotNull(actual);
+        assertEquals(expected.getEntityID(), actual.getEntityID());
+        assertTokenClaimGroupsEqual(expected.getRoleGroupMappings(), actual.getRoleGroupMappings());
+        assertEquals(expected.isJitEnabled(), actual.isJitEnabled());
+        assertEquals(expected.getUpnSuffix(), actual.getUpnSuffix());
+        assertEquals(expected.isMultiTenant(), actual.isMultiTenant());
+        assertEquals(expected.getProtocol(), actual.getProtocol());
+        assertOidcConfigsEqual(expected.getOidcConfig(), actual.getOidcConfig());
+    }
+
+    public static void assertTokenClaimGroupsEqual(List<TokenClaimGroupDTO> expected, List<TokenClaimGroupDTO> actual) {
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        for (TokenClaimGroupDTO expectedDTO : expected) {
+            boolean found = false;
+            for (TokenClaimGroupDTO actualDTO : actual) {
+                if (actualDTO.getClaimName().equals(expectedDTO.getClaimName())
+                        && actualDTO.getClaimValue().equals(expectedDTO.getClaimValue())) {
+                    assertEquals(expectedDTO.getGroups(), actualDTO.getGroups());
+                    found = true;
+                }
+            }
+            if (!found) {
+                fail(String.format("Expected claim group mapping [name: %s ; value: %s] is not found.",
+                        expectedDTO.getClaimName(), expectedDTO.getClaimValue()));
+            }
+        }
+    }
+
+    public static void assertOidcConfigsEqual(FederatedOidcConfigDTO expected, FederatedOidcConfigDTO actual) {
+        assertNotNull(actual);
+        assertEquals(expected.getAuthorizeEndpoint(), actual.getAuthorizeEndpoint());
+        assertEquals(expected.getClientId(), actual.getClientId());
+        assertEquals(expected.getClientSecret(), actual.getClientSecret());
+        assertEquals(expected.getIssuerType(), actual.getIssuerType());
+        assertEquals(expected.getJwksEndpoint(), actual.getJwksEndpoint());
+        assertEquals(expected.getLogoutEndpoint(), actual.getLogoutEndpoint());
+        assertEquals(expected.getMetadataEndpoint(), actual.getMetadataEndpoint());
+        assertEquals(expected.getPostLogoutEndpoint(), actual.getPostLogoutEndpoint());
+        assertEquals(expected.getRedirectURL(), actual.getRedirectURL());
+        assertEquals(expected.getTokenEndpoint(), actual.getTokenEndpoint());
     }
 
     public static void assertGroupsEqual(GroupDTO expected, GroupDTO actual) {

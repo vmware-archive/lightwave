@@ -17,4 +17,5 @@ public class FederatedIdpConfigNames {
     public static final String PROTOCOL = "protocol";
     public static final String ISSUER = "issuer";
     public static final String ISSUER_TYPE = "issuer_type";
+    public static final String MULTI_TENANT = "multi_tenant";
 }

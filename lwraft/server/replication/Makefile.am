@@ -6,7 +6,8 @@ libreplication_la_SOURCES = \
     firstreplcycle.c \
     metricsinit.c \
     replentry.c \
-    thread.c
+    thread.c \
+    raftldaprpc.c
 
 libreplication_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \

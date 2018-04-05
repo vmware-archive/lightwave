@@ -248,6 +248,11 @@ ParseRequestControls(
                 op->digestCtrl = *control;
             }
 
+            if (VmDirStringCompareA((*control)->type, VDIR_LDAP_CONTROL_PASSWD_BLOB, TRUE ) == 0)
+            {
+                op->passblobCtrl = *control;
+            }
+
             if (VmDirStringCompareA((*control)->type, LDAP_RAFT_PING_CONTROL, TRUE) == 0)
             {
                 retVal = _ParseRaftPingControlVal(

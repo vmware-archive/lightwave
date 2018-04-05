@@ -105,6 +105,11 @@ public class FederatedIdpImporter {
         IDPConfig idpConfig = new IDPConfig(entityId, IDPConfig.IDP_PROTOCOL_OAUTH_2_0);
         idpConfig.setOidcConfig(oidcConfig);
         idpConfig.setTokenClaimGroupMappings(roleGroupMapping);
+        boolean multiTenant = false;
+        if (config.get(FederatedIdpConfigNames.MULTI_TENANT) != null) {
+            multiTenant = Boolean.valueOf((String) config.get(FederatedIdpConfigNames.MULTI_TENANT));
+        }
+        idpConfig.setMultiTenant(multiTenant);
 
         idmClient.setExternalIdpConfig(tenantName, idpConfig);
         logger.info("Federated oidc config successfully set for issuer {} in tenant {}", idpConfig.getEntityID(), tenantName);

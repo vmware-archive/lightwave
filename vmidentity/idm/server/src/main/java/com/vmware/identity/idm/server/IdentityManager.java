@@ -7757,6 +7757,10 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(tenantName, "[tenantname]");
             ValidateUtil.validateNotNull(idpConfig, "[idpConfig]");
 
+            if (idpConfig.isMultiTenant() && !ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                throw new InvalidArgumentException("Multi-tenant IDP can only be registered in system tenant.") ;
+            }
+
             String protocol = idpConfig.getProtocol();
             IDPConfig.validateProtocol(protocol);
             if (protocol.equals(IDPConfig.IDP_PROTOCOL_SAML_2_0)) {
@@ -7842,7 +7846,19 @@ public class IdentityManager implements IIdentityManager {
             }
             else
             {
-                return tenantInfo.getExternalIdpConfigs();
+                Collection<IDPConfig> idpConfigs = tenantInfo.getExternalIdpConfigs();
+                String systemTenant = this.getSystemTenant();
+                if (!ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                    Collection<IDPConfig> systemTenantIdpConfigs = getTenantInfo(systemTenant).getExternalIdpConfigs();
+                    if (systemTenantIdpConfigs != null) {
+                        for (IDPConfig idpConfig : systemTenantIdpConfigs) {
+                            if (idpConfig.isMultiTenant()) {
+                                idpConfigs.add(idpConfig);
+                            }
+                        }
+                    }
+                }
+                return idpConfigs;
             }
         }
         catch (Exception e)
@@ -7869,7 +7885,19 @@ public class IdentityManager implements IIdentityManager {
             }
             else
             {
-                return tenantInfo.getExternalIdpConfigs(protocol);
+                Collection<IDPConfig> idpConfigs = tenantInfo.getExternalIdpConfigs(protocol);
+                String systemTenant = this.getSystemTenant();
+                if (!ServerUtils.isEquals(tenantName, this.getSystemTenant())) {
+                    Collection<IDPConfig> systemTenantIdpConfigs = getTenantInfo(systemTenant).getExternalIdpConfigs(protocol);
+                    if (systemTenantIdpConfigs != null) {
+                        for (IDPConfig idpConfig : systemTenantIdpConfigs) {
+                            if (idpConfig.isMultiTenant()) {
+                                idpConfigs.add(idpConfig);
+                            }
+                        }
+                    }
+                }
+                return idpConfigs;
             }
         }
         catch (Exception e)
@@ -7900,6 +7928,21 @@ public class IdentityManager implements IIdentityManager {
                     if (config.getEntityID().equals(configEntityId))
                         return config;
                 }
+                // look up multi-tenant idp config from system tenant
+                String systemTenant = this.getSystemTenant();
+                if (!ServerUtils.isEquals(tenantName, systemTenant)) {
+                    tenantInfo = getTenantInfo(systemTenant);
+                    if (tenantInfo == null)
+                    {
+                        throw new IllegalStateException(String.format("System tenant [%s] cannot be found", systemTenant));
+                    }
+                    for (IDPConfig config : tenantInfo.getExternalIdpConfigs())
+                    {
+                        if (config.isMultiTenant() && config.getEntityID().equals(configEntityId)) {
+                            return config;
+                        }
+                    }
+                }
                 return null;   // not found
             }
         }
@@ -7910,7 +7953,7 @@ public class IdentityManager implements IIdentityManager {
                     configEntityId, tenantName));
             throw e;
         }
-            }
+    }
 
     private
     Collection<IDPConfig> getExternalIdpForTenantByUrl(

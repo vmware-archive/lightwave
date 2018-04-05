@@ -37,6 +37,7 @@
 #define VMDIR_REST_HEADER_IF_MATCH          "If-Match"
 #define VMDIR_REST_HEADER_REQUESTID         "Requestid"
 #define VMDIR_REST_HEADER_ORIGIN            "Origin"
+#define VMDIR_REST_HEADER_CONNECTION        "Connection"
 
 // HTTP methods
 #define HTTP_METHOD_OPTIONS                 "OPTIONS"

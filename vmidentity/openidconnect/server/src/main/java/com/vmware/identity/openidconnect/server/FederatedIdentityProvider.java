@@ -29,6 +29,7 @@ import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.TokenClaimAttribute;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ErrorObject;
 
 public class FederatedIdentityProvider {
 
@@ -76,6 +77,24 @@ public class FederatedIdentityProvider {
 
         logger.info("JIT user {} successfully added to tenant {}.", userId.getUPN(), this.tenant);
         return internalUserId;
+    }
+
+    public void validateUserPermissions(Collection<String> permissionsFromToken,
+            Collection<TokenClaimAttribute> permissionsFromIDPConfig) throws ServerException {
+        Validate.notEmpty(permissionsFromIDPConfig, "permissions in IDP config is null or empty");
+        boolean hasValidPermission = false;
+        if (permissionsFromToken != null && !permissionsFromToken.isEmpty()) {
+            for (TokenClaimAttribute claim : permissionsFromIDPConfig) {
+                if (permissionsFromToken.contains(claim.getClaimValue())) {
+                    hasValidPermission = true;
+                    break;
+                }
+            }
+        }
+        if (!hasValidPermission) {
+            ErrorObject errorObject = ErrorObject.accessDenied(String.format("Insufficient permission."));
+            throw new ServerException(errorObject);
+        }
     }
 
     public void updateUserGroups(PrincipalId userId, Collection<String> permissions,

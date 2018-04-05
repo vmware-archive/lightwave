@@ -403,11 +403,12 @@ public class TokenRequestProcessor {
 
         FederatedIdentityProviderInfo federatedIdpInfo;
         try {
-            federatedIdpInfo = this.federatedInfoRetriever.retrieveInfo(issuer);
+            federatedIdpInfo = this.federatedInfoRetriever.retrieveInfo(this.tenant, issuer);
         } catch (Exception e1) {
             throw new ServerException(ErrorObject.serverError("failed to retrieve federated idp info with issuer " + issuer));
         }
         validateFederationToken(issuer, federationToken, solutionUser, federatedIdpInfo);
+        federatedIdentityProvider.validateUserPermissions(federationToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());
 
         PersonUser personUser;
         PrincipalId userId = new PrincipalId(federationToken.getUsername(), federationToken.getDomain());

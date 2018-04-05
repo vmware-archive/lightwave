@@ -619,6 +619,18 @@ VmDirDomainNameToDN(
     PSTR*   ppszDomainDN
     );
 
+DWORD
+VmDirConnectLDAPServerWithMachineAccount(
+    PCSTR  pszHostName,
+    PCSTR  pszDomain,
+    LDAP** ppLd
+    );
+
+VOID
+VmDirLdapUnbind(
+    LDAP** ppLd
+    );
+
 #if defined(HAVE_DCERPC_WIN32)
 int uuid_parse(char *str, uuid_t ret_uuid);
 #endif
@@ -2317,6 +2329,9 @@ DWORD
 VmDirSetThreadLogContextValue(
     PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
     );
+
+VOID
+VmDirFreeThreadContext(VOID);
 
 #ifdef __cplusplus
 }

@@ -41,6 +41,24 @@ _ParseCondWriteControlVal(
     VDIR_LDAP_RESULT *                      pLdapResult     // Output
     );
 
+static
+int
+_ParseAppendEntriesControlVal(
+   VDIR_OPERATION *                        pOp,
+   BerValue *                              pControlBer,    // Input: control value encoded as ber
+   PVDIR_APPEND_ENTRIES_CONTROL_VALUE       pCtrlVal,       // Output
+   VDIR_LDAP_RESULT *                      pLdapResult     // Output
+   );
+
+static
+int
+_ParseRequestVoteControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    PVDIR_REQUEST_VOTE_CONTROL_VALUE                pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -225,6 +243,34 @@ ParseRequestControls(
                                                   "ParseRequestControls: _ParseConditionalWriteControlVal failed.");
                 }
                 op->pCondWriteCtrl = *control;
+            }
+
+            if (VmDirStringCompareA( (*control)->type, LDAP_APPEND_ENTRIES_CONTROL, TRUE ) == 0)
+            {
+                retVal = _ParseAppendEntriesControlVal( op,
+                                                &lberBervCtlValue,
+                                                &((*control)->value.appendEntriesCtrlVal),
+                                                lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParseAppendEntriesControlVal failed.");
+                }
+                op->appendEntriesCtrl = *control;
+            }
+
+            if (VmDirStringCompareA( (*control)->type, LDAP_REQUEST_VOTE_CONTROL, TRUE ) == 0)
+            {
+                retVal = _ParseRequestVoteControlVal( op,
+                                                &lberBervCtlValue,
+                                                &((*control)->value.requestVoteCtrlVal),
+                                                lr);
+                if (retVal != LDAP_SUCCESS)
+                {
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+                                                  "ParseRequestControls: _ParseRequestVoteControlVal failed.");
+                }
+                op->requestVoteCtrl = *control;
             }
 
             if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
@@ -998,5 +1044,288 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: failed");
+    goto cleanup;
+}
+
+static
+int
+_ParseAppendEntriesControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    PVDIR_APPEND_ENTRIES_CONTROL_VALUE      pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf = {0};
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    ber_int_t           term = 0;
+    BerValue            leader = {0};
+    BerValue            preLogIndex= {0};
+    ber_int_t           preLogTerm = 0;
+    BerValue            leaderCommit = {0};
+    BerValue            entries = {0};
+
+    if (!pOp || !pControlBer)
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    if (!pCtrlVal || !pLdapResult)
+    {
+        retVal = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, pControlBer, LBER_USE_DER );
+
+    /*
+     * The AppendEntriesControl the BER-encoded version of the following SEQUENCE:
+     *
+     * ControlValue ::= SEQUENCE {
+     *        term                    Integer
+     *        leader                  OCTET STRING
+     *        preLogIndex             OCTET STRING
+     *        prevLogTerm             Integer
+     *        leaderCommit            OCTET STRING
+     *        entries                 OCTET STRING
+     *  }
+     */
+
+    if (ber_scanf(ber, "{immimm}", &term, &leader, &preLogIndex, &preLogTerm, &leaderCommit, &entries) == LBER_ERROR)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing filter value", __FUNCTION__);
+        pLdapResult->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading cluster state control filter");
+    }
+
+    pCtrlVal->term = term;
+
+    retVal = VmDirAllocateStringA(leader.bv_val, &(pCtrlVal->leader));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pCtrlVal->preLogIndex = VmDirStringToLA(preLogIndex.bv_val, NULL, 10);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pCtrlVal->preLogTerm = preLogTerm;
+
+    pCtrlVal->leaderCommit = VmDirStringToLA(leaderCommit.bv_val, NULL, 10);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirAllocateAndCopyMemory(entries.bv_val, entries.bv_len, (PVOID*)&(pCtrlVal->entries.lberbv_val));
+    BAIL_ON_VMDIR_ERROR(retVal);
+    pCtrlVal->entries.lberbv_len = entries.bv_len;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    if (pszLocalErrorMsg && pLdapResult->pszErrMsg)
+    {
+        VMDIR_APPEND_ERROR_MSG(pLdapResult->pszErrMsg, pszLocalErrorMsg);
+    }
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s Error: %d", __func__, retVal);
+    goto cleanup;
+}
+
+static
+int
+_ParseRequestVoteControlVal(
+    VDIR_OPERATION *                        pOp,
+    BerValue *                              pControlBer,    // Input: control value encoded as ber
+    PVDIR_REQUEST_VOTE_CONTROL_VALUE        pCtrlVal,       // Output
+    VDIR_LDAP_RESULT *                      pLdapResult     // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf = {0};
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    ber_int_t           term = 0;
+    BerValue            candidateId = {0};
+    BerValue            lastLogIndex = {0};
+    ber_int_t           lastLogTerm = 0;
+
+    if (!pOp || !pControlBer )
+    {
+        retVal = LDAP_PROTOCOL_ERROR;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    if (!pCtrlVal || !pLdapResult)
+    {
+        retVal = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR( retVal );
+    }
+
+    ber_init2( ber, pControlBer, LBER_USE_DER );
+
+    /*
+     * The RequestVoteControl the BER-encoded version of the following SEQUENCE:
+     *
+     * ControlValue ::= SEQUENCE {
+     *        term                    Integer
+     *        candidateId             OCTET STRING
+     *        lastLogIndex            OCTET STRING
+     *        lastLogTerm             Integer
+     *  }
+     */
+
+    if (ber_scanf(ber, "{immi}", &term, &candidateId, &lastLogIndex, &lastLogTerm) == LBER_ERROR)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_scanf failed while parsing filter value", __FUNCTION__);
+        pLdapResult->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Error in reading cluster state control filter");
+    }
+
+    pCtrlVal->term = term;
+
+    retVal = VmDirAllocateStringA(candidateId.bv_val, &(pCtrlVal->candidateId));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pCtrlVal->lastLogIndex = VmDirStringToLA(lastLogIndex.bv_val, NULL, 10);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pCtrlVal->lastLogTerm = lastLogTerm;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    if (pszLocalErrorMsg && pLdapResult->pszErrMsg)
+    {
+       VMDIR_APPEND_ERROR_MSG(pLdapResult->pszErrMsg, pszLocalErrorMsg);
+    }
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s Error: %d", __func__, retVal);
+    goto cleanup;
+}
+
+int
+VmDirCreateAppendEntriesCtrl(
+    PVDIR_APPEND_ENTRIES_CONTROL_VALUE pAppendEntriesCtrlValue,
+    LDAPControl*    pAppendEntriesCtrl
+    )
+{
+    int             retVal = LDAP_SUCCESS;
+    BerElement*     pBer = NULL;
+    BerValue        leaderBV = {0};
+    BerValue        preLogIndexBV = {0};
+    BerValue        leaderCommitBV = {0};
+    BerValue        entriesBV = {0};
+
+    if (!pAppendEntriesCtrlValue || !pAppendEntriesCtrl)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    leaderBV.bv_val = (char*)pAppendEntriesCtrlValue->leader;
+    leaderBV.bv_len = VmDirStringLenA(pAppendEntriesCtrlValue->leader);
+
+    retVal = VmDirAllocateStringPrintf(&preLogIndexBV.bv_val, "%"PRIu64, pAppendEntriesCtrlValue->preLogIndex);
+    BAIL_ON_VMDIR_ERROR( retVal );
+    preLogIndexBV.bv_len = VmDirStringLenA(preLogIndexBV.bv_val);
+
+    retVal = VmDirAllocateStringPrintf(&leaderCommitBV.bv_val, "%"PRIu64, pAppendEntriesCtrlValue->leaderCommit);
+    BAIL_ON_VMDIR_ERROR( retVal );
+    leaderCommitBV.bv_len = VmDirStringLenA( leaderCommitBV.bv_val);
+
+    entriesBV.bv_val = pAppendEntriesCtrlValue->entries.lberbv.bv_val;
+    entriesBV.bv_len = pAppendEntriesCtrlValue->entries.lberbv.bv_len;
+
+    if ( ber_printf( pBer, "{iOOiOO}", pAppendEntriesCtrlValue->term, &leaderBV,
+                     &preLogIndexBV, pAppendEntriesCtrlValue->preLogTerm, &leaderCommitBV, &entriesBV) == -1)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_printf failed.", __FUNCTION__ );
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    memset( pAppendEntriesCtrl, 0, sizeof( LDAPControl ));
+    pAppendEntriesCtrl->ldctl_oid = LDAP_APPEND_ENTRIES_CONTROL;
+    pAppendEntriesCtrl->ldctl_iscritical = '1';
+    if (ber_flatten2(pBer, &pAppendEntriesCtrl->ldctl_value, 1))
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(preLogIndexBV.bv_val);
+    VMDIR_SAFE_FREE_MEMORY(leaderCommitBV.bv_val);
+    if (pBer)
+    {
+        ber_free(pBer, 1);
+    }
+    return retVal;
+
+error:
+    VmDirFreeCtrlContent(pAppendEntriesCtrl);
+    goto cleanup;
+}
+
+int
+VmDirCreateRequestVoteCtrl(
+    PVDIR_REQUEST_VOTE_CONTROL_VALUE pRequestVoteCtrlValue,
+    LDAPControl*    pRequestVoteCtrl
+    )
+{
+    int             retVal = LDAP_SUCCESS;
+    BerElement*     pBer = NULL;
+    BerValue        candidateIdBV = {0};
+    BerValue        lastLogIndexBV = {0};
+
+    if (!pRequestVoteCtrlValue || !pRequestVoteCtrl)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    candidateIdBV.bv_val = pRequestVoteCtrlValue->candidateId;
+    candidateIdBV.bv_len = VmDirStringLenA(pRequestVoteCtrlValue->candidateId);
+
+    retVal = VmDirAllocateStringPrintf(&lastLogIndexBV.bv_val, "%"PRIu64, pRequestVoteCtrlValue->lastLogIndex);
+    BAIL_ON_VMDIR_ERROR( retVal );
+    lastLogIndexBV.bv_len = VmDirStringLenA(lastLogIndexBV.bv_val);
+
+    if ( ber_printf( pBer, "{iOOi}", pRequestVoteCtrlValue->term, &candidateIdBV,
+                    &lastLogIndexBV, pRequestVoteCtrlValue->lastLogTerm) == -1)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_printf failed.", __FUNCTION__ );
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    memset( pRequestVoteCtrl, 0, sizeof( LDAPControl ));
+    pRequestVoteCtrl->ldctl_oid = LDAP_REQUEST_VOTE_CONTROL;
+    pRequestVoteCtrl->ldctl_iscritical = '1';
+    if (ber_flatten2(pBer, &pRequestVoteCtrl->ldctl_value, 1))
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(lastLogIndexBV.bv_val);
+    if (pBer)
+    {
+        ber_free(pBer, 1);
+    }
+    return retVal;
+
+error:
+    VmDirFreeCtrlContent(pRequestVoteCtrl);
     goto cleanup;
 }

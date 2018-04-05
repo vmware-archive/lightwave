@@ -81,7 +81,7 @@ public class LogoutRequestProcessor {
         String externalIdpIssuer = this.httpRequest.getCookieValue(SessionManager.getExternalIdpIssuerCookieName(this.tenant));
         if (externalIdpIssuer != null) {
             this.federatedIdpInfoRetriever = new FederatedIdentityProviderInfoRetriever(idmClient);
-            this.federatedIdpInfo = federatedIdpInfoRetriever.retrieveInfo(externalIdpIssuer);
+            this.federatedIdpInfo = federatedIdpInfoRetriever.retrieveInfo(tenant, externalIdpIssuer);
             this.federatedIdpLogoutProcessor = findLogoutProcessor();
         }
     }

@@ -190,26 +190,25 @@ VmDirSrvAccessCheck(
         }
         // otherwise, continue to SELF check below
     }
-    else
+
+    // Check Access Token in connection
+    dwError = VmDirSrvAccessCheckEntry(pAccessInfo->pAccessToken, pSecDescAbs, accessDesired, &samGranted);
+    if (!dwError)
     {
-        // Check Access Token in connection
-        dwError = VmDirSrvAccessCheckEntry(pAccessInfo->pAccessToken, pSecDescAbs, accessDesired, &samGranted);
-        if (!dwError)
+        if (samGranted != accessDesired)
         {
-            if (samGranted != accessDesired)
-            {
-                dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            goto cleanup; // Access Allowed
+            dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
-        else if (VMDIR_ERROR_INSUFFICIENT_ACCESS == dwError)
-        {
-            // Continue with more ACL check
-            dwError = 0;
-            samGranted = 0;
-        }
+        goto cleanup; // Access Allowed
     }
+    else if (VMDIR_ERROR_INSUFFICIENT_ACCESS == dwError)
+    {
+        // Continue with more ACL check
+        dwError = 0;
+        samGranted = 0;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // Otherwise, continue (1) Check whether granted with SELF access right
     dwError = VmDirSrvAccessCheckSelf(

@@ -4304,7 +4304,7 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
     public static final String PROPERTY_OIDC_AUTHORIZE_REDIRECT_URI = "vmwOidcAuthorizeRedirectURI";
     public static final String PROPERTY_OIDC_LOGOUT_URI = "vmwOidcLogoutURI";
     public static final String PROPERTY_OIDC_POST_LOGOUT_URI = "vmwOidcPostLogoutRedirectURI";
-
+    public static final String PROPERTY_MULTI_TENANT = "vmwSTSMultiTenant";
 
     @SuppressWarnings("unchecked")
     private IDPConfigLdapObject()
@@ -4422,6 +4422,24 @@ final class IDPConfigLdapObject extends BaseLdapObject<IDPConfig>
                                 }
                             }
                         ),
+                        new PropertyMapperMetaInfo<IDPConfig>(
+                                PROPERTY_MULTI_TENANT,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IDPConfig>() {
+                                    @Override
+                                    public void SetLdapValue(IDPConfig idpConfig, LdapValue[] value)
+                                    {
+                                        ValidateUtil.validateNotNull(idpConfig, "idpConfig");
+                                        idpConfig.setMultiTenant(ServerUtils.getBooleanValue(value));
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IDPConfig config)
+                                    {
+                                        return ServerUtils.getLdapValue(config.isMultiTenant());
+                                    }
+                                }
+                            ),
                         new PropertyMapperMetaInfo<IDPConfig>(
                                 PROPERTY_CLIENT_SECRET,
                                 -1,

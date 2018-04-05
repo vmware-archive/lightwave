@@ -692,6 +692,12 @@ VdirPasswordModifyPreCheck(
 
     assert(pOperation);
 
+    if (VMDIR_IS_OP_CTRL_PASSBLOB(pOperation))
+    {
+        // take blob as is. only works for mode type "REPLACE".
+        goto cleanup;
+    }
+
     dwError = PasswdModifyRequestCheck(
                     pOperation,
                     &pModAddPasswd,

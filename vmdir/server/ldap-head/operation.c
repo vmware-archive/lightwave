@@ -183,11 +183,6 @@ VmDirFreeOperationContent(
             VMDIR_SAFE_FREE_MEMORY(csv->pszInvocationId);
         }
 
-        if (op->reqControls)
-        {
-            DeleteControls(&(op->reqControls));
-        }
-
         if (op->syncDoneCtrl)
         {
             PLW_HASHTABLE_NODE      pNode = NULL;
@@ -240,7 +235,11 @@ VmDirFreeOperationContent(
                  break;
         }
 
-        VmDirSchemaCtxRelease(op->pSchemaCtx);
+        if (op->reqControls)
+        {
+            DeleteControls(&(op->reqControls));
+        }
+
         VmDirFreeEntryArrayContent(&op->internalSearchEntryArray);
         VmDirFreeBervalContent(&op->reqDn);
         VMDIR_SAFE_FREE_MEMORY(op->ldapResult.pszErrMsg);
@@ -251,5 +250,7 @@ VmDirFreeOperationContent(
         {
             VmDirDeleteConnection(&op->conn);
         }
+
+        VmDirSchemaCtxRelease(op->pSchemaCtx);
    }
 }

@@ -1027,6 +1027,8 @@ typedef enum
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+#define VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC "IntegrityChkJobIntervalInSec"
+#define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
 
 //
 // The expiration period for deleted entries. Any entries older than this will
@@ -2271,6 +2273,16 @@ VmDirStringListAddStrClone(
     PVMDIR_STRING_LIST  pStrList
     );
 
+DWORD
+VmDirStringListReverse(
+    PVMDIR_STRING_LIST pStrList
+    );
+
+DWORD
+VmDirStringListRemoveLast(
+    PVMDIR_STRING_LIST pStrList
+    );
+
 int
 VmDirQsortCaseExactCompareString(
     const void* ppStr1,
@@ -2388,6 +2400,13 @@ VmDirStringToTokenListExt(
     PCSTR pszStr,
     PCSTR pszDelimiter,
     PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirTokenListToString(
+    PVMDIR_STRING_LIST pStrList,
+    PCSTR pszDelimiter,
+    PSTR *ppszStr
     );
 
 DWORD

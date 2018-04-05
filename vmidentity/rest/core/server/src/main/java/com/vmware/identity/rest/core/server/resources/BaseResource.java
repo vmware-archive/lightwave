@@ -55,6 +55,7 @@ public abstract class BaseResource {
     protected static final Histogram requestLatency = Histogram.build()
             .name("sts_requests_latency_seconds").help("Request latency in seconds.")
             .labelNames("component", "tenant", "resource", "operation")
+            .buckets(0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 3.0, 4.0)
             .register();
 
     protected BaseResource(Locale locale, String localizationPackage, SecurityContext securityContext) {
