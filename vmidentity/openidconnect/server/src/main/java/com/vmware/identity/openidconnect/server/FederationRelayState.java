@@ -13,6 +13,7 @@
  */
 package com.vmware.identity.openidconnect.server;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -237,7 +238,7 @@ public class FederationRelayState {
           return this;
       }
 
-      public FederationRelayState build() throws Exception {
+      public FederationRelayState build() throws UnsupportedEncodingException {
           JSONObject json = new JSONObject();
 
           json.put(PARAM_ISSUER, issuer);

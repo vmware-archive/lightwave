@@ -51,6 +51,8 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -110,6 +112,18 @@ public class TestContext {
     public static RSAPublicKey CLIENT_PUBLIC_KEY;
     public static X509Certificate CLIENT_CERT;
 
+    public static final String EXTERNAL_IDP_ENTITYID = "https://ext.vmware.com/openidconnect";
+    public static final String EXTERNAL_IDP_ISSUER_TYPE = "CSP";
+    public static final String EXTERNAL_IDP_CLIENT_ID = "CSP_CLIENT";
+    public static final String EXTERNAL_IDP_CLIENT_SECRET = "secret";
+    public static final String EXTERNAL_IDP_METADATA = EXTERNAL_IDP_ENTITYID + "/.well-known/openid-config";
+    public static final String EXTERNAL_IDP_JWKS = EXTERNAL_IDP_ENTITYID + "/jwks";
+    public static final String EXTERNAL_IDP_TOKEN = EXTERNAL_IDP_ENTITYID + "/token";
+    public static final String EXTERNAL_IDP_AUTHORIZE = EXTERNAL_IDP_ENTITYID + "/authorize";
+    public static final String EXTERNAL_IDP_LOGOUT = EXTERNAL_IDP_ENTITYID + "/logout";
+    public static final String EXTERNAL_IDP_POST_LOGOUT = EXTERNAL_IDP_ENTITYID + "/post-logout";
+    public static final String EXTERNAL_IDP_REDIRECT = EXTERNAL_IDP_ENTITYID + "/redirect";
+
     public static void initialize() throws Exception {
         SESSION_COOKIE_NAME = SessionManager.getSessionCookieName(TENANT_NAME);
 
@@ -138,10 +152,28 @@ public class TestContext {
         return authnController(idmClient());
     }
 
-    public static AuthenticationController authnController(CasIdmClient idmClient) {
-        return new AuthenticationController(idmClient, authzCodeManager(), sessionManager(), messageSource());
+    public static AuthenticationController authnController(
+        CasIdmClient idmClient) {
+            return authnController(idmClient, false);
+        }
+
+    public static AuthenticationController authnController(
+        CasIdmClient idmClient, boolean federated) {
+        SessionManager sessionMgr = sessionManager();
+        FederatedIdentityProcessor fed = null;
+        if (federated)
+        {
+            fed = federatedIdentityProcessor(idmClient, sessionMgr);
+        }
+        return new AuthenticationController(
+            idmClient, authzCodeManager(), sessionMgr, messageSource(),
+            fed);
     }
 
+    public static FederatedIdentityProcessor federatedIdentityProcessor(
+        CasIdmClient idmClient, SessionManager sessionMgr) {
+        return new CSPIdentityProcessor(idmClient, sessionMgr);
+    }
     public static TokenController tokenController() {
         return tokenController(idmClient());
     }
@@ -405,6 +437,25 @@ public class TestContext {
 
     public static String securIdLoginString() {
         return securIdLoginString(USERNAME, SECURID_PASSCODE, null);
+    }
+
+    public static IDPConfig externalIDPConfig() {
+        OidcConfig oidcCfg = new OidcConfig();
+        oidcCfg
+            .setIssuerType(EXTERNAL_IDP_ISSUER_TYPE)
+            .setClientId(EXTERNAL_IDP_CLIENT_ID)
+            .setClientSecret(EXTERNAL_IDP_CLIENT_SECRET)
+            .setMetadataURI(EXTERNAL_IDP_METADATA)
+            .setJwksURI(EXTERNAL_IDP_JWKS)
+            .setTokenRedirectURI(EXTERNAL_IDP_TOKEN)
+            .setAuthorizeRedirectURI(EXTERNAL_IDP_AUTHORIZE)
+            .setLogoutURI(EXTERNAL_IDP_LOGOUT)
+            .setPostLogoutURI(EXTERNAL_IDP_POST_LOGOUT)
+            .setRedirectURI(EXTERNAL_IDP_REDIRECT);
+
+        IDPConfig config = new IDPConfig(EXTERNAL_IDP_ENTITYID, IDPConfig.IDP_PROTOCOL_OAUTH_2_0, oidcCfg);
+
+        return config;
     }
 
     public static String securIdLoginString(String username, String passcode, String sessionId) {
@@ -870,7 +921,7 @@ public class TestContext {
         }
     }
 
-    private static String extractAuthnResponseTarget(
+    public static String extractAuthnResponseTarget(
             MockHttpServletResponse response,
             Flow flow,
             boolean redirectResponseMode,

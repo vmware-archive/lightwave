@@ -30,6 +30,7 @@ import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.common.LoginHint;
 
 /**
  * @author Yehia Zayour
@@ -45,6 +46,22 @@ public final class AuthenticationRequest extends ProtocolRequest {
     private final Nonce nonce;
     private final ClientAssertion clientAssertion;
     private final CorrelationID correlationId;
+    private final LoginHint loginHint;
+
+    public AuthenticationRequest(
+        URI uri,
+        ResponseType responseType,
+        ResponseMode responseMode,
+        ClientID clientId,
+        URI redirectUri,
+        Scope scope,
+        State state,
+        Nonce nonce,
+        ClientAssertion clientAssertion,
+        CorrelationID correlationId) {
+            this(uri, responseType, responseMode, clientId, redirectUri,
+                 scope, state, nonce, clientAssertion, null, correlationId);
+        }
 
     public AuthenticationRequest(
             URI uri,
@@ -56,6 +73,7 @@ public final class AuthenticationRequest extends ProtocolRequest {
             State state,
             Nonce nonce,
             ClientAssertion clientAssertion,
+            LoginHint loginHint,
             CorrelationID correlationId) {
         Validate.notNull(uri, "uri");
         Validate.notNull(responseType, "responseType");
@@ -66,6 +84,7 @@ public final class AuthenticationRequest extends ProtocolRequest {
         Validate.notNull(state, "state");
         Validate.notNull(nonce, "nonce");
         // nullable clientAssertion
+        // nullable loginHint
         // nullable correlationId
 
         this.uri = uri;
@@ -77,6 +96,7 @@ public final class AuthenticationRequest extends ProtocolRequest {
         this.state = state;
         this.nonce = nonce;
         this.clientAssertion = clientAssertion;
+        this.loginHint = loginHint;
         this.correlationId = correlationId;
     }
 
@@ -112,6 +132,10 @@ public final class AuthenticationRequest extends ProtocolRequest {
         return this.clientAssertion;
     }
 
+    public LoginHint getLoginHint() {
+        return this.loginHint;
+    }
+
     public CorrelationID getCorrelationID() {
         return this.correlationId;
     }
@@ -133,6 +157,9 @@ public final class AuthenticationRequest extends ProtocolRequest {
         result.put("nonce", this.nonce.getValue());
         if (this.clientAssertion != null) {
             result.put("client_assertion", this.clientAssertion.serialize());
+        }
+        if (this.loginHint!= null) {
+            result.put("login_hint", this.loginHint.getValue());
         }
         if (this.correlationId != null) {
             result.put("correlation_id", this.correlationId.getValue());
@@ -165,6 +192,10 @@ public final class AuthenticationRequest extends ProtocolRequest {
             if (parameters.containsKey("client_assertion")) {
                 clientAssertion = ClientAssertion.parse(parameters);
             }
+            LoginHint loginHint = null;
+            if (parameters.containsKey("login_hint")) {
+                loginHint = new LoginHint(ParameterMapUtils.getString(parameters, "login_hint"));
+            }
 
             CorrelationID correlationId = null;
             if (parameters.containsKey("correlation_id")) {
@@ -183,6 +214,7 @@ public final class AuthenticationRequest extends ProtocolRequest {
                     state,
                     nonce,
                     clientAssertion,
+                    loginHint,
                     correlationId);
         } catch (com.vmware.identity.openidconnect.common.ParseException e) {
             throw new ParseException(e.getErrorObject(), clientId, responseMode, redirectUri, state, e);

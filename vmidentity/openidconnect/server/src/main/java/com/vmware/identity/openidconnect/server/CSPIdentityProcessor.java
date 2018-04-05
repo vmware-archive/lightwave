@@ -13,7 +13,9 @@
  */
 package com.vmware.identity.openidconnect.server;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -121,11 +123,16 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     writeLockKeyLookup = keyLookupLock.writeLock();
   }
 
+  // for unit tests
+  public CSPIdentityProcessor(CasIdmClient idmClient, SessionManager sessionManager) {
+    this();
+    this.idmClient = idmClient;
+    this.sessionManager = sessionManager;
+  }
+
     @Override
-    public HttpResponse processAuthRequestForFederatedIDP(HttpServletRequest request, String tenant,
-            IDPConfig idpConfig) throws Exception {
-        HttpRequest httpRequest = HttpRequest.from(request);
-        AuthenticationRequest authnRequest = AuthenticationRequest.parse(httpRequest);
+    public HttpResponse processAuthRequestForFederatedIDP(AuthenticationRequest authnRequest, String tenant,
+            IDPConfig idpConfig) throws ServerException {
         FederationRelayState.Builder builder = new FederationRelayState.Builder(idpConfig.getEntityID(),
                 authnRequest.getClientID().getValue(), authnRequest.getRedirectURI().toString());
         final String orgLink = CSP_ORG_LINK + tenant;
@@ -135,8 +142,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
         builder.spInitiatedState(authnRequest.getState().getValue());
         builder.responseMode(authnRequest.getResponseMode().getValue());
         builder.responseType(authnRequest.getResponseType().toString());
-        final FederationRelayState relayState = builder.build();
-        return processRequestPreAuth(request, relayState, orgLink, idpConfig);
+        FederationRelayState relayState;
+        try {
+            relayState = builder.build();
+        } catch (UnsupportedEncodingException e) {
+            throw new ServerException(ErrorObject.serverError("Unsupported encoding while building relay state."), e);
+        }
+        return processRequestPreAuth(relayState, orgLink, idpConfig);
   }
 
   @Override
@@ -158,7 +170,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
           throw new ServerException(errorObject);
       }
       builder.tenant(orgId);
-      return processRequestPreAuth(request, builder.build(), orgLink, idpConfig);
+      return processRequestPreAuth(builder.build(), orgLink, idpConfig);
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
@@ -171,13 +183,22 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
   private HttpResponse
   processRequestPreAuth(
-      HttpServletRequest request,
       FederationRelayState relayState,
       String orgLink,
       IDPConfig idpConfig
-  ) throws Exception {
+  ) throws ServerException{
     OidcConfig oidcConfig = idpConfig.getOidcConfig();
-    URI target = new URI(oidcConfig.getAuthorizeRedirectURI());
+    URI target= null;
+    try {
+        target = new URI(oidcConfig.getAuthorizeRedirectURI());
+    } catch (URISyntaxException e) {
+        throw new ServerException(
+            ErrorObject.serverError(
+                String.format(
+                    "Invalid Authorize Redirect URL for '%s'",
+                    idpConfig.getEntityID())),
+                e);
+    }
 
     Map<String, String> parameters = new HashMap<String, String>();
 

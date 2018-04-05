@@ -29,10 +29,13 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.Issuer;
+import com.vmware.identity.openidconnect.common.LoginHint;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.protocol.AccessToken;
@@ -58,6 +61,8 @@ public class AuthenticationRequestProcessor {
     private final PersonUserAuthenticator personUserAuthenticator;
     private final SolutionUserAuthenticator solutionUserAuthenticator;
 
+    private final FederatedIdentityProcessorProvider federatedProcessorProvider;
+
     private final AuthorizationCodeManager authzCodeManager;
     private final SessionManager sessionManager;
     private final MessageSource messageSource;
@@ -80,7 +85,8 @@ public class AuthenticationRequestProcessor {
             Model model,
             Locale locale,
             HttpRequest httpRequest,
-            String tenant) {
+            String tenant,
+            FederatedIdentityProcessorProvider fedProvider) {
         this.tenantInfoRetriever = new TenantInfoRetriever(idmClient);
         this.clientInfoRetriever = new ClientInfoRetriever(idmClient);
         this.serverInfoRetriever = new ServerInfoRetriever(idmClient);
@@ -95,6 +101,7 @@ public class AuthenticationRequestProcessor {
         this.locale = locale;
         this.httpRequest = httpRequest;
         this.tenant = tenant;
+        this.federatedProcessorProvider = fedProvider;
 
         this.isAjaxRequest = (this.httpRequest.getMethod() == HttpRequest.Method.POST);
 
@@ -151,63 +158,82 @@ public class AuthenticationRequestProcessor {
             return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
         }
 
-        // process login information (username/password or session), if failed, return error message to browser so javascript can consume it
-        LoginProcessor p = new LoginProcessor(
-                this.personUserAuthenticator,
-                this.sessionManager,
-                this.messageSource,
-                this.locale,
-                this.httpRequest,
-                this.tenant);
-        Triple<PersonUser, SessionID, LoginMethod> loginResult;
-        try {
-            loginResult = p.process();
-        } catch (LoginProcessor.LoginException e) {
-            LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
-            return Pair.of((ModelAndView) null, e.toHttpResponse());
+        // decide whether to do local or external
+        IDPConfig idpConfig = null;
+        try{
+            idpConfig = getFederatedIDPConfig(this.tenant);
+        } catch(ServerException e){
+            LoggerUtils.logFailedRequest(logger, e);
+            return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
         }
-        PersonUser personUser   = loginResult.getLeft();
-        SessionID sessionId     = loginResult.getMiddle();
-        LoginMethod loginMethod = loginResult.getRight();
-
-        // if no person user, return login form
-        if (personUser == null) {
+        if (idpConfig != null) {
+            try{
+                // use federated idp login page
+                final FederatedIdentityProcessor processor = this.federatedProcessorProvider.findProcessor(idpConfig);
+                return Pair.of((ModelAndView) null, processor.processAuthRequestForFederatedIDP(this.authnRequest, tenant, idpConfig));
+            }catch(ServerException e){
+                LoggerUtils.logFailedRequest(logger, e);
+                return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
+            }
+        } else {
+            // process login information (username/password or session), if failed, return error message to browser so javascript can consume it
+            LoginProcessor p = new LoginProcessor(
+                    this.personUserAuthenticator,
+                    this.sessionManager,
+                    this.messageSource,
+                    this.locale,
+                    this.httpRequest,
+                    this.tenant);
+            Triple<PersonUser, SessionID, LoginMethod> loginResult;
             try {
-                ModelAndView loginForm = generateLoginForm();
-                logger.info("login form generated");
-                return Pair.of(loginForm, (HttpResponse) null);
+                loginResult = p.process();
+            } catch (LoginProcessor.LoginException e) {
+                LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
+                return Pair.of((ModelAndView) null, e.toHttpResponse());
+            }
+            PersonUser personUser   = loginResult.getLeft();
+            SessionID sessionId     = loginResult.getMiddle();
+            LoginMethod loginMethod = loginResult.getRight();
+
+            // if no person user, return login form
+            if (personUser == null) {
+                try {
+                    ModelAndView loginForm = generateLoginForm();
+                    logger.info("login form generated");
+                    return Pair.of(loginForm, (HttpResponse) null);
+                } catch (ServerException e) {
+                    LoggerUtils.logFailedRequest(logger, e);
+                    return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
+                }
+            }
+
+            // we have a person user, process authn request for this person user
+            try {
+                AuthenticationSuccessResponse authnSuccessResponse = (this.authnRequest.getResponseType().contains(ResponseTypeValue.AUTHORIZATION_CODE)) ?
+                        processAuthzCodeResponse(personUser, sessionId) :
+                        processIDTokenResponse(personUser, sessionId);
+                if (loginMethod == null) {
+                    this.sessionManager.update(sessionId, this.clientInfo);
+                } else {
+                    this.sessionManager.add(sessionId, personUser, loginMethod, this.clientInfo);
+                }
+                HttpResponse httpResponse = authnSuccessResponse.toHttpResponse();
+                httpResponse.addCookie(loggedInSessionCookie(sessionId));
+                logger.info(
+                        "subject [{}] response_type [{}] response_mode [{}] login_method [{}]",
+                        personUser.getSubject().getValue(),
+                        this.authnRequest.getResponseType().toString(),
+                        this.authnRequest.getResponseMode().getValue(),
+                        (loginMethod == null) ? "session" : loginMethod.getValue());
+                return Pair.of((ModelAndView) null, httpResponse);
             } catch (ServerException e) {
                 LoggerUtils.logFailedRequest(logger, e);
                 return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
             }
         }
-
-        // we have a person user, process authn request for this person user
-        try {
-            AuthenticationSuccessResponse authnSuccessResponse = (this.authnRequest.getResponseType().contains(ResponseTypeValue.AUTHORIZATION_CODE)) ?
-                    processAuthzCodeResponse(personUser, sessionId) :
-                    processIDTokenResponse(personUser, sessionId);
-            if (loginMethod == null) {
-                this.sessionManager.update(sessionId, this.clientInfo);
-            } else {
-                this.sessionManager.add(sessionId, personUser, loginMethod, this.clientInfo);
-            }
-            HttpResponse httpResponse = authnSuccessResponse.toHttpResponse();
-            httpResponse.addCookie(loggedInSessionCookie(sessionId));
-            logger.info(
-                    "subject [{}] response_type [{}] response_mode [{}] login_method [{}]",
-                    personUser.getSubject().getValue(),
-                    this.authnRequest.getResponseType().toString(),
-                    this.authnRequest.getResponseMode().getValue(),
-                    (loginMethod == null) ? "session" : loginMethod.getValue());
-            return Pair.of((ModelAndView) null, httpResponse);
-        } catch (ServerException e) {
-            LoggerUtils.logFailedRequest(logger, e);
-            return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());
-        }
     }
 
-    private AuthenticationSuccessResponse processAuthzCodeResponse(PersonUser personUser, SessionID sessionId) {
+	private AuthenticationSuccessResponse processAuthzCodeResponse(PersonUser personUser, SessionID sessionId) {
         AuthorizationCode authzCode = new AuthorizationCode();
 
         this.authzCodeManager.add(
@@ -340,5 +366,22 @@ public class AuthenticationRequestProcessor {
         }
 
         return new ModelAndView("unpentry");
+    }
+
+    private IDPConfig getFederatedIDPConfig(String tenant) throws ServerException {
+        String issuer = null;
+        LoginHint loginHint = this.authnRequest.getLoginHint();
+        IDPConfig idpConfig = null;
+
+        if (loginHint != null) {
+            issuer = loginHint.getValue();
+        } else {
+            issuer = this.tenantInfoRetriever.getTenantIssuer(tenant);
+        }
+
+        if (issuer != null && !issuer.isEmpty() && !issuer.equals(this.tenantInfo.getIssuer().getValue())) {
+            idpConfig = this.tenantInfoRetriever.getExternalIDPConfig(tenant, issuer);
+        }
+        return idpConfig;
     }
 }

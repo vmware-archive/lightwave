@@ -47,7 +47,7 @@ import com.vmware.identity.openidconnect.protocol.HttpResponse;
  * @author Yehia Zayour
  */
 @Controller
-public class AuthenticationController {
+public class AuthenticationController implements FederatedIdentityProcessorProvider {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(AuthenticationController.class);
 
     @Autowired
@@ -73,11 +73,13 @@ public class AuthenticationController {
             CasIdmClient idmClient,
             AuthorizationCodeManager authzCodeManager,
             SessionManager sessionManager,
-            MessageSource messageSource) {
+            MessageSource messageSource,
+            FederatedIdentityProcessor cspProcessor) {
         this.idmClient = idmClient;
         this.authzCodeManager = authzCodeManager;
         this.sessionManager = sessionManager;
         this.messageSource = messageSource;
+        this.cspProcessor = cspProcessor;
     }
 
     @RequestMapping(
@@ -96,26 +98,20 @@ public class AuthenticationController {
         try {
             HttpRequest httpRequest = HttpRequest.from(request);
             context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
-            IDPConfig idpConfig = getFederatedIDPConfig(tenant);
-            if (idpConfig != null) {
-                // use federated idp login page
-                final FederatedIdentityProcessor processor = findProcessor(idpConfig.getOidcConfig().getIssuerType());
-                httpResponse = processor.processAuthRequestForFederatedIDP(request, tenant, idpConfig);
-            } else {
-                // use lightwave idp login page
-                AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
-                        this.idmClient,
-                        this.authzCodeManager,
-                        this.sessionManager,
-                        this.messageSource,
-                        model,
-                        locale,
-                        httpRequest,
-                        tenant);
-                Pair<ModelAndView, HttpResponse> result = p.process();
-                page = result.getLeft();
-                httpResponse = result.getRight();
-            }
+
+            AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
+                    this.idmClient,
+                    this.authzCodeManager,
+                    this.sessionManager,
+                    this.messageSource,
+                    model,
+                    locale,
+                    httpRequest,
+                    tenant,
+                    this);
+            Pair<ModelAndView, HttpResponse> result = p.process();
+            page = result.getLeft();
+            httpResponse = result.getRight();
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);
@@ -133,25 +129,23 @@ public class AuthenticationController {
         return page;
     }
 
-    private IDPConfig getFederatedIDPConfig(String tenant) throws Exception {
-        String issuer = this.idmClient.getIssuer(tenant);
-        if (issuer != null && !issuer.isEmpty()) {
-            IDPConfig idpConfig =  idmClient.getExternalIdpConfigForTenant(tenant, issuer);
-            if (idpConfig != null) {
-                // validate IDP is using oidc protocol
-                if (idpConfig.getOidcConfig() == null) {
-                    throw new ServerException(ErrorObject.invalidRequest("no oidc configuration found"));
-                }
-                return idpConfig;
-            }
-        }
-        return null;
-    }
+    @Override
+    public FederatedIdentityProcessor findProcessor(IDPConfig idpConfig) throws ServerException {
 
-    private FederatedIdentityProcessor findProcessor(String issuerType) throws Exception {
-        if (issuerType == null || !issuerType.equalsIgnoreCase("csp")) {
-            throw new NoSuchProviderException("Error: Unsupported Issuer Type - " + issuerType);
+        if (idpConfig == null) {
+            throw new ServerException(ErrorObject.serverError("Cannot find federated identity processor for an null idpConfig"));
         }
-        return cspProcessor;
+
+        // validate IDP is using oidc protocol
+        if (idpConfig.getOidcConfig() == null) {
+            throw new ServerException(ErrorObject.invalidRequest("no oidc configuration found"));
+        }
+        String issuerType = idpConfig.getOidcConfig().getIssuerType();
+        if (issuerType == null || !issuerType.equalsIgnoreCase("csp")) {
+            throw new ServerException(
+                ErrorObject.serverError(
+                String.format("Unsupported Issuer Type - '%s'", issuerType)), null);
+        }
+        return this.cspProcessor;
     }
 }

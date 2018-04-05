@@ -7,7 +7,6 @@ PROJECT_ROOT=$(pwd)
 retVal=0
 
 #unit tests
-
 unitTestsRetVal=0
 unitTestsCurrentRet=0
 cd "$PROJECT_ROOT/vmidentity/rest"
@@ -19,41 +18,54 @@ if [ ! $unitTestsCurrentRet -eq 0 ]; then
     unitTestsRetVal=1
 fi
 
+cd "$PROJECT_ROOT/vmidentity/openidconnect"
+echo mvn test -DskipIntegrationTests=true -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+mvn test -DskipIntegrationTests=true -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+unitTestsCurrentRet=$?
+if [ ! $unitTestsCurrentRet -eq 0 ]; then
+    echo "Error: unit tests in vmidentity/openidconnect"
+    unitTestsRetVal=1
+fi
+
 # Integration tests
+oidcClientRetVal=0
+restClientRetVal=0
 
-# OIDC Client
-cd "$PROJECT_ROOT/vmidentity/openidconnect/client/"
-echo mvn verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-mvn verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-oidcClientRetVal=$?
+if [[ ! -z $1 ]]; then
+    # OIDC Client
+    cd "$PROJECT_ROOT/vmidentity/openidconnect/client/"
+    echo mvn verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    mvn verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    oidcClientRetVal=$?
 
-# REST Idm Client
-cd "$PROJECT_ROOT/vmidentity/rest/idm/client/"
-echo verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-mvn verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-restClientRetVal=$?
+    # REST Idm Client
+    cd "$PROJECT_ROOT/vmidentity/rest/idm/client/"
+    echo verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    mvn verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$1 -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    restClientRetVal=$?
+fi
 
 if [ ! $unitTestsRetVal -eq 0 ]; then
-    echo "Error: vmidentity unit tests failed."
+    printf "\nError: vmidentity unit tests failed.\n"
     retVal=1
 fi
 
 if [ ! $oidcClientRetVal -eq 0 ]; then
-    echo "Error: vmidentity/openidconnect/client/"
+    printf "\nError: integration tests: vmidentity/openidconnect/client/\n"
     cat "$PROJECT_ROOT/vmidentity/openidconnect/client/target/failsafe-reports/failsafe-summary.xml"
     retVal=1
 fi
 
 if [ ! $restClientRetVal -eq 0 ]; then
-    echo "Error: vmidentity/rest/idm/client/"
+    printf "\nError: integration tests: vmidentity/rest/idm/client/\n"
     cat "$PROJECT_ROOT/vmidentity/rest/idm/client/target/failsafe-reports/failsafe-summary.xml"
     retVal=1
 fi
 
 if [ ! $retVal -eq 0 ]; then
-   echo --------FAILURE----------
+   printf "\n--------FAILURE----------\n"
 else
-   echo --------SUCCESS----------
+   printf "\n--------SUCCESS----------\n"
 fi
 
 exit $retVal
