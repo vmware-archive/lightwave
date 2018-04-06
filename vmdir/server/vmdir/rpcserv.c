@@ -42,7 +42,8 @@ VmDirSrvInitializeHost(
     PWSTR    pwszPassword,
     PWSTR    pwszSiteName,
     PWSTR    pwszReplURI,
-    UINT32   firstReplCycleMode
+    UINT32   firstReplCycleMode,
+    PVMDIR_TRUST_INFO_W pTrustInfoW
     )
 {
     DWORD dwError = 0;
@@ -51,7 +52,9 @@ VmDirSrvInitializeHost(
     PSTR  pszPassword = NULL;
     PSTR  pszSiteName = NULL;
     PSTR  pszReplURI = NULL;
+    PSTR  pszFQDomainName = NULL;
     PSTR  pszSystemDomainAdminName = "Administrator";  // For system domain, we always use "Administrator" name.
+    PVMDIR_TRUST_INFO_A pTrustInfoA = NULL;
 
     if (IsNullOrEmptyString(pwszDomainName) ||
         IsNullOrEmptyString(pwszPassword))
@@ -91,17 +94,29 @@ VmDirSrvInitializeHost(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = VmDirAllocateStringA(pszDomainName, &pszFQDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pTrustInfoW)
+    {
+        dwError = VmDirAllocateTrustInfoAFromW(
+                    pTrustInfoW,
+                    &pTrustInfoA);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = VmDirSrvSetupHostInstance(
-                    pszDomainName,
+                    pszFQDomainName,
                     pszSystemDomainAdminName,
                     pszPassword,
                     pszSiteName,
                     pszReplURI,
-                    firstReplCycleMode );
+                    firstReplCycleMode,
+                    pTrustInfoA );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeHost success: (%s)(%s)(%s)(%s)",
-                                     VDIR_SAFE_STRING(pszDomainName),
+                                     VDIR_SAFE_STRING(pszFQDomainName),
                                      VDIR_SAFE_STRING(pszSystemDomainAdminName),
                                      VDIR_SAFE_STRING(pszSiteName),
                                      VDIR_SAFE_STRING(pszReplURI));
@@ -113,12 +128,14 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszPassword);
     VMDIR_SAFE_FREE_MEMORY(pszSiteName);
     VMDIR_SAFE_FREE_MEMORY(pszReplURI);
+    VMDIR_SAFE_FREE_MEMORY(pszFQDomainName);
+    VMDIR_SAFE_FREE_TRUST_INFO_A(pTrustInfoA);
 
     return dwError;
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeHost failed (%u)(%s)(%s)(%s)(%s)(%u)", dwError,
-                                     VDIR_SAFE_STRING(pszDomainName),
+                                     VDIR_SAFE_STRING(pszFQDomainName),
                                      VDIR_SAFE_STRING(pszSystemDomainAdminName),
                                      VDIR_SAFE_STRING(pszSiteName),
                                      VDIR_SAFE_STRING(pszReplURI),
@@ -2509,4 +2526,143 @@ Srv_RpcVmDirUrgentReplicationResponse(
     )
 {
     return VMDIR_ERROR_DEPRECATED_FUNCTION;
+}
+
+static
+DWORD
+_RpcVmDirCreateDomainTrustInternal(
+    handle_t hBinding,
+    PWSTR    pwszTrustName,
+    PWSTR    pwszDomainName,
+    PWSTR    pwszTrustPasswdIn,
+    PWSTR    pwszTrustPasswdOut
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszTrustName = NULL;
+    PSTR pszTrustPasswdIn = NULL;
+    PSTR pszTrustPasswdOut = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszDnTrusts = NULL;
+    PCSTR pszSystemContainerName = "System";
+    PCSTR pszDnDomain = gVmdirKrbGlobals.pszDomainDN;
+    PSTR pszDnUpn = NULL;
+
+    if ( IsNullOrEmptyString(pwszTrustName)
+     ||  IsNullOrEmptyString(pwszDomainName)
+     ||  IsNullOrEmptyString(pwszTrustPasswdIn)
+     ||  IsNullOrEmptyString(pwszTrustPasswdOut)
+     ||  IsNullOrEmptyString(pszDnDomain)
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringAFromW(
+                    pwszTrustName,
+                    &pszTrustName
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                    pwszDomainName,
+                    &pszDomainName
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                    pwszTrustPasswdIn,
+                    &pszTrustPasswdIn
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                    pwszTrustPasswdOut,
+                    &pszTrustPasswdOut
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDN(
+                    pszSystemContainerName,
+                    pszDnDomain,
+                    &pszDnTrusts);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDN(pszTrustName, pszDnTrusts, &pszDnUpn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDomainTrust(
+                    pszTrustName,
+                    pszDomainName,
+                    pszTrustPasswdIn,
+                    pszTrustPasswdOut,
+                    pszDnUpn
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszTrustName) );
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDnTrusts);
+    VMDIR_SAFE_FREE_MEMORY(pszDnUpn);
+    VMDIR_SAFE_FREE_MEMORY(pszTrustName);
+    VMDIR_SAFE_FREE_MEMORY(pszTrustPasswdIn);
+    VMDIR_SAFE_FREE_MEMORY(pszTrustPasswdOut);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                     "%s failed (%u)(%s)",
+                     __FUNCTION__,
+                     dwError,
+                     VDIR_SAFE_STRING(pszTrustName) );
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirCreateDomainTrust(
+    handle_t hBinding,
+    PWSTR    pwszTrustName,
+    PWSTR    pwszDomainName,
+    PWSTR    pwszTrustPasswdIn,
+    PWSTR    pwszTrustPasswdOut
+    )
+{
+    DWORD dwError = 0;
+
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _RpcVmDirCreateDomainTrustInternal(
+                  hBinding,
+                  pwszTrustName,
+                  pwszDomainName,
+                  pwszTrustPasswdIn,
+                  pwszTrustPasswdOut
+                  );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                     "%s failed (%u)",
+                     __FUNCTION__,
+                     dwError );
+    goto cleanup;
 }

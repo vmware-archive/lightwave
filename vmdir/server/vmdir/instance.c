@@ -23,8 +23,10 @@ VmDirSrvInitKrb(
     PCSTR            pszFQDomainName,
     PCSTR            pszDomainDN,
     PCSTR            pszUserSid,
+    PVMDIR_TRUST_INFO_A pTrustInfoA,
     PSTR             *ppszTgtDN,
-    PSTR             *ppszKMDN
+    PSTR             *ppszKMDN,
+    PSTR             *ppszDomainTrustDN
     );
 
 static
@@ -185,7 +187,8 @@ VmDirSrvSetupHostInstance(
     PCSTR   pszPassword,
     PCSTR   pszSiteName,
     PCSTR   pszReplURI,
-    UINT32  firstReplCycleMode
+    UINT32  firstReplCycleMode,
+    PVMDIR_TRUST_INFO_A pTrustInfoA
     )
 {
     DWORD   dwError = 0;
@@ -235,10 +238,21 @@ VmDirSrvSetupHostInstance(
     VMDIR_SECURITY_DESCRIPTOR SecDescAnonymousRead = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescNoDelete = {0};
 
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "Setting up a host instance (%s).",
-            VDIR_SAFE_STRING(pszFQDomainName));
+    if (pTrustInfoA)
+    {
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Setting up a host instance (%s) as child domain of (%s).",
+                VDIR_SAFE_STRING(pszFQDomainName),
+                VDIR_SAFE_STRING(pTrustInfoA->pszName));
+    }
+    else
+    {
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Setting up a host instance (%s).",
+                VDIR_SAFE_STRING(pszFQDomainName));
+    }
 
     if (pszSiteName)
     {
@@ -535,6 +549,7 @@ VmDirSrvSetupHostInstance(
                 pszDomainDN,
                 pszUsername,
                 pszPassword,
+                pTrustInfoA,
                 &SecDescAnonymousRead,
                 &SecDescNoDelete);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -778,6 +793,7 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
+    PVMDIR_TRUST_INFO_A pTrustInfoA,                        // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut,    // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescNoDeleteOut          // OPTIONAL
     )
@@ -785,12 +801,14 @@ VmDirSrvSetupDomainInstance(
     DWORD dwError = 0;
 
     PCSTR pszUsersContainerName    = "Users";
+    PCSTR pszSystemContainerName   = "System";
     PCSTR pszBuiltInContainerName  = "Builtin";
     PCSTR pszFSPsContainerName  = FSP_CONTAINER_RDN_ATTR_VALUE;
     PCSTR pszBuiltInUsersGroupName = "Users";
     PCSTR pszBuiltInAdministratorsGroupName = "Administrators";
 
     PSTR pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
+    PSTR pszSystemContainerDN  = NULL; // CN=System,<domain DN>
     PSTR pszBuiltInContainerDN = NULL; // CN=BuiltIn,<domain DN>
     PSTR pszFSPsContainerDN = NULL;     // CN=ForeignSecurityPrincipals,<domain DN>
     PSTR pszUserDN = NULL;
@@ -804,6 +822,7 @@ VmDirSrvSetupDomainInstance(
     PSTR pszTenantRealmName = NULL;
     PSTR pszTgtDN = NULL;
     PSTR pszKMDN = NULL;
+    PSTR pszDomainTrustDN = NULL;
     VMDIR_SECURITY_DESCRIPTOR SecDescFullAccess = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescNoDelete = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescNoDeleteChild = {0};
@@ -830,6 +849,16 @@ VmDirSrvSetupDomainInstance(
 
     dwError = VmDirSrvCreateContainer(
             pSchemaCtx, pszUsersContainerDN, pszUsersContainerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Create System container
+
+    dwError = VmDirSrvCreateDN(
+            pszSystemContainerName, pszDomainDN, &pszSystemContainerDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateContainer(
+            pSchemaCtx, pszSystemContainerDN, pszSystemContainerName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Create Builtin container
@@ -868,8 +897,10 @@ VmDirSrvSetupDomainInstance(
                     pszFQDomainName,
                     pszDomainDN,
                     pszKrbtgtSid,
+                    pTrustInfoA,
                     &pszTgtDN,
-                    &pszKMDN);
+                    &pszKMDN,
+                    &pszDomainTrustDN);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             // prepare administrator krb UPN for the very first node
@@ -1157,6 +1188,11 @@ VmDirSrvSetupDomainInstance(
             pszUsersContainerDN, &SecDescNoDeleteChild, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // Set SD for System container
+    dwError = VmDirAppendSecurityDescriptorForDn(
+            pszSystemContainerDN, &SecDescNoDeleteChild, TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // Set SD for Builtin container
     dwError = VmDirAppendSecurityDescriptorForDn(
             pszBuiltInContainerDN, &SecDescNoDelete, TRUE);
@@ -1210,6 +1246,14 @@ VmDirSrvSetupDomainInstance(
         dwError = VmDirAppendSecurityDescriptorForDn(
                 pszKMDN, &SecDescFullAccess, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pszDomainTrustDN)
+        {
+            // Set SD for parent domain trust
+            dwError = VmDirAppendSecurityDescriptorForDn(
+                    pszDomainTrustDN, &SecDescFullAccess, TRUE);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
     // Create default password and lockout policy
@@ -1255,6 +1299,7 @@ VmDirSrvSetupDomainInstance(
 cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pszUsersContainerDN);
+    VMDIR_SAFE_FREE_MEMORY(pszSystemContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszBuiltInContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszFSPsContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszUserDN);
@@ -1795,8 +1840,10 @@ VmDirSrvInitKrb(
     PCSTR pszFQDomainName,
     PCSTR pszDomainDN,
     PCSTR pszUserSid,
+    PVMDIR_TRUST_INFO_A pTrustInfoA,
     PSTR *ppszTgtDN,
-    PSTR *ppszKMDN
+    PSTR *ppszKMDN,
+    PSTR *ppszDomainTrustDN
     )
 {
     DWORD       dwError = 0;
@@ -1812,6 +1859,12 @@ VmDirSrvInitKrb(
     PSTR        pszKMUPN = NULL;
     PSTR        pszKMPasswd = NULL;
     PSTR        pszKMDN = NULL;
+    PSTR        pszLowerCaseTrustName = NULL;
+    PSTR        pszLowerCaseDomainName = NULL;
+    PSTR        pszDomainTrustDN = NULL;
+    PSTR        pszTrustPasswdIn = NULL;
+    PSTR        pszTrustPasswdOut = NULL;
+    PCSTR       pszSystemContainerName = "System";
     VDIR_BERVALUE   bervMKey = VDIR_BERVALUE_INIT;
     VDIR_BERVALUE   bervEncMKey = VDIR_BERVALUE_INIT;
 
@@ -1863,7 +1916,11 @@ VmDirSrvInitKrb(
                     &pszTgtPasswd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirUPNToAccountDN(pszTgtUPN, ATTR_CN, pszTgtCN, &pszTgtDN);
+    dwError = VmDirUPNToAccountDN(
+                    pszTgtUPN,
+                    ATTR_CN,
+                    pszTgtCN,
+                    &pszTgtDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // create krbtgt principal
@@ -1914,11 +1971,64 @@ VmDirSrvInitKrb(
                     &bervEncMKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (pTrustInfoA)
+    {
+        dwError = VmDirAllocASCIIUpperToLower(
+                        pTrustInfoA->pszName,
+                        &pszLowerCaseTrustName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocASCIIUpperToLower(
+                        pszFQDomainName,
+                        &pszLowerCaseDomainName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringPrintf(
+                        &pszDomainTrustDN,
+                        "cn=%s,cn=%s,%s",
+                        pszLowerCaseTrustName,
+                        pszSystemContainerName,
+                        pszDomainDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmKdcGenerateRandomPassword(
+                        VMDIR_KDC_RANDOM_PWD_LEN,
+                        &pszTrustPasswdIn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmKdcGenerateRandomPassword(
+                        VMDIR_KDC_RANDOM_PWD_LEN,
+                        &pszTrustPasswdOut);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSrvCreateDomainTrust(
+                        pszLowerCaseTrustName,
+                        pszLowerCaseDomainName,
+                        pszTrustPasswdIn,
+                        pszTrustPasswdOut,
+                        pszDomainTrustDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        /* setup trust in parent domain */
+        dwError = VmDirCreateDomainTrust(
+                        pTrustInfoA->pszDC,
+                        pszLowerCaseDomainName,
+                        pszLowerCaseTrustName,
+                        pTrustInfoA->pszUserName,
+                        pTrustInfoA->pszPassword,
+                        pszTrustPasswdOut,
+                        pszTrustPasswdIn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *ppszTgtDN = pszTgtDN;
     pszTgtDN = NULL;
 
     *ppszKMDN = pszKMDN;
     pszKMDN = NULL;
+
+    *ppszDomainTrustDN = pszDomainTrustDN;
+    pszDomainTrustDN = NULL;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pMasterKey);
@@ -1928,9 +2038,14 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszTgtPasswd);
     VMDIR_SAFE_FREE_MEMORY(pszKMUPN);
     VMDIR_SAFE_FREE_MEMORY(pszKMPasswd);
+    VMDIR_SAFE_FREE_MEMORY(pszTrustPasswdIn);
+    VMDIR_SAFE_FREE_MEMORY(pszTrustPasswdOut);
     VMDIR_SAFE_FREE_MEMORY(pszRealmName);
     VMDIR_SAFE_FREE_MEMORY(pszKMDN);
     VMDIR_SAFE_FREE_MEMORY(pszTgtDN);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainTrustDN);
+    VMDIR_SAFE_FREE_MEMORY(pszLowerCaseTrustName);
+    VMDIR_SAFE_FREE_MEMORY(pszLowerCaseDomainName);
     return dwError;
 
 error:

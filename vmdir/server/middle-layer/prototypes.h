@@ -240,6 +240,14 @@ VmDirKrbUPNKeySet(
     PVDIR_BERVALUE   pBervPasswd
     );
 
+DWORD
+VmDirKrbCreateKeyBlob(
+    PVDIR_BERVALUE   pBervPrincipalName,
+    PVDIR_BERVALUE   pBervPasswd,
+    DWORD            dwKvno,
+    PVDIR_BERVALUE   pOutKeyBlob
+    );
+
 // sasl.c
 DWORD
 VmDirSASLInit(

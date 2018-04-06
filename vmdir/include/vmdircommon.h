@@ -107,6 +107,13 @@ enum
     VMDIR_RESTORE_FAILED
 };
 
+// Values for trust direction
+enum
+{
+    VMDIR_TRUST_DIRECTION_INCOMING = 0,
+    VMDIR_TRUST_DIRECTION_OUTGOING
+};
+
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;

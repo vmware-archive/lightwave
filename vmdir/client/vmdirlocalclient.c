@@ -23,7 +23,8 @@ VmDirLocalInitializeHost(
     PWSTR   pwszPassword,
     PWSTR   pwszSiteName,
     PWSTR   pwszReplURI,
-    UINT32  firstReplCycleMode
+    UINT32  firstReplCycleMode,
+    PVMDIR_TRUST_INFO_W pTrustInfoW
 )
 {
     DWORD dwError = 0;
@@ -50,6 +51,10 @@ VmDirLocalInitializeHost(
     input_spec[3].data.pWString = (PWSTR) pwszSiteName;
     input_spec[4].data.pWString = (PWSTR) pwszReplURI;
     input_spec[5].data.pUint32  = &firstReplCycleMode;
+    input_spec[6].data.pWString = (PSTR) pTrustInfoW ? pTrustInfoW->pwszName : NULL;
+    input_spec[7].data.pWString = (PSTR) pTrustInfoW ? pTrustInfoW->pwszDC : NULL;
+    input_spec[8].data.pWString = (PSTR) pTrustInfoW ? pTrustInfoW->pwszUserName : NULL;
+    input_spec[9].data.pWString = (PSTR) pTrustInfoW ? pTrustInfoW->pwszPassword : NULL;
 
     dwError = VmDirLocalIPCRequest(
                     apiType,

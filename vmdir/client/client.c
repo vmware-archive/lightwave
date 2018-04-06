@@ -582,7 +582,8 @@ VmDirSetupHostInstanceEx(
     PCSTR                       pszPassword,
     PCSTR                       pszSiteName,
     PCSTR                       pszPartnerHostName,
-    VMDIR_FIRST_REPL_CYCLE_MODE firstReplCycleMode
+    VMDIR_FIRST_REPL_CYCLE_MODE firstReplCycleMode,
+    PVMDIR_TRUST_INFO_A         pTrustInfoA
     )
 {
     DWORD dwError = 0;
@@ -595,6 +596,7 @@ VmDirSetupHostInstanceEx(
     PWSTR pwszPassword = NULL;
     PWSTR pwszSiteName = NULL;
     PWSTR pwszReplURI = NULL;
+    PVMDIR_TRUST_INFO_W pTrustInfoW = NULL;
 
     if (IsNullOrEmptyString(pszDomainName) ||
         IsNullOrEmptyString(pszUsername) ||
@@ -645,13 +647,22 @@ VmDirSetupHostInstanceEx(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (pTrustInfoA)
+    {
+        dwError = VmDirAllocateTrustInfoWFromA(
+                    pTrustInfoA,
+                    &pTrustInfoW);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = VmDirLocalInitializeHost(
                     pwszDomainname,
                     pwszUsername,
                     pwszPassword,
                     pwszSiteName,
                     pwszReplURI,
-                    firstReplCycleMode);
+                    firstReplCycleMode,
+                    pTrustInfoW);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirLocalInitializeHost (%s)(%s)(%s) passed",
@@ -666,13 +677,14 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszReplURI);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pwszDomainname);
-
     VMDIR_SAFE_FREE_MEMORY(pwszUsername);
     VMDIR_SAFE_FREE_MEMORY(pwszPassword);
     VMDIR_SAFE_FREE_MEMORY(pwszSiteName);
     VMDIR_SAFE_FREE_MEMORY(pwszReplURI);
+    VMDIR_SAFE_FREE_TRUST_INFO_W(pTrustInfoW);
 
     return dwError;
+
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSetupHostInstanceEx failed. Error(%u)", dwError);
     goto cleanup;
@@ -685,6 +697,34 @@ VmDirSetupHostInstance(
     PCSTR    pszUserName,
     PCSTR    pszPassword,
     PCSTR    pszSiteName
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = VmDirSetupHostInstanceTrust(
+                    pszDomainName,
+                    pszLotusServerName,
+                    pszUserName,
+                    pszPassword,
+                    pszSiteName,
+                    NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirSetupHostInstanceTrust(
+    PCSTR    pszDomainName,
+    PCSTR    pszLotusServerName, // optional lotus server name.
+    PCSTR    pszUserName,
+    PCSTR    pszPassword,
+    PCSTR    pszSiteName,
+    PVMDIR_TRUST_INFO_A pTrustInfoA // optional
     )
 {
     DWORD   dwError = 0;
@@ -734,7 +774,8 @@ VmDirSetupHostInstance(
                         pszPassword,
                         pszSiteName,
                         NULL,
-                        FIRST_REPL_CYCLE_MODE_OBJECT_BY_OBJECT);
+                        FIRST_REPL_CYCLE_MODE_OBJECT_BY_OBJECT,
+                        pTrustInfoA);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // This task must be performed after VmDirSetupHostInstanceEx(), because the server does not start listening on
@@ -756,18 +797,17 @@ VmDirSetupHostInstance(
                         TRUE );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSetupHostInstance (%s)(%s)(%s) passed",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSetupHostInstanceTrust (%s)(%s)(%s) passed",
                                         VDIR_SAFE_STRING(pszDomainName),
                                         VDIR_SAFE_STRING(pszSiteName),
                                         VDIR_SAFE_STRING(pszLotusServerNameCanon) );
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszLotusServerNameCanon );
     VmDirCloseClientConnection(pIPCConnection);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSetupHostInstance failed. Error(%u)", dwError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSetupHostInstanceTrust failed. Error(%u)", dwError);
     goto cleanup;
 }
 
@@ -927,7 +967,8 @@ VmDirJoin(
                                  pszPassword,
                                  pszSiteName,
                                  pszPartnerServerName,
-                                 firstReplCycleMode );
+                                 firstReplCycleMode,
+                                 NULL );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirUpdateKeytabFile(

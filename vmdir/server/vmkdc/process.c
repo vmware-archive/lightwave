@@ -26,6 +26,18 @@ VmKdcProcessTgsReq(
     PVMKDC_CONTEXT pContext,
     PVMKDC_DATA *ppkrbMsg);
 
+static
+BOOLEAN
+isCrossRealmTGT(
+    PVMKDC_PRINCIPAL pPrincipal);
+
+static
+DWORD
+VmDirGetClosestServer(
+    PVMKDC_CONTEXT pContext,
+    PVMKDC_PRINCIPAL pServer,
+    PVMKDC_PRINCIPAL *ppClosestServer);
+
 DWORD
 VmKdcProcessKdcReq(
     PVMKDC_CONTEXT pContext,
@@ -584,6 +596,7 @@ VmKdcProcessTgsReq(
     PVMKDC_KEY pPresentedSKey = NULL;
     PVMKDC_KEY pSessionKey = NULL;
     PVMKDC_PRINCIPAL pSname = NULL;
+    PVMKDC_PRINCIPAL pClosestServer = NULL;
     DWORD nonce = 0;
     PVMKDC_DATA pAsnData = NULL;
     PVMKDC_TICKET pTicket = NULL;
@@ -643,6 +656,30 @@ VmKdcProcessTgsReq(
                   pContext,
                   pSname,
                   &pServerEntry);
+    if (dwError == ERROR_NO_PRINC && isCrossRealmTGT(pSname))
+    {
+        /*
+         * Look for a cross-realm krbtgt that may be closer.
+         */
+        dwError = VmDirGetClosestServer(
+                      pContext,
+                      pSname,
+                      &pClosestServer);
+        BAIL_ON_VMKDC_ERROR(dwError);
+
+        dwError = VmKdcSearchDirectory(
+                      pContext,
+                      pClosestServer,
+                      &pServerEntry);
+        BAIL_ON_VMKDC_ERROR(dwError);
+
+        pSname = pClosestServer;
+
+        VMKDC_SAFE_FREE_STRINGA(pszServerName);
+
+        dwError = VmKdcUnparsePrincipalName(pSname, &pszServerName);
+        BAIL_ON_VMKDC_ERROR(dwError);
+    }
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
@@ -834,17 +871,22 @@ VmKdcProcessTgsReq(
                       &pKrbtgtKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
-    /*
-     * Create authorization data
-     */
-    dwError = VmKdcCreateAuthzData(
-                      pContext,
-                      pEncTicketPart->cname,
-                      kdc_time,
-                      pSKey,
-                      pKrbtgtKey,
-                      &pAuthzData);
-    BAIL_ON_VMKDC_ERROR(dwError);
+    if (!VmDirStringCompareA(
+            VMKDC_GET_PTR_DATA(pEncTicketPart->cname->realm),
+            VMKDC_GET_PTR_DATA(pSname->realm), TRUE))
+    {
+        /*
+         * Create authorization data
+         */
+        dwError = VmKdcCreateAuthzData(
+                          pContext,
+                          pEncTicketPart->cname,
+                          kdc_time,
+                          pSKey,
+                          pKrbtgtKey,
+                          &pAuthzData);
+        BAIL_ON_VMKDC_ERROR(dwError);
+    }
 #endif
 
     /*
@@ -913,6 +955,7 @@ VmKdcProcessTgsReq(
     *ppKrbMsg = krbMsg;
 
 error:
+
     switch (dwError)
     {
         case 0: /* success, don't set error_code */
@@ -986,4 +1029,211 @@ error:
     VMKDC_SAFE_FREE_DIRECTORY_ENTRY(pKrbtgtEntry);
 #endif
     return dwError;
+}
+
+static
+BOOLEAN
+isCrossRealmTGT(
+    PVMKDC_PRINCIPAL pPrincipal)
+{
+    BOOLEAN bRetval = FALSE;
+
+    if (pPrincipal->numComponents == 2
+        && !VmDirStringCompareA(VMKDC_GET_PTR_DATA(pPrincipal->components[0]),
+                                "krbtgt", TRUE)
+        &&  VmDirStringCompareA(VMKDC_GET_PTR_DATA(pPrincipal->components[1]),
+                                VMKDC_GET_PTR_DATA(pPrincipal->realm), TRUE))
+    {
+        bRetval = TRUE;
+    }
+
+    return bRetval;
+}
+
+static
+DWORD
+VmDirGetClosestServer(
+    PVMKDC_CONTEXT pContext,
+    PVMKDC_PRINCIPAL pServer,
+    PVMKDC_PRINCIPAL *ppClosestServer)
+{
+    DWORD dwError = 0;
+    PVMKDC_PRINCIPAL pClosestServer = NULL;
+    PSTR pszDomain = NULL;
+    PSTR pszRequestedDomain = NULL;
+    PSTR pszClosestDomain = NULL;
+    PSTR pszUPN = NULL;
+    PVMDIR_STRING_LIST pDomainStringList = NULL;
+    PVMDIR_STRING_LIST pRequestedDomainStringList = NULL;
+    PSTR r1 = NULL;
+    PSTR r2 = NULL;
+    typedef enum {
+        TRUST_NONE,
+        TRUST_SELF,
+        TRUST_PARENT,
+        TRUST_CHILD,
+    } TRUST_KIND;
+    TRUST_KIND eTrustKind = TRUST_NONE;
+    DWORD dwIndex = 0;
+    DWORD dwNumToRemove = 0;
+
+    pszDomain = VMKDC_GET_PTR_DATA(pServer->realm);
+    pszRequestedDomain = VMKDC_GET_PTR_DATA(pServer->components[1]);
+
+    /*
+     * If the requested domain is the same as the domain, return it.
+     */
+    if (!VmDirStringCompareA(pszRequestedDomain, pszDomain, TRUE))
+    {
+        eTrustKind = TRUST_SELF;
+    }
+    else
+    {
+        dwError = VmDirStringToTokenList(
+                      pszDomain,
+                      ".",
+                      &pDomainStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringListReverse(
+                      pDomainStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringToTokenList(
+                      pszRequestedDomain,
+                      ".",
+                      &pRequestedDomainStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringListReverse(
+                      pRequestedDomainStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!pDomainStringList
+            || !pDomainStringList->pStringList[0]
+            || !pRequestedDomainStringList
+            || !pRequestedDomainStringList->pStringList[0]
+            || (VmDirStringCompareA(pDomainStringList->pStringList[0],
+                                    pRequestedDomainStringList->pStringList[0], FALSE) != 0))
+        {
+            /* fail if they do not share the same root */
+            eTrustKind = TRUST_NONE;
+        }
+        else
+        {
+            if (pDomainStringList->dwCount == pRequestedDomainStringList->dwCount)
+            {
+                eTrustKind = TRUST_PARENT;
+            }
+            else if (pDomainStringList->dwCount < pRequestedDomainStringList->dwCount)
+            {
+                dwError = VmDirTokenListToString(
+                              pDomainStringList,
+                              ".",
+                              &r1);
+                BAIL_ON_VMKDC_ERROR(dwError);
+
+                dwError = VmDirTokenListToString(
+                              pRequestedDomainStringList,
+                              ".",
+                              &r2);
+                BAIL_ON_VMKDC_ERROR(dwError);
+
+                if (!VmDirStringNCompareA(r1, r2, VmDirStringLenA(r1), FALSE))
+                {
+                    eTrustKind = TRUST_CHILD;
+                }
+                else
+                {
+                    eTrustKind = TRUST_PARENT;
+                }
+            }
+            else
+            {
+                eTrustKind = TRUST_PARENT;
+            }
+        }
+    }
+
+    switch (eTrustKind)
+    {
+    case TRUST_SELF:
+        dwError = VmKdcAllocateStringA(pszDomain, &pszClosestDomain);
+        BAIL_ON_VMKDC_ERROR(dwError);
+        break;
+
+    case TRUST_PARENT:
+        dwError = VmDirStringListReverse(
+                      pDomainStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringListRemove(
+                      pDomainStringList,
+                      pDomainStringList->pStringList[0]);
+        BAIL_ON_VMKDC_ERROR(dwError);
+
+        dwError = VmDirTokenListToString(
+                      pDomainStringList,
+                      ".",
+                      &pszClosestDomain);
+        BAIL_ON_VMKDC_ERROR(dwError);
+        break;
+
+    case TRUST_CHILD:
+        dwError = VmDirStringListReverse(
+                      pRequestedDomainStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwNumToRemove = pRequestedDomainStringList->dwCount -
+                        pDomainStringList->dwCount - 1;
+
+        for (dwIndex = 0; dwIndex < dwNumToRemove; dwIndex++)
+        {
+            dwError = VmDirStringListRemove(
+                          pRequestedDomainStringList,
+                          pRequestedDomainStringList->pStringList[0]);
+            BAIL_ON_VMKDC_ERROR(dwError);
+        }
+
+        dwError = VmDirTokenListToString(
+                      pRequestedDomainStringList,
+                      ".",
+                      &pszClosestDomain);
+        BAIL_ON_VMKDC_ERROR(dwError);
+        break;
+
+    case TRUST_NONE:
+    default:
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMKDC_ERROR(dwError);
+    }
+
+    dwError = VmKdcAllocateStringPrintf(
+                  &pszUPN,
+                  "krbtgt/%s@%s",
+                  pszClosestDomain,
+                  pszDomain);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcParsePrincipalName(pContext, pszUPN, &pClosestServer);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    *ppClosestServer = pClosestServer;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(r1);
+    VMDIR_SAFE_FREE_STRINGA(r2);
+    if (pDomainStringList)
+    {
+        VmDirStringListFree(pDomainStringList);
+    }
+    if (pRequestedDomainStringList)
+    {
+        VmDirStringListFree(pRequestedDomainStringList);
+    }
+    return dwError;
+
+error:
+
+    goto cleanup;
 }

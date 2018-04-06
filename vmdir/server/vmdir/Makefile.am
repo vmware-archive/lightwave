@@ -35,6 +35,7 @@ vmdird_SOURCES = \
     tenantmgmt.c \
     tombstone.c \
     tracklastlogin.c \
+    trusts.c \
     utils.c \
     vmdir_sstub.c \
     vmdirftp_sstub.c \

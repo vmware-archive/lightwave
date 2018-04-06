@@ -286,6 +286,22 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_FREE_TRUST_INFO_A(pTrustInfoA)   \
+    do {                                            \
+        if ((pTrustInfoA)) {                        \
+            VmDirFreeTrustInfoA(pTrustInfoA);       \
+            (pTrustInfoA) = NULL;                   \
+        }                                           \
+    } while(0)
+
+#define VMDIR_SAFE_FREE_TRUST_INFO_W(pTrustInfoW)   \
+    do {                                            \
+        if ((pTrustInfoW)) {                        \
+            VmDirFreeTrustInfoW(pTrustInfoW);       \
+            (pTrustInfoW) = NULL;                   \
+        }                                           \
+    } while(0)
+
 #define VMDIR_LOCK_MUTEX(bInLock, mutex)        \
     do {                                        \
         if (!(bInLock))                         \

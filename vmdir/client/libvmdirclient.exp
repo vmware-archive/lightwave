@@ -1,6 +1,7 @@
 ldap_syslog
 slap_debug
 VmDirSetupHostInstance
+VmDirSetupHostInstanceTrust
 VmDirDemote
 VmDirJoin
 VmDirClientJoin
@@ -120,3 +121,10 @@ VmDirServerReset
 VmDirSetupDefaultAccount
 VmDirAppendRaftState
 VmDirClientFreeMachineInfo
+VmDirAllocateTrustInfoA
+VmDirAllocateTrustInfoW
+VmDirAllocateTrustInfoAFromW
+VmDirAllocateTrustInfoWFromA
+VmDirFreeTrustInfoA
+VmDirFreeTrustInfoW
+VmDirCreateDomainTrust
