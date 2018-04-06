@@ -33,7 +33,7 @@ type TestConfig struct {
 	ClientID string `yaml:"ClientID"`
 	// Issuer to get token from
 	Issuer1 string `yaml:"Issuer1"`
-	// Second Issuer to get token from
+	// Second Issuer to get token from. Must be different from issuer 1 and oidc metadata issuer
 	Issuer2 string `yaml:"Issuer2"`
 	// Username to use to get token
 	Username string `yaml:"Username"`
@@ -290,6 +290,16 @@ func TestAcquireTokensConcurrent(t *testing.T) {
 		// CheckAcquireTokensBySolutionUser
 		<-done
 	}
+}
+
+func TestBuildClientIssuer(t *testing.T) {
+	reqID := "Test-ClientBuildIssuers"
+	logger := getLogger(reqID)
+
+	oidcClient, err := buildOidcClient(config.Issuer2, "", reqID, logger)
+	require.Nil(t, err, "Build OIDC client should succeed and take metadata's issuer, err: %+v", err)
+
+	assert.NotEqual(t, oidcClient.Issuer(), config.Issuer2, "Issuer 2 in config should not equal metadata issuer")
 }
 
 func BuildIDToken(oidcClient Client, tokens Tokens, reqID string, logger Logger) (IDToken, error) {

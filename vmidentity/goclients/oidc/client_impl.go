@@ -10,7 +10,6 @@ import (
 	"time"
 
 	jose "gopkg.in/square/go-jose.v2"
-	"strings"
 )
 
 const (
@@ -109,16 +108,6 @@ func getProviderMetadata(issuer string, client *http.Client, requestID string, l
 		return nil, OIDCMetadataError.MakeError("Unable to parse oidc metadata.", err)
 	}
 
-	if !strings.EqualFold(metadata.Issuer, issuer) {
-		PrintLog(logger, LogLevelError,
-			"Issuer does not match the configured issuer. Configured: '%s', Returned:'%s'",
-			issuer, metadata.Issuer)
-
-		return nil, OIDCMetadataError.MakeError(
-			fmt.Sprintf("Issuer does not match the configured issuer. Configured: '%s', Returned:'%s'",
-				issuer, metadata.Issuer), nil)
-	}
-
 	if len(metadata.AuthorizationEndpoint) <= 0 {
 		PrintLog(logger, LogLevelError, "Invalid OIDC metadata: authorization endpoint is required")
 		return nil, OIDCMetadataError.MakeError("Authorization endpoint is required", nil)
@@ -126,12 +115,17 @@ func getProviderMetadata(issuer string, client *http.Client, requestID string, l
 
 	if len(metadata.JwksEndpoint) <= 0 {
 		PrintLog(logger, LogLevelError, "Invalid OIDC metadata: Jwks endpoint is is required")
-		return nil, OIDCMetadataError.MakeError("Jwks endpoint is is required", nil)
+		return nil, OIDCMetadataError.MakeError("Jwks endpoint is required", nil)
 	}
 
 	if len(metadata.SigningAlg) <= 0 || !contains(metadata.SigningAlg, string(jose.RS256)) {
 		PrintLog(logger, LogLevelError, "Invalid OIDC metadata: RS256 signing algorithm is required")
 		return nil, OIDCMetadataError.MakeError("RS256 signing algorithm is required", nil)
+	}
+
+	if len(metadata.Issuer) <= 0 {
+			PrintLog(logger, LogLevelError,"No issuer found in oidc metadata")
+			return nil, OIDCMetadataError.MakeError("Issuer is required", nil)
 	}
 
 	return &metadata, nil
