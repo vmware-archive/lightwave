@@ -35,6 +35,8 @@ type TestConfig struct {
 	Issuer1 string `yaml:"Issuer1"`
 	// Second Issuer to get token from. Must be different from issuer 1 and oidc metadata issuer
 	Issuer2 string `yaml:"Issuer2"`
+	// Issuer endpoint with tenant that does not exist
+	FakeIssuer string `yaml:"FakeIssuer"`
 	// Username to use to get token
 	Username string `yaml:"Username"`
 	// Password to use to get token
@@ -300,6 +302,13 @@ func TestBuildClientIssuer(t *testing.T) {
 	require.Nil(t, err, "Build OIDC client should succeed and take metadata's issuer, err: %+v", err)
 
 	assert.NotEqual(t, oidcClient.Issuer(), config.Issuer2, "Issuer 2 in config should not equal metadata issuer")
+
+	// Test Errors
+	oidcClient, err = buildOidcClient(config.FakeIssuer, "", reqID, config.NoopLogger)
+	if assert.NotNil(t, err, "Error expected with fake issuer") {
+		assert.Contains(t, err.Error(), OIDCInvalidRequestError.Name(), "Invalid Request error expected")
+	}
+	assert.Nil(t, oidcClient, "Client returned on error should be nil")
 }
 
 func BuildIDToken(oidcClient Client, tokens Tokens, reqID string, logger Logger) (IDToken, error) {

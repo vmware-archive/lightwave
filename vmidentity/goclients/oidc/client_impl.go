@@ -97,15 +97,30 @@ func getProviderMetadata(issuer string, client *http.Client, requestID string, l
 	resp, err := client.Do(req)
 	if err != nil {
 		PrintLog(logger, LogLevelError, "Unable to retrieve oidc metadata. Error: '%v'", err)
-		return nil, OIDCMetadataError.MakeError("Unable to retrieve oidc metadata.", err)
+		return nil, OIDCMetadataRetrievalError.MakeError("Unable to retrieve oidc metadata.", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		PrintLog(logger, LogLevelError,
+			"Unable to obtain oidc token. HttpStatusCode='%v' HttpStatus='%v'", resp.StatusCode, resp.Status)
+		var errResponse jsonErrorResponse
+		jsonDecoder := json.NewDecoder(resp.Body)
+		if err := jsonDecoder.Decode(&errResponse); err != nil {
+			PrintLog(logger, LogLevelError, "Unable to parse oidc metadata error response. Error: '%v'", err)
+			return nil,	OIDCMetadataRetrievalError.MakeError("Unable to retrieve oidc metadata.", err)
+		}
+
+		err = errResponse.makeError()
+		PrintLog(logger, LogLevelError, "Unable to obtain metadata with '%v'", err)
+		return nil, err
+	}
 
 	var metadata idpMetadata
 	jsonDecoder := json.NewDecoder(resp.Body)
 	if err := jsonDecoder.Decode(&metadata); err != nil {
 		PrintLog(logger, LogLevelError, "Unable to parse oidc metadata. Error: '%v'", err)
-		return nil, OIDCMetadataError.MakeError("Unable to parse oidc metadata.", err)
+		return nil, OIDCMetadataParseError.MakeError("Unable to parse oidc metadata.", err)
 	}
 
 	if len(metadata.AuthorizationEndpoint) <= 0 {

@@ -39,7 +39,6 @@ func ParseAndValidateIDToken(
 	return parseIDToken(token, issuer, audience, nonce, signers, logger)
 }
 
-
 // ParseTenantInToken parses a token string and returns the tenant claim.
 // It should only be used when necessary, as this method does not verify the signature in the token. It is recommended to
 // use ParseAndValidateToken() first and get the tenant claim.
