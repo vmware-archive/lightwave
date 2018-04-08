@@ -120,7 +120,7 @@ func getProviderMetadata(issuer string, client *http.Client, requestID string, l
 	jsonDecoder := json.NewDecoder(resp.Body)
 	if err := jsonDecoder.Decode(&metadata); err != nil {
 		PrintLog(logger, LogLevelError, "Unable to parse oidc metadata. Error: '%v'", err)
-		return nil, OIDCMetadataParseError.MakeError("Unable to parse oidc metadata.", err)
+		return nil, OIDCJsonParseError.MakeError("Unable to parse oidc metadata.", err)
 	}
 
 	if len(metadata.AuthorizationEndpoint) <= 0 {
@@ -162,11 +162,27 @@ func getSigners(client *http.Client, jwksEndpoint string, requestID string, logg
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		PrintLog(logger, LogLevelError,
+			"Unable to retrieve oidc signer keys. HttpStatusCode='%v' HttpStatus='%v'", resp.StatusCode, resp.Status)
+		var errResponse jsonErrorResponse
+		jsonDecoder := json.NewDecoder(resp.Body)
+		if err := jsonDecoder.Decode(&errResponse); err != nil {
+			return nil, OIDCJwksRetrievalError.MakeError(
+				fmt.Sprintf("Unable to retrieve oidc signer keys. HttpStatusCode='%v' HTTPStatus='%v'",
+					resp.StatusCode, resp.Status), err)
+		}
+
+		err = errResponse.makeError()
+		PrintLog(logger, LogLevelError, "Unable to retrieve oidc signer keys with '%v'", err)
+		return nil, err
+	}
+
 	var jwkSet jose.JSONWebKeySet
 	jsonDecoder := json.NewDecoder(resp.Body)
 	if err := jsonDecoder.Decode(&jwkSet); err != nil {
 		PrintLog(logger, LogLevelError, "Unable to unmarshal oidc signer keys. Error: '%v'", err)
-		return nil, OIDCJwksRetrievalError.MakeError("Unable to unmarshal oidc signer keys.", err)
+		return nil, OIDCJsonParseError.MakeError("Unable to unmarshal oidc signer keys.", err)
 	}
 
 	return &jwkSet, nil
@@ -275,17 +291,12 @@ func (c *oidcClientImpl) acquireTokens(auth url.Values, scope string, requestID 
 
 	if resp.StatusCode != http.StatusOK {
 		PrintLog(c.logger, LogLevelError,
-			"Unable to obtain oidc token. HttpStatusCode='%v' HttpStatus='%v'",
-			resp.StatusCode, resp.Status)
+			"Unable to obtain oidc token. HttpStatusCode='%v' HttpStatus='%v'", resp.StatusCode, resp.Status)
 		var errResponse jsonErrorResponse
 		jsonDecoder := json.NewDecoder(resp.Body)
 		if err := jsonDecoder.Decode(&errResponse); err != nil {
-			PrintLog(c.logger, LogLevelError, "Unable to parse oidc error response. Error: '%v'", err)
-			return nil,
-				OIDCGetTokenError.MakeError(
-					fmt.Sprintf(
-						"Unable to obtain oidc token. HttpStatusCode='%v' HTTPStatus='%v'",
-						resp.StatusCode, resp.Status), err)
+			return nil, OIDCGetTokenError.MakeError(
+				fmt.Sprintf("Unable to obtain oidc token. HttpStatusCode='%v' HTTPStatus='%v'", resp.StatusCode, resp.Status), err)
 		}
 
 		err = errResponse.makeError()
@@ -297,7 +308,7 @@ func (c *oidcClientImpl) acquireTokens(auth url.Values, scope string, requestID 
 	jsonDecoder := json.NewDecoder(resp.Body)
 	if err := jsonDecoder.Decode(&jsonRsp); err != nil {
 		PrintLog(c.logger, LogLevelError, "Unable to parse oidc token response. Error: '%v'", err)
-		return nil, OIDCGetTokenError.MakeError("Unable to parse oidc token response.", err)
+		return nil, OIDCJsonParseError.MakeError("Unable to parse oidc token response.", err)
 	}
 
 	if len(jsonRsp.AccessToken) <= 0 {

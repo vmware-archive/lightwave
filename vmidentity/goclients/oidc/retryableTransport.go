@@ -1,7 +1,9 @@
 package oidc
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -32,11 +34,26 @@ func NewRetryableTransportWrapper(transport http.Transport, retries, retryInterv
 func (r retryableTransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
 	var response *http.Response
 	var err error
+	var bodyStr []byte
 
 	requestStr := requestToStr(req)
+
+	if req.Body != nil {
+		bodyStr, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		req.Body.Close()
+	}
+
 	PrintLog(r.logger, LogLevelInfo, "Sending [%s]", requestStr)
 	for i := 0; i < r.retries; i++ {
 		var shouldRetry bool
+
+		if req.Body != nil {
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyStr))
+		}
+
 		response, err = r.transport.RoundTrip(req)
 		if err != nil {
 			PrintLog(r.logger, LogLevelError, "Error in submitting [%s] request. Error: %+v", requestStr, err)
