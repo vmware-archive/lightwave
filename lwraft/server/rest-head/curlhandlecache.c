@@ -91,9 +91,14 @@ VmDirRESTCurlHandleCacheGet(
     if (pHandleQueue)
     {
         dwError = dequePop(pHandleQueue, (PVOID*)&pCurlHandle);
+        if (dwError == ERROR_NO_MORE_ITEMS)
+        {
+            dwError = 0;
+        }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else
+
+    if (!pCurlHandle)
     {
         pCurlHandle = curl_easy_init();
         if (!pCurlHandle)
