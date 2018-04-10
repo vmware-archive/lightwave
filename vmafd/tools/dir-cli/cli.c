@@ -4191,3 +4191,179 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+DirCliEnumerateTrusts(
+    PCSTR pszLogin,
+    PCSTR pszPassword)
+{
+    DWORD dwError = 0;
+    PCSTR pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PSTR  pszPassword1 = NULL;
+    PCSTR pszPasswordLocal = pszPassword;
+    PSTR  pszDCName = NULL;
+    PSTR  pszUser = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAdminUPN = NULL;
+    LDAP* pLd = NULL;
+    PDIR_CLI_ENUM_TRUST_CONTEXT pEnumContext = NULL;
+    PSTR* ppszTrusts = NULL;
+    DWORD dwTrustCount = 0;
+    DWORD dwCount = 0;
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain, NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszPasswordLocal = pszPassword1;
+    }
+
+    dwError = DirCliGetDCName(&pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapConnect(
+                    pszDCName,
+                    pszUser,
+                    pszDomain,
+                    pszPasswordLocal,
+                    &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapBeginEnumTrusts(
+                    pLd,
+                    pszDomain,
+                    256,
+                    &pEnumContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    do
+    {
+        DWORD idx = 0;
+
+        if (ppszTrusts)
+        {
+            VmAfdFreeStringArrayCountA(ppszTrusts, dwCount);
+            ppszTrusts = NULL;
+        }
+
+        dwError = DirCliLdapEnumTrusts(pEnumContext, &ppszTrusts, &dwCount);
+        if (dwError == ERROR_NO_MORE_ITEMS)
+        {
+            dwError = 0;
+            break;
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        for (; idx < dwCount; idx++)
+        {
+            fprintf(stdout, "%s\n", ppszTrusts[idx]);
+            dwTrustCount++;
+        }
+
+    } while (dwCount > 0);
+
+    if (dwTrustCount == 0)
+    {
+        fprintf(stderr, "Domain has no trusts\n");
+    }
+
+cleanup:
+
+    if (pEnumContext)
+    {
+        DirCliLdapEndEnumTrusts(pEnumContext);
+    }
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    if (ppszTrusts)
+    {
+        VmAfdFreeStringArrayCountA(ppszTrusts, dwCount);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+DirCliDeleteTrust(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszTrustName)
+{
+    DWORD dwError = 0;
+    PCSTR pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PSTR  pszPassword1 = NULL;
+    PCSTR pszPasswordLocal = pszPassword;
+    PSTR  pszDCName = NULL;
+    PSTR  pszUser = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAdminUPN = NULL;
+    LDAP* pLd = NULL;
+
+    if (IsNullOrEmptyString(pszTrustName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain, NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszPasswordLocal = pszPassword1;
+    }
+
+    dwError = DirCliGetDCName(&pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapConnect(
+                    pszDCName,
+                    pszUser,
+                    pszDomain,
+                    pszPasswordLocal,
+                    &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapDeleteTrust(
+                pLd,
+                pszTrustName,
+                pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    fprintf(stdout, "Trust %s successfully deleted\n", pszTrustName);
+
+cleanup:
+
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}

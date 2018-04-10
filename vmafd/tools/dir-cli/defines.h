@@ -48,6 +48,8 @@ typedef enum
     DIR_COMMAND_TENANT_LIST,
     DIR_COMMAND_ORGUNIT_CREATE,
     DIR_COMMAND_ORGUNIT_LIST,
+    DIR_COMMAND_TRUST_LIST,
+    DIR_COMMAND_TRUST_DELETE,
 } DIR_COMMAND;
 
 typedef enum
@@ -93,6 +95,7 @@ typedef enum
 #define OBJECT_CLASS_GROUP         "group"
 #define OBJECT_CLASS_ORGANIZATIONAL_UNIT "organizationalUnit"
 #define OBJECT_CLASS_TOP           "top"
+#define OBJECT_CLASS_TRUSTED_DOMAIN "trustedDomain"
 
 #define ATTR_NAME_OBJECTCLASS "objectclass"
 #define ATTR_NAME_SUBJECT_DN  "vmwSTSSubjectDN"

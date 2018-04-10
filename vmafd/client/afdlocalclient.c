@@ -930,7 +930,11 @@ VmAfdLocalPromoteVmDir(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszSiteName,
-    PCWSTR pwszPartnerHostName
+    PCWSTR pwszPartnerHostName,
+    PCWSTR pwszTrustName,
+    PCWSTR pwszTrustDC,
+    PCWSTR pwszTrustUserName,
+    PCWSTR pwszTrustPassword
 )
 {
     DWORD dwError = 0;
@@ -949,6 +953,10 @@ VmAfdLocalPromoteVmDir(
     input_spec[3].data.pWString = (PWSTR) pwszPassword;
     input_spec[4].data.pWString = (PWSTR) pwszSiteName;
     input_spec[5].data.pWString = (PWSTR) pwszPartnerHostName;
+    input_spec[6].data.pWString = (PWSTR) pwszTrustName;
+    input_spec[7].data.pWString = (PWSTR) pwszTrustDC;
+    input_spec[8].data.pWString = (PWSTR) pwszTrustUserName;
+    input_spec[9].data.pWString = (PWSTR) pwszTrustPassword;
 
     dwError = VecsLocalIPCRequest(
                     apiType,
@@ -968,7 +976,7 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalPromoteVmDir failed. Error(%u)", dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }

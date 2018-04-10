@@ -122,6 +122,22 @@ extern "C" {
         }                                 \
     } while(0)
 
+#define VMAFD_SAFE_FREE_TRUST_INFO_A(PTR) \
+    do {                                  \
+        if ((PTR)) {                      \
+            VmAfdFreeTrustInfoA(PTR);     \
+            (PTR) = NULL;                 \
+        }                                 \
+    } while(0)
+
+#define VMAFD_SAFE_FREE_TRUST_INFO_W(PTR) \
+    do {                                  \
+        if ((PTR)) {                      \
+            VmAfdFreeTrustInfoW(PTR);     \
+            (PTR) = NULL;                 \
+        }                                 \
+    } while(0)
+
 #define VMAFD_LOCK_MUTEX(bInLock, mutex) \
     do {                                 \
         if (!(bInLock))                  \
@@ -306,7 +322,6 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_CREATE_COMPUTER_ACCOUNT    56
 #define VMAFD_IPC_BEGIN_UPGRADE              57
 #define VMAFD_IPC_END_UPGRADE                58
-
 
 #define CDC_IPC_ENABLE_DEFAULT_HA            60
 #define CDC_IPC_ENABLE_LEGACY_HA             61

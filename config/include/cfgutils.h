@@ -69,6 +69,11 @@ typedef struct _VMW_IC_SETUP_PARAMS
     BOOLEAN bMachinePreJoined;
     BOOLEAN bAtomicJoin;
 
+    PSTR pszParentDomainName;
+    PSTR pszParentDC;
+    PSTR pszParentUserName;
+    PSTR pszParentPassword;
+
 } VMW_IC_SETUP_PARAMS, *PVMW_IC_SETUP_PARAMS;
 
 typedef struct _VMW_DEPLOY_LOG_CONTEXT* PVMW_DEPLOY_LOG_CONTEXT;
@@ -215,7 +220,7 @@ VmwDeployValidateSiteName(
     );
 
 DWORD
-VmwDeployValidatePartnerCredentials(
+VmwDeployValidateServerCredentials(
     PCSTR pszServer,
     PCSTR pszUsername,
     PCSTR pszPassword,

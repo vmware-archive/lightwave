@@ -292,7 +292,7 @@ error:
 }
 
 DWORD
-VmwDeployValidatePartnerCredentials(
+VmwDeployValidateServerCredentials(
     PCSTR pszServer,
     PCSTR pszUsername,
     PCSTR pszPassword,
@@ -305,7 +305,7 @@ VmwDeployValidatePartnerCredentials(
     DWORD dwNumRetry = 0;
 
     VMW_DEPLOY_LOG_INFO(
-            "Validating credentials to partner [%s] at domain [%s]",
+            "Validating credentials to server [%s] at domain [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszServer),
             VMW_DEPLOY_SAFE_LOG_STRING(pszDomain));
 

@@ -264,7 +264,11 @@ VmAfdLocalPromoteVmDir(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszSiteName,
-    PCWSTR pwszPartnerHostName
+    PCWSTR pwszPartnerHostName,
+    PCWSTR pwszTrustDomainName,
+    PCWSTR pwszTrustDC,
+    PCWSTR pwszTrustUserName,
+    PCWSTR pwszTrustPassword
 );
 
 DWORD
