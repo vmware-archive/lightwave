@@ -114,6 +114,13 @@ DirCliExecOrgunitRequest(
     );
 
 static
+DWORD
+DirCliExecDRNodeRestoreFromDB(
+    int   argc,
+    char* argv[]
+    );
+
+static
 void
 ShowUsage(
     VOID
@@ -332,6 +339,12 @@ ParseArgs(
     else if (!VmAfdStringCompareA(pszArg, "list-domain-versions", TRUE))
     {
         dwError = DirCliExecNodesVersionRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmAfdStringCompareA(pszArg, "disaster-recovery", TRUE))
+    {
+        dwError = DirCliExecDRNodeRestoreFromDB(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
@@ -3722,6 +3735,104 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+DirCliExecDRNodeRestoreFromDB(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DWORD iArg = 0;
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_USER_NAME,
+        PARSE_MODE_PASSWORD
+    } PARSE_MODE;
+
+    PARSE_MODE parseMode = PARSE_MODE_OPEN;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+        switch (parseMode)
+        {
+        case PARSE_MODE_OPEN:
+            if(!strcmp(pszArg, "--login"))
+            {
+                parseMode = PARSE_MODE_USER_NAME;
+            }
+            else if(!strcmp(pszArg, "--password"))
+            {
+                parseMode = PARSE_MODE_PASSWORD;
+            }
+            else
+            {
+                dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+            break;
+
+        case PARSE_MODE_USER_NAME:
+            if (pszUserName)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszUserName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_PASSWORD:
+            if (pszPassword)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        default:
+
+            dwError = ERROR_LOCAL_OPTION_INVALID;
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            break;
+        }
+    }
+
+    dwError = DirCliDRNodeRestoreFromDB(
+        pszUserName ,
+        pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
 
 static
 DWORD
@@ -4453,5 +4564,8 @@ ShowUsage(
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
         "\t             [ --container-dn <container DN>         ]\n"
+        "\tdisaster-recovery\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
         "\thelp\n");
 }

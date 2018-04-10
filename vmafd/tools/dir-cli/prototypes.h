@@ -675,6 +675,12 @@ DirCliGetDCNodesVersion(
     );
 
 DWORD
+DirCliDRNodeRestoreFromDB(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    );
+
+DWORD
 DirCliListNodesA(
     PCSTR     pszHostName,
     PCSTR     pszLogin,
@@ -716,4 +722,12 @@ DirCliEnumerateOrgunits(
     PCSTR pszLogin,
     PCSTR pszPassword,
     PCSTR pszContainerDN
+    );
+
+DWORD
+DirCliGetStrRegKeyA(
+    PVMAF_CFG_CONNECTION    pConnection,
+    PCSTR                   pszKeyPath,
+    PCSTR                   pszKeyName,
+    PSTR*                   ppszValue
     );

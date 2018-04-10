@@ -63,13 +63,9 @@ DirCliLdapConnect(
     )
 {
     DWORD dwError = 0;
-    PSTR  pszUserDN = NULL;
     LDAP* pLd = NULL;
     PSTR pszUpn = NULL;
     int retryCount = 2;
-
-    dwError = DirCliGetUserDN(pszUser, pszDomain, &pszUserDN);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringPrintf(
                 &pszUpn,
@@ -100,7 +96,6 @@ DirCliLdapConnect(
     *ppLd = pLd;
 
 cleanup:
-    VMAFD_SAFE_FREE_MEMORY(pszUserDN);
 
     return dwError;
 
