@@ -15,6 +15,7 @@ libsrvcommon_la_SOURCES = \
     dcconnthr.c           \
     entryencodedecode.c   \
     krbsrvutil.c          \
+    nodeidentity.c        \
     oidctovmdirerror.c    \
     oprequestutil.c       \
     security-sd.c         \

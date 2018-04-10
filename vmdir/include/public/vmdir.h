@@ -83,6 +83,7 @@ extern "C" {
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
 #define VMDIR_CA_CONTAINER_NAME                 "Certificate-Authorities"
 #define RAFT_CONTEXT_CONTAINER_NAME             "raftcontext"
+#define VMDIR_DNS_CONTAINER_NAME                "DomainDnsZones"
 
 #define FSP_CONTAINER_RDN_ATTR                  "cn"
 #define FSP_CONTAINER_RDN_ATTR_VALUE            "ForeignSecurityPrincipals"

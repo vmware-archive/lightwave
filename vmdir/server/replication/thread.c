@@ -76,10 +76,6 @@ VmDirSrvCreateReplAgrObj(
     );
 
 static
-DWORD
-VmDirSetGlobalServerId();
-
-static
 int
 _VmDirContinueReplicationCycle(
     uint64_t *puiStartTimeInShutdown,
@@ -720,35 +716,6 @@ error:
 
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "UpdateServerObject failed (%u)", retVal);
 
-    goto cleanup;
-}
-
-// Update global server ID
-
-static
-DWORD
-VmDirSetGlobalServerId()
-{
-    DWORD           dwError = 0;
-    PVDIR_ENTRY     pEntry = NULL;
-    PVDIR_ATTRIBUTE pMaxServerId = NULL;
-
-    dwError = VmDirSimpleDNToEntry(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pMaxServerId = VmDirEntryFindAttribute( ATTR_MAX_SERVER_ID, pEntry );
-    assert( pMaxServerId != NULL );
-
-    gVmdirServerGlobals.serverId = atoi(pMaxServerId->vals[0].lberbv.bv_val) + 1;
-
-cleanup:
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-    return dwError;
-
-error:
     goto cleanup;
 }
 

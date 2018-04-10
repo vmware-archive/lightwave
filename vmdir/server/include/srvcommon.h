@@ -1149,11 +1149,6 @@ VmDirSrvCreateDN(
     );
 
 DWORD
-VmDirSrvCreateServerObj(
-    PVDIR_SCHEMA_CTX pSchemaCtx
-    );
-
-DWORD
 VmDirSrvCreateReplAgrsContainer(
     PVDIR_SCHEMA_CTX pSchemaCtx);
 
@@ -1762,6 +1757,17 @@ VmDirBkgdTaskUpdatePrevTime(
 DWORD
 VmDirOidcToVmdirError(
     DWORD dwOidcError
+    );
+
+// nodeidentity.c
+DWORD
+VmDirSrvCreateServerObj(
+    PVDIR_SCHEMA_CTX pSchemaCtx
+    );
+
+DWORD
+VmDirSetGlobalServerId(
+    VOID
     );
 
 #ifdef __cplusplus
