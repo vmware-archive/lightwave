@@ -38,6 +38,7 @@ public class TenantConfigurationDTO extends DTO {
     private final ProviderPolicyDTO providerPolicy;
     private final BrandPolicyDTO brandPolicy;
     private final AuthenticationPolicyDTO authenticationPolicy;
+    private final OperatorsAccessPolicyDTO operatorsAccessPolicy;
 
     /**
      * Construct a {@code TenantConfigurationDTO} with its various policies.
@@ -50,12 +51,30 @@ public class TenantConfigurationDTO extends DTO {
      * @param authenticationPolicy the authentication policy for a tenant.
      */
     public TenantConfigurationDTO(PasswordPolicyDTO passwordPolicy, LockoutPolicyDTO lockoutPolicy, TokenPolicyDTO tokenPolicy, ProviderPolicyDTO providerPolicy, BrandPolicyDTO brandPolicy, AuthenticationPolicyDTO authenticationPolicy) {
+        this(passwordPolicy, lockoutPolicy, tokenPolicy, providerPolicy, brandPolicy, authenticationPolicy, null);
+    }
+
+    /**
+     * Construct a {@code TenantConfigurationDTO} with its various policies.
+     *
+     * @param passwordPolicy the password policy for a tenant.
+     * @param lockoutPolicy the lockout policy for a tenant.
+     * @param tokenPolicy the token policy for a tenant.
+     * @param providerPolicy the provider policy for a tenant.
+     * @param brandPolicy the brand policy for a tenant.
+     * @param authenticationPolicy the authentication policy for a tenant.
+     * @param operatorsAccessPolicy the operators access policy for a tenant.
+     */
+    public TenantConfigurationDTO(PasswordPolicyDTO passwordPolicy, LockoutPolicyDTO lockoutPolicy,
+        TokenPolicyDTO tokenPolicy, ProviderPolicyDTO providerPolicy, BrandPolicyDTO brandPolicy,
+        AuthenticationPolicyDTO authenticationPolicy, OperatorsAccessPolicyDTO operatorsAccessPolicy) {
         this.passwordPolicy = passwordPolicy;
         this.lockoutPolicy = lockoutPolicy;
         this.tokenPolicy = tokenPolicy;
         this.providerPolicy = providerPolicy;
         this.brandPolicy = brandPolicy;
         this.authenticationPolicy = authenticationPolicy;
+        this.operatorsAccessPolicy = operatorsAccessPolicy;
     }
 
     /**
@@ -113,6 +132,15 @@ public class TenantConfigurationDTO extends DTO {
     }
 
     /**
+     * Get the operators access policy.
+     *
+     * @return the operators access policy.
+     */
+    public OperatorsAccessPolicyDTO getOperatorsAccessPolicy(){
+        return this.operatorsAccessPolicy;
+    }
+
+    /**
      * Create an instance of the {@link TenantConfigurationDTO.Builder} class.
      *
      * @return a new {@code TenantConfigurationDTO.Builder}.
@@ -137,6 +165,7 @@ public class TenantConfigurationDTO extends DTO {
         private ProviderPolicyDTO providerPolicy;
         private BrandPolicyDTO brandPolicy;
         private AuthenticationPolicyDTO authenticationPolicy;
+        private OperatorsAccessPolicyDTO operatorsAccessPolicy;
 
         public Builder withPasswordPolicy(PasswordPolicyDTO passwordPolicy) {
             this.passwordPolicy = passwordPolicy;
@@ -168,8 +197,15 @@ public class TenantConfigurationDTO extends DTO {
             return this;
         }
 
+        public Builder withOperatorsAccessPolicy(OperatorsAccessPolicyDTO operatorsAccessPolicy) {
+            this.operatorsAccessPolicy = operatorsAccessPolicy;
+            return this;
+        }
+
         public TenantConfigurationDTO build() {
-            return new TenantConfigurationDTO(passwordPolicy, lockoutPolicy, tokenPolicy, providerPolicy, brandPolicy, authenticationPolicy);
+            return new TenantConfigurationDTO(
+                passwordPolicy, lockoutPolicy, tokenPolicy, providerPolicy,
+                brandPolicy, authenticationPolicy, operatorsAccessPolicy);
         }
     }
 

@@ -6593,6 +6593,15 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         }
     }
 
+    @Override
+    public boolean isValidDn(String dn) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+            return ServerUtils.isValidDN(connection, dn);
+        }
+    }
+
     private PooledLdapConnection borrowConnection() throws Exception {
         return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
     }

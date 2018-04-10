@@ -53,6 +53,7 @@ import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PasswordPolicy;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchCriteria;
@@ -73,6 +74,7 @@ import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
 import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
+import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
@@ -92,6 +94,7 @@ import com.vmware.identity.rest.idm.server.mapper.AuthenticationPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.LockoutPolicyMapper;
+import com.vmware.identity.rest.idm.server.mapper.OperatorsAccessPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.PasswordPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.ProviderPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.SecurityDomainMapper;
@@ -527,6 +530,7 @@ public class TenantResource extends BaseResource {
         ProviderPolicyDTO providerPolicy = null;
         BrandPolicyDTO brandPolicy = null;
         AuthenticationPolicyDTO authenticationPolicy = null;
+        OperatorsAccessPolicyDTO operatorsPolicy = null;
 
         try {
             if (requestedConfigs.contains(TenantConfigType.ALL)) {
@@ -536,6 +540,7 @@ public class TenantResource extends BaseResource {
                 providerPolicy = getProviderPolicy(tenantName);
                 brandPolicy = getBrandPolicy(tenantName);
                 authenticationPolicy = getAuthenticationPolicy(tenantName);
+                operatorsPolicy = getOperatorsAccessPolicy(tenantName);
             } else {
                 for (TenantConfigType type : requestedConfigs) {
                     switch (type) {
@@ -562,14 +567,17 @@ public class TenantResource extends BaseResource {
                     case AUTHENTICATION:
                         authenticationPolicy = getAuthenticationPolicy(tenantName);
                         break;
+
+                    case OPERATORS_ACCESS:
+                        operatorsPolicy = getOperatorsAccessPolicy(tenantName);
+                        break;
                     }
                 }
             }
 
             return TenantConfigurationDTO.builder().withLockoutPolicy(lockoutPolicy).withPasswordPolicy(passwordPolicy)
                     .withTokenPolicy(tokenPolicy).withProviderPolicy(providerPolicy).withBrandPolicy(brandPolicy)
-                    .withAuthenticationPolicy(authenticationPolicy).build();
-
+                    .withAuthenticationPolicy(authenticationPolicy).withOperatorsAccessPolicy(operatorsPolicy).build();
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve configuration details of tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
@@ -608,6 +616,7 @@ public class TenantResource extends BaseResource {
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
         LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
         PasswordPolicyDTO passwordPolicy = configurationDTO.getPasswordPolicy();
+        OperatorsAccessPolicyDTO operatorAccessPolicyDTO = configurationDTO.getOperatorsAccessPolicy();
 
         try {
 
@@ -660,6 +669,12 @@ public class TenantResource extends BaseResource {
                 PasswordPolicy idmPasswordPolicy = PasswordPolicyMapper.getPasswordPolicy(passwordPolicy);
                 getIDMClient().setPasswordPolicy(tenantName, idmPasswordPolicy);
                 configBuilder.withPasswordPolicy(getPasswordPolicy(tenantName));
+            }
+
+            if (operatorAccessPolicyDTO != null) {
+                OperatorAccessPolicy idmPolicy = OperatorsAccessPolicyMapper.getOperatorsAccessPolicy(operatorAccessPolicyDTO);
+                getIDMClient().setOperatorAccessPolicy(tenantName, idmPolicy);
+                configBuilder.withOperatorsAccessPolicy(this.getOperatorsAccessPolicy(tenantName));
             }
 
             return configBuilder.build();
@@ -781,6 +796,11 @@ public class TenantResource extends BaseResource {
 
     private AuthenticationPolicyDTO getAuthenticationPolicy(String tenantName) throws Exception {
         return AuthenticationPolicyMapper.getAuthenticationPolicyDTO(getIDMClient().getAuthnPolicy(tenantName));
+    }
+
+    private OperatorsAccessPolicyDTO getOperatorsAccessPolicy(String tenantName) throws Exception {
+        return OperatorsAccessPolicyMapper.getOperatorsAccessPolicyDTO(
+            getIDMClient().getOperatorAccessPolicy(tenantName));
     }
 
     private Long getClockTolerance(String tenantName) throws Exception {

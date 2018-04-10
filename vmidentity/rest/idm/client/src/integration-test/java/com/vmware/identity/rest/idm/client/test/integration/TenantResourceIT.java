@@ -46,6 +46,7 @@ import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.client.test.integration.util.UserGenerator;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
+import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
@@ -134,9 +135,13 @@ public class TenantResourceIT extends IntegrationTestBase {
             .withProhibitedPreviousPasswordCount(3)
             .build();
 
+        OperatorsAccessPolicyDTO operatorsDto = new OperatorsAccessPolicyDTO.Builder()
+            .withEnabled(true).build();
+
         TenantConfigurationDTO config = new TenantConfigurationDTO.Builder()
             .withLockoutPolicy(lockout)
             .withPasswordPolicy(password)
+            .withOperatorsAccessPolicy(operatorsDto)
             .build();
 
         // verify default password expirationd days before update
@@ -158,6 +163,8 @@ public class TenantResourceIT extends IntegrationTestBase {
         assertEquals(password.getMinUppercaseCount(), actual.getPasswordPolicy().getMinUppercaseCount());
         assertEquals(password.getPasswordLifetimeDays(), actual.getPasswordPolicy().getPasswordLifetimeDays());
         assertEquals(password.getProhibitedPreviousPasswordCount(), actual.getPasswordPolicy().getProhibitedPreviousPasswordCount());
+        assertNotNull(actual.getOperatorsAccessPolicy());
+        assertEquals(operatorsDto.getEnabled(), actual.getOperatorsAccessPolicy().getEnabled());
     }
 
     @Test

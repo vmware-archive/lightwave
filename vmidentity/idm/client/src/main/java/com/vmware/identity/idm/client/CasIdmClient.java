@@ -79,6 +79,7 @@ import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.PasswordExpiredException;
 import com.vmware.identity.idm.PasswordPolicy;
@@ -3590,6 +3591,30 @@ public class CasIdmClient
     public void setAuthnPolicy(String tenantName, AuthnPolicy policy)
             throws Exception {
         getService().setAuthNPolicy(tenantName, policy,
+                this.getServiceContext());
+    }
+
+    /**
+     * Retrieve the tenant Operators Access Policy
+     *
+     * @param tenantName
+     * @throws IDMException
+     */
+    public OperatorAccessPolicy getOperatorAccessPolicy(String tenantName) throws Exception {
+        return getService()
+                .getOperatorAccessPolicy(tenantName, this.getServiceContext());
+    }
+
+    /**
+     * Set the tenant Operator Access Policy
+     *
+     * @param tenantName
+     * @param policy Operators Access Policy
+     * @throws IDMException
+     */
+    public void setOperatorAccessPolicy(String tenantName, OperatorAccessPolicy policy)
+            throws Exception {
+        getService().setOperatorAccessPolicy(tenantName, policy,
                 this.getServiceContext());
     }
 

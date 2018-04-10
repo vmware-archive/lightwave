@@ -990,6 +990,23 @@ public interface IIdentityManager
             throws  IDMException;
 
     /**
+     * Retrieve the tenant Operators Access Policy
+     *
+     * @param tenantName
+     * @throws IDMException
+     */
+    public OperatorAccessPolicy getOperatorAccessPolicy(String tenantName, IIdmServiceContext serviceContext) throws IDMException;
+
+    /**
+     * Set the tenant Operator Access Policy
+     *
+     * @param tenantName
+     * @param policy policy to set for operator access
+     * @throws IDMException
+     */
+    public void setOperatorAccessPolicy(String tenantName, OperatorAccessPolicy policy, IIdmServiceContext serviceContext) throws IDMException;
+
+    /**
      * Operation for retrieving the IDM authentication statistics cache
      *
      * @param tenantName cannot be null or empty

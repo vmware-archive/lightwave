@@ -118,6 +118,7 @@ import com.vmware.identity.idm.NoSuchExternalIdpConfigException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.PasswordExpiredException;
 import com.vmware.identity.idm.PasswordPolicy;
@@ -7041,6 +7042,7 @@ public class IdentityManager implements IIdentityManager {
             AuthnPolicy authnPolicy = getAuthnPolicy(tenantName, authnTypes);
             boolean idpSelectionFlag = attrs.isIDPSelectionEnabled();
             String issuer = _configStore.getIssuer(tenantName);
+            OperatorAccessPolicy operatorPolicy = _configStore.getOperatorAccessPolicy(tenantName);
 
             List<Certificate> certificate = _configStore.getTenantCertificate(tenantName);
                     Collection<List<Certificate>> certChains = _configStore.getTenantCertChains(tenantName);
@@ -7076,7 +7078,8 @@ public class IdentityManager implements IIdentityManager {
                                     issuer,
                                     providersInfo != null ? providersInfo._defaultProviders : null,
                                     authnPolicy,
-                                    idpSelectionFlag);
+                                    idpSelectionFlag,
+                                    operatorPolicy);
         }
 
         return tenantInfo;
@@ -8429,34 +8432,109 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(Tenant tenant, IIdmServiceContext serviceContext, String operationName)
-   {
-      return getDiagnosticsContext((tenant != null) ? tenant.getName() : "(NULL)", serviceContext, operationName);
-   }
+    private OperatorAccessPolicy getOperatorAccessPolicy(
+        String tenantName) throws Exception
+    {
+        try
+        {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, IIdmServiceContext serviceContext, String operationName)
-   {
-      String correlationId = null;
-      String userId = "";
-      String sessionId = "";
-      if(serviceContext != null)
-      {
-          correlationId = serviceContext.getCorrelationId();
-          userId = serviceContext.getUserId();
-          sessionId = serviceContext.getSessionId();
-      }
-      if (ServerUtils.isNullOrEmpty(correlationId))
-      {
-          correlationId = UUID.randomUUID().toString();
-      }
-      return getDiagnosticsContext(tenantName, correlationId, operationName, userId, sessionId);
-   }
+            return tenantInfo.getOperatorAccessPolicy();
+        }
+        catch(Exception ex)
+        {
+            logger.error("Failed to getOperatorAccessPolicy", ex);
+            throw ex;
+        }
+    }
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, String correlationId, String operationName, String userId, String sessionId)
-   {
-       // for now we don't use operationName, but can add support in the future
-       return DiagnosticsContextFactory.createContext(correlationId, tenantName, userId, sessionId);
-   }
+    private void setOperatorAccessPolicy(
+        String tenantName, OperatorAccessPolicy policy) throws Exception
+    {
+        try
+        {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            if (policy != null)
+            {
+                boolean bSystemTenant = ServerUtils.isEquals(tenantName, this.getSystemTenant());
+                if ( ( bSystemTenant == false )
+                     && ( (ServerUtils.isNullOrEmpty(policy.userBaseDn()) == false)
+                          || (ServerUtils.isNullOrEmpty(policy.groupBaseDn()) == false) ) ) {
+
+                    throw new InvalidArgumentException("User base DN and group base DN can only be set for system tenant.");
+                }
+
+                if (bSystemTenant == true) {
+                    ISystemDomainIdentityProvider systemProvider = tenantInfo.findSystemProvider();
+                    ServerUtils.validateNotNullSystemIdp(systemProvider, tenantName);
+
+                    if ( (ServerUtils.isNullOrEmpty(policy.userBaseDn()) == false)
+                         && (systemProvider.isValidDn(policy.userBaseDn()) == false) ) {
+
+                        throw new InvalidArgumentException(String.format("User base DN [%s] is invalid", policy.userBaseDn()));
+                    }
+                    if ( (ServerUtils.isNullOrEmpty(policy.groupBaseDn()) == false)
+                         && (systemProvider.isValidDn(policy.groupBaseDn()) == false) ) {
+
+                        throw new InvalidArgumentException(String.format("Group base DN [%s] is invalid", policy.groupBaseDn()));
+                    }
+                }
+                else
+                {
+                    if (policy.enabled())
+                    {
+                        TenantInformation systemTenantInfo = findTenant(this.getSystemTenant());
+                        OperatorAccessPolicy systemTenantPolicy = systemTenantInfo.getOperatorAccessPolicy();
+                        if ( ( systemTenantPolicy == null) || (systemTenantPolicy.enabled() == false) )
+                        {
+                            logger.warn(
+                                "Enabling Operator Access for tenant {} will become effective once system tenant enables it as well.",
+                                tenantName);
+                        }
+                    }
+                }
+            }
+            this._configStore.setOperatorAccessPolicy(tenantName, policy);
+            this._tenantCache.deleteTenant(tenantName);
+         }
+        catch(Exception ex)
+        {
+            logger.error("Failed to set setOperatorAccessPolicy", ex);
+            throw ex;
+        }
+    }
+
+    private static IDiagnosticsContextScope getDiagnosticsContext(Tenant tenant, IIdmServiceContext serviceContext, String operationName)
+    {
+        return getDiagnosticsContext((tenant != null) ? tenant.getName() : "(NULL)", serviceContext, operationName);
+    }
+
+    private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, IIdmServiceContext serviceContext, String operationName)
+    {
+        String correlationId = null;
+        String userId = "";
+        String sessionId = "";
+        if(serviceContext != null)
+        {
+            correlationId = serviceContext.getCorrelationId();
+            userId = serviceContext.getUserId();
+            sessionId = serviceContext.getSessionId();
+        }
+        if (ServerUtils.isNullOrEmpty(correlationId))
+        {
+            correlationId = UUID.randomUUID().toString();
+        }
+        return getDiagnosticsContext(tenantName, correlationId, operationName, userId, sessionId);
+    }
+
+    private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, String correlationId, String operationName, String userId, String sessionId)
+    {
+        // for now we don't use operationName, but can add support in the future
+        return DiagnosticsContextFactory.createContext(correlationId, tenantName, userId, sessionId);
+    }
 
     // ---------------------------------------------
     // IIdentityManager interface implementation
@@ -12178,6 +12256,46 @@ public class IdentityManager implements IIdentityManager {
             ManageCrlCacheChecker();
         } catch (Exception ex) {
             throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    @Override
+    public OperatorAccessPolicy getOperatorAccessPolicy(
+        String tenantName, IIdmServiceContext serviceContext) throws IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOperatorAccessPolicy"))
+        {
+            try
+            {
+                return this.getOperatorAccessPolicy(tenantName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    @Override
+    public void setOperatorAccessPolicy(
+        String tenantName, OperatorAccessPolicy policy, IIdmServiceContext serviceContext) throws IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setOperatorAccessPolicy"))
+        {
+            try
+            {
+                this.setOperatorAccessPolicy(tenantName, policy);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
         }
     }
 
