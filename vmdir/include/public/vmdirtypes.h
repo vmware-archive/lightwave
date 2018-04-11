@@ -391,6 +391,20 @@ typedef struct _VMDIR_SUPERLOG_TABLE
     PVMDIR_SUPERLOG_TABLE_ROW rows;
 } VMDIR_SUPERLOG_TABLE, *PVMDIR_SUPERLOG_TABLE;
 
+typedef struct _VMDIR_TRUST_INFO_A {
+    PSTR pszName;
+    PSTR pszDC;
+    PSTR pszUserName;
+    PSTR pszPassword;
+} VMDIR_TRUST_INFO_A, *PVMDIR_TRUST_INFO_A;
+
+typedef struct _VMDIR_TRUST_INFO_W {
+    PWSTR pwszName;
+    PWSTR pwszDC;
+    PWSTR pwszUserName;
+    PWSTR pwszPassword;
+} VMDIR_TRUST_INFO_W, *PVMDIR_TRUST_INFO_W;
+
 #ifndef MDB_STATE_OP
 #define MDB_STATE_OP
 

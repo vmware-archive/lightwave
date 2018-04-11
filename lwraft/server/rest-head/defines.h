@@ -53,6 +53,7 @@
 #define VMDIR_REST_HEADER_CONTENT_TYPE      "Content-Type"
 #define VMDIR_REST_HEADER_REQUESTID         "Requestid"
 #define VMDIR_REST_HEADER_ORIGIN            "Origin"
+#define VMDIR_REST_HEADER_CONNECTION        "Connection"
 
 // HTTP STATUS CODES
 // 1xx Informational

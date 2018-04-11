@@ -40,6 +40,7 @@ public class FederatedIdpDTO extends DTO {
     private final Boolean jitEnabled;
     private final String upnSuffix;
     private final List<TokenClaimGroupDTO> roleGroupMappings;
+    private final Boolean multiTenant;
 
     /**
      * Construct an {@code FederatedIdpPDTO} with its various details.
@@ -50,7 +51,7 @@ public class FederatedIdpDTO extends DTO {
      * @param jitEnabled enable or disable just-in-time provisioning.
      * @param upnSuffix a UPN suffix to use for this identity provider.
      * @param roleGroupMap role group mapping for this identity provider.
-     */
+     * */
     public FederatedIdpDTO(
             String entityID,
             String protocol,
@@ -61,6 +62,32 @@ public class FederatedIdpDTO extends DTO {
             String upnSuffix,
             List<TokenClaimGroupDTO> roleGroupMappings
     ) {
+        this(entityID, protocol, alias, oidcConfig, samlConfig, jitEnabled, 
+                upnSuffix, roleGroupMappings, false);
+    }
+
+    /**
+     * Construct an {@code FederatedIdpPDTO} with its various details.
+     *
+     * @param entityID the entity identifier.
+     * @param protocol the protocol used by this External IDP
+     * @param alias the alias of the IDP.
+     * @param jitEnabled enable or disable just-in-time provisioning.
+     * @param upnSuffix a UPN suffix to use for this identity provider.
+     * @param roleGroupMap role group mapping for this identity provider.
+     * @param multiTenant whether the idp config is multi-tenanted
+     */
+    public FederatedIdpDTO(
+            String entityID,
+            String protocol,
+            String alias,
+            FederatedOidcConfigDTO oidcConfig,
+            FederatedSamlConfigDTO samlConfig,
+            Boolean jitEnabled,
+            String upnSuffix,
+            List<TokenClaimGroupDTO> roleGroupMappings,
+            Boolean multiTenant
+    ) {
         this.entityID = entityID;
         this.protocol = protocol;
         this.alias = alias;
@@ -69,6 +96,7 @@ public class FederatedIdpDTO extends DTO {
         this.jitEnabled = jitEnabled;
         this.upnSuffix = upnSuffix;
         this.roleGroupMappings = roleGroupMappings;
+        this.multiTenant = multiTenant;
     }
 
     /**
@@ -114,6 +142,15 @@ public class FederatedIdpDTO extends DTO {
      */
     public String getUpnSuffix() {
         return this.upnSuffix;
+    }
+
+    /**
+     * Check if the IDP is multi-tenant.
+     *
+     * @return
+     */
+    public Boolean isMultiTenant() {
+        return this.multiTenant;
     }
 
     /**
@@ -167,6 +204,7 @@ public class FederatedIdpDTO extends DTO {
         private Boolean jitEnabled;
         private String upnSuffix;
         private List<TokenClaimGroupDTO> roleGroupMappings;
+        private Boolean multiTenant;
 
         public Builder withEntityID(String entityID) {
             this.entityID = entityID;
@@ -208,6 +246,11 @@ public class FederatedIdpDTO extends DTO {
             return this;
         }
 
+        public Builder withMultiTenant(Boolean multiTenant) {
+            this.multiTenant = multiTenant;
+            return this;
+        }
+
         public FederatedIdpDTO build() {
             return new FederatedIdpDTO(
                             entityID,
@@ -217,7 +260,8 @@ public class FederatedIdpDTO extends DTO {
                             samlConfig,
                             jitEnabled,
                             upnSuffix,
-                            roleGroupMappings
+                            roleGroupMappings,
+                            multiTenant
             );
         }
     }

@@ -286,6 +286,22 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_FREE_TRUST_INFO_A(pTrustInfoA)   \
+    do {                                            \
+        if ((pTrustInfoA)) {                        \
+            VmDirFreeTrustInfoA(pTrustInfoA);       \
+            (pTrustInfoA) = NULL;                   \
+        }                                           \
+    } while(0)
+
+#define VMDIR_SAFE_FREE_TRUST_INFO_W(pTrustInfoW)   \
+    do {                                            \
+        if ((pTrustInfoW)) {                        \
+            VmDirFreeTrustInfoW(pTrustInfoW);       \
+            (pTrustInfoW) = NULL;                   \
+        }                                           \
+    } while(0)
+
 #define VMDIR_LOCK_MUTEX(bInLock, mutex)        \
     do {                                        \
         if (!(bInLock))                         \
@@ -636,6 +652,8 @@ extern "C" {
 #ifndef VMDIR_ARRAY_SIZE
 #define VMDIR_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
+
+#define VMDIR_IS_OP_CTRL_PASSBLOB(op) (op->passblobCtrl != NULL)
 
 //////////////////////////////////////////////////////////////////////////
 // Used in attribute index cache and bdb-store

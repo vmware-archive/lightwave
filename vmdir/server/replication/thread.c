@@ -1111,14 +1111,6 @@ _VmDirFetchReplicationPage(
     LDAPControl**   ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
     LDAP*   pLd = NULL;
-    struct timeval  tv = {0};
-    struct timeval* pTv = NULL;
-
-    if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
-    {
-        tv.tv_sec =  gVmdirGlobals.dwLdapSearchTimeoutSec;
-        pTv = &tv;
-    }
 
     pLd = pConnection->pLd;
 
@@ -1163,7 +1155,7 @@ _VmDirFetchReplicationPage(
             FALSE,
             srvCtrls,
             NULL,
-            pTv,
+            NULL, // should not time out replication search on client/server side.
             pPage->iEntriesRequested,
             &(pPage->searchRes));
 

@@ -97,6 +97,9 @@ VmDirRESTServerInit(
     // post should still handle simple auth
     (VOID)VmDirRESTCacheInit(&gpVdirRestCache);
 
+    dwError = VmDirRESTCurlHandleCacheInit(&gpVdirRestCurlHandleCache);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = coapi_load_from_file(REST_API_SPEC, &gpVdirRestApiDef);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -151,6 +154,7 @@ VmDirRESTServerShutdown(
     //cleanup all global variables
     VmDirRESTUnloadVmAfdAPI(gpVdirVmAfdApi);
     VmDirFreeRESTCache(gpVdirRestCache);
+    VmDirRESTCurlHandleCacheFree(gpVdirRestCurlHandleCache);
     VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
 }
 

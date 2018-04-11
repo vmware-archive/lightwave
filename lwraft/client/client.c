@@ -2856,42 +2856,8 @@ VmDirRaftAppendEntries(
     /* [out] */              unsigned long long *status
     )
 {
-    DWORD dwError = 0;
-    UINT32 iCurrentTerm = 0;
-    idl_uhyper_int iStatus = 0;
-    chglog_container chglogEntries = {0};
-    chglogEntries.chglog_size = entriesSize;
-    chglogEntries.chglog_bytes = entries;
-
-    *currentTerm = 0;
-    *status = 0;
-
-    if (hBinding==NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VMDIR_RPC_TRY
-    {
-        dwError =  RpcVmDirRaftAppendEntries(hBinding->hBinding, term, (idl_char *)leader, preLogIndex,
-                                             prevLogTerm, leaderCommit, &chglogEntries, &iCurrentTerm, &iStatus);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *currentTerm = iCurrentTerm;
-    *status = iStatus;
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
+    //obsolete by LDAP Raft RPC
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
 
@@ -2906,31 +2872,8 @@ VmDirRaftRequestVote(
     /* [out] */ UINT32 *voteGranted
 )
 {
-    DWORD   dwError = 0;
-
-    if (hBinding==NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VMDIR_RPC_TRY
-    {
-        dwError =  RpcVmDirRaftRequestVote( hBinding->hBinding, term, (idl_char *)candidateId,
-                                            lastLogIndex, lastLogTerm, currentTerm, voteGranted);
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
+    //obsolete by LDAP Raft RPC
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
 /* RPC wrapper for the startvote tool */

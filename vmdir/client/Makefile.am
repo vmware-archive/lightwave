@@ -26,6 +26,7 @@ libvmdirclient_la_SOURCES = \
     setupldu.c \
     shell.c \
     superlogutil.c \
+    trusts.c \
     users.c \
     util.c \
     vmdir_cstub.c \

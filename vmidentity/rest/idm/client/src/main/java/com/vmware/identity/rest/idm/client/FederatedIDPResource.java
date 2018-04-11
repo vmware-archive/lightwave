@@ -181,7 +181,7 @@ public class FederatedIDPResource extends ClientResource {
             String tenant,
             String entityId
     ) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        delete(tenant, Base64.encodeBase64String(entityId.getBytes("UTF-8")), false);
+        delete(tenant, entityId, false);
     }
 
     /**

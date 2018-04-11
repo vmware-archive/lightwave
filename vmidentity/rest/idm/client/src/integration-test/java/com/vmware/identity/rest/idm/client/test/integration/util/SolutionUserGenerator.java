@@ -28,4 +28,13 @@ public class SolutionUserGenerator {
             .build();
     }
 
+    public static com.vmware.directory.rest.common.data.SolutionUserDTO generateVmdirSolutionUser (String name, String domain, String description, CertificateDTO certificate) {
+        return new com.vmware.directory.rest.common.data.SolutionUserDTO.Builder()
+                .withName(name)
+                .withDomain(domain)
+                .withDescription(description)
+                .withCertificate(certificate)
+                .withDisabled(false)
+                .build();
+    }
 }

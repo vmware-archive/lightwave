@@ -59,6 +59,7 @@ public class IDPConfig implements Serializable
     Map<TokenClaimAttribute,List<String>> tokenClaimGroupMappings;
     boolean isJitEnabled;
     String upnSuffix;
+    boolean isMultiTenant;
     OidcConfig oidcConfig;
 
     /**
@@ -170,6 +171,14 @@ public class IDPConfig implements Serializable
             Validate.notEmpty(upnSuffix);
         }
         this.upnSuffix = upnSuffix;
+    }
+
+    public boolean isMultiTenant() {
+        return this.isMultiTenant;
+    }
+
+    public void setMultiTenant(boolean isMultiTenant) {
+        this.isMultiTenant = isMultiTenant;
     }
 
     /**

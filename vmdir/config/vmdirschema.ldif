@@ -19852,6 +19852,7 @@ objectClasses: (
          $ vmwOidcAuthorizeRedirectURI
          $ vmwOidcLogoutURI
          $ vmwOidcPostLogoutRedirectURI
+         $ vmwSTSMultiTenant
         )
     )
 

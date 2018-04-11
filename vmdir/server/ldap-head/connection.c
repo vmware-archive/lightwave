@@ -1251,6 +1251,7 @@ ProcessAConnection(
                 retVal);
         goto error;
     }
+    pConn->bIsLdaps = pConnCtx->bIsLdaps;
 
     while (TRUE)
     {
@@ -1794,6 +1795,7 @@ vmdirConnAccept(
             pConnCtx->udp_addr_len = udp_addr_len;
             pfnProcessAConnection = ProcessUdpConnection;
         }
+        pConnCtx->bIsLdaps = bIsLdaps;
 
         retVal = VmDirCreateThread(&threadId, TRUE, pfnProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)

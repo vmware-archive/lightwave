@@ -49,6 +49,7 @@ vmdird_SOURCES = \
     tenantmgmt.c \
     tombstone.c \
     tracklastlogin.c \
+    trusts.c \
     utils.c \
     $(PAC_SRC) \
     vmdir_sstub.c \

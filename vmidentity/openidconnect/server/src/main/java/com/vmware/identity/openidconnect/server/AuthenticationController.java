@@ -136,7 +136,7 @@ public class AuthenticationController {
     private IDPConfig getFederatedIDPConfig(String tenant) throws Exception {
         String issuer = this.idmClient.getIssuer(tenant);
         if (issuer != null && !issuer.isEmpty()) {
-            IDPConfig idpConfig =  idmClient.getExternalIdpConfigForTenant(idmClient.getSystemTenant(), issuer);
+            IDPConfig idpConfig =  idmClient.getExternalIdpConfigForTenant(tenant, issuer);
             if (idpConfig != null) {
                 // validate IDP is using oidc protocol
                 if (idpConfig.getOidcConfig() == null) {

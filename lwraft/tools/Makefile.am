@@ -3,4 +3,5 @@ SUBDIRS = \
     lwraftpromo \
     vdcaclmgr \
     vdcadmintool \
-    vdcschema
+    vdcschema \
+    mdb_walflush

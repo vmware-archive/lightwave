@@ -115,9 +115,9 @@
 // For every N tombstones that we reap we'll sleep X seconds to prevent us from
 // taxing the server too much.
 //
-#define TOMBSTONE_REAPING_THROTTLE_COUNT 20
-#define TOMBSTONE_REAPING_THROTTLE_SLEEP (1 * 1000)
-#define VDIR_REAP_EXPIRED_ENTRIES_BATCH 2000
+#define TOMBSTONE_REAPING_THROTTLE_COUNT 5
+#define TOMBSTONE_REAPING_THROTTLE_SLEEP 250
+#define VDIR_REAP_EXPIRED_ENTRIES_BATCH 10
 
 #define VDIR_INTEGRITY_CHECK_BATCH     1000
 

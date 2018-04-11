@@ -1054,8 +1054,9 @@ WriteAttributes(
 
                 if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE) == 0)
                 {
-                    if ((iSearchReqSpecialChars & LDAP_SEARCH_REQUEST_CHAR_PASSWD) != 0)
-                    {   // vmdir specific - return password only if special char '-' is requested
+                    if ((iSearchReqSpecialChars & LDAP_SEARCH_REQUEST_CHAR_PASSWD) != 0 ||
+                        VMDIR_IS_OP_CTRL_PASSBLOB(op))
+                    {   // vmdir specific - return password only if special char '-' or passctrl is requested
                         bSendAttribute = TRUE;
                     }
                 }

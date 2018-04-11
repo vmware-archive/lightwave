@@ -1781,52 +1781,8 @@ Srv_RpcVmDirRaftRequestVote(
     /* [out] */ UINT32 *voteGranted
 )
 {
-    DWORD  dwError = 0;
-    UINT32 iLastLogTerm = 0;
-    UINT32 iVoteGranted = 0;
-    //PSTR candidateId = NULL;
-
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-    uint64_t uiStartTime = 0;
-    uint64_t uiEndTime = 0;
-
-    uiStartTime = VmDirGetTimeInMilliSec();
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-/*
-    dwError = VmDirAllocateStringAFromW(pwszCandidateId, &candidateId);
-    BAIL_ON_VMDIR_ERROR(dwError); */
-
-    //_VmDirRequestVoteGetReply will own candidateId
-    _VmDirRequestVoteGetReply(term, (char *)candidateId, lastLogIndex, lastLogTerm, &iLastLogTerm, &iVoteGranted);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *currentTerm = iLastLogTerm;
-    *voteGranted = iVoteGranted;
-
-    //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-    //  "Srv_RpcVmDirRaftRequestVote succeed term %lu lastLogIndex %llu", term, lastLogIndex );
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-
-    uiEndTime = VmDirGetTimeInMilliSec();
-    VmDirRpcMetricsUpdate(METRICS_RPC_OP_RAFTREQUESTVOTE, uiStartTime, uiEndTime);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-        "Srv_RpcVmDirRaftRequestVote succeed term %lu lastLogIndex %llu", term, lastLogIndex );
-    goto cleanup;
+    //obsolete by LDAP Raft RPC
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
 UINT32
@@ -1924,47 +1880,8 @@ UINT32 Srv_RpcVmDirRaftAppendEntries(
     /* [out] */ idl_uhyper_int *status
 )
 {
-    DWORD  dwError = 0;
-    UINT32 iCurrentTerm = 0;
-    unsigned long long iStatus = 0;
-    uint64_t uiStartTime = 0;
-    uint64_t uiEndTime = 0;
-
-    uiStartTime = VmDirGetTimeInMilliSec();
-
-    *currentTerm = 0;
-    *status = 0;
-
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAppendEntriesGetReply(term, (char *)leader, preLogIndex, prevLogTerm,
-                                          leaderCommit, entries->chglog_size, entries->chglog_bytes, &iCurrentTerm, &iStatus);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *currentTerm = iCurrentTerm;
-    *status = iStatus;
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-
-    uiEndTime = VmDirGetTimeInMilliSec();
-    VmDirRpcMetricsUpdate(METRICS_RPC_OP_RAFTAPPENDENTRIES, uiStartTime, uiEndTime);
-
-    return dwError;
-
-error:
-    goto cleanup;
+    //Obsolet by LDAP based RPC
+    return VMDIR_ERROR_DEPRECATED_FUNCTION;
 }
 
 void vmdir_raft_handle_t_rundown(void *ctx)

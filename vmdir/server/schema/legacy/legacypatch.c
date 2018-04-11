@@ -26,6 +26,12 @@ VmDirPatchLocalSubSchemaSubEntry(
     PVDIR_LDAP_SCHEMA   pMergedSchema = NULL;
     PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod = NULL;
 
+    // TODO, clean up patch legacy schema blob logic.
+    // This should never be executed in LIGHTWAVE_BUILD.
+#ifdef LIGHTWAVE_BUILD
+    assert(0);
+#endif
+
     dwError = VmDirReadSubSchemaSubEntry(&pSchemaEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 

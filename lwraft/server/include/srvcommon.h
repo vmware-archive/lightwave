@@ -530,6 +530,24 @@ typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
     DWORD    status;
 } VMDIR_SCW_DONE_CONTROL_VALUE;
 
+typedef struct _VDIR_APPEND_ENTRIES_CONTROL_VALUE
+{
+    uint32_t                term;
+    char *                  leader;
+    uint64_t                preLogIndex;
+    uint32_t                preLogTerm;
+    uint64_t                leaderCommit;
+    VDIR_BERVALUE           entries;
+} VDIR_APPEND_ENTRIES_CONTROL_VALUE, *PVDIR_APPEND_ENTRIES_CONTROL_VALUE;
+
+typedef struct _VDIR_REQUEST_VOTE_CONTROL_VALUE
+{
+    uint32_t                term;
+    char *                  candidateId;
+    uint64_t                lastLogIndex;
+    uint32_t                lastLogTerm;
+} VDIR_REQUEST_VOTE_CONTROL_VALUE, *PVDIR_REQUEST_VOTE_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
     SyncRequestControlValue                 syncReqCtrlVal;
@@ -537,6 +555,8 @@ typedef union LdapControlValue
     VDIR_PAGED_RESULT_CONTROL_VALUE         pagedResultCtrlVal;
     VMDIR_SCW_DONE_CONTROL_VALUE            scwDoneCtrlVal;
     VDIR_CONDWRITE_CONTROL_VALUE            condWriteCtrlVal;
+    VDIR_APPEND_ENTRIES_CONTROL_VALUE       appendEntriesCtrlVal;
+    VDIR_REQUEST_VOTE_CONTROL_VALUE         requestVoteCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -558,7 +578,6 @@ typedef enum
 {
     VDIR_OPERATION_PROTOCOL_LDAP,
     VDIR_OPERATION_PROTOCOL_REST
-
 } VDIR_OPERATION_PROTOCOL;
 
 typedef struct _VDIR_OPERATION_ML_METRIC
@@ -599,6 +618,8 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *     strongConsistencyWriteCtrl;
     VDIR_LDAP_CONTROL *     manageDsaITCtrl;
     VDIR_LDAP_CONTROL *     pCondWriteCtrl;
+    VDIR_LDAP_CONTROL *     appendEntriesCtrl;
+    VDIR_LDAP_CONTROL *     requestVoteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD                   dwSchemaWriteOp; // this operation is schema modification
@@ -626,7 +647,6 @@ typedef struct _VDIR_OPERATION
     DWORD               dwSentEntries; // number of entries sent back to client
     BOOLEAN             bSuppressLogInfo;
     BOOLEAN             bNoRaftLog; //The operation is derived or in local server scope - don't generate Raft log
-
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO

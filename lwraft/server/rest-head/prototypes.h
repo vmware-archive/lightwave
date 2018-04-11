@@ -611,3 +611,26 @@ VmDirRESTIsValidOrigin(
     PSTR                    pRestOp,
     BOOLEAN                 *isValidOrigin
     );
+
+// curlhandlecache.c
+DWORD
+VmDirRESTCurlHandleCacheInit(
+    PVDIR_REST_CURL_HANDLE_CACHE* ppRestproxyCache
+    );
+
+DWORD
+VmDirRESTCurlHandleCacheGet(
+    PVDIR_REST_CURL_HANDLE_CACHE pRestCurlHandleCache,
+    PSTR pszURL,
+    CURL** ppCurlHandle);
+
+DWORD
+VmDirRESTCurlHandleCachePut(
+    PVDIR_REST_CURL_HANDLE_CACHE pRestCurlHandleCache,
+    PSTR pszURL,
+    CURL* pCurlHandleMap);
+
+VOID
+VmDirRESTCurlHandleCacheFree(
+    PVDIR_REST_CURL_HANDLE_CACHE pRestCurlHandleCache
+    );

@@ -685,3 +685,47 @@ VmDirMapLdapError(
             return VMDIR_ERROR_GENERIC;
     }
 }
+
+/*
+ *  Bind to a host with the handle to be used later
+ */
+DWORD
+VmDirConnectLDAPServerWithMachineAccount(
+    PCSTR  pszHostName,
+    PCSTR  pszDomain,
+    LDAP** ppLd
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDCAccount = NULL;
+    PSTR pszDCAccountPassword = NULL;
+    char bufUPN[VMDIR_MAX_UPN_LEN] = {0};
+    LDAP* pLd = NULL;
+
+    dwError = VmDirRegReadDCAccount( &pszDCAccount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirReadDCAccountPassword( &pszDCAccountPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszDCAccount, pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLd,
+        pszHostName,
+        bufUPN,
+        pszDCAccountPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppLd = pLd;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDCAccount);
+    VMDIR_SECURE_FREE_STRINGA(pszDCAccountPassword);
+    return dwError;
+
+error:
+    goto cleanup;
+}

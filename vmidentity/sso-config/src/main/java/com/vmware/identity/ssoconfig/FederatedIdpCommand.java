@@ -39,6 +39,9 @@ public class FederatedIdpCommand extends SSOConfigCommand {
     @Option(name = "--enable-jit", metaVar ="[True | False]", usage = "Jit provisioning switch.")
     private String jit;
 
+    @Option(name = "--multi-tenant", metaVar ="[True | False]", usage = "Multi tenant switch.")
+    private String multiTenant;
+
     @Option(name = "--delete", metaVar = "[Entity ID]", usage = "Delete the federated IDP with the entity ID.")
     private String entityIdToDelete;
 
@@ -100,6 +103,9 @@ public class FederatedIdpCommand extends SSOConfigCommand {
 
         boolean jitEnabled = SSOConfigurationUtils.checkBoolean(jit, currentIdpConfig.isJitEnabled());
         builder.withJitEnabled(jitEnabled);
+
+        boolean isMultiTenant = SSOConfigurationUtils.checkBoolean(multiTenant, currentIdpConfig.isMultiTenant());
+        builder.withMultiTenant(isMultiTenant);
 
         client.federatedIdp().register(tenant, builder.build());
         logger.info("Successfully registered federated IDP for tenant " + tenant);
@@ -186,6 +192,7 @@ public class FederatedIdpCommand extends SSOConfigCommand {
                 SSOConfigurationUtils.displayParamNameAndValues(e.getClaimName() + "/" + e.getClaimValue(), e.getGroups());
             }
         }
+        SSOConfigurationUtils.displayParamNameAndValue("Multi Tenant", idp.isMultiTenant());
 
         SSOConfigurationUtils.displaySeparationLine();
     }

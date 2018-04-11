@@ -124,6 +124,9 @@ VmDirRESTOperationReadRequest(
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONNECTION, &pRestOp->pszHeaderConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (pRestOp->pszOrigin)
     {
         dwError = VmRESTIsValidOrigin(pRestOp->pszOrigin, &pRestOp->bisValidOrigin);
@@ -243,7 +246,8 @@ VmDirRESTOperationWriteResponse(
     dwError = VmRESTSetHttpReasonPhrase(ppResponse, pszHttpReason);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
+    dwError = VmRESTSetHttpHeader(
+            ppResponse, "Connection", pRestOp->pszHeaderConnection ? pRestOp->pszHeaderConnection : "close");
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTSetCORSHeaders(pRestOp, ppResponse);
@@ -327,6 +331,7 @@ VmDirFreeRESTOperation(
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderConnection);
         if (pRestOp->pjInput)
         {
             json_decref(pRestOp->pjInput);

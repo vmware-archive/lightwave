@@ -173,6 +173,10 @@ VmDirPerformModify(
       mr->numMods++;
    }
 
+   retVal = ParseRequestControls(pOperation, pResult);
+   BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
+                                "Modify request control parsing failed");
+
    if ( ber_scanf( pOperation->ber, "}") == LBER_ERROR )
    {
       VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "PerformModify: ber_scanf failed" );

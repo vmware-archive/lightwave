@@ -34,7 +34,7 @@ vmstsjars_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-codec-1.9.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang-2.6.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang3-3.3.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jersey-media-json-jackson-2.25.1.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-jaxrs-json-provider-2.9.4.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-core-2.9.4.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-databind-2.9.4.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-annotations-2.9.4.jar \

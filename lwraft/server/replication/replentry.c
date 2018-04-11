@@ -37,32 +37,6 @@ VmDirRaftLogEntryId(unsigned long long LogIndex)
     return LOG_ENTRY_EID_PREFIX | LogIndex;
 }
 
-BOOLEAN
-_VmDirRaftPeerIsReady(PCSTR pPeerHostName)
-{
-    PVMDIR_PEER_PROXY pPeerProxy = NULL;
-    BOOLEAN bReady = FALSE;
-
-    for (pPeerProxy=gRaftState.proxies; pPeerProxy != NULL; pPeerProxy = pPeerProxy->pNext )
-    {
-        if (pPeerProxy->isDeleted) // skip deleted peer
-        {
-            continue;
-        }
-        if (VmDirStringCompareA(pPeerProxy->raftPeerHostname, pPeerHostName, FALSE)==0)
-        {
-            break;
-        }
-    }
-
-    if (pPeerProxy && (pPeerProxy->proxy_state == RPC_IDLE || pPeerProxy->proxy_state == RPC_BUSY))
-    {
-        bReady = TRUE;
-    }
-
-    return bReady;
-}
-
 //Create the initial persistent state
 DWORD
 VmDirInitRaftPsState(

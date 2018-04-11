@@ -1,5 +1,6 @@
 #!/bin/bash -xe
 source $(dirname $(realpath $0))/common.sh
+source $(dirname $(realpath $0))/mdb_compact.sh
 
 # Check if this is Photon 2.0 and update to our internal repo if needed
 DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
@@ -128,3 +129,7 @@ EOF
   systemctl daemon-reload
   systemctl restart telegraf
 fi
+
+set +e
+mdb_compact
+set -e

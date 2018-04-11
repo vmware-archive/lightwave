@@ -1,10 +1,7 @@
 #!/bin/sh
 
-# Defaults: should be empty strings by default
-#
-#
-#force_debug="-g -O0"
-#enable_winjoin="--enable-winjoin=yes"
+DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
+ARG=$1
 
 usage()
 {
@@ -72,18 +69,18 @@ fi
 IFS=%
 
 autoreconf -vif .. \
-  && \
+&& \
 ../configure \
-    CFLAGS="$force_debug -Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare" \
-    LDFLAGS=-ldl \
-    --prefix=/opt/vmware \
-    --libdir=/opt/vmware/lib64 \
-    --localstatedir=/var/lib/vmware \
-    --with-config=./config \
-    $enable_winjoin \
-  && \
+  CFLAGS="$force_debug -Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare" \
+  LDFLAGS=-ldl \
+  --prefix=/opt/vmware \
+  --libdir=/opt/vmware/lib64 \
+  --localstatedir=/var/lib/vmware \
+  --with-config=./config \
+  $enable_winjoin \
+&& \
  make \
-  && \
+&& \
  make package DIST=$DIST
 
 DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
@@ -95,6 +92,7 @@ fi
 
 if [ "$enable_with_ui" = "1" ]; then
    make -C ../ui
+   mkdir -p rpmbuild/RPMS/x86_64
    cp ../ui/lwraft-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
    cp ../ui/lightwave-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
 fi

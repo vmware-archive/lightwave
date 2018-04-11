@@ -242,6 +242,10 @@ extern "C" {
 #define ATTR_LASTLOGONTIMESTAMP_LEN         sizeof(ATTR_LASTLOGONTIMESTAMP)-1
 #define ATTR_TENANTIZED_UPN                 "vmwSTSTenantizedUserPrincipalName"
 #define ATTR_TENANTIZED_UPN_LEN             sizeof(ATTR_TENANTIZED_UPN)-1
+#define ATTR_TRUST_AUTH_INCOMING            "trustAuthIncoming"
+#define ATTR_TRUST_AUTH_INCOMING_LEN        sizeof(ATTR_TRUST_AUTH_INCOMING)-1
+#define ATTR_TRUST_AUTH_OUTGOING            "trustAuthOutgoing"
+#define ATTR_TRUST_AUTH_OUTGOING_LEN        sizeof(ATTR_TRUST_AUTH_OUTGOING)-1
 
 #define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
 #define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"
@@ -417,7 +421,7 @@ extern "C" {
 #define OC_COMPUTER                      "computer"
 #define OC_MANAGED_SERVICE_ACCOUNT       "msDS-ManagedServiceAccount"
 #define OC_GROUP                         "group"
-#define OC_GROUP_LEN                     sizeo(OC_GROUP)-1
+#define OC_GROUP_LEN                     sizeof(OC_GROUP)-1
 #define OC_ATTRIBUTE_SCHEMA             "attributeschema"
 #define OC_ATTRIBUTE_SCHEMA_LEN         sizeof(OC_ATTRIBUTE_SCHEMA)-1
 #define OC_CLASS_SCHEMA                 "classschema"
@@ -426,6 +430,9 @@ extern "C" {
 #define OC_CLUSTER_STATE_LEN            sizeof(OC_CLUSTER_STATE)-1
 #define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
+
+#define OC_TRUSTED_DOMAIN               "trustedDomain"
+#define OC_TRUSTED_DOMAIN_LEN           sizeof(OC_TRUSTED_DOMAIN)-1
 
 #define CM_COMPONENTMANAGER             "ComponentManager"
 #define CM_SITE                         "CMSites"
@@ -515,6 +522,8 @@ extern "C" {
 #define LDAP_RAFT_VOTE_CONTROL                  "1.3.6.1.4.1.6876.40.10.5"
 // vmw OID for server state ping
 #define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
+// vmw OID for password export/import. This does NOT apply to srp/krb secrets.
+#define VDIR_LDAP_CONTROL_PASSWD_BLOB           "1.3.6.1.4.1.6876.40.10.8"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

@@ -60,3 +60,6 @@ VmDirRaftLeaveCluster
 VmDirFreeRaftCluster
 VmDirRaftStartVoteClient
 VmDirRaftFollowerInitiateVote
+VmDirLdapUnbind
+VmDirGetServerName
+VmDirConnectLDAPServerWithMachineAccount

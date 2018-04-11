@@ -31,15 +31,6 @@
 #define VMKDC_DEFAULT_KVNO 1
 #endif
 
-static
-DWORD
-_VmDirKrbCreateKeyBlob(
-    PVDIR_BERVALUE      pBervPrincipalName,
-    PVDIR_BERVALUE      pBervPasswd,
-    DWORD               dwKvno,
-    PVDIR_BERVALUE      pOutKeyBlob
-    );
-
 /*
  * TODO, need to revisit this function to confirm assumptions and improve error to reject
  * TODO, invalid/unexpected realm.
@@ -265,7 +256,7 @@ fprintf(fp, "%*s\n",
 fclose(fp);
 #endif
             // create key blob
-            dwError = _VmDirKrbCreateKeyBlob(
+            dwError = VmDirKrbCreateKeyBlob(
                             &(pAttrUPN->vals[0]),
                             pBervPasswd,
                             kvno,
@@ -336,9 +327,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-_VmDirKrbCreateKeyBlob(
+VmDirKrbCreateKeyBlob(
         PVDIR_BERVALUE      pBervPrincipalName,
         PVDIR_BERVALUE      pBervPasswd,
         DWORD               dwKvno,

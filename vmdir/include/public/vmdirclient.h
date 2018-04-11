@@ -240,6 +240,16 @@ VmDirSetupHostInstance(
     );
 
 DWORD
+VmDirSetupHostInstanceTrust(
+    PCSTR   pszDomainName,
+    PCSTR   pszLotusServerName, // optional Lotus Server Name (FQDN/IP/hostname)
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszSiteName,
+    PVMDIR_TRUST_INFO_A pTrustInfoA
+    );
+
+DWORD
 VmDirDemote(
     PCSTR   pszUserName,
     PCSTR   pszPassword
@@ -852,6 +862,57 @@ VmDirCloseDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hBinding,
     FILE **                 ppFileHandle
 );
+
+DWORD
+VmDirCreateDomainTrust(
+    PCSTR    pszServerName,
+    PCSTR    pszTrustName,
+    PCSTR    pszDomainName,
+    PCSTR    pszUserName,
+    PCSTR    pszPassword,
+    PCSTR    pszTrustPasswdIn,
+    PCSTR    pszTrustPasswdOut
+    );
+
+DWORD
+VmDirAllocateTrustInfoA(
+    PCSTR   pszName,
+    PCSTR   pszDC,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PVMDIR_TRUST_INFO_A *ppTrustInfoA
+    );
+
+VOID
+VmDirFreeTrustInfoA(
+    PVMDIR_TRUST_INFO_A pTrustInfoA
+    );
+
+DWORD
+VmDirAllocateTrustInfoW(
+    PCWSTR   pwszName,
+    PCWSTR   pwszDC,
+    PCWSTR   pwszUserName,
+    PCWSTR   pwszPassword,
+    PVMDIR_TRUST_INFO_W *ppTrustInfoW
+    );
+
+VOID
+VmDirFreeTrustInfoW(
+    PVMDIR_TRUST_INFO_W pTrustInfoW
+    );
+
+DWORD
+VmDirAllocateTrustInfoAFromW(
+    PVMDIR_TRUST_INFO_W pTrustInfoW,
+    PVMDIR_TRUST_INFO_A *ppTrustInfoA
+    );
+
+DWORD
+VmDirAllocateTrustInfoWFromA(
+    PVMDIR_TRUST_INFO_A pTrustInfoA,
+    PVMDIR_TRUST_INFO_W *ppTrustInfoW
+    );
 
 /*
  * Deprecated function in LW 1.2
