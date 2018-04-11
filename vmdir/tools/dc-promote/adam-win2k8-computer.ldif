@@ -1,0 +1,8 @@
+version: 1
+dn: cn=ADAM-WIN2K8R2-D,cn=Computers,dc=lightwave,dc=local
+changetype: add
+objectClass: Computer
+userPassword: Testing123@
+sAMAccountName: ADAM-WIN2K8R2-D
+userPrincipalName: ADAM-WIN2K8R2-D@LIGHTWAVE.LOCAL
+cn: ADAM-WIN2K8R2-D
