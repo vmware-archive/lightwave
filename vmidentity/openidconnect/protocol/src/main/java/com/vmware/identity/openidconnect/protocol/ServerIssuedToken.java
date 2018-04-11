@@ -150,7 +150,10 @@ public abstract class ServerIssuedToken extends JWTToken {
             claimsBuilder = claimsBuilder.claim("sid", this.sessionId.getValue());
         }
         if (this.holderOfKey != null) {
-            RSAKey rsaKey = new RSAKey(this.holderOfKey, KeyUse.SIGNATURE, null, JWSAlgorithm.RS256, null, null, null, null);
+            RSAKey.Builder builder = new RSAKey.Builder(this.holderOfKey)
+                .keyUse(KeyUse.SIGNATURE)
+                .algorithm(JWSAlgorithm.RS256);
+            RSAKey rsaKey = builder.build();
             claimsBuilder = claimsBuilder.claim("hotk", (new JWKSet(rsaKey)).toJSONObject());
         }
         if (this.actAs != null) {

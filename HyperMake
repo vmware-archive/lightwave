@@ -74,6 +74,16 @@ targets:
     cmds:
       - ./support/scripts/clean.sh
 
+commands:
+
+  vmidentity-mvn-cmd:
+    description: run mvn command for vmidentity
+    always: true
+    cmds:
+      - PROJECT_ROOT=$(pwd)
+      - cd $PROJECT_ROOT/vmidentity
+      - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+
 settings:
   default-targets:
     - build
