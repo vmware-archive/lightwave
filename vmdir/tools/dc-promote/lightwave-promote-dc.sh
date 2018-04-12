@@ -316,6 +316,12 @@ scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/supported-controls.sh $PRIV_USER@$LIG
 ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/supported-controls.sh 
 
 
+echo_status "Add Computers container to DC"
+chmod +x $LIGHTWAVE_BASE/vmdir/tools/dc-promote/computers-container.sh
+scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/computers-container.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/computers-container.sh
+
+
 # TBD:Adam
 # Add DNS "A" record for client who joined
 # This should be done in the actual lsassd code, 
