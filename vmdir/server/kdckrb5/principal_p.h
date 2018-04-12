@@ -32,6 +32,7 @@ VmKdcMakePrincipal(
     PCSTR realmName,
     DWORD numComponents,
     PCSTR *components,
+    VMKDC_NAME_TYPE eNameType,
     PVMKDC_PRINCIPAL *ppRetPrincipal);
 
 DWORD

@@ -167,6 +167,7 @@ VmKdcDecodeKdcReq(
         dwError = VmKdcMakePrincipal(heimReq.req_body.realm,
                                      heimReq.req_body.cname->name_string.len,
                                      (PCSTR *)heimReq.req_body.cname->name_string.val,
+                                     VMKDC_NT_PRINCIPAL,
                                      &pKdcReq->req_body.cname);
         BAIL_ON_VMKDC_ERROR(dwError);
     }
@@ -182,6 +183,7 @@ VmKdcDecodeKdcReq(
         dwError = VmKdcMakePrincipal(heimReq.req_body.realm,
                                      heimReq.req_body.sname->name_string.len,
                                      (PCSTR *)heimReq.req_body.sname->name_string.val,
+                                     VMKDC_NT_SRV_INST,
                                      &pKdcReq->req_body.sname);
         BAIL_ON_VMKDC_ERROR(dwError);
     }
