@@ -63,6 +63,7 @@ VmKdcDecodeAuthenticator(
     dwError = VmKdcMakePrincipal(heimAuth.crealm,
                                  heimAuth.cname.name_string.len,
                                  (PCSTR *)heimAuth.cname.name_string.val,
+                                 VMKDC_NT_PRINCIPAL,
                                  &pAuthenticator->cname);
     BAIL_ON_VMKDC_ERROR(dwError);
 
