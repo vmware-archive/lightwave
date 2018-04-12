@@ -1,0 +1,146 @@
+#cloud-config
+
+write_files:
+  - content: |
+        #!/bin/bash
+        systemctl $2 $1
+    owner: root:root
+    permission: 044
+    path: /usr/bin/service
+  - content: |
+        #!/bin/bash -xe
+        DEVICE=${1:-/dev/xvdb}
+        MOUNT_POINT=${2:-/var/lib/vmware}
+        FS_TYPE=ext4
+        if [ -b $DEVICE ] && !( parted --script ${DEVICE}1 print ); then
+            echo "Setting up SSD filesystem"
+            mkfs -t $FS_TYPE $DEVICE
+            mkdir -p $MOUNT_POINT
+            mount $DEVICE $MOUNT_POINT
+            echo "$DEVICE $MOUNT_POINT $FS_TYPE defaults,barrier,noatime,noacl,data=ordered 1 1" >> /etc/fstab
+            echo ""
+        else
+            echo "Device $DEVICE not found or partition ${DEVICE}1 already exists."
+            echo "Skipping secondary disk format."
+        fi
+    owner: root:root
+    permission: 0644
+    path: /root/setup-ssd-fs.sh
+  - content: |
+        #!/bin/bash -xe
+        echo "Installing tooling"
+        tdnf install -y bindutils iputils less gawk wget groff parted python2 python3
+
+        # Expand main partition to use all space available
+        # Skip if /dev/xvda2 does not exist
+        if ( parted --script /dev/xvda2 print ); then
+            echo "Expanding primary parition."
+            parted ---pretend-input-tty /dev/xvda resizepart fix 2 yes 100%
+            resize2fs /dev/xvda2
+        else
+            echo "Default partition /dev/xvda2 not found."
+            echo "Skipping partition space expansion."
+        fi
+
+        wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm -rf get-pip.py
+        pip3 install --upgrade --user awscli
+        echo ""
+        #
+        # Docker causes DNS resolution issues with Lightwave
+        #
+        echo "Remove Docker from instance"
+        systemctl stop docker
+        systemctl disable docker
+        ip link del docker0
+        rpm -e docker
+    owner: root:root
+    permission: 0644
+    path: /root/install-tooling.sh
+  - content: |
+        #!/bin/bash -xe
+        # SSM allows users to execute remote commands against the VM
+        # need to be able to download the RPM and install RPM
+        tdnf install -y wget
+        # the default version of curl is too old and will fail installation of the RPM
+        tdnf update -y curl
+        wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+        rpm -i amazon-ssm-agent.rpm
+        rm -rf amazon-ssm-agent.rpm
+        systemctl enable amazon-ssm-agent
+        systemctl start amazon-ssm-agent
+    owner: root:root
+    permission: 0644
+    path: /root/install-ssm.sh
+  - content: |
+        #!/bin/bash -xe
+        tdnf install -y ruby chkconfig cronie wget gawk less
+        source /root/get_info.sh
+        CODEDEPLOY_INSTALLER_LOCATION=($(get_tag_value CODEDEPLOY_INSTALLER_LOCATION))
+        aws s3 cp $CODEDEPLOY_INSTALLER_LOCATION /tmp/codedeploy-install
+        chmod +x /tmp/codedeploy-install
+        /tmp/codedeploy-install rpm
+        chmod +x /usr/bin/service
+        echo ""
+    owner: root:root
+    permission: 0644
+    path: /root/install-code-deploy.sh
+  - content: |
+        #!/bin/bash -xe
+        source /root/get_info.sh
+        echo "Set up firewall rules"
+        iptables -P INPUT ACCEPT
+        iptables -P OUTPUT ACCEPT
+        iptables -P FORWARD ACCEPT
+        iptables -F
+
+        ASG_NAME=$(get_asg_name)
+        INSTANCE_ID=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)
+        LW_DOMAIN_NAME=($(get_tag_value LW_DOMAIN))
+        echo "Setting up Hostname"
+        HOSTNAME=$ASG_NAME-$INSTANCE_ID
+        HOSTNAME_FQDN=$HOSTNAME.$LW_DOMAIN_NAME
+        echo "::1         localhost ipv6-localhost ipv6-loopback" > /etc/hosts
+        echo "127.0.0.1 $HOSTNAME_FQDN $HOSTNAME localhost localhost.$LW_DOMAIN_NAME" >> /etc/hosts
+        hostnamectl set-hostname $HOSTNAME
+        sed -i '/^DNS=/s/^/#/' /etc/systemd/resolved.conf
+        sed -i '/^Domains=/s/^/#/' /etc/systemd/network/99-dhcp-en.network
+        systemctl restart systemd-networkd systemd-resolved
+        echo ""
+    owner: root:root
+    permission: 0644
+    path: /root/setup-hostname.sh
+  - content: |
+        #!/bin/bash
+        export PATH=$PATH:/root/.local/bin
+        # get_tag_value retrives the value of a specific tag on the autoscaling group in which the instance resides
+        # TAG: the name of the tag whose value to retrieve
+        get_tag_value() {
+          TAG=$1
+          INSTANCE_ID=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)
+          REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e "s:\([0-9][0-9]*\)[a-z]*\$:\\1:")
+          ASG=$(aws autoscaling describe-auto-scaling-instances --instance-ids $INSTANCE_ID --region $REGION  --query AutoScalingInstances[].AutoScalingGroupName --output text)
+          local VALUE=($(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names $ASG --region $REGION --query AutoScalingGroups[].Tags[?Key==\'${TAG}\'].Value --output text))
+          echo "$VALUE"
+        }
+
+        # get_asg_name retrives the value of a specific tag on the autoscaling group in which the instance resides
+        get_asg_name() {
+          INSTANCE_ID=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)
+          REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e "s:\([0-9][0-9]*\)[a-z]*\$:\\1:")
+          local ASG=$(aws autoscaling describe-auto-scaling-instances --instance-ids $INSTANCE_ID --region $REGION \
+            --query AutoScalingInstances[].AutoScalingGroupName --output text)
+          echo "$ASG"
+        }
+    owner: root:root
+    permission: 0644
+    path: /root/get_info.sh
+runcmd:
+ - chmod +x /root/*.sh
+ - /root/install-tooling.sh >> /tmp/cloud-init.log 2>&1
+ - /root/setup-ssd-fs.sh /dev/nvme0n1 /var/lib/vmware >> /tmp/cloud-init.log 2>&1
+ - /root/setup-ssd-fs.sh /dev/xvdb /var/log >> /tmp/cloud-init.log 2>&1
+ - cp /tmp/cloud-init.log /var/log/cloud-init.log
+ - /root/install-ssm.sh >> /var/log/cloud-init.log 2>&1
+ - /root/setup-hostname.sh  >> /var/log/cloud-init.log 2>&1
+ - /root/install-code-deploy.sh >> /var/log/cloud-init.log 2>&1
+
