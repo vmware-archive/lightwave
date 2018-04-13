@@ -481,7 +481,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
              ( this.getAlias().equalsIgnoreCase(id.getDomain())
              &&
              (this.getRegisteredUpnSuffixes() == null ||
-              !this.getRegisteredUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(id.getDomain())))
+              !this.getRegisteredUpnSuffixes().contains(id.getDomain()))
              )
            )
         {
@@ -524,7 +524,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     {
         return ( ( this.isSameDomainUpn(principalDomainName ) ) ||
                  ( (this.getRegisteredUpnSuffixes() != null) &&
-                   ( this.getRegisteredUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(principalDomainName)) )
+                   ( this.getRegisteredUpnSuffixes().contains(principalDomainName) )
                  )
                );
     }
@@ -532,7 +532,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     protected PrincipalId normalizeAliasInPrincipal(PrincipalId id)
     {
         if (this.getRegisteredUpnSuffixes() == null ||
-            !this.getRegisteredUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(id.getDomain())))
+            !this.getRegisteredUpnSuffixes().contains(id.getDomain()))
         {
             id = ServerUtils.normalizeAliasInPrincipal(id, this.getDomain(), this.getAlias());
         }

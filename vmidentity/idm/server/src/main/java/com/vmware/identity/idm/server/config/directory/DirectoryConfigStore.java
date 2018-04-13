@@ -2992,7 +2992,7 @@ public class DirectoryConfigStore implements IConfigStore {
           new LdapMod(
               LdapModOperation.ADD,
               IdentityProviderLdapObject.PROPERTY_UPN_SUFFIXES,
-              LdapValue.fromString(ValidateUtil.getCanonicalUpnSuffix(upnSuffix))
+              LdapValue.fromString(upnSuffix)
           )
       };
       connection.modifyObject(identityProviderDn, mod);
@@ -3055,7 +3055,7 @@ public class DirectoryConfigStore implements IConfigStore {
           new LdapMod(
               LdapModOperation.DELETE,
               IdentityProviderLdapObject.PROPERTY_UPN_SUFFIXES,
-              ValidateUtil.getCanonicalUpnSuffix(upnSuffix)
+              upnSuffix
           )
       };
       connection.modifyObject(identityProviderDn, mod);

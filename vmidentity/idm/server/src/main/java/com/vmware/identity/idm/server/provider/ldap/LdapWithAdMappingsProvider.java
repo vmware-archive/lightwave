@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -275,7 +276,7 @@ public class LdapWithAdMappingsProvider extends BaseLdapProvider
     */
    private Set<String> getAlterUpnSuffixes() throws Exception
    {
-       Set<String> alterUpnSuffixes = new HashSet<String>();
+       Set<String> alterUpnSuffixes = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 
        ILdapConnectionEx connection = null;
        ILdapMessage message = null;
@@ -376,10 +377,7 @@ public class LdapWithAdMappingsProvider extends BaseLdapProvider
                                                                                   ATTR_UPN_SUFFIXES));
                        if (suffixes != null && suffixes.size() > 0)
                        {
-                           for (String suffix : suffixes)
-                           {
-                               alterUpnSuffixes.add(ValidateUtil.getCanonicalUpnSuffix(suffix));
-                           }
+                           alterUpnSuffixes.addAll(suffixes);
                        }
                    }
                }

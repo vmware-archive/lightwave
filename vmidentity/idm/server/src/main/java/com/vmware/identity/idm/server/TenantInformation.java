@@ -205,7 +205,7 @@ public class TenantInformation
         Set<String> upnSuffixes = provider.getRegisteredUpnSuffixes();
         if (upnSuffixes != null)
         {
-            result = upnSuffixes.contains(ValidateUtil.getCanonicalUpnSuffix(domainName));
+            result = upnSuffixes.contains(domainName);
         }
 
         return result;

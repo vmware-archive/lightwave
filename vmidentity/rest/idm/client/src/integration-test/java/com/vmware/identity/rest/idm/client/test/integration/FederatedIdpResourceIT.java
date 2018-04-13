@@ -2,6 +2,7 @@ package com.vmware.identity.rest.idm.client.test.integration;
 
 import static com.vmware.identity.rest.idm.client.test.integration.util.Assert.assertFederatedIDPsEqual;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -36,9 +37,17 @@ public class FederatedIdpResourceIT extends IntegrationTestBase {
 
         assertFalse(idps.isEmpty());
 
-        FederatedIdpDTO idp = idps.get(0);
+        boolean idpFound = false;
+        for (FederatedIdpDTO idp : idps)
+        {
+            if (idp != null && idp.getEntityID().equals(testIDP.getEntityID()))
+            {
+                assertFederatedIDPsEqual(testIDP, idp);
+                idpFound = true;
+            }
+        }
 
-        assertFederatedIDPsEqual(testIDP, idp);
+        assertTrue("Could not find TestIDP", idpFound);
     }
 
     @Test

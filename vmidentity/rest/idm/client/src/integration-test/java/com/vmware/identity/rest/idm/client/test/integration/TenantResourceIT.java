@@ -14,9 +14,11 @@
 package com.vmware.identity.rest.idm.client.test.integration;
 
 import static com.vmware.identity.rest.idm.client.test.integration.util.Assert.assertTenantEquals;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -53,6 +55,7 @@ public class TenantResourceIT extends IntegrationTestBase {
     private static UserDTO testUserWithPriviledge;
     private static UserDTO testUserWithoutPriviledge;
     private static UserDTO testUser;
+    private static UserDTO testUserCase;
     private static GroupDTO testGroup;
     private static SolutionUserDTO testSolutionUser;
     private static String systemTenant;
@@ -63,10 +66,11 @@ public class TenantResourceIT extends IntegrationTestBase {
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
         IntegrationTestBase.init(true);
         systemTenant = properties.getSystemTenant();
-        testUserWithPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser1", systemTenant, "Test user with tenant operator priviledge."));
+        testUserWithPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser1", systemTenant, "Test user with tenant operator privilege."));
         List<String> members = Arrays.asList(UPNUtil.buildUPN(testUserWithPriviledge.getName() ,testUserWithPriviledge.getDomain()));
         systemAdminVmdirClient.group().addMembers(systemTenant, "TenantOperators", systemTenant, members, MemberType.USER);
-        testUserWithoutPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser2", systemTenant, "Test user without tenant operator priviledge."));
+        testUserWithoutPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser2", systemTenant, "Test user without tenant operator privilege."));
+        testUserCase = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser3", systemTenant, "Test user without tenant operator privilege."));
 
         testUser = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser(
                 "testUser", systemTenant, "Test user for tenant resource IT."));
@@ -83,6 +87,7 @@ public class TenantResourceIT extends IntegrationTestBase {
         IntegrationTestBase.cleanup(true);
         systemAdminVmdirClient.user().delete(systemTenant, testUserWithPriviledge.getName(), testUserWithPriviledge.getDomain());
         systemAdminVmdirClient.user().delete(systemTenant, testUserWithoutPriviledge.getName(), testUserWithoutPriviledge.getDomain());
+        systemAdminVmdirClient.user().delete(systemTenant, testUserCase.getName(), testUserCase.getDomain());
         systemAdminVmdirClient.user().delete(systemTenant, testUser.getName(), testUser.getDomain());
         systemAdminVmdirClient.group().delete(systemTenant, testGroup.getName(), testGroup.getDomain());
         systemAdminVmdirClient.solutionUser().delete(systemTenant, testSolutionUser.getName());
@@ -163,11 +168,13 @@ public class TenantResourceIT extends IntegrationTestBase {
     public void testFindPrincipalIds() throws Exception {
         List<String> pricipalIds = new ArrayList<>();
         pricipalIds.add("testUser"+ '@' + systemTenant);
+        pricipalIds.add("testUser3"+ '@' + systemTenant);
         pricipalIds.add("testGroup" + '@' + systemTenant);
         pricipalIds.add("testSolutionUser" + '@' + systemTenant);
 
         List<String> expectedPrincipalIds = new ArrayList<>();
         expectedPrincipalIds.add(testUser.getName() + "@" + testUser.getDomain());
+        expectedPrincipalIds.add(testUserCase.getName() + "@" + testUserCase.getDomain());
         expectedPrincipalIds.add(testGroup.getDomain() + "\\" + testGroup.getName());
         expectedPrincipalIds.add(testSolutionUser.getName() + "@" + testSolutionUser.getDomain());
 
@@ -177,6 +184,30 @@ public class TenantResourceIT extends IntegrationTestBase {
         assertNotNull(normalizedPricipalIdsDTO);
         assertNotNull(normalizedPricipalIdsDTO.getIds());
         assertEquals(normalizedPricipalIdsDTO.getIds().size(), expectedPrincipalIds.size());
+        for (String id : expectedPrincipalIds) {
+            assertTrue("Expected id: " + id, normalizedPricipalIdsDTO.getIds().contains(id));
+        }
+
+        pricipalIds = new ArrayList<>();
+        pricipalIds.add("testUser"+ '@' + systemTenant.toUpperCase());
+        pricipalIds.add("testUser3"+ '@' + systemTenant.toUpperCase());
+        pricipalIds.add("testGroup" + '@' + systemTenant.toUpperCase());
+        pricipalIds.add("testSolutionUser" + '@' + systemTenant.toUpperCase());
+
+        principalIdsDTO = new PrincipalIdentifiersDTO.Builder().withIds(pricipalIds).build();
+        normalizedPricipalIdsDTO = systemAdminClient.tenant().findPrincipalIds(systemTenant, principalIdsDTO);
+        for (String id : expectedPrincipalIds) {
+            assertTrue("Expected id: " + id, normalizedPricipalIdsDTO.getIds().contains(id));
+        }
+
+        pricipalIds = new ArrayList<>();
+        pricipalIds.add("testUser"+ '@' + systemTenant.toLowerCase());
+        pricipalIds.add("testUser3"+ '@' + systemTenant.toLowerCase());
+        pricipalIds.add("testGroup" + '@' + systemTenant.toLowerCase());
+        pricipalIds.add("testSolutionUser" + '@' + systemTenant.toLowerCase());
+
+        principalIdsDTO = new PrincipalIdentifiersDTO.Builder().withIds(pricipalIds).build();
+        normalizedPricipalIdsDTO = systemAdminClient.tenant().findPrincipalIds(systemTenant, principalIdsDTO);
         for (String id : expectedPrincipalIds) {
             assertTrue("Expected id: " + id, normalizedPricipalIdsDTO.getIds().contains(id));
         }

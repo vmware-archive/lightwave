@@ -3150,7 +3150,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         {
             ValidateUtil.validateUpn(detail.getUserPrincipalName(), "userPrincipalName");
             String[] parts = detail.getUserPrincipalName().split("@");
-            newUserUpn = new PrincipalId(parts[0], ValidateUtil.getCanonicalUpnSuffix(parts[1]));
+            newUserUpn = new PrincipalId(parts[0], parts[1]);
         }
         else
         {
@@ -3439,7 +3439,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         if (upn != null)
         {
             result = ( this.getUpnSuffixes() != null ) &&
-                     ( this.getUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(upn.getDomain())) );
+                    ( this.getUpnSuffixes().contains(upn.getDomain()) );
         }
         return result;
     }

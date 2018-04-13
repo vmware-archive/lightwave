@@ -21,9 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.Map;
 import java.util.Set;
+
 
 import com.vmware.identity.idm.AuthenticationType;
 import com.vmware.identity.idm.DomainType;
@@ -320,11 +321,8 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
       this._upnSuffixes = null;
       if ( ( upnSuffixes != null ) && (upnSuffixes.isEmpty() == false) )
       {
-          this._upnSuffixes = new HashSet<String>(upnSuffixes.size());
-          for( String suffix : upnSuffixes )
-          {
-              this._upnSuffixes.add(ValidateUtil.getCanonicalUpnSuffix(suffix));
-          }
+          this._upnSuffixes = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+          this._upnSuffixes.addAll(upnSuffixes);
           this._upnSuffixes = Collections.<String>unmodifiableSet(this._upnSuffixes);
       }
    }
