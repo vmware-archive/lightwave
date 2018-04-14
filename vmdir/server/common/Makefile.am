@@ -21,6 +21,7 @@ libsrvcommon_la_SOURCES = \
     security-sd.c         \
     srp.c                 \
     util.c                \
+    vectorutils.c         \
     vmafdlib.c            \
     vmdirentry.c          \
     vmdirtoldaperror.c
