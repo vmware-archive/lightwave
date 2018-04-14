@@ -72,6 +72,13 @@ VmDnsSrvCleanupAddressRecords(
     VMDNS_RR_TYPE recordType
     );
 
+static
+DWORD
+VmDnsSrvCleanupPTRRecords(
+    PVMDNS_ZONE_OBJECT pZoneObject,
+    PSTR pszRecordName
+    );
+
 DWORD
 VmDnsSrvInitialize(
     BOOL bUseDirectoryStore
@@ -1680,11 +1687,11 @@ VmDnsSrvCleanupNSRecords(
                 dwError = VmDnsSrvDeleteRecord(pZoneObject, pRecord);
 
                 VMDNS_LOG_INFO(
-                    "Cleanup NS record %s from zone %s, status: %u.",
-                    pRecord->pszName,
-                    pszDomain,
-                    dwError
-                    );
+                      "Cleanup NS record %s from zone %s, status: %u.",
+                      pRecord->pszName,
+                      pszDomain,
+                      dwError
+                      );
 
                 dwError = ERROR_SUCCESS;
             }
@@ -1765,11 +1772,11 @@ VmDnsSrvCleanupSRVRecords(
                 dwError = VmDnsSrvDeleteRecord(pZoneObject, pRecord);
 
                 VMDNS_LOG_INFO(
-                        "Cleanup SRV record %s from zone %s, status: %u.",
-                        pRecord->pszName,
-                        pszDomain,
-                        dwError
-                        );
+                      "Cleanup SRV record %s from zone %s, status: %u.",
+                      pRecord->pszName,
+                      pszDomain,
+                      dwError
+                      );
 
                 dwError = ERROR_SUCCESS;
             }
@@ -1799,6 +1806,10 @@ VmDnsSrvCleanupAddressRecords(
     DWORD dwError = ERROR_SUCCESS;
     PVMDNS_RECORD_LIST pRecordList = NULL;
     PCSTR pszRecordType = NULL;
+    PSTR pszIpAddress = NULL;
+    PSTR pszReverseZone = NULL;
+    PVMDNS_ZONE_OBJECT pReverseZoneObject = NULL;
+    PSTR pszRecordName = NULL;
     DWORD idx = 0;
 
     if (!pZoneObject ||
@@ -1833,21 +1844,132 @@ VmDnsSrvCleanupAddressRecords(
     // Remove record(s)
     if (pRecordList)
     {
+        if (recordType == VMDNS_RR_TYPE_A)
+        {
+            pszReverseZone = "in-addr.arpa.";
+        }
+        else
+        {
+            pszReverseZone = "ip6.arpa.";
+        }
+
+        dwError = VmDnsSrvFindZone(
+                        pszReverseZone,
+                        &pReverseZoneObject
+                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
         for (idx = 0; idx < pRecordList->dwCurrentSize; ++idx)
         {
             PVMDNS_RECORD pRecord = pRecordList->ppRecords[idx]->pRecord;
 
-            dwError = VmDnsSrvDeleteRecord(
-                        pZoneObject,
-                        pRecord
-                        );
+            dwError = VmDnsSrvDeleteRecord(pZoneObject, pRecord);
+
             VMDNS_LOG_INFO(
-                    "Cleanup %s record %s from zone %s done, status: %u.",
-                    pszRecordType,
-                    pRecord->pszName,
-                    pszDomain,
-                    dwError
+                  "Cleanup %s record %s from zone %s done, status: %u.",
+                  pszRecordType,
+                  pRecord->pszName,
+                  pszDomain,
+                  dwError
+                  );
+
+            dwError = ERROR_SUCCESS;
+
+            // Construct the PTR record name from the IP address
+
+            if (recordType == VMDNS_RR_TYPE_A)
+            {
+                dwError = VmDnsIp4AddressToString(
+                                pRecord->Data.A.IpAddress,
+                                &pszIpAddress);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+            else
+            {
+                dwError = VmDnsIp6AddressToString(
+                                pRecord->Data.AAAA.Ip6Address,
+                                &pszIpAddress);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+
+            dwError = VmDnsGeneratePtrNameFromIp(
+                            pszIpAddress,
+                            &pszRecordName);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            // Cleanup PTR record(s)
+
+            dwError = VmDnsSrvCleanupPTRRecords(
+                            pReverseZoneObject,
+                            pszRecordName
+                            );
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    VmDnsRecordListRelease(pRecordList);
+    VmDnsZoneObjectRelease(pReverseZoneObject);
+    VMDNS_SAFE_FREE_STRINGA(pszIpAddress);
+    VMDNS_SAFE_FREE_STRINGA(pszRecordName);
+    return dwError;
+
+error:
+    VMDNS_LOG_ERROR("%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsSrvCleanupPTRRecords(
+    PVMDNS_ZONE_OBJECT pZoneObject,
+    PSTR pszRecordName
+)
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PVMDNS_RECORD_LIST pRecordList = NULL;
+    DWORD idx = 0;
+
+    if (!pZoneObject ||
+        IsNullOrEmptyString(pszRecordName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    // Query record(s)
+    dwError = VmDnsSrvQueryRecords(
+                    pZoneObject,
+                    pszRecordName,
+                    VMDNS_RR_TYPE_PTR,
+                    0,
+                    &pRecordList
                     );
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get PTR records. Error %d",
+                        __FUNCTION__,
+                        dwError);
+        dwError = ERROR_SUCCESS;
+    }
+
+    // Remove record(s)
+    if (pRecordList)
+    {
+        for (idx = 0; idx < pRecordList->dwCurrentSize; ++idx)
+        {
+            PVMDNS_RECORD pRecord = pRecordList->ppRecords[idx]->pRecord;
+
+            dwError = VmDnsSrvDeleteRecord(pZoneObject, pRecord);
+
+            VMDNS_LOG_INFO(
+                  "Cleanup PTR record %s from zone %s done, status: %u.",
+                  pRecord->pszName,
+                  pZoneObject->pszName,
+                  dwError
+                  );
+
             dwError = ERROR_SUCCESS;
         }
     }

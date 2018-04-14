@@ -914,4 +914,14 @@ VmDnsDeserializeDnsTsigRecord(
     PVMDNS_RECORD_DATA pData
     );
 
+DWORD
+VmDnsIp4AddressToString(
+    VMDNS_IP4_ADDRESS Ip4Address,
+    PSTR*             ppStr
+    );
 
+DWORD
+VmDnsIp6AddressToString(
+    VMDNS_IP6_ADDRESS Ip6Address,
+    PSTR*             ppStr
+    );
