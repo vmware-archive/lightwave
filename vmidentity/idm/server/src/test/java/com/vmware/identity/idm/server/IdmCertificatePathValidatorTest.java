@@ -66,6 +66,7 @@ public class IdmCertificatePathValidatorTest {
      * @throws CertificateRevocationCheckException
      * @throws KeyStoreException
      */
+    @Ignore
     @Test
     public final void testEnableRevCheckOff()
                     throws CertificateRevocationCheckException,
@@ -93,6 +94,7 @@ public class IdmCertificatePathValidatorTest {
      * CRL test with wrong CRL cheche. Using selfsigned cert with DOD CRL cache.
      *
      */
+    @Ignore
     @Test
     public void testCRLOverrideWithWrongCRLFile() {
 
@@ -126,6 +128,7 @@ public class IdmCertificatePathValidatorTest {
      * Uses override only without in-cert CRLDP.
      *
      */
+    @Ignore
     @Test
     public void testCRLOverrideWithWrongCRLFile2() {
 

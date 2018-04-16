@@ -4874,8 +4874,7 @@ public class DirectoryConfigStore implements IConfigStore {
                     .build();
       try {
         LdapConnectionPool ldapConnectionPool = LdapConnectionPool.getInstance();
-        ILdapConnectionEx conn = ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
-        return new PooledLdapConnection(conn, pooledLdapConnectionIdentity, ldapConnectionPool);
+        return ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
       } catch (Exception e) {
         logger.error(e);
         latestEx = e;

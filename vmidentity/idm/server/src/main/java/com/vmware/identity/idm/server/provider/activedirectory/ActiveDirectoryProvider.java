@@ -1875,7 +1875,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
    private PooledLdapConnection borrowLdapConnection(String domainName, boolean bUseGC, boolean bForceRediscover) throws Exception
    {
        LdapConnectionPool pool = LdapConnectionPool.getInstance();
-       ILdapConnectionEx conn = null;
+       PooledLdapConnection conn = null;
        DomainControllerInfo dcInfo = bForceRediscover
                                      ? obtainDcInfoWithRediscover(domainName)
                                      : obtainDcInfo(domainName);
@@ -1903,7 +1903,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            conn = pool.borrowConnection(identity);
        }
 
-       return new PooledLdapConnection(conn, identity, pool);
+       return conn;
    }
 
    // Get a GC ldap connection to the registered AD provider domain

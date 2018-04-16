@@ -83,6 +83,8 @@ import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
 import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
+import com.vmware.identity.idm.server.provider.ILdapConnectionProvider;
+import com.vmware.identity.idm.server.provider.IPooledConnectionProvider;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
@@ -107,6 +109,7 @@ import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 
+// future: this should inherit from VMDirProvider
 public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ISystemDomainIdentityProvider
 {
@@ -421,7 +424,16 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     public VMwareDirectoryProvider(String tenantName, IIdentityStoreData store, boolean isSystemDomainProvider)
     {
-        super(tenantName, store);
+        this( tenantName, store, isSystemDomainProvider, null, null);
+    }
+
+    public VMwareDirectoryProvider(
+        String tenantName, IIdentityStoreData store,
+        boolean isSystemDomainProvider,
+        IPooledConnectionProvider pooledConnectionProvider,
+        ILdapConnectionProvider ldapConenctionProvider)
+    {
+        super(tenantName, store, null, pooledConnectionProvider, ldapConenctionProvider);
 
         _isSystemDomainProvider = isSystemDomainProvider;
 

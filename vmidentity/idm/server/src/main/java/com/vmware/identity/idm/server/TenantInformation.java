@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.RSAAgentConfig;
@@ -254,6 +255,22 @@ public class TenantInformation
                 if (provider instanceof ISystemDomainIdentityProvider)
                 {
                     return (ISystemDomainIdentityProvider)provider;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public IIdentityStoreData findSystemIds() {
+        // There can be only one system provider
+        if (this._idsStores != null && !this._idsStores.isEmpty())
+        {
+            for (IIdentityStoreData ids : this._idsStores)
+            {
+                if (ids.getDomainType() == DomainType.SYSTEM_DOMAIN)
+                {
+                    return ids;
                 }
             }
         }
