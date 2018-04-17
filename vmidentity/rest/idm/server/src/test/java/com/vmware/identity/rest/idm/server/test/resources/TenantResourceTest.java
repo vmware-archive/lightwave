@@ -189,8 +189,10 @@ public class TenantResourceTest {
         mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         mockCasIdmClient.setTenantCredentials(eq(TENANT_NAME), isA(Collection.class), isA(PrivateKey.class));
         mockCasIdmClient.setBrandName(eq(TENANT_NAME), eq(BRAND_NAME));
+        mockCasIdmClient.setPasswordPolicy(isA(String.class), isA(PasswordPolicy.class));
         expect(mockCasIdmClient.getTenant(TENANT_NAME)).andReturn(getTestTenant());
         expect(mockCasIdmClient.getBrandName(TENANT_NAME)).andReturn(null);
+        expect(mockCasIdmClient.getPasswordPolicy(TENANT_NAME)).andReturn(getTestPasswordPolicy());
         expect(mockCasIdmClient.getSystemTenant()).andReturn(SYSTEM_TENANT_NAME);
         expect(mockCasIdmClient.getBrandName(SYSTEM_TENANT_NAME)).andReturn(BRAND_NAME);
         mControl.replay();

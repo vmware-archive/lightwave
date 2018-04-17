@@ -52,6 +52,7 @@ import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
+import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchCriteria;
@@ -161,6 +162,22 @@ public class TenantResource extends BaseResource {
                 String systemTenantBrandName = getIDMClient().getBrandName(getIDMClient().getSystemTenant());
                 getIDMClient().setBrandName(tenantDTO.getName(), systemTenantBrandName);
             }
+
+            // extend password expiry to 700 days
+            int passwordExpirationInDays = 700;
+            PasswordPolicy currentPasswordPolicy = getIDMClient().getPasswordPolicy(tenantDTO.getName());
+            PasswordPolicy newPasswordPolicy = new PasswordPolicy(currentPasswordPolicy.getDescription(),
+                    currentPasswordPolicy.getProhibitedPreviousPasswordsCount(),
+                    currentPasswordPolicy.getMinimumLength(),
+                    currentPasswordPolicy.getMaximumLength(),
+                    currentPasswordPolicy.getMinimumAlphabetCount(),
+                    currentPasswordPolicy.getMinimumUppercaseCount(),
+                    currentPasswordPolicy.getMinimumLowercaseCount(),
+                    currentPasswordPolicy.getMinimumNumericCount(),
+                    currentPasswordPolicy.getMinimumSpecialCharacterCount(),
+                    currentPasswordPolicy.getMaximumAdjacentIdenticalCharacterCount(),
+                    passwordExpirationInDays);
+            getIDMClient().setPasswordPolicy(tenantDTO.getName(), newPasswordPolicy);
 
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantDTO.getName()));
 
@@ -590,6 +607,7 @@ public class TenantResource extends BaseResource {
         BrandPolicyDTO brandPolicy = configurationDTO.getBrandPolicy();
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
         LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
+        PasswordPolicyDTO passwordPolicy = configurationDTO.getPasswordPolicy();
 
         try {
 
@@ -636,6 +654,12 @@ public class TenantResource extends BaseResource {
                 LockoutPolicy idmLockoutPolicy = LockoutPolicyMapper.getLockoutPolicy(lockoutPolicy);
                 getIDMClient().setLockoutPolicy(tenantName, idmLockoutPolicy);
                 configBuilder.withLockoutPolicy(getLockoutPolicy(tenantName));
+            }
+
+            if (passwordPolicy != null) {
+                PasswordPolicy idmPasswordPolicy = PasswordPolicyMapper.getPasswordPolicy(passwordPolicy);
+                getIDMClient().setPasswordPolicy(tenantName, idmPasswordPolicy);
+                configBuilder.withPasswordPolicy(getPasswordPolicy(tenantName));
             }
 
             return configBuilder.build();

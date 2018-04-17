@@ -63,7 +63,7 @@ public class FederatedIdpDTO extends DTO {
             List<TokenClaimGroupDTO> roleGroupMappings
     ) {
         this(entityID, protocol, alias, oidcConfig, samlConfig, jitEnabled, 
-                upnSuffix, roleGroupMappings, false);
+                upnSuffix, roleGroupMappings, null);
     }
 
     /**
