@@ -720,14 +720,21 @@ _VmDirAttrAddSpnName(PVDIR_ENTRY pEntry,
     DWORD i = 0;
     PSTR pszDomainName = NULL;
     VDIR_BERVALUE    cnRdn = VDIR_BERVALUE_INIT;
+    PSTR             pszDn = NULL;
     PSTR             pszRdnName = NULL;
     PSTR             pszRdnValue = NULL;
     PSTR             pszSpn = NULL;
     PSTR             pszDomainNameLc = NULL;
     PSTR             pszDomainNameUc = NULL;
 
-    dwError = LwLdapConvertDNToDomain(
+    dwError = VmDirAllocateAndCopyMemory(
                   pEntry->dn.lberbv.bv_val,
+                  pEntry->dn.lberbv.bv_len,
+                  (PVOID *) &pszDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwLdapConvertDNToDomain(
+                  pszDn,
                   &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -784,12 +791,13 @@ _VmDirAttrAddSpnName(PVDIR_ENTRY pEntry,
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDn);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainNameLc);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainNameUc);
+    VMDIR_SAFE_FREE_STRINGA(pszSpn);
     return dwError;
 
 error:
-    VMDIR_SAFE_FREE_MEMORY(pszDomainNameLc);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainNameUc);
-    VMDIR_SAFE_FREE_MEMORY(pszSpn);
     goto cleanup;
 }
 
@@ -823,6 +831,8 @@ _VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
     DWORD i = 0;
     PSTR pszDomainName = NULL;
     PSTR pszComputerUpn = NULL;
+    PSTR pszDn = NULL;
+    PSTR pszSamAccountName = NULL;
     PVDIR_ATTRIBUTE pAttrSamAccountName = NULL;
 
     if (!_VmDirCheckIsComputerAccount(pEntry))
@@ -839,9 +849,15 @@ _VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateAndCopyMemory(
+                  pEntry->dn.lberbv.bv_val,
+                  pEntry->dn.lberbv.bv_len,
+                  (PVOID *) &pszDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     /* Construct the full Computer account name */
     dwError = LwLdapConvertDNToDomain(
-                  pEntry->dn.lberbv.bv_val,
+                  pszDn,
                   &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -849,10 +865,18 @@ _VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
     {
         pszDomainName[i] = (char) toupper((int) pszDomainName[i]);
     }
-    dwError = VmDirAllocateStringPrintf(
-                  &pszComputerUpn, 
-                  "%s@%s",
+
+    /* Allocate NULL terminated sAMAccountName string */
+    dwError = VmDirAllocateAndCopyMemory(
                   pAttrSamAccountName->vals[0].lberbv.bv_val,
+                  pAttrSamAccountName->vals[0].lberbv.bv_len,
+                  (PVOID *) &pszSamAccountName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                  &pszComputerUpn,
+                  "%s@%s",
+                  pszSamAccountName,
                   pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -864,6 +888,8 @@ _VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
     *ppAttrUPN = VmDirFindAttrByName(pEntry, ATTR_KRB_UPN);
 
 cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDn);
+    VMDIR_SAFE_FREE_STRINGA(pszSamAccountName);
     VMDIR_SAFE_FREE_STRINGA(pszComputerUpn);
     VMDIR_SAFE_FREE_STRINGA(pszDomainName);
 
@@ -961,7 +987,7 @@ _VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
                       (PVOID *) &pwszUnicodePwd);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        memcpy((PVOID) pwszUnicodePwd, 
+        memcpy((PVOID) pwszUnicodePwd,
                pAttrUnicodePwd->vals[0].lberbv.bv_val,
                pAttrUnicodePwd->vals[0].lberbv.bv_len);
 
@@ -1310,6 +1336,7 @@ _VmDirPluginGenericPreAdd(
     PVDIR_ATTRIBUTE  pAttrSD    = VmDirFindAttrByName(pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
     PSTR             pszLocalErrMsg = NULL;
 
+    /* Create computer account for joining Windows system */
     dwError = _VmDirJoinCreateComputerAccount(pEntry, &pAttrUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
