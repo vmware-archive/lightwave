@@ -708,6 +708,318 @@ VmDirExecutePostModifyCommitPlugins(
                                 dwResult);
 }
 
+#ifdef WINJOIN_CHECK_ENABLED
+static
+DWORD
+_VmDirAttrAddSpnName(PVDIR_ENTRY pEntry,
+                     PSTR pszHost,
+                     BOOLEAN bUcHost,
+                     BOOLEAN bShortHost)
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    PSTR pszDomainName = NULL;
+    VDIR_BERVALUE    cnRdn = VDIR_BERVALUE_INIT;
+    PSTR             pszRdnName = NULL;
+    PSTR             pszRdnValue = NULL;
+    PSTR             pszSpn = NULL;
+    PSTR             pszDomainNameLc = NULL;
+    PSTR             pszDomainNameUc = NULL;
+
+    dwError = LwLdapConvertDNToDomain(
+                  pEntry->dn.lberbv.bv_val,
+                  &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    dwError = VmDirGetRdn(&pEntry->dn, &cnRdn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRdnToNameValue(&cnRdn, &pszRdnName, &pszRdnValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; pszRdnValue[i]; i++)
+    {
+        pszRdnValue[i] = (char) tolower((int) pszRdnValue[i]);
+    }
+
+    dwError = VmDirAllocateStringA(pszDomainName, &pszDomainNameLc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; pszDomainNameLc[i]; i++)
+    {
+        pszDomainNameLc[i] = (char) tolower((int) pszDomainNameLc[i]);
+    }
+
+    dwError = VmDirAllocateStringA(pszDomainName, &pszDomainNameUc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; pszDomainNameUc[i]; i++)
+    {
+        pszDomainNameUc[i] = (char) toupper((int) pszDomainNameUc[i]);
+    }
+
+    if (bShortHost)
+    {
+        dwError = VmDirAllocateStringPrintf(
+                      &pszSpn,
+                      "%s/%s@%s",
+                      pszHost,
+                      pszRdnValue,
+                      pszDomainNameUc);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(
+                      &pszSpn,
+                      "%s/%s.%s@%s",
+                      pszHost,
+                      pszRdnValue,
+                      pszDomainNameLc,
+                      pszDomainNameUc);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_KRB_SPN, pszSpn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszDomainNameLc);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainNameUc);
+    VMDIR_SAFE_FREE_MEMORY(pszSpn);
+    goto cleanup;
+}
+
+static
+BOOLEAN
+_VmDirCheckIsComputerAccount(
+    PVDIR_ENTRY pEntry)
+{
+    BOOLEAN bIsComputerAccount = FALSE;
+    PVDIR_ATTRIBUTE pAttrObjectClass = NULL;
+
+    pAttrObjectClass = VmDirEntryFindAttribute(ATTR_OBJECT_CLASS, pEntry);
+
+    if (pAttrObjectClass && pAttrObjectClass->vals[0].lberbv.bv_val &&
+        VmDirStringCompareA(pAttrObjectClass->vals[0].lberbv.bv_val,
+                            "Computer",
+                            FALSE) == 0)
+    {
+        bIsComputerAccount = TRUE;
+    }
+
+    return bIsComputerAccount;
+}
+
+static
+DWORD
+_VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
+                                PVDIR_ATTRIBUTE *ppAttrUPN)
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    PSTR pszDomainName = NULL;
+    PSTR pszComputerUpn = NULL;
+    PVDIR_ATTRIBUTE pAttrSamAccountName = NULL;
+
+    if (!_VmDirCheckIsComputerAccount(pEntry))
+    {
+        goto cleanup;
+    }
+
+    pAttrSamAccountName = VmDirEntryFindAttribute(
+                              ATTR_SAM_ACCOUNT_NAME,
+                              pEntry);
+    if (!pAttrSamAccountName)
+    {
+        dwError = VMDIR_ERROR_ENTRY_NOT_FOUND;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /* Construct the full Computer account name */
+    dwError = LwLdapConvertDNToDomain(
+                  pEntry->dn.lberbv.bv_val,
+                  &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i=0; pszDomainName[i]; i++)
+    {
+        pszDomainName[i] = (char) toupper((int) pszDomainName[i]);
+    }
+    dwError = VmDirAllocateStringPrintf(
+                  &pszComputerUpn, 
+                  "%s@%s",
+                  pAttrSamAccountName->vals[0].lberbv.bv_val,
+                  pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    /* Add these attributes to the directory entry */
+    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_KRB_UPN, pszComputerUpn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppAttrUPN = VmDirFindAttrByName(pEntry, ATTR_KRB_UPN);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszComputerUpn);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirAddAdMachineAccount(PVDIR_ENTRY pEntry)
+{
+    DWORD            dwError = 0;
+    VDIR_BERVALUE    cnRdn = VDIR_BERVALUE_INIT;
+    PSTR             pszRdnName = NULL;
+    PSTR             pszRdnValue = NULL;
+    PVDIR_ATTRIBUTE  pObjectCnAttrExist = NULL;
+
+    /* Add ATTR_CN if not present when the first RDN component is CN= */
+    dwError = VmDirGetRdn(&pEntry->dn, &cnRdn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRdnToNameValue(&cnRdn, &pszRdnName, &pszRdnValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pszRdnName && pszRdnValue && VmDirStringCompareA(pszRdnName, ATTR_CN, FALSE) == 0)
+    {
+        pObjectCnAttrExist = VmDirEntryFindAttribute(
+                                  ATTR_CN,
+                                  pEntry);
+        if (!pObjectCnAttrExist)
+        {
+            /* Add missing cn attribute; skip over "cn=" prefix */
+            dwError = VmDirEntryAddSingleValueAttribute(
+                          pEntry,
+                          ATTR_CN,
+                          cnRdn.lberbv.bv_val + 3,
+                          cnRdn.lberbv.bv_len - 3);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    /* Test for object is a computer account */
+    if (_VmDirCheckIsComputerAccount(pEntry))
+    {
+        /* For computer accounts, add service principals */
+        dwError = _VmDirAttrAddSpnName(pEntry, "host", FALSE, FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAttrAddSpnName(pEntry, "ldap", FALSE, FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAttrAddSpnName(pEntry, "cifs", FALSE, FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAttrAddSpnName(pEntry, "RPC", TRUE, FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAttrAddSpnName(pEntry, "DNS", TRUE, FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAttrAddSpnName(pEntry, "LDAP", TRUE, TRUE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszRdnName);
+    VMDIR_SAFE_FREE_MEMORY(pszRdnValue);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
+                          PVDIR_ATTRIBUTE *ppAttrPasswd)
+{
+    DWORD            dwError = 0;
+    PVDIR_ATTRIBUTE  pAttrUnicodePwd    = VmDirFindAttrByName(pEntry, ATTR_UNICODE_PWD);
+    PSTR             pszAccountPwdAlloc = NULL;
+    PSTR             pszAccountPwd = NULL;
+    DWORD            dwAccountPwdLen = 0;
+
+    /* Windows join computer account passes this password */
+    if (_VmDirCheckIsComputerAccount(pEntry) && pAttrUnicodePwd)
+    {
+        dwError = LwRtlCStringAllocateFromWC16String(
+                      &pszAccountPwdAlloc,
+                      (PCWSTR) pAttrUnicodePwd->vals[0].lberbv.bv_val);
+        dwError = LwNtStatusToWin32Error(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwAccountPwdLen = LwRtlWC16StringNumChars(
+                              (PCWSTR) pAttrUnicodePwd->vals[0].lberbv.bv_val);
+
+        /* Must prune off the " " around the password */
+        if (pszAccountPwdAlloc[0] == '"' &&
+            pszAccountPwdAlloc[dwAccountPwdLen-1] == '"')
+        {
+            pszAccountPwd = pszAccountPwdAlloc + 1;
+            pszAccountPwd[dwAccountPwdLen-1 - 1] = '\0';
+        }
+        else
+        {
+            pszAccountPwd = pszAccountPwdAlloc;
+        }
+
+        dwError = VmDirEntryAddSingleValueStrAttribute(
+                        pEntry,
+                        ATTR_USER_PASSWORD,
+                        pszAccountPwd);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        *ppAttrPasswd = VmDirFindAttrByName(pEntry, ATTR_USER_PASSWORD);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszAccountPwdAlloc);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+#else
+
+/* Non-Win join stub functions */
+static
+DWORD
+_VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
+                                PVDIR_ATTRIBUTE *ppAttrUPN)
+{
+    return 0;
+}
+
+static
+DWORD
+_VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
+                          PVDIR_ATTRIBUTE *ppAttrPasswd)
+{
+    return 0;
+}
+
+static
+DWORD
+_VmDirAddAdMachineAccount(PVDIR_ENTRY pEntry)
+{
+    return 0;
+}
+#endif
+
 static
 DWORD
 _VmDirOperationPlugin(
@@ -986,13 +1298,18 @@ _VmDirPluginGenericPreAdd(
     PVDIR_ATTRIBUTE  pAttrSD    = VmDirFindAttrByName(pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
     PSTR             pszLocalErrMsg = NULL;
 
+    dwError = _VmDirJoinCreateComputerAccount(pEntry, &pAttrUPN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if ( pAttrUPN )
     {
         dwError = VmDirValidatePrincipalName( pAttrUPN, &pszLocalErrMsg );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-#if 1 /* TBD:Adam-Safe to allow multi-valued SPN's? */
-    pAttrSPN = 0;
+
+#ifdef WINJOIN_CHECK_ENABLED
+    /* Safe to allow multi-valued SPN's */
+    pAttrSPN = NULL;
 #endif
     if ( pAttrSPN )
     {
@@ -1041,6 +1358,10 @@ _VmDirPluginPasswordHashPreAdd(
     char             pszTimeBuf[GENERALIZED_TIME_STR_LEN + 1] = {0};
     PBYTE            pSalt = NULL;
     PCSTR            pszErrorContext = NULL;
+
+    /* Windows computer joining passes the machine account pwd in unicode */
+    dwError = _VmDirAttrUnicodePwdToPwd(pEntry, &pAttrPasswd);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pAttrPasswd)
     {
@@ -1128,6 +1449,9 @@ _VmDirPluginPasswordHashPreAdd(
 cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pSalt);
+
+    /* Machine account pwd is sensitive; do not store in vmdir */
+    VmDirEntryRemoveAttribute(pEntry, ATTR_UNICODE_PWD);
 
     return dwError;
 
@@ -1315,6 +1639,10 @@ _VmDirPluginAddOpAttrsPreAdd(
 
     VmDirCurrentGeneralizedTime(pszTimeBuf, sizeof(pszTimeBuf));
 
+    /* Add attributes for AD compatibility */
+    dwError = _VmDirAddAdMachineAccount(pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // We auto generate modifytimestamp or take value from input if allowed.
     if (gVmdirGlobals.bAllowImportOpAttrs == FALSE && pAttrModifyTimeStamp)
     {
@@ -1377,7 +1705,6 @@ _VmDirPluginAddOpAttrsPreAdd(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
     return dwError;
 
 error:

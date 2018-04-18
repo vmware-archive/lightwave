@@ -322,21 +322,25 @@ scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/computers-container.sh $PRIV_USER@$LI
 ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/computers-container.sh
 
 
-# TBD:Adam
-# Add DNS "A" record for client who joined
-# This should be done in the actual lsassd code, 
-# temporary work-around
+## Add DNS "A" record for client who joined
+## This should be done in the actual lsassd code, 
+## temporary work-around
+## 
+## Using TKEY / TSIG dynamic update is the right approach...
+## Lightwave may have to use RPC interface...
 echo_status "Adding DNS A record for joined client photon-102-test2"
 ssh $PRIV_USER@$LIGHTWAVE_AD \
 /opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
   --hostname photon-102-test2 --ip 10.118.96.61  \
   --server localhost --username Administrator --password $ADMIN_PASSWORD
 
-echo_status "Adding DNS A record for joined client ADAM-WIN2K8R2-D"
-ssh $PRIV_USER@$LIGHTWAVE_AD \
-/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
-  --hostname ADAM-WIN2K8R2-D --ip 10.118.96.151  \
-  --server localhost --username Administrator --password $ADMIN_PASSWORD
+## TBD:Adam
+## TKEY dynamic DNS update works, so don't need this section.
+#echo_status "Adding DNS A record for joined client ADAM-WIN2K8R2-D"
+#ssh $PRIV_USER@$LIGHTWAVE_AD \
+#/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
+#  --hostname ADAM-WIN2K8R2-D --ip 10.118.96.151  \
+#  --server localhost --username Administrator --password $ADMIN_PASSWORD
 
 echo_status "Adding SRV record for Default-First-Site-Name..."
 ssh $PRIV_USER@$LIGHTWAVE_AD \
@@ -345,6 +349,8 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
   --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
   --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
 
+# Move this into lwsmd job
+#
 echo_status "Copy drsuapi firewall script to DC"
 scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/firewall-drsuapi.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 

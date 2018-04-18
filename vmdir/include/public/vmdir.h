@@ -246,6 +246,10 @@ extern "C" {
 #define ATTR_TRUST_AUTH_INCOMING_LEN        sizeof(ATTR_TRUST_AUTH_INCOMING)-1
 #define ATTR_TRUST_AUTH_OUTGOING            "trustAuthOutgoing"
 #define ATTR_TRUST_AUTH_OUTGOING_LEN        sizeof(ATTR_TRUST_AUTH_OUTGOING)-1
+#define ATTR_COMPUTERS                      "computers"
+#define ATTR_COMPUTERS_LEN                  (sizeof(ATTR_COMPUTERS)-1)
+#define ATTR_UNICODE_PWD                    "unicodePwd"
+#define ATTR_UNICODE_PWD_LEN                (sizeof(ATTR_UNICODE_PWD)-1)
 
 #define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
 #define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"

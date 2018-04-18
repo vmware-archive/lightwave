@@ -799,8 +799,12 @@ int format_cldap_netlogon_response_msg(
     off += sizeof(type);
 
     /* flags */
+    /* TBD:Adam-Remove GC and time server flags; maybe time server later
     flags = PDC | GC | LDAP | DS | KDC | TIME_SRV | CLOSEST | WRITABLE | 
             GOOD_TIME_SRV | WDC  | UNK2;
+    */
+
+    flags = PDC | LDAP | DS | KDC | CLOSEST | WRITABLE | WDC  | UNK2;
     memcpy(&buf[off], &flags, sizeof(flags)); /* This value is supposed to be LE */
     off += sizeof(flags);
     
