@@ -106,10 +106,21 @@
               ng-submit="searchmembers(vm.membersearch, vm.idsmembersearch, membersearchtype)"
               role="searchmembersform" style="margin-top:-10px;">
             <div class="member-search-criteria-box">
-                Domain: <select
+                Domain: <input
+                    list="domainslist"
+                    type="text"
                     ng-model="vm.idsmembersearch"
-                    ng-options="t as t.name for t in vm.identitysources"
-                    style="height:24px;width:120px;margin-left:5px;" ng-change="getallmembers(vm.idsmembersearch);"></select>
+                    style="height:24px;width:120px;margin-left:5px" >
+                        <datalist
+                            name="domainslist"
+                            id="domainslist">
+                                <option
+                                    ng-repeat="sd in vm.securitydomains track by sd.name"
+                                    label="{{sd.name}}"
+                                    value="{{sd.name}}">{{sd.name}}
+                                </option>
+                        </datalist>
+                    </input>
                 Filter: <select
                     ng-model="membersearchtype"
                     ng-options="t as t.name for t in membersearchtypes"

@@ -2705,10 +2705,10 @@ public class IdentityManager implements IIdentityManager {
     }
 
     /**
-     * Retrieves the security domains supported by a provider
+     * Retrieves the security domains supported by a tenant or a specified provider
      *
      * @param tenantName    Name of tenant, non-null non-empty, required
-     * @param providerName  Name of identity provider
+     * @param providerName  Name of identity provider; optional
      * @return Collection of domains, Empty collection if no provider found
      * @throws Exception
      */
@@ -2722,20 +2722,35 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
-            ValidateUtil.validateNotEmpty(providerName, "Provider name");
 
             TenantInformation tenantInfo = findTenant(tenantName);
-
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
-            // The provider name is the fully qualified domain name
-            IIdentityProvider provider =
-                                tenantInfo.findProviderByName(providerName);
-            if (provider != null)
+            Collection<SecurityDomain> domains = Collections.emptySet();
+
+            if (ServerUtils.isNullOrEmpty(providerName))
             {
-                return Collections.unmodifiableCollection(
-                        provider.getDomains());
+                Collection<IIdentityProvider> providers = tenantInfo.getProviders();
+                if (providers != null)
+                {
+                    domains = new HashSet<SecurityDomain>();
+                    for( IIdentityProvider p : providers ) {
+                        domains.addAll(p.getDomains());
+                    }
+                }
             }
+            else
+            {
+                // The provider name is the fully qualified domain name
+                IIdentityProvider provider =
+                                    tenantInfo.findProviderByName(providerName);
+                if (provider != null)
+                {
+                    domains = new HashSet<SecurityDomain>();
+                    domains.addAll(provider.getDomains());
+                }
+            }
+            return Collections.unmodifiableCollection(domains);
         }
         catch(Exception ex)
         {
@@ -2747,8 +2762,6 @@ public class IdentityManager implements IIdentityManager {
 
             throw ex;
         }
-
-        return Collections.emptySet();
     }
 
     /**

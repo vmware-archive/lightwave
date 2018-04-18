@@ -35,6 +35,7 @@ import com.vmware.identity.idm.IdentityStoreData;
 import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.SecurityDomain;
 import com.vmware.identity.idm.SolutionDetail;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.rest.core.data.CertificateDTO;
@@ -158,5 +159,14 @@ public class TestDataGenerator {
         KeyPair keypair = keyGen.genKeyPair();
         PrivateKey privateKey = keypair.getPrivate();
         return new PrivateKeyDTO(privateKey);
+    }
+
+    public static Collection<SecurityDomain> getIdmSecurityDomains(String tenantName) {
+        Collection<SecurityDomain> domains = new HashSet<SecurityDomain>(4);
+        domains.add(new SecurityDomain(tenantName, null));
+        domains.add(new SecurityDomain("openldap.com", ""));
+        domains.add(new SecurityDomain("vmware.com", "VMWAREM"));
+        domains.add(new SecurityDomain("localos", "localosalias"));
+        return domains;
     }
 }

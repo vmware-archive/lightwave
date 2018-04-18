@@ -1079,7 +1079,7 @@ Lightwave POST service
 %{_jarsdir}/log4j-api-2.8.2.jar
 %{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
 %{_jarsdir}/log4j-core-2.8.2.jar
-%{_jarsdir}/nimbus-jose-jwt-4.12.jar
+%{_jarsdir}/nimbus-jose-jwt-5.6.jar
 
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war

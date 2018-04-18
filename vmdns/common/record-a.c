@@ -130,7 +130,7 @@ VmDnsCopyAddressRecord(
 
     pData = &pDest->Data.A;
 
-    VmDnsAllocateStringA(pSrc->pszName, &pDest->pszName);
+    dwError = VmDnsAllocateStringA(pSrc->pszName, &pDest->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pDest->iClass = pSrc->iClass;
@@ -159,7 +159,7 @@ VmDnsRpcCopyAddressRecord(
 
     pData = &pDest->Data.A;
 
-    VmDnsRpcAllocateStringA(pSrc->pszName, &pDest->pszName);
+    dwError = VmDnsRpcAllocateStringA(pSrc->pszName, &pDest->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pDest->iClass = pSrc->iClass;
@@ -186,23 +186,15 @@ VmDnsAddressRecordToString(
     DWORD dwError = ERROR_SUCCESS;
     PSTR  pStr = NULL;
     PCSTR pszType = NULL;
-    CHAR  szAddr[INET_ADDRSTRLEN] = {0};
-    VMDNS_IP4_ADDRESS ip4 = 0;
+    PSTR pszIp4Address = NULL;
 
     dwError = VmDnsRecordTypeToString(pRecord->dwType, &pszType);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    ip4 = htonl(pRecord->Data.A.IpAddress);
-
-    if (!inet_ntop(
-            AF_INET,
-            &ip4,
-            szAddr,
-            sizeof(szAddr)))
-    {
-        dwError = ERROR_BAD_FORMAT;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
+    dwError = VmDnsIp4AddressToString(
+                    pRecord->Data.A.IpAddress,
+                    &pszIp4Address);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
@@ -215,13 +207,14 @@ VmDnsAddressRecordToString(
                     pRecord->pszName,
                     pRecord->iClass,
                     pRecord->dwTtl,
-                    szAddr
+                    pszIp4Address
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppStr = pStr;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszIp4Address);
     return dwError;
 
 error:

@@ -3816,7 +3816,6 @@ error:
     dwError = 0;
     goto cleanup;
 }
-
 DWORD
 VmAfdIpcPromoteVmDir(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
@@ -3840,6 +3839,10 @@ VmAfdIpcPromoteVmDir(
     PWSTR pwszPassword = NULL;
     PWSTR pwszSiteName = NULL;
     PWSTR pwszPartnerHostName = NULL;
+    PWSTR pwszTrustName = NULL;
+    PWSTR pwszTrustDC = NULL;
+    PWSTR pwszTrustUserName = NULL;
+    PWSTR pwszTrustPassword = NULL;
 
     VMW_TYPE_SPEC input_spec[] = PROMOTE_VMDIR_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -3868,12 +3871,16 @@ VmAfdIpcPromoteVmDir(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    pwszServerName      = input_spec[0].data.pWString;
-    pwszDomainName      = input_spec[1].data.pWString;
-    pwszUserName        = input_spec[2].data.pWString;
-    pwszPassword        = input_spec[3].data.pWString;
-    pwszSiteName        = input_spec[4].data.pWString;
-    pwszPartnerHostName = input_spec[5].data.pWString;
+    pwszServerName        = input_spec[0].data.pWString;
+    pwszDomainName        = input_spec[1].data.pWString;
+    pwszUserName          = input_spec[2].data.pWString;
+    pwszPassword          = input_spec[3].data.pWString;
+    pwszSiteName          = input_spec[4].data.pWString;
+    pwszPartnerHostName   = input_spec[5].data.pWString;
+    pwszTrustName         = input_spec[6].data.pWString;
+    pwszTrustDC           = input_spec[7].data.pWString;
+    pwszTrustUserName     = input_spec[8].data.pWString;
+    pwszTrustPassword     = input_spec[9].data.pWString;
 
     if (IsNullOrEmptyString(pwszUserName) ||
         IsNullOrEmptyString(pwszPassword))
@@ -3895,7 +3902,11 @@ VmAfdIpcPromoteVmDir(
                       pwszUserName,
                       pwszPassword,
                       pwszSiteName,
-                      pwszPartnerHostName
+                      pwszPartnerHostName,
+                      pwszTrustName,
+                      pwszTrustDC,
+                      pwszTrustUserName,
+                      pwszTrustPassword
                       );
     LOG_URESULT_ERROR(uResult);
 

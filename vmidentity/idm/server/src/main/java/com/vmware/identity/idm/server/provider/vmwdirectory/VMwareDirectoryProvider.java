@@ -2171,6 +2171,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         attrNames.add(ATTR_NAME_ACCOUNT);
         attrNames.add(ATTR_NAME_OBJECTSID);
 
+        if (!attrNames.contains(ATTR_USER_PRINCIPAL_NAME)) {
+            attrNames.add(ATTR_USER_PRINCIPAL_NAME);
+        }
+        if (!attrNames.contains(ATTR_TENANTIZED_USER_PRINCIPAL_NAME)) {
+            attrNames.add(ATTR_TENANTIZED_USER_PRINCIPAL_NAME);
+        }
+
         try (PooledLdapConnection pooledConnection = borrowConnection())
         {
             ILdapConnectionEx connection = pooledConnection.getConnection();
@@ -3150,7 +3157,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         {
             ValidateUtil.validateUpn(detail.getUserPrincipalName(), "userPrincipalName");
             String[] parts = detail.getUserPrincipalName().split("@");
-            newUserUpn = new PrincipalId(parts[0], ValidateUtil.getCanonicalUpnSuffix(parts[1]));
+            newUserUpn = new PrincipalId(parts[0], parts[1]);
         }
         else
         {
@@ -3439,7 +3446,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         if (upn != null)
         {
             result = ( this.getUpnSuffixes() != null ) &&
-                     ( this.getUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(upn.getDomain())) );
+                    ( this.getUpnSuffixes().contains(upn.getDomain()) );
         }
         return result;
     }

@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -184,6 +185,15 @@ public class TenantInfoRetriever {
             return this.idmClient.getSystemTenant();
         } catch (Exception e) {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving system tenant name"), e);
+        }
+    }
+
+    public IDPConfig getExternalIDPConfig(String tenant, String entityId) throws ServerException {
+        try {
+            return idmClient.getExternalIdpConfigForTenant(tenant, entityId);
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError(
+                String.format("idm error while retrieving external idp config for tenant '%s'", tenant)), e);
         }
     }
 }

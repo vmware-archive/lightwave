@@ -238,6 +238,26 @@ VmwDeploySetupServerPrimary(
     dwError = VmwDeployValidateSiteName(pParams->pszSite);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (pParams->pszParentDomainName)
+    {
+        VMW_DEPLOY_LOG_INFO(
+                "Creating as child domain of parent [%s]",
+                VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszParentDomainName));
+
+        dwError = VmwDeployValidateHostname(pParams->pszParentDC);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        dwError = VmwDeployValidatePassword(pParams->pszParentPassword);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        dwError = VmwDeployValidateServerCredentials(
+                        pParams->pszParentDC,
+                        pParams->pszParentUserName,
+                        pParams->pszParentPassword,
+                        pParams->pszParentDomainName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     if (!IsNullOrEmptyString(pParams->pszDNSForwarders))
     {
         dwError = VmwDeployValidateDNSForwarders(pParams->pszDNSForwarders);
@@ -288,7 +308,7 @@ VmwDeploySetupServerPartner(
     dwError = VmwDeployValidateHostname(pParams->pszHostname);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = VmwDeployValidatePartnerCredentials(
+    dwError = VmwDeployValidateServerCredentials(
                     pParams->pszServer,
                     pParams->pszUsername,
                     pParams->pszPassword,
@@ -339,14 +359,19 @@ VmwDeploySetupServerCommon(
     PSTR  pszSSLCert = NULL;
     PSTR  pszPrivateKey = NULL;
     PSTR  pszVmdirCfgPath = NULL;
+    PSTR  pszDomainName = NULL;
+    PSTR  pszFQDomainName = NULL;
+    PVMAFD_TRUST_INFO_A pTrustInfoA = NULL;
 
     VMW_DEPLOY_LOG_INFO("Setting various configuration values");
 
+    pszDomainName = pParams->pszDomainName;
+
     VMW_DEPLOY_LOG_VERBOSE(
             "Setting Domain Name to [%s]",
-            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
+            VMW_DEPLOY_SAFE_LOG_STRING(pszDomainName));
 
-    dwError = VmAfdSetDomainNameA(pszHostname, pParams->pszDomainName);
+    dwError = VmAfdSetDomainNameA(pszHostname, pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_VERBOSE(
@@ -370,14 +395,36 @@ VmwDeploySetupServerCommon(
 
     VMW_DEPLOY_LOG_INFO("Promoting directory service to be domain controller");
 
-    dwError = VmAfdPromoteVmDirA(
-                    pParams->pszHostname,
-                    pParams->pszDomainName,
-                    pParams->pszUsername,
-                    pParams->pszPassword,
-                    pParams->pszSite,
-                    pParams->pszServer);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+    if (pParams->pszParentDomainName)
+    {
+        dwError = VmAfdAllocateTrustInfoA(
+                        pParams->pszParentDomainName,
+                        pParams->pszParentDC,
+                        pParams->pszParentUserName,
+                        pParams->pszParentPassword,
+                        &pTrustInfoA);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        dwError = VmAfdPromoteVmDirTrustA(
+                        pParams->pszHostname,
+                        pParams->pszDomainName,
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        pParams->pszSite,
+                        pTrustInfoA);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdPromoteVmDirA(
+                        pParams->pszHostname,
+                        pParams->pszDomainName,
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        pParams->pszSite,
+                        pParams->pszServer);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     VMW_DEPLOY_LOG_INFO("Setting up the logical deployment unit");
 
@@ -487,6 +534,14 @@ cleanup:
     {
         VmwDeployFreeMemory(pszSSLCert);
     }
+    if (pszFQDomainName)
+    {
+        VmwDeployFreeMemory(pszFQDomainName);
+    }
+    if (pTrustInfoA)
+    {
+        VmAfdFreeTrustInfoA(pTrustInfoA);
+    }
 
     return dwError;
 
@@ -543,7 +598,7 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwDeployValidatePartnerCredentials(
+    dwError = VmwDeployValidateServerCredentials(
                     pParams->pszServer,
                     pParams->pszUsername,
                     pParams->pszPassword,

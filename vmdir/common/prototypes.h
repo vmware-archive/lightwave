@@ -218,6 +218,7 @@ VmDirGenRandomImpl(
 
 DWORD
 VmDirInternalDeleteTree(
-    PCSTR pBaseDb
+    PCSTR   pBaseDN,
+    BOOLEAN bInclusive
     );
 

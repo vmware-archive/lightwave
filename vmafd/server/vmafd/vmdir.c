@@ -216,12 +216,16 @@ error:
 
 DWORD
 VmAfSrvPromoteVmDir(
-    PWSTR    pwszLotusServerName, /* IN              */
-    PWSTR    pwszDomainName,      /* IN     OPTIONAL */
-    PWSTR    pwszUserName,        /* IN              */
-    PWSTR    pwszPassword,        /* IN              */
-    PWSTR    pwszSiteName,        /* IN     OPTIONAL */
-    PWSTR    pwszPartnerHostName  /* IN     OPTIONAL */
+    PWSTR    pwszLotusServerName,   /* IN              */
+    PWSTR    pwszDomainName,        /* IN     OPTIONAL */
+    PWSTR    pwszUserName,          /* IN              */
+    PWSTR    pwszPassword,          /* IN              */
+    PWSTR    pwszSiteName,          /* IN     OPTIONAL */
+    PWSTR    pwszPartnerHostName,   /* IN     OPTIONAL */
+    PWSTR    pwszTrustName,         /* IN     OPTIONAL */
+    PWSTR    pwszTrustDC,           /* IN     OPTIONAL */
+    PWSTR    pwszTrustUserName,     /* IN     OPTIONAL */
+    PWSTR    pwszTrustPassword      /* IN     OPTIONAL */
     )
 {
     DWORD dwError = 0;
@@ -234,6 +238,8 @@ VmAfSrvPromoteVmDir(
     PWSTR pwszDCSiteName = NULL;
     PWSTR pwszPNID = NULL;
     PSTR pszPartnerHostName = NULL;
+    PVMDIR_TRUST_INFO_A pTrustInfoA = NULL;
+    PVMDIR_TRUST_INFO_W pTrustInfoW = NULL;
     PSTR pszDefaultRealm = NULL;
     PWSTR pwszCurDomainName = NULL;
     BOOLEAN bFirstInstance = TRUE;
@@ -281,12 +287,33 @@ VmAfSrvPromoteVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    if (pwszTrustName || pwszTrustDC || pwszTrustUserName || pwszTrustPassword)
+    {
+        dwError = VmDirAllocateTrustInfoW(
+                          pwszTrustName,
+                          pwszTrustDC,
+                          pwszTrustUserName,
+                          pwszTrustPassword,
+                          &pTrustInfoW);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmDirAllocateTrustInfoAFromW(
+                          pTrustInfoW,
+                          &pTrustInfoA);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfSrvGetPNID(&pwszPNID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (bFirstInstance)
     {
         dwError = VmAfdAllocateStringA(pszDomainName, &pszDefaultRealm);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringWFromA(
+                      pszDefaultRealm,
+                      &pwszCurDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
@@ -304,13 +331,27 @@ VmAfSrvPromoteVmDir(
         }
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmDirSetupHostInstance(
-                          pszDomainName,
-                          pszLotusServerName,
-                          pszUserName,
-                          pszPassword,
-                          pszSiteName);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        if (pTrustInfoA)
+        {
+            dwError = VmDirSetupHostInstanceTrust(
+                              pszDefaultRealm,
+                              pszLotusServerName,
+                              pszUserName,
+                              pszPassword,
+                              pszSiteName,
+                              pTrustInfoA);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirSetupHostInstance(
+                              pszDefaultRealm,
+                              pszLotusServerName,
+                              pszUserName,
+                              pszPassword,
+                              pszSiteName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
 
         dwDNSRetry = 0;
 
@@ -319,7 +360,7 @@ VmAfSrvPromoteVmDir(
             dwError = VmAfSrvConfigureDNSW(
                               NULL,
                               pwszPNID,
-                              pwszDomainName,
+                              pwszCurDomainName,
                               pwszUserName,
                               pwszPassword,
                               pwszSiteName);
@@ -345,6 +386,8 @@ VmAfSrvPromoteVmDir(
         }
         BAIL_ON_VMAFD_ERROR(dwError);
 
+        dwError = VmAfSrvSetDomainNameA(pszDefaultRealm);
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
     else
     {
@@ -423,9 +466,6 @@ VmAfSrvPromoteVmDir(
     chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
 #endif
 
-    dwError = VmAfSrvSetDomainNameA(pszDomainName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CONTROLLER);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -491,6 +531,14 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
     VMAFD_SAFE_FREE_MEMORY(pwszCurDomainName);
     VMAFD_SAFE_FREE_MEMORY(pwszPNID);
+    if (pTrustInfoA)
+    {
+        VmDirFreeTrustInfoA(pTrustInfoA);
+    }
+    if (pTrustInfoW)
+    {
+        VmDirFreeTrustInfoW(pTrustInfoW);
+    }
 
     return dwError;
 

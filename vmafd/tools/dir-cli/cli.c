@@ -99,6 +99,79 @@ DirCliPrintComputers(
     DWORD dwNumComputers
     );
 
+static
+DWORD
+_DirCliForeResetAdminCreds(
+    PCSTR   pszDomain,
+    PSTR*   ppszNewPassword
+    );
+
+DWORD
+DirCliGetStrRegKeyA(
+    PVMAF_CFG_CONNECTION    pConnection,
+    PCSTR                   pszKeyPath,
+    PCSTR                   pszKeyName,
+    PSTR*                   ppszValue
+    )
+{
+    DWORD dwError = 0;
+    PVMAF_CFG_KEY pRootKey = NULL;
+    PVMAF_CFG_KEY pSubKey = NULL;
+    PSTR pszValue = NULL;
+
+    if (!pConnection || !ppszValue || IsNullOrEmptyString(pszKeyPath) || IsNullOrEmptyString(pszKeyName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfConfigOpenRootKey(
+                pConnection,
+                "HKEY_LOCAL_MACHINE",
+                0,
+                KEY_READ,
+                &pRootKey);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfConfigOpenKey(
+                pConnection,
+                pRootKey,
+                pszKeyPath,
+                0,
+                KEY_READ,
+                &pSubKey);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfConfigReadStringValue(
+                pSubKey,
+                NULL,
+                pszKeyName,
+                &pszValue);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszValue = pszValue;
+    pszValue = NULL;
+
+cleanup:
+    VMAFD_SAFE_FREE_STRINGA(pszValue);
+
+    if (pSubKey)
+    {
+        VmAfConfigCloseKey(pSubKey);
+    }
+
+    if (pRootKey)
+    {
+        VmAfConfigCloseKey(pRootKey);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
 DWORD
 DirCliCreateServiceA(
     PCSTR pszServiceName,
@@ -2485,67 +2558,6 @@ error:
 
 static
 DWORD
-VmAfdGetDomainNameFromRegistryA(
-    PVMAF_CFG_CONNECTION pConnection,
-    PSTR *ppszDomain
-    )
-{
-    DWORD dwError = 0;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pSubKey = NULL;
-    PSTR pszDomain = NULL;
-
-    dwError = VmAfConfigOpenRootKey(
-                pConnection,
-                "HKEY_LOCAL_MACHINE",
-                0,
-                KEY_READ,
-                &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                pConnection,
-                pRootKey,
-                VMAFD_CONFIG_PARAMETER_KEY_PATH,
-                0,
-                KEY_READ,
-                &pSubKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigReadStringValue(
-                pSubKey,
-                NULL,
-                VMAFD_REG_KEY_DOMAIN_NAME,
-                &pszDomain);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    *ppszDomain = pszDomain;
-    pszDomain = NULL;
-
-cleanup:
-    VMAFD_SAFE_FREE_STRINGA(pszDomain);
-
-    if (pSubKey)
-    {
-        VmAfConfigCloseKey(pSubKey);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-
-    return dwError;
-
-error:
-
-    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
-
-    goto cleanup;
-}
-
-static
-DWORD
 DirCliParsePrincipalEx(
     PVMAF_CFG_CONNECTION pConnection,
     PCSTR pszLogin,
@@ -2574,7 +2586,11 @@ DirCliParsePrincipalEx(
         }
         else
         {
-            dwError = VmAfdGetDomainNameFromRegistryA(pConnection, &pszDomain);
+            dwError = DirCliGetStrRegKeyA(
+                pConnection,
+                VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                VMAFD_REG_KEY_DOMAIN_NAME,
+                &pszDomain);
             BAIL_ON_VMAFD_ERROR(dwError);
         }
 
@@ -3195,6 +3211,111 @@ error:
 }
 
 DWORD
+DirCliDRNodeRestoreFromDB(
+    PCSTR   pszUserName,    // optional
+    PCSTR   pszPassword     // optional
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDomain = NULL;
+    PSTR    pszDCName = NULL;
+    DWORD   dwState = 0;
+    PSTR    pszLocalPass = NULL;
+    PVMAF_CFG_CONNECTION pConnection = NULL;
+    BOOLEAN bResetPassword = FALSE;
+    LDAP*   pLd = NULL;
+
+    dwError = VmAfConfigOpenConnection(&pConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    // get DOMAIN from registry
+    dwError = DirCliGetStrRegKeyA(
+        pConnection,
+        VMAFD_CONFIG_PARAMETER_KEY_PATH,
+        VMAFD_REG_KEY_DOMAIN_NAME,
+        &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    // get DCName from registry
+    dwError = DirCliGetStrRegKeyA(
+        pConnection,
+        VMAFD_CONFIG_PARAMETER_KEY_PATH,
+        VMAFD_REG_KEY_DC_NAME,
+        &pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszUserName || pszPassword)
+    {
+        // validate user supplied credentials
+        dwError = DirCliLdapConnect(
+            "localhost",
+            pszUserName,
+            pszDomain,
+            pszPassword,
+            &pLd);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        bResetPassword = TRUE;
+    }
+
+    // By now, we should have copied backup DB into /var/lib/vmware/vmdir/partner/ directory.
+    // This will trigger vmdir to swap and pick up backup DB + clean up all DC objects.
+    dwError = VmDirServerReset(&dwState);
+    if (dwError != 0)
+    {
+        printf("!!!!! FATAL ERROR !!!!! %s call VmDirServerReset failed (%u)\n", __FUNCTION__, dwError);
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (bResetPassword)
+    {
+        dwError = _DirCliForeResetAdminCreds(pszDomain, &pszLocalPass);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    // recreate DC account for this DR node
+    dwError = VmDirSetupDefaultAccount(
+        pszDomain,
+        pszDCName,
+        pszDCName,
+        pszUserName ? pszUserName : DIR_LOGIN_DEFAULT,
+        pszPassword ? pszPassword : pszLocalPass);
+   if (dwError != 0)
+   {
+       printf("!!!!! FATAL ERROR !!!!! %s call VmDirSetupDefaultAccount failed (%u)\n", __FUNCTION__, dwError);
+   }
+   BAIL_ON_VMAFD_ERROR(dwError);
+
+   printf("\n --------------------------------------------------------------------------------------\n");
+   printf("    Domain Controller node %s successfully restored from backup database\n", pszDCName);
+   printf(" --------------------------------------------------------------------------------------\n\n");
+
+cleanup:
+    if (pszLocalPass)
+    {
+        memset(pszLocalPass, 0, VmAfdStringLenA(pszLocalPass));
+        VMAFD_SAFE_FREE_MEMORY(pszLocalPass);
+    }
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    if (pConnection)
+    {
+        VmAfConfigCloseConnection(pConnection);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 DirCliGetDCNodesVersion(
     PCSTR      pszHostName,
     PCSTR      pszLogin,
@@ -3333,95 +3454,19 @@ DirCliPrintComputers(
 
 static
 DWORD
-DirCliGetMachineAccount(
-    PVMAF_CFG_CONNECTION pConnection,
-    PSTR *ppszMachineAccount
-    )
-{
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pSubKey = NULL;
-    DWORD dwError = 0;
-    PSTR pszMachineAccount = NULL;
-
-    dwError = VmAfConfigOpenRootKey(
-                pConnection,
-                "HKEY_LOCAL_MACHINE",
-                0,
-                KEY_READ,
-                &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                pConnection,
-                pRootKey,
-                VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
-                0,
-                KEY_READ,
-                &pSubKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigReadStringValue(
-                pSubKey,
-                NULL,
-                VMAFD_REG_KEY_DC_ACCOUNT,
-                &pszMachineAccount);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    *ppszMachineAccount = pszMachineAccount;
-    pszMachineAccount = NULL;
-
-cleanup:
-    VMAFD_SAFE_FREE_STRINGA(pszMachineAccount);
-
-    if (pSubKey)
-    {
-        VmAfConfigCloseKey(pSubKey);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-
-    return dwError;
-error:
-    goto cleanup;
-}
-
-static
-DWORD
 DirCliIsManagementNode(
     PVMAF_CFG_CONNECTION pConnection,
     BOOLEAN *pbManagementNode
     )
 {
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pSubKey = NULL;
     DWORD dwError = 0;
     PSTR pszDCAccountDN = NULL;
 
-    dwError = VmAfConfigOpenRootKey(
-                pConnection,
-                "HKEY_LOCAL_MACHINE",
-                0,
-                KEY_READ,
-                &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                pConnection,
-                pRootKey,
-                VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
-                0,
-                KEY_READ,
-                &pSubKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigReadStringValue(
-                pSubKey,
-                NULL,
-                VMAFD_REG_KEY_DC_ACCOUNT_DN,
-                &pszDCAccountDN);
+    dwError = DirCliGetStrRegKeyA(
+        pConnection,
+        VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+        VMAFD_REG_KEY_DC_ACCOUNT_DN,
+        &pszDCAccountDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (VmAfdCaselessStrStrA(pszDCAccountDN, "ou=Domain Controllers"))
@@ -3435,16 +3480,6 @@ DirCliIsManagementNode(
 
 cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDCAccountDN);
-
-    if (pSubKey)
-    {
-        VmAfConfigCloseKey(pSubKey);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
 
     return dwError;
 
@@ -3462,8 +3497,6 @@ DirCliGetDCNameFromRegistry(
 {
     DWORD dwError = 0;
     PSTR pszServerName = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pSubKey = NULL;
 
     if (pszSuppliedServerName != NULL)
     {
@@ -3472,28 +3505,11 @@ DirCliGetDCNameFromRegistry(
     }
     else
     {
-        dwError = VmAfConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    VMAFD_CONFIG_PARAMETER_KEY_PATH,
-                    0,
-                    KEY_READ,
-                    &pSubKey);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfConfigReadStringValue(
-                    pSubKey,
-                    NULL,
-                    VMAFD_REG_KEY_DC_NAME,
-                    &pszServerName);
+        dwError = DirCliGetStrRegKeyA(
+            pConnection,
+            VMAFD_CONFIG_PARAMETER_KEY_PATH,
+            VMAFD_REG_KEY_DC_NAME,
+            &pszServerName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -3502,16 +3518,6 @@ DirCliGetDCNameFromRegistry(
 
 cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszServerName);
-
-    if (pSubKey)
-    {
-        VmAfConfigCloseKey(pSubKey);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
 
     return dwError;
 error:
@@ -3685,7 +3691,11 @@ DirCliMachineAccountReset(
                 &pszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = DirCliGetMachineAccount(pConnection, &pszMachineAccount);
+    dwError = DirCliGetStrRegKeyA(
+                pConnection,
+                VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                VMAFD_REG_KEY_DC_ACCOUNT,
+                &pszMachineAccount);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     /*
@@ -4115,6 +4125,239 @@ cleanup:
     }
     VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
     VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+_DirCliForeResetAdminCreds(
+    PCSTR   pszDomain,
+    PSTR*   ppszNewPassword
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUPN = NULL;
+    PBYTE   pLocalPasswordByte = NULL;
+    DWORD   dwPasswordSize = 0;
+    PSTR    pszLocalPass = NULL;
+
+    dwError = VmAfdAllocateStringPrintf(
+                &pszUPN,
+                "%s@%s",
+                DIR_LOGIN_DEFAULT,
+                pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirForceResetPassword(
+        pszUPN,
+        &pLocalPasswordByte,
+        &dwPasswordSize);
+    if (dwError == 0)
+    {
+        dwError = VmAfdAllocateMemory(dwPasswordSize+1, (PVOID*)&pszLocalPass);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        memcpy(pszLocalPass, pLocalPasswordByte, dwPasswordSize);
+        printf("New password for %s is -\n%s\n", pszUPN, pszLocalPass);
+    }
+    else
+    {
+        printf("!!!!! FATAL ERROR !!!!! %s call VmDirForceResetPassword failed (%u)\n", __FUNCTION__, dwError);
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszNewPassword = pszLocalPass;
+    pszLocalPass = NULL;
+
+cleanup:
+    if (pLocalPasswordByte)
+    {
+        memset(pLocalPasswordByte, 0, dwPasswordSize);
+        VMAFD_SAFE_FREE_MEMORY(pLocalPasswordByte);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pszUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszLocalPass);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+DirCliEnumerateTrusts(
+    PCSTR pszLogin,
+    PCSTR pszPassword)
+{
+    DWORD dwError = 0;
+    PCSTR pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PSTR  pszPassword1 = NULL;
+    PCSTR pszPasswordLocal = pszPassword;
+    PSTR  pszDCName = NULL;
+    PSTR  pszUser = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAdminUPN = NULL;
+    LDAP* pLd = NULL;
+    PDIR_CLI_ENUM_TRUST_CONTEXT pEnumContext = NULL;
+    PSTR* ppszTrusts = NULL;
+    DWORD dwTrustCount = 0;
+    DWORD dwCount = 0;
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain, NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszPasswordLocal = pszPassword1;
+    }
+
+    dwError = DirCliGetDCName(&pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapConnect(
+                    pszDCName,
+                    pszUser,
+                    pszDomain,
+                    pszPasswordLocal,
+                    &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapBeginEnumTrusts(
+                    pLd,
+                    pszDomain,
+                    256,
+                    &pEnumContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    do
+    {
+        DWORD idx = 0;
+
+        if (ppszTrusts)
+        {
+            VmAfdFreeStringArrayCountA(ppszTrusts, dwCount);
+            ppszTrusts = NULL;
+        }
+
+        dwError = DirCliLdapEnumTrusts(pEnumContext, &ppszTrusts, &dwCount);
+        if (dwError == ERROR_NO_MORE_ITEMS)
+        {
+            dwError = 0;
+            break;
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        for (; idx < dwCount; idx++)
+        {
+            fprintf(stdout, "%s\n", ppszTrusts[idx]);
+            dwTrustCount++;
+        }
+
+    } while (dwCount > 0);
+
+    if (dwTrustCount == 0)
+    {
+        fprintf(stderr, "Domain has no trusts\n");
+    }
+
+cleanup:
+
+    if (pEnumContext)
+    {
+        DirCliLdapEndEnumTrusts(pEnumContext);
+    }
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    if (ppszTrusts)
+    {
+        VmAfdFreeStringArrayCountA(ppszTrusts, dwCount);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+DirCliDeleteTrust(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszTrustName)
+{
+    DWORD dwError = 0;
+    PCSTR pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PSTR  pszPassword1 = NULL;
+    PCSTR pszPasswordLocal = pszPassword;
+    PSTR  pszDCName = NULL;
+    PSTR  pszUser = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAdminUPN = NULL;
+    LDAP* pLd = NULL;
+
+    if (IsNullOrEmptyString(pszTrustName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain, NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszPasswordLocal = pszPassword1;
+    }
+
+    dwError = DirCliGetDCName(&pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapConnect(
+                    pszDCName,
+                    pszUser,
+                    pszDomain,
+                    pszPasswordLocal,
+                    &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapDeleteTrust(
+                pLd,
+                pszTrustName,
+                pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    fprintf(stdout, "Trust %s successfully deleted\n", pszTrustName);
+
+cleanup:
+
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
     VMAFD_SAFE_FREE_MEMORY(pszUser);
     VMAFD_SAFE_FREE_MEMORY(pszDomain);
 

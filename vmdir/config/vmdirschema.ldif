@@ -19588,6 +19588,14 @@ attributetypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.114
+    NAME 'vmwSTSEnableOperatorAccess'
+    DESC 'VMWare identity Service - Enable Operator Access'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19944,6 +19952,20 @@ objectClasses: (
    MAY ( userCertificate
        )
    )
+
+objectClasses: (
+   VMWare.STS.objectclass.31
+   NAME 'vmwSTSOperatorAccessPolicy'
+   DESC 'VMware Identity Service - Operator Access Policy'
+   SUP top
+   STRUCTURAL
+   MUST ( cn )
+   MAY ( vmwSTSEnableOperatorAccess
+         $ vmwSTSUserBaseDN
+         $ vmwSTSGroupBaseDN
+       )
+   )
+
 ############################################################
 # VMware OIDC
 ############################################################

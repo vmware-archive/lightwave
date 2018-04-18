@@ -150,12 +150,16 @@ VmAfSrvGetSiteGUID(
 
 DWORD
 VmAfSrvPromoteVmDir(
-    PWSTR    pwszLotusServerName,/* IN              */
-    PWSTR    pwszDomainName,     /* IN     OPTIONAL */
-    PWSTR    pwszUserName,       /* IN              */
-    PWSTR    pwszPassword,       /* IN              */
-    PWSTR    pwszSiteName,       /* IN     OPTIONAL */
-    PWSTR    pwszPartnerHostName /* IN     OPTIONAL */
+    PWSTR    pwszLotusServerName,   /* IN              */
+    PWSTR    pwszDomainName,        /* IN     OPTIONAL */
+    PWSTR    pwszUserName,          /* IN              */
+    PWSTR    pwszPassword,          /* IN              */
+    PWSTR    pwszSiteName,          /* IN     OPTIONAL */
+    PWSTR    pwszPartnerHostName,   /* IN     OPTIONAL */
+    PWSTR    pwszTrustName,         /* IN              */
+    PWSTR    pwszTrustDC,           /* IN              */
+    PWSTR    pwszTrustUserName,     /* IN              */
+    PWSTR    pwszTrustPassword      /* IN              */
     );
 
 DWORD
@@ -1229,6 +1233,15 @@ VmAfdIpcSetMachineID(
 
 DWORD
 VmAfdIpcPromoteVmDir(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcPromoteVmDirTrust(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
     DWORD dwRequestSize,

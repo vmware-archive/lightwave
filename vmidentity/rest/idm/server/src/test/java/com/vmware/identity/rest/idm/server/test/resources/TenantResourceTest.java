@@ -59,6 +59,7 @@ import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.SearchCriteria;
+import com.vmware.identity.idm.SecurityDomain;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -73,6 +74,7 @@ import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
 import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
+import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 import com.vmware.identity.rest.idm.data.TokenPolicyDTO;
@@ -214,6 +216,7 @@ public class TenantResourceTest {
     public void testCreateOnIDMError_ThrowsInternalServerError() throws Exception {
         mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         expectLastCall().andThrow(new IDMException("unit test duplicate tenant error"));
+        mockCasIdmClient.deleteTenant(eq(TENANT_NAME));
         mControl.replay();
         tenantResource.create(getTestTenantDTO());
         mControl.verify();
@@ -679,6 +682,17 @@ public class TenantResourceTest {
         expectLastCall().andThrow(new IDMException("IDM error"));
         mControl.replay();
         tenantResource.searchMembers(TENANT_NAME, MemberType.SOLUTIONUSER.name(), DOMAIN, 200, SearchType.NAME.name(), "admin");
+        mControl.verify();
+    }
+
+    @Test
+    public void testGetSecurityDomains() throws Exception {
+        Collection<SecurityDomain> secDomains = TestDataGenerator.getIdmSecurityDomains(TENANT_NAME);
+        expect(mockCasIdmClient.getSecurityDomains(eq(TENANT_NAME), eq((String)null))).andReturn(secDomains);
+        mControl.replay();
+
+        Collection<SecurityDomainDTO> secDomanDTOs = tenantResource.getSecurityDomains(TENANT_NAME);
+        assertEquals(secDomains.size(), secDomanDTOs.size());
         mControl.verify();
     }
 

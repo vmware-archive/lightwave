@@ -63,13 +63,9 @@ DirCliLdapConnect(
     )
 {
     DWORD dwError = 0;
-    PSTR  pszUserDN = NULL;
     LDAP* pLd = NULL;
     PSTR pszUpn = NULL;
     int retryCount = 2;
-
-    dwError = DirCliGetUserDN(pszUser, pszDomain, &pszUserDN);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringPrintf(
                 &pszUpn,
@@ -100,7 +96,6 @@ DirCliLdapConnect(
     *ppLd = pLd;
 
 cleanup:
-    VMAFD_SAFE_FREE_MEMORY(pszUserDN);
 
     return dwError;
 
@@ -2478,6 +2473,43 @@ error:
 }
 
 DWORD
+DirCliGetTrustDN(
+    PCSTR pszTrustName,
+    PCSTR pszDomain,
+    PSTR* ppszTrustDN
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDomainDN = NULL;
+    PSTR pszTrustDN = NULL;
+
+    dwError = DirCliGetDomainDN(pszDomain, &pszDomainDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringPrintf(
+                    &pszTrustDN,
+                    "CN=%s,CN=System,%s",
+                    pszTrustName,
+                    pszDomainDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszTrustDN = pszTrustDN;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszDomainDN);
+
+    return dwError;
+
+error:
+
+    VMAFD_SAFE_FREE_STRINGA(pszTrustDN);
+    *ppszTrustDN = NULL;
+
+    goto cleanup;
+}
+
+DWORD
 DirCliGetGroupDN(
     PCSTR pszGroupName,
     PCSTR pszDomain,
@@ -3052,6 +3084,229 @@ DirCliLdapEndEnumOrgunits(
         ldap_msgfree(pContext->pSearchRes);
     }
     VmAfdFreeMemory(pContext);
+}
+
+DWORD
+DirCliLdapBeginEnumTrusts(
+    LDAP*  pLd,
+    PCSTR  pszDomain,
+    DWORD  dwMaxCount,
+    PDIR_CLI_ENUM_TRUST_CONTEXT* ppContext
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszSearchBase = NULL;
+    PSTR  pszFilter = NULL;
+    PSTR  ppszAttrs[] = {ATTR_NAME_CN, NULL};
+    PDIR_CLI_ENUM_TRUST_CONTEXT pContext = NULL;
+    PSTR  pszDomainDN = NULL;
+
+    dwError = VmAfdAllocateMemory(
+                    sizeof(DIR_CLI_ENUM_ORGUNIT_CONTEXT),
+                    (PVOID*)&pContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pContext->pLd = pLd;
+    pContext->dwMaxCount = (dwMaxCount <= 256 ? 256 : dwMaxCount);
+
+    dwError = DirCliGetDomainDN(pszDomain, &pszDomainDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringPrintf(
+                    &pszSearchBase,
+                    "CN=System,%s",
+                    pszDomainDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringPrintf(
+                    &pszFilter,
+                    "(%s=%s)",
+                    ATTR_NAME_OBJECTCLASS,
+                    OBJECT_CLASS_TRUSTED_DOMAIN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pLd,
+                    pszSearchBase,
+                    LDAP_SCOPE_ONELEVEL,
+                    pszFilter,
+                    ppszAttrs,
+                    FALSE,             /* attrs only  */
+                    NULL,              /* serverctrls */
+                    NULL,              /* clientctrls */
+                    NULL,              /* timeout */
+                    0,
+                    &pContext->pSearchRes);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pContext->dwNumEntries = ldap_count_entries(
+                                    pContext->pLd,
+                                    pContext->pSearchRes);
+
+    *ppContext = pContext;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszDomainDN);
+    VMAFD_SAFE_FREE_MEMORY(pszSearchBase);
+    VMAFD_SAFE_FREE_MEMORY(pszFilter);
+
+    return dwError;
+
+error:
+
+    *ppContext = NULL;
+
+    if (pContext)
+    {
+        DirCliLdapEndEnumTrusts(pContext);
+    }
+
+    goto cleanup;
+}
+
+DWORD
+DirCliLdapEnumTrusts(
+    PDIR_CLI_ENUM_TRUST_CONTEXT pContext,
+    PSTR** pppszTrusts,
+    PDWORD pdwCount
+    )
+{
+    DWORD dwError = 0;
+    PSTR* ppszTrusts = NULL;
+    DWORD dwCount = 0;
+    DWORD idx = 0;
+    struct berval** ppValues = NULL;
+
+    if (!pContext->dwNumEntries ||
+         (pContext->dwNumRead == pContext->dwNumEntries))
+    {
+        dwError = ERROR_NO_MORE_ITEMS;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwCount = pContext->dwNumEntries - pContext->dwNumRead;
+    if (dwCount > pContext->dwMaxCount)
+    {
+        dwCount = pContext->dwMaxCount;
+    }
+
+    dwError = VmAfdAllocateMemory(sizeof(PSTR)*dwCount, (PVOID*)&ppszTrusts);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    for (; idx < dwCount; idx++)
+    {
+        if (!pContext->pEntry)
+        {
+            pContext->pEntry = ldap_first_entry(
+                                    pContext->pLd,
+                                    pContext->pSearchRes);
+        }
+        else
+        {
+            pContext->pEntry = ldap_next_entry(
+                                    pContext->pLd,
+                                    pContext->pEntry);
+        }
+
+        if (!pContext->pEntry)
+        {
+            dwError = ERROR_INVALID_STATE;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        if (ppValues)
+        {
+            ldap_value_free_len(ppValues);
+            ppValues = NULL;
+        }
+
+        ppValues = ldap_get_values_len(
+                        pContext->pLd,
+                        pContext->pEntry,
+                        ATTR_NAME_CN);
+
+        if (!ppValues || (ldap_count_values_len(ppValues) != 1))
+        {
+            dwError = ERROR_INVALID_STATE;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        dwError = VmAfdAllocateStringPrintf(
+                        &ppszTrusts[idx],
+                        "%s",
+                        ppValues[0]->bv_val);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    pContext->dwNumRead += dwCount;
+
+    *pppszTrusts = ppszTrusts;
+    *pdwCount = dwCount;
+
+cleanup:
+
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    return dwError;
+
+error:
+
+    *pppszTrusts = NULL;
+    *pdwCount = 0;
+
+    if (ppszTrusts)
+    {
+        VmAfdFreeStringArrayCountA(ppszTrusts, dwCount);
+    }
+
+    goto cleanup;
+}
+
+VOID
+DirCliLdapEndEnumTrusts(
+    PDIR_CLI_ENUM_TRUST_CONTEXT pContext
+    )
+{
+    if (pContext->pSearchRes)
+    {
+        ldap_msgfree(pContext->pSearchRes);
+    }
+    VmAfdFreeMemory(pContext);
+}
+
+DWORD
+DirCliLdapDeleteTrust(
+    LDAP*         pLd,
+    PCSTR         pszTrustName,
+    PCSTR         pszDomain)
+{
+    DWORD dwError = 0;
+    PSTR  pszTrustDN = NULL;
+
+    dwError = DirCliGetTrustDN(pszTrustName, pszDomain, &pszTrustDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = ldap_delete_ext_s(
+                    pLd,
+                    pszTrustDN,
+                    NULL,
+                    NULL
+                    );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszTrustDN);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
 }
 
 DWORD

@@ -42,6 +42,12 @@ public class RoleCheckTest {
     protected static PublicKey publicKey;
     protected static PrivateKey privateKey;
 
+    private static final String VSPHERE_DOMAIN = "vsphere.local";
+    private static final String SYSTEM_DOMAIN = "system.local";
+
+    private static final String SUBJECT_ADMINISTRATOR = "administrator@" + VSPHERE_DOMAIN;
+    private static final String SUBJECT_CONFIGURATOR = "configuration_user@"+ SYSTEM_DOMAIN;
+
     @BeforeClass
     public static void setup() {
         KeyPair keypair = KeyPairUtil.getKeyPair();
@@ -51,8 +57,10 @@ public class RoleCheckTest {
 
     @Test
     public void testRoleField() throws Exception {
+        RoleMapper mapper = getMapper(VSPHERE_DOMAIN, VSPHERE_DOMAIN);
+
         SignedJWT jwt = new JWTBuilder(privateKey)
-            .subject("administrator")
+            .subject(SUBJECT_ADMINISTRATOR)
             .issuer("OAUTH")
             .audience(Config.RESOURCE_SERVER_AUDIENCE)
             .role(Role.ADMINISTRATOR.getRoleName())
@@ -60,7 +68,7 @@ public class RoleCheckTest {
 
         AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD, Config.JWT_MUTITENANTED_FIELD);
 
-        ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, null);
+        ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
 
         request.validateRole(Role.ADMINISTRATOR);
         request.validateRole(Role.CONFIGURATION_USER);
@@ -69,7 +77,7 @@ public class RoleCheckTest {
 
     public void testRoleField_WrongRole() throws Exception {
         SignedJWT jwt = new JWTBuilder(privateKey)
-            .subject("configuration_user")
+            .subject(SUBJECT_CONFIGURATOR)
             .issuer("OAUTH")
             .audience(Config.RESOURCE_SERVER_AUDIENCE)
             .role(Role.CONFIGURATION_USER.getRoleName())
@@ -84,12 +92,12 @@ public class RoleCheckTest {
 
     @Test
     public void testGroupsField() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local", new HashSet<String>());
+        RoleMapper mapper = getMapper(VSPHERE_DOMAIN, VSPHERE_DOMAIN);
 
         List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.ADMINISTRATOR).getGroupNetbios() } );
 
         SignedJWT jwt = new JWTBuilder(privateKey)
-            .subject("administrator")
+            .subject(SUBJECT_ADMINISTRATOR)
             .issuer("OAUTH")
             .audience(Config.RESOURCE_SERVER_AUDIENCE)
             .groups(groups)
@@ -107,12 +115,12 @@ public class RoleCheckTest {
 
     @Test(expected = InsufficientRoleException.class)
     public void testGroupsField_WrongRole() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "vsphere.local", new HashSet<String>());
+        RoleMapper mapper = getMapper(VSPHERE_DOMAIN, VSPHERE_DOMAIN);
 
         List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.CONFIGURATION_USER).getGroupNetbios() } );
 
         SignedJWT jwt = new JWTBuilder(privateKey)
-            .subject("administrator")
+            .subject(SUBJECT_ADMINISTRATOR)
             .issuer("OAUTH")
             .audience(Config.RESOURCE_SERVER_AUDIENCE)
             .groups(groups)
@@ -127,12 +135,12 @@ public class RoleCheckTest {
 
     @Test
     public void testSystemConfigurationRole_DomainDiffers() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "system.local", new HashSet<String>());
+        RoleMapper mapper = getMapper(VSPHERE_DOMAIN, SYSTEM_DOMAIN);
 
         List<String> groups = Arrays.asList( new String[] { mapper.getRoleGroup(Role.CONFIGURATION_USER).getGroupNetbios() } );
 
         SignedJWT jwt = new JWTBuilder(privateKey)
-            .subject("administrator")
+            .subject(SUBJECT_CONFIGURATOR)
             .issuer("OAUTH")
             .audience(Config.RESOURCE_SERVER_AUDIENCE)
             .groups(groups)
@@ -147,12 +155,12 @@ public class RoleCheckTest {
 
     @Test(expected = InsufficientRoleException.class)
     public void testSystemConfigurationRole_WrongDomain() throws Exception {
-        RoleMapper mapper = new RoleMapper("vsphere.local", "system.local", new HashSet<String>());
+        RoleMapper mapper = getMapper(VSPHERE_DOMAIN, SYSTEM_DOMAIN);
 
-        List<String> groups = Arrays.asList( new String[] { new RoleGroup(Role.CONFIGURATION_USER, Role.CONFIGURATION_USER.getRoleName(), "vsphere.local").getGroupNetbios() } );
+        List<String> groups = Arrays.asList( new String[] { new RoleGroup(Role.CONFIGURATION_USER, Role.CONFIGURATION_USER.getRoleName(), VSPHERE_DOMAIN).getGroupNetbios() } );
 
         SignedJWT jwt = new JWTBuilder(privateKey)
-            .subject("administrator")
+            .subject(SUBJECT_ADMINISTRATOR)
             .issuer("OAUTH")
             .audience(Config.RESOURCE_SERVER_AUDIENCE)
             .groups(groups)
@@ -182,4 +190,12 @@ public class RoleCheckTest {
         return builder.toString();
     }
 
+    private static RoleMapper getMapper(String tenantDomain, String systemTenantDomain) {
+        HashSet<String> trustedDomains = new HashSet<String>();
+        trustedDomains.add(tenantDomain);
+        trustedDomains.add(systemTenantDomain);
+
+        RoleMapper mapper = new RoleMapper(tenantDomain, systemTenantDomain, trustedDomains);
+        return mapper;
+    }
 }

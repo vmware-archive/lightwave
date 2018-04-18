@@ -114,6 +114,20 @@ DirCliExecOrgunitRequest(
     );
 
 static
+DWORD
+DirCliExecDRNodeRestoreFromDB(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
+DirCliExecTrustRequest(
+    int   argc,
+    char* argv[]
+    );
+
+static
 void
 ShowUsage(
     VOID
@@ -335,6 +349,12 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
+    else if (!VmAfdStringCompareA(pszArg, "disaster-recovery", TRUE))
+    {
+        dwError = DirCliExecDRNodeRestoreFromDB(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
     else if (!VmAfdStringCompareA(pszArg, "nodes", TRUE))
     {
         dwError = DirCliExecTopologyRequest(
@@ -362,6 +382,12 @@ ParseArgs(
     else if (!VmAfdStringCompareA(pszArg, "orgunit", TRUE))
     {
         dwError = DirCliExecOrgunitRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmAfdStringCompareA(pszArg, "trust", TRUE))
+    {
+        dwError = DirCliExecTrustRequest(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
@@ -3722,6 +3748,104 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+DirCliExecDRNodeRestoreFromDB(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DWORD iArg = 0;
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_USER_NAME,
+        PARSE_MODE_PASSWORD
+    } PARSE_MODE;
+
+    PARSE_MODE parseMode = PARSE_MODE_OPEN;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+        switch (parseMode)
+        {
+        case PARSE_MODE_OPEN:
+            if(!strcmp(pszArg, "--login"))
+            {
+                parseMode = PARSE_MODE_USER_NAME;
+            }
+            else if(!strcmp(pszArg, "--password"))
+            {
+                parseMode = PARSE_MODE_PASSWORD;
+            }
+            else
+            {
+                dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+            break;
+
+        case PARSE_MODE_USER_NAME:
+            if (pszUserName)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszUserName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_PASSWORD:
+            if (pszPassword)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        default:
+
+            dwError = ERROR_LOCAL_OPTION_INVALID;
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            break;
+        }
+    }
+
+    dwError = DirCliDRNodeRestoreFromDB(
+        pszUserName ,
+        pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
 
 static
 DWORD
@@ -4306,6 +4430,217 @@ error:
 }
 
 static
+DWORD
+DirCliExecTrustRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DIR_COMMAND command = DIR_COMMAND_UNKNOWN;
+    DWORD idx = 0;
+    PSTR pszLogin = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszTrustName = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_TRUST_LIST,
+        PARSE_MODE_TRUST_DELETE,
+    } PARSE_MODE;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_LOGIN,
+        PARSE_SUB_MODE_PASSWORD,
+        PARSE_SUB_MODE_TRUST_NAME,
+    } PARSE_SUB_MODE;
+
+    PARSE_MODE mode = PARSE_MODE_OPEN;
+    PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (mode)
+        {
+            case PARSE_MODE_OPEN:
+
+                if (!VmAfdStringCompareA(pszArg, "list", TRUE))
+                {
+                    command = DIR_COMMAND_TRUST_LIST;
+                    mode = PARSE_MODE_TRUST_LIST;
+                }
+                else if (!VmAfdStringCompareA(pszArg, "delete", TRUE))
+                {
+                    command = DIR_COMMAND_TRUST_DELETE;
+                    mode = PARSE_MODE_TRUST_DELETE;
+                }
+                else
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_TRUST_LIST:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!VmAfdStringCompareA(pszArg, "--login", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else
+                        {
+                            dwError = ERROR_INVALID_PARAMETER;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+
+                        dwError = ERROR_INVALID_STATE;
+                        BAIL_ON_VMAFD_ERROR(dwError);
+
+                        break;
+                }
+                break;
+
+            case PARSE_MODE_TRUST_DELETE:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+                        if(!strcmp(pszArg, "--login"))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--trust-name", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_TRUST_NAME;
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_TRUST_NAME:
+                        if (pszTrustName)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszTrustName = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+                        dwError = ERROR_INVALID_STATE;
+                        break;
+            }
+            break;
+
+            default:
+                dwError = ERROR_INVALID_STATE;
+                break;
+        }
+    }
+
+    switch (command)
+    {
+        case DIR_COMMAND_TRUST_LIST:
+            dwError = DirCliEnumerateTrusts(
+                          pszLogin,
+                          pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        case DIR_COMMAND_TRUST_DELETE:
+            dwError = DirCliDeleteTrust(
+                          pszLogin,
+                          pszPassword,
+                          pszTrustName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        default:
+            dwError = ERROR_INVALID_STATE;
+            break;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
 void
 ShowUsage(
     VOID
@@ -4354,6 +4689,7 @@ ShowUsage(
         "\t             [ --password <password>                 ]\n"
         "\tgroup modify --name <group name>\n"
         "\t             [ --add <user or group name>            ]\n"
+        "\t             [ --remove <user or group name>         ]\n"
         "\t             [ --login    <admin user id>            ]\n"
         "\t             [ --password <password>                 ]\n"
         "\tgroup list --name <group name>\n"
@@ -4453,5 +4789,15 @@ ShowUsage(
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
         "\t             [ --container-dn <container DN>         ]\n"
+        "\tdisaster-recovery\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\ttrust list\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\ttrust delete\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t             --trust-name  <trust-name>               \n"
         "\thelp\n");
 }

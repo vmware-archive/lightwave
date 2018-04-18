@@ -26,6 +26,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.DocumentBuilder;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.web.util.UriUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -37,7 +38,7 @@ import org.w3c.dom.Node;
 @WebServlet("/Login")
 public class Login extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-       
+
     /**
      * @see HttpServlet#HttpServlet()
      */
@@ -51,6 +52,7 @@ public class Login extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try{
 			String[] tenant = request.getParameterValues("tenant");
+			String[] localLogin = request.getParameterValues("local");
 			String tenantName = "";
 			if(tenant != null && tenant.length > 0){
 				tenantName = tenant[0];
@@ -61,6 +63,7 @@ public class Login extends HttpServlet {
 				return;
 			}
 			tenantName = tenantName.toLowerCase();
+			// todo: most settings here should be discovered from metadata...
 			String uri = request.getRequestURL().toString();
 			String protocol = uri.split("://")[0];
 			String hostname = uri.split("://")[1].split("/")[0];
@@ -72,6 +75,10 @@ public class Login extends HttpServlet {
 						  "&redirect_uri=" +
 						  redirect_uri +
 						  "&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server%20rs_vmdir";
+			if ( (localLogin != null) && (localLogin.length > 0) && (localLogin[0].equalsIgnoreCase("true")) ) {
+				String issuer = protocol + "://" + hostname + "/openidconnect/" + tenantName;
+				args += "&login_hint=" + UriUtils.encodeQueryParam(issuer, "UTF-8");
+			}
 			String authorizeUri = openIdConnectUri + args;
 			response.sendRedirect(authorizeUri);
 		} catch(Exception exc)

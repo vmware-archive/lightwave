@@ -963,10 +963,10 @@ public class CasIdmClient
             }
 
     /**
-     * Retrieves the security domains supported by a provider
+     * Retrieves the security domains supported by a tenant optionally limited for a specific provider
      *
      * @param tenantName    Name of tenant, non-null non-empty, required
-     * @param providerName  Name of identity provider
+     * @param providerName  Name of identity provider (optional)
      * @return Collection of domains, Empty collection if no provider found
      * @throws Exception
      */

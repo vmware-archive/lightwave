@@ -215,7 +215,7 @@ public class TokenIssuer {
     }
 
     private Subject subject() {
-        return (this.personUser != null) ? this.personUser.getSubject() : this.solutionUser.getSubject();
+        return (this.personUser != null) ? this.userInfo.getSubject() : this.solutionUser.getSubject();
     }
 
     private boolean multiTenant() {

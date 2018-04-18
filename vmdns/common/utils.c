@@ -709,3 +709,75 @@ VmDnsGetTimeInMilliSec(
     return  iTimeInMSec;
 }
 
+DWORD
+VmDnsIp4AddressToString(
+    VMDNS_IP4_ADDRESS Ip4Address,
+    PSTR*             ppStr
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PSTR pStr = NULL;
+    CHAR szAddr[INET_ADDRSTRLEN] = {0};
+    VMDNS_IP4_ADDRESS ip4 = 0;
+
+    ip4 = htonl(Ip4Address);
+
+    if (!inet_ntop(
+            AF_INET,
+            &ip4,
+            szAddr,
+            sizeof(szAddr)))
+    {
+        dwError = ERROR_BAD_FORMAT;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateStringA(
+                    szAddr,
+                    &pStr);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppStr = pStr;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDNS_SAFE_FREE_STRINGA(pStr);
+    goto cleanup;
+}
+
+DWORD
+VmDnsIp6AddressToString(
+    VMDNS_IP6_ADDRESS Ip6Address,
+    PSTR*             ppStr
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PSTR pStr = NULL;
+    CHAR szAddr[INET6_ADDRSTRLEN] = {0};
+
+    if (!inet_ntop(
+            AF_INET6,
+            Ip6Address.IP6Byte,
+            szAddr,
+            sizeof(szAddr)))
+    {
+        dwError = ERROR_BAD_FORMAT;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateStringA(
+                    szAddr,
+                    &pStr);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppStr = pStr;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDNS_SAFE_FREE_STRINGA(pStr);
+    goto cleanup;
+}

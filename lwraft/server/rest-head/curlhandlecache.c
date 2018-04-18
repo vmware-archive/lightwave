@@ -217,7 +217,6 @@ VmDirRESTCurlHandleCacheFree(
                 pCurlHandle = NULL;
                 dequePopLeft(pHandleQueue, (PVOID*)&pCurlHandle);
             }
-            dequeFree(pHandleQueue);
         }
 
         LwRtlHashMapClear(pRestCurlHandleCache->pCurlHandleMap, VmDirSimpleHashMapPairFree, NULL);

@@ -404,7 +404,7 @@ public class IdentityProviderResourceTest {
         mockCasIDMClient.probeProviderConnectivity(isA(String.class), isA(IdentityStoreData.class));
         expectLastCall().andThrow(new IDMException("IDM error"));
         mControl.replay();
-        identitySourceResource.create(IdentityProviderMapper.getIdentityProviderDTO(getTestOpenLDAPIdentityProvider()), true);
+        identitySourceResource.create(getTestExternalIdentityProviderDTO(getTestOpenLDAPIdentityProvider()), true);
         mControl.verify();
     }
 

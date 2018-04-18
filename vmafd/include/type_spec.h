@@ -812,6 +812,26 @@ typedef struct _VMW_TYPE_SPEC_
     "Partner Host Name",\
     VMW_IPC_TYPE_WSTRING,\
     {NULL}\
+  },\
+  {\
+    "Parent Domain Name",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Parent Domain Controller",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Parent UserName",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Parent Password",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
   }\
 }
 

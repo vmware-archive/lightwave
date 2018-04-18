@@ -477,16 +477,6 @@ public final class ValidateUtil {
        return latestResult;
    }
 
-   public static String getCanonicalUpnSuffix(String upnSuffix)
-   {
-       String resSuffix = null;
-       if ( upnSuffix != null )
-       {
-           resSuffix = upnSuffix.toUpperCase();
-       }
-       return resSuffix;
-   }
-
    private static void logAndThrow(String msg) {
       DiagnosticsLoggerFactory.getLogger(ValidateUtil.class).error(msg);
       throw new IllegalArgumentException(msg);

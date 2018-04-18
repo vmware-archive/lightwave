@@ -601,6 +601,22 @@ typedef struct _VMAFD_DC_ENTRIES_W
     wstring_t* ppszEntries;
 } CDC_DC_ENTRIES_W, *PCDC_DC_ENTRIES_W;
 
+typedef struct _VMAFD_TRUST_INFO_A
+{
+    PSTR pszName;
+    PSTR pszDC;
+    PSTR pszUserName;
+    PSTR pszPassword;
+} VMAFD_TRUST_INFO_A, *PVMAFD_TRUST_INFO_A;
+
+typedef struct _VMAFD_TRUST_INFO_W
+{
+    PWSTR pwszName;
+    PWSTR pwszDC;
+    PWSTR pwszUserName;
+    PWSTR pwszPassword;
+} VMAFD_TRUST_INFO_W, *PVMAFD_TRUST_INFO_W;
+
 #ifdef _DCE_IDL_
 cpp_quote("#endif")
 #endif

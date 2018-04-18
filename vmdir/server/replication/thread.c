@@ -76,10 +76,6 @@ VmDirSrvCreateReplAgrObj(
     );
 
 static
-DWORD
-VmDirSetGlobalServerId();
-
-static
 int
 _VmDirContinueReplicationCycle(
     uint64_t *puiStartTimeInShutdown,
@@ -114,14 +110,6 @@ int
 VmDirParseEntryForDn(
     LDAPMessage *ldapEntryMsg,
     PSTR *ppszDn
-    );
-
-static
-DWORD
-_VmDirFilterEmptyPageSyncDoneCtr(
-    PCSTR           pszPattern,
-    struct berval * pLocalCtrl,
-    struct berval * pPageSyncDoneCtrl
     );
 
 static
@@ -723,35 +711,6 @@ error:
     goto cleanup;
 }
 
-// Update global server ID
-
-static
-DWORD
-VmDirSetGlobalServerId()
-{
-    DWORD           dwError = 0;
-    PVDIR_ENTRY     pEntry = NULL;
-    PVDIR_ATTRIBUTE pMaxServerId = NULL;
-
-    dwError = VmDirSimpleDNToEntry(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pMaxServerId = VmDirEntryFindAttribute( ATTR_MAX_SERVER_ID, pEntry );
-    assert( pMaxServerId != NULL );
-
-    gVmdirServerGlobals.serverId = atoi(pMaxServerId->vals[0].lberbv.bv_val) + 1;
-
-cleanup:
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
 static
 VMDIR_DC_CONNECTION_STATE
 _VmDirReplicationConnect(
@@ -911,6 +870,8 @@ _VmDirConsumePartner(
     uint64_t    uiEndTime = 0;
     uint64_t    uiStartTimeInShutdown = 0;
     uint64_t    uiStartTimeToConsume = 0;
+    PSTR        pszUtdVector = NULL;
+    PLW_HASHMAP pUtdVectorMap = NULL;
 
     uiStartTimeToConsume = VmDirGetTimeInMilliSec();
 
@@ -934,6 +895,12 @@ _VmDirConsumePartner(
         goto cleanup;
     }
 
+    retVal = VmDirUTDVectorCacheToString(&pszUtdVector);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    retVal = VmDirStringToUTDVector(pszUtdVector, &pUtdVectorMap);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
     initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
     lastSupplierUsnProcessed = initUsn;
 
@@ -954,12 +921,20 @@ _VmDirConsumePartner(
 
         _VmDirProcessReplicationPage(pContext, pPage);
 
-        lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
+        if (pPage->lastSupplierUsnProcessed > lastSupplierUsnProcessed)
+        {
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_REPL,
+                    "%s: Updating hw from %" PRId64 "to %" PRId64,
+                    __FUNCTION__,
+                    lastSupplierUsnProcessed,
+                    pPage->lastSupplierUsnProcessed);
 
-        // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
-        retVal = _VmDirFilterEmptyPageSyncDoneCtr(
-                pReplAgr->lastLocalUsnProcessed.lberbv.bv_val,
-                &bervalSyncDoneCtrl,
+            lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
+        }
+
+        retVal = VmDirUpdateUtdVectorLocalCache(
+                pUtdVectorMap,
                 &(pPage->searchResCtrls[0]->ldctl_value));
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
@@ -973,20 +948,22 @@ _VmDirConsumePartner(
 
     if (retVal == LDAP_SUCCESS)
     {
-        // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.
-        if (pPage && bervalSyncDoneCtrl.bv_val)
-        {
-            retVal = VmDirReplUpdateCookies(
-                    pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
-            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        retVal = VmDirSyncDoneCtrlFromLocalCache(
+                lastSupplierUsnProcessed,
+                pUtdVectorMap,
+                &bervalSyncDoneCtrl);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            VMDIR_LOG_INFO(
-                    VMDIR_LOG_MASK_ALL,
-                    "Replication supplier %s USN range (%llu,%s) processed",
-                    pReplAgr->ldapURI,
-                    initUsn,
-                    pReplAgr->lastLocalUsnProcessed.lberbv_val);
-        }
+        retVal = VmDirReplUpdateCookies(
+                pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Replication supplier %s USN range (%llu,%s) processed",
+                pReplAgr->ldapURI,
+                initUsn,
+                pReplAgr->lastLocalUsnProcessed.lberbv_val);
     }
 
 collectmetrics:
@@ -1019,6 +996,9 @@ cleanup:
             pConnection->pszHostname,
             (VmDirGetTimeInMilliSec() - uiStartTimeToConsume),
             retVal);
+    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
+    LwRtlHashMapClear(pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
+    LwRtlFreeHashMap(&pUtdVectorMap);
     VmDirReplicationClearFailedEntriesFromQueue(pContext);
     VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
@@ -1037,62 +1017,6 @@ ldaperror:
     }
 
     goto collectmetrics;
-}
-
-/*
- *  During a cycle, we fetch and process page in a loop.
- *
- *  pszPattern is used as the high watermark in the syncRequestCtrl for "ALL" fetch call within the cycle.
- *
- *  The supplier uses pszPattern value to initialize its syncDoneCtrl high watermark.
- *  (A) If supplier search result set > 0
- *     It sends entry per UTDVector filtering.
- *     It updates syncDoneCtrl high watermark
- *
- *  (B) If supplier search result set = 0, its syncDoneCtrl high watermark value does not change.
- *
- *  At the end of a replication search request, the supplier sends high watermark value in syncDoneCtrl.
- *
- *  Note, both (A) and (B) cases could return 0 entry.
- *  But we should ignore syncDoneCtrl in scenario (B), which could happen during page boundary condition
- *      where the last fetch return 0.  In this case, we should not use this syncDoneCtrl to update cookies.
- *
- */
-static
-DWORD
-_VmDirFilterEmptyPageSyncDoneCtr(
-    PCSTR           pszPattern,
-    struct berval * pLocalCtrl,
-    struct berval * pPageSyncDoneCtrl
-    )
-{
-    DWORD   dwError= 0;
-    PSTR    pszTmp = NULL;
-    size_t  iPatternLen = VmDirStringLenA(pszPattern);
-
-    // In WriteSyncDoneControl syncDoneCtrl value looks like: high watermark,utdVector,[continue].
-
-    // Update pLocalCtrl only if high watermark value differs between supplier syncDoneCtrl and consumer syncRequestCtrl.
-    if ( (VmDirStringNCompareA(pPageSyncDoneCtrl->bv_val, pszPattern, iPatternLen, FALSE) != 0) ||
-         pPageSyncDoneCtrl->bv_val[iPatternLen] != ','
-       )
-    {
-        VMDIR_SAFE_FREE_MEMORY(pLocalCtrl->bv_val);
-        pLocalCtrl->bv_len = 0;
-        dwError = VmDirAllocateStringA(pPageSyncDoneCtrl->bv_val, &pszTmp);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pLocalCtrl->bv_val = pszTmp;
-        pLocalCtrl->bv_len = VmDirStringLenA(pszTmp);
-        pszTmp = NULL;
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszTmp);
-    goto cleanup;
 }
 
 static

@@ -16,6 +16,7 @@ package com.vmware.identity.rest.idm.server.resources;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,12 +50,15 @@ import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.LockoutPolicy;
+import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchCriteria;
+import com.vmware.identity.idm.SecurityDomain;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.Tenant;
+import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
@@ -73,6 +77,7 @@ import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
+import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
@@ -88,6 +93,7 @@ import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.LockoutPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.PasswordPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.ProviderPolicyMapper;
+import com.vmware.identity.rest.idm.server.mapper.SecurityDomainMapper;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.mapper.TenantMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
@@ -321,13 +327,42 @@ public class TenantResource extends BaseResource {
         } catch (BadRequestException | IllegalArgumentException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
-            throw new BadRequestException(String.format(sm.getString("res.ten.search.failed"), tenantName), e);
+            throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to look up members on tenant '{}' due to a server side error", tenantName, e);
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
             totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "findPrincipalIds").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+    @GET
+    @Path(PathParameters.TENANT_NAME_VAR + "/securitydomains")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.REGULAR_USER)
+    public Collection<SecurityDomainDTO> getSecurityDomains(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getSecurityDomains").startTimer();
+        String responseStatus = HTTP_OK;
+        try{
+            CasIdmClient idmClient = this.getIDMClient();
+            Collection<SecurityDomain> secDomains = idmClient.getSecurityDomains(tenantName, null);
+            return SecurityDomainMapper.getSecurityDomainDTOs(secDomains);
+        } catch (NoSuchTenantException e) {
+            log.warn("Failed to enumerate security domains on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to enumerate security domains on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
+        } catch (Exception e) {
+            log.error("Failed to enumerate security domains on tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getSecurityDomains").inc();
             requestTimer.observeDuration();
         }
     }
@@ -397,10 +432,10 @@ public class TenantResource extends BaseResource {
             log.debug("Failed to search members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (InvalidArgumentException e) {
+        } catch (InvalidArgumentException | NoSuchIdpException e) {
             log.error("Failed to search members on tenant '{}' due to a client side error", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
-            throw new BadRequestException("");
+            throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
         } catch (BadRequestException e) {
             responseStatus = HTTP_BAD_REQUEST;
             throw e;

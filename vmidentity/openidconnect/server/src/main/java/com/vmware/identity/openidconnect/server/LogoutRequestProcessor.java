@@ -62,8 +62,6 @@ public class LogoutRequestProcessor {
     private FederatedIdentityProviderInfoRetriever federatedIdpInfoRetriever;
     private FederatedIdentityProviderInfo federatedIdpInfo;
     private LogoutRequest logoutRequest;
-    private URI postLogoutRedirectUri;
-    private State logoutState;
 
     public LogoutRequestProcessor(
             CasIdmClient idmClient,
@@ -146,8 +144,8 @@ public class LogoutRequestProcessor {
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e);
             LogoutErrorResponse logoutErrorResponse = new LogoutErrorResponse(
-                    this.postLogoutRedirectUri,
-                    this.logoutState,
+                    this.logoutRequest.getPostLogoutRedirectURI(),
+                    this.logoutRequest.getState(),
                     e.getErrorObject());
             return logoutErrorResponse.toHttpResponse();
         }
@@ -157,6 +155,9 @@ public class LogoutRequestProcessor {
         String sessionIdString = this.httpRequest.getCookieValue(SessionManager.getSessionCookieName(this.tenant));
         SessionID sessionId = null;
         SessionManager.Entry entry = null;
+        URI redirectURI = this.logoutRequest.getPostLogoutRedirectURI();
+        State state = this.logoutRequest.getState();
+
         if (sessionIdString != null) {
             sessionId = new SessionID(sessionIdString);
             entry = this.sessionManager.get(sessionId);
@@ -167,14 +168,12 @@ public class LogoutRequestProcessor {
         // log out of external idp if the login session is created with external idp
         if (this.federatedIdpInfo != null) {
             try {
-                this.postLogoutRedirectUri = new URI(this.federatedIdpLogoutProcessor.process(this.federatedIdpInfo, entry));
+                state = null;
+                redirectURI = new URI(this.federatedIdpLogoutProcessor.process(this.federatedIdpInfo, entry));
             } catch (Exception e) {
                 logger.error("Encountered an error when logging out of external idp.", e);
                 throw new ServerException(ErrorObject.serverError(String.format("error while logging out of external idp %s", this.federatedIdpInfo.getIssuer())), e);
             }
-        } else {
-            this.postLogoutRedirectUri = this.logoutRequest.getPostLogoutRedirectURI();
-            this.logoutState = this.logoutRequest.getState();
         }
 
         Cookie personUserCertificateLoggedOutCookie = null;
@@ -198,8 +197,8 @@ public class LogoutRequestProcessor {
         }
 
         LogoutSuccessResponse logoutSuccessResponse = new LogoutSuccessResponse(
-                this.postLogoutRedirectUri,
-                this.logoutState,
+                redirectURI,
+                state,
                 sessionId,
                 logoutUris);
 

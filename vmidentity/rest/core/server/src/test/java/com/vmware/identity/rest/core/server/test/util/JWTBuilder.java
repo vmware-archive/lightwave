@@ -124,7 +124,11 @@ public class JWTBuilder {
     }
 
     public JWTBuilder hotk(PublicKey key) {
-        RSAKey rsaKey = new RSAKey((RSAPublicKey) key, KeyUse.SIGNATURE, null, JWSAlgorithm.RS256, null, null, null, null);
+        RSAKey.Builder builder = new RSAKey.Builder((RSAPublicKey) key)
+            .algorithm(JWSAlgorithm.RS256)
+            .keyUse(KeyUse.SIGNATURE);
+
+        RSAKey rsaKey = builder.build();
         this.hotk = new JWKSet(rsaKey);
         return this;
     }
