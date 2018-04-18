@@ -154,6 +154,10 @@ Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
 
+%debug_package
+%build
+%install
+
 %pre
 
     # First argument is 1 => New Installation
