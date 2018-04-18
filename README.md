@@ -103,6 +103,8 @@ photon-iso.repo; this is achieved by setting "enabled=0" in
 
 Create the file "/etc/yum.repos.d/lightwave.repo" with the following contents.
 
+#### For photon 1.0
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [lightwave]
 name=VMware Lightwave 1.0(x86_64)
@@ -113,10 +115,24 @@ enabled=1
 skip_if_unavailable=True
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#### For photon 2.0
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[lightwave]
+name=VMware Lightwave for Photon 2.0(x86_64)
+baseurl=https://vmware.bintray.com/lightwave-dev/photon_2.0/master
+gpgcheck=0
+enabled=1
+skip_if_unavailable=True
+EOM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ### Photon Extras YUM repository
 
 Create the file "/etc/yum.repos.d/photon-extras.repo" with the following
 contents.
+
+#### For photon 1.0
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [photon-extras]
@@ -128,20 +144,59 @@ enabled=1
 skip_if_unavailable=True
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#### For photon 2.0
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[photon-extras]
+name=VMware Photon Extras 2.0(x86_64)
+baseurl=https://dl.bintray.com/vmware/photon_extras_$releasever_$basearch
+gpgkey=file:///etc/pki/rpm-gpg/VMWARE-RPM-GPG-KEY
+gpgcheck=1
+enabled=1
+skip_if_unavailable=True
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ### Setting up a Lightwave Domain Controller
 
 You must first install the following packages on your Photon instance
 
-1. lightwave-client-1.3.0-0.x86\_64.rpm
+1. lightwave-client
 
-2. lightwave-server-1.3.0-0.x86\_64.rpm
+2. lightwave-server
 
-3. lightwave-1.3.0-0.x86\_64.rpm
+3. lightwave
 
-If using the YUM repositories for the pre-built binaries, install the Lightwave
-Domain Controller using "tdnf install lightwave".
+For installing these simply execute the following tdnf commands:
+
+#### For photon 1.0
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tdnf makecache
+tdnf install lightwave-client lightwave lightwave-server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#### For photon 2.0
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tdnf makecache
+tdnf install lightwave-client-1.3.1 lightwave-1.3.1 lightwave-server-1.3.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This should pull all required depencies for lightwave.
 
 #### Instantiating a domain controller
+
+#### Set up the hostname for the instance
+
+This is step is required for every lightwave node. Edit the /etc/hosts file
+to look like given below:
+
+echo -e "127.0.0.1\tlocalhost" > /etc/hosts
+echo -e "${VM_IP}\t${VM_HOSTNAME}.${VM_DOMAIN_NAME} ${VM_HOSTNAME}" >> /etc/hosts
+hostnamectl set-hostname --static ${VM_HOSTNAME}
+
+Note that the VM_DOMAIN_NAME can be chosen for the first server and should be the
+same for all partner nodes in a cluster.
 
 ##### Standalone mode (this is the first replica in a new domain)
 
