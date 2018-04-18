@@ -19,14 +19,17 @@ import java.security.cert.CertPath;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
 import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.TokenClaimAttribute;
@@ -364,4 +367,7 @@ public interface IdmAccessor {
      */
     Collection<RelyingParty> getRelyingParties(String tenant);
 
+    Collection<IIdentityStoreData> getProviders( String tenant, EnumSet<DomainType> domainTypes );
+
+    String getSystemTenant();
 }

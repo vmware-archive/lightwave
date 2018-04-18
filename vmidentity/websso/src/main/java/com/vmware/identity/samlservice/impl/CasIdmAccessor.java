@@ -930,4 +930,26 @@ public class CasIdmAccessor implements IdmAccessor {
                     "Failed to return relying part configurations for the tenant.", e);
         }
     }
+
+    @Override
+    public Collection<IIdentityStoreData> getProviders( String tenant, EnumSet<DomainType> domainTypes )
+    {
+        try {
+            return client.getProviders(tenant, domainTypes);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to return providers for the tenant.", e);
+        }
+    }
+
+    @Override
+    public String getSystemTenant()
+    {
+        try {
+            return client.getSystemTenant();
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to return system tenant.", e);
+        }
+    }
 }

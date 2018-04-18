@@ -18,13 +18,19 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -70,6 +76,7 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
       final String signatureAlgorithm;
       final ArrayList<List<Certificate>> allValidCertChains;
       final Collection<IDPConfig> extIdps;
+      final Set<String> blackListedDomains;
 
       log.debug("Retrieving configuration for tenant {}", tenantName);
       try {
@@ -99,6 +106,7 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
                  }
              }
          }
+         blackListedDomains = this.extractBlackListedDomains(tenantName);
       } catch (NoSuchTenantException e) {
          throw noSuchIdPExc(e);
       } catch (RuntimeException e) {
@@ -110,7 +118,7 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
       final Config result = newConfig(issuer, signingCertificateChain,
          authorityPrivateKey, new TokenRestrictions(maximumBearerTokenLifetime,
             maximumHoKTokenLifetime, delegationCount, renewCount),
-            allValidCertChains, clockTolerance, signatureAlgorithm, extIdps);
+            allValidCertChains, clockTolerance, signatureAlgorithm, extIdps, blackListedDomains);
 
       assert result != null;
       return result;
@@ -138,7 +146,8 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
       TokenRestrictions tokenRestrictions,
       Collection<List<Certificate>> validCertificateChains,
       long clockTolerance, String signatureAlgorithm,
-      Collection<IDPConfig> externalIdps) {
+      Collection<IDPConfig> externalIdps,
+      Set<String> blackListedDomains) {
       assert issuerName != null;
       assert issuerName != "";
       assert signingCertificateChain != null;
@@ -149,7 +158,27 @@ public final class ConfigExtractorImpl implements ConfigExtractor {
 
       return new Config(new SamlAuthorityConfiguration(issuerName,
          signingCertificateChain, tenantPrivateKey, signatureAlgorithm),
-         tokenRestrictions, validCertificateChains, clockTolerance, externalIdps);
+         tokenRestrictions, validCertificateChains, clockTolerance, externalIdps, blackListedDomains);
+   }
+
+   private Set<String> extractBlackListedDomains(String tenantName) throws Exception {
+        // this keeps orginal logic form AuthnOnlyTokenValidator.java
+        // it might need to be adjusted
+        HashSet<String> blacklistedDomainsForExtIdp = new HashSet<>();
+
+        String systemTenant = client.getSystemTenant();
+        EnumSet<DomainType> systemDomains = EnumSet.of(DomainType.SYSTEM_DOMAIN, DomainType.LOCAL_OS_DOMAIN);
+        Collection<IIdentityStoreData> providers = client
+            .getProviders(systemTenant, systemDomains);
+        if (providers != null) {
+            for( IIdentityStoreData prov : providers ) {
+                if ( prov != null ){
+                    blacklistedDomainsForExtIdp.add(prov.getName());
+                }
+            }
+        }
+
+        return blacklistedDomainsForExtIdp;
    }
 
    private NoSuchIdPException noSuchIdPExc(NoSuchTenantException e) {

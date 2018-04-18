@@ -168,7 +168,7 @@ public class AuthnOnlyTokenValidator implements TokenValidator {
         public SubjectValidator getSubjectValidator(NameId issuer)
         {
             IDPConfig externalIdp = getExternalIdpConfig(this.config, issuer);
-            return new SubjectValidatorImpl(this.principalAttributesExtractor, externalIdp);
+            return new SubjectValidatorImpl(this.principalAttributesExtractor, externalIdp, this.config.getBlackListedDomains());
         }
 
         /**
@@ -215,36 +215,18 @@ public class AuthnOnlyTokenValidator implements TokenValidator {
         private final PrincipalAttributesExtractor principalAttributesExtractor;
         private final IDPConfig externalIdp;
         private final static String JIT_USER_SEARCH_ATTR = "vmwSTSExternalIdpUserId";
-        private static final Set<String> blacklistedDomainsForExtEdp;
-        private static final String idmHost = "localhost";
+        private final Set<String> blacklistedDomainsForExtEdp;
 
-        static
-        {
-            CasIdmClient client = new CasIdmClient(idmHost);
-            blacklistedDomainsForExtEdp = new HashSet<>();
-
-            try {
-                EnumSet<DomainType> systemDomains = EnumSet.of(DomainType.SYSTEM_DOMAIN);
-                Iterator<IIdentityStoreData> iter = client
-                        .getProviders(client.getSystemTenant(), systemDomains).iterator();
-                // only one system domain
-                blacklistedDomainsForExtEdp.add(iter.next().getName());
-
-                EnumSet<DomainType> localDomains = EnumSet.of(DomainType.LOCAL_OS_DOMAIN);
-                iter = client
-                        .getProviders(client.getSystemTenant(), localDomains).iterator();
-                // only one local domain
-                blacklistedDomainsForExtEdp.add(iter.next().getName());
-            } catch (Exception e) {
-                logger.warn("Failded to add blacklisted domains for external idp.", e);
-            }
-        }
-
-        public SubjectValidatorImpl( PrincipalAttributesExtractor inPrincipalAttributesExtractor, IDPConfig inExternalIdp)
+        public SubjectValidatorImpl(
+            PrincipalAttributesExtractor inPrincipalAttributesExtractor,
+            IDPConfig inExternalIdp,
+            Set<String> blacklistedDomains)
         {
             ValidateUtil.validateNotNull(inPrincipalAttributesExtractor, "inPrincipalAttributesExtractor");
             this.principalAttributesExtractor = inPrincipalAttributesExtractor;
             this.externalIdp = inExternalIdp;
+            this.blacklistedDomainsForExtEdp = new HashSet<String>();
+            this.blacklistedDomainsForExtEdp.addAll(blacklistedDomains);
         }
 
         @Override

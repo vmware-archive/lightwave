@@ -165,22 +165,43 @@ targets:
 
 commands:
 
-  vmidentity-mvn-cmd:
+  vmidentity-mvn-cmd-photon2:
     description: run mvn command for vmidentity
     always: true
     cmds:
       - PROJECT_ROOT=$(pwd)
       - cd $PROJECT_ROOT/vmidentity
       - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  vmidentity-mvn-cmd-photon1:
+    description: run mvn command for vmidentity
+    always: true
+    cmds:
+      - PROJECT_ROOT=$(pwd)
+      - cd $PROJECT_ROOT/vmidentity
+      - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    image: 'vmware/lightwave-toolchain:2.0.1'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there
   # to make sure the fqdn is resolvable from container
-  test-vmidentity:
+  test-vmidentity-photon1:
     description: runs vmidentity integration tests; pass in an ip of a running lw instance as an argument
     always: true
     cmds:
       - './support/scripts/test-vmidentity.sh $@'
+    image: 'vmware/lightwave-toolchain:2.0.1'
+
+  # if your lw server setup includes fqdn which is not normally resolvable
+  # make sure to create .hmakerc and define docker:hosts settings there
+  # to make sure the fqdn is resolvable from container
+  test-vmidentity-photon2:
+    description: runs vmidentity integration tests; pass in an ip of a running lw instance as an argument
+    always: true
+    cmds:
+      - './support/scripts/test-vmidentity.sh $@'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
 
 settings:
   default-targets:

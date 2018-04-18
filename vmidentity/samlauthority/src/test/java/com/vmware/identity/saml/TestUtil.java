@@ -25,6 +25,8 @@ public class TestUtil {
    public static final int TOKEN_RENEW_COUNT = 10;
    public static final long DEFAULT_CLOCK_TOLERANCE = 10000L;
    public static final String TENANT_NAME = "tenant";
+   public static final String SYSTEM_TENANT = "lw-testdom.com";
+   public static final String LOCAL_OS = "localos";
 
    public static Date createDate(int year, int month, int day, int hours,
       int minutes, int seconds, int miliseconds) {

@@ -16,6 +16,8 @@ package com.vmware.identity.saml.config;
 import static com.vmware.identity.saml.TestUtil.DEFAULT_CLOCK_TOLERANCE;
 import static com.vmware.identity.saml.TestUtil.DEFAULT_MAXIMUM_TOKEN_LIFETIME;
 import static com.vmware.identity.saml.TestUtil.TENANT_NAME;
+import static com.vmware.identity.saml.TestUtil.SYSTEM_TENANT;
+import static com.vmware.identity.saml.TestUtil.LOCAL_OS;
 import static com.vmware.identity.saml.TestUtil.TOKEN_DELEGATION_COUNT;
 import static com.vmware.identity.saml.TestUtil.TOKEN_RENEW_COUNT;
 import static org.easymock.EasyMock.createMock;
@@ -35,6 +37,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 
@@ -42,7 +45,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.IdentityStoreData;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.saml.NoSuchIdPException;
@@ -196,6 +202,15 @@ public class ConfigExtractorTest {
 
       expect(identityManagerClient.getAllExternalIdpConfig(TENANT_NAME, IDPConfig.IDP_PROTOCOL_SAML_2_0))
       .andReturn(extIdps);
+
+      expect(identityManagerClient.getSystemTenant()).andReturn(SYSTEM_TENANT);
+
+      ArrayList<IIdentityStoreData> ids = new ArrayList<IIdentityStoreData>(2);
+      ids.add(IdentityStoreData.CreateSystemIdentityStoreData(SYSTEM_TENANT));
+      ids.add(IdentityStoreData.CreateLocalOSIdentityStoreData(LOCAL_OS));
+
+      expect(identityManagerClient.getProviders(SYSTEM_TENANT, EnumSet.of(DomainType.SYSTEM_DOMAIN, DomainType.LOCAL_OS_DOMAIN)))
+      .andReturn(ids);
 
       replay(identityManagerClient);
       return identityManagerClient;

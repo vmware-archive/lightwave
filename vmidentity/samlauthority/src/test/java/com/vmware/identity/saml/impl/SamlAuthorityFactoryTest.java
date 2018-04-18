@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import junit.framework.Assert;
 
@@ -146,12 +147,15 @@ public class SamlAuthorityFactoryTest {
    private Config initDefaultConfig(List<Certificate> signingChain,
       String signatureAlgorithm) {
       Collection<List<Certificate>> validCerts = initValidCerts(signingChain);
+      Set<String> blackListedDomains = new HashSet<String>();
+      blackListedDomains.addAll(Arrays.<String>asList( TestConstants.SYSTEM_TENANT, TestConstants.LOCALOS));
       Config config = new Config(new SamlAuthorityConfiguration("issuer",
          signingChain, authorityKey, signatureAlgorithm),
          new TokenRestrictions(DEFAULT_MAXIMUM_TOKEN_LIFETIME,
             DEFAULT_MAXIMUM_TOKEN_LIFETIME, TOKEN_DELEGATION_COUNT,
             TOKEN_RENEW_COUNT), validCerts, DEFAULT_CLOCK_TOLERANCE,
-            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)));
+            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)),
+            blackListedDomains);
       return config;
    }
 
