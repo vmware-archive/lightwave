@@ -106,6 +106,16 @@ _DirCliForeResetAdminCreds(
     PSTR*   ppszNewPassword
     );
 
+static
+DWORD
+DirCliLDAPDBBackup(
+    PVMAF_CFG_CONNECTION pConnection,
+    PCSTR   pszServerName,
+    PCSTR   pszLogin,
+    PCSTR   pszPassword,
+    PCSTR   pszBackupPath
+    );
+
 DWORD
 DirCliGetStrRegKeyA(
     PVMAF_CFG_CONNECTION    pConnection,
@@ -3244,14 +3254,20 @@ DirCliDRNodeRestoreFromDB(
         &pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (pszUserName || pszPassword)
+    if (pszUserName)
     {
+        if (!pszPassword)
+        {
+            dwError = DirCliReadPassword(pszUserName, pszDomain, NULL, &pszLocalPass);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
         // validate user supplied credentials
         dwError = DirCliLdapConnect(
             "localhost",
             pszUserName,
             pszDomain,
-            pszPassword,
+            pszPassword ? pszPassword : pszLocalPass,
             &pLd);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
@@ -3308,6 +3324,141 @@ cleanup:
     }
     VMAFD_SAFE_FREE_MEMORY(pszDCName);
     VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+DirCliDBBackup(
+    PCSTR pszServerName,
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszBackupPath
+    )
+{
+    DWORD   dwError = 0;
+    PVMAF_CFG_CONNECTION pConnection = NULL;
+    PSTR    pszLocalLogin = NULL;
+    PSTR    pszLocalPassword = NULL;
+    PSTR    pszDomain = NULL;
+    PCSTR   pszLocalServerName = pszServerName ? pszServerName : "localhost";
+
+    if (IsNullOrEmptyString(pszBackupPath))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfConfigOpenConnection(&pConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszLogin)
+    {
+        dwError = DirCliGetStrRegKeyA(
+            pConnection,
+            VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMAFD_REG_KEY_DC_ACCOUNT,
+            &pszLocalLogin);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = DirCliGetStrRegKeyA(
+            pConnection,
+            VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMAFD_REG_KEY_DC_PASSWORD,
+            &pszLocalPassword);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        if (!pszPassword)
+        {
+            dwError = DirCliGetStrRegKeyA(
+                pConnection,
+                VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                VMAFD_REG_KEY_DOMAIN_NAME,
+                &pszDomain);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            dwError = DirCliReadPassword(pszLogin, pszDomain, NULL, &pszLocalPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+
+    dwError = DirCliLDAPDBBackup(
+        pConnection,
+        pszLocalServerName,
+        pszLogin ? pszLogin : pszLocalLogin,
+        pszPassword ? pszPassword : pszLocalPassword,
+        pszBackupPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+   printf("\n --------------------------------------------------------------------------------------\n");
+   printf("    LDAP database backup on host %s, path %s successfully\n", pszLocalServerName, pszBackupPath);
+   printf(" --------------------------------------------------------------------------------------\n\n");
+
+cleanup:
+    if (pConnection)
+    {
+        VmAfConfigCloseConnection(pConnection);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszLocalLogin);
+    VMAFD_SAFE_FREE_MEMORY(pszLocalPassword);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+    printf("\n --------------------------------------------------------------------------------------\n");
+    printf("    LDAP database backup on host %s failed (%d)\n", pszLocalServerName, dwError);
+    printf(" --------------------------------------------------------------------------------------\n\n");
+    goto cleanup;
+}
+
+static
+DWORD
+DirCliLDAPDBBackup(
+    PVMAF_CFG_CONNECTION pConnection,
+    PCSTR   pszServerName,
+    PCSTR   pszLogin,
+    PCSTR   pszPassword,
+    PCSTR   pszBackupPath
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDomain = NULL;
+    PVMDIR_SERVER_CONTEXT hServer = NULL;
+
+     dwError = DirCliGetStrRegKeyA(
+            pConnection,
+            VMAFD_CONFIG_PARAMETER_KEY_PATH,
+            VMAFD_REG_KEY_DOMAIN_NAME,
+            &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirOpenServerA(
+        pszServerName,
+        pszLogin,
+        pszDomain,
+        pszPassword,
+        0,
+        NULL,
+        &hServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirBackupDB(
+        hServer,
+        pszBackupPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+    if (hServer)
+    {
+        VmDirCloseServer(hServer);
+    }
 
     return dwError;
 
@@ -4360,10 +4511,8 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszDCName);
     VMAFD_SAFE_FREE_MEMORY(pszUser);
     VMAFD_SAFE_FREE_MEMORY(pszDomain);
-
     return dwError;
 
 error:
-
     goto cleanup;
 }

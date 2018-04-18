@@ -108,6 +108,13 @@ DirCliExecTenantRequest(
 
 static
 DWORD
+DirCliExecDBBackup(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
 DirCliExecOrgunitRequest(
     int   argc,
     char* argv[]
@@ -388,6 +395,12 @@ ParseArgs(
     else if (!VmAfdStringCompareA(pszArg, "trust", TRUE))
     {
         dwError = DirCliExecTrustRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmAfdStringCompareA(pszArg, "database-backup", TRUE))
+    {
+        dwError = DirCliExecDBBackup(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
@@ -4640,6 +4653,148 @@ error:
     goto cleanup;
 }
 
+DWORD
+DirCliExecDBBackup(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DWORD iArg = 0;
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszBackupPath = NULL;
+    PSTR pszServerName = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_SERVER_NAME,
+        PARSE_MODE_USER_NAME,
+        PARSE_MODE_PASSWORD,
+        PARSE_MODE_BACKUP_FOLDER_PATH
+    } PARSE_MODE;
+
+    PARSE_MODE parseMode = PARSE_MODE_OPEN;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+        switch (parseMode)
+        {
+        case PARSE_MODE_OPEN:
+            if(!strcmp(pszArg, "--login"))
+            {
+                parseMode = PARSE_MODE_USER_NAME;
+            }
+            else if(!strcmp(pszArg, "--password"))
+            {
+                parseMode = PARSE_MODE_PASSWORD;
+            }
+            else if(!strcmp(pszArg, "--backuppath"))
+            {
+                parseMode = PARSE_MODE_BACKUP_FOLDER_PATH;
+            }
+            else if(!strcmp(pszArg, "--server-name"))
+            {
+                parseMode = PARSE_MODE_SERVER_NAME;
+            }
+            else
+            {
+                dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+            break;
+
+        case PARSE_MODE_USER_NAME:
+            if (pszUserName)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszUserName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_PASSWORD:
+            if (pszPassword)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_SERVER_NAME:
+            if (pszPassword)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszServerName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_BACKUP_FOLDER_PATH:
+            if (pszBackupPath)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg,
+                                           &pszBackupPath);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        default:
+
+            dwError = ERROR_LOCAL_OPTION_INVALID;
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            break;
+        }
+    }
+
+    dwError = DirCliDBBackup(
+        pszServerName,
+        pszUserName ,
+        pszPassword,
+        pszBackupPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pszBackupPath);
+    VMAFD_SAFE_FREE_MEMORY(pszServerName);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 static
 void
 ShowUsage(
@@ -4792,6 +4947,11 @@ ShowUsage(
         "\tdisaster-recovery\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
+        "\tdatabase-backup\n"
+        "\t             [ --server-name <server name>           ]\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t             [ --backuppath  <ABS path to store backup>]\n"
         "\ttrust list\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"

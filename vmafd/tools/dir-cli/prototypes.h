@@ -778,3 +778,11 @@ DirCliDeleteTrust(
     PCSTR pszPassword,
     PCSTR pszTrustName
     );
+
+DWORD
+DirCliDBBackup(
+    PCSTR pszServerName,
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszBackupPath
+    );
