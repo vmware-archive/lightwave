@@ -946,7 +946,8 @@ _VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
                           PVDIR_ATTRIBUTE *ppAttrPasswd)
 {
     DWORD            dwError = 0;
-    PVDIR_ATTRIBUTE  pAttrUnicodePwd    = VmDirFindAttrByName(pEntry, ATTR_UNICODE_PWD);
+    PVDIR_ATTRIBUTE  pAttrUnicodePwd = VmDirFindAttrByName(pEntry, ATTR_UNICODE_PWD);
+    PWSTR            pwszUnicodePwd = NULL;
     PSTR             pszAccountPwdAlloc = NULL;
     PSTR             pszAccountPwd = NULL;
     DWORD            dwAccountPwdLen = 0;
@@ -954,14 +955,24 @@ _VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
     /* Windows join computer account passes this password */
     if (_VmDirCheckIsComputerAccount(pEntry) && pAttrUnicodePwd)
     {
+        /* Create a NULL terminated wide-character string of unicodePwd */
+        dwError = VmDirAllocateMemory(
+                      pAttrUnicodePwd->vals[0].lberbv.bv_len + sizeof(WCHAR),
+                      (PVOID *) &pwszUnicodePwd);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        memcpy((PVOID) pwszUnicodePwd, 
+               pAttrUnicodePwd->vals[0].lberbv.bv_val,
+               pAttrUnicodePwd->vals[0].lberbv.bv_len);
+
+        /* Convert unicodePwd to C String */
         dwError = LwRtlCStringAllocateFromWC16String(
                       &pszAccountPwdAlloc,
-                      (PCWSTR) pAttrUnicodePwd->vals[0].lberbv.bv_val);
+                      (PCWSTR) pwszUnicodePwd);
         dwError = LwNtStatusToWin32Error(dwError);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwAccountPwdLen = LwRtlWC16StringNumChars(
-                              (PCWSTR) pAttrUnicodePwd->vals[0].lberbv.bv_val);
+        dwAccountPwdLen = VmDirStringLenA(pszAccountPwdAlloc);
 
         /* Must prune off the " " around the password */
         if (pszAccountPwdAlloc[0] == '"' &&
@@ -986,6 +997,7 @@ _VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
 
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszAccountPwdAlloc);
+    VMDIR_SAFE_FREE_MEMORY(pwszUnicodePwd);
 
     return dwError;
 
