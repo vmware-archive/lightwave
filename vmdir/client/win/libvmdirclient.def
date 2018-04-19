@@ -8,6 +8,7 @@ EXPORTS
     VmDirClientJoin
     VmDirClientJoinAtomic
     VmDirClientLeave
+    VmDirClientLeaveEx
     VmDirCreateComputerAccount
     VmDirCreateComputerAccountAtomic
     VmDirSetupTenantInstance

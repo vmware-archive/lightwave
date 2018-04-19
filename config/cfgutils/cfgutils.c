@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -45,6 +45,12 @@ VmwDeploySetupServerCommon(
 
 static
 DWORD
+VmwDeployDeleteServer(
+    PVMW_IC_SETUP_PARAMS pParams
+    );
+
+static
+DWORD
 VmwDeploySetupClientWithDC(
     PVMW_IC_SETUP_PARAMS pParams
     );
@@ -52,6 +58,12 @@ VmwDeploySetupClientWithDC(
 static
 DWORD
 VmwDeploySetupClient(
+    PVMW_IC_SETUP_PARAMS pParams
+    );
+
+static
+DWORD
+VmwDeployDeleteClient(
     PVMW_IC_SETUP_PARAMS pParams
     );
 
@@ -137,9 +149,48 @@ VmwDeployDeleteInstance(
 {
     DWORD dwError = 0;
 
-    // TODO
+    if (!pParams)
+    {
+        VMW_DEPLOY_LOG_ERROR("No setup parameters specified");
 
-    return dwError;
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (!VmwDeployHaveAdminRights())
+    {
+        VMW_DEPLOY_LOG_ERROR("User does not have administrative rights");
+
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    switch (pParams->dir_svc_mode)
+    {
+        case VMW_DIR_SVC_MODE_STANDALONE:
+        case VMW_DIR_SVC_MODE_PARTNER:
+
+            dwError = VmwDeployDeleteServer(pParams);
+
+            break;
+
+        case VMW_DIR_SVC_MODE_CLIENT:
+
+            dwError = VmwDeployDeleteClient(pParams);
+
+            break;
+
+        default:
+
+            dwError = ERROR_INVALID_PARAMETER;
+
+            break;
+    }
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+error:
+
+     return dwError;
 }
 
 BOOL
@@ -208,6 +259,177 @@ VmwDeployFreeSetupParams(
         VmwDeployFreeMemory(pParams->pszSubjectAltName);
     }
     VmwDeployFreeMemory(pParams);
+}
+
+DWORD
+VmwDeployReadPassword(
+    PCSTR pszUser,
+    PCSTR pszDomain,
+    PSTR* ppszPassword
+    )
+{
+    DWORD dwError = 0;
+    struct termios orig, nonecho;
+    CHAR  szPassword[33] = "";
+    PSTR  pszPassword = NULL;
+    DWORD iChar = 0;
+
+    memset(szPassword, 0, sizeof(szPassword));
+
+    fprintf(stdout, "Password (%s@%s): ", pszUser, pszDomain);
+    fflush(stdout);
+
+    tcgetattr(0, &orig); // get current settings
+    memcpy(&nonecho, &orig, sizeof(struct termios)); // copy settings
+    nonecho.c_lflag &= ~(ECHO); // don't echo password characters
+    tcsetattr(0, TCSANOW, &nonecho); // set current settings to not echo
+
+    // Read up to 32 characters of password
+
+    for (; iChar < sizeof(szPassword); iChar++)
+    {
+        CHAR ch;
+
+        if (read(STDIN_FILENO, &ch, 1) < 0)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_DEPLOY_ERROR(dwError);
+        }
+
+        if (ch == '\n')
+        {
+            fprintf(stdout, "\n");
+            fflush(stdout);
+            break;
+        }
+        else if (ch == '\b') /* backspace */
+        {
+            if (iChar > 0)
+            {
+                iChar--;
+                szPassword[iChar] = '\0';
+            }
+        }
+        else
+        {
+            szPassword[iChar] = ch;
+        }
+    }
+
+    if (IsNullOrEmptyString(&szPassword[0]))
+    {
+        dwError = ERROR_PASSWORD_RESTRICTION;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    dwError = VmwDeployAllocateStringA(szPassword, &pszPassword);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    *ppszPassword = pszPassword;
+
+cleanup:
+
+    tcsetattr(0, TCSANOW, &orig);
+
+    return dwError;
+
+error:
+
+    *ppszPassword = NULL;
+
+    goto cleanup;
+}
+
+DWORD
+VmwDeployGetError(
+    DWORD dwErrorCode,
+    PSTR *ppszErrorMessage,
+    int *pretCode
+    )
+{
+    int retCode = 0;
+    DWORD dwError = 0;
+    PSTR pszErrorMsg = NULL;
+    PSTR pszErrorMessage = NULL;
+
+    if (!ppszErrorMessage || !pretCode)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    switch (dwErrorCode)
+    {
+
+    case ERROR_INVALID_PARAMETER:
+        retCode = 2;
+        pszErrorMsg = "Invalid parameter was given";
+        break;
+    case ERROR_CANNOT_CONNECT_VMAFD:
+        retCode = 20;
+        pszErrorMsg = "Could not connect to the local service VMware AFD.\nVerify VMware AFD is running.";
+        break;
+    case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
+        retCode = 21;
+        pszErrorMsg = "Could not connect to the local service VMware Directory Service.\nVerify VMware Directory Service is running.";
+        break;
+    case ERROR_INVALID_CONFIGURATION:
+        retCode = 22;
+        pszErrorMsg = "Configuration is not correct.\n";
+        break;
+    case VMDIR_ERROR_SERVER_DOWN:
+        retCode = 23;
+        pszErrorMsg = "Could not connect to VMware Directory Service via LDAP.\nVerify VMware Directory Service is running on the appropriate system and is reachable from this host.";
+        break;
+    case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
+        retCode = 24;
+        pszErrorMsg = "Authentication to VMware Directory Service failed.\nVerify the username and password.";
+        break;
+    case ERROR_ACCESS_DENIED:
+        retCode = 25;
+        pszErrorMsg = "Authorization failed.\nVerify account has proper administrative privileges.";
+        break;
+    case ERROR_INVALID_DOMAINNAME:
+        retCode = 26;
+        pszErrorMsg = "The domain name specified is invalid.";
+        break;
+    case ERROR_NO_SUCH_DOMAIN:
+        retCode = 27;
+        pszErrorMsg = "A domain controller for the given domain could not be located.";
+        break;
+    case ERROR_PASSWORD_RESTRICTION:
+        retCode = 28;
+        pszErrorMsg = "A required password was not specified or did not match complexity requirements.";
+        break;
+    case ERROR_HOST_DOWN:
+        retCode = 29;
+        pszErrorMsg = "The required service on the domain controller is unreachable.";
+        break;
+    default:
+        retCode = 1;
+    }
+
+    if (pszErrorMsg)
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pszErrorMsg,
+                        &pszErrorMessage);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    *pretCode = retCode;
+    *ppszErrorMessage = pszErrorMessage;
+
+cleanup:
+    return retCode;
+
+error:
+    if (pszErrorMessage)
+    {
+        VmwDeployFreeMemory(pszErrorMessage);
+        pszErrorMessage = NULL;
+    }
+    goto cleanup;
 }
 
 static
@@ -371,7 +593,7 @@ VmwDeploySetupServerCommon(
             "Setting Domain Name to [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszDomainName));
 
-    dwError = VmAfdSetDomainNameA(pszHostname, pszDomainName);
+    dwError = VmAfdSetDomainNameA(pszHostname, pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_VERBOSE(
@@ -548,6 +770,34 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+static
+DWORD
+VmwDeployDeleteServer(
+    PVMW_IC_SETUP_PARAMS pParams)
+{
+    DWORD dwError = 0;
+    PSTR  pszUsername = VMW_ADMIN_NAME;
+
+    if (pParams->pszServer)
+    {
+        VMW_DEPLOY_LOG_INFO("Demoting server [%s]", pParams->pszServer);
+    }
+    else
+    {
+        VMW_DEPLOY_LOG_INFO("Demoting server");
+    }
+
+    dwError = VmAfdDemoteVmDirA(
+                    pParams->pszServer,
+                    pszUsername,
+                    pParams->pszPassword);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+error:
+
+    return dwError;
 }
 
 static
@@ -1044,6 +1294,37 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+static
+DWORD
+VmwDeployDeleteClient(
+    PVMW_IC_SETUP_PARAMS pParams)
+{
+    DWORD dwError = 0;
+
+    if (pParams->pszMachineAccount)
+    {
+        VMW_DEPLOY_LOG_INFO(
+              "Client [%s] Leaving domain",
+              pParams->pszMachineAccount);
+    }
+    else
+    {
+        VMW_DEPLOY_LOG_INFO("Leaving domain");
+    }
+
+    dwError = VmAfdLeaveVmDirA(
+                    pParams->pszServer,
+                    pParams->pszUsername,
+                    pParams->pszPassword,
+                    pParams->pszMachineAccount,
+                    pParams->dwLeaveFlags);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+error:
+
+    return dwError;
 }
 
 static

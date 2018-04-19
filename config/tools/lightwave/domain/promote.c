@@ -28,7 +28,6 @@ static
 DWORD
 VmwDeployBuildParams(
     PCSTR pszDomain,
-    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
@@ -46,7 +45,10 @@ ShowUsage(
     VOID
     );
 
-int main(int argc, char* argv[])
+int
+LightwaveDomainPromote(
+    int argc,
+    char* argv[])
 {
     DWORD dwError = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -54,13 +56,20 @@ int main(int argc, char* argv[])
     int retCode = 0;
     PSTR pszErrorMsg = NULL;
     PSTR pszErrorDesc = NULL;
+    DWORD dwError2 = 0;
+
+    if (!strcmp(argv[0], "--help"))
+    {
+        ShowUsage();
+        goto cleanup;
+    }
 
     setlocale(LC_ALL, "");
 
     dwError = VmwDeployInitialize();
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = ParseArgs(argc-1, &argv[1], &pSetupParams);
+    dwError = ParseArgs(argc, argv, &pSetupParams);
     if (dwError)
     {
         ShowUsage();
@@ -98,62 +107,22 @@ cleanup:
 
 error:
 
-    switch (dwError)
+    dwError2 = VmwDeployGetError(
+                     dwError,
+                     &pszErrorMsg,
+                     &retCode);
+    if (dwError2 || retCode == 1)
     {
-
-    case ERROR_INVALID_PARAMETER:
-        retCode = 2;
-        pszErrorMsg = "Invalid parameter was given.";
-        break;
-    case ERROR_CANNOT_CONNECT_VMAFD:
-        retCode = 20;
-        pszErrorMsg = "Could not connect to the local service VMware AFD.\nVerify VMware AFD is running.";
-        break;
-    case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
-        retCode = 21;
-        pszErrorMsg = "Could not connect to the local service VMware Directory Service.\nVerify VMware Directory Service is running.";
-        break;
-    case ERROR_INVALID_CONFIGURATION:
-        retCode = 22;
-        pszErrorMsg = "Configuration is not correct.\n";
-        break;
-    case VMDIR_ERROR_SERVER_DOWN:
-        retCode = 23;
-        pszErrorMsg = "Could not connect to VMware Directory Service via LDAP.\nVerify VMware Directory Service is running on the appropriate system and is reachable from this host.";
-        break;
-    case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
-        retCode = 24;
-        pszErrorMsg = "Authentication to VMware Directory Service failed.\nVerify the username and password.";
-        break;
-    case ERROR_ACCESS_DENIED:
-        retCode = 25;
-        pszErrorMsg = "Authorization failed.\nVerify account has proper administrative privileges.";
-        break;
-    case ERROR_INVALID_DOMAINNAME:
-        retCode = 26;
-        pszErrorMsg = "The domain name specified is invalid.";
-        break;
-    case ERROR_NO_SUCH_DOMAIN:
-        retCode = 27;
-        pszErrorMsg = "A domain controller for the given domain could not be located.";
-        break;
-    case ERROR_PASSWORD_RESTRICTION:
-        retCode = 28;
-        pszErrorMsg = "A required password was not specified or did not match complexity requirements.";
-        break;
-    case ERROR_HOST_DOWN:
-        retCode = 29;
-        pszErrorMsg = "The required service on the domain controller is unreachable.";
-        break;
-    case VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE:
-        retCode = 30;
-        pszErrorMsg = "Could not join to the remote service VMWare Directory Service.\nThe remote schema is incompatible with the local schema.";
-        break;
-    default:
-        retCode = 1;
+        if (!VmAfdGetErrorMsgByCode(dwError, &pszErrorDesc))
+        {
+            fprintf(stderr, "Domain controller setup failed. Error %u: %s \n", dwError, pszErrorDesc);
+        }
+        else
+        {
+            fprintf(stderr, "Domain controller setup failed with error: %u\n", dwError);
+        }
     }
-
-    if (retCode != 1)
+    else
     {
         fprintf(
             stderr,
@@ -161,19 +130,14 @@ error:
             pszErrorMsg,
             dwError);
     }
-    else
-    {
-        if (!VmAfdGetErrorMsgByCode(dwError, &pszErrorDesc))
-        {
-            fprintf(stderr, "ic-promoteDomain controller setup failed. Error %u: %s \n", dwError, pszErrorDesc);
-        }
-        else
-        {
-            fprintf(stderr, "Domain controller setup ic-promote failed with error: %u\n", dwError);
-        }
-    }
 
     VMW_DEPLOY_LOG_ERROR("Domain controller setup failed. Error code: %u", dwError);
+
+    if (pszErrorMsg)
+    {
+        VmwDeployFreeMemory(pszErrorMsg);
+        pszErrorMsg = NULL;
+    }
 
     goto cleanup;
 }
@@ -193,10 +157,11 @@ ParseArgs(
     PSTR  pszPassword = NULL;
     PSTR  pszSite     = NULL;
     PSTR  pszSubjectAltName = NULL;
-    PSTR  pszParentDomain   = NULL;
-    PSTR  pszParentDC       = NULL;
+    PSTR  pszParentDomain = NULL;
+    PSTR  pszParentDC = NULL;
     PSTR  pszParentUserName = NULL;
     PSTR  pszParentPassword = NULL;
+    PSTR  pszFQDomainName = NULL;
     enum PARSE_MODE
     {
         PARSE_MODE_OPEN = 0,
@@ -213,7 +178,6 @@ ParseArgs(
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
-    PSTR pszFQDomainName = NULL;
 
     for (; iArg < argc; iArg++)
     {
@@ -415,7 +379,6 @@ ParseArgs(
 
                 break;
 
-
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -439,7 +402,6 @@ ParseArgs(
 
     dwError = VmwDeployBuildParams(
                     pszDomain,
-                    pszUsername,
                     pszPassword,
                     pszPartner,
                     pszSite,
@@ -478,7 +440,6 @@ static
 DWORD
 VmwDeployBuildParams(
     PCSTR pszDomain,
-    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
@@ -492,6 +453,7 @@ VmwDeployBuildParams(
 {
     DWORD dwError = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
+    PSTR pszUsername = VMW_ADMIN_NAME;
     PSTR pszPassword1 = NULL;
     PSTR pszHostname = NULL;
 
@@ -544,7 +506,7 @@ VmwDeployBuildParams(
         pszUsername = VMW_ADMIN_NAME;
     }
 
-    if (!pszPassword)
+    if (IsNullOrEmptyString(pszPassword))
     {
         dwError = VmwDeployReadPassword(
                         pszUsername,
@@ -563,10 +525,10 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwDeployAllocateStringA(pszUsername, &pSetupParams->pszUsername);
+    dwError = VmwDeployAllocateStringA(pszDomain, &pSetupParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = VmwDeployAllocateStringA(pszDomain, &pSetupParams->pszDomainName);
+    dwError = VmwDeployAllocateStringA(pszUsername, &pSetupParams->pszUsername);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmwDeployAllocateStringA(pszPassword, &pSetupParams->pszPassword);
@@ -635,16 +597,18 @@ ShowUsage(
     VOID
     )
 {
-    printf("Usage : ic-promote { arguments }\n"
+    PSTR pszUsageText =
+           "Usage: lightwave domain promote { arguments }\n"
            "Arguments:\n"
-           "[--domain   <fully qualified domain name. Default : vsphere.local>]\n"
-           "[--username <username>]\n"
-           "--password  <password to administrator account>\n"
-           "[--partner  <partner domain controller's hostname or IP Address>]\n"
-           "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
-           "[--site     <infra site name>]\n"
-           "[--parent-domain <parent domain name>]\n"
-           "[--parent-dc <parent domain controller>]\n"
-           "[--parent-username <parent domain admin username>]\n"
-           "[--parent-password <password for admin user in parent domain>]\n\n");
+           "    [--domain   <fully qualified domain name. Default : vsphere.local>]\n"
+           "    --password  <password to administrator account>\n"
+           "    [--partner  <partner domain controller's hostname or IP Address>]\n"
+           "    [--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
+           "    [--site     <infra site name>]\n"
+           "    [--parent-domain <parent domain name>]\n"
+           "    [--parent-dc <parent domain controller>]\n"
+           "    [--parent-username <parent domain admin username>]\n"
+           "    [--parent-password <password for admin user in parent domain>]\n";
+
+    printf("%s", pszUsageText);
 }

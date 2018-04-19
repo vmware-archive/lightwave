@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -193,8 +193,10 @@ VmAfSrvJoinVmDir2(
 
 DWORD
 VmAfSrvLeaveVmDir(
+    PWSTR    pwszServerName,    /* IN              */
     PWSTR    pwszUserName,      /* IN              */
     PWSTR    pwszPassword,      /* IN              */
+    PWSTR    pwszMachineName,   /* IN              */
     DWORD    dwLeaveFlags       /* IN              */
     );
 

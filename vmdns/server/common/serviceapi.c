@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -1721,6 +1721,7 @@ VmDnsSrvCleanupSRVRecords(
     PVMDNS_RECORD_LIST pRecordList = NULL;
     DWORD idx = 0;
     VMDNS_RECORD srvRecord = { 0 };
+    PSTR pszLowerCaseDomain = NULL;
 
     if (!pZoneObject ||
         IsNullOrEmptyString(pszDomain) ||
@@ -1731,11 +1732,16 @@ VmDnsSrvCleanupSRVRecords(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    dwError = VmDnsStringToLower(
+                            pszDomain,
+                            &pszLowerCaseDomain);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     dwError = VmDnsAllocateStringPrintfA(
                             &srvRecord.pszName,
                             "%s.%s",
                             pszSrvName,
-                            pszDomain
+                            pszLowerCaseDomain
                             );
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -1785,6 +1791,7 @@ VmDnsSrvCleanupSRVRecords(
 
 cleanup:
     VmDnsRecordListRelease(pRecordList);
+    VMDNS_SAFE_FREE_STRINGA(pszLowerCaseDomain);
     VMDNS_SAFE_FREE_STRINGA(srvRecord.pszName);
     return dwError;
 

@@ -1733,6 +1733,8 @@ AC_CONFIG_FILES([Makefile
                  config/tools/Makefile
                  config/tools/ic-promote/Makefile
                  config/tools/ic-join/Makefile
+                 config/tools/lightwave/Makefile
+                 config/tools/lightwave/domain/Makefile
                  config/scripts/Makefile
                  config/scripts/configure-lightwave-server
                  config/scripts/configure-identity-server

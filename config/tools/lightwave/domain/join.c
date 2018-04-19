@@ -49,7 +49,10 @@ ShowUsage(
     VOID
     );
 
-int main(int argc, char* argv[])
+int
+LightwaveDomainJoin(
+    int argc,
+    char* argv[])
 {
     DWORD dwError = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -57,13 +60,20 @@ int main(int argc, char* argv[])
     int retCode = 0;
     PSTR pszErrorMsg = NULL;
     PSTR pszErrorDesc = NULL;
+    DWORD dwError2 = 0;
+
+    if (!strcmp(argv[0], "--help"))
+    {
+        ShowUsage();
+        goto cleanup;
+    }
 
     setlocale(LC_ALL, "");
 
     dwError = VmwDeployInitialize();
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = ParseArgs(argc-1, &argv[1], &pSetupParams);
+    dwError = ParseArgs(argc, argv, &pSetupParams);
     if (dwError)
     {
         ShowUsage();
@@ -101,66 +111,11 @@ cleanup:
 
 error:
 
-    switch (dwError)
-    {
-
-    case ERROR_INVALID_PARAMETER:
-        retCode = 2;
-        pszErrorMsg = "Invalid parameter was given";
-        break;
-    case ERROR_CANNOT_CONNECT_VMAFD:
-        retCode = 20;
-        pszErrorMsg = "Could not connect to the local service VMware AFD.\nVerify VMware AFD is running.";
-        break;
-    case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
-        retCode = 21;
-        pszErrorMsg = "Could not connect to the local service VMware Directory Service.\nVerify VMware Directory Service is running.";
-        break;
-    case ERROR_INVALID_CONFIGURATION:
-        retCode = 22;
-        pszErrorMsg = "Configuration is not correct.\n";
-        break;
-    case VMDIR_ERROR_SERVER_DOWN:
-        retCode = 23;
-        pszErrorMsg = "Could not connect to VMware Directory Service via LDAP.\nVerify VMware Directory Service is running on the appropriate system and is reachable from this host.";
-        break;
-    case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
-        retCode = 24;
-        pszErrorMsg = "Authentication to VMware Directory Service failed.\nVerify the username and password.";
-        break;
-    case ERROR_ACCESS_DENIED:
-        retCode = 25;
-        pszErrorMsg = "Authorization failed.\nVerify account has proper administrative privileges.";
-        break;
-    case ERROR_INVALID_DOMAINNAME:
-        retCode = 26;
-        pszErrorMsg = "The domain name specified is invalid.";
-        break;
-    case ERROR_NO_SUCH_DOMAIN:
-        retCode = 27;
-        pszErrorMsg = "A domain controller for the given domain could not be located.";
-        break;
-    case ERROR_PASSWORD_RESTRICTION:
-        retCode = 28;
-        pszErrorMsg = "A required password was not specified or did not match complexity requirements.";
-        break;
-    case ERROR_HOST_DOWN:
-        retCode = 29;
-        pszErrorMsg = "The required service on the domain controller is unreachable.";
-        break;
-    default:
-        retCode = 1;
-    }
-
-    if (retCode != 1)
-    {
-        fprintf(
-            stderr,
-            "Domain join failed, error= %s %u\n",
-            pszErrorMsg,
-            dwError);
-    }
-    else
+    dwError2 = VmwDeployGetError(
+                     dwError,
+                     &pszErrorMsg,
+                     &retCode);
+    if (dwError2 || retCode == 1)
     {
         if (!VmAfdGetErrorMsgByCode(dwError, &pszErrorDesc))
         {
@@ -171,11 +126,24 @@ error:
             fprintf(stderr, "Domain join failed with error: %u\n", dwError);
         }
     }
+    else
+    {
+        fprintf(
+            stderr,
+            "Domain join failed, error= %s %u\n",
+            pszErrorMsg,
+            dwError);
+    }
 
     VMW_DEPLOY_LOG_ERROR("Domain join failed. Error code: %u", dwError);
 
-    goto cleanup;
+    if (pszErrorMsg)
+    {
+        VmwDeployFreeMemory(pszErrorMsg);
+        pszErrorMsg = NULL;
+    }
 
+    goto cleanup;
 }
 
 static
@@ -255,8 +223,7 @@ ParseArgs(
                 {
                     bDisableDNS = TRUE;
                 }
-                else if (!strcmp(pszArg, "--use-machine-account") ||
-                         !strcmp(pszArg, "--use-machine-accout"))
+                else if (!strcmp(pszArg, "--use-machine-account"))
                 {
                     bUseMachineAccount = TRUE;
                 }
@@ -521,8 +488,7 @@ VmwDeployBuildParams(
 
     if (!pszUsername)
     {
-        pszUsername = (bUseMachineAccount && pszMachineAccount)
-                                ? pszMachineAccount : VMW_ADMIN_NAME;
+        pszUsername = "administrator";
     }
 
     if (!pszPassword)
@@ -596,18 +562,22 @@ ShowUsage(
     VOID
     )
 {
-    printf("Usage : ic-join { arguments }\n"
+    PSTR pszUsageText =
+           "Usage: lightwave domain join { arguments }\n"
            "Arguments:\n"
-           "[--domain-controller <domain controller's hostname or IP Address>]\n"
-           "[--domain    <fully qualified domain name. default: vsphere.local>]\n"
-           "[--machine-account-name <preferred computer account name. default: <hostname>]\n"
-           "[--org-unit <organizational unit. default: Computers]\n"
-           "[--disable-afd-listener]\n"
-           "[--disable-dns]\n"
-           "[--use-machine-account] Use machine account credentials to join\n"
-           "[--prejoined] Machine account is already created in directory \n"
-           "[--username <username>]\n"
-           "[--password <password>]\n"
-           "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
-           "[--site <sitename>] Specific region to join to\n");
+           "    [--domain-controller <domain controller's hostname or IP Address>]\n"
+           "    [--domain    <fully qualified domain name. default: vsphere.local>]\n"
+           "    [--machine-account-name <preferred computer account name. default: <hostname>]\n"
+           "    [--org-unit <organizational unit. default: Computers]\n"
+           "    [--disable-afd-listener]\n"
+           "    [--disable-dns]\n"
+           "    [--use-machine-account] Use machine account credentials to join\n"
+           "    [--prejoined] Machine account is already created in directory\n"
+           "    [--atomic] Perform atomic join\n"
+           "    [--username <account name>]\n"
+           "    [--password <password>]\n"
+           "    [--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
+           "    [--site <sitename>] Specific region to join to\n";
+
+    printf("%s", pszUsageText);
 }

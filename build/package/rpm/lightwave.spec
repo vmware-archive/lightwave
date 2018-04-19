@@ -1086,6 +1086,7 @@ Lightwave POST service
 %defattr(-,root,root)
 
 %{_bindir}/ic-join
+%{_bindir}/lightwave
 %{_bindir}/cdc-cli
 %{_bindir}/certool
 %{_bindir}/dir-cli

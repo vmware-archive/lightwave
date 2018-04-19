@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2018 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -14,22 +14,22 @@
 
 
 
-#include "includes.h"
+#include <config.h>
 
-DWORD
-VmAfdLeaveDomain(
-    PCSTR pszUsername,
-    PCSTR pszPassword,
-    DWORD dwLeaveFlags
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
+#include <cfgsys.h>
 
-    dwError = VmAfdLeaveVmDirA(NULL, pszUsername, pszPassword, NULL, dwLeaveFlags);
-    if (dwError == ERROR_NOT_JOINED)
-    {
-        dwError = ERROR_SUCCESS;
-    }
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+#ifdef HAVE_TERM_H
+#include <term.h>
+#endif
 
-    return dwError;
-}
+#include <cfgdefs.h>
+#include <cfgerrors.h>
+#include <cfgutils.h>
+
+#include <vmdirerrors.h>
+#include <vmafdclient.h>
+
+#include "prototypes.h"

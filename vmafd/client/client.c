@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -3328,6 +3328,7 @@ VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN              */
     PCSTR pszUserName,      /* IN              */
     PCSTR pszPassword,      /* IN              */
+    PCSTR pszMachineName,   /* IN              */
     DWORD dwLeaveFlags      /* IN              */
 )
 {
@@ -3335,6 +3336,7 @@ VmAfdLeaveVmDirA(
     PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
 
     if (pszServerName)
     {
@@ -3354,11 +3356,18 @@ VmAfdLeaveVmDirA(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    if (pszMachineName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     // Machine credentials will be used if the user name and password are NULL.
     dwError = VmAfdLeaveVmDirW(
                   pwszServerName,
                   pwszUserName,
                   pwszPassword,
+                  pwszMachineName,
                   dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -3367,6 +3376,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszServerName);
     VMAFD_SAFE_FREE_MEMORY(pwszUserName);
     VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
 
     return dwError;
 
@@ -3380,6 +3390,7 @@ VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN              */
     PCWSTR pwszUserName,    /* IN              */
     PCWSTR pwszPassword,    /* IN              */
+    PCWSTR pwszMachineName, /* IN              */
     DWORD dwLeaveFlags      /* IN              */
 )
 {
@@ -3389,6 +3400,7 @@ VmAfdLeaveVmDirW(
                       pwszServerName,
                       pwszUserName,
                       pwszPassword,
+                      pwszMachineName,
                       dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
