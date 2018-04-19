@@ -14,6 +14,7 @@ RUN tdnf update -y --refresh rpm-4.13.0.1 tdnf && \
     tdnf install -y gawk-4.1.3 && \
     tdnf install -y autoconf-2.69 && \
     tdnf install -y automake-1.15 && \
+    tdnf install -y elfutils-0.169 && \
     tdnf install -y libtool-2.4.6 && \
     tdnf install -y gcc-5.3.0 && \
     tdnf install -y glibc-devel-2.22 && \
@@ -36,5 +37,6 @@ RUN tdnf update -y --refresh rpm-4.13.0.1 tdnf && \
     tdnf install -y copenapi-devel-0.0.1 && \
     tdnf install -y c-rest-engine-devel-1.2 && \
     tdnf install -y go-1.8.1 && \
+    tdnf install -y nodejs-7.7.4 && \
     echo 'ALL ALL=NOPASSWD: ALL' >>/etc/sudoers && \
     chmod -R o+r /opt/likewise/include

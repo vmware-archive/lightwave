@@ -9,7 +9,7 @@ all: rpm
 
 nodejs:
 ifndef NODE
-        @echo 'Installing nodeJS'
+	@echo 'Installing nodeJS'
 	tdnf install nodejs-7.7.4 -y
 endif
 

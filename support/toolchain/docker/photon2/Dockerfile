@@ -16,6 +16,7 @@ RUN tdnf update -qy  tdnf  && \
     tdnf install -qy gawk-4.1.4 && \
     tdnf install -qy autoconf-2.69 && \
     tdnf install -qy automake-1.15 && \
+    tdnf install -qy elfutils-0.169 && \
     tdnf install -qy libtool-2.4.6 && \
     tdnf install -qy diffutils && \
     tdnf install -qy findutils && \
@@ -38,8 +39,10 @@ RUN tdnf update -qy  tdnf  && \
     tdnf install -qy openssl-devel && \
     tdnf install -qy likewise-open-devel-6.2.11 && \
     tdnf install -qy copenapi-devel-0.0.2 && \
-    tdnf install -qy c-rest-engine-devel-1.1 && \
+    tdnf install -qy c-rest-engine-devel-1.2 && \
     tdnf install -qy go-1.9.1 && \
+    tdnf install -qy nodejs-7.7.4 && \
+    tdnf install -qy jq-1.5 && \
     tdnf install -qy curl-devel-7.58.0 && \
     tdnf install -qy krb5-devel-1.16 && \
     tdnf install -qy sqlite-devel-3.21.0 && \
