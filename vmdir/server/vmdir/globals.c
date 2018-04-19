@@ -92,9 +92,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
         VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
-        VMDIR_SF_INIT(.dwCopyDbWritesMin, 100),
-        VMDIR_SF_INIT(.dwCopyDbIntervalInSec, 0),
-        VMDIR_SF_INIT(.dwCopyDbBlockWriteInSec, 30),
         VMDIR_SF_INIT(.dwLdapWrites, 0),
         VMDIR_SF_INIT(.gpVdirSslCtx, NULL)
     };

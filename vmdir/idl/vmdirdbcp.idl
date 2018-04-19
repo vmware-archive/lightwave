@@ -112,4 +112,10 @@ typedef struct _VMDIR_DBCP_DATA_CONTAINER
            [in]                     handle_t   hBinding,
            [out]                    UINT32  *  pdwLogMask
       );
+
+      UINT32
+      RpcVmDirBackupDB(
+           [in]                     handle_t   hBinding,
+           [in, string]             PWSTR      pwszBackupPath
+      );
 }

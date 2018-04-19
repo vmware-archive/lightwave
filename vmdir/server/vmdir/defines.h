@@ -357,39 +357,6 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_COPY_DB_WRITES_MIN, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 100000,                           \
-        /*.dwDefault      = */ 1,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 600,                              \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 600,                              \
-        /*.dwDefault      = */ 30,                               \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_TOMBSTONE_EXPIRATION_IN_SEC, \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \

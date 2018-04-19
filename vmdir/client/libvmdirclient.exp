@@ -128,3 +128,4 @@ VmDirAllocateTrustInfoWFromA
 VmDirFreeTrustInfoA
 VmDirFreeTrustInfoW
 VmDirCreateDomainTrust
+VmDirBackupDB

@@ -500,6 +500,12 @@ VmDirGetVmDirLogPath(
     );
 
 DWORD
+VmDirBackupDB(
+    PVMDIR_SERVER_CONTEXT hServer,
+    PCSTR       pszBackupPath
+    );
+
+DWORD
 VmDirSetLogLevel(
     PCSTR   pszLogLevel
     );

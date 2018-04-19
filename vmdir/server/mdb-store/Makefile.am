@@ -14,6 +14,7 @@ noinst_LTLIBRARIES = libmdb-store.la
 libmdb_store_la_SOURCES = \
     config.c \
     entry.c \
+    dbstate.c \
     generic.c \
     globals.c \
     index.c \

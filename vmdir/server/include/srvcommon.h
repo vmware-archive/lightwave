@@ -1261,6 +1261,11 @@ VmDirOperationTypeToName(
     VDIR_OPERATION_TYPE opType
     );
 
+PCSTR
+VmDirMdbStateToName(
+    MDB_state_op opType
+    );
+
 BOOLEAN
 VmDirIsSameConsumerSupplierEntryAttr(
     PVDIR_ATTRIBUTE pAttr,

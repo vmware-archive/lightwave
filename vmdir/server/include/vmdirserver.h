@@ -228,11 +228,6 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bTrackLastLoginTime;
     BOOLEAN                         bPagedSearchReadAhead;
 
-    // The following three counter is for database copy feature
-    // registra key configuration.
-    DWORD                           dwCopyDbWritesMin;
-    DWORD                           dwCopyDbIntervalInSec;
-    DWORD                           dwCopyDbBlockWriteInSec;
     // Collect stats for estimate elapsed time with database copy
     DWORD                           dwLdapWrites;
 

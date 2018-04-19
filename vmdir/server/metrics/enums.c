@@ -105,6 +105,7 @@ VmDirMetricsRpcOperationString(
             "ReadDatabaseFile",
             "CloseDatabaseFile",
             "SetBackendState",
+            "BackupDB",
             "GetState",
             "GetLogLevel",
             "GetLogMask"

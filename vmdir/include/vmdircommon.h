@@ -82,6 +82,14 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 #define VMKDC_RANDPWD_MAX_RETRY         128 /* Prevents RpcVmDirCreateUser() from looping forever */
 
+#define VMDIR_SIZE_16       16
+#define VMDIR_SIZE_32       32
+#define VMDIR_SIZE_64       64
+#define VMDIR_SIZE_128      128
+#define VMDIR_SIZE_256      256
+#define VMDIR_SIZE_512      512
+#define VMDIR_SIZE_1024     1024
+
 // Versions and DFLs
 #define VMDIR_DFL_UNKNOWN "UNKNOWN"
 #define VMDIR_DFL_5_5 "5.5"
@@ -1028,9 +1036,6 @@ typedef enum
 #define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
 #define VMDIR_REG_KEY_SUPPRES_TRACK_LLT       "SuppressTrackLLTContainer"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
-#define VMDIR_REG_KEY_COPY_DB_WRITES_MIN      "CopyDbWritesMin"
-#define VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC "CopyDbIntervalInSec"
-#define VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC "CopyDbBlockWriteInSec"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
@@ -1701,6 +1706,12 @@ VmDirMigrateUserKey(
     DWORD newMasterKeyLen,
     PBYTE* ppNewUpnKeys,
     PDWORD pNewUpnKeysLen);
+
+DWORD
+VmDirPathExists(
+    PCSTR       pszPath,
+    PBOOLEAN    pbFound
+    );
 
 DWORD
 VmDirFileExists(

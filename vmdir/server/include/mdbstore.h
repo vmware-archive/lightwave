@@ -193,6 +193,16 @@ VmDirMDBShutdownDB(
     );
 
 DWORD
+VmDirInitMdbStateGlobals(
+    VOID
+    );
+
+VOID
+VmDirFreeMdbStateGlobals(
+    VOID
+    );
+
+DWORD
 VmDirSetMdbBackendState(
     DWORD               dwFileTransferState,
     DWORD               *pdwLogNum,

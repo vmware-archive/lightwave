@@ -449,9 +449,6 @@ VmDirInit(
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
 
-            dwError = VmDirInitDbCopyThread();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             dwError = VmDirInitTombstoneReapingThread();
             BAIL_ON_VMDIR_ERROR(dwError);
 

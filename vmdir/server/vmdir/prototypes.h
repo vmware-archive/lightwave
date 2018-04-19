@@ -140,6 +140,17 @@ VmDirBkgdPingMaxOrigUsn(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );
 
+// dbbackup.c
+VOID
+VmDirSrvSetMDBStateClear(
+    VOID
+    );
+
+DWORD
+VmDirSrvBackupDB(
+    PCSTR       pszBackupPath
+    );
+
 // init.c
 DWORD
 VmDirInit(
@@ -674,10 +685,6 @@ VmDirInitTombstoneReapingThread(
 
 DWORD
 VmDirInitTrackLastLoginThread(
-    VOID
-    );
-
-DWORD VmDirInitDbCopyThread(
     VOID
     );
 

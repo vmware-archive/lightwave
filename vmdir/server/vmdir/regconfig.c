@@ -257,27 +257,6 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_COPY_DB_WRITES_MIN,
-                    TRUE))
-        {
-            gVmdirGlobals.dwCopyDbWritesMin = pEntry->dwValue;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC,
-                    TRUE))
-        {
-            gVmdirGlobals.dwCopyDbIntervalInSec = pEntry->dwValue;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC,
-                    TRUE))
-        {
-            gVmdirGlobals.dwCopyDbBlockWriteInSec = pEntry->dwValue;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
                     VMDIR_REG_KEY_TOMBSTONE_EXPIRATION_IN_SEC,
                     TRUE))
         {
@@ -1008,79 +987,4 @@ cleanup:
 
 error:
     goto cleanup;
-}
-
-DWORD
-_VmDirDbCpReadRegistry(
-    PDWORD pdwCopyDbWritesMin,
-    PDWORD pdwCopyDbIntervalInSec,
-    PDWORD pdwCopyDbBlockWriteInSec
-    )
-{
-#ifndef WIN32
-    DWORD dwError = 0;
-    DWORD dwValue = 0;
-    PSTR  pszLocalErrorMsg = NULL;
-    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
-
-    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg),
-      "_VmDirDbCpReadRegistry: VmDirRegConfigHandleOpen error %d", dwError);
-
-    dwError = VmDirRegConfigGetDword(pCfgHandle, VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
-            VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC, &dwValue);
-    if (dwError)
-    {
-        if (dwError != LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDbCpReadRegistry %s error %d",
-                  VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC, dwError);
-        }
-    } else
-    {
-        *pdwCopyDbIntervalInSec = dwValue;
-    }
-
-    dwError = VmDirRegConfigGetDword(pCfgHandle, VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
-                VMDIR_REG_KEY_COPY_DB_WRITES_MIN, &dwValue);
-    if (dwError)
-    {
-        if (dwError != LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDbCpReadRegistry %s error %d",
-                  VMDIR_REG_KEY_COPY_DB_WRITES_MIN, dwError);
-        }
-    } else
-    {
-        *pdwCopyDbWritesMin = dwValue;
-    }
-
-    dwError = VmDirRegConfigGetDword(pCfgHandle, VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
-            VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC, &dwValue);
-    if (dwError)
-    {
-        if (dwError != LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDbCpReadRegistry %s error %d",
-                  VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC, dwError);
-        }
-    } else
-    {
-        *pdwCopyDbBlockWriteInSec = dwValue;
-    }
-
-cleanup:
-    if (pCfgHandle)
-    {
-        VmDirRegConfigHandleClose(pCfgHandle);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg));
-    goto cleanup;
-#else
-    return 0;
-#endif
 }
