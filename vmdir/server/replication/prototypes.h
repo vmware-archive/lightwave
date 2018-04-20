@@ -136,6 +136,24 @@ VmDirReplicationFreePageEntryContent(
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
+int
+VmDirComposeNodeUtdVector(
+    PCSTR   pszHostname,
+    PSTR*   ppszUtdVector,
+    PSTR*   ppszMaxUSN
+    );
+
+int
+VmDirSwapDB(
+    PCSTR   dbHomeDir,
+    BOOLEAN bHasXlog
+    );
+
+int
+VmDirPatchDSERoot(
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
 #ifdef __cplusplus
 }
 #endif

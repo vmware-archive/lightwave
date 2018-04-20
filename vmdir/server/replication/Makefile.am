@@ -2,6 +2,7 @@
 noinst_LTLIBRARIES = libreplication.la
 
 libreplication_la_SOURCES = \
+    drrestore.c \
     firstreplcycle.c \
     globals.c \
     libmain.c \
