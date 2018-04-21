@@ -901,6 +901,88 @@ error:
 
 static
 DWORD
+_VmDirAddMachineAccountGroupMembership(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY pEntry,
+    PSTR pszGroupDn, 
+    PSTR pszUserDn)
+{
+    DWORD              dwError = 0;
+    PVDIR_OPERATION    pModifyOp = NULL;
+    PVDIR_ATTRIBUTE    pAttr = NULL;
+    PSTR               pszType = ATTR_MEMBER;
+    PVDIR_SCHEMA_CTX   pSchemaCtx = NULL;
+    PVDIR_MODIFICATION pMod = NULL;
+
+    if (!_VmDirCheckIsComputerAccount(pEntry))
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirExternalOperationCreate(
+                  NULL,
+                  -1,
+                  LDAP_REQ_MODIFY,
+                  /* This is an alias, NULL out after use */
+                  pOperation->conn,
+                  &pModifyOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringToBervalContent(pszGroupDn, &pModifyOp->reqDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringToBervalContent(pszGroupDn, &pModifyOp->request.modifyReq.dn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_MODIFICATION), (PVOID*)&pMod);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAttr = &pMod->attr;
+
+    dwError = VmDirStringToBervalContent(pszType, &pAttr->type);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaAttrNameToDescriptor(
+                  pSchemaCtx,
+                  pszType,
+                  &pAttr->pATDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /* Only one attribute change at a time */
+    pAttr->numVals = 1;
+
+    dwError = VmDirAllocateMemory(
+                  sizeof(VDIR_BERVALUE) * (pAttr->numVals + 1),
+                  (PVOID*)&pAttr->vals);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringToBervalContent(pszUserDn, &pAttr->vals[0]);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pModifyOp->conn = pOperation->conn;
+    pMod->operation = MOD_OP_ADD;
+    pModifyOp->request.modifyReq.mods = pMod;
+    pModifyOp->request.modifyReq.numMods = 1;
+
+    dwError = VmDirMLModify(pModifyOp);
+    pModifyOp->conn = NULL;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperation(pModifyOp);
+    VmDirSchemaCtxRelease(pSchemaCtx);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
 _VmDirAddAdMachineAccount(PVDIR_ENTRY pEntry)
 {
     DWORD            dwError = 0;
@@ -1022,6 +1104,12 @@ _VmDirAttrUnicodePwdToPwd(PVDIR_ENTRY pEntry,
     }
 
 cleanup:
+
+    /* Machine account pwd is sensitive; do not store in vmdir */
+    /* TBD:Adam Either don't store it, or don't respond to a query for it */
+    /* TBD: Don't know if I need this value in future pwd change operations */
+    VmDirEntryRemoveAttribute(pEntry, ATTR_UNICODE_PWD);
+
     VMDIR_SAFE_FREE_STRINGA(pszAccountPwdAlloc);
     VMDIR_SAFE_FREE_MEMORY(pwszUnicodePwd);
 
@@ -1489,9 +1577,6 @@ cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pSalt);
 
-    /* Machine account pwd is sensitive; do not store in vmdir */
-    VmDirEntryRemoveAttribute(pEntry, ATTR_UNICODE_PWD);
-
     return dwError;
 
 error:
@@ -1877,8 +1962,44 @@ _VmDirPluginSchemaLibUpdatePostAddCommit(
     PVDIR_ENTRY      pEntry,
     DWORD            dwResult)
 {
-    return _VmDirPluginSchemaLibUpdatePostModifyCommit(
-            pOperation, pEntry, dwResult);
+    DWORD dwError = 0;
+    /* TBD:Adam-Get rid of this hard-coded value */
+    PSTR pszMachineAccount = "cn=ADAM-WIN2K8R2-D,cn=computers,dc=lightwave,dc=local";
+
+    dwError = _VmDirPluginSchemaLibUpdatePostModifyCommit(
+               pOperation, pEntry, dwResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (_VmDirCheckIsComputerAccount(pEntry))
+    {
+        dwError = _VmDirAddMachineAccountGroupMembership(
+                      pOperation,
+                      pEntry,
+       /* TBD:Adam-Construct the proper DN for the local domain */
+                      "cn=Users,cn=Builtin,dc=lightwave,dc=local",
+                      pszMachineAccount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAddMachineAccountGroupMembership(
+                      pOperation,
+                      pEntry,
+                      "cn=Administrators,cn=Builtin,dc=lightwave,dc=local",
+                      pszMachineAccount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirAddMachineAccountGroupMembership(
+                      pOperation,
+                      pEntry,
+                      "cn=DNSAdmins,cn=Builtin,dc=lightwave,dc=local",
+                      pszMachineAccount);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 static

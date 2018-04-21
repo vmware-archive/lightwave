@@ -1,0 +1,20 @@
+version: 1
+dn:  cn=users,cn=builtin,dc=lightwave,dc=local
+changetype: modify
+add: member
+member: CN=ADAM-WIN2K8R2-D,CN=Computers,DC=lightwave,DC=local
+
+dn:  cn=DNSAdmins,cn=builtin,dc=lightwave,dc=local
+changetype: modify
+add: member
+member: CN=ADAM-WIN2K8R2-D,CN=Computers,DC=lightwave,DC=local
+
+dn:  cn=Administrators,cn=builtin,dc=lightwave,dc=local
+changetype: modify
+add: member
+member: CN=ADAM-WIN2K8R2-D,CN=Computers,DC=lightwave,DC=local
+
+dn:  cn=CAAdmins,cn=builtin,dc=lightwave,dc=local
+changetype: modify
+add: member
+member: CN=ADAM-WIN2K8R2-D,CN=Computers,DC=lightwave,DC=local
