@@ -1601,6 +1601,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/tools/vdcschema/Makefile
                  vmdir/tools/test/Makefile
                  vmdir/tools/test/vmdirclienttest/Makefile
+                 vmdir/tools/mdb_walflush/Makefile
                  vmdir/thirdparty/Makefile
                  vmdir/thirdparty/openldap/Makefile
                  vmdir/thirdparty/openldap/libraries/Makefile

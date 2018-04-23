@@ -1051,6 +1051,10 @@ Lightwave POST service
 %{_bindir}/vdcmetric
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
+%{_bindir}/run_backup.sh
+%{_bindir}/lw_backup.sh
+%{_bindir}/aws_backup_common.sh
+%{_bindir}/lw_mdb_walflush
 
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird

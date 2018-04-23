@@ -26,7 +26,7 @@ main(int argc, char* argv[])
     BOOLEAN         bMdbWalEnable = TRUE;
     MDB_env*        mdbEnv = NULL;
 #ifndef _WIN32
-    const char     *dbHomeDir = LWRAFT_DB_DIR;
+    const char     *dbHomeDir = VMDIR_DB_DIR;
 #else
     _TCHAR          dbHomeDir[MAX_PATH];
     dwError = VmDirMDBGetHomeDir(dbHomeDir);
