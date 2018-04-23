@@ -302,5 +302,12 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d) for UPN: %s",
+            __FUNCTION__,
+            dwError,
+            pAuthToken ? VDIR_SAFE_STRING(pAuthToken->pszBindUPN) : "");
+
     goto cleanup;
 }
