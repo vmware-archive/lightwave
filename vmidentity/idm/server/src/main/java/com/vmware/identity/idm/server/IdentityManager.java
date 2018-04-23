@@ -175,6 +175,7 @@ import com.vmware.identity.idm.server.provider.ProviderFactory;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.activedirectory.ServerKrbUtils;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
+import com.vmware.identity.idm.server.provider.vmwdirectory.SystemTenantProvider;
 import com.vmware.identity.idm.server.vmaf.VmafClientUtil;
 import com.vmware.identity.interop.IdmUtils;
 import com.vmware.identity.interop.accountmanager.AccountLockedOutException;
@@ -6935,7 +6936,7 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
-    ProvidersInfo loadProvidersInfo(String tenantName) throws Exception
+    ProvidersInfo loadProvidersInfo(String tenantName, OperatorAccessPolicy tenantOperatorPolicy) throws Exception
     {
         Collection<IIdentityProvider> providers =
                 new ArrayList<IIdentityProvider>();
@@ -6975,7 +6976,40 @@ public class IdentityManager implements IIdentityManager {
             }
         }
 
+        instantiateOperatorsProviderIdNeeded( tenantName, tenantOperatorPolicy, providers );
+
         return new ProvidersInfo(providers, stores, adProvider, defaultProviders);
+    }
+
+    private void instantiateOperatorsProviderIdNeeded(
+        String tenantName, OperatorAccessPolicy tenantOperatorPolicy,
+        Collection<IIdentityProvider> providers) {
+        try
+        {
+            if ((tenantOperatorPolicy) != null && (tenantOperatorPolicy.enabled()))
+            {
+                String systemTenant = this.getSystemTenant();
+
+                if (ServerUtils.isEquals(tenantName, systemTenant) == false)
+                {
+                    TenantInformation systemTenantInfo = this.findTenant(systemTenant);
+                    if (systemTenantInfo != null ){
+                        OperatorAccessPolicy opPolicy = systemTenantInfo.getOperatorAccessPolicy();
+                        if (opPolicy != null && opPolicy.enabled() == true){
+                            IIdentityStoreData ids = systemTenantInfo.findSystemIds();
+                            if (ids != null) {
+                                IIdentityProvider opProvider = new SystemTenantProvider(tenantName, systemTenantInfo.findSystemIds(), opPolicy);
+                                providers.add( opProvider );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            logger.error("Failed to create operators provider.", ex);
+        }
     }
 
     private
@@ -7048,7 +7082,7 @@ public class IdentityManager implements IIdentityManager {
                     Collection<List<Certificate>> certChains = _configStore.getTenantCertChains(tenantName);
                             PrivateKey key = _configStore.getTenantPrivateKey(tenantName);
 
-                            ProvidersInfo providersInfo = loadProvidersInfo(tenantName);
+                            ProvidersInfo providersInfo = loadProvidersInfo(tenantName, operatorPolicy);
                             Collection<IDPConfig> idpConfigs = _configStore.getExternalIDPConfigs(tenantName);
 
                             tenantInfo = new TenantInformation(

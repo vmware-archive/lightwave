@@ -23,6 +23,7 @@ import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IdentityStoreType;
 import com.vmware.identity.idm.KnownSamlAttributes;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchResult;
@@ -787,13 +788,21 @@ public class SystemTenantProviderIT extends IDMServerBaseIT {
         opsGroups.add(opsgroup2);
         opsGroups.add(opsgroup3);
 
+        OperatorAccessPolicy.Builder b = new OperatorAccessPolicy.Builder()
+            .withEnabled(true);
+
         systemTenantProviderDefaultBase = new SystemTenantProvider(
-            systemTenant, getIDS(domainDN, domainDN), pool, ldapProvider, true);
+            systemTenant, getIDS(domainDN, domainDN), b.build(), pool, ldapProvider, true);
+
+        b = new OperatorAccessPolicy.Builder()
+            .withEnabled(true)
+            .withUserBaseDn(dn( uniqueName(OPS_USERS_CNT), uniqueName(USERS_CNT)))
+            .withGroupBaseDn(dn( uniqueName(OPS_GROUPS_CNT), uniqueName(GROUPS_CNT)));
+
         systemTenantProviderCustomBase = new SystemTenantProvider(
             systemTenant,
-            getIDS(
-                dn( uniqueName(OPS_USERS_CNT) , uniqueName(USERS_CNT)),
-                dn( uniqueName(OPS_GROUPS_CNT) , uniqueName(GROUPS_CNT))),
+            getIDS(domainDN, domainDN),
+            b.build(),
             pool, ldapProvider, true
         );
 

@@ -32,7 +32,6 @@ import java.util.UUID;
 
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
-import org.junit.AfterClass;
 
 import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.directory.rest.common.data.MemberType;
@@ -320,7 +319,6 @@ public class OIDCClientITBase {
         return new ClientID(oidcClientDTO.getClientId());
     }
 
-    @AfterClass
     public static void tearDown() throws Exception {
         idmClientForSystemTenant.tenant().delete(regularTenant);
         vmdirClientForSystemTenant.user().delete(systemTenant, solutionUserName, systemTenant);

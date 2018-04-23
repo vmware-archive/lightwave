@@ -20,6 +20,7 @@ import com.vmware.identity.idm.AuthenticationType;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.IdentityStoreType;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.server.ServerUtils;
@@ -36,22 +37,21 @@ public class SystemTenantProvider extends VMDirProvider {
     private final String baseGroupDn;
     private boolean useIdsCreds; // used for testing
 
-    // todo: add ops config
     public SystemTenantProvider(
-	String tenantName, IIdentityStoreData store )
+	String tenantName, IIdentityStoreData store, OperatorAccessPolicy opPolicy )
     {
-    	this(tenantName, store, null, null, false);
+    	this(tenantName, store, opPolicy, null, null, false);
     }
 
-    // todo: add ops config
     // for unit tests
     public SystemTenantProvider(
-	    String tenantName, IIdentityStoreData store,
+        String tenantName, IIdentityStoreData store,
+        OperatorAccessPolicy opPolicy,
         IPooledConnectionProvider pooledConnectionProvider,
         ILdapConnectionProvider ldapConnectionProvider,
         boolean idsCreds)
     {
-        super(tenantName, getIDS(store, idsCreds), pooledConnectionProvider, ldapConnectionProvider );
+        super(tenantName, getIDS(store, opPolicy, idsCreds), pooledConnectionProvider, ldapConnectionProvider );
         this.baseGroupDn = this.getGroupsDN(this.getDomain()).toLowerCase();
         this.useIdsCreds = idsCreds;
     }
@@ -169,10 +169,13 @@ public class SystemTenantProvider extends VMDirProvider {
         throw new NotImplementedException();
     }
 
-    private static IIdentityStoreData getIDS( IIdentityStoreData storeData, boolean idsCreds) {
+    private static IIdentityStoreData getIDS(
+        IIdentityStoreData storeData, OperatorAccessPolicy opPolicy, boolean idsCreds) {
+
         ValidateUtil.validateNotNull( storeData, "storeData" );
-            ValidateUtil.validateNotEmpty( storeData.getName(), "storeData.getName()" );
-            ValidateUtil.validateNotNull(
+        ValidateUtil.validateNotNull( opPolicy, "opPolicy" );
+        ValidateUtil.validateNotEmpty( storeData.getName(), "storeData.getName()" );
+        ValidateUtil.validateNotNull(
             storeData.getExtendedIdentityStoreData(), "storeData.getExtendedIdentityStoreData()" );
         Validate.isTrue(
             storeData.getExtendedIdentityStoreData().getProviderType() == IdentityStoreType.IDENTITY_STORE_TYPE_VMWARE_DIRECTORY,
@@ -202,12 +205,23 @@ public class SystemTenantProvider extends VMDirProvider {
             data.setAuthenticationType(dataEx.getAuthenticationType());
         }
 
-        // todo: use ops provider settings
-        data.setUserBaseDn(dataEx.getUserBaseDn());
+        // if ops config provides settings -> use them
+        // if not use ids
+        // finally fallback to domain wide
+        if ( ServerUtils.isNullOrEmpty(opPolicy.userBaseDn()) == false){
+            data.setUserBaseDn(opPolicy.userBaseDn());
+        } else {
+            data.setUserBaseDn(dataEx.getUserBaseDn());
+        }
         if (ServerUtils.isNullOrEmpty(data.getUserBaseDn())) {
             data.setUserBaseDn(getDomainDN(data.getName()));
         }
-        data.setGroupBaseDn(dataEx.getGroupBaseDn());
+
+        if ( ServerUtils.isNullOrEmpty(opPolicy.groupBaseDn()) == false){
+            data.setGroupBaseDn(opPolicy.groupBaseDn());
+        } else {
+            data.setGroupBaseDn(dataEx.getGroupBaseDn());
+        }
         if (ServerUtils.isNullOrEmpty(data.getGroupBaseDn())) {
             data.setGroupBaseDn(getDomainDN(data.getName()));
         }
