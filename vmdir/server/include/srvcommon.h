@@ -73,6 +73,8 @@ extern "C" {
 
 // Deadlock Detection (DD) vector indicator
 #define VMDIR_REPL_DD_VEC_INDICATOR  "vector:"
+#define VMDIR_REPL_CONT_INDICATOR_STR "continue:"
+
 
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
@@ -574,6 +576,7 @@ typedef struct SyncDoneControlValue
     //   (done in result.c/VmDirSendSearchEntry)
     // 2. full page request sent and there could be more changes pending.
     BOOLEAN                 bContinue;
+    PSTR                    pszDeadlockDetectionVector;
 } SyncDoneControlValue;
 
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
@@ -783,6 +786,7 @@ typedef struct _VMDIR_REPLICATION_AGREEMENT
     VDIR_BERVALUE               dn;
     char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
     PSTR                        pszHostname;
+    PSTR                        pszInvocationID;
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
     VMDIR_DC_CONNECTION         dcConn;
@@ -1513,7 +1517,8 @@ VmDirFilterInternalSearch(
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
-   PVDIR_ENTRY         pSrEntry
+   PVDIR_ENTRY         pSrEntry,
+   PBOOLEAN            pbLowestPendingUncommittedUsn
    );
 
 // middle-layer password.c

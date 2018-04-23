@@ -102,7 +102,6 @@ _VmDirSearchPreCondition(
     )
 {
     DWORD    dwError = 0;
-    BOOLEAN  bHoldingReadLock = FALSE;
     PSTR     pszLocalErrorMsg = NULL;
 
     // Is sync request operable?
@@ -121,18 +120,6 @@ _VmDirSearchPreCondition(
             dwError = pResult->errCode = LDAP_UNAVAILABLE;
             BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg,
                     "Server in not in normal mode, not allowing outward replication.");
-        }
-
-        bHoldingReadLock = pOperation->conn->bInReplLock;
-        // Sync request must acquire replication (read) lock
-        VMDIR_RWLOCK_READLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock, 1000);
-
-        if (!pOperation->conn->bInReplLock ||
-            (VmDirdState() == VMDIRD_STATE_SHUTDOWN && bHoldingReadLock == FALSE))//don't allow new sync req in shutdown state
-        {
-            VMDIR_RWLOCK_UNLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock);
-            dwError = pResult->errCode = LDAP_BUSY;
-            BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
 

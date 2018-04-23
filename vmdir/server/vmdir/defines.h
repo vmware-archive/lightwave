@@ -422,4 +422,15 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_EMPTY_PAGE_COUNT,   \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 1,                                \
+        /*.dwMax          = */ 10,                               \
+        /*.dwDefault      = */ 3,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }

@@ -157,9 +157,6 @@ VmDirDeleteConnection(
 {
     if (conn && *conn)
     {
-        // Release replication (read) lock if holding
-        VMDIR_RWLOCK_UNLOCK((*conn)->bInReplLock, gVmdirGlobals.replRWLock);
-
         if ((*conn)->sb)
         {
             VmDirSASLSessionClose((*conn)->pSaslInfo);

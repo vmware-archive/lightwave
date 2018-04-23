@@ -348,21 +348,54 @@ DeleteControls(
    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "DeleteControls: End." );
 }
 
-VOID
-VmDirSetSyncDoneCtlbContinue(
+DWORD
+VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION pOp,
-    DWORD           dwSentEntryCount
+    DWORD           dwSentEntryCount,
+    BOOLEAN         bLowestPendingUncommittedUsn
     )
 {
-    if (pOp &&
-        pOp->syncDoneCtrl &&
-        pOp->request.searchReq.sizeLimit > 0 &&
-        pOp->request.searchReq.sizeLimit == dwSentEntryCount)
-    {   // replication pull full page request sent and there could be more changes pending
-        // ask consumer to come back.
-        pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
+    BOOLEAN   bConsumingPartner = FALSE;
+    DWORD     dwError = 0;
+    PCSTR     pszInvocationId = NULL;
+
+    if (pOp && pOp->syncDoneCtrl && pOp->syncReqCtrl)
+    {
+        bConsumingPartner = VmDirConsumerRoleActive();
+
+        pszInvocationId = pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val;
+
+        if (bConsumingPartner && dwSentEntryCount == 0)
+        {
+            dwError = VmDirDDVectorToString(
+                    pszInvocationId,
+                    &pOp->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_REPL,
+                    "%s: supplier sending vector: %s",
+                    __FUNCTION__,
+                    pOp->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
+        }
+
+        if ((pOp->request.searchReq.sizeLimit > 0 &&
+             pOp->request.searchReq.sizeLimit == dwSentEntryCount) ||
+             bConsumingPartner ||
+             bLowestPendingUncommittedUsn)
+        {
+            pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
+        }
     }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
 }
+
 
 int
 WriteSyncDoneControl(
@@ -371,6 +404,7 @@ WriteSyncDoneControl(
     )
 {
     int                     retVal = LDAP_OPERATIONS_ERROR;
+    size_t                  deadlockDetectionVectorLen = 0;
     PLW_HASHTABLE_NODE      pNode = NULL;
     LW_HASHTABLE_ITER       iter = LW_HASHTABLE_ITER_INIT;
     UptoDateVectorEntry *   pUtdVectorEntry = NULL;
@@ -387,16 +421,22 @@ WriteSyncDoneControl(
             BAIL_ON_VMDIR_ERROR( retVal );
         }
         { // Construct string format of utdVector
+            if (op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector)
+            {
+                deadlockDetectionVectorLen = VmDirStringLenA(op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
+            }
+
             int     numEntries = LwRtlHashTableGetCount( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector );
             char *  writer = NULL;
             size_t  tmpLen = 0;
             size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
                                 (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) +
-                                (VMDIR_REPL_CONT_INDICATOR_LEN + 1);
+                                VMDIR_REPL_CONT_INDICATOR_LEN +
+                                deadlockDetectionVectorLen + 1;
 
             // Sync Done control value looks like: <lastLocalUsnChanged>,<serverId1>:<server 1 last originating USN>,
-            // <serverId2>,<server 2 originating USN>,...,[continue:1,]
-
+            // <serverId2>,<server 2 originating USN>,...,
+            // [continue:1,vector:<servername>:<consecutiveEmptyPageCounter>,<servername>:<consecutiveEmptyPageCounter>...]
             if (VmDirAllocateMemory( bufferSize, (PVOID *)&bvCtrlVal.lberbv.bv_val) != 0)
             {
                 retVal = LDAP_OPERATIONS_ERROR;
@@ -426,6 +466,15 @@ WriteSyncDoneControl(
             {
                 VmDirStringPrintFA( writer, bufferSize, VMDIR_REPL_CONT_INDICATOR );
                 tmpLen = VmDirStringLenA( writer );
+                writer += tmpLen;
+                bufferSize -= tmpLen;
+                bvCtrlVal.lberbv.bv_len += tmpLen;
+            }
+
+            if (op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector)
+            {
+                VmDirStringPrintFA(writer, bufferSize, op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
+                tmpLen = VmDirStringLenA(writer);
                 writer += tmpLen;
                 bufferSize -= tmpLen;
                 bvCtrlVal.lberbv.bv_len += tmpLen;

@@ -266,6 +266,7 @@ VmDirFreeReplicationAgreement(
         VmDirFreeBervalContent(&pReplAgr->lastLocalUsnProcessed);
         VmDirFreeBervalContent(&pReplAgr->dn);
         VMDIR_SAFE_FREE_MEMORY(pReplAgr->pszHostname);
+        VMDIR_SAFE_FREE_MEMORY(pReplAgr->pszInvocationID);
         VMDIR_SAFE_FREE_MEMORY(pReplAgr);
     }
 }
@@ -388,6 +389,8 @@ LoadReplicationAgreements()
             dwError = ProcessReplicationAgreementEntry( op.internalSearchEntryArray.pEntry + iCnt );
             BAIL_ON_VMDIR_ERROR( dwError );
         }
+
+        VmDirPopulateInvocationIdInReplAgr();
     }
 
 cleanup:

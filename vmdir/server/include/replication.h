@@ -148,6 +148,72 @@ VmDirUTDVectorCacheShutdown(
     VOID
     );
 
+DWORD
+VmDirStringToUTDVector(
+    PCSTR          pszUTDVector,
+    PLW_HASHMAP*   ppMap
+    );
+
+DWORD
+VmDirUTDVectorToString(
+    PLW_HASHMAP   pMap,
+    PSTR*         ppszUTDVector
+    );
+
+DWORD
+VmDirUpdateUtdVectorLocalCache(
+    PLW_HASHMAP      pUtdVectorMap,
+    struct berval*   pPageSyncDoneCtrl
+    );
+
+DWORD
+VmDirSyncDoneCtrlFromLocalCache(
+    USN              lastSupplierUsnProcessed,
+    PLW_HASHMAP      pUtdVectorMap,
+    struct berval*   pPageSyncDoneCtrl
+    );
+
+/*
+ * deadlockdetectionvector.c
+ */
+DWORD
+VmDirDDVectorInit(
+    VOID
+    );
+
+VOID
+VmDirDDVectorShutdown(
+    VOID
+    );
+
+DWORD
+VmDirDDVectorUpdate(
+    PCSTR   pszInvocationId,
+    DWORD   dwValue
+    );
+
+BOOLEAN
+VmDirConsumerRoleActive(
+    VOID
+    );
+
+VOID
+VmDirDDVectorClear(
+    VOID
+    );
+
+DWORD
+VmDirDDVectorParseString(
+    PSTR       pszDeadlockDetectionVectorStr,
+    PBOOLEAN   pbCompleteReplCycle
+    );
+
+DWORD
+VmDirDDVectorToString(
+    PCSTR   pszInvocationId,
+    PSTR*   ppDeadlockDetectionVectorStr
+    );
+
 #ifdef __cplusplus
 }
 #endif

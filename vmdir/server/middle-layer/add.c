@@ -309,7 +309,7 @@ txnretry:
 
     gVmdirGlobals.dwLdapWrites++; //occasionally concurrent update error is fine on the counter
 
-    VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+    VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry);
 
 cleanup:
     {

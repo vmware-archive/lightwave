@@ -297,6 +297,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwReplConsumerThreadTimeoutInMilliSec = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_EMPTY_PAGE_COUNT,
+                    TRUE))
+        {
+            gVmdirGlobals.dwEmptyPageCnt = pEntry->dwValue;
+        }
     }
 
 cleanup:

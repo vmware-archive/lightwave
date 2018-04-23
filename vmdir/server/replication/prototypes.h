@@ -56,6 +56,11 @@ VmDirCacheKrb5Creds(
     PSTR  *ppszErrorMsg
     );
 
+VOID
+VmDirPopulateInvocationIdInReplAgr(
+    VOID
+    );
+
 // replentry.c
 int
 ReplAddEntry(

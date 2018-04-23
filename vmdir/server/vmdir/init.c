@@ -1730,9 +1730,6 @@ InitializeGlobalVars(
     dwError = VmDirAllocateCondition(&gVmdirGlobals.replCycleDoneCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateRWLock(&gVmdirGlobals.replRWLock);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirAllocateMutex(&gVmdirKrbGlobals.pmutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1770,6 +1767,9 @@ InitializeGlobalVars(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirUTDVectorCacheInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirDDVectorInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
