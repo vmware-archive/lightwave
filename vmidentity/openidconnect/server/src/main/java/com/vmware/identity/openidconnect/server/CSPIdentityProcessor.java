@@ -255,6 +255,11 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
   private HttpResponse
   processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
+    Validate.notNull(token, "Token must not be null.");
+    Validate.notNull(state, "Relay state must not be null.");
+    Validate.notNull(idpConfig, "IDPConfig must not be null.");
+    Validate.notNull(session, "Session must not be null.");
+
     CSPToken idToken = token.getLeft();
     CSPToken accessToken = token.getRight();
     String tenantName = idToken.getTenant();
@@ -275,6 +280,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
           // There is potential race condition for creating tenant.
           createTenant(tenantName, state.getIssuer());
           createOrgOwnerAccount(tenantName, federatedIdp, state.getIssuer(), user);
+          tenantInfo = getTenantInfo(tenantName);
       } else {
           ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] does not exist", tenantName));
           LoggerUtils.logFailedRequest(logger, errorObject);
@@ -310,13 +316,16 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     ClientID clientID = new ClientID(state.getClientId());
     ClientInfo clientInfo = clientInfoRetriever.retrieveClientInfo(systemDomain, clientID);
 
+    PersonUser personUser = new PersonUser(user, tenantName);
+    UserInfoRetriever userInfoRetriever = new UserInfoRetriever(idmClient);
+    personUser = userInfoRetriever.getUPN(personUser); // use upn from ldap
+
     Cookie sessionCookie = loggedInSessionCookie(tenantName, session);
     Cookie cspIssuerCookie = CSPIssuerCookie(tenantName, state.getIssuer());
-    PersonUser personUser = new PersonUser(user, tenantName);
     sessionManager.update(session, personUser, LoginMethod.PASSWORD, clientInfo);
     HttpResponse httpResponse;
     if (StringUtils.isNotEmpty(state.getSPInitiatedState())) {
-        AuthenticationSuccessResponse authnSuccessResponse = processIDTokenResponse(tenantName, state, personUser, session);
+        AuthenticationSuccessResponse authnSuccessResponse = processIDTokenResponse(tenantInfo, userInfoRetriever, state, personUser, session);
         httpResponse = authnSuccessResponse.toHttpResponse();
     } else {
         String redirectURI = String.format("%s/%s", state.getRedirectURI(), tenantName);
@@ -328,15 +337,17 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     return httpResponse;
   }
 
-    private AuthenticationSuccessResponse processIDTokenResponse(String tenant, FederationRelayState state,
-            PersonUser personUser, SessionID sessionId) throws Exception {
+    private AuthenticationSuccessResponse processIDTokenResponse(TenantInfo tenantInfo, UserInfoRetriever userInfoRetriever,
+            FederationRelayState state, PersonUser personUser, SessionID sessionId) throws Exception {
+        Validate.notNull(tenantInfo, "TenantInfo must not be null.");
+        Validate.notNull(state, "Relay state must not be null.");
+        Validate.notNull(personUser, "Person user must not be null.");
+        Validate.notNull(sessionId, "Session must not be null.");
+
         ServerInfoRetriever serverInfoRetriever = new ServerInfoRetriever(idmClient);
-        UserInfoRetriever userInfoRetriever = new UserInfoRetriever(idmClient);
         Scope scope = Scope.parse(state.getScope());
-        Set<ResourceServerInfo> resourceServerInfos = serverInfoRetriever.retrieveResourceServerInfos(tenant, scope);
+        Set<ResourceServerInfo> resourceServerInfos = serverInfoRetriever.retrieveResourceServerInfos(tenantInfo.getName(), scope);
         UserInfo userInfo = userInfoRetriever.retrieveUserInfo(personUser, scope, resourceServerInfos);
-        TenantInfoRetriever tenantInfoRetriever = new TenantInfoRetriever(idmClient);
-        TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
 
         TokenIssuer tokenIssuer = new TokenIssuer(personUser, (SolutionUser) null, userInfo, tenantInfo, scope,
                 new Nonce(state.getNonce()), new ClientID(state.getClientId()), sessionId);
@@ -611,7 +622,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       CSPToken accessToken = new CSPToken(TokenClass.ACCESS_TOKEN, accessTokenJWT);
 
       validateIssuer(idToken, key.getIssuer());
+      validateIssuer(accessToken, key.getIssuer());
       validateExpiration(idToken);
+      validateExpiration(accessToken);
 
       return Pair.of(idToken, accessToken);
     }

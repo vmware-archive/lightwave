@@ -34,7 +34,6 @@ import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.LoginHint;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
@@ -209,6 +208,7 @@ public class AuthenticationRequestProcessor {
 
             // we have a person user, process authn request for this person user
             try {
+                personUser = this.userInfoRetriever.getUPN(personUser); // use upn from ldap
                 AuthenticationSuccessResponse authnSuccessResponse = (this.authnRequest.getResponseType().contains(ResponseTypeValue.AUTHORIZATION_CODE)) ?
                         processAuthzCodeResponse(personUser, sessionId) :
                         processIDTokenResponse(personUser, sessionId);
