@@ -70,6 +70,10 @@ if [ -d $BACKUP_PATH ]; then
     rm -rf $BACKUP_PATH
 fi
 
+if [ ! -d /var/lib/vmware/db_bkp ]; then
+    mkdir /var/lib/vmware/db_bkp
+fi
+
 /opt/vmware/bin/dir-cli database-backup --backuppath $BACKUP_PATH
 if [ $? -ne 0 ]; then
     logger -t backup "Error while taking db backup."
