@@ -89,7 +89,15 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope', '$location',
                         href: "#ssoservermgmt",
                         roles: ['Administrator'],
                         tenantType: 'All'
-                    }
+                    },
+                    {
+                        name: "Directory",
+                        header: true,
+                        href: "/webui",
+                        selected: false,
+                        roles: ['Administrator'],
+                        tenantType: 'All'
+                     }
                 ];
 
                 for (var i=0; i<$scope.vm.menus.length; i++) {

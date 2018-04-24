@@ -588,6 +588,8 @@ build/vmidentity/
 build/vmmetrics/
 build/rpmbuild/
 
+vmidentity/lightwaveui/src
+vmidentity/lightwaveui/web/share
 # hmake files
 .hmake
 .hmakerc

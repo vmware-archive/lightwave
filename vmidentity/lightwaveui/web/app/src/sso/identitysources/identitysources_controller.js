@@ -39,6 +39,14 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 $scope.vm.isNew = true;
                 $scope.vm.newIdentitySource = {
                         connectionStrings: [],
+                        attributesMap: {
+                            'http://vmware.com/schemas/attr-names/2011/07/isSolution' : 'subjectType',
+                            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress' : 'mail',
+                            'http://schemas.xmlsoap.org/claims/UPN' : 'userPrincipalName',
+                            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname' : 'sn',
+                            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname' : 'givenName',
+                            'http://rsa.com/schemas/attr-names/2009/01/GroupIdentity' : 'memberof'
+                        },
                         type: 'IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING'
                 };
                 $scope.vm.selectedIdentitysource = null;
