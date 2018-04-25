@@ -486,6 +486,7 @@ VmDirSwapDB(
     PSTR                    pszLocalErrorMsg = NULL;
     int                     errorCode = 0;
     BOOLEAN                 bLegacyDataLoaded = FALSE;
+    BOOLEAN                 bPathExist = FALSE;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
 
 #ifndef _WIN32
@@ -559,7 +560,11 @@ VmDirSwapDB(
                                          dbNewName, errorCode);
         }
 
-        if (rename(dbExistingName, dbNewName) != 0)
+        retVal = VmDirPathExists(dbExistingName, &bPathExist);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        // compacted DB does not have xlogs
+        if (bPathExist && rename(dbExistingName, dbNewName) != 0)
         {
             retVal = LDAP_OPERATIONS_ERROR;
             errorCode = errno;
