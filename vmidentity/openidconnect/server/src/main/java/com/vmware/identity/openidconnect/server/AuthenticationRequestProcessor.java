@@ -334,7 +334,7 @@ public class AuthenticationRequestProcessor {
         this.model.addAttribute("sso_endpoint",                 Endpoints.BASE + Endpoints.AUTHENTICATION);
         this.model.addAttribute("responseMode",                 this.authnRequest.getResponseMode().getValue());
 
-        this.model.addAttribute("tenant",                       this.tenant);
+        this.model.addAttribute("tenant",                       StringEscapeUtils.escapeEcmaScript(this.tenant));
         this.model.addAttribute("tenant_brandname",             StringEscapeUtils.escapeEcmaScript(this.tenantInfo.getBrandName()));
         this.model.addAttribute("tenant_logonbanner_title",     StringEscapeUtils.escapeEcmaScript(this.tenantInfo.getLogonBannerTitle()));
         this.model.addAttribute("tenant_logonbanner_content",   StringEscapeUtils.escapeEcmaScript(this.tenantInfo.getLogonBannerContent()));

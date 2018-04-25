@@ -100,7 +100,7 @@ public class SsoController extends BaseSsoController {
             processSsoRequest(locale, tenant, request, response, authenticator,requestState,
                     messageSource, sessionManager);
 
-            model.addAttribute("tenant", tenant);
+            model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
             model.addAttribute("protocol", "websso");
             if (requestState.isChooseIDPViewRequired() != null && requestState.isChooseIDPViewRequired()) {
                 setupChooseIDPModel(model,locale, tenant, requestState);
@@ -299,7 +299,7 @@ public class SsoController extends BaseSsoController {
                 sso(locale, tenant, model, request, response);
                 return null;
             }
-            model.addAttribute("tenant", tenant);
+            model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
             model.addAttribute("protocol", "websso");
             setupAuthenticationModel(model,locale, tenant, request, null);
         } catch (Exception e) {
@@ -312,7 +312,7 @@ public class SsoController extends BaseSsoController {
      }
 
     private void setupChooseIDPModel(Model model, Locale locale, String tenant, AuthnRequestState requestState) {
-        model.addAttribute("tenant", tenant);
+        model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
         model.addAttribute("protocol", "websso");
         model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
         List<String> entityIdList = requestState.getIDPSelectionEntityIdList();
