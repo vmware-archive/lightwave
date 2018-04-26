@@ -3,7 +3,6 @@ package oidc
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vmware/cascade-kubernetes-extras/oidc-proxy/proxy/oidc"
 	"testing"
 	"time"
 )
@@ -27,7 +26,7 @@ func TestValidateExpiration(t *testing.T) {
 	claims[ClaimIssuedAt] = time.Now().Add(time.Second * (defaultClockToleranceSecs + 1))
 	err = validateExpiration(&claims, defaultClockToleranceSecs)
 	if assert.NotNil(t, err, "Claim should be invalid") {
-		assert.Contains(t, err.Error(), oidc.OIDCTokenNotYetValidError.Name(), "Error should be NotYetValid: %+v", err)
+		assert.Contains(t, err.Error(), OIDCTokenNotYetValidError.Name(), "Error should be NotYetValid: %+v", err)
 	}
 }
 
@@ -41,13 +40,13 @@ func TestValidateAudienceClaim(t *testing.T) {
 	claims[ClaimAudience] = 0
 	err := validateAudienceClaim(&claims)
 	if assert.NotNil(t, err, "Audience should be String") {
-		assert.Contains(t, err.Error(), oidc.OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
 	}
 
 	claims[ClaimAudience] = []int{1}
 	err = validateAudienceClaim(&claims)
 	if assert.NotNil(t, err, "Audience should be String") {
-		assert.Contains(t, err.Error(), oidc.OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
 	}
 
 	claims[ClaimAudience] = []string{""}
