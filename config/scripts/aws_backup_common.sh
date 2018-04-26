@@ -57,6 +57,13 @@ delete_file() {
     aws s3 rm s3://$FULL_PATH/$1
 }
 
+exit_if_no_tag() {
+    aws autoscaling describe-tags $EC2_REGION --filters "Name=auto-scaling-group,Values=$ASG" "Name=key,Values=BACKUP_ENABLED" "Name=Value,Values=1" |grep ResourceId
+    if [ $? -ne 0 ]; then
+        exit
+    fi
+}
+
 REGION=$EC2_REGION
 get_account_id
 BUCKET=dr-$ACCOUNT_ID-$REGION

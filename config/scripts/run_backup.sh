@@ -1,6 +1,8 @@
 #!/bin/bash
 source /opt/vmware/bin/aws_backup_common.sh
 
+exit_if_no_tag
+
 SLEEP_QUANTUM=900
 
 logger -t run_backup "Started run_backup.sh"
@@ -26,7 +28,7 @@ if [ ! $RANK -eq 0 ]; then
     #Check if any other node has done the backup.
     get_latest_bkp
 
-    MTIME=${LATEST: -24}
+    MTIME=${LATEST: -31}
     CURRENT_TIME=`date '+%Y%m%d%H%M'`
     C_HOUR=${CURRENT_TIME:8:2}
     C_HOUR=`echo $C_HOUR | sed 's/^0//'`
@@ -45,10 +47,10 @@ if [ ! $RANK -eq 0 ]; then
     if [ $C_DAY -eq $M_DAY ]; then
         (( TIME_DIFF=C_ELAPSED-M_ELAPSED ))
     else
-        (( TIME_DIFF=24*60-C_ELAPSED+M_ELAPSED ))
+        (( TIME_DIFF=24*60+C_ELAPSED-M_ELAPSED ))
     fi
 
-    if (( TIME_DIFF < SLEEP_TIME+15 )); then
+    if (( TIME_DIFF < SLEEP_TIME/60 + 15 )); then
         logger -t run_backup "Another node took the backup "$TIME_DIFF" mins ago. Backup not required."
         exit
     fi
