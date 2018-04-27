@@ -428,7 +428,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 1,                                \
         /*.dwMax          = */ 10,                               \
-        /*.dwDefault      = */ 3,                                \
+        /*.dwDefault      = */ 1,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
