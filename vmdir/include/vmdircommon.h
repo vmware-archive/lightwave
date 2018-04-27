@@ -1041,6 +1041,7 @@ typedef enum
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
 #define VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC "IntegrityChkJobIntervalInSec"
 #define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
+#define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
 
 //
 // The expiration period for deleted entries. Any entries older than this will
@@ -1708,6 +1709,12 @@ VmDirMigrateUserKey(
     DWORD newMasterKeyLen,
     PBYTE* ppNewUpnKeys,
     PDWORD pNewUpnKeysLen);
+
+DWORD
+VmDirGetFileSizeInMB(
+    PCSTR   pszFile,
+    PDWORD  pdwFileSizeInMB
+    );
 
 DWORD
 VmDirPathExists(

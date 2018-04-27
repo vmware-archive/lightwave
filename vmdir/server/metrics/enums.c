@@ -81,6 +81,20 @@ VmDirMetricsLdapErrorString(
 }
 
 PSTR
+VmDirMetricsSrvStatString(
+    METRICS_SRV_STAT srvStat
+    )
+{
+    static PSTR pszSrvStat[METRICS_SRV_STAT_COUNT] =
+    {
+            "DBSizeInMB",
+            "BackupTimeTakenInSec"
+    };
+
+    return pszSrvStat[srvStat];
+}
+
+PSTR
 VmDirMetricsRpcOperationString(
     METRICS_RPC_OPS operation
     )

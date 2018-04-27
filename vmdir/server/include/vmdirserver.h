@@ -546,6 +546,22 @@ VmDirRpcMetricsShutdown(
     VOID
     );
 
+DWORD
+VmDirSrvStatMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirSrvStatMetricsUpdate(
+    METRICS_SRV_STAT srvStat,
+    uint64_t        iValue
+    );
+
+VOID
+VmDirSrvStatMetricsShutdown(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

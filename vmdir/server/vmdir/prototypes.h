@@ -140,6 +140,11 @@ VmDirBkgdPingMaxOrigUsn(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );
 
+DWORD
+VmDirBkgdSrvStat(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
 // dbbackup.c
 VOID
 VmDirSrvSetMDBStateClear(
@@ -713,6 +718,12 @@ VmDirMetricsInitialize(
 
 VOID
 VmDirMetricsShutdown(
+    VOID
+    );
+
+// metics.c
+DWORD
+VmDirUpdateSrvStat(
     VOID
     );
 
