@@ -58,7 +58,7 @@ delete_file() {
 }
 
 exit_if_no_tag() {
-    aws autoscaling describe-tags $EC2_REGION --filters "Name=auto-scaling-group,Values=$ASG" "Name=key,Values=BACKUP_ENABLED" "Name=Value,Values=1" |grep ResourceId
+    aws autoscaling describe-tags --region $EC2_REGION --filters "Name=auto-scaling-group,Values=$ASG_NAME" "Name=key,Values=BACKUP_ENABLED" "Name=Value,Values=1" |grep ResourceId
     if [ $? -ne 0 ]; then
         exit
     fi
