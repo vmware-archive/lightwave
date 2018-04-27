@@ -72,13 +72,18 @@ public class OperatorsAccessCommand extends SSOConfigCommand {
         configs.add(TenantConfigType.OPERATORS_ACCESS);
         TenantConfigurationDTO existingConfig = client.tenant().getConfig(this.tenant, configs);
         OperatorsAccessPolicyDTO existingPolicy = existingConfig.getOperatorsAccessPolicy();
-        if ( (existingPolicy == null) && ( isEnabled == false ) ) {
-            // no op
-        } else {
+        if ( (existingPolicy != null) || ( isEnabled == true ) ) {
+            String existingUserBaseDn = null;
+            String existingGroupBaseDn = null;
+            if ( existingPolicy != null ) {
+                existingUserBaseDn = existingPolicy.getUserBaseDn();
+                existingGroupBaseDn = existingPolicy.getGroupBaseDn();
+            }
+
             OperatorsAccessPolicyDTO policyDto = new OperatorsAccessPolicyDTO.Builder()
                .withEnabled(isEnabled)
-               .withUserBaseDn( this.userBaseDnOption != null ? this.userBaseDnOption : existingPolicy.getUserBaseDn() )
-               .withGroupBaseDn( this.groupBaseDnOption != null ? this.groupBaseDnOption : existingPolicy.getGroupBaseDn() )
+               .withUserBaseDn( this.userBaseDnOption != null ? this.userBaseDnOption : existingUserBaseDn )
+               .withGroupBaseDn( this.groupBaseDnOption != null ? this.groupBaseDnOption : existingGroupBaseDn )
                .build();
 
             TenantConfigurationDTO dto = TenantConfigurationDTO.builder()
