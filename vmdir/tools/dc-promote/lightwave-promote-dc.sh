@@ -164,19 +164,6 @@ ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-vmafd.sh
 ssh $PRIV_USER@$LIGHTWAVE_AD '( /opt/likewise/bin/lwsm start npfs && /opt/likewise/bin/lwsm start pvfs && 
     /opt/likewise/bin/lwsm start rdr && /opt/likewise/bin/lwsm start srv )'
 
-# 8 Modify IP tables entries
-ssh $PRIV_USER@$LIGHTWAVE_AD '( iptables -I LIGHTWAVE --proto icmp -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto udp --dport 53 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto tcp --dport 53 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto udp --dport 88 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto tcp --dport 88 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto udp --dport 389 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto tcp --dport 445 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto tcp --dport 135 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto tcp --dport 139 -j ACCEPT &&
-    iptables -I LIGHTWAVE --proto tcp --dport 389 -j ACCEPT &&
-    iptables -I OUTPUT --proto tcp --dport 389 -j ACCEPT )'
-
 ## 9 Add DNS forwarder
 ssh $PRIV_USER@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder $DNS_FORWARDER \
     --server localhost --username Administrator --domain "$DC_DOMAIN" --password `cat /var/tmp/promote-pwd.txt`'
@@ -298,18 +285,41 @@ cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "LoginShellTemplate" REG_SZ "/bin/sh"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "LpcSocketPath" REG_SZ "/var/lib/likewise/rpc/lsass"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "Path" REG_SZ "/opt/likewise/lib64/libnetlogon_srv.so"
-/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "RegisterTcpIp" REG_DWORD 0
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\netlogon]' "RegisterTcpIp" REG_DWORD 1
+#
 # drsuapi RPC service
+#
 /opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]'
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "HomeDirPrefix" REG_SZ "/home"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "LoginShellTemplate" REG_SZ "/bin/sh"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "LpcSocketPath" REG_SZ "/var/lib/likewise/rpc/lsass"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "Path" REG_SZ "/opt/likewise/lib64/libdrsuapi_srv.so"
 /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\lsass\\Parameters\\RPCServers\\drsuapi]' "RegisterTcpIp" REG_DWORD 1
+#
+# lsassd dependencies on dcerpc endpoint mapper (netlogon/drsuapi)
+#
+/opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\\Services\\lsass]' "Dependencies" "vmdir netlogon lwio lwreg rdr dcerpc"
+#
+#
+# srv Service configuration
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\srv]' "Autostart" REG_DWORD 1
 NNNN
 scp /tmp/regshell-rpcloadorder.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
 ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/regshell-rpcloadorder.sh
 
+echo_status "Add dcfirewall configuration for lwsmd"
+cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/firewall-drsuapi-config.sh
+/opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\\Services\\dcfirewall]'
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Arguments" REG_SZ "/opt/likewise/bin/firewall-drsuapi"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Autostart" REG_DWORD 1
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Dependencies" REG_SZ "lsass"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Description" REG_SZ "DRSUAPI firewall service"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Environment" REG_SZ ""
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Path" REG_SZ "/opt/likewise/bin/firewall-drsuapi"
+/opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\\Services\\dcfirewall]' "Type" REG_DWORD 1
+NNNN
+scp /tmp/firewall-drsuapi-config.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/firewall-drsuapi-config.sh
 
 echo_status "Modify DSE Root supportedControl values for domain join"
 scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/supported-controls.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
@@ -334,14 +344,6 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
   --hostname photon-102-test2 --ip 10.118.96.61  \
   --server localhost --username Administrator --password $ADMIN_PASSWORD
 
-## TBD:Adam
-## TKEY dynamic DNS update works, so don't need this section.
-#echo_status "Adding DNS A record for joined client ADAM-WIN2K8R2-D"
-#ssh $PRIV_USER@$LIGHTWAVE_AD \
-#/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
-#  --hostname ADAM-WIN2K8R2-D --ip 10.118.96.151  \
-#  --server localhost --username Administrator --password $ADMIN_PASSWORD
-
 echo_status "Adding SRV record for Default-First-Site-Name..."
 ssh $PRIV_USER@$LIGHTWAVE_AD \
 /opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type SRV \
@@ -352,12 +354,14 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
 # Move this into lwsmd job
 #
 echo_status "Copy drsuapi firewall script to DC"
-scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/firewall-drsuapi.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
+scp $LIGHTWAVE_BASE/vmdir/tools/dc-promote/firewall-drsuapi.sh $PRIV_USER@$LIGHTWAVE_AD:/opt/likewise/bin/firewall-drsuapi
 
 # 16 Restart all lightwave services
 echo_status "Restart all lightwave services"
-ssh $PRIV_USER@$LIGHTWAVE_AD \
-    /opt/likewise/bin/lwsm restart lwreg
+ssh $PRIV_USER@$LIGHTWAVE_AD /opt/likewise/bin/lwsm stop lwreg
+ssh $PRIV_USER@$LIGHTWAVE_AD systemctl stop lwsmd
+ssh $PRIV_USER@$LIGHTWAVE_AD systemctl start lwsmd
+ssh $PRIV_USER@$LIGHTWAVE_AD /opt/likewise/bin/lwsm restart lwreg
 
 # 17 get a copy of the krb5.keytab from DC
 echo_status "get a copy of the krb5.keytab from DC"
