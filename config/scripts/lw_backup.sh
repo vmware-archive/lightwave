@@ -3,6 +3,16 @@ source /opt/vmware/bin/aws_backup_common.sh
 
 BACKUP_PATH="/var/lib/vmware/db_bkp/vmdir"
 
+update_backup_regkey() {
+  /opt/likewise/bin/lwregshell list_values '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' | grep -i BackupTimeTaken
+  OUT=$?
+  if [ ${OUT} != 0 ]; then
+     /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' BackupTimeTaken REG_DWORD $1
+  else
+     /opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' BackupTimeTaken $1
+  fi
+}
+
 #Uploads the mdb file. Sample name: <instance_id>-data.mdb
 upload_bundle() {
     #Calculate checksum
@@ -65,6 +75,8 @@ write_version() {
 logger -t backup "Taking backup"
 time=`date '+%Y%m%d%H%M'`
 
+backup_start_time="$(date -u +%s)"
+
 #Hot copy
 if [ -d $BACKUP_PATH ]; then
     rm -rf $BACKUP_PATH
@@ -100,6 +112,9 @@ if [ $? -ne 0 ]; then
     logger -t backup "Failed to take backup of rpm archive. Exiting."
     exit 1
 fi
+
+backup_end_time="$(date -u +%s)"
+update_backup_regkey $(( backup_end_time - backup_start_time ))
 
 #Delete backups older than 5 days
 get_bkp_list
