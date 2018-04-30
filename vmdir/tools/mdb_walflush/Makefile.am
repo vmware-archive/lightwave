@@ -25,7 +25,8 @@ lw_mdb_walflush_LDADD = \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @DL_LIBS@
 
 
 lw_mdb_walflush_LDFLAGS = \

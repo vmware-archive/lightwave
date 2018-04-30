@@ -25,7 +25,8 @@ vdcupgrade_LDADD = \
     @CRYPT_LIBS@ \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @DL_LIBS@
 
 vdcupgrade_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

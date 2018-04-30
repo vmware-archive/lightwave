@@ -587,6 +587,7 @@ build/vmevent/
 build/vmidentity/
 build/vmmetrics/
 build/rpmbuild/
+build/docker
 
 vmidentity/lightwaveui/src
 vmidentity/lightwaveui/web/share

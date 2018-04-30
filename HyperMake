@@ -5,30 +5,51 @@ name: lightwave
 description: Lightwave
 
 targets:
-  rebuild-toolchain:
-    description: build toolchain image
+  rebuild-toolchain-photon1:
+    description: build toolchain image for Photon OS 1.0
     watches:
-      - support/toolchain/docker/photon
-    build: support/toolchain/docker/photon
+      - support/toolchain/docker/photon1
+    build: support/toolchain/docker/photon1
+    image: 'vmware/lightwave-toolchain:2.0.1'
     cache: false
 
-  toolchain:
+  rebuild-toolchain-photon2:
+    description: build toolchain image for Photon OS 2.0
+    watches:
+      - support/toolchain/docker/photon2
+    build: support/toolchain/docker/photon2
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+    cache: false
+
+  toolchain-[osver:photon1,photon2]:
     description: place-holder for future dependencies
 
-  bootstrap-lightwave:
+  bootstrap-lightwave-photon1:
     description: Bootstraps build
     after:
-      - toolchain
+      - toolchain-photon1
     watches:
       - '**/**/*.am'
       - '**/**/*.ac'
     cmds:
       - ./support/scripts/bootstrap.sh
+    image: 'vmware/lightwave-toolchain:2.0.1'
 
-  build-lightwave:
+  bootstrap-lightwave-photon2:
+    description: Bootstraps build
+    after:
+      - toolchain-photon2
+    watches:
+      - '**/**/*.am'
+      - '**/**/*.ac'
+    cmds:
+      - ./support/scripts/bootstrap.sh
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  build-lightwave-photon1:
     description: build Lightwave source code for linux
     after:
-      - bootstrap-lightwave
+      - bootstrap-lightwave-photon1
     watches:
       - support/scripts/build.sh
       - '**/**/*.cpp'
@@ -37,42 +58,110 @@ targets:
       - '**/**/*.java'
     cmds:
       - ./support/scripts/build.sh
+    image: 'vmware/lightwave-toolchain:2.0.1'
+
+  build-lightwave-photon2:
+    description: build Lightwave source code for linux
+    after:
+      - bootstrap-lightwave-photon2
+    watches:
+      - support/scripts/build.sh
+      - '**/**/*.cpp'
+      - '**/**/*.c'
+      - '**/**/*.h'
+      - '**/**/*.java'
+    cmds:
+      - ./support/scripts/build.sh
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  build-[osver:photon1,photon2]:
+    description: build source code
+    after:
+      - 'build-*-$[osver]'
 
   build:
     description: build source code
     after:
-      - 'build-*'
+      - 'build-*-photon2'
+
+  pack-photon1:
+    description: Create RPM Package
+    after:
+      - build-photon1
+    cmds:
+      - ./support/scripts/pack.sh
+    image: 'vmware/lightwave-toolchain:2.0.1'
+
+  pack-photon2:
+    description: Create RPM Package
+    after:
+      - build-photon2
+    cmds:
+      - ./support/scripts/pack.sh
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
 
   pack:
     description: Create RPM Package
     after:
-      - build
-    cmds:
-      - ./support/scripts/pack.sh
+      - pack-photon2
 
-  docker-lightwave-base:
+  docker-lightwave-base-photon1:
     description: build lightwave-base docker image
-    build: ./support/toolchain/docker/photon2
-    image: 'vmware/lightwave-toolchain-photon:2.0.1'
+    build: ./support/docker/base/photon1
+    image: 'vmware/lightwave-base:2.0.1'
 
-  docker-lightwave-pre:
+  docker-lightwave-base-photon2:
+    description: build lightwave-base docker image
+    build: ./support/docker/base/photon2
+    image: 'vmware/lightwave-base-photon2:1.0.0'
+
+  docker-lightwave-pre-photon1:
     description: Prepare for container build
     cmds:
-      - ./support/scripts/prep-container-build.sh
+      - ./support/scripts/prep-container-build.sh photon1
     always: true
+    image: 'vmware/lightwave-toolchain:2.0.1'
 
-  docker-lightwave:
+  docker-lightwave-pre-photon2:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon2
+    always: true
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  docker-lightwave-photon1:
     description: build lightwave docker image
     build: ./build/docker
-    image: 'vmware/lightwave-sts'
     after:
-      - docker-lightwave-pre
+      - docker-lightwave-pre-photon1
+    image: 'vmware/lightwave-sts'
 
-  clean:
+  docker-lightwave-photon2:
+    description: build lightwave docker image
+    build: ./build/docker
+    after:
+      - docker-lightwave-pre-photon2
+    image: 'vmware/lightwave-sts-photon2'
+
+  clean-photon1:
     description: Cleanup
     always: true
     cmds:
       - ./support/scripts/clean.sh
+    image: 'vmware/lightwave-toolchain:2.0.1'
+
+  clean-photon2:
+    description: Cleanup
+    always: true
+    cmds:
+      - ./support/scripts/clean.sh
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  clean:
+    description: Cleanup
+    after:
+      - clean-photon2
+    always: true
 
 commands:
 
@@ -97,5 +186,3 @@ settings:
   default-targets:
     - build
     - pack
-  docker:
-    image: 'vmware/lightwave-toolchain-photon:2.0.1'

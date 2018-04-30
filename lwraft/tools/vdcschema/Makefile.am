@@ -31,7 +31,8 @@ postschema_LDADD = \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @DL_LIBS@
 
 postschema_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
