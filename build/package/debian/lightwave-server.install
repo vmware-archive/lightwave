@@ -25,6 +25,8 @@ opt/vmware/bin/vmkdc_admin
 opt/vmware/bin/run_backup.sh
 opt/vmware/bin/lw_backup.sh
 opt/vmware/bin/aws_backup_common.sh
+opt/vmware/bin/lw_restore.sh
+opt/vmware/bin/aws_restore_common.sh
 opt/vmware/jars/openidconnect-protocol.jar
 opt/vmware/jars/openidconnect-server.jar
 opt/vmware/jars/samlauthority.jar

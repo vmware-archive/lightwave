@@ -1055,6 +1055,8 @@ Lightwave POST service
 %{_bindir}/lw_backup.sh
 %{_bindir}/aws_backup_common.sh
 %{_bindir}/lw_mdb_walflush
+%{_bindir}/lw_restore.sh
+%{_bindir}/aws_restore_common.sh
 
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird
