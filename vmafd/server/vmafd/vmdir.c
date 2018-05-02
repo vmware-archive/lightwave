@@ -311,11 +311,6 @@ VmAfSrvPromoteVmDir(
         dwError = VmAfdAllocateStringA(pszDomainName, &pszDefaultRealm);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdAllocateStringWFromA(
-                      pszDefaultRealm,
-                      &pwszCurDomainName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
         dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
         BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -334,7 +329,7 @@ VmAfSrvPromoteVmDir(
         if (pTrustInfoA)
         {
             dwError = VmDirSetupHostInstanceTrust(
-                              pszDefaultRealm,
+                              pszDomainName,
                               pszLotusServerName,
                               pszUserName,
                               pszPassword,
@@ -345,7 +340,7 @@ VmAfSrvPromoteVmDir(
         else
         {
             dwError = VmDirSetupHostInstance(
-                              pszDefaultRealm,
+                              pszDomainName,
                               pszLotusServerName,
                               pszUserName,
                               pszPassword,
@@ -360,7 +355,7 @@ VmAfSrvPromoteVmDir(
             dwError = VmAfSrvConfigureDNSW(
                               NULL,
                               pwszPNID,
-                              pwszCurDomainName,
+                              pwszDomainName,
                               pwszUserName,
                               pwszPassword,
                               pwszSiteName);
@@ -384,9 +379,6 @@ VmAfSrvPromoteVmDir(
                 __FUNCTION__,
                 dwError);
         }
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfSrvSetDomainNameA(pszDefaultRealm);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
     else
@@ -465,6 +457,9 @@ VmAfSrvPromoteVmDir(
 #ifndef _WIN32
     chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
 #endif
+
+    dwError = VmAfSrvSetDomainNameA(pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CONTROLLER);
     BAIL_ON_VMAFD_ERROR(dwError);
