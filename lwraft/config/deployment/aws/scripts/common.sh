@@ -15,6 +15,18 @@ LOGDIR="/opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMEN
 export LOGDIR
 export PATH=$PATH:/root/.local/bin
 
+## the AWS region of the current VM
+export EC2_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone \
+                    | sed -e "s:\([0-9][0-9]*\)[a-z]*\$:\\1:")
+## the id of current VM
+export INSTANCE_ID=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)
+## the name of the auto scaling group this VM belongs to
+export ASG_NAME=$(aws autoscaling describe-auto-scaling-instances \
+                  --instance-ids ${INSTANCE_ID} \
+                  --region ${EC2_REGION} \
+                  --query AutoScalingInstances[].AutoScalingGroupName \
+                  --output text)
+
 # retrieves instance ID of this instance
 get_current_instance_id() {
     INSTANCE=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)

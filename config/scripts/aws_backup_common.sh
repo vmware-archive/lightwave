@@ -14,7 +14,7 @@ get_node_list() {
 
 #Returns name of latest archive.zip that has been uploaded by any node in the region to S3
 get_latest_bkp() {
-    LATEST=`aws s3 ls $FULL_PATH/ | grep "archive.zip" | sort | tail -n 1 | awk '{print $4}'`
+    LATEST=`aws s3 ls $1/ | grep "archive.zip" | sort | tail -n 1 | awk '{print $4}'`
 }
 
 #Chek if the bucket exists. If not, create it
@@ -47,14 +47,14 @@ upload_to_cloud() {
 
 #Get list of all files in the backup directory
 get_bkp_list() {
-    LIST=`aws s3 ls $FULL_PATH/ | grep archive`
+    LIST=`aws s3 ls $1/ | grep archive`
     if [ $? -ne 0 ]; then
         exit
     fi
 }
 
 delete_file() {
-    aws s3 rm s3://$FULL_PATH/$1
+    aws s3 rm s3://$1/$2
 }
 
 exit_if_no_tag() {
@@ -64,8 +64,13 @@ exit_if_no_tag() {
     fi
 }
 
+#argument: lw-dr or post-dr
+get_full_path() {
+    FULL_PATH="$BUCKET/$1/$ASG_NAME"
+}
+
 REGION=$EC2_REGION
 get_account_id
 BUCKET=dr-$ACCOUNT_ID-$REGION
-FULL_PATH=$BUCKET/lw-dr/$ASG_NAME
 LW_BKP_PATH=lw-dr/$ASG_NAME
+POST_BKP_PATH=post-dr/$ASG_NAME

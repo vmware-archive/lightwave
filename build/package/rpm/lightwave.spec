@@ -1186,6 +1186,9 @@ Lightwave POST service
 %{_bindir}/mdb_stat
 %{_bindir}/mdb_verify_checksum
 %{_bindir}/mdb_walflush
+%{_bindir}/run_backup.sh
+%{_bindir}/lw_backup.sh
+%{_bindir}/aws_backup_common.sh
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
 

@@ -1,7 +1,15 @@
 #!/bin/bash
 source /opt/vmware/bin/aws_backup_common.sh
 
+if [ "$#" -ne 1 ]; then
+    echo "Usage: run_backup.sh lw-dr|post-dr"
+    exit
+fi
+
 exit_if_no_tag
+
+MODE=$1
+get_full_path $MODE
 
 SLEEP_QUANTUM=900
 
@@ -26,9 +34,13 @@ if [ ! $RANK -eq 0 ]; then
     sleep $SLEEP_TIME
 
     #Check if any other node has done the backup.
-    get_latest_bkp
+    get_latest_bkp $FULL_PATH
 
-    MTIME=${LATEST: -31}
+    if [ $MODE = "lw-dr" ]; then
+        MTIME=${LATEST: -31}
+    else
+        MTIME=${LATEST: -33}
+    fi
     CURRENT_TIME=`date '+%Y%m%d%H%M'`
     C_HOUR=${CURRENT_TIME:8:2}
     C_HOUR=`echo $C_HOUR | sed 's/^0//'`
@@ -56,4 +68,4 @@ if [ ! $RANK -eq 0 ]; then
     fi
 fi
 
-/opt/vmware/bin/lw_backup.sh
+/opt/vmware/bin/lw_backup.sh $MODE

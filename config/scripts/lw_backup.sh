@@ -1,7 +1,23 @@
 #!/bin/bash
 source /opt/vmware/bin/aws_backup_common.sh
 
-BACKUP_PATH="/var/lib/vmware/db_bkp/vmdir"
+if [ $# -ne 1 ]; then
+    echo "Usage: lw_backup.sh lw-dr|post-dr"
+    exit
+fi
+
+MODE=$1
+if [ $MODE = "lw-dr" ]; then
+    UPLOAD_PATH=$LW_BKP_PATH
+    BACKUP_PATH="/var/lib/vmware/db_bkp/vmdir"
+    COMPONENT="lw"
+    WAL_FLUSH="/opt/vmware/bin/lw_mdb_walflush $BACKUP_PATH"
+else
+    UPLOAD_PATH=$POST_BKP_PATH
+    BACKUP_PATH="/var/lib/vmware/db_bkp/post"
+    COMPONENT="post"
+    WAL_FLUSH="/opt/vmware/bin/mdb_walflush $BACKUP_PATH"
+fi
 
 update_backup_regkey() {
   /opt/likewise/bin/lwregshell list_values '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' | grep -i BackupTimeTaken
@@ -24,9 +40,9 @@ upload_bundle() {
     retry=1
     while [ $retry -le 5 ]
     do
-	    logger -t backup "Uploading $LW_BKP_PATH/$INSTANCE_ID-$time-data.mdb"
+	    logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
         start_time="$(date -u +%s)"
-		upload_to_cloud "$LW_BKP_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb" "$md5"
+		upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb" "$md5"
         if [ $? -ne 0 ]; then
             logger -t backup "Error while uploading bundle. Retrying."
             (( retry = $retry + 1 ))
@@ -42,12 +58,12 @@ upload_bundle() {
 
 #uploads the rpm archive. Sample name: <instance_id>-lw_rpm_archive.zip
 write_version() {
-    pushd /var/vmware/lightwave; zip -r /var/log/lightwave/lw_rpm_archive.zip *; popd
+    pushd /var/vmware/lightwave; zip -r /var/log/lightwave/${COMPONENT}_rpm_archive.zip *; popd
     if [ $? -ne 0 ]; then
         logger -t backup "Error while zipping archive."
         exit
     fi
-    md5=`openssl md5 -binary /var/log/lightwave/lw_rpm_archive.zip | base64`
+    md5=`openssl md5 -binary /var/log/lightwave/${COMPONENT}_rpm_archive.zip | base64`
     if [ $? -ne 0 ]; then
         exit
     fi
@@ -56,7 +72,7 @@ write_version() {
     while [ $retry -le 5 ]
     do
         start_time="$(date -u +%s)"
-        upload_to_cloud "$LW_BKP_PATH/$INSTANCE_ID-$time-lw_rpm_archive.zip" "/var/log/lightwave/lw_rpm_archive.zip" "$md5"
+        upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-${COMPONENT}_rpm_archive.zip" "/var/log/lightwave/${COMPONENT}_rpm_archive.zip" "$md5"
         if [ $? -ne 0 ]; then
             logger -t backup "Error while uploading bundle. Retrying."
             (( retry = $retry + 1 ))
@@ -65,14 +81,15 @@ write_version() {
         end_time="$(date -u +%s)"
         upload_time=$(( end_time - start_time ))
         logger -t backup "DB Upload took "$upload_time" seconds."
-        rm -rf /var/log/lightwave/lw_rpm_archive.zip
+        rm -rf /var/log/lightwave/${COMPONENT}_rpm_archive.zip
         return 0
     done
-    rm -rf /var/log/lightwave/lw_rpm_archive.zip
+    rm -rf /var/log/lightwave/${COMPONENT}_rpm_archive.zip
     return 1
 }
 
 logger -t backup "Taking backup"
+get_full_path $MODE
 time=`date '+%Y%m%d%H%M'`
 
 backup_start_time="$(date -u +%s)"
@@ -93,7 +110,7 @@ if [ $? -ne 0 ]; then
 fi
 
 #WAL flush
-/opt/vmware/bin/lw_mdb_walflush $BACKUP_PATH
+eval $WAL_FLUSH
 if [ $? -ne 0 ]; then
     logger -t backup "Error while flishing WAL."
     exit
@@ -117,7 +134,7 @@ backup_end_time="$(date -u +%s)"
 update_backup_regkey $(( backup_end_time - backup_start_time ))
 
 #Delete backups older than 5 days
-get_bkp_list
+get_bkp_list $FULL_PATH
 C_DAY=${time:6:2}
 C_DAY=`echo $C_DAY | sed 's/^0//'`
 C_MONTH=${time:4:2}
@@ -128,7 +145,11 @@ for line in $LIST; do
     if [ $mod -ne 0 ]; then
         continue
     fi
-    MTIME=${line: -31}
+    if [ $MODE = "lw-dr" ]; then
+        MTIME=${line: -31}
+    else
+        MTIME=${line: -33}
+    fi
     M_DAY=${MTIME:6:2}
     M_DAY=`echo $M_DAY | sed 's/^0//'`
     M_MONTH=${MTIME:4:2}
@@ -149,9 +170,9 @@ for line in $LIST; do
     fi
 
     if [ $ELAPSED_DAYS -gt 5 ]; then
-        logger -t backup "DELETING "$BUCKET/$LW_BKP_PATH/$line
+        logger -t backup "DELETING "$BUCKET/$UPLOAD_PATH/$line
         mdb_file=${line::-18}data.mdb
-        delete_file $line
-        delete_file $mdb_file
+        delete_file $FULL_PATH $line
+        delete_file $FULL_PATH $mdb_file
     fi
 done
