@@ -69,7 +69,9 @@ public class MockIdmClient extends CasIdmClient {
     private final String tenantIssuer; // this maps to vmwStsIssuer set on tenant
 
     private final String clientId;
+    private final Boolean multiTenant;
     private final String redirectUri;
+    private final String redirectUriTemplate;
     private final String logoutUri;
     private final String postLogoutRedirectUri;
     private final String clientCertSubjectDN;
@@ -112,7 +114,9 @@ public class MockIdmClient extends CasIdmClient {
         this.tenantIssuer            = builder.tenantIssuer;
 
         this.clientId                = builder.clientId;
+        this.multiTenant             = builder.multiTenant;
         this.redirectUri             = builder.redirectUri;
+        this.redirectUriTemplate     = builder.redirectUriTemplate;
         this.logoutUri               = builder.logoutUri;
         this.postLogoutRedirectUri   = builder.postLogoutRedirectUri;
         this.clientCertSubjectDN     = builder.clientCertSubjectDN;
@@ -148,6 +152,8 @@ public class MockIdmClient extends CasIdmClient {
         if (this.clientId != null) {
             OIDCClient client = new OIDCClient.Builder(this.clientId).
                     redirectUris(Arrays.asList(this.redirectUri)).
+                    multiTenant(multiTenant).
+                    redirectUriTemplates(this.redirectUriTemplate != null ? Arrays.asList(this.redirectUriTemplate) : new ArrayList<String> ()).
                     postLogoutRedirectUris(Arrays.asList(this.postLogoutRedirectUri)).
                     logoutUri(this.logoutUri).
                     certSubjectDN(this.clientCertSubjectDN).
@@ -500,7 +506,9 @@ public class MockIdmClient extends CasIdmClient {
         private String tenantIssuer; // this maps to vmwStsIssuer set on tenant
 
         private String clientId;
+        private Boolean multiTenant;
         private String redirectUri;
+        private String redirectUriTemplate;
         private String logoutUri;
         private String postLogoutRedirectUri;
         private String clientCertSubjectDN;
@@ -570,8 +578,18 @@ public class MockIdmClient extends CasIdmClient {
             return this;
         }
 
+        public Builder multiTenant(boolean multiTenant) {
+            this.multiTenant = multiTenant;
+            return this;
+        }
+
         public Builder redirectUri(String redirectUri) {
             this.redirectUri = redirectUri;
+            return this;
+        }
+
+        public Builder redirectUriTemplate(String redirectUriTemplate) {
+            this.redirectUriTemplate = redirectUriTemplate;
             return this;
         }
 

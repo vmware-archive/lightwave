@@ -14,25 +14,20 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
+import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 
 import net.minidev.json.JSONObject;
 
 public class FederationRelayState {
-  private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(FederationRelayState.class);
 
   private static final String PARAM_TENANT = "tenant";
   private static final String PARAM_ISSUER = "issuer";
@@ -45,70 +40,132 @@ public class FederationRelayState {
   private static final String PARAM_RESPONSE_MODE = "response_mode";
 
   private String tenant;
+  private State state;
+  private Nonce nonce; // nonce used for external IDP request
   private String issuer;
   private String redirectURL;
   private String clientId;
-  private String nonce;
+  private String spInitiatedNonce;
   private String spInitiatedState;
-  private String scope;
-  private String responseMode;
-  private String responseType;
-  private String encodedValue;
+  private String spInitiatedScope;
+  private String spInitiatedResponseMode;
+  private String spInitiatedResponseType;
 
   private FederationRelayState(Builder builder) {
       this.tenant = builder.tenant;
+      this.state = builder.state;
+      this.nonce = builder.nonce;
       this.issuer = builder.issuer;
       this.clientId = builder.clientId;
       this.redirectURL = builder.redirectURL;
-      this.encodedValue = builder.encodedValue;
-      this.nonce = builder.nonce;
+      this.spInitiatedNonce = builder.spInitiatedNonce;
       this.spInitiatedState = builder.spInitiatedState;
-      this.scope = builder.scope;
-      this.responseMode = builder.responseMode;
-      this.responseType = builder.responseType;
+      this.spInitiatedScope = builder.spInitiatedScope;
+      this.spInitiatedResponseMode = builder.spInitiatedResponseMode;
+      this.spInitiatedResponseType = builder.spInitiatedResponseType;
   }
 
+  /**
+   * Get the tenant name of the authentication request.
+   *
+   * @return tenant name
+   */
   public String getTenant() {
       return tenant;
   }
 
+  /**
+   * Get the state of the delegated authentication request from Lightwave to Federated IDP.
+   *
+   * @return state per oidc protocol
+   */
+  public State getState() {
+      return state;
+  }
+
+  /**
+   * Get the nonce of the delegated authentication request from Lightwave to Federated IDP.
+   *
+   * @return nonce per oidc protocol
+   */
+  public Nonce getNonce() {
+      return nonce;
+  }
+
+  /**
+   * Get issuer of the Identity Provider.
+   *
+   * @return issuer per oidc protocol
+   */
   public String getIssuer() {
     return issuer;
   }
 
+  /**
+   * Get Lightwave OIDC client id.
+   *
+   * @return client id
+   */
   public String getClientId() {
     return clientId;
   }
 
+  /**
+   * Get redirect url where the tokens are sent.
+   *
+   * @return redirect url per oidc protocol
+   */
   public String getRedirectURI() {
     return redirectURL;
   }
 
-  public String getEncodedValue() {
-    return encodedValue;
-  }
-
+  /**
+   * Get state value from SP initiated request.
+   *
+   * @return state per oidc protocol
+   */
   public String getSPInitiatedState() {
       return spInitiatedState;
   }
 
-  public String getNonce() {
-      return nonce;
+  /**
+   * Get nonce value from SP initiated request.
+   *
+   * @return nonce per oidc protocol
+   */
+  public String getSPInitiatedNonce() {
+      return spInitiatedNonce;
   }
 
-  public String getScope() {
-      return scope;
+  /**
+   * Get scope value from SP initiated request.
+   *
+   * @return scope per oidc protocol
+   */
+  public String getSPInitiatedScope() {
+      return spInitiatedScope;
   }
 
-  public String getResponseType() {
-      return responseType;
+  /**
+   * Get responseType from SP initiated request.
+   *
+   * @return response type per oidc protocol
+   */
+  public String getSPInitiatedResponseType() {
+      return spInitiatedResponseType;
   }
 
-  public String getResponseMode() {
-      return responseMode;
+  /**
+   * Get responseMode from SP initiated request.
+   *
+   * @return responseMode per oidc protocol
+   */
+  public String getSPInitiatedResponseMode() {
+      return spInitiatedResponseMode;
   }
 
-  public static FederationRelayState build(String base64EncodedState) throws Exception {
+  public static FederationRelayState build(String base64EncodedState) throws ServerException {
+    Validate.notEmpty(base64EncodedState, "Encoded state must not be null.");
     try {
       String urlDecodedState = URLDecoder.decode(base64EncodedState, "UTF-8");
       JSONObject jsonContent = JSONUtils.parseJSONObject(
@@ -124,19 +181,6 @@ public class FederationRelayState {
       if (redirectURL == null || redirectURL.isEmpty()) {
         throw new ServerException(ErrorObject.invalidRequest("client redirect uri is invalid"));
       }
-      try {
-        URI testRedirectURI = new URI(redirectURL);
-      } catch (URISyntaxException e) {
-        ErrorObject errorObject = ErrorObject.invalidRequest(
-                                      String.format(
-                                          "client redirect uri is invalid. %s: %s",
-                                          e.getClass().getName(),
-                                          e.getMessage()
-                                      )
-                                  );
-        LoggerUtils.logFailedRequest(logger, errorObject, e);
-        throw new ServerException(errorObject);
-      }
       String clientId = JSONUtils.getString(jsonContent, PARAM_CLIENT_ID);
       if (clientId == null || clientId.isEmpty()) {
         throw new ServerException(ErrorObject.invalidRequest("client id is invalid"));
@@ -146,52 +190,52 @@ public class FederationRelayState {
 
       if (JSONUtils.hasKey(jsonContent, PARAM_TENANT)) {
           String tenant = JSONUtils.getString(jsonContent, PARAM_TENANT);
-          builder.tenant(tenant);
+          builder.withTenant(tenant);
       }
 
       if (JSONUtils.hasKey(jsonContent, PARAM_NONCE)) {
           String nonce = JSONUtils.getString(jsonContent, PARAM_NONCE);
-          builder.nonce(nonce);
+          builder.withSPInitiatedNonce(nonce);
       }
 
       if (JSONUtils.hasKey(jsonContent, PARAM_STATE)) {
           String state = JSONUtils.getString(jsonContent, PARAM_STATE);
-          builder.spInitiatedState(state);
+          builder.withSPInitiatedState(state);
       }
 
       if (JSONUtils.hasKey(jsonContent, PARAM_SCOPE)) {
           String scope = JSONUtils.getString(jsonContent, PARAM_SCOPE);
-          builder.scope(scope);
+          builder.withSPInitiatedScope(scope);
       }
 
       if (JSONUtils.hasKey(jsonContent, PARAM_RESPONSE_MODE)) {
           String responseMode = JSONUtils.getString(jsonContent, PARAM_RESPONSE_MODE);
-          builder.responseMode(responseMode);
+          builder.withSPInitiatedResponseMode(responseMode);
       }
 
       if (JSONUtils.hasKey(jsonContent, PARAM_RESPONSE_TYPE)) {
           String responseType = JSONUtils.getString(jsonContent, PARAM_RESPONSE_TYPE);
-          builder.responseType(responseType);
+          builder.withSPInitiatedResponseType(responseType);
       }
 
-      builder.encodedValue(base64EncodedState);
-      return new FederationRelayState(builder);
-    } catch (ParseException e) {
-      throw new Exception("failed to parse json response", e);
+      return builder.build();
+    } catch (ParseException | UnsupportedEncodingException e) {
+      throw new ServerException(ErrorObject.invalidRequest("Unable to parse relay state json content."), e);
     }
   }
 
   public static class Builder {
       private String tenant;
+      private State state;
+      private Nonce nonce;
       private String issuer;
       private String redirectURL;
       private String clientId;
-      private String nonce;
+      private String spInitiatedNonce;
       private String spInitiatedState;
-      private String scope;
-      private String responseMode;
-      private String responseType;
-      private String encodedValue;
+      private String spInitiatedScope;
+      private String spInitiatedResponseMode;
+      private String spInitiatedResponseType;
 
       public Builder(String issuer, String clientId, String redirectURL) {
           Validate.notEmpty(issuer, "issuer");
@@ -203,76 +247,50 @@ public class FederationRelayState {
           this.redirectURL = redirectURL;
       }
 
-      public Builder tenant(String tenant) {
+      public Builder withTenant(String tenant) {
+          Validate.notEmpty(tenant, "tenant must not be null");
           this.tenant = tenant;
           return this;
       }
 
-      public Builder nonce(String nonce) {
+      public Builder withState(State state) {
+          Validate.notNull(state, "state must not be null.");
+          this.state = state;
+          return this;
+      }
+
+      public Builder withNonce(Nonce nonce) {
+          Validate.notNull(nonce, "nonce must not be null.");
           this.nonce = nonce;
           return this;
       }
 
-      public Builder spInitiatedState(String spInitiatedState) {
+      public Builder withSPInitiatedNonce(String nonce) {
+          this.spInitiatedNonce = nonce;
+          return this;
+      }
+
+      public Builder withSPInitiatedState(String spInitiatedState) {
           this.spInitiatedState = spInitiatedState;
           return this;
       }
 
-      public Builder scope(String scope) {
-          this.scope = scope;
+      public Builder withSPInitiatedScope(String scope) {
+          this.spInitiatedScope = scope;
           return this;
       }
 
-      public Builder responseMode(String responseMode) {
-          this.responseMode = responseMode;
+      public Builder withSPInitiatedResponseMode(String responseMode) {
+          this.spInitiatedResponseMode = responseMode;
           return this;
       }
 
-      public Builder responseType(String responseType) {
-          this.responseType = responseType;
+      public Builder withSPInitiatedResponseType(String responseType) {
+          this.spInitiatedResponseType = responseType;
           return this;
       }
 
-      public Builder encodedValue(String encodedValue) {
-          this.encodedValue = encodedValue;
-          return this;
-      }
-
-      public FederationRelayState build() throws UnsupportedEncodingException {
-          JSONObject json = new JSONObject();
-
-          json.put(PARAM_ISSUER, issuer);
-          json.put(PARAM_CLIENT_ID, clientId);
-          json.put(PARAM_REDIRECT_URI, redirectURL);
-
-          if(StringUtils.isNotEmpty(tenant)) {
-              json.put(PARAM_TENANT, tenant);
-          }
-
-          if(StringUtils.isNotEmpty(nonce)) {
-              json.put(PARAM_NONCE, nonce);
-          }
-
-          if (StringUtils.isNotEmpty(scope)) {
-              json.put(PARAM_SCOPE, scope);
-          }
-
-          if (StringUtils.isNotEmpty(spInitiatedState)) {
-              json.put(PARAM_STATE, spInitiatedState);
-          }
-
-          if (StringUtils.isNotEmpty(responseMode)) {
-              json.put(PARAM_RESPONSE_MODE, responseMode);
-          }
-
-          if (StringUtils.isNotEmpty(responseType)) {
-              json.put(PARAM_RESPONSE_TYPE, responseType);
-          }
-
-          if (StringUtils.isEmpty(encodedValue)) {
-              encodedValue = URLEncoder.encode(Base64Utils.encodeToString(json.toJSONString()), "UTF-8");
-          }
-
+      public FederationRelayState build() {
           return new FederationRelayState(this);
       }
   }

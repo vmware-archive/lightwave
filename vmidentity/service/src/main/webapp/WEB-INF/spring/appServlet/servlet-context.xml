@@ -133,4 +133,6 @@
 
     <beans:bean id="oidcSessionManager" class="com.vmware.identity.openidconnect.server.SessionManager"/>
 
+    <beans:bean id="authnRequestTracker" class="com.vmware.identity.openidconnect.server.FederationAuthenticationRequestTracker"/>
+
 </beans:beans>

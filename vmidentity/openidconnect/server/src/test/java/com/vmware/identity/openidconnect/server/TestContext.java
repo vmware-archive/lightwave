@@ -101,6 +101,7 @@ public class TestContext {
     public static final URI LOGOUT_ENDPOINT_URI         = URI.create("https://psc.vmware.com/openidconnect/logout/" + TENANT_NAME);
     public static final URI JWKS_ENDPOINT_URI           = URI.create("https://psc.vmware.com/openidconnect/jwks/" + TENANT_NAME);
     public static final URI REDIRECT_URI                = URI.create("https://vcenter-server.com/relying-party/redirect");
+    public static final String REDIRECT_URI_TEMPLATE    = "https://vcenter-server.com/relying-party/redirect/{tenant}";
     public static final URI POST_LOGOUT_REDIRECT_URI    = URI.create("https://vcenter-server.com/relying-party/post-logout-redirect");
     public static final URI LOGOUT_URI                  = URI.create("https://vcenter-server.com/relying-party/logout");
     public static SolutionUser SOLUTION_USER;
@@ -437,6 +438,15 @@ public class TestContext {
 
     public static String securIdLoginString() {
         return securIdLoginString(USERNAME, SECURID_PASSCODE, null);
+    }
+
+    public static FederationRelayState federationRelayState(String clientId, String redirectUri)
+    {
+        return new FederationRelayState.Builder(EXTERNAL_IDP_ENTITYID, clientId, redirectUri)
+                .withNonce(new Nonce(NONCE))
+                .withState(new State(STATE))
+                .withTenant(TENANT_NAME)
+                .build();
     }
 
     public static IDPConfig externalIDPConfig() {

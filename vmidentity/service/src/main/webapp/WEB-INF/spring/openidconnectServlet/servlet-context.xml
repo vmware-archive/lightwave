@@ -27,4 +27,6 @@
 
     <beans:bean id="cspProcessor" class="com.vmware.identity.openidconnect.server.CSPIdentityProcessor"/>
 
+    <beans:bean id="authnRequestTracker" class="com.vmware.identity.openidconnect.server.FederationAuthenticationRequestTracker"/>
+
 </beans:beans>
