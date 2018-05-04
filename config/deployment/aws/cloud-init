@@ -29,7 +29,7 @@ write_files:
   - content: |
         #!/bin/bash -xe
         echo "Installing tooling"
-        tdnf install -y bindutils iputils less gawk wget groff parted python2 python3
+        tdnf install -y bindutils iputils less gawk wget groff parted python2 python3 jq
 
         # Expand main partition to use all space available
         # Skip if /dev/xvda2 does not exist
