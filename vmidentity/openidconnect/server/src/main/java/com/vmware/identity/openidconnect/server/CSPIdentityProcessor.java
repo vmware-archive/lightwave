@@ -60,6 +60,7 @@ import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.MemberAlreadyExistException;
 import com.vmware.identity.idm.OidcConfig;
+import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -446,8 +447,26 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
         try {
             idmClient.addTenant(new Tenant(tenantName), "Administrator",
                     idmClient.generatePassword(idmClient.getSystemTenant()).toCharArray());
+            logger.info("Setting credentials for tenant {}", tenantName);
             idmClient.setTenantCredentials(tenantName);
+            logger.info("Setting issuer for tenant {}", tenantName);
             idmClient.setIssuer(tenantName, entityId);
+            // extend password expiry to 700 days
+            logger.info("Setting password policy for tenant {}", tenantName);
+            int passwordExpirationInDays = 700;
+            PasswordPolicy currentPasswordPolicy = idmClient.getPasswordPolicy(tenantName);
+            PasswordPolicy newPasswordPolicy = new PasswordPolicy(currentPasswordPolicy.getDescription(),
+                    currentPasswordPolicy.getProhibitedPreviousPasswordsCount(),
+                    currentPasswordPolicy.getMinimumLength(),
+                    currentPasswordPolicy.getMaximumLength(),
+                    currentPasswordPolicy.getMinimumAlphabetCount(),
+                    currentPasswordPolicy.getMinimumUppercaseCount(),
+                    currentPasswordPolicy.getMinimumLowercaseCount(),
+                    currentPasswordPolicy.getMinimumNumericCount(),
+                    currentPasswordPolicy.getMinimumSpecialCharacterCount(),
+                    currentPasswordPolicy.getMaximumAdjacentIdenticalCharacterCount(),
+                    passwordExpirationInDays);
+            idmClient.setPasswordPolicy(tenantName, newPasswordPolicy);
             logger.info("Successfully created CSP tenant {}", tenantName);
         } catch (DuplicateTenantException e) {
             ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] already exists.", tenantName));
