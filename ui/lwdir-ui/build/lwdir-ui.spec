@@ -1,5 +1,5 @@
 Summary:        A web based UI for lightwave server
-Name:           lightwave-ui
+Name:           lwdir-ui
 Version:        0.1
 Release:        1%{?dist}
 License:        VMware

@@ -60,8 +60,6 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
         String domain = params.getDomainName();
         String username = params.getUsername();
         String password = params.getPassword();
-        System.out.println("Configuring Lightwave UI for domain : " + domain);
-        registerOidcClientForLightwaveUI(servername, subjectAltName, domain, username, password);
         configureLandingPage();
     }
 
@@ -238,9 +236,6 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
                 writer.append(System.lineSeparator());
                 writer.append("<head>");
                 writer.append(System.lineSeparator());
-                writer.append(String
-                        .format("<meta http-equiv=\"refresh\" content=\"0;URL=lightwaveui\">%s",
-                                System.lineSeparator()));
                 writer.append("</head>");
                 writer.append(System.lineSeparator());
                 writer.append("<body> </body>");
