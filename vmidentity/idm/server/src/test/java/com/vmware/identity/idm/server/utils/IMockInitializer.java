@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2018 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -14,18 +14,8 @@
  *
  */
 
-package com.vmware.identity.idm.server.provider;
+package com.vmware.identity.idm.server.utils;
 
-import java.security.cert.X509Certificate;
-import java.util.Collection;
-
-import com.vmware.identity.idm.IIdentityStoreData;
-
-public interface IProviderFactory {
-
-    public IIdentityProvider buildProvider(
-        String tenantName, IIdentityStoreData store,
-        Collection<X509Certificate> trustedCertificates,
-        IAccountProvider acctProvider ) throws Exception;
-
+public interface IMockInitializer<T> {
+    void initialize(T object);
 }

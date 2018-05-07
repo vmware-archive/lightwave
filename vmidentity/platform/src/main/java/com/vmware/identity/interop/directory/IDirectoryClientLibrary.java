@@ -80,6 +80,16 @@ public interface IDirectoryClientLibrary
     );
 
     String
+    ResetAccountPassword(
+        String hostURI,
+        String domainName,
+        String accountUPN,
+        String accountDN,
+        String currentPwd,
+        boolean bForceRefresh
+    );
+
+    String
     GetLocalLduGuid();
 
     void

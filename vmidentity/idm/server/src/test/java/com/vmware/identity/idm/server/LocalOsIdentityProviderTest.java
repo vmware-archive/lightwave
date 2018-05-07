@@ -536,7 +536,7 @@ public class LocalOsIdentityProviderTest
 
             try
             {
-                localOsProvider = factory.buildProvider( "vsphere.local", storeData, null );
+                localOsProvider = factory.buildProvider( "vsphere.local", storeData, null, null );
             }
             catch (Exception e)
             {

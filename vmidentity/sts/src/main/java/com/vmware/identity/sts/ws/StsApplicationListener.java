@@ -21,6 +21,7 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.heartbeat.VmAfdHeartbeat;
 import com.vmware.certificate.VMCAAdapter2;
+import com.vmware.identity.idm.server.IdentityManager;
 
 public class StsApplicationListener implements ServletContextListener {
     private static final int port = 443;
@@ -48,7 +49,10 @@ public class StsApplicationListener implements ServletContextListener {
         try {
             heartbeat.stopBeating();
             log.info("Heartbeat stopped");
+            IdentityManager.getIdmInstance().notifyAppStopping();
+            log.info("Idm notified of app stop");
             VMCAAdapter2.VMCACleanupOpenSSL();
+            log.info("VMCA cleaned up");
         } catch (VMCAException e) {
             log.error("Failed to cleanup VMCA SSL library", e);
         } catch (Exception e) {

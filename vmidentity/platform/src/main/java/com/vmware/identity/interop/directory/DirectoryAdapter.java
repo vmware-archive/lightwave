@@ -79,6 +79,17 @@ public class DirectoryAdapter extends NativeAdapter
             );
 
         int
+        VmDirResetActPassword(
+            String hostURI,
+            String domainName,
+            String accountUPN,
+            String accountDN,
+            String currentPwd,
+            byte bForceRefresh,
+            PointerByReference ppPassword
+        );
+
+        int
         VmDirGeneratePassword(
             String hostURI,
             String upn,
@@ -319,6 +330,46 @@ public class DirectoryAdapter extends NativeAdapter
                                                     userDN,
                                                     oldPassword,
                                                     newPassword));
+    }
+
+    @Override
+    public String ResetAccountPassword(
+        String hostURI, String domainName, String accountUPN, String accountDN,
+        String currentPwd, boolean bForceRefresh) {
+
+        Validate.validateNotEmpty(hostURI, "host uri");
+        Validate.validateNotEmpty(domainName, "domainName");
+        Validate.validateNotEmpty(accountUPN, "accountUPN");
+        Validate.validateNotEmpty(accountDN, "accountDN");
+        Validate.validateNotEmpty(currentPwd, "currentPwd");
+
+        PointerByReference ppPassword = new PointerByReference(Pointer.NULL);
+        byte refresh = 0;
+        if (bForceRefresh) {
+            refresh = 1;
+        }
+
+        try {
+
+            CheckError(DirectoryClientLibrary.INSTANCE.VmDirResetActPassword(
+                                                    hostURI,
+                                                    domainName,
+                                                    accountUPN,
+                                                    accountDN,
+                                                    currentPwd,
+                                                    refresh,
+                                                    ppPassword));
+
+            return getString(ppPassword.getValue());
+        }
+        finally
+        {
+            if (ppPassword.getValue() != Pointer.NULL)
+            {
+                DirectoryClientLibrary.INSTANCE.VmDirFreeMemory(ppPassword.getValue());
+                ppPassword.setValue(Pointer.NULL);
+            }
+        }
     }
 
     @Override
