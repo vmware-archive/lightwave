@@ -51,6 +51,18 @@ public class OidcClientCommand extends SSOConfigCommand {
     @Option(name = "--register", metaVar = "[Metadata File path]", usage = "OIDC Client metadata file location to register.")
     private String metadataFile = null;
 
+    @Option(name = "--update", metaVar = "[OIDC Client Id]", usage = "OIDC Client Id to update.")
+    private String clientId = null;
+
+    @Option(name = "--redirect-uri", metaVar = "[Redirect URI]", usage = "Add an oidc client redirect uri.")
+    private String redirectUri;
+
+    @Option(name = "--redirect-uri-template", metaVar = "[Redirect URI Template]", usage = "Add an oidc client redirect uri template.")
+    private String redirectUriTemplate;
+
+    @Option(name = "-m", aliases = {"--metadata-file-path"}, metaVar = "[Metadata File path]", usage = "OIDC Client metadata file location.")
+    private String metadataFileToUpdate;
+
     @Option(name = "--list", metaVar = "[all | OIDC Client Id]", usage = "List tenant's OIDC Client configurations."
             + " Type [all] to list all or type in the specific OIDC Client name.")
     private String clientIdToList = null;
@@ -64,6 +76,8 @@ public class OidcClientCommand extends SSOConfigCommand {
     protected void execute() throws Exception {
         if (StringUtils.isNotEmpty(metadataFile)) {
             registerOIDCClient();
+        } else if(StringUtils.isNotEmpty(clientId)){
+            updateOIDCClient();
         } else if (StringUtils.isNotEmpty(idToDelete)) {
             deleteOIDCClient();
         } else if (StringUtils.isNotEmpty(clientIdToList)) {
@@ -88,6 +102,55 @@ public class OidcClientCommand extends SSOConfigCommand {
             );
         } finally {
             scanner.close();
+        }
+    }
+
+    private void updateOIDCClient() throws Exception {
+        IdmClient client = SSOConfigurationUtils.getIdmClient();
+        OIDCClientDTO clientDTO = null;
+        if (StringUtils.isNotEmpty(redirectUri) || StringUtils.isNotEmpty(redirectUriTemplate)) {
+            OIDCClientMetadataDTO existingMetadata = client.oidcClient().get(tenant, clientId).getOIDCClientMetadataDTO();
+            List<String> redirectUris = existingMetadata.getRedirectUris();
+            List<String> redirectUriTemplates = existingMetadata.getRedirectUriTemplates();
+            if (StringUtils.isNotEmpty(redirectUri)) {
+                redirectUris.add(redirectUri);
+            }
+            if (StringUtils.isNotEmpty(redirectUriTemplate)) {
+                redirectUriTemplates.add(redirectUriTemplate);
+            }
+            OIDCClientMetadataDTO newMetadata = new OIDCClientMetadataDTO.Builder().
+            withRedirectUris(redirectUris).
+            withRedirectUriTemplates(redirectUriTemplates).
+            withTokenEndpointAuthMethod(existingMetadata.getTokenEndpointAuthMethod()).
+            withPostLogoutRedirectUris(existingMetadata.getPostLogoutRedirectUris()).
+            withLogoutUri(existingMetadata.getLogoutUri()).
+            withCertSubjectDN(existingMetadata.getCertSubjectDN()).
+            withAuthnRequestClientAssertionLifetimeMS(existingMetadata.getAuthnRequestClientAssertionLifetimeMS()).
+            withMultiTenant(existingMetadata.isMultiTenant()).
+            withLogoutUriTemplate(existingMetadata.getLogoutUriTemplate()).
+            withPostLogoutRedirectUriTemplates(existingMetadata.getPostLogoutRedirectUriTemplates()).build();
+            clientDTO = client.oidcClient().update(tenant, clientId, newMetadata);
+        } else if (StringUtils.isNotEmpty(metadataFile)) {
+            Scanner scanner = new Scanner(new File(metadataFile));
+            try {
+                clientDTO = client.oidcClient().update(tenant, clientId,
+                                                getOIDCClientMetadataDTO(
+                                                        scanner.useDelimiter("\\Z").next()));
+            } finally {
+                scanner.close();
+            }
+        }
+        if (clientDTO != null) {
+            logger.info(String.format(
+                    "Successfully updated OIDC Client [%s] for tenant %s",
+                    clientId,
+                    tenant));
+            displayOIDCClient(clientDTO);
+        } else {
+            logger.info(String.format(
+                    "Error updating OIDC Client [%s] for tenant %s",
+                    clientId,
+                    tenant));
         }
     }
 
@@ -189,6 +252,27 @@ public class OidcClientCommand extends SSOConfigCommand {
         if (postLogoutURIs != null) {
             for (String uri : postLogoutURIs) {
                 SSOConfigurationUtils.displayParamNameAndValue("Post Logout URI", uri);
+            }
+        }
+        if (client.getOIDCClientMetadataDTO().isMultiTenant()) {
+            // Print the Redirect URI templates
+            final List<String> redirectURITemplates = metadata.getRedirectUriTemplates();
+            if (redirectURITemplates != null) {
+                for (String uri : redirectURITemplates) {
+                    SSOConfigurationUtils.displayParamNameAndValue("Redirect URI Template", uri);
+                }
+            }
+            // Print the Logout URI template
+            final String logoutURITemplate = metadata.getLogoutUriTemplate();
+            if (logoutURITemplate != null) {
+                SSOConfigurationUtils.displayParamNameAndValue("Logout URI Template", logoutURITemplate);
+            }
+            // Print the Post Logout URI templates
+            final List<String> postLogoutURITemplates = metadata.getPostLogoutRedirectUriTemplates();
+            if (postLogoutURITemplates != null) {
+                for (String uri : postLogoutURITemplates) {
+                    SSOConfigurationUtils.displayParamNameAndValue("Post Logout URI Template", uri);
+                }
             }
         }
         final String certSubjectDN = metadata.getCertSubjectDN();
