@@ -27,6 +27,12 @@ public final class Directory
     }
 
     public static
+    void createInstanceRemote(String hostname, String domainName, String adminId, String password)
+    {
+        library.CreateDirectoryInstanceRemote(hostname, domainName, adminId, password);
+    }
+
+    public static
     void deleteInstance(String domainName, String adminId, String password)
     {
         library.DeleteDirectoryInstance(domainName, adminId, password);

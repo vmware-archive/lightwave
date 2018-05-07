@@ -54,6 +54,14 @@ public class DirectoryAdapter extends NativeAdapter
             );
 
         int
+        VmDirSetupTenantInstanceEx(
+                String host,
+                String domainName,
+                String adminId,
+                String password
+        );
+
+        int
         VmDirSetPassword(
             String hostURI,
             String adminDN,
@@ -172,6 +180,27 @@ public class DirectoryAdapter extends NativeAdapter
                                             domainName,
                                             administratorId,
                                             password));
+    }
+
+    @Override
+    public
+    void
+    CreateDirectoryInstanceRemote(
+            String hostname,
+            String domainName,
+            String administratorId,
+            String password)
+    {
+        Validate.validateNotEmpty(hostname, "hostname");
+        Validate.validateNotEmpty(domainName, "domain name");
+        Validate.validateNotEmpty(administratorId, "administrator id");
+        Validate.validateNotEmpty(password, "password");
+
+        CheckError(DirectoryClientLibrary.INSTANCE.VmDirSetupTenantInstanceEx(
+                hostname,
+                domainName,
+                administratorId,
+                password));
     }
 
     @Override

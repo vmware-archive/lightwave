@@ -33,6 +33,14 @@ public interface IDirectoryClientLibrary
     );
 
     void
+    CreateDirectoryInstanceRemote(
+            String hostname,
+            String domainName,
+            String administratorId,
+            String password
+    );
+
+    void
     DeleteDirectoryInstance(
         String domainName,
         String administratorId,

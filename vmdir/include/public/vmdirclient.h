@@ -329,6 +329,14 @@ VmDirSetupTenantInstance(
     );
 
 DWORD
+VmDirSetupTenantInstanceEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    );
+
+DWORD
 VmDirCreateTenant(
     PCSTR pszUserUPN,
     PCSTR pszPassword,

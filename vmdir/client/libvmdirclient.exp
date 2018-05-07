@@ -130,3 +130,4 @@ VmDirFreeTrustInfoA
 VmDirFreeTrustInfoW
 VmDirCreateDomainTrust
 VmDirBackupDB
+VmDirSetupTenantInstanceEx

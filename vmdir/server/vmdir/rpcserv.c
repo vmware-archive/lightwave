@@ -2713,3 +2713,46 @@ error:
                      dwError );
     goto cleanup;
 }
+
+UINT32
+Srv_RpcVmDirInitializeTenant(
+    handle_t hBinding,
+    PWSTR    pwszDomainName,
+    PWSTR    pwszUsername,
+    PWSTR    pwszPassword
+    )
+{
+    DWORD dwError = 0;
+
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvInitializeTenant(
+                    pwszDomainName,
+                    pwszUsername,
+                    pwszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                     "%s failed (%u)",
+                     __FUNCTION__,
+                     dwError );
+    goto cleanup;
+}

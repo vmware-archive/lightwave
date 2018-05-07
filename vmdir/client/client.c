@@ -6863,6 +6863,90 @@ VmDirClientFreeMachineInfo(
     }
 }
 
+DWORD
+VmDirSetupTenantInstanceEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszDomainName = NULL;
+    PWSTR pwszUsername = NULL;
+    PWSTR pwszPassword = NULL;
+    handle_t hBinding = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        IsNullOrEmptyString(pszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszUsername, &pwszUsername);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateBindingHandleMachineAccountA(
+                    pszServerName,
+                    NULL,
+                    &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RPC_TRY
+    {
+
+        dwError = RpcVmDirInitializeTenant(
+                        hBinding,
+                        pwszDomainName,
+                        pwszUsername,
+                        pwszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s (%s) passed",
+            __FUNCTION__,
+            pszDomainName);
+
+cleanup:
+    if (hBinding)
+    {
+        VmDirFreeBindingHandle(&hBinding);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pwszUsername);
+    VMDIR_SAFE_FREE_MEMORY(pwszPassword);
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed. Error(%u)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirResetActPassword(
