@@ -12,6 +12,7 @@ libpostclient_la_CPPFLAGS = \
 libpostclient_la_SOURCES = \
     binding.c \
     client.c \
+    dbbackupclient.c \
     globals.c \
     krb5login.c \
     ldaputil.c \

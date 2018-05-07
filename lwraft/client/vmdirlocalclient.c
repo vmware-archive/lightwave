@@ -121,6 +121,48 @@ error:
 }
 
 DWORD
+VmDirLocalServerReset(
+    UINT32  *pServerState
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMDIR_IPC_SERVER_RESET;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC output_spec[] = SERVER_RESET_PARAMS;
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    if ( !pServerState )
+    {
+        BAIL_WITH_VMDIR_ERROR (dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pServerState = *(output_spec[1].data.pUint32);
+
+cleanup:
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmDirLocalInitializeTenant(
     PWSTR   pwszNamingContext,
     PWSTR   pwszUserName,

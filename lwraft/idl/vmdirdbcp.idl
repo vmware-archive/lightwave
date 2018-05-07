@@ -142,4 +142,10 @@ cpp_quote("#endif")
            [in]                     handle_t   hBinding,
            [in]                     UINT32     dwMode
       );
+
+      UINT32
+      RpcVmDirBackupDB(
+           [in]                     handle_t   hBinding,
+           [in, string]             PWSTR      pwszBackupPath
+      );
 }
