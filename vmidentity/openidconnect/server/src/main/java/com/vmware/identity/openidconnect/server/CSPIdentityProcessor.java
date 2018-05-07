@@ -13,6 +13,8 @@
  */
 package com.vmware.identity.openidconnect.server;
 
+import static com.vmware.identity.openidconnect.server.FederatedIdentityProvider.getPrincipalId;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -270,7 +272,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
 
     TenantInfo tenantInfo = getTenantInfo(tenantName);
-    PrincipalId user = new PrincipalId(accessToken.getUsername(), accessToken.getDomain());
+    PrincipalId user = getPrincipalId(accessToken.getUsername(), accessToken.getDomain());
     FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
     boolean isOrgOwner = accessToken.getPermissions().contains(ROLE_CSP_ORG_OWNER);
     if (tenantInfo == null) {
