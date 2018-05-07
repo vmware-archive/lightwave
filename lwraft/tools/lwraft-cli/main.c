@@ -29,7 +29,21 @@ ShowUsage(
 
 static
 DWORD
-RaftCliExecNodePrincipalRequest(
+RaftCliExecNodeRequest(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
+RaftCliExecDBBackupRequest(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
+RaftCliExecDisasterRecoveryRequest(
     int   argc,
     char* argv[]
     );
@@ -176,7 +190,19 @@ ParseArgs(
     }
     else if (!VmDirStringNCompareA(pszArg, "node", VmDirStringLenA("node"), TRUE))
     {
-        dwError = RaftCliExecNodePrincipalRequest(
+        dwError = RaftCliExecNodeRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmDirStringNCompareA(pszArg, "database-backup", VmDirStringLenA("database-backup"), TRUE))
+    {
+        dwError = RaftCliExecDBBackupRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmDirStringNCompareA(pszArg, "disaster-recovery", VmDirStringLenA("disaster-recovery"), TRUE))
+    {
+        dwError = RaftCliExecDisasterRecoveryRequest(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
@@ -205,7 +231,7 @@ error:
 
 static
 DWORD
-RaftCliExecNodePrincipalRequest(
+RaftCliExecNodeRequest(
     int   argc,
     char* argv[]
     )
@@ -643,6 +669,228 @@ error:
 }
 
 static
+DWORD
+RaftCliExecDBBackupRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError= 0;
+    DWORD iArg = 0;
+
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszBackupPath = NULL;
+    PSTR pszServerName = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_SERVER_NAME,
+        PARSE_MODE_USER_NAME,
+        PARSE_MODE_PASSWORD,
+        PARSE_MODE_BACKUP_FOLDER_PATH
+    } PARSE_MODE;
+
+    /*
+     * Initializing to default values
+     */
+    PARSE_MODE  parseMode    = PARSE_MODE_OPEN;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+        switch (parseMode)
+        {
+        case PARSE_MODE_OPEN:
+            if(!strcmp(pszArg, "--login"))
+            {
+                parseMode = PARSE_MODE_USER_NAME;
+            }
+            else if(!strcmp(pszArg, "--password"))
+            {
+                parseMode = PARSE_MODE_PASSWORD;
+            }
+            else if(!strcmp(pszArg, "--backuppath"))
+            {
+                parseMode = PARSE_MODE_BACKUP_FOLDER_PATH;
+            }
+            else if(!strcmp(pszArg, "--server-name"))
+            {
+                parseMode = PARSE_MODE_SERVER_NAME;
+            }
+            else
+            {
+                dwError = VMDIR_ERROR_OPTION_UNKNOWN;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            break;
+
+        case PARSE_MODE_USER_NAME:
+            if (pszUserName)
+            {
+                dwError = VMDIR_ERROR_OPTION_INVALID;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            };
+            pszUserName = pszArg;
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_PASSWORD:
+            if (pszPassword)
+            {
+                dwError = VMDIR_ERROR_OPTION_INVALID;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszPassword = pszArg;
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_SERVER_NAME:
+            if (pszPassword)
+            {
+                dwError = VMDIR_ERROR_OPTION_INVALID;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszServerName = pszArg;
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_BACKUP_FOLDER_PATH:
+            if (pszBackupPath)
+            {
+                dwError = VMDIR_ERROR_OPTION_INVALID;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszBackupPath = pszArg;
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        default:
+
+            dwError = VMDIR_ERROR_OPTION_INVALID;
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            break;
+        }
+    }
+
+    dwError = RaftCliDBBackup(
+        pszServerName,
+        pszUserName ,
+        pszPassword,
+        pszBackupPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+RaftCliExecDisasterRecoveryRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError= 0;
+    DWORD iArg = 0;
+
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_USER_NAME,
+        PARSE_MODE_PASSWORD
+    } PARSE_MODE;
+
+    /*
+     * Initializing to default values
+     */
+    PARSE_MODE  parseMode    = PARSE_MODE_OPEN;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+        switch (parseMode)
+        {
+        case PARSE_MODE_OPEN:
+            if(!strcmp(pszArg, "--login"))
+            {
+                parseMode = PARSE_MODE_USER_NAME;
+            }
+            else if(!strcmp(pszArg, "--password"))
+            {
+                parseMode = PARSE_MODE_PASSWORD;
+            }
+            else
+            {
+                dwError = VMDIR_ERROR_OPTION_UNKNOWN;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            break;
+
+        case PARSE_MODE_USER_NAME:
+            if (pszUserName)
+            {
+                dwError = VMDIR_ERROR_OPTION_INVALID;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            };
+            pszUserName = pszArg;
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        case PARSE_MODE_PASSWORD:
+            if (pszPassword)
+            {
+                dwError = VMDIR_ERROR_OPTION_INVALID;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszPassword = pszArg;
+
+            parseMode = PARSE_MODE_OPEN;
+
+            break;
+
+        default:
+
+            dwError = VMDIR_ERROR_OPTION_INVALID;
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            break;
+        }
+    }
+
+    dwError = RaftCliDRNodeRestoreFromDB(
+        pszUserName,
+        pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
 void
 ShowUsage(
     VOID
@@ -670,9 +918,17 @@ ShowUsage(
         "\t                 --password         <password>\n"
         "\t                 --demote-host-name <host to demote>]\n\n"
 
-        "\tnode startvote   [--server-name      <host name>]\n"
+        "\tnode startvote   [--server-name      <host name> ]\n"
         "\t                 --login            <user@domain>\n"
         "\t                 --password         <password>\n\n"
+        "\tdisaster-recovery\n"
+        "\t                 [ --login          <admin user id> ]\n"
+        "\t                 [ --password       <password> ]\n\n"
+        "\tdatabase-backup\n"
+        "\t                 [ --server-name    <server name> ]\n"
+        "\t                 [ --login          <admin user id> ]\n"
+        "\t                 [ --password       <password> ]\n"
+        "\t                 --backuppath       <ABS path to store backup>\n\n"
         "\thelp\n");
 }
 

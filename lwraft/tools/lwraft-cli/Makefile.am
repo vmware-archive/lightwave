@@ -1,7 +1,9 @@
 bin_PROGRAMS = post-cli
 
 post_cli_SOURCES = \
-    clinode.c  \
+    clinode.c \
+    clibackup.c \
+    clidr.c \
     main.c
 
 post_cli_CPPFLAGS = \
