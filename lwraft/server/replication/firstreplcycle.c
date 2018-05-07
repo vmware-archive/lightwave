@@ -56,15 +56,6 @@ _VmDirGetRemoteDBFileUsingRPC(
     UINT32      remoteFileSizeMb,
     UINT32      remoteDBMapSizeMb);
 
-static
-VOID
-_VmDirShutdownDB();
-
-static
-int
-_VmDirSwapDB(
-    PCSTR   dbHomeDir,
-    BOOLEAN bHasXlog);
 
 VOID
 VmDirFreeBindingHandle(
@@ -103,7 +94,7 @@ VmDirFirstReplicationCycle(
 #endif
 
     //Shutdown local database
-    _VmDirShutdownDB();
+    VmDirShutdownDB();
 
     retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir, &bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
@@ -114,7 +105,7 @@ VmDirFirstReplicationCycle(
 
     VmDirMetricsShutdown();
 
-    retVal = _VmDirSwapDB(dbHomeDir, bHasXlog);
+    retVal = VmDirSwapDB(dbHomeDir, bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal,
             pszLocalErrorMsg,
@@ -447,9 +438,10 @@ error:
  * shutdown the current backend
  * @return VOID
  */
-static
 VOID
-_VmDirShutdownDB()
+VmDirShutdownDB(
+    VOID
+    )
 {
     PVDIR_BACKEND_INTERFACE pBE = NULL;
 
@@ -467,17 +459,18 @@ _VmDirShutdownDB()
     VmDirBackendContentFree(pBE);
 }
 
-static
 int
-_VmDirSwapDB(
+VmDirSwapDB(
     PCSTR dbHomeDir,
-    BOOLEAN bHasXlog)
+    BOOLEAN bHasXlog
+    )
 {
     int                     retVal = LDAP_SUCCESS;
     char                    dbExistingName[VMDIR_MAX_FILE_NAME_LEN] = {0};
     char                    dbNewName[VMDIR_MAX_FILE_NAME_LEN] = {0};
     PSTR                    pszLocalErrorMsg = NULL;
     int                     errorCode = 0;
+    BOOLEAN                 bPathExist = FALSE;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
@@ -537,7 +530,11 @@ _VmDirSwapDB(
                                          dbNewName, errorCode);
         }
 
-        if (rename(dbExistingName, dbNewName) != 0)
+        retVal = VmDirPathExists(dbExistingName, &bPathExist);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        // compacted DB does not have xlogs
+        if (bPathExist && rename(dbExistingName, dbNewName) != 0)
         {
             retVal = LDAP_OPERATIONS_ERROR;
             errorCode = errno;
@@ -563,8 +560,6 @@ _VmDirSwapDB(
 
         VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "cannot remove directory %s errno %d", dbExistingName, errorCode);
     }
-
-
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);
 

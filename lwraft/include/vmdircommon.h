@@ -73,6 +73,14 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 #define VMKDC_RANDPWD_MAX_RETRY 128 /* Prevents RpcVmDirCreateUser() from looping forever */
 
+#define VMDIR_SIZE_16       16
+#define VMDIR_SIZE_32       32
+#define VMDIR_SIZE_64       64
+#define VMDIR_SIZE_128      128
+#define VMDIR_SIZE_256      256
+#define VMDIR_SIZE_512      512
+#define VMDIR_SIZE_1024     1024
+
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"
 
@@ -1557,6 +1565,12 @@ VmDirMigrateUserKey(
     DWORD newMasterKeyLen,
     PBYTE* ppNewUpnKeys,
     PDWORD pNewUpnKeysLen);
+
+DWORD
+VmDirPathExists(
+    PCSTR       pszPath,
+    PBOOLEAN    pbFound
+    );
 
 DWORD
 VmDirFileExists(

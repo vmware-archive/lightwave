@@ -862,7 +862,7 @@ _VmDirReplicationThrFun(
         //server has not complete vdcpromo, wait signal triggered by vdcpromo
 
         //In case lwraftd restart while waiting for promo, this call will advance raft logs.
-        _VmDirLoadRaftState();
+        VmDirLoadRaftState();
 
         VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
         dwError = VmDirConditionWait( gVmdirGlobals.replAgrsCondition, gVmdirGlobals.replAgrsMutex );
@@ -911,7 +911,7 @@ _VmDirReplicationThrFun(
 
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "_VmDirReplicationThrFun: _VmDirRaftLoadGlobals");
 
-    dwError = _VmDirLoadRaftState();
+    dwError = VmDirLoadRaftState();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     _VmDirGetRaftQuorumOverride(TRUE);

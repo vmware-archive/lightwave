@@ -1801,6 +1801,34 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirPathExists(
+    PCSTR       pszPath,
+    PBOOLEAN    pbFound
+    )
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bFound = FALSE;
+    struct stat statBuf = {0};
+    int         iRetVal = 0;
+
+    if (IsNullOrEmptyString(pszPath) || !pbFound)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    iRetVal = stat(pszPath, &statBuf);
+    if (iRetVal == 0)
+    {
+        bFound = TRUE;
+    }
+
+    *pbFound = bFound;
+
+error:
+    return dwError;
+}
+
 #ifndef _WIN32
 DWORD
 VmDirFileExists(

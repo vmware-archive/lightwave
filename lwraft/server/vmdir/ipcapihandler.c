@@ -121,6 +121,16 @@ VmDirLocalAPIHandler(
                         );
         break;
 
+      case VMDIR_IPC_SERVER_RESET:
+        dwError = VmDirIpcServerReset(
+                        pSecurityContext,
+                        pRequest,
+                        dwRequestSize,
+                        &pResponse,
+                        &dwResponseSize
+                        );
+        break;
+
       default:
 
         dwError = ERROR_INVALID_PARAMETER;

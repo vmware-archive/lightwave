@@ -362,6 +362,9 @@ VmDirMDBInitializeDB(
     dwError = VmDirMDBInitializeIndexDB();
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    dwError = VmDirInitMdbStateGlobals();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     VmDirLogDBStats();
 
     dwError = _VmDirWtxnStatsInit();
@@ -406,6 +409,8 @@ VmDirMDBShutdownDB(
         mdb_env_close(gVdirMdbGlobals.mdbEnv);
         gVdirMdbGlobals.mdbEnv = NULL;
     }
+
+    VmDirFreeMdbStateGlobals();
 
     MDBFreeMdbGlobals();
 
@@ -795,41 +800,3 @@ MDBFreeMdbGlobals(
     }
 }
 
-/*
- * See file client.c VmDirSetBackendState on parameters
- */
-DWORD
-VmDirSetMdbBackendState(
-    MDB_state_op        op,
-    DWORD               *pdwLogNum,
-    DWORD               *pdwDbSizeMb,
-    DWORD               *pdwDbMapSizeMb,
-    PSTR                pszDbPath,
-    DWORD               dwDbPathSize)
-{
-    DWORD dwError = 0;
-    unsigned long lognum = 0L;
-    unsigned long  dbSizeMb = 0L;
-    unsigned long  dbMapSizeMb = 0L;
-
-    if (op < MDB_STATE_CLEAR || op > MDB_STATE_GETXLOGNUM)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *pdwLogNum = 0;
-    *pdwDbSizeMb = 0;
-    *pdwDbMapSizeMb = 0;
-    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, op, &lognum, &dbSizeMb, &dbMapSizeMb, pszDbPath, dwDbPathSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    *pdwLogNum = lognum;
-    *pdwDbSizeMb = dbSizeMb;
-    *pdwDbMapSizeMb = dbMapSizeMb;
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}

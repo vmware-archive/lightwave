@@ -109,6 +109,17 @@ VmDirLoadIndex(
     VOID
     );
 
+// dbbackup.c
+VOID
+VmDirSrvSetMDBStateClear(
+    VOID
+    );
+
+DWORD
+VmDirSrvBackupDB(
+    PCSTR       pszBackupPath
+    );
+
 // init.c
 DWORD
 VmDirInit(
@@ -304,6 +315,11 @@ VmDirSrvSetSRPSecret(
 DWORD
 VmDirSrvGetServerState(
     PDWORD   pServerState
+    );
+
+DWORD
+VmDirSrvServerReset(
+    PDWORD pServerResetState
     );
 
 #ifndef _WIN32

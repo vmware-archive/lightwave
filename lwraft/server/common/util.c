@@ -938,3 +938,37 @@ cleanup:
 error:
     goto cleanup;
 }
+
+PCSTR
+VmDirMdbStateToName(
+    MDB_state_op opType
+    )
+{
+    struct
+    {
+        MDB_state_op    opType;
+        PCSTR           pszOpName;
+    }
+    static operationTypeToNameTable[] =
+    {
+        {MDB_STATE_CLEAR,      "CLEAR"},
+        {MDB_STATE_READONLY,   "READONLY"},
+        {MDB_STATE_KEEPXLOGS,  "KEEPXLOGS"},
+        {MDB_STATE_GETXLOGNUM, "GETXLOGNUM"},
+    };
+
+    PCSTR pszName = VMDIR_PCSTR_UNKNOWN;
+    int i=0;
+
+    for (; i< VMDIR_ARRAY_SIZE(operationTypeToNameTable); i++)
+    {
+        if (opType == operationTypeToNameTable[i].opType)
+        {
+            pszName = operationTypeToNameTable[i].pszOpName;
+            break;
+        }
+    }
+
+    return pszName;
+}
+

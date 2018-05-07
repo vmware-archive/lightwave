@@ -1058,6 +1058,11 @@ VmDirSrvGetDomainFunctionalLevel(
     PDWORD pdwLevel
     );
 
+PCSTR
+VmDirMdbStateToName(
+    MDB_state_op opType
+    );
+
 // candidates.c
 void
 AndFilterResults(

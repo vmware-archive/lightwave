@@ -93,9 +93,9 @@ error:
 }
 
 DWORD
-_VmDirLoadRaftState(
+VmDirLoadRaftState(
     VOID
-)
+    )
 {
     DWORD dwError = 0;
     PSTR  pszLocalErrorMsg = NULL;
