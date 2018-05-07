@@ -1,10 +1,13 @@
-SUBDIRS = domain
+SUBDIRS = \
+    domain \
+    dns
 
 bin_PROGRAMS = lightwave
 
 lightwave_SOURCES = \
     main.c \
-    domain.c
+    domain.c \
+    dns.c
 
 lightwave_CPPFLAGS = \
     -I$(top_srcdir)/config/include \
@@ -17,6 +20,7 @@ lightwave_CPPFLAGS = \
 
 lightwave_LDADD = \
     @top_builddir@/config/tools/lightwave/domain/libdomain.la \
+    @top_builddir@/config/tools/lightwave/dns/libdns.la \
     @top_builddir@/config/cfgutils/libcfgutils.la \
     @top_builddir@/vmafd/client/libvmafdclient.la \
     @top_builddir@/vmca/client/libvmcaclient.la \

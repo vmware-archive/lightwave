@@ -132,6 +132,11 @@ VmwDeployDeleteInstance(
     PVMW_IC_SETUP_PARAMS pParams
     );
 
+DWORD
+VmwDeployDeleteDCDNSRecords(
+    PVMW_IC_SETUP_PARAMS pParams
+    );
+
 VOID
 VmwDeployFreeSetupParams(
     PVMW_IC_SETUP_PARAMS pParams

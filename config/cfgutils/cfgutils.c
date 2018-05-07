@@ -193,6 +193,63 @@ error:
      return dwError;
 }
 
+DWORD
+VmwDeployDeleteDCDNSRecords(
+    PVMW_IC_SETUP_PARAMS pParams
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_SERVER_CONTEXT   pServerContext = NULL;
+    VMDNS_INIT_SITE_INFO    initInfo = {0};
+    CHAR                    szDomainFQDN[257] = {0};
+    DWORD                   dwStrLen = 0;
+
+    if (!pParams)
+    {
+        VMW_DEPLOY_LOG_ERROR("No setup parameters specified");
+
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    strncpy(szDomainFQDN, pParams->pszDomainName, 256);
+    dwStrLen = strlen(szDomainFQDN);
+    if (szDomainFQDN[dwStrLen - 1] != '.')
+    {
+        szDomainFQDN[dwStrLen] = '.';
+        szDomainFQDN[dwStrLen + 1] = 0;
+    }
+
+    initInfo.pszDcSrvName = pParams->pszServer;
+    initInfo.pszDomain = szDomainFQDN;
+    initInfo.wPort = DEFAULT_LDAP_PORT_NUM;
+    initInfo.pszSiteName = pParams->pszSite;
+    dwError = VmDnsOpenServerA(
+                "localhost",
+                pParams->pszUsername,
+                pParams->pszDomainName,
+                pParams->pszPassword,
+                0,
+                NULL,
+                &pServerContext);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmDnsUninitializeWithSiteA(pServerContext, &initInfo);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+cleanup:
+    if (pServerContext)
+    {
+        VmDnsCloseServer(pServerContext);
+    }
+
+    return dwError;
+error:
+    VMW_DEPLOY_LOG_ERROR("%s Error : %d, ServerName : %s, Domain : %s", __FUNCTION__, dwError, pParams->pszServer, szDomainFQDN);
+
+    goto cleanup;
+}
+
 BOOL
 VmwDeployIsRetriableError(
     DWORD dwError)

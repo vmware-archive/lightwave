@@ -12,6 +12,8 @@
  * under the License.
  */
 
+
+
 #include "includes.h"
 
 static
@@ -20,63 +22,22 @@ ShowUsage(
     VOID
     );
 
-static
 int
-LightwaveCommand(
-    int argc,
-    char *argv[]
-    );
-
-int
-main(
+LightwaveDns(
     int argc,
     char* argv[])
 {
     int iRetCode = 0;
 
-    if (argc < 2)
+    if (!strcmp(argv[0], "delete-dc"))
     {
-        iRetCode = 1;
-        ShowUsage();
-    }
-    else
-    {
-        iRetCode = LightwaveCommand(argc-1, &argv[1]);
-    }
-
-    return iRetCode;
-}
-
-static
-int
-LightwaveCommand(
-    int argc,
-    char *argv[])
-{
-    int iRetCode = 0;
-
-    if (argc < 2)
-    {
-        ShowUsage();
-        iRetCode = 1;
-        goto cleanup;
-    }
-
-    if (!strcmp(argv[0], "domain"))
-    {
-        iRetCode = LightwaveDomain(argc-1, &argv[1]);
-    }
-    else if (!strcmp(argv[0], "dns"))
-    {
-        iRetCode = LightwaveDns(argc-1, &argv[1]);
+        iRetCode = LightwaveDCDnsDelete(argc-1, &argv[1]);
     }
     else
     {
         ShowUsage();
-        iRetCode = 1;
     }
 
-cleanup:
     return iRetCode;
 }
 
@@ -87,13 +48,12 @@ ShowUsage(
     )
 {
     char pszUsageText[] =
-        "Usage: lightwave COMMAND {arguments}\n"
+        "Usage: lightwave dns COMMAND {arguments}\n"
         "\n"
         "Commands:\n"
-        "    domain   promote, demote, join, or leave a Lightwave domain\n"
-        "    dns      delete"
+        "    delete-dc   delete DNS records of a DC\n"
         "\n"
-        "Run 'lightwave COMMAND --help' for more information on a particular command'\n";
+        "Run 'lightwave dns COMMAND --help' for more information on a particular command'\n";
 
     printf("%s", pszUsageText);
 }

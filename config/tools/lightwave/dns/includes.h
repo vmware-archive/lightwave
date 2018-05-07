@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -18,44 +18,18 @@
 
 #include <cfgsys.h>
 
-#ifdef HAVE_LWSM_LWSM_H
-#include <lwsm/lwsm.h>
-#endif
-
-#ifdef HAVE_REG_LWREG_H
-#include <reg/lwreg.h>
-#endif
-
-#ifdef HAVE_REG_REGUTIL_H
-#include <reg/regutil.h>
-#endif
-
-#ifdef HAVE_LDAP_H
-#include <ldap.h>
-#endif
-
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
-
 #ifdef HAVE_TERM_H
 #include <term.h>
 #endif
-
-#include <vmdirclient.h>
-#include <vmdirerrors.h>
-#include <vmca.h>
-#include <vmdns.h>
-#include <vmafdclient.h>
-#include <vmdir.h>
 
 #include <cfgdefs.h>
 #include <cfgerrors.h>
 #include <cfgutils.h>
 
-#include "defines.h"
-#include "structs.h"
+#include <vmdirerrors.h>
+#include <vmafdclient.h>
 
 #include "prototypes.h"
-#include "externs.h"
-
