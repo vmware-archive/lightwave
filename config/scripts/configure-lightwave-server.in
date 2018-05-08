@@ -417,14 +417,14 @@ else
 
     case "$LOTUS_DEPLOYMENT" in
         "standalone")
-            $BIN_DIR/ic-promote \
+            $BIN_DIR/lightwave domain promote \
                 --domain $LOTUS_DOMAIN_DEFAULT \
                 --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
                 --site $LOTUS_SITE_NAME \
                 $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
             ;;
         "partner")
-            $BIN_DIR/ic-promote \
+            $BIN_DIR/lightwave domain promote \
                 --domain $LOTUS_DOMAIN_DEFAULT \
                 --username $LOTUS_ADMIN_DEFAULT \
                 --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
@@ -433,7 +433,7 @@ else
                 $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
             ;;
         "child")
-            $BIN_DIR/ic-promote \
+            $BIN_DIR/lightwave domain promote \
                 --domain $LOTUS_DOMAIN_DEFAULT \
                 --username $LOTUS_ADMIN_DEFAULT \
                 --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
