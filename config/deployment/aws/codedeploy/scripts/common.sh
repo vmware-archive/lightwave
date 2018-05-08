@@ -7,10 +7,9 @@ init()
   if [[ -z ${COMMON_INIT} ]]
   then
     source $(dirname $(realpath $0))/aws.sh
+    source $(dirname $(realpath $0))/aws_dns.sh
     source $(dirname $(realpath $0))/promote.sh
     source $(dirname $(realpath $0))/healthcheck.sh
-    load_variables
-    load_credentials
     export COMMON_INIT=true
   fi
 }
@@ -19,30 +18,41 @@ init()
 # Load all configuration variables
 load_variables()
 {
-  load_aws_variables
+  VARFILE=$(dirname $(realpath $0))/variables
+  if [[ -f ${VARFILE} ]]
+  then
+    echo "Loading variables from file ${VARFILE}"
+    source ${VARFILE}
 
-  # check mandatory variables
-  [[ ${ROOTDIR} ]]
-  [[ ${SAN_ENTRY} ]]
-  [[ ${SITE} ]]
+  else
+    echo "Loading variables from cloud"
+    load_aws_variables
 
-  export HOSTNAME=$(hostname -f)
-  echo "HOSTNAME: ${HOSTNAME}"
-  [[ ${HOSTNAME} ]]
+    # check mandatory variables
+    [[ ${ROOTDIR} ]]
+    [[ ${SAN_ENTRY} ]]
+    [[ ${SITE} ]]
 
-  export CONFIGDIR=${ROOTDIR}/configs
-  echo "CONFIGDIR: ${CONFIGDIR}"
-  [[ ${CONFIGDIR} ]]
+    export HOSTNAME=$(hostname -f)
+    echo "HOSTNAME=${HOSTNAME}" >> ${VARFILE}
+    echo "HOSTNAME=${HOSTNAME}"
+    [[ ${HOSTNAME} ]]
 
-  export CRONDIR=${ROOTDIR}/crontab
-  echo "CRONDIR: ${CRONDIR}"
-  [[ ${CRONDIR} ]]
+    export CONFIGDIR=${ROOTDIR}/configs
+    echo "CONFIGDIR=${CONFIGDIR}" >> ${VARFILE}
+    echo "CONFIGDIR=${CONFIGDIR}"
+    [[ ${CONFIGDIR} ]]
 
-  export PUB_DNS=8.8.8.8
-  echo "PUB_DNS: ${PUB_DNS}"
-  [[ ${PUB_DNS} ]]
+    export CRONDIR=${ROOTDIR}/crontab
+    echo "CRONDIR=${CRONDIR}" >> ${VARFILE}
+    echo "CRONDIR=${CRONDIR}"
+    [[ ${CRONDIR} ]]
 
-  export PROMOTED=false
+    export PUB_DNS=8.8.8.8
+    echo "PUB_DNS=${PUB_DNS}" >> ${VARFILE}
+    echo "PUB_DNS=${PUB_DNS}"
+    [[ ${PUB_DNS} ]]
+  fi
 }
 
 ###
@@ -79,12 +89,12 @@ stop_services()
 # Start all lightwave services
 start_services()
 {
-  /opt/likewise/bin/lwsm restart vmafd
-  /opt/likewise/bin/lwsm restart vmca
-  /opt/likewise/bin/lwsm restart vmdir
-  /opt/likewise/bin/lwsm restart vmdns
+  /opt/likewise/bin/lwsm start vmafd
+  /opt/likewise/bin/lwsm start vmca
+  /opt/likewise/bin/lwsm start vmdir
+  /opt/likewise/bin/lwsm start vmdns
   systemctl daemon-reload
-  systemctl restart vmware-stsd
+  systemctl start vmware-stsd
 }
 
 ###
@@ -142,6 +152,15 @@ start_cron()
 
   crontab ${CRONDIR}/lw-cron.txt
   crontab -l
+}
+
+###
+# Concatenates elements of an array using the specified separator
+string_join()
+{
+  local IFS="$1"
+  shift
+  echo "$*"
 }
 
 init

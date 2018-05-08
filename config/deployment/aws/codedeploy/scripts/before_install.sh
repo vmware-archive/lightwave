@@ -4,6 +4,7 @@ source $(dirname $(realpath $0))/common.sh
 
 main()
 {
+  load_variables
   install_dependencies
   install_logging_dependencies
 }
@@ -12,18 +13,17 @@ main()
 # Install simple lightwave dependencies which don't require configuration
 install_dependencies()
 {
-  cp ${CONFIGDIR}/lightwave.repo /etc/yum.repos.d/lightwave.repo
+  echo "Install generic depdendencies"
 
+  cp ${CONFIGDIR}/lightwave.repo /etc/yum.repos.d/lightwave.repo
   tdnf -yq makecache
   # required to create local yum repository
-  tdnf install -y sed zip unzip
-  tdnf install -y createrepo_c
-  tdnf install -y c-rest-engine-1.2-4.ph2
-  tdnf install -y cyrus-sasl-2.1.26
-  tdnf install -y glibc-devel-2.26
-  tdnf install -y openssl-1.0.2n
-  tdnf install -y likewise-open-6.2.11
-  tdnf install -y jq-1.5-3.ph2
+  tdnf install -yq sed zip unzip createrepo_c \
+                   c-rest-engine-1.2-4.ph2 \
+                   cyrus-sasl-2.1.26 \
+                   glibc-devel-2.26 \
+                   openssl-1.0.2n \
+                   likewise-open-6.2.11
 }
 
 ###
@@ -33,6 +33,8 @@ install_logging_dependencies()
   # if LOGSTASH_ELB option is set, we need to install logging depedencies
   if [[ -n "${LOGSTASH_ELB}" ]]
   then
+    echo "Install logging depdendencies"
+
     # install logging tools
     tdnf install -y syslog-ng logrotate
     if ! rpm -q filebeat

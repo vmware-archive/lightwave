@@ -4,6 +4,7 @@ source $(dirname $(realpath $0))/common.sh
 
 main()
 {
+  load_variables
   create_lw_repo
   install_lightwave
   install_telegraf
@@ -13,6 +14,8 @@ main()
 # Create local repository using rpm files from the archive file
 create_lw_repo()
 {
+  echo "Create temp lightwave repo using new rpm files"
+
   # re-point lightwave repo to /tmp/vmware/lightwave
   sed -i -e "s/https:\/\/.*/file:\/\/\/tmp\/vmware\/lightwave/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo
 
@@ -26,6 +29,7 @@ create_lw_repo()
   do
     f=`awk -F'/' '{ print $NF; }' <<< ${org}`
     tgt="/tmp/vmware/lightwave/x86_64/${f}"
+    echo "ln -nfs ${org} ${tgt}"
     ln -nfs ${org} ${tgt}
   done
 
@@ -38,10 +42,14 @@ create_lw_repo()
 # refresh lwsm after install/upgrade
 install_lightwave()
 {
+  echo "Install lightwave packages"
+
   RPM_VERSION=$(rpm -qp --queryformat '%{VERSION}-%{RELEASE}' $(find ${ROOTDIR} -name "lightwave-server-*.rpm"))
-  tdnf install -y lightwave-client-${RPM_VERSION} \
-                  lightwave-server-${RPM_VERSION} \
-                  lightwave-${RPM_VERSION}
+  echo "RPM_VERSION=${RPM_VERSION}"
+
+  tdnf install -yq lightwave-client-${RPM_VERSION} \
+                   lightwave-server-${RPM_VERSION} \
+                   lightwave-${RPM_VERSION}
 }
 
 ###
@@ -51,6 +59,8 @@ install_telegraf()
   # if WAVEFRONT_PROXY_ELB option is set, we need to install telegraf
   if [[ -n "${WAVEFRONT_PROXY_ELB}" ]]
   then
+    echo "Install telegraf"
+
     cp ${CONFIGDIR}/wavefront_telegraf.repo /etc/yum.repos.d/wavefront_telegraf.repo
     tdnf makecache
     # (PR 2021327) install 1.4.0 until we resolve issue with 1.5.0 installation

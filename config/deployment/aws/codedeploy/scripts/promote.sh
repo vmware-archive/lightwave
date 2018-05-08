@@ -10,14 +10,28 @@ promote_as_first_node()
       --username "${ADMINISTRATOR_USER}" \
       --password "${ADMINISTRATOR_PASS}" \
       --site ${SITE}
+
   generate_ssl_cert
   add_dns_forwarder
+
+  # temporary solution
+  echo "Set localhost (${LOCAL_IPV4}) as primary DNS"
+  replace_dns_list ${LOCAL_IPV4}
 }
 
 ###
 # Configure lightwave instance to join as a partner
 promote_as_partner_node()
 {
+  # temporary solution
+  find_asg_partners
+  if [[ ${#PARTNER_IPS[@]} -eq 0 ]]
+  then
+    echo "Only node in the region - this must be a new region deployment"
+    echo "Use ${PARTNER} as DNS while performing promote"
+    replace_dns_list ${PARTNER}
+  fi
+
   echo "/opt/vmware/bin/configure-lightwave-server --domain ${LW_DOMAIN} --username ${DOMAIN_PROMOTER_USER} --site ${SITE} --partner ${PARTNER}"
   /opt/vmware/bin/configure-lightwave-server \
       --domain "${LW_DOMAIN}" \
@@ -25,8 +39,13 @@ promote_as_partner_node()
       --password "${DOMAIN_PROMOTER_PASS}" \
       --site ${SITE} \
       --partner ${PARTNER}
+
   generate_ssl_cert
   fix_topology
+
+  # temporary solution
+  echo "Make the new node the new primary DNS - it will make scale up/down easier"
+  touch primary_dns
 }
 
 ###

@@ -4,6 +4,8 @@ source $(dirname $(realpath $0))/common.sh
 
 main()
 {
+  load_variables
+  load_credentials
   update_registry_values
   start_services
 
@@ -21,10 +23,8 @@ main()
     else
       echo "You must provide administrator credential to promote the first node. Skipping promote step."
       copy_first_dc_init_scripts
-      return 0
     fi
   fi
-  PROMOTED=true
 }
 
 ###
@@ -47,11 +47,7 @@ update_registry_values()
 copy_first_dc_init_scripts()
 {
   mkdir -p /root/first-dc-init
-  cp $(dirname $(realpath $0))/aws.sh /root/first-dc-init
-  cp $(dirname $(realpath $0))/common.sh /root/first-dc-init
-  cp $(dirname $(realpath $0))/promote.sh /root/first-dc-init
-  cp $(dirname $(realpath $0))/healthcheck.sh /root/first-dc-init
-  cp $(dirname $(realpath $0))/first-dc-init.sh /root/first-dc-init
+  cp $(dirname $(realpath $0))/*.sh /root/first-dc-init/
   chmod +x /root/first-dc-init/*.sh
 }
 

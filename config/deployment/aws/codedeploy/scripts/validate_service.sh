@@ -4,7 +4,8 @@ source $(dirname $(realpath $0))/common.sh
 
 main()
 {
-  if [[ "${PROMOTED}" == true ]]
+  STATE=$(/opt/vmware/bin/vmafd-cli get-domain-state --server-name localhost)
+  if [[ "${STATE}" == "Controller" ]]
   then
     is_idm_healthy
   fi

@@ -45,6 +45,8 @@ main()
   echo "Configuring first Lightwave node"
   promote_as_first_node
 
+  # TODO - data patches for ligthwave-proxy
+
   echo ""
   echo "Successfully configured first Lightwave node! :)"
 }

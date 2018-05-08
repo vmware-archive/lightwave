@@ -118,7 +118,7 @@ perform_schema_patch()
       --host ${NODE_IP} \
       --login ${SRV_ACCT_MGR_USER} \
       --passwd ${SRV_ACCT_MGR_PASS} \
-      --dryrun > output.log
+      --dryrun > schema-patch-dryrun.log
 
   /opt/vmware/bin/vdcschema patch-schema-defs \
       --file /opt/vmware/share/config/vmdirschema.ldif \
