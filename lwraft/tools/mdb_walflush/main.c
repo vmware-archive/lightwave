@@ -22,7 +22,7 @@ main(int argc, char* argv[])
 {
     DWORD           dwError = 0;
     unsigned int    envFlags = 0;
-    mdb_mode_t      oflags;
+    mdb_mode_t      mode = 0;
     BOOLEAN         bMdbWalEnable = TRUE;
     MDB_env*        mdbEnv = NULL;
 #ifndef _WIN32
@@ -55,9 +55,9 @@ main(int argc, char* argv[])
         envFlags |= MDB_WAL;
     }
 
-    oflags = O_RDWR;
+    mode = S_IRUSR | S_IWUSR;
 
-    dwError = mdb_env_open ( mdbEnv, dbHomeDir, envFlags, oflags );
+    dwError = mdb_env_open ( mdbEnv, dbHomeDir, envFlags, mode );
     BAIL_ON_VMDIR_ERROR( dwError );
 
     mdb_env_sync(mdbEnv, 1);

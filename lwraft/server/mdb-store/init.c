@@ -225,7 +225,7 @@ VmDirMDBInitializeDB(
 {
     DWORD           dwError = 0;
     unsigned int    envFlags = 0;
-    mdb_mode_t      oflags;
+    mdb_mode_t      mode = 0;
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
     DWORD           db_chkpt_interval = 0;
@@ -321,9 +321,9 @@ VmDirMDBInitializeDB(
     /* Open the environment.  */
 
 #ifndef _WIN32
-    oflags = O_RDWR;
+    mode = S_IRUSR | S_IWUSR;
 #else
-    oflags = GENERIC_READ|GENERIC_WRITE;
+    mode = GENERIC_READ|GENERIC_WRITE;
 #endif
 
     //MDB WAL is the default mode and can be turned off with reg key MdbEnableWal set to 0
@@ -342,7 +342,7 @@ VmDirMDBInitializeDB(
         envFlags |= MDB_WAL;
     }
 
-    dwError = mdb_env_open ( gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, oflags );
+    dwError = mdb_env_open ( gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, mode );
 //TODO, what if open failed?  how to recover??
     BAIL_ON_VMDIR_ERROR( dwError );
 

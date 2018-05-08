@@ -623,7 +623,7 @@ _VmDirOpenDbEnv()
 {
     DWORD dwError = 0;
     unsigned int    envFlags = 0;
-    mdb_mode_t      oflags;
+    mdb_mode_t      mode = 0;
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
     PSTR            pszLocalErrorMsg = NULL;
@@ -693,12 +693,12 @@ _VmDirOpenDbEnv()
         envFlags |= MDB_WAL;
     }
 
-    oflags = O_RDWR;
+    mode = S_IRUSR | S_IWUSR;
 
     dwError = _VmdirCreateDbEnv(db_max_mapsize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = mdb_env_open (gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, oflags );
+    dwError = mdb_env_open (gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, mode );
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "_VmDirOpenDbEnv: open database at %d failed", dbHomeDir);
 
 cleanup:
