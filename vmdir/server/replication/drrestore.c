@@ -24,6 +24,7 @@
  */
 
 #include "includes.h"
+#define DR_DC_LIST "lw-dr-dc-list.txt"
 
 static
 DWORD
@@ -34,13 +35,13 @@ _VmDirDeleteDCObject(
 static
 DWORD
 _VmDirDeleteServerObjectTree(
-    VOID
+    PDEQUE  pDequeDCObjUPN
     );
 
 static
 DWORD
-_VmDirDeleteDNSTree(
-    VOID
+_VmDirDumpQ(
+    PDEQUE  pDequeDCObjUPN
     );
 
 static
@@ -82,7 +83,7 @@ VmDirSrvServerReset(
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     BOOLEAN             bWriteInvocationId = FALSE;
     DEQUE               deqDCObjUPN = {0};
-    PSTR                pszComputer = NULL;
+    PVMDIR_DR_DC_INFO   pDcInfo = NULL;
     PSTR                pszUtdVector = NULL;
     BOOLEAN             bMdbWalEnable = FALSE;
     VDIR_BERVALUE       bvUtdVector = VDIR_BERVALUE_INIT;
@@ -108,7 +109,7 @@ VmDirSrvServerReset(
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Delete DC objects", __FUNCTION__);
 
-    dwError = _VmDirDeleteServerObjectTree();
+    dwError = _VmDirDeleteServerObjectTree(&deqDCObjUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Delete Directory Server object tree", __FUNCTION__);
 
@@ -116,9 +117,9 @@ VmDirSrvServerReset(
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Delete Managed Service objects", __FUNCTION__);
 
-    dwError = _VmDirDeleteDNSTree();
+    dwError = _VmDirDumpQ(&deqDCObjUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Delete DNS objects", __FUNCTION__);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Dumped queue to file", __FUNCTION__);
 
     // shutdown and init ACL to pick up domain sid from restored DB
     VmDirVmAclShutdown();
@@ -174,8 +175,10 @@ cleanup:
 
     while(!dequeIsEmpty(&deqDCObjUPN))
     {
-        dequePopLeft(&deqDCObjUPN, (PVOID*)&pszComputer);
-        VMDIR_SAFE_FREE_MEMORY(pszComputer);
+        dequePopLeft(&deqDCObjUPN, (PVOID*)&pDcInfo);
+        VMDIR_SAFE_FREE_MEMORY(pDcInfo->pszSite);
+        VMDIR_SAFE_FREE_MEMORY(pDcInfo->pszUPN);
+        VMDIR_SAFE_FREE_MEMORY(pDcInfo);
     }
     return dwError;
 
@@ -238,6 +241,7 @@ _VmDirDeleteDCObject(
     PSTR    pszDCObj = NULL;
     PVDIR_ATTRIBUTE pAttrUPN = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
+    PVMDIR_DR_DC_INFO pQueueStruct = NULL;
 
     //Delete domain controllers
     dwError = VmDirAllocateStringPrintf(&
@@ -262,12 +266,18 @@ _VmDirDeleteDCObject(
             pAttrUPN = VmDirFindAttrByName(&entryArray.pEntry[i], ATTR_KRB_UPN);
             if (pAttrUPN)
             {
-               dwError = VmDirAllocateStringA(pAttrUPN->vals[0].lberbv_val, &pszDCObj);
-               BAIL_ON_VMDIR_ERROR(dwError);
+                VmDirAllocateMemory(sizeof(VMDIR_DR_DC_INFO), (PVOID*)&pQueueStruct);
+                BAIL_ON_VMDIR_ERROR(dwError);
 
-               dwError = dequePush(pDequeDCObjUPN, pszDCObj);
-               BAIL_ON_VMDIR_ERROR(dwError);
-               pszDCObj = NULL;
+                dwError = VmDirAllocateStringA(pAttrUPN->vals[0].lberbv_val, &pszDCObj);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                pQueueStruct->pszUPN = pszDCObj;
+
+                dwError = dequePush(pDequeDCObjUPN, pQueueStruct);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                pszDCObj = NULL;
+                pQueueStruct = NULL;
             }
 
             dwError = VmDirDeleteEntry(&entryArray.pEntry[i]);
@@ -279,6 +289,7 @@ cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
     VMDIR_SAFE_FREE_MEMORY(pszDomainControllerContainerDn);
     VMDIR_SAFE_FREE_MEMORY(pszDCObj);
+    VMDIR_SAFE_FREE_MEMORY(pQueueStruct);
 
     return dwError;
 
@@ -290,13 +301,17 @@ error:
 static
 DWORD
 _VmDirDeleteServerObjectTree(
-    VOID
+    PDEQUE  pDequeDCObjUPN
     )
 {
     DWORD   dwError = 0;
     int     i = 0;
     PSTR    pszConfigurationContainerDn = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
+    PVMDIR_DR_DC_INFO pQueueStruct = NULL;
+    PSTR    pszSite = NULL;
+    PSTR    pszCN = NULL;
+    PDEQUE_NODE pDequeTmp = NULL;
 
     dwError = VmDirAllocateStringPrintf(
         &pszConfigurationContainerDn,
@@ -320,6 +335,29 @@ _VmDirDeleteServerObjectTree(
             /* Delete all replication agreement entries for a server and
              * the server it self under the configuration/site container
              */
+            dwError = VmDirServerDNToSite(entryArray.pEntry[i].dn.lberbv_val, &pszSite);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (pDequeTmp = pDequeDCObjUPN->pHead; pDequeTmp != NULL; pDequeTmp = pDequeTmp->pNext)
+            {
+                pQueueStruct = (PVMDIR_DR_DC_INFO) pDequeTmp->pElement;
+                VmDirDnLastRDNToCn(entryArray.pEntry[i].dn.lberbv_val, &pszCN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                if (VmDirStringLenA(pszCN) >= VmDirStringLenA(pQueueStruct->pszUPN) ||
+                    VmDirStringNCompareA(pszCN, pQueueStruct->pszUPN, VmDirStringLenA(pszCN), FALSE) ||
+                    pQueueStruct->pszUPN[VmDirStringLenA(pszCN)] != '@')
+                {
+                    VMDIR_SAFE_FREE_MEMORY(pszCN);
+                    continue;
+                }
+
+                pQueueStruct->pszSite = pszSite;
+                pszSite = NULL;
+                VMDIR_SAFE_FREE_MEMORY(pszCN);
+                break;
+            }
+
             dwError = VmDirInternalDeleteTree(entryArray.pEntry[i].dn.lberbv_val, TRUE);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -328,6 +366,7 @@ _VmDirDeleteServerObjectTree(
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
     VMDIR_SAFE_FREE_MEMORY(pszConfigurationContainerDn);
+    VMDIR_SAFE_FREE_MEMORY(pszSite);
 
     return dwError;
 error:
@@ -337,30 +376,45 @@ error:
 // remove all DNS objects under dc=DomainDnsZones,SYSTEM_DOMAIN
 static
 DWORD
-_VmDirDeleteDNSTree(
-    VOID
+_VmDirDumpQ(
+    PDEQUE  pDequeDCObjUPN
     )
 {
-    DWORD   dwError = 0;
-    PSTR    pszDNSContainer = NULL;
+    DWORD       dwError = 0;
+    PSTR        pszFileName = VMDIR_LOG_DIR VMDIR_PATH_SEP DR_DC_LIST;
+    FILE*       fDumpFile = NULL;
+    DWORD       dwWritten = 0;
+    PVMDIR_DR_DC_INFO pVal = NULL;
+    PDEQUE_NODE pDequeTmp = NULL;
+    PSTR        pszOutLine = NULL;
 
-    dwError = VmDirAllocateStringPrintf(
-        &pszDNSContainer,
-        "dc=%s,%s",
-        VMDIR_DNS_CONTAINER_NAME,
-        gVmdirServerGlobals.systemDomainDN.lberbv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInternalDeleteTree(pszDNSContainer, FALSE);
-    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND ||
-        dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
+    fDumpFile = fopen(pszFileName, "w");
+    if (fDumpFile == NULL)
     {
-        dwError = 0;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pDequeTmp = pDequeDCObjUPN->pHead; pDequeTmp != NULL; pDequeTmp = pDequeTmp->pNext)
+    {
+        pVal = (PVMDIR_DR_DC_INFO) pDequeTmp->pElement;
+        dwError = VmDirAllocateStringPrintf(&pszOutLine, "%s,%s\n", pVal->pszUPN, pVal->pszSite);
+        dwWritten = (DWORD) fwrite(
+                            pszOutLine,
+                            sizeof(char),
+                            VmDirStringLenA(pszOutLine),
+                            fDumpFile);
+        if (dwWritten != VmDirStringLenA(pszOutLine))
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszDNSContainer);
+    if (fDumpFile)
+    {
+        fclose(fDumpFile);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszOutLine);
 
     return dwError;
 error:
