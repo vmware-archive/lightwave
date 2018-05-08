@@ -88,10 +88,10 @@ _VmDirSearchValidStateForReplication(
     PVDIR_OPERATION     pOperation
     )
 {
-    // Valid state to supply or in shutdown state and in the middle of supplying
+    // Valid state to supply
     return (VmDirdState() == VMDIRD_STATE_NORMAL ||
             VmDirdState() == VMDIRD_STATE_READ_ONLY ||
-           (VmDirdState() == VMDIRD_STATE_SHUTDOWN && pOperation->conn->bInReplLock));
+            VmDirdState() == VMDIRD_STATE_SHUTDOWN);
 }
 
 static

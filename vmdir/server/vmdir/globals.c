@@ -58,6 +58,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwOperationsThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwEmptyPageCnt, 0),
+        VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),

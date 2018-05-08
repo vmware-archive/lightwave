@@ -180,6 +180,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwOperationsThreadTimeoutInMilliSec;
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
     DWORD                           dwEmptyPageCnt;
+    DWORD                           dwSupplierThrTimeoutInMilliSec;
 
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;

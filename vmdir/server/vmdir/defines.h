@@ -395,7 +395,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 5000,                             \
         /*.dwMax          = */ 60000,                            \
-        /*.dwDefault      = */ 10000,                            \
+        /*.dwDefault      = */ 20000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -429,6 +429,17 @@
         /*.dwMin          = */ 1,                                \
         /*.dwMax          = */ 10,                               \
         /*.dwDefault      = */ 1,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_SUPPLIER_THREAD_TIMEOUT_IN_MILLI_SEC, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5000,                             \
+        /*.dwMax          = */ 60000,                            \
+        /*.dwDefault      = */ 10000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
