@@ -43,6 +43,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.Comparator;
 
 import javax.security.auth.login.LoginException;
 
@@ -50,6 +51,11 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
+import com.vmware.identity.cdc.CdcSession;
+import com.vmware.identity.cdc.CdcFactory;
+import com.vmware.identity.cdc.HeartbeatInfo;
+import com.vmware.identity.cdc.DCStatusInfo;
+import com.vmware.identity.cdc.CdcGenericException;
 import com.vmware.af.VmAfClientNativeException;
 import com.vmware.af.interop.VmAfAccessDeniedException;
 import com.vmware.af.interop.VmAfAlreadyJoinedException;
@@ -515,6 +521,52 @@ public class IdentityManager implements IIdentityManager {
                 throw ex;
             }
         }
+    }
+
+    private
+    String getPartnerDC()
+    {
+        List<DCStatusInfo> statusInfo;
+        try
+        {
+            CdcSession cdcSession = CdcFactory.createCdcSessionViaIPC();
+            statusInfo = cdcSession.enumDCStatusInfo();
+        }
+        catch (CdcGenericException e)
+        {
+            logger.error(String.format(
+                    "Failed to find partner DC: %s, defaulting to localhost",
+                    e.getMessage()));
+
+            return HOSTNAME_MACRO;
+        }
+
+        if (statusInfo.size() == 0)
+        {
+            // there should be at least one DCInfo in list
+            return null;
+        }
+
+        class DCInfoComparator implements Comparator
+        {
+            public int compare(Object obj1, Object obj2)
+            {
+                DCStatusInfo dc1 = (DCStatusInfo)obj1;
+                DCStatusInfo dc2 = (DCStatusInfo)obj2;
+
+                // compare based on isAlive, then lexicographically on dcName
+                if (dc1.isAlive == dc2.isAlive)
+                {
+                    return dc1.dcName.compareToIgnoreCase(dc2.dcName);
+                }
+
+                return (dc1.isAlive) ? 1 : -1;
+            }
+        }
+
+        Collections.sort(statusInfo, new DCInfoComparator());
+
+        return statusInfo.get(0).dcName;
     }
 
     private

@@ -20,147 +20,206 @@ import com.vmware.identity.cdc.CdcAdapter;
  * however the authentication mechanism done by validating Domain user credentials in Directory Service.
  * NOTE: This class is *not* Thread-safe.
  */
-public class CdcSession implements AutoCloseable{
-   private PointerRef _serverHandle;
-   private final String _userName;
-   private final String _serverName;
+public class CdcSession implements AutoCloseable {
+    private PointerRef _serverHandle;
+    private final String _userName;
+    private final String _serverName;
 
-   private static final String LOCALHOST = "__localhost__";
-   private static final String LOCALUSER = "__localuser__";
+    private static final String LOCALHOST = "__localhost__";
+    private static final String LOCALUSER = "__localuser__";
 
-   CdcSession(String serverName, String userName, String password) {
-      PointerRef pServer = new PointerRef();
-      int error = 0;
-      _serverName = (serverName == null) ? LOCALHOST : serverName;
-      _userName = (userName == null) ? LOCALUSER : userName;
+    CdcSession(String serverName, String userName, String password) {
+        PointerRef pServer = new PointerRef();
+        int error = 0;
+        _serverName = (serverName == null) ? LOCALHOST : serverName;
+        _userName = (userName == null) ? LOCALUSER : userName;
 
-      error = CdcAdapter.VmAfdOpenServerW(serverName, userName, password, pServer);
+        error = CdcAdapter.VmAfdOpenServerW(serverName, userName, password, pServer);
+        BAIL_ON_ERROR(
+                error,
+                "Error opening server '%s' for user '%s'",
+                serverName,
+                userName);
 
-      if (error != 0) {
-          throw new CdcGenericException(
-                           String.format("Error opening server '%s' for user '%s'",
-                           serverName,
-                           userName),
-                           error
-                           );
-      }
-      _serverHandle = pServer;
+        _serverHandle = pServer;
 
-   }
+    }
 
-   private void closeSession(){
-	   if (_serverHandle != null)
-	   {
-		    CdcAdapter.VmAfdCloseServer(_serverHandle);
-	   }
-	   _serverHandle = null;
-   }
+    private void closeSession() {
+        if (_serverHandle != null) {
+            CdcAdapter.VmAfdCloseServer(_serverHandle);
+        }
+        _serverHandle = null;
+    }
 
-   public void enableClientAffinity() {
+    public void enableClientAffinity() {
 
-      int error = CdcAdapter.CdcEnableClientAffinity(_serverHandle);
-      BAIL_ON_ERROR(
+        int error = CdcAdapter.CdcEnableClientAffinity(_serverHandle);
+        BAIL_ON_ERROR(
                 error,
                 "Enabling client affinity failed. [Server: %s, User: %s]",
-                 _serverName,
-                 _userName
-                 );
-   }
+                _serverName,
+                _userName
+        );
+    }
 
-   public void disableClientAffinity() {
+    public void disableClientAffinity() {
 
-      int error = CdcAdapter.CdcDisableClientAffinity(_serverHandle);
-      BAIL_ON_ERROR(
+        int error = CdcAdapter.CdcDisableClientAffinity(_serverHandle);
+        BAIL_ON_ERROR(
                 error,
                 "Enabling client affinity failed. [Server: %s, User: %s]",
-                 _serverName,
-                 _userName
-                 );
-   }
+                _serverName,
+                _userName
+        );
+    }
 
-   public CdcDCEntry getAffinitizedDC(String domainName, int flags) {
+    public CdcDCEntry getAffinitizedDC(String domainName, int flags) {
 
-      CdcDCEntry resultEntry = null;
-      CdcDCEntryNative pEntry = new CdcDCEntryNative();
-      int error = CdcAdapter.CdcGetDCNameW(
-                                        _serverHandle,
-                                        domainName,
-                                        flags,
-                                        pEntry
-                                        );
-      if (error == CdcAdapter.ERROR_OBJECT_NOT_FOUND) {
-         resultEntry = null;
-      } else {
-         BAIL_ON_ERROR(error,
-               "Getting affinitized DC for domain %s failed. [Server: %s, User: %s]",
-               domainName, _serverName, _userName);
-         resultEntry = convertCdcDCEntryNativeToCdcDCEntry(pEntry);
-      }
-      return resultEntry;
-   }
+        CdcDCEntry resultEntry = null;
+        CdcDCEntryNative pEntry = new CdcDCEntryNative();
+        int error = CdcAdapter.CdcGetDCNameW(
+                            _serverHandle,
+                            domainName,
+                            flags,
+                            pEntry);
 
-   public List<String> enumDCEntries() {
-	      List<String> dcEntryList = new ArrayList<String>();
-	      int error = CdcAdapter.CdcEnumDCEntriesW(
-                                      _serverHandle,
-                                      dcEntryList
-                                      );
-          BAIL_ON_ERROR(
-              error,
-              "Enumerating DCs failed. [Server: %s, User: %s]",
-              _serverName, _userName
-              );
+        if (error == CdcAdapter.ERROR_OBJECT_NOT_FOUND) {
+            resultEntry = null;
+        } else {
+            BAIL_ON_ERROR(
+                    error,
+                    "Getting affinitized DC for domain %s failed. [Server: %s, User: %s]",
+                    domainName,
+                    _serverName,
+                    _userName);
 
-	      return dcEntryList;
-   }
-   
-   public CdcState getCdcState() {
-	      IntRef pState = new IntRef();
-	      CdcState cdcState;
-	      int error = CdcAdapter.CdcGetCurrentState(
-	    		  						_serverHandle,
-	    		  						pState
-	    		  						);
-	      BAIL_ON_ERROR(
-	    		   error,
-	    		   "Getting CDC State failed. [Server: %s, User: %s]",
-	               _serverName, _userName
-	               );
-	      cdcState = CdcState.getState(pState.number);
-	      
-	      return cdcState;
-   }
+            resultEntry = convertCdcDCEntryNativeToCdcDCEntry(pEntry);
+        }
+        return resultEntry;
+    }
 
-   @Override
-   public void close(){
-	   closeSession();
-   }
+    public List <String> enumDCEntries() {
+        List <String> dcEntryList = new ArrayList<String>();
+        int error = CdcAdapter.CdcEnumDCEntriesW(
+                _serverHandle,
+                dcEntryList
+        );
+        BAIL_ON_ERROR(
+                error,
+                "Enumerating DCs failed. [Server: %s, User: %s]",
+                _serverName, _userName
+        );
 
-   private static CdcDCEntry convertCdcDCEntryNativeToCdcDCEntry(CdcDCEntryNative entryNative) {
-      String dcName = entryNative.dcName;
-      CdcAddressType type = CdcAddressType.getEntryType(entryNative.addressType);
+        return dcEntryList;
+    }
 
-      String dcAddress = entryNative.dcAddress;
-      String dcSiteName = entryNative.dcSiteName;
+    public List <DCStatusInfo> enumDCStatusInfo() {
+        List <DCStatusInfo> dcStatusList = new ArrayList<DCStatusInfo>();
 
-      return new CdcDCEntry(type, dcName, dcAddress, dcSiteName);
-   }
+        List <String> dcEntries = enumDCEntries();
+        for (String entry : dcEntries) {
+            dcStatusList.add(getDCStatusInfo(entry, null));
+        }
 
-   private static void BAIL_ON_ERROR(final int error, final String format,
-	         Object... vargs) {
-	      switch (error) {
-	      case 0:
-	         break;
-	      default:
-	         throw new CdcGenericException(String.format(format, vargs), error);
-	      }
-   }
+        return dcStatusList;
+    }
 
-   protected void finalize() throws Throwable {
-      try {
-    	  closeSession();
-      } finally {
-         super.finalize();
-      }
-   }
+    public DCStatusInfo getDCStatusInfo(String dcName, String domainName) {
+        DCStatusInfo resultEntry = null;
+        CdcStatusInfoNative statusInfo = new CdcStatusInfoNative();
+        HeartbeatStatusNative hbStatus = new HeartbeatStatusNative();
+
+        int error = CdcAdapter.CdcGetDCStatusInfoW(
+                _serverHandle,
+                dcName,
+                domainName,
+                statusInfo,
+                hbStatus);
+
+        BAIL_ON_ERROR(
+                error,
+                "Getting status info for %s failed. [Server: %s, User: %s]",
+                dcName,
+                _serverName,
+                _userName);
+
+        return convertCdcStatusNativeToDCStatusInfo(dcName, statusInfo, hbStatus);
+    }
+
+    public CdcState getCdcState() {
+        IntRef pState = new IntRef();
+        CdcState cdcState;
+        int error = CdcAdapter.CdcGetCurrentState(_serverHandle, pState);
+
+        BAIL_ON_ERROR(
+                error,
+                "Getting CDC State failed. [Server: %s, User: %s]",
+                _serverName,
+                _userName);
+        cdcState = CdcState.getState(pState.number);
+
+        return cdcState;
+    }
+
+    @Override
+    public void close() {
+        closeSession();
+    }
+
+    private static CdcDCEntry convertCdcDCEntryNativeToCdcDCEntry(CdcDCEntryNative entryNative) {
+        String dcName = entryNative.dcName;
+        CdcAddressType type = CdcAddressType.getEntryType(entryNative.addressType);
+
+        String dcAddress = entryNative.dcAddress;
+        String dcSiteName = entryNative.dcSiteName;
+
+        return new CdcDCEntry(type, dcName, dcAddress, dcSiteName);
+    }
+
+    private static DCStatusInfo convertCdcStatusNativeToDCStatusInfo(
+            String dcName, CdcStatusInfoNative statusInfo, HeartbeatStatusNative hbStatus) {
+        if (statusInfo == null || hbStatus == null) {
+            BAIL_ON_ERROR(
+                    CdcAdapter.ERROR_INVALID_PARAMETER,
+                    "Failed to get DCStatusInfo from vmafd");
+        }
+
+        List<HeartbeatInfo> heartbeatInfo = new ArrayList<HeartbeatInfo>();
+        for (HeartbeatInfoNative info : hbStatus.hbInfoArr) {
+            HeartbeatInfo hbInfo = new HeartbeatInfo(
+                        info.serviceName,
+                        info.port,
+                        info.lastHeartbeat,
+                        (info.isAlive != 0));
+
+            heartbeatInfo.add(hbInfo);
+        }
+
+        return new DCStatusInfo(
+                dcName,
+                statusInfo.lastPing,
+                statusInfo.lastResponseTime,
+                statusInfo.lastError,
+                statusInfo.siteName,
+                (statusInfo.isAlive != 0),
+                heartbeatInfo);
+    }
+
+    private static void BAIL_ON_ERROR(final int error, final String format, Object...vargs) {
+        switch (error) {
+            case 0:
+                break;
+            default:
+                throw new CdcGenericException(String.format(format, vargs), error);
+        }
+    }
+
+    protected void finalize() throws Throwable {
+        try {
+            closeSession();
+        } finally {
+            super.finalize();
+        }
+    }
 }
