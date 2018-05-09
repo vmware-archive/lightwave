@@ -23,7 +23,7 @@ VmDirRpcMetricsInit(
     DWORD   i = 0;
 
     // use identical bucket for all histograms
-    uint64_t buckets[5] = {1, 10, 100, 500, 1000};
+    uint64_t buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
 
     // use this template to construct labels
     VM_METRICS_LABEL    labels[1] =
@@ -40,7 +40,7 @@ VmDirRpcMetricsInit(
                 "post_dcerpc",
                 labels, 1,
                 "Histogram for DCERPC Request Durations for different operations",
-                buckets, 5,
+                buckets, 8,
                 &gpRpcMetrics[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
     }

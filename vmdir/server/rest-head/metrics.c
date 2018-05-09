@@ -31,7 +31,7 @@ VmDirRestMetricsInit(
     DWORD   i = 0, j = 0;
 
     // use identical bucket for all histograms
-    uint64_t    buckets[5] = {1, 10, 100, 500, 1000};
+    uint64_t buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
 
     // use this template to construct labels
     VM_METRICS_LABEL    labels[2] =
@@ -52,7 +52,7 @@ VmDirRestMetricsInit(
                     "vmdir_rest_ldap",
                     labels, 2,
                     "Histogram for REST LDAP request durations in total",
-                    buckets, 5,
+                    buckets, 8,
                     &gpRestLdapMetrics[i][j][METRICS_LAYER_PROTOCOL]);
             BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -61,7 +61,7 @@ VmDirRestMetricsInit(
                     "vmdir_rest_ldap_middlelayer",
                     labels, 2,
                     "Histogram for REST LDAP request durations in the middle layer",
-                    buckets, 5,
+                    buckets, 8,
                     &gpRestLdapMetrics[i][j][METRICS_LAYER_MIDDLELAYER]);
             BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -70,7 +70,7 @@ VmDirRestMetricsInit(
                     "vmdir_rest_ldap_middlelayer_backend",
                     labels, 2,
                     "Histogram for REST LDAP request durations in the backend",
-                    buckets, 5,
+                    buckets, 8,
                     &gpRestLdapMetrics[i][j][METRICS_LAYER_BACKEND]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }

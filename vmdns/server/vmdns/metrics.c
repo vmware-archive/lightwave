@@ -147,7 +147,7 @@ VmDnsMetricsHistogramInit(
     )
 {
     DWORD dwError = 0;
-    UINT64 buckets[] = {1, 10, 100, 300, 1000};
+    UINT64 buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
     int i;
 
     for (i=DNS_QUERY_DURATION; i<=DNS_UPDATE_DURATION; i++)
@@ -159,7 +159,7 @@ VmDnsMetricsHistogramInit(
                     1,
                     "DNS Protocol Process Request Duration",
                     buckets,
-                    5,
+                    8,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -174,7 +174,7 @@ VmDnsMetricsHistogramInit(
                     1,
                     "Store Process Request Duration",
                     buckets,
-                    5,
+                    8,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -189,7 +189,7 @@ VmDnsMetricsHistogramInit(
                     1,
                     "Rpc Process Request Duration",
                     buckets,
-                    5,
+                    8,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
