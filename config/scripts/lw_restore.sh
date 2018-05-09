@@ -42,7 +42,7 @@ while read line
 do
     DC=`cut -d '@' -f 1 <<< "$line"`
     DC="$DC."
-    SITE=`cut -d ',' -f2`
+    SITE=`cut -d ',' -f 2 <<< "$line"`
     echo "Calling lightwave delete-dc for $DC $SITE"
     /opt/vmware/bin/lightwave dns delete-dc --username $PROMOTER_USER --password $DOMAIN_PROMOTER_PASS --domain $LW_DOMAIN --domain-controller $DC --site $SITE
 done </var/log/lightwave/lw-dr-dc-list.txt
