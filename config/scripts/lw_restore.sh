@@ -38,6 +38,17 @@ download_db $BACKUP_PATH /var/lib/vmware/vmdir/partner/data.mdb
 
 /opt/vmware/bin/dir-cli disaster-recovery --login $PROMOTER_USER --password $DOMAIN_PROMOTER_PASS
 
+while read line
+do
+    DC=`cut -d '@' -f 1 <<< "$line"`
+    DC="$DC."
+    SITE=`cut -d ',' -f2`
+    echo "Calling lightwave delete-dc for $DC $SITE"
+    /opt/vmware/bin/lightwave dns delete-dc --username $PROMOTER_USER --password $DOMAIN_PROMOTER_PASS --domain $LW_DOMAIN --domain-controller $DC --site $SITE
+done </var/log/lightwave/lw-dr-dc-list.txt
+
+rm /var/log/lightwave/lw-dr-dc-list.txt
+
 /opt/likewise/bin/lwsm restart vmafd
 /opt/likewise/bin/lwsm restart vmdir
 
