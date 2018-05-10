@@ -28,6 +28,7 @@ static
 DWORD
 VmwDeployBuildParams(
     PCSTR pszDomain,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
@@ -402,6 +403,7 @@ ParseArgs(
 
     dwError = VmwDeployBuildParams(
                     pszDomain,
+                    pszUsername,
                     pszPassword,
                     pszPartner,
                     pszSite,
@@ -440,6 +442,7 @@ static
 DWORD
 VmwDeployBuildParams(
     PCSTR pszDomain,
+    PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
@@ -453,7 +456,6 @@ VmwDeployBuildParams(
 {
     DWORD dwError = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
-    PSTR pszUsername = VMW_ADMIN_NAME;
     PSTR pszPassword1 = NULL;
     PSTR pszHostname = NULL;
 
