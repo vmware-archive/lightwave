@@ -139,7 +139,7 @@ if [ `rpm -qa | grep -c vmware-ic-config | grep -v grep` -eq 0 ]; then
 
   echo '+++ Promote vmdir +++'
   # Promote vmdir instance
-  /opt/vmware/bin/lightwave domain promote --domain $DOMAIN --password 'VMware123@'
+  /opt/vmware/bin/ic-promote --domain $DOMAIN --password 'VMware123@'
 
   echo '+++ Enable nsswitch and pam +++'
   /opt/likewise/bin/domainjoin-cli configure --enable nsswitch
