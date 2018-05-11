@@ -95,7 +95,7 @@ _VmDirLogLookup(
     );
 
 DWORD
-_VmDirDeleteAllLogs(
+VmDirDeleteAllLogs(
     unsigned long long startLogIndex,
     BOOLEAN *pbFatalError
     );

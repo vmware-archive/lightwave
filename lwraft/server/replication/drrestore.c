@@ -50,6 +50,7 @@ VmDirSrvServerReset(
     const char  *dbHomeDir = LWRAFT_DB_DIR;
     BOOLEAN     bWriteInvocationId = FALSE;
     BOOLEAN     bMdbWalEnable = FALSE;
+    BOOLEAN     bFatalError = FALSE;
 
     VmDirGetMdbWalEnable(&bMdbWalEnable);
 
@@ -65,6 +66,10 @@ VmDirSrvServerReset(
     dwError = VmDirLoadRaftState();
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Load Raft State", __FUNCTION__);
+
+    dwError = VmDirDeleteAllLogs(gRaftState.commitIndex+1, &bFatalError);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Delete uncommitted raft logs > %llu", __FUNCTION__, gRaftState.commitIndex);
 
     dwError = _VmDirDeleteDCObject();
     BAIL_ON_VMDIR_ERROR(dwError);
