@@ -215,6 +215,8 @@ ParseArgs(
 
                 pszUsername = pszArg;
 
+                parseMode = PARSE_MODE_OPEN;
+
                 break;
 
             case PARSE_MODE_PASSWORD:
@@ -399,7 +401,7 @@ ShowUsage(
     PSTR pszUsageText =
            "Usage: lightwave domain leave { arguments }\n"
            "Arguments:\n"
-           "    [--username <acccount name>]\n"
+           "    [--username <account name>]\n"
            "    --password <password>\n"
            "    [--domain <domain name>]\n"
            "    [--client <hostname of client machine>]\n"
