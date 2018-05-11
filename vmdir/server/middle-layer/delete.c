@@ -365,7 +365,7 @@ txnretry:
 
     gVmdirGlobals.dwLdapWrites++;
 
-    VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+    VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->eId);
 
     // Post delete entry
     // TODO, make it into a separate file deletePlugin.c

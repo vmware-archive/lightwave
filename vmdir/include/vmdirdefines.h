@@ -574,6 +574,8 @@ extern "C" {
 #define VMDIR_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
+#define VMDIR_IS_OP_CTRL_SYNC_REQ(pOp) (pOp->syncReqCtrl != NULL)
+
 //////////////////////////////////////////////////////////////////////////
 // Used in attribute index cache and bdb-store
 #define INDEX_TYPE_EQUALITY              0x01

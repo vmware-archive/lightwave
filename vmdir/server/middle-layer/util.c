@@ -19,7 +19,8 @@
 VOID
 VmDirAuditWriteOp(
     PVDIR_OPERATION pOp,
-    PCSTR           pszDN
+    PCSTR           pszDN,
+    ENTRYID         eId
     )
 {
     PVDIR_CONNECTION pConn = NULL;
@@ -44,9 +45,10 @@ VmDirAuditWriteOp(
         }
     }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Entry (%s)(from %s)(by %s)(via %s)(USN %llu,%llu)",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Entry (%s, EID %llu)(from %s)(by %s)(via %s)(USN %llu,%llu)",
                     VmDirLdapReqCodeToName(pOp->reqCode),
                     VDIR_SAFE_STRING(pszDN),
+                    eId,
                     pConn ? pConn->szClientIP : "",
                     VDIR_SAFE_STRING(pszBy),
                     VmDirOperationTypeToName(pOp->opType),

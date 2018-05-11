@@ -86,6 +86,14 @@ PrepareValueMetaDataAttribute(
    PDEQUE                       pValueMetaDataToSend
    );
 
+static
+int
+_VmDirValidateAttrMetadata(
+    BOOLEAN     bFullValidate,
+    PATTRIBUTE_META_DATA_NODE pAttrMetaData,
+    int         numAttrMetaData,
+    PVDIR_ENTRY pEntry);
+
 /*
     4.2.2. Bind Response
     The Bind response is defined as follows.
@@ -468,19 +476,13 @@ VmDirSendSearchEntry(
                                                 "pfnBEGetAllAttrValueMetaData failed.");
             }
 
-            // SJ-TBD: Following double for loop to be optimized
-            // Copy attrMetaData to corresponding attributes
-            for (i=0; i<numAttrMetaData; i++)
-            {
-                for ( pAttr = pSrEntry->attrs; pAttr != NULL; pAttr = pAttr->next)
-                {
-                    if (pAttr->pATDesc->usAttrID == pAttrMetaData[i].attrID)
-                    {
-                        VmDirStringCpyA( pAttr->metaData, VMDIR_MAX_ATTR_META_DATA_LEN, pAttrMetaData[i].metaData );
-                        pAttrMetaData[i].metaData[0] = '\0';
-                    }
-                }
+            retVal = _VmDirValidateAttrMetadata(VMDIR_IS_OP_CTRL_SYNC_REQ(pOperation), pAttrMetaData, numAttrMetaData, pSrEntry);
+            if (retVal == VMDIR_ERROR_ATTR_META_DATA_NOTFOUND)
+            {   // bad meta data, skip its replication feed.
+                retVal = 0;
+                goto cleanup;
             }
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
 
         retVal = WriteAttributes( pOperation, pSrEntry, iSearchReqSpecialChars , ber, &pszLocalErrorMsg );
@@ -1429,3 +1431,51 @@ SetSpecialReturnChar(
         }
     }
 }
+
+static
+int
+_VmDirValidateAttrMetadata(
+    BOOLEAN     bFullValidate,
+    PATTRIBUTE_META_DATA_NODE pAttrMetaData,
+    int         numAttrMetaData,
+    PVDIR_ENTRY pEntry)
+{
+    int     iCnt = 0;
+    int     iRetVal = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+
+    for (pAttr = pEntry->attrs; pAttr != NULL; pAttr = pAttr->next)
+    {
+        pAttr->metaData[0] = '\0';
+
+        for (iCnt=0; iCnt<numAttrMetaData; iCnt++)
+        {
+            if (pAttr->pATDesc->usAttrID == pAttrMetaData[iCnt].attrID)
+            {
+                VmDirStringCpyA( pAttr->metaData, VMDIR_MAX_ATTR_META_DATA_LEN, pAttrMetaData[iCnt].metaData);
+                pAttrMetaData[iCnt].metaData[0] = '\0';
+
+                break;
+            }
+        }
+
+        if (bFullValidate && pAttr->metaData[0] == '\0')
+        {
+            iRetVal = VMDIR_ERROR_ATTR_META_DATA_NOTFOUND;
+
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, %s, %d missing attribute metadata",
+                __FUNCTION__,
+                VDIR_SAFE_STRING(pAttr->pATDesc->pszName),
+                pAttr->pATDesc->usAttrID);
+        }
+    }
+
+    if (iRetVal)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, URGENT replication error (%d), entry (%s) (%llu) will not converge",
+            __FUNCTION__, iRetVal, VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->eId);
+    }
+
+    return iRetVal;
+}
+
