@@ -4,6 +4,7 @@ source $(dirname $(realpath $0))/common.sh
 
 main()
 {
+  check_cloud_init_result
   load_variables
   install_dependencies
   install_logging_dependencies
@@ -22,7 +23,6 @@ install_dependencies()
                    c-rest-engine-1.2-4.ph2 \
                    cyrus-sasl-2.1.26 \
                    glibc-devel-2.26 \
-                   openssl-1.0.2n \
                    likewise-open-6.2.11
 }
 

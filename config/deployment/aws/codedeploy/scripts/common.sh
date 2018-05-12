@@ -15,6 +15,17 @@ init()
 }
 
 ###
+# Check if cloud-init failed
+check_cloud_init_result()
+{
+  if [[ -f /root/cloud-init-failed ]]
+  then
+    cat /root/cloud-init.log
+    return 1
+  fi
+}
+
+###
 # Load all configuration variables
 load_variables()
 {
@@ -101,8 +112,15 @@ start_services()
 # Read a likewise registry value
 read_registry_val()
 {
+  if [[ $# -ne 2 ]]
+  then
+    echo "read_registry_val expects 2 arguments but $# provided"
+    return 1
+  fi
+
   KEYNAME=$1
   VALNAME=$2
+
   echo $(/opt/likewise/bin/lwregshell list_values ${KEYNAME} | grep -i ${VALNAME} || true)
 }
 
@@ -110,13 +128,24 @@ read_registry_val()
 # Add a new likewise registry value - noop if already exists
 add_registry_val()
 {
+  if [[ $# -ne 4 ]]
+  then
+    echo "add_registry_val expects 4 arguments but $# provided"
+    return 1
+  fi
+
   KEYNAME=$1
   VALNAME=$2
   VALTYPE=$3
   VALUE=$4
 
-  if [[ -z $(read_registry_val ${KEYNAME} ${VALNAME}) ]]
+  echo "checking ${KEYNAME} ${VALNAME}"
+  CUR_VALUE=$(read_registry_val ${KEYNAME} ${VALNAME})
+  if [[ ${CUR_VALUE} ]]
   then
+    echo "value is already set to ${CUR_VALUE} - noop"
+  else
+    echo "adding a new value ${VALUE} (${VALTYPE})"
     /opt/likewise/bin/lwregshell add_value ${KEYNAME} ${VALNAME} ${VALTYPE} ${VALUE}
   fi
 }
@@ -125,16 +154,26 @@ add_registry_val()
 # Replace a likewise registry value - override if already exists
 replace_registry_val()
 {
+  if [[ $# -ne 4 ]]
+  then
+    echo "replace_registry_val expects 4 arguments but $# provided"
+    return 1
+  fi
+
   KEYNAME=$1
   VALNAME=$2
   VALTYPE=$3
   VALUE=$4
 
-  if [[ -z $(read_registry_val ${KEYNAME} ${VALNAME}) ]]
+  echo "checking ${KEYNAME} ${VALNAME}"
+  CUR_VALUE=$(read_registry_val ${KEYNAME} ${VALNAME})
+  if [[ ${CUR_VALUE} ]]
   then
-    /opt/likewise/bin/lwregshell add_value ${KEYNAME} ${VALNAME} ${VALTYPE} ${VALUE}
-  else
+    echo "overriding value from ${CUR_VALUE} to ${VALUE}"
     /opt/likewise/bin/lwregshell set_value ${KEYNAME} ${VALNAME} ${VALUE}
+  else
+    echo "adding a new value ${VALUE} (${VALTYPE})"
+    /opt/likewise/bin/lwregshell add_value ${KEYNAME} ${VALNAME} ${VALTYPE} ${VALUE}
   fi
 }
 

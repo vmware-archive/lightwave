@@ -49,7 +49,9 @@ begin_upgrade()
 {
   if [[ -n `pgrep vmafdd` ]]
   then
-    echo "/opt/vmware/bin/vmafd-cli begin-upgrade --server-name localhost --user-name ${DOMAIN_PROMOTER_USER}"
+    echo "/opt/vmware/bin/vmafd-cli begin-upgrade" \
+         "--server-name localhost" \
+         "--user-name ${DOMAIN_PROMOTER_USER}"
     /opt/vmware/bin/vmafd-cli begin-upgrade \
         --server-name localhost \
         --user-name "${DOMAIN_PROMOTER_USER}" \

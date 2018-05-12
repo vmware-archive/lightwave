@@ -4,7 +4,10 @@
 # Configure lightwave instance as a standalone
 promote_as_first_node()
 {
-  echo "/opt/vmware/bin/configure-lightwave-server --domain ${LW_DOMAIN} --username ${LW_USERNAME} --site ${SITE}"
+  echo "/opt/vmware/bin/configure-lightwave-server" \
+       "--domain ${LW_DOMAIN}" \
+       "--username ${ADMINISTRATOR_USER}" \
+       "--site ${SITE}"
   /opt/vmware/bin/configure-lightwave-server \
       --domain "${LW_DOMAIN}" \
       --username "${ADMINISTRATOR_USER}" \
@@ -32,15 +35,20 @@ promote_as_partner_node()
     replace_dns_list ${PARTNER}
   fi
 
-  echo "/opt/vmware/bin/configure-lightwave-server --domain ${LW_DOMAIN} --username ${DOMAIN_PROMOTER_USER} --site ${SITE} --partner ${PARTNER}"
+  echo "/opt/vmware/bin/configure-lightwave-server" \
+       "--domain ${LW_DOMAIN}" \
+       "--username ${DOMAIN_PROMOTER_USER}" \
+       "--site ${SITE}" \
+       "--server ${PARTNER}"
   /opt/vmware/bin/configure-lightwave-server \
       --domain "${LW_DOMAIN}" \
       --username "${DOMAIN_PROMOTER_USER}" \
       --password "${DOMAIN_PROMOTER_PASS}" \
       --site ${SITE} \
-      --partner ${PARTNER}
+      --server ${PARTNER}
 
   generate_ssl_cert
+  add_dns_forwarder
   fix_topology
 
   # temporary solution
@@ -95,7 +103,9 @@ generate_ssl_cert()
 # Configure a DNS forwarder to the public DNS
 add_dns_forwarder()
 {
-  echo "/opt/vmware/bin/vmdns-cli add-forwarder ${PUB_DNS} --domain ${LW_DOMAIN} --username ${DOMAIN_PROMOTER_USER}"
+  echo "/opt/vmware/bin/vmdns-cli add-forwarder ${PUB_DNS}" \
+       "--domain ${LW_DOMAIN}" \
+       "--username ${DOMAIN_PROMOTER_USER}"
   /opt/vmware/bin/vmdns-cli add-forwarder ${PUB_DNS} \
       --server localhost \
       --domain "${LW_DOMAIN}" \
@@ -107,26 +117,35 @@ add_dns_forwarder()
 # Fixes broken replication topology using vdcrepadmin command
 fix_topology()
 {
-  +e # TODO (PR: 1982635): Remove after this PR is resolved
+  set +e # TODO (PR: 1982635): Remove after this PR is resolved
 
   # fix intra-region replication topoloy
-  echo "/opt/vmware/bin/vdcrepadmin -f enableredundanttopology -h ${HOSTNAME} -u ${DOMAIN_PROMOTER_USER} -s ${SITE} -n"
+  echo "/opt/vmware/bin/vdcrepadmin" \
+       "-f enableredundanttopology" \
+       "-h ${HOSTNAME}" \
+       "-u ${DOMAIN_PROMOTER_USER}" \
+       "-s ${SITE}" \
+       "-n"
   /opt/vmware/bin/vdcrepadmin \
       -f enableredundanttopology \
-      -h ${HOSTNAME} \
+      -h "${HOSTNAME}" \
       -u "${DOMAIN_PROMOTER_USER}" \
       -w "${DOMAIN_PROMOTER_PASS}" \
       -s "${SITE}" \
       -n
 
   # fix inter-region replication topoloy
-  echo "/opt/vmware/bin/vdcrepadmin -f enableredundanttopology -h ${HOSTNAME} -u ${DOMAIN_PROMOTER_USER} -n"
+  echo "/opt/vmware/bin/vdcrepadmin" \
+       "-f enableredundanttopology" \
+       "-h ${HOSTNAME}" \
+       "-u ${DOMAIN_PROMOTER_USER}" \
+       "-n"
   /opt/vmware/bin/vdcrepadmin \
       -f enableredundanttopology \
-      -h ${HOSTNAME} \
+      -h "${HOSTNAME}" \
       -u "${DOMAIN_PROMOTER_USER}" \
       -w "${DOMAIN_PROMOTER_PASS}" \
       -n
 
-  -e # TODO (PR: 1982635): Remove after this PR is resolved
+  set -e # TODO (PR: 1982635): Remove after this PR is resolved
 }

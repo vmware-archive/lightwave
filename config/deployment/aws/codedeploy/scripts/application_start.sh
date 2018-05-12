@@ -34,6 +34,10 @@ update_registry_values()
   # disable ldap simple bind to port 389
   replace_registry_val '[HKEY_THIS_MACHINE\services\vmdir\parameters]' AllowInsecureAuthentication REG_DWORD 0
 
+  # HACK - otherwise it won't work for new nodes
+  #        identity rpm install should create this path instead
+  /opt/likewise/bin/lwregshell add_key '[HKEY_THIS_MACHINE\Software\VMware\Identity\Configuration]' || true
+
   # set SAN entry name as hostname for IDM
   replace_registry_val '[HKEY_THIS_MACHINE\Software\VMware\Identity\Configuration]' Hostname REG_SZ ${SAN_ENTRY}
 

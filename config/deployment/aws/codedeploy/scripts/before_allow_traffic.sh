@@ -55,7 +55,9 @@ end_upgrade()
   echo "Sleep for 60 seconds for clients to re-affinitize"
   sleep 60
 
-  echo "/opt/vmware/bin/vmafd-cli end-upgrade --server-name localhost --user-name ${DOMAIN_PROMOTER_USER}"
+  echo "/opt/vmware/bin/vmafd-cli end-upgrade" \
+       "--server-name localhost" \
+       "--user-name ${DOMAIN_PROMOTER_USER}"
   /opt/vmware/bin/vmafd-cli end-upgrade \
       --server-name localhost \
       --user-name "${DOMAIN_PROMOTER_USER}" \
