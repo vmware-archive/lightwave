@@ -1189,6 +1189,8 @@ Lightwave POST service
 %{_bindir}/run_backup.sh
 %{_bindir}/lw_backup.sh
 %{_bindir}/aws_backup_common.sh
+%{_bindir}/post_aws_restore_common.sh
+%{_bindir}/post_restore.sh
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
 
