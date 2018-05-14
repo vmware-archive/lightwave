@@ -74,6 +74,9 @@ VmDirShutdown(
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: operation threads stopped gracefully", __func__);
     }
 
+    VmDirBkgdThreadShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
+
     VmDirRpcServerShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
 

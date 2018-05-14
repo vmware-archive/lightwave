@@ -109,6 +109,17 @@ VmDirLoadIndex(
     VOID
     );
 
+// background.c
+DWORD
+VmDirBkgdThreadFun(
+    PVOID   pArg
+    );
+
+DWORD
+VmDirBkgdSrvStat(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
 // dbbackup.c
 VOID
 VmDirSrvSetMDBStateClear(

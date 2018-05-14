@@ -103,6 +103,8 @@ VmDirFirstReplicationCycle(
             "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
             retVal);
 
+    VmDirBkgdThreadShutdown();
+
     VmDirMetricsShutdown();
 
     retVal = VmDirSwapDB(dbHomeDir, bHasXlog);
@@ -117,6 +119,13 @@ VmDirFirstReplicationCycle(
             retVal,
             pszLocalErrorMsg,
             "VmDirFirstReplicationCycle: VmDirMetricsInitialize call failed, error: %d.",
+            retVal);
+
+    retVal = VmDirBkgdThreadInitialize();
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrorMsg,
+            "VmDirFirstReplicationCycle: VmDirBkgdThreadInitialize call failed, error: %d.",
             retVal);
 
     VMDIR_LOG_INFO(

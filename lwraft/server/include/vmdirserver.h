@@ -44,6 +44,8 @@ extern "C" {
 
 #define REPL_THREAD_SCHED_PRIORITY 10
 
+#define DEFAULT_THREAD_PRIORITY_DELTA 10
+
 /*
  * Plugin logic has four hook points per LDAP operation -
  *
@@ -110,6 +112,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     DWORD                dwEfficientReadOpTimeMS;
     DWORD                dwRESTWorker;
     DWORD                dwRESTLogLevelOverride;
+    BOOLEAN              bPromoted;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

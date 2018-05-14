@@ -163,43 +163,41 @@ error:
 }
 
 void
-VmDirCurrentGeneralizedTime(
+VmDirCurrentGeneralizedTimeWithOffset(
     PSTR    pszTimeBuf,
-    int     iBufSize)
+    int     iBufSize,
+    DWORD   dwOffset // in seconds
+    )
 {
-#ifndef _WIN32
     time_t      tNow = time(NULL);
     struct tm   tmpTm = {0};
+    struct tm   *ptm = NULL;
 
-    assert (pszTimeBuf);
+    tNow -= dwOffset;
 
-    gmtime_r(&tNow, &tmpTm);
-
-    snprintf(pszTimeBuf, iBufSize, "%04d%02d%02d%02d%02d%02d.0Z",
-            tmpTm.tm_year + 1900,
-            tmpTm.tm_mon + 1,
-            tmpTm.tm_mday,
-            tmpTm.tm_hour,
-            tmpTm.tm_min,
-            tmpTm.tm_sec);
-
-    return;
+#ifdef _WIN32
+    ptm = gmtime(&tNow);
 #else
-    SYSTEMTIME sysTime = {0};
-
-    GetSystemTime( &sysTime );
-
-    _snprintf_s(
-        pszTimeBuf,
-        iBufSize,
-        iBufSize-1,
-        "%04d%02d%02d%02d%02d%02d.0Z",
-        sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour,
-        sysTime.wMinute, sysTime.wSecond
-        );
-
+    gmtime_r(&tNow, &tmpTm);
+    ptm = &tmpTm;
 #endif
 
+    VmDirStringPrintFA(pszTimeBuf, iBufSize, "%04d%02d%02d%02d%02d%02d.0Z",
+            ptm->tm_year + 1900,
+            ptm->tm_mon + 1,
+            ptm->tm_mday,
+            ptm->tm_hour,
+            ptm->tm_min,
+            ptm->tm_sec);
+}
+
+void
+VmDirCurrentGeneralizedTime(
+    PSTR    pszTimeBuf,
+    int     iBufSize
+    )
+{
+    VmDirCurrentGeneralizedTimeWithOffset(pszTimeBuf, iBufSize, 0);
 }
 
 VOID
