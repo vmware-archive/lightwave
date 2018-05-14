@@ -12,20 +12,22 @@ if [ $MODE = "lw-dr" ]; then
     BACKUP_PATH="/var/lib/vmware/db_bkp/vmdir"
     COMPONENT="lw"
     WAL_FLUSH="/opt/vmware/bin/lw_mdb_walflush $BACKUP_PATH"
+    SERVICE="vmdir"
 else
     UPLOAD_PATH=$POST_BKP_PATH
     BACKUP_PATH="/var/lib/vmware/db_bkp/post"
     COMPONENT="post"
     WAL_FLUSH="/opt/vmware/bin/mdb_walflush $BACKUP_PATH"
+    SERVICE="post"
 fi
 
 update_backup_regkey() {
-  /opt/likewise/bin/lwregshell list_values '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' | grep -i BackupTimeTaken
+  /opt/likewise/bin/lwregshell list_values '[HKEY_THIS_MACHINE\Services\'$SERVICE'\Parameters]' | grep -i BackupTimeTaken
   OUT=$?
   if [ ${OUT} != 0 ]; then
-     /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' BackupTimeTaken REG_DWORD $1
+     /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Services\'$SERVICE'\Parameters]' BackupTimeTaken REG_DWORD $1
   else
-     /opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' BackupTimeTaken $1
+     /opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Services\'$SERVICE'\Parameters]' BackupTimeTaken $1
   fi
 }
 
@@ -40,9 +42,9 @@ upload_bundle() {
     retry=1
     while [ $retry -le 5 ]
     do
-	    logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
+        logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
         start_time="$(date -u +%s)"
-		upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb" "$md5"
+        upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb" "$md5"
         if [ $? -ne 0 ]; then
             logger -t backup "Error while uploading bundle. Retrying."
             (( retry = $retry + 1 ))
@@ -103,7 +105,11 @@ if [ ! -d /var/lib/vmware/db_bkp ]; then
     mkdir /var/lib/vmware/db_bkp
 fi
 
-/opt/vmware/bin/dir-cli database-backup --backuppath $BACKUP_PATH
+if [ $MODE = "lw-dr" ]; then
+    /opt/vmware/bin/dir-cli database-backup --backuppath $BACKUP_PATH
+else
+    /opt/vmware/bin/post-cli database-backup --backuppath $BACKUP_PATH
+fi
 if [ $? -ne 0 ]; then
     logger -t backup "Error while taking db backup."
     exit
@@ -171,7 +177,11 @@ for line in $LIST; do
 
     if [ $ELAPSED_DAYS -gt 5 ]; then
         logger -t backup "DELETING "$BUCKET/$UPLOAD_PATH/$line
-        mdb_file=${line::-18}data.mdb
+        if [ $MODE = "lw-dr" ]; then
+            mdb_file=${line::-18}data.mdb
+        else
+            mdb_file=${line::-20}data.mdb
+        fi
         delete_file $FULL_PATH $line
         delete_file $FULL_PATH $mdb_file
     fi
