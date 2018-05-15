@@ -39,7 +39,7 @@ public interface IIdentityManager
     /*
      *  Tenant
      */
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws  IDMException;
+    public void addTenant(String hostname, Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws  IDMException;
 
     public void deleteTenant(String name, IIdmServiceContext serviceContext) throws  IDMException;
 

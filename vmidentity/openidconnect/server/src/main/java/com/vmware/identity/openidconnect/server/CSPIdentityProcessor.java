@@ -32,10 +32,27 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.Collections;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import com.vmware.identity.cdc.CdcGenericException;
+import com.vmware.identity.cdc.CdcSession;
+import com.vmware.identity.cdc.DCStatusInfo;
+import com.vmware.identity.cdc.CdcFactory;
+import com.vmware.identity.idm.DomainType;
+import com.vmware.identity.idm.DuplicateTenantException;
+import com.vmware.identity.idm.ReplicationException;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.InvalidPrincipalException;
+import com.vmware.identity.idm.MemberAlreadyExistException;
+import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OidcConfig;
+import com.vmware.identity.idm.PasswordPolicy;
+import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.Tenant;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -54,17 +71,6 @@ import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.DomainType;
-import com.vmware.identity.idm.DuplicateTenantException;
-import com.vmware.identity.idm.IDPConfig;
-import com.vmware.identity.idm.IIdentityStoreData;
-import com.vmware.identity.idm.InvalidPrincipalException;
-import com.vmware.identity.idm.MemberAlreadyExistException;
-import com.vmware.identity.idm.OIDCClient;
-import com.vmware.identity.idm.OidcConfig;
-import com.vmware.identity.idm.PasswordPolicy;
-import com.vmware.identity.idm.PrincipalId;
-import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
@@ -323,10 +329,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     boolean isOrgOwner = accessToken.getPermissions().contains(ROLE_CSP_ORG_OWNER);
     if (tenantInfo == null) {
       if (isOrgOwner) {
-          // Multiple requests to /federate endpoint can happen at the same time.
-          // Multiple lightwave servers are in the picture which serve requests at the same time.
-          // There is potential race condition for creating tenant.
-          createTenant(tenantName, relayState.getIssuer());
+          // Multiple requests to /federate endpoint can happen at the same time; tenant creation will be routed to partnerDC
+          String partnerDC = getPartnerDC();
+          createTenant(partnerDC, tenantName, relayState.getIssuer());
           createOrgOwnerAccount(tenantName, federatedIdp, relayState.getIssuer(), user);
           tenantInfo = getTenantInfo(tenantName);
       } else {
@@ -540,12 +545,12 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       }
   }
 
-  private void createTenant(String tenantName, String entityId) throws ServerException {
+  private void createTenant(String partnerDC, String tenantName, String entityId) throws ServerException {
         Validate.notEmpty(tenantName, "tenant name must not be empty");
         Validate.notEmpty(entityId, "csp issuer must not be empty");
 
         try {
-            idmClient.addTenant(new Tenant(tenantName), "Administrator",
+            idmClient.addTenant(partnerDC, new Tenant(tenantName), "Administrator",
                     idmClient.generatePassword(idmClient.getSystemTenant()).toCharArray());
             logger.info("Setting credentials for tenant {}", tenantName);
             idmClient.setTenantCredentials(tenantName);
@@ -571,17 +576,22 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
         } catch (DuplicateTenantException e) {
             ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] already exists.", tenantName));
             throw new ServerException(errorObject, e);
+        } catch (ReplicationException e) {
+            // Creating remote tenant failed due to replication delay. The created tenant should already be cleanup up
+            logger.error("Failed to create csp tenant {} on {}", tenantName, partnerDC);
+            ErrorObject errorObject = ErrorObject.serverError(String.format("Failed to create tenant [%s]", tenantName));
+            throw new ServerException(errorObject, e);
         } catch (Exception e) {
             try {
                 logger.error("Failed to create csp tenant {}. Deleting tenant...", tenantName);
                 idmClient.deleteTenant(tenantName);
             } catch (Exception ex) {
                 ErrorObject errorObject = ErrorObject.serverError(String.format(
-                        "Tenant % provision failure.", tenantName));
+                        "Tenant [%s] provision failure.", tenantName));
                 throw new ServerException(errorObject, ex);
             }
             ErrorObject errorObject = ErrorObject.serverError(String.format(
-                    "Tenant % provision failure.", tenantName));
+                    "Tenant [%s] provision failure.", tenantName));
             throw new ServerException(errorObject, e);
         }
   }
@@ -750,4 +760,65 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       return Pair.of(idToken, accessToken);
     }
   }
+
+    private String getPartnerDC()
+    {
+        String partnerDC = null;
+        try (CdcSession cdcSession = CdcFactory.createCdcSessionViaIPC())
+        {
+            if (cdcSession == null)
+            {
+                logger.error("Failed to create CDC Session Via IPC, could not find partner DC");
+                return partnerDC;
+            }
+            partnerDC = getHealthyPartnerDC(cdcSession);
+        }
+        catch (CdcGenericException e)
+        {
+            logger.error(String.format(
+                    "Failed to find partner DC, Error: %s",
+                    e.getMessage()));
+
+            return partnerDC;
+        }
+
+        if (partnerDC == null)
+        {
+            // there should be at least one DCInfo in list if CDC is enabled
+            logger.info(String.format("DC Status Info list is empty, defaulting to localhost"));
+        }
+
+        return partnerDC;
+    }
+
+    private String getHealthyPartnerDC(CdcSession cdcSession)
+    {
+        List <String> dcEntries = cdcSession.enumDCEntries();
+        // Sort lexicographically
+        Collections.sort(dcEntries);
+
+        for (String entry : dcEntries)
+        {
+            DCStatusInfo dcStatusInfo = null;
+            try
+            {
+                dcStatusInfo = cdcSession.getDCStatusInfo(entry, null);
+            }
+            catch (CdcGenericException e)
+            {
+                logger.error(String.format(
+                                "Could not get DC status info for [%s], Error: %s",
+                                entry,
+                                e.getMessage()));
+
+                continue;
+            }
+
+            if (dcStatusInfo != null && dcStatusInfo.isAlive)
+            {
+                return dcStatusInfo.dcName;
+            }
+        }
+        return null;
+    }
 }

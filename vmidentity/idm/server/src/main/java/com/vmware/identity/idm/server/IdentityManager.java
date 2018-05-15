@@ -43,19 +43,14 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.Comparator;
 
 import javax.security.auth.login.LoginException;
 
+import com.vmware.identity.interop.directory.DirectoryException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
-import com.vmware.identity.cdc.CdcSession;
-import com.vmware.identity.cdc.CdcFactory;
-import com.vmware.identity.cdc.HeartbeatInfo;
-import com.vmware.identity.cdc.DCStatusInfo;
-import com.vmware.identity.cdc.CdcGenericException;
 import com.vmware.af.VmAfClientNativeException;
 import com.vmware.af.interop.VmAfAccessDeniedException;
 import com.vmware.af.interop.VmAfAlreadyJoinedException;
@@ -101,6 +96,7 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.GroupDetail;
 import com.vmware.identity.idm.HostNotJoinedRequiredDomainException;
 import com.vmware.identity.idm.IDMException;
+import com.vmware.identity.idm.ReplicationException;
 import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.IDPConfig;
@@ -193,6 +189,7 @@ import com.vmware.identity.interop.idm.IIdmClientLibrary;
 import com.vmware.identity.interop.idm.IdmClientLibraryFactory;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.ConstraintViolationLdapException;
+import com.vmware.identity.interop.ldap.InvalidCredentialsLdapException;
 import com.vmware.identity.interop.ldap.DirectoryStoreProtocol;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ServerDownLdapException;
@@ -333,6 +330,8 @@ public class IdentityManager implements IIdentityManager {
     private static final String LOCAL_OS_STATIC_ALIAS = "localos";
     private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
     private static final String PASSCODE_PROVIDER_TYPE = "RSA";
+    private static final int MAX_RETRY_REPLICATION = 4;
+    private static final int RETRY_INTERVAL_MILLISECONDS = 2000;
 
     public static final String THIRD_PARTY_IDP_USER_DEFAULT_GROUP_NAME = "Users";
     public static final String INTERNAL_ATTR_GROUP_OBJECTIDS = "userMemberOfGroupIds"; // This will include both user's own sid as well as the sids of groups user is a member of
@@ -472,7 +471,7 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
-    void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
+    void addTenant(String hostname, Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
     {
         try
         {
@@ -482,16 +481,29 @@ public class IdentityManager implements IIdentityManager {
 
             registerTenant(tenant, adminAccountName, adminPwd);
 
-            Directory.createInstance(
-                  tenant.getName(),
-                  adminAccountName,
-                  String.valueOf(adminPwd));
+            logger.info(String.format(
+                    "Adding Tenant [%s] in %s",
+                    tenant.getName(), hostname));
+
+            // Create tenant locally
+            if (hostname == null || hostname.isEmpty())
+            {
+                Directory.createInstance(
+                        tenant.getName(),
+                        adminAccountName,
+                        String.valueOf(adminPwd));
+            }
+            else
+            {
+                addTenantRemote(hostname, tenant.getName(), adminAccountName, String.valueOf(adminPwd));
+            }
 
             //Add Tenant admin to System Admins group
             Collection<IIdentityStoreData> stores =
-                getProviders(tenant.getName(), EnumSet.of(DomainType.SYSTEM_DOMAIN), true/*internal*/);
+                    getProviders(tenant.getName(), EnumSet.of(DomainType.SYSTEM_DOMAIN), true/*internal*/);
             if (stores.size() != 1)
             {
+
                 throw new IllegalStateException("Failed to find tenant's system domain");
             }
             stores.iterator().next().getExtendedIdentityStoreData();
@@ -524,49 +536,94 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
-    String getPartnerDC()
-    {
-        List<DCStatusInfo> statusInfo;
+    void addTenantRemote(String hostname, String tenant, String adminAccountName, String adminPwd) throws Exception {
+        boolean tenantReplicated = false;
+
         try
         {
-            CdcSession cdcSession = CdcFactory.createCdcSessionViaIPC();
-            statusInfo = cdcSession.enumDCStatusInfo();
-        }
-        catch (CdcGenericException e)
-        {
-            logger.error(String.format(
-                    "Failed to find partner DC: %s, defaulting to localhost",
-                    e.getMessage()));
+            Directory.createInstanceRemote(hostname, tenant, adminAccountName, String.valueOf(adminPwd));
 
-            return HOSTNAME_MACRO;
-        }
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            String adminsGroupDn = String.format("cn=Administrators,cn=Builtin,%s",
+                                            ServerUtils.getDomainDN(settings.getTenantsSystemDomainName(tenant)));
 
-        if (statusInfo.size() == 0)
-        {
-            // there should be at least one DCInfo in list
-            return null;
-        }
-
-        class DCInfoComparator implements Comparator
-        {
-            public int compare(Object obj1, Object obj2)
+            // Try to ldap bind as newly created tenant
+            for (int retry = 0; retry < MAX_RETRY_REPLICATION; retry++)
             {
-                DCStatusInfo dc1 = (DCStatusInfo)obj1;
-                DCStatusInfo dc2 = (DCStatusInfo)obj2;
+                Thread.sleep(RETRY_INTERVAL_MILLISECONDS);
 
-                // compare based on isAlive, then lexicographically on dcName
-                if (dc1.isAlive == dc2.isAlive)
+                try (ILdapConnectionEx connection = ServerUtils.getLdapConnectionByURIs(
+                        settings.getSystemDomainConnectionInfo(),
+                        settings.getTenantAdminUserName(tenant, adminAccountName),
+                        adminPwd,
+                        settings.getSystemDomainAuthenticationType(),
+                        false,
+                        new LdapCertificateValidationSettings(null, null)))
                 {
-                    return dc1.dcName.compareToIgnoreCase(dc2.dcName);
+                    if (connection != null && ServerUtils.isValidDN(connection, adminsGroupDn))
+                    {
+                        tenantReplicated = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.info(String.format(
+                            "Error occurred when trying to bind as tenant Admin: %s",
+                            ex.getMessage()));
                 }
 
-                return (dc1.isAlive) ? 1 : -1;
+                if (tenantReplicated)
+                {
+                    break;
+                }
+
+                logger.info(String.format(
+                        "[Retry %d] Waiting for created Tenant [%s] to replicate...",
+                        retry, tenant));
             }
         }
+        catch (DirectoryException ex)
+        {
+            logger.error(String.format(
+                    "Directory Exception occurred when Creating tenant %s in %s: %s",
+                    tenant,
+                    hostname,
+                    ex.toString()));
 
-        Collections.sort(statusInfo, new DCInfoComparator());
+            if (ex.getErrorCode() == Directory.VMDIR_ERROR_ENTRY_EXISTS)
+            {
+                throw new DuplicateTenantException(String.format("Tenant %s already exists", tenant));
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.error(String.format(
+                    "Exception occurred when Creating tenant %s in %s: %s",
+                    tenant,
+                    hostname,
+                    ex.getMessage()));
+        }
 
-        return statusInfo.get(0).dcName;
+        if (!tenantReplicated)
+        {
+            logger.error(String.format(
+                    "Tenant %s failed to replicate, deleting tenant on partner DC %s",
+                    tenant, hostname));
+
+            try
+            {
+                Directory.deleteInstanceRemote(hostname, tenant, adminAccountName, String.valueOf(adminPwd));
+            }
+            catch (Exception ex)
+            {
+                logger.error(String.format(
+                        "Failed to delete tenant %s on partner DC %s",
+                        tenant, hostname));
+
+                throw ex;
+            }
+            throw new ReplicationException("Error creating tenant in remote IDM");
+        }
     }
 
     private
@@ -8644,13 +8701,12 @@ public class IdentityManager implements IIdentityManager {
      * {@inheritDoc}
      */
     @Override
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws  IDMException
-    {
+    public void addTenant(String hostname, Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws IDMException {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenant, serviceContext, "addTenant"))
         {
             try
             {
-                this.addTenant(tenant, adminAccountName, adminPwd);
+                this.addTenant(hostname, tenant, adminAccountName, adminPwd);
             }
             catch(Exception ex)
             {

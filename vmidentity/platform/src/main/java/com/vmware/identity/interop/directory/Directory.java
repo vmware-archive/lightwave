@@ -18,6 +18,8 @@ import com.sun.jna.ptr.IntByReference;
 
 public final class Directory
 {
+    public static final int VMDIR_ERROR_ENTRY_EXISTS = 9706;
+
     private static final IDirectoryClientLibrary library = DirectoryAdapter.getInstance();
 
     public static

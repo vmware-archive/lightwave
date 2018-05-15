@@ -19,6 +19,7 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
+import static org.easymock.EasyMock.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -193,7 +194,7 @@ public class TenantResourceTest {
     @Test
     public void testCreateTenant() throws Exception {
         TenantDTO tenantToCreate = getTestTenantDTO();
-        mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
+        mockCasIdmClient.addTenant((String)isNull(null), isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         mockCasIdmClient.setTenantCredentials(eq(TENANT_NAME), isA(Collection.class), isA(PrivateKey.class));
         mockCasIdmClient.setBrandName(eq(TENANT_NAME), eq(BRAND_NAME));
         mockCasIdmClient.setPasswordPolicy(isA(String.class), isA(PasswordPolicy.class));
@@ -223,7 +224,7 @@ public class TenantResourceTest {
 
     @Test(expected=InternalServerErrorException.class)
     public void testCreateOnIDMError_ThrowsInternalServerError() throws Exception {
-        mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
+        mockCasIdmClient.addTenant((String)isNull(null), isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         expectLastCall().andThrow(new IDMException("unit test duplicate tenant error"));
         mockCasIdmClient.deleteTenant(eq(TENANT_NAME));
         mControl.replay();
@@ -233,7 +234,7 @@ public class TenantResourceTest {
 
     @Test(expected = BadRequestException.class)
     public void testCreateTenantIfAlreadyExists_ThrowsBadRequestException() throws Exception {
-        mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
+        mockCasIdmClient.addTenant((String)isNull(null), isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         expectLastCall().andThrow(new DuplicateTenantException("unit test duplicate tenant error"));
         mControl.replay();
         tenantResource.create(getTestTenantDTO());

@@ -442,7 +442,7 @@ public final class TenantManagementTest
 
         IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
 
-        idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+        idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
 
         try
         {
@@ -456,7 +456,7 @@ public final class TenantManagementTest
 
         try
         {
-            idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+            idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
         } catch (DuplicateTenantException ex)
         {
             // cleanup
@@ -658,7 +658,7 @@ public final class TenantManagementTest
             //Test setting a existing tenant.
             newTenant = true;
             Tenant newtenant = new Tenant(_impTenantName);
-            idmClient.addTenant(newtenant,DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+            idmClient.addTenant(null, newtenant,DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
 
             idmClient.importTenantConfiguration(_impTenantName, tenantDoc);
             try
@@ -5177,7 +5177,7 @@ public final class TenantManagementTest
 
         Tenant tenantToCreate = new Tenant(tenantName);
 
-        idmClient.addTenant(tenantToCreate, adminAccountName, adminPwd.toCharArray());
+        idmClient.addTenant(null, tenantToCreate, adminAccountName, adminPwd.toCharArray());
 
         Tenant tenant = idmClient.getTenant(tenantName);
         Assert.assertNotNull(tenant);
@@ -5221,7 +5221,7 @@ public final class TenantManagementTest
 
         try
         {
-            idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+            idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
         } catch (DuplicateTenantException ex)
         {
             // cleanup
@@ -5288,7 +5288,7 @@ public final class TenantManagementTest
         Tenant tenantToCreate = new Tenant(tenantName);
         try {
             IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
-            idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+            idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
         } catch (Exception ex) {
             Assert.fail("should not reach here");
         }
@@ -5421,7 +5421,7 @@ public final class TenantManagementTest
         String tenantName = UUID.randomUUID().toString();
         Tenant tenantToCreate = new Tenant(tenantName);
         IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
-        idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+        idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
         try
         {
             Tenant tenant = idmClient.getTenant(tenantName);
@@ -5524,7 +5524,7 @@ public final class TenantManagementTest
         String tenantName = UUID.randomUUID().toString();
         Tenant tenantToCreate = new Tenant(tenantName);
         IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
-        idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+        idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
         try
         {
             Tenant tenant = idmClient.getTenant(tenantName);

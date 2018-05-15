@@ -146,7 +146,7 @@ public class TenantResource extends BaseResource {
             // Create tenant
             Tenant tenantToCreate = TenantMapper.getTenant(tenantDTO);
             PrincipalId adminId = PrincipalUtil.fromName(tenantDTO.getUsername());
-            getIDMClient().addTenant(tenantToCreate, adminId.getName(), tenantDTO.getPassword().toCharArray());
+            getIDMClient().addTenant(null, tenantToCreate, adminId.getName(), tenantDTO.getPassword().toCharArray());
             if (tenantDTO.getCredentials() == null || tenantDTO.getCredentials().getCertificates() == null
                     || tenantDTO.getCredentials().getPrivateKey() == null) {
                 log.info("Attempting to create tenant with no provided credentials - using root credentials instead");

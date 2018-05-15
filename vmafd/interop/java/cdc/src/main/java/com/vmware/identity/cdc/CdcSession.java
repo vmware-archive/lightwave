@@ -114,17 +114,6 @@ public class CdcSession implements AutoCloseable {
         return dcEntryList;
     }
 
-    public List <DCStatusInfo> enumDCStatusInfo() {
-        List <DCStatusInfo> dcStatusList = new ArrayList<DCStatusInfo>();
-
-        List <String> dcEntries = enumDCEntries();
-        for (String entry : dcEntries) {
-            dcStatusList.add(getDCStatusInfo(entry, null));
-        }
-
-        return dcStatusList;
-    }
-
     public DCStatusInfo getDCStatusInfo(String dcName, String domainName) {
         DCStatusInfo resultEntry = null;
         CdcStatusInfoNative statusInfo = new CdcStatusInfoNative();
