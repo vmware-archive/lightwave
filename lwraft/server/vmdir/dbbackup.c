@@ -45,15 +45,25 @@ _VmDirCopyFile(
     PCSTR   pszFileName
     );
 
+static
 VOID
-VmDirSrvSetMDBStateClear(
-    VOID
+_VmDirSrvSetMDBStateClear(
+    PCSTR pszDBPath
     )
 {
     DWORD   dwXlogNum = 0;
     DWORD   dwDbSizeMb = 0;
     DWORD   dwDbMapSizeMb = 0;
-    CHAR    bufDBPath[VMDIR_SIZE_256] = {0};
+    size_t  nLength = 0;
+    CHAR    bufDBPath[VMDIR_MAX_FILE_NAME_LEN] = {0};
+
+    nLength = VmDirStringLenA(pszDBPath);
+
+    VmDirCopyMemory(
+                 bufDBPath,
+                 VMDIR_MAX_FILE_NAME_LEN,
+                 pszDBPath,
+                 nLength);
 
     VmDirSetMdbBackendState(
         MDB_STATE_CLEAR,
@@ -61,52 +71,36 @@ VmDirSrvSetMDBStateClear(
         &dwDbSizeMb,
         &dwDbMapSizeMb,
         bufDBPath,
-        VMDIR_SIZE_256);
+        VMDIR_MAX_FILE_NAME_LEN);
 }
 
+/*
+ * set backend state, copy db and xlogs
+*/
 DWORD
-VmDirSrvBackupDB(
-    PCSTR       pszBackupPath
+_VmDirSrvCopyDB(
+    MDB_state_op            mdbMode,
+    PCSTR                   pszDBPath,
+    PCSTR                   pszBackupPath
     )
 {
     DWORD   dwError = 0;
     DWORD   low_xlognum = 0;
     DWORD   high_xlognum = 0;
+    BOOLEAN bClearMDBState = FALSE;
     DWORD   remoteDbSizeMb = 0;
     DWORD   remoteDbMapSizeMb = 0;
     CHAR    bufCurrentDBPath[VMDIR_MAX_FILE_NAME_LEN] = {0};
-    DWORD   dwMdbWalEnable = 1;
-    BOOLEAN bClearMDBState = FALSE;
-    MDB_state_op    mdbMode = MDB_STATE_KEEPXLOGS;
+    size_t  nLength = 0;
 
-    if (IsNullOrEmptyString(pszBackupPath))
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
+    nLength = VmDirStringLenA(pszDBPath);
 
-    dwError  = _VmDirValidateBackupPath(pszBackupPath);
+    dwError = VmDirCopyMemory(
+                 bufCurrentDBPath,
+                 VMDIR_MAX_FILE_NAME_LEN,
+                 pszDBPath,
+                 nLength);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    // default mode is to enable WAL
-    dwError = VmDirGetRegKeyValueDword(
-        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
-        VMDIR_REG_KEY_MDB_ENABLE_WAL,
-        &dwMdbWalEnable,
-        1);
-    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
-    {
-        dwError = 0;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (dwMdbWalEnable)
-    {
-        mdbMode = MDB_STATE_KEEPXLOGS;
-    }
-    else
-    {
-        mdbMode = MDB_STATE_READONLY;
-    }
 
     dwError = VmDirSetMdbBackendState(
         mdbMode,
@@ -143,10 +137,89 @@ VmDirSrvBackupDB(
     }
 
 cleanup:
+
     if (bClearMDBState)
     {
-        VmDirSrvSetMDBStateClear();
+        _VmDirSrvSetMDBStateClear(bufCurrentDBPath);
     }
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDirSrvBackupDB(
+    PCSTR       pszBackupPath
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwMdbWalEnable = 1;
+    MDB_state_op    mdbMode = MDB_STATE_KEEPXLOGS;
+    CHAR    bufBackupMainDBPath[VMDIR_MAX_FILE_NAME_LEN] = {0};
+    CHAR    bufBackupLog1DBPath[VMDIR_MAX_FILE_NAME_LEN] = {0};
+
+    if (IsNullOrEmptyString(pszBackupPath))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError  = _VmDirValidateBackupPath(pszBackupPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // default mode is to enable WAL
+    dwError = VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+        VMDIR_REG_KEY_MDB_ENABLE_WAL,
+        &dwMdbWalEnable,
+        1);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwMdbWalEnable)
+    {
+        mdbMode = MDB_STATE_KEEPXLOGS;
+    }
+    else
+    {
+        mdbMode = MDB_STATE_READONLY;
+    }
+
+    dwError = VmDirStringPrintFA(
+                  bufBackupMainDBPath,
+                  VMDIR_MAX_FILE_NAME_LEN,
+                  "%s/%s",
+                  pszBackupPath,
+                  MAIN_DB_DIR);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError  = _VmDirValidateBackupPath(bufBackupMainDBPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirSrvCopyDB(mdbMode, LWRAFT_DB_DIR, bufBackupMainDBPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (gVmdirGlobals.bUseLogDB)
+    {
+        dwError = VmDirStringPrintFA(
+                      bufBackupLog1DBPath,
+                      VMDIR_MAX_FILE_NAME_LEN,
+                      "%s/%s",
+                      bufBackupMainDBPath,
+                      LOG1_DB_DIR);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError  = _VmDirValidateBackupPath(bufBackupLog1DBPath);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirSrvCopyDB(mdbMode, LOG1_DB_PATH, bufBackupLog1DBPath);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+cleanup:
 
     return dwError;
 

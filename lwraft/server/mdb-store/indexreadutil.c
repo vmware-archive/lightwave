@@ -18,13 +18,14 @@
 static
 DWORD
 MdbScanIndex(
-    PVDIR_DB_TXN        pTxn,
-    VDIR_BERVALUE *     attrType,
-    PVDIR_DB_DBT        pKey,
-    VDIR_FILTER *       pFilter,
-    int                 maxScanForSizeLimit,
-    int *               partialCandidates,
-    ENTRYID             eStartingId
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_DB_TXN            pTxn,
+    VDIR_BERVALUE *         attrType,
+    PVDIR_DB_DBT            pKey,
+    VDIR_FILTER *           pFilter,
+    int                     maxScanForSizeLimit,
+    int *                   partialCandidates,
+    ENTRYID                 eStartingId
     );
 
 /*
@@ -49,7 +50,7 @@ VmDirMDBCheckIfALeafNode(
     PVDIR_DB_TXN        pTxn = NULL;
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
 
-    assert(pBECtx && pBECtx->pBEPrivate && pIsLeafEntry);
+    assert(pBECtx && pBECtx->pBE && pBECtx->pBEPrivate && pIsLeafEntry);
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -59,7 +60,7 @@ VmDirMDBCheckIfALeafNode(
             parentIdAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    dwError = VmDirMDBIndexGetDBi(pBECtx->pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     key.mv_data = &EIDBytes[0];
@@ -120,7 +121,7 @@ VmDirMDBGetAttrMetaData(
     PVDIR_DB_TXN          pTxn = NULL;
     PVDIR_INDEX_CFG       pIndexCfg = NULL;
 
-    assert( pBECtx && pBECtx->pBEPrivate );
+    assert( pBECtx && pBECtx->pBE && pBECtx->pBEPrivate );
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -128,7 +129,7 @@ VmDirMDBGetAttrMetaData(
             attrMetaDataAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    dwError = VmDirMDBIndexGetDBi(pBECtx->pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     indTypes = pIndexCfg->iTypes;
@@ -205,7 +206,7 @@ VmDirMDBGetAllAttrsMetaData(
     int                         iNumNode = 0;
     int                         iMaxNumNode = 0;
 
-    assert( pBECtx && pBECtx->pBEPrivate );
+    assert( pBECtx && pBECtx->pBE && pBECtx->pBEPrivate );
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -213,7 +214,7 @@ VmDirMDBGetAllAttrsMetaData(
             attrMetaDataAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    dwError = VmDirMDBIndexGetDBi(pBECtx->pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     indTypes = pIndexCfg->iTypes;
@@ -334,7 +335,7 @@ VmDirMDBGetCandidates(
     ENTRYID         parentId = 0;
     PVDIR_DB_TXN    pTxn = NULL;
 
-    assert(pBECtx && pBECtx->pBEPrivate && pFilter);
+    assert(pBECtx && pBECtx->pBE && pBECtx->pBEPrivate && pFilter);
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -361,7 +362,7 @@ VmDirMDBGetCandidates(
 
             key.mv_size = normValLen + 1;
 
-            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
+            dwError = MdbScanIndex(pBECtx->pBE, pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -426,7 +427,7 @@ VmDirMDBGetCandidates(
                 assert( FALSE );
             }
 
-            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
+            dwError = MdbScanIndex(pBECtx->pBE, pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -451,7 +452,7 @@ VmDirMDBGetCandidates(
             key.mv_data = &parentEIdBytes[0];
             MDBEntryIdToDBT(parentId, &key);
 
-            dwError = MdbScanIndex(pTxn, &(parentIdAttr), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
+            dwError = MdbScanIndex(pBECtx->pBE, pTxn, &(parentIdAttr), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -514,7 +515,7 @@ VmDirMDBDNToEntryId(
     PVDIR_INDEX_CFG       pIndexCfg = NULL;
     PSTR                  pszLocalErrMsg = NULL;
 
-    assert(pBECtx && pBECtx->pBEPrivate && pDn && pEId);
+    assert(pBECtx && pBECtx->pBE && pBECtx->pBEPrivate && pDn && pEId);
 
     normDn    = BERVAL_NORM_VAL(*pDn);
     normDnLen = BERVAL_NORM_LEN(*pDn);
@@ -531,7 +532,7 @@ VmDirMDBDNToEntryId(
                 dnAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+        dwError = VmDirMDBIndexGetDBi(pBECtx->pBE, pIndexCfg, &mdbDBi);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirAllocateMemory( normDnLen + 1, (PVOID *)&pKeyData );
@@ -597,7 +598,7 @@ VmDirMDBObjectGUIDToEntryId(
     PVDIR_INDEX_CFG       pIndexCfg = NULL;
     PSTR                  pszLocalErrMsg = NULL;
 
-    assert(pBECtx && pBECtx->pBEPrivate && pszObjectGUID && pEId);
+    assert(pBECtx && pBECtx->pBE && pBECtx->pBEPrivate && pszObjectGUID && pEId);
 
     Len = VmDirStringLenA(pszObjectGUID);
 
@@ -607,7 +608,7 @@ VmDirMDBObjectGUIDToEntryId(
             guidAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    dwError = VmDirMDBIndexGetDBi(pBECtx->pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMemory( Len + 1, (PVOID *)&pKeyData );
@@ -705,13 +706,14 @@ MDBDBTToEntryId(
 static
 DWORD
 MdbScanIndex(
-    PVDIR_DB_TXN        pTxn,
-    VDIR_BERVALUE *     attrType,
-    PVDIR_DB_DBT        pKey,
-    VDIR_FILTER *       pFilter,
-    int                 maxScanForSizeLimit,
-    int *               partialCandidates,
-    ENTRYID             eStartingId
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_DB_TXN            pTxn,
+    VDIR_BERVALUE *         attrType,
+    PVDIR_DB_DBT            pKey,
+    VDIR_FILTER *           pFilter,
+    int                     maxScanForSizeLimit,
+    int *                   partialCandidates,
+    ENTRYID                 eStartingId
     )
 {
     DWORD               dwError = 0;
@@ -724,6 +726,7 @@ MdbScanIndex(
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
     PVDIR_DB_DBC        pCursor = NULL;
     unsigned int        cursorFlags;
+    PVDIR_MDB_DB        pDB = (PVDIR_MDB_DB)VmDirSafeDBFromBE(pBE);
 
     // GE filter is neither exactMatch nor a partialMatch
     BOOLEAN     bIsExactMatch = (pFilter->choice == LDAP_FILTER_EQUALITY || pFilter->choice == FILTER_ONE_LEVEL_SEARCH);
@@ -750,14 +753,14 @@ MdbScanIndex(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    dwError = VmDirMDBIndexGetDBi(pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     bIsUniqueVal = pIndexCfg->bGlobalUniq;
 
     if (pTxn == NULL)
     {
-        dwError = mdb_txn_begin(    gVdirMdbGlobals.mdbEnv,
+        dwError = mdb_txn_begin(    pDB->mdbEnv,
                                     BE_DB_PARENT_TXN_NULL,
                                     MDB_RDONLY,
                                     &pLocalTxn);

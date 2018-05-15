@@ -105,4 +105,3 @@ typedef struct _VMDIR_BKGD_GLOBALS
     BOOLEAN             bShutdown;
 
 } VMDIR_BKGD_GLOBALS, *PVMDIR_BKGD_GLOBALS;
-

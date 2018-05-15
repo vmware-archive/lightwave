@@ -248,6 +248,9 @@ VmDirPagedSearchCacheNodeAllocate(
     dwError = VmDirAllocateMemory(sizeof(*pSearchRecord), (PVOID)&pSearchRecord);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    pSearchRecord->pBE = pOperation->pBEIF;
+    assert(pSearchRecord->pBE);
+
     dwError = VmDirUuidGenerate(&guid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -553,7 +556,10 @@ _VmDirPagedSearchProcessEntry(
     VDIR_ENTRY srEntry = {0};
     BOOLEAN bInclude = FALSE;
 
-    dwError = pOperation->pBEIF->pfnBESimpleIdToEntry(eId, &srEntry);
+    dwError = pOperation->pBEIF->pfnBESimpleIdToEntry(
+                  pOperation->pBEIF,
+                  eId,
+                  &srEntry);
     if (dwError == 0)
     {
         if (CheckIfEntryPassesFilter(pOperation, &srEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
@@ -678,7 +684,7 @@ _VmDirPagedSearchWorkerThread(
                 NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    searchOp.pBEIF = VmDirBackendSelect(NULL);
+    searchOp.pBEIF = pSearchRecord->pBE;
     searchOp.request.searchReq.filter = pSearchRecord->pFilter;
 
     while (pSearchRecord->dwCandidatesProcessed < (DWORD)pSearchRecord->pTotalCandidates->size)

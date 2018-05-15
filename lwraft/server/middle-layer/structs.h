@@ -169,6 +169,8 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     // thread know that it can exit.
     //
     BOOLEAN bSearchCompleted;
+    /* backend interface */
+    PVDIR_BACKEND_INTERFACE pBE;
 } VDIR_PAGED_SEARCH_RECORD, *PVDIR_PAGED_SEARCH_RECORD;
 
 typedef struct _VDIR_PAGED_SEARCH_CACHE

@@ -238,6 +238,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue * 1024;  // reg key value in K
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_RAFT_USE_LOGDB,
+                    TRUE))
+        {
+            gVmdirGlobals.bUseLogDB = pEntry->dwValue ? TRUE : FALSE; /* use separate log db for logs */
+        }
         else if(!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_CURL_TIMEOUT_SEC,

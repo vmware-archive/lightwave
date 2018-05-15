@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VmDirIndexLibInitLogDB(
+    VOID
+    );
+
 DWORD
 VmDirIndexLibInit(
     PVMDIR_MUTEX    pModMutex
@@ -107,6 +113,12 @@ VmDirIndexLibInit(
         pIndexCfg = NULL;
     }
 
+    if (gVmdirGlobals.bUseLogDB)
+    {
+        dwError = _VmDirIndexLibInitLogDB();
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = InitializeIndexingThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -167,7 +179,7 @@ VmDirIndexOpen(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pBE = VmDirBackendSelect(NULL);
-    dwError = pBE->pfnBEIndexOpen(pIndexCfg);
+    dwError = pBE->pfnBEIndexOpen(pBE, pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -205,4 +217,39 @@ VmDirIndexLibShutdown(
 
     gVdirIndexGlobals.mutex = NULL;
     gVdirIndexGlobals.bFirstboot = FALSE;
+}
+
+/*
+ * include logdb in init path.
+ * note logdb is not considered for dynamic indexing at this time.
+ * this is because multidb split is pending for indexcfg.
+*/
+static
+DWORD
+_VmDirIndexLibInitLogDB(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    static VDIR_DEFAULT_INDEX_CFG defIdx[] = VDIR_INDEX_INITIALIZER;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
+    DWORD i = 0;
+
+    pBE = VmDirBackendSelect(ALIAS_LOG_CURRENT);
+    assert(pBE);
+
+    // open default indices
+    for (i = 0; defIdx[i].pszAttrName; i++)
+    {
+        dwError = VmDirIndexCfgAcquire(
+                defIdx[i].pszAttrName, VDIR_INDEX_READ, &pIndexCfg);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = pBE->pfnBEIndexOpen(pBE, pIndexCfg);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+error:
+    return dwError;
 }

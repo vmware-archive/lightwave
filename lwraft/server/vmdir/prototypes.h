@@ -106,7 +106,6 @@ VmDirFreeMemberships(
 
 DWORD
 VmDirLoadIndex(
-    VOID
     );
 
 // background.c
@@ -126,11 +125,6 @@ VmDirBkgdSrvStatPer10Min(
     );
 
 // dbbackup.c
-VOID
-VmDirSrvSetMDBStateClear(
-    VOID
-    );
-
 DWORD
 VmDirSrvBackupDB(
     PCSTR       pszBackupPath

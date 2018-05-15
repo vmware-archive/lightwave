@@ -32,7 +32,7 @@ VmDirSimpleNormDNToEntry(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    pBE = VmDirBackendSelect(NULL);
+    pBE = VmDirBackendSelect(pszNormDN);
     assert(pBE);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
@@ -44,7 +44,7 @@ VmDirSimpleNormDNToEntry(
             (PVOID*)&pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pBE->pfnBESimpleDnToEntry((PSTR)pszNormDN, pEntry);
+    dwError = pBE->pfnBESimpleDnToEntry(pBE, (PSTR)pszNormDN, pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppEntry = pEntry;
@@ -84,7 +84,7 @@ VmDirSimpleDNToEntry(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    pBE = VmDirBackendSelect(NULL);
+    pBE = VmDirBackendSelect(pszDN);
     assert(pBE);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
@@ -102,7 +102,7 @@ VmDirSimpleDNToEntry(
             (PVOID*)&pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pBE->pfnBESimpleDnToEntry(BERVAL_NORM_VAL(bvDn), pEntry);
+    dwError = pBE->pfnBESimpleDnToEntry(pBE, BERVAL_NORM_VAL(bvDn), pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppEntry = pEntry;

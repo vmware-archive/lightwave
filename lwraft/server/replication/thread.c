@@ -32,7 +32,7 @@
 extern DWORD AttrListToEntry(PVDIR_SCHEMA_CTX, PSTR, PSTR*, PVDIR_ENTRY);
 extern DWORD VmDirAddModSingleAttributeReplace(PVDIR_OPERATION, PCSTR, PCSTR, PVDIR_BERVALUE);
 extern DWORD VmDirCloneStackOperation(PVDIR_OPERATION, PVDIR_OPERATION, VDIR_OPERATION_TYPE, ber_tag_t, PVDIR_SCHEMA_CTX);
-extern int VmDirEntryAttrValueNormalize(PVDIR_ENTRY, BOOLEAN);
+extern int VmDirEntryAttrValueNormalize(PVDIR_BACKEND_CTX, PVDIR_ENTRY, BOOLEAN);
 extern DWORD VmDirSyncCounterReset(PVMDIR_SYNCHRONIZE_COUNTER pSyncCounter, int syncValue);
 extern DWORD VmDirConditionBroadcast(PVMDIR_COND pCondition);
 static DWORD _VmDirAppendEntriesRpc(PVMDIR_PEER_PROXY pProxySelf, int);
@@ -436,6 +436,41 @@ error:
     goto cleanup;
 }
 
+VOID VmDirRaftPostCommit(void *ctx);
+VOID VmDirRaftCommitFail(void *ctx);
+
+/*
+ * when using log db, PrepareCommit will complete log commit.
+ * handle special cases such as no-op log commit which only
+ * commits to log db.
+ *
+*/
+static
+DWORD
+_VmDirRaftLogOnlyCommit(
+    )
+{
+    DWORD dwError = 0;
+    void *pCtx = NULL;
+
+    dwError = VmDirRaftPrepareCommit(&pCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirRaftPostCommit(pCtx);
+
+cleanup:
+    return dwError;
+
+error:
+    if (pCtx)
+    {
+        VmDirRaftCommitFail(pCtx);
+    }
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+      "_VmDirRaftLogOnlyCommit: error %d", dwError);
+    goto cleanup;
+}
+
 /*
  * Logs from lastApplied to highest index may or maynot committed though the highest committed
  * log must have been persisted in this server per the committing and voting algorithm.
@@ -472,7 +507,7 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     dwError = VmDirInitStackOperation(&ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_MODIFY, pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(RAFT_LOGS_CONTAINER_DN);
     assert(ldapOp.pBEIF);
 
     //Once returned successfully, it would block any other write transactions
@@ -569,8 +604,23 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     dwError = ldapOp.pBEIF->pfnBEEntryAdd(ldapOp.pBECtx, &raftEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (gVmdirGlobals.bUseLogDB)
+    {
+        /*
+         * pass ownership of ctx to gLogEntry.
+         * note ldapOp.pBECtx is empty after this.
+        */
+        dwError = VmDirBackendCtxMoveContents(ldapOp.pBECtx, &gLogEntry.beCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirRaftLogOnlyCommit(&ldapOp);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     //VmDirRaftPrepareCommit now owns gLogEntry
     bHasTxn = FALSE;
@@ -591,7 +641,10 @@ cleanup:
     if (bHasTxn)
     {
         _VmDirChgLogFree(&gLogEntry);
-        ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
+        if (ldapOp.pBEIF)
+        {
+            ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
+        }
     }
     VMDIR_UNLOCK_MUTEX(bLockRpcReply, gRaftRpcReplyMutex);
     VmDirFreeOperationContent(&ldapOp);
@@ -1632,12 +1685,49 @@ int VmDirRaftPrepareCommit(void **ppCtx)
     waitTimeout = gLogEntry.requestCode == 0?LARGE_TIMEOUT_VALUE_MS:(gVmdirGlobals.dwRaftElectionTimeoutMS<<5);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
+    /*
+     * if using separate log db, commit the transaction to log db now.
+     * per raft protocol, local log should be committed before checking
+     * for consensus. Because we allow a combined/separate log with
+     * bUseLogDB flag, now is not a good time for refactoring.
+     * TODO: refactor and simplify raft log logic. commit hook not needed.
+    */
+    if (gVmdirGlobals.bUseLogDB)
+    {
+        /* must have log ctx to commit log entry */
+        if (!gLogEntry.beCtx.pBE ||
+            !gLogEntry.beCtx.pBEPrivate)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        /* commit log entry now */
+        dwError = gLogEntry.beCtx.pBE->pfnBETxnCommit(&gLogEntry.beCtx);
+        if (dwError)
+        {
+            /* all validations are done at this point. attempt once more before fail */
+            VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "VmDirRaftPrepareCommit: Failed to commit log txn(%d). Retrying.",
+                dwError);
+            dwError = gLogEntry.beCtx.pBE->pfnBETxnCommit(&gLogEntry.beCtx);
+        }
+
+        /* if fail to commit log, set to follower */
+        if (dwError)
+        {
+            gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     if (_VmDirGetRaftQuorumOverride(FALSE) || gRaftState.clusterSize < 2)
     {
         //This is a standalone server or QuorumOverride is set
         goto raft_commit_done;
     }
-
 get_consensus_begin:
     do
     {
@@ -1739,6 +1829,23 @@ raft_commit_done:
     gRaftState.opCounts++;
     if (gLogEntry.index > 0)
     {
+        if (gVmdirGlobals.bUseLogDB)
+        {
+            /*
+             * with separate log db, log state can be updated.
+             * commit ctx not required.
+             * TODO: simplify when bUseLogDB is default
+            */
+            gRaftState.commitIndex = gRaftState.lastLogIndex = gLogEntry.index;
+            gRaftState.commitIndexTerm = gRaftState.lastLogTerm = gLogEntry.term;
+            if (gLogEntry.requestCode != 0)
+            {
+                //not non-op
+                gRaftState.lastApplied = gLogEntry.index;
+            }
+            gRaftState.cmd = ExecNone;
+        }
+
         dwError = VmDirAllocateMemory(sizeof(VDIR_RAFT_COMMIT_CTX), (PVOID*)&pCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1752,7 +1859,8 @@ raft_commit_done:
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
           "VmDirRaftPrepareCommit: succeeded; server role %d term %d lastApplied %llu",
           gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
-    } else
+    }
+    else
     {
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
     }
@@ -1791,18 +1899,23 @@ VmDirRaftPostCommit(void *ctx)
     {
         BOOLEAN bLock = TRUE;
 
-        pCtx = (PVDIR_RAFT_COMMIT_CTX)ctx;
-
-        gRaftState.commitIndex = gRaftState.lastLogIndex = pCtx->logIndex;
-        gRaftState.commitIndexTerm = gRaftState.lastLogTerm = pCtx->logTerm;
-        if (pCtx->logRequestCode != 0)
+        /* prepare already updated state when using logdb */
+        if (!gVmdirGlobals.bUseLogDB)
         {
-            //not non-op
-            gRaftState.lastApplied = pCtx->logIndex;
+            pCtx = (PVDIR_RAFT_COMMIT_CTX)ctx;
+
+            gRaftState.commitIndex = gRaftState.lastLogIndex = pCtx->logIndex;
+            gRaftState.commitIndexTerm = gRaftState.lastLogTerm = pCtx->logTerm;
+            if (pCtx->logRequestCode != 0)
+            {
+                //not non-op
+                gRaftState.lastApplied = pCtx->logIndex;
+            }
+            gRaftState.cmd = ExecNone;
+
+            VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPostCommit: log (%llu %d) lastApplied %llu logOp %d",
+                pCtx->logIndex, pCtx->logTerm, gRaftState.lastApplied, pCtx->logRequestCode);
         }
-        gRaftState.cmd = ExecNone;
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPostCommit: log (%llu %d) lastApplied %llu logOp %d",
-                        pCtx->logIndex, pCtx->logTerm, gRaftState.lastApplied, pCtx->logRequestCode);
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
         VMDIR_SAFE_FREE_MEMORY(ctx);
     }
@@ -2244,6 +2357,8 @@ _VmDirApplyLog(unsigned long long indexToApply)
     BOOLEAN bHasTxn = FALSE;
     unsigned long long priCommitIndex = 0;
     int logEntrySize = 0;
+    /* unpacked logs are always applied to main database */
+    PVDIR_BACKEND_INTERFACE pBEMain = VmDirBackendSelect(ALIAS_MAIN);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (indexToApply <= gRaftState.lastApplied)
@@ -2306,10 +2421,10 @@ _VmDirApplyLog(unsigned long long indexToApply)
         VmDirFreeEntry(ldapOp.request.addReq.pEntry);
         ldapOp.request.addReq.pEntry = &entry;
 
-        ldapOp.pBEIF = VmDirBackendSelect(NULL);
+        ldapOp.pBEIF = pBEMain;
         assert(ldapOp.pBEIF);
 
-        dwError = VmDirEntryAttrValueNormalize(&entry, FALSE /*all attributes*/);
+        dwError = VmDirEntryAttrValueNormalize(ldapOp.pBECtx, &entry, FALSE /*all attributes*/);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSchemaModMutexAcquire(&ldapOp);
@@ -2336,7 +2451,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_MODIFY, pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldapOp.pBEIF = VmDirBackendSelect(NULL);
+        ldapOp.pBEIF = pBEMain;
         assert(ldapOp.pBEIF);
 
         modReq = &(ldapOp.request.modifyReq);
@@ -2379,7 +2494,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_DELETE, pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        ldapOp.pBEIF = VmDirBackendSelect(NULL);
+        ldapOp.pBEIF = pBEMain;
         assert(ldapOp.pBEIF);
 
         dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
@@ -3101,7 +3216,7 @@ _VmdirDeleteLog(unsigned long long logIndex, BOOLEAN bCompactLog)
     dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendForLogIndex(logIndex);
     assert(ldapOp.pBEIF);
 
     dwError = VmDirAllocateStringPrintf(&pDn, "%s=%llu,%s", ATTR_CN, logIndex, RAFT_LOGS_CONTAINER_DN);
@@ -3182,7 +3297,7 @@ VmDirPersistTerm(
     dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx );
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirInitStackOperation");
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(RAFT_PERSIST_STATE_DN);
     assert(ldapOp.pBEIF);
 
     if (term > 0)

@@ -161,7 +161,10 @@ VmDirInternalAddEntry(
     }
 
     // Normalize all attribute value
-    retVal = VmDirEntryAttrValueNormalize(pEntry, FALSE /*all attributes*/);
+    retVal = VmDirEntryAttrValueNormalize(
+                 pOperation->pBECtx,
+                 pEntry,
+                 FALSE /*all attributes*/);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
             "Attr value normalization failed - (%u)",
@@ -468,15 +471,16 @@ error:
 
 int
 VmDirEntryAttrValueNormalize(
-    PVDIR_ENTRY     pEntry,
-    BOOLEAN         bIndexAttributeOnly
+    PVDIR_BACKEND_CTX pBECtx,
+    PVDIR_ENTRY       pEntry,
+    BOOLEAN           bIndexAttributeOnly
     )
 {
     DWORD           dwError = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
 
-    assert(pEntry && pEntry->pSchemaCtx);
+    assert(pBECtx && pBECtx->pBE && pEntry && pEntry->pSchemaCtx);
 
     for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
     {

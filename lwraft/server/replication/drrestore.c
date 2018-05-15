@@ -58,7 +58,6 @@ VmDirSrvServerReset(
     )
 {
     DWORD dwError = 0;
-    const char  *dbHomeDir = LWRAFT_DB_DIR;
     BOOLEAN     bWriteInvocationId = FALSE;
     BOOLEAN     bMdbWalEnable = FALSE;
     BOOLEAN     bFatalError = FALSE;
@@ -89,8 +88,9 @@ VmDirSrvServerReset(
     VmDirShutdownDB();
 
     //swap current vmdir database file with the foriegn one under partner/
-    dwError = VmDirSwapDB(dbHomeDir, bMdbWalEnable);
+    dwError = VmDirSwapDBs(bMdbWalEnable);
     BAIL_ON_VMDIR_ERROR(dwError);
+
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Swap DB", __FUNCTION__);
 
     dwError = VmDirLoadRaftState();

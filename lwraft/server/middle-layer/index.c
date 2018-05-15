@@ -371,7 +371,9 @@ VmDirPluginIndexEntryPreModify(
     // delete index if no longer needed
     else if (bExist && !bNeed)
     {
-        dwError = VmDirIndexDelete(pIndexUpd, pCNAttr->vals[0].lberbv.bv_val);
+        dwError = VmDirIndexDelete(
+                      pIndexUpd,
+                      pCNAttr->vals[0].lberbv.bv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
         bExist = FALSE;
     }

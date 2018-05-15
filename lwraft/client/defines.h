@@ -326,6 +326,8 @@ the buffer size will always be adequate.
         "No leader"}, \
     {VMDIR_ERROR_INVALID_ROLE, \
         "Invalid role of node"}, \
+    {VMDIR_ERROR_BACKEND_INSTANCE_NOT_FOUND, \
+        "Backend instance not found"}, \
 };
 
 #define VMDIR_RPC_ERROR_TABLE_INITIALIZER \

@@ -1183,6 +1183,25 @@ VmDirSimpleEntryCreateWithGuid(
     );
 
 DWORD
+VmDirSimpleEntryCreateInBE(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_SCHEMA_CTX        pSchemaCtx,
+    PSTR*                   ppszEntryInitializer,
+    PSTR                    pszDN,
+    ENTRYID                 ulEntryId
+    );
+
+DWORD
+VmDirSimpleEntryCreateInBEWithGuid(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_SCHEMA_CTX        pSchemaCtx,
+    PSTR*                   ppszEntryInitializer,
+    PSTR                    pszDN,
+    ENTRYID                 ulEntryId,
+    PSTR                    pszGuid
+    );
+
+DWORD
 VmDirModAddSingleValueAttribute(
     PVDIR_MODIFICATION      pMod,
     PVDIR_SCHEMA_CTX        pSchemaCtx,
@@ -1231,6 +1250,17 @@ VmDirFilterInternalSearch(
         unsigned long       ulPageSize,
         PSTR                *ppszPageCookie,
         PVDIR_ENTRY_ARRAY   pEntryArray
+    );
+
+DWORD
+VmDirFilterInternalSearchInBE(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PCSTR                   pszBaseDN,
+    int                     searchScope,
+    PCSTR                   pszFilter,
+    unsigned long           ulPageSize,
+    PSTR                    *ppszPageCookie,
+    PVDIR_ENTRY_ARRAY       pEntryArray
     );
 
 // middle-layer result.c

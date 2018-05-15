@@ -480,7 +480,7 @@ VmDirGetUPNMemberships(
     dwError = VmDirInitStackOperation(&searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    searchOp.pBEIF = VmDirBackendSelect(NULL);
+    searchOp.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
 
     dwError = searchOp.pBEIF->pfnBETxnBegin(searchOp.pBECtx, VDIR_BACKEND_TXN_READ);
     BAIL_ON_VMDIR_ERROR(dwError);

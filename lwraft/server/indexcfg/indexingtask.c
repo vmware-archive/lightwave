@@ -83,7 +83,7 @@ VmDirIndexingTaskCompute(
     }
     else
     {
-        dwError = pBE->pfnBEMaxEntryId(&maxEId);
+        dwError = pBE->pfnBEMaxEntryId(pBE, &maxEId);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         gVdirIndexGlobals.offset += INDEXING_BATCH_SIZE;
@@ -218,9 +218,9 @@ VmDirIndexingTaskPopulateIndices(
 
         // open index db first if it's new
         if (pIndexCfg->initOffset == gVdirIndexGlobals.offset &&
-                !pBE->pfnBEIndexExist(pIndexCfg))
+                !pBE->pfnBEIndexExist(pBE, pIndexCfg))
         {
-            dwError = pBE->pfnBEIndexOpen(pIndexCfg);
+            dwError = pBE->pfnBEIndexOpen(pBE, pIndexCfg);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -232,7 +232,7 @@ VmDirIndexingTaskPopulateIndices(
     }
 
     dwError = pBE->pfnBEIndexPopulate(
-            pIndexCfgs,  gVdirIndexGlobals.offset, INDEXING_BATCH_SIZE);
+            pBE, pIndexCfgs,  gVdirIndexGlobals.offset, INDEXING_BATCH_SIZE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -326,7 +326,7 @@ VmDirIndexingTaskDeleteIndices(
         // in case of resume, it may be already deleted
         if (pIndexCfg->status == VDIR_INDEXING_DISABLED)
         {
-            dwError = pBE->pfnBEIndexDelete(pIndexCfg);
+            dwError = pBE->pfnBEIndexDelete(pBE, pIndexCfg);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             pIndexCfg->status = VDIR_INDEXING_DELETED;

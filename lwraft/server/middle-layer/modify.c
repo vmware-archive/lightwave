@@ -514,7 +514,7 @@ VmDirInternalEntryAttributeReplace(
             &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(pszNormDN);
     assert(ldapOp.pBEIF);
 
     ldapOp.reqDn.lberbv.bv_val = (PSTR)pszNormDN;

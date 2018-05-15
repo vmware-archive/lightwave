@@ -89,6 +89,8 @@ typedef struct _VDIR_RAFT_LOG
                                // and requestCode(4 bytes), followed by chglog.
 #define RAFT_LOG_HEADER_LEN (sizeof(UINT64) + sizeof(UINT32) + sizeof(UINT64) + sizeof(UINT32))
 //Total storage for packRaftLog is RAFT_LOG_HEADER_LEN + chglog data length
+    /* beCtx holdng raftlog txn to commit*/
+    VDIR_BACKEND_CTX beCtx;
 } VDIR_RAFT_LOG, *PVDIR_RAFT_LOG;
 
 
@@ -150,6 +152,33 @@ typedef struct _VMDIR_PEER_PROXY
     struct _VMDIR_PEER_PROXY *pNext;
 } VMDIR_PEER_PROXY, *PVMDIR_PEER_PROXY;
 
+/*
+ * current log db. always present.
+*/
+#define LOG_DB_CURRENT  0
+
+/*
+ * previous log db. used on two non-overlapping usage scenarios
+ *
+ * 1. when migrating from older systems, log and state are combined
+ *    and previous db will point to the older main db.
+ *
+ * 2. when current log db reaches a log count threshold,
+      current db is set as previous and a new log db is set
+      as current.
+*/
+#define LOG_DB_PREVIOUS 1
+
+/* total number of log dbs supported */
+#define LOG_DB_COUNT    2
+
+typedef struct _VDIR_RAFT_LOG_DB_STATE
+{
+    UINT64 startLogIndex; /* start log index in this db */
+    UINT64 endLogIndex; /* end log index in this db */
+    PSTR pszLogDN; /* dn of the log db */
+} VDIR_RAFT_LOG_DB_STATE, *PVDIR_RAFT_LOG_DB_STATE;
+
 typedef struct _VDIR_RAFT_STAT
 {
     VDIR_RAFT_ROLE role; //This server's current Raft role
@@ -171,6 +200,10 @@ typedef struct _VDIR_RAFT_STAT
     VDIR_BERVALUE leader; //leader's hostname for referal
     BOOLEAN disallowUpdates; //disallow external LDAP add/modify/delete; momently for newly elected leader
     PVMDIR_PEER_PROXY proxies;   //A list of elements, each for a peer proxy
+    /* is there a previous log? */
+    BOOLEAN bHasPrevLog;
+    /* ctx of log entry so that PrepareCommit can commit it (applicable when using log db)*/
+    VDIR_BACKEND_CTX beCtx;
     //Below are persistent variables, i.e. must be writen to entry cn=persiststate,cn=raftcontext once changed
     UINT64 lastApplied; //Index of highest log entry that have been applied to directory entry.
     UINT32 currentTerm;

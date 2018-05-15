@@ -3822,3 +3822,56 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pData);
     goto cleanup;
 }
+
+DWORD
+VmDirMkdir(
+    PCSTR path,
+    int mode
+    )
+{
+    DWORD   dwError = 0;
+#ifdef _WIN32
+    if(CreateDirectory(path, NULL)==0)
+    {
+        errno = WSAGetLastError();
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+#else
+    if(mkdir(path, mode)!=0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+#endif
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirMkdir on dir %s failed (%u) errno: (%d)", path, dwError, errno);
+    goto cleanup;
+}
+
+DWORD
+VmDirDirectoryExists(
+    PCSTR       pszDirName,
+    PBOOLEAN    pbFound)
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bFound = FALSE;
+    struct stat statBuf = {0};
+    int         iRetVal = 0;
+
+    BAIL_ON_VMDIR_INVALID_POINTER(pszDirName, dwError);
+    BAIL_ON_VMDIR_INVALID_POINTER(pbFound, dwError);
+
+    iRetVal = stat(pszDirName, &statBuf);
+    if (iRetVal == 0 && S_ISDIR(statBuf.st_mode))
+    {
+        bFound = TRUE;
+    }
+
+    *pbFound = bFound;
+
+error:
+    return dwError;
+}

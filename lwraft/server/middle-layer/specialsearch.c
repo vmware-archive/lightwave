@@ -81,7 +81,10 @@ VmDirHandleSpecialSearch(
         dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = pOp->pBEIF->pfnBESimpleIdToEntry(DSE_ROOT_ENTRY_ID, pEntry);
+        dwError = pOp->pBEIF->pfnBESimpleIdToEntry(
+                      pOp->pBEIF,
+                      DSE_ROOT_ENTRY_ID,
+                      pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                 "%s Entry search failed.", pszEntryType[entryType]);
 
