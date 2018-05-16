@@ -17,9 +17,15 @@
 static VMDIR_BKGD_TASK_CTX tasks[] =
 {
         {
-                VmDirBkgdSrvStat,
+                VmDirBkgdSrvStatPer1Min,
+                60, // every minute
+                "bkgdprevtime_update_srvstat1Min",
+                {0}
+        },
+        {
+                VmDirBkgdSrvStatPer10Min,
                 60 * 10, // every 10 minute
-                "bkgdprevtime_update_srvstat",
+                "bkgdprevtime_update_srvstat10Min",
                 {0}
         }
 };
@@ -160,7 +166,7 @@ VmDirBkgdThreadFun(
 }
 
 DWORD
-VmDirBkgdSrvStat(
+VmDirBkgdSrvStatPer10Min(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     )
 {
@@ -171,7 +177,7 @@ VmDirBkgdSrvStat(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-//    dwError = VmDirUpdateSrvStat();
+    dwError = VmDirUpdateSrvStatPer10Min();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
@@ -184,3 +190,30 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
+
+DWORD
+VmDirBkgdSrvStatPer1Min(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pTaskCtx)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirUpdateSrvStatPer1Min();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+

@@ -2642,6 +2642,14 @@ VmDirRaftGetRole(VDIR_RAFT_ROLE *pRole)
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 }
 
+UINT64
+VmDirRaftGetLastLogIndex(
+    VOID
+    )
+{
+    return gRaftState.lastLogIndex;
+}
+
 BOOLEAN
 VmDirRaftNeedReferral(PCSTR pszReqDn)
 {

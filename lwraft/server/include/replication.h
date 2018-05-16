@@ -82,6 +82,11 @@ VmDirUpdateRaftLogChangedAttr(
     PVDIR_ENTRY     pEntry
     );
 
+UINT64
+VmDirRaftGetLastLogIndex(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

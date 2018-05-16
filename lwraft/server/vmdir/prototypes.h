@@ -116,7 +116,12 @@ VmDirBkgdThreadFun(
     );
 
 DWORD
-VmDirBkgdSrvStat(
+VmDirBkgdSrvStatPer1Min(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdSrvStatPer10Min(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );
 
@@ -590,6 +595,17 @@ VmDirIpcGetSRPSecret(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
+    );
+
+// metics.c
+DWORD
+VmDirUpdateSrvStatPer1Min(
+    VOID
+    );
+
+DWORD
+VmDirUpdateSrvStatPer10Min(
+    VOID
     );
 
 #ifdef __cplusplus

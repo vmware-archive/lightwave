@@ -102,26 +102,22 @@ VmDirSrvStatMetricsInit(
 {
     DWORD   dwError = 0;
     DWORD   i = 0;
-    PSTR    pszGauageName[METRICS_SRV_STAT_COUNT] = {
+    PSTR    pszGaugeName[METRICS_SRV_STAT_COUNT] = {
         "vmdir_srv_stat_dbsize",
         "vmdir_srv_stat_backuptimetaken",
         };
-
-    // use this template to construct labels
-    VM_METRICS_LABEL    labels[1] =
-    {
-            {"servicestat",   NULL}
-    };
+    PSTR    pszGaugeInfo[METRICS_SRV_STAT_COUNT] = {
+        "Database size in megabytes",
+        "Backup time taken in seconds",
+        };
 
     for (i = 0; i < METRICS_SRV_STAT_COUNT; i++)
     {
-        labels[0].pszValue = VmDirMetricsSrvStatString(i);
-
         dwError = VmMetricsGaugeNew(
                 pmContext,
-                pszGauageName[i],
-                labels, 1,
-                "Service state gauge",
+                pszGaugeName[i],
+                NULL, 0,
+                pszGaugeInfo[i],
                 &gpSrvStatMetrics[i]);
         BAIL_ON_VMDIR_ERROR(dwError);
     }

@@ -94,6 +94,15 @@ typedef enum
 
 typedef enum
 {
+    METRICS_SRV_DBSIZE,
+    METRICS_SRV_BACKUP_TIMETAKEN,
+    METRICS_SRV_LAST_LOG_INDEX,
+    METRICS_SRV_STAT_COUNT
+
+} METRICS_SRV_STAT;
+
+typedef enum
+{
     METRICS_LAYER_PROTOCOL,
     METRICS_LAYER_MIDDLELAYER,
     METRICS_LAYER_PRE_PLUGINS,
@@ -131,6 +140,11 @@ VmDirMetricsLdapOpTypeString(
 PSTR
 VmDirMetricsLdapErrorString(
     METRICS_LDAP_ERRORS error
+    );
+
+PSTR
+VmDirMetricsSrvStatString(
+    METRICS_SRV_STAT srvStat
     );
 
 PSTR

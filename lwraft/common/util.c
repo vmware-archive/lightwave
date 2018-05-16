@@ -1802,6 +1802,31 @@ error:
 }
 
 DWORD
+VmDirGetFileSizeInMB(
+    PCSTR   pszFile,
+    PDWORD  pdwFileSizeInMB
+    )
+{
+    DWORD   dwError = 0;
+    struct stat st = {0};
+
+    if (IsNullOrEmptyString(pszFile) || !pdwFileSizeInMB)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    if (stat(pszFile, &st) == -1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+    *pdwFileSizeInMB = st.st_size / (1024*1024);
+
+error:
+    return dwError;
+}
+
+DWORD
 VmDirPathExists(
     PCSTR       pszPath,
     PBOOLEAN    pbFound

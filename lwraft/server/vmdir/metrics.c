@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VmDirGetBackupTimeTaken(
+    PDWORD  pdwBackupTakenTime
+    );
+
 DWORD
 VmDirRpcMetricsInit(
     VOID
@@ -86,4 +92,148 @@ VmDirRpcMetricsShutdown(
     {
         gpRpcMetrics[i] = NULL;
     }
+}
+
+DWORD
+VmDirSrvStatMetricsInit(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszGaugeName[METRICS_SRV_STAT_COUNT] = {
+        "post_srv_stat_dbsize",
+        "post_srv_stat_backuptimetaken",
+        "post_srv_stat_lastlogindex",
+        };
+    PSTR    pszGaugeInfo[METRICS_SRV_STAT_COUNT] = {
+        "Database size in megabytes",
+        "Backup time taken in seconds",
+        "Last raft log index",
+        };
+
+    for (i = 0; i < METRICS_SRV_STAT_COUNT; i++)
+    {
+        dwError = VmMetricsGaugeNew(
+                pmContext,
+                pszGaugeName[i],
+                NULL, 0,
+                pszGaugeInfo[i],
+                &gpSrvStatMetrics[i]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+VOID
+VmDirSrvStatMetricsUpdate(
+    METRICS_SRV_STAT srvStat,
+    uint64_t        iValue
+    )
+{
+    PVM_METRICS_GAUGE   pGauge = NULL;
+
+    pGauge = gpSrvStatMetrics[srvStat];
+    if (pGauge)
+    {
+        VmMetricsGaugeSet(pGauge, iValue);
+    }
+}
+
+VOID
+VmDirSrvStatMetricsShutdown(
+    VOID
+    )
+{
+    DWORD   i = 0;
+
+    for (i = 0; i < METRICS_SRV_STAT_COUNT; i++)
+    {
+        gpSrvStatMetrics[i] = NULL;
+    }
+}
+
+DWORD
+VmDirUpdateSrvStatPer10Min(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwDBSizeInMB = 0;
+    DWORD   dwBackupTakenTime = 0;
+
+    dwError = VmDirGetFileSizeInMB(LWRAFT_DB_DIR "/" MDB_MAIN_DB, &dwDBSizeInMB);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirSrvStatMetricsUpdate(METRICS_SRV_DBSIZE, dwDBSizeInMB);
+
+    dwError = _VmDirGetBackupTimeTaken(&dwBackupTakenTime);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirSrvStatMetricsUpdate(METRICS_SRV_BACKUP_TIMETAKEN, dwBackupTakenTime);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirUpdateSrvStatPer1Min(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    VmDirSrvStatMetricsUpdate(METRICS_SRV_LAST_LOG_INDEX, VmDirRaftGetLastLogIndex());
+
+    return dwError;
+}
+
+
+static
+DWORD
+_VmDirGetBackupTimeTaken(
+    PDWORD  pdwBackupTakenTime
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwBackupTimeTaken = 0;
+
+    dwError = VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+        VMDIR_REG_KEY_BACKUP_TIME_TAKEN,
+        &dwBackupTimeTaken,
+        0);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwBackupTimeTaken)
+    {   // backup job set value, report then reset it.
+        dwError = VmDirSetRegKeyValueDword(
+                    VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                    VMDIR_REG_KEY_BACKUP_TIME_TAKEN,
+                    0);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pdwBackupTakenTime = dwBackupTimeTaken;
+
+error:
+    return dwError;
 }
