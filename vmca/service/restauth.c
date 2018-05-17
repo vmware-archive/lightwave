@@ -184,21 +184,25 @@ VMCAGetAccessTokenFromParameter(
 
     if (pszTokenType)
     {
-       if (!VMCAStringCompareA(pszTokenType, "Bearer", FALSE))
-       {
-          pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_BEARER_TOKEN;
-       }
-
-       if (!VMCAStringCompareA(pszTokenType, "Negotiate", FALSE))
-       {
-          pAuthorization->tokenType = VMCA_AUTHORIZATION_TOKEN_TYPE_KRB;
-       }
-
-       if (!VMCAStringCompareA(pszTokenType, "hot-pk", FALSE))
-       {
-          pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_HOTK_TOKEN;
-       }
-    } else
+        if (!VMCAStringCompareA(pszTokenType, "Bearer", FALSE))
+        {
+            pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_BEARER_TOKEN;
+        }
+        else if (!VMCAStringCompareA(pszTokenType, "Negotiate", FALSE))
+        {
+            pAuthorization->tokenType = VMCA_AUTHORIZATION_TOKEN_TYPE_KRB;
+        }
+        else if (!VMCAStringCompareA(pszTokenType, "hot-pk", FALSE))
+        {
+            pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_HOTK_TOKEN;
+        }
+        else
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+    }
+    else
     {
         dwError = ERROR_INVALID_PARAMETER; 
         BAIL_ON_VMCA_ERROR(dwError);
