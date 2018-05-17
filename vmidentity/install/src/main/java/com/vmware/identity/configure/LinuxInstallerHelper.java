@@ -140,6 +140,10 @@ public class LinuxInstallerHelper implements InstallerHelper {
             // TODO: use port from reverse proxy
             registryAdapter.setStringValue(configKey, "StsTcPort",
                     Integer.toString(InstallerUtils.REVERSE_PROXY_PORT));
+            registryAdapter.setStringValue(configKey, "StsBearerTokenLifetime",
+                    Integer.toString(InstallerUtils.MAX_BEARER_TOKEN_LIFETIME_IN_HOURS));
+            registryAdapter.setStringValue(configKey, "StsBearerRefreshTokenLifetime",
+                    Integer.toString(InstallerUtils.MAX_BEARER_REFRESH_TOKEN_LIFETIME_IN_HOURS));
         } finally {
                 if(rootKey != null) {
                         rootKey.close();

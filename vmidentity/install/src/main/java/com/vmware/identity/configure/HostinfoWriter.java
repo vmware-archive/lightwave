@@ -51,19 +51,19 @@ public class HostinfoWriter {
 
     public void write() throws HostinfoCreationFailedException {
 
-        IRegistryAdapter registryAdpater = null;
+        IRegistryAdapter registryAdapter = null;
         IRegistryKey registryRootKey = null;
         IRegistryKey vmIdentityRegistryKey = null;
         try {
-            registryAdpater = RegistryAdapterFactory.getInstance().getRegistryAdapter();
-            registryRootKey = registryAdpater.openRootKey((int) RegKeyAccess.KEY_WRITE);
-            vmIdentityRegistryKey = registryAdpater.openKey(registryRootKey, CONFIG_IDENTITY_ROOT_KEY, 0, (int) RegKeyAccess.KEY_ALL_ACCESS);
-            registryAdpater.setStringValue(vmIdentityRegistryKey, HOST_NAME_KEY, this.hostname);
+            registryAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+            registryRootKey = registryAdapter.openRootKey((int) RegKeyAccess.KEY_WRITE);
+            vmIdentityRegistryKey = registryAdapter.openKey(registryRootKey, CONFIG_IDENTITY_ROOT_KEY, 0, (int) RegKeyAccess.KEY_ALL_ACCESS);
+            registryAdapter.setStringValue(vmIdentityRegistryKey, HOST_NAME_KEY, this.hostname);
             if (this.hostnameType != null) {
-                registryAdpater.setStringValue(vmIdentityRegistryKey, HOST_NAME_TYPE_KEY, this.hostnameType);
+                registryAdapter.setStringValue(vmIdentityRegistryKey, HOST_NAME_TYPE_KEY, this.hostnameType);
             }
             if (this.isLightwave) {
-                registryAdpater.setIntValue(vmIdentityRegistryKey, IS_LIGHTWAVE_KEY, 1);
+                registryAdapter.setIntValue(vmIdentityRegistryKey, IS_LIGHTWAVE_KEY, 1);
             }
         } catch (Exception ex) {
             throw new HostinfoCreationFailedException(ex);

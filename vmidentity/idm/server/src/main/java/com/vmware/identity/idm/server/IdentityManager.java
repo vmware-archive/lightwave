@@ -1582,7 +1582,14 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            // TODO: remove reading from registry key
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            long maxBearerTokenLifetimeInRegistry = settings.getMaxBearerTokenLifetimeInMillis();
+            if (maxBearerTokenLifetimeInRegistry > 0) {
+                return maxBearerTokenLifetimeInRegistry;
+            }
 
+            // read from directory service
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
@@ -1690,7 +1697,14 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            // TODO: remove reading from registry key
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            long maxBearerRefreshTokenLifetimeInRegistry = settings.getMaxBearerRefreshTokenLifetimeInMillis();
+            if (maxBearerRefreshTokenLifetimeInRegistry > 0) {
+                return maxBearerRefreshTokenLifetimeInRegistry;
+            }
 
+            // read from directory service
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 

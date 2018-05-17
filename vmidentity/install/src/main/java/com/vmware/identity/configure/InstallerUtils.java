@@ -66,6 +66,8 @@ public class InstallerUtils {
     public static final String CERTIFICATE_COUNTRY = "US";
     public static final String CERTIFICATE_EMAIL = "email@acme.com";
     public static final int REVERSE_PROXY_PORT = 443;
+    public static final int MAX_BEARER_TOKEN_LIFETIME_IN_HOURS = 12;
+    public static final int MAX_BEARER_REFRESH_TOKEN_LIFETIME_IN_HOURS = 12;
 
     public static String CONFIG_DIRECTORY_ROOT_KEY = null;
     public static String CONFIG_DIRECTORY_PARAMETERS_KEY = null;
