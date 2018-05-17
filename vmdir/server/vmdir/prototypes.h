@@ -81,7 +81,8 @@ VmDirIsRpcOperationAllowed(
 
 DWORD
 VmDirAdministratorAccessCheck(
-    PCSTR pszUpn
+    PCSTR pszUpn,
+    PCSTR pszDomain
     );
 
 BOOLEAN

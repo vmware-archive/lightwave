@@ -39,6 +39,12 @@ public final class Directory
     }
 
     public static
+    void deleteInstanceRemote(String hostname, String domainName, String adminId, String password)
+    {
+        library.DeleteDirectoryInstanceRemote(hostname, domainName, adminId, password);
+    }
+
+    public static
     void
     SetPassword(
         String hostURI,

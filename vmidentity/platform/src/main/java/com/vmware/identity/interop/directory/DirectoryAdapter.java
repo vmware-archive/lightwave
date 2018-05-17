@@ -148,6 +148,15 @@ public class DirectoryAdapter extends NativeAdapter
             String              domainName
         );
 
+        int
+        VmDirDeleteTenantEx
+        (
+                String              hostname,
+                String              domainName,
+                String              adminId,
+                String              password
+        );
+
         void
         VmDirFreeMemory
             (
@@ -219,6 +228,27 @@ public class DirectoryAdapter extends NativeAdapter
                                             administratorId,
                                             password,
                                             domainName));
+    }
+
+    @Override
+    public
+    void
+    DeleteDirectoryInstanceRemote(
+            String hostname,
+            String domainName,
+            String administratorId,
+            String password)
+    {
+        Validate.validateNotEmpty(hostname, "hostname");
+        Validate.validateNotEmpty(administratorId, "administrator id");
+        Validate.validateNotEmpty(password, "password");
+        Validate.validateNotEmpty(domainName, "domain name");
+
+        CheckError(DirectoryClientLibrary.INSTANCE.VmDirDeleteTenantEx(
+                hostname,
+                domainName,
+                administratorId,
+                password));
     }
 
     @Override

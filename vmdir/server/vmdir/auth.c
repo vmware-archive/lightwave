@@ -361,28 +361,24 @@ VmDirSrvFreeAccessToken(
 
 DWORD
 VmDirAdministratorAccessCheck(
-    PCSTR pszUpn
+    PCSTR pszUpn,
+    PCSTR pszDomainDn
     )
 {
     DWORD dwError = 0;
-    PCSTR pszDomainDn = NULL;
     const CHAR szAdministrators[] = "cn=Administrators,cn=Builtin";
     PSTR pszAdministratorsDn = NULL;
     PSTR *ppszMemberships = NULL;
     DWORD dwMemberships = 0;
+    PSTR pszSystemDomainDn = NULL;
 
-    if (IsNullOrEmptyString(pszUpn))
+    if (IsNullOrEmptyString(pszUpn) || IsNullOrEmptyString(pszDomainDn))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pszDomainDn = gVmdirServerGlobals.systemDomainDN.lberbv.bv_val;
-    if (pszDomainDn == NULL)
-    {
-        dwError = ERROR_INVALID_STATE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    VMDIR_GET_SYSTEM_DOMAIN_DN(pszSystemDomainDn, dwError);
 
     dwError = VmDirGetUPNMemberships(pszUpn, &ppszMemberships, &dwMemberships);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -390,11 +386,22 @@ VmDirAdministratorAccessCheck(
     dwError = VmDirAllocateStringPrintf(&pszAdministratorsDn, "%s,%s", szAdministrators, pszDomainDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!VmDirIsMemberOf(ppszMemberships, dwMemberships, gVmdirServerGlobals.bvDCGroupDN.lberbv.bv_val) &&
-        !VmDirIsMemberOf(ppszMemberships, dwMemberships, pszAdministratorsDn))
+    if (VmDirStringCompareA(pszSystemDomainDn, pszDomainDn, FALSE) == 0)
     {
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (!VmDirIsMemberOf(ppszMemberships, dwMemberships, gVmdirServerGlobals.bvDCGroupDN.lberbv.bv_val) &&
+            !VmDirIsMemberOf(ppszMemberships, dwMemberships, pszAdministratorsDn))
+        {
+            dwError = ERROR_ACCESS_DENIED;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else
+    {
+        if (!VmDirIsMemberOf(ppszMemberships, dwMemberships, pszAdministratorsDn))
+        {
+            dwError = ERROR_ACCESS_DENIED;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
 cleanup:

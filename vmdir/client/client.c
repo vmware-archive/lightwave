@@ -6947,6 +6947,81 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirDeleteTenantEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszDomainName = NULL;
+    handle_t hBinding = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        IsNullOrEmptyString(pszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateBindingHandleAuthA(
+                    pszServerName,
+                    NULL,
+                    pszUsername,
+                    pszDomainName,
+                    pszPassword,
+                    &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RPC_TRY
+    {
+
+        dwError = RpcVmDirDeleteTenant(hBinding, pwszDomainName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s (%s) passed",
+            __FUNCTION__,
+            pszDomainName);
+
+cleanup:
+    if (hBinding)
+    {
+        VmDirFreeBindingHandle(&hBinding);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed. Error(%u)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
+
+
 static
 DWORD
 _VmDirResetActPassword(

@@ -220,4 +220,10 @@ cpp_quote("#endif")
         [in, string, unique] PWSTR pszUsername,
         [in, string, unique] PWSTR pszPassword,
         );
+
+    UINT32
+    RpcVmDirDeleteTenant(
+        [in]                 handle_t    hBinding,
+        [in, string, unique] PWSTR pszDomainName
+        );
 }
