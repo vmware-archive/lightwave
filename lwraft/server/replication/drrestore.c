@@ -31,6 +31,17 @@ _VmDirDeleteDCObject(
     VOID
     );
 
+static
+DWORD
+_VmDirPingLDAPPort(
+    DWORD   dwIPFamily
+    );
+
+static
+DWORD
+_VmDirStartLDAPListener(
+    VOID
+    );
 
 /* This function re-instantiates the current vmdir instance with a
  * foreign (MDB) database file.
@@ -79,8 +90,88 @@ VmDirSrvServerReset(
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Load Server Globals", __FUNCTION__);
 
+    dwError = _VmDirStartLDAPListener();
+    BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s LDAP port is up", __FUNCTION__);
+
     dwError = VmDirMetricsInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirPingLDAPPort(
+    DWORD   dwIPFamily
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    BOOLEAN bInReplCycleDoneLock = FALSE;
+
+    for (dwCnt = 0; dwCnt<10; dwCnt++)
+    {
+        VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+        VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
+        VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+
+        if (dwIPFamily == AF_INET && VmDirPingIPV4AcceptThr(VmDirGetLdapPort()) == 0)
+        {
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s IPV4 LDAP port is up", __FUNCTION__);
+            break;
+        }
+        else if (dwIPFamily == AF_INET6 && VmDirPingIPV6AcceptThr(VmDirGetLdapPort()) == 0)
+        {
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s IPV6 LDAP port is up", __FUNCTION__);
+            break;
+        }
+
+        VmDirSleep(1000);
+    }
+
+    if (dwCnt==10)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+error:
+    VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+
+    return dwError;
+}
+
+static
+DWORD
+_VmDirStartLDAPListener(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bIPV4 = FALSE;
+    BOOLEAN bIPV6 = FALSE;
+
+    dwError = VmDirInitConnAcceptThread();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirWhichAddressPresent(&bIPV4, &bIPV6);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bIPV4)
+    {
+        dwError = _VmDirPingLDAPPort(AF_INET);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (bIPV6)
+    {
+        dwError = _VmDirPingLDAPPort(AF_INET6);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     return dwError;

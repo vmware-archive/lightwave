@@ -91,6 +91,16 @@ VmDirWhichAddressPresent(
     BOOLEAN *pIPV6AddressPresent
     );
 
+DWORD
+VmDirPingIPV6AcceptThr(
+    DWORD   dwPort
+    );
+
+DWORD
+VmDirPingIPV4AcceptThr(
+    DWORD   dwPort
+    );
+
 // controls.c
 void
 DeleteControls(

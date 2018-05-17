@@ -460,6 +460,10 @@ VmDirShutdownDB(
 
     VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
+    // in DR case, stop listening thread.
+    // in Join case, listening thread is not in listen mode yet.
+    VmDirShutdownConnAcceptThread();
+
     VmDirSchemaLibShutdown();
 
     VmDirIndexLibShutdown();
