@@ -619,8 +619,13 @@ VmDirStringReplaceAll(
     );
 
 VOID
+VmDirStringTrimSpace(
+    PSTR    pszStr
+    );
+
+VOID
 VmdDirNormalizeString(
-    PSTR    pszString
+    PSTR    pszStr
     );
 
 #ifdef _WIN32
@@ -2532,6 +2537,21 @@ VmDirListFiles(
     PVMDIR_STRING_LIST* ppFiles
     );
 
+DWORD
+VmDirBytesToHexString(
+    PBYTE   pData,
+    size_t  length,
+    PSTR*   ppszHexStr,
+    BOOLEAN bLowerCase
+    );
+
+DWORD
+VmDirHexStringToBytes(
+    PSTR    pszHexStr,
+    PBYTE*  ppData,
+    size_t* pLength
+    );
+
 // threadcontext.c
 typedef struct _VMDIR_THREAD_CONTEXT
 {
@@ -2549,14 +2569,13 @@ typedef struct _VMDIR_THREAD_LOG_CONTEXT
 } VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
 
 DWORD
-VmDirInitThreadContext(VOID);
-
-VOID
-VmDirFreeThreadContext(VOID);
+VmDirInitThreadContext(
+    VOID
+    );
 
 VOID
 VmDirFreeThreadLogContext(
-    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext;
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext
     );
 
 DWORD
@@ -2572,6 +2591,38 @@ VmDirGetThreadLogContextValue(
 DWORD
 VmDirSetThreadLogContextValue(
     PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
+    );
+
+VOID
+VmDirFreeThreadContext(
+    VOID
+    );
+
+// opensslutil.c
+DWORD
+VmDirComputeMessageDigest(
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    unsigned char**         ppMD,
+    size_t*                 pMDSize
+    );
+
+DWORD
+VmDirConvertPEMToPublicKey(
+    PCSTR       pszPEM,
+    EVP_PKEY**  ppPubKey
+    );
+
+DWORD
+VmDirVerifyRSASignature(
+    EVP_PKEY*               pPubKey,
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    const unsigned char*    pSignature,
+    size_t                  signatureSize,
+    PBOOLEAN                pVerified
     );
 
 #ifdef __cplusplus

@@ -77,7 +77,7 @@ VmDirRESTOperationReadRequest(
     PSTR    pszTmp = NULL;
     PSTR    pszKey = NULL;
     PSTR    pszVal = NULL;
-    PSTR    pszInput = NULL;
+    PSTR    pszBody = NULL;
     size_t  len = 0;
 
     if (!pRestOp || !pRESTHandle || !pRestReq)
@@ -117,14 +117,23 @@ VmDirRESTOperationReadRequest(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    // read request authorization info
+    // read request headers
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHORIZATION, &pRestOp->pszAuth);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONNECTION, &pRestOp->pszHeaderConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_DATE, &pRestOp->pszDate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONNECTION, &pRestOp->pszHeaderConnection);
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pRestOp->pszOrigin)
@@ -132,9 +141,6 @@ VmDirRESTOperationReadRequest(
         dwError = VmRESTIsValidOrigin(pRestOp->pszOrigin, &pRestOp->bisValidOrigin);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     // read request params
     for (i = 1; i <= dwParamCount; i++)
@@ -152,29 +158,32 @@ VmDirRESTOperationReadRequest(
     // read request input json
     do
     {
-        if (bytesRead || !pszInput)
+        if (bytesRead || !pszBody)
         {
-            dwError = VmDirReallocateMemory(
-                    (PVOID)pszInput,
-                    (PVOID*)&pszInput,
-                    len + MAX_REST_PAYLOAD_LENGTH + 1);     // +1 for NULL char
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pszBody,
+                    (PVOID*)&pszBody,
+                    len + MAX_REST_PAYLOAD_LENGTH + 1,
+                    len);     // +1 for NULL char
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
         bytesRead = 0;
         dwError = VmRESTGetData(
-                pRESTHandle, pRestReq, pszInput + len, &bytesRead);
+                pRESTHandle, pRestReq, pszBody + len, &bytesRead);
 
         len += bytesRead;
     }
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
-    pszInput[len] = 0;
 
-    if (!IsNullOrEmptyString(pszInput))
+    // save for signature validation
+    pRestOp->pszBody = pszBody;
+
+    if (!IsNullOrEmptyString(pszBody))
     {
-        pRestOp->pjInput = json_loads(pszInput, 0, &jError);
-        if (!pRestOp->pjInput)
+        pRestOp->pjBody = json_loads(pszBody, 0, &jError);
+        if (!pRestOp->pjBody)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                     "%s failed to parse json payload: "
@@ -196,7 +205,6 @@ VmDirRESTOperationReadRequest(
     }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszInput);
     return dwError;
 
 error:
@@ -205,6 +213,7 @@ error:
             "%s failed, error (%d)",
             __FUNCTION__,
             dwError);
+    VMDIR_SAFE_FREE_MEMORY(pszBody);
     goto cleanup;
 }
 
@@ -326,15 +335,20 @@ VmDirFreeRESTOperation(
     if (pRestOp)
     {
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
+
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderConnection);
-        if (pRestOp->pjInput)
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszDate);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
+
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszBody);
+        if (pRestOp->pjBody)
         {
-            json_decref(pRestOp->pjInput);
+            json_decref(pRestOp->pjBody);
         }
         LwRtlHashMapClear(pRestOp->pParamMap, VmDirSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestOp->pParamMap);

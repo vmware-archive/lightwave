@@ -731,6 +731,9 @@ extern "C" {
                                   (c) == '?' ||   \
                                   (c) == '/' )
 
+#define VMDIR_ASCII_SPACE(c) \
+    ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )
+
 #define VMDIR_ASCII_LOWER_TO_UPPER(c)   \
 if ( VMDIR_ASCII_LOWER(c) )             \
 {                                       \
