@@ -119,16 +119,16 @@ public class RequestSigner {
      * Create a string for signing using the various necessary components.
      *
      * @param method the HTTP method (e.g. GET, PUT, etc.)
-     * @param md5 a MD5 hash of the request entity
+     * @param hash a hash of the request entity
      * @param mediaType the media type of a request
      * @param date the timestamp for a request
      * @param uri the uri of a request
      * @return the formatted string to be signed.
      */
-    public static String createSigningString(String method, String md5, String mediaType, Date date, URI uri) {
+    public static String createSigningString(String method, String hash, String mediaType, Date date, URI uri) {
         StringBuilder sb = new StringBuilder();
         sb.append(method).append("\n");
-        sb.append(md5).append("\n");
+        sb.append(hash).append("\n");
         sb.append(mediaType).append("\n");
         sb.append(getHttpFormattedDate(date)).append("\n");
         sb.append(sanitizeURI(uri));
@@ -172,25 +172,26 @@ public class RequestSigner {
     }
 
     /**
-     * Computes the MD5 hash of a request entity.
+     * Computes the hash of a request entity.
      *
      * @param entity the entity to hash.
-     * @return the MD5 hash of the entity.
+     * @param signingAlgo the siging algorithm.
+     * @return the SHA256 hash of the entity.
      */
-    public static String computeMD5(String entity) {
+    public static String computeEntityHash(String entity, String signingAlg) {
         if (entity == null || entity.isEmpty()) {
             return "";
         }
 
-        MessageDigest md5;
+        MessageDigest sha256;
 
         try {
-            md5 = MessageDigest.getInstance("MD5");
+            sha256 = MessageDigest.getInstance(signingAlg);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalArgumentException("An error occurred while getting the message digest", e);
         }
 
-        return Hex.encodeHexString(md5.digest(entity.getBytes(StandardCharsets.UTF_8)));
+        return Hex.encodeHexString(sha256.digest(entity.getBytes(StandardCharsets.UTF_8)));
     }
 
 }

@@ -42,6 +42,7 @@ public class SAMLTokenVerifierTest {
     private static final String TEST_SAML_BEARER_FILENAME = "samltoken.xml";
     private static final String TEST_SAML_HOK_FILENAME = "samltoken_hok.xml";
     private static final long SKEW_TIME = 10 * 60 * 1000;
+    private static final String SHA256 = "SHA-256";
 
     @Test
     public void testVerification_Bearer() throws Exception {
@@ -57,7 +58,7 @@ public class SAMLTokenVerifierTest {
         SAMLTokenTestUtil.setConfirmationCertificate(token.getSAMLToken(), SAMLTokenTestUtil.getCertificate());
 
         ContainerRequestContext context = createMockRequest("some/arbitrary/endpoint", "PUT", "", MediaType.APPLICATION_FORM_URLENCODED_TYPE, new Date());
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, SAMLTokenTestUtil.getPrivateKey());
 
         SAMLTokenVerifier verifier = new SAMLTokenVerifier(signedString, context, SKEW_TIME, SAMLTokenTestUtil.getCertificate());
