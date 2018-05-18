@@ -9,6 +9,16 @@ fi
 exit_if_no_tag
 
 MODE=$1
+
+if [ "$MODE" == "post-dr" ]; then
+    #take backup only at follower
+    HOST=$(hostname)
+    /opt/vmware/bin/post-cli node list --server-name "$HOST" | grep -A 1 "leader" | grep -i "$HOST"
+    if [ $? -eq 0 ]; then
+        exit
+    fi
+fi
+
 get_full_path $MODE
 
 SLEEP_QUANTUM=900

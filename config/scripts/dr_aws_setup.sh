@@ -3,11 +3,9 @@
 DR_TYPE=$1      #Can be lightwave or post
 APP_NAME=$2
 DG_NAME=$3
-ASG_NAME=$4
-REGION=$5
-S3_PATH=$6
-VPC_ID=$7       #Not needed for POST
-ELB_NAME=$8     #Temporary. To be removed once single node upgrade works
+REGION=$4
+S3_PATH=$5
+VPC_ID=$6       #Not needed for POST
 S3_BUCKET=`cut -d "/" -f 1 <<< "$S3_PATH"`
 S3_KEY=`cut -d "/" -f 2- <<< "$S3_PATH"`
 
@@ -16,15 +14,31 @@ if [ "$DR_TYPE" != "lightwave" ] && [ "$DR_TYPE" != "post" ]; then
     exit
 fi
 
-if [ "$DR_TYPE" == "lightwave" ] && [ $# -ne 8 ]; then
+if [ "$DR_TYPE" == "lightwave" ] && [ $# -ne 6 ]; then
     echo "Usage: dr_aws_setup.sh lightwave <Application name> <Deployment group name> <ASG> <Region> <S3 path to LW archive> <VPC ID> <ELB name>"
     exit
-elif [ "$DR_TYPE" == "post" ] && [ $# -ne 6 ]; then
+elif [ "$DR_TYPE" == "post" ] && [ $# -ne 5 ]; then
     echo "Usage: dr_aws_setup.sh post <Application name> <Deployment group name> <ASG> <Region> <S3 path to post archive>"
     exit
 fi
 
 TOTAL_START_TIME="$(date -u +%s)"
+
+if [[ $S3_BUCKET == *backup ]]; then
+    echo "Copying deployment archive to local region"
+    aws s3 cp "s3://$S3_PATH" "s3://${S3_BUCKET%-*}/deployment/archive.zip"
+    S3_BUCKET="${S3_BUCKET%-*}"
+    S3_KEY="deployment/archive.zip"
+fi
+
+ELB_NAME=$(aws deploy get-deployment-group --application-name $APP_NAME --deployment-group-name $DG_NAME \
+                --region $REGION --query 'deploymentGroupInfo.loadBalancerInfo.elbInfoList[0].name' --output text)
+
+ASG_NAME=$(aws deploy get-deployment-group --application-name $APP_NAME --deployment-group-name $DG_NAME \
+                --region $REGION --query 'deploymentGroupInfo.autoScalingGroups[0].name' --output text)
+
+IAM_ROLE_ARN=$(aws deploy get-deployment-group --application-name $APP_NAME --deployment-group-name $DG_NAME \
+                --region $REGION --query 'deploymentGroupInfo.serviceRoleArn' --output text)
 
 #Delete hook to prevent automatic deployment
 HOOK_NAME=$(aws autoscaling describe-lifecycle-hooks --auto-scaling-group-name $ASG_NAME --region $REGION --query 'LifecycleHooks[0].LifecycleHookName')
@@ -101,6 +115,10 @@ echo "SUCCESS: Deployment finished."
 S3_MDB=${S3_PATH%-*}-data.mdb
 INSTANCE=(`aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME --region $REGION --output=text --query 'AutoScalingGroups[0].Instances[].InstanceId'`)
 
+#Remove instance from ELB to prevent traffic coming in during recovery
+echo "Removing instance from ELB"
+aws elb deregister-instances-from-load-balancer --load-balancer-name $ELB_NAME --instances $INSTANCE --region $REGION
+
 if [ "$DR_TYPE" == "lightwave" ]; then
     echo "Running lw_restore.sh on instance $INSTANCE. Restoring from $S3_MDB."
     COMMAND_ID=$(aws ssm send-command --region $REGION --instance-ids "${INSTANCE}" --document-name "AWS-RunShellScript" --comment "DR restore" \
@@ -140,8 +158,6 @@ echo "Upgrading to latest binaries."
 #TODO: Remove delete-deployment-group and create-deployment-group steps once single node upgrade works
 if [ "$DR_TYPE" == "lightwave" ]; then
     aws deploy delete-deployment-group --region $REGION --application-name $APP_NAME --deployment-group-name $DG_NAME
-
-    IAM_ROLE_ARN=$(aws iam get-role --role-name "gophotonService" --query "Role.Arn" --output text)
 
     aws deploy create-deployment-group \
       --region $REGION \
