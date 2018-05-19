@@ -187,14 +187,8 @@ VmDirRESTAuthViaToken(
     dwError = VmDirRESTAuthTokenValidate(pAuthToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // TODO (PR 2004701): Validate the proof of possession
-    //   1) get hok and signature from HTTP request header
-    //   2) get public key from HOK
-    //   3) validate signature with public key
-    //if (pAuthToken->tokenType == VDIR_REST_AUTH_TOKEN_HOTK)
-    //{
-    //    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED);
-    //}
+    dwError = VmDirRESTAuthTokenValidatePOP(pAuthToken, pRestOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // retrieve security information of the UPN
     dwError = LwMapSecurityCreateContext(&pMapSecurityContext);

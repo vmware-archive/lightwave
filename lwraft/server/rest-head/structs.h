@@ -101,29 +101,34 @@ typedef struct _VDIR_REST_RESOURCE
 // operation.c
 typedef struct _VDIR_REST_OPERATION
 {
-    DWORD                       dwPort;
-    PSTR                        pszAuth;
-    PSTR                        pszMethod;
-    PSTR                        pszPath;
-    PSTR                        pszSubPath;
-    PSTR                        pszHeaderIfMatch;
-    PSTR                        pszContentType;
-    PSTR                        pszInput;
-    PSTR                        pszClientIP;
-    PSTR                        pszOrigin;
-    PSTR                        pszHeaderConnection;
-    BOOLEAN                     bisValidOrigin;
-    json_t*                     pjInput;
-    PLW_HASHMAP                 pParamMap;
-    VDIR_REST_AUTH_METHOD       authMthd;
-    PVDIR_CONNECTION            pConn;
-    PVDIR_REST_RESULT           pResult;
-    PVDIR_REST_RESOURCE         pResource;
-    PREST_API_METHOD            pMethod;
+    DWORD                   dwPort;
+    PSTR                    pszAuth;
+    PSTR                    pszMethod;
+    PSTR                    pszPath;
+    PSTR                    pszSubPath;
+
+    // header
+    PSTR                    pszHeaderIfMatch;
+    PSTR                    pszContentType;
+    PSTR                    pszClientIP;
+    PSTR                    pszHeaderConnection;
+    PSTR                    pszDate;
+    PSTR                    pszOrigin;
+    BOOLEAN                 bisValidOrigin;
+
+    // payload
+    PSTR                    pszBody;
+    json_t*                 pjBody;
+    PLW_HASHMAP             pParamMap;
+    VDIR_REST_AUTH_METHOD   authMthd;
+    PVDIR_CONNECTION        pConn;
+    PVDIR_REST_RESULT       pResult;
+    PVDIR_REST_RESOURCE     pResource;
+    PREST_API_METHOD        pMethod;
 
     // if leader, get it from resource.c
     // otherwise, get it from proxy.c
-    PFN_GET_HTTP_ERROR          pfnGetHttpError;
+    PFN_GET_HTTP_ERROR      pfnGetHttpError;
 
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
@@ -139,7 +144,9 @@ typedef struct _VDIR_REST_AUTH_TOKEN
 {
     VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
     PSTR                        pszAccessToken;
+    PSTR                        pszSignatureHex;
     PSTR                        pszBindUPN;
+    PSTR                        pszHOTKPEM;
 
 } VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
 
