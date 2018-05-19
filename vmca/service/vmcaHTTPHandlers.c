@@ -17,10 +17,56 @@
 #ifndef _WIN32
 
 DWORD
-VMCARESTGetPayload(
-    PVMREST_HANDLE      pRESTHandle,
-    PREST_REQUEST       pRESTRequest,
+VMCAHttpReqObjCreate(
+    VMCA_HTTP_REQ_OBJ** ppVMCARequest
+    )
+{
+    DWORD   dwError = 0;
+    VMCA_HTTP_REQ_OBJ* pVMCARequest = NULL;
+
+    HANDLE_NULL_PARAM(ppVMCARequest, dwError);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAAllocateMemory(sizeof(VMCA_HTTP_REQ_OBJ), (PVOID*) &pVMCARequest);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    *ppVMCARequest = pVMCARequest;
+
+cleanup:
+    return dwError;
+
+error:
+    VMCA_SAFE_FREE_MEMORY(pVMCARequest);
+    goto cleanup;
+}
+
+VOID
+VMCAFreeHttpReqObj(
     VMCA_HTTP_REQ_OBJ*  pVMCARequest
+    )
+{
+    if (pVMCARequest)
+    {
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszMethod);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszUri);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszVer);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszConnection);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszTransferEncoding);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszContentLength);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszAuthorization);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszContentType);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszDate);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszPayload);
+        VMCAFreeAccessToken(pVMCARequest->pAccessToken);
+        VMCA_SAFE_FREE_MEMORY(pVMCARequest);
+    }
+}
+
+DWORD
+VMCARESTGetPayload(
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
+    PVMREST_HANDLE      pRESTHandle,
+    PREST_REQUEST       pRESTRequest
     )
 {
     DWORD   dwError = 0;
@@ -66,53 +112,42 @@ error:
 
 DWORD
 VMCARESTParseHttpHeader(
-    PREST_REQUEST pRESTRequest,
-    VMCA_HTTP_REQ_OBJ** ppVMCARequest
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
+    PREST_REQUEST       pRESTRequest
     )
 {
     DWORD dwError = 0;
-    PSTR  pszBuff = NULL;
-    VMCA_HTTP_REQ_OBJ* pVMCARequest;
 
-    HANDLE_NULL_PARAM(ppVMCARequest, dwError);
+    HANDLE_NULL_PARAM(pVMCARequest, dwError);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    dwError = VMCAAllocateMemory(
-                            sizeof(VMCA_HTTP_REQ_OBJ),
-                            (PVOID*) &pVMCARequest
-                            );
+    dwError = VmRESTGetHttpMethod(pRESTRequest, &pVMCARequest->pszMethod);
     BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTGetHttpMethod(pRESTRequest, &pszBuff);
-    BAIL_ON_VMREST_ERROR(dwError);
-    pVMCARequest->pszMethod = pszBuff;
 
     // TRUE - Request c-rest-engine to decode the URI
-    dwError = VmRESTGetHttpURI(pRESTRequest, TRUE, &pszBuff);
+    dwError = VmRESTGetHttpURI(pRESTRequest, TRUE, &pVMCARequest->pszUri);
     BAIL_ON_VMREST_ERROR(dwError);
-    pVMCARequest->pszUri = pszBuff;
 
-    dwError = VmRESTGetHttpVersion(pRESTRequest, &pszBuff);
+    dwError = VmRESTGetHttpVersion(pRESTRequest, &pVMCARequest->pszVer);
     BAIL_ON_VMREST_ERROR(dwError);
-    pVMCARequest->pszVer = pszBuff;
 
-    dwError = VmRESTGetHttpHeader(pRESTRequest,"Content-Length", &pszBuff);
+    dwError = VmRESTGetHttpHeader(pRESTRequest,"Content-Length", &pVMCARequest->pszContentLength);
     BAIL_ON_VMREST_ERROR(dwError);
-    pVMCARequest->pszContentLength = pszBuff;
 
-    *ppVMCARequest = pVMCARequest;
+    dwError = VmRESTGetHttpHeader(pRESTRequest, "Authorization", &pVMCARequest->pszAuthorization);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRESTRequest, "Content-Type", &pVMCARequest->pszContentType);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRESTRequest, "Date", &pVMCARequest->pszDate);
+    BAIL_ON_VMCA_ERROR(dwError);
+
 cleanup:
-
     return dwError;
+
 error:
-    VMCA_SAFE_FREE_STRINGA(pVMCARequest->pszMethod);
-    VMCA_SAFE_FREE_STRINGA(pVMCARequest->pszUri);
-    VMCA_SAFE_FREE_STRINGA(pVMCARequest->pszVer);
-    VMCA_SAFE_FREE_STRINGA(pszBuff);
-    VMCA_SAFE_FREE_MEMORY(pVMCARequest);
-
     goto cleanup;
-
 }
 
 DWORD
@@ -178,15 +213,14 @@ error:
 
 DWORD
 VMCARESTCheckAccess(
-    PREST_REQUEST pRESTRequest,
-    VMCA_HTTP_REQ_OBJ* pVMCARequest,
-    BOOL bNeedAdminPrivilege
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
+    BOOL                bNeedAdminPrivilege
     )
 {
     DWORD dwError = 0;
     PVMCA_ACCESS_TOKEN pAccessToken = NULL;
 
-    dwError = VMCARESTGetAccessToken(pRESTRequest, &pAccessToken);
+    dwError = VMCARESTGetAccessToken(pVMCARequest, &pAccessToken);
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (bNeedAdminPrivilege)
@@ -266,7 +300,7 @@ VMCARESTHandleRootRequest(
 
     } else if (!strcmp(pVMCARequest->pszMethod,"POST"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
+        dwError = VMCARESTCheckAccess(pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTAddRootCertificate(
@@ -277,7 +311,7 @@ VMCARESTHandleRootRequest(
         BAIL_ON_VMREST_ERROR(dwError);
     } else if (!strcmp(pVMCARequest->pszMethod,"PUT"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
+        dwError = VMCARESTCheckAccess(pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTAddRootCertificate(
@@ -319,7 +353,7 @@ VMCARESTHandleCertRequest(
 
     if (!strcmp(pVMCARequest->pszMethod,"GET"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
+        dwError = VMCARESTCheckAccess(pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VmRESTGetParamsByIndex(pRESTRequest, 2, 1, &pszKey2, &pszVal2);
@@ -348,7 +382,7 @@ VMCARESTHandleCertRequest(
         BAIL_ON_VMREST_ERROR(dwError);
     } else if (!strcmp(pVMCARequest->pszMethod,"PUT"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, false);
+        dwError = VMCARESTCheckAccess(pVMCARequest, false);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTGetSignedCertificate(
@@ -359,7 +393,7 @@ VMCARESTHandleCertRequest(
         BAIL_ON_VMREST_ERROR(dwError);
     } else if (!strcmp(pVMCARequest->pszMethod,"DELETE"))
     {
-        dwError = VMCARESTCheckAccess(pRESTRequest, pVMCARequest, true);
+        dwError = VMCARESTCheckAccess(pVMCARequest, true);
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VMCARESTRevokeCertificate(
@@ -617,10 +651,13 @@ VMCAHandleHttpRequest(
     PSTR pszResponsePayload = NULL;
     VMCA_HTTP_REQ_OBJ* pVMCARequest = NULL;
 
-    dwError = VMCARESTParseHttpHeader(pRequest, &pVMCARequest);
+    dwError = VMCAHttpReqObjCreate(&pVMCARequest);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VMCARESTGetPayload(pRESTHandle, pRequest, pVMCARequest);
+    dwError = VMCARESTParseHttpHeader(pVMCARequest, pRequest);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VMCARESTGetPayload(pVMCARequest, pRESTHandle, pRequest);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VMCARESTExecuteHttpURI(
@@ -641,12 +678,7 @@ VMCAHandleHttpRequest(
 cleanup:
     VMCA_SAFE_FREE_MEMORY(pszResponsePayload);
     VMCA_SAFE_FREE_MEMORY(pszStatusCode);
-    if (pVMCARequest)
-    {
-        VMCAFreeAccessToken(pVMCARequest->pAccessToken);
-        VMCA_SAFE_FREE_MEMORY(pVMCARequest->pszPayload);
-        VMCA_SAFE_FREE_MEMORY(pVMCARequest);
-    }
+    VMCAFreeHttpReqObj(pVMCARequest);
     return dwError;
 
 error:

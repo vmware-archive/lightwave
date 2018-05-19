@@ -68,6 +68,8 @@ typedef struct _VMW_CFG_KEY*        PVMW_CFG_KEY;
 #define VMCA_ASCII_aTof(c)     ( (c) >= 'a' && (c) <= 'f' )
 #define VMCA_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
 #define VMCA_ASCII_DIGIT(c)    ( (c) >= '0' && (c) <= '9' )
+#define VMCA_ASCII_SPACE(c) \
+    ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )
 
 #define VMCA_KEY_PARAMETERS "Services\\vmca\\Parameters"
 
@@ -412,6 +414,14 @@ VMCAReallocateMemory(
     DWORD        dwSize
     );
 
+DWORD
+VMCACopyMemory(
+    PVOID       pDst,
+    size_t      dstSize,
+    const void* pSrc,
+    size_t      cpySize
+    );
+
 VOID
 VMCAFreeMemory(
     PVOID pMemory
@@ -541,6 +551,11 @@ VMCAStringCatA(
     PCSTR strSource
     );
 
+VOID
+VMCAStringTrimSpace(
+    PSTR    pszStr
+    );
+
 DWORD
 VMCAGetUTCTimeString(
     PSTR *pszTimeString
@@ -637,6 +652,26 @@ VMCAVerifyHostName(
     PCSTR pszHostName,
     PCSTR pszHostIp,
     PCSTR pCertRequest
+    );
+
+DWORD
+VMCAComputeMessageDigest(
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    unsigned char**         ppMD,
+    size_t*                 pMDSize
+    );
+
+DWORD
+VMCAVerifyRSASignature(
+    EVP_PKEY*               pPubKey,
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    const unsigned char*    pSignature,
+    size_t                  signatureSize,
+    PBOOLEAN                pVerified
     );
 
 /////////////////////////////Actual VMCA Common Functions///////////////////
@@ -761,11 +796,20 @@ VMCAPEMToPrivateKey(
     RSA **ppPrivateKey
 );
 
+/*
+ * Deprecated - use VMCAConvertPEMToPublicKey instead
+ */
 DWORD
 VMCAPEMToPublicKey(
     PSTR pKey,
     RSA **ppPublicKey
 );
+
+DWORD
+VMCAConvertPEMToPublicKey(
+    PCSTR       pszPEM,
+    EVP_PKEY**  ppPubKey
+    );
 
 DWORD
 VMCAPEMToCSR(
@@ -1322,6 +1366,21 @@ VOID*
 VMCAGetLibSym(
     VMCA_LIB_HANDLE  pLibHandle,
     PCSTR           pszFunctionName
+    );
+
+DWORD
+VMCABytesToHexString(
+    PUCHAR  pData,
+    DWORD   length,
+    PSTR*   pszHexString,
+    BOOLEAN bLowerCase
+    );
+
+DWORD
+VMCAHexStringToBytes(
+    PSTR    pszHexStr,
+    PUCHAR* ppData,
+    size_t* pLength
     );
 
 // vmafdlib.c

@@ -32,8 +32,16 @@ VMCAGetDomainName(
     );
 
 DWORD
+VMCAVerifyOIDCHOTKTokenSignature(
+    PSTR                pszSignatureHex,
+    PCSTR               pszHOTKPEM,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest
+    );
+
+DWORD
 VMCAVerifyOIDCBearerToken(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     )
 {
@@ -41,7 +49,7 @@ VMCAVerifyOIDCBearerToken(
     POIDC_ACCESS_TOKEN pOIDCToken = NULL;
     PSTR pszSigningCertificatePEM = NULL;
 
-    if (!pAuthorization)
+    if (!pAuthorization || !pVMCARequest || !ppAccessToken)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
@@ -51,13 +59,12 @@ VMCAVerifyOIDCBearerToken(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = OidcAccessTokenBuild(
-                            &pOIDCToken,
-                            pAuthorization->pszAuthorizationToken,
-                            pszSigningCertificatePEM,
-                            NULL,
-                            VMCA_DEFAULT_SCOPE_STRING,
-                            VMCA_DEFAULT_CLOCK_TOLERANCE
-                            );
+            &pOIDCToken,
+            pAuthorization->pszAuthorizationToken,
+            pszSigningCertificatePEM,
+            NULL,
+            VMCA_DEFAULT_SCOPE_STRING,
+            VMCA_DEFAULT_CLOCK_TOLERANCE);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAMakeOIDCAccessToken(pOIDCToken, pAuthorization, ppAccessToken);
@@ -67,22 +74,25 @@ cleanup:
     return dwError;
 
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
 DWORD
 VMCAVerifyOIDCHOTKToken(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     )
 {
     DWORD dwError = 0;
     POIDC_ACCESS_TOKEN pOIDCToken = NULL;
     PSTR pszSigningCertificatePEM = NULL;
-    PSTR pszTokenData = NULL;
-    PSTR pszSignature = NULL;
+    PSTR pszAuthTokenCp = NULL;
+    PSTR pszTokenData = NULL;       // don't free - used for strtok
+    PSTR pszSignatureHex = NULL;    // don't free - used for strtok
 
-    if (!pAuthorization)
+    if (!pAuthorization || !pVMCARequest || !ppAccessToken)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
@@ -91,27 +101,141 @@ VMCAVerifyOIDCHOTKToken(
     dwError = VMCAGetTenantSigningCert(&pszSigningCertificatePEM);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    pszTokenData = VMCAStringTokA(pAuthorization->pszAuthorizationToken, ":", &pszSignature);
-
-    dwError = OidcAccessTokenBuild(
-                            &pOIDCToken,
-                            pszTokenData,
-                            pszSigningCertificatePEM,
-                            NULL,
-                            VMCA_DEFAULT_SCOPE_STRING,
-                            VMCA_DEFAULT_CLOCK_TOLERANCE
-                            );
+    dwError = VMCAAllocateStringA(pAuthorization->pszAuthorizationToken, &pszAuthTokenCp);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    // TODO validate signature
+    pszTokenData = VMCAStringTokA(pszAuthTokenCp, ":", &pszSignatureHex);
+
+    dwError = OidcAccessTokenBuild(
+            &pOIDCToken,
+            pszTokenData,
+            pszSigningCertificatePEM,
+            NULL,
+            VMCA_DEFAULT_SCOPE_STRING,
+            VMCA_DEFAULT_CLOCK_TOLERANCE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAVerifyOIDCHOTKTokenSignature(
+            pszSignatureHex,
+            OidcAccessTokenGetHolderOfKeyPEM(pOIDCToken),
+            pVMCARequest);
+    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAMakeOIDCAccessToken(pOIDCToken, pAuthorization, ppAccessToken);
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
+    VMCA_SAFE_FREE_MEMORY(pszAuthTokenCp);
     return dwError;
 
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
+VMCAVerifyOIDCHOTKTokenSignature(
+    PSTR                pszSignatureHex,
+    PCSTR               pszHOTKPEM,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest
+    )
+{
+    DWORD   dwError = 0;
+    unsigned char*  signature = NULL;
+    unsigned char*  sha256Body = NULL;
+    size_t          signatureSize = 0;
+    size_t          sha256BodySize = 0;
+    PSTR    pszSha256BodyHex = NULL;
+    PSTR    pszBlob = NULL;
+    EVP_PKEY*   pPubKey = NULL;
+    BOOLEAN     verified = FALSE;
+
+    // HOK token must provide signature and PEM cert
+    if (IsNullOrEmptyString(pszSignatureHex) ||
+        IsNullOrEmptyString(pszHOTKPEM))
+    {
+        VMCA_LOG_ERROR("%s: Missing signature or PEM", __FUNCTION__);
+        dwError = VMCA_ERROR_AUTH_BAD_DATA;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    // decode hex-encoded signature to binary
+    dwError = VMCAHexStringToBytes(pszSignatureHex, &signature, &signatureSize);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    // convert PEM to public key
+    dwError = VMCAConvertPEMToPublicKey(pszHOTKPEM, &pPubKey);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    // http request must have content-type and date headers
+    if (IsNullOrEmptyString(pVMCARequest->pszContentType) ||
+        IsNullOrEmptyString(pVMCARequest->pszDate))
+    {
+        VMCA_LOG_ERROR("%s: Missing content-type or date", __FUNCTION__);
+        dwError = VMCA_ERROR_AUTH_BAD_DATA;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pVMCARequest->pszPayload))
+    {
+        // sanitize body
+        VMCAStringTrimSpace(pVMCARequest->pszPayload);
+
+        // sha256 digest of body
+        dwError = VMCAComputeMessageDigest(
+                EVP_sha256(),
+                pVMCARequest->pszPayload,
+                VMCAStringLenA(pVMCARequest->pszPayload),
+                &sha256Body,
+                &sha256BodySize);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        // hexadecimal encoding of the digest - use lower case
+        dwError = VMCABytesToHexString(sha256Body, sha256BodySize, &pszSha256BodyHex, TRUE);
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    // recreate blob to use in signature validation
+    dwError = VMCAAllocateStringPrintfA(
+            &pszBlob,
+            "%s\n%s\n%s\n%s\n%s",
+            pVMCARequest->pszMethod,
+            VMCA_SAFE_STRING(pszSha256BodyHex),
+            pVMCARequest->pszContentType,
+            pVMCARequest->pszDate,
+            pVMCARequest->pszUri);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    // verify signature
+    dwError = VMCAVerifyRSASignature(
+            pPubKey,
+            EVP_sha256(),
+            pszBlob,
+            VMCAStringLenA(pszBlob),
+            signature,
+            signatureSize,
+            &verified);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    if (!verified)
+    {
+        VMCA_LOG_ERROR("%s: Bad signature", __FUNCTION__);
+        dwError = VMCA_ERROR_AUTH_BAD_DATA;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+cleanup:
+    VMCA_SAFE_FREE_MEMORY(signature);
+    VMCA_SAFE_FREE_MEMORY(sha256Body);
+    VMCA_SAFE_FREE_MEMORY(pszSha256BodyHex);
+    VMCA_SAFE_FREE_MEMORY(pszBlob);
+    EVP_PKEY_free(pPubKey);
+    return dwError;
+
+error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    // TODO - log error and let it through for now
+    dwError = 0;
     goto cleanup;
 }
 
@@ -166,6 +290,7 @@ cleanup:
     return dwError;
 
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     if (ppszSigningCertPEM)
         *ppszSigningCertPEM = NULL;
     goto cleanup;
@@ -221,14 +346,14 @@ VMCAMakeOIDCAccessToken(
     *ppAccessToken = pAccessToken;
 
 cleanup:
-
     return dwError;
+
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     if (ppAccessToken)
         *ppAccessToken = NULL;
     if (pAccessToken)
         VMCAFreeAccessToken(pAccessToken);
-
     goto cleanup;
 }
 
@@ -277,6 +402,7 @@ VMCAGetDomainName(
     BAIL_ON_VMCA_ERROR(dwError);
 
     *ppDomain = pDomain;
+
 cleanup:
     if (pParamsKey)
         VmwConfigCloseKey(pParamsKey);
@@ -285,7 +411,9 @@ cleanup:
     if (pConnection)
         VmwConfigCloseConnection(pConnection);
     return dwError;
+
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     VMCA_SAFE_FREE_MEMORY(pDomain);
     if (ppDomain)
         *ppDomain = NULL;

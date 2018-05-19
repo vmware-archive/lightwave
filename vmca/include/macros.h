@@ -35,6 +35,13 @@ extern "C"
 	if (dwError) goto error; \
 	}while(0)
 
+#define BAIL_WITH_ERROR(dwError, ERROR_CODE)    \
+    do {                                        \
+        dwError = ERROR_CODE;                   \
+        assert(dwError != 0);                   \
+        goto error;                             \
+    } while (0)
+
 #define REPO_ALIGN_BYTES(marker) \
             ((marker) % sizeof(size_t) ? \
                     sizeof(size_t) - ((marker) % sizeof(size_t)) : 0)
