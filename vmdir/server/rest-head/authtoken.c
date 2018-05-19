@@ -57,7 +57,8 @@ VmDirRESTAuthTokenParse(
     DWORD   dwError = 0;
     PSTR    pszAuthDataCp = NULL;
     PSTR    pszTokenType = NULL;
-    PSTR    pszAccessToken = NULL;
+    PSTR    pszTokenData = NULL;
+    PSTR    pszSignature = NULL;
 
     if (!pAuthToken || IsNullOrEmptyString(pszAuthData))
     {
@@ -67,9 +68,9 @@ VmDirRESTAuthTokenParse(
     dwError = VmDirAllocateStringA(pszAuthData, &pszAuthDataCp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pszTokenType = VmDirStringTokA(pszAuthDataCp, " ", &pszAccessToken);
+    pszTokenType = VmDirStringTokA(pszAuthDataCp, " ", &pszTokenData);
     if (IsNullOrEmptyString(pszTokenType) ||
-        IsNullOrEmptyString(pszAccessToken))
+        IsNullOrEmptyString(pszTokenData))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_AUTH_BAD_DATA);
     }
@@ -77,18 +78,23 @@ VmDirRESTAuthTokenParse(
     if (VmDirStringCompareA(pszTokenType, "Bearer", FALSE) == 0)
     {
         pAuthToken->tokenType = VDIR_REST_AUTH_TOKEN_BEARER;
+
+        dwError = VmDirAllocateStringA(pszTokenData, &pAuthToken->pszAccessToken);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     else if (VmDirStringCompareA(pszTokenType, "hotk-pk", FALSE) == 0)
     {
         pAuthToken->tokenType = VDIR_REST_AUTH_TOKEN_HOTK;
+
+        pszTokenData = VmDirStringTokA(pszTokenData, ":", &pszSignature);
+
+        dwError = VmDirAllocateStringA(pszTokenData, &pAuthToken->pszAccessToken);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_AUTH_METHOD_NOT_SUPPORTED);
     }
-
-    dwError = VmDirAllocateStringA(pszAccessToken, &pAuthToken->pszAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszAuthDataCp);

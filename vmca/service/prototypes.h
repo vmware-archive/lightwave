@@ -627,8 +627,6 @@ VMCASignedRequestPrivate(
 
 #ifdef REST_ENABLED
 
-#ifndef _WIN32
-
 //vmcaHTTPCallback.c
 DWORD
 VMCARESTGetCRL(
@@ -717,7 +715,13 @@ VMCAFreeAccessToken(
 
 //oidcutil.c
 DWORD
-VMCAVerifyOIDC(
+VMCAVerifyOIDCBearerToken(
+    PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    );
+
+DWORD
+VMCAVerifyOIDCHOTKToken(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     );
@@ -726,8 +730,6 @@ VOID
 VMCAFreeOIDC(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
-
-#endif
 
 //restbasicauth.c
 DWORD

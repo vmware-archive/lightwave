@@ -32,7 +32,7 @@ VMCAGetDomainName(
     );
 
 DWORD
-VMCAVerifyOIDC(
+VMCAVerifyOIDCBearerToken(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     )
@@ -59,6 +59,51 @@ VMCAVerifyOIDC(
                             VMCA_DEFAULT_CLOCK_TOLERANCE
                             );
     BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAMakeOIDCAccessToken(pOIDCToken, pAuthorization, ppAccessToken);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VMCAVerifyOIDCHOTKToken(
+    PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    )
+{
+    DWORD dwError = 0;
+    POIDC_ACCESS_TOKEN pOIDCToken = NULL;
+    PSTR pszSigningCertificatePEM = NULL;
+    PSTR pszTokenData = NULL;
+    PSTR pszSignature = NULL;
+
+    if (!pAuthorization)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAGetTenantSigningCert(&pszSigningCertificatePEM);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    pszTokenData = VMCAStringTokA(pAuthorization->pszAuthorizationToken, ":", &pszSignature);
+
+    dwError = OidcAccessTokenBuild(
+                            &pOIDCToken,
+                            pszTokenData,
+                            pszSigningCertificatePEM,
+                            NULL,
+                            VMCA_DEFAULT_SCOPE_STRING,
+                            VMCA_DEFAULT_CLOCK_TOLERANCE
+                            );
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    // TODO validate signature
 
     dwError = VMCAMakeOIDCAccessToken(pOIDCToken, pAuthorization, ppAccessToken);
     BAIL_ON_VMCA_ERROR(dwError);
