@@ -180,7 +180,8 @@ public class VerificationUtil {
             return "";
         }
 
-        try (InputStream in = context.getEntityStream(); ByteArrayOutputStream out = new ByteArrayOutputStream(in.available())){
+        InputStream in = context.getEntityStream(); // The JAX-RS runtime is responsible for closing the input stream.
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream(in.available())) {
             final byte[] data = new byte[ReaderWriter.BUFFER_SIZE];
             int len = 0;
 
@@ -190,8 +191,7 @@ public class VerificationUtil {
             out.flush();
 
             // Reset our entity stream since we consumed it and it may need to be read for object marshalling
-            in.reset();
-            context.setEntityStream(in);
+            context.setEntityStream(new ByteArrayInputStream(out.toByteArray()));
 
             return RequestSigner.computeEntityHash(out.toString(), signingAlg);
         } catch (IOException e) {
@@ -213,5 +213,4 @@ public class VerificationUtil {
                 context.getDate(),
                 context.getUriInfo().getRequestUri());
     }
-
 }

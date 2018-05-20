@@ -409,7 +409,8 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         expect(context.getMethod()).andReturn(method).anyTimes();
         if (entity != null) {
             expect(context.hasEntity()).andReturn(!entity.isEmpty()).anyTimes();
-            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes())).anyTimes();
+            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes()));
+            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes()));
             context.setEntityStream(isA(InputStream.class));
             expectLastCall().anyTimes();
         } else {
