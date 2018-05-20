@@ -19,6 +19,8 @@ const (
 	ClaimNonce = "nonce"
 	// ClaimTokenType is the name of the token type token claim
 	ClaimTokenType = "token_type"
+	// ClaimHotKJWK is the name of the HOTK JWK set claim
+	ClaimHotKJWK = "hotk"
 	// ClaimAudience is the name of the audience token claim
 	ClaimAudience = "aud"
 	// ClaimExpiration is the name of the exiration token claim
@@ -48,6 +50,7 @@ type jwt interface {
 	IssuedAt() time.Time
 	IdpSessionID() (string, bool)
 	Audience() ([]string, bool)
+	Hotk() (bool, *jose.JSONWebKeySet, error)
 	Claim(claimName string) (interface{}, bool)
 }
 
@@ -198,6 +201,10 @@ func validateAndNormalizeClaims(rawClaims *map[string]interface{}, issuer string
 	if err != nil {
 		return err
 	}
+	err = ensureOptionalHotkJWKSetClaim(rawClaims, ClaimHotKJWK)
+	if err != nil {
+		return err
+	}
 	err = ensureStringClaim(rawClaims, ClaimSubject)
 	if err != nil {
 		return err
@@ -331,6 +338,57 @@ func ensureTimeClaim(claims *map[string]interface{}, claimName string) error {
 
 	c[claimName] = exp
 
+	return nil
+}
+
+func ensureOptionalHotkJWKSetClaim(claims *map[string]interface{}, claimName string) error {
+	var ok bool
+	var val interface{}
+	var hotk jose.JSONWebKeySet
+	var tokType string
+
+	c := *claims
+	if val, ok = c[ClaimTokenType]; !ok {
+		return OIDCTokenInvalidError.MakeError(
+			fmt.Sprintf("Invalid token: '%s' claim missing", ClaimTokenType), nil)
+	}
+	tokType = val.(string)
+
+	if tokType == HOKTokenType {
+		if val, ok = c[claimName]; !ok {
+			return OIDCTokenInvalidError.MakeError(
+				fmt.Sprintf("Invalid token: '%s' token missing '%s' claim", tokType, ClaimHotKJWK), nil)
+		}
+
+		rawHotk, err := json.Marshal(val)
+		if err != nil {
+			return OIDCTokenInvalidError.MakeError(
+				fmt.Sprintf("Failed to marshal hotk claim"), err)
+		}
+
+		var hotkTmp struct {
+			Keys []json.RawMessage `json:"keys"`
+		}
+		json.Unmarshal(rawHotk, &hotkTmp)
+
+		if len(hotkTmp.Keys) > 0 {
+			for _, k := range hotkTmp.Keys {
+				var jwk jose.JSONWebKey
+				err := json.Unmarshal([]byte(k), &jwk)
+				if err != nil {
+					return OIDCTokenInvalidError.MakeError(
+						fmt.Sprintf("Failed to unmarshal JWK from HOTK claim"), err)
+				}
+				hotk.Keys = append(hotk.Keys, jwk)
+			}
+			return nil
+		}
+		return OIDCTokenInvalidError.MakeError(
+			fmt.Sprintf("TokenType %s needs %s claim", tokType, claimName), err)
+	}
+
+	// Return nil here because tokenType is not hotk-pk and we don't check for
+	// or require the HOTK claim
 	return nil
 }
 
@@ -529,6 +587,41 @@ func (t *jwtImpl) Audience() ([]string, bool) {
 	}
 
 	return arrayVal, ok
+}
+
+func (t *jwtImpl) Hotk() (bool, *jose.JSONWebKeySet, error) {
+	if t.Type() == HOKTokenType {
+		if val, ok := t.claims[ClaimHotKJWK]; ok {
+			var hotk jose.JSONWebKeySet
+			rawHotk, err := json.Marshal(val)
+			if err != nil {
+				return false, nil, OIDCJsonParseError.MakeError(
+					fmt.Sprintf("Failed to marshal hotk claim"), err)
+			}
+
+			var hotkTmp struct {
+				Keys []json.RawMessage `json:"keys"`
+			}
+			json.Unmarshal(rawHotk, &hotkTmp)
+
+			if len(hotkTmp.Keys) > 0 {
+				for _, k := range hotkTmp.Keys {
+					var jwk jose.JSONWebKey
+					err := json.Unmarshal([]byte(k), &jwk)
+					if err != nil {
+						return false, nil, OIDCJsonParseError.MakeError(
+							fmt.Sprintf("Failed to unmarshal JWK from HOTK claim"), err)
+					}
+					hotk.Keys = append(hotk.Keys, jwk)
+				}
+				return true, &hotk, nil
+			}
+			return false, nil, OIDCTokenInvalidError.MakeError(
+				fmt.Sprintf("Failed to find HOTK JWKs"), err)
+		}
+	}
+
+	return false, nil, nil
 }
 
 func (t *jwtImpl) IdpSessionID() (string, bool) {
