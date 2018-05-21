@@ -4584,6 +4584,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ILdapMessage message = null;
         String userDn = null;
+        ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
 
         try (PooledLdapConnection pooledConnection = borrowConnection())
         {
@@ -4614,21 +4615,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 throw new InvalidPrincipalException(String.format(
                         "user %s@%s doesn't exist", userId.getName(), userId.getDomain()), userId.getUPN());
             }
-        }
-        finally
-        {
-            if (null != message)
-            {
-                message.close();
-                message = null;
-            }
-        }
-
-        ILdapConnectionEx connection = null;
-        try
-        {
-            connection = this.getConnection(userDn, new String(currentPassword), AuthenticationType.PASSWORD, false);
-            ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
             LdapMod attrPassword =
                     new LdapMod(LdapModOperation.REPLACE, ATTR_USER_PASSWORD,
                             new LdapValue[] {
@@ -4636,24 +4622,19 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             LdapValue.fromString(new String(newPassword)) });
             attributeList.add(attrPassword);
 
-            // Only update when necessary
-            connection.modifyObject(userDn, attributeList
-                    .toArray(new LdapMod[attributeList.size()]));
-        }
-        catch (InvalidCredentialsLdapException ex)
-        {
-            logger.error("Original login seems invalid.", ex);
-            // According to admin interface, if not valid password,
-            // should throw this.
-            throw new InvalidPrincipalException(String.format(
-                    "Invalid login credential for user %s@%s", accountName,
-                    this.getDomain()), String.format("%s@%s", accountName,
-                    getDomain()));
-        } finally
-        {
-            if ( connection != null )
+            if (attributeList.size() > 0)
             {
-                connection.close();
+                // Only update when necessary
+                connection.modifyObject(userDn, attributeList
+                        .toArray(new LdapMod[attributeList.size()]));
+            }
+        }
+        finally
+        {
+            if (null != message)
+            {
+                message.close();
+                message = null;
             }
         }
     }
