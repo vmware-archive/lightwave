@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"crypto/rsa"
+	"gopkg.in/square/go-jose.v2"
 	"time"
 )
 
@@ -65,6 +66,7 @@ type AccessToken interface {
 	Expiration() time.Time
 	IssuedAt() time.Time
 	Audience() ([]string, bool)
+	Hotk() (bool, *jose.JSONWebKeySet, error)
 	Claim(claimName string) (interface{}, bool)
 }
 

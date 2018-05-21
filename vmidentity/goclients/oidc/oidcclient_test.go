@@ -363,6 +363,12 @@ func checkAccessToken(t *testing.T, accessToken AccessToken, expectedSubject, ex
 	assert.True(t, accessToken.Expiration().After(accessToken.IssuedAt()), "Expiration should be after issued time")
 	assert.True(t, accessToken.Expiration().After(time.Now()), "Token should not be expired")
 
+	ok, hotk, err := accessToken.Hotk()
+	require.Nil(t, err, "Should not fail when getting HOTK claim from hotk-pk token")
+	if ok {
+		assert.NotNil(t, hotk, "HOTK claim should not be nil")
+	}
+
 	groups, ok := accessToken.Claim("groups")
 	if assert.True(t, ok, "Group should be in token") {
 		if s, ok := groups.([]string); ok {
@@ -376,6 +382,7 @@ func checkAccessToken(t *testing.T, accessToken AccessToken, expectedSubject, ex
 			assert.NotEmpty(t, s, "Token should have tenant")
 		}
 	}
+
 }
 
 func buildOidcClient(issuer, clientID, requestID string, logger Logger) (Client, error) {
