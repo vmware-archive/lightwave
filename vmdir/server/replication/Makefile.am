@@ -8,6 +8,7 @@ libreplication_la_SOURCES = \
     globals.c \
     libmain.c \
     metrics.c \
+    replcookies.c \
     replentry.c \
     replqueue.c \
     thread.c \

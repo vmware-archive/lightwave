@@ -377,8 +377,7 @@ DeleteControls(
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION pOp,
-    DWORD           dwSentEntryCount,
-    BOOLEAN         bLowestPendingUncommittedUsn
+    DWORD           dwSentEntryCount
     )
 {
     BOOLEAN   bConsumingPartner = FALSE;
@@ -407,8 +406,7 @@ VmDirUpdateSyncDoneCtl(
 
         if ((pOp->request.searchReq.sizeLimit > 0 &&
              pOp->request.searchReq.sizeLimit == dwSentEntryCount) ||
-             bConsumingPartner ||
-             bLowestPendingUncommittedUsn)
+             bConsumingPartner)
         {
             pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
         }
@@ -1093,7 +1091,8 @@ ParseSyncRequestControlVal(
     }
 
     backendCtx.pBE = VmDirBackendSelect("");
-    maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN(&backendCtx, FALSE) - 1;
+
+    maxPartnerVisibleUSN = VmDirGetMaxCommittedUSN()+1;
 
     if (syncReqCtrlVal->intLastLocalUsnProcessed > maxPartnerVisibleUSN)
     {

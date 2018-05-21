@@ -64,6 +64,12 @@ InitializeGlobalVars(
 
 static
 DWORD
+InitializeServerOperationsGlobals(
+    VOID
+    );
+
+static
+DWORD
 _VmDirWriteBackInvocationId(
     VOID
     );
@@ -229,8 +235,8 @@ VmDirInitBackend(
     dwError = VmDirLoadIndex(bInitializeEntries || *pbLegacyDataLoaded);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // prepare USNList to guarantee safe USN for replication
-    dwError = VmDirBackendInitUSNList(pBE);
+    // Guarantee safe USN for replication where there is no I/O
+    dwError = VmDirInitMaxCommittedUSN(pBE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bInitializeEntries)
@@ -330,6 +336,9 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = InitializeServerStatusGlobals();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = InitializeServerOperationsGlobals();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
@@ -619,6 +628,14 @@ _VmDirRestoreInstance(
     PSTR    pszDCAccount = NULL;
     PSTR*   ppszServerInfo = NULL;
     size_t  dwInfoCount = 0;
+
+    dwError = LDAP_OPERATIONS_ERROR;
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "%s: restore not supported: %d.",
+            __FUNCTION__,
+            dwError);
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
@@ -1849,6 +1866,31 @@ error:
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "InitializeGlobalVars failed (%d)", dwError );
 
+    goto cleanup;
+}
+
+static
+DWORD
+InitializeServerOperationsGlobals(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirAllocateMutex(&gVmDirServerOpsGlobals.pMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_WRITE_QUEUE), (PVOID)&gVmDirServerOpsGlobals.pWriteQueue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&gVmDirServerOpsGlobals.pWriteQueue->pList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: failed (%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
 

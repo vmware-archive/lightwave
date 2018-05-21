@@ -192,9 +192,18 @@ VmDirMDBGetNextUSN(
     unsigned char   USNValueBytes[sizeof( USN )] = {0};
     USN             localUSN = 0;
     BOOLEAN         bRevertUSN = FALSE;
-    BOOLEAN         bUnsetMaxUSN = TRUE;
 
-    assert( pBECtx && pUsn );
+    assert(pBECtx && pUsn);
+
+    if (pBECtx->wTxnUSN != 0)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: Acquiring multiple USN using same BECtx not allowed, usn: %"PRId64,
+            __FUNCTION__,
+            pBECtx->wTxnUSN);
+        BAIL_WITH_VMDIR_ERROR(dwError, LDAP_OPERATIONS_ERROR);
+    }
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
     if (pTxn)
@@ -227,26 +236,11 @@ VmDirMDBGetNextUSN(
     dwError =  mdb_put(pLocalTxn, gVdirMdbGlobals.mdbSeqDBi, &key, &value, BE_DB_FLAGS_ZERO);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pBECtx->wTxnUSN == 0)
-    {   // capture and set outstanding USN within txn scope
-        pBECtx->wTxnUSN = localUSN;
+    pBECtx->wTxnUSN = localUSN;
 
-        dwError = VmDirBackendAddOutstandingUSN( pBECtx );
-        BAIL_ON_VMDIR_ERROR(dwError);
-        bRevertUSN = TRUE;
-    }
-    else
-    {   // if BECtx has wTxnUSN already (nested txn), it should be smaller than new USN here.
-        if (pBECtx->wTxnUSN >= localUSN)
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "nested OP/TXN USN ordering logic error: (%ld)(%ld)",
-                      pBECtx->wTxnUSN, localUSN );
-            dwError = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        VmDirBackendSetMaxOutstandingUSN(pBECtx, localUSN);
-        bUnsetMaxUSN = TRUE;
-    }
+    dwError = VmDirBackendAddOutstandingUSN( pBECtx );
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bRevertUSN = TRUE;
 
     if (pLocalTxn != pTxn)
     {
@@ -258,16 +252,9 @@ VmDirMDBGetNextUSN(
     *pUsn = localUSN;
 
 cleanup:
-
     return dwError;
 
 error:
-
-    if (bUnsetMaxUSN)
-    {
-        VmDirBackendSetMaxOutstandingUSN(pBECtx, localUSN - 1);
-    }
-
     if (bRevertUSN)
     {
         VmDirBackendRemoveOutstandingUSN( pBECtx );

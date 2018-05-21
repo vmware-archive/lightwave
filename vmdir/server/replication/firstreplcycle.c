@@ -850,7 +850,7 @@ _VmDirWrapUpFirstReplicationCycle(
 
     syncDoneCtrlVal.bv_len = VmDirStringLenA(syncDoneCtrlVal.bv_val);
 
-    if ((retVal = VmDirReplUpdateCookies( pSchemaCtx, &(syncDoneCtrlVal), pReplAgr )) != LDAP_SUCCESS)
+    if ((retVal = VmDirReplCookieCreate(pSchemaCtx, &(syncDoneCtrlVal), pReplAgr)) != LDAP_SUCCESS)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: UpdateCookies failed. Error: %d", __FUNCTION__, retVal);
         BAIL_ON_VMDIR_ERROR(retVal);

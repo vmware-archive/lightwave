@@ -650,6 +650,12 @@ typedef enum
 
 } VDIR_OPERATION_PROTOCOL;
 
+typedef struct _VMDIR_WRITE_QUEUE_ELEMENT
+{
+    USN   usn;
+    PVMDIR_COND pCond;
+} VMDIR_WRITE_QUEUE_ELEMENT, *PVMDIR_WRITE_QUEUE_ELEMENT;
+
 typedef struct _VDIR_OPERATION
 {
     VDIR_OPERATION_TYPE     opType;
@@ -700,7 +706,6 @@ typedef struct _VDIR_OPERATION
     // fields valid for INTERNAL operations
     ///////////////////////////////////////////////////////////////////////////
     VDIR_ENTRY_ARRAY    internalSearchEntryArray; // internal search result
-    USN                 lowestPendingUncommittedUsn; // recorded at the beginning of replication search operation.
     PSTR                pszFilters; // filter candidates' size recorded in string
     DWORD               dwSentEntries; // number of entries sent back to client
 
@@ -709,6 +714,11 @@ typedef struct _VDIR_OPERATION
     ///////////////////////////////////////////////////////////////////////////
     PCSTR               pszPartner;
     USN                 ulPartnerUSN; // in replication, the partner USN been processed.
+
+    ///////////////////////////////////////////////////////////////////////////
+    // fields valid for write operations
+    ///////////////////////////////////////////////////////////////////////////
+    PVMDIR_WRITE_QUEUE_ELEMENT   pWriteQueueEle;
 
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
@@ -1551,8 +1561,7 @@ VmDirFilterInternalSearch(
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
-   PVDIR_ENTRY         pSrEntry,
-   PBOOLEAN            pbLowestPendingUncommittedUsn
+   PVDIR_ENTRY         pSrEntry
    );
 
 // middle-layer password.c

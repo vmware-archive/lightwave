@@ -32,6 +32,8 @@ libmiddle_layer_la_SOURCES = \
     specialsearch.c \
     srputil.c \
     util.c \
+    usn.c \
+    writequeue.c \
     libmain.c
 
 libmiddle_layer_la_CPPFLAGS = \

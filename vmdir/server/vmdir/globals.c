@@ -59,6 +59,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwEmptyPageCnt, 0),
         VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
+        VMDIR_SF_INIT(.dwWriteTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
@@ -178,6 +179,13 @@ VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pThrInfo, NULL),
         VMDIR_SF_INIT(.bShutdown, FALSE)
+    };
+
+VMDIR_SERVER_OPERATIONS_GLOBALS gVmDirServerOpsGlobals =
+    {
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.maxCommittedUSN, 0),
+        VMDIR_SF_INIT(.pWriteQueue, NULL)
     };
 
 PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

@@ -132,7 +132,7 @@ ProcessPreValidatedEntries(
         dwError = VmDirBuildComputedAttribute(pOperation, pSrEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSendSearchEntry(pOperation, pSrEntry, NULL);
+        dwError = VmDirSendSearchEntry(pOperation, pSrEntry);
         if (dwError == VMDIR_ERROR_INSUFFICIENT_ACCESS)
         {
             VMDIR_LOG_WARNING(
@@ -188,7 +188,6 @@ VmDirInternalSearch(
     )
 {
     int     retVal = LDAP_SUCCESS;
-    int     deadLockRetries = 0;
     DWORD   dwEntryCount = 0;
     BOOLEAN bHasTxn = FALSE;
     BOOLEAN bUseOldSearch = TRUE;
@@ -229,58 +228,22 @@ VmDirInternalSearch(
     if (pOperation->syncReqCtrl != NULL) // Replication
     {
         pOperation->opType = VDIR_OPERATION_TYPE_REPL;
-        pOperation->lowestPendingUncommittedUsn =
-                    pOperation->pBEIF->pfnBEGetLeastOutstandingUSN( pOperation->pBECtx, FALSE );
-
-        VmDirLog( LDAP_DEBUG_REPL, "Replication request USN (%u)",  pOperation->lowestPendingUncommittedUsn );
     }
 
     // If base is not ROOT, read lock the base object (DnToEntryId index entry) to make sure it exists, and it does
     // not get deleted during this search processing.
     if (pOperation->reqDn.lberbv.bv_len != 0)
     {
-        // ************************************************************************************
-        // transaction retry loop begin.  make sure all function within are retry agnostic.
-        // ************************************************************************************
-txnretry:
-        if (bHasTxn)
-        {
-            pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
-            bHasTxn = FALSE;
-        }
+        retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
+                retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+        bHasTxn = TRUE;
+        iBEStartTime = VmDirGetTimeInMilliSec();
 
-        deadLockRetries++;
-        if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-        {
-            retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
-        else
-        {
-            retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
-                                          retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            bHasTxn = TRUE;
-            iBEStartTime = VmDirGetTimeInMilliSec();
-
-            // Lookup in the DN index.
-            retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
-            if (retVal != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DNToEID (%u)(%s)",
-                                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-                }
-            }
-        }
-        // ************************************************************************************
-        // transaction retry loop end.
-        // ************************************************************************************
+        // Lookup in the DN index.
+        retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DNToEID (%u)(%s)",
+                retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     }
 
     // start txn if not has one already.
@@ -1217,7 +1180,6 @@ VmDirProcessCandidateList(
     BOOLEAN           bInternalSearch = FALSE;
     BOOLEAN           bStoreRsltInMem = FALSE;
     BOOLEAN           bPageResultsCtrl = FALSE;
-    BOOLEAN           bLowestPendingUncommittedUsn = FALSE;
     DWORD             dwPageSize = 0;
     ENTRYID           lastEID = 0;
 
@@ -1323,7 +1285,7 @@ VmDirProcessCandidateList(
 
                 if (bSendEntry)
                 {
-                    retVal = VmDirSendSearchEntry(pOperation, pSrEntry, &bLowestPendingUncommittedUsn);
+                    retVal = VmDirSendSearchEntry(pOperation, pSrEntry);
                     if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
                     {
                         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
@@ -1379,8 +1341,7 @@ VmDirProcessCandidateList(
 
     retVal = VmDirUpdateSyncDoneCtl(
             pOperation,
-            numSentEntries,
-            bLowestPendingUncommittedUsn);
+            numSentEntries);
     BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:

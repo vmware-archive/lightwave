@@ -274,8 +274,7 @@ done:
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
-   PVDIR_ENTRY         pSrEntry,
-   PBOOLEAN            pbLowestPendingUncommittedUsn
+   PVDIR_ENTRY         pSrEntry
    )
 {
     int                         retVal = LDAP_SUCCESS;
@@ -287,7 +286,6 @@ VmDirSendSearchEntry(
     int                         nAttrs = 0;
     int                         nVals = 0;
     BOOLEAN                     attrMetaDataReqd = FALSE;
-    BOOLEAN                     bLowestPendingUncommittedUsn = FALSE;
     SearchReq *                 sr = &(pOperation->request.searchReq);
     int                         i = 0;
     BOOLEAN                     nonTrivialAttrsInReplScope = FALSE;
@@ -305,11 +303,6 @@ VmDirSendSearchEntry(
     {
         retVal = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    if (pbLowestPendingUncommittedUsn == NULL)
-    {
-        pbLowestPendingUncommittedUsn = &bLowestPendingUncommittedUsn;
     }
 
     pSrEntry->bSearchEntrySent = FALSE;
@@ -378,32 +371,6 @@ VmDirSendSearchEntry(
             pAttr = VmDirEntryFindAttribute(ATTR_USN_CHANGED, pSrEntry);
             assert( pAttr != NULL );
             usnChanged = VmDirStringToLA( pAttr->vals[0].lberbv.bv_val, NULL, 10);
-
-            // Check if usnChanged is beyond lowestPendingUncommittedUsn recorded at the beginning of replication search
-            if (pOperation->lowestPendingUncommittedUsn)
-            {
-                if (usnChanged == pOperation->lowestPendingUncommittedUsn)
-                {
-                    // This usn is successfully committed, bump lowestPendingUncommittedUsn by 1
-                    pOperation->lowestPendingUncommittedUsn++;
-
-                    VMDIR_LOG_INFO( LDAP_DEBUG_REPL,
-                            "SendSearchEntry: bumping lowestPendingUncommittedUsn to %" PRId64,
-                            pOperation->lowestPendingUncommittedUsn );
-                }
-                else if (usnChanged > pOperation->lowestPendingUncommittedUsn)
-                {
-                    VMDIR_LOG_INFO(
-                            VMDIR_LOG_MASK_ALL,
-                            "SendSearchEntry: usnChanged = %" PRId64 ", lowestPendingUncommittedUsn = %" PRId64 ", "
-                            "skipping entry: %s", usnChanged, pOperation->lowestPendingUncommittedUsn,
-                            pSrEntry->dn.lberbv.bv_val);
-
-                    // Shouldn't stop cycle until we don't have a skip, inform consumer to come back again
-                    *pbLowestPendingUncommittedUsn = TRUE;
-                    goto updateSyncDoneCtrl; // Don't send this entry
-                }
-            }
 
             // Don't send (skip) modifications to my server object, and my RAs
             pAttrUsnCreated = VmDirEntryFindAttribute(ATTR_USN_CREATED, pSrEntry);
@@ -598,24 +565,9 @@ VmDirSendSearchEntry(
                             pSrEntry->dn.lberbv.bv_val, pOperation->syncReqCtrl, nonTrivialAttrsInReplScope);
         }
 
-updateSyncDoneCtrl:
         if (pOperation->syncReqCtrl != NULL)
         {
-            if (*pbLowestPendingUncommittedUsn)
-            {
-                VMDIR_LOG_INFO(
-                        LDAP_DEBUG_REPL,
-                        "%s: update lastLocalUsnProcessed from %" PRId64 " to lowestPendingUncommittedUsn %" PRId64 " to avoid retry",
-                        __FUNCTION__,
-                        pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed,
-                        pOperation->lowestPendingUncommittedUsn-1);
-                /*
-                 * Sending high watermark to consumer results in repl cycle retry.
-                 * Avoid retry by sending lowestpendingUncommittedUsn-1.
-                 */
-                pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed = pOperation->lowestPendingUncommittedUsn-1;
-            }
-            else if (usnChanged  > pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed)
+            if (usnChanged  > pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed)
             {
                 // record max local usnChanged in syncControlDone
                 pOperation->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed = usnChanged;
@@ -664,6 +616,7 @@ _VmDirIsUsnInScope(
     PCSTR               pAttrName,
     char *              origInvocationId,
     USN                 origUsn,
+    USN                 localUSN,
     USN                 priorSentUSNCreated,
     BOOLEAN *           isUsnInScope
     )
@@ -724,7 +677,7 @@ _VmDirIsUsnInScope(
         // Note, this handles ADD->MODIFY case but not multiple MODIFYs scenario.
         // However, it is fine as consumer should be able to handle redundant feed from supplier.
         // The key point here is to NOT send ATTR_USN_CREATED, so we can derive correct sync_state in WriteSyncStateControl.
-        if (origUsn > priorSentUSNCreated)
+        if (localUSN > priorSentUSNCreated)
         {
             *isUsnInScope = TRUE;
 
@@ -766,9 +719,22 @@ IsAttrInReplScope(
     char                    origInvocationId[VMDIR_GUID_STR_LEN];
     //origUsn is set to <originating USN>
     USN                     origUsn = VmDirStringToLA( VmDirStringRChrA( attrMetaData, ':' ) + 1, NULL, 10 );
+    USN                     localUSN = 0;
     PSTR                    pszLocalErrorMsg = NULL;
+    PSTR                    pszDupAttrMetaData = NULL;
+    PSTR                    pszLocalUSN = NULL;
 
     *inScope = FALSE;
+
+    retVal = VmDirAllocateStringA(attrMetaData, &pszDupAttrMetaData);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pszLocalUSN = VmDirStringChrA(pszDupAttrMetaData, ':');
+    *pszLocalUSN = '\0';
+
+    localUSN = VmDirStringToLA(pszDupAttrMetaData, NULL, 10);
+
+    VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s: metadata: %s localUSN: %llu", __FUNCTION__, pszDupAttrMetaData, localUSN);
 
     // attrMetaData format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
     VmDirStringNCpyA( origInvocationId, VMDIR_GUID_STR_LEN,
@@ -814,7 +780,7 @@ IsAttrInReplScope(
     else
     {
         BOOLEAN usnInScope = FALSE;
-        retVal = _VmDirIsUsnInScope(op, attrType, origInvocationId, origUsn, priorSentUSNCreated, &usnInScope);
+        retVal = _VmDirIsUsnInScope(op, attrType, origInvocationId, origUsn, localUSN, priorSentUSNCreated, &usnInScope);
         BAIL_ON_VMDIR_ERROR(retVal);
         if (!usnInScope)
         {
@@ -834,6 +800,8 @@ IsAttrInReplScope(
     *inScope = TRUE;
 
 cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pszDupAttrMetaData);
 
     if (ppszErrorMsg)
     {
@@ -1308,6 +1276,9 @@ PrepareValueMetaDataAttribute(
     char origInvocationId[VMDIR_GUID_STR_LEN] = {0};
     USN  origUsn = 0;
     char *p1 = NULL, *p2 = NULL;
+    PSTR pszDupAttrValueMetaData = NULL;
+    PSTR pszLocalUSN = NULL;
+    USN localUSN = 0;
 
     if (dequeIsEmpty(pAllValueMetaData))
     {
@@ -1325,6 +1296,24 @@ PrepareValueMetaDataAttribute(
         if (pOp->syncReqCtrl)
         {
             BOOLEAN usnInScope = FALSE;
+
+            VMDIR_SAFE_FREE_MEMORY(pszDupAttrValueMetaData);
+            retVal = VmDirAllocateAndCopyMemory(
+                    pAVmeta->lberbv.bv_val,
+                    pAVmeta->lberbv.bv_len,
+                    (PVOID*)&pszDupAttrValueMetaData);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            //<attr-name>:<local-usn>
+            pszLocalUSN = VmDirStringChrA(VmDirStringChrA(pszDupAttrValueMetaData, ':') + 1, ':');
+            *pszLocalUSN = '\0';
+
+            //<local-usn>
+            pszLocalUSN = VmDirStringChrA(pszDupAttrValueMetaData, ':')+1;
+
+            localUSN = VmDirStringToLA(pszLocalUSN, NULL, 10);
+
+            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s: metadata: %s localUSN: %llu", __FUNCTION__, pszDupAttrValueMetaData, localUSN);
 
             // Format is: <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
             //            :<value-change-originating time>:<value-change-originating-usn>:<opcode>:<value-size>:<value>
@@ -1348,7 +1337,7 @@ PrepareValueMetaDataAttribute(
                 continue;
                 //Change is originated from the requesting server. Don't send it.
             }
-            retVal = _VmDirIsUsnInScope(pOp, NULL, origInvocationId, origUsn, 0, &usnInScope);
+            retVal = _VmDirIsUsnInScope(pOp, NULL, origInvocationId, origUsn, localUSN, 0, &usnInScope);
             BAIL_ON_VMDIR_ERROR(retVal);
             if (!usnInScope)
             {
@@ -1363,6 +1352,7 @@ PrepareValueMetaDataAttribute(
     }
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDupAttrValueMetaData);
     VmDirFreeBerval(pAVmeta);
     return retVal;
 

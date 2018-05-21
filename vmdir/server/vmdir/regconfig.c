@@ -311,6 +311,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwSupplierThrTimeoutInMilliSec = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwWriteTimeoutInMilliSec = pEntry->dwValue;
+        }
     }
 
 cleanup:

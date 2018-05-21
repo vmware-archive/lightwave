@@ -66,7 +66,6 @@ VmDirBackendConfig(
     PVDIR_BACKEND_USN_LIST  pUSNList = NULL;
 
     gVdirBEGlobals.pszBERootDN = "";
-    gVdirBEGlobals.usnFirstNext = USN_SEQ_INITIAL_VALUE;
     gVdirBEGlobals.pBE = NULL;
 
     gVdirBEGlobals.pBE = VmDirMDBBEInterface();
@@ -162,49 +161,6 @@ VmDirBackendCtxContentFree(
     }
 
     return;
-}
-
-/*
- * call this function during server start up.
- * It prepares gVdirBEGlobals.pBE->pBEUSNList such that replication scan can
- *      still call VmDirBackendLeastOutstandingUSN to get a safe USN number even if there is NO write
- *      operations since server starts.
- */
-DWORD
-VmDirBackendInitUSNList(
-    PVDIR_BACKEND_INTERFACE   pBE
-    )
-{
-    DWORD               dwError = 0;
-    VDIR_BACKEND_CTX    beCtx = {0};
-    USN                 tmpUSN = 0;
-
-    assert( pBE );
-
-    beCtx.pBE = pBE;
-
-    // acquire a USN and also add it to USNList
-    dwError = pBE->pfnBEGetNextUSN(&beCtx, &tmpUSN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    gVdirBEGlobals.usnFirstNext = tmpUSN;
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Next available local USN: %lu", tmpUSN);
-
-error:
-
-    VmDirBackendCtxContentFree(&beCtx);
-
-    return dwError;
-}
-
-VOID
-VmDirBackendGetFirstNextUSN(
-    USN *pUSN
-    )
-{
-    assert(pUSN != NULL);
-
-    *pUSN = gVdirBEGlobals.usnFirstNext;
 }
 
 /*

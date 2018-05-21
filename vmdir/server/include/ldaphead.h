@@ -121,8 +121,7 @@ ParseAndFreeSyncStateControl(
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION   pOp,
-    DWORD     dwSentEntryCount,
-    BOOLEAN   bLowestPendingUncommittedUsn
+    DWORD     dwSentEntryCount
     );
 
 int

@@ -70,7 +70,6 @@ VmDirInternalDeleteEntry(
     )
 {
     int         retVal = LDAP_SUCCESS;
-    int         deadLockRetries = 0;
     VDIR_ENTRY  entry = {0};
     PVDIR_ENTRY pEntry = NULL;
     BOOLEAN     leafNode = FALSE;
@@ -126,25 +125,13 @@ VmDirInternalDeleteEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECtx.wTxnUSN not set");
     }
 
+    if (!bIsTombstoneObj)
+    {
+        retVal = VmDirWriteQueueWait(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Failed in waiting for USN dispatch");
+    }
+
     // BUGBUG, need to protect some system entries such as schema,domain....etc?
-
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    if (bHasTxn)
-    {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
-        bHasTxn = FALSE;
-    }
-
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-    else
     {
         if (pEntry)
         {
@@ -166,18 +153,12 @@ txnretry:
                                     &(delReq->dn),
                                     &entry,
                                     VDIR_BACKEND_ENTRY_LOCK_WRITE);
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "(%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "(%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
         pEntry = &entry;
 
@@ -204,21 +185,13 @@ txnretry:
                 VmDirFreeEntryContent(pParentEntry);
                 VMDIR_SAFE_FREE_MEMORY(pParentEntry);
 
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    case VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "parent (%s) not found, (%s)",
-                                                      pEntry->pdn.lberbv_val,
-                                                      VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "parent (%s) lookup failed, (%s)",
-                                                      pEntry->pdn.lberbv_val,
-                                                      VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-                }
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrMsg,
+                    "parent (%s) lookup failed, (%s) retVal (%u)",
+                    pEntry->pdn.lberbv_val,
+                    VDIR_SAFE_STRING(pOperation->pBEErrorMsg),
+                    retVal);
             }
 
             pEntry->pParentEntry = pParentEntry;        // pEntry takes over pParentEntry
@@ -288,18 +261,8 @@ txnretry:
                 BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
 
                 // Generate new meta-data for the attributes being updated
-                if ((retVal = VmDirGenerateModsNewMetaData( pOperation, modReq->mods, pEntry->eId )) != 0)
-                {
-
-                    switch (retVal)
-                    {
-                        case VMDIR_ERROR_LOCK_DEADLOCK:
-                            goto txnretry; // Possible retry.  BUGBUG, is modReq->mods in above call good for retry?
-
-                        default:
-                            BAIL_ON_VMDIR_ERROR( retVal );
-                    }
-                }
+                retVal = VmDirGenerateModsNewMetaData(pOperation, modReq->mods, pEntry->eId);
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
 
             // Normalize attribute values in mods
@@ -319,18 +282,12 @@ txnretry:
                     pOperation->pBECtx,
                     bIsTombstoneObj ? NULL : modReq->mods,
                     pEntry);
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryDelete (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "BEEntryDelete (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
         // Use normalized DN value
         if (bIsDomainObject)
@@ -341,17 +298,12 @@ txnretry:
         }
 
         retVal = pOperation->pBEIF->pfnBEDeleteAllAttrValueMetaData(pOperation->pBECtx, pOperation->pSchemaCtx, pEntry->eId);
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryDeleteL pfnBEDeleteAllAttrValueMetaData error: (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "BEEntryDelete pfnBEDeleteAllAttrValueMetaData error: (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
@@ -366,9 +318,6 @@ txnretry:
                     pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
         }
     }
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
 
     gVmdirGlobals.dwLdapWrites++;
 
@@ -380,6 +329,10 @@ txnretry:
     VdirLockoutCacheRemoveRec(pEntry->dn.bvnorm_val);
 
 cleanup:
+    if (!bIsTombstoneObj)
+    {
+        VmDirWriteQueuePop(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
+    }
 
     {
         int iPostCommitPluginRtn  = 0;

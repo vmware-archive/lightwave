@@ -43,12 +43,6 @@ VmDirFirstReplicationCycle(
     PCSTR                           pszHostname,
     VMDIR_REPLICATION_AGREEMENT *   pReplAgr);
 
-int
-VmDirReplUpdateCookies(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    struct berval *                 syncDoneCtrlVal,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr);
-
 DWORD
 VmDirCacheKrb5Creds(
     PCSTR pszUPN,
@@ -163,6 +157,19 @@ int
 VmDirPatchDSERoot(
     PVDIR_SCHEMA_CTX    pSchemaCtx
     );
+
+// replcookies.c
+DWORD
+VmDirReplCookieCreate(
+    PVDIR_SCHEMA_CTX                pSchemaCtx,
+    struct berval *                 syncDoneCtrlVal,
+    VMDIR_REPLICATION_AGREEMENT *   replAgr);
+
+int
+VmDirReplCookieUpdate(
+    PVDIR_SCHEMA_CTX                pSchemaCtx,
+    struct berval *                 syncDoneCtrlVal,
+    VMDIR_REPLICATION_AGREEMENT *   replAgr);
 
 #ifdef __cplusplus
 }

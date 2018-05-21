@@ -51,7 +51,7 @@ int
 SetupReplModifyRequest(
     VDIR_OPERATION *    modOp,
     PVDIR_ENTRY         pEntry,
-    USN *               pNextLocalUsn,
+    USN                 localUsn,
     ENTRYID             entryId
     );
 
@@ -168,7 +168,6 @@ ReplAddEntry(
     USN                 localUsn = 0;
     char                localUsnStr[VMDIR_MAX_USN_STR_LEN];
     size_t              localUsnStrlen = 0;
-    int                 dbRetVal = 0;
     PVDIR_ATTRIBUTE     pAttrAttrMetaData = NULL;
     PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
     int                 i = 0;
@@ -218,14 +217,22 @@ ReplAddEntry(
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "ReplAddEntry: next entry being replicated/Added is: %s", pEntry->dn.lberbv.bv_val);
 
     // Set local attributes.
-
-    if ((dbRetVal = op.pBEIF->pfnBEGetNextUSN( op.pBECtx, &localUsn )) != 0)
+    if((retVal = VmDirWriteQueuePush(
+                    op.pBECtx,
+                    gVmDirServerOpsGlobals.pWriteQueue,
+                    op.pWriteQueueEle)) != 0)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplAddEntry: pfnBEGetNextUSN failed with error code: %d, error string: %s",
-                  dbRetVal, VDIR_SAFE_STRING(op.pBEErrorMsg) );
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: failed with error code: %d, error string: %s",
+            __FUNCTION__,
+            retVal,
+            VDIR_SAFE_STRING(op.pBEErrorMsg));
         retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
+
+    localUsn = op.pWriteQueueEle->usn;
 
     if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%" PRId64, localUsn)) != 0)
     {
@@ -357,7 +364,6 @@ ReplDeleteEntry(
     VDIR_OPERATION      tmpAddOp = {0};
     VDIR_OPERATION      delOp = {0};
     ModifyReq *         mr = &(delOp.request.modifyReq);
-    USN                 localUsn = {0};
     LDAPMessage *       ldapMsg = pPageEntry->entry;
 
     retVal = VmDirInitStackOperation( &delOp,
@@ -418,8 +424,23 @@ ReplDeleteEntry(
     delOp.pszPartner = pPageEntry->pszPartner;
     delOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
+    if((retVal = VmDirWriteQueuePush(
+                    delOp.pBECtx,
+                    gVmDirServerOpsGlobals.pWriteQueue,
+                    delOp.pWriteQueueEle)) != 0)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: failed with error code: %d, error string: %s",
+            __FUNCTION__,
+            retVal,
+            VDIR_SAFE_STRING(delOp.pBEErrorMsg));
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
     // SJ-TBD: What about if one or more attributes were meanwhile added to the entry? How do we purge them?
-    retVal = SetupReplModifyRequest( &delOp, tmpAddOp.request.addReq.pEntry, &localUsn, 0);
+    retVal = SetupReplModifyRequest(&delOp, tmpAddOp.request.addReq.pEntry, delOp.pWriteQueueEle->usn, 0);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
@@ -490,9 +511,9 @@ ReplModifyEntry(
     )
 {
     int                 retVal = LDAP_SUCCESS;
+    int                 dbRetVal = 0;
     VDIR_OPERATION      modOp = {0};
     ModifyReq *         mr = &(modOp.request.modifyReq);
-    int                 dbRetVal = 0;
     BOOLEAN             bHasTxn = FALSE;
     int                 deadLockRetries = 0;
     PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
@@ -570,6 +591,26 @@ ReplModifyEntry(
     modOp.pBEIF = VmDirBackendSelect(mr->dn.lberbv.bv_val);
     assert(modOp.pBEIF);
 
+    if((retVal = VmDirWriteQueuePush(
+                    modOp.pBECtx,
+                    gVmDirServerOpsGlobals.pWriteQueue,
+                    modOp.pWriteQueueEle)) != 0)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: failed with error code: %d, error string: %s",
+            __FUNCTION__,
+            retVal,
+            VDIR_SAFE_STRING(modOp.pBEErrorMsg));
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    localUsn = modOp.pWriteQueueEle->usn;
+
+    retVal = VmDirWriteQueueWait(gVmDirServerOpsGlobals.pWriteQueue, modOp.pWriteQueueEle);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
     // ************************************************************************************
     // transaction retry loop begin.  make sure all function within are retry agnostic.
     // ************************************************************************************
@@ -637,7 +678,7 @@ txnretry:
     modOp.pszPartner = pPageEntry->pszPartner;
     modOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
 
-    if ((retVal = SetupReplModifyRequest(&modOp, &e, &localUsn, entryId)) != LDAP_SUCCESS)
+    if ((retVal = SetupReplModifyRequest(&modOp, &e, localUsn, entryId)) != LDAP_SUCCESS)
     {
         switch (retVal)
         {
@@ -751,6 +792,8 @@ txnretry:
     }
 
 cleanup:
+    VmDirWriteQueuePop(gVmDirServerOpsGlobals.pWriteQueue, modOp.pWriteQueueEle);
+
     // Release schema modification mutex
     VmDirFreeBervalContent(&bvParentDn);
     (VOID)VmDirSchemaModMutexRelease(&modOp);
@@ -1383,7 +1426,7 @@ int
 SetupReplModifyRequest(
     VDIR_OPERATION *    pOperation,
     PVDIR_ENTRY         pEntry,
-    USN *               pNextLocalUsn,
+    USN                 localUsn,
     ENTRYID             entryId
     )
 {
@@ -1391,10 +1434,8 @@ SetupReplModifyRequest(
     VDIR_MODIFICATION * mod = NULL;
     VDIR_ATTRIBUTE *    currAttr = NULL;
     unsigned int        i = 0;
-    USN                 localUsn = 0;
     char                localUsnStr[VMDIR_MAX_USN_STR_LEN];
     size_t              localUsnStrlen = 0;
-    int                 dbRetVal = 0;
     PVDIR_ATTRIBUTE     pAttrAttrMetaData = NULL;
     BOOLEAN             isDeleteObjReq = FALSE;
     VDIR_MODIFICATION * lastKnownDNMod = NULL;
@@ -1414,14 +1455,6 @@ SetupReplModifyRequest(
     // Make sure Attribute has its ATDesc set
     retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
-
-    if ((dbRetVal = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &localUsn )) != 0)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: BdbGetNextUSN failed with error code: %d, error string: %s",
-                  dbRetVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
 
     if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%" PRId64,
                                        localUsn)) != 0)
@@ -1557,8 +1590,6 @@ SetupReplModifyRequest(
             BAIL_ON_VMDIR_ERROR( retVal );
         }
     }
-
-    *pNextLocalUsn = localUsn;
 
 cleanup:
     // pAttrAttrMetaData is local, needs to be freed within the call

@@ -46,6 +46,11 @@
 
 // function parameter pEntry is NULL in this case!!
 // NOTE: order of fields MUST stay in sync with struct definition...
+/*
+ * Before adding any plugins which requires to perform add/modify/delete,
+ * Please be aware of Writequeue logic. Acquiring multiple (nested) USNs in the same
+ * thread could result in deadlock.
+ */
 #define VDIR_PRE_MODAPPLY_MODIFY_PLUGIN_INITIALIZER                 \
 {                                                                   \
     {                                                               \
@@ -57,13 +62,13 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplaceOpAttrsPreModApplyModify), \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDIrPluginHandleFSPsPreModApplyModify), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDIrPluginHandleFSPsPreModApplyModify), \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplaceOpAttrsPreModApplyModify), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -139,7 +144,7 @@
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirpluginPasswordPostModifyCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
@@ -166,6 +171,11 @@
 
 // NOTE1: order of fields MUST stay in sync with struct definition...
 // NOTE2: generate SID (_VmDirPluginGenerateSidPreAdd) after generating GUID in _VmDirPluginAddOpAttrsPreAdd plugin
+/*
+ * Before adding any plugins which requires to perform add/modify/delete,
+ * Please be aware of Writequeue logic. Acquiring multiple (nested) USNs in the same
+ * thread could result in deadlock.
+ */
 #define VDIR_PRE_ADD_PLUGIN_INITIALIZER                             \
 {                                                                   \
     {                                                               \
@@ -183,6 +193,12 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginCreateFSPsPreAdd),      \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginAddOpAttrsPreAdd),      \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
@@ -190,12 +206,6 @@
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginGenerateSidPreAdd),     \
-    VMDIR_SF_INIT(.pNext, NULL )                                    \
-    },                                                              \
-    {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginCreateFSPsPreAdd),      \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -265,7 +275,7 @@
 #define VDIR_PRE_MODAPPLY_DELETE_PLUGIN_INITIALIZER                 \
 {                                                                   \
     {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, VmDirPluginGroupMemberPreModApplyDelete), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
@@ -1279,7 +1289,6 @@ _VmDirPluginAddOpAttrsPreAdd(
     DWORD            dwPriorResult)
 {
     DWORD        dwError = 0;
-    USN          usn = 0;
     char         usnStr[VMDIR_MAX_USN_STR_LEN];
     char         pszTimeBuf[GENERALIZED_TIME_STR_LEN + 1] = {0};
     uuid_t       guid;
@@ -1289,12 +1298,14 @@ _VmDirPluginAddOpAttrsPreAdd(
     PVDIR_ATTRIBUTE pAttrModifyTimeStamp = VmDirFindAttrByName(pEntry,ATTR_MODIFYTIMESTAMP);
     PVDIR_ATTRIBUTE pAttrCreateTimeStamp = VmDirFindAttrByName(pEntry,ATTR_CREATETIMESTAMP);
 
-    // Get/create USN value
     pszErrorContext = "Get next USN";
-    dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
+    dwError = VmDirWriteQueuePush(
+            pOperation->pBECtx,
+            gVmDirServerOpsGlobals.pWriteQueue,
+            pOperation->pWriteQueueEle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, usn);
+    VmDirStringNPrintFA(usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, pOperation->pWriteQueueEle->usn);
 
     // Append usnCreated attribute
     pszErrorContext = "Add USN create attribute";
@@ -1542,19 +1553,19 @@ _VmDirPluginReplaceOpAttrsPreModApplyModify(
     DWORD           dwPriorResult)
 {
     DWORD   dwError = 0;
-    USN     usn = 0;
     char    usnStr[VMDIR_MAX_USN_STR_LEN];
     char    pszTimeBuf[GENERALIZED_TIME_STR_LEN + 1] = {0};
     PCSTR   pszErrorContext = NULL;
     PCSTR   pszModifiersDN = NULL;
 
-    // Get/create USN value
-
     pszErrorContext = "Get next USN";
-    dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
-    BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = VmDirWriteQueuePush(
+            pOperation->pBECtx,
+            gVmDirServerOpsGlobals.pWriteQueue,
+            pOperation->pWriteQueueEle);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, usn);
+    VmDirStringNPrintFA(usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%" PRId64, pOperation->pWriteQueueEle->usn);
 
     pszErrorContext = "Replace USN change attribute";
     dwError = VmDirAppendAMod( pOperation, MOD_OP_REPLACE, ATTR_USN_CHANGED, ATTR_USN_CHANGED_LEN, usnStr, VmDirStringLenA( usnStr ) );

@@ -1085,6 +1085,8 @@ typedef enum
 
 #define VMDIR_REG_KEY_SUPPLIER_THREAD_TIMEOUT_IN_MILLI_SEC "ReplSupplierThreadTimeoutInMilliSec"
 
+#define VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC "WriteTimeoutInMilliSec"
+
 #define VMDIR_REG_KEY_EMPTY_PAGE_COUNT "ReplEmptyPageCnt"
 
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"

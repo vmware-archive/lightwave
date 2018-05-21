@@ -444,4 +444,15 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 1,                                \
+        /*.dwMax          = */ 120000,                           \
+        /*.dwDefault      = */ 60000,                            \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }

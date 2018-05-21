@@ -188,6 +188,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
     DWORD                           dwEmptyPageCnt;
     DWORD                           dwSupplierThrTimeoutInMilliSec;
+    DWORD                           dwWriteTimeoutInMilliSec;
 
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
@@ -282,6 +283,20 @@ typedef struct _VMDIR_INTEGRITY_CHECK_GLOBALS
 } VMDIR_INTEGRITY_CHECK_GLOBALS, *PVMDIR_INTEGRITY_CHECK_GLOBALS;
 
 extern VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck;
+
+typedef struct _VMDIR_WRITE_QUEUE
+{
+    PVDIR_LINKED_LIST  pList;
+} VMDIR_WRITE_QUEUE, *PVMDIR_WRITE_QUEUE;
+
+typedef struct _VMDIR_SERVER_OPERATIONS_GLOBALS
+{
+    PVMDIR_MUTEX         pMutex;
+    USN                  maxCommittedUSN;
+    PVMDIR_WRITE_QUEUE   pWriteQueue;
+} VMDIR_SERVER_OPERATIONS_GLOBALS, *PVMDIR_SERVER_OPERATIONS_GLOBALS;
+
+extern VMDIR_SERVER_OPERATIONS_GLOBALS gVmDirServerOpsGlobals;
 
 typedef enum
 {
