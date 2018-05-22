@@ -50,7 +50,7 @@ type jwt interface {
 	IssuedAt() time.Time
 	IdpSessionID() (string, bool)
 	Audience() ([]string, bool)
-	Hotk() (bool, *jose.JSONWebKeySet, error)
+	Hotk() (*jose.JSONWebKeySet, error)
 	Claim(claimName string) (interface{}, bool)
 }
 
@@ -589,13 +589,13 @@ func (t *jwtImpl) Audience() ([]string, bool) {
 	return arrayVal, ok
 }
 
-func (t *jwtImpl) Hotk() (bool, *jose.JSONWebKeySet, error) {
+func (t *jwtImpl) Hotk() (*jose.JSONWebKeySet, error) {
 	if t.Type() == HOKTokenType {
 		if val, ok := t.claims[ClaimHotKJWK]; ok {
 			var hotk jose.JSONWebKeySet
 			rawHotk, err := json.Marshal(val)
 			if err != nil {
-				return false, nil, OIDCJsonParseError.MakeError(
+				return nil, OIDCJsonParseError.MakeError(
 					fmt.Sprintf("Failed to marshal hotk claim"), err)
 			}
 
@@ -609,19 +609,21 @@ func (t *jwtImpl) Hotk() (bool, *jose.JSONWebKeySet, error) {
 					var jwk jose.JSONWebKey
 					err := json.Unmarshal([]byte(k), &jwk)
 					if err != nil {
-						return false, nil, OIDCJsonParseError.MakeError(
+						return nil, OIDCJsonParseError.MakeError(
 							fmt.Sprintf("Failed to unmarshal JWK from HOTK claim"), err)
 					}
 					hotk.Keys = append(hotk.Keys, jwk)
 				}
-				return true, &hotk, nil
+				return &hotk, nil
 			}
-			return false, nil, OIDCTokenInvalidError.MakeError(
+			return nil, OIDCTokenInvalidError.MakeError(
 				fmt.Sprintf("Failed to find HOTK JWKs"), err)
 		}
+		return nil, OIDCTokenInvalidError.MakeError(
+			fmt.Sprintf("hotk-pk JWT must have hotk claim"), nil)
 	}
 
-	return false, nil, nil
+	return nil, nil
 }
 
 func (t *jwtImpl) IdpSessionID() (string, bool) {

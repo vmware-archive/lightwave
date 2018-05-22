@@ -66,7 +66,7 @@ type AccessToken interface {
 	Expiration() time.Time
 	IssuedAt() time.Time
 	Audience() ([]string, bool)
-	Hotk() (bool, *jose.JSONWebKeySet, error)
+	Hotk() (*jose.JSONWebKeySet, error)
 	Claim(claimName string) (interface{}, bool)
 }
 

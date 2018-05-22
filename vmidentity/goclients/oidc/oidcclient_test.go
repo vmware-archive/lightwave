@@ -363,9 +363,9 @@ func checkAccessToken(t *testing.T, accessToken AccessToken, expectedSubject, ex
 	assert.True(t, accessToken.Expiration().After(accessToken.IssuedAt()), "Expiration should be after issued time")
 	assert.True(t, accessToken.Expiration().After(time.Now()), "Token should not be expired")
 
-	ok, hotk, err := accessToken.Hotk()
+	hotk, err := accessToken.Hotk()
 	require.Nil(t, err, "Should not fail when getting HOTK claim from hotk-pk token")
-	if ok {
+	if accessToken.Type() == "hotk-pk" {
 		assert.NotNil(t, hotk, "HOTK claim should not be nil")
 	}
 

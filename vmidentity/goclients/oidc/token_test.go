@@ -139,9 +139,8 @@ func TestParseHotkClaim(t *testing.T) {
 	require.Nil(t, err, "Should not fail decoding raw hotk-pk token body")
 	jwt := &jwtImpl{claims: tokenBody}
 
-	ok, hotk, err := jwt.Hotk()
+	hotk, err := jwt.Hotk()
 	require.Nil(t, err, "Should not fail when extracting HOTK claim")
-	assert.True(t, ok, "Extracting HOTK claim should not fail")
 	assert.NotNil(t, hotk, "HOTK claim should not be nil")
 }
 
