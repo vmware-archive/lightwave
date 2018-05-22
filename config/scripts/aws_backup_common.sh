@@ -38,7 +38,7 @@ get_account_id() {
 }
 
 upload_to_cloud() {
-    aws s3api put-object --bucket $BUCKET --key $1 --body $2 --metadata md5chksum=$3 --content-md5 $3
+    aws s3 cp "$2" "s3://$BUCKET/$1"
     if [ $? -ne 0 ]; then
         return 1
     fi

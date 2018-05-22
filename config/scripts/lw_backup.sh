@@ -33,29 +33,18 @@ update_backup_regkey() {
 
 #Uploads the mdb file. Sample name: <instance_id>-data.mdb
 upload_bundle() {
-    #Calculate checksum
-    md5=`openssl md5 -binary $BACKUP_PATH/data.mdb | base64`
-    if [ $? -ne 0 ]; then
-        exit
-    fi
     #Upload bundle to cloud storage
-    retry=1
-    while [ $retry -le 5 ]
-    do
-        logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
-        start_time="$(date -u +%s)"
-        upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb" "$md5"
-        if [ $? -ne 0 ]; then
-            logger -t backup "Error while uploading bundle. Retrying."
-            (( retry = $retry + 1 ))
-            continue
-        fi
-        end_time="$(date -u +%s)"
-        upload_time=$(( end_time - start_time ))
-        logger -t backup "DB Upload took "$upload_time" seconds."
-        return 0
-    done
-    return 1
+    logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
+    start_time="$(date -u +%s)"
+    upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb"
+    if [ $? -ne 0 ]; then
+        logger -t backup "Error while uploading bundle."
+        return 1
+    fi
+    end_time="$(date -u +%s)"
+    upload_time=$(( end_time - start_time ))
+    logger -t backup "DB Upload took "$upload_time" seconds."
+    return 0
 }
 
 #uploads the rpm archive. Sample name: <instance_id>-lw_rpm_archive.zip
@@ -65,29 +54,18 @@ write_version() {
         logger -t backup "Error while zipping archive."
         exit
     fi
-    md5=`openssl md5 -binary /var/log/lightwave/${COMPONENT}_rpm_archive.zip | base64`
+    start_time="$(date -u +%s)"
+    upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-${COMPONENT}_rpm_archive.zip" "/var/log/lightwave/${COMPONENT}_rpm_archive.zip"
     if [ $? -ne 0 ]; then
-        exit
-    fi
-
-    retry=1
-    while [ $retry -le 5 ]
-    do
-        start_time="$(date -u +%s)"
-        upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-${COMPONENT}_rpm_archive.zip" "/var/log/lightwave/${COMPONENT}_rpm_archive.zip" "$md5"
-        if [ $? -ne 0 ]; then
-            logger -t backup "Error while uploading bundle. Retrying."
-            (( retry = $retry + 1 ))
-            continue
-        fi
-        end_time="$(date -u +%s)"
-        upload_time=$(( end_time - start_time ))
-        logger -t backup "DB Upload took "$upload_time" seconds."
+        logger -t backup "Error while uploading bundle."
         rm -rf /var/log/lightwave/${COMPONENT}_rpm_archive.zip
-        return 0
-    done
+        return 1
+    fi
+    end_time="$(date -u +%s)"
+    upload_time=$(( end_time - start_time ))
+    logger -t backup "DB Upload took "$upload_time" seconds."
     rm -rf /var/log/lightwave/${COMPONENT}_rpm_archive.zip
-    return 1
+    return 0
 }
 
 logger -t backup "Taking backup"
