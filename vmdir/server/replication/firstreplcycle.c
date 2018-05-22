@@ -110,16 +110,20 @@ VmDirFirstReplicationCycle(
 
     assert(gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB);
 
+
+    VmDirBkgdThreadShutdown();
+
+    VmDirMetricsShutdown();
+
+    //Shutdown local database
+    VmDirShutdownDB();
+
     retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir, &bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal,
             pszLocalErrorMsg,
             "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
             retVal);
-
-    VmDirBkgdThreadShutdown();
-
-    VmDirMetricsShutdown();
 
     retVal = VmDirSwapDB(dbHomeDir, bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
@@ -475,6 +479,36 @@ error:
     goto cleanup;
 }
 
+/**
+ * @ _VmDirShutdownDB()
+ * shutdown the current backend
+ * @return VOID
+ */
+VOID
+VmDirShutdownDB(
+    VOID
+    )
+{
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
+
+    // Shutdown backend
+    pBE = VmDirBackendSelect(NULL);
+    assert(pBE);
+
+    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
+
+    // in DR case, stop listening thread.
+    // in Join case, listening thread is not in listen mode yet.
+    VmDirShutdownConnAcceptThread();
+
+    VmDirIndexLibShutdown();
+
+    VmDirSchemaLibShutdown();
+
+    pBE->pfnBEShutdown();
+    VmDirBackendContentFree(pBE);
+}
+
 int
 VmDirSwapDB(
     PCSTR dbHomeDir,
@@ -487,26 +521,12 @@ VmDirSwapDB(
     int                     errorCode = 0;
     BOOLEAN                 bLegacyDataLoaded = FALSE;
     BOOLEAN                 bPathExist = FALSE;
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
 #else
     const char   fileSeperator = '\\';
 #endif
-
-    // Shutdown backend
-    pBE = VmDirBackendSelect(NULL);
-    assert(pBE);
-
-    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
-
-    VmDirIndexLibShutdown();
-
-    VmDirSchemaLibShutdown();
-
-    pBE->pfnBEShutdown();
-    VmDirBackendContentFree(pBE);
 
     // move .mdb files
     retVal = VmDirStringPrintFA( dbExistingName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator,

@@ -56,6 +56,24 @@ _VmDirDeriveDRNodeUtdVector(
     PSTR*   ppszUtdVector
     );
 
+static
+DWORD
+_VmDirPingListenerPorts(
+    DWORD   dwIPFamily
+    );
+
+static
+DWORD
+_VmDirPingLDAPPort(
+    DWORD   dwIPFamily
+    );
+
+static
+DWORD
+_VmDirStartLDAPListener(
+    VOID
+    );
+
 /* This function re-instantiates the current vmdir instance with a
  * foreign (MDB) database file.
  *
@@ -93,6 +111,12 @@ VmDirSrvServerReset(
     VmDirBkgdThreadShutdown();
 
     VmDirMetricsShutdown();
+
+    // stop REST head
+    VmDirRESTServerStop();
+
+    // stop LDAP head and close current DB
+    VmDirShutdownDB();
 
     //swap current vmdir database file with the foriegn one under partner/
     dwError = VmDirSwapDB(dbHomeDir, bMdbWalEnable);
@@ -163,6 +187,10 @@ VmDirSrvServerReset(
     dwError = LoadServerGlobals(&bWriteInvocationId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = _VmDirStartLDAPListener();
+    BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s LDAP port is up", __FUNCTION__);
+
     dwError = VmDirMetricsInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -180,6 +208,103 @@ cleanup:
         VMDIR_SAFE_FREE_MEMORY(pDcInfo->pszUPN);
         VMDIR_SAFE_FREE_MEMORY(pDcInfo);
     }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirPingListenerPorts(
+    DWORD   dwIPFamily
+    )
+{
+    DWORD   dwError = 0;
+    PDWORD  pdwPorts = NULL;
+    DWORD   dwNumPorts = 0;
+    DWORD   i = 0;
+
+    VmDirGetLdapListenPorts(&pdwPorts, &dwNumPorts);
+
+    for (i=0; i<dwNumPorts; i++)
+    {
+        if (dwIPFamily == AF_INET && VmDirPingIPV4AcceptThr(pdwPorts[i]) != 0)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+        else if (dwIPFamily == AF_INET6 && VmDirPingIPV6AcceptThr(pdwPorts[i]) != 0)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
+
+error:
+    return dwError;
+}
+
+static
+DWORD
+_VmDirPingLDAPPort(
+    DWORD   dwIPFamily
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+
+    for (dwCnt = 0; dwCnt<10; dwCnt++)
+    {
+        if (dwIPFamily == AF_INET && _VmDirPingListenerPorts(dwIPFamily) == 0)
+        {
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s IPV4 LDAP port is up", __FUNCTION__);
+            break;
+        }
+        else if (dwIPFamily == AF_INET6 && _VmDirPingListenerPorts(dwIPFamily) == 0)
+        {
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s IPV6 LDAP port is up", __FUNCTION__);
+            break;
+        }
+
+        VmDirSleep(1000);
+    }
+
+    if (dwCnt==10)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+error:
+    return dwError;
+}
+
+DWORD
+_VmDirStartLDAPListener(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bIPV4 = FALSE;
+    BOOLEAN bIPV6 = FALSE;
+
+    dwError = VmDirInitConnAcceptThread();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirWhichAddressPresent(&bIPV4, &bIPV6);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bIPV4)
+    {
+        dwError = _VmDirPingLDAPPort(AF_INET);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (bIPV6)
+    {
+        dwError = _VmDirPingLDAPPort(AF_INET6);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
     return dwError;
 
 error:
@@ -435,6 +560,7 @@ _VmDirDeleteManagedService(
     PSTR    pszManagedServiceAccountContainerDn = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
     PDEQUE_NODE pDequeTmp = NULL;
+    PVMDIR_DR_DC_INFO   pQueueStructTmp = NULL;
 
     dwError = VmDirAllocateStringPrintf(
         &pszManagedServiceAccountContainerDn,
@@ -461,7 +587,8 @@ _VmDirDeleteManagedService(
 
             for (pDequeTmp = pDequeDCObjUPN->pHead; pDequeTmp != NULL; pDequeTmp = pDequeTmp->pNext)
             {
-                if (VmDirStringCaseStrA(pAttrUPN->vals[0].lberbv_val, pDequeTmp->pElement) != NULL)
+                pQueueStructTmp = (PVMDIR_DR_DC_INFO) pDequeTmp->pElement;
+                if (VmDirStringCaseStrA(pAttrUPN->vals[0].lberbv_val, pQueueStructTmp->pszUPN) != NULL)
                 {
                     dwError = VmDirDeleteEntry(&entryArray.pEntry[i]);
                     BAIL_ON_VMDIR_ERROR(dwError);

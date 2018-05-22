@@ -148,6 +148,11 @@ VmDirComposeNodeUtdVector(
     PSTR*   ppszMaxUSN
     );
 
+VOID
+VmDirShutdownDB(
+    VOID
+    );
+
 int
 VmDirSwapDB(
     PCSTR   dbHomeDir,
