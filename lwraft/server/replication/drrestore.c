@@ -65,9 +65,15 @@ VmDirSrvServerReset(
 
     VmDirGetMdbWalEnable(&bMdbWalEnable);
 
-    VmDirShutdownDB();
+    VmDirBkgdThreadShutdown();
 
     VmDirMetricsShutdown();
+
+    // stop REST head
+    VmDirRESTServerStop();
+
+    // stop LDAP head and close current DB
+    VmDirShutdownDB();
 
     //swap current vmdir database file with the foriegn one under partner/
     dwError = VmDirSwapDB(dbHomeDir, bMdbWalEnable);
@@ -95,6 +101,9 @@ VmDirSrvServerReset(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s LDAP port is up", __FUNCTION__);
 
     dwError = VmDirMetricsInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirBkgdThreadInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

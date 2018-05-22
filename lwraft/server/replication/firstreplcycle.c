@@ -93,6 +93,10 @@ VmDirFirstReplicationCycle(
     }
 #endif
 
+    VmDirBkgdThreadShutdown();
+
+    VmDirMetricsShutdown();
+
     //Shutdown local database
     VmDirShutdownDB();
 
@@ -102,10 +106,6 @@ VmDirFirstReplicationCycle(
             pszLocalErrorMsg,
             "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
             retVal);
-
-    VmDirBkgdThreadShutdown();
-
-    VmDirMetricsShutdown();
 
     retVal = VmDirSwapDB(dbHomeDir, bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
