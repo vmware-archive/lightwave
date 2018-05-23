@@ -142,8 +142,21 @@
       <artifactId>log4j-api</artifactId>
       <version>${apache.log4j.version}</version>
     </dependency>
-  </dependencies>
 
+    <!--  Metrics Dependencies -->
+    <!-- The client -->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+    <!-- Hotspot JVM metrics-->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+  </dependencies>
   <properties>
     <rootDirectory>${basedir}/../..</rootDirectory>
   </properties>

@@ -15,8 +15,6 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.io.IOException;
-import java.security.NoSuchProviderException;
-import java.util.Collection;
 import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
@@ -37,11 +35,12 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IDPConfig;
-import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
+
+import io.prometheus.client.Histogram.Timer;
 
 /**
  * @author Yehia Zayour
@@ -49,6 +48,8 @@ import com.vmware.identity.openidconnect.protocol.HttpResponse;
 @Controller
 public class AuthenticationController implements FederatedIdentityProcessorProvider {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(AuthenticationController.class);
+
+    private final String metricsResource = "authentication";
 
     @Autowired
     private CasIdmClient idmClient;
@@ -91,6 +92,8 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
+        String metricsOperation = "authenticate";
+        Timer requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
         ModelAndView page = null;
         HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
@@ -120,6 +123,13 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
         } finally {
             if (context != null) {
                 context.close();
+            }
+            if (httpResponse != null) {
+                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                        metricsResource, metricsOperation);
+            }
+            if (requestTimer != null) {
+                requestTimer.observeDuration();
             }
         }
 

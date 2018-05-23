@@ -17,6 +17,7 @@ package com.vmware.identity.openidconnect.common;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -52,7 +53,9 @@ public enum GrantType {
     }
 
     public static GrantType parse(String value) throws ParseException {
-        Validate.notEmpty(value, "value");
+        if (StringUtils.isEmpty(value)) {
+            throw new ParseException(ErrorObject.invalidGrant("invalid grant_type parameter"));
+        }
         GrantType result = stringToEnumMap.get(value);
         if (result == null) {
             throw new ParseException(ErrorObject.unsupportedGrantType("unsupported grant_type parameter"));

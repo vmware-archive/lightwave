@@ -34,12 +34,16 @@ import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
+import io.prometheus.client.Histogram.Timer;
+
 /**
  * @author Yehia Zayour
  */
 @Controller
 public class LogoutController {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(LogoutController.class);
+
+    private final String metricsResource = "logout";
 
     @Autowired
     private CasIdmClient idmClient;
@@ -66,7 +70,10 @@ public class LogoutController {
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
-        HttpResponse httpResponse;
+        String metricsOperation = "logout";
+        Timer requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+
+        HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
 
         try {
@@ -86,6 +93,13 @@ public class LogoutController {
         } finally {
             if (context != null) {
                 context.close();
+            }
+            if (httpResponse != null) {
+                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                        metricsResource, metricsOperation);
+            }
+            if (requestTimer != null) {
+                requestTimer.observeDuration();
             }
         }
 

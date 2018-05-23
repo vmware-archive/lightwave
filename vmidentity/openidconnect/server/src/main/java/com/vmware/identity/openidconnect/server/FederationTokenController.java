@@ -19,6 +19,7 @@ import java.security.NoSuchProviderException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.Validate;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -35,13 +36,21 @@ import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
+import io.prometheus.client.Histogram.Timer;
+
 @Controller
 public class FederationTokenController {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(FederationTokenController.class);
+
+    public static final String metricsResource = "federation";
+    private static final String QUERY_PARAM_ORG_LINK = "orgLink";
+    private static final String QUERY_PARAM_CODE = "code";
+    private static final String QUERY_PARAM_STATE = "state";
 
     @Autowired
     private CasIdmClient idmClient;
@@ -63,22 +72,48 @@ public class FederationTokenController {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws IOException {
-        HttpResponse httpResponse;
+        String metricsOperation = "authenticate";
+        Timer requestTimer = null;
+        String tenant = null;
+        HttpResponse httpResponse = null;
         try {
-            final String code = request.getParameter("code");
-            final String state = request.getParameter("state");
-
             FederationRelayState relayState;
+            final String code = request.getParameter(QUERY_PARAM_CODE);
+            final String state = request.getParameter(QUERY_PARAM_STATE);
             // check if it is redirection response with auth code
             if (StringUtils.isEmpty(code)) {
                 relayState = FederationRelayState.build(state);
+                final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
+                Validate.notEmpty(orgLink, "Org link is not found from the request.");
+                // check tenant name is valid
+                int index = orgLink.lastIndexOf("/") + 1;
+                // tenant name is the org id from org link
+                tenant = orgLink.substring(index);
+                Validate.notEmpty(tenant, "Org id is not found from org link.");
+                if (StringUtils.isNotEmpty(relayState.getTenant())
+                        && !StringUtils.equalsIgnoreCase(relayState.getTenant(), tenant)) {
+                    ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
+                    throw new ServerException(errorObject);
+                }
+
+                relayState = new FederationRelayState.Builder(relayState.getIssuer(),
+                        relayState.getClientId(), relayState.getRedirectURI())
+                        .withTenant(tenant)
+                        .withState(new State())
+                        .withNonce(new Nonce())
+                        .build();
             } else {
                 // validate state
                 relayState = authnRequestTracker.remove(State.parse(state));
                 if (relayState == null) {
                     throw new ServerException(ErrorObject.invalidRequest("State not found."));
                 }
+                tenant = relayState.getTenant();
+                Validate.notEmpty(tenant, "Tenant name in auth request tracker should not be empty.");
             }
+
+            // start timer after tenant is available
+            requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
 
             final IDPConfig idpConfig = findFederatedIDP(relayState.getIssuer()); // External IDP corresponding to Issuer
             final OidcConfig oidcConfig = idpConfig.getOidcConfig();
@@ -87,15 +122,28 @@ public class FederationTokenController {
             }
             final FederatedIdentityProcessor processor = findProcessor(oidcConfig.getIssuerType());
             httpResponse = processor.processRequest(request, relayState, idpConfig);
+        } catch (IllegalArgumentException e) {
+            ErrorObject errorObject = ErrorObject.invalidRequest("Invalid request.");
+            LoggerUtils.logFailedRequest(logger, errorObject, e);
+            httpResponse = HttpResponse.createJsonResponse(errorObject);
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
             httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());
         } catch (Exception e) {
-            ErrorObject errorObject = ErrorObject.invalidRequest(
+            ErrorObject errorObject = ErrorObject.serverError(
                     String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);
             httpResponse = HttpResponse.createJsonResponse(errorObject);
+        } finally {
+            if (httpResponse != null) {
+                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                        metricsResource, metricsOperation);
+            }
+            if (requestTimer != null) {
+                requestTimer.observeDuration();
+            }
         }
+
         httpResponse.applyTo(response);
     }
 
@@ -127,7 +175,9 @@ public class FederationTokenController {
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
-        HttpResponse httpResponse;
+        String metricsOperation = "acquireFederationTokens";
+        Timer requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+        HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
 
         try {
@@ -146,6 +196,13 @@ public class FederationTokenController {
         } finally {
             if (context != null) {
                 context.close();
+            }
+            if (httpResponse != null) {
+                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                        metricsResource, metricsOperation);
+            }
+            if (requestTimer != null) {
+                requestTimer.observeDuration();
             }
         }
 

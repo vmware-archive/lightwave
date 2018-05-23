@@ -41,6 +41,8 @@ import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.ProviderMetadataMapper;
 import com.vmware.identity.openidconnect.protocol.URIUtils;
 
+import io.prometheus.client.Histogram.Timer;
+
 /**
  * @author Jun Sun
  * @author Yehia Zayour
@@ -52,6 +54,7 @@ public class MetadataController {
     private static final List<String> RESPONSE_TYPES_SUPPORTED = Arrays.asList("code", "id_token", "token id_token");
     private static final List<String> SUBJECT_TYPES_SUPPORTED = Arrays.asList("public");
     private static final List<String> ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED = Arrays.asList("RS256");
+    private final String metricsResource = "metadata";
 
     @Autowired
     private CasIdmClient idmClient;
@@ -79,13 +82,16 @@ public class MetadataController {
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,
             @PathVariable("tenant") String tenant) throws IOException {
-        HttpResponse httpResponse;
+        String metricsOperation = "getMetadata";
+        Timer requestTimer = null;
+        HttpResponse httpResponse = null;
 
         try {
             TenantInfoRetriever tenantInfoRetriever = new TenantInfoRetriever(this.idmClient);
             if (tenant == null) {
                 tenant = tenantInfoRetriever.getDefaultTenantName();
             }
+            requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
             tenant = tenantInfo.getName(); // use tenant name as it appears in directory
             Issuer issuer = tenantInfo.getIssuer();
@@ -111,6 +117,14 @@ public class MetadataController {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);
             httpResponse = HttpResponse.createJsonResponse(errorObject);
+        } finally {
+            if (httpResponse != null) {
+                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                        metricsResource, metricsOperation);
+            }
+            if (requestTimer != null) {
+                requestTimer.observeDuration();
+            }
         }
 
         httpResponse.applyTo(httpServletResponse);
