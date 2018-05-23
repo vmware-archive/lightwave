@@ -1,0 +1,13 @@
+linux
+systemd
+glibc
+openssl
+xz-libs
+util-linux-libs
+libcap
+kmod
+Linux-PAM
+zlib
+krb5
+dbus
+ruby
