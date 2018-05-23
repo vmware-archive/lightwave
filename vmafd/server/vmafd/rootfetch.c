@@ -255,7 +255,7 @@ VmAfdRootFetchTask(
                 pArgs->pszUpn,
                 pArgs->pszPassword,
                 &pLotus);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmAfdQueryCACerts(pLotus, NULL, TRUE, &pCACerts);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -301,6 +301,12 @@ cleanup:
     }
 
     return dwError;
+
+vmdirerror:
+    if (dwError == VMDIR_ERROR_USER_INVALID_CREDENTIAL)
+    {
+        VmAfdTryOldPassword();
+    }
 
 error :
 

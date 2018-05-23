@@ -156,6 +156,13 @@ extern "C" {
         }                                 \
     } while (0)
 
+#define BAIL_ON_VMDIR_ERROR(dwError) \
+    if (dwError)                                                   \
+    {                                                              \
+        VmAfdLog( VMAFD_DEBUG_ERROR, "[Error - %d, %s:%d]", dwError, __FILE__, __LINE__); \
+        goto vmdirerror;                                                \
+    }
+
 #define BAIL_ON_VMAFD_ERROR(dwError) \
     if (dwError)                                                   \
     {                                                              \

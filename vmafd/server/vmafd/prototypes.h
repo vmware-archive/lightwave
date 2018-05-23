@@ -117,6 +117,11 @@ VmAfSrvSetDCName(
     );
 
 DWORD
+VmAfSrvGetOldPassword(
+    PWSTR*  ppwszPassword   /* IN     */
+    );
+
+DWORD
 VmAfSrvGetMachineAccountInfo(
     PWSTR*   ppwszAccount,    /*    OUT */
     PWSTR*   ppwszPassword,   /*    OUT */
@@ -1933,6 +1938,11 @@ DWORD
 VmAfdGetDefaultDomainName(
     LDAP* pLotus,
     PSTR* ppDomainName
+    );
+
+VOID
+VmAfdTryOldPassword(
+    VOID
     );
 
 //storehash_util.c
