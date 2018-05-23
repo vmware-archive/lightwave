@@ -210,8 +210,10 @@ VmDnsOnForwarderRequest(
 static
 VOID
 VmDnsMetricsRcodeUpdate(
-   UCHAR rCode
-   );
+    BOOL                    bQueryInZone,
+    METRICS_VDNS_RCODE_OPS  operation,
+    UCHAR                   rCode
+    );
 
 typedef DWORD
 (*PVMDNS_SOCK_EVENT_HANDLER)(
@@ -1165,7 +1167,7 @@ cleanup:
     }
     if (bQueryInZone || dwFrwdError)
     {
-        VmDnsMetricsRcodeUpdate(rCode);
+        VmDnsMetricsRcodeUpdate(bQueryInZone, METRICS_VDNS_RCODE_OP_TCP_REQ_READ, rCode);
     }
 
     VMDNS_SAFE_FREE_MEMORY(pResponse);
@@ -1282,7 +1284,7 @@ cleanup:
     }
     if (bQueryInZone || dwFrwdError)
     {
-        VmDnsMetricsRcodeUpdate(rCode);
+        VmDnsMetricsRcodeUpdate(bQueryInZone, METRICS_VDNS_RCODE_OP_UDP_REQ_READ, rCode);
     }
 
     VMDNS_SAFE_FREE_MEMORY(pResponse);
@@ -1785,7 +1787,7 @@ cleanup:
     }
     if (bUpdateRCodeMetric)
     {
-        VmDnsMetricsRcodeUpdate(dwResponseCode);
+        VmDnsMetricsRcodeUpdate(false, METRICS_VDNS_RCODE_OP_FORWARDER_RESP, dwResponseCode);
     }
 
     return dwError;
@@ -1991,23 +1993,16 @@ error:
 static
 VOID
 VmDnsMetricsRcodeUpdate(
- UCHAR rCode
- )
+    BOOL                    bQueryInZone,
+    METRICS_VDNS_RCODE_OPS  operation,
+    UCHAR                   rCode
+    )
 {
-    if (rCode ==  VM_DNS_RCODE_NAME_ERROR)
-    {
-        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_NXDOMAIN_ERR_COUNT]);
-    }
-    else if (rCode == VM_DNS_RCODE_NOT_IMPLEMENTED)
-    {
-        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_NOT_IMPLEMENTED_COUNT]);
-    }
-    else if (rCode == VM_DNS_RCODE_SERVER_FAILURE)
-    {
-        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_ERROR_UNKNOWN_COUNT]);
-    }
-    else if (rCode == VM_DNS_RCODE_NOERROR)
-    {
-        VmMetricsCounterIncrement(gVmDnsCounterMetrics[DNS_NO_ERROR]);
-    }
+    METRICS_VDNS_RCODE_DOMAINS metricsRcodeDomain = 0;
+    METRICS_VDNS_RCODE_ERRORS metricsRcodeError = 0;
+
+    metricsRcodeDomain = VmDnsMetricsMapRcodeDomainToEnum(bQueryInZone);
+    metricsRcodeError = VmDnsMetricsMapRcodeErrorToEnum(rCode);
+
+    VmMetricsCounterIncrement(gVmDnsRcodeErrorMetrics[metricsRcodeDomain][operation][metricsRcodeError]);
 }
