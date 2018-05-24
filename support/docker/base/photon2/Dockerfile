@@ -19,7 +19,7 @@ RUN tdnf update -y tdnf && \
          jansson-2.9  \
          likewise-open-6.2.11 \
          openjre-1.8.0.141 \
-         openssl-1.0.2h \
+         openssl-1.0.2o \
          procps-ng-3.3.12 \
          rpm-4.13.0.1 \
          sed-4.4

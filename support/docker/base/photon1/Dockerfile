@@ -9,7 +9,7 @@ RUN tdnf update --refresh -y \
          tdnf-1.1.0 \
          rpm-4.13.0.1 && \
     tdnf install -y \
-         openssl-1.0.2h \
+         openssl-1.0.2o \
          createrepo-0.10.4 \
          apache-tomcat-8.5.20 \
          boost-1.60.0 \
