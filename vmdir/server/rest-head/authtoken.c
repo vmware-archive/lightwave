@@ -290,7 +290,7 @@ VmDirRESTAuthTokenValidatePOP(
             VDIR_SAFE_STRING(pszSha256BodyHex),
             pRestOp->pszContentType,
             pRestOp->pszDate,
-            pRestOp->pszPath);
+            pRestOp->pszURI);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // verify signature

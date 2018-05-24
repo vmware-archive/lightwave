@@ -71,6 +71,7 @@ VMCAVerifyOIDCBearerToken(
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
+    VMCA_SAFE_FREE_MEMORY(pszSigningCertificatePEM);
     return dwError;
 
 error:
@@ -125,6 +126,7 @@ VMCAVerifyOIDCHOTKToken(
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
+    VMCA_SAFE_FREE_MEMORY(pszSigningCertificatePEM);
     VMCA_SAFE_FREE_MEMORY(pszAuthTokenCp);
     return dwError;
 
@@ -265,7 +267,7 @@ VMCAGetTenantSigningCert(
     PCSTR   pszServer = "localhost";
     int     nPortNumber = 443;
     PSTR    pszTenant = NULL;
-    PCSTR   pszSigningCertPEM = NULL;
+    PSTR    pszSigningCertPEM = NULL;
 
     if (!ppszSigningCertPEM)
     {
@@ -283,14 +285,21 @@ VMCAGetTenantSigningCert(
                                 NULL /* pszTlsCAPath: NULL means skip TLS validation, pass LIGHTWAVE_TLS_CA_PATH to turn on */);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    pszSigningCertPEM = OidcServerMetadataGetSigningCertificatePEM(pMetadata);
-    *ppszSigningCertPEM = (PSTR)pszSigningCertPEM;
+    dwError = VMCAAllocateStringA(
+            OidcServerMetadataGetSigningCertificatePEM(pMetadata),
+            &pszSigningCertPEM);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppszSigningCertPEM = pszSigningCertPEM;
 
 cleanup:
+    VMCA_SAFE_FREE_MEMORY(pszTenant);
+    OidcServerMetadataDelete(pMetadata);
     return dwError;
 
 error:
     VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    VMCA_SAFE_FREE_MEMORY(pszSigningCertPEM);
     if (ppszSigningCertPEM)
         *ppszSigningCertPEM = NULL;
     goto cleanup;

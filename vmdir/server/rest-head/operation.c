@@ -90,7 +90,11 @@ VmDirRESTOperationReadRequest(
     dwError = VmRESTGetHttpMethod(pRestReq, &pRestOp->pszMethod);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read request URI. TRUE - req c-rest-engine to decode URI
+    // read raw request URI as sent from client - for token POP validation
+    dwError = VmRESTGetHttpURI(pRestReq, FALSE, &pRestOp->pszURI);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // read decoded request URI and truncate parameters
     dwError = VmRESTGetHttpURI(pRestReq, TRUE, &pRestOp->pszPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -336,6 +340,7 @@ VmDirFreeRESTOperation(
     {
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszURI);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
 

@@ -124,8 +124,7 @@ VMCARESTParseHttpHeader(
     dwError = VmRESTGetHttpMethod(pRESTRequest, &pVMCARequest->pszMethod);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    // TRUE - Request c-rest-engine to decode the URI
-    dwError = VmRESTGetHttpURI(pRESTRequest, TRUE, &pVMCARequest->pszUri);
+    dwError = VmRESTGetHttpURI(pRESTRequest, FALSE, &pVMCARequest->pszUri);
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTGetHttpVersion(pRESTRequest, &pVMCARequest->pszVer);

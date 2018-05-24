@@ -104,6 +104,7 @@ typedef struct _VDIR_REST_OPERATION
     DWORD                   dwPort;
     PSTR                    pszAuth;
     PSTR                    pszMethod;
+    PSTR                    pszURI;
     PSTR                    pszPath;
     PSTR                    pszSubPath;
 

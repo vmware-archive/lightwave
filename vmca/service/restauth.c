@@ -51,7 +51,7 @@ VMCARESTGetAccessToken(
     dwError = VMCAFindRestAuthMethod(pAuthorization->tokenType, &dwIdx);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    dwError = gVMCAAccessTokenMethods[dwIdx].pfnVerify(pAuthorization, pVMCARequest, ppAccessToken);
+    dwError = gVMCAAccessTokenMethods[dwIdx].pfnVerify(pAuthorization, pVMCARequest, &pAccessToken);
     BAIL_ON_VMCA_ERROR(dwError);
 
     *ppAccessToken = pAccessToken;
