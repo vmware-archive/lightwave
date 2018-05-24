@@ -118,14 +118,28 @@ targets:
   docker-lightwave-pre-photon1:
     description: Prepare for container build
     cmds:
-      - ./support/scripts/prep-container-build.sh photon1
+      - ./support/scripts/prep-container-build.sh photon1 server
+    always: true
+    image: 'vmware/lightwave-toolchain:2.0.3'
+
+  docker-lightwave-client-pre-photon1:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon1 client
     always: true
     image: 'vmware/lightwave-toolchain:2.0.3'
 
   docker-lightwave-pre-photon2:
     description: Prepare for container build
     cmds:
-      - ./support/scripts/prep-container-build.sh photon2
+      - ./support/scripts/prep-container-build.sh photon2 server
+    always: true
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  docker-lightwave-client-pre-photon2:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon2 client
     always: true
     image: 'vmware/lightwave-toolchain-photon2:1.0.0'
 
@@ -136,12 +150,26 @@ targets:
       - docker-lightwave-pre-photon1
     image: 'vmware/lightwave-sts'
 
+  docker-lightwave-client-photon1:
+    description: build lightwave docker image
+    build: ./build/docker
+    after:
+      - docker-lightwave-client-pre-photon1
+    image: 'vmware/lightwave-client'
+
   docker-lightwave-photon2:
     description: build lightwave docker image
     build: ./build/docker
     after:
       - docker-lightwave-pre-photon2
     image: 'vmware/lightwave-sts-photon2'
+
+  docker-lightwave-client-photon2:
+    description: build lightwave client docker image
+    build: ./build/docker
+    after:
+      - docker-lightwave-client-pre-photon2
+    image: 'vmware/lightwave-client-photon2'
 
   clean-photon1:
     description: Cleanup

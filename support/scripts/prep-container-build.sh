@@ -44,16 +44,32 @@ PROJECT_ROOT=$(pwd)
 DOCKER_ROOT=$PROJECT_ROOT/build/docker
 
 OSVER=
-if [ $# -gt 0 ]; then
+FLAVOR=
+if [ $# -gt 1 ]; then
     OSVER=$1
+    FLAVOR=$2
 fi
 
 case "$OSVER" in
     photon1)
-        DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sts/photon1
+        case "$FLAVOR" in
+            server)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sts/photon1
+                ;;
+            client)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/client/photon1
+                ;;
+        esac
         ;;
     photon2)
-        DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sts/photon2
+        case "$FLAVOR" in
+            server)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sts/photon2
+                ;;
+            client)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/client/photon2
+                ;;
+        esac
         ;;
     *)
         echo "Error: Unsupported o/s version: $OSVER"
