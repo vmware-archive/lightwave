@@ -82,6 +82,7 @@ fi
 if [ ! -d /var/lib/vmware/db_bkp ]; then
     mkdir /var/lib/vmware/db_bkp
 fi
+chown lightwave:lightwave /var/lib/vmware/db_bkp
 
 if [ $MODE = "lw-dr" ]; then
     /opt/vmware/bin/dir-cli database-backup --backuppath $BACKUP_PATH

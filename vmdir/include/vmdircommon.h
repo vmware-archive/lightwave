@@ -2144,6 +2144,11 @@ VmDirIsRootSecurityContext (
     );
 
 BOOL
+VmDirIsLightwaveSecurityContext (
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext
+    );
+
+BOOL
 VmDirEqualsSecurityContext (
     PVM_DIR_SECURITY_CONTEXT pSecurityContext1,
     PVM_DIR_SECURITY_CONTEXT pSecurityContext12

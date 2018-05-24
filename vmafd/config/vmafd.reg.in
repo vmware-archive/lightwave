@@ -1,6 +1,7 @@
 [HKEY_THIS_MACHINE\Services]
 
 [HKEY_THIS_MACHINE\Services\vmafd]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;WD)
 "Description" = {
     default = "VMware afd Service"
     doc = ""
@@ -31,6 +32,7 @@
 }
 
 [HKEY_THIS_MACHINE\Services\vmafd\Parameters]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;WD)
 "LogFile" = {
     default = "/var/log/vmware/vmafd/vmafdd.log"
     doc     = "Log File"

@@ -96,7 +96,7 @@ typedef UINT8 BOOLEAN, *PBOOLEAN;
 #endif
 
 #ifndef _WIN32
-#define VMAFD_NCALRPC_END_POINT "vmafdsvc"
+#define VMAFD_NCALRPC_END_POINT "/var/lib/vmware/rpc/vmafdsvc"
 #define VMAFD_SEPERATOR "/"
 
 #else

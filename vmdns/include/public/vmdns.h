@@ -35,7 +35,7 @@ extern "C" {
 #define MAX_LOG_MESSAGE_LEN    4096
 
 #ifndef _WIN32
-#define VMDNS_NCALRPC_END_POINT "vmdnssvc"
+#define VMDNS_NCALRPC_END_POINT "/var/lib/vmware/rpc/vmdnssvc"
 #else
     // note: keep in sync with /vmdns/main/idl/vmdns.idl
 #define VMDNS_NCALRPC_END_POINT "VMwareDNSService"

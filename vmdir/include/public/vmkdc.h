@@ -37,7 +37,7 @@ extern "C" {
 #define MAX_LOG_MESSAGE_LEN    4096
 
 #ifndef _WIN32
-#define VMKDC_NCALRPC_END_POINT "vmkdcsvc"
+#define VMKDC_NCALRPC_END_POINT "/var/lib/vmware/rpc/vmkdcsvc"
 #else
 // note: keep in sync with /vmkdc/main/idl/vmkdc.idl
 #define VMKDC_NCALRPC_END_POINT "VMwareKdcService"

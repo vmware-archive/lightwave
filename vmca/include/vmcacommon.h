@@ -302,7 +302,7 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 #define VMCA_REG_KEY_INSTALL_PATH            "InstallPath"
 
 #define VMCA_RPC_TCP_END_POINT               "2014"
-#define VMCA_NCALRPC_END_POINT               "vmcasvc"
+#define VMCA_NCALRPC_END_POINT               "/var/lib/vmware/rpc/vmcasvc"
 
 // Event logs related constants.
 

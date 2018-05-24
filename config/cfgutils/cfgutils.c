@@ -79,6 +79,14 @@ VmwDeployGetVmDirConfigPath(
     PSTR* ppszPath
     );
 
+static
+DWORD
+VmwDeployVecsSetPermission(
+    PCSTR pszStoreName,
+    PCSTR pszUserName,
+    DWORD dwAccessMask
+    );
+
 DWORD
 VmwDeploySetupInstance(
     PVMW_IC_SETUP_PARAMS pParams
@@ -627,6 +635,53 @@ error:
 
 static
 DWORD
+VmwDeployVecsSetPermission(
+    PCSTR pszStoreName,
+    PCSTR pszUserName,
+    DWORD dwAccessMask
+    )
+{
+    DWORD dwError = 0;
+    PVECS_STORE pStore = NULL;
+
+    if (IsNullOrEmptyString (pszStoreName) ||
+        IsNullOrEmptyString (pszUserName) ||
+        !dwAccessMask)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR (dwError);
+    }
+
+    dwError = VecsOpenCertStoreA (
+                    NULL,
+                    pszStoreName,
+                    NULL,
+                    &pStore
+                    );
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VecsSetPermissionA (
+                    pStore,
+                    pszUserName,
+                    dwAccessMask
+                    );
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+cleanup:
+    if (pStore)
+    {
+        VecsCloseCertStore (pStore);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
 VmwDeploySetupServerCommon(
     PVMW_IC_SETUP_PARAMS pParams
     )
@@ -766,6 +821,12 @@ VmwDeploySetupServerCommon(
     VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
 
     dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmwDeployVecsSetPermission(
+                    SYSTEM_CERT_STORE_NAME,
+                    VMW_LIGHTWAVE_USER_NAME,
+                    READ_STORE);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(

@@ -33,8 +33,10 @@ fix_ssl_cert
 if [ ! -d /var/lib/vmware/vmdir/partner ]; then
     mkdir /var/lib/vmware/vmdir/partner
 fi
+chown lightwave:lightwave /var/lib/vmware/vmdir/partner
 
 download_db $BACKUP_PATH /var/lib/vmware/vmdir/partner/data.mdb
+chown lightwave:lightwave /var/lib/vmware/vmdir/partner/data.mdb
 
 /opt/vmware/bin/dir-cli disaster-recovery --login $PROMOTER_USER --password $DOMAIN_PROMOTER_PASS
 
