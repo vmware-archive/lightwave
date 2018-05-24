@@ -4644,8 +4644,7 @@ VmAfdStartHeartbeatW(
                           );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdLocalPostHeartbeat(pwszServiceName, dwServicePort);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    VmAfdLocalPostHeartbeat(pwszServiceName, dwServicePort);
 
     dwError = VmAfdAllocateStringW(
                               pwszServiceName,
