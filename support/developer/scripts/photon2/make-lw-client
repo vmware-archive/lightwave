@@ -1,5 +1,35 @@
 #!/bin/bash
 
+function check_lightwave_join
+{
+    node=$1
+    expected_domain=$2
+    # Check if lightwave node is joined
+    attempts=1
+    joined="false"
+    total_attempts=10
+    sleep 5
+    while [ $attempts -lt $total_attempts ] && [ $joined != "true" ]; do
+       actual_domain=$(docker exec -it $node /opt/vmware/bin/vmafd-cli get-domain-name --server-name localhost)
+       actual_domain=${actual_domain//[[:space:]]/}
+       if [[ $actual_domain == $expected_domain ]]; then
+            joined="true"
+            break;
+        else
+            echo "Lightwave not joined (attempt $attempts/$total_attempts), will try again."
+            attempts=$[$attempts+1]
+            sleep 5
+        fi
+    done
+
+    if [ $attempts -eq $total_attempts ]; then
+       echo "Could not join $node to Lightwave Domain [$expected_domain] after $total_attempts attempts"
+       exit 1
+    else
+       echo "Lightwave client at $node has been successfully joined to domain [$expected_domain]."
+    fi
+}
+
 LIGHTWAVE_DOMAIN=lightwave.local
 LIGHTWAVE_PASSWORD='Admin!23'
 LIGHTWAVE_SITE=Default-first-site
@@ -33,4 +63,4 @@ docker run -d \
            -v $LIGHTWAVE_CONFIG_DIR:/var/lib/vmware/config \
            vmware/lightwave-client-photon2
 
-#check_lightwave 192.168.114.6
+check_lightwave_join lightwave-client-1 $LIGHTWAVE_DOMAIN

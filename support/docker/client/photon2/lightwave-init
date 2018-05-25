@@ -33,6 +33,31 @@ fi
 
 sleep 1
 
+CONFIG_FILE=/var/lib/vmware/config/lightwave-client.cfg
+
+if [ -f $CONFIG_FILE ]; then
+    DOMAIN=$(grep "^domain=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+    ADMIN=$(grep "^admin=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+    PASSWORD=$(grep "^password=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+    SITE=$(grep "^site-name=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+
+    exec 3> /dev/tty
+    echo $PASSWORD > 3
+
+    if [ -z "$SITE" ]; then
+        /opt/vmware/bin/ic-join --domain $DOMAIN \
+                                --username $ADMIN \
+                                < 3
+    else
+        /opt/vmware/bin/ic-join --domain $DOMAIN \
+                                --username $ADMIN \
+                                --site $SITE \
+                                < 3
+    fi
+
+    exec <&3
+fi
+
 while :
 do
     sleep 5 &
