@@ -62,17 +62,30 @@ VmDirSrvServerReset(
     BOOLEAN     bWriteInvocationId = FALSE;
     BOOLEAN     bMdbWalEnable = FALSE;
     BOOLEAN     bFatalError = FALSE;
+    BOOLEAN     bLdapThrStopped = FALSE;
 
     VmDirGetMdbWalEnable(&bMdbWalEnable);
+
+    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
     VmDirBkgdThreadShutdown();
 
     VmDirMetricsShutdown();
 
+    // stop LDAP head
+    VmDirShutdownConnAcceptThread();
+    VmDirWaitForLDAPOpThr(&bLdapThrStopped);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s stop LDAP head", __FUNCTION__);
+
     // stop REST head
     VmDirRESTServerStop();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s stop REST head", __FUNCTION__);
 
-    // stop LDAP head and close current DB
+    // pause 3 seconds
+    // TODO, need a cleaner solution to drain all protocol heads to ensure NO more backend/schema/index layer access
+    VmDirSleep(3000);
+
+    // close current DB
     VmDirShutdownDB();
 
     //swap current vmdir database file with the foriegn one under partner/

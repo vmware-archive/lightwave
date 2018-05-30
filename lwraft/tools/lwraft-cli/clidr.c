@@ -32,6 +32,8 @@ RaftCliDRNodeRestoreFromDB(
     PSTR    pszLocalPassword = NULL;
     PSTR    pszDCAccount = NULL;
     PSTR    pszDomain = NULL;
+    LDAP*   pLd = NULL;
+    PSTR    pszUPN = NULL;
 
     if ((pszLogin && !pszPassword) || (!pszLogin && pszPassword))
     {
@@ -43,6 +45,26 @@ RaftCliDRNodeRestoreFromDB(
 
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pszLogin)
+    {   // validate credentials
+        dwError = VmDirAllocateStringPrintf(
+                    &pszUPN,
+                    "%s@%s",
+                    pszLogin,
+                    pszDomain);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSafeLDAPBind(&pLd, "localhost", pszUPN, pszPassword);
+        if (dwError != 0)
+        {
+            printf("!!!!! FATAL ERROR !!!!! %s invalid login and/or password (%u)\n", __FUNCTION__, dwError);
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirLdapUnbind(&pLd);
+        pLd = NULL;
+    }
 
     // By now, we should have copied backup DB into /var/lib/vmware/post/partner/ directory.
     // This will trigger vmdir to swap and pick up backup DB + clean up all DC objects.
@@ -81,6 +103,8 @@ RaftCliDRNodeRestoreFromDB(
    printf(" --------------------------------------------------------------------------------------\n\n");
 
 cleanup:
+    VmDirLdapUnbind(&pLd);
+    VMDIR_SAFE_FREE_MEMORY(pszUPN);
     VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
     VMDIR_SAFE_FREE_MEMORY(pszLocalPassword);
     VMDIR_SAFE_FREE_MEMORY(pszDomain);
