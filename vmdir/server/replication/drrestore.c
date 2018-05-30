@@ -77,7 +77,8 @@ _VmDirStartLDAPListener(
 /* This function re-instantiates the current vmdir instance with a
  * foreign (MDB) database file.
  *
- * 1. foreign DB should be copy to /var/lib/vmware/vmdir/partner directory
+ * 0. foreign DB should be copy to /var/lib/vmware/vmdir/partner directory
+ * 1. stop all protocol heads
  * 2. re-initialize backend with foreign DB (this include schema and index reload)
  * 3. derive UTDVector of DR node from foreign DB
  * 4. clean up foreign DB
@@ -104,18 +105,35 @@ VmDirSrvServerReset(
     PVMDIR_DR_DC_INFO   pDcInfo = NULL;
     PSTR                pszUtdVector = NULL;
     BOOLEAN             bMdbWalEnable = FALSE;
+    BOOLEAN             bLdapThrStopped = FALSE;
     VDIR_BERVALUE       bvUtdVector = VDIR_BERVALUE_INIT;
 
     VmDirGetMdbWalEnable(&bMdbWalEnable);
+
+    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
     VmDirBkgdThreadShutdown();
 
     VmDirMetricsShutdown();
 
+    // stop KDC head
+    VmKdcServiceShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s stop KDC head", __FUNCTION__);
+
+    // stop LDAP head
+    VmDirShutdownConnAcceptThread();
+    VmDirWaitForLDAPOpThr(&bLdapThrStopped);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s stop LDAP head", __FUNCTION__);
+
     // stop REST head
     VmDirRESTServerStop();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s stop REST head", __FUNCTION__);
 
-    // stop LDAP head and close current DB
+    // pause 3 seconds
+    // TODO, need a cleaner solution to drain all protocol heads to ensure NO more backend/schema/index layer access
+    VmDirSleep(3000);
+
+    // close current DB
     VmDirShutdownDB();
 
     //swap current vmdir database file with the foriegn one under partner/

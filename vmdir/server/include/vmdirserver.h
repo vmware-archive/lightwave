@@ -466,6 +466,11 @@ VmDirShutdown(
     PBOOLEAN pbWaitTimeOut
     );
 
+VOID
+VmDirWaitForLDAPOpThr(
+    PBOOLEAN pbStopped
+    );
+
 // tracklastlogin.c
 VOID
 VmDirAddTrackLastLoginItem(

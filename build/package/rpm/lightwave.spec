@@ -1061,6 +1061,7 @@ Lightwave POST service
 %{_sbindir}/vmdird
 %{_sbindir}/vmdnsd
 
+%{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
 
 %{_datadir}/config/vmca.reg
@@ -1115,7 +1116,6 @@ Lightwave POST service
 %{_lib64dir}/libvmeventclient.so*
 %{_lib64dir}/libvmcaclient.so*
 %{_lib64dir}/libvmdirclient.so*
-%{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/libgssapi_ntlm.so*
 %{_lib64dir}/libgssapi_srp.so*
 %{_lib64dir}/libgssapi_unix.so*

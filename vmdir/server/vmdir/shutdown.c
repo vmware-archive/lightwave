@@ -18,12 +18,6 @@
 
 static
 VOID
-VmDirWaitForOperationThr(
-    PBOOLEAN pbStopped
-    );
-
-static
-VOID
 VmDirStopSrvThreads(
     VOID);
 
@@ -61,7 +55,7 @@ VmDirShutdown(
     VmDirShutdownConnAcceptThread();
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for LDAP operation threads to stop ...", __func__);
-    VmDirWaitForOperationThr(&bLDAPHeadStopped);
+    VmDirWaitForLDAPOpThr(&bLDAPHeadStopped);
 
     if (!bRESTHeadStopped || !bLDAPHeadStopped)
     {
@@ -144,14 +138,18 @@ done:
 /*
  * wait till all ldap operation threads are done
  */
-static
 VOID
-VmDirWaitForOperationThr(
+VmDirWaitForLDAPOpThr(
     PBOOLEAN pbStopped
     )
 {
     DWORD       dwError = 0;
     BOOLEAN     bTimedOut = FALSE;
+
+    if (!pbStopped)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     // wait for operation threads to finish, timeout in 10 seconds.
     dwError = VmDirSyncCounterWaitEvent(gVmdirGlobals.pOperationThrSyncCounter, &bTimedOut);

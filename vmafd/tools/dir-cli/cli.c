@@ -3270,6 +3270,9 @@ DirCliDRNodeRestoreFromDB(
             pszPassword ? pszPassword : pszLocalPass,
             &pLd);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        DirCliLdapClose(pLd);   // close connection, so VmDirServerReset can drain LDAP head quickly.
+        pLd = NULL;
     }
     else
     {
