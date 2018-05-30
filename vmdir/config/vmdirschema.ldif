@@ -77,6 +77,21 @@ objectClasses: (
         $ vmwRaftActiveFollower
         $ vmwRaftMember
         $ vmwRaftState
+# Additional DSE Root objects
+        $ dnsHostName
+#        $ currentTime
+#        $ domainControllerFunctionality
+#        $ domainFunctionality
+        $ dsServiceName
+#        $ forestFunctionality
+#        $ highestCommittedUSN
+#        $ isGlobalCatalogReady
+#        $ isSynchronized
+        $ ldapServiceName
+#        $ namingContexts
+        $ supportedCapabilities
+#        $ supportedLDAPPolicies
+        $ supportedSASLMechanisms
         )
     )
 
@@ -964,6 +979,33 @@ attributeTypes: (
     DESC 'RFC4512: supported SASL mechanisms'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     USAGE dSAOperation
+    )
+
+#
+# "Stolen" OIDs from Mark Wahl; Need to do something about this
+#
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.301
+    NAME 'supportedCapabilities'
+    DESC 'MS-ADAM supportedCapabilities'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.38
+    USAGE dSAOperation
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.302
+    NAME 'ldapServiceName'
+    DESC 'MS-ADAM ldapServiceName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    1.3.6.1.4.1.1466.101.120.303
+    NAME 'dsServiceName'
+    DESC 'MS-ADAM dsServiceName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    SINGLE-VALUE
     )
 
 attributeTypes: (
@@ -9864,6 +9906,22 @@ attributeTypes: (
     2.16.840.1.113730.3.140
     NAME 'userSMIMECertificate'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributeTypes: (
+    2.5.5.9
+    NAME 'domainControllerFunctionality'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    )
+
+attributeTypes: (
+    2.5.5.11
+    NAME 'currentTime'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+# vmw
+    USAGE directoryOperation
     )
 
 attributeTypes: (

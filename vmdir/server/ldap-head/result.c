@@ -1079,6 +1079,33 @@ WriteAttributes(
                     pAttr[0].type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
                     bSendAttribute = TRUE;           // return all operational attributes - "+"
                 }
+                else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE) == 0)
+                {
+                    int errVal = 0;
+                    uuid_t uuidGUID = {0};
+                    PBYTE pbGUID = NULL;
+
+                    /* Convert GUID to binary */
+                    errVal = uuid_parse(
+                                  pAttr->vals[0].lberbv.bv_val, /* this is the SID string */
+                                  uuidGUID);
+                    if (errVal == -1)
+                    {
+                        retVal = ERROR_INVALID_PARAMETER;
+                        BAIL_ON_VMDIR_ERROR(retVal);
+                    }
+
+                    retVal = VmDirAllocateMemory(sizeof(uuid_t), (PVOID *)&pbGUID);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                    
+                    memcpy(pbGUID, uuidGUID, sizeof(uuid_t));
+                    VmDirFreeBervalContent(&pAttr->vals[0]);
+
+                    pAttr->vals[0].lberbv.bv_val = pbGUID;
+                    pAttr->vals[0].lberbv.bv_len = sizeof(uuid_t);
+                    pAttr[0].type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
+                    bSendAttribute = TRUE;           // return all operational attributes - "+"
+                }
 #endif
                 else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_KRB_MASTER_KEY, FALSE) == 0)
                 {

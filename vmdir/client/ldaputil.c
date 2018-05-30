@@ -692,6 +692,8 @@ VmDirGetSiteGuidInternal(
     LDAPMessage *pEntry = NULL;
     struct berval** ppValues = NULL;
     PSTR  pszGUID = NULL;
+    PSTR  pszUUID = NULL;
+    UCHAR szGUID[VMDIR_GUID_STR_LEN] = {0};
 
     dwError = VmDirGetSiteNameInternal(pLd, &pszSiteName);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -734,10 +736,25 @@ VmDirGetSiteGuidInternal(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (ppValues[0]->bv_len == 16)
+    {
+        /* Convert binary GUID to string representation */
+        dwError = VmDirUuidToStringLower(
+                      (void *) ppValues[0]->bv_val,
+                      szGUID,
+                      sizeof(szGUID));
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszUUID = szGUID;
+    }
+    else
+    {
+        pszUUID = ppValues[0]->bv_val;
+    }
+
     dwError = VmDirAllocateStringPrintf(
                         &pszGUID,
                         "%s",
-                        ppValues[0]->bv_val);
+                        pszUUID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszGUID = pszGUID;

@@ -123,6 +123,8 @@ extern "C" {
 #define ATTR_DESCRIPTION_LEN                sizeof(ATTR_DESCRIPTION)-1
 #define ATTR_DN                             "entryDN"
 #define ATTR_DN_LEN                         sizeof(ATTR_DN)-1
+#define ATTR_DISTINGUISHED_NAME             "distinguishedName"
+#define ATTR_DISTINGUISHED_NAME_LEN         sizeof(ATTR_DISTINGUISHED_NAME_LEN)-1
 #define ATTR_EID                            "entryid"
 #define ATTR_EID_LEN                        sizeof(ATTR_EID)-1
 #define ATTR_OBJECT_CLASS                   "objectclass"

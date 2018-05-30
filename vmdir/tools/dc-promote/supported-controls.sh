@@ -56,6 +56,29 @@ supportedControl: 1.3.6.1.4.1.4203.1.9.1.2
 -
 delete: supportedControl
 supportedControl: 1.3.6.1.4.1.4203.1.9.1.3
+-
+add: supportedCapabilities
+supportedCapabilities: 1.2.840.113556.1.4.2080
+-
+add: supportedCapabilities
+supportedCapabilities: 1.2.840.113556.1.4.1935
+-
+add: supportedCapabilities
+supportedCapabilities: 1.2.840.113556.1.4.1791
+-
+add: supportedCapabilities
+supportedCapabilities: 1.2.840.113556.1.4.1670
+-
+add: supportedCapabilities
+supportedCapabilities: 1.2.840.113556.1.4.800
+-
+add: dnsHostName
+dnsHostName: photon-addc2.lightwave.local
+-
+add: ldapServiceName
+ldapServiceName: lightwave.local:adam-win2k8r2-d\$@LIGHTWAVE.LOCAL
+-
+add: dsServiceName
+dsServiceName: CN=NTDS Settings,CN=PHOTON-ADDC2,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=lightwave,DC=local
 NNNN
 ldapmodify -Y GSSAPI -a -f /var/tmp/supported-control.ldif
-

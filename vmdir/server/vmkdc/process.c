@@ -240,10 +240,7 @@ VmKdcMakeSaltForEtype(
     switch (etype)
     {
         case ENCTYPE_AES256_CTS_HMAC_SHA1_96:
-            dwError = VmDirAllocateStringPrintf(
-                          &pszDupPrincName,
-                          "%s",
-                          pszPrincName);
+            dwError = VmKdcAllocateStringA(pszPrincName, &pszDupPrincName);
             BAIL_ON_VMKDC_ERROR(dwError);
 
             pszSaltUser = pszDupPrincName;
@@ -257,7 +254,7 @@ VmKdcMakeSaltForEtype(
             *pszTmp++ = '\0';
             pszSaltDomain = pszTmp;
 
-            dwError = VmDirAllocateStringPrintf(
+            dwError = VmKdcAllocateStringPrintf(
                           &pszRetSaltString,
                           "%s%s",
                           pszSaltDomain,
@@ -475,7 +472,6 @@ VmKdcProcessAsReq(
                                  pszSaltString,
                                  pszSaltStringClientName,
                                  TRUE);
-                BAIL_ON_VMKDC_ERROR(dwError);
             }
 
             break;

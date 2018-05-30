@@ -725,6 +725,7 @@ _VmDirAttrAddSpnName(PVDIR_ENTRY pEntry,
     PSTR             pszRdnValue = NULL;
     PSTR             pszSpn = NULL;
     PSTR             pszDomainNameLc = NULL;
+    PSTR             pszHostUc = NULL;
     PSTR             pszDomainNameUc = NULL;
 
     dwError = VmDirAllocateAndCopyMemory(
@@ -766,6 +767,18 @@ _VmDirAttrAddSpnName(PVDIR_ENTRY pEntry,
         pszDomainNameUc[i] = (char) toupper((int) pszDomainNameUc[i]);
     }
 
+    if (bUcHost)
+    {
+        dwError = VmDirAllocateStringA(pszHost, &pszHostUc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (i=0; pszHostUc[i]; i++)
+        {
+            pszHostUc[i] = (char) toupper((int) pszHostUc[i]);
+        }
+        pszHost = pszHostUc;
+    }
+
     if (bShortHost)
     {
         dwError = VmDirAllocateStringPrintf(
@@ -791,6 +804,7 @@ _VmDirAttrAddSpnName(PVDIR_ENTRY pEntry,
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszHostUc);
     VMDIR_SAFE_FREE_STRINGA(pszDn);
     VMDIR_SAFE_FREE_STRINGA(pszDomainNameLc);
     VMDIR_SAFE_FREE_STRINGA(pszDomainNameUc);
@@ -880,9 +894,18 @@ _VmDirJoinCreateComputerAccount(PVDIR_ENTRY pEntry,
                   pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-
     /* Add these attributes to the directory entry */
-    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_KRB_UPN, pszComputerUpn);
+    dwError = VmDirEntryAddSingleValueStrAttribute(
+                  pEntry,
+                  ATTR_KRB_UPN,
+                  pszComputerUpn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /* Explicitly add distinguishedName attribute, same as dn: */
+    dwError = VmDirEntryAddSingleValueStrAttribute(
+                  pEntry,
+                  ATTR_DISTINGUISHED_NAME,
+                  pszDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppAttrUPN = VmDirFindAttrByName(pEntry, ATTR_KRB_UPN);
@@ -1108,7 +1131,13 @@ cleanup:
     /* Machine account pwd is sensitive; do not store in vmdir */
     /* TBD:Adam Either don't store it, or don't respond to a query for it */
     /* TBD: Don't know if I need this value in future pwd change operations */
+    /* This is needed for the NetrServerReqChallenge3() mutual auth exchange
+     * Keep for now, but possibly make a non-searchable attribute, or maybe
+     * just store unicodePwdMD4 hash attribute...
+
     VmDirEntryRemoveAttribute(pEntry, ATTR_UNICODE_PWD);
+
+    */
 
     VMDIR_SAFE_FREE_STRINGA(pszAccountPwdAlloc);
     VMDIR_SAFE_FREE_MEMORY(pwszUnicodePwd);

@@ -754,6 +754,7 @@ static int format_dns_name(unsigned char *buf, int off, char *forest)
 }
 
 int format_cldap_netlogon_response_msg(
+    unsigned int opCode,
     int messageId,
     char *forest,
     char *domainName,
@@ -769,7 +770,7 @@ int format_cldap_netlogon_response_msg(
     BerElement *ber = NULL;
     struct berval *flatten = NULL;
     int berror = 0;
-    unsigned int type = 23;
+    unsigned int type = opCode;
     unsigned int flags = 0;
     unsigned char buf[512];
     char NBDomain[32] = {0};
@@ -1089,6 +1090,11 @@ ProcessUdpConnection(
     uuid_t GUID = {0};
     DWORD dwCldapResponseLen = 0;
     PVOID *pCldapResponse = NULL;
+    unsigned int opCode = 0;
+    BOOLEAN bDnsDomain = FALSE;
+    BOOLEAN bUser = FALSE;
+    BOOLEAN bAAC = FALSE;
+    BOOLEAN bNtVer = FALSE;
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection called");
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
@@ -1129,8 +1135,31 @@ ProcessUdpConnection(
     {
         if (matchBlob(in_ber_val.bv_val,
                       in_ber_val.bv_len,
+                      "DnsDomain", NULL))
+        {
+            bDnsDomain = TRUE;
+        }
+        if (matchBlob(in_ber_val.bv_val,
+                      in_ber_val.bv_len,
                       "User", &userPtr))
         {
+            bUser = TRUE;
+        }
+        if (matchBlob(in_ber_val.bv_val,
+                      in_ber_val.bv_len,
+                      "AAC", NULL))
+        {
+            bAAC = TRUE;
+        }
+        if (matchBlob(in_ber_val.bv_val,
+                      in_ber_val.bv_len,
+                      "NtVer", NULL))
+        {
+            bNtVer = TRUE;
+        }
+        if (bUser && bDnsDomain && bAAC && bNtVer)
+        {
+            opCode = 25;
             if (userPtr && *userPtr == 0x04)
             {
                 userPtr++;
@@ -1143,6 +1172,7 @@ ProcessUdpConnection(
                 user[i] = '\0';
             }
             retVal = format_cldap_netlogon_response_msg(
+                        opCode,
                         messageId,
                         forest,
                         DomainNameLc,
@@ -1156,7 +1186,9 @@ ProcessUdpConnection(
         }
         else
         {
+            opCode = 23;
             retVal = format_cldap_netlogon_response_msg(
+                        opCode,
                         messageId,
                         forest,
                         DomainName,

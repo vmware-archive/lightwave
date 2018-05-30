@@ -300,6 +300,7 @@ VmKdcSearchDirectory(
     *ppRetDirectoryEntry = pDirectoryEntry;
 
 cleanup:
+    VMKDC_SAFE_FREE_STRINGA(pszPrincName);
     VMKDC_SAFE_FREE_STRINGA(pszUPN);
     VMKDC_SAFE_FREE_STRINGA(pszDN);
     VMKDC_SAFE_FREE_DATA(princAsn1KeyData);
@@ -314,7 +315,6 @@ error:
                     dwError);
 
     VMKDC_SAFE_FREE_KEYSET(princKeySet);
-    VMKDC_SAFE_FREE_STRINGA(pszPrincName);
     VMKDC_SAFE_FREE_MEMORY(pDirectoryEntry);
     goto cleanup;
 }
@@ -458,6 +458,7 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmKdcGetKrbUPNKey: failed (%u)(%s)", dwError, VDIR_SAFE_STRING(pszUpnName));
 
     VMKDC_SAFE_FREE_MEMORY(pRetUPNKey);
+    VMKDC_SAFE_FREE_STRINGA(pszRetUpnName);
 
     // keep error code space to KDC specific
     dwError = ERROR_NO_PRINC;

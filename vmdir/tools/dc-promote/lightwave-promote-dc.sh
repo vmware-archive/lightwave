@@ -195,20 +195,20 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
    --server localhost \
    --password `cat /var/tmp/promote-pwd.txt`'
 
-echo_status "DNS _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs SRV tcp record"
-ssh $PRIV_USER@$LIGHTWAVE_AD \
-  '/opt/vmware/bin/vmdns-cli add-record --zone '"$DC_DOMAIN"' \
-   --type SRVFF \
-   --service-literal  _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
-   --protocol tcp \
-   --target '"$DC_NAME"' \
-   --priority 1 \
-   --weight 1 \
-   --port 389 \
-   --server localhost \
-   --domain '"$DC_DOMAIN"' \
-   --password `cat /var/tmp/promote-pwd.txt`'
-
+#echo_status "DNS _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs SRV tcp record"
+#ssh $PRIV_USER@$LIGHTWAVE_AD \
+#  '/opt/vmware/bin/vmdns-cli add-record --zone '"$DC_DOMAIN"' \
+#   --type SRVFF \
+#   --service-literal  _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
+#   --protocol tcp \
+#   --target '"$DC_NAME"' \
+#   --priority 1 \
+#   --weight 1 \
+#   --port 389 \
+#   --server localhost \
+#   --domain '"$DC_DOMAIN"' \
+#   --password `cat /var/tmp/promote-pwd.txt`'
+#
 # 11  Add additional cifs entries to krb5.keytab
 echo_status "Add additional cifs entries to krb5.keytab"
 scp $TOOLS_DIR/add-keytab.sh $PRIV_USER@$LIGHTWAVE_AD:/tmp
@@ -348,6 +348,12 @@ echo_status "Adding SRV record for Default-First-Site-Name..."
 ssh $PRIV_USER@$LIGHTWAVE_AD \
 /opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type SRV \
   --service-literal _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
+  --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
+  --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
+
+ssh $PRIV_USER@$LIGHTWAVE_AD \
+/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type SRV \
+  --service-literal _ldap._tcp.Default-First-Site-Name._sites \
   --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
   --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
 
