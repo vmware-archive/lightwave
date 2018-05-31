@@ -288,6 +288,11 @@ Lightwave POST service
             # Upgrade
             #
             %{_sbindir}/configure-build.sh "%{_backupdir}"
+            # Remove the cached lightwaveui directory if no corresponding war file is found
+            ROOTDIR="/opt/vmware/vmware-sts/webapps"
+            if [ ! -f "$ROOTDIR/lightwaveui.war" ]; then
+                rm -rf $ROOTDIR/lightwaveui
+            fi
             ;;
     esac
 
