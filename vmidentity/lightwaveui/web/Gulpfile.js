@@ -34,10 +34,9 @@ var sequence = [
 
 delete(['./dist/*']);
 
-gulp.task('default', sequence);
 
 
-gulp.task('lightwave-ui-js-minify', function() {
+gulp.task('lightwave-ui-js-minify', function(done) {
     var app_js = 'lightwave-ui.' + version + '.js';
     var dest_js_folder = './dist/js';
 
@@ -51,18 +50,20 @@ gulp.task('lightwave-ui-js-minify', function() {
         //.pipe(uglify())
         .pipe(rename({ extname: '.min.js' }))
         .pipe(gulp.dest(dest_js_folder));
+	done();
 });
 
-gulp.task('lightwave-app-ui-js', function() {
+gulp.task('lightwave-app-ui-js', function(done) {
     var app_js = 'lightwave-app-ui.' + version + '.js';
     var dest_js_folder = './dist/js';
 
     gulp.src(['./app/app.js'])
         .pipe(concat(app_js))
         .pipe(gulp.dest(dest_js_folder));
+    done();
 });
 
-gulp.task('lightwave-ui-vendor-js-minify', function() {
+gulp.task('lightwave-ui-vendor-js-minify', function(done) {
     var app_js = 'lightwave-ui-vendor.' + version + '.js';
     var dest_js_folder = './dist/js';
 
@@ -82,7 +83,6 @@ gulp.task('lightwave-ui-vendor-js-minify', function() {
             './app/bower_components/kjur-jsrsasign/ext/jsbn2.js',
             './app/bower_components/kjur-jsrsasign/ext/rsa.js',
             './app/bower_components/kjur-jsrsasign/ext/rsa2.js',
-            './app/bower_components/kjur-jsrsasign/ext/sha512.js',
             './app/bower_components/kjur-jsrsasign/ext/base64.js',
             './app/bower_components/kjur-jsrsasign/min/crypto-1.1.min.js',
             './app/bower_components/kjur-jsrsasign/min/asn1hex-1.1.min.js',
@@ -94,10 +94,11 @@ gulp.task('lightwave-ui-vendor-js-minify', function() {
         //.pipe(uglify())
         .pipe(rename({ extname: '.min.js' }))
         .pipe(gulp.dest(dest_js_folder));
+	done();
 });
 
 
-gulp.task('lightwave-ui-html-minify', function() {
+gulp.task('lightwave-ui-html-minify', function(done) {
     gulp.src([
         './app/src/**/*.html',
         './app/*.html',
@@ -106,17 +107,19 @@ gulp.task('lightwave-ui-html-minify', function() {
         ])
         .pipe(htmlmin({collapseWhitespace: true}))
         .pipe(gulp.dest('./dist'))
+	done();
 });
 
-gulp.task('lightwave-ui-css-minify', function() {
+gulp.task('lightwave-ui-css-minify', function(done) {
     var app_css = 'lightwave-ui.' + version + '.min.css';
     gulp.src('./app/app.css')
         .pipe(cleanCSS({compatibility: 'ie8'}))
         .pipe(rename(app_css))
         .pipe(gulp.dest('./dist/css'));
+    done();
 });
 
-gulp.task('lightwave-ui-vendor-css-minify', function() {
+gulp.task('lightwave-ui-vendor-css-minify', function(done) {
     var app_vendor_css = 'lightwave-ui-vendor.' + version + '.css';
     gulp.src([
             './app/bower_components/ng-dialog/css/ngDialog.min.css',
@@ -126,9 +129,13 @@ gulp.task('lightwave-ui-vendor-css-minify', function() {
         .pipe(cleanCSS({compatibility: 'ie8'}))
         .pipe(rename({ extname: '.min.css' }))
         .pipe(gulp.dest('./dist/css'));
+    done();
 });
 
-gulp.task('lightwave-ui-copy-assets', function() {
+gulp.task('lightwave-ui-copy-assets', function(done) {
     gulp.src(['./app/assets/*.png','./app/assets/*.gif'])
         .pipe(gulp.dest('./dist/assets'));
+    done();
 });
+
+gulp.task('default', gulp.series(sequence));

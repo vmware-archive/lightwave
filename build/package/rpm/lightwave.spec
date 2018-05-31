@@ -164,6 +164,12 @@ Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
 
+%package ui
+Summary: Web based UI for lightwave IDM
+Requires: lightwave
+%description ui
+Lightwave Web based UI for lightwave IDM
+
 %debug_package
 %build
 %install
@@ -1337,6 +1343,12 @@ Lightwave POST service
 %config %attr(750, root, root) %{_datadir}/config/refresh-resolve-conf.sh
 %config %attr(750, root, root) %{_datadir}/config/post-demote-deads.sh
 %config %attr(750, root, root) %{_datadir}/config/monitor-core-dump.sh
+
+%files ui
+
+%defattr(-,root,root)
+
+%{_webappsdir}/lightwaveui.war
 
 %files devel
 
