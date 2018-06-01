@@ -640,12 +640,6 @@ VmDnsOnDisconnect(
         VmDnsSockClose(pSocket);
     }
 
-    if (pIoBuffer)
-    {
-        VMDNS_LOG_IO_RELEASE(pIoBuffer);
-        VmDnsSockReleaseIoBuffer(pIoBuffer);
-    }
-
     return ERROR_SUCCESS;
 }
 
