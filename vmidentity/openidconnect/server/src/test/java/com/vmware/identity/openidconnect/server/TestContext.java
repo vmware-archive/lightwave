@@ -173,7 +173,7 @@ public class TestContext {
 
     public static FederatedIdentityProcessor federatedIdentityProcessor(
         CasIdmClient idmClient, SessionManager sessionMgr) {
-        return new CSPIdentityProcessor(idmClient, sessionMgr);
+        return new CSPIdentityProcessor(idmClient, sessionMgr, new FederationAuthenticationRequestTracker());
     }
     public static TokenController tokenController() {
         return tokenController(idmClient());
