@@ -15,10 +15,10 @@ if [ "$DR_TYPE" != "lightwave" ] && [ "$DR_TYPE" != "post" ]; then
 fi
 
 if [ "$DR_TYPE" == "lightwave" ] && [ $# -ne 6 ]; then
-    echo "Usage: dr_aws_setup.sh lightwave <Application name> <Deployment group name> <ASG> <Region> <S3 path to LW archive> <VPC ID> <ELB name>"
+    echo "Usage: dr_aws_setup.sh lightwave <Application name> <Deployment group name> <Region> <S3 path to LW archive> <VPC ID>"
     exit
 elif [ "$DR_TYPE" == "post" ] && [ $# -ne 5 ]; then
-    echo "Usage: dr_aws_setup.sh post <Application name> <Deployment group name> <ASG> <Region> <S3 path to post archive>"
+    echo "Usage: dr_aws_setup.sh post <Application name> <Deployment group name> <Region> <S3 path to post archive>"
     exit
 fi
 
@@ -43,8 +43,11 @@ IAM_ROLE_ARN=$(aws deploy get-deployment-group --application-name $APP_NAME --de
 #Delete hook to prevent automatic deployment
 HOOK_NAME=$(aws autoscaling describe-lifecycle-hooks --auto-scaling-group-name $ASG_NAME --region $REGION --query 'LifecycleHooks[0].LifecycleHookName')
 HOOK_NAME=`echo $HOOK_NAME | tr -d '"'`
-aws autoscaling delete-lifecycle-hook --auto-scaling-group-name $ASG_NAME --region $REGION --lifecycle-hook-name $HOOK_NAME
-echo "Deleted code deploy hook "$HOOK_NAME
+
+if [ $HOOK_NAME != "null" ]; then
+    aws autoscaling delete-lifecycle-hook --auto-scaling-group-name $ASG_NAME --region $REGION --lifecycle-hook-name $HOOK_NAME
+    echo "Deleted code deploy hook "$HOOK_NAME
+fi
 
 #Set default DNS
 if [ "$DR_TYPE" == "lightwave" ]; then
@@ -153,22 +156,38 @@ else
     echo "SUCCESS: Restore script executed"
 fi
 
-echo "Upgrading to latest binaries."
-
-#TODO: Remove delete-deployment-group and create-deployment-group steps once single node upgrade works
+#TODO: Remove scale up step once single node upgrade works for LW
 if [ "$DR_TYPE" == "lightwave" ]; then
-    aws deploy delete-deployment-group --region $REGION --application-name $APP_NAME --deployment-group-name $DG_NAME
+    echo "Scaling up to two nodes"
+    aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 2 --desired-capacity 2 --region $REGION
+    ASG_STATUS1=$(aws autoscaling describe-auto-scaling-groups --region $REGION --auto-scaling-group-name $ASG_NAME --output=text --query 'AutoScalingGroups[0].Instances[0].LifecycleState')
+    ASG_STATUS2=$(aws autoscaling describe-auto-scaling-groups --region $REGION --auto-scaling-group-name $ASG_NAME --output=text --query 'AutoScalingGroups[0].Instances[1].LifecycleState')
+    n=0
+    START_TIME="$(date -u +%s)"
 
-    aws deploy create-deployment-group \
-      --region $REGION \
-      --application-name $APP_NAME \
-      --auto-scaling-groups $ASG_NAME \
-      --deployment-group-name $DG_NAME \
-      --deployment-config-name CodeDeployDefault.OneAtATime \
-      --service-role-arn $IAM_ROLE_ARN \
-      --deployment-style deploymentType=IN_PLACE,deploymentOption=WITH_TRAFFIC_CONTROL \
-      --load-balancer-info elbInfoList=[{name="$ELB_NAME"}]
+    until [ $n -ge 100 ] || ([ "$ASG_STATUS1" == "InService" ] && [ "$ASG_STATUS2" == "InService" ])
+    do
+        sleep 10
+        ASG_STATUS1=$(aws autoscaling describe-auto-scaling-groups --region $REGION --auto-scaling-group-name $ASG_NAME --output=text --query 'AutoScalingGroups[0].Instances[0].LifecycleState')
+        ASG_STATUS2=$(aws autoscaling describe-auto-scaling-groups --region $REGION --auto-scaling-group-name $ASG_NAME --output=text --query 'AutoScalingGroups[0].Instances[1].LifecycleState')
+        n=$[$n+1]
+        END_TIME="$(date -u +%s)"
+        ELAPSED=$((END_TIME - START_TIME))
+        echo "VM status: $ASG_STATUS1 $ASG_STATUS2, Elapsed Time: $ELAPSED seconds"
+    done
+
+    if [ "$ASG_STATUS1" != "InService" ] || [ "$ASG_STATUS2" != "InService" ]; then
+        echo "ASG deployment failed (or timed out)"
+        exit 1;
+    fi
+
+    I1=$(aws autoscaling describe-auto-scaling-groups --region $REGION --auto-scaling-group-name $ASG_NAME --output=text --query 'AutoScalingGroups[0].Instances[0].InstanceId')
+    I2=$(aws autoscaling describe-auto-scaling-groups --region $REGION --auto-scaling-group-name $ASG_NAME --output=text --query 'AutoScalingGroups[0].Instances[1].InstanceId')
+    aws elb deregister-instances-from-load-balancer --load-balancer-name $ELB_NAME --instances $I1 --region $REGION
+    aws elb deregister-instances-from-load-balancer --load-balancer-name $ELB_NAME --instances $I2 --region $REGION
 fi
+
+echo "Upgrading to latest binaries."
 
 S3_BUCKET_LATEST=$(aws deploy list-application-revisions \
   --region $REGION \
@@ -198,7 +217,7 @@ echo "Deployment started: $DEPLOYMENT_ID"
 DEPLOYMENT_STATUS=$(aws deploy get-deployment --region $REGION --deployment-id $DEPLOYMENT_ID --query "deploymentInfo.status" --output text)
 n=0
 START_TIME="$(date -u +%s)"
-until ([ $n -ge 100 ] || [ "$DEPLOYMENT_STATUS" == "Succeeded" ] )
+until ([ $n -ge 200 ] || [ "$DEPLOYMENT_STATUS" == "Succeeded" ] )
 do
     sleep 10
     DEPLOYMENT_STATUS=$(aws deploy get-deployment --region $REGION --deployment-id $DEPLOYMENT_ID --query "deploymentInfo.status" --output text)
