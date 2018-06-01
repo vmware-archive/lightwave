@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
@@ -4562,13 +4563,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             // password is char array
                             LdapValue.fromString(new String(newPassword)) });
             attributeList.add(attrPassword);
-
-            if (attributeList.size() > 0)
-            {
-                // Only update when necessary
-                connection.modifyObject(userDn, attributeList
+            connection.modifyObject(userDn, attributeList
                         .toArray(new LdapMod[attributeList.size()]));
-            }
         } finally
         {
             if (null != message)
@@ -4582,59 +4578,86 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public void resetUserPassword(String accountName, char[] currentPassword,
             char[] newPassword) throws Exception
     {
+        InvalidCredentialsLdapException srpEx = null;
         ILdapMessage message = null;
         String userDn = null;
-        ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
+        ILdapConnectionEx connection = null;
 
-        try (PooledLdapConnection pooledConnection = borrowConnection())
-        {
-            ILdapConnectionEx connection = pooledConnection.getConnection();
+        try {
             final String domainName = getDomain();
             final PrincipalId userId = new PrincipalId(accountName, domainName);
-
-            String[] attrNames = { ATTR_NAME_ACCOUNT };
-
-            String filter = buildQueryByUserFilter( userId );
-
-            message =
-                    connection.search(getTenantSearchBaseRootDN(),
-                            LdapScope.SCOPE_SUBTREE, filter, attrNames, false);
-
-            ILdapEntry[] entries = message.getEntries();
-
-            if (entries != null && entries.length == 1)
-            {
-                // found the user
-                userDn = entries[0].getDN();
-            } else
-            {
-                // The user doesn't exist.
-                // There shouldn't be the case that there will be two users
-                // with same account name in lotus, this should be prevented
-                // when adding a user.
-                throw new InvalidPrincipalException(String.format(
-                        "user %s@%s doesn't exist", userId.getName(), userId.getDomain()), userId.getUPN());
+            try {
+                connection = this.getConnection(userId.getUPN(), new String(currentPassword),
+                        AuthenticationType.SRP, false);
+            } catch (InvalidCredentialsLdapException ex) {
+                logger.warn("Failed to authenticate using SRP binding", ex);
+                if (connection != null) {
+                    connection.close(); // close SRP connection
+                }
+                srpEx = ex;
             }
-            LdapMod attrPassword =
-                    new LdapMod(LdapModOperation.REPLACE, ATTR_USER_PASSWORD,
-                            new LdapValue[] {
-                            // password is char array
-                            LdapValue.fromString(new String(newPassword)) });
-            attributeList.add(attrPassword);
 
-            if (attributeList.size() > 0)
-            {
-                // Only update when necessary
+            if(srpEx != null){
+                userDn = getUserDn(userId, true);
+                if(userDn != null){
+                    logger.warn("The user is not SRP-enabled. Attempting to authenticate using simple bind.");
+                    connection = this.getConnection(userDn, new String(currentPassword),
+                            AuthenticationType.PASSWORD, false);
+                } else {
+                    logger.error("Original login seems invalid.", srpEx);
+                    // According to admin interface, if not valid password,
+                    // should throw this.
+                    throw new InvalidPrincipalException(String.format(
+                            "Invalid login credential for user %s@%s", accountName,
+                            this.getDomain()), String.format("%s@%s", accountName,
+                            getDomain()));
+                }
+            }
+
+            if (connection != null) {
+                // modify password attribute after authentication
+                if (StringUtils.isEmpty(userDn)) {
+                    String[] attrNames = { ATTR_NAME_ACCOUNT };
+                    String filter = buildQueryByUserFilter( userId );
+
+                    message =
+                            connection.search(getTenantSearchBaseRootDN(),
+                                    LdapScope.SCOPE_SUBTREE, filter, attrNames, false);
+
+                    ILdapEntry[] entries = message.getEntries();
+                    if (entries != null && entries.length == 1)
+                    {
+                        // found the user
+                        userDn = entries[0].getDN();
+                    }
+                }
+                if (StringUtils.isEmpty(userDn)) {
+                    // The user doesn't exist.
+                    // There shouldn't be the case that there will be two users
+                    // with same account name in lotus, this should be prevented
+                    // when adding a user.
+                    throw new InvalidPrincipalException(String.format(
+                            "user %s@%s doesn't exist", userId.getName(), userId.getDomain()), userId.getUPN());
+                }
+                ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
+                LdapMod attrPassword =
+                        new LdapMod(LdapModOperation.REPLACE, ATTR_USER_PASSWORD,
+                                new LdapValue[] {
+                                // password is char array
+                                LdapValue.fromString(new String(newPassword)) });
+                attributeList.add(attrPassword);
                 connection.modifyObject(userDn, attributeList
-                        .toArray(new LdapMod[attributeList.size()]));
+                            .toArray(new LdapMod[attributeList.size()]));
+            } else {
+                throw new IDMException("Failed to connection to ldap server.");
             }
-        }
-        finally
-        {
-            if (null != message)
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (message != null)
             {
                 message.close();
-                message = null;
             }
         }
     }
