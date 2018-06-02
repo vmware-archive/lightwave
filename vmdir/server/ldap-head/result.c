@@ -273,6 +273,40 @@ done:
 }
 
 #ifdef WINJOIN_CHECK_ENABLED
+/* Return TRUE if the search request attribute is in the operation */
+static
+BOOLEAN
+VmDirIsAttrInRequest(
+   VDIR_OPERATION *op,
+   PVDIR_ATTRIBUTE pAttr,
+   PSTR           pszDesiredAttrName)
+{
+    BOOLEAN bFound = FALSE;
+    SearchReq *sr = &(op->request.searchReq);
+    int i = 0;
+    PSTR pszAttrName = NULL;
+
+    if (!op || !pAttr)
+    {
+        goto cleanup;
+    }
+
+    pszAttrName = (PSTR) pAttr->type.lberbv.bv_val;
+    for (i = 0; sr->attrs && sr->attrs[i].lberbv.bv_val; i++)
+    {
+        if (VmDirStringCompareA(sr->attrs[i].lberbv.bv_val, pszAttrName, FALSE) == 0 &&
+            VmDirStringCompareA(sr->attrs[i].lberbv.bv_val, pszDesiredAttrName, FALSE) == 0)
+        {
+            bFound = TRUE;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    return bFound;
+}
+
+
 static
 void
 VmDirSendLdapResult_internal(
@@ -1061,25 +1095,25 @@ WriteAttributes(
                     }
                 }
 #ifdef WINJOIN_CHECK_ENABLED
-                else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_SID, FALSE) == 0)
+                else if (VmDirIsAttrInRequest(op, pAttr, ATTR_OBJECT_SID))
                 {
                     ber_len_t sidLen = 0;
                     PCHAR pcSidBuffer = NULL;
 
                     /* Convert SID to binary */
                     retVal = VmDirAllocateSidBufferFromCString(
-                                  pAttr->vals[0].lberbv.bv_val, /* this is the SID string */
+                                  pAttr->vals->lberbv.bv_val, /* this is the SID string */
                                   &pcSidBuffer,
                                   &sidLen);
                     BAIL_ON_VMDIR_ERROR(retVal);
-                    VmDirFreeBervalContent(&pAttr->vals[0]);
+                    VmDirFreeBervalContent(pAttr->vals);
 
-                    pAttr->vals[0].lberbv.bv_val = pcSidBuffer;
-                    pAttr->vals[0].lberbv.bv_len = sidLen;
-                    pAttr[0].type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
+                    pAttr->vals->lberbv.bv_val = pcSidBuffer;
+                    pAttr->vals->lberbv.bv_len = sidLen;
+                    pAttr->type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
                     bSendAttribute = TRUE;           // return all operational attributes - "+"
                 }
-                else if (VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE) == 0)
+                else if (VmDirIsAttrInRequest(op, pAttr, ATTR_OBJECT_GUID))
                 {
                     int errVal = 0;
                     uuid_t uuidGUID = {0};
@@ -1087,7 +1121,7 @@ WriteAttributes(
 
                     /* Convert GUID to binary */
                     errVal = uuid_parse(
-                                  pAttr->vals[0].lberbv.bv_val, /* this is the SID string */
+                                  pAttr->vals->lberbv.bv_val, /* this is the SID string */
                                   uuidGUID);
                     if (errVal == -1)
                     {
@@ -1099,11 +1133,11 @@ WriteAttributes(
                     BAIL_ON_VMDIR_ERROR(retVal);
                     
                     memcpy(pbGUID, uuidGUID, sizeof(uuid_t));
-                    VmDirFreeBervalContent(&pAttr->vals[0]);
+                    VmDirFreeBervalContent(pAttr->vals);
 
-                    pAttr->vals[0].lberbv.bv_val = pbGUID;
-                    pAttr->vals[0].lberbv.bv_len = sizeof(uuid_t);
-                    pAttr[0].type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
+                    pAttr->vals->lberbv.bv_val = pbGUID;
+                    pAttr->vals->lberbv.bv_len = sizeof(uuid_t);
+                    pAttr->type.bOwnBvVal = TRUE;  // Indicate memory to be freed later
                     bSendAttribute = TRUE;           // return all operational attributes - "+"
                 }
 #endif
