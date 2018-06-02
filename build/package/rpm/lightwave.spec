@@ -454,6 +454,7 @@ Lightwave POST service
     chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
     chown -R lightwave:lightwave %{_vmca_dbdir}
     chown -R lightwave:lightwave %{_vmdir_dbdir}
+    find %{_vmdir_dbdir} -type f -exec chmod 600 {} \;
     chown -R lightwave:lightwave %{_integchkdir}
 
 %post client
