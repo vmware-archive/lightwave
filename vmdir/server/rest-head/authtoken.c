@@ -320,13 +320,11 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, error (%d)",
+        __FUNCTION__,
+        dwError);
 
-    // TODO - log error and let it through for now
-    dwError = 0;
     goto cleanup;
 }
 

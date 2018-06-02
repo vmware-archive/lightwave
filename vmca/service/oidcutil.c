@@ -236,8 +236,6 @@ cleanup:
 
 error:
     VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
-    // TODO - log error and let it through for now
-    dwError = 0;
     goto cleanup;
 }
 
