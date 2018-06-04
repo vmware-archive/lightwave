@@ -56,6 +56,11 @@ typedef EntryId               ENTRYID;
 #define VMDIR_MAX_UPN_LEN       512
 #endif
 
+#ifndef VMDIR_MAX_TIMESTAMP_LEN
+#define VMDIR_MAX_TIMESTAMP_LEN   20
+#endif
+
+
 typedef struct _VMDIR_REPL_PARTNER_INFO
 {
     CHAR*       pszURI;
@@ -107,6 +112,9 @@ typedef struct _VMDIR_REPL_STATE
 typedef struct _VMDIR_SERVER_INFO
 {
     CHAR*       pszServerDN;
+    CHAR*       pszCreateTimeStamp;
+    CHAR*       pszServerFQDN;
+    CHAR*       pszSiteName;
 } VMDIR_SERVER_INFO, *PVMDIR_SERVER_INFO;
 
 typedef struct VMDIR_DC_VERSION_INFO

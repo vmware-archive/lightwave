@@ -32,6 +32,15 @@ _VmDirIsHostAPartner(
     PSTR *ppszPartnerRaDn
     );
 
+static
+DWORD
+VmDirPopulateAttrValues(
+    LDAP *pLd,
+    LDAPMessage* pMessage,
+    PCSTR pszAttribute,
+    PINTERNAL_SERVER_INFO pInternalServerInfo
+    );
+
 /*
  * Get all vmdir server info from pLd
  */
@@ -41,11 +50,12 @@ VmDirGetServersInfo(
     LDAP* pLd,
     PCSTR pszHost,
     PCSTR pszDomain,
+    PCSTR* ppAttrsArray,
     PINTERNAL_SERVER_INFO* ppInternalServerInfo,
     DWORD* pdwInfoCount
     )
 {
-    return VmDirGetServersInfoOnSite(pLd, NULL, pszHost, pszDomain, ppInternalServerInfo, pdwInfoCount);
+    return VmDirGetServersInfoOnSite(pLd, NULL, pszHost, pszDomain, ppAttrsArray, ppInternalServerInfo, pdwInfoCount);
 }
 
 /*
@@ -86,7 +96,7 @@ VmDirGetUsnFromPartners(
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGetServersInfoOnSite( pLd, NULL,  pszServerName, pszDomain, &pInternalServerInfo, &dwInfoCount);
+    dwError = VmDirGetServersInfoOnSite( pLd, NULL,  pszServerName, pszDomain, NULL, &pInternalServerInfo, &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i=0; i<dwInfoCount; i++)
@@ -739,6 +749,7 @@ VmDirGetServersInfoOnSite(
     PCSTR                   pszSiteName,
     PCSTR                   pszHost,
     PCSTR                   pszDomain,
+    PCSTR*                  ppAttrsArray,
     PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
     DWORD*                  pdwInfoCount
     )
@@ -753,6 +764,9 @@ VmDirGetServersInfoOnSite(
     PSTR            pszServerDN     = NULL;
     int             searchLevel     = LDAP_SCOPE_ONELEVEL;
     PSTR            pFilter         = NULL;
+    BerElement*     ber;
+    PSTR            pszAttribute = NULL;
+    PSTR            pszSiteNameTmp = NULL;
 
     PINTERNAL_SERVER_INFO   pInternalServerInfo = NULL;
 
@@ -789,7 +803,7 @@ VmDirGetServersInfoOnSite(
                              pszSearchBaseDN,
                              searchLevel,
                              pFilter,  /* filter */
-                             NULL,  /* attrs[]*/
+                             (PSTR*)ppAttrsArray,  /* attrs[]*/
                              FALSE,
                              NULL,  /* serverctrls */
                              NULL,  /* clientctrls */
@@ -835,6 +849,20 @@ VmDirGetServersInfoOnSite(
                         );
         ldap_memfree(pszServerDN);
         BAIL_ON_VMDIR_ERROR(dwError);
+        for ( pszAttribute = ldap_first_attribute( pLd, pMessage, &ber );
+              pszAttribute != NULL;
+              pszAttribute = ldap_next_attribute( pLd, pMessage, ber ) )
+        {
+            dwError = VmDirPopulateAttrValues(pLd, pMessage, pszAttribute, &pInternalServerInfo[i]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwError = VmDirGetSiteNameInternal(pLd, &pszSiteNameTmp);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+
+        dwError = VmDirStringCpyA(pInternalServerInfo[i].pszSiteName, VMDIR_MAX_LDAP_URI_LEN, pszSiteNameTmp);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     *ppInternalServerInfo = pInternalServerInfo;
@@ -844,10 +872,16 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszSearchBaseDN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pFilter);
+    VMDIR_SAFE_FREE_MEMORY(pszSiteNameTmp);
 
     if (pMessages)
     {
         ldap_msgfree(pMessages);
+    }
+    if (ber != NULL)
+    {
+        ber_free(ber, 0);
+        ber = NULL;
     }
     return dwError;
 
@@ -976,5 +1010,68 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirIsHostAPartner failed. Error(%u)", dwError);
+    goto cleanup;
+}
+
+static
+DWORD
+VmDirPopulateAttrValues(
+    LDAP *pLd,
+    LDAPMessage* pMessage,
+    PCSTR pszAttribute,
+    PINTERNAL_SERVER_INFO pInternalServerInfo
+    )
+{
+    DWORD dwError = 0;
+    struct berval**  vals = NULL;
+    PSTR pszValue = NULL;
+    DWORD dwIndex = 0;
+
+    if (!pLd || !pMessage || !pInternalServerInfo || IsNullOrEmptyString(pszAttribute))
+    {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    vals = ldap_get_values_len(pLd, pMessage, pszAttribute);
+
+    if (vals)
+    {
+        for (dwIndex = 0; vals[dwIndex] != '\0'; ++dwIndex)
+        {
+            if (dwIndex)
+            {
+                dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszValue = vals[dwIndex]->bv_val;
+        }
+
+        if (VmDirStringCompareA(pszAttribute, "createTimeStamp", FALSE))
+        {
+            dwError = VmDirStringCpyA(
+                                pInternalServerInfo->pszCreateTimeStamp,
+                                VMDIR_MAX_TIMESTAMP_LEN,
+                                pszValue
+                                );
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(pszAttribute, "cn", FALSE))
+        {
+            dwError = VmDirStringCpyA(
+                                pInternalServerInfo->pszServerFQDN,
+                                VMDIR_MAX_LDAP_URI_LEN,
+                                pszValue);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    if (vals)
+    {
+        ldap_value_free_len(vals);
+    }
+    return dwError;
+error:
     goto cleanup;
 }

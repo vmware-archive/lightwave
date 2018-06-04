@@ -780,6 +780,7 @@ _VmDirGetServersOnSite(
                             pszSiteName,
                             pszServerName,
                             pszDomain,
+                            NULL,
                             &pInternalServerInfo,
                             &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);

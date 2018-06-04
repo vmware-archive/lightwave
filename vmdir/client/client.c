@@ -147,6 +147,12 @@ _VmDirWriteToKeyTabFile(
     PVMDIR_KRB_INFO pKrbInfo
     );
 
+static
+VOID
+_VmDirClearServerInfo(
+    PVMDIR_SERVER_INFO pServerInfo
+    );
+
 /*
  * Refresh account password before it expires.
  */
@@ -2970,6 +2976,7 @@ VmDirGetServers(
                             pLd,
                             pszServerName,
                             pszDomain,
+                            NULL,
                             &pInternalServerInfo,
                             &dwInfoCount);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -6963,6 +6970,7 @@ VmDirDeleteTenantEx(
         IsNullOrEmptyString(pszDomainName) ||
         IsNullOrEmptyString(pszUsername) ||
         IsNullOrEmptyString(pszPassword))
+
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -7020,7 +7028,167 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirGetServersDetailed(
+    PCSTR               pszHostName,
+    PCSTR               pszUserName,
+    PCSTR               pszPassword,
+    PVMDIR_SERVER_INFO*  ppServerInfo,   // output
+    DWORD*              pdwNumServer    // output
+)
+{
+    DWORD       dwError                 = 0;
+    DWORD       i                       = 0;
+    PSTR        pszDomain               = NULL;
+    LDAP*       pLd                     = NULL;
+    DWORD       dwInfoCount             = 0;
+    PINTERNAL_SERVER_INFO pInternalServerInfo  = NULL;
+    PVMDIR_SERVER_INFO pServerInfo = NULL;
+    PSTR        pszServerName = NULL;
+    char        bufUPN[VMDIR_MAX_UPN_LEN] = {0};
 
+    // parameter check
+    if (
+            IsNullOrEmptyString (pszHostName) ||
+            IsNullOrEmptyString (pszUserName) ||
+            pszPassword         == NULL       ||
+            pdwNumServer   == NULL
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetServerName( pszHostName, &pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // get domain name
+    dwError = VmDirGetDomainName(
+                    pszServerName,
+                    &pszDomain
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszUserName, pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBindExt1(
+        &pLd,
+        pszServerName,
+        bufUPN,
+        pszPassword,
+        MAX_LDAP_CONNECT_NETWORK_TIMEOUT);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //get all vmdir servers in the forest.
+    dwError = VmDirGetServersInfo(
+                            pLd,
+                            pszServerName,
+                            pszDomain,
+                            PVMDIR_SERVER_INFO_ATTRS,
+                            &pInternalServerInfo,
+                            &dwInfoCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ppServerInfo)
+    {
+        dwError = VmDirAllocateMemory(
+                dwInfoCount*sizeof(VMDIR_SERVER_INFO),
+                (PVOID*)&pServerInfo
+        );
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for ( i=0; i<dwInfoCount; ++i)
+        {
+            dwError = VmDirAllocateStringA(
+                    pInternalServerInfo[i].pszServerDN,
+                    &(pServerInfo[i].pszServerDN)
+            );
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pInternalServerInfo[i].pszCreateTimeStamp,
+                    &(pServerInfo[i].pszCreateTimeStamp)
+                    );
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pInternalServerInfo[i].pszServerFQDN,
+                    &(pServerInfo[i].pszServerFQDN)
+                    );
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pInternalServerInfo[i].pszSiteName,
+                    &(pServerInfo[i].pszSiteName)
+                    );
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        *ppServerInfo = pServerInfo;
+    }
+
+    *pdwNumServer = dwInfoCount;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pInternalServerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
+
+    // unbind
+    if (pLd)
+    {
+        ldap_unbind_ext_s(pLd, NULL, NULL);
+    }
+
+    return dwError;
+
+error:
+    if (ppServerInfo)
+    {
+        *ppServerInfo = NULL;
+    }
+    if (pServerInfo)
+    {
+        VmDirFreeServerInfoArray(pServerInfo, i);
+    }
+    if (pdwNumServer)
+    {
+        *pdwNumServer = 0;
+    }
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "VmDirGetServersDetailed failed. Error[%d]\n",
+            dwError
+            );
+    goto cleanup;
+}
+
+VOID
+VmDirFreeServerInfo(
+    PVMDIR_SERVER_INFO pServerInfo
+    )
+{
+    _VmDirClearServerInfo(pServerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+}
+
+VOID
+VmDirFreeServerInfoArray(
+    PVMDIR_SERVER_INFO pServerInfo,
+    DWORD              dwCount
+    )
+{
+    if (pServerInfo && dwCount)
+    {
+        DWORD dwIndex = 0;
+        for ( dwIndex = 0; dwIndex<dwCount; ++dwIndex)
+        {
+            _VmDirClearServerInfo(&pServerInfo[dwIndex]);
+        }
+    }
+    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+}
 
 static
 DWORD
@@ -7278,4 +7446,19 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+static
+VOID
+_VmDirClearServerInfo(
+    PVMDIR_SERVER_INFO pServerInfo
+    )
+{
+    if (pServerInfo)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pServerInfo->pszServerDN);
+        VMDIR_SAFE_FREE_MEMORY(pServerInfo->pszCreateTimeStamp);
+        VMDIR_SAFE_FREE_MEMORY(pServerInfo->pszServerFQDN);
+        VMDIR_SAFE_FREE_MEMORY(pServerInfo->pszSiteName);
+    }
 }

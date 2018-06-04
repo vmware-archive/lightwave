@@ -115,6 +115,7 @@ EXPORTS
     VmDirGetProposedTopology
     VmDirGetChangesInTopology
     VmDirApplyTopologyChanges
+    VmDirGetServersDetailed
     VmDirFreeHATopologyData
     VmDirFreeHAServerInfo
     VmDirFreeHATopologyChanges
