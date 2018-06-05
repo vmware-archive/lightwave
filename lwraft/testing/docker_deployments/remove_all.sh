@@ -8,4 +8,4 @@ function remove_node() {
     docker rm $1
 }
 
-docker ps -qf name=post.test | xargs -n1 -I{} bash -c "$(declare -f remove_node) ; remove_node {} ;"
+docker ps -qaf network=post_test_net | xargs -n1 -I{} bash -c "$(declare -f remove_node) ; remove_node {} ;"

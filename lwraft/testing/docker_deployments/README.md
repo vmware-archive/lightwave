@@ -41,6 +41,12 @@ Network details should be transparent for the purposes of this test.
 If you need to know those, you can run
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+./deploy_logsplit.sh <number of nodes>
+For eg: ./deploy_logsplit.sh 4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+same functionality as deploy except that post registry sets RaftUseLogDB to 0x1
+which splits the database to state and log.
+
 docker network -f name=post_test_net
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -92,6 +98,52 @@ dn: cn=persiststate,cn=raftcontext
 vmwRaftFirstLogindex: 1
 vmwRaftLastApplied: 633
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+node_stats
+---------
+
+Show role, term, lastindex and lastappliedindex on all nodes (showing just one node below)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+root@photon-e3ce278f5ae4 [ ~/docker_deployments ]# ./node_stats.sh
+CONTAINER ID        IMAGE               COMMAND             CREATED              STATUS              PORTS               NAMES
+def26ccdc3db        docker_posttest     "/bin/bash"         About a minute ago   Up 59 seconds                           post3.post.test
+
+Node Name                      Role       Term   LastIndex       LastAppliedIndex
+------------------------------ ---------- ------ --------------- ----------------
+post3.post.test                Follower   2      633             633
+post2.post.test                Follower   2      633             633
+post1.post.test                Leader     2      633             633
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+node_demote
+----------
+
+demote a node. specify node number. Note: this is not versatile as it assumes post1.post.test is leader.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+root@photon-e3ce278f5ae4 [ ~/docker_deployments ]# ./node_demote.sh 2
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+5144f2f6f4f1        docker_posttest     "/bin/bash"         5 minutes ago       Up 5 minutes                            post1.post.test
+Persistent Objectstore Service instance post2.post.test is removed from cluster successfully.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+node_promote
+------------
+
+promote a node by node number. works when demoted using node_demote (which means it must be part of the cluster)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+root@photon-e3ce278f5ae4 [ ~/docker_deployments ]# ./node_promote.sh 2
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+ee2dc3bdf3d0        docker_posttest     "/bin/bash"         5 minutes ago       Up 5 minutes                            post2.post.test
+Initializing Persistent Objectstore Service instance ...
+System Host Name: post2.post.test
+Partner Server Name: post1.post.test
+Target Domain Name: post.test
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 remove_all
 ---------
