@@ -70,6 +70,7 @@ then
     echo "" >> /etc/syslog-ng/syslog-ng.conf
 fi
 
+systemctl enable syslog-ng
 systemctl restart syslog-ng
 systemctl restart systemd-journald
 
@@ -98,7 +99,8 @@ output.logstash:
   hosts: ["$LOGSTASH_ELB:5043"]
 EOF
 
-systemctl start filebeat
+systemctl enable filebeat
+systemctl restart filebeat
 
 # install telegraph if the WAVEFRONT_PROXY tag is set
 get_tag_value "WAVEFRONT_PROXY" WAVEFRONT_PROXY
@@ -127,6 +129,7 @@ EOF
   find /opt/vmware -name "*-telegraf.conf" | xargs cp -t /etc/telegraf/telegraf.d
 
   systemctl daemon-reload
+  systemctl enable telegraf
   systemctl restart telegraf
 fi
 
