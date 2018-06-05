@@ -512,6 +512,7 @@ Lightwave POST service
             /bin/rm %{_krb5_gss_conf_dir}/mech-$$
         fi
     fi
+    chmod 644 %{_krb5_gss_conf_dir}/mech
 
     /bin/mkdir -m 700 -p %{_vmafd_dbdir}
     /bin/mkdir -m 700 -p %{_vecsdir}
