@@ -193,15 +193,17 @@ VmDirFreeOperationContent(
             while ((pNode = LwRtlHashTableIterate(syncDoneCtrlVal->htUtdVector, &iter)))
             {
                 dwError = LwRtlHashTableRemove(syncDoneCtrlVal->htUtdVector, pNode);
-                assert( dwError == 0 );
+                assert(dwError == 0);
                 pUtdVectorEntry = LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
-                VmDirFreeBervalContent( &pUtdVectorEntry->invocationId );
-                VMDIR_SAFE_FREE_MEMORY( pUtdVectorEntry );
+                VmDirFreeBervalContent(&pUtdVectorEntry->invocationId);
+                VMDIR_SAFE_FREE_MEMORY(pUtdVectorEntry);
             }
             LwRtlFreeHashTable(&syncDoneCtrlVal->htUtdVector);
-            assert( syncDoneCtrlVal->htUtdVector == NULL );
+            assert(syncDoneCtrlVal->htUtdVector == NULL);
 
-            VMDIR_SAFE_FREE_MEMORY( op->syncDoneCtrl );
+            VMDIR_SAFE_FREE_MEMORY(syncDoneCtrlVal->pszDeadlockDetectionVector);
+
+            VMDIR_SAFE_FREE_MEMORY(op->syncDoneCtrl);
         }
 
         switch (op->reqCode)

@@ -15,6 +15,7 @@
 package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,6 +29,11 @@ public class OIDCClientGssIT extends OIDCClientITBase {
     @BeforeClass
     public static void setUp() throws Exception {
         setUp("config.properties");
+    }
+
+    @AfterClass
+    public static void cleanup() throws Exception {
+        tearDown();
     }
 
     // NonRegNoHOKConfigClient, GssGrant

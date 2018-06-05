@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -293,6 +293,15 @@ VmDirClientLeave(
     );
 
 DWORD
+VmDirClientLeaveEx(
+    PCSTR    pszServerName,
+    PCSTR    pszUserName,
+    PCSTR    pszPassword,
+    PCSTR    pszDomainName,
+    PCSTR    pszMachine
+    );
+
+DWORD
 VmDirCreateComputerAccount(
     PCSTR pszServerName,
     PCSTR pszUserName,
@@ -314,6 +323,22 @@ VmDirCreateComputerAccountAtomic(
 
 DWORD
 VmDirSetupTenantInstance(
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    );
+
+DWORD
+VmDirSetupTenantInstanceEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    );
+
+DWORD
+VmDirDeleteTenantEx(
+    PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUsername,
     PCSTR pszPassword
@@ -497,6 +522,12 @@ DWORD
 VmDirGetVmDirLogPath(
     PSTR  pszPath,
     PCSTR pszLogFile
+    );
+
+DWORD
+VmDirBackupDB(
+    PVMDIR_SERVER_CONTEXT hServer,
+    PCSTR       pszBackupPath
     );
 
 DWORD

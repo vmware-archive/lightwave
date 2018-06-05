@@ -1647,6 +1647,58 @@ error:
     goto cleanup;
 }
 
+UINT32
+Srv_RpcVmDirBackupDB(
+    handle_t    hBinding,
+    PWSTR       pwszBackupPath
+    )
+{
+    DWORD  dwError = 0;
+    DWORD dwRpcFlags =   VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    uint64_t uiStartTime = 0;
+    uint64_t uiEndTime = 0;
+    PSTR    pszBackupPath = NULL;
+
+    uiStartTime = VmDirGetTimeInMilliSec();
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pwszBackupPath))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateStringAFromW(pwszBackupPath, &pszBackupPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvBackupDB(pszBackupPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s done", __FUNCTION__);
+
+cleanup:
+    uiEndTime = VmDirGetTimeInMilliSec();
+    VmDirRpcMetricsUpdate(METRICS_RPC_OP_BACKUPDB, uiStartTime, uiEndTime);
+
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszBackupPath);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
+    goto cleanup;
+}
+
 /*
  * Rundown function for vmdir_dbcp_handle data. Handle the case where the
  * client/server connection is lost and the existing connection handle (FILE *)
@@ -1655,11 +1707,6 @@ error:
  */
 void vmdir_dbcp_handle_t_rundown(void *ctx)
 {
-    DWORD dwXlogNum = 0;
-    DWORD dwDbSizeMb = 0;
-    DWORD dwDbMapSizeMb = 0;
-    char tmp_buf[256];
-
     FILE *pFileHandle = (FILE *)ctx;
 
     if (pFileHandle)
@@ -1671,9 +1718,8 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
         }
     }
     // Clear backend READ-ONLY mode when dbcp connection interrupted.
-    VmDirSetMdbBackendState(0, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, tmp_buf, sizeof(tmp_buf));
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: turn off keeping xlog flag on backend, xlognum: %d", dwXlogNum);
-
+    VmDirSrvSetMDBStateClear();
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: MdbBackendState cleared,");
     // Set vmdir state to NORMAL
     VmDirdStateSet(VMDIRD_STATE_NORMAL);
 }

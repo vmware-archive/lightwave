@@ -266,7 +266,7 @@ VmDirReplMetricsInit(
     PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
 
     // use identical bucket for all histograms
-    uint64_t    buckets[4] = {1, 10, 100, 1000};
+    uint64_t buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
 
     // use this template to construct labels
     VM_METRICS_LABEL labels[4] =
@@ -337,7 +337,7 @@ VmDirReplMetricsInit(
             "vmdir_repl_time_cycle_succeeded",
             labels, 2,
             "Time taken to complete replication cycle (successful) with each direct partner",
-            buckets, 4,
+            buckets, 8,
             &pReplMetrics->pTimeCycleSucceeded);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -346,7 +346,7 @@ VmDirReplMetricsInit(
             "vmdir_repl_time_cycle_failed",
             labels, 2,
             "Time taken to complete replication cycle (unsuccessful) with each direct partner",
-            buckets, 4,
+            buckets, 8,
             &pReplMetrics->pTimeCycleFailed);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -356,7 +356,7 @@ VmDirReplMetricsInit(
             "vmdir_repl_usn_behind",
             labels, 4,
             "USN difference to quantify replication lags between two nodes",
-            buckets, 4,
+            buckets, 8,
             &pReplMetrics->pUsnBehind);
     BAIL_ON_VMDIR_ERROR(dwError);
 

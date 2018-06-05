@@ -233,7 +233,8 @@ VmDirGenerateRandomPasswordByDefaultPolicy
 VOID
 VmDirAuditWriteOp(
     PVDIR_OPERATION  pOp,
-    PCSTR            pszDN
+    PCSTR            pszDN,
+    PVDIR_ENTRY      pEntry
     );
 
 #endif /* ML_INTERFACE_H_ */

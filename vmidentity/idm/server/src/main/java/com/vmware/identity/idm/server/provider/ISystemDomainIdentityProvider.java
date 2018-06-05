@@ -163,4 +163,6 @@ public interface ISystemDomainIdentityProvider extends IIdentityProvider
     List<VmHostData> getComputers(boolean getDCOnly) throws Exception;
 
     String generatePassword() throws Exception;
+
+    boolean isValidDn(String dn) throws Exception;
 }

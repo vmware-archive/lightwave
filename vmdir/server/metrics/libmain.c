@@ -35,6 +35,9 @@ VmDirMetricsInitialize(
     dwError = VmDirRpcMetricsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirSrvStatMetricsInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirReplMetricsCacheInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -59,6 +62,7 @@ VmDirMetricsShutdown(
     VmDirLdapMetricsShutdown();
     VmDirRestMetricsShutdown();
     VmDirRpcMetricsShutdown();
+    VmDirSrvStatMetricsShutdown();
     VmDirReplMetricsCacheShutdown();
     VmMetricsDestroy(pmContext);
 }

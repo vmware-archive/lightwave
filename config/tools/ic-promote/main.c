@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -38,14 +38,6 @@ VmwDeployBuildParams(
     PCSTR pszParentUserName,
     PCSTR pszParentPassword,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
-    );
-
-static
-DWORD
-VmwDeployReadPassword(
-    PCSTR pszUser,
-    PCSTR pszDomain,
-    PSTR* ppszPassword
     );
 
 static
@@ -636,87 +628,6 @@ error:
 
     goto cleanup;
 }
-
-static
-DWORD
-VmwDeployReadPassword(
-    PCSTR pszUser,
-    PCSTR pszDomain,
-    PSTR* ppszPassword
-    )
-{
-    DWORD dwError = 0;
-    struct termios orig, nonecho;
-    CHAR  szPassword[33] = "";
-    PSTR  pszPassword = NULL;
-    DWORD iChar = 0;
-
-    memset(szPassword, 0, sizeof(szPassword));
-
-    fprintf(stdout, "Password (%s@%s): ", pszUser, pszDomain);
-    fflush(stdout);
-
-    tcgetattr(0, &orig); // get current settings
-    memcpy(&nonecho, &orig, sizeof(struct termios)); // copy settings
-    nonecho.c_lflag &= ~(ECHO); // don't echo password characters
-    tcsetattr(0, TCSANOW, &nonecho); // set current settings to not echo
-
-    // Read up to 32 characters of password
-
-    for (; iChar < sizeof(szPassword); iChar++)
-    {
-        CHAR ch;
-
-        if (read(STDIN_FILENO, &ch, 1) < 0)
-        {
-            dwError = LwErrnoToWin32Error(errno);
-            BAIL_ON_DEPLOY_ERROR(dwError);
-        }
-
-        if (ch == '\n')
-        {
-            fprintf(stdout, "\n");
-            fflush(stdout);
-            break;
-        }
-        else if (ch == '\b') /* backspace */
-        {
-            if (iChar > 0)
-            {
-                iChar--;
-                szPassword[iChar] = '\0';
-            }
-        }
-        else
-        {
-            szPassword[iChar] = ch;
-        }
-    }
-
-    if (IsNullOrEmptyString(&szPassword[0]))
-    {
-        dwError = ERROR_PASSWORD_RESTRICTION;
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
-
-    dwError = VmwDeployAllocateStringA(szPassword, &pszPassword);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    *ppszPassword = pszPassword;
-
-cleanup:
-
-    tcsetattr(0, TCSANOW, &orig);
-
-    return dwError;
-
-error:
-
-    *ppszPassword = NULL;
-
-    goto cleanup;
-}
-
 
 static
 VOID

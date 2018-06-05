@@ -60,9 +60,12 @@ VmKdcServiceShutdown(
     VOID
     )
 {
-    VmKdcdStateSet(VMKDC_STOPPING);
-    VmKdcShutdown();
-    //VmKdcLogTerminate();
+    if (gVmkdcGlobals.vmkdcdState != VMKDC_SHUTDOWN)
+    {
+        VmKdcdStateSet(VMKDC_STOPPING);
+        VmKdcShutdown();
+        //VmKdcLogTerminate();
+    }
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Vmkdcd: stop");
 

@@ -805,6 +805,33 @@ error:
 }
 
 DWORD
+VmAfSrvGetOldPassword(
+    PWSTR*  ppwszPassword   /* IN     */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszOldPassword = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(ppwszPassword, dwError);
+
+    dwError = _ConfigGetString( VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                        VMAFD_REG_KEY_DC_OLD_PASSWORD,
+                        &pwszOldPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppwszPassword = pwszOldPassword;
+    pwszOldPassword = NULL;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pwszOldPassword);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmAfSrvGetMachineAccountInfo(
     PWSTR*   ppwszAccount,     /*    OUT */
     PWSTR*   ppwszPassword,    /*    OUT */

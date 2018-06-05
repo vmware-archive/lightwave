@@ -11,20 +11,16 @@
     "angular-route": "1.5.8",
     "angular-loader": "1.5.8",
     "angular-mocks": "1.5.8",
-    "html5-boilerplate": "~5.2.0",
+    "html5-boilerplate": "5.2.0",
     "jquery": "3.0.0",
-    "angular-flash-alert": "^2.2.4",
+    "angular-flash-alert": "2.4.0",
     "angular-bootstrap": "latest",
     "moment": "2.12.0",
-    "ng-file-upload": "^12.0.4",
-    "ng-dialog": "^0.6.2",
-    "karma-jasmine": "^1.0.2",
-    "requirejs": "^2.2.0",
-    "cryptojslib": "latest",
+    "ng-file-upload": "12.2.13",
+    "ng-dialog": "0.6.6",
+    "karma-jasmine": "1.1.1",
+    "requirejs": "2.3.5",
+    "cryptojslib": "3.1.2",
     "kjur-jsrsasign": "jsrsasign#^5.0.12"
-  },
-  "resolutions": {
-    "angular-cookies": "1.5.8",
-    "ng-dialog": "^0.6.2"
   }
 }

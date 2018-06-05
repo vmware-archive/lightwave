@@ -76,7 +76,7 @@ VmDirRESTOperationReadRequest(
     PSTR    pszKey = NULL;
     PSTR    pszTemp = NULL;
     PSTR    pszVal = NULL;
-    PSTR    pszInput = NULL;
+    PSTR    pszBody = NULL;
     size_t  len = 0;
 
     if (!pRestOp || !pRESTHandle || !pRestReq)
@@ -92,7 +92,11 @@ VmDirRESTOperationReadRequest(
     dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, &pRestOp->dwPort);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read request URI. TRUE requests c-rest-engine to decode URI
+    // read raw request URI as sent from client - for token POP validation
+    dwError = VmRESTGetHttpURI(pRestReq, FALSE, &pRestOp->pszURI);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // read decoded request URI and truncate parameters
     dwError = VmRESTGetHttpURI(pRestReq, TRUE, &pRestOp->pszPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -122,26 +126,26 @@ VmDirRESTOperationReadRequest(
     // set resource-specifc http error mapping function
     pRestOp->pfnGetHttpError = pRestOp->pResource->pfnGetHttpError;
 
-    // read request authorization info
+    // read request headers
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_AUTHENTICATION, &pRestOp->pszAuth);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read header If-Match
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_IF_MATCH, &pRestOp->pszHeaderIfMatch);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read Content-type
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONTENT_TYPE, &pRestOp->pszContentType);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // read Requestid
-    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONNECTION, &pRestOp->pszHeaderConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_DATE, &pRestOp->pszDate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_CONNECTION, &pRestOp->pszHeaderConnection);
+    dwError = VmRESTGetHttpHeader(pRestReq, VMDIR_REST_HEADER_REQUESTID, &pRestOp->pConn->pThrLogCtx->pszRequestId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pRestOp->pszOrigin)
@@ -166,11 +170,11 @@ VmDirRESTOperationReadRequest(
     // read request input json
     do
     {
-        if (bytesRead || !pszInput)
+        if (bytesRead || !pszBody)
         {
             dwError = VmDirReallocateMemoryWithInit(
-                    (PVOID)pszInput,
-                    (PVOID*)&pszInput,
+                    (PVOID)pszBody,
+                    (PVOID*)&pszBody,
                     len + MAX_REST_PAYLOAD_LENGTH + 1,
                     len);     // +1 for NULL char
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -178,15 +182,15 @@ VmDirRESTOperationReadRequest(
 
         bytesRead = 0;
         dwError = VmRESTGetData(
-                pRESTHandle, pRestReq, pszInput + len, &bytesRead);
+                pRESTHandle, pRestReq, pszBody + len, &bytesRead);
 
         len += bytesRead;
     }
     while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Save the input in string format for proxy
-    pRestOp->pszInput = pszInput;
+    // save for signature validation and proxy forwarding
+    pRestOp->pszBody = pszBody;
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
@@ -204,7 +208,7 @@ error:
             "%s failed, error (%d)",
             __FUNCTION__,
             dwError);
-    VMDIR_SAFE_FREE_STRINGA(pszInput);
+    VMDIR_SAFE_FREE_STRINGA(pszBody);
     goto cleanup;
 }
 
@@ -221,10 +225,10 @@ VmDirRESTOperationParseRequestPayload(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    if (!IsNullOrEmptyString(pRestOp->pszInput))
+    if (!IsNullOrEmptyString(pRestOp->pszBody))
     {
-        pRestOp->pjInput = json_loads(pRestOp->pszInput, 0, &jError);
-        if (!pRestOp->pjInput)
+        pRestOp->pjBody = json_loads(pRestOp->pszBody, 0, &jError);
+        if (!pRestOp->pjBody)
         {
             VMDIR_LOG_ERROR(
                     VMDIR_LOG_MASK_ALL,
@@ -420,18 +424,21 @@ VmDirFreeRESTOperation(
     {
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszAuth);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszMethod);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszURI);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszPath);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszSubPath);
+
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderIfMatch);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszContentType);
-        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszInput);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszClientIP);
         VMDIR_SAFE_FREE_MEMORY(pRestOp->pszHeaderConnection);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszDate);
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
 
-        if (pRestOp->pjInput)
+        VMDIR_SAFE_FREE_MEMORY(pRestOp->pszBody);
+        if (pRestOp->pjBody)
         {
-            json_decref(pRestOp->pjInput);
+            json_decref(pRestOp->pjBody);
         }
         LwRtlHashMapClear(pRestOp->pParamMap, VmDirSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestOp->pParamMap);

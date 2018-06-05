@@ -13,7 +13,6 @@
  */
 #include "includes.h"
 
-
 // This API does not work now, most of the information
 // returned the RPC stack is NULL.
 
@@ -84,6 +83,11 @@ VMCACheckAccess(
                             NULL, /* unsigned32 *authn_svc, */
                             NULL, /* unsigned32 *authz_svc, */
                             &rpc_status);
+    if (rpc_status != RPC_S_OK)
+    {
+        dwError = VMCA_KRB_ACCESS_DENIED;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
 
     /* Deny if connection is not encrypted */
     if (dwProtectLevel < rpc_c_protect_level_pkt_privacy)
@@ -93,7 +97,7 @@ VMCACheckAccess(
     }
 
     /* Deny if no auth identity is provided.  */
-    if (rpc_status == rpc_s_binding_has_no_auth || !authPrinc || !*authPrinc)
+    if (!authPrinc || !*authPrinc)
     {
         dwError = VMCA_KRB_ACCESS_DENIED;
         BAIL_ON_VMCA_ERROR(dwError);

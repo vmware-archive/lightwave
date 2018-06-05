@@ -1,0 +1,4 @@
+filebeat:
+config_dir: /etc/filebeat/conf.d
+output.logstash:
+hosts: ["@@LOGSTASH_ELB@@:5043"]

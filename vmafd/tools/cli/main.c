@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -2792,6 +2792,7 @@ ParseArgsLeaveVmDir(
         PARSE_MODE_LEAVE_VM_DIR_SERVER_NAME,
         PARSE_MODE_LEAVE_VM_DIR_USER_NAME,
         PARSE_MODE_LEAVE_VM_DIR_PASSWORD,
+        PARSE_MODE_LEAVE_VM_DIR_MACHINE_NAME,
     } PARSE_MODE_LEAVE_VM_DIR;
     PARSE_MODE_LEAVE_VM_DIR parseMode = PARSE_MODE_LEAVE_VM_DIR_OPEN;
     DWORD iArg = 0;
@@ -2814,6 +2815,10 @@ ParseArgsLeaveVmDir(
                 else if (!strcmp(pszArg, "--password"))
                 {
                     parseMode = PARSE_MODE_LEAVE_VM_DIR_PASSWORD;
+                }
+                else if (!strcmp(pszArg, "--machine-name"))
+                {
+                    parseMode = PARSE_MODE_LEAVE_VM_DIR_MACHINE_NAME;
                 }
                 else if (!strcmp(pszArg, "--force"))
                 {
@@ -2866,6 +2871,21 @@ ParseArgsLeaveVmDir(
                 }
 
                 dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPassword);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_LEAVE_VM_DIR_OPEN;
+
+                break;
+
+            case PARSE_MODE_LEAVE_VM_DIR_MACHINE_NAME:
+
+                if (pContext->pszMachineName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszMachineName);
                 BAIL_ON_VMAFD_ERROR(dwError);
 
                 parseMode = PARSE_MODE_LEAVE_VM_DIR_OPEN;

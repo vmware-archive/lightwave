@@ -121,12 +121,6 @@ typedef enum
     VMCA_AUTHORIZATION_TOKEN_TYPE_MAX
 } VMCA_AUTHORIZATION_TYPE;
 
-typedef struct _VMCA_AUTHORIZATION_PARAM
-{
-    PSTR pszAuthorizationToken;
-    VMCA_AUTHORIZATION_TYPE tokenType;
-} VMCA_AUTHORIZATION_PARAM, *PVMCA_AUTHORIZATION_PARAM;
-
 typedef struct _VMCA_ACCESS_TOKEN
 {
     VMCA_AUTHORIZATION_TYPE  tokenType;
@@ -140,8 +134,30 @@ typedef struct _VMCA_ACCESS_TOKEN
 //    }
 } VMCA_ACCESS_TOKEN, *PVMCA_ACCESS_TOKEN;
 
+typedef struct _VMCA_HTTP_REQ_OBJ {
+    PSTR                            pszMethod;
+    PSTR                            pszUri;
+    PSTR                            pszVer;
+    PSTR                            pszConnection;
+    PSTR                            pszTransferEncoding;
+    PSTR                            pszContentLength;
+    PSTR                            pszAuthorization;
+    PSTR                            pszContentType;
+    PSTR                            pszDate;
+    PSTR                            pszPayload;
+    FILE*                           debugFile;
+    PVMCA_ACCESS_TOKEN              pAccessToken;
+} VMCA_HTTP_REQ_OBJ, *PVMCA_HTTP_REQ_OBJ;
+
+typedef struct _VMCA_AUTHORIZATION_PARAM
+{
+    PSTR pszAuthorizationToken;
+    VMCA_AUTHORIZATION_TYPE tokenType;
+} VMCA_AUTHORIZATION_PARAM, *PVMCA_AUTHORIZATION_PARAM;
+
 typedef DWORD (*VMCA_ACCESS_TOKEN_VERIFY) (
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     );
 
@@ -155,19 +171,6 @@ typedef struct _VMCA_ACCESS_TOKEN_METHODS
     VMCA_ACCESS_TOKEN_VERIFY      pfnVerify;
     VMCA_ACCESS_TOKEN_FREE        pfnFree;
 } VMCA_ACCESS_TOKEN_METHODS;
-
-typedef struct
-_VMCA_HTTP_REQ_OBJ {
-    PSTR                            pszMethod;
-    PSTR                            pszUri;
-    PSTR                            pszVer;
-    PSTR                            pszConnection;
-    PSTR                            pszTransferEncoding;
-    PSTR                            pszContentLength;
-    PSTR                            pszPayload;
-    FILE*                           debugFile;
-    PVMCA_ACCESS_TOKEN              pAccessToken;
-} VMCA_HTTP_REQ_OBJ, *PVMCA_HTTP_REQ_OBJ;
 
 #endif
 

@@ -1,7 +1,7 @@
 [HKEY_THIS_MACHINE\Services]
 
 [HKEY_THIS_MACHINE\Services\vmdir]
-@security = O:SYG:BAD:(A;;KA;;;BA)
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;S-1-22-2-@LIGHTWAVE_GID@)
 "Description" = {
     default = "VMware Directory Service"
     doc = ""

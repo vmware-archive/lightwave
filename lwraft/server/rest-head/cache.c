@@ -34,9 +34,6 @@ VmDirRESTCacheInit(
     dwError = VmDirAllocateRWLock(&pRestCache->pRWLock);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRESTCacheRefresh(pRestCache);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     *ppRestCache = pRestCache;
 
 cleanup:
@@ -135,7 +132,7 @@ VmDirRESTCacheGetOIDCSigningCertPEM(
 
     if (IsNullOrEmptyString(pRestCache->pszOIDCSigningCertPEM))
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
     }
 
     dwError = VmDirAllocateStringA(
@@ -179,7 +176,7 @@ VmDirRESTCacheGetBuiltInAdminsGroupSid(
 
     if (!RtlValidSid(pRestCache->pBuiltInAdminsGroupSid))
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
     }
 
     ulSidLen = RtlLengthSid(pRestCache->pBuiltInAdminsGroupSid);

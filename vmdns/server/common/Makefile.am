@@ -18,6 +18,7 @@ libsrvcommon_la_SOURCES = \
     hashtable.c           \
     ldap.c                \
     lru.c                 \
+    metricsenums.c        \
     nameEntry.c           \
     recordlist.c          \
     recordobject.c        \

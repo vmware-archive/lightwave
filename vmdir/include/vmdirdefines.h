@@ -622,6 +622,16 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_GET_SYSTEM_DOMAIN_DN(pszDomainDn, dwError)                  \
+    do {                                                                  \
+        (pszDomainDn) = gVmdirServerGlobals.systemDomainDN.lberbv.bv_val; \
+        if (IsNullOrEmptyString((pszDomainDn)))                           \
+        {                                                                 \
+            (dwError) = VMDIR_ERROR_INVALID_STATE;                        \
+            BAIL_ON_VMDIR_ERROR((dwError));                               \
+        }                                                                 \
+    } while(0)
+
 // if VDIR_CONNECTION has bind info in VDIR_ACCESS_INFO, use it; otherwise,
 // this is an internal operation and hence uses default administrator DN
 #define VMDIR_CURRENT_AUTHENTICATED_DN( pAccessInfo )       \
@@ -730,6 +740,9 @@ extern "C" {
                                   (c) == '.' ||   \
                                   (c) == '?' ||   \
                                   (c) == '/' )
+
+#define VMDIR_ASCII_SPACE(c) \
+    ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )
 
 #define VMDIR_ASCII_LOWER_TO_UPPER(c)   \
 if ( VMDIR_ASCII_LOWER(c) )             \

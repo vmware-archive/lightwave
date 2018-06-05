@@ -45,6 +45,12 @@ VmDirRESTAuthTokenValidate(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
     );
 
+DWORD
+VmDirRESTAuthTokenValidatePOP(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken,
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
 VOID
 VmDirFreeRESTAuthToken(
     PVDIR_REST_AUTH_TOKEN   pAuthToken

@@ -1,7 +1,9 @@
 bin_PROGRAMS = post-cli
 
 post_cli_SOURCES = \
-    clinode.c  \
+    clinode.c \
+    clibackup.c \
+    clidr.c \
     main.c
 
 post_cli_CPPFLAGS = \
@@ -27,7 +29,8 @@ post_cli_LDADD = \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @DL_LIBS@
 
 post_cli_LDFLAGS = \
     @DCERPC_LDFLAGS@ \

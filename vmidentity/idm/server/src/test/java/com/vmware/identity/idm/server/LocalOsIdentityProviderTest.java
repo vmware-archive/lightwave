@@ -30,6 +30,7 @@ import junit.framework.Assert;
 import org.apache.commons.lang.SystemUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vmware.identity.idm.Attribute;
@@ -46,6 +47,7 @@ import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.ProviderFactory;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
 
+@Ignore
 public class LocalOsIdentityProviderTest
 {
     private final static String domainName = "localhost";

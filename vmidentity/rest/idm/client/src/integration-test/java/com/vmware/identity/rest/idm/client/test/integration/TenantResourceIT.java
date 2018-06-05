@@ -45,6 +45,8 @@ import com.vmware.identity.rest.idm.client.test.integration.util.TestClientFacto
 import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.client.test.integration.util.UserGenerator;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
+import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
+import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
@@ -119,17 +121,50 @@ public class TenantResourceIT extends IntegrationTestBase {
             .withFailedAttemptIntervalSec(30L)
             .withMaxFailedAttempts(5)
             .build();
+        PasswordPolicyDTO password = new PasswordPolicyDTO.Builder()
+            .withDescription("Updated description")
+            .withMaxIdenticalAdjacentCharacters(5)
+            .withMaxLength(30)
+            .withMinAlphabeticCount(3)
+            .withMinLength(10)
+            .withMinLowercaseCount(1)
+            .withMinNumericCount(1)
+            .withMinSpecialCharCount(1)
+            .withMinUppercaseCount(1)
+            .withPasswordLifetimeDays(10)
+            .withProhibitedPreviousPasswordCount(3)
+            .build();
+
+        OperatorsAccessPolicyDTO operatorsDto = new OperatorsAccessPolicyDTO.Builder()
+            .withEnabled(true).build();
 
         TenantConfigurationDTO config = new TenantConfigurationDTO.Builder()
             .withLockoutPolicy(lockout)
+            .withPasswordPolicy(password)
+            .withOperatorsAccessPolicy(operatorsDto)
             .build();
 
+        // verify default password expirationd days before update
+        assertEquals(new Integer(700), testAdminClient.tenant().getConfig(testTenant.getName()).getPasswordPolicy().getPasswordLifetimeDays());
         TenantConfigurationDTO actual = testAdminClient.tenant().updateConfig(testTenant.getName(), config);
 
         assertEquals(lockout.getDescription(), actual.getLockoutPolicy().getDescription());
         assertEquals(lockout.getAutoUnlockIntervalSec(), actual.getLockoutPolicy().getAutoUnlockIntervalSec());
         assertEquals(lockout.getFailedAttemptIntervalSec(), actual.getLockoutPolicy().getFailedAttemptIntervalSec());
         assertEquals(lockout.getMaxFailedAttempts(), actual.getLockoutPolicy().getMaxFailedAttempts());
+        assertEquals(password.getDescription(), actual.getPasswordPolicy().getDescription());
+        assertEquals(password.getMaxIdenticalAdjacentCharacters(), actual.getPasswordPolicy().getMaxIdenticalAdjacentCharacters());
+        assertEquals(password.getMaxLength(), actual.getPasswordPolicy().getMaxLength());
+        assertEquals(password.getMinAlphabeticCount(), actual.getPasswordPolicy().getMinAlphabeticCount());
+        assertEquals(password.getMinLength(), actual.getPasswordPolicy().getMinLength());
+        assertEquals(password.getMinLowercaseCount(), actual.getPasswordPolicy().getMinLowercaseCount());
+        assertEquals(password.getMinNumericCount(), actual.getPasswordPolicy().getMinNumericCount());
+        assertEquals(password.getMinSpecialCharCount(), actual.getPasswordPolicy().getMinSpecialCharCount());
+        assertEquals(password.getMinUppercaseCount(), actual.getPasswordPolicy().getMinUppercaseCount());
+        assertEquals(password.getPasswordLifetimeDays(), actual.getPasswordPolicy().getPasswordLifetimeDays());
+        assertEquals(password.getProhibitedPreviousPasswordCount(), actual.getPasswordPolicy().getProhibitedPreviousPasswordCount());
+        assertNotNull(actual.getOperatorsAccessPolicy());
+        assertEquals(operatorsDto.getEnabled(), actual.getOperatorsAccessPolicy().getEnabled());
     }
 
     @Test

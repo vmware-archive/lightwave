@@ -34,6 +34,8 @@
 #define VMW_VMDNS_SVC_NAME "vmdns"
 #define VMW_DCERPC_SVC_NAME "dcerpc"
 
+#define VMW_LIGHTWAVE_USER_NAME "lightwave"
+
 #define VMCA_RPC_TCP_END_POINT "2014"
 
 #define VMW_TIME_SECS_PER_MINUTE   ( 60)

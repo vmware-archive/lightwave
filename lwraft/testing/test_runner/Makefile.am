@@ -22,7 +22,8 @@ vmdir_test_runner_LDADD = \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @DL_LIBS@
 
 vmdir_test_runner_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

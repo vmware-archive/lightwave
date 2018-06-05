@@ -84,6 +84,7 @@ import com.vmware.identity.idm.NoSuchResourceServerException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
 import com.vmware.identity.idm.OidcConfig;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.RSAAMInstanceInfo;
 import com.vmware.identity.idm.RSAAgentConfig;
@@ -3541,6 +3542,52 @@ public class DirectoryConfigStore implements IConfigStore {
     return rsaConfig;
   }
 
+  @Override
+  public OperatorAccessPolicy getOperatorAccessPolicy(String tenantName) throws Exception
+  {
+      try (PooledLdapConnection pooledConnection = borrowConnection()) {
+          ILdapConnectionEx connection = pooledConnection.getConnection();
+          String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+
+          OperatorAccessPolicyLdapObject policyLdapObject = OperatorAccessPolicyLdapObject.getInstance();
+
+          OperatorAccessPolicy policy = policyLdapObject.retrieveObject(connection, tenantsRootDn, LdapScope.SCOPE_ONE_LEVEL, null);
+
+          return policy;
+      }
+  }
+
+  @Override
+  public void setOperatorAccessPolicy(String tenantName, OperatorAccessPolicy policy) throws Exception
+  {
+      try (PooledLdapConnection pooledConnection = borrowConnection()) {
+          ILdapConnectionEx connection = pooledConnection.getConnection();
+          String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+
+          OperatorAccessPolicyLdapObject policyLdapObject = OperatorAccessPolicyLdapObject.getInstance();
+          String policyDn = policyLdapObject.lookupObject(connection, tenantsRootDn, LdapScope.SCOPE_ONE_LEVEL, null);
+          if ( ServerUtils.isNullOrEmpty(policyDn) )
+          {
+              if (policy != null)
+              {
+                  policyDn = policyLdapObject.getDnFromObject(tenantsRootDn, policy);
+                  policyLdapObject.createObject(connection, policyDn, policy);
+              }
+          }
+          else
+          {
+              if (policy == null)
+              {
+                  policyLdapObject.deleteObject(connection, policyDn);
+              }
+              else
+              {
+                  policyLdapObject.updateObject(connection, policyDn, policy);
+              }
+          }
+      }
+  }
+
   private static HashMap<String, RSAAMInstanceInfo>
   retrieveRSAAMInstancesMap(ILdapConnectionEx connection, String rsaAgentConfigDn) {
     ValidateUtil.validateNotEmpty(rsaAgentConfigDn, "rsaAgentConfigDn");
@@ -4874,8 +4921,7 @@ public class DirectoryConfigStore implements IConfigStore {
                     .build();
       try {
         LdapConnectionPool ldapConnectionPool = LdapConnectionPool.getInstance();
-        ILdapConnectionEx conn = ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
-        return new PooledLdapConnection(conn, pooledLdapConnectionIdentity, ldapConnectionPool);
+        return ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
       } catch (Exception e) {
         logger.error(e);
         latestEx = e;

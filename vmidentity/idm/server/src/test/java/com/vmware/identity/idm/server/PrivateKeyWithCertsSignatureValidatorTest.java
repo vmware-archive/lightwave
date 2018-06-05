@@ -23,6 +23,7 @@ import java.security.cert.Certificate;
 
 import junit.framework.Assert;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PrivateKeyWithCertsSignatureValidatorTest {
@@ -31,6 +32,7 @@ public class PrivateKeyWithCertsSignatureValidatorTest {
     private static final String customKeyAlias = "le-v2webserver-a732d6b5-db80-435a-b3d2-e360a0392976";
     private static final String keyAlias = "stskey";
 
+    @Ignore
     @Test
     public void test_ValidatePrivateKeyWithCert_VMCACerts() {
         ClientCertTestUtils utils = new ClientCertTestUtils();
@@ -44,6 +46,7 @@ public class PrivateKeyWithCertsSignatureValidatorTest {
         }
     }
 
+    @Ignore
     @Test
     public void test_ValidatePrivateKeyWithCert_CustomCerts() {
         ClientCertTestUtils utils = new ClientCertTestUtils();
@@ -57,6 +60,7 @@ public class PrivateKeyWithCertsSignatureValidatorTest {
         }
     }
 
+    @Ignore
     @Test(expected = IllegalArgumentException.class)
     public void test_ValidatePrivateKeyWithCert_NoMatch() throws Exception {
         ClientCertTestUtils utils = new ClientCertTestUtils();

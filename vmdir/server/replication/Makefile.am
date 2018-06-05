@@ -2,6 +2,8 @@
 noinst_LTLIBRARIES = libreplication.la
 
 libreplication_la_SOURCES = \
+    deadlockdetectionvector.c \
+    drrestore.c \
     firstreplcycle.c \
     globals.c \
     libmain.c \

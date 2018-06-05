@@ -28,13 +28,6 @@ VmcaDbDatabaseInitialize(
     BAIL_ON_VMCA_ERROR(dwError);
 
 #ifndef _WIN32
-    // NT has no correspoding ownership or mod change ? 
-    if (chown(pszAppDBName, 0, 0) < 0)
-    {
-        dwError = LwErrnoToWin32Error(errno);
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
     if (chmod(pszAppDBName, S_IRUSR | S_IWUSR) < 0)
     {
         dwError = LwErrnoToWin32Error(errno);

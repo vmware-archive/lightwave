@@ -329,7 +329,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 65535,                            \
-        /*.dwDefault      = */ 120,                              \
+        /*.dwDefault      = */ 60,                               \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -352,39 +352,6 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 1,                                \
         /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_COPY_DB_WRITES_MIN, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 100000,                           \
-        /*.dwDefault      = */ 1,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 600,                              \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 600,                              \
-        /*.dwDefault      = */ 30,                               \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -428,7 +395,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 5000,                             \
         /*.dwMax          = */ 60000,                            \
-        /*.dwDefault      = */ 10000,                            \
+        /*.dwDefault      = */ 20000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -451,6 +418,28 @@
         /*.dwMin          = */ 5,                                \
         /*.dwMax          = */ 10000,                            \
         /*.dwDefault      = */ 50,                               \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_EMPTY_PAGE_COUNT,   \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 1,                                \
+        /*.dwMax          = */ 10,                               \
+        /*.dwDefault      = */ 1,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_SUPPLIER_THREAD_TIMEOUT_IN_MILLI_SEC, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5000,                             \
+        /*.dwMax          = */ 60000,                            \
+        /*.dwDefault      = */ 10000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

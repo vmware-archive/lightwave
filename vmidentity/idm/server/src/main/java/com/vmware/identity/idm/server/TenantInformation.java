@@ -27,8 +27,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.ValidateUtil;
@@ -66,6 +68,7 @@ public class TenantInformation
     private final boolean _enableIdpSelection;
     private final ReadWriteLock _rsaConfigFilesLock;
     private RSAAgentConfig _preRsaAgentConfig;
+    private OperatorAccessPolicy _operatorsAccessPolicy;
 
     public
     TenantInformation(
@@ -95,7 +98,8 @@ public class TenantInformation
             String issuer,
             Collection<String> defaultProviders,
             AuthnPolicy authnPolicy,
-            boolean idpSelectionFlag
+            boolean idpSelectionFlag,
+            OperatorAccessPolicy operatorPolicy
             )
     {
         _tenant = tenant;
@@ -127,6 +131,7 @@ public class TenantInformation
         _enableIdpSelection = idpSelectionFlag;
         _rsaConfigFilesLock = new ReentrantReadWriteLock();
         _preRsaAgentConfig = null;
+        this._operatorsAccessPolicy = operatorPolicy;
     }
 
     public Tenant getTenant()
@@ -261,6 +266,22 @@ public class TenantInformation
         return null;
     }
 
+    public IIdentityStoreData findSystemIds() {
+        // There can be only one system provider
+        if (this._idsStores != null && !this._idsStores.isEmpty())
+        {
+            for (IIdentityStoreData ids : this._idsStores)
+            {
+                if (ids.getDomainType() == DomainType.SYSTEM_DOMAIN)
+                {
+                    return ids;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public IIdentityProvider getAdProvider()
     {
         return _adProvider;
@@ -339,6 +360,10 @@ public class TenantInformation
     public boolean isIDPSelectionEnabled()
     {
         return _enableIdpSelection;
+    }
+
+    public OperatorAccessPolicy getOperatorAccessPolicy() {
+        return this._operatorsAccessPolicy;
     }
 
     public ReadWriteLock get_rsaConfigFilesLock() {

@@ -67,7 +67,8 @@ vmcad_LDADD = \
     @UUID_LIBS@ \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
-    @CRESTENGINE_LIBS@
+    @CRESTENGINE_LIBS@ \
+    @DL_LIBS@
 
 vmcad_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

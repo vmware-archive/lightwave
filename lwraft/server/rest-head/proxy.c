@@ -367,18 +367,18 @@ _VmDirRESTProxySetCurlOpts(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Add the payload if exists
-    if(pRestOp->pszInput && VmDirStringLenA(pRestOp->pszInput) != 0)
+    if(pRestOp->pszBody && VmDirStringLenA(pRestOp->pszBody) != 0)
     {
         dwError = curl_easy_setopt(
                 pCurlHandle,
                 CURLOPT_POSTFIELDS,
-                pRestOp->pszInput);
+                pRestOp->pszBody);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = curl_easy_setopt(
                 pCurlHandle,
                 CURLOPT_POSTFIELDSIZE,
-                VmDirStringLenA(pRestOp->pszInput));
+                VmDirStringLenA(pRestOp->pszBody));
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 

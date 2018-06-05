@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -155,6 +155,13 @@ extern "C" {
             (bInLock) = FALSE;            \
         }                                 \
     } while (0)
+
+#define BAIL_ON_VMDIR_ERROR(dwError) \
+    if (dwError)                                                   \
+    {                                                              \
+        VmAfdLog( VMAFD_DEBUG_ERROR, "[Error - %d, %s:%d]", dwError, __FILE__, __LINE__); \
+        goto vmdirerror;                                                \
+    }
 
 #define BAIL_ON_VMAFD_ERROR(dwError) \
     if (dwError)                                                   \
@@ -450,8 +457,5 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
 #define VMAFD_REG_KEY_ENABLE_DDNS      "EnableDnsUpdates"
 #define VMAFD_REG_KEY_HEARTBEAT       "HeartbeatInterval"
-
-//domainJoinFlag
-#define VMAFD_DOMAIN_LEAVE_FLAGS_FORCE 0x00000001
 
 #endif /* __VMAFDDEFINES_H__ */

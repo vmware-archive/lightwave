@@ -14,6 +14,8 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import static com.vmware.identity.openidconnect.server.FederatedIdentityProvider.getPrincipalId;
+
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
@@ -411,7 +413,7 @@ public class TokenRequestProcessor {
         federatedIdentityProvider.validateUserPermissions(federationToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());
 
         PersonUser personUser;
-        PrincipalId userId = new PrincipalId(federationToken.getUsername(), federationToken.getDomain());
+        PrincipalId userId = getPrincipalId(federationToken.getUsername(), federationToken.getDomain());
         try {
             if (!federatedIdentityProvider.isFederationUserActive(userId)) {
                 federatedIdentityProvider.provisionFederationUser(issuer, userId);

@@ -58,11 +58,14 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private static final String Description = "VMware Secure Token Service";
 
     private static final String SSL_ENABLED_ATTR= "SSLEnabled";
-    private static final String SSL_ENABLED_PROTOCOL_ATTR="sslEnabledProtocols";
+    private static final String SSL_ENABLED_PROTOCOL_ATTR="protocols";
     private static final String SSL_IMPLEMENTATION_NAME_ATTR="sslImplementationName";
     private static final String STORE_ATTR="store";
-    private static final String KEYALIAS_ATTR="keyAlias";
-    private static final String KEYSTORETYPE_ATTR="keystoreType";
+    private static final String KEYALIAS_ATTR="certificateKeyAlias";
+    private static final String KEYSTORETYPE_ATTR="certificateKeystoreType";
+    private static final String CONNECTOR = "Connector";
+    private static final String SSL_HOST_CONFIG = "SSLHostConfig";
+    private static final String CERTIFICATE_ATTR = "Certificate";
 
     private static final Logger log = LoggerFactory
             .getLogger(SecureTokenServerInstaller.class);
@@ -301,23 +304,29 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document doc = builder.parse(serverXmlFile);
-            NodeList connectorList = doc.getElementsByTagName("Connector");
+            NodeList connectorList = doc.getElementsByTagName(CONNECTOR);
+            NodeList sslHostConfigList = doc.getElementsByTagName(SSL_HOST_CONFIG);
+            NodeList cerficateList = doc.getElementsByTagName(CERTIFICATE_ATTR);
             for (int i = 0 ; i < connectorList.getLength(); i ++) {
 
-                Node node = connectorList.item(i);
-                Element element = (Element) node;
-                boolean isSSLEnabled = element.hasAttribute(SSL_ENABLED_ATTR);
+                Node connectorNode = connectorList.item(i);
+                Node sslHostConfigNode = sslHostConfigList.item(i);
+                Node certificateNode = cerficateList.item(i);
+                Element connectorElement = (Element) connectorNode;
+                Element sslHostConfigElement = (Element) sslHostConfigNode;
+                Element certificateElement = (Element) certificateNode;
+                boolean isSSLEnabled = connectorElement.hasAttribute(SSL_ENABLED_ATTR);
                 if (isSSLEnabled) {
-                    sslEnabledProtocols = element.getAttribute(SSL_ENABLED_PROTOCOL_ATTR);
-                    log.debug("SecureTokenServerInstaller : getServerAttributes sslEnabledProtocols: %s",sslEnabledProtocols);
-                    storename  = element.getAttribute(STORE_ATTR);
+                    sslEnabledProtocols = sslHostConfigElement.getAttribute(SSL_ENABLED_PROTOCOL_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes sslEnabledProtocols: %s", sslEnabledProtocols);
+                    storename  = connectorElement.getAttribute(STORE_ATTR);
                     log.debug("SecureTokenServerInstaller : getServerAttributes storename: %s", storename);
-                    sslImplementationName = element.getAttribute(SSL_IMPLEMENTATION_NAME_ATTR);
-                    log.debug("SecureTokenServerInstaller : getServerAttributes sslImplementationName: %s",sslImplementationName);
-                    keyAlias  = element.getAttribute(KEYALIAS_ATTR);
-                    log.debug("SecureTokenServerInstaller : getServerAttributes keyAlias:" +keyAlias);
-                    keyStoreType  = element.getAttribute(KEYSTORETYPE_ATTR);
-                    log.debug("SecureTokenServerInstaller : getServerAttributes keyStoreType:" +keyStoreType);
+                    sslImplementationName = connectorElement.getAttribute(SSL_IMPLEMENTATION_NAME_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes sslImplementationName: %s", sslImplementationName);
+                    keyAlias  = certificateElement.getAttribute(KEYALIAS_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes keyAlias:" + keyAlias);
+                    keyStoreType  = certificateElement.getAttribute(KEYSTORETYPE_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes keyStoreType:" + keyStoreType);
 
                 } else {
                     continue;
@@ -338,18 +347,24 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
                             "conf","server.xml");
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document doc = builder.parse(new File(filePath));
-            NodeList connectorList = doc.getElementsByTagName("Connector");
+            NodeList connectorList = doc.getElementsByTagName(CONNECTOR);
+            NodeList sslHostConfigList = doc.getElementsByTagName(SSL_HOST_CONFIG);
+            NodeList cerficateList = doc.getElementsByTagName(CERTIFICATE_ATTR);
             for (int i = 0; i < connectorList.getLength(); i++) {
 
-                Node node = connectorList.item(i);
-                Element element = (Element) node;
-                boolean isSSLEnabled = element.hasAttribute(SSL_ENABLED_ATTR);
+                Node connectorNode = connectorList.item(i);
+                Node sslHostConfigNode = sslHostConfigList.item(i);
+                Node certificateNode = cerficateList.item(i);
+                Element connectorElement = (Element) connectorNode;
+                Element sslHostConfigElement = (Element) sslHostConfigNode;
+                Element certificateElement = (Element) certificateNode;
+                boolean isSSLEnabled = connectorElement.hasAttribute(SSL_ENABLED_ATTR);
                 if (isSSLEnabled) {
-                    element.setAttribute(SSL_ENABLED_PROTOCOL_ATTR, sslEnabledProtocols);
-                    element.setAttribute(STORE_ATTR,storename);
-                    element.setAttribute(SSL_IMPLEMENTATION_NAME_ATTR,sslImplementationName);
-                    element.setAttribute(KEYALIAS_ATTR,keyAlias);
-                    element.setAttribute(KEYSTORETYPE_ATTR,keyStoreType);
+                    sslHostConfigElement.setAttribute(SSL_ENABLED_PROTOCOL_ATTR, sslEnabledProtocols);
+                    connectorElement.setAttribute(STORE_ATTR,storename);
+                    connectorElement.setAttribute(SSL_IMPLEMENTATION_NAME_ATTR, sslImplementationName);
+                    certificateElement.setAttribute(KEYALIAS_ATTR, keyAlias);
+                    certificateElement.setAttribute(KEYSTORETYPE_ATTR, keyStoreType);
 
                 } else {
                     continue;

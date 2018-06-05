@@ -10,4 +10,6 @@ lwraftconf_DATA = \
     refresh-resolve-conf.sh \
     monitor-core-dump.sh
 
-bin_SCRIPTS = 
+bin_SCRIPTS = \
+    post_aws_restore_common.sh \
+    post_restore.sh

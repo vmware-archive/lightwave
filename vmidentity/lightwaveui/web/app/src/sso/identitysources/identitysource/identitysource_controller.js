@@ -19,8 +19,11 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
         function($scope, $rootScope, popupUtil, IdentitySourceService, TenantService, Util) {
 
                 $scope.vm.viewCertificate = viewCertificate;
+                $scope.vm.isNativeAD = isNativeAD;
                 $scope.vm.isSecure = isSecure;
                 $scope.vm.isNewSecure = isNewSecure;
+                $scope.vm.toggleUseMachineAccount = toggleUseMachineAccount;
+                $scope.vm.toggleUseSPN = toggleUseSPN;
                 $scope.vm.showBasicTab = showBasicTab;
                 $scope.vm.showCertificateTab = showCertificateTab;
                 $scope.vm.showCredentialsTab = showCredentialsTab;
@@ -61,6 +64,22 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                 ids = $scope.vm.selectedIdentitysource;
                         }
                         if($scope.vm.idsTab == 1){
+                                if ($scope.vm.isNativeAD()) {
+                                    if (ids.name && ids.alias) {
+                                        ids.friendlyName = ids.alias;
+                                        ids.userBaseDN = 'null';
+                                        ids.groupBaseDN = 'null';
+                                        ids.connectionStrings[0] = 'ldap://' + ids.name;
+                                        if (ids.useSPN == 'true' && ids.servicePrincipalName && ids.username && ids.password) {
+                                            return true;
+                                        } else if (ids.machineAccount == 'true') {
+                                            ids.username = 'null';
+                                            ids.password = 'null';
+                                            return true;
+                                        }
+                                   }
+                                    return false;
+                                }
 
                                 if(ids.name && ids.friendlyName && ids.alias && ids.userBaseDN &&  ids.groupBaseDN && ids.connectionStrings)
                                 {
@@ -131,6 +150,9 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         else if(type == 2) {
                                 $scope.vm.newIdentitySource.type = 'IDENTITY_STORE_TYPE_LDAP';
                         }
+                        else if(type == 3) {
+                                $scope.vm.newIdentitySource.type = 'IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY';
+                        }
                 }
                 function viewCertificate(certificate) {
 
@@ -139,6 +161,13 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                 var controller = 'CertificateViewerCntrl';
                                 Util.viewCertificate($scope, certificate.encoded, template, controller);
                         }
+                }
+
+                function isNativeAD() {
+                        if ($scope.vm.newIdentitySource.type == 'IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY') {
+                            return true;
+                        }
+                        return false;
                 }
 
                 function isSecure() {
@@ -161,6 +190,28 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                             ($scope.vm.newIdentitySource.connectionStrings.length > 1
                             && $scope.vm.newIdentitySource.connectionStrings[1] != null
                             && $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldaps") > -1));
+                }
+
+                function toggleUseMachineAccount() {
+                        if ($scope.vm.newIdentitySource.machineAccount != 'true') {
+                            $scope.vm.newIdentitySource.machineAccount = 'true';
+                            $scope.vm.newIdentitySource.useSPN = 'false';
+                        } else {
+                            $scope.vm.newIdentitySource.machineAccount = 'false';
+                        }
+                }
+
+                function toggleUseSPN() {
+                        if ($scope.vm.newIdentitySource.useSPN != 'true') {
+                            $scope.vm.newIdentitySource.useSPN = 'true';
+                            $scope.vm.newIdentitySource.machineAccount = 'false';
+                            if ($scope.vm.newIdentitySource.username == 'null' || $scope.vm.newIdentitySource.password == 'null') {
+                                $scope.vm.newIdentitySource.username = null;
+                                $scope.vm.newIdentitySource.password = null;
+                            }
+                        } else {
+                            $scope.vm.newIdentitySource.useSPN = 'false';
+                        }
                 }
 
                 function showBasicTab() {
@@ -253,8 +304,15 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                                 $scope.vm.selectedIdentitysource.certificates = [];
                                         if($scope.vm.newIdentitySource)
                                                 $scope.vm.newIdentitySource.certificates = [];
-                                        $scope.vm.idsTab += 2;
+                                        if($scope.vm.isNativeAD()) {
+                                                $scope.vm.idsTab += 3;
+                                        } else {
+                                                $scope.vm.idsTab += 2;
+                                        }
                                 }
+                        }
+                        else if($scope.vm.idsTab == 2 && $scope.vm.isNativeAD()) {
+                                $scope.vm.idsTab += 2;
                         }
                         else
                         {
@@ -270,6 +328,12 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                         $scope.vm.idsTab -= 1;
                                 else
                                         $scope.vm.idsTab -= 2;
+                        }
+                        else if($scope.vm.idsTab == 4 && $scope.vm.isNativeAD()){
+                                if($scope.vm.isNewSecure() || $scope.vm.isSecure())
+                                        $scope.vm.idsTab -= 2;
+                                else
+                                        $scope.vm.idsTab -= 3;
                         }
                         else
                         {

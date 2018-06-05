@@ -633,7 +633,7 @@ _VmDirAppendEntriesGetReply(
 
     //Now preLogIndex found locally and has a macthing term - delete all logs > preLogIndex,
     //  those logs are uncommitted, and were replicated from old leaders.
-    dwError = _VmDirDeleteAllLogs(preLogIndex+1, &bFatalError);
+    dwError = VmDirDeleteAllLogs(preLogIndex+1, &bFatalError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (entrySize > 1)

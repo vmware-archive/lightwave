@@ -99,7 +99,8 @@ public abstract class SSOConfigCommand {
                             RelyingPartyCommand.class,
                             SetCredentialsCommand.class,
                             TenantConfigurationCommand.class,
-                            UserResourceCommand.class
+                            UserResourceCommand.class,
+                            OperatorsAccessCommand.class
                             )
                     );
     }
@@ -211,6 +212,9 @@ public abstract class SSOConfigCommand {
             System.exit(1);
         } catch (com.vmware.identity.rest.core.client.exceptions.client.UnauthorizedException ue) {
             logger.error("Token expired. Please use set-credentials command to retrieve token with admin username and password.");
+            System.exit(1);
+        } catch (com.vmware.identity.rest.core.client.exceptions.WebApplicationException we) {
+            logger.error("Error: {} {}", we.getMessage(), we.getServerCause());
             System.exit(1);
         } catch (Exception e) {
             System.err.println(e.getMessage());

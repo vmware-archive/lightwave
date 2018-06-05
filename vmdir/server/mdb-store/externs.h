@@ -27,3 +27,5 @@
  */
 
 extern VDIR_MDB_GLOBALS gVdirMdbGlobals;
+
+extern VDIR_MDB_STATE_GLOBALS gVDirMdbStateGlobals;

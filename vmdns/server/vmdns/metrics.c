@@ -16,6 +16,12 @@
 
 static
 DWORD
+VmDnsRcodeErrorMetricsInit(
+    VOID
+    );
+
+static
+DWORD
 VmDnsMetricsCounterInit(
     VOID
     );
@@ -35,11 +41,6 @@ VmDnsMetricsGaugeInit(
 static VM_METRICS_LABEL labelDurationOps[2][1] = {{{"operation","query"}},
                                                   {{"operation","update"}}};
 
-static VM_METRICS_LABEL labelErrors[4][1] = {{{"code","nxdomain_error"}},
-                                             {{"code","not_implemented_error"}},
-                                             {{"code","unknown_error"}},
-                                             {{"code","no_error"}}};
-
 static VM_METRICS_LABEL labelCacheOps[2][1] = {{{"operation","lookup"}},
                                                {{"operation","miss"}}};
 
@@ -55,6 +56,9 @@ VmDnsMetricsInit(
     DWORD dwError = 0;
 
     dwError = VmMetricsInit(&gVmDnsMetricsContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsRcodeErrorMetricsInit();
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsMetricsCounterInit();
@@ -74,6 +78,52 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDnsRcodeErrorMetricsInit(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0, j = 0, k = 0;
+
+    // use this template to construct labels
+    VM_METRICS_LABEL labels[3] =
+    {
+            {"domain",      NULL},
+            {"operation",   NULL},
+            {"rcode",       NULL}
+    };
+
+    for (i = 0; i < METRICS_VDNS_RCODE_DOMAIN_COUNT; i++)
+    {
+        for (j = 0; j < METRICS_VDNS_RCODE_OP_COUNT; j++)
+        {
+            for (k = 0; k < METRICS_VDNS_RCODE_ERROR_COUNT; k++)
+            {
+                labels[0].pszValue = VmDnsMetricsRcodeDomainString(i);
+                labels[1].pszValue = VmDnsMetricsRcodeOperationString(j);
+                labels[2].pszValue = VmDnsMetricsRcodeErrorString(k);
+
+                dwError = VmMetricsCounterNew(
+                            gVmDnsMetricsContext,
+                            "vmdns_dns_error_count",
+                            labels, 3,
+                            "DNS Error Counts",
+                            &gVmDnsRcodeErrorMetrics[i][j][k]
+                            );
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
 static
 DWORD
 VmDnsMetricsCounterInit(
@@ -83,18 +133,6 @@ VmDnsMetricsCounterInit(
     DWORD dwError = 0;
     int i;
 
-    for (i=DNS_ERROR_NXDOMAIN_ERR_COUNT; i<=DNS_NO_ERROR; i++ )
-    {
-        dwError = VmMetricsCounterNew(
-                    gVmDnsMetricsContext,
-                    "vmdns_dns_error_count",
-                    labelErrors[i - DNS_ERROR_NXDOMAIN_ERR_COUNT],
-                    1,
-                    "DNS Error Counts",
-                    &gVmDnsCounterMetrics[i]
-                    );
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
     for (i=CACHE_ZONE_LOOKUP; i<=CACHE_ZONE_MISS; i++ )
     {
         dwError = VmMetricsCounterNew(
@@ -147,7 +185,7 @@ VmDnsMetricsHistogramInit(
     )
 {
     DWORD dwError = 0;
-    UINT64 buckets[] = {1, 10, 100, 300, 1000};
+    UINT64 buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
     int i;
 
     for (i=DNS_QUERY_DURATION; i<=DNS_UPDATE_DURATION; i++)
@@ -159,7 +197,7 @@ VmDnsMetricsHistogramInit(
                     1,
                     "DNS Protocol Process Request Duration",
                     buckets,
-                    5,
+                    8,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -174,7 +212,7 @@ VmDnsMetricsHistogramInit(
                     1,
                     "Store Process Request Duration",
                     buckets,
-                    5,
+                    8,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -189,7 +227,7 @@ VmDnsMetricsHistogramInit(
                     1,
                     "Rpc Process Request Duration",
                     buckets,
-                    5,
+                    8,
                     &gVmDnsHistogramMetrics[i]
                     );
         BAIL_ON_VMDNS_ERROR(dwError);

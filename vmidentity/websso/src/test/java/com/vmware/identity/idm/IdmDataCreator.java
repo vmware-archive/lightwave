@@ -183,7 +183,7 @@ public final class IdmDataCreator {
         }
         catch(NoSuchTenantException ex)
         {
-            idmClient.addTenant(tenantToCreate, ServerConfig.getTenantAdminUsername(), ServerConfig.getTenantAdminPassword().toCharArray());
+            idmClient.addTenant(null, tenantToCreate, ServerConfig.getTenantAdminUsername(), ServerConfig.getTenantAdminPassword().toCharArray());
         }
 
         existingTenant = idmClient.getTenant(tenantName);

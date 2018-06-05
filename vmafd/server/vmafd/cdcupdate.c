@@ -78,6 +78,10 @@ CdcUpdateCache(
     PCDC_CACHE_UPDATE_CONTEXT pCdcCacheUpdateContext
     );
 
+static
+BOOLEAN
+CdcCanRunCachingThread();
+
 DWORD
 CdcInitCdcCacheUpdate(
     PCDC_CACHE_UPDATE_CONTEXT *ppContext
@@ -346,9 +350,7 @@ CdcHandleDCCaching(
     DWORD dwError = 0;
     DWORD dwRefreshInterval = 0;
     DWORD dwHeartBeat = 0;
-    CDC_DB_ENUM_HA_MODE cdcHAMode = CDC_DB_ENUM_HA_MODE_UNDEFINED;
     PCDC_CACHE_UPDATE_CONTEXT pThrArgs = (PCDC_CACHE_UPDATE_CONTEXT)pData;
-    CDC_DC_STATE cdcCurrentState = CDC_DC_STATE_UNDEFINED;
 
     pThrArgs->bRefreshCache = TRUE;
 
@@ -378,27 +380,14 @@ CdcHandleDCCaching(
             dwHeartBeat = CDC_DEFAULT_HEARTBEAT;
         }
 
-        dwError = CdcRegDbGetHAMode(&cdcHAMode);
-        if (dwError)
-        {
-            cdcHAMode = CDC_DB_ENUM_HA_MODE_DEFAULT;
-            dwError = 0;
-        }
-
-        if (cdcHAMode == CDC_DB_ENUM_HA_MODE_DEFAULT)
-        {
-            if (!CdcSrvGetCurrentState(&cdcCurrentState) &&
-                cdcCurrentState != CDC_DC_STATE_UNDEFINED &&
-                cdcCurrentState != CDC_DC_STATE_LEGACY)
+        if (CdcCanRunCachingThread()) {
+            dwError = CdcUpdateCache(pThrArgs);
+            if (dwError)
             {
-                dwError = CdcUpdateCache(pThrArgs);
-                if (dwError)
-                {
-                    VmAfdLog(
-                          VMAFD_DEBUG_ANY,
-                          "Failed to populate the DC Cache. Error [%u]",
-                          dwError);
-                }
+                VmAfdLog(
+                      VMAFD_DEBUG_ANY,
+                      "Failed to populate the DC Cache. Error [%u]",
+                      dwError);
             }
         }
 
@@ -429,6 +418,52 @@ cleanup:
     return NULL;
 error:
 
+    goto cleanup;
+}
+
+BOOLEAN
+CdcCanRunCachingThread()
+{
+    DWORD dwError = 0;
+    BOOLEAN bCanUpdate = FALSE;
+    VMAFD_DOMAIN_STATE dwDomainState = VMAFD_DOMAIN_STATE_NONE;
+    CDC_DB_ENUM_HA_MODE cdcHAMode = CDC_DB_ENUM_HA_MODE_UNDEFINED;
+    CDC_DC_STATE cdcCurrentState = CDC_DC_STATE_UNDEFINED;
+
+    dwError = CdcRegDbGetHAMode(&cdcHAMode);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (cdcHAMode == CDC_DB_ENUM_HA_MODE_DEFAULT)
+    {
+        dwError = VmAfSrvGetDomainState(&dwDomainState);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        switch (dwDomainState)
+        {
+            case VMAFD_DOMAIN_STATE_CONTROLLER:
+                bCanUpdate = TRUE;
+                break;
+
+            case VMAFD_DOMAIN_STATE_CLIENT:
+                dwError = CdcSrvGetCurrentState(&cdcCurrentState);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                if (cdcCurrentState != CDC_DC_STATE_UNDEFINED &&
+                    cdcCurrentState != CDC_DC_STATE_LEGACY)
+                {
+                    bCanUpdate = TRUE;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+cleanup:
+    return bCanUpdate;
+error:
+    bCanUpdate = FALSE;
     goto cleanup;
 }
 

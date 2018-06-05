@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -1185,6 +1185,7 @@ VmAfdLocalLeaveVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
+    PCWSTR pwszMachineName,
     DWORD  dwLeaveFlags
 )
 {
@@ -1201,7 +1202,8 @@ VmAfdLocalLeaveVmDir(
     input_spec[0].data.pWString = (PWSTR) pwszServerName;
     input_spec[1].data.pWString = (PWSTR) pwszUserName;
     input_spec[2].data.pWString = (PWSTR) pwszPassword;
-    input_spec[3].data.pUint32  = (PDWORD) &dwLeaveFlags;
+    input_spec[3].data.pWString = (PWSTR) pwszMachineName;
+    input_spec[4].data.pUint32  = (PDWORD) &dwLeaveFlags;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

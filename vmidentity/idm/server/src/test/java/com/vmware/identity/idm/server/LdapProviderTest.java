@@ -31,6 +31,7 @@ import javax.security.auth.login.LoginException;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vmware.identity.idm.Attribute;
@@ -53,6 +54,7 @@ import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.ldap.LdapProvider;
 
+@Ignore
 public class LdapProviderTest
 {
    private static ServerIdentityStoreData storeData = null;

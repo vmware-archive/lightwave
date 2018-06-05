@@ -18,7 +18,8 @@ vdcbackup_LDADD = \
     @LWREG_LIBS@ \
     @CRYPTO_LIBS@ \
     @LDAP_LIBS@ \
-    @UUID_LIBS@
+    @UUID_LIBS@ \
+    @DL_LIBS@
 
 vdcbackup_LDFLAGS = \
     @LW_LDFLAGS@

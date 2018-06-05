@@ -87,9 +87,19 @@ typedef enum
     METRICS_RPC_OP_GETMODE,
     METRICS_RPC_OP_RAFTREQUESTVOTE,
     METRICS_RPC_OP_RAFTAPPENDENTRIES,
+    METRICS_RPC_OP_BACKUPDB,
     METRICS_RPC_OP_COUNT
 
 } METRICS_RPC_OPS;
+
+typedef enum
+{
+    METRICS_SRV_DBSIZE,
+    METRICS_SRV_BACKUP_TIMETAKEN,
+    METRICS_SRV_LAST_LOG_INDEX,
+    METRICS_SRV_STAT_COUNT
+
+} METRICS_SRV_STAT;
 
 typedef enum
 {
@@ -130,6 +140,11 @@ VmDirMetricsLdapOpTypeString(
 PSTR
 VmDirMetricsLdapErrorString(
     METRICS_LDAP_ERRORS error
+    );
+
+PSTR
+VmDirMetricsSrvStatString(
+    METRICS_SRV_STAT srvStat
     );
 
 PSTR

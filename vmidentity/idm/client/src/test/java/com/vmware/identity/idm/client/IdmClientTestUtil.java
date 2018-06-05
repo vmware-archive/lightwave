@@ -191,7 +191,7 @@ class IdmClientTestUtil
         } catch (NoSuchTenantException ex)
         {
             Tenant tenantToCreate = new Tenant(tenantName);
-            idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+            idmClient.addTenant(null, tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
             tenant = idmClient.getTenant(tenantName);
             Assert.assertNotNull(tenant);
             Assert.assertEquals(tenantName, tenant.getName());

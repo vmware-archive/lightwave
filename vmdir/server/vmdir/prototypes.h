@@ -81,7 +81,8 @@ VmDirIsRpcOperationAllowed(
 
 DWORD
 VmDirAdministratorAccessCheck(
-    PCSTR pszUpn
+    PCSTR pszUpn,
+    PCSTR pszDomain
     );
 
 BOOLEAN
@@ -138,6 +139,22 @@ VmDirBkgdCountClosedConnections(
 DWORD
 VmDirBkgdPingMaxOrigUsn(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+DWORD
+VmDirBkgdSrvStat(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+// dbbackup.c
+VOID
+VmDirSrvSetMDBStateClear(
+    VOID
+    );
+
+DWORD
+VmDirSrvBackupDB(
+    PCSTR       pszBackupPath
     );
 
 // init.c
@@ -677,10 +694,6 @@ VmDirInitTrackLastLoginThread(
     VOID
     );
 
-DWORD VmDirInitDbCopyThread(
-    VOID
-    );
-
 DWORD
 VmDirCreateHeartbeatThread(
     );
@@ -706,6 +719,12 @@ VmDirMetricsInitialize(
 
 VOID
 VmDirMetricsShutdown(
+    VOID
+    );
+
+// metics.c
+DWORD
+VmDirUpdateSrvStat(
     VOID
     );
 

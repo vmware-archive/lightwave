@@ -41,6 +41,9 @@ import com.vmware.identity.rest.core.util.StringManager;
  */
 public class VerificationUtil {
 
+    private static final String SHA256 = "SHA-256";
+    private static final String MD5 = "MD5";
+
     /**
      * Verifies the token type in an access token.
      *
@@ -76,7 +79,10 @@ public class VerificationUtil {
             return false;
         }
 
-        String stringToSign = buildStringToSign(context);
+        String stringToSign = buildStringToSign(context, SHA256);
+        if (!RequestSigner.verify(signedRequestHex, stringToSign, pubKey)) {
+            stringToSign = buildStringToSign(context, MD5); // for backward compatibility
+        }
 
         return RequestSigner.verify(signedRequestHex, stringToSign, pubKey);
     }
@@ -99,7 +105,10 @@ public class VerificationUtil {
             return false;
         }
 
-        String stringToSign = buildStringToSign(context);
+        String stringToSign = buildStringToSign(context, SHA256);
+        if (!RequestSigner.verify(signedRequestHex, stringToSign, certificate)) {
+            stringToSign = buildStringToSign(context, MD5); // for backward compatibility
+        }
 
         return RequestSigner.verify(signedRequestHex, stringToSign, certificate);
     }
@@ -166,33 +175,31 @@ public class VerificationUtil {
         return true;
     }
 
-    private static String getMD5(ContainerRequestContext context) {
+    private static String getHash(ContainerRequestContext context, String signingAlg) {
         if (!context.hasEntity()) {
             return "";
         }
 
-        InputStream in = context.getEntityStream();
-
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream(in.available());
-
+        InputStream in = context.getEntityStream(); // The JAX-RS runtime is responsible for closing the input stream.
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream(in.available())) {
             final byte[] data = new byte[ReaderWriter.BUFFER_SIZE];
             int len = 0;
 
             while ((len = in.read(data)) > 0) {
                 out.write(data, 0, len);
             }
+            out.flush();
 
             // Reset our entity stream since we consumed it and it may need to be read for object marshalling
             context.setEntityStream(new ByteArrayInputStream(out.toByteArray()));
 
-            return RequestSigner.computeMD5(out.toString());
+            return RequestSigner.computeEntityHash(out.toString(), signingAlg);
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
     }
 
-    public static String buildStringToSign(ContainerRequestContext context) {
+    public static String buildStringToSign(ContainerRequestContext context, String signingAlg) {
         // client is expected to use the exact content type they pass to us in their signature calculation.
         String contentType = context.getHeaderString("Content-Type");
 
@@ -201,10 +208,9 @@ public class VerificationUtil {
         }
 
         return RequestSigner.createSigningString(context.getMethod(),
-                getMD5(context),
+                getHash(context, signingAlg),
                 contentType,
                 context.getDate(),
                 context.getUriInfo().getRequestUri());
     }
-
 }

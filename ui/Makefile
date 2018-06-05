@@ -1,4 +1,4 @@
-SUBDIRS := lightwave-ui lwraft-ui
+SUBDIRS := lwdir-ui lwraft-ui
 
 all: $(SUBDIRS)
 

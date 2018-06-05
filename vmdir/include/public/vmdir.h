@@ -536,7 +536,7 @@ extern "C" {
 #define MAX_LOG_MESSAGE_LEN    4096
 
 #ifndef _WIN32
-#define VMDIR_NCALRPC_END_POINT "vmdirsvc"
+#define VMDIR_NCALRPC_END_POINT "/var/lib/vmware/rpc/vmdirsvc"
 #else
 // note: keep in sync with /vmdir/main/idl/vmdir.idl
 #define VMDIR_NCALRPC_END_POINT "VMWareDirectoryService"

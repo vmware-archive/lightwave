@@ -38,8 +38,6 @@ extern PVMREST_HANDLE gpVMCAHTTPSHandle;
 
 extern VMCA_ACCESS_TOKEN_METHODS gVMCAAccessTokenMethods[];
 
-#ifndef _WIN32
-
 extern uint32_t
 VMCAHandleHttpRequest(
     PVMREST_HANDLE  pRESTHandle,
@@ -47,8 +45,6 @@ VMCAHandleHttpRequest(
     PREST_RESPONSE* ppResponse,
     uint32_t        paramsCount
     );
-
-#endif
 
 #endif
 

@@ -208,6 +208,12 @@ SSOStringAllocateSubstring(
     PSTRING* ppsz /* OUT */);
 
 SSOERROR
+SSOStringAllocateSprintf(
+    PSTRING*    ppsz, /* OUT */
+    PCSTRING    psz1,
+    ...);
+
+SSOERROR
 SSOStringConcatenate(
     PCSTRING psz1,
     PCSTRING psz2,
@@ -536,5 +542,12 @@ SSOCdcNew(
 void
 SSOCdcDelete(
     PSSO_CDC pCdc);
+
+// Util
+
+bool
+SSOIsLocalHost(
+    PCSTRING    pszHostname
+    );
 
 #endif

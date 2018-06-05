@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -1170,11 +1170,9 @@ VmDirClientLeave(
     PSTR    pszDomainName = NULL;
     PSTR    pszDCAccount = NULL;
     PSTR    pszDCAccountPass = NULL;
-
     PCSTR   pszUser = NULL;
     PCSTR   pszPass = NULL;
     PCSTR   pszMachine = NULL;
-
 
     if ((!pszUserName &&  pszPassword) ||
         ( pszUserName && !pszPassword))
@@ -1211,12 +1209,12 @@ VmDirClientLeave(
         pszPass = pszPassword;
     }
 
-    dwError = VmDirLdapRemoveComputerAccount(
-                      pszDomainName,
-                      pszServerName,
-                      pszUser,
-                      pszPass,
-                      pszMachine);
+    dwError = VmDirClientLeaveEx(
+                    pszServerName,
+                    pszDomainName,
+                    pszUser,
+                    pszPass,
+                    pszMachine);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s (%s)(%s) passed",
@@ -1233,7 +1231,90 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirClientLeave failed. Error(%u)", dwError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirClientLeave failed. Error (%u)",
+                     dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirClientLeaveEx(
+    PCSTR    pszServerName,
+    PCSTR    pszDomainName,
+    PCSTR    pszUserName,
+    PCSTR    pszPassword,
+    PCSTR    pszMachine
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrMsg = NULL;
+    PCSTR   pszServiceTable[] = VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER;
+    int     i = 0;
+    LDAP*   pLd = NULL;
+
+    if ((!pszUserName &&  pszPassword) ||
+        ( pszUserName && !pszPassword))
+    {
+        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (IsNullOrEmptyString(pszServerName))
+    {
+        pszServerName = "localhost";
+    }
+
+    dwError = VmDirLdapRemoveComputerAccount(
+                      pszDomainName,
+                      pszServerName,
+                      pszUserName,
+                      pszPassword,
+                      pszMachine);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //Remove Service Accounts
+
+    dwError = VmDirConnectLDAPServer(
+                &pLd,
+                pszServerName,
+                pszDomainName,
+                pszUserName,
+                pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); i++)
+    {
+        dwError = VmDirLdapDeleteServiceAccount(
+                        pLd,
+                        pszDomainName,
+                        pszServiceTable[i],
+                        pszMachine,
+                        TRUE);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+                         "fail to delete Service Account %s associated with client %s",
+                         pszServiceTable[i], pszMachine);
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: complete deleting Service Account %s associated with client %s",
+                         __FUNCTION__, pszServiceTable[i], pszMachine);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s (%s)(%s) passed",
+                                        __FUNCTION__,
+                                        VDIR_SAFE_STRING(pszServerName),
+                                        VDIR_SAFE_STRING(pszUserName) );
+
+cleanup:
+
+    if (pLd)
+    {
+        VmDirLdapUnbind(&pLd);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed, %s (%u)",
+                     __FUNCTION__, pszLocalErrMsg, dwError);
 
     goto cleanup;
 }
@@ -6781,6 +6862,165 @@ VmDirClientFreeMachineInfo(
         VmDirFreeMachineInfoA(pMachineInfo);
     }
 }
+
+DWORD
+VmDirSetupTenantInstanceEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszDomainName = NULL;
+    PWSTR pwszUsername = NULL;
+    PWSTR pwszPassword = NULL;
+    handle_t hBinding = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        IsNullOrEmptyString(pszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszUsername, &pwszUsername);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateBindingHandleMachineAccountA(
+                    pszServerName,
+                    NULL,
+                    &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RPC_TRY
+    {
+
+        dwError = RpcVmDirInitializeTenant(
+                        hBinding,
+                        pwszDomainName,
+                        pwszUsername,
+                        pwszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s (%s) passed",
+            __FUNCTION__,
+            pszDomainName);
+
+cleanup:
+    if (hBinding)
+    {
+        VmDirFreeBindingHandle(&hBinding);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pwszUsername);
+    VMDIR_SAFE_FREE_MEMORY(pwszPassword);
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed. Error(%u)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirDeleteTenantEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszDomainName = NULL;
+    handle_t hBinding = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszDomainName) ||
+        IsNullOrEmptyString(pszUsername) ||
+        IsNullOrEmptyString(pszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateBindingHandleAuthA(
+                    pszServerName,
+                    NULL,
+                    pszUsername,
+                    pszDomainName,
+                    pszPassword,
+                    &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RPC_TRY
+    {
+
+        dwError = RpcVmDirDeleteTenant(hBinding, pwszDomainName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s (%s) passed",
+            __FUNCTION__,
+            pszDomainName);
+
+cleanup:
+    if (hBinding)
+    {
+        VmDirFreeBindingHandle(&hBinding);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed. Error(%u)",
+            __FUNCTION__,
+            dwError);
+    goto cleanup;
+}
+
+
 
 static
 DWORD

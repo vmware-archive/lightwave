@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 #ifndef _WIN32
-#define VMEVENT_NCALRPC_END_POINT "vmafdsvc"
+#define VMEVENT_NCALRPC_END_POINT "/var/lib/vmware/rpc/vmafdsvc"
 #else
 #define VMEVENT_NCALRPC_END_POINT "VMWareAfdService"
 #endif

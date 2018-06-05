@@ -234,7 +234,7 @@ VmDirHandleSpecialSearch(
 
         for (i = 0; i < pEntryArray->iSize; i++)
         {
-            dwError = VmDirSendSearchEntry(pOp, &pEntryArray->pEntry[i]);
+            dwError = VmDirSendSearchEntry(pOp, &pEntryArray->pEntry[i], NULL);
             BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                     "%s Entry send failed.", pszEntryType[entryType]);
         }

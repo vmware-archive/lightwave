@@ -608,7 +608,7 @@ _VmDirProcessNextPage(
             dwError = VmDirBuildComputedAttribute(pOperation, pEntry);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirSendSearchEntry(pOperation, pEntry);
+            dwError = VmDirSendSearchEntry(pOperation, pEntry, NULL);
             if (dwError == VMDIR_ERROR_INSUFFICIENT_ACCESS)
             {
                 VMDIR_LOG_WARNING(

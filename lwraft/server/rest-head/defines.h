@@ -18,7 +18,7 @@
 
 #define VMDIR_REST_CONN_TIMEOUT_SEC 30
 #define VMDIR_MAX_DATA_PER_CONN_MB  25
-#define VMDIR_DAEMON_NAME      "postd";
+#define VMDIR_DAEMON_NAME           "postd";
 #define VMDIR_REST_STOP_TIMEOUT_SEC 10
 
 #define MAX_REST_PAYLOAD_LENGTH     4096
@@ -54,6 +54,7 @@
 #define VMDIR_REST_HEADER_REQUESTID         "Requestid"
 #define VMDIR_REST_HEADER_ORIGIN            "Origin"
 #define VMDIR_REST_HEADER_CONNECTION        "Connection"
+#define VMDIR_REST_HEADER_DATE              "Date"
 
 // HTTP STATUS CODES
 // 1xx Informational

@@ -54,7 +54,7 @@ import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
 
-
+@Ignore
 public class ADProviderTest
 {
    private static ServerIdentityStoreData storeData = null;

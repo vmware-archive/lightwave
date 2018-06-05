@@ -281,7 +281,7 @@ VmDirSyncDoneCtrlFromLocalCache(
     dwError = VmDirAllocateStringPrintf(&pszSyncDoneCtrlVal, "%s%s", pszHighWatermark, pszUtdVectorStr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: update hw & UTD vec with: %s", __FUNCTION__, pszSyncDoneCtrlVal);
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: update cookie: %s", __FUNCTION__, pszSyncDoneCtrlVal);
 
     pPageSyncDoneCtrl->bv_val = pszSyncDoneCtrlVal;
     pPageSyncDoneCtrl->bv_len = VmDirStringLenA(pszSyncDoneCtrlVal);
@@ -325,7 +325,7 @@ VmDirUpdateUtdVectorLocalCache(
     for (dwCount = 1; dwCount < pStrList->dwCount; dwCount++)
     {
         if (VmDirStringStrA(pStrList->pStringList[dwCount], VMDIR_REPL_DD_VEC_INDICATOR) != NULL ||
-            VmDirStringStrA(pStrList->pStringList[dwCount], VMDIR_REPL_CONT_INDICATOR) != NULL)
+            VmDirStringStrA(pStrList->pStringList[dwCount], VMDIR_REPL_CONT_INDICATOR_STR) != NULL)
         {
             break;
         }

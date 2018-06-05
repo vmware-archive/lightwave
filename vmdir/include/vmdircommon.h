@@ -82,6 +82,14 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 #define VMKDC_RANDPWD_MAX_RETRY         128 /* Prevents RpcVmDirCreateUser() from looping forever */
 
+#define VMDIR_SIZE_16       16
+#define VMDIR_SIZE_32       32
+#define VMDIR_SIZE_64       64
+#define VMDIR_SIZE_128      128
+#define VMDIR_SIZE_256      256
+#define VMDIR_SIZE_512      512
+#define VMDIR_SIZE_1024     1024
+
 // Versions and DFLs
 #define VMDIR_DFL_UNKNOWN "UNKNOWN"
 #define VMDIR_DFL_5_5 "5.5"
@@ -618,8 +626,13 @@ VmDirStringReplaceAll(
     );
 
 VOID
+VmDirStringTrimSpace(
+    PSTR    pszStr
+    );
+
+VOID
 VmdDirNormalizeString(
-    PSTR    pszString
+    PSTR    pszStr
     );
 
 #ifdef _WIN32
@@ -1035,14 +1048,12 @@ typedef enum
 #define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
 #define VMDIR_REG_KEY_SUPPRES_TRACK_LLT       "SuppressTrackLLTContainer"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
-#define VMDIR_REG_KEY_COPY_DB_WRITES_MIN      "CopyDbWritesMin"
-#define VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC "CopyDbIntervalInSec"
-#define VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC "CopyDbBlockWriteInSec"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
 #define VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC "IntegrityChkJobIntervalInSec"
 #define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
+#define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
 
 //
 // The expiration period for deleted entries. Any entries older than this will
@@ -1058,11 +1069,15 @@ typedef enum
 #define VMDIR_REG_KEY_OPERATIONS_THREAD_TIMEOUT_IN_MILLI_SEC "OperationsThreadTimeoutInMilliSec"
 #define VMDIR_REG_KEY_REPL_CONSUMER_THREAD_TIMEOUT_IN_MILLI_SEC "ReplConsumerThreadTimeoutInMilliSec"
 
+#define VMDIR_REG_KEY_SUPPLIER_THREAD_TIMEOUT_IN_MILLI_SEC "ReplSupplierThreadTimeoutInMilliSec"
+
+#define VMDIR_REG_KEY_EMPTY_PAGE_COUNT "ReplEmptyPageCnt"
+
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MAX  180
-#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 30
+#define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 10
 
 #define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
 #define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
@@ -1710,6 +1725,18 @@ VmDirMigrateUserKey(
     PDWORD pNewUpnKeysLen);
 
 DWORD
+VmDirGetFileSizeInMB(
+    PCSTR   pszFile,
+    PDWORD  pdwFileSizeInMB
+    );
+
+DWORD
+VmDirPathExists(
+    PCSTR       pszPath,
+    PBOOLEAN    pbFound
+    );
+
+DWORD
 VmDirFileExists(
     PCSTR pszFileName,
     PBOOLEAN pbFound
@@ -2124,6 +2151,11 @@ VmDirIsRootSecurityContext (
     );
 
 BOOL
+VmDirIsLightwaveSecurityContext (
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext
+    );
+
+BOOL
 VmDirEqualsSecurityContext (
     PVM_DIR_SECURITY_CONTEXT pSecurityContext1,
     PVM_DIR_SECURITY_CONTEXT pSecurityContext12
@@ -2517,6 +2549,21 @@ VmDirListFiles(
     PVMDIR_STRING_LIST* ppFiles
     );
 
+DWORD
+VmDirBytesToHexString(
+    PBYTE   pData,
+    size_t  length,
+    PSTR*   ppszHexStr,
+    BOOLEAN bLowerCase
+    );
+
+DWORD
+VmDirHexStringToBytes(
+    PSTR    pszHexStr,
+    PBYTE*  ppData,
+    size_t* pLength
+    );
+
 // threadcontext.c
 typedef struct _VMDIR_THREAD_CONTEXT
 {
@@ -2534,14 +2581,13 @@ typedef struct _VMDIR_THREAD_LOG_CONTEXT
 } VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
 
 DWORD
-VmDirInitThreadContext(VOID);
-
-VOID
-VmDirFreeThreadContext(VOID);
+VmDirInitThreadContext(
+    VOID
+    );
 
 VOID
 VmDirFreeThreadLogContext(
-    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext;
+    PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext
     );
 
 DWORD
@@ -2557,6 +2603,38 @@ VmDirGetThreadLogContextValue(
 DWORD
 VmDirSetThreadLogContextValue(
     PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
+    );
+
+VOID
+VmDirFreeThreadContext(
+    VOID
+    );
+
+// opensslutil.c
+DWORD
+VmDirComputeMessageDigest(
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    unsigned char**         ppMD,
+    size_t*                 pMDSize
+    );
+
+DWORD
+VmDirConvertPEMToPublicKey(
+    PCSTR       pszPEM,
+    EVP_PKEY**  ppPubKey
+    );
+
+DWORD
+VmDirVerifyRSASignature(
+    EVP_PKEY*               pPubKey,
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    const unsigned char*    pSignature,
+    size_t                  signatureSize,
+    PBOOLEAN                pVerified
     );
 
 #ifdef __cplusplus

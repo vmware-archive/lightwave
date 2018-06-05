@@ -19,6 +19,7 @@ import java.util.Collections;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.TokenClass;
 
@@ -35,6 +36,7 @@ public class CSPToken extends FederationToken {
     private String domain;
     private String emailId;
     private Collection<String> permissions;
+    private Nonce nonce;
 
     public CSPToken(TokenClass tokenClass, SignedJWT signedJwt) throws ParseException {
         super(tokenClass, signedJwt);
@@ -52,6 +54,11 @@ public class CSPToken extends FederationToken {
         } else {
             this.permissions = Collections.emptySet();
         }
+        Nonce nonce = null;
+        if (claims.getClaims().containsKey("nonce")) {
+            nonce = new Nonce(JWTUtils.getString(claims, tokenClass, "nonce"));
+        }
+        this.nonce = nonce;
     }
 
     @Override
@@ -76,5 +83,10 @@ public class CSPToken extends FederationToken {
     @Override
     public Collection<String> getPermissions() {
         return this.permissions;
+    }
+
+    @Override
+    public Nonce getNonce() {
+        return this.nonce;
     }
 }

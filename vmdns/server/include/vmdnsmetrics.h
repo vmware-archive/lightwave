@@ -16,12 +16,53 @@
 
 typedef enum
 {
-    /*DNS Metrics - Error Count*/
-    DNS_ERROR_NXDOMAIN_ERR_COUNT,
-    DNS_ERROR_NOT_IMPLEMENTED_COUNT,
-    DNS_ERROR_UNKNOWN_COUNT,
-    DNS_NO_ERROR,
+    /*DNS Metrics - Error Count using rcode*/
+    METRICS_VDNS_RCODE_NOERROR,
+    METRICS_VDNS_RCODE_FORMAT_ERROR,
+    METRICS_VDNS_RCODE_SERVER_FAILURE,
+    METRICS_VDNS_RCODE_NAME_ERROR,
+    METRICS_VDNS_RCODE_NOT_IMPLEMENTED,
+    METRICS_VDNS_RCODE_REFUSED,
+    METRICS_VDNS_RCODE_YXDOMAIN,
+    METRICS_VDNS_RCODE_YXRRSET,
+    METRICS_VDNS_RCODE_NXRRSET,
+    METRICS_VDNS_RCODE_NOTAUTH,
+    METRICS_VDNS_RCODE_NOTZONE,
+    METRICS_VDNS_RCODE_BADSIG,
+    METRICS_VDNS_RCODE_BADKEY,
+    METRICS_VDNS_RCODE_BADTIME,
+    METRICS_VDNS_RCODE_BADMODE,
+    METRICS_VDNS_RCODE_BADNAME,
+    METRICS_VDNS_RCODE_BADALG,
+    METRICS_VDNS_RCODE_UNKNOWN,
 
+    METRICS_VDNS_RCODE_ERROR_COUNT,
+
+} METRICS_VDNS_RCODE_ERRORS;
+
+typedef enum
+{
+    /*DNS Metrics - Operation Type for rcode error count*/
+    METRICS_VDNS_RCODE_OP_TCP_REQ_READ,
+    METRICS_VDNS_RCODE_OP_UDP_REQ_READ,
+    METRICS_VDNS_RCODE_OP_FORWARDER_RESP,
+
+    METRICS_VDNS_RCODE_OP_COUNT,
+
+} METRICS_VDNS_RCODE_OPS;
+
+typedef enum
+{
+    /*DNS Metrics - Domain for rcode error count*/
+    METRICS_VDNS_RCODE_DOMAIN_LIGHTWAVE,
+    METRICS_VDNS_RCODE_DOMAIN_OTHER,
+
+    METRICS_VDNS_RCODE_DOMAIN_COUNT,
+
+} METRICS_VDNS_RCODE_DOMAINS;
+
+typedef enum
+{
     /*DNS Metrics - Cache Lookup,Miss,Purge Counts*/
     CACHE_ZONE_LOOKUP,
     CACHE_ZONE_MISS,
@@ -66,8 +107,37 @@ typedef enum
 
 #define VDNS_RESPONSE_TIME(val) ((val) ? (val) : 1)
 
+extern PVM_METRICS_COUNTER gVmDnsRcodeErrorMetrics[METRICS_VDNS_RCODE_DOMAIN_COUNT]
+                                                   [METRICS_VDNS_RCODE_OP_COUNT]
+                                                    [METRICS_VDNS_RCODE_ERROR_COUNT];
 extern PVM_METRICS_COUNTER gVmDnsCounterMetrics[VDNS_COUNTER_COUNT];
 extern PVM_METRICS_HISTOGRAM gVmDnsHistogramMetrics[VDNS_HISTOGRAM_COUNT];
 extern PVM_METRICS_GAUGE gVmDnsGaugeMetrics[VDNS_GAUGE_COUNT];
 extern PVM_METRICS_CONTEXT gVmDnsMetricsContext;
+
+// metricsenums.c
+PSTR
+VmDnsMetricsRcodeDomainString(
+    METRICS_VDNS_RCODE_DOMAINS domain
+    );
+
+PSTR
+VmDnsMetricsRcodeOperationString(
+    METRICS_VDNS_RCODE_OPS operation
+    );
+
+PSTR
+VmDnsMetricsRcodeErrorString(
+    METRICS_VDNS_RCODE_ERRORS error
+    );
+
+METRICS_VDNS_RCODE_ERRORS
+VmDnsMetricsMapRcodeErrorToEnum(
+    UCHAR rCode
+    );
+
+METRICS_VDNS_RCODE_DOMAINS
+VmDnsMetricsMapRcodeDomainToEnum(
+    BOOL bQueryInZone
+    );
 

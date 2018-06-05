@@ -29,6 +29,7 @@ import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.TokenClaimAttribute;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 
 public class FederatedIdentityProvider {
@@ -38,6 +39,16 @@ public class FederatedIdentityProvider {
     private final CasIdmClient idmClient;
     private final String tenant;
     private static final String CLAIM_PERMS = "perms";
+    // package access for unit tests
+    static final String UPNSeparator = "@";
+    static final String usernameDelimiter = "-";
+    static final char[] invalidCharsForUsername;
+    static {
+        char[] invalidCharsForUserDetail = "^<>&%`".toCharArray();
+        char netbiosSeparator = '\\';
+        invalidCharsForUsername = (String.valueOf(invalidCharsForUserDetail) + UPNSeparator + netbiosSeparator)
+                   .toCharArray();
+    }
 
     public FederatedIdentityProvider(String tenant, CasIdmClient idmClient) {
         Validate.notNull(idmClient, "idm client");
@@ -66,7 +77,8 @@ public class FederatedIdentityProvider {
         }
         idmClient.registerUpnSuffix(tenant, systemDomain, userId.getDomain());
         // generate a unique user name in order not to conflict with local users
-        String userName = userId.getName() + "-" + userId.getDomain();
+        String userName = userId.getName() + usernameDelimiter + userId.getDomain();
+        checkInvalidCharForUsername(userName);
         PrincipalId internalUserId = idmClient.addJitUser(tenant, userName,
                 new PersonDetail.Builder()
                 .userPrincipalName(userId.getUPN())
@@ -158,5 +170,29 @@ public class FederatedIdentityProvider {
         }
         groupNames.remove("Everyone");
         return groupNames;
+    }
+
+    public static PrincipalId getPrincipalId(String userId, String domain) {
+        Validate.notEmpty(userId, "csp user id must not be empty.");
+        if (userId.contains(UPNSeparator)) {
+            PrincipalId id = ServerUtils.getPrincipalId(userId); // throws an error if there are more than one UPN separators
+            return id;
+        } else {
+            Validate.notEmpty(domain, "csp domain must not be empty.");
+            return new PrincipalId(userId, domain);
+        }
+    }
+
+    static void checkInvalidCharForUsername(String username) {
+        Validate.notEmpty(username, "user name must not be empty.");
+        for (char invalidChar : invalidCharsForUsername)
+         {
+             if (-1 != username.indexOf(invalidChar))
+             {
+                 throw new IllegalArgumentException(
+                    String.format(
+                       "Invalid character [%c] detected in csp username.", invalidChar));
+             }
+         }
     }
 }

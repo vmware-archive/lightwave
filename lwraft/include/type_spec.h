@@ -233,4 +233,18 @@ typedef struct _VMW_TYPE_SPEC_
     }\
 }
 
+#define SERVER_RESET_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Server State",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+}
+
 #endif /* __TYPE_SPEC_H__ */

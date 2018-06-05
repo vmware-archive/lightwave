@@ -132,7 +132,7 @@ ProcessPreValidatedEntries(
         dwError = VmDirBuildComputedAttribute(pOperation, pSrEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSendSearchEntry(pOperation, pSrEntry);
+        dwError = VmDirSendSearchEntry(pOperation, pSrEntry, NULL);
         if (dwError == VMDIR_ERROR_INSUFFICIENT_ACCESS)
         {
             VMDIR_LOG_WARNING(
@@ -1212,6 +1212,7 @@ VmDirProcessCandidateList(
     BOOLEAN           bInternalSearch = FALSE;
     BOOLEAN           bStoreRsltInMem = FALSE;
     BOOLEAN           bPageResultsCtrl = FALSE;
+    BOOLEAN           bLowestPendingUncommittedUsn = FALSE;
     DWORD             dwPageSize = 0;
     ENTRYID           lastEID = 0;
 
@@ -1220,7 +1221,7 @@ VmDirProcessCandidateList(
      * the server should ignore the control as the request can be satisfied in a single page.
      */
     if (pOperation->showPagedResultsCtrl && (pOperation->request.searchReq.sizeLimit == 0 ||
-            pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize < (DWORD)pOperation->request.searchReq.sizeLimit))
+        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize < (DWORD)pOperation->request.searchReq.sizeLimit))
     {
         VmDirLog( LDAP_DEBUG_TRACE, "showPagedResultsCtrl applies to this query." );
 
@@ -1317,7 +1318,7 @@ VmDirProcessCandidateList(
 
                 if (bSendEntry)
                 {
-                    retVal = VmDirSendSearchEntry( pOperation, pSrEntry );
+                    retVal = VmDirSendSearchEntry(pOperation, pSrEntry, &bLowestPendingUncommittedUsn);
                     if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
                     {
                         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
@@ -1371,18 +1372,18 @@ VmDirProcessCandidateList(
                         pOperation->request.searchReq.sizeLimit);
     }
 
-    // if full page sent to consumer, ask consumer to come back.
-    VmDirSetSyncDoneCtlbContinue(pOperation, numSentEntries);
+    retVal = VmDirUpdateSyncDoneCtl(
+            pOperation,
+            numSentEntries,
+            bLowestPendingUncommittedUsn);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
     pOperation->dwSentEntries = numSentEntries;
-    VmDirFreeEntryContent( pSrEntry );
-
+    VmDirFreeEntryContent(pSrEntry);
     return retVal;
 
 error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessCandiateList failed. (%u)", retVal);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ProcessCandiateList failed. (%u)", retVal);
     goto cleanup;
 }

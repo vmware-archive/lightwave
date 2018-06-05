@@ -89,6 +89,13 @@ typedef struct _VMDIR_UTDVECTOR_CACHE
 
 } VMDIR_UTDVECTOR_CACHE, *PVMDIR_UTDVECTOR_CACHE;
 
+typedef struct _VMDIR_REPL_DEADLOCKDETECTION_VECTOR
+{
+    PSTR          pszInvocationId;
+    PLW_HASHMAP   pEmptyPageSentMap;
+    PVMDIR_MUTEX  pMutex;
+} VMDIR_REPL_DEADLOCKDETECTION_VECTOR, *PVMDIR_REPL_DEADLOCKDETECTION_VECTOR;
+
 typedef struct _VMDIR_SERVER_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
@@ -127,6 +134,8 @@ typedef struct _VMDIR_SERVER_GLOBALS
     // 1) At the end of VmDirSrvSetupHostInstance for the 1st node
     // 2) At the end of LoadServerGlobals for other nodes
     BOOLEAN              bPromoted;
+
+    PVMDIR_REPL_DEADLOCKDETECTION_VECTOR  pReplDeadlockDetectionVector;
 
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
@@ -170,6 +179,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapConnectTimeoutSec;
     DWORD                           dwOperationsThreadTimeoutInMilliSec;
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
+    DWORD                           dwEmptyPageCnt;
+    DWORD                           dwSupplierThrTimeoutInMilliSec;
 
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
@@ -194,9 +205,6 @@ typedef struct _VMDIR_GLOBALS
     PVMDIR_MUTEX                    replCycleDoneMutex;
     PVMDIR_COND                     replCycleDoneCondition;
     DWORD                           dwReplCycleCounter;
-
-    // To synchronize replication reads and writes.
-    PVMDIR_RWLOCK                   replRWLock;
 
     // Upper limit (local USNs only < this number) on updates that can be replicated out "safely".
     USN                             limitLocalUsnToBeSupplied;
@@ -228,11 +236,6 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bTrackLastLoginTime;
     BOOLEAN                         bPagedSearchReadAhead;
 
-    // The following three counter is for database copy feature
-    // registra key configuration.
-    DWORD                           dwCopyDbWritesMin;
-    DWORD                           dwCopyDbIntervalInSec;
-    DWORD                           dwCopyDbBlockWriteInSec;
     // Collect stats for estimate elapsed time with database copy
     DWORD                           dwLdapWrites;
 
@@ -484,6 +487,11 @@ VmDirShutdown(
     PBOOLEAN pbWaitTimeOut
     );
 
+VOID
+VmDirWaitForLDAPOpThr(
+    PBOOLEAN pbStopped
+    );
+
 // tracklastlogin.c
 VOID
 VmDirAddTrackLastLoginItem(
@@ -562,6 +570,22 @@ VmDirRpcMetricsUpdate(
 
 VOID
 VmDirRpcMetricsShutdown(
+    VOID
+    );
+
+DWORD
+VmDirSrvStatMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirSrvStatMetricsUpdate(
+    METRICS_SRV_STAT srvStat,
+    uint64_t        iValue
+    );
+
+VOID
+VmDirSrvStatMetricsShutdown(
     VOID
     );
 

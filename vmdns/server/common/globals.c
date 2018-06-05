@@ -17,6 +17,9 @@
 VMW_DNS_DRIVER_GLOBALS gDNSDriverGlobals;
 PVMW_DNS_DRIVER_GLOBALS gpSrvContext = &gDNSDriverGlobals;
 
+PVM_METRICS_COUNTER gVmDnsRcodeErrorMetrics[METRICS_VDNS_RCODE_DOMAIN_COUNT]
+                                            [METRICS_VDNS_RCODE_OP_COUNT]
+                                             [METRICS_VDNS_RCODE_ERROR_COUNT];
 PVM_METRICS_COUNTER gVmDnsCounterMetrics[VDNS_COUNTER_COUNT];
 PVM_METRICS_HISTOGRAM gVmDnsHistogramMetrics[VDNS_HISTOGRAM_COUNT];
 PVM_METRICS_GAUGE gVmDnsGaugeMetrics[VDNS_GAUGE_COUNT];

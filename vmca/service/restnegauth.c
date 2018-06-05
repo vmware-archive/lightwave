@@ -145,6 +145,7 @@ error:
 DWORD
 VMCARESTVerifyKrbAuth(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     )
 {

@@ -694,6 +694,59 @@ error :
     goto cleanup;
 }
 
+VOID
+VmAfdTryOldPassword(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    PWSTR   pwszOldPassword = NULL;
+    PSTR    pszOldPassword = NULL;
+    LDAP*   pLd = NULL;
+    PVMAFD_REG_ARG pArgs = NULL;
+
+    dwError = VmAfSrvGetOldPassword(&pwszOldPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(
+                    pwszOldPassword,
+                    &pszOldPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdGetMachineInfo(&pArgs);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdLDAPConnect(
+                pArgs->pszAccount,
+                LDAP_PORT,
+                pArgs->pszAccountUPN,
+                pszOldPassword,
+                &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDCActPassword(pwszOldPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s recover machine account password from registry", __FUNCTION__);
+
+cleanup:
+    if (pArgs)
+    {
+        VmAfdFreeRegArgs(pArgs);
+    }
+    if (pLd)
+    {
+        VmAfdLdapClose(pLd);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pwszOldPassword);
+    VMAFD_SAFE_FREE_MEMORY(pszOldPassword);
+
+    return;
+
+error:
+    goto cleanup;
+}
 static
 int
 VmAfdCountResultAttribute(

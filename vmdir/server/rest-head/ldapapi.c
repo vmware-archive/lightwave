@@ -66,7 +66,7 @@ VmDirRESTLdapAdd(
 
     pAddOp->protocol = VDIR_OPERATION_PROTOCOL_REST;
 
-    dwError = VmDirRESTDecodeEntry(pRestOp->pjInput, &pEntry);
+    dwError = VmDirRESTDecodeEntry(pRestOp->pjBody, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirResetAddRequestEntry(pAddOp, pEntry);
@@ -234,7 +234,7 @@ VmDirRESTLdapModify(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTDecodeEntryMods(
-            pRestOp->pjInput,
+            pRestOp->pjBody,
             &pModifyOp->request.modifyReq.mods,
             &pModifyOp->request.modifyReq.numMods);
     BAIL_ON_VMDIR_ERROR(dwError);

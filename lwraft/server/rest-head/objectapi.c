@@ -77,7 +77,7 @@ VmDirRESTObjectPut(
     BAIL_ON_VMDIR_ERROR(dwError)
 
     dwError = VmDirRESTDecodeObject(
-            pRestOp->pjInput, pRestOp->pszSubPath, pszTenant, &pObj);
+            pRestOp->pjBody, pRestOp->pszSubPath, pszTenant, &pObj);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirResetAddRequestEntry(pAddOp, pObj);
@@ -242,7 +242,7 @@ VmDirRESTObjectPatch(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirRESTDecodeObjectMods(
-            pRestOp->pjInput,
+            pRestOp->pjBody,
             pszTenant,
             &pModifyOp->request.modifyReq.mods,
             &pModifyOp->request.modifyReq.numMods);

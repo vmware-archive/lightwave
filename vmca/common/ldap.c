@@ -108,14 +108,6 @@ VMCAKeyIdToHexString(
 
 static
 DWORD
-VMCABytesToHexString(
-    PUCHAR  pData,
-    DWORD   length,
-    PSTR    *pszHexString
-    );
-
-static
-DWORD
 VMCAGenerateCACNForLdap(
     X509* pCertificate,
     PSTR* ppszCACN
@@ -776,33 +768,6 @@ error:
 
 static
 DWORD
-VMCABytesToHexString(
-    PUCHAR  pData,
-    DWORD   length,
-    PSTR    *pszHexString
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-    char* pszOut = NULL;
-    DWORD i = 0;
-
-    dwError = VMCAAllocateMemory(length * 2 + 1, (PVOID*)&pszOut);
-    BAIL_ON_ERROR(dwError);
-
-    for (; i < length; ++i)
-    {
-        sprintf(pszOut + i * 2, "%02X", pData[i]);
-    }
-    pszOut[length * 2] = '\0';
-
-    *pszHexString = pszOut;
-
-error:
-    return dwError;
-}
-
-static
-DWORD
 VMCAKeyIdToHexString(
     ASN1_OCTET_STRING*  pIn,
     PSTR*               ppszOut
@@ -817,7 +782,7 @@ VMCAKeyIdToHexString(
         BAIL_ON_ERROR(dwError);
     }
 
-    dwError = VMCABytesToHexString((PUCHAR)(pIn->data), pIn->length, &pszOut);
+    dwError = VMCABytesToHexString((PUCHAR)(pIn->data), pIn->length, &pszOut, FALSE);
     BAIL_ON_ERROR(dwError);
 
     *ppszOut = pszOut;
@@ -867,7 +832,7 @@ VMCAGenerateCACNForLdap(
         length = i2d_PUBKEY(pPubKey, &pKey);
         SHA1(pEncodedKey, length, md);
 
-        dwError = VMCABytesToHexString((PUCHAR)md, SHA_DIGEST_LENGTH, &pszCACN);
+        dwError = VMCABytesToHexString((PUCHAR)md, SHA_DIGEST_LENGTH, &pszCACN, FALSE);
         BAIL_ON_ERROR(dwError);
     }
 

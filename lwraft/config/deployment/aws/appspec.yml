@@ -20,7 +20,7 @@ hooks:
       sudo: true
   AfterInstall:
     - location: scripts/after_install.sh
-      timeout: 300
+      timeout: 900
       runas: root
       sudo: true
   ApplicationStart:

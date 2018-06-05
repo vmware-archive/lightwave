@@ -33,16 +33,6 @@ _VmDirLdapCheckVmDirStatus(
 
 static
 DWORD
-_VmDirSetupDefaultAccount(
-    PCSTR pszDomainName,
-    PCSTR pszPartnerServerName,
-    PCSTR pszLdapHostName,
-    PCSTR pszBindUserName,
-    PCSTR pszBindPassword
-    );
-
-static
-DWORD
 _VmDirModDcPassword(
     PCSTR pszLocalHostName,
     PCSTR pszUPN,
@@ -717,7 +707,7 @@ VmDirSetupHostInstance(
 
     // This task must be performed after VmDirSetupHostInstanceEx(), because the server does not start listening on
     // LDAP ports till SetupHostInstance is done.
-    dwError = _VmDirSetupDefaultAccount(
+    dwError = VmDirSetupDefaultAccount(
                         pszDomainName,
                         pszLotusServerNameCanon,    // Partner is self in this 1st instance case.
                         pszLotusServerNameCanon,
@@ -829,7 +819,7 @@ VmDirJoin(
     // IMPORTANT: In general, the following sequence of operations should be strictly kept like this, otherwise SASL
     // binds in replication may break.
 
-    dwError = _VmDirSetupDefaultAccount(
+    dwError = VmDirSetupDefaultAccount(
                                 pszDomainName,
                                 pszPartnerServerName,       // remote lotus server FQDN/IP
                                 pszLotusServerNameCanon,    // local lotus name
@@ -990,6 +980,32 @@ error:
 
     VMDIR_SAFE_FREE_MEMORY(pLocalByte);
 
+    goto cleanup;
+}
+
+/* IPC call, needs root privileges */
+DWORD
+VmDirServerReset(
+    DWORD*      pState
+    )
+{
+    DWORD                   dwError = 0;
+
+    if ( !pState )
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLocalServerReset(&pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s succeded", __FUNCTION__);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -2331,12 +2347,9 @@ error:
 
 // Create machine and krb service account
 // 1. machine account: machineFQDN@REALM
-// 2. ldap service account: ldap/machineFQDN@REALM
-// 3. host service account: host/machineFQDN@REALM
-// 4. vmca service account: vmca/machineFQDN@REALM
-static
+
 DWORD
-_VmDirSetupDefaultAccount(
+VmDirSetupDefaultAccount(
     PCSTR pszDomainName,
     PCSTR pszPartnerServerName,
     PCSTR pszLdapHostName,
@@ -2345,8 +2358,6 @@ _VmDirSetupDefaultAccount(
     )
 {
     DWORD   dwError = 0;
-//    PCSTR   pszServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
-//    int     iCnt = 0;
 
     dwError = VmDirLdapSetupDCAccountOnPartner(
                                     pszDomainName,
@@ -2356,27 +2367,8 @@ _VmDirSetupDefaultAccount(
                                     pszLdapHostName );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-/*
-    for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
-    {
-        dwError = VmDirLdapSetupServiceAccount(
-                                        pszDomainName,
-                                        pszPartnerServerName,
-                                        pszBindUserName,
-                                        pszBindPassword,
-                                        pszServiceTable[iCnt],
-                                        pszLdapHostName );
-        if (dwError == LDAP_ALREADY_EXISTS)
-        {
-            dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior merge/join..etc)
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupKrbAccount SetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
-                                                   pszServiceTable[iCnt] );
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-*/
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirSetupKrbAccount (%s)(%s) passed",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s (%s)(%s) passed",
+                                        __FUNCTION__,
                                         VDIR_SAFE_STRING(pszDomainName),
                                         VDIR_SAFE_STRING(pszPartnerServerName) );
 cleanup:

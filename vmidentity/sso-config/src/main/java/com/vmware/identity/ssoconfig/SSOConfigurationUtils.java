@@ -44,6 +44,7 @@ import com.vmware.identity.rest.core.client.AccessToken;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
+import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
 
 /**
  * SSO Configuration utility functions.
@@ -254,6 +255,24 @@ public class SSOConfigurationUtils {
         //displayParamNameAndValue("enableHint", policy.getClientCertificatePolicy().isUserNameHintEnabled());
 
         System.out.println("\n\n");
+    }
+
+    static void displayOperatorsAccessPolicy(OperatorsAccessPolicyDTO policyDTO)
+    {
+        if (policyDTO == null)
+        {
+            displayParamNameAndValue("Enabled", "false/unset");
+        }
+        else
+        {
+            displayParamNameAndValue("Enabled", policyDTO.getEnabled());
+            if(!StringUtils.isEmpty(policyDTO.getUserBaseDn())){
+                displayParamNameAndValue("UserBaseDn", policyDTO.getUserBaseDn());
+            }
+            if(!StringUtils.isEmpty(policyDTO.getGroupBaseDn())){
+                displayParamNameAndValue("GroupBaseDn", policyDTO.getGroupBaseDn());
+            }
+        }
     }
 
     static void displayAuthnEnableStatus(boolean password, boolean windows, boolean cert) {

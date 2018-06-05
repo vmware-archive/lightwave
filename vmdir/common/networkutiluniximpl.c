@@ -120,7 +120,7 @@ VmDirOpenClientConnectionImpl(
              * This environment variable is synonymous with "raft protocol"
              * is in use, so bind to the raft server socket.
              */
-	    snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH_POST);
+	    snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH_POST), SOCKET_FILE_PATH_POST);
         }
         else if ((sockname = getenv("VMDIR_ENV_VMDIR_IPC_SOCKET")))
         {

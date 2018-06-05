@@ -88,6 +88,10 @@ public class IdmServerConfig
    private final String CONFIG_LDAP_CONNECTION_POOL_IDLE_TIME = "LdapConnectionPoolIdleTime";
    private final String CONFIG_LDAP_CONNECTION_POOL_MAX_WAIT = "LdapConnectionPoolMaxWait";
 
+   // Bearer token lifetime configuration in registry
+   private final String CONFIG_BEARER_TOKEN_LIFETIME_MAX = "StsBearerTokenLifetime";
+   private final String CONFIG_BEARER_REFRESH_TOKEN_LIFETIME_MAX = "StsBearerRefreshTokenLifetime";
+
    private static final String UPN_SEP_STR = new String(new char[] {ValidateUtil.UPN_SEPARATOR});
 
    // config stores related properties
@@ -302,6 +306,32 @@ public class IdmServerConfig
          {
             return isCertValidationEnabled.equalsIgnoreCase(Boolean.TRUE.toString());
          }
+       }
+   }
+
+   public long getMaxBearerTokenLifetimeInMillis() {
+       IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+       try (IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ)) {
+           String maxBearerTokenLifetimeInHours = regAdapter.getStringValue(rootKey, CONFIG_ROOT_KEY,
+                   CONFIG_BEARER_TOKEN_LIFETIME_MAX, true);
+           if (maxBearerTokenLifetimeInHours == null) {
+               return 0;
+           } else {
+               return TimeUnit.HOURS.toMillis(Integer.parseInt(maxBearerTokenLifetimeInHours)); // convert to milliseconds
+           }
+       }
+   }
+
+   public long getMaxBearerRefreshTokenLifetimeInMillis() {
+       IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+       try (IRegistryKey rootKey = regAdapter.openRootKey((int) RegKeyAccess.KEY_READ)) {
+           String maxRefreshBearerTokenLifetimeInhours = regAdapter.getStringValue(rootKey, CONFIG_ROOT_KEY,
+                   CONFIG_BEARER_REFRESH_TOKEN_LIFETIME_MAX, true);
+           if (maxRefreshBearerTokenLifetimeInhours == null) {
+               return 0;
+           } else {
+               return TimeUnit.HOURS.toMillis(Integer.parseInt(maxRefreshBearerTokenLifetimeInhours)); // convert to milliseconds
+           }
        }
    }
 

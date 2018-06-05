@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -78,7 +79,7 @@ public class WebssoMetadataController {
             logger.info("Responded with ERROR " + vr.getResponseCode() + ", message " + message);
         }
 
-        model.addAttribute("tenant", tenant);
+        model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
     }
 
     /**

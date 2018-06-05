@@ -79,6 +79,7 @@ import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.PasswordExpiredException;
 import com.vmware.identity.idm.PasswordPolicy;
@@ -156,6 +157,7 @@ public class CasIdmClient
     /**
      * Adds the specified tenant with administrator credentials to the IDM configuration
      *
+     * @param  hostname     Partner Domain Controller to create tenant in. If null, use localhost.
      * @param  tenant       Tenant to be added.
      * @param  adminAccountName name of the account with administrator privilege, cannot be null or empty
      * @param  adminPwd         cannot be null or zero length array
@@ -163,9 +165,9 @@ public class CasIdmClient
      * @throws InvalidArgumentException    -- if the tenant name or
      *                                 other required parameter is null or empty
      */
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
+    public void addTenant(String hostname, Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
     {
-        getService().addTenant(tenant, adminAccountName, adminPwd, this.getServiceContext());
+        getService().addTenant(hostname, tenant, adminAccountName, adminPwd, this.getServiceContext());
     }
 
     /**
@@ -3590,6 +3592,30 @@ public class CasIdmClient
     public void setAuthnPolicy(String tenantName, AuthnPolicy policy)
             throws Exception {
         getService().setAuthNPolicy(tenantName, policy,
+                this.getServiceContext());
+    }
+
+    /**
+     * Retrieve the tenant Operators Access Policy
+     *
+     * @param tenantName
+     * @throws IDMException
+     */
+    public OperatorAccessPolicy getOperatorAccessPolicy(String tenantName) throws Exception {
+        return getService()
+                .getOperatorAccessPolicy(tenantName, this.getServiceContext());
+    }
+
+    /**
+     * Set the tenant Operator Access Policy
+     *
+     * @param tenantName
+     * @param policy Operators Access Policy
+     * @throws IDMException
+     */
+    public void setOperatorAccessPolicy(String tenantName, OperatorAccessPolicy policy)
+            throws Exception {
+        getService().setOperatorAccessPolicy(tenantName, policy,
                 this.getServiceContext());
     }
 

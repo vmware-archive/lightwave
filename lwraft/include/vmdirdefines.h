@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+#define VMDIR_PCSTR_UNKNOWN "unknown"
+
 #ifdef _WIN32
     #define PCVOID const PVOID
     #define ssize_t SSIZE_T
@@ -725,6 +727,9 @@ extern "C" {
                                   (c) == '?' ||   \
                                   (c) == '/' )
 
+#define VMDIR_ASCII_SPACE(c) \
+    ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )
+
 #define VMDIR_ASCII_LOWER_TO_UPPER(c)   \
 if ( VMDIR_ASCII_LOWER(c) )             \
 {                                       \
@@ -806,6 +811,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
 #define VMDIR_IPC_GET_SERVER_STATE     6
+#define VMDIR_IPC_SERVER_RESET         10
 
 //VERSIONS
 #define VER1_INPUT 0

@@ -19,6 +19,7 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
+import static org.easymock.EasyMock.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -56,6 +57,7 @@ import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.SearchCriteria;
@@ -71,6 +73,7 @@ import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
 import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.ClientCertificatePolicyDTO;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
+import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
 import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
@@ -82,6 +85,7 @@ import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.data.attributes.SearchType;
 import com.vmware.identity.rest.idm.data.attributes.TenantConfigType;
 import com.vmware.identity.rest.idm.server.mapper.AuthenticationPolicyMapper;
+import com.vmware.identity.rest.idm.server.mapper.OperatorsAccessPolicyMapper;
 import com.vmware.identity.rest.idm.server.resources.CertificateResource;
 import com.vmware.identity.rest.idm.server.resources.GroupResource;
 import com.vmware.identity.rest.idm.server.resources.IdentityProviderResource;
@@ -111,6 +115,10 @@ public class TenantResourceTest {
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_UPN = ADMIN_USERNAME + "@" + DOMAIN;
     private static final String ADMIN_PWD = "testThis!23";
+
+    private static final String OPERATOR_USER_BASE_DN = "cn=users,cn=Operators,dc=system,dc=tenant";
+    private static final String OPERATOR_GROUP_BASE_DN = "cn=groups,cn=Operators,dc=system,dc=tenant";
+    private static final boolean OPERATOR_ENABLED = true;
 
     // Lockout policy related test constants
     private static final String LOCKOUT_DESC = "Lockout policy created for purpose of unit testing";
@@ -186,11 +194,13 @@ public class TenantResourceTest {
     @Test
     public void testCreateTenant() throws Exception {
         TenantDTO tenantToCreate = getTestTenantDTO();
-        mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
+        mockCasIdmClient.addTenant((String)isNull(null), isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         mockCasIdmClient.setTenantCredentials(eq(TENANT_NAME), isA(Collection.class), isA(PrivateKey.class));
         mockCasIdmClient.setBrandName(eq(TENANT_NAME), eq(BRAND_NAME));
+        mockCasIdmClient.setPasswordPolicy(isA(String.class), isA(PasswordPolicy.class));
         expect(mockCasIdmClient.getTenant(TENANT_NAME)).andReturn(getTestTenant());
         expect(mockCasIdmClient.getBrandName(TENANT_NAME)).andReturn(null);
+        expect(mockCasIdmClient.getPasswordPolicy(TENANT_NAME)).andReturn(getTestPasswordPolicy());
         expect(mockCasIdmClient.getSystemTenant()).andReturn(SYSTEM_TENANT_NAME);
         expect(mockCasIdmClient.getBrandName(SYSTEM_TENANT_NAME)).andReturn(BRAND_NAME);
         mControl.replay();
@@ -214,7 +224,7 @@ public class TenantResourceTest {
 
     @Test(expected=InternalServerErrorException.class)
     public void testCreateOnIDMError_ThrowsInternalServerError() throws Exception {
-        mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
+        mockCasIdmClient.addTenant((String)isNull(null), isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         expectLastCall().andThrow(new IDMException("unit test duplicate tenant error"));
         mockCasIdmClient.deleteTenant(eq(TENANT_NAME));
         mControl.replay();
@@ -224,7 +234,7 @@ public class TenantResourceTest {
 
     @Test(expected = BadRequestException.class)
     public void testCreateTenantIfAlreadyExists_ThrowsBadRequestException() throws Exception {
-        mockCasIdmClient.addTenant(isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
+        mockCasIdmClient.addTenant((String)isNull(null), isA(Tenant.class), eq(ADMIN_USERNAME), aryEq(ADMIN_PWD.toCharArray()));
         expectLastCall().andThrow(new DuplicateTenantException("unit test duplicate tenant error"));
         mControl.replay();
         tenantResource.create(getTestTenantDTO());
@@ -240,6 +250,7 @@ public class TenantResourceTest {
         assertNull(tenantConfig.getTokenPolicy());
         assertNull(tenantConfig.getProviderPolicy());
         assertNull(tenantConfig.getBrandPolicy());
+        assertNull(tenantConfig.getOperatorsAccessPolicy());
     }
 
     @Test
@@ -252,6 +263,7 @@ public class TenantResourceTest {
         assertNull(tenantConfig.getTokenPolicy());
         assertNull(tenantConfig.getProviderPolicy());
         assertNull(tenantConfig.getBrandPolicy());
+        assertNull(tenantConfig.getOperatorsAccessPolicy());
     }
 
     @Test
@@ -271,6 +283,7 @@ public class TenantResourceTest {
         assertNull(tenantConfig.getLockoutPolicy());
         assertNull(tenantConfig.getTokenPolicy());
         assertNull(tenantConfig.getBrandPolicy());
+        assertNull(tenantConfig.getOperatorsAccessPolicy());
     }
 
     @Test
@@ -291,6 +304,7 @@ public class TenantResourceTest {
         assertNull(tenantConfig.getPasswordPolicy());
         assertNull(tenantConfig.getLockoutPolicy());
         assertNull(tenantConfig.getBrandPolicy());
+        assertNull(tenantConfig.getOperatorsAccessPolicy());
     }
 
     @Test
@@ -306,6 +320,21 @@ public class TenantResourceTest {
         assertNull(tenantConfig.getProviderPolicy());
         assertNull(tenantConfig.getPasswordPolicy());
         assertNull(tenantConfig.getLockoutPolicy());
+        assertNull(tenantConfig.getOperatorsAccessPolicy());
+    }
+
+    @Test
+    public void testGetConfig_OperatorsAccessPolicy() throws Exception {
+
+        expect(mockCasIdmClient.getOperatorAccessPolicy(TENANT_NAME)).andReturn(getTestOperatorAccessPolicy());
+        mControl.replay();
+        TenantConfigurationDTO tenantConfig = tenantResource.getConfig(TENANT_NAME, Arrays.asList(TenantConfigType.OPERATORS_ACCESS.name()));
+        assertOperatorAccessPolicy(tenantConfig.getOperatorsAccessPolicy());
+        assertNull(tenantConfig.getLockoutPolicy());
+        assertNull(tenantConfig.getPasswordPolicy());
+        assertNull(tenantConfig.getTokenPolicy());
+        assertNull(tenantConfig.getProviderPolicy());
+        assertNull(tenantConfig.getBrandPolicy());
     }
 
     @Test
@@ -331,6 +360,7 @@ public class TenantResourceTest {
         expect(mockCasIdmClient.getBrandName(TENANT_NAME)).andReturn(BRAND_NAME);
         expect(mockCasIdmClient.getAuthnPolicy(TENANT_NAME)).andReturn(getTestAuthnPolicy());
         expect(mockCasIdmClient.isTenantIDPSelectionEnabled(TENANT_NAME)).andReturn(DEFAULT_PROVIDER_SELECTION_ENABLED);
+        expect(mockCasIdmClient.getOperatorAccessPolicy(TENANT_NAME)).andReturn(getTestOperatorAccessPolicy());
 
         mControl.replay();
         TenantConfigurationDTO tenantConfig = tenantResource.getConfig(TENANT_NAME, Arrays.asList(TenantConfigType.ALL.name()));
@@ -342,6 +372,7 @@ public class TenantResourceTest {
         assertProviderPolicy(tenantConfig.getProviderPolicy());
         assertBrandPolicy(tenantConfig.getBrandPolicy());
         assertAuthenticationPolicy(tenantConfig.getAuthenticationPolicy());
+        assertOperatorAccessPolicy(tenantConfig.getOperatorsAccessPolicy());
     }
 
     @Test
@@ -351,6 +382,7 @@ public class TenantResourceTest {
                 .withProviderPolicy(getProviderPolicyDTO())
                 .withBrandPolicy(getTestBrandPolicyDTO())
                 .withAuthenticationPolicy(getTestAuthenticationPolicyDTO())
+                .withOperatorsAccessPolicy(getTestOperatorsAccessPolicyDTO())
                 .build();
 
         mockCasIdmClient.setLockoutPolicy(eq(TENANT_NAME), isA(LockoutPolicy.class));
@@ -370,6 +402,8 @@ public class TenantResourceTest {
         mockCasIdmClient.setAuthnPolicy(eq(TENANT_NAME), isA(AuthnPolicy.class));
         mockCasIdmClient.setLocalIDPAlias(TENANT_NAME, DEFAULT_PROVIDER_ALIAS);
         mockCasIdmClient.setTenantIDPSelectionEnabled(TENANT_NAME, DEFAULT_PROVIDER_SELECTION_ENABLED);
+        mockCasIdmClient.setOperatorAccessPolicy(eq(TENANT_NAME), isA(OperatorAccessPolicy.class));
+
         expect(mockCasIdmClient.getDefaultProviders(TENANT_NAME)).andReturn(defaultIdentityStores);
         expect(mockCasIdmClient.getProvider(TENANT_NAME, DEFAULT_PROVIDER)).andReturn(mockIdentityStore);
         expect(mockIdentityStore.getExtendedIdentityStoreData()).andReturn(mockIIdentityStoreDataEx);
@@ -392,6 +426,7 @@ public class TenantResourceTest {
         expect(mockCasIdmClient.getLocalIDPAlias(TENANT_NAME)).andReturn(DEFAULT_PROVIDER_ALIAS);
         expect(mockCasIdmClient.getAuthnPolicy(TENANT_NAME)).andReturn(getTestAuthnPolicy());
         expect(mockCasIdmClient.isTenantIDPSelectionEnabled(TENANT_NAME)).andReturn(DEFAULT_PROVIDER_SELECTION_ENABLED);
+        expect(mockCasIdmClient.getOperatorAccessPolicy(TENANT_NAME)).andReturn(getTestOperatorAccessPolicy());
 
         mControl.replay();
         TenantConfigurationDTO updatedConfig = tenantResource.updateConfig(TENANT_NAME, configToUpdate);
@@ -400,6 +435,7 @@ public class TenantResourceTest {
         assertProviderPolicy(updatedConfig.getProviderPolicy());
         assertBrandPolicy(updatedConfig.getBrandPolicy());
         assertAuthenticationPolicy(updatedConfig.getAuthenticationPolicy());
+        assertOperatorAccessPolicy(updatedConfig.getOperatorsAccessPolicy());
     }
 
     private void assertProviderPolicy(ProviderPolicyDTO providerPolicy) {
@@ -732,6 +768,14 @@ public class TenantResourceTest {
         return new AuthnPolicy(true, true, true, cert);
     }
 
+    private OperatorAccessPolicy getTestOperatorAccessPolicy() {
+        return new OperatorAccessPolicy.Builder()
+            .withEnabled(OPERATOR_ENABLED)
+            .withUserBaseDn(OPERATOR_USER_BASE_DN)
+            .withGroupBaseDn(OPERATOR_GROUP_BASE_DN)
+            .build();
+    }
+
     private static String getTestPEMCert() throws IOException {
         byte[] encoded = Files.readAllBytes(Paths.get(TEST_CERT_LOC));
         return new String(encoded, Charset.defaultCharset());
@@ -748,6 +792,10 @@ public class TenantResourceTest {
 
     private AuthenticationPolicyDTO getTestAuthenticationPolicyDTO() throws CertificateException, IOException {
         return AuthenticationPolicyMapper.getAuthenticationPolicyDTO(getTestAuthnPolicy());
+    }
+
+    private OperatorsAccessPolicyDTO getTestOperatorsAccessPolicyDTO(){
+        return OperatorsAccessPolicyMapper.getOperatorsAccessPolicyDTO(getTestOperatorAccessPolicy());
     }
 
     private PasswordPolicy getTestPasswordPolicy() {
@@ -779,6 +827,12 @@ public class TenantResourceTest {
         assertEquals(FAILED_ATTEMPT_INTERVAL_SEC, (long) lockoutPolicy.getFailedAttemptIntervalSec());
         assertEquals(FAILED_ATTEMPTS, (int) lockoutPolicy.getMaxFailedAttempts());
         assertEquals(AUTO_UNLOCK_INTERVAL_SEC, (long) lockoutPolicy.getAutoUnlockIntervalSec());
+    }
+
+    private void assertOperatorAccessPolicy(OperatorsAccessPolicyDTO policy){
+        assertEquals(OPERATOR_ENABLED, policy.getEnabled());
+        assertEquals(OPERATOR_USER_BASE_DN, policy.getUserBaseDn());
+        assertEquals(OPERATOR_GROUP_BASE_DN, policy.getGroupBaseDn());
     }
 
     private void assertPasswordPolicy(PasswordPolicyDTO passwordPolicy) {

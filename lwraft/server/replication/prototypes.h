@@ -75,7 +75,7 @@ VmDirInitRaftPsState(
     );
 
 DWORD
-_VmDirLoadRaftState(
+VmDirLoadRaftState(
     VOID
     );
 
@@ -95,7 +95,7 @@ _VmDirLogLookup(
     );
 
 DWORD
-_VmDirDeleteAllLogs(
+VmDirDeleteAllLogs(
     unsigned long long startLogIndex,
     BOOLEAN *pbFatalError
     );
@@ -251,6 +251,17 @@ VmDirRaftLdapRpcRequestVote(
 VOID
 VmDirPersistTerm(
     int term
+    );
+
+VOID
+VmDirShutdownDB(
+    VOID
+    );
+
+int
+VmDirSwapDB(
+    PCSTR   dbHomeDir,
+    BOOLEAN bHasXlog
     );
 
 #ifdef __cplusplus

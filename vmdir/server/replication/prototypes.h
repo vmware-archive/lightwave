@@ -56,6 +56,11 @@ VmDirCacheKrb5Creds(
     PSTR  *ppszErrorMsg
     );
 
+VOID
+VmDirPopulateInvocationIdInReplAgr(
+    VOID
+    );
+
 // replentry.c
 int
 ReplAddEntry(
@@ -134,6 +139,29 @@ VmDirReplicationFreePageEntry(
 VOID
 VmDirReplicationFreePageEntryContent(
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    );
+
+int
+VmDirComposeNodeUtdVector(
+    PCSTR   pszHostname,
+    PSTR*   ppszUtdVector,
+    PSTR*   ppszMaxUSN
+    );
+
+VOID
+VmDirShutdownDB(
+    VOID
+    );
+
+int
+VmDirSwapDB(
+    PCSTR   dbHomeDir,
+    BOOLEAN bHasXlog
+    );
+
+int
+VmDirPatchDSERoot(
+    PVDIR_SCHEMA_CTX    pSchemaCtx
     );
 
 #ifdef __cplusplus

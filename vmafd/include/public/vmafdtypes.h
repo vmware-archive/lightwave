@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -96,7 +96,7 @@ typedef UINT8 BOOLEAN, *PBOOLEAN;
 #endif
 
 #ifndef _WIN32
-#define VMAFD_NCALRPC_END_POINT "vmafdsvc"
+#define VMAFD_NCALRPC_END_POINT "/var/lib/vmware/rpc/vmafdsvc"
 #define VMAFD_SEPERATOR "/"
 
 #else
@@ -148,6 +148,9 @@ void *vecs_crl_handle_t;
 
 //CDC_GET_DCNAME_FLAG
 #define CDC_FORCE_REFRESH 0x00000001
+
+//domainJoinFlag
+#define VMAFD_DOMAIN_LEAVE_FLAGS_FORCE 0x00000001
 
 #ifndef VMAFD_STATUS_DEFINED
 #define VMAFD_STATUS_DEFINED 1

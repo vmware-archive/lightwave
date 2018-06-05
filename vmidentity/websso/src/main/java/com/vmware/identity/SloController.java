@@ -19,6 +19,7 @@ import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
@@ -113,7 +114,7 @@ public final class SloController {
                      "to service providers."+e.getMessage(), e);
         }
 
-        model.addAttribute("tenant", tenant);
+        model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
     }
 
     /**

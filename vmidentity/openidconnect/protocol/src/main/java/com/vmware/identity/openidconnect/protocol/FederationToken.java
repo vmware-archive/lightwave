@@ -26,6 +26,7 @@ import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.openidconnect.common.JWTID;
+import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.TokenClass;
 
@@ -98,6 +99,8 @@ public abstract class FederationToken {
     public abstract Collection<String> getPermissions();
 
     public abstract String getTenant();
+
+    public abstract Nonce getNonce();
 
     public static FederationToken parse(JSONObject jsonObject, TokenClass tokenClass,
             FederationIDPIssuerType issuerType) throws ParseException {

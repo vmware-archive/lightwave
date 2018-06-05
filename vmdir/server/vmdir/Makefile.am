@@ -21,6 +21,7 @@ vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
     background.c \
+    dbbackup.c \
     globals.c \
     heartbeat.c \
     index.c \

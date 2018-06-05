@@ -41,7 +41,7 @@ public class TenantHelper {
 
     public void createTenant(String tenantName, String tenantLongname, String tenantKey) throws Exception {
         Tenant t = new Tenant(tenantName, tenantLongname, tenantKey);
-        idmClient.addTenant(t, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+        idmClient.addTenant(null, t, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
     }
 
     public Tenant getTenant(String tenantName) throws Exception {

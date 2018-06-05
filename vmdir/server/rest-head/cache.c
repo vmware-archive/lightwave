@@ -140,7 +140,7 @@ VmDirRESTCacheGetOIDCSigningCertPEM(
     if (LwRtlHashMapFindKey(pRestCache->pOIDCSigningCertPEM, (PVOID*)&pszVal, pszDomainName) ||
         IsNullOrEmptyString(pszVal))
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
     }
 
     dwError = VmDirAllocateStringA(
