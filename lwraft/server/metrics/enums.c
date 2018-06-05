@@ -73,6 +73,7 @@ VmDirMetricsLdapErrorString(
             "LDAP_SIZELIMIT_EXCEEDED",
             "LDAP_NO_SUCH_OBJECT",
             "LDAP_BUSY",
+            "LDAP_ERROR_PRE_CONDITION",
             "LDAP_OTHER"
     };
 
@@ -285,6 +286,11 @@ VmDirMetricsMapLdapErrorToEnum(
 
     case LDAP_BUSY:
         match = METRICS_LDAP_BUSY;
+        break;
+
+    // Pre condition is a custom error hence is not in ldap error space
+    case VMDIR_LDAP_ERROR_PRE_CONDITION:
+        match = METRICS_LDAP_ERROR_PRE_CONDITION;
         break;
 
     default:
