@@ -403,14 +403,7 @@ VmDirSendLdapResult_internal(
     }
 
 done:
-    if (pOperation->syncDoneCtrl &&
-        !pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
-    {
-        // while in supplier role, we hold replication RLock.
-        // done with this supplier feed "cycle" - !syncDoneCtrlVal.bContinue.
-        // so it is safe to release replication RLock.
-        VMDIR_RWLOCK_UNLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock);
-    }
+    ;
 }
 #endif
 

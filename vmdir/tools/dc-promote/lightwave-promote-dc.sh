@@ -91,8 +91,8 @@ if [ $LIGHTWAVE_AD != $id ]; then
   exit 1
 fi
 
-if [ ! -f $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-?.x86_64.rpm  ]; then
-  echo "ERROR: file '$LIKEWISE_BASE/likewise-open-6.2.11-?.x86_64.rpm' does not exist"
+if [ ! -f $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-*.x86_64.rpm  ]; then
+  echo "ERROR: file '$LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-*.x86_64.rpm' does not exist"
   exit 1
 fi
 
@@ -115,7 +115,7 @@ fi
 
 # 1 Copy custom build of Likewise-Open
 echo_status "Copy likewise-open to DC"
-scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-?.x86_64.rpm $PRIV_USER@$LIGHTWAVE_AD:/tmp
+scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-*.x86_64.rpm $PRIV_USER@$LIGHTWAVE_AD:/tmp
 
 # 2 Copy Lightwave --enable-winjoin build
 echo_status "Copy lightwave to DC"
@@ -123,7 +123,7 @@ scp $LIGHTWAVE_BASE/build/rpmbuild/RPMS/x86_64/*.rpm $PRIV_USER@$LIGHTWAVE_AD:/t
 
 # 3 Install Likewise-Open
 echo_status "Install likewise-open"
-ssh $PRIV_USER@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-?.x86_64.rpm
+ssh $PRIV_USER@$LIGHTWAVE_AD rpm -ivh /tmp/likewise-open-6.2.11-*.x86_64.rpm
 
 
 # 4 Install Lightwave RPMs
@@ -298,7 +298,7 @@ cat <<NNNN | ssh $PRIV_USER@$LIGHTWAVE_AD cat > /tmp/regshell-rpcloadorder.sh
 #
 # lsassd dependencies on dcerpc endpoint mapper (netlogon/drsuapi)
 #
-/opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\\Services\\lsass]' "Dependencies" "vmdir netlogon lwio lwreg rdr dcerpc"
+/opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\\Services\\lsass]' "Dependencies" "netlogon lwio lwreg rdr dcerpc"
 #
 #
 # srv Service configuration
