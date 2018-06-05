@@ -339,6 +339,7 @@ error:
         __FUNCTION__,
         dwError);
 
+    dwError = 0;    // temporary for zero-down time
     goto cleanup;
 }
 
