@@ -41,9 +41,17 @@ VMware Lightwave Server
 
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
-%define _webappsdir %{_prefix}/vmware-sts/webapps
-%define _configdir %{_prefix}/share/config
+%define _stsdir %{_prefix}/vmware-sts
+%define _webappsdir %{_stsdir}/webapps
+%define _stsconfdir %{_stsdir}/conf
+%define _stsbindir %{_stsdir}/bin
+%define _stslogsdir %{_stsdir}/logs
+%define _lightwavelogsdir /var/log/vmware/sso
+%define _configdir %{_datadir}/config
 %define _servicedir /lib/systemd/system
+%define _stsdbdir %{_localstatedir}/vmware-sts
+%define _lwuser lightwave
+%define _lwgroup lightwave
 
 %if 0%{?_likewise_open_prefix:1} == 0
 %define _likewise_open_prefix /opt/likewise
@@ -176,11 +184,13 @@ Lightwave POST service
             #
             # Upgrade
             #
-            if [ ! -d %{_backupdir} ];
+            if [ ! -d %{_stsdbdir} ];
             then
-                /bin/mkdir "%{_backupdir}"
+                /bin/install -d %{_stsdbdir} -o %{_lwuser} -g %{_lwgroup} -m 700
+            else
+                chown -R %{_lwuser}:%{_lwgroup} %{_stsdbdir} >/dev/null 2>&1
             fi
-            /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
+            /bin/cp "%{_stsconfdir}/server.xml" "%{_stsdbdir}/server.xml"
             ;;
     esac
 
@@ -266,7 +276,18 @@ Lightwave POST service
             ;;
     esac
 
+%triggerin -- likewise-open
+    # work-around likewise bug where it does not properly set file permission
+    # once pr#2131086 is fixed this should be removed
+    chmod o+r /etc/gss/mech
+
 %post
+
+    lw_uid="$(id -u %{_lwuser})"
+    lw_gid="$(id -g %{_lwgroup})"
+
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_configdir}/idm/idm.reg
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_servicedir}/vmware-stsd.service
 
     case "$1" in
         1)
@@ -281,13 +302,87 @@ Lightwave POST service
             if [ $? -eq 0 ]; then
                 /bin/systemctl daemon-reload
             fi
+
+            # create logs dir and link tomcat logs there
+            if [ -d %{_stslogsdir} ]; then
+                /bin/rm -rf %{_stslogsdir}
+            fi
+
+            /bin/install -d %{_lightwavelogsdir} -o %{_lwuser} -g %{_lwgroup} -m 755
+            /bin/ln -s %{_lightwavelogsdir} %{_stslogsdir}
+
+            try_starting_lwregd_svc=true
+
+            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            if [ $try_starting_lwregd_svc = true ]; then
+                %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
+                sleep 5
+            else
+                started_lwregd=false
+                if [ -z "`pidof lwregd`" ]; then
+                    echo "Starting lwregd"
+                    %{_likewise_open_sbindir}/lwregd &
+                    started_lwregd=true
+                    sleep 5
+                fi
+                %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
+                if [ $started_lwregd = true ]; then
+                    kill -TERM `pidof lwregd`
+                    wait
+                fi
+            fi
             ;;
 
         2)
             #
             # Upgrade
             #
-            %{_sbindir}/configure-build.sh "%{_backupdir}"
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                /bin/systemctl daemon-reload
+            fi
+
+            try_starting_lwregd_svc=true
+
+            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                try_starting_lwregd_svc=false
+            fi
+
+            if [ $try_starting_lwregd_svc = true ]; then
+                %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
+                %{_likewise_open_bindir}/lwsm -q refresh
+                sleep 5
+            else
+                started_lwregd=false
+                if [ -z "`pidof lwregd`" ]; then
+                    echo "Starting lwregd"
+                    %{_likewise_open_sbindir}/lwregd &
+                    started_lwregd=true
+                    sleep 5
+                fi
+                %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
+                if [ $started_lwregd = true ]; then
+                    kill -TERM `pidof lwregd`
+                    wait
+                fi
+            fi
+
+            %{_sbindir}/configure-build.sh "%{_stsdbdir}"
+
             # Remove the cached lightwaveui directory if no corresponding war file is found
             ROOTDIR="/opt/vmware/vmware-sts/webapps"
             if [ ! -f "$ROOTDIR/lightwaveui.war" ]; then
@@ -296,29 +391,22 @@ Lightwave POST service
             ;;
     esac
 
-    if [ -x "%{_lwisbindir}/lwregshell" ]
+    /bin/cp %{_sysconfdir}/vmware/java/vmware-override-java.security %{_stsconfdir}
+    chmod 600 %{_stsconfdir}/vmware-override-java.security
+
+    if [ -x "%{_likewise_open_bindir}/lwregshell" ]
     then
-        %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            # add key if not exist
-            %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
-        fi
+        # set version
+        %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
-        %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Release" > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            # add value if not exist
-            %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Release" REG_SZ "Lightwave"
-        fi
-
-        %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Version" > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            # add value if not exist
-            %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" REG_SZ "%{_version}"
-        else
-            # set value if exists
-            %{_lwisbindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-        fi
+        # set vmdir provider bind protocol to srp
+        %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
+        %{_likewise_open_bindir}/lwsm restart lsass
     fi
+
+    chown -R %{_lwuser}:%{_lwgroup} %{_stsdir} >/dev/null 2>&1
+    chown -R %{_lwuser}:%{_lwgroup} %{_lightwavelogsdir} >/dev/null 2>&1
+    chown -R %{_lwuser}:%{_lwgroup} %{_sbindir}/vmware-stsd.sh >/dev/null 2>&1
 
 %post server
 
@@ -1020,7 +1108,7 @@ Lightwave POST service
 %{_sbindir}/sso-config.sh
 %{_sbindir}/configure-pwd-policy.sh
 
-%{_datadir}/config/idm/*
+%{_configdir}/idm/*
 
 %{_jarsdir}/samlauthority.jar
 %{_jarsdir}/vmware-identity-diagnostics.jar
@@ -1052,16 +1140,16 @@ Lightwave POST service
 
 %{_servicedir}/vmware-stsd.service
 
-%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
-%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.policy
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.properties
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/context.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/logging.properties
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/server.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
-%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/vmsts-telegraf.conf
+%config %attr(700, root, root) %{_stsbindir}/setenv.sh
+%config %attr(600, root, root) %{_stsbindir}/vmware-identity-tomcat-extensions.jar
+%config %attr(600, root, root) %{_stsconfdir}/catalina.policy
+%config %attr(600, root, root) %{_stsconfdir}/catalina.properties
+%config %attr(600, root, root) %{_stsconfdir}/context.xml
+%config %attr(600, root, root) %{_stsconfdir}/logging.properties
+%config %attr(600, root, root) %{_stsconfdir}/server.xml
+%config %attr(600, root, root) %{_stsconfdir}/web.xml
+%config %attr(600, root, root) %{_stsconfdir}/tomcat-users.xml
+%config %attr(600, root, root) %{_stsconfdir}/vmsts-telegraf.conf
 
 %files server
 
