@@ -62,7 +62,7 @@
     doc     = "DC Cache heartbeat frequency"
 }
 "EnableDCERPC" = {
-    default = dword:00000001
+    default = dword:00000000
     doc     = "Enable or Disable DCE/RPC Server"
 }
 "LegacyModeHA" = {

@@ -609,7 +609,8 @@ Lightwave POST service
                 fi
             fi
 
-            %{_likewise_open_bindir}/lwsm start vmafd
+            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
+            %{_likewise_open_bindir}/lwsm restart vmafd
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
             ;;
     esac
