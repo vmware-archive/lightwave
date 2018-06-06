@@ -1,10 +1,12 @@
 #!/bin/bash
 
+set -x
+
 AMI_FILE="ami-file"
 MANIFESTFILE=rpmmanifest
 RPMUPDATELISTFILE=rpmupdatelist
 REBOOTLISTFILE=rebootlist
-RPMLISTFILE=rpmlist
+RPMDIFFFILE=rpmdifflist
 
 #The following will be passed down as environment variables from codebuild
 APPLICATION_NAME=${POST_DEPLOYMENT_APP}
@@ -17,7 +19,7 @@ CODEBUILD_PATH="/var/vmware/codebuild"
 
 if [ ! -f $AMI_FILE ]; then
     echo "No ami file present"
-    exit 0
+    exit 1
 fi
 if [ ! -f $RPMUPDATELISTFILE ]; then
     echo "No rpm update list file present"
@@ -281,7 +283,7 @@ PerformUpdateOnInstances()
         fi
 
         #Perform the update
-        RPMLIST=`tr '\n' ' ' < $RPMUPDATELISTFILE`
+        RPMLIST=`tr '\n' ' ' < $RPMDIFFFILE$INSTANCE_ID`
         if [[ "$RPMLIST" != "" ]]; then
             cmd="tdnf install -y $RPMLIST"
             ssm_send_command $INSTANCE_ID 30 "shell" "$cmd"
@@ -300,8 +302,9 @@ PerformUpdateOnInstances()
 
         #Reboot the instance if needed
         REBOOTREQUIRED=false
-        grep -f $REBOOTLISTFILE $RPMUPDATELISTFILE
+        grep -f $REBOOTLISTFILE $RPMDIFFFILE$INSTANCE_ID
         if [[ $? -eq 0 ]]; then
+            REBOOTREQUIRED=true
             cmd="reboot"
             ssm_send_command $INSTANCE_ID 40 "shell" "$cmd"
             if [[ $? -ne 0 ]]; then
@@ -352,6 +355,27 @@ RestartServicesAndRegisterWithELB()
     fi
 }
 
+GetRpmManifest()
+{
+    INSTANCE_ID=$1
+    FILENAME=$2
+    cmdId=$(aws ssm send-command --instance-ids $INSTANCE_ID --document-name "AWS-RunShellScript" --query "Command.CommandId" --output text  --output-s3-bucket-name "$BUCKET_NAME" --output-s3-key-prefix "$MANIFEST_PATH" --parameters commands="rpm -qa | grep "\.ph2" | grep -v lwph2")
+    while [ "$(aws ssm list-command-invocations --command-id "$cmdId" --query "CommandInvocations[].Status" --output text)" == "InProgress" ]; do sleep 5; done
+    outputPath=$(aws ssm list-command-invocations --command-id "$cmdId" --details --query "CommandInvocations[].CommandPlugins[].OutputS3KeyPrefix" --output text)
+    aws s3 ls --recursive s3://${BUCKET_NAME}/${outputPath}/ | grep stderr
+    if [ $? -eq 0 ]; then
+        echo "Error while getting manifest"
+        return 1
+    fi
+    STDOUT=`aws s3 ls --recursive s3://${BUCKET_NAME}/${outputPath}/ | grep stdout | awk -F' ' '{print $4}'`
+    aws s3 cp s3://$BUCKET_NAME/$STDOUT $FILENAME
+    if [ $? -ne 0 ]; then
+        echo "Error while getting manifest"
+        return 1
+    fi
+    return 0
+}
+
 CheckAndUploadManifest()
 {
     ASG_DATA=`aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names $ASG_NAME`
@@ -369,29 +393,20 @@ CheckAndUploadManifest()
             echo $ASG_DATA
             return 1
         fi
-        cmdId=$(aws ssm send-command --instance-ids $INSTANCE_ID --document-name "AWS-RunShellScript" --query "Command.CommandId" --output text  --output-s3-bucket-name "$BUCKET_NAME" --output-s3-key-prefix "$MANIFEST_PATH" --parameters commands="rpm -qa | grep "\.ph2" | grep -v lwph2")
-        while [ "$(aws ssm list-command-invocations --command-id "$cmdId" --query "CommandInvocations[].Status" --output text)" == "InProgress" ]; do sleep 5; done
-        outputPath=$(aws ssm list-command-invocations --command-id "$cmdId" --details --query "CommandInvocations[].CommandPlugins[].OutputS3KeyPrefix" --output text)
-        aws s3 ls --recursive s3://${BUCKET_NAME}/${outputPath}/ | grep stderr
-        if [ $? -eq 0 ]; then
-            echo "Error while getting manifest"
-            return 1
-        fi
-        STDOUT=`aws s3 ls --recursive s3://${BUCKET_NAME}/${outputPath}/ | grep stdout | awk -F' ' '{print $4}'`
-        aws s3 cp s3://$BUCKET_NAME/$STDOUT ./stdout
+        GetRpmManifest $INSTANCE_ID newmanifest
         if [ $? -ne 0 ]; then
-            echo "Error while getting manifest"
+            echo "Could not get manifest for instance $INSTANCE_ID"
             return 1
         fi
-        sed -i '/^$/d' $RPMUPDATELISTFILE #Remove blank lines
-        sed -i '/^$/d' ./stdout
-        grep -vf ./stdout $RPMUPDATELISTFILE
+        sed -i '/^$/d' $RPMDIFFFILE$INSTANCE_ID #Remove blank lines
+        sed -i '/^$/d' newmanifest
+        grep -vf newmanifest $RPMDIFFFILE$INSTANCE_ID
         if [ $? -eq 0 ]; then
             echo "Update list and rpm manifest do not match for instance $INSTANCE_ID"
             return 1
         fi
     done
-    aws s3 cp ./stdout s3://$BUCKET_NAME/$MANIFEST_PATH/$MANIFESTFILE
+    aws s3 cp newmanifest s3://$BUCKET_NAME/$MANIFEST_PATH/$MANIFESTFILE
     if [ $? -ne 0 ]; then
         echo "Error while getting manifest"
         return 1
@@ -399,9 +414,55 @@ CheckAndUploadManifest()
     return 0
 }
 
+CheckUpdateRequired()
+{
+    ASG_DATA=`aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names $ASG_NAME`
+    NUMINSTANCES=`echo $ASG_DATA | ./jq -r '.AutoScalingGroups[].Instances' | ./jq length`
+
+    if [ $NUMINSTANCES == "0" ] ; then
+        echo "No instances found attached to the ASG : $ASG_NAME"
+        return 1
+    fi
+    UPDATEREQUIRED=false
+    for i in `seq 0 1 $(expr $NUMINSTANCES - 1)`; do
+        INSTANCE_ID=`echo $ASG_DATA | ./jq -r ".AutoScalingGroups[].Instances[$i].InstanceId"`
+        if [ $INSTANCE_ID == "" ] || [ $INSTANCE_ID == "null" ] ; then
+            echo "Instance not found!!"
+            echo $ASG_DATA
+            return 1
+        fi
+        GetRpmManifest $INSTANCE_ID currentmanifest
+        if [ $? -ne 0 ]; then
+            echo "Could not get manifest for instance $INSTANCE_ID"
+            return 1
+        fi
+        rm -f $RPMDIFFFILE$INSTANCE_ID
+        for pkg in `cat $RPMUPDATELISTFILE`; do
+            grep $pkg currentmanifest
+            if [ $? -ne 0 ]; then
+                echo "$pkg" >> $RPMDIFFFILE$INSTANCE_ID
+            fi
+        done
+        if [ -f $RPMDIFFFILE$INSTANCE_ID ]; then
+            cat $RPMDIFFFILE$INSTANCE_ID
+            UPDATEREQUIRED=true
+        fi
+    done
+    if ! $UPDATEREQUIRED; then
+        echo "RPMs up to date, no update required!"
+        exit 0
+    fi
+    return 0
+}
+
 main()
 {
     local rc=0
+    CheckUpdateRequired
+    if [ $? -ne 0 ]; then
+        echo "Could not check if update is required"
+        exit 1
+    fi
     OLD_IMAGE_ID=`aws autoscaling describe-launch-configurations --launch-configuration-names $LAUNCH_CONFIG  --output=text --query 'LaunchConfigurations[0].ImageId'`
     if [[ $OLD_IMAGE_ID != $IMAGE_ID ]]
     then
