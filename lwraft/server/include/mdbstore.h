@@ -17,6 +17,8 @@
 #ifndef MDB_STORE_INTERFACE_H_
 #define MDB_STORE_INTERFACE_H_
 
+#define MDB_MAIN_DB     "data.mdb"
+
 // entry.c
 DWORD
 VmDirMDBSimpleEIdToEntry(
@@ -152,6 +154,16 @@ VmDirMDBInitializeDB (
 
 DWORD
 VmDirMDBShutdownDB(
+    VOID
+    );
+
+DWORD
+VmDirInitMdbStateGlobals(
+    VOID
+    );
+
+VOID
+VmDirFreeMdbStateGlobals(
     VOID
     );
 

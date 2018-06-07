@@ -33,8 +33,10 @@ type TestConfig struct {
 	ClientID string `yaml:"ClientID"`
 	// Issuer to get token from
 	Issuer1 string `yaml:"Issuer1"`
-	// Second Issuer to get token from
+	// Second Issuer to get token from. Must be different from issuer 1 and oidc metadata issuer
 	Issuer2 string `yaml:"Issuer2"`
+	// Issuer endpoint with tenant that does not exist
+	FakeIssuer string `yaml:"FakeIssuer"`
 	// Username to use to get token
 	Username string `yaml:"Username"`
 	// Password to use to get token
@@ -292,6 +294,23 @@ func TestAcquireTokensConcurrent(t *testing.T) {
 	}
 }
 
+func TestBuildClientIssuer(t *testing.T) {
+	reqID := "Test-ClientBuildIssuers"
+	logger := getLogger(reqID)
+
+	oidcClient, err := buildOidcClient(config.Issuer2, "", reqID, logger)
+	require.Nil(t, err, "Build OIDC client should succeed and take metadata's issuer, err: %+v", err)
+
+	assert.NotEqual(t, oidcClient.Issuer(), config.Issuer2, "Issuer 2 in config should not equal metadata issuer")
+
+	// Test Errors
+	oidcClient, err = buildOidcClient(config.FakeIssuer, "", reqID, config.NoopLogger)
+	if assert.NotNil(t, err, "Error expected with fake issuer") {
+		assert.Contains(t, err.Error(), OIDCInvalidRequestError.Name(), "Invalid Request error expected")
+	}
+	assert.Nil(t, oidcClient, "Client returned on error should be nil")
+}
+
 func BuildIDToken(oidcClient Client, tokens Tokens, reqID string, logger Logger) (IDToken, error) {
 	signers, _ := oidcClient.Signers(false, reqID)
 	return ParseAndValidateIDToken(
@@ -344,6 +363,12 @@ func checkAccessToken(t *testing.T, accessToken AccessToken, expectedSubject, ex
 	assert.True(t, accessToken.Expiration().After(accessToken.IssuedAt()), "Expiration should be after issued time")
 	assert.True(t, accessToken.Expiration().After(time.Now()), "Token should not be expired")
 
+	hotk, err := accessToken.Hotk()
+	require.Nil(t, err, "Should not fail when getting HOTK claim from hotk-pk token")
+	if accessToken.Type() == "hotk-pk" {
+		assert.NotNil(t, hotk, "HOTK claim should not be nil")
+	}
+
 	groups, ok := accessToken.Claim("groups")
 	if assert.True(t, ok, "Group should be in token") {
 		if s, ok := groups.([]string); ok {
@@ -357,6 +382,7 @@ func checkAccessToken(t *testing.T, accessToken AccessToken, expectedSubject, ex
 			assert.NotEmpty(t, s, "Token should have tenant")
 		}
 	}
+
 }
 
 func buildOidcClient(issuer, clientID, requestID string, logger Logger) (Client, error) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -122,6 +122,22 @@ extern "C" {
         }                                 \
     } while(0)
 
+#define VMAFD_SAFE_FREE_TRUST_INFO_A(PTR) \
+    do {                                  \
+        if ((PTR)) {                      \
+            VmAfdFreeTrustInfoA(PTR);     \
+            (PTR) = NULL;                 \
+        }                                 \
+    } while(0)
+
+#define VMAFD_SAFE_FREE_TRUST_INFO_W(PTR) \
+    do {                                  \
+        if ((PTR)) {                      \
+            VmAfdFreeTrustInfoW(PTR);     \
+            (PTR) = NULL;                 \
+        }                                 \
+    } while(0)
+
 #define VMAFD_LOCK_MUTEX(bInLock, mutex) \
     do {                                 \
         if (!(bInLock))                  \
@@ -139,6 +155,13 @@ extern "C" {
             (bInLock) = FALSE;            \
         }                                 \
     } while (0)
+
+#define BAIL_ON_VMDIR_ERROR(dwError) \
+    if (dwError)                                                   \
+    {                                                              \
+        VmAfdLog( VMAFD_DEBUG_ERROR, "[Error - %d, %s:%d]", dwError, __FILE__, __LINE__); \
+        goto vmdirerror;                                                \
+    }
 
 #define BAIL_ON_VMAFD_ERROR(dwError) \
     if (dwError)                                                   \
@@ -307,7 +330,6 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_BEGIN_UPGRADE              57
 #define VMAFD_IPC_END_UPGRADE                58
 
-
 #define CDC_IPC_ENABLE_DEFAULT_HA            60
 #define CDC_IPC_ENABLE_LEGACY_HA             61
 #define CDC_IPC_GET_DC_NAME                  62
@@ -435,8 +457,5 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
 #define VMAFD_REG_KEY_ENABLE_DDNS      "EnableDnsUpdates"
 #define VMAFD_REG_KEY_HEARTBEAT       "HeartbeatInterval"
-
-//domainJoinFlag
-#define VMAFD_DOMAIN_LEAVE_FLAGS_FORCE 0x00000001
 
 #endif /* __VMAFDDEFINES_H__ */

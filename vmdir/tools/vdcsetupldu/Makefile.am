@@ -27,7 +27,8 @@ vdcsetupldu_LDADD = \
     @UUID_LIBS@ \
     @SASL_LIBS@ \
     @LDAP_LIBS@ \
-    @LBER_LIBS@
+    @LBER_LIBS@ \
+    @DL_LIBS@
 
 vdcsetupldu_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

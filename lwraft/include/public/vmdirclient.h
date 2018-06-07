@@ -108,6 +108,15 @@ VmDirSetupTenantInstance(
     );
 
 DWORD
+VmDirSetupDefaultAccount(
+    PCSTR pszDomainName,
+    PCSTR pszPartnerServerName,
+    PCSTR pszLdapHostName,
+    PCSTR pszBindUserName,
+    PCSTR pszBindPassword
+    );
+
+DWORD
 VmDirRaftLeader(
     PCSTR   pszServerName,
     PSTR*   ppszLeader
@@ -167,6 +176,12 @@ DWORD
 VmDirGetVmDirLogPath(
     PSTR  pszPath,
     PCSTR pszLogFile
+    );
+
+DWORD
+VmDirBackupDB(
+    PVMDIR_SERVER_CONTEXT hServer,
+    PCSTR       pszBackupPath
     );
 
 DWORD

@@ -9,7 +9,7 @@ all: rpm
 
 nodejs:
 ifndef NODE
-        @echo 'Installing nodeJS'
+	@echo 'Installing nodeJS'
 	tdnf install nodejs-7.7.4 -y
 endif
 
@@ -23,4 +23,4 @@ rpm: ng-cli
 	rpmbuild --define "_topdir `pwd`/stage" -ba build/lwraft-ui.spec
 
 clean:
-	rm -rf stage dist
+	rm -rf stage dist node_modules

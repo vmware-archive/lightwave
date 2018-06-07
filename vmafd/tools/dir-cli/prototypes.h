@@ -155,6 +155,13 @@ DirCliGetOrgunitDN(
     );
 
 DWORD
+DirCliGetTrustDN(
+    PCSTR pszTrustName,
+    PCSTR pszDomain,
+    PSTR* ppszTrustDN
+    );
+
+DWORD
 DirCliGetDomainDN(
     PCSTR pszDomain,
     PSTR* ppszDomainDN
@@ -373,6 +380,33 @@ DirCliLdapEndEnumOrgunits(
     );
 
 DWORD
+DirCliLdapBeginEnumTrusts(
+    LDAP*  pLd,
+    PCSTR  pszDomain,
+    DWORD  dwMaxCount,
+    PDIR_CLI_ENUM_TRUST_CONTEXT* ppContext
+    );
+
+DWORD
+DirCliLdapEnumTrusts(
+    PDIR_CLI_ENUM_TRUST_CONTEXT pContext,
+    PSTR** pppszTrusts,
+    PDWORD pdwCount
+    );
+
+VOID
+DirCliLdapEndEnumTrusts(
+    PDIR_CLI_ENUM_TRUST_CONTEXT pContext
+    );
+
+DWORD
+DirCliLdapDeleteTrust(
+    LDAP*         pLd,
+    PCSTR         pszTrustName,
+    PCSTR         pszDomain
+    );
+
+DWORD
 DirCliLdapFindFingerPrintMatch(
     LDAP* pLd,
     PCSTR pszFingerPrint,
@@ -553,7 +587,7 @@ DirCliLdapGetDSERootAttribute(
     PSTR* ppAttrValue
     );
 
-    DWORD
+DWORD
 DirCliLdapCheckCAContainer(
     LDAP*    pLd,
     PCSTR    pszConfigurationDN,
@@ -675,6 +709,12 @@ DirCliGetDCNodesVersion(
     );
 
 DWORD
+DirCliDRNodeRestoreFromDB(
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    );
+
+DWORD
 DirCliListNodesA(
     PCSTR     pszHostName,
     PCSTR     pszLogin,
@@ -716,4 +756,33 @@ DirCliEnumerateOrgunits(
     PCSTR pszLogin,
     PCSTR pszPassword,
     PCSTR pszContainerDN
+    );
+
+DWORD
+DirCliGetStrRegKeyA(
+    PVMAF_CFG_CONNECTION    pConnection,
+    PCSTR                   pszKeyPath,
+    PCSTR                   pszKeyName,
+    PSTR*                   ppszValue
+    );
+
+DWORD
+DirCliEnumerateTrusts(
+    PCSTR pszLogin,
+    PCSTR pszPassword
+    );
+
+DWORD
+DirCliDeleteTrust(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszTrustName
+    );
+
+DWORD
+DirCliDBBackup(
+    PCSTR pszServerName,
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszBackupPath
     );

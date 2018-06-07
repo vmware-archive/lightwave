@@ -1,6 +1,7 @@
 [HKEY_THIS_MACHINE\Services]
 
 [HKEY_THIS_MACHINE\Services\vmca]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;WD)
 "Description" = {
     default = "VMware Certificate Service"
     doc = ""
@@ -29,17 +30,22 @@
     default = dword:00000001
     doc = ""
 }
-
+"User" = {
+    default = "lightwave"
+    doc = ""
+}
+"Group" = {
+    default = "lightwave"
+    doc = ""
+}
 
 [HKEY_THIS_MACHINE\Services\vmca\Parameters]
-
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;WD)
 "RootCert" = {
     default = "@VMCA_DB_DIR@/root.cer"
     doc = "The Root CA Cert"
 }
-
 "RootPrivateKey" = {
     default = "@VMCA_DB_DIR@/privatekey.pem"
     doc = "The Private Key to be used for the RootCert"
-
 }

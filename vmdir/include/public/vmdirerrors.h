@@ -59,6 +59,8 @@
 #define VMDIR_ERROR_DEPRECATED_FUNCTION               (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 9 )      // 9009
 #define VMDIR_ERROR_FILE_OPEN                         (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 10 )     // 9010
 #define VMDIR_ERROR_FILE_READ                         (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 11 )     // 9011
+#define VMDIR_ERROR_PATH_EXISTS                       (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 12 )     // 9012
+#define VMDIR_ERROR_INVALID_PATH                      (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 13 )     // 9013
 
 // generic error 9100~9599
 #define IS_VMDIR_GENERIC_ERROR_SPACE(n) \
@@ -147,6 +149,9 @@
 // pagedsearch 9290 ~ 9299
 #define VMDIR_ERROR_NO_PAGED_SEARCH_CONTEXT            (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 190 )    // 9290
 #define VMDIR_ERROR_INVALID_PAGED_SEARCH_REQUEST       (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 191 )    // 9291
+
+// vector processing 9300 ~ 9310
+#define VMDIR_ERROR_INVALID_VECTOR_STR                 (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 200 )    // 9300
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // customized LDAP return code (range 9300 - 9399)

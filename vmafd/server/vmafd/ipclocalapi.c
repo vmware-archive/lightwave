@@ -1,11 +1,18 @@
 /*
- * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
- * Module   : ipclocalapi.c
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
  *
- * Abstract :
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  */
+
+
 #include "includes.h"
 
 #define LOG_URESULT_ERROR(uResult)                 \
@@ -3816,7 +3823,6 @@ error:
     dwError = 0;
     goto cleanup;
 }
-
 DWORD
 VmAfdIpcPromoteVmDir(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
@@ -3840,6 +3846,10 @@ VmAfdIpcPromoteVmDir(
     PWSTR pwszPassword = NULL;
     PWSTR pwszSiteName = NULL;
     PWSTR pwszPartnerHostName = NULL;
+    PWSTR pwszTrustName = NULL;
+    PWSTR pwszTrustDC = NULL;
+    PWSTR pwszTrustUserName = NULL;
+    PWSTR pwszTrustPassword = NULL;
 
     VMW_TYPE_SPEC input_spec[] = PROMOTE_VMDIR_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -3868,12 +3878,16 @@ VmAfdIpcPromoteVmDir(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    pwszServerName      = input_spec[0].data.pWString;
-    pwszDomainName      = input_spec[1].data.pWString;
-    pwszUserName        = input_spec[2].data.pWString;
-    pwszPassword        = input_spec[3].data.pWString;
-    pwszSiteName        = input_spec[4].data.pWString;
-    pwszPartnerHostName = input_spec[5].data.pWString;
+    pwszServerName        = input_spec[0].data.pWString;
+    pwszDomainName        = input_spec[1].data.pWString;
+    pwszUserName          = input_spec[2].data.pWString;
+    pwszPassword          = input_spec[3].data.pWString;
+    pwszSiteName          = input_spec[4].data.pWString;
+    pwszPartnerHostName   = input_spec[5].data.pWString;
+    pwszTrustName         = input_spec[6].data.pWString;
+    pwszTrustDC           = input_spec[7].data.pWString;
+    pwszTrustUserName     = input_spec[8].data.pWString;
+    pwszTrustPassword     = input_spec[9].data.pWString;
 
     if (IsNullOrEmptyString(pwszUserName) ||
         IsNullOrEmptyString(pwszPassword))
@@ -3895,7 +3909,11 @@ VmAfdIpcPromoteVmDir(
                       pwszUserName,
                       pwszPassword,
                       pwszSiteName,
-                      pwszPartnerHostName
+                      pwszPartnerHostName,
+                      pwszTrustName,
+                      pwszTrustDC,
+                      pwszTrustUserName,
+                      pwszTrustPassword
                       );
     LOG_URESULT_ERROR(uResult);
 
@@ -4427,6 +4445,7 @@ VmAfdIpcLeaveVmDir(
     PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
     PUINT32 pdwLeaveFlags = NULL;
     VMW_TYPE_SPEC input_spec[] = LEAVE_VMDIR_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -4458,7 +4477,8 @@ VmAfdIpcLeaveVmDir(
     pwszServerName  = input_spec[0].data.pWString;
     pwszUserName    = input_spec[1].data.pWString;
     pwszPassword    = input_spec[2].data.pWString;
-    pdwLeaveFlags   = input_spec[3].data.pUint32;
+    pwszMachineName = input_spec[3].data.pWString;
+    pdwLeaveFlags   = input_spec[4].data.pUint32;
 
     if (!VmAfdIsRootSecurityContext(pConnectionContext))
     {
@@ -4468,8 +4488,10 @@ VmAfdIpcLeaveVmDir(
     }
 
     uResult = VmAfSrvLeaveVmDir(
+                      pwszServerName,
                       pwszUserName,
                       pwszPassword,
+                      pwszMachineName,
                       *pdwLeaveFlags
                       );
     LOG_URESULT_ERROR(uResult);
@@ -5455,6 +5477,8 @@ VmAfdIpcTriggerRootCertsRefresh(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+    BOOL bIsAllowed = FALSE;
+    PSTR pszSecurity = NULL;
 
     VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
 
@@ -5479,7 +5503,24 @@ VmAfdIpcTriggerRootCertsRefresh(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    bIsAllowed = VmAfdIsRootSecurityContext(pConnectionContext);
+#ifndef _WIN32
+    if (!bIsAllowed)
+    {
+        dwError = VmAfSrvGetRegKeySecurity(
+                    VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    &pszSecurity);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+        dwError = VmAfdCheckAclContext(
+                    pConnectionContext,
+                    pszSecurity,
+                    &bIsAllowed);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+#endif
+
+    if (!bIsAllowed)
     {
         VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
         dwError = ERROR_ACCESS_DENIED;

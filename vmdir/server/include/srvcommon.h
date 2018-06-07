@@ -71,6 +71,11 @@ extern "C" {
 #define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
 #define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
 
+// Deadlock Detection (DD) vector indicator
+#define VMDIR_REPL_DD_VEC_INDICATOR  "vector:"
+#define VMDIR_REPL_CONT_INDICATOR_STR "continue:"
+
+
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
@@ -571,6 +576,7 @@ typedef struct SyncDoneControlValue
     //   (done in result.c/VmDirSendSearchEntry)
     // 2. full page request sent and there could be more changes pending.
     BOOLEAN                 bContinue;
+    PSTR                    pszDeadlockDetectionVector;
 } SyncDoneControlValue;
 
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
@@ -780,6 +786,7 @@ typedef struct _VMDIR_REPLICATION_AGREEMENT
     VDIR_BERVALUE               dn;
     char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
     PSTR                        pszHostname;
+    PSTR                        pszInvocationID;
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
     VMDIR_DC_CONNECTION         dcConn;
@@ -1149,11 +1156,6 @@ VmDirSrvCreateDN(
     );
 
 DWORD
-VmDirSrvCreateServerObj(
-    PVDIR_SCHEMA_CTX pSchemaCtx
-    );
-
-DWORD
 VmDirSrvCreateReplAgrsContainer(
     PVDIR_SCHEMA_CTX pSchemaCtx);
 
@@ -1261,6 +1263,11 @@ VmDirLdapReqCodeToName(
 PCSTR
 VmDirOperationTypeToName(
     VDIR_OPERATION_TYPE opType
+    );
+
+PCSTR
+VmDirMdbStateToName(
+    MDB_state_op opType
     );
 
 BOOLEAN
@@ -1510,7 +1517,8 @@ VmDirFilterInternalSearch(
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
-   PVDIR_ENTRY         pSrEntry
+   PVDIR_ENTRY         pSrEntry,
+   PBOOLEAN            pbLowestPendingUncommittedUsn
    );
 
 // middle-layer password.c
@@ -1762,6 +1770,36 @@ VmDirBkgdTaskUpdatePrevTime(
 DWORD
 VmDirOidcToVmdirError(
     DWORD dwOidcError
+    );
+
+// nodeidentity.c
+DWORD
+VmDirSrvCreateServerObj(
+    PVDIR_SCHEMA_CTX pSchemaCtx
+    );
+
+DWORD
+VmDirSetGlobalServerId(
+    VOID
+    );
+
+//vectorutils.c
+typedef DWORD (*PFN_VEC_PAIR_TO_STR) (LW_HASHMAP_PAIR, BOOLEAN, PSTR*);
+
+DWORD
+VmDirVectorToStr(
+    PLW_HASHMAP          pMap,
+    PFN_VEC_PAIR_TO_STR  pPairToStr,
+    PSTR*                ppOutStr
+    );
+
+typedef DWORD (*PFN_VEC_STR_TO_PAIR) (PSTR, PSTR, LW_HASHMAP_PAIR*);
+
+DWORD
+VmDirStrtoVector(
+    PCSTR               pszVector,
+    PFN_VEC_STR_TO_PAIR pStrToPair,
+    PLW_HASHMAP         pMap
     );
 
 #ifdef __cplusplus

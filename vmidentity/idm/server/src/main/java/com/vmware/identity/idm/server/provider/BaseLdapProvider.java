@@ -78,6 +78,8 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     final private IIdentityStoreDataEx _storeDataEx;
     final private Collection<X509Certificate> _tenantTrustedCertificates;
     final private String tenantName;
+    final private IPooledConnectionProvider connectionProvider;
+    final private ILdapConnectionProvider ldapConnectionProvider;
 
     @Override
     public Set<String> getRegisteredUpnSuffixes()
@@ -134,7 +136,18 @@ public abstract class BaseLdapProvider implements IIdentityProvider
        this(tenantName, storeData, null);
     }
 
-    protected BaseLdapProvider(String tenantName, IIdentityStoreData storeData, Collection<X509Certificate> tenantTrustedCertificates)
+    protected BaseLdapProvider(
+        String tenantName, IIdentityStoreData storeData,
+        Collection<X509Certificate> tenantTrustedCertificates)
+    {
+        this(tenantName, storeData, tenantTrustedCertificates, null, null);
+    }
+
+    protected BaseLdapProvider(
+        String tenantName, IIdentityStoreData storeData,
+        Collection<X509Certificate> tenantTrustedCertificates,
+        IPooledConnectionProvider connectionProvider,
+        ILdapConnectionProvider ldapConnectionProvider)
     {
         ValidateUtil.validateNotNull( storeData, "storeData" );
         ValidateUtil.validateNotEmpty( storeData.getName(), "storeData.getName()" );
@@ -145,6 +158,12 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         this._storeDataEx = storeData.getExtendedIdentityStoreData();
         this._tenantTrustedCertificates = tenantTrustedCertificates;
         this.tenantName = tenantName;
+        if (connectionProvider == null) {
+            this.connectionProvider = LdapConnectionPool.getInstance();
+        } else {
+            this.connectionProvider = connectionProvider;
+        }
+        this.ldapConnectionProvider = ldapConnectionProvider;
     }
 
     protected IIdentityStoreData getStoreData() { return this._storeData; };
@@ -197,7 +216,6 @@ public abstract class BaseLdapProvider implements IIdentityProvider
 	    boolean useGc) throws Exception {
 
 	Exception latestEx = null;
-	final LdapConnectionPool ldapConnectionPool = LdapConnectionPool.getInstance();
 
 	Collection<URI> connectionUris = ServerUtils.toURIObjects(connStrings);
 	for (URI connectionString : connectionUris) {
@@ -216,8 +234,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
 	    PooledLdapConnectionIdentity pooledLdapConnectionIdentity = builder.build();
 
 	    try {
-		ILdapConnectionEx conn = ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
-		return new PooledLdapConnection(conn, pooledLdapConnectionIdentity, ldapConnectionPool);
+		    return this.connectionProvider.borrowConnection(pooledLdapConnectionIdentity);
 	    } catch (Exception e) {
 		logger.error(e);
 		latestEx = e;
@@ -408,14 +425,25 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     ILdapConnectionEx
     getConnection(Collection<String> connectionStrings, String userName, String password, AuthenticationType authType, boolean useGcPort) throws Exception
     {
-        return ServerUtils.getLdapConnectionByURIs(
+        if (this.ldapConnectionProvider != null){
+            return this.ldapConnectionProvider.getConnection(
                 ServerUtils.toURIObjects(connectionStrings),
                 userName,
                 password,
                 authType,
                 useGcPort,
                 new LdapCertificateValidationSettings(this.getStoreDataEx().getCertificates(), _tenantTrustedCertificates)
-        );
+                );
+        } else {
+            return ServerUtils.getLdapConnectionByURIs(
+                    ServerUtils.toURIObjects(connectionStrings),
+                    userName,
+                    password,
+                    authType,
+                    useGcPort,
+                    new LdapCertificateValidationSettings(this.getStoreDataEx().getCertificates(), _tenantTrustedCertificates)
+            );
+        }
     }
 
     @Override
@@ -481,7 +509,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
              ( this.getAlias().equalsIgnoreCase(id.getDomain())
              &&
              (this.getRegisteredUpnSuffixes() == null ||
-              !this.getRegisteredUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(id.getDomain())))
+              !this.getRegisteredUpnSuffixes().contains(id.getDomain()))
              )
            )
         {
@@ -524,7 +552,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     {
         return ( ( this.isSameDomainUpn(principalDomainName ) ) ||
                  ( (this.getRegisteredUpnSuffixes() != null) &&
-                   ( this.getRegisteredUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(principalDomainName)) )
+                   ( this.getRegisteredUpnSuffixes().contains(principalDomainName) )
                  )
                );
     }
@@ -532,7 +560,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     protected PrincipalId normalizeAliasInPrincipal(PrincipalId id)
     {
         if (this.getRegisteredUpnSuffixes() == null ||
-            !this.getRegisteredUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(id.getDomain())))
+            !this.getRegisteredUpnSuffixes().contains(id.getDomain()))
         {
             id = ServerUtils.normalizeAliasInPrincipal(id, this.getDomain(), this.getAlias());
         }

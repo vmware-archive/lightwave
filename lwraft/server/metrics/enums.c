@@ -73,10 +73,26 @@ VmDirMetricsLdapErrorString(
             "LDAP_SIZELIMIT_EXCEEDED",
             "LDAP_NO_SUCH_OBJECT",
             "LDAP_BUSY",
+            "LDAP_ERROR_PRE_CONDITION",
             "LDAP_OTHER"
     };
 
     return pszLdapErrorCodes[error];
+}
+
+PSTR
+VmDirMetricsSrvStatString(
+    METRICS_SRV_STAT srvStat
+    )
+{
+    static PSTR pszSrvStat[METRICS_SRV_STAT_COUNT] =
+    {
+            "DBSizeInMB",
+            "BackupTimeTakenInSec",
+            "LastLogIndex"
+    };
+
+    return pszSrvStat[srvStat];
 }
 
 PSTR
@@ -103,6 +119,7 @@ VmDirMetricsRpcOperationString(
             "ReadDatabaseFile",
             "CloseDatabaseFile",
             "SetBackendState",
+            "BackupDB",
             "GetState",
             "GetLogLevel",
             "GetLogMask",
@@ -269,6 +286,11 @@ VmDirMetricsMapLdapErrorToEnum(
 
     case LDAP_BUSY:
         match = METRICS_LDAP_BUSY;
+        break;
+
+    // Pre condition is a custom error hence is not in ldap error space
+    case VMDIR_LDAP_ERROR_PRE_CONDITION:
+        match = METRICS_LDAP_ERROR_PRE_CONDITION;
         break;
 
     default:

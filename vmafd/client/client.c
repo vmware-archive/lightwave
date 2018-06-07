@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -2475,7 +2475,11 @@ VmAfdPromoteVmDirW(
                       pwszUserName,
                       pwszPassword,
                       pwszSiteName,
-                      pwszPartnerHostName);
+                      pwszPartnerHostName,
+                      NULL,
+                      NULL,
+                      NULL,
+                      NULL);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -2485,6 +2489,299 @@ cleanup:
 error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdPromoteVmDirW failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdAllocateTrustInfoA(
+    PCSTR pszName,
+    PCSTR pszDC,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PVMAFD_TRUST_INFO_A *ppTrustInfoA
+)
+{
+    DWORD dwError = 0;
+    PVMAFD_TRUST_INFO_A pTrustInfoA = NULL;
+
+    dwError = VmAfdAllocateMemory(
+                  sizeof(VMAFD_TRUST_INFO_A),
+                  (PVOID*)&pTrustInfoA);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringA(
+                  pszName,
+                  &pTrustInfoA->pszName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringA(
+                  pszDC,
+                  &pTrustInfoA->pszDC);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringA(
+                  pszUserName,
+                  &pTrustInfoA->pszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringA(
+                  pszPassword,
+                  &pTrustInfoA->pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppTrustInfoA = pTrustInfoA;
+
+cleanup:
+    return dwError;
+
+error:
+    VMAFD_SAFE_FREE_TRUST_INFO_A(pTrustInfoA);
+    goto cleanup;
+}
+
+DWORD
+VmAfdAllocateTrustInfoW(
+    PCWSTR pwszName,
+    PCWSTR pwszDC,
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PVMAFD_TRUST_INFO_W *ppTrustInfoW
+)
+{
+    DWORD dwError = 0;
+    PVMAFD_TRUST_INFO_W pTrustInfoW = NULL;
+
+    dwError = VmAfdAllocateMemory(
+                  sizeof(VMAFD_TRUST_INFO_W),
+                  (PVOID*)&pTrustInfoW);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringW(
+                  pwszName,
+                  &pTrustInfoW->pwszName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringW(
+                  pwszDC,
+                  &pTrustInfoW->pwszDC);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringW(
+                  pwszUserName,
+                  &pTrustInfoW->pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringW(
+                  pwszPassword,
+                  &pTrustInfoW->pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppTrustInfoW = pTrustInfoW;
+
+cleanup:
+    return dwError;
+
+error:
+    VMAFD_SAFE_FREE_TRUST_INFO_W(pTrustInfoW);
+    goto cleanup;
+}
+
+DWORD
+VmAfdAllocateTrustInfoWFromA(
+    PVMAFD_TRUST_INFO_A pTrustInfoA,
+    PVMAFD_TRUST_INFO_W *ppTrustInfoW
+)
+{
+    DWORD dwError = 0;
+    PVMAFD_TRUST_INFO_W pTrustInfoW = NULL;
+
+    dwError = VmAfdAllocateMemory(
+                  sizeof(VMAFD_TRUST_INFO_W),
+                  (PVOID*)&pTrustInfoW);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                  pTrustInfoA->pszName,
+                  &pTrustInfoW->pwszName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                  pTrustInfoA->pszDC,
+                  &pTrustInfoW->pwszDC);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                  pTrustInfoA->pszUserName,
+                  &pTrustInfoW->pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                  pTrustInfoA->pszPassword,
+                  &pTrustInfoW->pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppTrustInfoW = pTrustInfoW;
+
+cleanup:
+    return dwError;
+
+error:
+    VMAFD_SAFE_FREE_TRUST_INFO_W(pTrustInfoW);
+    goto cleanup;
+}
+
+VOID
+VmAfdFreeTrustInfoA(
+    PVMAFD_TRUST_INFO_A pTrustInfoA
+)
+{
+    if (pTrustInfoA)
+    {
+        VMAFD_SAFE_FREE_STRINGA(pTrustInfoA->pszName);
+        VMAFD_SAFE_FREE_STRINGA(pTrustInfoA->pszDC);
+        VMAFD_SAFE_FREE_STRINGA(pTrustInfoA->pszUserName);
+        VMAFD_SAFE_FREE_STRINGA(pTrustInfoA->pszPassword);
+        VMAFD_SAFE_FREE_MEMORY(pTrustInfoA);
+    }
+}
+
+VOID
+VmAfdFreeTrustInfoW(
+    PVMAFD_TRUST_INFO_W pTrustInfoW
+)
+{
+    if (pTrustInfoW)
+    {
+        VMAFD_SAFE_FREE_STRINGW(pTrustInfoW->pwszName);
+        VMAFD_SAFE_FREE_STRINGW(pTrustInfoW->pwszDC);
+        VMAFD_SAFE_FREE_STRINGW(pTrustInfoW->pwszUserName);
+        VMAFD_SAFE_FREE_STRINGW(pTrustInfoW->pwszPassword);
+        VMAFD_SAFE_FREE_MEMORY(pTrustInfoW);
+    }
+}
+
+DWORD
+VmAfdPromoteVmDirTrustA(
+    PCSTR pszServerName,            /* IN              */
+    PCSTR pszDomainName,            /* IN              */
+    PCSTR pszUserName,              /* IN              */
+    PCSTR pszPassword,              /* IN              */
+    PCSTR pszSiteName,              /* IN     OPTIONAL */
+    PVMAFD_TRUST_INFO_A pTrustInfoA /* IN              */
+)
+{
+    DWORD dwError = 0;
+    PWSTR pwszServerName = NULL;
+    PWSTR pwszDomainName = NULL;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszSiteName = NULL;
+    PVMAFD_TRUST_INFO_W pTrustInfoW = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        !pTrustInfoA)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszDomainName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszDomainName, &pwszDomainName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszSiteName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszSiteName, &pwszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateTrustInfoWFromA(
+                  pTrustInfoA,
+                  &pTrustInfoW);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdPromoteVmDirTrustW(
+                  pwszServerName,
+                  pwszDomainName,
+                  pwszUserName,
+                  pwszPassword,
+                  pwszSiteName,
+                  pTrustInfoW);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszServerName);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+    VMAFD_SAFE_FREE_TRUST_INFO_W(pTrustInfoW);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdPromoteVmDirTrustW(
+    PCWSTR pwszServerName,          /* IN              */
+    PCWSTR pwszDomainName,          /* IN     OPTIONAL */
+    PCWSTR pwszUserName,            /* IN              */
+    PCWSTR pwszPassword,            /* IN              */
+    PCWSTR pwszSiteName,            /* IN     OPTIONAL */
+    PVMAFD_TRUST_INFO_W pTrustInfoW /* IN              */
+)
+{
+    DWORD dwError = 0;
+
+    if (IsNullOrEmptyString(pwszServerName) ||
+            IsNullOrEmptyString(pwszUserName) ||
+            IsNullOrEmptyString(pwszPassword) ||
+            !pTrustInfoW)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s: promoting vmdir instance", __FUNCTION__);
+
+    dwError = VmAfdLocalPromoteVmDir(
+                      pwszServerName,
+                      pwszDomainName,
+                      pwszUserName,
+                      pwszPassword,
+                      pwszSiteName,
+                      NULL,
+                      pTrustInfoW->pwszName,
+                      pTrustInfoW->pwszDC,
+                      pTrustInfoW->pwszUserName,
+                      pTrustInfoW->pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s: failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -3031,6 +3328,7 @@ VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN              */
     PCSTR pszUserName,      /* IN              */
     PCSTR pszPassword,      /* IN              */
+    PCSTR pszMachineName,   /* IN              */
     DWORD dwLeaveFlags      /* IN              */
 )
 {
@@ -3038,6 +3336,7 @@ VmAfdLeaveVmDirA(
     PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
 
     if (pszServerName)
     {
@@ -3057,11 +3356,18 @@ VmAfdLeaveVmDirA(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    if (pszMachineName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     // Machine credentials will be used if the user name and password are NULL.
     dwError = VmAfdLeaveVmDirW(
                   pwszServerName,
                   pwszUserName,
                   pwszPassword,
+                  pwszMachineName,
                   dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -3070,6 +3376,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszServerName);
     VMAFD_SAFE_FREE_MEMORY(pwszUserName);
     VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
 
     return dwError;
 
@@ -3083,6 +3390,7 @@ VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN              */
     PCWSTR pwszUserName,    /* IN              */
     PCWSTR pwszPassword,    /* IN              */
+    PCWSTR pwszMachineName, /* IN              */
     DWORD dwLeaveFlags      /* IN              */
 )
 {
@@ -3092,6 +3400,7 @@ VmAfdLeaveVmDirW(
                       pwszServerName,
                       pwszUserName,
                       pwszPassword,
+                      pwszMachineName,
                       dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -4335,8 +4644,7 @@ VmAfdStartHeartbeatW(
                           );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdLocalPostHeartbeat(pwszServiceName, dwServicePort);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    VmAfdLocalPostHeartbeat(pwszServiceName, dwServicePort);
 
     dwError = VmAfdAllocateStringW(
                               pwszServiceName,
@@ -5174,4 +5482,3 @@ VmAfdFreeWString(
 {
     VMAFD_SAFE_FREE_STRINGW(pwszString);
 }
-

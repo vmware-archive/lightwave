@@ -39,3 +39,14 @@ VDIR_MDB_GLOBALS gVdirMdbGlobals =
         VMDIR_SF_INIT(.mdbGenericDupKeyDBi, 0),
         VMDIR_SF_INIT(.mdbGenericUniqKeyDBi, 0)
     };
+
+VDIR_MDB_STATE_GLOBALS gVDirMdbStateGlobals =
+{
+    // NOTE: order of fields MUST stay in sync with struct definition...
+    VMDIR_SF_INIT(.pMutex, NULL),
+    VMDIR_SF_INIT(.dwDBCopyCount, 0),
+    VMDIR_SF_INIT(.xLogNum, 0),
+    VMDIR_SF_INIT(.dbSizeMb, 0),
+    VMDIR_SF_INIT(.dbMapMb, 0),
+};
+

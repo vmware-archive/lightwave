@@ -706,3 +706,79 @@ VMCAGetLibSym(
 #endif
 }
 
+DWORD
+VMCABytesToHexString(
+    PUCHAR  pData,
+    DWORD   length,
+    PSTR*   pszHexString,
+    BOOLEAN bLowerCase
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    char* pszOut = NULL;
+    DWORD i = 0;
+
+    dwError = VMCAAllocateMemory(length * 2 + 1, (PVOID*)&pszOut);
+    BAIL_ON_ERROR(dwError);
+
+    for (; i < length; ++i)
+    {
+        sprintf(pszOut + i * 2, bLowerCase ? "%02x" : "%02X", pData[i]);
+    }
+    pszOut[length * 2] = '\0';
+
+    *pszHexString = pszOut;
+
+error:
+    return dwError;
+}
+
+DWORD
+VMCAHexStringToBytes(
+    PSTR    pszHexStr,
+    PUCHAR* ppData,
+    size_t* pLength
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    size_t  hexlen = 0;
+    size_t  datalen = 0;
+    PBYTE   pData = NULL;
+    unsigned char twoHexChars[3];
+
+    if (!pszHexStr || !ppData || !pLength)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    hexlen = VMCAStringLenA(pszHexStr);
+    if (hexlen % 2)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    datalen = hexlen / 2;
+    dwError = VMCAAllocateMemory(datalen, (PVOID*)&pData);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    for (i = 0; i < datalen; i++)
+    {
+        strncpy(twoHexChars, &pszHexStr[i*2], 2);
+        twoHexChars[2] = '\0';
+        pData[i] = (unsigned char)strtoul(twoHexChars, NULL, 16);
+    }
+
+    *ppData = pData;
+    *pLength = datalen;
+
+cleanup:
+    return dwError;
+
+error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    VMCA_SAFE_FREE_MEMORY(pData);
+    goto cleanup;
+}

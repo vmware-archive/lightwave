@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -930,7 +930,11 @@ VmAfdLocalPromoteVmDir(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszSiteName,
-    PCWSTR pwszPartnerHostName
+    PCWSTR pwszPartnerHostName,
+    PCWSTR pwszTrustName,
+    PCWSTR pwszTrustDC,
+    PCWSTR pwszTrustUserName,
+    PCWSTR pwszTrustPassword
 )
 {
     DWORD dwError = 0;
@@ -949,6 +953,10 @@ VmAfdLocalPromoteVmDir(
     input_spec[3].data.pWString = (PWSTR) pwszPassword;
     input_spec[4].data.pWString = (PWSTR) pwszSiteName;
     input_spec[5].data.pWString = (PWSTR) pwszPartnerHostName;
+    input_spec[6].data.pWString = (PWSTR) pwszTrustName;
+    input_spec[7].data.pWString = (PWSTR) pwszTrustDC;
+    input_spec[8].data.pWString = (PWSTR) pwszTrustUserName;
+    input_spec[9].data.pWString = (PWSTR) pwszTrustPassword;
 
     dwError = VecsLocalIPCRequest(
                     apiType,
@@ -968,7 +976,7 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalPromoteVmDir failed. Error(%u)", dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -1177,6 +1185,7 @@ VmAfdLocalLeaveVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
+    PCWSTR pwszMachineName,
     DWORD  dwLeaveFlags
 )
 {
@@ -1193,7 +1202,8 @@ VmAfdLocalLeaveVmDir(
     input_spec[0].data.pWString = (PWSTR) pwszServerName;
     input_spec[1].data.pWString = (PWSTR) pwszUserName;
     input_spec[2].data.pWString = (PWSTR) pwszPassword;
-    input_spec[3].data.pUint32  = (PDWORD) &dwLeaveFlags;
+    input_spec[3].data.pWString = (PWSTR) pwszMachineName;
+    input_spec[4].data.pUint32  = (PDWORD) &dwLeaveFlags;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

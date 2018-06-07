@@ -108,6 +108,14 @@ VmDnsDirCreateRecord(
 
 static
 DWORD
+VmDnsDirDestroyRecord(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pZoneDN,
+    PVMDNS_RECORD       pRecord
+    );
+
+static
+DWORD
 VmDnsDirAddRecord(
     PVMDNS_DIR_CONTEXT  pDirContext,
     PCSTR               pZoneDN,
@@ -170,6 +178,15 @@ VmDnsDirParseDN(
     PSTR               pszNodeDN,
     PCSTR*             ppszZone,
     PCSTR*             ppszRecord
+    );
+
+static
+DWORD
+VmDnsDirCountRecords(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PVMDNS_RECORD       pRecord,
+    DWORD*              pdwCount
     );
 
 VOID
@@ -1132,6 +1149,44 @@ error:
 }
 
 DWORD
+VmDnsDirDestroyRecord(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PVMDNS_RECORD       pRecord
+    )
+{
+    DWORD dwError = 0;
+    PSTR   pszRecordDN = NULL;
+
+    dwError = VmDnsDirBuildRecordDN(
+                    pszZoneDN,
+                    pRecord,
+                    &pszRecordDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_delete_ext_s(
+                    pDirContext->pLdap,
+                    pszRecordDN,
+                    NULL,
+                    NULL);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    VMDNS_LOG_DEBUG("Successfully destroyed dir record %s %u.",
+                    pRecord->pszName, pRecord->dwType);
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
+
+    return dwError;
+
+error:
+    VMDNS_LOG_ERROR("Failed to destroy dir record %s %u, error %u.",
+                    pRecord->pszName, pRecord->dwType, dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmDnsDirAddZoneRecord(
     PCSTR               pZoneName,
     PVMDNS_RECORD       pRecord
@@ -1197,11 +1252,36 @@ VmDnsDirDeleteRecord(
     PVMDNS_RECORD       pRecord
     )
 {
-    return VmDnsDirProcessRecord(
-                            pDirContext,
-                            pszZoneDN,
-                            pRecord,
-                            LDAP_MOD_DELETE | LDAP_MOD_BVALUES);
+    DWORD dwError = ERROR_SUCCESS;
+    DWORD dwError2 = ERROR_SUCCESS;
+    DWORD dwCount = 0;
+
+    dwError = VmDnsDirProcessRecord(
+                    pDirContext,
+                    pszZoneDN,
+                    pRecord,
+                    LDAP_MOD_DELETE | LDAP_MOD_BVALUES);
+    if (dwError == ERROR_SUCCESS)
+    {
+        /*
+         * When all the dnsRecord attributes for an object have
+         * been deleted, also delete the object itself.
+         */
+        dwError2 = VmDnsDirCountRecords(
+                         pDirContext,
+                         pszZoneDN,
+                         pRecord,
+                         &dwCount);
+        if (dwError2 == ERROR_SUCCESS && dwCount == 0)
+        {
+            dwError2 = VmDnsDirDestroyRecord(
+                             pDirContext,
+                             pszZoneDN,
+                             pRecord);
+        }
+    }
+
+    return dwError;
 }
 
 DWORD
@@ -1708,8 +1788,6 @@ VmDnsDirGetRecordsByName(
     pEntry = ldap_first_entry(
                         pDirContext->pLdap,
                         pSearchRes);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
     if (!pEntry)
     {
         dwError = ERROR_NOT_FOUND;
@@ -2751,6 +2829,91 @@ VmDnsDirParseDN(
     }
 
 cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsDirCountRecords(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PVMDNS_RECORD       pRecord,
+    DWORD*              pdwCount
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszRecordDN = NULL;
+    PSTR ppszAttrs[] = {
+            VMDNS_LDAP_ATTR_DNS_RECORD,
+            NULL
+            };
+    LDAPMessage* pSearchRes = NULL;
+    LDAPMessage* pEntry = NULL;
+    struct berval** ppValues = NULL;
+    DWORD dwCount = 0;
+    PSTR pszFilter = NULL;
+
+    dwError = VmDnsDirBuildRecordDN(
+                    pszZoneDN,
+                    pRecord,
+                    &pszRecordDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateStringPrintfA(
+                    &pszFilter,
+                    "(%s=%s)",
+                    VMDNS_LDAP_ATTR_OBJECTCLASS,
+                    VMDNS_LDAP_OC_DNSNODE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pDirContext->pLdap,
+                    pszRecordDN,
+                    LDAP_SCOPE_SUBTREE,
+                    pszFilter,
+                    ppszAttrs,
+                    FALSE,             /* attrs only  */
+                    NULL,              /* serverctrls */
+                    NULL,              /* clientctrls */
+                    NULL,              /* timeout */
+                    0,
+                    &pSearchRes);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pEntry = ldap_first_entry(
+                    pDirContext->pLdap,
+                    pSearchRes);
+    if (pEntry)
+    {
+        ppValues = ldap_get_values_len(
+                         pDirContext->pLdap,
+                         pEntry,
+                         VMDNS_LDAP_ATTR_DNS_RECORD);
+        if (ppValues)
+        {
+            dwCount = ldap_count_values_len(ppValues);
+        }
+    }
+
+    *pdwCount = dwCount;
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
+    VMDNS_SAFE_FREE_STRINGA(pszFilter);
+
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    if (pSearchRes)
+    {
+        ldap_msgfree(pSearchRes);
+    }
+
     return dwError;
 
 error:

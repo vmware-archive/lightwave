@@ -469,6 +469,8 @@ CdcStateMachineWorker(
     CDC_DC_STATE cdcEndingState = CDC_DC_STATE_UNDEFINED;
     PCDC_STATE_MACHINE_CONTEXT pStateMachine =
                                     (PCDC_STATE_MACHINE_CONTEXT)pData;
+    VMAFD_DOMAIN_STATE DomainState = VMAFD_DOMAIN_STATE_NONE;
+
     while (TRUE && pStateMachine)
     {
         BOOLEAN bShutdown = FALSE;
@@ -499,10 +501,14 @@ CdcStateMachineWorker(
 
         if (cdcHAMode == CDC_DB_ENUM_HA_MODE_DEFAULT)
         {
+            dwError = VmAfSrvGetDomainState(&DomainState);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
             if (!CdcSrvGetCurrentState(&cdcCurrentState) &&
                 cdcCurrentState == CDC_DC_STATE_LEGACY)
             {
-                if(VmAfdCheckDomainFunctionalLevel(
+                if (DomainState == VMAFD_DOMAIN_STATE_CONTROLLER ||
+                    VmAfdCheckDomainFunctionalLevel(
                                         SSO_HA_MIN_DOMAIN_LEVEL_MAJOR,
                                         SSO_HA_MIN_DOMAIN_LEVEL_MINOR))
                 {

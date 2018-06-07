@@ -340,7 +340,7 @@ public class ConfigTest {
          authorityCert, authorityKey, signatureAlgorithm),
          new TokenRestrictions(maximumBearerTokenLifetime,
             maximumHoKTokenLifetime, delegationCount, renewCount), validCerts,
-         clockTolerance, Collections.<IDPConfig> emptyList());
+         clockTolerance, Collections.<IDPConfig> emptyList(), Collections.<String>emptySet());
    }
 
 }

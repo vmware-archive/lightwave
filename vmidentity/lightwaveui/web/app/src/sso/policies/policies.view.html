@@ -547,7 +547,7 @@
                                     Certificate Policies accepted
                                 </div>
                                 <div class="col-md-8 text-label"
-                                     ng-repeat="policyOid in  vm.policies.authenticationPolicy.clientCertificatePolicy.certPolicyOIDs"
+                                     ng-repeat="policyOid in vm.policies.authenticationPolicy.clientCertificatePolicy.certPolicyOIDs"
                                      style="padding:5px;">
                                     {{policyOid}}
                                 </div>
@@ -557,7 +557,7 @@
                                     Trusted CA Certificates
                                 </div>
                                 <div class="col-md-8 text-label"
-                                     ng-repeat="certificate in  vm.policies.authenticationPolicy.clientCertificatePolicy.trustedCACertificates"
+                                     ng-repeat="certificate in vm.policies.authenticationPolicy.clientCertificatePolicy.trustedCACertificates"
                                      style="padding:5px;">
                                     <button type="button"
                                             class="btn btn-link"
@@ -571,6 +571,56 @@
                                         }}
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="3" heading="Operator Access">
+                    <div style="margin-top:20px;">
+                        <div class="secondary-header-bold">
+                            Controls operators' authentication for tenant. Operators are users from system tenant.
+                        </div>
+                        <div class="pull-right">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="showEditOperatorAccessPolicy()"
+                                    ng-show="globals.currentUser.role == 'Administrator'">
+                                EDIT
+                            </button>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Enable operator access
+                            </div>
+                            <div class="col-xs-6">
+                                <img src="../app/assets/enabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="vm.policies.operatorsAccessPolicy.enabled"
+                                     uib-tooltip="Enabled operators login"
+                                     style="margin-top:-5px;"/>
+                                <img src="../app/assets/disabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="!vm.policies.operatorsAccessPolicy.enabled"
+                                     uib-tooltip="Enabled operators login"
+                                     style="margin-top:-5px;"/>
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12" ng-show="globals.currentUser.isSystemTenant" >
+                            <div class="col-xs-6">
+                                User Base Dn
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.operatorsAccessPolicy.userBaseDn}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12" ng-show="globals.currentUser.isSystemTenant" >
+                            <div class="col-xs-6">
+                                Group Base Dn
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.operatorsAccessPolicy.groupBaseDn}}
                             </div>
                         </div>
                     </div>

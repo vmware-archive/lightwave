@@ -106,15 +106,11 @@ public class JWKSControllerTest {
         String n = (String) jwk.get("n");
         String x5c = (String) ((JSONArray) jwk.get("x5c")).get(0);
 
-        RSAKey rsaKey = new RSAKey(
-                TestContext.TENANT_PUBLIC_KEY,
-                KeyUse.SIGNATURE,
-                null,
-                JWSAlgorithm.RS256,
-                null,
-                null,
-                null,
-                Arrays.asList(Base64.encode(TestContext.TENANT_CERT.getEncoded())));
+        RSAKey.Builder builder = new RSAKey.Builder(TestContext.TENANT_PUBLIC_KEY)
+            .algorithm(JWSAlgorithm.RS256)
+            .keyUse(KeyUse.SIGNATURE)
+            .x509CertChain(Arrays.asList(Base64.encode(TestContext.TENANT_CERT.getEncoded())));
+        RSAKey rsaKey = builder.build();
 
         Assert.assertEquals("RS256", alg);
         Assert.assertEquals("sig", use);

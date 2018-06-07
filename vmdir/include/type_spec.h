@@ -108,6 +108,26 @@ typedef struct _VMW_TYPE_SPEC_
         "First Replication Cycle Mode",\
         VMW_IPC_TYPE_UINT32,\
         {NULL}\
+    },\
+    {\
+        "Trust Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Trust Domain Controller",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Trust Username",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Trust Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
     }\
 }
 

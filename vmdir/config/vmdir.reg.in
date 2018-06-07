@@ -1,7 +1,7 @@
 [HKEY_THIS_MACHINE\Services]
 
 [HKEY_THIS_MACHINE\Services\vmdir]
-@security = O:SYG:BAD:(A;;KA;;;BA)
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;S-1-22-2-@LIGHTWAVE_GID@)
 "Description" = {
     default = "VMware Directory Service"
     doc = ""
@@ -19,7 +19,7 @@
     doc = ""
 }
 "Dependencies" = {
-    default = "lwreg dcerpc"
+    default = "lsass lwreg dcerpc"
     doc = ""
 }
 "Type" = {
@@ -30,8 +30,17 @@
     default = dword:00000001
     doc = ""
 }
+"User" = {
+    default = "lightwave"
+    doc = ""
+}
+"Group" = {
+    default = "lightwave"
+    doc = ""
+}
 
 [HKEY_THIS_MACHINE\Services\vmdir\Parameters]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;S-1-22-2-@LIGHTWAVE_GID@)
 "DefaultSchema" = {
     default = "@VMDIR_CONFIG_DIR@/vmdirschema.ldif"
     doc = ""
@@ -79,4 +88,3 @@
 
 [HKEY_THIS_MACHINE\Services\vmdir\Parameters\Credentials]
 @security = O:SYG:S-1-22-2-0D:(A;;RCFAFRFWFXKAKRKWKXNW;;;WD)(A;;RCFAFRFWFXKAKRKWKXNW;;;S-1-22-2-0)(A;;RCSDWDWOFAFRFWFXKAKRKWKXNRNWNX;;;SY)
-

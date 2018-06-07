@@ -18,6 +18,8 @@ import com.sun.jna.ptr.IntByReference;
 
 public final class Directory
 {
+    public static final int VMDIR_ERROR_ENTRY_EXISTS = 9706;
+
     private static final IDirectoryClientLibrary library = DirectoryAdapter.getInstance();
 
     public static
@@ -27,9 +29,21 @@ public final class Directory
     }
 
     public static
+    void createInstanceRemote(String hostname, String domainName, String adminId, String password)
+    {
+        library.CreateDirectoryInstanceRemote(hostname, domainName, adminId, password);
+    }
+
+    public static
     void deleteInstance(String domainName, String adminId, String password)
     {
         library.DeleteDirectoryInstance(domainName, adminId, password);
+    }
+
+    public static
+    void deleteInstanceRemote(String hostname, String domainName, String adminId, String password)
+    {
+        library.DeleteDirectoryInstanceRemote(hostname, domainName, adminId, password);
     }
 
     public static

@@ -99,20 +99,15 @@ _VmDirFlowCtrlThrExit(
 
 static
 VOID
-_VmDirPingIPV6AcceptThr(
-    DWORD   dwPort
-    );
-
-static
-VOID
-_VmDirPingIPV4AcceptThr(
-    DWORD   dwPort
-    );
-
-static
-VOID
 _VmDirPingAcceptThr(
     DWORD   dwPort
+    );
+
+static
+BOOLEAN
+_VmDirShutdownConnection(
+    PVDIR_OPERATION  pOp,
+    uint64_t*        piStartSupplierTime
     );
 
 DWORD
@@ -157,9 +152,6 @@ VmDirDeleteConnection(
 {
     if (conn && *conn)
     {
-        // Release replication (read) lock if holding
-        VMDIR_RWLOCK_UNLOCK((*conn)->bInReplLock, gVmdirGlobals.replRWLock);
-
         if ((*conn)->sb)
         {
             VmDirSASLSessionClose((*conn)->pSaslInfo);
@@ -657,8 +649,9 @@ ProcessAConnection(
     METRICS_LDAP_OPS operationTag = METRICS_LDAP_OP_IGNORE;
     BOOLEAN          bReplSearch = FALSE;
     uint64_t         iStartTime = 0;
-    uint64_t         iStartSupplierTime = 0;
     uint64_t         iEndTime = 0;
+    uint64_t         iStartSupplierTime = 0;
+    BOOLEAN          bShutdown = FALSE;
 
     // increment operation thread counter
     retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
@@ -683,30 +676,6 @@ ProcessAConnection(
 
     while (TRUE)
     {
-        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-        {
-            if (pConn->bInReplLock == FALSE)
-            {
-                goto cleanup;
-            }
-            else
-            {
-                if (iStartSupplierTime == 0)
-                {
-                    iStartSupplierTime = VmDirGetTimeInMilliSec();
-                }
-                else if ((VmDirGetTimeInMilliSec() - iStartSupplierTime) >=
-                         (gVmdirGlobals.dwOperationsThreadTimeoutInMilliSec - MSECS_IN_SECOND))
-                {
-                    VMDIR_LOG_WARNING(
-                            VMDIR_LOG_MASK_ALL,
-                            "%s: supplier timedout",
-                            __FUNCTION__);
-                    goto cleanup;
-                }
-            }
-        }
-
         ber = ber_alloc();
         if (ber == NULL)
         {
@@ -922,13 +891,15 @@ ProcessAConnection(
             _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
         }
 
+        bShutdown = _VmDirShutdownConnection(pOperation, &iStartSupplierTime);
+
         VmDirFreeOperation(pOperation);
         pOperation = NULL;
 
         ber_free(ber, 1);
         ber = NULL;
 
-        if (retVal == LDAP_NOTICE_OF_DISCONNECT) // returned as a result of protocol parsing error.
+        if (retVal == LDAP_NOTICE_OF_DISCONNECT || bShutdown) // returned as a result of protocol parsing error.
         {
             // RFC 4511, section 4.1.1: If the server receives an LDAPMessage from the client in which the LDAPMessage
             // SEQUENCE tag cannot be recognized, the messageID cannot be parsed, the tag of the protocolOp is not
@@ -1426,12 +1397,12 @@ error:
  * During server shutdown, connect to listening thread to break select blocking call.
  * So listening thread can shutdown gracefully.
  */
-static
-VOID
-_VmDirPingIPV6AcceptThr(
+DWORD
+VmDirPingIPV6AcceptThr(
     DWORD   dwPort
     )
 {
+    DWORD   dwError = 0;
     ber_socket_t        sockfd = -1;
     struct sockaddr_in6 servaddr6 = {0};
     struct in6_addr loopbackaddr = IN6ADDR_LOOPBACK_INIT;
@@ -1439,7 +1410,7 @@ _VmDirPingIPV6AcceptThr(
     if ((sockfd = socket (AF_INET6, SOCK_STREAM, 0)) < 0)
     {
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed", __FUNCTION__, __LINE__);
-        goto error;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
     }
 
     memset(&servaddr6, 0, sizeof(servaddr6));
@@ -1451,7 +1422,7 @@ _VmDirPingIPV6AcceptThr(
     if (connect(sockfd, (struct sockaddr *) &servaddr6, sizeof(servaddr6)) < 0)
     {
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed %d", __FUNCTION__, __LINE__, errno);
-        goto error;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
     }
 
 error:
@@ -1459,22 +1430,22 @@ error:
     {
         tcp_close(sockfd);
     }
-    return;
+    return dwError;
 }
 
-static
-VOID
-_VmDirPingIPV4AcceptThr(
+DWORD
+VmDirPingIPV4AcceptThr(
     DWORD   dwPort
     )
 {
+    DWORD   dwError = 0;
     ber_socket_t        sockfd = -1;
     struct  sockaddr_in servaddr = {0};
 
     if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
     {
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed", __FUNCTION__, __LINE__);
-        goto error;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
     }
 
     memset(&servaddr, 0, sizeof(servaddr));
@@ -1486,7 +1457,7 @@ _VmDirPingIPV4AcceptThr(
     if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
     {
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed %d", __FUNCTION__, __LINE__, errno);
-        goto error;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
     }
 
 error:
@@ -1494,7 +1465,7 @@ error:
     {
         tcp_close(sockfd);
     }
-    return;
+    return dwError;
 }
 
 static
@@ -1503,8 +1474,64 @@ _VmDirPingAcceptThr(
     DWORD   dwPort
     )
 {
-    _VmDirPingIPV4AcceptThr(dwPort);
-    _VmDirPingIPV6AcceptThr(dwPort);
+    VmDirPingIPV4AcceptThr(dwPort);
+    VmDirPingIPV6AcceptThr(dwPort);
 
     return;
+}
+
+/*
+ * Graceful shutdown is best effort - supplier and consumer thread has a
+ * timeout of 10 sec default.
+ * Supplier thread
+ *     - When vmdir in shutdown state, all external ports are blocked.
+ *       From one successfull supplier cycle after shutdown, we can infer that all
+ *       the orginating changes on this node reached atleast one partner.
+ */
+static
+BOOLEAN
+_VmDirShutdownConnection(
+    PVDIR_OPERATION  pOp,
+    uint64_t*        piStartSupplierTime
+    )
+{
+    BOOLEAN   bShutdown = FALSE;
+    uint64_t  iTimeDiff = 0;
+
+    iTimeDiff = *piStartSupplierTime ? (VmDirGetTimeInMilliSec() - *piStartSupplierTime) : 0;
+
+    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+    {
+        if (pOp->syncReqCtrl == NULL)
+        {
+            bShutdown = TRUE;
+        }
+        else
+        {
+            if (*piStartSupplierTime == 0)
+            {
+                *piStartSupplierTime = VmDirGetTimeInMilliSec();
+            }
+            else if (pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue == FALSE)
+            {
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: supplier cycle complete, for: %s",
+                        __FUNCTION__,
+                        VDIR_SAFE_STRING(pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val));
+                bShutdown = TRUE;
+            }
+            else if (iTimeDiff >=  gVmdirGlobals.dwSupplierThrTimeoutInMilliSec)
+            {
+                VMDIR_LOG_WARNING(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: supplier timed out, for: %s",
+                        __FUNCTION__,
+                        VDIR_SAFE_STRING(pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val));
+                bShutdown = TRUE;
+            }
+        }
+    }
+
+    return  bShutdown;
 }

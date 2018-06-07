@@ -429,6 +429,7 @@ VmKdcDecodeEncTicketPart(
     dwError = VmKdcMakePrincipal(heimPart.crealm,
                                  heimPart.cname.name_string.len,
                                  (PCSTR *)heimPart.cname.name_string.val,
+                                 VMKDC_NT_PRINCIPAL,
                                  &pClient);
     BAIL_ON_VMKDC_ERROR(dwError);
 

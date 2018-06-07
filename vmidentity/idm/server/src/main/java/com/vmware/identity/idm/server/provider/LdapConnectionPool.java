@@ -24,7 +24,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 
-public final class LdapConnectionPool {
+public final class LdapConnectionPool implements IPooledConnectionProvider{
 
     private final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(LdapConnectionPool.class);
     private final static LdapConnectionPool INSTANCE = new LdapConnectionPool();
@@ -43,7 +43,7 @@ public final class LdapConnectionPool {
         return INSTANCE;
     }
 
-    public ILdapConnectionEx borrowConnection(PooledLdapConnectionIdentity identity) throws Exception {
+    public PooledLdapConnection borrowConnection(PooledLdapConnectionIdentity identity) throws Exception {
         String tenantName = identity.getTenantName().toLowerCase();
 
         GenericKeyedObjectPool<PooledLdapConnectionIdentity, ILdapConnectionEx> currentPool = poolMap.get(tenantName);
@@ -52,7 +52,7 @@ public final class LdapConnectionPool {
             throw new IllegalStateException("Connection pool does not exist for tenant " + tenantName);
         }
 
-        return currentPool.borrowObject(identity);
+        return new PooledLdapConnection( currentPool.borrowObject(identity), identity, this);
     }
 
     public void returnConnection(PooledLdapConnection pooledConnection) {

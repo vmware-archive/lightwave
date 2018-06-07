@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -117,6 +117,11 @@ VmAfSrvSetDCName(
     );
 
 DWORD
+VmAfSrvGetOldPassword(
+    PWSTR*  ppwszPassword   /* IN     */
+    );
+
+DWORD
 VmAfSrvGetMachineAccountInfo(
     PWSTR*   ppwszAccount,    /*    OUT */
     PWSTR*   ppwszPassword,   /*    OUT */
@@ -150,12 +155,16 @@ VmAfSrvGetSiteGUID(
 
 DWORD
 VmAfSrvPromoteVmDir(
-    PWSTR    pwszLotusServerName,/* IN              */
-    PWSTR    pwszDomainName,     /* IN     OPTIONAL */
-    PWSTR    pwszUserName,       /* IN              */
-    PWSTR    pwszPassword,       /* IN              */
-    PWSTR    pwszSiteName,       /* IN     OPTIONAL */
-    PWSTR    pwszPartnerHostName /* IN     OPTIONAL */
+    PWSTR    pwszLotusServerName,   /* IN              */
+    PWSTR    pwszDomainName,        /* IN     OPTIONAL */
+    PWSTR    pwszUserName,          /* IN              */
+    PWSTR    pwszPassword,          /* IN              */
+    PWSTR    pwszSiteName,          /* IN     OPTIONAL */
+    PWSTR    pwszPartnerHostName,   /* IN     OPTIONAL */
+    PWSTR    pwszTrustName,         /* IN              */
+    PWSTR    pwszTrustDC,           /* IN              */
+    PWSTR    pwszTrustUserName,     /* IN              */
+    PWSTR    pwszTrustPassword      /* IN              */
     );
 
 DWORD
@@ -189,8 +198,10 @@ VmAfSrvJoinVmDir2(
 
 DWORD
 VmAfSrvLeaveVmDir(
+    PWSTR    pwszServerName,    /* IN              */
     PWSTR    pwszUserName,      /* IN              */
     PWSTR    pwszPassword,      /* IN              */
+    PWSTR    pwszMachineName,   /* IN              */
     DWORD    dwLeaveFlags       /* IN              */
     );
 
@@ -1237,6 +1248,15 @@ VmAfdIpcPromoteVmDir(
     );
 
 DWORD
+VmAfdIpcPromoteVmDirTrust(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
 VmAfdIpcDemoteVmDir(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
@@ -1918,6 +1938,11 @@ DWORD
 VmAfdGetDefaultDomainName(
     LDAP* pLotus,
     PSTR* ppDomainName
+    );
+
+VOID
+VmAfdTryOldPassword(
+    VOID
     );
 
 //storehash_util.c

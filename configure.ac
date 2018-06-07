@@ -1533,6 +1533,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/tools/vdcaclmgr/Makefile
                  lwraft/tools/vdcadmintool/Makefile
                  lwraft/tools/vdcschema/Makefile
+                 lwraft/tools/mdb_walflush/Makefile
                  lwraft/thirdparty/Makefile
                  lwraft/thirdparty/openldap/Makefile
                  lwraft/thirdparty/openldap/libraries/Makefile
@@ -1600,6 +1601,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/tools/vdcschema/Makefile
                  vmdir/tools/test/Makefile
                  vmdir/tools/test/vmdirclienttest/Makefile
+                 vmdir/tools/mdb_walflush/Makefile
                  vmdir/thirdparty/Makefile
                  vmdir/thirdparty/openldap/Makefile
                  vmdir/thirdparty/openldap/libraries/Makefile
@@ -1731,6 +1733,9 @@ AC_CONFIG_FILES([Makefile
                  config/tools/Makefile
                  config/tools/ic-promote/Makefile
                  config/tools/ic-join/Makefile
+                 config/tools/lightwave/Makefile
+                 config/tools/lightwave/domain/Makefile
+                 config/tools/lightwave/dns/Makefile
                  config/scripts/Makefile
                  config/scripts/configure-lightwave-server
                  config/scripts/configure-identity-server

@@ -74,6 +74,7 @@ VmKdcDecodeApReq(
     dwError = VmKdcMakePrincipal(heimReq.ticket.realm,
                                  heimReq.ticket.sname.name_string.len,
                                  (PCSTR *)heimReq.ticket.sname.name_string.val,
+                                 VMKDC_NT_SRV_INST,
                                  &sname);
     BAIL_ON_VMKDC_ERROR(dwError);
 

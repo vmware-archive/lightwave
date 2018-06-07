@@ -1,19 +1,32 @@
 #!/bin/bash -e
 
+if [ -z $LOGDIR ]; then
+  # Workaround for Photon 2.0 not showing CodeDeploy parameters
+  # Assumes code deploy runs under /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}
+  if [[ ! $DEPLOYMENT_GROUP_ID ]] ; then
+    DEPLOYMENT_GROUP_ID=$(realpath $0 | cut -d "/" -f5)
+  fi
 
-# Workaround for Photon 2.0 not showing CodeDeploy parameters
-# Assumes code deploy runs under /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}
-if [[ ! $DEPLOYMENT_GROUP_ID ]] ; then
-  DEPLOYMENT_GROUP_ID=$(realpath $0 | cut -d "/" -f5)
+  if [[ ! $DEPLOYMENT_ID ]] ; then
+    DEPLOYMENT_ID=$(realpath $0 | cut -d "/" -f6)
+  fi
+
+  LOGDIR="/opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}/logs"
 fi
-
-if [[ ! $DEPLOYMENT_ID ]] ; then
-  DEPLOYMENT_ID=$(realpath $0 | cut -d "/" -f6)
-fi
-
-LOGDIR="/opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}/logs"
 export LOGDIR
 export PATH=$PATH:/root/.local/bin
+
+## the AWS region of the current VM
+export EC2_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone \
+                    | sed -e "s:\([0-9][0-9]*\)[a-z]*\$:\\1:")
+## the id of current VM
+export INSTANCE_ID=$(curl -sS http://169.254.169.254/latest/meta-data/instance-id)
+## the name of the auto scaling group this VM belongs to
+export ASG_NAME=$(aws autoscaling describe-auto-scaling-instances \
+                  --instance-ids ${INSTANCE_ID} \
+                  --region ${EC2_REGION} \
+                  --query AutoScalingInstances[].AutoScalingGroupName \
+                  --output text)
 
 # retrieves instance ID of this instance
 get_current_instance_id() {

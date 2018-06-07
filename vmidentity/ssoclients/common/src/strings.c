@@ -95,6 +95,49 @@ error:
 }
 
 SSOERROR
+SSOStringAllocateSprintf(
+    PSTRING*    ppsz, /* OUT */
+    PCSTRING    psz1,
+    ...)
+{
+    SSOERROR    e = SSOERROR_NONE;
+    PSTRING     p = NULL;
+    bool        bVaStarted = false;
+    va_list     args;
+
+    ASSERT_NOT_NULL(psz1);
+    ASSERT_NOT_NULL(ppsz);
+
+    va_start(args, psz1);
+    bVaStarted = true;
+
+    if ( vasprintf(&p, psz1, args) < 0 )
+    {
+        e = SSOERROR_INVALID_ARGUMENT;
+        BAIL_ON_ERROR(e);
+    }
+
+    *ppsz = p;
+
+cleanup:
+
+    if (bVaStarted != false)
+    {
+        va_end(args);
+    }
+    return e;
+
+error:
+
+    SSOStringFreeAndClear(p);
+    if (ppsz)
+    {
+        *ppsz = NULL;
+    }
+    goto cleanup;
+}
+
+SSOERROR
 SSOStringConcatenate(
     PCSTRING psz1,
     PCSTRING psz2,

@@ -15,6 +15,7 @@ libcfgutils_la_SOURCES = \
 
 libcfgutils_la_CPPFLAGS = \
     -I$(top_srcdir)/config/include \
+    -I$(top_srcdir)/config/include/public \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmca/include/public \
     -I$(top_srcdir)/vmdns/include/public \

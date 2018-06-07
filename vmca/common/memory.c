@@ -95,6 +95,35 @@ error:
     goto cleanup;
 }
 
+DWORD
+VMCACopyMemory(
+    PVOID       pDst,
+    size_t      dstSize,
+    const void* pSrc,
+    size_t      cpySize
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pDst || !pSrc || cpySize > dstSize)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+#ifndef _WIN32
+    memcpy(pDst, pSrc, cpySize);
+#else
+    if (memcpy_s(pDst, dstSize, pSrc, cpySize) != 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+#endif
+
+error:
+    return dwError;
+}
+
 VOID
 VMCAFreeMemory(
     PVOID pMemory

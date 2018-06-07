@@ -38,6 +38,7 @@ public final class Config {
    private final Collection<List<Certificate>> validCerts;
    private final long clockTolerance;
    private final Map<String, IDPConfig> externalIdps;
+   private final Set<String> blackListedDomains;
 
    /**
     *
@@ -65,7 +66,9 @@ public final class Config {
    public Config(SamlAuthorityConfiguration samlAuthorityConfig,
       TokenRestrictions tokenRestrictions,
       Collection<List<Certificate>> validCerts, long clockTolerance,
-      Collection<IDPConfig> inExternalIdps) {
+      Collection<IDPConfig> inExternalIdps,
+      Set<String> blackListedDomains
+      ) {
 
       Validate.notNull(samlAuthorityConfig);
       Validate.notNull(tokenRestrictions);
@@ -101,6 +104,11 @@ public final class Config {
           }
       }
       this.externalIdps = Collections.unmodifiableMap(idpsSet);
+      HashSet<String> domains = new HashSet<String>();
+      if( blackListedDomains != null){
+         domains.addAll(blackListedDomains);
+      }
+      this.blackListedDomains = Collections.unmodifiableSet(domains);
    }
 
    /**
@@ -139,6 +147,14 @@ public final class Config {
        return this.externalIdps;
    }
 
+   /**
+    * List of blacklisted domains for ext idp such as system tenant domain;
+    localos provider etc.
+    */
+   public Set<String> getBlackListedDomains() {
+       return this.blackListedDomains;
+   }
+
    @Override
    public int hashCode() {
       final int prime = 31;
@@ -149,6 +165,7 @@ public final class Config {
       result = prime * result + validCerts.hashCode();
       result = prime * result + samlAuthorityConfig.hashCode();
       result = prime * result + externalIdps.hashCode();
+      result = prime * result + blackListedDomains.hashCode();
       return result;
    }
 
@@ -166,7 +183,8 @@ public final class Config {
          && samlAuthorityConfig.equals(other.samlAuthorityConfig)
          && tokenRestrictions.equals(other.tokenRestrictions)
          && validCerts.equals(other.validCerts)
-         && externalIdps.equals(other.externalIdps);
+         && externalIdps.equals(other.externalIdps)
+         && blackListedDomains.equals(other.blackListedDomains);
    }
 
    /**

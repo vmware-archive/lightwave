@@ -5,6 +5,8 @@ idl_srcdir=$(top_srcdir)/lwraft/idl
 postd_SOURCES = \
     accountmgmt.c \
     auth.c \
+    background.c \
+    dbbackup.c \
     globals.c \
     index.c \
     init.c \

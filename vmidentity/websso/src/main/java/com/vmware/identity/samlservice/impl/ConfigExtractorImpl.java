@@ -17,10 +17,14 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.saml.config.Config;
 import com.vmware.identity.saml.config.ConfigExtractor;
@@ -65,9 +69,31 @@ public class ConfigExtractorImpl implements ConfigExtractor {
           }
       }
 
+      Set<String> blackListedDomains = this.extractBlackListedDomains(tenantName, idmAccessor);
       return new Config(
          new Config.SamlAuthorityConfiguration(issuer,
             signingCertificateChain, authorityKey, idmAccessor.getTenantSignatureAlgorithm()),
-            tokenRestrictions, allChains, clockTolerance, externalIdps);
+            tokenRestrictions, allChains, clockTolerance, externalIdps, blackListedDomains);
    }
+
+    private Set<String> extractBlackListedDomains(String tenantName, IdmAccessor idmAccessor) {
+        // this keeps orginal logic form AuthnOnlyTokenValidator.java
+        // it might need to be adjusted
+        HashSet<String> blacklistedDomainsForExtIdp = new HashSet<>();
+
+        String systemTenant = idmAccessor.getSystemTenant();
+        EnumSet<DomainType> systemDomains = EnumSet.of(DomainType.SYSTEM_DOMAIN, DomainType.LOCAL_OS_DOMAIN);
+        Collection<IIdentityStoreData> providers = idmAccessor
+            .getProviders(systemTenant, systemDomains);
+        if (providers != null) {
+            for( IIdentityStoreData prov : providers ) {
+                if ( prov != null ) {
+                    blacklistedDomainsForExtIdp.add(prov.getName());
+                }
+            }
+        }
+
+        return blacklistedDomainsForExtIdp;
+    }
+
 }

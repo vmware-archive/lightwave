@@ -51,3 +51,12 @@
     doc     = "Port to use for sts"
 }
 
+"StsBearerTokenLifetime" = {
+    default = "12"
+    doc     = "STS bearer token lifetime in hours to override vmdir value. Set to 0 if not to override."
+}
+
+"StsBearerRefreshTokenLifetime" = {
+    default = "12"
+    doc     = "STS bearer refresh token lifetime in hours to override vmdir value. Set to 0 if not to override."
+}

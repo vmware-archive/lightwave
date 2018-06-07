@@ -102,6 +102,11 @@ function redirect(){
 			var protocol = parts[0]
 			var hostname = parts[1]
 			var uri = protocol + "://" + hostname + "/lightwaveui/Login?tenant=" + tenantName;
+			if ( location.hash === '#local' )
+			{
+				uri = uri + "&local=true"
+				sessionStorage.setItem("lwLoginParams", "&local=true")
+			}
 			window.location = uri;
 		}
 }

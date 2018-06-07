@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
@@ -83,6 +84,8 @@ import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
 import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
+import com.vmware.identity.idm.server.provider.ILdapConnectionProvider;
+import com.vmware.identity.idm.server.provider.IPooledConnectionProvider;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
@@ -107,6 +110,7 @@ import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 
+// future: this should inherit from VMDirProvider
 public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ISystemDomainIdentityProvider
 {
@@ -421,7 +425,16 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     public VMwareDirectoryProvider(String tenantName, IIdentityStoreData store, boolean isSystemDomainProvider)
     {
-        super(tenantName, store);
+        this( tenantName, store, isSystemDomainProvider, null, null);
+    }
+
+    public VMwareDirectoryProvider(
+        String tenantName, IIdentityStoreData store,
+        boolean isSystemDomainProvider,
+        IPooledConnectionProvider pooledConnectionProvider,
+        ILdapConnectionProvider ldapConenctionProvider)
+    {
+        super(tenantName, store, null, pooledConnectionProvider, ldapConenctionProvider);
 
         _isSystemDomainProvider = isSystemDomainProvider;
 
@@ -2171,6 +2184,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         attrNames.add(ATTR_NAME_ACCOUNT);
         attrNames.add(ATTR_NAME_OBJECTSID);
 
+        if (!attrNames.contains(ATTR_USER_PRINCIPAL_NAME)) {
+            attrNames.add(ATTR_USER_PRINCIPAL_NAME);
+        }
+        if (!attrNames.contains(ATTR_TENANTIZED_USER_PRINCIPAL_NAME)) {
+            attrNames.add(ATTR_TENANTIZED_USER_PRINCIPAL_NAME);
+        }
+
         try (PooledLdapConnection pooledConnection = borrowConnection())
         {
             ILdapConnectionEx connection = pooledConnection.getConnection();
@@ -3150,7 +3170,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         {
             ValidateUtil.validateUpn(detail.getUserPrincipalName(), "userPrincipalName");
             String[] parts = detail.getUserPrincipalName().split("@");
-            newUserUpn = new PrincipalId(parts[0], ValidateUtil.getCanonicalUpnSuffix(parts[1]));
+            newUserUpn = new PrincipalId(parts[0], parts[1]);
         }
         else
         {
@@ -3439,7 +3459,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         if (upn != null)
         {
             result = ( this.getUpnSuffixes() != null ) &&
-                     ( this.getUpnSuffixes().contains(ValidateUtil.getCanonicalUpnSuffix(upn.getDomain())) );
+                    ( this.getUpnSuffixes().contains(upn.getDomain()) );
         }
         return result;
     }
@@ -4543,13 +4563,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             // password is char array
                             LdapValue.fromString(new String(newPassword)) });
             attributeList.add(attrPassword);
-
-            if (attributeList.size() > 0)
-            {
-                // Only update when necessary
-                connection.modifyObject(userDn, attributeList
+            connection.modifyObject(userDn, attributeList
                         .toArray(new LdapMod[attributeList.size()]));
-            }
         } finally
         {
             if (null != message)
@@ -4563,78 +4578,86 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public void resetUserPassword(String accountName, char[] currentPassword,
             char[] newPassword) throws Exception
     {
+        InvalidCredentialsLdapException srpEx = null;
         ILdapMessage message = null;
         String userDn = null;
+        ILdapConnectionEx connection = null;
 
-        try (PooledLdapConnection pooledConnection = borrowConnection())
-        {
-            ILdapConnectionEx connection = pooledConnection.getConnection();
+        try {
             final String domainName = getDomain();
             final PrincipalId userId = new PrincipalId(accountName, domainName);
-
-            String[] attrNames = { ATTR_NAME_ACCOUNT };
-
-            String filter = buildQueryByUserFilter( userId );
-
-            message =
-                    connection.search(getTenantSearchBaseRootDN(),
-                            LdapScope.SCOPE_SUBTREE, filter, attrNames, false);
-
-            ILdapEntry[] entries = message.getEntries();
-
-            if (entries != null && entries.length == 1)
-            {
-                // found the user
-                userDn = entries[0].getDN();
-            } else
-            {
-                // The user doesn't exist.
-                // There shouldn't be the case that there will be two users
-                // with same account name in lotus, this should be prevented
-                // when adding a user.
-                throw new InvalidPrincipalException(String.format(
-                        "user %s@%s doesn't exist", userId.getName(), userId.getDomain()), userId.getUPN());
+            try {
+                connection = this.getConnection(userId.getUPN(), new String(currentPassword),
+                        AuthenticationType.SRP, false);
+            } catch (InvalidCredentialsLdapException ex) {
+                logger.warn("Failed to authenticate using SRP binding", ex);
+                if (connection != null) {
+                    connection.close(); // close SRP connection
+                }
+                srpEx = ex;
             }
-        }
-        finally
-        {
-            if (null != message)
+
+            if(srpEx != null){
+                userDn = getUserDn(userId, true);
+                if(userDn != null){
+                    logger.warn("The user is not SRP-enabled. Attempting to authenticate using simple bind.");
+                    connection = this.getConnection(userDn, new String(currentPassword),
+                            AuthenticationType.PASSWORD, false);
+                } else {
+                    logger.error("Original login seems invalid.", srpEx);
+                    // According to admin interface, if not valid password,
+                    // should throw this.
+                    throw new InvalidPrincipalException(String.format(
+                            "Invalid login credential for user %s@%s", accountName,
+                            this.getDomain()), String.format("%s@%s", accountName,
+                            getDomain()));
+                }
+            }
+
+            if (connection != null) {
+                // modify password attribute after authentication
+                if (StringUtils.isEmpty(userDn)) {
+                    String[] attrNames = { ATTR_NAME_ACCOUNT };
+                    String filter = buildQueryByUserFilter( userId );
+
+                    message =
+                            connection.search(getTenantSearchBaseRootDN(),
+                                    LdapScope.SCOPE_SUBTREE, filter, attrNames, false);
+
+                    ILdapEntry[] entries = message.getEntries();
+                    if (entries != null && entries.length == 1)
+                    {
+                        // found the user
+                        userDn = entries[0].getDN();
+                    }
+                }
+                if (StringUtils.isEmpty(userDn)) {
+                    // The user doesn't exist.
+                    // There shouldn't be the case that there will be two users
+                    // with same account name in lotus, this should be prevented
+                    // when adding a user.
+                    throw new InvalidPrincipalException(String.format(
+                            "user %s@%s doesn't exist", userId.getName(), userId.getDomain()), userId.getUPN());
+                }
+                ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
+                LdapMod attrPassword =
+                        new LdapMod(LdapModOperation.REPLACE, ATTR_USER_PASSWORD,
+                                new LdapValue[] {
+                                // password is char array
+                                LdapValue.fromString(new String(newPassword)) });
+                attributeList.add(attrPassword);
+                connection.modifyObject(userDn, attributeList
+                            .toArray(new LdapMod[attributeList.size()]));
+            } else {
+                throw new IDMException("Failed to connection to ldap server.");
+            }
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (message != null)
             {
                 message.close();
-                message = null;
-            }
-        }
-
-        ILdapConnectionEx connection = null;
-        try
-        {
-            connection = this.getConnection(userDn, new String(currentPassword), AuthenticationType.PASSWORD, false);
-            ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
-            LdapMod attrPassword =
-                    new LdapMod(LdapModOperation.REPLACE, ATTR_USER_PASSWORD,
-                            new LdapValue[] {
-                            // password is char array
-                            LdapValue.fromString(new String(newPassword)) });
-            attributeList.add(attrPassword);
-
-            // Only update when necessary
-            connection.modifyObject(userDn, attributeList
-                    .toArray(new LdapMod[attributeList.size()]));
-        }
-        catch (InvalidCredentialsLdapException ex)
-        {
-            logger.error("Original login seems invalid.", ex);
-            // According to admin interface, if not valid password,
-            // should throw this.
-            throw new InvalidPrincipalException(String.format(
-                    "Invalid login credential for user %s@%s", accountName,
-                    this.getDomain()), String.format("%s@%s", accountName,
-                    getDomain()));
-        } finally
-        {
-            if ( connection != null )
-            {
-                connection.close();
             }
         }
     }
@@ -6571,6 +6594,15 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         } catch (AlreadyExistsLdapException e) {
             throw new ContainerAlreadyExistsException(
                     "Another container with the name '" + containerName + "' already exists");
+        }
+    }
+
+    @Override
+    public boolean isValidDn(String dn) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+            return ServerUtils.isValidDN(connection, dn);
         }
     }
 

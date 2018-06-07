@@ -33,6 +33,7 @@ import com.vmware.identity.idm.KnownSamlAttributes;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
 
@@ -59,11 +60,13 @@ public class UserInfoRetriever {
             throw new ServerException(ErrorObject.accessDenied("user has been disabled or deleted"));
         }
 
+        String upn = null;
         String givenName = null;
         String familyName = null;
         List<String> groupMembership = null;
 
         Collection<Attribute> attributes = new ArrayList<>();
+        attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME));
 
         if (user instanceof PersonUser) {
             attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_FIRST_NAME));
@@ -90,6 +93,9 @@ public class UserInfoRetriever {
                 familyName = entry.getValues().isEmpty() ? null : entry.getValues().get(0);
             } else if (attributeName.equals(KnownSamlAttributes.ATTRIBUTE_USER_GROUPS)) {
                 groupMembership = entry.getValues();
+            } else if (attributeName.equals(KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME)) {
+                ValidateUtil.validateNotEmpty(entry.getValues(), "subject upn");
+                upn = entry.getValues().get(0);
             }
         }
 
@@ -121,7 +127,36 @@ public class UserInfoRetriever {
             groupMembershipFiltered = computeGroupMembershipFiltered(groupMembership, resourceServerInfos);
         }
 
-        return new UserInfo(groupMembership, groupMembershipFiltered, adminServerRole, givenName, familyName);
+        return new UserInfo(upn, groupMembership, groupMembershipFiltered, adminServerRole, givenName, familyName);
+    }
+
+    public PersonUser getUPN(User user) throws ServerException {
+        Validate.notNull(user, "user");
+
+        if (!isEnabled(user)) {
+            throw new ServerException(ErrorObject.accessDenied("user has been disabled or deleted"));
+        }
+
+        String upn = null;
+        Collection<Attribute> attributes = new ArrayList<>();
+        attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME));
+        Collection<AttributeValuePair> attributeValuePairs = getAttributes(user, attributes);
+        Validate.notEmpty(attributeValuePairs, "attribute values are empty");
+        for (AttributeValuePair entry : attributeValuePairs) {
+            String attributeName = entry.getAttrDefinition().getName();
+            if (attributeName.equals(KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME)) {
+                Validate.notEmpty(entry.getValues(), "subject upn is empty");
+                upn = entry.getValues().get(0);
+            }
+        }
+        Validate.notEmpty(upn, "subject upn is empty");
+        PersonUser personUser = null;
+        try {
+            personUser = PersonUser.parse(upn, user.getTenant());
+        } catch (ParseException e) {
+            throw new ServerException(ErrorObject.serverError(String.format("invalid UPN %s", upn)), e);
+        }
+        return personUser;
     }
 
     public boolean isMemberOfGroup(User user, String group) throws ServerException {

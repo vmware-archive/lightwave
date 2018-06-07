@@ -19,6 +19,7 @@ import java.security.NoSuchProviderException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -34,6 +35,7 @@ import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
@@ -48,6 +50,9 @@ public class FederationTokenController {
     private SessionManager sessionManager;
 
     @Autowired
+    private FederationAuthenticationRequestTracker authnRequestTracker;
+
+    @Autowired
     private FederatedIdentityProcessor cspProcessor;
 
     @RequestMapping(
@@ -60,14 +65,28 @@ public class FederationTokenController {
     ) throws IOException {
         HttpResponse httpResponse;
         try {
-            final FederationRelayState state = FederationRelayState.build(request.getParameter("state"));
-            final IDPConfig idpConfig = findFederatedIDP(state.getIssuer()); // External IDP corresponding to Issuer
+            final String code = request.getParameter("code");
+            final String state = request.getParameter("state");
+
+            FederationRelayState relayState;
+            // check if it is redirection response with auth code
+            if (StringUtils.isEmpty(code)) {
+                relayState = FederationRelayState.build(state);
+            } else {
+                // validate state
+                relayState = authnRequestTracker.remove(State.parse(state));
+                if (relayState == null) {
+                    throw new ServerException(ErrorObject.invalidRequest("State not found."));
+                }
+            }
+
+            final IDPConfig idpConfig = findFederatedIDP(relayState.getIssuer()); // External IDP corresponding to Issuer
             final OidcConfig oidcConfig = idpConfig.getOidcConfig();
             if (oidcConfig == null) {
-                throw new ServerException(ErrorObject.invalidRequest("no oidc configuration found"));
+                throw new ServerException(ErrorObject.invalidRequest("Oidc configuration not found"));
             }
             final FederatedIdentityProcessor processor = findProcessor(oidcConfig.getIssuerType());
-            httpResponse = processor.processRequest(request, state, idpConfig);
+            httpResponse = processor.processRequest(request, relayState, idpConfig);
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
             httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());

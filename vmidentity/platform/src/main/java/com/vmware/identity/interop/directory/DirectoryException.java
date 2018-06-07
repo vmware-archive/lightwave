@@ -37,4 +37,9 @@ public class DirectoryException extends RuntimeException
 	        				"VMware Directory error [code: %d]", 
 	        				this._errCode);
     }
+
+    public int getErrorCode()
+    {
+        return _errCode;
+    }
 }

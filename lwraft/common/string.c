@@ -535,6 +535,75 @@ error:
     return dwError;
 }
 
+VOID
+VmDirStringTrimSpace(
+    PSTR    pszStr
+    )
+{
+    size_t  len = 0;
+    size_t  start = 0;
+    size_t  end = 0;
+    size_t  i = 0;
+    size_t  j = 0;
+
+    if (pszStr)
+    {
+        len = VmDirStringLenA(pszStr);
+        if (len > 0)
+        {
+            for (start = 0; start < len && VMDIR_ASCII_SPACE(pszStr[start]); start++);
+            for (end = len - 1; end > 0 && VMDIR_ASCII_SPACE(pszStr[end]); end--);
+
+            for (i = start; i <= end; i++, j++)
+            {
+                pszStr[j] = pszStr[i];
+            }
+            pszStr[j] = '\0';
+        }
+    }
+}
+
+/*
+ * remove heading/trailing spaces
+ * compact consecutive spaces into a single one
+ */
+VOID
+VmdDirNormalizeString(
+    PSTR    pszStr
+    )
+{
+    size_t  len = 0;
+    size_t  i = 0;
+    size_t  j = 0;
+
+    if (pszStr)
+    {
+        len = VmDirStringLenA(pszStr);
+
+        for (i = 0, j = 0; i < len; i++)
+        {
+            if (VMDIR_ASCII_SPACE(pszStr[i]) &&
+                (i == 0 || VMDIR_ASCII_SPACE(pszStr[i-1])))
+            {
+                continue;
+            }
+
+            pszStr[j++] = pszStr[i];
+        }
+        pszStr[j] = '\0';
+
+        // handle last space if exists
+        if (j > 0 && VMDIR_ASCII_SPACE(pszStr[j-1]))
+        {
+            pszStr[j-1] = '\0';
+        }
+        else
+        {
+            pszStr[j] = '\0';
+        }
+    }
+}
+
 /*
  *  does NOT return empty string token.
  *  say pszStr = "(A;;RP;;;MYSID)" and pszDelimiter = ";"

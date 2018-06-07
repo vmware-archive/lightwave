@@ -14,6 +14,7 @@
 package com.vmware.identity.rest.idm.client;
 
 import static com.vmware.identity.rest.core.client.RequestExecutor.execute;
+import static com.vmware.identity.rest.core.client.RequestExecutor.executeAndReturnList;
 import static com.vmware.identity.rest.core.client.URIFactory.buildParameters;
 import static com.vmware.identity.rest.core.client.URIFactory.buildURI;
 
@@ -35,6 +36,7 @@ import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
 import com.vmware.identity.rest.core.client.methods.HttpDeleteWithBody;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
+import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 import com.vmware.identity.rest.idm.data.attributes.MemberType;
@@ -234,6 +236,26 @@ public class TenantResource extends ClientResource {
      */
     public SearchResultDTO search(String tenant, String domain, String query) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
         return search(tenant, domain, query, null, null, null);
+    }
+
+    /**
+     * Get security domains in a tenant.
+     *
+     * <p><b>Required Role:</b> {@code user}.
+     *
+     * @param tenant the name of the tenant to search.
+     * @return the results of the search.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public List<SecurityDomainDTO> getSecurityDoimains(String tenant) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), TENANT_NAME_POST_URI + "/securitydomains", tenant);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken());
+        return executeAndReturnList(parent.getClient(), post, SecurityDomainDTO.class);
     }
 
     /**

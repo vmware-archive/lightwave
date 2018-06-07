@@ -153,7 +153,7 @@ public class RequestFactory {
     private static String sign(HttpEntityEnclosingRequestBase request, String entity, Date date, PrivateKey privateKey) throws InvalidKeyException, SignatureException {
         String stringToSign = RequestSigner.createSigningString(
                 request.getMethod(),
-                RequestSigner.computeMD5(entity),
+                RequestSigner.computeEntityHash(entity, "SHA-256"),
                 APPLICATION_JSON_UTF8.toString(),
                 date,
                 request.getURI());

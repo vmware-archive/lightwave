@@ -36,6 +36,12 @@ VmDirMarshalResponse (
     PDWORD pdwResponseSize
     );
 
+static
+BOOLEAN
+VmDirIsAuthorizedSecurityContext (
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext
+    );
+
 DWORD
 VmDirIpcInitializeHost(
     PVM_DIR_SECURITY_CONTEXT pSecurityContext,
@@ -57,13 +63,18 @@ VmDirIpcInitializeHost(
     PWSTR pwszPassword = NULL;
     PWSTR pwszSiteName = NULL;
     PWSTR pwszReplURI = NULL;
+    PWSTR pwszTrustName = NULL;
+    PWSTR pwszTrustDC = NULL;
+    PWSTR pwszTrustUserName = NULL;
+    PWSTR pwszTrustPassword = NULL;
     DWORD dwFirstReplCycleMode = 0;
     VMW_TYPE_SPEC input_spec[] = INITIALIZE_HOST_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+    PVMDIR_TRUST_INFO_W pTrustInfoW = NULL;
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcInitializeHost");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -93,6 +104,38 @@ VmDirIpcInitializeHost(
     pwszSiteName = input_spec[3].data.pWString;
     pwszReplURI = input_spec[4].data.pWString;
     dwFirstReplCycleMode = *input_spec[5].data.pUint32;
+    pwszTrustName = input_spec[6].data.pWString;
+    pwszTrustDC = input_spec[7].data.pWString;
+    pwszTrustUserName = input_spec[8].data.pWString;
+    pwszTrustPassword = input_spec[9].data.pWString;
+
+    if (pwszTrustName || pwszTrustDC || pwszTrustUserName || pwszTrustPassword)
+    {
+        dwError = VmDirAllocateMemory(
+                        sizeof(VMDIR_TRUST_INFO_W),
+                        (PVOID*)&pTrustInfoW);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pwszTrustName)
+        {
+            pTrustInfoW->pwszName = pwszTrustName;
+        }
+
+        if (pwszTrustDC)
+        {
+            pTrustInfoW->pwszDC = pwszTrustDC;
+        }
+
+        if (pwszTrustUserName)
+        {
+            pTrustInfoW->pwszUserName = pwszTrustUserName;
+        }
+
+        if (pwszTrustPassword)
+        {
+            pTrustInfoW->pwszPassword = pwszTrustPassword;
+        }
+    }
 
     uResult = VmDirSrvInitializeHost(
                     pwszDomainName,
@@ -100,7 +143,8 @@ VmDirIpcInitializeHost(
                     pwszPassword,
                     pwszSiteName,
                     pwszReplURI,
-                    dwFirstReplCycleMode);
+                    dwFirstReplCycleMode,
+                    pTrustInfoW);
     output_spec[0].data.pUint32 = &uResult;
 
     dwError = VmDirMarshalResponse (
@@ -119,6 +163,7 @@ cleanup:
     *pdwResponseSize = dwResponseSize;
 
     VmDirFreeTypeSpecContent (input_spec, noOfArgsIn);
+    VMDIR_SAFE_FREE_MEMORY(pTrustInfoW);
     return dwError;
 
 error:
@@ -163,7 +208,7 @@ VmDirIpcInitializeTenant(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcInitializeTenant");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -341,7 +386,7 @@ VmDirIpcCreateTenant(
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Entering VmDirIpcCreateTenant");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -438,7 +483,7 @@ VmDirIpcDeleteTenant(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcDeleteTenant");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -536,7 +581,7 @@ VmDirIpcEnumerateTenants(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcEnumerateTenants");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -661,7 +706,7 @@ VmDirIpcForceResetPassword(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcForceResetPassword");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -773,7 +818,7 @@ VmDirIpcGeneratePassword(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcGeneratePassword");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -884,7 +929,7 @@ VmDirIpcSetSRPSecret(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcSetSRPSecret");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -974,7 +1019,7 @@ VmDirIpcGetServerState(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcGetServerState ");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -1062,7 +1107,7 @@ VmDirIpcServerReset(
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcServerReset ");
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -1320,7 +1365,7 @@ VmDirIpcGetSRPSecret(
         BAIL_ON_VMDIR_ERROR (dwError);
     }
 
-    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "%s: Access Denied",
@@ -1408,4 +1453,20 @@ error:
 
     dwError = 0;
     goto cleanup;
+}
+
+static
+BOOLEAN
+VmDirIsAuthorizedSecurityContext (
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext)
+{
+    BOOLEAN bIsAuthorized = FALSE;
+
+    bIsAuthorized = VmDirIsRootSecurityContext(pSecurityContext);
+    if (!bIsAuthorized)
+    {
+        bIsAuthorized = VmDirIsLightwaveSecurityContext(pSecurityContext);
+    }
+
+    return bIsAuthorized;
 }

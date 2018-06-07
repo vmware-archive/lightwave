@@ -170,6 +170,11 @@ VmDirIsRootSecurityContextImpl (
     );
 
 BOOL
+VmDirIsLightwaveSecurityContextImpl (
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext
+    );
+
+BOOL
 VmDirEqualsSecurityContextImpl (
     PVM_DIR_SECURITY_CONTEXT pSecurityContext1,
     PVM_DIR_SECURITY_CONTEXT pSecurityContext12
@@ -218,6 +223,7 @@ VmDirGenRandomImpl(
 
 DWORD
 VmDirInternalDeleteTree(
-    PCSTR pBaseDb
+    PCSTR   pBaseDN,
+    BOOLEAN bInclusive
     );
 

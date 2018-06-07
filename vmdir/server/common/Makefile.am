@@ -15,11 +15,13 @@ libsrvcommon_la_SOURCES = \
     dcconnthr.c           \
     entryencodedecode.c   \
     krbsrvutil.c          \
+    nodeidentity.c        \
     oidctovmdirerror.c    \
     oprequestutil.c       \
     security-sd.c         \
     srp.c                 \
     util.c                \
+    vectorutils.c         \
     vmafdlib.c            \
     vmdirentry.c          \
     vmdirtoldaperror.c

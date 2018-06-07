@@ -14,12 +14,6 @@
 
 #include "includes.h"
 
-DWORD
-VMCARESTVerifyAccess(
-      PVMCA_AUTHORIZATION_PARAM pAuthorization,
-      PVMCA_ACCESS_TOKEN* ppAccessToken
-      );
-
 static
 DWORD
 VMCAGetAccessTokenFromParameter(
@@ -36,35 +30,28 @@ VMCAFindRestAuthMethod(
 
 DWORD
 VMCARESTGetAccessToken(
-      PREST_REQUEST pRESTRequest,
-      PVMCA_ACCESS_TOKEN* ppAccessToken
-      )
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    )
 {
     DWORD dwError = 0;
-    PSTR pszAccessTokenParameter = NULL;
+    DWORD dwIdx = 0;
     PVMCA_AUTHORIZATION_PARAM pAuthorization = NULL;
     PVMCA_ACCESS_TOKEN pAccessToken = NULL;
 
-    if (!pRESTRequest || !ppAccessToken)
+    if (!pVMCARequest || !ppAccessToken)
     {
         dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VmRESTGetHttpHeader(
-                            pRESTRequest,
-                            "Authorization",
-                            &pszAccessTokenParameter
-                            );
+    dwError = VMCAGetAccessTokenFromParameter(pVMCARequest->pszAuthorization, &pAuthorization);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    dwError = VMCAGetAccessTokenFromParameter(
-                                        pszAccessTokenParameter,
-                                        &pAuthorization
-                                        );
+    dwError = VMCAFindRestAuthMethod(pAuthorization->tokenType, &dwIdx);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    dwError = VMCARESTVerifyAccess(pAuthorization, &pAccessToken);
+    dwError = gVMCAAccessTokenMethods[dwIdx].pfnVerify(pAuthorization, pVMCARequest, &pAccessToken);
     BAIL_ON_VMCA_ERROR(dwError);
 
     *ppAccessToken = pAccessToken;
@@ -77,6 +64,7 @@ cleanup:
     return dwError;
 
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     if (ppAccessToken)
     {
         *ppAccessToken = NULL;
@@ -86,38 +74,6 @@ error:
         VMCAFreeAccessToken(pAccessToken);
     }
     dwError = (dwError == EACCES) ? EACCES : ERROR_ACCESS_DENIED;
-    goto cleanup;
-}
-
-DWORD
-VMCARESTVerifyAccess(
-      PVMCA_AUTHORIZATION_PARAM pAuthorization,
-      PVMCA_ACCESS_TOKEN* ppAccessToken
-      )
-{
-    DWORD dwError = 0;
-    DWORD dwIdx = 0;
-
-    dwError = VMCAFindRestAuthMethod(
-                              pAuthorization->tokenType,
-                              &dwIdx
-                              );
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = gVMCAAccessTokenMethods[dwIdx].pfnVerify(
-                                               pAuthorization,
-                                               ppAccessToken
-                                               );
-    BAIL_ON_VMCA_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    if (ppAccessToken)
-    {
-        *ppAccessToken = NULL;
-    }
     goto cleanup;
 }
 
@@ -184,21 +140,26 @@ VMCAGetAccessTokenFromParameter(
 
     if (pszTokenType)
     {
-       if (!VMCAStringCompareA(pszTokenType, "Bearer", FALSE))
-       {
-          pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_BEARER_TOKEN;
-       }
-
-       if (!VMCAStringCompareA(pszTokenType, "Negotiate", FALSE))
-       {
-          pAuthorization->tokenType = VMCA_AUTHORIZATION_TOKEN_TYPE_KRB;
-       }
-
-       if (!VMCAStringCompareA(pszTokenType, "hot-pk", FALSE))
-       {
-          pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_HOTK_TOKEN;
-       }
-    } else
+        if (!VMCAStringCompareA(pszTokenType, "Bearer", FALSE))
+        {
+            pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_BEARER_TOKEN;
+        }
+        else if (!VMCAStringCompareA(pszTokenType, "Negotiate", FALSE))
+        {
+            pAuthorization->tokenType = VMCA_AUTHORIZATION_TOKEN_TYPE_KRB;
+        }
+        else if (!VMCAStringCompareA(pszTokenType, "hot-pk", FALSE) ||
+                 !VMCAStringCompareA(pszTokenType, "hotk-pk", FALSE))
+        {
+            pAuthorization->tokenType = VMCA_AUTHORIZATION_TYPE_HOTK_TOKEN;
+        }
+        else
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+    }
+    else
     {
         dwError = ERROR_INVALID_PARAMETER; 
         BAIL_ON_VMCA_ERROR(dwError);
@@ -215,6 +176,7 @@ cleanup:
     return dwError;
 
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     if (ppAuthorization)
     {
         *ppAuthorization = NULL;
@@ -267,6 +229,7 @@ cleanup:
     return dwError;
 
 error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
     if (pdwIdx)
     {
         *pdwIdx = 0;

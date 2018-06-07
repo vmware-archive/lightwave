@@ -85,15 +85,11 @@ public class JWKSController {
 
             List<Base64> x5c = new ArrayList<Base64>(1);
             x5c.add(Base64.encode(tenantInfo.getCertificate().getEncoded()));
-            RSAKey rsaKey = new RSAKey(
-                    tenantInfo.getPublicKey(),
-                    KeyUse.SIGNATURE,
-                    null,
-                    JWSAlgorithm.RS256,
-                    null,
-                    null,
-                    null,
-                    x5c);
+            RSAKey.Builder builder = new RSAKey.Builder(tenantInfo.getPublicKey())
+                .algorithm(JWSAlgorithm.RS256)
+                .keyUse(KeyUse.SIGNATURE)
+                .x509CertChain(x5c);
+            RSAKey rsaKey = builder.build();
             JWKSet jwks = new JWKSet(rsaKey);
 
             httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, jwks.toJSONObject());

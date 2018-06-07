@@ -93,9 +93,9 @@ error:
 }
 
 DWORD
-_VmDirLoadRaftState(
+VmDirLoadRaftState(
     VOID
-)
+    )
 {
     DWORD dwError = 0;
     PSTR  pszLocalErrorMsg = NULL;
@@ -311,7 +311,7 @@ error:
 
 //Remove all logs with index >= startLogIndex
 DWORD
-_VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
+VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
 {
     DWORD dwError = 0;
     VDIR_ENTRY_ARRAY entryArray = {0};
@@ -346,7 +346,7 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
         if (!pAttr)
         {
             //This indicate the corruption of the log entry data.
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs invalid log entry, logIdx %llu lastLogIndex %llu",
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirDeleteAllLogs invalid log entry, logIdx %llu lastLogIndex %llu",
                             logIndex, gRaftState.lastLogIndex);
             *pbFatalError = TRUE;
             dwError = LDAP_OPERATIONS_ERROR;
@@ -362,7 +362,7 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
 
     if (logCnt > 1)
     {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirDeleteAllLogs deleting %d logs from %llu to %llu ...",
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirDeleteAllLogs deleting %d logs from %llu to %llu ...",
                        logCnt, pLogIdxArray[0], pLogIdxArray[logCnt-1]);
     }
 
@@ -374,7 +374,7 @@ _VmDirDeleteAllLogs(unsigned long long startLogIndex, BOOLEAN *pbFatalError)
               * compromised. We should investigate the sequence of events on how to get here.
               */
              VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-               "_VmDirDeleteAllLogs attempt to delete log already applied, logIdx %llu lastApplied %llu lastLogIndex %llu",
+               "VmDirDeleteAllLogs attempt to delete log already applied, logIdx %llu lastApplied %llu lastLogIndex %llu",
                pLogIdxArray[i], gRaftState.lastApplied, gRaftState.lastLogIndex);
 
              *pbFatalError = TRUE;
@@ -906,6 +906,7 @@ _VmDirRaftLoadGlobals(PSTR *ppszLocalErrorMsg)
     dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.hostname, "%s", pszHostname);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    gVmdirServerGlobals.bPromoted = TRUE;
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirRaftLoadGlobals: successfully loaded instance specific globals");
 
 cleanup:

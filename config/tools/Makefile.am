@@ -1,3 +1,4 @@
 SUBDIRS = \
     ic-promote \
-    ic-join
+    ic-join \
+    lightwave

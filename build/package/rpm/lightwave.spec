@@ -114,6 +114,8 @@ VMware Lightwave Server
 %define _vmdir_dbdir  %{_localstatedir}/vmdir
 %define _vmafd_dbdir  %{_localstatedir}/vmafd
 %define _vmsts_dbdir  %{_localstatedir}/vmsts
+%define _rpcdir       %{_localstatedir}/rpc
+%define _ipcdir       %{_localstatedir}/ipc
 
 %define _vecsdir %{_vmafd_dbdir}/vecs
 %define _crlsdir %{_vmafd_dbdir}/crl
@@ -153,6 +155,10 @@ Summary: Lightwave POST Service
 Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
+
+%debug_package
+%build
+%install
 
 %pre
 
@@ -211,6 +217,9 @@ Lightwave POST service
 %pre client
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
+
+    getent group lightwave >/dev/null || groupadd lightwave
+    getent passwd lightwave >/dev/null || useradd -g lightwave -d / -s /sbin/nologin -c "Lightwave User" lightwave
 
     case "$1" in
         1)
@@ -279,6 +288,11 @@ Lightwave POST service
             # Upgrade
             #
             %{_sbindir}/configure-build.sh "%{_backupdir}"
+            # Remove the cached lightwaveui directory if no corresponding war file is found
+            ROOTDIR="/opt/vmware/vmware-sts/webapps"
+            if [ ! -f "$ROOTDIR/lightwaveui.war" ]; then
+                rm -rf $ROOTDIR/lightwaveui
+            fi
             ;;
     esac
 
@@ -320,12 +334,18 @@ Lightwave POST service
     fi
 
     # common
-    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/install -d %{_logdir} -o lightwave -g lightwave -m 755
+    /bin/mkdir -m 755 -p %{_logconfdir}
+
+    lw_uid="$(id -u lightwave)"
+    lw_gid="$(id -g lightwave)"
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir.reg
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmca.reg
 
     # vmdir
-    /bin/mkdir -m 700 -p %{_vmdir_dbdir}
-    /bin/mkdir -m 755 -p %{_integchkdir}/reports
-    /bin/mkdir -m 755 -p %{_integchkdir}/archive
+    /bin/install -d %{_vmdir_dbdir} -o lightwave -g lightwave -m 700
+    /bin/install -d %{_integchkdir}/reports -o lightwave -g lightwave -m 755
+    /bin/install -d %{_integchkdir}/archive -o lightwave -g lightwave -m 755
 
     if [ -a %{_sasl2dir}/vmdird.conf ]; then
         /bin/rm %{_sasl2dir}/vmdird.conf
@@ -334,24 +354,20 @@ Lightwave POST service
     # add vmdird.conf to sasl2 directory
     /bin/ln -s %{_datadir}/config/saslvmdird.conf %{_sasl2dir}/vmdird.conf
 
-    /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmdird-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/vmdird-syslog-ng.conf
     fi
     /bin/ln -s %{_datadir}/config/vmdird-syslog-ng.conf %{_logconfdir}/vmdird-syslog-ng.conf
 
     # vmdns
-    /bin/mkdir -m 755 -p %{_logdir}
-    /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmdnsd-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/vmdnsd-syslog-ng.conf
     fi
     /bin/ln -s %{_datadir}/config/vmdnsd-syslog-ng.conf %{_logconfdir}/vmdnsd-syslog-ng.conf
 
     # vmca
-    /bin/mkdir -m 700 -p %{_vmca_dbdir}
-    /bin/mkdir -m 755 -p %{_logdir}
-    /bin/mkdir -m 755 -p %{_logconfdir}
+    /bin/install -d %{_vmca_dbdir} -o lightwave -g lightwave -m 700
+
     if [ -a %{_logconfdir}/vmcad-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/vmcad-syslog-ng.conf
     fi
@@ -437,6 +453,15 @@ Lightwave POST service
             ;;
     esac
 
+    setcap cap_dac_read_search,cap_sys_nice,cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdird
+    setcap cap_dac_read_search+ep %{_sbindir}/vmcad
+
+    chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
+    chown -R lightwave:lightwave %{_vmca_dbdir}
+    chown -R lightwave:lightwave %{_vmdir_dbdir}
+    find %{_vmdir_dbdir} -type f -exec chmod 600 {} \;
+    chown -R lightwave:lightwave %{_integchkdir}
+
 %post client
 
     # First argument is 1 => New Installation
@@ -455,7 +480,7 @@ Lightwave POST service
     fi
     /bin/systemctl restart firewall.service
 
-    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/install -d %{_logdir} -o lightwave -g lightwave -m 755
 
     SRP_MECH_OID="1.2.840.113554.1.2.10"
     UNIX_MECH_OID="1.3.6.1.4.1.6876.11711.2.1.2"
@@ -487,17 +512,25 @@ Lightwave POST service
             /bin/rm %{_krb5_gss_conf_dir}/mech-$$
         fi
     fi
+    chmod 644 %{_krb5_gss_conf_dir}/mech
 
     /bin/mkdir -m 700 -p %{_vmafd_dbdir}
     /bin/mkdir -m 700 -p %{_vecsdir}
     /bin/mkdir -m 700 -p %{_crlsdir}
 
-    /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/vmafdd-syslog-ng.conf
     fi
     /bin/ln -s %{_datadir}/config/vmafdd-syslog-ng.conf %{_logconfdir}/vmafdd-syslog-ng.conf
+
+    lw_uid="$(id -u lightwave)"
+    lw_gid="$(id -g lightwave)"
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmafd.reg
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir-client.reg
+
+    /bin/install -d %{_rpcdir} -o lightwave -g lightwave -m 755
+    /bin/install -d %{_ipcdir} -o lightwave -g lightwave -m 755
 
     case "$1" in
         1)
@@ -575,8 +608,15 @@ Lightwave POST service
                     wait
                 fi
             fi
+
+            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
+            %{_likewise_open_bindir}/lwsm restart vmafd
+            %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
             ;;
     esac
+
+    lw_user_sid="S-1-22-1-$lw_uid"
+    %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
 
 %post post
 
@@ -596,7 +636,6 @@ Lightwave POST service
     # add postd.conf to sasl2 directory
     /bin/ln -s %{_datadir}/config/saslpostd.conf %{_sasl2dir}/postd.conf
 
-    /bin/mkdir -m 755 -p %{_logdir}
     /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/postd-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/postd-syslog-ng.conf
@@ -1007,9 +1046,8 @@ Lightwave POST service
 %{_jarsdir}/log4j-api-2.8.2.jar
 %{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
 %{_jarsdir}/log4j-core-2.8.2.jar
-%{_jarsdir}/nimbus-jose-jwt-4.12.jar
+%{_jarsdir}/nimbus-jose-jwt-5.6.jar
 
-%{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 
 %{_servicedir}/vmware-stsd.service
@@ -1047,11 +1085,18 @@ Lightwave POST service
 %{_bindir}/vdcmetric
 %{_bindir}/vmdir_upgrade.sh
 %{_bindir}/vdcresetMachineActCred
+%{_bindir}/run_backup.sh
+%{_bindir}/lw_backup.sh
+%{_bindir}/aws_backup_common.sh
+%{_bindir}/lw_mdb_walflush
+%{_bindir}/lw_restore.sh
+%{_bindir}/aws_restore_common.sh
 
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird
 %{_sbindir}/vmdnsd
 
+%{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
 
 %{_datadir}/config/vmca.reg
@@ -1078,6 +1123,7 @@ Lightwave POST service
 %defattr(-,root,root)
 
 %{_bindir}/ic-join
+%{_bindir}/lightwave
 %{_bindir}/cdc-cli
 %{_bindir}/certool
 %{_bindir}/dir-cli
@@ -1105,7 +1151,6 @@ Lightwave POST service
 %{_lib64dir}/libvmeventclient.so*
 %{_lib64dir}/libvmcaclient.so*
 %{_lib64dir}/libvmdirclient.so*
-%{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/libgssapi_ntlm.so*
 %{_lib64dir}/libgssapi_srp.so*
 %{_lib64dir}/libgssapi_unix.so*
@@ -1174,6 +1219,12 @@ Lightwave POST service
 %{_bindir}/post-cli
 %{_bindir}/mdb_stat
 %{_bindir}/mdb_verify_checksum
+%{_bindir}/mdb_walflush
+%{_bindir}/run_backup.sh
+%{_bindir}/lw_backup.sh
+%{_bindir}/aws_backup_common.sh
+%{_bindir}/post_aws_restore_common.sh
+%{_bindir}/post_restore.sh
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
 

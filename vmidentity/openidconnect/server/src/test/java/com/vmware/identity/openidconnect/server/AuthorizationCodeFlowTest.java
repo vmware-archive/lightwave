@@ -86,7 +86,8 @@ public class AuthorizationCodeFlowTest {
         SessionManager sessionManager = new SessionManager();
         MessageSource messageSource = messageSource();
 
-        AuthenticationController authnController = new AuthenticationController(idmClient, authzCodeManager, sessionManager, messageSource);
+        AuthenticationController authnController = new AuthenticationController(
+                idmClient, authzCodeManager, sessionManager, messageSource, null);
         TokenController tokenController = new TokenController(idmClient, authzCodeManager);
         LogoutController logoutController = new LogoutController(idmClient, sessionManager);
 

@@ -43,6 +43,7 @@ import com.vmware.directory.rest.common.data.SearchResultDTO;
 import com.vmware.directory.rest.common.data.UserDTO;
 import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
+import com.vmware.identity.rest.core.client.exceptions.client.BadRequestException;
 import com.vmware.identity.rest.core.client.exceptions.client.NotFoundException;
 
 public class GroupResourceIT extends IntegrationTestBase {
@@ -98,6 +99,11 @@ public class GroupResourceIT extends IntegrationTestBase {
         assertEquals(updatedDetails.getDescription(), up.getDetails().getDescription());
 
         deleteGroup(testGroup);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testGetMembersWithInvalidGroupName() throws Exception {
+        testAdminClient.group().getMembers(TENANT_NAME, "", TENANT_NAME, MemberType.USER, 200);
     }
 
     @Test

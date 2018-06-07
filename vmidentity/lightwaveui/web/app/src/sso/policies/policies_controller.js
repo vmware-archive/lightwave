@@ -29,6 +29,7 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
         $scope.showlockoutpolicy = showlockoutpolicy;
         $scope.showtokenpolicy = showtokenpolicy;
         $scope.showpasswordpolicy = showpasswordpolicy;
+        $scope.showEditOperatorAccessPolicy = showEditOperatorAccessPolicy;
         $scope.viewcertificate = viewcertificate;
 
         refresh();
@@ -80,7 +81,7 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
 
         function getConfigPartial() {
             $rootScope.globals.errors = null;
-            var configs = ['LOCKOUT', 'PASSWORD', 'TOKEN', 'BRAND', 'AUTHENTICATION'];
+            var configs = ['LOCKOUT', 'PASSWORD', 'TOKEN', 'BRAND', 'AUTHENTICATION', 'OPERATORS_ACCESS'];
             TenantService
                 .GetConfiguration($rootScope.globals.currentUser, configs)
                 .then(function (res) {
@@ -129,7 +130,11 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
             var controller = 'AuthenticationPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
-
+        function showEditOperatorAccessPolicy() {
+            var template = 'sso/policies/operator/operator.edit.html';
+            var controller = 'OperatorPolicyCntrl';
+            popupUtil.open($scope, template, controller);
+        }
         function viewcertificate(certificate){
 
             if(certificate) {

@@ -6,6 +6,7 @@ vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
     background.c \
+    dbbackup.c \
     globals.c \
     heartbeat.c \
     index.c \
@@ -35,6 +36,7 @@ vmdird_SOURCES = \
     tenantmgmt.c \
     tombstone.c \
     tracklastlogin.c \
+    trusts.c \
     utils.c \
     vmdir_sstub.c \
     vmdirftp_sstub.c \

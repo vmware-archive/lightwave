@@ -1801,6 +1801,59 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirGetFileSizeInMB(
+    PCSTR   pszFile,
+    PDWORD  pdwFileSizeInMB
+    )
+{
+    DWORD   dwError = 0;
+    struct stat st = {0};
+
+    if (IsNullOrEmptyString(pszFile) || !pdwFileSizeInMB)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    if (stat(pszFile, &st) == -1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+    *pdwFileSizeInMB = st.st_size / (1024*1024);
+
+error:
+    return dwError;
+}
+
+DWORD
+VmDirPathExists(
+    PCSTR       pszPath,
+    PBOOLEAN    pbFound
+    )
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bFound = FALSE;
+    struct stat statBuf = {0};
+    int         iRetVal = 0;
+
+    if (IsNullOrEmptyString(pszPath) || !pbFound)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    iRetVal = stat(pszPath, &statBuf);
+    if (iRetVal == 0)
+    {
+        bFound = TRUE;
+    }
+
+    *pbFound = bFound;
+
+error:
+    return dwError;
+}
+
 #ifndef _WIN32
 DWORD
 VmDirFileExists(
@@ -3064,49 +3117,6 @@ VmDirSimpleHashMapPairFree(
     VMDIR_SAFE_FREE_MEMORY(pPair->pValue);
 }
 
-/*
- * remove heading/trailing spaces
- * compact consecutive spaces into a single one
- */
-VOID
-VmdDirNormalizeString(
-    PSTR    pszString
-    )
-{
-    size_t  iSize = 0;
-    size_t  iCnt = 0;
-    size_t  iLast = 0;
-
-    if (pszString)
-    {
-        iSize = VmDirStringLenA(pszString);
-
-        for (iCnt = 0, iLast = 0; iCnt < iSize; iCnt++)
-        {
-            if (pszString[iCnt] == ' ' &&
-                    (iCnt == 0 || pszString[iCnt-1] == ' '))
-            {   // skip leading/trailing spaces and multiple spaces
-                continue;
-            }
-
-            pszString[iLast] = pszString[iCnt];
-            iLast++;
-        }
-
-        // handle last space if exists
-        if (iLast > 0 && pszString[ iLast - 1 ] == ' ')
-        {
-            pszString[iLast - 1] = '\0';
-        }
-        else
-        {
-            pszString[iLast] = '\0';
-        }
-    }
-
-    return;
-}
-
 #ifdef _WIN32
 
 static
@@ -3718,3 +3728,97 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirBytesToHexString(
+    PBYTE   pData,
+    size_t  length,
+    PSTR*   ppszHexStr,
+    BOOLEAN bLowerCase
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszHexStr = NULL;
+
+    if (!pData || !ppszHexStr)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(length * 2 + 1, (PVOID*)&pszHexStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < length; i++)
+    {
+        sprintf(pszHexStr + i * 2, bLowerCase ? "%02x" : "%02X", pData[i]);
+    }
+    pszHexStr[length * 2] = '\0';
+
+    *ppszHexStr = pszHexStr;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed with error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pszHexStr);
+    goto cleanup;
+}
+
+DWORD
+VmDirHexStringToBytes(
+    PSTR    pszHexStr,
+    PBYTE*  ppData,
+    size_t* pLength
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    size_t  hexlen = 0;
+    size_t  datalen = 0;
+    PBYTE   pData = NULL;
+    unsigned char twoHexChars[3];
+
+    if (!pszHexStr || !ppData || !pLength)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    hexlen = VmDirStringLenA(pszHexStr);
+    if (hexlen % 2)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    datalen = hexlen / 2;
+    dwError = VmDirAllocateMemory(datalen, (PVOID*)&pData);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < datalen; i++)
+    {
+        strncpy(twoHexChars, &pszHexStr[i*2], 2);
+        twoHexChars[2] = '\0';
+        pData[i] = (unsigned char)strtoul(twoHexChars, NULL, 16);
+    }
+
+    *ppData = pData;
+    *pLength = datalen;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed with error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    VMDIR_SAFE_FREE_MEMORY(pData);
+    goto cleanup;
+}

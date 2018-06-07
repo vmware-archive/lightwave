@@ -86,8 +86,12 @@ VmDirSrvCreateTenant(
     dwError = VmDirDomainNameToDN(pszFQDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // can not create tenant under system domain tree
-    if (VmDirStringEndsWith(pszDomainDN, gVmdirServerGlobals.systemDomainDN.lberbv_val, FALSE))
+    // can not create tenant below and above system domain
+    // e.g. if sytem tenant is "taipei.lw.local",
+    // this function should fail pszDomainName 
+    // "center.taipei.lw.local" || "taipei.lw.local" || "lw.local" || "local"
+    if (VmDirStringEndsWith(pszDomainDN, gVmdirServerGlobals.systemDomainDN.lberbv_val, FALSE) ||
+        VmDirStringEndsWith(gVmdirServerGlobals.systemDomainDN.lberbv_val, pszDomainDN, FALSE))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
     }
@@ -103,6 +107,7 @@ VmDirSrvCreateTenant(
                     pszDomainDN,
                     pszUsername,
                     pszPassword,
+                    NULL,
                     NULL,
                     NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -139,8 +144,10 @@ VmDirSrvDeleteTenant(
     dwError = VmDirFQDNToDN(pszDomainName, &pszDomainDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // can not touch system domain subtree.
-    if (VmDirStringEndsWith(pszDomainDn, gVmdirServerGlobals.systemDomainDN.lberbv_val, FALSE))
+    // can not touch system domain subtree including its ancestor nodes.
+    // e.g. if sytem tenant is "taipei.lw.local",
+    // this function should fail pszDomainName "taipei.lw.local" || "lw.local" || "local"
+    if (VmDirStringEndsWith(gVmdirServerGlobals.systemDomainDN.lberbv_val, pszDomainDn, FALSE))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
     }

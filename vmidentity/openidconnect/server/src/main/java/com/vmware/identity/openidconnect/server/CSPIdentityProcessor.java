@@ -13,24 +13,46 @@
  */
 package com.vmware.identity.openidconnect.server;
 
+import static com.vmware.identity.openidconnect.server.FederatedIdentityProvider.getPrincipalId;
+
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.Collections;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import com.vmware.identity.cdc.CdcGenericException;
+import com.vmware.identity.cdc.CdcSession;
+import com.vmware.identity.cdc.DCStatusInfo;
+import com.vmware.identity.cdc.CdcFactory;
+import com.vmware.identity.idm.DomainType;
+import com.vmware.identity.idm.DuplicateTenantException;
+import com.vmware.identity.idm.ReplicationException;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.InvalidPrincipalException;
+import com.vmware.identity.idm.MemberAlreadyExistException;
+import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OidcConfig;
+import com.vmware.identity.idm.PasswordPolicy;
+import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.Tenant;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -49,15 +71,6 @@ import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.DomainType;
-import com.vmware.identity.idm.DuplicateTenantException;
-import com.vmware.identity.idm.IDPConfig;
-import com.vmware.identity.idm.IIdentityStoreData;
-import com.vmware.identity.idm.InvalidPrincipalException;
-import com.vmware.identity.idm.MemberAlreadyExistException;
-import com.vmware.identity.idm.OidcConfig;
-import com.vmware.identity.idm.PrincipalId;
-import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
@@ -97,17 +110,22 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   public static final String QUERY_PARAM_CLIENT_ID = "client_id";
   public static final String QUERY_PARAM_REDIRECT_URI = "redirect_uri";
   public static final String QUERY_PARAM_STATE = "state";
+  public static final String QUERY_PARAM_NONCE = "nonce";
   public static final String QUERY_PARAM_GRANT_TYPE = "grant_type";
 
   private static final String ROLE_CSP_ORG_OWNER = "csp:org_owner";
   private static final String ADMIN_GROUP_NAME = "Administrators";
   private static final String CSP_ORG_LINK = "/csp/gateway/am/api/orgs/";
+  private static final String TENANT_TEMPLATE = "{tenant}";
 
   @Autowired
   private CasIdmClient idmClient;
 
   @Autowired
   private SessionManager sessionManager;
+
+  @Autowired
+  private FederationAuthenticationRequestTracker authnRequestTracker;
 
   private final HashMap<String, FederatedTokenPublicKey> publicKeyLookup;
   private final ReadWriteLock keyLookupLock;
@@ -121,22 +139,36 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     writeLockKeyLookup = keyLookupLock.writeLock();
   }
 
+  // for unit tests
+  public CSPIdentityProcessor(CasIdmClient idmClient, SessionManager sessionManager) {
+    this();
+    this.idmClient = idmClient;
+    this.sessionManager = sessionManager;
+  }
+
     @Override
-    public HttpResponse processAuthRequestForFederatedIDP(HttpServletRequest request, String tenant,
-            IDPConfig idpConfig) throws Exception {
-        HttpRequest httpRequest = HttpRequest.from(request);
-        AuthenticationRequest authnRequest = AuthenticationRequest.parse(httpRequest);
+    public HttpResponse processAuthRequestForFederatedIDP(AuthenticationRequest authnRequest, String tenant,
+            IDPConfig idpConfig) throws ServerException {
+        Validate.notNull(authnRequest, "auth request must not be null.");
+        Validate.notEmpty(tenant, "tenant must not be null.");
+        Validate.notNull(idpConfig, "idp config must not be null.");
         FederationRelayState.Builder builder = new FederationRelayState.Builder(idpConfig.getEntityID(),
                 authnRequest.getClientID().getValue(), authnRequest.getRedirectURI().toString());
+        builder.withTenant(tenant);
+        State state = new State();
+        builder.withState(state);
+        builder.withNonce(new Nonce());
+        builder.withSPInitiatedNonce(authnRequest.getNonce().getValue());
+        builder.withSPInitiatedScope(authnRequest.getScope().toString());
+        builder.withSPInitiatedState(authnRequest.getState().getValue());
+        builder.withSPInitiatedResponseMode(authnRequest.getResponseMode().getValue());
+        builder.withSPInitiatedResponseType(authnRequest.getResponseType().toString());
+        FederationRelayState relayState = builder.build();
+
+        authnRequestTracker.add(state, relayState);
+
         final String orgLink = CSP_ORG_LINK + tenant;
-        builder.tenant(tenant);
-        builder.nonce(authnRequest.getNonce().getValue());
-        builder.scope(authnRequest.getScope().toString());
-        builder.spInitiatedState(authnRequest.getState().getValue());
-        builder.responseMode(authnRequest.getResponseMode().getValue());
-        builder.responseType(authnRequest.getResponseType().toString());
-        final FederationRelayState relayState = builder.build();
-        return processRequestPreAuth(request, relayState, orgLink, idpConfig);
+        return processRequestPreAuth(relayState, orgLink, idpConfig);
   }
 
   @Override
@@ -146,19 +178,31 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       FederationRelayState relayState,
       IDPConfig idpConfig
   ) throws Exception {
+    Validate.notNull(request, "http request must not be null.");
+    Validate.notNull(relayState, "relay state must not be null.");
+    Validate.notNull(idpConfig, "idp config must not be null.");
     final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
     if (orgLink != null && !orgLink.isEmpty()) {
-      FederationRelayState.Builder builder = new FederationRelayState.Builder(relayState.getIssuer(),
-                relayState.getClientId(), relayState.getRedirectURI());
+      // check tenant name is valid
       int index = orgLink.lastIndexOf("/") + 1;
       String orgId = orgLink.substring(index);
       if (StringUtils.isNotEmpty(relayState.getTenant())
               && !StringUtils.equalsIgnoreCase(relayState.getTenant(), orgId)) {
-          ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
+          ErrorObject errorObject = ErrorObject.invalidRequest("invalid tenant name");
           throw new ServerException(errorObject);
       }
-      builder.tenant(orgId);
-      return processRequestPreAuth(request, builder.build(), orgLink, idpConfig);
+
+      relayState = new FederationRelayState.Builder(relayState.getIssuer(),
+              relayState.getClientId(), relayState.getRedirectURI())
+              .withTenant(orgId)
+              .withState(new State())
+              .withNonce(new Nonce())
+              .build();
+
+      validateOIDCClient(relayState);
+
+      authnRequestTracker.add(relayState.getState(), relayState);
+      return processRequestPreAuth(relayState, orgLink, idpConfig);
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
@@ -171,20 +215,33 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
   private HttpResponse
   processRequestPreAuth(
-      HttpServletRequest request,
       FederationRelayState relayState,
       String orgLink,
       IDPConfig idpConfig
-  ) throws Exception {
+  ) throws ServerException{
+    Validate.notNull(relayState, "relay state must not be null.");
+    Validate.notEmpty(orgLink, "org link must not empty.");
+    Validate.notNull(idpConfig, "idp config must not be null.");
     OidcConfig oidcConfig = idpConfig.getOidcConfig();
-    URI target = new URI(oidcConfig.getAuthorizeRedirectURI());
+    URI target= null;
+    try {
+        target = new URI(oidcConfig.getAuthorizeRedirectURI());
+    } catch (URISyntaxException e) {
+        throw new ServerException(
+            ErrorObject.serverError(
+                String.format(
+                    "Invalid Authorize Redirect URL for '%s'",
+                    idpConfig.getEntityID())),
+                e);
+    }
 
     Map<String, String> parameters = new HashMap<String, String>();
 
     parameters.put(QUERY_PARAM_CLIENT_ID, oidcConfig.getClientId());
     parameters.put(QUERY_PARAM_ORG_LINK, orgLink);
     parameters.put(QUERY_PARAM_REDIRECT_URI, oidcConfig.getRedirectURI()); // match URI registered with ClientID
-    parameters.put(QUERY_PARAM_STATE, relayState.getEncodedValue());
+    parameters.put(QUERY_PARAM_STATE, relayState.getState().getValue());
+    parameters.put(QUERY_PARAM_NONCE, relayState.getNonce().getValue());
 
     URI redirectTarget = URIUtils.appendQueryParameters(target, parameters);
     return HttpResponse.createRedirectResponse(redirectTarget);
@@ -197,22 +254,34 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       String authenticode,
       IDPConfig idpConfig
   ) throws Exception {
+    Validate.notNull(request, "http request must not be null.");
+    Validate.notNull(relayState, "relay state must not be null.");
+    Validate.notNull(relayState.getState(), "state must not be null.");
+    Validate.notEmpty(authenticode, "auth code must not be empty.");
+    Validate.notNull(idpConfig, "idp config must not be null.");
+
     SessionID session = new SessionID();
     sessionManager.add(session);
     // Get the Token corresponding to the code
     Pair<CSPToken, CSPToken> token = getToken(authenticode, relayState, idpConfig, session);
     // Process the response
-    // TODO: Nonce and state handling
     return processResponse(token, idpConfig, relayState, session);
   }
 
   private Pair<CSPToken, CSPToken>
   getToken( String code, FederationRelayState relayState, IDPConfig idpConfig, SessionID session) throws Exception {
+    Validate.notEmpty(code, "auth code must not be empty.");
+    Validate.notNull(relayState, "relay state must not be null.");
+    Validate.notNull(relayState.getState(), "state must not be null.");
+    Validate.notNull(relayState.getNonce(), "nonce must not be null.");
+    Validate.notNull(idpConfig, "idp config must not be null.");
+    Validate.notNull(session, "session must not be null.");
     OidcConfig oidcConfig = idpConfig.getOidcConfig();
     URI target = new URI(oidcConfig.getTokenRedirectURI());
     Map<String, String> parameters = new HashMap<String, String>();
     parameters.put(QUERY_PARAM_REDIRECT_URI, oidcConfig.getRedirectURI());
-    parameters.put(QUERY_PARAM_STATE, relayState.getEncodedValue());
+    parameters.put(QUERY_PARAM_STATE, relayState.getState().getValue());
+    parameters.put(QUERY_PARAM_NONCE, relayState.getNonce().getValue());
     parameters.put(QUERY_PARAM_GRANT_TYPE, "authorization_code");
     parameters.put(QUERY_PARAM_CODE, code);
     Map<String, String> headers = new HashMap<String, String>();
@@ -233,27 +302,38 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   private HttpResponse
-  processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState state, SessionID session) throws Exception {
+  processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState relayState, SessionID session) throws Exception {
+    Validate.notNull(token, "Token must not be null.");
+    Validate.notNull(relayState, "Relay state must not be null.");
+    Validate.notNull(idpConfig, "IDPConfig must not be null.");
+    Validate.notNull(session, "Session must not be null.");
+
     CSPToken idToken = token.getLeft();
     CSPToken accessToken = token.getRight();
+    // validate nonce
+    Validate.notNull(relayState.getNonce(), "nonce must not be null");
+    if (idToken.getNonce() != null) {
+        // jira task: CSP-6969
+        Validate.isTrue(relayState.getNonce().equals(idToken.getNonce()), "invalid nonce in id token");
+    }
     String tenantName = idToken.getTenant();
-    if (StringUtils.isEmpty(tenantName) || StringUtils.isEmpty(state.getTenant())
-            || !StringUtils.equalsIgnoreCase(tenantName, state.getTenant())) {
+    if (StringUtils.isEmpty(tenantName) || StringUtils.isEmpty(relayState.getTenant())
+            || !StringUtils.equalsIgnoreCase(tenantName, relayState.getTenant())) {
       ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
       throw new ServerException(errorObject);
     }
 
     TenantInfo tenantInfo = getTenantInfo(tenantName);
-    PrincipalId user = new PrincipalId(accessToken.getUsername(), accessToken.getDomain());
+    PrincipalId user = getPrincipalId(accessToken.getUsername(), accessToken.getDomain());
     FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
     boolean isOrgOwner = accessToken.getPermissions().contains(ROLE_CSP_ORG_OWNER);
     if (tenantInfo == null) {
       if (isOrgOwner) {
-          // Multiple requests to /federate endpoint can happen at the same time.
-          // Multiple lightwave servers are in the picture which serve requests at the same time.
-          // There is potential race condition for creating tenant.
-          createTenant(tenantName, state.getIssuer());
-          createOrgOwnerAccount(tenantName, federatedIdp, state.getIssuer(), user);
+          // Multiple requests to /federate endpoint can happen at the same time; tenant creation will be routed to partnerDC
+          String partnerDC = getPartnerDC();
+          createTenant(partnerDC, tenantName, relayState.getIssuer());
+          createOrgOwnerAccount(tenantName, federatedIdp, relayState.getIssuer(), user);
+          tenantInfo = getTenantInfo(tenantName);
       } else {
           ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] does not exist", tenantName));
           LoggerUtils.logFailedRequest(logger, errorObject);
@@ -267,13 +347,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
 
     FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
-    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, state.getIssuer());
+    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
 
     // validate perms in the access token against the configured perm roles in the federated idp
     federatedIdp.validateUserPermissions(accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());
 
     if (!federatedIdp.isFederationUserActive(user)) {
-        federatedIdp.provisionFederationUser(state.getIssuer(), user);
+        federatedIdp.provisionFederationUser(relayState.getIssuer(), user);
         if (isOrgOwner) {
             try {
                 idmClient.addUserToGroup(tenantName, user, ADMIN_GROUP_NAME);
@@ -286,20 +366,24 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     federatedIdp.updateUserGroups(user, accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings());
 
     ClientInfoRetriever clientInfoRetriever = new ClientInfoRetriever(idmClient);
-    ClientID clientID = new ClientID(state.getClientId());
+    ClientID clientID = new ClientID(relayState.getClientId());
     ClientInfo clientInfo = clientInfoRetriever.retrieveClientInfo(systemDomain, clientID);
 
-    Cookie sessionCookie = loggedInSessionCookie(tenantName, session);
-    Cookie cspIssuerCookie = CSPIssuerCookie(tenantName, state.getIssuer());
     PersonUser personUser = new PersonUser(user, tenantName);
+    UserInfoRetriever userInfoRetriever = new UserInfoRetriever(idmClient);
+    personUser = userInfoRetriever.getUPN(personUser); // use upn from ldap
+
+    Cookie sessionCookie = loggedInSessionCookie(tenantName, session);
+    Cookie cspIssuerCookie = CSPIssuerCookie(tenantName, relayState.getIssuer());
     sessionManager.update(session, personUser, LoginMethod.PASSWORD, clientInfo);
     HttpResponse httpResponse;
-    if (StringUtils.isNotEmpty(state.getSPInitiatedState())) {
-        AuthenticationSuccessResponse authnSuccessResponse = processIDTokenResponse(tenantName, state, personUser, session);
+    if (StringUtils.isNotEmpty(relayState.getSPInitiatedState())) {
+        AuthenticationSuccessResponse authnSuccessResponse = processIDTokenResponse(tenantInfo,
+                userInfoRetriever, relayState, personUser, session);
         httpResponse = authnSuccessResponse.toHttpResponse();
     } else {
-        String redirectURI = String.format("%s/%s", state.getRedirectURI(), tenantName);
-        httpResponse = HttpResponse.createRedirectResponse(new URI(redirectURI));
+        URI redirectURI = new URI(StringUtils.replace(relayState.getRedirectURI(), TENANT_TEMPLATE, tenantName));
+        httpResponse = HttpResponse.createRedirectResponse(redirectURI);
     }
     httpResponse.addCookie(sessionCookie);
     httpResponse.addCookie(cspIssuerCookie);
@@ -307,26 +391,28 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     return httpResponse;
   }
 
-    private AuthenticationSuccessResponse processIDTokenResponse(String tenant, FederationRelayState state,
-            PersonUser personUser, SessionID sessionId) throws Exception {
+    private AuthenticationSuccessResponse processIDTokenResponse(TenantInfo tenantInfo, UserInfoRetriever userInfoRetriever,
+            FederationRelayState state, PersonUser personUser, SessionID sessionId) throws Exception {
+        Validate.notNull(tenantInfo, "TenantInfo must not be null.");
+        Validate.notNull(state, "Relay state must not be null.");
+        Validate.notNull(personUser, "Person user must not be null.");
+        Validate.notNull(sessionId, "Session must not be null.");
+
         ServerInfoRetriever serverInfoRetriever = new ServerInfoRetriever(idmClient);
-        UserInfoRetriever userInfoRetriever = new UserInfoRetriever(idmClient);
-        Scope scope = Scope.parse(state.getScope());
-        Set<ResourceServerInfo> resourceServerInfos = serverInfoRetriever.retrieveResourceServerInfos(tenant, scope);
+        Scope scope = Scope.parse(state.getSPInitiatedScope());
+        Set<ResourceServerInfo> resourceServerInfos = serverInfoRetriever.retrieveResourceServerInfos(tenantInfo.getName(), scope);
         UserInfo userInfo = userInfoRetriever.retrieveUserInfo(personUser, scope, resourceServerInfos);
-        TenantInfoRetriever tenantInfoRetriever = new TenantInfoRetriever(idmClient);
-        TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
 
         TokenIssuer tokenIssuer = new TokenIssuer(personUser, (SolutionUser) null, userInfo, tenantInfo, scope,
-                new Nonce(state.getNonce()), new ClientID(state.getClientId()), sessionId);
+                new Nonce(state.getSPInitiatedNonce()), new ClientID(state.getClientId()), sessionId);
 
         IDToken idToken = tokenIssuer.issueIDToken();
         AccessToken accessToken = null;
-        if (ResponseType.parse(state.getResponseType()).contains(ResponseTypeValue.ACCESS_TOKEN)) {
+        if (ResponseType.parse(state.getSPInitiatedResponseType()).contains(ResponseTypeValue.ACCESS_TOKEN)) {
             accessToken = tokenIssuer.issueAccessToken();
         }
 
-        return new AuthenticationSuccessResponse(ResponseMode.parse(state.getResponseMode()),
+        return new AuthenticationSuccessResponse(ResponseMode.parse(state.getSPInitiatedResponseMode()),
                 new URI(state.getRedirectURI()), State.parse(state.getSPInitiatedState()), false,
                 (AuthorizationCode) null, idToken, accessToken);
     }
@@ -386,6 +472,60 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
   }
 
+  // package access for unit testing
+  void validateOIDCClient(FederationRelayState relayState) throws ServerException {
+      Validate.notNull(relayState, "relay state must not be null.");
+      String tenantName = relayState.getTenant();
+      String redirectURL = relayState.getRedirectURI();
+      // validate url format
+      try {
+          URI testRedirectURI = new URI(StringUtils.replace(redirectURL, TENANT_TEMPLATE, tenantName));
+        } catch (URISyntaxException e) {
+          ErrorObject errorObject = ErrorObject.invalidRequest(
+                                        String.format(
+                                            "client redirect uri is invalid. %s: %s",
+                                            e.getClass().getName(),
+                                            e.getMessage()
+                                        )
+                                    );
+          LoggerUtils.logFailedRequest(logger, errorObject, e);
+          throw new ServerException(errorObject);
+      }
+
+      // check client id is valid
+      String clientId = relayState.getClientId();
+      OIDCClient client = null;
+      TenantInfo tenantInfo = getTenantInfo(relayState.getTenant());
+      List<String> validRedirectUris = new ArrayList<>();
+
+      try {
+          if (tenantInfo == null) {
+              client = this.idmClient.getOIDCClient(getSystemTenant(), clientId);
+          } else {
+              client = this.idmClient.getOIDCClient(tenantName, clientId);
+              validRedirectUris.addAll(client.getRedirectUris());
+          }
+          if (client.isMultiTenant()) {
+              validRedirectUris.addAll(client.getRedirectUriTemplates());
+          }
+      } catch (Exception e) {
+          throw new ServerException(ErrorObject.invalidRequest("invalid oidc client"));
+      }
+
+      // check redirect uri is valid
+      if (!validRedirectUris.contains(redirectURL)) {
+          throw new ServerException(ErrorObject.invalidRequest("unregistered redirect_uri"));
+      }
+  }
+
+  private String getSystemTenant() throws ServerException {
+      try {
+          return idmClient.getSystemTenant();
+      } catch (Exception e) {
+          throw new ServerException(ErrorObject.serverError("Unable to retrieve system tenant name."));
+      }
+  }
+
   private void validateIssuer(FederationToken token, String expectedIssuer) throws Exception {
       String issuer = token.getIssuer();
       if (issuer == null || !issuer.equalsIgnoreCase(expectedIssuer)) {
@@ -405,18 +545,41 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       }
   }
 
-  private void createTenant(String tenantName, String entityId) throws ServerException {
+  private void createTenant(String partnerDC, String tenantName, String entityId) throws ServerException {
         Validate.notEmpty(tenantName, "tenant name must not be empty");
         Validate.notEmpty(entityId, "csp issuer must not be empty");
 
         try {
-            idmClient.addTenant(new Tenant(tenantName), "Administrator",
+            idmClient.addTenant(partnerDC, new Tenant(tenantName), "Administrator",
                     idmClient.generatePassword(idmClient.getSystemTenant()).toCharArray());
+            logger.info("Setting credentials for tenant {}", tenantName);
             idmClient.setTenantCredentials(tenantName);
+            logger.info("Setting issuer for tenant {}", tenantName);
             idmClient.setIssuer(tenantName, entityId);
+            // extend password expiry to 700 days
+            logger.info("Setting password policy for tenant {}", tenantName);
+            int passwordExpirationInDays = 700;
+            PasswordPolicy currentPasswordPolicy = idmClient.getPasswordPolicy(tenantName);
+            PasswordPolicy newPasswordPolicy = new PasswordPolicy(currentPasswordPolicy.getDescription(),
+                    currentPasswordPolicy.getProhibitedPreviousPasswordsCount(),
+                    currentPasswordPolicy.getMinimumLength(),
+                    currentPasswordPolicy.getMaximumLength(),
+                    currentPasswordPolicy.getMinimumAlphabetCount(),
+                    currentPasswordPolicy.getMinimumUppercaseCount(),
+                    currentPasswordPolicy.getMinimumLowercaseCount(),
+                    currentPasswordPolicy.getMinimumNumericCount(),
+                    currentPasswordPolicy.getMinimumSpecialCharacterCount(),
+                    currentPasswordPolicy.getMaximumAdjacentIdenticalCharacterCount(),
+                    passwordExpirationInDays);
+            idmClient.setPasswordPolicy(tenantName, newPasswordPolicy);
             logger.info("Successfully created CSP tenant {}", tenantName);
         } catch (DuplicateTenantException e) {
             ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] already exists.", tenantName));
+            throw new ServerException(errorObject, e);
+        } catch (ReplicationException e) {
+            // Creating remote tenant failed due to replication delay. The created tenant should already be cleanup up
+            logger.error("Failed to create csp tenant {} on {}", tenantName, partnerDC);
+            ErrorObject errorObject = ErrorObject.serverError(String.format("Failed to create tenant [%s]", tenantName));
             throw new ServerException(errorObject, e);
         } catch (Exception e) {
             try {
@@ -424,11 +587,11 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
                 idmClient.deleteTenant(tenantName);
             } catch (Exception ex) {
                 ErrorObject errorObject = ErrorObject.serverError(String.format(
-                        "Tenant % provision failure.", tenantName));
+                        "Tenant [%s] provision failure.", tenantName));
                 throw new ServerException(errorObject, ex);
             }
             ErrorObject errorObject = ErrorObject.serverError(String.format(
-                    "Tenant % provision failure.", tenantName));
+                    "Tenant [%s] provision failure.", tenantName));
             throw new ServerException(errorObject, e);
         }
   }
@@ -590,9 +753,72 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       CSPToken accessToken = new CSPToken(TokenClass.ACCESS_TOKEN, accessTokenJWT);
 
       validateIssuer(idToken, key.getIssuer());
+      validateIssuer(accessToken, key.getIssuer());
       validateExpiration(idToken);
+      validateExpiration(accessToken);
 
       return Pair.of(idToken, accessToken);
     }
   }
+
+    private String getPartnerDC()
+    {
+        String partnerDC = null;
+        try (CdcSession cdcSession = CdcFactory.createCdcSessionViaIPC())
+        {
+            if (cdcSession == null)
+            {
+                logger.error("Failed to create CDC Session Via IPC, could not find partner DC");
+                return partnerDC;
+            }
+            partnerDC = getHealthyPartnerDC(cdcSession);
+        }
+        catch (CdcGenericException e)
+        {
+            logger.error(String.format(
+                    "Failed to find partner DC, Error: %s",
+                    e.getMessage()));
+
+            return partnerDC;
+        }
+
+        if (partnerDC == null)
+        {
+            // there should be at least one DCInfo in list if CDC is enabled
+            logger.info(String.format("DC Status Info list is empty, defaulting to localhost"));
+        }
+
+        return partnerDC;
+    }
+
+    private String getHealthyPartnerDC(CdcSession cdcSession)
+    {
+        List <String> dcEntries = cdcSession.enumDCEntries();
+        // Sort lexicographically
+        Collections.sort(dcEntries);
+
+        for (String entry : dcEntries)
+        {
+            DCStatusInfo dcStatusInfo = null;
+            try
+            {
+                dcStatusInfo = cdcSession.getDCStatusInfo(entry, null);
+            }
+            catch (CdcGenericException e)
+            {
+                logger.error(String.format(
+                                "Could not get DC status info for [%s], Error: %s",
+                                entry,
+                                e.getMessage()));
+
+                continue;
+            }
+
+            if (dcStatusInfo != null && dcStatusInfo.isAlive)
+            {
+                return dcStatusInfo.dcName;
+            }
+        }
+        return null;
+    }
 }

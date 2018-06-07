@@ -34,6 +34,7 @@ function AuthenticationService($window, $rootScope) {
             + "&tenant="
             + $rootScope.globals.currentUser.tenant;
         $window.sessionStorage.currentUser = 'logout';
+        $window.sessionStorage.removeItem("lwLoginParams");
         $window.location.href = logoutUri;
     }
 

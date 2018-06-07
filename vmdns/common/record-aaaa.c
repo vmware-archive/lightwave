@@ -200,20 +200,15 @@ VmDnsIp6AddressRecordToString(
     DWORD dwError = ERROR_SUCCESS;
     PSTR  pStr = NULL;
     PCSTR pszType = NULL;
-    CHAR  szAddr[INET6_ADDRSTRLEN];
+    PSTR  pszIp6Address = NULL;
 
     dwError = VmDnsRecordTypeToString(pRecord->dwType, &pszType);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (!inet_ntop(
-            AF_INET6,
-            pRecord->Data.AAAA.Ip6Address.IP6Byte,
-            szAddr,
-            sizeof(szAddr)))
-    {
-        dwError = ERROR_BAD_FORMAT;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
+    dwError = VmDnsIp6AddressToString(
+                    pRecord->Data.AAAA.Ip6Address,
+                    &pszIp6Address);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateStringPrintfA(
                     &pStr,
@@ -226,13 +221,14 @@ VmDnsIp6AddressRecordToString(
                     pRecord->pszName,
                     pRecord->iClass,
                     pRecord->dwTtl,
-                    szAddr
+                    pszIp6Address
                     );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppStr = pStr;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszIp6Address);
     return dwError;
 
 error:

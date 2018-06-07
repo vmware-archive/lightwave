@@ -87,3 +87,13 @@ typedef struct _VDIR_MDB_GLOBALS
     MDB_dbi                         mdbGenericUniqKeyDBi;
 
 } VDIR_MDB_GLOBALS, *PVDIR_MDB_GLOBALS;
+
+typedef struct _VDIR_MDB_STATE_GLOBALS
+{
+    PVMDIR_MUTEX    pMutex;
+    DWORD           dwDBCopyCount;
+    unsigned long   xLogNum;
+    unsigned long   dbSizeMb;
+    unsigned long   dbMapMb;
+    CHAR            bufDBPath[VMDIR_MAX_FILE_NAME_LEN];
+} VDIR_MDB_STATE_GLOBALS, *PVDIR_MDB_STATE_GLOBALS;

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -240,6 +240,16 @@ VmDirSetupHostInstance(
     );
 
 DWORD
+VmDirSetupHostInstanceTrust(
+    PCSTR   pszDomainName,
+    PCSTR   pszLotusServerName, // optional Lotus Server Name (FQDN/IP/hostname)
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PCSTR   pszSiteName,
+    PVMDIR_TRUST_INFO_A pTrustInfoA
+    );
+
+DWORD
 VmDirDemote(
     PCSTR   pszUserName,
     PCSTR   pszPassword
@@ -283,6 +293,15 @@ VmDirClientLeave(
     );
 
 DWORD
+VmDirClientLeaveEx(
+    PCSTR    pszServerName,
+    PCSTR    pszUserName,
+    PCSTR    pszPassword,
+    PCSTR    pszDomainName,
+    PCSTR    pszMachine
+    );
+
+DWORD
 VmDirCreateComputerAccount(
     PCSTR pszServerName,
     PCSTR pszUserName,
@@ -304,6 +323,22 @@ VmDirCreateComputerAccountAtomic(
 
 DWORD
 VmDirSetupTenantInstance(
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    );
+
+DWORD
+VmDirSetupTenantInstanceEx(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword
+    );
+
+DWORD
+VmDirDeleteTenantEx(
+    PCSTR pszServerName,
     PCSTR pszDomainName,
     PCSTR pszUsername,
     PCSTR pszPassword
@@ -487,6 +522,12 @@ DWORD
 VmDirGetVmDirLogPath(
     PSTR  pszPath,
     PCSTR pszLogFile
+    );
+
+DWORD
+VmDirBackupDB(
+    PVMDIR_SERVER_CONTEXT hServer,
+    PCSTR       pszBackupPath
     );
 
 DWORD
@@ -852,6 +893,57 @@ VmDirCloseDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hBinding,
     FILE **                 ppFileHandle
 );
+
+DWORD
+VmDirCreateDomainTrust(
+    PCSTR    pszServerName,
+    PCSTR    pszTrustName,
+    PCSTR    pszDomainName,
+    PCSTR    pszUserName,
+    PCSTR    pszPassword,
+    PCSTR    pszTrustPasswdIn,
+    PCSTR    pszTrustPasswdOut
+    );
+
+DWORD
+VmDirAllocateTrustInfoA(
+    PCSTR   pszName,
+    PCSTR   pszDC,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PVMDIR_TRUST_INFO_A *ppTrustInfoA
+    );
+
+VOID
+VmDirFreeTrustInfoA(
+    PVMDIR_TRUST_INFO_A pTrustInfoA
+    );
+
+DWORD
+VmDirAllocateTrustInfoW(
+    PCWSTR   pwszName,
+    PCWSTR   pwszDC,
+    PCWSTR   pwszUserName,
+    PCWSTR   pwszPassword,
+    PVMDIR_TRUST_INFO_W *ppTrustInfoW
+    );
+
+VOID
+VmDirFreeTrustInfoW(
+    PVMDIR_TRUST_INFO_W pTrustInfoW
+    );
+
+DWORD
+VmDirAllocateTrustInfoAFromW(
+    PVMDIR_TRUST_INFO_W pTrustInfoW,
+    PVMDIR_TRUST_INFO_A *ppTrustInfoA
+    );
+
+DWORD
+VmDirAllocateTrustInfoWFromA(
+    PVMDIR_TRUST_INFO_A pTrustInfoA,
+    PVMDIR_TRUST_INFO_W *ppTrustInfoW
+    );
 
 /*
  * Deprecated function in LW 1.2

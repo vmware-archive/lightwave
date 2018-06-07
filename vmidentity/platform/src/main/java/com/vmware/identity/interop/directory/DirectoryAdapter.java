@@ -54,6 +54,14 @@ public class DirectoryAdapter extends NativeAdapter
             );
 
         int
+        VmDirSetupTenantInstanceEx(
+                String host,
+                String domainName,
+                String adminId,
+                String password
+        );
+
+        int
         VmDirSetPassword(
             String hostURI,
             String adminDN,
@@ -140,6 +148,15 @@ public class DirectoryAdapter extends NativeAdapter
             String              domainName
         );
 
+        int
+        VmDirDeleteTenantEx
+        (
+                String              hostname,
+                String              domainName,
+                String              adminId,
+                String              password
+        );
+
         void
         VmDirFreeMemory
             (
@@ -177,6 +194,27 @@ public class DirectoryAdapter extends NativeAdapter
     @Override
     public
     void
+    CreateDirectoryInstanceRemote(
+            String hostname,
+            String domainName,
+            String administratorId,
+            String password)
+    {
+        Validate.validateNotEmpty(hostname, "hostname");
+        Validate.validateNotEmpty(domainName, "domain name");
+        Validate.validateNotEmpty(administratorId, "administrator id");
+        Validate.validateNotEmpty(password, "password");
+
+        CheckError(DirectoryClientLibrary.INSTANCE.VmDirSetupTenantInstanceEx(
+                hostname,
+                domainName,
+                administratorId,
+                password));
+    }
+
+    @Override
+    public
+    void
     DeleteDirectoryInstance(
             String domainName,
             String administratorId,
@@ -190,6 +228,27 @@ public class DirectoryAdapter extends NativeAdapter
                                             administratorId,
                                             password,
                                             domainName));
+    }
+
+    @Override
+    public
+    void
+    DeleteDirectoryInstanceRemote(
+            String hostname,
+            String domainName,
+            String administratorId,
+            String password)
+    {
+        Validate.validateNotEmpty(hostname, "hostname");
+        Validate.validateNotEmpty(administratorId, "administrator id");
+        Validate.validateNotEmpty(password, "password");
+        Validate.validateNotEmpty(domainName, "domain name");
+
+        CheckError(DirectoryClientLibrary.INSTANCE.VmDirDeleteTenantEx(
+                hostname,
+                domainName,
+                administratorId,
+                password));
     }
 
     @Override

@@ -31,7 +31,8 @@ vdcschema_LDADD = \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
     @PTHREAD_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @DL_LIBS@
 
 vdcschema_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

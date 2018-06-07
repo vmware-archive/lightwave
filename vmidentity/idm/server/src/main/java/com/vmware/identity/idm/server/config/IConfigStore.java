@@ -29,6 +29,7 @@ import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.RSAAMInstanceInfo;
 import com.vmware.identity.idm.RSAAgentConfig;
@@ -373,4 +374,9 @@ public interface IConfigStore
    public void addRSAInstanceInfo(String tenantName, RSAAMInstanceInfo instInfo) throws Exception;
 
    public void deleteRSAInstanceInfo(String tenantName, String siteID) throws Exception;
+
+   public OperatorAccessPolicy getOperatorAccessPolicy(String tenantName) throws Exception;
+
+   public void setOperatorAccessPolicy(String tenantName, OperatorAccessPolicy policy) throws Exception;
+
 }

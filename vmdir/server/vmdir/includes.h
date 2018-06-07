@@ -36,6 +36,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 // OpenLDAP ber library include files
 #include <lber.h>

@@ -1184,13 +1184,17 @@ public class TokenAuthorityTest {
       Collection<List<Certificate>> validCerts = new HashSet<List<Certificate>>();
       validCerts.add(certPathList);
 
+      Set<String> blackListedDomains = new HashSet<String>();
+      blackListedDomains.addAll(Arrays.<String>asList( TestConstants.SYSTEM_TENANT, TestConstants.LOCALOS));
+
       @SuppressWarnings("unchecked")
       Config config = new Config(new SamlAuthorityConfiguration(ISSUER,
          (List<Certificate>) signInfo.getCertificationPath().getCertificates(),
          signInfo.getPrivateKey(), signatureAlgorithm),
          tokenRestrictions != null ? tokenRestrictions
             : defaultTokenRestrictions, validCerts, DEFAULT_CLOCK_TOLERANCE,
-            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)));
+            Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)),
+            blackListedDomains);
       expect(configExtractor.getConfig()).andReturn(config).anyTimes();
 
       replay(configExtractor, configExtractorFactory);

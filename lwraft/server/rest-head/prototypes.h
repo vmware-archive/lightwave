@@ -45,6 +45,12 @@ VmDirRESTAuthTokenValidate(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
     );
 
+DWORD
+VmDirRESTAuthTokenValidatePOP(
+    PVDIR_REST_AUTH_TOKEN   pAuthToken,
+    PVDIR_REST_OPERATION    pRestOp
+    );
+
 VOID
 VmDirFreeRESTAuthToken(
     PVDIR_REST_AUTH_TOKEN   pAuthToken
@@ -610,4 +616,27 @@ DWORD
 VmDirRESTIsValidOrigin(
     PSTR                    pRestOp,
     BOOLEAN                 *isValidOrigin
+    );
+
+// curlhandlecache.c
+DWORD
+VmDirRESTCurlHandleCacheInit(
+    PVDIR_REST_CURL_HANDLE_CACHE* ppRestproxyCache
+    );
+
+DWORD
+VmDirRESTCurlHandleCacheGet(
+    PVDIR_REST_CURL_HANDLE_CACHE pRestCurlHandleCache,
+    PSTR pszURL,
+    CURL** ppCurlHandle);
+
+DWORD
+VmDirRESTCurlHandleCachePut(
+    PVDIR_REST_CURL_HANDLE_CACHE pRestCurlHandleCache,
+    PSTR pszURL,
+    CURL* pCurlHandleMap);
+
+VOID
+VmDirRESTCurlHandleCacheFree(
+    PVDIR_REST_CURL_HANDLE_CACHE pRestCurlHandleCache
     );

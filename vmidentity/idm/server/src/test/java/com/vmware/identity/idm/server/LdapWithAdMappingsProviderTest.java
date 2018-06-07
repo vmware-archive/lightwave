@@ -51,6 +51,7 @@ import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
 
+@Ignore
 public class LdapWithAdMappingsProviderTest
 {
    // bugzilla#1173915 - unable to create NativeAd due to changes. Need to adjust the tests ....

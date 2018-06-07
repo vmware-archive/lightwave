@@ -24,7 +24,8 @@ vdcsrp_LDADD = \
     @CRYPT_LIBS@ \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @DL_LIBS@
 
 vdcsrp_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

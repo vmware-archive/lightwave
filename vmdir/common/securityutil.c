@@ -207,6 +207,28 @@ error:
 }
 
 BOOL
+VmDirIsLightwaveSecurityContext (
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext
+    )
+{
+    BOOL bIsLightwave = FALSE;
+    DWORD dwError = 0;
+
+    if (!pSecurityContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    bIsLightwave = VmDirIsLightwaveSecurityContextImpl (
+                          pSecurityContext
+                          );
+
+error:
+    return bIsLightwave;
+}
+
+BOOL
 VmDirEqualsSecurityContext (
       PVM_DIR_SECURITY_CONTEXT pSecurityContext1,
       PVM_DIR_SECURITY_CONTEXT pSecurityContext2

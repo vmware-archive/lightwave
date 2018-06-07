@@ -45,6 +45,11 @@
       <artifactId>vmware-vmca-client</artifactId>
       <version>${vmware.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>client-domain-controller-cache</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
 
     <!-- Common  Dependencies -->
     <dependency>

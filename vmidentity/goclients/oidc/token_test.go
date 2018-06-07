@@ -3,7 +3,6 @@ package oidc
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vmware/cascade-kubernetes-extras/oidc-proxy/proxy/oidc"
 	"testing"
 	"time"
 )
@@ -27,7 +26,7 @@ func TestValidateExpiration(t *testing.T) {
 	claims[ClaimIssuedAt] = time.Now().Add(time.Second * (defaultClockToleranceSecs + 1))
 	err = validateExpiration(&claims, defaultClockToleranceSecs)
 	if assert.NotNil(t, err, "Claim should be invalid") {
-		assert.Contains(t, err.Error(), oidc.OIDCTokenNotYetValidError.Name(), "Error should be NotYetValid: %+v", err)
+		assert.Contains(t, err.Error(), OIDCTokenNotYetValidError.Name(), "Error should be NotYetValid: %+v", err)
 	}
 }
 
@@ -41,13 +40,13 @@ func TestValidateAudienceClaim(t *testing.T) {
 	claims[ClaimAudience] = 0
 	err := validateAudienceClaim(&claims)
 	if assert.NotNil(t, err, "Audience should be String") {
-		assert.Contains(t, err.Error(), oidc.OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
 	}
 
 	claims[ClaimAudience] = []int{1}
 	err = validateAudienceClaim(&claims)
 	if assert.NotNil(t, err, "Audience should be String") {
-		assert.Contains(t, err.Error(), oidc.OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "InvalidToken Error expected")
 	}
 
 	claims[ClaimAudience] = []string{""}
@@ -120,6 +119,29 @@ func TestParseTenantInToken(t *testing.T) {
 	tenant, err := ParseTenantInToken("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE1MjI0MzczNDgsImV4cCI6MTU1Mzk3MzM0OCwiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoiZXhhbXBsZSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIkVtYWlsIjoianJvY2tldEBleGFtcGxlLmNvbSIsIlJvbGUiOlsiTWFuYWdlciIsIlByb2plY3QgQWRtaW5pc3RyYXRvciJdLCJ0ZW5hbnQiOiJ0ZXN0LXRlbmFudCJ9.-7E3nnZOARCWbgFdxlYYw61Atddnc-3MxwvTdNQqc5I")
 	require.Nil(t, err, "No error is expected when parsing valid token")
 	assert.Equal(t, "test-tenant", tenant, "Tenant in claim does not match")
+}
+
+func TestValidateHotkToken(t *testing.T) {
+	rawJWTWithHotkBody := `{ "sub": "1234567890", "name": "John Doe", "admin": true, "iss": "issuer1", "aud": "audience", "jti": "801a40fd-9925-4d27-a018-dfa93b706058", "iat": 1526845548, "exp": 2536688546, "token_class": "access_token", "token_type": "hotk-pk", "hotk": { "keys": [ { "kty": "RSA", "e": "AQAB", "use": "sig", "alg": "RS256", "n": "zAKoZnaYZ_jDMEt-X8O8FZrpkgphCAebtPIy12_HLg_AtcZhK5CR7EofNdmJo7uHE6xUNVuVl-yMp5wI2O3Ceq-rBmINZyhkwK9Te7gJiQg2IpfoZfOFDigjqqsMSf_trd01IdRbSnc6pI3CAIIsXTP1EdqVqnmf6_P_CcmuKp6Lv8h2lDpaUDJrSxGRmldagY4gEA6HLYRtsTppcK9uADQU9Yumxz4cRUao63MFNTDZJoOoz6QnAbDD99Oi7XeIpDM43rEGP2-NCy8PmhMgD1wAQ4mmuQTX-0ZHgTHGG2aTAPtTFNZOkdw6yrZCzcnMlozt-_CuQYB84iqSfJNNXQ" } ] } }`
+	hotkIssuer := "issuer1"
+
+	rawClaims, err := decodePayload([]byte(rawJWTWithHotkBody))
+	require.Nil(t, err, "Should not fail when decoding raw hotk-pk token body")
+
+	err = validateAndNormalizeClaims(&rawClaims, hotkIssuer, defaultClockToleranceSecs)
+	assert.Nil(t, err, "Should not fail to validate and normalize hotk-pk claims")
+}
+
+func TestParseHotkClaim(t *testing.T) {
+	rawJWTWithHotkBody := `{ "sub": "1234567890", "name": "John Doe", "admin": true, "iss": "issuer1", "jti": "801a40fd-9925-4d27-a018-dfa93b706058", "iat": 1526845548, "exp": 2536688546, "token_class": "access_token", "token_type": "hotk-pk", "hotk": { "keys": [ { "kty": "RSA", "e": "AQAB", "use": "sig", "alg": "RS256", "n": "zAKoZnaYZ_jDMEt-X8O8FZrpkgphCAebtPIy12_HLg_AtcZhK5CR7EofNdmJo7uHE6xUNVuVl-yMp5wI2O3Ceq-rBmINZyhkwK9Te7gJiQg2IpfoZfOFDigjqqsMSf_trd01IdRbSnc6pI3CAIIsXTP1EdqVqnmf6_P_CcmuKp6Lv8h2lDpaUDJrSxGRmldagY4gEA6HLYRtsTppcK9uADQU9Yumxz4cRUao63MFNTDZJoOoz6QnAbDD99Oi7XeIpDM43rEGP2-NCy8PmhMgD1wAQ4mmuQTX-0ZHgTHGG2aTAPtTFNZOkdw6yrZCzcnMlozt-_CuQYB84iqSfJNNXQ" } ] } }`
+
+	tokenBody, err := decodePayload([]byte(rawJWTWithHotkBody))
+	require.Nil(t, err, "Should not fail decoding raw hotk-pk token body")
+	jwt := &jwtImpl{claims: tokenBody}
+
+	hotk, err := jwt.Hotk()
+	require.Nil(t, err, "Should not fail when extracting HOTK claim")
+	assert.NotNil(t, hotk, "HOTK claim should not be nil")
 }
 
 func testInvalidTokens(t *testing.T, token string) {

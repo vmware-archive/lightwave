@@ -61,18 +61,27 @@ typedef struct _VDIR_REST_OPERATION
 {
     PSTR                pszAuth;
     PSTR                pszMethod;
+    PSTR                pszURI;
     PSTR                pszPath;
     PSTR                pszSubPath;
+
+    // header
     PSTR                pszOrigin;
     PSTR                pszHeaderIfMatch; // lwraft only
     PSTR                pszHeaderConnection;
-    json_t*             pjInput;
+    PSTR                pszContentType;
+    PSTR                pszDate;
     BOOLEAN             bisValidOrigin;
+
+    // payload
+    PSTR                pszBody;
+    json_t*             pjBody;
     PLW_HASHMAP         pParamMap;
     PVDIR_CONNECTION    pConn;
     PVDIR_REST_RESULT   pResult;
     PVDIR_REST_RESOURCE pResource;
     PREST_API_METHOD    pMethod;
+
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
 // authtoken.c
@@ -87,8 +96,10 @@ typedef struct _VDIR_REST_AUTH_TOKEN
 {
     VDIR_REST_AUTH_TOKEN_TYPE   tokenType;
     PSTR                        pszAccessToken;
-    PSTR                        pszTenant;
+    PSTR                        pszSignatureHex;
     PSTR                        pszBindUPN;
+    PSTR                        pszTenant;
+    PSTR                        pszHOTKPEM;
 
 } VDIR_REST_AUTH_TOKEN, *PVDIR_REST_AUTH_TOKEN;
 

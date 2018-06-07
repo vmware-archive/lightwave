@@ -37,6 +37,8 @@ public class RequestSignerTest {
 
     private static PublicKey publicKey;
     private static PrivateKey privateKey;
+    private static final String SHA256 = "SHA-256";
+    private static final String MD5 = "MD5";
 
     @BeforeClass
     public static void setup() throws NoSuchAlgorithmException {
@@ -50,11 +52,11 @@ public class RequestSignerTest {
 
     @Test
     public void testSigning() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
-        String md5 = RequestSigner.computeMD5("this is an entity");
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);
         Date date = new Date();
         URI uri = new URI("http://localhost/");
 
-        String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
 
         String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
 
@@ -63,13 +65,13 @@ public class RequestSignerTest {
 
     @Test
     public void testSigning_BadURI() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
-        String md5 = RequestSigner.computeMD5("this is an entity");
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);
         Date date = new Date();
         URI uri = new URI("http://localhost/path/to/data");
         URI badUri = new URI("http://junkhost/not/the/path");
 
-        String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
-        String badStringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, badUri);
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
+        String badStringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, badUri);
 
         String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
 
@@ -78,13 +80,13 @@ public class RequestSignerTest {
 
     @Test
     public void testSigning_BadDate() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
-        String md5 = RequestSigner.computeMD5("this is an entity");
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);;
         Date date = new Date();
         Date badDate = new Date(date.getTime() + 1000);
         URI uri = new URI("http://localhost/");
 
-        String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
-        String badStringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", badDate, uri);
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
+        String badStringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", badDate, uri);
 
         String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
 
@@ -93,12 +95,12 @@ public class RequestSignerTest {
 
     @Test
     public void testSigning_BadContentType() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
-        String md5 = RequestSigner.computeMD5("this is an entity");
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);
         Date date = new Date();
         URI uri = new URI("http://localhost/");
 
-        String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
-        String badStringToSign = RequestSigner.createSigningString("GET", md5, "application/xml", date, uri);
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
+        String badStringToSign = RequestSigner.createSigningString("GET", sha256, "application/xml", date, uri);
 
         String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
 
@@ -106,14 +108,31 @@ public class RequestSignerTest {
     }
 
     @Test
-    public void testSigning_BadMD5() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
-        String md5 = RequestSigner.computeMD5("this is an entity");
-        String badMd5 = RequestSigner.computeMD5("bad entity");
+    public void testSigning_BadSHA256() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);
+        String badSha256 = RequestSigner.computeEntityHash("bad entity", SHA256);
+
         Date date = new Date();
         URI uri = new URI("http://localhost/");
 
-        String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
-        String badStringToSign = RequestSigner.createSigningString("GET", badMd5, "application/json; charset=UTF-8", date, uri);
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
+        String badStringToSign = RequestSigner.createSigningString("GET", badSha256, "application/json; charset=UTF-8", date, uri);
+
+        String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
+
+        assertFalse("Signature was verified", RequestSigner.verify(signedRequestHex, badStringToSign, publicKey));
+    }
+
+    @Test
+    public void testSigning_WrongAlgorithm() throws URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);
+        String wrongAlg = RequestSigner.computeEntityHash("this is an entity", MD5);
+
+        Date date = new Date();
+        URI uri = new URI("http://localhost/");
+
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
+        String badStringToSign = RequestSigner.createSigningString("GET", wrongAlg, "application/json; charset=UTF-8", date, uri);
 
         String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
 
@@ -122,12 +141,12 @@ public class RequestSignerTest {
 
     @Test
     public void testSigning_BadMethod() throws NoSuchAlgorithmException, URISyntaxException, InvalidKeyException, SignatureException, DecoderException {
-        String md5 = RequestSigner.computeMD5("this is an entity");
+        String sha256 = RequestSigner.computeEntityHash("this is an entity", SHA256);
         Date date = new Date();
         URI uri = new URI("http://localhost/");
 
-        String stringToSign = RequestSigner.createSigningString("GET", md5, "application/json; charset=UTF-8", date, uri);
-        String badStringToSign = RequestSigner.createSigningString("POST", md5, "application/json; charset=UTF-8", date, uri);
+        String stringToSign = RequestSigner.createSigningString("GET", sha256, "application/json; charset=UTF-8", date, uri);
+        String badStringToSign = RequestSigner.createSigningString("POST", sha256, "application/json; charset=UTF-8", date, uri);
 
         String signedRequestHex = RequestSigner.sign(stringToSign, privateKey);
 

@@ -203,4 +203,27 @@ cpp_quote("#endif")
     [in, string, unique]  PWSTR                   pszOrgUnit,
     [in, out]             PVMDIR_MACHINE_INFO_W   *ppMachineInfo
     );
+
+    UINT32
+    RpcVmDirCreateDomainTrust(
+        [in]                 handle_t    hBinding,
+        [in, string, unique] PWSTR pszTrustName,
+        [in, string, unique] PWSTR pszDomainName,
+        [in, string, unique] PWSTR pszTrustPasswdIn,
+        [in, string, unique] PWSTR pszTrustPasswdOut,
+        );
+
+    UINT32
+    RpcVmDirInitializeTenant(
+        [in]                 handle_t    hBinding,
+        [in, string, unique] PWSTR pszDomainName,
+        [in, string, unique] PWSTR pszUsername,
+        [in, string, unique] PWSTR pszPassword,
+        );
+
+    UINT32
+    RpcVmDirDeleteTenant(
+        [in]                 handle_t    hBinding,
+        [in, string, unique] PWSTR pszDomainName
+        );
 }

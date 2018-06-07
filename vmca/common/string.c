@@ -306,6 +306,34 @@ error:
     return dwError;
 }
 
+VOID
+VMCAStringTrimSpace(
+    PSTR    pszStr
+    )
+{
+    size_t  len = 0;
+    size_t  start = 0;
+    size_t  end = 0;
+    size_t  i = 0;
+    size_t  j = 0;
+
+    if (pszStr)
+    {
+        len = VMCAStringLenA(pszStr);
+        if (len > 0)
+        {
+            for (start = 0; start < len && VMCA_ASCII_SPACE(pszStr[start]); start++);
+            for (end = len - 1; end > 0 && VMCA_ASCII_SPACE(pszStr[end]); end--);
+
+            for (i = start; i <= end; i++, j++)
+            {
+                pszStr[j] = pszStr[i];
+            }
+            pszStr[j] = '\0';
+        }
+    }
+}
+
 DWORD
 VMCAGetUTCTimeString(PSTR *pszTimeString)
 {

@@ -57,3 +57,19 @@ RaftCliDemoteA(
     PCSTR     pszPassword,
     PCSTR     pszLeaveNode
     );
+
+// clibackup.c
+DWORD
+RaftCliDBBackup(
+    PCSTR pszServerName,
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszBackupPath
+    );
+
+// clidr.c
+DWORD
+RaftCliDRNodeRestoreFromDB(
+    PCSTR pszLogin,
+    PCSTR pszPassword
+    );

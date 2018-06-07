@@ -63,3 +63,6 @@ VmDirRaftFollowerInitiateVote
 VmDirLdapUnbind
 VmDirGetServerName
 VmDirConnectLDAPServerWithMachineAccount
+VmDirBackupDB
+VmDirServerReset
+VmDirSetupDefaultAccount

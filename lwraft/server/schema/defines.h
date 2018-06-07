@@ -58,7 +58,8 @@
     (c) == '?' ||        \
     (c) == ' ' )
 
-
+// should retire these and use ones in the vmdirdefines.h
+// but keep these for now for backward compatibility
 #define VDIR_ASCII(c)            ( ((c) & 0x80) == 0 )
 #define VDIR_IA5_CHAR(c)        ( VDIR_ASCII(c) )
 #define VDIR_NUMERIC_CHAR(c)    ( ASCII_DIGIT(c) || ASCII_SPACE(c) )

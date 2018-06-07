@@ -81,7 +81,8 @@ VmDirIsRpcOperationAllowed(
 
 DWORD
 VmDirAdministratorAccessCheck(
-    PCSTR pszUpn
+    PCSTR pszUpn,
+    PCSTR pszDomain
     );
 
 BOOLEAN
@@ -140,6 +141,22 @@ VmDirBkgdPingMaxOrigUsn(
     PVMDIR_BKGD_TASK_CTX    pTaskCtx
     );
 
+DWORD
+VmDirBkgdSrvStat(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    );
+
+// dbbackup.c
+VOID
+VmDirSrvSetMDBStateClear(
+    VOID
+    );
+
+DWORD
+VmDirSrvBackupDB(
+    PCSTR       pszBackupPath
+    );
+
 // init.c
 DWORD
 VmDirInit(
@@ -157,6 +174,7 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
+    PVMDIR_TRUST_INFO_A pTrustInfoA,
     PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut,    // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescNoDeleteOut          // OPTIONAL
     );
@@ -168,7 +186,8 @@ VmDirSrvSetupHostInstance(
     PCSTR pszPassword,
     PCSTR pszSiteName,
     PCSTR pszReplURI,
-    UINT32  firstReplicationCycleMode
+    UINT32  firstReplicationCycleMode,
+    PVMDIR_TRUST_INFO_A pTrustInfoA
     );
 
 // regconfig.c
@@ -314,7 +333,8 @@ VmDirSrvInitializeHost(
     PWSTR    pwszPassword,
     PWSTR    pwszSiteName,
     PWSTR    pwszReplURI,
-    UINT32   firstReplCycleMode
+    UINT32   firstReplCycleMode,
+    PVMDIR_TRUST_INFO_W pTrustInfoW
     );
 
 DWORD
@@ -393,12 +413,38 @@ VmDirGetKrbUPNKey(
     DWORD*      pSize
     );
 
-
 DWORD
 VmDirGetKeyTabRecBlob(
     PSTR      pszUpnName,
     PBYTE*    ppBYTE,
     DWORD*    pSize
+    );
+
+// trusts.c
+
+DWORD
+VmDirKrbGetTrustAuthInfo(
+    PCSTR       pszDN,
+    DWORD       dwTrustDirection,
+    PBYTE       *ppByteSecret,
+    DWORD       *pdwSecretLen
+    );
+
+DWORD
+VmDirKrbSetTrustAuthInfo(
+    PCSTR       pszUPN,
+    PCSTR       pszDN,
+    DWORD       dwTrustDirection,
+    PCSTR       pszPasswd
+    );
+
+DWORD
+VmDirSrvCreateDomainTrust(
+    PCSTR   pszTrustName,
+    PCSTR   pszDomainName,
+    PCSTR   pszTrustPasswordIncoming,
+    PCSTR   pszTrustPasswordOutgoing,
+    PCSTR   pszEntryDN
     );
 
 /* accountmgmt.c */
@@ -648,10 +694,6 @@ VmDirInitTrackLastLoginThread(
     VOID
     );
 
-DWORD VmDirInitDbCopyThread(
-    VOID
-    );
-
 DWORD
 VmDirCreateHeartbeatThread(
     );
@@ -677,6 +719,12 @@ VmDirMetricsInitialize(
 
 VOID
 VmDirMetricsShutdown(
+    VOID
+    );
+
+// metics.c
+DWORD
+VmDirUpdateSrvStat(
     VOID
     );
 

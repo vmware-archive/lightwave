@@ -26,7 +26,7 @@
 }
 
 #ifndef _WIN32
-#define SOCKET_FILE_PATH "/var/run/vmdir_socket"   /* vmdir IPC UDS socket */
+#define SOCKET_FILE_PATH "/var/lib/vmware/ipc/vmdir_socket"   /* vmdir IPC UDS socket */
 #define SOCKET_FILE_PATH_POST "/tmp/vmdir_socket"  /* raft server IPC UDS socket */
 #define EVERYONE_UID -1
 #endif
@@ -35,3 +35,6 @@
 #define PIPE_TIMEOUT_INTERVAL 5000
 #define PIPE_CLIENT_RETRY_COUNT 3
 #endif
+
+#define MAX_GWTPWR_BUF_LENGTH 16384
+#define VMDIR_LIGHTWAVE_USER_NAME "lightwave"

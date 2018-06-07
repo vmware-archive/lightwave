@@ -1,11 +1,18 @@
 /*
- * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ * Copyright © 2015-2018 VMware, Inc.  All Rights Reserved.
  *
- * Module   : type_spec.h
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
  *
- * Abstract :
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  */
+
+
 typedef enum
 {
     VMW_IPC_TYPE_UNDEFINED = 0,
@@ -812,6 +819,26 @@ typedef struct _VMW_TYPE_SPEC_
     "Partner Host Name",\
     VMW_IPC_TYPE_WSTRING,\
     {NULL}\
+  },\
+  {\
+    "Parent Domain Name",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Parent Domain Controller",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Parent UserName",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Parent Password",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
   }\
 }
 
@@ -950,6 +977,11 @@ typedef struct _VMW_TYPE_SPEC_
     },\
     {\
         "Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Machine Name",\
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
     },\

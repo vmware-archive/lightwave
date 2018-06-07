@@ -77,11 +77,16 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
                 writeHostinfo();
                 removeHostnameFile();
             } catch (Exception ex){
-
+                log.error("Unable to write host info for IDM upgrade.", ex);
             }
         }
 
-
+        try {
+            log.info("Configuring registry setting for IDM");
+            InstallerUtils.getInstallerHelper().configRegistry();
+        } catch (Exception ex) {
+            log.error("Unable to configure registry for IDM updgrade.", ex);
+        }
     }
 
     @Override

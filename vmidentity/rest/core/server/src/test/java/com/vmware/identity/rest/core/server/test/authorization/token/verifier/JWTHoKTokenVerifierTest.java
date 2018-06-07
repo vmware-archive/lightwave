@@ -57,6 +57,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
 
     protected static PublicKey publicKey;
     protected static PrivateKey privateKey;
+    private static final String SHA256 = "SHA-256";
 
     @BeforeClass
     public static void setup() {
@@ -81,7 +82,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -126,7 +127,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, keypair.getPrivate());
 
 
@@ -150,7 +151,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -174,7 +175,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
         PublicKey badPublicKey = KeyPairUtil.getKeyPair().getPublic();
@@ -198,7 +199,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
 
         PrivateKey badPrivateKey = KeyPairUtil.getKeyPair().getPrivate();
         String signedString = RequestSigner.sign(stringToSign, badPrivateKey);
@@ -224,7 +225,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
         JWTHoKTokenVerifier verifier = new JWTHoKTokenVerifier(signedString, context, SKEW_TIME, publicKey);
@@ -251,7 +252,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -279,7 +280,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -307,7 +308,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -335,7 +336,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -363,7 +364,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -391,7 +392,7 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, jwt.serialize());
         AccessToken token = builder.build(info);
 
-        String stringToSign = VerificationUtil.buildStringToSign(context);
+        String stringToSign = VerificationUtil.buildStringToSign(context, SHA256);
         String signedString = RequestSigner.sign(stringToSign, privateKey);
 
 
@@ -408,7 +409,8 @@ public class JWTHoKTokenVerifierTest extends AccessTokenVerifierTest {
         expect(context.getMethod()).andReturn(method).anyTimes();
         if (entity != null) {
             expect(context.hasEntity()).andReturn(!entity.isEmpty()).anyTimes();
-            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes())).anyTimes();
+            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes()));
+            expect(context.getEntityStream()).andReturn(new ByteArrayInputStream(entity.getBytes()));
             context.setEntityStream(isA(InputStream.class));
             expectLastCall().anyTimes();
         } else {

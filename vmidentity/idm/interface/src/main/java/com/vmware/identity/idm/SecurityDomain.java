@@ -35,7 +35,6 @@ public class SecurityDomain implements Serializable {
     public SecurityDomain(String name, String alias)
     {
         ValidateUtil.validateNotEmpty(name, "name");
-        ValidateUtil.validateNotEmpty(alias, "alias");
 
         _name = name;
         _alias = alias;

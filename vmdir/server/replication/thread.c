@@ -76,10 +76,6 @@ VmDirSrvCreateReplAgrObj(
     );
 
 static
-DWORD
-VmDirSetGlobalServerId();
-
-static
 int
 _VmDirContinueReplicationCycle(
     uint64_t *puiStartTimeInShutdown,
@@ -117,14 +113,6 @@ VmDirParseEntryForDn(
     );
 
 static
-DWORD
-_VmDirFilterEmptyPageSyncDoneCtr(
-    PCSTR           pszPattern,
-    struct berval * pLocalCtrl,
-    struct berval * pPageSyncDoneCtrl
-    );
-
-static
 VOID
 _VmDirReplicationUpdateTombStoneEntrySyncState(
     PVMDIR_REPLICATION_PAGE_ENTRY pPage
@@ -139,6 +127,12 @@ _VmDirUpdateReplicationInterval(
 static
 BOOLEAN
 _VmDirSkipReplicationCycle();
+
+static
+VOID
+_VmDirUpdateInvocationIdInReplAgr(
+    VOID
+    );
 
 DWORD
 VmDirGetReplCycleCounter(
@@ -189,6 +183,67 @@ error:
     goto cleanup;
 }
 
+VOID
+VmDirPopulateInvocationIdInReplAgr(
+    VOID
+    )
+{
+    PSTR      pszCfgBaseDN = NULL;
+    DWORD     dwError = 0;
+    size_t    iCnt = 0;
+    BOOLEAN   bInLock = FALSE;
+    VDIR_ENTRY_ARRAY   entryArray = {0};
+    PVDIR_ATTRIBUTE    pAttrCN = NULL;
+    PVDIR_ATTRIBUTE    pAttrInvocID = NULL;
+    PVMDIR_REPLICATION_AGREEMENT   pReplAgr = NULL;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszCfgBaseDN,
+            "cn=%s,%s",
+            VMDIR_CONFIGURATION_CONTAINER_NAME,
+            gVmdirServerGlobals.systemDomainDN.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(
+            pszCfgBaseDN,
+            LDAP_SCOPE_SUBTREE,
+            ATTR_OBJECT_CLASS,
+            OC_DIR_SERVER,
+            &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    //complexity should be a problem since size of 'n' number of partners is always small here.
+    for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
+    {
+        pAttrCN = VmDirFindAttrByName(&entryArray.pEntry[iCnt], ATTR_CN);
+        pAttrInvocID = VmDirFindAttrByName(&entryArray.pEntry[iCnt], ATTR_INVOCATION_ID);
+
+        if (pAttrCN && pAttrInvocID)
+        {
+            for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
+            {
+                if (VmDirStringCompareA(pReplAgr->pszHostname, pAttrCN->vals[0].lberbv_val, FALSE) == 0 &&
+                    pReplAgr->pszInvocationID == NULL)
+                {
+                    VmDirAllocateStringA(pAttrInvocID->vals[0].lberbv_val, &pReplAgr->pszInvocationID);
+                }
+            }
+        }
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+    VMDIR_SAFE_FREE_MEMORY(pszCfgBaseDN);
+    VmDirFreeEntryArrayContent(&entryArray);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
 // vdirReplicationThrFun is the main replication function that:
 //  - Executes replication cycles endlessly
 //  - Each replication cycle consist of processing all the RAs for this vmdird instance.
@@ -230,6 +285,9 @@ vdirReplicationThrFun(
 
     retVal = _VmDirWaitForReplicationAgreement(&bExitThread);
     BAIL_ON_VMDIR_ERROR(retVal);
+
+    // To handle - stand alone node - signaled by partner join
+    _VmDirUpdateInvocationIdInReplAgr();
 
     if (bExitThread)
     {
@@ -313,6 +371,12 @@ vdirReplicationThrFun(
             }
 
             _VmDirConsumePartner(&sContext, pReplAgr, &pReplAgr->dcConn, &bUpdateReplicationInterval);
+            /*
+             * To avoid race condition after resetting the vector
+             * if this node plays consumer role before supplying the new vector value
+             * could result in longer replication cycle.
+             */
+            VmDirSleep(100);
         }
 
         VMDIR_LOG_DEBUG(
@@ -393,7 +457,7 @@ _VmDirUpdateReplicationInterval(
     BOOLEAN   bUpdateReplicationInterval
     )
 {
-    DWORD   dwReplicationTimeIntervalInMilliSec = 1000;
+    DWORD   dwReplicationTimeIntervalInMilliSec = 800;
 
     if (bUpdateReplicationInterval)
     {
@@ -723,35 +787,6 @@ error:
     goto cleanup;
 }
 
-// Update global server ID
-
-static
-DWORD
-VmDirSetGlobalServerId()
-{
-    DWORD           dwError = 0;
-    PVDIR_ENTRY     pEntry = NULL;
-    PVDIR_ATTRIBUTE pMaxServerId = NULL;
-
-    dwError = VmDirSimpleDNToEntry(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pMaxServerId = VmDirEntryFindAttribute( ATTR_MAX_SERVER_ID, pEntry );
-    assert( pMaxServerId != NULL );
-
-    gVmdirServerGlobals.serverId = atoi(pMaxServerId->vals[0].lberbv.bv_val) + 1;
-
-cleanup:
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
 static
 VMDIR_DC_CONNECTION_STATE
 _VmDirReplicationConnect(
@@ -899,29 +934,19 @@ _VmDirConsumePartner(
     BOOLEAN                         *pbUpdateReplicationInterval
     )
 {
-    int retVal = LDAP_SUCCESS;
-    USN initUsn = 0;
-    USN lastSupplierUsnProcessed = 0;
-    BOOLEAN bInReplLock = FALSE;
-    BOOLEAN bContinue = FALSE;
-    PVMDIR_REPLICATION_PAGE pPage = NULL;
-    struct berval   bervalSyncDoneCtrl = {0};
+    int       retVal = LDAP_SUCCESS;
+    USN       initUsn = 0;
+    USN       lastSupplierUsnProcessed = 0;
+    PSTR      pszUtdVector = NULL;
+    BOOLEAN   bContinue = FALSE;
+    BOOLEAN   bCompleteReplCycle = FALSE;
+    uint64_t  uiStartTime = 0;
+    uint64_t  uiEndTime = 0;
+    uint64_t  uiStartTimeInShutdown = 0;
+    PLW_HASHMAP    pUtdVectorMap = NULL;
+    struct berval  bervalSyncDoneCtrl = {0};
+    PVMDIR_REPLICATION_PAGE     pPage = NULL;
     PVMDIR_REPLICATION_METRICS  pReplMetrics = NULL;
-    uint64_t    uiStartTime = 0;
-    uint64_t    uiEndTime = 0;
-    uint64_t    uiStartTimeInShutdown = 0;
-    uint64_t    uiStartTimeToConsume = 0;
-
-    uiStartTimeToConsume = VmDirGetTimeInMilliSec();
-
-    VMDIR_RWLOCK_WRITELOCK(bInReplLock, gVmdirGlobals.replRWLock, 0);
-
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "%s: start consuming partner: %s time taken to acquire lock: %" PRId64 " milliseconds",
-            __FUNCTION__,
-            pConnection->pszHostname,
-            (VmDirGetTimeInMilliSec() - uiStartTimeToConsume));
 
     uiStartTime = VmDirGetTimeInMilliSec();
     /*
@@ -934,11 +959,22 @@ _VmDirConsumePartner(
         goto cleanup;
     }
 
+    retVal = VmDirDDVectorUpdate(pReplAgr->pszInvocationID, 0);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    retVal = VmDirUTDVectorCacheToString(&pszUtdVector);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+    retVal = VmDirStringToUTDVector(pszUtdVector, &pUtdVectorMap);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
     initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
     lastSupplierUsnProcessed = initUsn;
 
     do // do-while (bMoreUpdatesExpected == TRUE); paged results loop
     {
+        bCompleteReplCycle = FALSE;
+
         _VmDirFreeReplicationPage(pPage);
         pPage = NULL;
 
@@ -954,12 +990,19 @@ _VmDirConsumePartner(
 
         _VmDirProcessReplicationPage(pContext, pPage);
 
-        lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
+        if (pPage->lastSupplierUsnProcessed > lastSupplierUsnProcessed)
+        {
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_REPL,
+                    "%s: Updating hw from %" PRId64 "to %" PRId64,
+                    __FUNCTION__,
+                    lastSupplierUsnProcessed,
+                    pPage->lastSupplierUsnProcessed);
+            lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
+        }
 
-        // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
-        retVal = _VmDirFilterEmptyPageSyncDoneCtr(
-                pReplAgr->lastLocalUsnProcessed.lberbv.bv_val,
-                &bervalSyncDoneCtrl,
+        retVal = VmDirUpdateUtdVectorLocalCache(
+                pUtdVectorMap,
                 &(pPage->searchResCtrls[0]->ldctl_value));
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
@@ -968,25 +1011,32 @@ _VmDirConsumePartner(
                    pPage->searchResCtrls[0]->ldctl_value.bv_val,
                    VMDIR_REPL_CONT_INDICATOR) ?
                    TRUE : FALSE;
+
+        retVal = VmDirDDVectorParseString(
+                VmDirStringStrA(pPage->searchResCtrls[0]->ldctl_value.bv_val, "vector:"),
+                &bCompleteReplCycle);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
-    while (bContinue);
+    while (bContinue && bCompleteReplCycle == FALSE);
 
     if (retVal == LDAP_SUCCESS)
     {
-        // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.
-        if (pPage && bervalSyncDoneCtrl.bv_val)
-        {
-            retVal = VmDirReplUpdateCookies(
-                    pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
-            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        retVal = VmDirSyncDoneCtrlFromLocalCache(
+                lastSupplierUsnProcessed,
+                pUtdVectorMap,
+                &bervalSyncDoneCtrl);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            VMDIR_LOG_INFO(
-                    VMDIR_LOG_MASK_ALL,
-                    "Replication supplier %s USN range (%llu,%s) processed",
-                    pReplAgr->ldapURI,
-                    initUsn,
-                    pReplAgr->lastLocalUsnProcessed.lberbv_val);
-        }
+        retVal = VmDirReplUpdateCookies(
+                pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        VMDIR_LOG_INFO(
+                VMDIR_LOG_MASK_ALL,
+                "Replication supplier %s USN range (%llu,%s) processed",
+                pReplAgr->ldapURI,
+                initUsn,
+                pReplAgr->lastLocalUsnProcessed.lberbv_val);
     }
 
 collectmetrics:
@@ -1012,15 +1062,11 @@ collectmetrics:
     }
 
 cleanup:
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "%s: completed consuming partner: %s total time taken: %" PRId64 " milliseconds, status: %d",
-            __FUNCTION__,
-            pConnection->pszHostname,
-            (VmDirGetTimeInMilliSec() - uiStartTimeToConsume),
-            retVal);
+    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
+    VmDirDDVectorClear();
+    LwRtlHashMapClear(pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
+    LwRtlFreeHashMap(&pUtdVectorMap);
     VmDirReplicationClearFailedEntriesFromQueue(pContext);
-    VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
     _VmDirFreeReplicationPage(pPage);
     return;
@@ -1039,62 +1085,6 @@ ldaperror:
     goto collectmetrics;
 }
 
-/*
- *  During a cycle, we fetch and process page in a loop.
- *
- *  pszPattern is used as the high watermark in the syncRequestCtrl for "ALL" fetch call within the cycle.
- *
- *  The supplier uses pszPattern value to initialize its syncDoneCtrl high watermark.
- *  (A) If supplier search result set > 0
- *     It sends entry per UTDVector filtering.
- *     It updates syncDoneCtrl high watermark
- *
- *  (B) If supplier search result set = 0, its syncDoneCtrl high watermark value does not change.
- *
- *  At the end of a replication search request, the supplier sends high watermark value in syncDoneCtrl.
- *
- *  Note, both (A) and (B) cases could return 0 entry.
- *  But we should ignore syncDoneCtrl in scenario (B), which could happen during page boundary condition
- *      where the last fetch return 0.  In this case, we should not use this syncDoneCtrl to update cookies.
- *
- */
-static
-DWORD
-_VmDirFilterEmptyPageSyncDoneCtr(
-    PCSTR           pszPattern,
-    struct berval * pLocalCtrl,
-    struct berval * pPageSyncDoneCtrl
-    )
-{
-    DWORD   dwError= 0;
-    PSTR    pszTmp = NULL;
-    size_t  iPatternLen = VmDirStringLenA(pszPattern);
-
-    // In WriteSyncDoneControl syncDoneCtrl value looks like: high watermark,utdVector,[continue].
-
-    // Update pLocalCtrl only if high watermark value differs between supplier syncDoneCtrl and consumer syncRequestCtrl.
-    if ( (VmDirStringNCompareA(pPageSyncDoneCtrl->bv_val, pszPattern, iPatternLen, FALSE) != 0) ||
-         pPageSyncDoneCtrl->bv_val[iPatternLen] != ','
-       )
-    {
-        VMDIR_SAFE_FREE_MEMORY(pLocalCtrl->bv_val);
-        pLocalCtrl->bv_len = 0;
-        dwError = VmDirAllocateStringA(pPageSyncDoneCtrl->bv_val, &pszTmp);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pLocalCtrl->bv_val = pszTmp;
-        pLocalCtrl->bv_len = VmDirStringLenA(pszTmp);
-        pszTmp = NULL;
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszTmp);
-    goto cleanup;
-}
-
 static
 int
 _VmDirFetchReplicationPage(
@@ -1111,6 +1101,14 @@ _VmDirFetchReplicationPage(
     LDAPControl**   ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
     LDAP*   pLd = NULL;
+    struct timeval  tv = {0};
+    struct timeval* pTv = NULL;
+
+    if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
+    {
+        tv.tv_sec =  gVmdirGlobals.dwLdapSearchTimeoutSec;
+        pTv = &tv;
+    }
 
     pLd = pConnection->pLd;
 
@@ -1155,7 +1153,7 @@ _VmDirFetchReplicationPage(
             FALSE,
             srvCtrls,
             NULL,
-            NULL, // should not time out replication search on client/server side.
+            pTv, // default 60 sec - time out on client/server side.
             pPage->iEntriesRequested,
             &(pPage->searchRes));
 
@@ -1256,6 +1254,15 @@ _VmDirFetchReplicationPage(
                 pPage->iEntriesReceived,
                 initUsn,
                 VDIR_SAFE_STRING(pszUtdVector));
+    }
+    else
+    {
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL,
+                "%s: received empty page: %s from: %s",
+                __FUNCTION__,
+                VDIR_SAFE_STRING(pPage->searchResCtrls[0]->ldctl_value.bv_val),
+                VDIR_SAFE_STRING(pConnection->pszHostname));
     }
 
 cleanup:
@@ -1528,4 +1535,33 @@ ldaperror:
 
     VMDIR_SAFE_FREE_STRINGA(pszDn);
     goto cleanup;
+}
+
+static
+VOID
+_VmDirUpdateInvocationIdInReplAgr(
+    VOID
+    )
+{
+    BOOLEAN   bInLock = FALSE;
+    BOOLEAN   bUpdate = FALSE;
+    PVMDIR_REPLICATION_AGREEMENT  pReplAgr = NULL;
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
+    {
+        if (pReplAgr->pszInvocationID == NULL)
+        {
+            bUpdate = TRUE;
+            break;
+        }
+    }
+
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    if (bUpdate)
+    {
+        VmDirPopulateInvocationIdInReplAgr();
+    }
 }

@@ -47,12 +47,11 @@ vmstsjars_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-api-2.8.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-slf4j-impl-2.8.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-core-2.8.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/nimbus-jose-jwt-4.12.jar
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/nimbus-jose-jwt-5.6.jar
 
 vmstswebapps_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/openidconnect-sample-rp.war \
-    @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war \
-    @top_builddir@/vmidentity/vmware-sts/packages/lightwaveui.war
+    @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war
 
 sbin_SCRIPTS = \
     @top_srcdir@/vmidentity/websso/src/main/resources/sso-config.sh \

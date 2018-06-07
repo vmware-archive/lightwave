@@ -13,6 +13,7 @@ libssocommon_la_SOURCES = \
     string_builder.c \
     key_value_pair.c \
     strings.c \
+    util.c \
     errors.c
 
 libssocommon_la_CPPFLAGS = \

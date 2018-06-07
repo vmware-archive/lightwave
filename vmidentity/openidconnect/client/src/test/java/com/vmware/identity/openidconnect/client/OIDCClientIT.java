@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,6 +38,11 @@ public class OIDCClientIT extends OIDCClientITBase {
     @BeforeClass
     public static void setUp() throws Exception {
         setUp("config.properties");
+    }
+
+    @AfterClass
+    public static void cleanup() throws Exception {
+        tearDown();
     }
 
     // NonRegNoHOKConfigClient, PasswordGrant

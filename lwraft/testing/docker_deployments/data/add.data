@@ -1,0 +1,4 @@
+dn: cn=Barbara Jensen,dc=post,dc=test
+objectClass: person
+cn: Barbara Jensen
+sn: Jensen

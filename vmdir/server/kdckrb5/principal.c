@@ -60,6 +60,7 @@ VmKdcMakePrincipal(
     PCSTR realmName,
     DWORD numComponents,
     PCSTR *components,
+    VMKDC_NAME_TYPE eNameType,
     PVMKDC_PRINCIPAL *ppRetPrincipal)
 {
     PVMKDC_PRINCIPAL pPrincipal = NULL;
@@ -69,7 +70,7 @@ VmKdcMakePrincipal(
     dwError = VmKdcAllocatePrincipal(&pPrincipal);
     BAIL_ON_VMKDC_ERROR(dwError);
 
-    pPrincipal->type = VMKDC_NT_PRINCIPAL;
+    pPrincipal->type = eNameType;
 
     dwError = VmKdcAllocateDataString(realmName, &pPrincipal->realm);
     BAIL_ON_VMKDC_ERROR(dwError);

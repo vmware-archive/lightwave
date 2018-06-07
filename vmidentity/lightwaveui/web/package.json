@@ -39,6 +39,8 @@
     "prestart": "npm install",
     "start": "http-server -a localhost -p 8000 -c-1",
     "pretest": "npm install",
+    "gulp-install": "npm i -g gulp@3.9.1",
+    "bower-install": "npm i -g bower@1.8.4",
     "test": "karma start karma.conf.js",
     "test-single-run": "karma start karma.conf.js  --single-run",
     "preupdate-webdriver": "npm install",

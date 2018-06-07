@@ -260,22 +260,14 @@ VmDirSendLdapResult(
     }
 
 done:
-    if (pOperation->syncDoneCtrl &&
-        !pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
-    {
-        // while in supplier role, we hold replication RLock.
-        // done with this supplier feed "cycle" - !syncDoneCtrlVal.bContinue.
-        // so it is safe to release replication RLock.
-        VMDIR_RWLOCK_UNLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock);
-    }
-
     ber_free_buf(ber);
 }
 
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
-   PVDIR_ENTRY         pSrEntry
+   PVDIR_ENTRY         pSrEntry,
+   PBOOLEAN            pbLowestPendingUncommittedUsn
    )
 {
     int                         retVal = LDAP_SUCCESS;
@@ -287,6 +279,7 @@ VmDirSendSearchEntry(
     int                         nAttrs = 0;
     int                         nVals = 0;
     BOOLEAN                     attrMetaDataReqd = FALSE;
+    BOOLEAN                     bLowestPendingUncommittedUsn = FALSE;
     SearchReq *                 sr = &(pOperation->request.searchReq);
     int                         i = 0;
     BOOLEAN                     nonTrivialAttrsInReplScope = FALSE;
@@ -304,6 +297,11 @@ VmDirSendSearchEntry(
     {
         retVal = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    if (pbLowestPendingUncommittedUsn == NULL)
+    {
+        pbLowestPendingUncommittedUsn = &bLowestPendingUncommittedUsn;
     }
 
     pSrEntry->bSearchEntrySent = FALSE;
@@ -387,13 +385,14 @@ VmDirSendSearchEntry(
                 }
                 else if (usnChanged > pOperation->lowestPendingUncommittedUsn)
                 {
-                    VMDIR_LOG_INFO( LDAP_DEBUG_REPL,
+                    VMDIR_LOG_INFO(
+                            VMDIR_LOG_MASK_ALL,
                             "SendSearchEntry: usnChanged = %" PRId64 ", lowestPendingUncommittedUsn = %" PRId64 ", "
                             "skipping entry: %s", usnChanged, pOperation->lowestPendingUncommittedUsn,
-                            pSrEntry->dn.lberbv.bv_val );
+                            pSrEntry->dn.lberbv.bv_val);
 
                     // Shouldn't stop cycle until we don't have a skip, inform consumer to come back again
-                    pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
+                    *pbLowestPendingUncommittedUsn = TRUE;
                     goto updateSyncDoneCtrl; // Don't send this entry
                 }
             }
@@ -594,7 +593,7 @@ VmDirSendSearchEntry(
 updateSyncDoneCtrl:
         if (pOperation->syncReqCtrl != NULL)
         {
-            if (pOperation->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
+            if (*pbLowestPendingUncommittedUsn)
             {
                 VMDIR_LOG_INFO(
                         LDAP_DEBUG_REPL,

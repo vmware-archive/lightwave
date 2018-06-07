@@ -339,6 +339,6 @@ VmDirMultiStringFromStringList(
 cleanup:
     return dwError;
 error:
-    VMDIR_SAFE_FREE_MEMORY(pszMultiString);
+    VMDIR_SAFE_FREE_MEMORY(pszMultiStringStart);
     goto cleanup;
 }

@@ -44,7 +44,11 @@ function HttpService($http, HttpConfiguration, AuthenticationService, $window, $
 
     function handleFailure(response){
         if(response.status == 401 && response.data.error == 'invalid_token') {
+            var aditionalLoginParams = $window.sessionStorage.getItem("lwLoginParams");
             var redirectUri = '/lightwaveui/Login?tenant=' + $rootScope.globals.currentUser.tenant;
+            if (aditionalLoginParams) {
+                redirectUri = redirectUri + aditionalLoginParams;
+            }
             $window.sessionStorage.currentUser = 'logout';
             response.data.error = null;
             response.status = 200;

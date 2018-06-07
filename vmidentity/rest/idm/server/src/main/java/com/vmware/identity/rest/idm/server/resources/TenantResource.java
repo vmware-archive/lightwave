@@ -16,6 +16,7 @@ package com.vmware.identity.rest.idm.server.resources;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,12 +50,17 @@ import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.LockoutPolicy;
+import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
+import com.vmware.identity.idm.PasswordPolicy;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchCriteria;
+import com.vmware.identity.idm.SecurityDomain;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.Tenant;
+import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
@@ -68,11 +74,13 @@ import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
 import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
+import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
 import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
+import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
@@ -86,8 +94,10 @@ import com.vmware.identity.rest.idm.server.mapper.AuthenticationPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.mapper.LockoutPolicyMapper;
+import com.vmware.identity.rest.idm.server.mapper.OperatorsAccessPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.PasswordPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.ProviderPolicyMapper;
+import com.vmware.identity.rest.idm.server.mapper.SecurityDomainMapper;
 import com.vmware.identity.rest.idm.server.mapper.SolutionUserMapper;
 import com.vmware.identity.rest.idm.server.mapper.TenantMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
@@ -136,7 +146,7 @@ public class TenantResource extends BaseResource {
             // Create tenant
             Tenant tenantToCreate = TenantMapper.getTenant(tenantDTO);
             PrincipalId adminId = PrincipalUtil.fromName(tenantDTO.getUsername());
-            getIDMClient().addTenant(tenantToCreate, adminId.getName(), tenantDTO.getPassword().toCharArray());
+            getIDMClient().addTenant(null, tenantToCreate, adminId.getName(), tenantDTO.getPassword().toCharArray());
             if (tenantDTO.getCredentials() == null || tenantDTO.getCredentials().getCertificates() == null
                     || tenantDTO.getCredentials().getPrivateKey() == null) {
                 log.info("Attempting to create tenant with no provided credentials - using root credentials instead");
@@ -155,6 +165,22 @@ public class TenantResource extends BaseResource {
                 String systemTenantBrandName = getIDMClient().getBrandName(getIDMClient().getSystemTenant());
                 getIDMClient().setBrandName(tenantDTO.getName(), systemTenantBrandName);
             }
+
+            // extend password expiry to 700 days
+            int passwordExpirationInDays = 700;
+            PasswordPolicy currentPasswordPolicy = getIDMClient().getPasswordPolicy(tenantDTO.getName());
+            PasswordPolicy newPasswordPolicy = new PasswordPolicy(currentPasswordPolicy.getDescription(),
+                    currentPasswordPolicy.getProhibitedPreviousPasswordsCount(),
+                    currentPasswordPolicy.getMinimumLength(),
+                    currentPasswordPolicy.getMaximumLength(),
+                    currentPasswordPolicy.getMinimumAlphabetCount(),
+                    currentPasswordPolicy.getMinimumUppercaseCount(),
+                    currentPasswordPolicy.getMinimumLowercaseCount(),
+                    currentPasswordPolicy.getMinimumNumericCount(),
+                    currentPasswordPolicy.getMinimumSpecialCharacterCount(),
+                    currentPasswordPolicy.getMaximumAdjacentIdenticalCharacterCount(),
+                    passwordExpirationInDays);
+            getIDMClient().setPasswordPolicy(tenantDTO.getName(), newPasswordPolicy);
 
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantDTO.getName()));
 
@@ -321,13 +347,42 @@ public class TenantResource extends BaseResource {
         } catch (BadRequestException | IllegalArgumentException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
-            throw new BadRequestException(String.format(sm.getString("res.ten.search.failed"), tenantName), e);
+            throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
         } catch (Exception e) {
             log.error("Failed to look up members on tenant '{}' due to a server side error", tenantName, e);
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
             totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "findPrincipalIds").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+    @GET
+    @Path(PathParameters.TENANT_NAME_VAR + "/securitydomains")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.REGULAR_USER)
+    public Collection<SecurityDomainDTO> getSecurityDomains(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getSecurityDomains").startTimer();
+        String responseStatus = HTTP_OK;
+        try{
+            CasIdmClient idmClient = this.getIDMClient();
+            Collection<SecurityDomain> secDomains = idmClient.getSecurityDomains(tenantName, null);
+            return SecurityDomainMapper.getSecurityDomainDTOs(secDomains);
+        } catch (NoSuchTenantException e) {
+            log.warn("Failed to enumerate security domains on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to enumerate security domains on tenant '{}'", tenantName, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
+        } catch (Exception e) {
+            log.error("Failed to enumerate security domains on tenant '{}' due to a server side error", tenantName, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getSecurityDomains").inc();
             requestTimer.observeDuration();
         }
     }
@@ -397,10 +452,10 @@ public class TenantResource extends BaseResource {
             log.debug("Failed to search members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (InvalidArgumentException e) {
+        } catch (InvalidArgumentException | NoSuchIdpException e) {
             log.error("Failed to search members on tenant '{}' due to a client side error", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
-            throw new BadRequestException("");
+            throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
         } catch (BadRequestException e) {
             responseStatus = HTTP_BAD_REQUEST;
             throw e;
@@ -475,6 +530,7 @@ public class TenantResource extends BaseResource {
         ProviderPolicyDTO providerPolicy = null;
         BrandPolicyDTO brandPolicy = null;
         AuthenticationPolicyDTO authenticationPolicy = null;
+        OperatorsAccessPolicyDTO operatorsPolicy = null;
 
         try {
             if (requestedConfigs.contains(TenantConfigType.ALL)) {
@@ -484,6 +540,7 @@ public class TenantResource extends BaseResource {
                 providerPolicy = getProviderPolicy(tenantName);
                 brandPolicy = getBrandPolicy(tenantName);
                 authenticationPolicy = getAuthenticationPolicy(tenantName);
+                operatorsPolicy = getOperatorsAccessPolicy(tenantName);
             } else {
                 for (TenantConfigType type : requestedConfigs) {
                     switch (type) {
@@ -510,14 +567,17 @@ public class TenantResource extends BaseResource {
                     case AUTHENTICATION:
                         authenticationPolicy = getAuthenticationPolicy(tenantName);
                         break;
+
+                    case OPERATORS_ACCESS:
+                        operatorsPolicy = getOperatorsAccessPolicy(tenantName);
+                        break;
                     }
                 }
             }
 
             return TenantConfigurationDTO.builder().withLockoutPolicy(lockoutPolicy).withPasswordPolicy(passwordPolicy)
                     .withTokenPolicy(tokenPolicy).withProviderPolicy(providerPolicy).withBrandPolicy(brandPolicy)
-                    .withAuthenticationPolicy(authenticationPolicy).build();
-
+                    .withAuthenticationPolicy(authenticationPolicy).withOperatorsAccessPolicy(operatorsPolicy).build();
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve configuration details of tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
@@ -555,6 +615,8 @@ public class TenantResource extends BaseResource {
         BrandPolicyDTO brandPolicy = configurationDTO.getBrandPolicy();
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
         LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
+        PasswordPolicyDTO passwordPolicy = configurationDTO.getPasswordPolicy();
+        OperatorsAccessPolicyDTO operatorAccessPolicyDTO = configurationDTO.getOperatorsAccessPolicy();
 
         try {
 
@@ -601,6 +663,18 @@ public class TenantResource extends BaseResource {
                 LockoutPolicy idmLockoutPolicy = LockoutPolicyMapper.getLockoutPolicy(lockoutPolicy);
                 getIDMClient().setLockoutPolicy(tenantName, idmLockoutPolicy);
                 configBuilder.withLockoutPolicy(getLockoutPolicy(tenantName));
+            }
+
+            if (passwordPolicy != null) {
+                PasswordPolicy idmPasswordPolicy = PasswordPolicyMapper.getPasswordPolicy(passwordPolicy);
+                getIDMClient().setPasswordPolicy(tenantName, idmPasswordPolicy);
+                configBuilder.withPasswordPolicy(getPasswordPolicy(tenantName));
+            }
+
+            if (operatorAccessPolicyDTO != null) {
+                OperatorAccessPolicy idmPolicy = OperatorsAccessPolicyMapper.getOperatorsAccessPolicy(operatorAccessPolicyDTO);
+                getIDMClient().setOperatorAccessPolicy(tenantName, idmPolicy);
+                configBuilder.withOperatorsAccessPolicy(this.getOperatorsAccessPolicy(tenantName));
             }
 
             return configBuilder.build();
@@ -722,6 +796,11 @@ public class TenantResource extends BaseResource {
 
     private AuthenticationPolicyDTO getAuthenticationPolicy(String tenantName) throws Exception {
         return AuthenticationPolicyMapper.getAuthenticationPolicyDTO(getIDMClient().getAuthnPolicy(tenantName));
+    }
+
+    private OperatorsAccessPolicyDTO getOperatorsAccessPolicy(String tenantName) throws Exception {
+        return OperatorsAccessPolicyMapper.getOperatorsAccessPolicyDTO(
+            getIDMClient().getOperatorAccessPolicy(tenantName));
     }
 
     private Long getClockTolerance(String tenantName) throws Exception {

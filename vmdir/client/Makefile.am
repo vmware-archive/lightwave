@@ -12,6 +12,7 @@ libvmdirclient_la_CPPFLAGS = \
 libvmdirclient_la_SOURCES = \
     binding.c \
     client.c \
+    dbbackupclient.c \
     globals.c \
     groups.c \
     krb5login.c \
@@ -26,6 +27,7 @@ libvmdirclient_la_SOURCES = \
     setupldu.c \
     shell.c \
     superlogutil.c \
+    trusts.c \
     users.c \
     util.c \
     vmdir_cstub.c \

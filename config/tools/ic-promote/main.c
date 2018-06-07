@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -33,15 +33,11 @@ VmwDeployBuildParams(
     PCSTR pszPartner,
     PCSTR pszSite,
     PCSTR pszSubjectAltName,
+    PCSTR pszParentDomain,
+    PCSTR pszParentDC,
+    PCSTR pszParentUserName,
+    PCSTR pszParentPassword,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
-    );
-
-static
-DWORD
-VmwDeployReadPassword(
-    PCSTR pszUser,
-    PCSTR pszDomain,
-    PSTR* ppszPassword
     );
 
 static
@@ -197,18 +193,27 @@ ParseArgs(
     PSTR  pszPassword = NULL;
     PSTR  pszSite     = NULL;
     PSTR  pszSubjectAltName = NULL;
+    PSTR  pszParentDomain   = NULL;
+    PSTR  pszParentDC       = NULL;
+    PSTR  pszParentUserName = NULL;
+    PSTR  pszParentPassword = NULL;
     enum PARSE_MODE
     {
         PARSE_MODE_OPEN = 0,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_PARTNER,
+        PARSE_MODE_USERNAME,
         PARSE_MODE_PASSWORD,
         PARSE_MODE_SITE,
         PARSE_MODE_SSL_SUBJECT_ALT_NAME,
-        PARSE_MODE_USERNAME
+        PARSE_MODE_PARENT_DOMAIN,
+        PARSE_MODE_PARENT_DC,
+        PARSE_MODE_PARENT_USERNAME,
+        PARSE_MODE_PARENT_PASSWORD,
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
+    PSTR pszFQDomainName = NULL;
 
     for (; iArg < argc; iArg++)
     {
@@ -240,6 +245,22 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--ssl-subject-alt-name"))
                 {
                     parseMode = PARSE_MODE_SSL_SUBJECT_ALT_NAME;
+                }
+                else if (!strcmp(pszArg, "--parent-domain"))
+                {
+                    parseMode = PARSE_MODE_PARENT_DOMAIN;
+                }
+                else if (!strcmp(pszArg, "--parent-dc"))
+                {
+                    parseMode = PARSE_MODE_PARENT_DC;
+                }
+                else if (!strcmp(pszArg, "--parent-username"))
+                {
+                    parseMode = PARSE_MODE_PARENT_USERNAME;
+                }
+                else if (!strcmp(pszArg, "--parent-password"))
+                {
+                    parseMode = PARSE_MODE_PARENT_PASSWORD;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -338,6 +359,63 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_PARENT_DOMAIN:
+
+                if (pszParentDomain)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszParentDomain = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+            case PARSE_MODE_PARENT_DC:
+
+                if (pszParentDC)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszParentDC = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+            case PARSE_MODE_PARENT_USERNAME:
+
+                if (pszParentUserName)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszParentUserName = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+            case PARSE_MODE_PARENT_PASSWORD:
+
+                if (pszParentPassword)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszParentPassword = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -347,6 +425,18 @@ ParseArgs(
         }
     }
 
+    if (pszParentDomain && pszDomain)
+    {
+        dwError = VmwDeployAllocateStringPrintf(
+                        &pszFQDomainName,
+                        "%s.%s",
+                        pszDomain,
+                        pszParentDomain);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        pszDomain = pszFQDomainName;
+    }
+
     dwError = VmwDeployBuildParams(
                     pszDomain,
                     pszUsername,
@@ -354,12 +444,21 @@ ParseArgs(
                     pszPartner,
                     pszSite,
                     pszSubjectAltName,
+                    pszParentDomain,
+                    pszParentDC,
+                    pszParentUserName,
+                    pszParentPassword,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     *ppSetupParams = pSetupParams;
 
 cleanup:
+
+    if (pszFQDomainName)
+    {
+        VmwDeployFreeMemory(pszFQDomainName);
+    }
 
     return dwError;
 
@@ -384,6 +483,10 @@ VmwDeployBuildParams(
     PCSTR pszPartner,
     PCSTR pszSite,
     PCSTR pszSubjectAltName,
+    PCSTR pszParentDomain,
+    PCSTR pszParentDC,
+    PCSTR pszParentUserName,
+    PCSTR pszParentPassword,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
@@ -475,6 +578,30 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (pszParentDomain)
+    {
+        dwError = VmwDeployAllocateStringA(pszParentDomain, &pSetupParams->pszParentDomainName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (pszParentDC)
+    {
+        dwError = VmwDeployAllocateStringA(pszParentDC, &pSetupParams->pszParentDC);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (pszParentUserName)
+    {
+        dwError = VmwDeployAllocateStringA(pszParentUserName, &pSetupParams->pszParentUserName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (pszParentPassword)
+    {
+        dwError = VmwDeployAllocateStringA(pszParentPassword, &pSetupParams->pszParentPassword);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     *ppSetupParams = pSetupParams;
 
 cleanup:
@@ -503,87 +630,6 @@ error:
 }
 
 static
-DWORD
-VmwDeployReadPassword(
-    PCSTR pszUser,
-    PCSTR pszDomain,
-    PSTR* ppszPassword
-    )
-{
-    DWORD dwError = 0;
-    struct termios orig, nonecho;
-    CHAR  szPassword[33] = "";
-    PSTR  pszPassword = NULL;
-    DWORD iChar = 0;
-
-    memset(szPassword, 0, sizeof(szPassword));
-
-    fprintf(stdout, "Password (%s@%s): ", pszUser, pszDomain);
-    fflush(stdout);
-
-    tcgetattr(0, &orig); // get current settings
-    memcpy(&nonecho, &orig, sizeof(struct termios)); // copy settings
-    nonecho.c_lflag &= ~(ECHO); // don't echo password characters
-    tcsetattr(0, TCSANOW, &nonecho); // set current settings to not echo
-
-    // Read up to 32 characters of password
-
-    for (; iChar < sizeof(szPassword); iChar++)
-    {
-        CHAR ch;
-
-        if (read(STDIN_FILENO, &ch, 1) < 0)
-        {
-            dwError = LwErrnoToWin32Error(errno);
-            BAIL_ON_DEPLOY_ERROR(dwError);
-        }
-
-        if (ch == '\n')
-        {
-            fprintf(stdout, "\n");
-            fflush(stdout);
-            break;
-        }
-        else if (ch == '\b') /* backspace */
-        {
-            if (iChar > 0)
-            {
-                iChar--;
-                szPassword[iChar] = '\0';
-            }
-        }
-        else
-        {
-            szPassword[iChar] = ch;
-        }
-    }
-
-    if (IsNullOrEmptyString(&szPassword[0]))
-    {
-        dwError = ERROR_PASSWORD_RESTRICTION;
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
-
-    dwError = VmwDeployAllocateStringA(szPassword, &pszPassword);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    *ppszPassword = pszPassword;
-
-cleanup:
-
-    tcsetattr(0, TCSANOW, &orig);
-
-    return dwError;
-
-error:
-
-    *ppszPassword = NULL;
-
-    goto cleanup;
-}
-
-
-static
 VOID
 ShowUsage(
     VOID
@@ -596,5 +642,9 @@ ShowUsage(
            "--password  <password to administrator account>\n"
            "[--partner  <partner domain controller's hostname or IP Address>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
-           "[--site     <infra site name>]\n\n");
+           "[--site     <infra site name>]\n"
+           "[--parent-domain <parent domain name>]\n"
+           "[--parent-dc <parent domain controller>]\n"
+           "[--parent-username <parent domain admin username>]\n"
+           "[--parent-password <password for admin user in parent domain>]\n\n");
 }

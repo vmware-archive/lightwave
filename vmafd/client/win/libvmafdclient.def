@@ -34,6 +34,8 @@ EXPORTS
     VmAfdSetDCNameW
     VmAfdPromoteVmDirA
     VmAfdPromoteVmDirW
+    VmAfdPromoteVmDirTrustA
+    VmAfdPromoteVmDirTrustW
     VmAfdDemoteVmDirA
     VmAfdDemoteVmDirW
     VmAfdJoinVmDirA

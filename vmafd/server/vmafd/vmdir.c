@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -216,12 +216,16 @@ error:
 
 DWORD
 VmAfSrvPromoteVmDir(
-    PWSTR    pwszLotusServerName, /* IN              */
-    PWSTR    pwszDomainName,      /* IN     OPTIONAL */
-    PWSTR    pwszUserName,        /* IN              */
-    PWSTR    pwszPassword,        /* IN              */
-    PWSTR    pwszSiteName,        /* IN     OPTIONAL */
-    PWSTR    pwszPartnerHostName  /* IN     OPTIONAL */
+    PWSTR    pwszLotusServerName,   /* IN              */
+    PWSTR    pwszDomainName,        /* IN     OPTIONAL */
+    PWSTR    pwszUserName,          /* IN              */
+    PWSTR    pwszPassword,          /* IN              */
+    PWSTR    pwszSiteName,          /* IN     OPTIONAL */
+    PWSTR    pwszPartnerHostName,   /* IN     OPTIONAL */
+    PWSTR    pwszTrustName,         /* IN     OPTIONAL */
+    PWSTR    pwszTrustDC,           /* IN     OPTIONAL */
+    PWSTR    pwszTrustUserName,     /* IN     OPTIONAL */
+    PWSTR    pwszTrustPassword      /* IN     OPTIONAL */
     )
 {
     DWORD dwError = 0;
@@ -234,6 +238,8 @@ VmAfSrvPromoteVmDir(
     PWSTR pwszDCSiteName = NULL;
     PWSTR pwszPNID = NULL;
     PSTR pszPartnerHostName = NULL;
+    PVMDIR_TRUST_INFO_A pTrustInfoA = NULL;
+    PVMDIR_TRUST_INFO_W pTrustInfoW = NULL;
     PSTR pszDefaultRealm = NULL;
     PWSTR pwszCurDomainName = NULL;
     BOOLEAN bFirstInstance = TRUE;
@@ -281,6 +287,22 @@ VmAfSrvPromoteVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    if (pwszTrustName || pwszTrustDC || pwszTrustUserName || pwszTrustPassword)
+    {
+        dwError = VmDirAllocateTrustInfoW(
+                          pwszTrustName,
+                          pwszTrustDC,
+                          pwszTrustUserName,
+                          pwszTrustPassword,
+                          &pTrustInfoW);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmDirAllocateTrustInfoAFromW(
+                          pTrustInfoW,
+                          &pTrustInfoA);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
     dwError = VmAfSrvGetPNID(&pwszPNID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -304,13 +326,27 @@ VmAfSrvPromoteVmDir(
         }
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmDirSetupHostInstance(
-                          pszDomainName,
-                          pszLotusServerName,
-                          pszUserName,
-                          pszPassword,
-                          pszSiteName);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        if (pTrustInfoA)
+        {
+            dwError = VmDirSetupHostInstanceTrust(
+                              pszDomainName,
+                              pszLotusServerName,
+                              pszUserName,
+                              pszPassword,
+                              pszSiteName,
+                              pTrustInfoA);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirSetupHostInstance(
+                              pszDomainName,
+                              pszLotusServerName,
+                              pszUserName,
+                              pszPassword,
+                              pszSiteName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
 
         dwDNSRetry = 0;
 
@@ -344,7 +380,6 @@ VmAfSrvPromoteVmDir(
                 dwError);
         }
         BAIL_ON_VMAFD_ERROR(dwError);
-
     }
     else
     {
@@ -491,6 +526,14 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
     VMAFD_SAFE_FREE_MEMORY(pwszCurDomainName);
     VMAFD_SAFE_FREE_MEMORY(pwszPNID);
+    if (pTrustInfoA)
+    {
+        VmDirFreeTrustInfoA(pTrustInfoA);
+    }
+    if (pTrustInfoW)
+    {
+        VmDirFreeTrustInfoW(pTrustInfoW);
+    }
 
     return dwError;
 
@@ -514,6 +557,7 @@ VmAfSrvDemoteVmDir(
     PWSTR pwszSiteName = NULL;
     PWSTR pwszServerNameLocal = pwszServerName;
     PWSTR pwszServerName1 = NULL;
+    PSTR pszServerName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
@@ -522,15 +566,6 @@ VmAfSrvDemoteVmDir(
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
 
-    dwError = VmAfSrvGetDomainState(&domainState);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (domainState != VMAFD_DOMAIN_STATE_CONTROLLER)
-    {
-        dwError = ERROR_CANNOT_DEMOTE_VMDIR;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
     if (!pwszServerNameLocal)
     {
         dwError = VmAfdAllocateStringWFromA("localhost", &pwszServerName1);
@@ -538,68 +573,119 @@ VmAfSrvDemoteVmDir(
         pwszServerNameLocal = pwszServerName1;
     }
 
+    dwError = VmAfdAllocateStringAFromW(pwszServerNameLocal, &pszServerName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvGetDomainName(&pwszDomainName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfSrvGetSiteName(&pwszSiteName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfSrvUnconfigureDNSW(
-                        pwszServerNameLocal,
-                        pwszDomainName,
-                        pwszUserName,
-                        pwszPassword,
-                        pwszSiteName);
-    if (dwError)
+    if (!VmAfdIsLocalHost(pszServerName))
     {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to uninitialize dns. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
+        dwError = VmAfSrvGetDomainName(&pwszDomainName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvGetSiteName(&pwszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvUnconfigureDNSW(
+                            pwszServerNameLocal,
+                            pwszDomainName,
+                            pwszUserName,
+                            pwszPassword,
+                            pwszSiteName);
+        if (dwError)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s failed to uninitialize dns. Error(%u)",
+                __FUNCTION__,
+                dwError);
+            dwError = 0;
+        }
+        else
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s successfully uninitialized dns.",
+                __FUNCTION__);
+        }
+
+        dwError = VmDirLeaveFederation(
+                      pszServerName,
+                      pszUserName,
+                      pszPassword);
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
     else
     {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s successfully uninitialized dns.",
-            __FUNCTION__);
-    }
+        dwError = VmAfSrvGetDomainState(&domainState);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (domainState != VMAFD_DOMAIN_STATE_CONTROLLER)
+        {
+            dwError = ERROR_CANNOT_DEMOTE_VMDIR;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        dwError = VmAfSrvGetDomainName(&pwszDomainName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvGetSiteName(&pwszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvUnconfigureDNSW(
+                            pwszServerNameLocal,
+                            pwszDomainName,
+                            pwszUserName,
+                            pwszPassword,
+                            pwszSiteName);
+        if (dwError)
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s failed to uninitialize dns. Error(%u)",
+                __FUNCTION__,
+                dwError);
+            dwError = 0;
+        }
+        else
+        {
+            VmAfdLog(
+                VMAFD_DEBUG_ANY,
+                "%s successfully uninitialized dns.",
+                __FUNCTION__);
+        }
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    dwError = VmAfSrvSignalVmdirProvider();
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfSrvSignalVmdirProvider();
+        BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
-    dwError = VmDirDemote(pszUserName, pszPassword);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmDirDemote(pszUserName, pszPassword);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
 #if 0
     VmAfdShutdownSrcIpThread(gVmafdGlobals.pSourceIpContext);
     gVmafdGlobals.pSourceIpContext = NULL;
 #endif
 
-    if (gVmafdGlobals.pCertUpdateThr)
-    {
-        VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
-        gVmafdGlobals.pCertUpdateThr = NULL;
-    }
+        if (gVmafdGlobals.pCertUpdateThr)
+        {
+            VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
+            gVmafdGlobals.pCertUpdateThr = NULL;
+        }
 
-    if (gVmafdGlobals.pCdcContext)
-    {
-        CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+        if (gVmafdGlobals.pCdcContext)
+        {
+            CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+        }
     }
-
 
 cleanup:
 
@@ -608,6 +694,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGW(pwszServerName1);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszServerName);
 
     return dwError;
 
@@ -714,7 +801,7 @@ VmAfSrvJoinVmDir(
     // If already joined as a client, then force-leave first
     if (domainState == VMAFD_DOMAIN_STATE_CLIENT)
     {
-        dwError = VmAfSrvLeaveVmDir(NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
+        dwError = VmAfSrvLeaveVmDir(NULL, NULL, NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
@@ -916,7 +1003,7 @@ VmAfSrvJoinVmDir2(
     // If already joined as a client, then force-leave first
     if (domainState == VMAFD_DOMAIN_STATE_CLIENT)
     {
-        dwError = VmAfSrvLeaveVmDir(NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
+        dwError = VmAfSrvLeaveVmDir(NULL, NULL, NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
@@ -1230,8 +1317,10 @@ error:
 
 DWORD
 VmAfSrvLeaveVmDir(
+    PWSTR    pwszServerName,    /* IN              */
     PWSTR    pwszUserName,      /* IN              */
     PWSTR    pwszPassword,      /* IN              */
+    PWSTR    pwszMachineName,   /* IN              */
     DWORD    dwLeaveFlags       /* IN              */
     )
 {
@@ -1239,10 +1328,11 @@ VmAfSrvLeaveVmDir(
     PSTR pszServerName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
+    PSTR pszMachineName = NULL;
     PSTR pszDomainName = NULL;
     PSTR pszHostName = NULL;
     PSTR pszHostNameFQDN = NULL;
-    PWSTR pwszServerName = NULL;
+    PWSTR pwszServerName1 = NULL;
     PWSTR pwszMachineAccount = NULL;
     PWSTR pwszMachinePassword = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
@@ -1257,133 +1347,177 @@ VmAfSrvLeaveVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDomainState(&domainState);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (domainState != VMAFD_DOMAIN_STATE_CLIENT)
+    if (pwszMachineName)
     {
-        dwError = ERROR_NOT_JOINED;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfSrvGetAffinitizedDC(&pwszServerName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszServerName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (IsNullOrEmptyString(pwszUserName) &&
-        IsNullOrEmptyString(pwszPassword) )
-    {
-        dwError = VmAfSrvGetMachineAccountInfo(
-                                        &pwszMachineAccount,
-                                        &pwszMachinePassword,
-                                        NULL,
-                                        NULL
-                                        );
+        dwError = VmAfdAllocateStringAFromW(pwszMachineName, &pszMachineName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdAllocateStringAFromW(pwszMachineAccount, &pszUserName);
+        dwError = VmAfSrvGetDomainNameA(&pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdAllocateStringAFromW(pwszMachinePassword, &pszPassword);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-    else
-    {
         dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
-    }
 
-    dwError = VmAfSrvGetDomainNameA(&pszDomainName);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        if (!pwszServerName)
+        {
+            dwError = VmAfSrvGetAffinitizedDC(&pwszServerName1);
+            BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdGetHostName(&pszHostName);
-    BAIL_ON_VMAFD_ERROR(dwError);
+            pwszServerName = pwszServerName1;
+        }
 
-    dwError = VmAfdGetCanonicalHostName(
-                            pszHostName,
-                            &pszHostNameFQDN);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvUnsetDNSRecords(
+        dwError = VmAfSrvUnsetDNSRecords(
                         pszServerName,
                         pszDomainName,
                         pszUserName,
                         pszPassword,
-                        pszHostNameFQDN);
-    BAIL_ON_VMAFD_ERROR(dwError);
+                        pszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    dwError = VmAfSrvSignalVmdirProvider();
-    BAIL_ON_VMAFD_ERROR(dwError);
-#endif
-
-    // Machine credentials will be used if the user name or password are NULL.
-
-    dwError = VmDirClientLeave(
-                    pszServerName,
-                    pszUserName,
-                    pszPassword
-                    );
-    if (dwError)
+        dwError = VmDirClientLeaveEx(
+                        pszServerName,
+                        pszDomainName,
+                        pszUserName,
+                        pszPassword,
+                        pszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
     {
-        VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwError);
+        dwError = VmAfSrvGetDomainState(&domainState);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-        if (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE)
+        if (domainState != VMAFD_DOMAIN_STATE_CLIENT)
         {
-            //TODO: Add check for administrator access
-            dwError = VmAfSrvForceLeave();
+            dwError = ERROR_NOT_JOINED;
             BAIL_ON_VMAFD_ERROR(dwError);
         }
-    }
 
-    dwError = VecsDbReset();
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfSrvGetAffinitizedDC(&pwszServerName1);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringAFromW(pwszServerName1, &pszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    /*
-     * TODO: remove krb5.conf entries, machine account, etc.
-     */
+        if (IsNullOrEmptyString(pwszUserName) &&
+            IsNullOrEmptyString(pwszPassword) )
+        {
+            dwError = VmAfSrvGetMachineAccountInfo(
+                                            &pwszMachineAccount,
+                                            &pwszMachinePassword,
+                                            NULL,
+                                            NULL
+                                            );
+            BAIL_ON_VMAFD_ERROR(dwError);
 
-#if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
-    VmAfdLog(VMAFD_DEBUG_ANY,
-             "%s: unconfiguring NSSWITCH.",
-             __FUNCTION__);
+            dwError = VmAfdAllocateStringAFromW(pwszMachineAccount, &pszUserName);
+            BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = DJUnconfigureNSSwitch();
-    BAIL_ON_VMAFD_ERROR(dwError);
+            dwError = VmAfdAllocateStringAFromW(pwszMachinePassword, &pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+            BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY,
-             "%s: unconfiguring PAM.",
-             __FUNCTION__);
+            dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
 
-    dwError = DJUnconfigurePAM();
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfSrvGetDomainNameA(&pszDomainName);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = DJUnconfigureSSH();
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdGetHostName(&pszHostName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdGetCanonicalHostName(
+                                pszHostName,
+                                &pszHostNameFQDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvUnsetDNSRecords(
+                            pszServerName,
+                            pszDomainName,
+                            pszUserName,
+                            pszPassword,
+                            pszHostNameFQDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+        dwError = VmAfSrvSignalVmdirProvider();
+        BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
-    if (gVmafdGlobals.pCertUpdateThr)
-    {
-        VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
-        gVmafdGlobals.pCertUpdateThr = NULL;
-    }
+        // Machine credentials will be used if the user name or password are NULL.
 
-    if (gVmafdGlobals.pCdcContext)
-    {
-        CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+        dwError = VmDirClientLeave(
+                        pszServerName,
+                        pszUserName,
+                        pszPassword
+                        );
+        if (dwError)
+        {
+            VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwError);
+
+            if (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE)
+            {
+                //TODO: Add check for administrator access
+                dwError = VmAfSrvForceLeave();
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+        }
+
+        dwError = VecsDbReset();
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        /*
+         * TODO: remove krb5.conf entries, machine account, etc.
+         */
+
+#if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: unconfiguring NSSWITCH.",
+                 __FUNCTION__);
+
+        dwError = DJUnconfigureNSSwitch();
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: unconfiguring PAM.",
+                 __FUNCTION__);
+
+        dwError = DJUnconfigurePAM();
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = DJUnconfigureSSH();
+        BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
+        if (gVmafdGlobals.pCertUpdateThr)
+        {
+            VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
+            gVmafdGlobals.pCertUpdateThr = NULL;
+        }
+
+        if (gVmafdGlobals.pCdcContext)
+        {
+            CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+        }
     }
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pwszServerName);
+    VMAFD_SAFE_FREE_MEMORY(pwszServerName1);
     VMAFD_SAFE_FREE_STRINGA(pszServerName);
     VMAFD_SAFE_FREE_MEMORY(pwszMachineAccount);
     VMAFD_SAFE_FREE_MEMORY(pwszMachinePassword);

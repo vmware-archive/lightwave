@@ -57,6 +57,8 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.dwOperationsThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
+        VMDIR_SF_INIT(.dwEmptyPageCnt, 0),
+        VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
@@ -72,7 +74,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.replCycleDoneMutex, NULL),
         VMDIR_SF_INIT(.replCycleDoneCondition, NULL),
         VMDIR_SF_INIT(.dwReplCycleCounter, 0),
-        VMDIR_SF_INIT(.replRWLock, NULL),
         VMDIR_SF_INIT(.limitLocalUsnToBeSupplied, 0),
         VMDIR_SF_INIT(.pOperationThrSyncCounter, NULL),
         VMDIR_SF_INIT(.pPortListenSyncCounter, NULL),
@@ -92,9 +93,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
         VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
-        VMDIR_SF_INIT(.dwCopyDbWritesMin, 100),
-        VMDIR_SF_INIT(.dwCopyDbIntervalInSec, 0),
-        VMDIR_SF_INIT(.dwCopyDbBlockWriteInSec, 30),
         VMDIR_SF_INIT(.dwLdapWrites, 0),
         VMDIR_SF_INIT(.gpVdirSslCtx, NULL)
     };
@@ -150,6 +148,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
         VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
         VMDIR_SF_INIT(.bPromoted, FALSE),
+        VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
@@ -177,3 +176,5 @@ VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =
     };
 
 PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];
+
+PVM_METRICS_GAUGE   gpSrvStatMetrics[METRICS_SRV_STAT_COUNT];

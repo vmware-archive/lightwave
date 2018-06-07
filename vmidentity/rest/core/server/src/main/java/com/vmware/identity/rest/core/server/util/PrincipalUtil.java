@@ -31,19 +31,23 @@ public class PrincipalUtil {
      * @throws BadRequestException if the string is not in the correct format
      */
     public static PrincipalId fromName(String name) throws BadRequestException {
-        // UPN format: NAME@DOMAIN
-        String[] parts = name.split("@");
-        if (parts.length == 2) {
-            return new PrincipalId(parts[0], parts[1]);
-        }
+        try {
+            // UPN format: NAME@DOMAIN
+            String[] parts = name.split("@");
+            if (parts.length == 2) {
+                return new PrincipalId(parts[0], parts[1]);
+            }
 
-        // NETBIOS format: DOMAIN\NAME
-        parts = name.split("\\\\");
-        if (parts.length == 2) {
-            return new PrincipalId(parts[1], parts[0]);
-        }
+            // NETBIOS format: DOMAIN\NAME
+            parts = name.split("\\\\");
+            if (parts.length == 2) {
+                return new PrincipalId(parts[1], parts[0]);
+            }
 
-        throw new BadRequestException("Invalid name format: '" + name + "'");
+            throw new IllegalArgumentException("Failed to parse the principal id - " + name);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid name format: '" + name + "'", e);
+        }
     }
 
     public static Collection<PrincipalId> fromNames(Collection<String> names) throws BadRequestException {

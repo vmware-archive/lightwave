@@ -627,8 +627,6 @@ VMCASignedRequestPrivate(
 
 #ifdef REST_ENABLED
 
-#ifndef _WIN32
-
 //vmcaHTTPCallback.c
 DWORD
 VMCARESTGetCRL(
@@ -701,7 +699,7 @@ VMCAHandleEnumCertsParam(
 //restauth.c
 DWORD
 VMCARESTGetAccessToken(
-      PREST_REQUEST pRESTRequest,
+      VMCA_HTTP_REQ_OBJ*  pVMCARequest,
       PVMCA_ACCESS_TOKEN* ppAccessToken
       );
 
@@ -717,8 +715,16 @@ VMCAFreeAccessToken(
 
 //oidcutil.c
 DWORD
-VMCAVerifyOIDC(
+VMCAVerifyOIDCBearerToken(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    );
+
+DWORD
+VMCAVerifyOIDCHOTKToken(
+    PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     );
 
@@ -726,8 +732,6 @@ VOID
 VMCAFreeOIDC(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
-
-#endif
 
 //restbasicauth.c
 DWORD
@@ -754,6 +758,7 @@ base64_encode(
 DWORD
 VMCARESTVerifyKrbAuth(
     PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    VMCA_HTTP_REQ_OBJ*  pVMCARequest,
     PVMCA_ACCESS_TOKEN* ppAccessToken
     );
 

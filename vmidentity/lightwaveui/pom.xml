@@ -16,6 +16,97 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>1.0</version>
+        <configuration>
+          <installDirectory>web</installDirectory>
+          <workingDirectory>web</workingDirectory>
+        </configuration>
+        <executions>
+        <!-- It will install nodejs and npm -->
+        <execution>
+          <id>install node and npm</id>
+          <goals>
+            <goal>install-node-and-npm</goal>
+          </goals>
+          <configuration>
+            <nodeVersion>v7.7.4</nodeVersion>
+            <npmVersion>4.1.2</npmVersion>
+          </configuration>
+        </execution>
+        <!-- It will execute command "npm install" inside "/angular" directory -->
+        <execution>
+          <id>npm run-script gulp-install</id>
+          <phase>prepare-package</phase>
+          <goals>
+            <goal>npm</goal>
+          </goals>
+          <configuration>
+            <arguments>run-script gulp-install</arguments>
+          </configuration>
+        </execution>
+        <execution>
+          <id>npm run-script bower-install</id>
+          <goals>
+            <goal>npm</goal>
+          </goals>
+          <configuration>
+            <arguments>run-script bower-install</arguments>
+          </configuration>
+        </execution>
+        <execution>
+          <id>npm install</id>
+          <goals>
+            <goal>npm</goal>
+          </goals>
+          <configuration>
+            <installDirectory>./web</installDirectory>
+            <arguments>install</arguments>
+          </configuration>
+        </execution>
+        <execution>
+          <id>bower install</id>
+          <goals>
+            <goal>bower</goal>
+          </goals>
+          <configuration>
+            <installDirectory>./web</installDirectory>
+            <arguments>install --allow-root</arguments>
+          </configuration>
+        </execution>
+        <execution>
+          <id>gulp build</id>
+          <goals>
+            <goal>gulp</goal>
+          </goals>
+        </execution>
+       </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>${maven.war.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <overwrite>true</overwrite>
+              <outputDirectory>${basedir}/src/main/webapp/app</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/web/dist</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <version>${maven.war.plugin.version}</version>
@@ -241,11 +332,6 @@
       <groupId>commons-fileupload</groupId>
       <artifactId>commons-fileupload</artifactId>
       <version>${commons.fileupload.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-httpclient</groupId>
-      <artifactId>commons-httpclient</artifactId>
-      <version>${commons.httpclient.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>

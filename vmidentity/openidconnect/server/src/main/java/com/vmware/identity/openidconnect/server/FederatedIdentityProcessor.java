@@ -14,19 +14,24 @@
 package com.vmware.identity.openidconnect.server;
 
 import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 import javax.servlet.http.HttpServletRequest;
 
 public interface FederatedIdentityProcessor {
+
+    // IDP-initiated flow processing (called from /federate endpoint handler)
   HttpResponse processRequest(
                     HttpServletRequest request,
                     FederationRelayState relayState,
                     IDPConfig idpConfig
                 ) throws Exception ;
+
+  // SP-initiated flow (called from oidc's authz endpoint)
   HttpResponse processAuthRequestForFederatedIDP(
-          HttpServletRequest request,
+          AuthenticationRequest request,
           String tenant,
           IDPConfig idpConfig
-      ) throws Exception;
+      ) throws ServerException;
 }

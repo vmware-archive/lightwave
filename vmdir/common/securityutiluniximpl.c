@@ -192,6 +192,63 @@ VmDirIsRootSecurityContextImpl (
 }
 
 BOOL
+VmDirIsLightwaveSecurityContextImpl (
+        PVM_DIR_SECURITY_CONTEXT pSecurityContext
+        )
+{
+    DWORD dwError = 0;
+    BOOL bIsLightwave = FALSE;
+    int iStatus = 0;
+    struct passwd pwd = { 0 };
+    struct passwd *pResult = NULL;
+    size_t bufsize = 0;
+    char* pBuffer = NULL;
+    static uid_t uid = 0;
+
+    if (uid == 0)
+    {
+        /* uid is initialized on first call and cached in static var */
+
+        bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+        if (bufsize == -1)
+        {
+            bufsize = MAX_GWTPWR_BUF_LENGTH;
+        }
+
+        dwError = VmDirAllocateMemory(
+                        bufsize,
+                        (PVOID*)&pBuffer);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        iStatus = getpwnam_r(
+                        VMDIR_LIGHTWAVE_USER_NAME,
+                        &pwd,
+                        pBuffer,
+                        bufsize,
+                        &pResult);
+        if (iStatus || !pResult)
+        {
+            dwError = ERROR_NO_SUCH_USER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        uid = pwd.pw_uid;
+    }
+
+    if (pSecurityContext->uid == uid)
+    {
+        bIsLightwave = TRUE;
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pBuffer);
+    return bIsLightwave;
+
+error:
+    goto cleanup;
+}
+
+BOOL
 VmDirEqualsSecurityContextImpl (
       PVM_DIR_SECURITY_CONTEXT pSecurityContext1,
       PVM_DIR_SECURITY_CONTEXT pSecurityContext2

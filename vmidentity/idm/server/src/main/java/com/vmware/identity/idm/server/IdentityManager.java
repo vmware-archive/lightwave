@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
+import com.vmware.identity.interop.directory.DirectoryException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
@@ -95,6 +96,7 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.GroupDetail;
 import com.vmware.identity.idm.HostNotJoinedRequiredDomainException;
 import com.vmware.identity.idm.IDMException;
+import com.vmware.identity.idm.ReplicationException;
 import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.IDPConfig;
@@ -118,6 +120,7 @@ import com.vmware.identity.idm.NoSuchExternalIdpConfigException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
+import com.vmware.identity.idm.OperatorAccessPolicy;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.PasswordExpiredException;
 import com.vmware.identity.idm.PasswordPolicy;
@@ -174,6 +177,7 @@ import com.vmware.identity.idm.server.provider.ProviderFactory;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.activedirectory.ServerKrbUtils;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
+import com.vmware.identity.idm.server.provider.vmwdirectory.SystemTenantProvider;
 import com.vmware.identity.idm.server.vmaf.VmafClientUtil;
 import com.vmware.identity.interop.IdmUtils;
 import com.vmware.identity.interop.accountmanager.AccountLockedOutException;
@@ -185,6 +189,7 @@ import com.vmware.identity.interop.idm.IIdmClientLibrary;
 import com.vmware.identity.interop.idm.IdmClientLibraryFactory;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.ConstraintViolationLdapException;
+import com.vmware.identity.interop.ldap.InvalidCredentialsLdapException;
 import com.vmware.identity.interop.ldap.DirectoryStoreProtocol;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ServerDownLdapException;
@@ -325,6 +330,8 @@ public class IdentityManager implements IIdentityManager {
     private static final String LOCAL_OS_STATIC_ALIAS = "localos";
     private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
     private static final String PASSCODE_PROVIDER_TYPE = "RSA";
+    private static final int MAX_RETRY_REPLICATION = 4;
+    private static final int RETRY_INTERVAL_MILLISECONDS = 2000;
 
     public static final String THIRD_PARTY_IDP_USER_DEFAULT_GROUP_NAME = "Users";
     public static final String INTERNAL_ATTR_GROUP_OBJECTIDS = "userMemberOfGroupIds"; // This will include both user's own sid as well as the sids of groups user is a member of
@@ -464,7 +471,7 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
-    void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
+    void addTenant(String hostname, Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
     {
         try
         {
@@ -474,16 +481,29 @@ public class IdentityManager implements IIdentityManager {
 
             registerTenant(tenant, adminAccountName, adminPwd);
 
-            Directory.createInstance(
-                  tenant.getName(),
-                  adminAccountName,
-                  String.valueOf(adminPwd));
+            logger.info(String.format(
+                    "Adding Tenant [%s] in %s",
+                    tenant.getName(), hostname));
+
+            // Create tenant locally
+            if (hostname == null || hostname.isEmpty())
+            {
+                Directory.createInstance(
+                        tenant.getName(),
+                        adminAccountName,
+                        String.valueOf(adminPwd));
+            }
+            else
+            {
+                addTenantRemote(hostname, tenant.getName(), adminAccountName, String.valueOf(adminPwd));
+            }
 
             //Add Tenant admin to System Admins group
             Collection<IIdentityStoreData> stores =
-                getProviders(tenant.getName(), EnumSet.of(DomainType.SYSTEM_DOMAIN), true/*internal*/);
+                    getProviders(tenant.getName(), EnumSet.of(DomainType.SYSTEM_DOMAIN), true/*internal*/);
             if (stores.size() != 1)
             {
+
                 throw new IllegalStateException("Failed to find tenant's system domain");
             }
             stores.iterator().next().getExtendedIdentityStoreData();
@@ -512,6 +532,97 @@ public class IdentityManager implements IIdentityManager {
             {
                 throw ex;
             }
+        }
+    }
+
+    private
+    void addTenantRemote(String hostname, String tenant, String adminAccountName, String adminPwd) throws Exception {
+        boolean tenantReplicated = false;
+
+        try
+        {
+            Directory.createInstanceRemote(hostname, tenant, adminAccountName, String.valueOf(adminPwd));
+
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            String adminsGroupDn = String.format("cn=Administrators,cn=Builtin,%s",
+                                            ServerUtils.getDomainDN(settings.getTenantsSystemDomainName(tenant)));
+
+            // Try to ldap bind as newly created tenant
+            for (int retry = 0; retry < MAX_RETRY_REPLICATION; retry++)
+            {
+                Thread.sleep(RETRY_INTERVAL_MILLISECONDS);
+
+                try (ILdapConnectionEx connection = ServerUtils.getLdapConnectionByURIs(
+                        settings.getSystemDomainConnectionInfo(),
+                        settings.getTenantAdminUserName(tenant, adminAccountName),
+                        adminPwd,
+                        settings.getSystemDomainAuthenticationType(),
+                        false,
+                        new LdapCertificateValidationSettings(null, null)))
+                {
+                    if (connection != null && ServerUtils.isValidDN(connection, adminsGroupDn))
+                    {
+                        tenantReplicated = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.info(String.format(
+                            "Error occurred when trying to bind as tenant Admin: %s",
+                            ex.getMessage()));
+                }
+
+                if (tenantReplicated)
+                {
+                    break;
+                }
+
+                logger.info(String.format(
+                        "[Retry %d] Waiting for created Tenant [%s] to replicate...",
+                        retry, tenant));
+            }
+        }
+        catch (DirectoryException ex)
+        {
+            logger.error(String.format(
+                    "Directory Exception occurred when Creating tenant %s in %s: %s",
+                    tenant,
+                    hostname,
+                    ex.toString()));
+
+            if (ex.getErrorCode() == Directory.VMDIR_ERROR_ENTRY_EXISTS)
+            {
+                throw new DuplicateTenantException(String.format("Tenant %s already exists", tenant));
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.error(String.format(
+                    "Exception occurred when Creating tenant %s in %s: %s",
+                    tenant,
+                    hostname,
+                    ex.getMessage()));
+        }
+
+        if (!tenantReplicated)
+        {
+            logger.error(String.format(
+                    "Tenant %s failed to replicate, deleting tenant on partner DC %s",
+                    tenant, hostname));
+
+            try
+            {
+                Directory.deleteInstanceRemote(hostname, tenant, adminAccountName, String.valueOf(adminPwd));
+            }
+            catch (Exception ex)
+            {
+                logger.error(String.format(
+                        "Failed to delete tenant %s on partner DC %s",
+                        tenant, hostname));
+
+                throw ex;
+            }
+            throw new ReplicationException("Error creating tenant in remote IDM");
         }
     }
 
@@ -1528,7 +1639,14 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            // TODO: remove reading from registry key
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            long maxBearerTokenLifetimeInRegistry = settings.getMaxBearerTokenLifetimeInMillis();
+            if (maxBearerTokenLifetimeInRegistry > 0) {
+                return maxBearerTokenLifetimeInRegistry;
+            }
 
+            // read from directory service
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
@@ -1636,7 +1754,14 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            // TODO: remove reading from registry key
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            long maxBearerRefreshTokenLifetimeInRegistry = settings.getMaxBearerRefreshTokenLifetimeInMillis();
+            if (maxBearerRefreshTokenLifetimeInRegistry > 0) {
+                return maxBearerRefreshTokenLifetimeInRegistry;
+            }
 
+            // read from directory service
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
@@ -2705,10 +2830,10 @@ public class IdentityManager implements IIdentityManager {
     }
 
     /**
-     * Retrieves the security domains supported by a provider
+     * Retrieves the security domains supported by a tenant or a specified provider
      *
      * @param tenantName    Name of tenant, non-null non-empty, required
-     * @param providerName  Name of identity provider
+     * @param providerName  Name of identity provider; optional
      * @return Collection of domains, Empty collection if no provider found
      * @throws Exception
      */
@@ -2722,20 +2847,35 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
-            ValidateUtil.validateNotEmpty(providerName, "Provider name");
 
             TenantInformation tenantInfo = findTenant(tenantName);
-
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
-            // The provider name is the fully qualified domain name
-            IIdentityProvider provider =
-                                tenantInfo.findProviderByName(providerName);
-            if (provider != null)
+            Collection<SecurityDomain> domains = Collections.emptySet();
+
+            if (ServerUtils.isNullOrEmpty(providerName))
             {
-                return Collections.unmodifiableCollection(
-                        provider.getDomains());
+                Collection<IIdentityProvider> providers = tenantInfo.getProviders();
+                if (providers != null)
+                {
+                    domains = new HashSet<SecurityDomain>();
+                    for( IIdentityProvider p : providers ) {
+                        domains.addAll(p.getDomains());
+                    }
+                }
             }
+            else
+            {
+                // The provider name is the fully qualified domain name
+                IIdentityProvider provider =
+                                    tenantInfo.findProviderByName(providerName);
+                if (provider != null)
+                {
+                    domains = new HashSet<SecurityDomain>();
+                    domains.addAll(provider.getDomains());
+                }
+            }
+            return Collections.unmodifiableCollection(domains);
         }
         catch(Exception ex)
         {
@@ -2747,8 +2887,6 @@ public class IdentityManager implements IIdentityManager {
 
             throw ex;
         }
-
-        return Collections.emptySet();
     }
 
     /**
@@ -6921,7 +7059,7 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
-    ProvidersInfo loadProvidersInfo(String tenantName) throws Exception
+    ProvidersInfo loadProvidersInfo(String tenantName, OperatorAccessPolicy tenantOperatorPolicy) throws Exception
     {
         Collection<IIdentityProvider> providers =
                 new ArrayList<IIdentityProvider>();
@@ -6961,7 +7099,40 @@ public class IdentityManager implements IIdentityManager {
             }
         }
 
+        instantiateOperatorsProviderIdNeeded( tenantName, tenantOperatorPolicy, providers );
+
         return new ProvidersInfo(providers, stores, adProvider, defaultProviders);
+    }
+
+    private void instantiateOperatorsProviderIdNeeded(
+        String tenantName, OperatorAccessPolicy tenantOperatorPolicy,
+        Collection<IIdentityProvider> providers) {
+        try
+        {
+            if ((tenantOperatorPolicy) != null && (tenantOperatorPolicy.enabled()))
+            {
+                String systemTenant = this.getSystemTenant();
+
+                if (ServerUtils.isEquals(tenantName, systemTenant) == false)
+                {
+                    TenantInformation systemTenantInfo = this.findTenant(systemTenant);
+                    if (systemTenantInfo != null ){
+                        OperatorAccessPolicy opPolicy = systemTenantInfo.getOperatorAccessPolicy();
+                        if (opPolicy != null && opPolicy.enabled() == true){
+                            IIdentityStoreData ids = systemTenantInfo.findSystemIds();
+                            if (ids != null) {
+                                IIdentityProvider opProvider = new SystemTenantProvider(tenantName, systemTenantInfo.findSystemIds(), opPolicy);
+                                providers.add( opProvider );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            logger.error("Failed to create operators provider.", ex);
+        }
     }
 
     private
@@ -7028,12 +7199,13 @@ public class IdentityManager implements IIdentityManager {
             AuthnPolicy authnPolicy = getAuthnPolicy(tenantName, authnTypes);
             boolean idpSelectionFlag = attrs.isIDPSelectionEnabled();
             String issuer = _configStore.getIssuer(tenantName);
+            OperatorAccessPolicy operatorPolicy = _configStore.getOperatorAccessPolicy(tenantName);
 
             List<Certificate> certificate = _configStore.getTenantCertificate(tenantName);
                     Collection<List<Certificate>> certChains = _configStore.getTenantCertChains(tenantName);
                             PrivateKey key = _configStore.getTenantPrivateKey(tenantName);
 
-                            ProvidersInfo providersInfo = loadProvidersInfo(tenantName);
+                            ProvidersInfo providersInfo = loadProvidersInfo(tenantName, operatorPolicy);
                             Collection<IDPConfig> idpConfigs = _configStore.getExternalIDPConfigs(tenantName);
 
                             tenantInfo = new TenantInformation(
@@ -7063,7 +7235,8 @@ public class IdentityManager implements IIdentityManager {
                                     issuer,
                                     providersInfo != null ? providersInfo._defaultProviders : null,
                                     authnPolicy,
-                                    idpSelectionFlag);
+                                    idpSelectionFlag,
+                                    operatorPolicy);
         }
 
         return tenantInfo;
@@ -8416,34 +8589,109 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(Tenant tenant, IIdmServiceContext serviceContext, String operationName)
-   {
-      return getDiagnosticsContext((tenant != null) ? tenant.getName() : "(NULL)", serviceContext, operationName);
-   }
+    private OperatorAccessPolicy getOperatorAccessPolicy(
+        String tenantName) throws Exception
+    {
+        try
+        {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, IIdmServiceContext serviceContext, String operationName)
-   {
-      String correlationId = null;
-      String userId = "";
-      String sessionId = "";
-      if(serviceContext != null)
-      {
-          correlationId = serviceContext.getCorrelationId();
-          userId = serviceContext.getUserId();
-          sessionId = serviceContext.getSessionId();
-      }
-      if (ServerUtils.isNullOrEmpty(correlationId))
-      {
-          correlationId = UUID.randomUUID().toString();
-      }
-      return getDiagnosticsContext(tenantName, correlationId, operationName, userId, sessionId);
-   }
+            return tenantInfo.getOperatorAccessPolicy();
+        }
+        catch(Exception ex)
+        {
+            logger.error("Failed to getOperatorAccessPolicy", ex);
+            throw ex;
+        }
+    }
 
-   private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, String correlationId, String operationName, String userId, String sessionId)
-   {
-       // for now we don't use operationName, but can add support in the future
-       return DiagnosticsContextFactory.createContext(correlationId, tenantName, userId, sessionId);
-   }
+    private void setOperatorAccessPolicy(
+        String tenantName, OperatorAccessPolicy policy) throws Exception
+    {
+        try
+        {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            if (policy != null)
+            {
+                boolean bSystemTenant = ServerUtils.isEquals(tenantName, this.getSystemTenant());
+                if ( ( bSystemTenant == false )
+                     && ( (ServerUtils.isNullOrEmpty(policy.userBaseDn()) == false)
+                          || (ServerUtils.isNullOrEmpty(policy.groupBaseDn()) == false) ) ) {
+
+                    throw new InvalidArgumentException("User base DN and group base DN can only be set for system tenant.");
+                }
+
+                if (bSystemTenant == true) {
+                    ISystemDomainIdentityProvider systemProvider = tenantInfo.findSystemProvider();
+                    ServerUtils.validateNotNullSystemIdp(systemProvider, tenantName);
+
+                    if ( (ServerUtils.isNullOrEmpty(policy.userBaseDn()) == false)
+                         && (systemProvider.isValidDn(policy.userBaseDn()) == false) ) {
+
+                        throw new InvalidArgumentException(String.format("User base DN [%s] is invalid", policy.userBaseDn()));
+                    }
+                    if ( (ServerUtils.isNullOrEmpty(policy.groupBaseDn()) == false)
+                         && (systemProvider.isValidDn(policy.groupBaseDn()) == false) ) {
+
+                        throw new InvalidArgumentException(String.format("Group base DN [%s] is invalid", policy.groupBaseDn()));
+                    }
+                }
+                else
+                {
+                    if (policy.enabled())
+                    {
+                        TenantInformation systemTenantInfo = findTenant(this.getSystemTenant());
+                        OperatorAccessPolicy systemTenantPolicy = systemTenantInfo.getOperatorAccessPolicy();
+                        if ( ( systemTenantPolicy == null) || (systemTenantPolicy.enabled() == false) )
+                        {
+                            logger.warn(
+                                "Enabling Operator Access for tenant {} will become effective once system tenant enables it as well.",
+                                tenantName);
+                        }
+                    }
+                }
+            }
+            this._configStore.setOperatorAccessPolicy(tenantName, policy);
+            this._tenantCache.deleteTenant(tenantName);
+         }
+        catch(Exception ex)
+        {
+            logger.error("Failed to set setOperatorAccessPolicy", ex);
+            throw ex;
+        }
+    }
+
+    private static IDiagnosticsContextScope getDiagnosticsContext(Tenant tenant, IIdmServiceContext serviceContext, String operationName)
+    {
+        return getDiagnosticsContext((tenant != null) ? tenant.getName() : "(NULL)", serviceContext, operationName);
+    }
+
+    private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, IIdmServiceContext serviceContext, String operationName)
+    {
+        String correlationId = null;
+        String userId = "";
+        String sessionId = "";
+        if(serviceContext != null)
+        {
+            correlationId = serviceContext.getCorrelationId();
+            userId = serviceContext.getUserId();
+            sessionId = serviceContext.getSessionId();
+        }
+        if (ServerUtils.isNullOrEmpty(correlationId))
+        {
+            correlationId = UUID.randomUUID().toString();
+        }
+        return getDiagnosticsContext(tenantName, correlationId, operationName, userId, sessionId);
+    }
+
+    private static IDiagnosticsContextScope getDiagnosticsContext(String tenantName, String correlationId, String operationName, String userId, String sessionId)
+    {
+        // for now we don't use operationName, but can add support in the future
+        return DiagnosticsContextFactory.createContext(correlationId, tenantName, userId, sessionId);
+    }
 
     // ---------------------------------------------
     // IIdentityManager interface implementation
@@ -8453,13 +8701,12 @@ public class IdentityManager implements IIdentityManager {
      * {@inheritDoc}
      */
     @Override
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws  IDMException
-    {
+    public void addTenant(String hostname, Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws IDMException {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenant, serviceContext, "addTenant"))
         {
             try
             {
-                this.addTenant(tenant, adminAccountName, adminPwd);
+                this.addTenant(hostname, tenant, adminAccountName, adminPwd);
             }
             catch(Exception ex)
             {
@@ -12165,6 +12412,46 @@ public class IdentityManager implements IIdentityManager {
             ManageCrlCacheChecker();
         } catch (Exception ex) {
             throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    @Override
+    public OperatorAccessPolicy getOperatorAccessPolicy(
+        String tenantName, IIdmServiceContext serviceContext) throws IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOperatorAccessPolicy"))
+        {
+            try
+            {
+                return this.getOperatorAccessPolicy(tenantName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    @Override
+    public void setOperatorAccessPolicy(
+        String tenantName, OperatorAccessPolicy policy, IIdmServiceContext serviceContext) throws IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setOperatorAccessPolicy"))
+        {
+            try
+            {
+                this.setOperatorAccessPolicy(tenantName, policy);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
         }
     }
 

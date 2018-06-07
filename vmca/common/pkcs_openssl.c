@@ -723,6 +723,9 @@ error :
 
 }
 
+/*
+ * Deprecated - use VMCAConvertPEMCertToPublicKey instead
+ */
 DWORD
 VMCAPEMToPublicKey(
     PSTR pKey,
@@ -757,6 +760,70 @@ error :
 
 }
 
+DWORD
+VMCAConvertPEMToPublicKey(
+    PCSTR       pszPEM,
+    EVP_PKEY**  ppPubKey
+    )
+{
+    DWORD   dwError = 0;
+    int     retVal = 0;
+    BIO*    bio = NULL;
+    RSA*    rsa = NULL;
+    EVP_PKEY*   pPubKey = NULL;
+
+    if (IsNullOrEmptyString(pszPEM) || !ppPubKey)
+    {
+        BAIL_WITH_ERROR(dwError, VMCA_ARGUMENT_ERROR);
+    }
+
+    bio = BIO_new(BIO_s_mem());
+    if (!bio)
+    {
+        VMCA_LOG_ERROR("%s: BIO_new returned NULL", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_OUT_MEMORY_ERR);
+    }
+
+    retVal = BIO_puts(bio, pszPEM);
+    if (retVal <= 0)
+    {
+        VMCA_LOG_ERROR("%s: BIO_puts returned %d", __FUNCTION__, retVal);
+        BAIL_WITH_ERROR(dwError, VMCA_CERT_IO_FAILURE);
+    }
+
+    PEM_read_bio_RSA_PUBKEY(bio, &rsa, NULL, NULL);
+    if (!rsa)
+    {
+        VMCA_LOG_ERROR("%s: PEM_read_RSA_PUBKEY returned NULL", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_CERT_IO_FAILURE);
+    }
+
+    pPubKey = EVP_PKEY_new();
+    if (!pPubKey)
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_new returned NULL", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_CERT_IO_FAILURE);
+    }
+
+    retVal = EVP_PKEY_assign_RSA(pPubKey, rsa);
+    if (retVal != 1)
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_assign_RSA returned %d", __FUNCTION__, retVal);
+        BAIL_WITH_ERROR(dwError, VMCA_CERT_IO_FAILURE);
+    }
+
+    *ppPubKey = pPubKey;
+
+cleanup:
+    BIO_free(bio);
+    return dwError;
+
+error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    RSA_free(rsa);
+    EVP_PKEY_free(pPubKey);
+    goto cleanup;
+}
 
 DWORD
 VMCAPEMToCSR(
@@ -3574,3 +3641,139 @@ error:
     goto cleanup;
 }
 
+DWORD
+VMCAComputeMessageDigest(
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    unsigned char**         ppMD,
+    size_t*                 pMDSize
+    )
+{
+    DWORD   dwError = 0;
+    EVP_MD_CTX  mdCtx = {0};
+    unsigned char   md[EVP_MAX_MD_SIZE] = {0};
+    unsigned int    mdSize = 0;
+    unsigned char*  pMD = NULL;
+
+    if (!digestMethod || !pData || !ppMD || !pMDSize)
+    {
+        BAIL_WITH_ERROR(dwError, VMCA_ARGUMENT_ERROR);
+    }
+
+    EVP_MD_CTX_init(&mdCtx);
+
+    if (EVP_DigestInit_ex(&mdCtx, digestMethod, NULL) == 0)
+    {
+        VMCA_LOG_ERROR("%s: EVP_DigestInit_ex returned 0", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_ERROR_EVP_DIGEST);
+    }
+
+    if (EVP_DigestUpdate(&mdCtx, pData, dataSize) == 0)
+    {
+        VMCA_LOG_ERROR("%s: EVP_DigestUpdate returned 0", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_ERROR_EVP_DIGEST);
+    }
+
+    if (EVP_DigestFinal_ex(&mdCtx, md, &mdSize) == 0)
+    {
+        VMCA_LOG_ERROR("%s: EVP_DigestFinal_ex returned 0", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_ERROR_EVP_DIGEST);
+    }
+
+    dwError = VMCAAllocateMemory(mdSize, (PVOID*)&pMD);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VMCACopyMemory(pMD, mdSize, md, mdSize);
+    BAIL_ON_ERROR(dwError);
+
+    *ppMD = pMD;
+    *pMDSize = mdSize;
+
+cleanup:
+    EVP_MD_CTX_cleanup(&mdCtx);
+    return dwError;
+
+error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    VMCA_SAFE_FREE_MEMORY(pMD);
+    goto cleanup;
+}
+
+DWORD
+VMCAVerifyRSASignature(
+    EVP_PKEY*               pPubKey,
+    const EVP_MD*           digestMethod,
+    const unsigned char*    pData,
+    size_t                  dataSize,
+    const unsigned char*    pSignature,
+    size_t                  signatureSize,
+    PBOOLEAN                pVerified
+    )
+{
+    DWORD   dwError = 0;
+    int     retVal = 0;
+    unsigned char*  pMd = NULL;
+    size_t          mdSize = 0;
+    EVP_PKEY_CTX*   pPubKeyCtx = NULL;
+
+    if (!pPubKey || !digestMethod || !pData || !pData || !pVerified)
+    {
+        BAIL_WITH_ERROR(dwError, VMCA_ARGUMENT_ERROR);
+    }
+
+    dwError = VMCAComputeMessageDigest(digestMethod, pData, dataSize, &pMd, &mdSize);
+    BAIL_ON_ERROR(dwError);
+
+    pPubKeyCtx = EVP_PKEY_CTX_new(pPubKey, NULL);
+    if (!pPubKeyCtx)
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_CTX_new returned NULL", __FUNCTION__);
+        BAIL_WITH_ERROR(dwError, VMCA_KEY_IO_FAILURE);
+    }
+
+    retVal = EVP_PKEY_verify_init(pPubKeyCtx);
+    if (retVal <= 0)
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_verify_init returned %d", __FUNCTION__, retVal);
+        BAIL_WITH_ERROR(dwError, VMCA_KEY_IO_FAILURE);
+    }
+
+    retVal = EVP_PKEY_CTX_set_rsa_padding(pPubKeyCtx, RSA_PKCS1_PADDING);
+    if (retVal <= 0)
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_CTX_set_rsa_padding returned %d", __FUNCTION__, retVal);
+        BAIL_WITH_ERROR(dwError, VMCA_KEY_IO_FAILURE);
+    }
+
+    retVal = EVP_PKEY_CTX_set_signature_md(pPubKeyCtx, digestMethod);
+    if (retVal <= 0)
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_CTX_set_signature_md returned %d", __FUNCTION__, retVal);
+        BAIL_WITH_ERROR(dwError, VMCA_KEY_IO_FAILURE);
+    }
+
+    retVal = EVP_PKEY_verify(pPubKeyCtx, pSignature, signatureSize, pMd, mdSize);
+    if (retVal == 1)
+    {
+        *pVerified = TRUE;
+    }
+    else if (retVal == 0)
+    {
+        *pVerified = FALSE;
+    }
+    else
+    {
+        VMCA_LOG_ERROR("%s: EVP_PKEY_verify returned %d", __FUNCTION__, retVal);
+        BAIL_WITH_ERROR(dwError, VMCA_KEY_IO_FAILURE);
+    }
+
+cleanup:
+    VMCA_SAFE_FREE_MEMORY(pMd);
+    EVP_PKEY_CTX_free(pPubKeyCtx);
+    return dwError;
+
+error:
+    VMCA_LOG_ERROR("%s failed with error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}

@@ -7,6 +7,7 @@ package vecsclient
 #cgo LDFLAGS: -L/opt/vmware/lib64 -lvmafdclient -Wl,-rpath=/opt/vmware/lib64
 #include <stdlib.h>
 #include <vmafdtypes.h>
+#include <vmafdclient.h>
 #include <vecsclient.h>
 */
 import "C"
@@ -43,6 +44,30 @@ const (
 	VecsEntryInfoLevel1                                   // 1
 	VecsEntryInfoLevel2                                   // 2
 )
+
+// VecsForceRefreshCerts triggers a force refresh of Lightwave trusted
+// root certificates.  It takes in a server address, username, and pasword.
+// All arguments can and should be empty strings.
+// This function will return any encountered errors.
+func VecsForceRefreshCerts(server string, username string, password string) (err error) {
+	serverCStr := goStringToCString(server)
+	userNameCStr := goStringToCString(username)
+	passwordCStr := goStringToCString(password)
+
+	defer freeCString(serverCStr)
+	defer freeCString(userNameCStr)
+	defer freeCString(passwordCStr)
+
+	var e C.DWORD = C.VmAfdTriggerRootCertsRefresh(
+		serverCStr,
+		userNameCStr,
+		passwordCStr)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] failed to trigger force refresh of certs (%s)", cErrorToGoError(e))
+	}
+
+	return
+}
 
 // VecsCreateStore creates a new cert store and returns its handle.
 // The caller must call store.Close() when the store is no longer needed.
@@ -128,6 +153,22 @@ func (store *VecsStore) Close() (err error) {
 		store.p = nil
 	}
 
+	return
+}
+
+// EntryCount returns the number of entries in the specified store.
+// It returns any encountered errors.
+func (store *VecsStore) EntryCount() (count int, err error) {
+	var c C.DWORD = 0
+	var e C.DWORD = C.VecsGetEntryCount(
+		store.p,
+		&c)
+	if err != nil {
+		err = fmt.Errorf("[ERROR] failed to get entry count from VECS store (%s)", cErrorToGoError(e))
+		return
+	}
+
+	count = int(c)
 	return
 }
 

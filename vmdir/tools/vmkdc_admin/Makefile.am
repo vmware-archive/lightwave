@@ -41,7 +41,8 @@ vmkdc_admin_LDADD = \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
     @GSSAPI_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @DL_LIBS@
 
 vmkdc_admin_LDFLAGS = \
     @DCERPC_LDFLAGS@ \

@@ -319,6 +319,9 @@ VmDirInit(
             dwError = VmDirInitTrackLastLoginThread();
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+
+        dwError = VmDirBkgdThreadInitialize();
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     if (bWriteInvocationId) // Logic for backward compatibility. Needs to come after schema patch logic.

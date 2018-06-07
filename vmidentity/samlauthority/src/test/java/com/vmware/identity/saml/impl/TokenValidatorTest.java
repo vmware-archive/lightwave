@@ -284,9 +284,15 @@ public class TokenValidatorTest {
                cu.loadPrivateKey(CertificateUtil.STS_CERT_ALIAS), "RSA_SHA256"
        );
 
+       Set<String> blackListedDomains = new HashSet<String>();
+       blackListedDomains.addAll(Arrays.<String>asList( TestConstants.SYSTEM_TENANT, TestConstants.LOCALOS));
+
        final Config config = new Config(
            samlAuthorityConfig, tokenRestrictions, validCerts, clockTolerance,
-           Arrays.<IDPConfig>asList(new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)));
+           Arrays.<IDPConfig>asList(
+               new IDPConfig(TestConstants.EXTERNAL_ISSUER, TestConstants.EXTERNAL_ISSUER_PROTOCOL)
+           ),
+           blackListedDomains);
 
        final ConfigExtractor configExtractor = createMock(ConfigExtractor.class);
 

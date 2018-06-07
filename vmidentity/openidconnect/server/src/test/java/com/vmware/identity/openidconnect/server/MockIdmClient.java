@@ -17,6 +17,7 @@ package com.vmware.identity.openidconnect.server;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.Attribute;
@@ -36,9 +38,11 @@ import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
+import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IdentityStoreData;
 import com.vmware.identity.idm.InvalidPrincipalException;
+import com.vmware.identity.idm.KnownSamlAttributes;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchResourceServerException;
 import com.vmware.identity.idm.NoSuchTenantException;
@@ -61,16 +65,21 @@ public class MockIdmClient extends CasIdmClient {
     private final PrivateKey tenantPrivateKey;
     private final Certificate tenantCertificate;
     private final AuthnPolicy authnPolicy;
-    private final String issuer;
+    private final String issuer; // this maps to entityid
+    private final String tenantIssuer; // this maps to vmwStsIssuer set on tenant
 
     private final String clientId;
+    private final Boolean multiTenant;
     private final String redirectUri;
+    private final String redirectUriTemplate;
     private final String logoutUri;
     private final String postLogoutRedirectUri;
     private final String clientCertSubjectDN;
     private final Certificate clientCertificate;
     private final String tokenEndpointAuthMethod;
     private final OIDCClient additionalClient;
+
+    private final IDPConfig externalIDP;
 
     private final String username;
     private final String password;
@@ -102,9 +111,12 @@ public class MockIdmClient extends CasIdmClient {
         this.tenantCertificate       = builder.tenantCertificate;
         this.authnPolicy             = builder.authnPolicy;
         this.issuer                  = builder.issuer;
+        this.tenantIssuer            = builder.tenantIssuer;
 
         this.clientId                = builder.clientId;
+        this.multiTenant             = builder.multiTenant;
         this.redirectUri             = builder.redirectUri;
+        this.redirectUriTemplate     = builder.redirectUriTemplate;
         this.logoutUri               = builder.logoutUri;
         this.postLogoutRedirectUri   = builder.postLogoutRedirectUri;
         this.clientCertSubjectDN     = builder.clientCertSubjectDN;
@@ -140,6 +152,8 @@ public class MockIdmClient extends CasIdmClient {
         if (this.clientId != null) {
             OIDCClient client = new OIDCClient.Builder(this.clientId).
                     redirectUris(Arrays.asList(this.redirectUri)).
+                    multiTenant(multiTenant).
+                    redirectUriTemplates(this.redirectUriTemplate != null ? Arrays.asList(this.redirectUriTemplate) : new ArrayList<String> ()).
                     postLogoutRedirectUris(Arrays.asList(this.postLogoutRedirectUri)).
                     logoutUri(this.logoutUri).
                     certSubjectDN(this.clientCertSubjectDN).
@@ -150,6 +164,8 @@ public class MockIdmClient extends CasIdmClient {
         if (this.additionalClient != null) {
             this.clientMap.put(this.additionalClient.getClientId(), this.additionalClient);
         }
+
+        this.externalIDP = builder.externalIDP;
     }
 
     @Override
@@ -284,10 +300,31 @@ public class MockIdmClient extends CasIdmClient {
         Validate.notNull(id, "id");
         Validate.notEmpty(attributes, "attributes");
 
-        AttributeValuePair pair = new AttributeValuePair();
-        pair.setAttrDefinition(attributes.iterator().next());
-        pair.getValues().addAll(this.groupMembership);
-        return Arrays.asList(pair);
+        ArrayList<AttributeValuePair> values = new ArrayList<AttributeValuePair>();
+        if (attributes!= null) {
+            for(Attribute attr : attributes) {
+                AttributeValuePair pair = new AttributeValuePair();
+                pair.setAttrDefinition(attr);
+                if (attr.getName() == KnownSamlAttributes.ATTRIBUTE_USER_FIRST_NAME){
+                    pair.getValues().add(id.getName());
+                } else if (attr.getName() == KnownSamlAttributes.ATTRIBUTE_USER_LAST_NAME) {
+                    pair.getValues().add(id.getName());
+                } else if (attr.getName() == KnownSamlAttributes.ATTRIBUTE_USER_GROUPS) {
+                    pair.getValues().addAll(this.groupMembership);
+                } else if (attr.getName() == KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME) {
+                    pair.getValues().add(id.getUPN());
+                } else if (attr.getName() == KnownSamlAttributes.ATTRIBUTE_USER_SUBJECT_TYPE) {
+                    pair.getValues().add(
+                        id.getName().equals(this.solutionUsername) ? "true" : "false");
+                } else {
+                    throw new NotImplementedException(
+                        String.format( "Attribute [%s] is not supported.", attr.getName() ));
+                }
+                values.add(pair);
+            }
+        }
+
+        return values;
     }
 
     @Override
@@ -370,6 +407,12 @@ public class MockIdmClient extends CasIdmClient {
     }
 
     @Override
+    public String getIssuer(String tenantName) throws Exception {
+        validateTenant(tenantName);
+        return this.tenantIssuer;
+    }
+
+    @Override
     public String getLogonBannerTitle(String tenantName) throws Exception {
         validateTenant(tenantName);
         return null;
@@ -435,6 +478,18 @@ public class MockIdmClient extends CasIdmClient {
         return null;
     }
 
+    @Override
+    public IDPConfig getExternalIdpConfigForTenant(String tenantName, String entityID) throws Exception {
+        validateTenant(tenantName);
+        Validate.notNull(entityID, "entityID");
+
+        if ( (this.externalIDP != null) && (entityID.equals(this.externalIDP.getEntityID()))) {
+            return this.externalIDP;
+        }
+
+        return null;
+    }
+
     private void validateTenant(String tenantName) throws NoSuchTenantException {
         Validate.notEmpty(tenantName, "tenantName");
         if (!tenantName.equals(this.tenantName)) {
@@ -447,16 +502,20 @@ public class MockIdmClient extends CasIdmClient {
         private PrivateKey tenantPrivateKey;
         private Certificate tenantCertificate;
         private AuthnPolicy authnPolicy;
-        private String issuer;
+        private String issuer; // this maps to entityid
+        private String tenantIssuer; // this maps to vmwStsIssuer set on tenant
 
         private String clientId;
+        private Boolean multiTenant;
         private String redirectUri;
+        private String redirectUriTemplate;
         private String logoutUri;
         private String postLogoutRedirectUri;
         private String clientCertSubjectDN;
         private Certificate clientCertificate;
         private String tokenEndpointAuthMethod;
         private OIDCClient additionalClient;
+        private IDPConfig externalIDP;
 
         private String username;
         private String password;
@@ -509,13 +568,28 @@ public class MockIdmClient extends CasIdmClient {
             return this;
         }
 
+        public Builder tenantIssuer(String tenantIssuer) {
+            this.tenantIssuer = tenantIssuer;
+            return this;
+        }
+
         public Builder clientId(String clientId) {
             this.clientId = clientId;
             return this;
         }
 
+        public Builder multiTenant(boolean multiTenant) {
+            this.multiTenant = multiTenant;
+            return this;
+        }
+
         public Builder redirectUri(String redirectUri) {
             this.redirectUri = redirectUri;
+            return this;
+        }
+
+        public Builder redirectUriTemplate(String redirectUriTemplate) {
+            this.redirectUriTemplate = redirectUriTemplate;
             return this;
         }
 
@@ -645,6 +719,11 @@ public class MockIdmClient extends CasIdmClient {
         public Builder resourceServerMap(Map<String, ResourceServer> resourceServerMap) {
             Validate.notNull(resourceServerMap, "resourceServerMap");
             this.resourceServerMap = resourceServerMap;
+            return this;
+        }
+
+        public Builder externalIDP(IDPConfig externalIDP) {
+            this.externalIDP = externalIDP;
             return this;
         }
 

@@ -23,6 +23,12 @@ static VMDIR_BKGD_TASK_CTX tasks[] =
                 {0}
         },
         {
+                VmDirBkgdSrvStat,
+                60 * 10, // every 10 minute
+                "bkgdprevtime_update_srvstat",
+                {0}
+        },
+        {
                 VmDirBkgdCreateNewIntegChkReport,
                 60 * 60 * 6, // every 6 hours
                 "bkgdprevtime_replmetrics_createnewintegchkreport",
@@ -514,6 +520,32 @@ cleanup:
     VmDirFreeStrArray(ppszSrvs);
     VDIR_SAFE_UNBIND_EXT_S(pLd);
     ldap_msgfree(pResult);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirBkgdSrvStat(
+    PVMDIR_BKGD_TASK_CTX    pTaskCtx
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pTaskCtx)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirUpdateSrvStat();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirBkgdTaskUpdatePrevTime(pTaskCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
     return dwError;
 
 error:

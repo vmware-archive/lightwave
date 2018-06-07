@@ -91,6 +91,16 @@ VmDirWhichAddressPresent(
     BOOLEAN *pIPV6AddressPresent
     );
 
+DWORD
+VmDirPingIPV6AcceptThr(
+    DWORD   dwPort
+    );
+
+DWORD
+VmDirPingIPV4AcceptThr(
+    DWORD   dwPort
+    );
+
 // controls.c
 void
 DeleteControls(
@@ -108,10 +118,11 @@ ParseAndFreeSyncStateControl(
     USN*        pulPartnerUSN
     );
 
-VOID
-VmDirSetSyncDoneCtlbContinue(
-    PVDIR_OPERATION pOp,
-    DWORD           dwSentEntryCount
+DWORD
+VmDirUpdateSyncDoneCtl(
+    PVDIR_OPERATION   pOp,
+    DWORD     dwSentEntryCount,
+    BOOLEAN   bLowestPendingUncommittedUsn
     );
 
 int

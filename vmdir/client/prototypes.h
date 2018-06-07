@@ -558,7 +558,8 @@ VmDirLocalInitializeHost(
     PWSTR   pwszPassword,
     PWSTR   pwszSiteName,
     PWSTR   pwszReplURI,
-    UINT32  firstReplCycleMode
+    UINT32  firstReplCycleMode,
+    PVMDIR_TRUST_INFO_W pTrustInfoW
 );
 
 DWORD

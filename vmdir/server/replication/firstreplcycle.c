@@ -62,20 +62,9 @@ _VmDirGetRemoteDBFileUsingRPC(
 
 static
 int
-_VmDirSwapDB(
-    PCSTR   dbHomeDir,
-    BOOLEAN bHasXlog);
-
-static
-int
 _VmDirWrapUpFirstReplicationCycle(
     PCSTR                           pszHostname,
     VMDIR_REPLICATION_AGREEMENT *   pReplAgr);
-
-static
-int
-_VmDirPatchDSERoot(
-    PVDIR_SCHEMA_CTX    pSchemaCtx);
 
 VOID
 VmDirFreeBindingHandle(
@@ -121,6 +110,14 @@ VmDirFirstReplicationCycle(
 
     assert(gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB);
 
+
+    VmDirBkgdThreadShutdown();
+
+    VmDirMetricsShutdown();
+
+    //Shutdown local database
+    VmDirShutdownDB();
+
     retVal = _VmDirGetRemoteDBUsingRPC(pszHostname, dbHomeDir, &bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal,
@@ -128,11 +125,7 @@ VmDirFirstReplicationCycle(
             "VmDirFirstReplicationCycle: _VmDirGetRemoteDBUsingRPC() call failed with error: %d",
             retVal);
 
-    VmDirBkgdThreadShutdown();
-
-    VmDirMetricsShutdown();
-
-    retVal = _VmDirSwapDB(dbHomeDir, bHasXlog);
+    retVal = VmDirSwapDB(dbHomeDir, bHasXlog);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal,
             pszLocalErrorMsg,
@@ -486,9 +479,38 @@ error:
     goto cleanup;
 }
 
-static
+/**
+ * @ _VmDirShutdownDB()
+ * shutdown the current backend
+ * @return VOID
+ */
+VOID
+VmDirShutdownDB(
+    VOID
+    )
+{
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
+
+    // Shutdown backend
+    pBE = VmDirBackendSelect(NULL);
+    assert(pBE);
+
+    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
+
+    // in DR case, stop listening thread.
+    // in Join case, listening thread is not in listen mode yet.
+    VmDirShutdownConnAcceptThread();
+
+    VmDirIndexLibShutdown();
+
+    VmDirSchemaLibShutdown();
+
+    pBE->pfnBEShutdown();
+    VmDirBackendContentFree(pBE);
+}
+
 int
-_VmDirSwapDB(
+VmDirSwapDB(
     PCSTR dbHomeDir,
     BOOLEAN bHasXlog)
 {
@@ -498,26 +520,13 @@ _VmDirSwapDB(
     PSTR                    pszLocalErrorMsg = NULL;
     int                     errorCode = 0;
     BOOLEAN                 bLegacyDataLoaded = FALSE;
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
+    BOOLEAN                 bPathExist = FALSE;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
 #else
     const char   fileSeperator = '\\';
 #endif
-
-    // Shutdown backend
-    pBE = VmDirBackendSelect(NULL);
-    assert(pBE);
-
-    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
-
-    VmDirIndexLibShutdown();
-
-    VmDirSchemaLibShutdown();
-
-    pBE->pfnBEShutdown();
-    VmDirBackendContentFree(pBE);
 
     // move .mdb files
     retVal = VmDirStringPrintFA( dbExistingName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator,
@@ -545,7 +554,7 @@ _VmDirSwapDB(
             "_VmDirSwapDB: rename file from %s to %s failed, errno %d", dbExistingName, dbNewName, errorCode );
     }
 
-    retVal = VmDirStringPrintFA(dbNewName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator, VMDIR_MDB_XLOGS_DIR_NAME);
+    retVal = VmDirStringPrintFA(dbNewName, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator, VMDIR_MDB_XLOGS_DIR_NAME);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirSwapDB: VmDirStringPrintFA() call failed with error: %d", retVal );
 
@@ -571,7 +580,11 @@ _VmDirSwapDB(
                                          dbNewName, errorCode);
         }
 
-        if (rename(dbExistingName, dbNewName) != 0)
+        retVal = VmDirPathExists(dbExistingName, &bPathExist);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        // compacted DB does not have xlogs
+        if (bPathExist && rename(dbExistingName, dbNewName) != 0)
         {
             retVal = LDAP_OPERATIONS_ERROR;
             errorCode = errno;
@@ -633,109 +646,20 @@ _VmDirWrapUpFirstReplicationCycle(
     VMDIR_REPLICATION_AGREEMENT *   pReplAgr)
 {
     int                 retVal = LDAP_SUCCESS;
-    PVDIR_ENTRY         pPartnerServerEntry = NULL;
-    PVDIR_ATTRIBUTE     pAttrUpToDateVector = NULL;
-    PVDIR_ATTRIBUTE     pAttrInvocationId = NULL;
-    USN                 localUsn = 0;
-    USN                 partnerLocalUsn = 0;
-    char                partnerlocalUsnStr[VMDIR_MAX_USN_STR_LEN];
-    VDIR_BACKEND_CTX    beCtx = {0};
+    PSTR                pszUtdVector = NULL;
+    PSTR                pszMaxUSN = NULL;
     struct berval       syncDoneCtrlVal = {0};
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
-    VDIR_OPERATION      searchOp = {0};
-    PVDIR_FILTER        pSearchFilter = NULL;
-    PSTR                pszSeparator = NULL;
 
     retVal = VmDirSchemaCtxAcquire(&pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR( retVal );
-
-    retVal = VmDirInitStackOperation( &searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    searchOp.pBEIF = VmDirBackendSelect(NULL);
-    assert(searchOp.pBEIF);
-
-    searchOp.reqDn.lberbv.bv_val = "";
-    searchOp.reqDn.lberbv.bv_len = 0;
-    searchOp.request.searchReq.scope = LDAP_SCOPE_SUBTREE;
-
-    retVal = VmDirConcatTwoFilters(searchOp.pSchemaCtx, ATTR_CN, (PSTR) pszHostname, ATTR_OBJECT_CLASS, OC_DIR_SERVER,
-                                    &pSearchFilter);
+    retVal = VmDirComposeNodeUtdVector(pszHostname, &pszUtdVector, &pszMaxUSN);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    searchOp.request.searchReq.filter = pSearchFilter;
-
-    retVal = VmDirInternalSearch(&searchOp);
+    // SyncDoneCtrolVal := <partnerLocalUSN>,<UTDVector>
+    retVal = VmDirAllocateStringPrintf(&(syncDoneCtrlVal.bv_val), "%s,%s", pszMaxUSN, pszUtdVector);
     BAIL_ON_VMDIR_ERROR(retVal);
-
-    if (searchOp.internalSearchEntryArray.iSize != 1)
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "_VmDirWrapUpFirstReplicationCycle: Unexpected (not 1) number of partner server entries found (%d)",
-                    searchOp.internalSearchEntryArray.iSize );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    pPartnerServerEntry = searchOp.internalSearchEntryArray.pEntry;
-
-    pAttrUpToDateVector = VmDirEntryFindAttribute( ATTR_UP_TO_DATE_VECTOR, pPartnerServerEntry );
-
-    pAttrInvocationId = VmDirEntryFindAttribute( ATTR_INVOCATION_ID, pPartnerServerEntry );
-    assert( pAttrInvocationId != NULL );
-
-    beCtx.pBE = VmDirBackendSelect(NULL);
-    assert(beCtx.pBE);
-
-    if ((retVal = beCtx.pBE->pfnBEGetNextUSN( &beCtx, &localUsn )) != 0)
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: pfnBEGetNextUSN failed with error code: %d, "
-                  "error message: %s", retVal, VDIR_SAFE_STRING(beCtx.pszBEErrorMsg) );
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-
-    retVal = _VmGetHighestCommittedUSN(localUsn, &partnerLocalUsn);
-    BAIL_ON_VMDIR_ERROR( retVal );
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: partnerLocalUsn %llu locaUsn %llu", partnerLocalUsn, localUsn);
-
-    if ((retVal = VmDirStringNPrintFA( partnerlocalUsnStr, sizeof(partnerlocalUsnStr), sizeof(partnerlocalUsnStr) - 1,
-                                       "%" PRId64, partnerLocalUsn)) != 0)
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: VmDirStringNPrintFA failed with error code: %d",
-                  retVal );
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-
-    if (pAttrUpToDateVector)
-    {
-        if (VmDirStringEndsWith( pAttrUpToDateVector->vals[0].lberbv.bv_val, ",", FALSE))
-        {
-            pszSeparator = "";
-        }
-        else
-        {
-            pszSeparator = ",";
-        }
-
-        // <partnerLocalUSN>,<partner up-to-date vector>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringPrintf( &(syncDoneCtrlVal.bv_val), "%s,%s%s%s:%s,",
-                                                partnerlocalUsnStr,
-                                                pAttrUpToDateVector->vals[0].lberbv.bv_val,
-                                                pszSeparator,
-                                                pAttrInvocationId->vals[0].lberbv.bv_val,
-                                                partnerlocalUsnStr);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-    else
-    {
-        // <partnerLocalUSN>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringPrintf( &(syncDoneCtrlVal.bv_val), "%s,%s:%s,",
-                                                partnerlocalUsnStr,
-                                                pAttrInvocationId->vals[0].lberbv.bv_val,
-                                                partnerlocalUsnStr);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
 
     VmDirSetACLMode();
 
@@ -743,21 +667,22 @@ _VmDirWrapUpFirstReplicationCycle(
 
     if ((retVal = VmDirReplUpdateCookies( pSchemaCtx, &(syncDoneCtrlVal), pReplAgr )) != LDAP_SUCCESS)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: UpdateCookies failed. Error: %d", retVal );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: UpdateCookies failed. Error: %d", __FUNCTION__, retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
-    if ((retVal = _VmDirPatchDSERoot(pSchemaCtx)) != LDAP_SUCCESS)
+    if ((retVal = VmDirPatchDSERoot(pSchemaCtx)) != LDAP_SUCCESS)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: _VmDirPatchDSERoot failed. Error: %d", retVal );
-        BAIL_ON_VMDIR_ERROR( retVal );
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: _VmDirPatchDSERoot failed. Error: %d", __FUNCTION__, retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
 cleanup:
-    VmDirFreeOperationContent(&searchOp);
-    VmDirBackendCtxContentFree(&beCtx);
+    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
+    VMDIR_SAFE_FREE_MEMORY(pszMaxUSN);
     VMDIR_SAFE_FREE_MEMORY(syncDoneCtrlVal.bv_val);
     VmDirSchemaCtxRelease(pSchemaCtx);
+
     return retVal;
 
 error:
@@ -769,9 +694,8 @@ error:
 #define VDIR_PSC_VERSION "6.7.0"
 #endif
 
-static
 int
-_VmDirPatchDSERoot(
+VmDirPatchDSERoot(
     PVDIR_SCHEMA_CTX    pSchemaCtx)
 {
     int                      retVal = LDAP_SUCCESS;
@@ -856,6 +780,145 @@ error:
     goto cleanup;
 }
 
+/*
+ * After copying DB from partner, we need to derive UTDVector for new node from partner.
+ * i.e. <whatever partner node current UTDVector> + <partner invoactionid:partner max commited USN>
+ */
+int
+VmDirComposeNodeUtdVector(
+    PCSTR   pszHostname,
+    PSTR*   ppszUtdVector,
+    PSTR*   ppszMaxUSN
+    )
+{
+    int                 dwError = 0;
+    PVDIR_ENTRY         pServerEntry = NULL;
+    PVDIR_ATTRIBUTE     pAttrUTDVector = NULL;
+    PVDIR_ATTRIBUTE     pAttrInvocationId = NULL;
+    USN                 localUsn = 0;
+    USN                 maxCommittedUSN = 0;
+    VDIR_BACKEND_CTX    beCtx = {0};
+    VDIR_OPERATION      searchOp = {0};
+    PVDIR_FILTER        pSearchFilter = NULL;
+    PSTR                pszSeparator = NULL;
+    PSTR                pszLocalUtdVector = NULL;
+    PSTR                pszLocalMaxUSN = NULL;
+
+    dwError = VmDirInitStackOperation(&searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    searchOp.pBEIF = VmDirBackendSelect(NULL);
+    assert(searchOp.pBEIF);
+
+    searchOp.reqDn.lberbv.bv_val = "";
+    searchOp.reqDn.lberbv.bv_len = 0;
+    searchOp.request.searchReq.scope = LDAP_SCOPE_SUBTREE;
+
+    dwError = VmDirConcatTwoFilters(
+        searchOp.pSchemaCtx,
+        ATTR_CN,
+        (PSTR) pszHostname,
+        ATTR_OBJECT_CLASS,
+        OC_DIR_SERVER,
+        &pSearchFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    searchOp.request.searchReq.filter = pSearchFilter;
+
+    dwError = VmDirInternalSearch(&searchOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (searchOp.internalSearchEntryArray.iSize != 1)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: Unexpected (not 1) number of partner server entries found (%d)",
+            __FUNCTION__, searchOp.internalSearchEntryArray.iSize );
+
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    pServerEntry = searchOp.internalSearchEntryArray.pEntry;
+
+    pAttrUTDVector = VmDirEntryFindAttribute( ATTR_UP_TO_DATE_VECTOR, pServerEntry );
+
+    pAttrInvocationId = VmDirEntryFindAttribute( ATTR_INVOCATION_ID, pServerEntry );
+    assert( pAttrInvocationId != NULL );
+
+    beCtx.pBE = VmDirBackendSelect(NULL);
+    assert(beCtx.pBE);
+
+    if ((dwError = beCtx.pBE->pfnBEGetNextUSN( &beCtx, &localUsn )) != 0)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: pfnBEGetNextUSN failed with error code: %d, error message: %s",
+            dwError, VDIR_SAFE_STRING(beCtx.pszBEErrorMsg) );
+
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = _VmGetHighestCommittedUSN(localUsn, &maxCommittedUSN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(
+        VMDIR_LOG_MASK_ALL,
+        "%s: partner maxCommittedUSN %" PRId64,
+        __FUNCTION__, maxCommittedUSN);
+
+    dwError = VmDirAllocateStringPrintf(&pszLocalMaxUSN, "%" PRId64, maxCommittedUSN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pAttrUTDVector)
+    {
+        if (VmDirStringEndsWith( pAttrUTDVector->vals[0].lberbv.bv_val, ",", FALSE))
+        {
+            pszSeparator = "";
+        }
+        else
+        {
+            pszSeparator = ",";
+        }
+
+        //<partner up-to-date vector>,<partner server GUID>:<partnerLocalUSN>,
+        dwError = VmDirAllocateStringPrintf(
+            &pszLocalUtdVector,
+            "%s%s%s:%s,",
+            pAttrUTDVector->vals[0].lberbv.bv_val,
+            pszSeparator,
+            pAttrInvocationId->vals[0].lberbv.bv_val,
+            pszLocalMaxUSN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        //<partner server GUID>:<partnerLocalUSN>,
+        dwError = VmDirAllocateStringPrintf(
+            &pszLocalUtdVector,
+            "%s:%s,",
+            pAttrInvocationId->vals[0].lberbv.bv_val,
+            pszLocalMaxUSN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszUtdVector = pszLocalUtdVector;
+    pszLocalUtdVector = NULL;
+
+    *ppszMaxUSN = pszLocalMaxUSN;
+    pszLocalMaxUSN = NULL;
+
+cleanup:
+    VmDirFreeOperationContent(&searchOp);
+    VmDirBackendCtxContentFree(&beCtx);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalUtdVector);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalMaxUSN);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 static
 int
 _VmGetHighestCommittedUSN(
@@ -927,162 +990,5 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirMkdir on dir %s failed (%u) errno: (%d)", path, dwError, errno);
-    goto cleanup;
-}
-
-/* This function re-instantiates the current vmdir instance with a
- * foreign (MDB) database file. It is triggered by running vdcadmintool
- * with option 8.  Before this action, a foreign database files must be copied
- * onto diretory mdb_home_dir/partner/ which may include mdb WAL files under
- * xlogs/. See PR 1995325 for the functional spec and use cases.
- */
-DWORD
-VmDirSrvServerReset(
-    PDWORD pServerResetState
-    )
-{
-    int i = 0;
-    DWORD dwError = 0;
-    VDIR_ENTRY_ARRAY entryArray = {0};
-    const char  *dbHomeDir = VMDIR_DB_DIR;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    BOOLEAN bWriteInvocationId = FALSE;
-    PSTR pszConfigurationContainerDn = NULL;
-    PSTR pszDomainControllerContainerDn = NULL;
-    PSTR pszManagedServiceAccountContainerDn = NULL;
-    DEQUE computers = {0};
-    PSTR pszComputer = NULL;
-    PVDIR_ATTRIBUTE pAttrUPN = NULL;
-    BOOLEAN bMdbWalEnable = FALSE;
-
-    VmDirGetMdbWalEnable(&bMdbWalEnable);
-
-    VmDirBkgdThreadShutdown();
-
-    VmDirMetricsShutdown();
-
-    //swap current vmdir database file with the foriegn one under partner/
-    dwError = _VmDirSwapDB(dbHomeDir, bMdbWalEnable);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //Delete Computers (domain controller accounts) under Domain Controller container
-    dwError = VmDirAllocateStringPrintf(&pszDomainControllerContainerDn, "ou=%s,%s",
-                VMDIR_DOMAIN_CONTROLLERS_RDN_VAL, gVmdirServerGlobals.systemDomainDN.lberbv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEqualFilterInternalSearch(pszDomainControllerContainerDn, LDAP_SCOPE_ONE,
-                ATTR_OBJECT_CLASS, OC_COMPUTER, &entryArray);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if(entryArray.iSize > 0)
-    {
-        for (i = 0; i < entryArray.iSize; i++)
-        {
-            pAttrUPN = VmDirFindAttrByName(&entryArray.pEntry[i], ATTR_KRB_UPN);
-            if (pAttrUPN)
-            {
-               PSTR pPc = NULL;
-               dwError = VmDirAllocateStringA(pAttrUPN->vals[0].lberbv_val, &pPc);
-               dequePush(&computers, pPc);
-            }
-            dwError = VmDirDeleteEntry(&entryArray.pEntry[i]);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-    VmDirFreeEntryArrayContent(&entryArray);
-
-    /* Delete all entries in the subtree under Configuration container
-     *  (e.g. under cn=Configuration,dc=vmware,dc=com).
-     * This will remove the old replication topology
-     */
-    dwError = VmDirAllocateStringPrintf(&pszConfigurationContainerDn, "cn=%s,%s",
-                VMDIR_CONFIGURATION_CONTAINER_NAME, gVmdirServerGlobals.systemDomainDN.lberbv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEqualFilterInternalSearch(pszConfigurationContainerDn, LDAP_SCOPE_SUBTREE,
-                ATTR_OBJECT_CLASS, OC_DIR_SERVER, &entryArray);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (entryArray.iSize > 0)
-    {
-        for (i = 0; i < entryArray.iSize; i++)
-        {
-            /* Delete all replication agreement entries for a server and
-             * the server it self under the configuration/site container
-             */
-            dwError = VmDirInternalDeleteTree(entryArray.pEntry[i].dn.lberbv_val);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-    VmDirFreeEntryArrayContent(&entryArray);
-
-    //Delete ManagedServiceAccount entries that are associated with any of the domain controllers
-
-    dwError = VmDirAllocateStringPrintf(&pszManagedServiceAccountContainerDn, "cn=%s,%s",
-                VMDIR_MSAS_RDN_VAL, gVmdirServerGlobals.systemDomainDN.lberbv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEqualFilterInternalSearch(pszManagedServiceAccountContainerDn, LDAP_SCOPE_ONE,
-                ATTR_OBJECT_CLASS, OC_MANAGED_SERVICE_ACCOUNT, &entryArray);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (entryArray.iSize > 0)
-    {
-        for (i = 0; i < entryArray.iSize; i++)
-        {
-            PDEQUE_NODE p = NULL;
-            pAttrUPN = VmDirFindAttrByName(&entryArray.pEntry[i], ATTR_KRB_UPN);
-            for(p = computers.pHead; p != NULL; p = p->pNext)
-            {
-                if (VmDirStringCaseStrA(pAttrUPN->vals[0].lberbv_val, p->pElement) != NULL)
-                {
-                    dwError = VmDirDeleteEntry(&entryArray.pEntry[i]);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                    break;
-                }
-            }
-        }
-    }
-
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateServerObj(pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //Create server and replication entries for the current instance
-    // on top of the (cleaned up) foreign database.
-    dwError = VmDirSrvCreateReplAgrsContainer(pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirPatchDSERoot(pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirSchemaCtxRelease(pSchemaCtx);
-    pSchemaCtx = NULL;
-
-    dwError = LoadServerGlobals(&bWriteInvocationId);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirMetricsInitialize();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirBkgdThreadInitialize();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirSchemaCtxRelease(pSchemaCtx);
-    VmDirFreeEntryArrayContent(&entryArray);
-    VMDIR_SAFE_FREE_MEMORY(pszConfigurationContainerDn);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainControllerContainerDn);
-
-    while(!dequeIsEmpty(&computers))
-    {
-        dequePopLeft(&computers, (PVOID*)&pszComputer);
-        VMDIR_SAFE_FREE_MEMORY(pszComputer);
-    }
-    return dwError;
-
-error:
     goto cleanup;
 }

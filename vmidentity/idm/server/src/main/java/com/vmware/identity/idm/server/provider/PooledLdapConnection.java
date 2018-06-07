@@ -20,28 +20,24 @@ import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 public class PooledLdapConnection implements Closeable {
     private final ILdapConnectionEx connection;
     private final PooledLdapConnectionIdentity identity;
-    private final LdapConnectionPool pool;
+    private final IPooledConnectionProvider pool;
 
-    public PooledLdapConnection(ILdapConnectionEx conn, PooledLdapConnectionIdentity identity, LdapConnectionPool pool) {
-	this.connection = conn;
-	this.identity = identity;
-	this.pool = pool;
-    }
-
-    public LdapConnectionPool getPool() {
-	return pool;
+    public PooledLdapConnection(ILdapConnectionEx conn, PooledLdapConnectionIdentity identity, IPooledConnectionProvider pool) {
+        this.connection = conn;
+        this.identity = identity;
+        this.pool = pool;
     }
 
     public ILdapConnectionEx getConnection() {
-	return connection;
+	    return connection;
     }
 
     public PooledLdapConnectionIdentity getIdentity() {
-	return identity;
+	    return identity;
     }
 
     @Override
     public void close() {
-	pool.returnConnection(this);
+	    pool.returnConnection(this);
     }
 }

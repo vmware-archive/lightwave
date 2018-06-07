@@ -15,8 +15,8 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService', 'MemberService',
-        function($scope, $rootScope, GroupService, MemberService) {
+module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService', 'MemberService', 'TenantService',
+        function($scope, $rootScope, GroupService, MemberService, TenantService) {
 
             $scope.vm.saveMembers = saveMembers;
             $scope.vm.deleteSelectedMembers = deleteSelectedMembers;
@@ -35,10 +35,23 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                 $rootScope.globals.popup_errors = null;
                 var group = $scope.vm.selectedGroup;
                 $scope.vm.selectedmembersearch = '';
+                $scope.membersearchtype = $scope.membersearchtypes[2] // all
+
+                TenantService
+                .GetSecurityDomains($rootScope.globals.currentUser)
+                .then(function (res) {
+                    if (res.status == 200) {
+                        $scope.vm.securitydomains = res.data
+                    }
+                    else {
+                        $rootScope.globals.errors = res.data;
+                    }
+                });
+
                 getMembers(group, '');
 
-                if ($scope.vm.identitysource) {
-                    $scope.vm.idsmembersearch = $scope.vm.identitysource;
+                if ($scope.vm.securitydomains && $scope.vm.securitydomains.length == 1) {
+                    $scope.vm.idsmembersearch = $scope.vm.securitydomains[0].name;
                     getAllMembers($scope.vm.idsmembersearch);
                 }
                 clearMemberSearch();
@@ -251,9 +264,9 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                 }
             }
 
-            function getAllMembers(provider) {
+            function getAllMembers(domain) {
                 $scope.membersearchtype = $scope.membersearchtypes[2];
-                searchMembers('', provider, $scope.membersearchtype);
+                searchMembers('', domain, $scope.membersearchtype);
             }
 
             function clearMemberSearch() {
@@ -262,16 +275,16 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                 $scope.vm.membersearchresult = {};
             }
 
-            function searchMembers(searchvalue, provider, type) {
+            function searchMembers(searchvalue, domain, type) {
 
-                if (provider && type) {
+                if (domain && type) {
                     $rootScope.globals.popup_errors = null;
                     var typename = type.name;
                     $scope.vm.membersearchresult = {};
                     $scope.vm.searchMembersLoading = true;
                     if (type.name == "user") {
                         MemberService
-                            .Search($rootScope.globals.currentUser, provider.name, "USER", "NAME", searchvalue)
+                            .Search($rootScope.globals.currentUser, domain, "USER", "NAME", searchvalue)
                             .then(function (res) {
                                 if (res.status == 200) {
                                     $scope.vm.membersearchresult.users = res.data.users;
@@ -284,7 +297,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
 
                     } else if (type.name == "group") {
                         MemberService
-                            .Search($rootScope.globals.currentUser, provider.name, "GROUP", "NAME", searchvalue)
+                            .Search($rootScope.globals.currentUser, domain, "GROUP", "NAME", searchvalue)
                             .then(function (res) {
                                 if (res.status == 200) {
                                     $scope.vm.membersearchresult.groups = res.data.groups;
@@ -296,7 +309,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                             });
                     } else if (type.name == "all") {
                         MemberService
-                            .Search($rootScope.globals.currentUser, provider.name, "ALL", "NAME", searchvalue)
+                            .Search($rootScope.globals.currentUser, domain, "ALL", "NAME", searchvalue)
                             .then(function (res) {
                                 if (res.status == 200) {
                                     $scope.vm.membersearchresult.users = res.data.users;

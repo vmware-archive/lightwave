@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.lang.ObjectUtils;
 
@@ -1086,11 +1087,8 @@ public class IdentityStoreData implements IIdentityStoreData
             this._upnSuffixes = null;
             if ( ( upnSuffixes != null ) && (upnSuffixes.isEmpty() == false) )
             {
-                this._upnSuffixes = new HashSet<String>(upnSuffixes.size());
-                for(String suffix : upnSuffixes)
-                {
-                    this._upnSuffixes.add(ValidateUtil.getCanonicalUpnSuffix(suffix.toUpperCase()));
-                }
+                this._upnSuffixes = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+                this._upnSuffixes.addAll(upnSuffixes);
                 this._upnSuffixes = Collections.<String>unmodifiableSet(this._upnSuffixes);
             }
             this._flags = flags;

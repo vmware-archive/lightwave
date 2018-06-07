@@ -27,7 +27,8 @@ vdcmetric_LDADD = \
     @CRYPT_LIBS@ \
     @UUID_LIBS@ \
     @GSSAPI_LIBS@ \
-    @LDAP_LIBS@
+    @LDAP_LIBS@ \
+    @DL_LIBS@
 
 vdcmetric_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

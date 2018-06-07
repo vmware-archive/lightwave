@@ -72,5 +72,12 @@ public enum TenantConfigType {
      *
      * @see AuthenticationPolicyDTO
      */
-    AUTHENTICATION
+    AUTHENTICATION,
+
+    /**
+     * Retrieve only the tenant operatorsAccess policy.
+     *
+     * @see OperatorsAccessPOlicyDTO
+     */
+    OPERATORS_ACCESS
 }

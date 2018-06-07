@@ -30,7 +30,8 @@ postaclmgr_LDADD = \
     @LDAP_LIBS@ \
     @PTHREAD_LIBS@ \
     @UUID_LIBS@ \
-    @LBER_LIBS@
+    @LBER_LIBS@ \
+    @DL_LIBS@
 
 postaclmgr_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \

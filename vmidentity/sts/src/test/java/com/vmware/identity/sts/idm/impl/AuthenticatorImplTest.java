@@ -125,7 +125,7 @@ public final class AuthenticatorImplTest {
    public void testFailAuthentication_CertificateRevocation() throws Exception {
       final CasIdmClient client = createMock(CasIdmClient.class);
 
-      expect(client.authenticate(eq(TENANT_NAME), eq(X509CERTIFICATE_CHAIN),null))
+      expect(client.authenticate(eq(TENANT_NAME), eq(X509CERTIFICATE_CHAIN), eq((String)null)))
          .andThrow(new CertificateRevocationCheckException("Certificate revoked."));
 
       replay(client);

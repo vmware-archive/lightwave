@@ -47,13 +47,23 @@ import javax.servlet.http.Cookie;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.context.MessageSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ExtendedModelMap;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.Scope;
+
+import static com.vmware.identity.openidconnect.server.TestContext.externalIDPConfig;
+import static com.vmware.identity.openidconnect.server.TestContext.EXTERNAL_IDP_ENTITYID;
+import static com.vmware.identity.openidconnect.server.TestContext.EXTERNAL_IDP_AUTHORIZE;
+import static com.vmware.identity.openidconnect.server.TestContext.ISSUER;
+import static com.vmware.identity.openidconnect.server.TestContext.extractAuthnResponseTarget;
+import static com.vmware.identity.openidconnect.server.TestContext.federatedIdentityProcessor;
+import static com.vmware.identity.openidconnect.server.TestContext.messageSource;
 
 /**
  * @author Yehia Zayour
@@ -505,6 +515,59 @@ public class AuthenticationControllerTest {
         params.remove("scope"); // a request missing scope parameter will fail
         params.put("client_id", params.get("client_id") + "non_matching");
         assertErrorResponseMessage(flow, params, "invalid_client: unregistered client");
+    }
+
+    @Test
+    public void test_extidp_authz_response() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        Map<String, String> params = authnRequestParameters(flow);
+        CasIdmClient idmClient = idmClientBuilder()
+                .externalIDP(externalIDPConfig())
+                .tenantIssuer(EXTERNAL_IDP_ENTITYID)
+                .build();
+
+        AuthorizationCodeManager authzCodeManager = new AuthorizationCodeManager();
+        SessionManager sessionManager = new SessionManager();
+        MessageSource messageSource = messageSource();
+        FederatedIdentityProcessor fedProcessor = federatedIdentityProcessor(idmClient, sessionManager);
+
+        AuthenticationController authnController = new AuthenticationController(
+                idmClient, authzCodeManager, sessionManager, messageSource,fedProcessor);
+
+        // request with no session and no login string results in login form
+        MockHttpServletRequest request = TestUtil.createGetRequest(params);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
+        Assert.assertEquals("status", 302, response.getStatus());
+        Assert.assertTrue("ModelAndView==null", modelView == null); // redirect to external idp
+        Assert.assertEquals("redirect target", EXTERNAL_IDP_AUTHORIZE, extractAuthnResponseTarget(response, Flow.AUTHZ_CODE, true, false));
+    }
+
+    @Test
+    public void test_extidp_authz_response_login_hint() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        Map<String, String> params = authnRequestParameters(flow);
+        params.put("login_hint", ISSUER);
+
+        CasIdmClient idmClient = idmClientBuilder()
+                .externalIDP(externalIDPConfig())
+                .tenantIssuer(EXTERNAL_IDP_ENTITYID)
+                .build();
+
+        AuthorizationCodeManager authzCodeManager = new AuthorizationCodeManager();
+        SessionManager sessionManager = new SessionManager();
+        MessageSource messageSource = messageSource();
+        FederatedIdentityProcessor fedProcessor = federatedIdentityProcessor(idmClient, sessionManager);
+
+        AuthenticationController authnController = new AuthenticationController(
+                idmClient, authzCodeManager, sessionManager, messageSource,fedProcessor);
+
+        // request with no session and no login string results in login form
+        MockHttpServletRequest request = TestUtil.createGetRequest(params);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
+        Assert.assertEquals("status", 200, response.getStatus());
+        Assert.assertTrue("ModelAndView!=null", modelView != null); // local login form
     }
 
     private static void assertSuccessResponse(

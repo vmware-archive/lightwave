@@ -39,7 +39,7 @@
 #define FN_VECS_CLOSE_CERT_STORE            "VecsCloseCertStore"
 #define FN_VECS_FREE_ENTRY_A                "VecsFreeCertEntryA"
 
-#define MACIHNE_CERT_STORE_NAME             "MACHINE_SSL_CERT"
+#define MACHINE_CERT_STORE_NAME             "MACHINE_SSL_CERT"
 #define MACHINE_CERT_ALIAS                  "__MACHINE_CERT"
 
 typedef DWORD   (*fpVecsOpenCertStoreA)     ( PCSTR,PCSTR, PCSTR, PVECS_STORE* );
@@ -88,7 +88,7 @@ _VmDirGetSSLCert(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = (*fpOpenStore)( "localhost", MACIHNE_CERT_STORE_NAME, NULL, &pVECSStore );
+    dwError = (*fpOpenStore)( "localhost", MACHINE_CERT_STORE_NAME, NULL, &pVECSStore );
     BAIL_ON_VECS_ERROR(dwError);
 
     dwError = (*fpGetEntry)( pVECSStore, MACHINE_CERT_ALIAS, ENTRY_INFO_LEVEL_2, &pCertEntry );

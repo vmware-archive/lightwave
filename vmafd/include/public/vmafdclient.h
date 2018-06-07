@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -342,6 +342,54 @@ VmAfdPromoteVmDirW(
     );
 
 DWORD
+VmAfdAllocateTrustInfoA(
+    PCSTR pszName,                    /* IN              */
+    PCSTR pszDC,                      /* IN              */
+    PCSTR pszUserName,                /* IN              */
+    PCSTR pszPassword,                /* IN              */
+    PVMAFD_TRUST_INFO_A *ppTrustInfo  /*    OUT          */
+    );
+
+VOID
+VmAfdFreeTrustInfoA(
+    PVMAFD_TRUST_INFO_A pTrustInfo
+    );
+
+DWORD
+VmAfdAllocateTrustInfoW(
+    PCWSTR pwszName,                  /* IN              */
+    PCWSTR pwszDC,                    /* IN              */
+    PCWSTR pwszUserName,              /* IN              */
+    PCWSTR pwszPassword,              /* IN              */
+    PVMAFD_TRUST_INFO_W *ppTrustInfo  /*    OUT          */
+    );
+
+VOID
+VmAfdFreeTrustInfoW(
+    PVMAFD_TRUST_INFO_W pTrustInfo
+    );
+
+DWORD
+VmAfdPromoteVmDirTrustA(
+    PCSTR pszServerName,           /* IN     OPTIONAL */
+    PCSTR pszDomainName,           /* IN              */
+    PCSTR pszUserName,             /* IN              */
+    PCSTR pszPassword,             /* IN              */
+    PCSTR pszSiteName,             /* IN     OPTIONAL */
+    PVMAFD_TRUST_INFO_A pTrustInfo /* IN              */
+    );
+
+DWORD
+VmAfdPromoteVmDirTrustW(
+    PCWSTR pwszServerName,         /* IN     OPTIONAL */
+    PCWSTR pwszDomainName,         /* IN     OPTIONAL */
+    PCWSTR pwszUserName,           /* IN              */
+    PCWSTR pwszPassword,           /* IN              */
+    PCWSTR pwszSiteName,           /* IN     OPTIONAL */
+    PVMAFD_TRUST_INFO_W pTrustInfo /* IN              */
+    );
+
+DWORD
 VmAfdDemoteVmDirA(
     PCSTR pszServerName,    /* IN     OPTIONAL */
     PCSTR pszUserName,      /* IN              */
@@ -440,6 +488,7 @@ VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN     OPTIONAL */
     PCSTR pszUserName,      /* IN              */
     PCSTR pszPassword,      /* IN              */
+    PCSTR pszMachineName,   /* IN     OPTIONAL */
     DWORD dwLeaveFlags      /* IN              */
     );
 
@@ -448,6 +497,7 @@ VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN     OPTIONAL */
     PCWSTR pwszUserName,    /* IN              */
     PCWSTR pszPassword,     /* IN              */
+    PCWSTR pwszMachineName, /* IN     OPTIONAL */
     DWORD dwLeaveFlags      /* IN              */
     );
 
@@ -802,6 +852,7 @@ VmAfdEndUpgrade(
 #define VmAfdSetDCName                  VmAfdSetDCNameW
 #define VmAfdGetMachineAccountInfo      VmAfdGetMachineAccountInfoW
 #define VmAfdPromoteVmDir               VmAfdPromoteVmDirW
+#define VmAfdPromoteVmDirTrust          VmAfdPromoteVmDirTrustW
 #define VmAfdDemoteVmDir                VmAfdDemoteVmDirW
 #define VmAfdJoinVmDir                  VmAfdJoinVmDirW
 #define VmAfdLeaveVmDir                 VmAfdLeaveVmDirW
@@ -837,6 +888,7 @@ VmAfdEndUpgrade(
 #define VmAfdSetDCName                  VmAfdSetDCNameA
 #define VmAfdGetMachineAccountInfo      VmAfdGetMachineAccountInfoA
 #define VmAfdPromoteVmDir               VmAfdPromoteVmDirA
+#define VmAfdPromoteVmDirTrust          VmAfdPromoteVmDirTrustA
 #define VmAfdDemoteVmDir                VmAfdDemoteVmDirA
 #define VmAfdJoinVmDir                  VmAfdJoinVmDirA
 #define VmAfdLeaveVmDir                 VmAfdLeaveVmDirA

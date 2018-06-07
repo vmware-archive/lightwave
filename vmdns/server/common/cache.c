@@ -430,16 +430,6 @@ VmDnsCachePurgeRecord(
 {
     PVMDNS_RECORD_LIST pList = NULL;
     DWORD dwError = 0;
-    DWORD dwOpCode;
-
-    if (dwCachePurgeEvent == CACHE_PURGE_MODIFICATION)
-    {
-       dwOpCode = CACHE_MODIFY_PURGE_COUNT;
-    }
-    else if (dwCachePurgeEvent == CACHE_PURGE_REPLICATION)
-    {
-       dwOpCode = CACHE_NOTIFY_PURGE_COUNT;
-    }
 
     if (VmDnsStringCompareA(pZoneObject->pszName, pszRecord, FALSE) == 0)
     {
@@ -481,7 +471,15 @@ VmDnsCachePurgeRecord(
         }
         else
         {
-            VmMetricsCounterIncrement(gVmDnsCounterMetrics[dwOpCode]);
+            if (dwCachePurgeEvent == CACHE_PURGE_MODIFICATION)
+            {
+                VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_MODIFY_PURGE_COUNT]);
+            }
+            else if (dwCachePurgeEvent == CACHE_PURGE_REPLICATION)
+            {
+                VmMetricsCounterIncrement(gVmDnsCounterMetrics[CACHE_NOTIFY_PURGE_COUNT]);
+            }
+
             VmDnsLog(
                 VMDNS_LOG_LEVEL_DEBUG,
                 "Succesfully Purged (%s) from Cache",

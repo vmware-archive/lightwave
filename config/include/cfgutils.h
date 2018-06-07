@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -69,6 +69,13 @@ typedef struct _VMW_IC_SETUP_PARAMS
     BOOLEAN bMachinePreJoined;
     BOOLEAN bAtomicJoin;
 
+    PSTR pszParentDomainName;
+    PSTR pszParentDC;
+    PSTR pszParentUserName;
+    PSTR pszParentPassword;
+
+    DWORD dwLeaveFlags;
+
 } VMW_IC_SETUP_PARAMS, *PVMW_IC_SETUP_PARAMS;
 
 typedef struct _VMW_DEPLOY_LOG_CONTEXT* PVMW_DEPLOY_LOG_CONTEXT;
@@ -122,6 +129,11 @@ VmwDeploySetupInstance(
 
 DWORD
 VmwDeployDeleteInstance(
+    PVMW_IC_SETUP_PARAMS pParams
+    );
+
+DWORD
+VmwDeployDeleteDCDNSRecords(
     PVMW_IC_SETUP_PARAMS pParams
     );
 
@@ -215,7 +227,7 @@ VmwDeployValidateSiteName(
     );
 
 DWORD
-VmwDeployValidatePartnerCredentials(
+VmwDeployValidateServerCredentials(
     PCSTR pszServer,
     PCSTR pszUsername,
     PCSTR pszPassword,
@@ -225,6 +237,20 @@ VmwDeployValidatePartnerCredentials(
 VOID
 VmwDeployShutdown(
     VOID
+    );
+
+DWORD
+VmwDeployReadPassword(
+    PCSTR pszUser,
+    PCSTR pszDomain,
+    PSTR* ppszPassword
+    );
+
+DWORD
+VmwDeployGetError(
+    DWORD dwErrorCode,
+    PSTR *ppszErrorMessage,
+    int *pretCode
     );
 
 #ifdef __cplusplus

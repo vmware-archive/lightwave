@@ -29,6 +29,8 @@ const (
 	OIDCJWSError                ErrorCode = 118
 	OIDCJsonError               ErrorCode = 119
 	OIDCInvalidArgError         ErrorCode = 120
+	OIDCMetadataRetrievalError  ErrorCode = 121
+	OIDCJsonParseError          ErrorCode = 122
 )
 
 var errorText = map[ErrorCode]string{
@@ -49,6 +51,8 @@ var errorText = map[ErrorCode]string{
 	OIDCUnsupportedGrantType:       "OIDCUnsupportedGrantType",
 	OIDCAccessDeniedError:          "OIDCAccessDeniedError",
 	OIDCServerError:                "OIDCServerError",
+	OIDCMetadataRetrievalError:     "OIDCMetadataRetrievalError",
+	OIDCJsonParseError:             "OIDCJsonParseError",
 }
 
 var serverError = map[string]ErrorCode{
