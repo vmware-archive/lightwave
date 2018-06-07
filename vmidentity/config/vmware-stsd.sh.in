@@ -12,7 +12,11 @@ DEFAULT_MAX_RAM=256m
 
 PREFIX=/opt/vmware
 JARDIR=$PREFIX/jars
+CLASSPATH=$JAVA_HOME/jre/lib/ext/vmware-endpoint-certificate-store.jar:$JSVC_HOME/commons-daemon-1.0.15.jar:"$JARDIR/*.jar":$JARDIR/vmware-identity-idm-interface.jar:$JARDIR/vmware-identity-diagnostics.jar:$JARDIR/vmware-identity-idm-server.jar:$JARDIR/vmware-identity-platform.jar
 DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
+
+# JAVA Security Properties
+JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 
 # STS Instance
 SERVICE_NAME=vmware-sts-stsd
@@ -28,8 +32,6 @@ DEBUG_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,addres
 
 CATALINA_HOME=${CATALINA_HOME:-@TOMCAT_HOME@}
 CATALINA_BASE="$VMWARE_HOME/$INSTANCE_NAME"
-
-JAVA_SEC_PROP="$CATALINA_BASE/conf/vmware-override-java.security"
 
 ShowUsage()
 {

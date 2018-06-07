@@ -46,6 +46,33 @@ function cleanup()
     fi
 }
 
+function copy_tc_security_override
+{
+    echo "Copying Security Override to TC conf"
+
+    /bin/cp -f /etc/vmware/java/vmware-override-java.security $TC_CONF_PATH/vmware-identity-override-java.security
+    bail_on_error $? "Failed to install Security Override file"
+}
+
+function config_tc_log
+{
+    echo "Creating TC Instance"
+
+    TC_INSTANCE_LOG_PATH=$TC_INSTANCE_BASE/logs
+    if [ -d $TC_INSTANCE_LOG_PATH ]; then
+        /bin/rm -rf $TC_INSTANCE_LOG_PATH
+    fi
+
+	mkdir -m 755 -p $SSO_LOG_PATH
+	bail_on_error $? "Failed to create path [$SSO_LOG_PATH]"
+
+    #Create symbolic link for logs
+    /bin/ln -s $SSO_LOG_PATH $TC_INSTANCE_LOG_PATH
+    bail_on_error $? "Error: Failed to create symlink [$TC_INSTANCE_LOG_PATH->$SSO_LOG_PATH]"
+
+    return 0
+}
+
 #
 # Main
 #
@@ -53,6 +80,12 @@ function cleanup()
 trap cleanup SIGINT SIGHUP SIGTERM
 
 echo "Configuring VMware STS"
+
+config_tc_log
+bail_on_error $? "Failed to create TC instance"
+
+copy_tc_security_override
+bail_on_error $? "Failed to copy security override"
 
 echo "VMware STS configured successfully"
 

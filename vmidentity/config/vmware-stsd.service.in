@@ -7,10 +7,6 @@ Requires=lwsmd.service
 Type=forking
 ExecStart=/opt/vmware/sbin/vmware-stsd.sh start
 SuccessExitStatus=0
-User=@LIGHTWAVE_UID@
-Group=@LIGHTWAVE_GID@
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target

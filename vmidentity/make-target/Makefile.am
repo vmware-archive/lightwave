@@ -73,7 +73,7 @@ vmidmconf_DATA= \
     @top_srcdir@/vmidentity/sso-config/src/main/resources/ssoconfig.log4j2.xml \
     @top_srcdir@/vmidentity/idm/server/src/main/resources/log4j2.xml \
     @top_srcdir@/vmidentity/idm/server/src/main/resources/server.policy \
-    @top_builddir@/vmidentity/config/idm.reg
+    @top_srcdir@/vmidentity/idm/server/src/main/resources/idm.reg
 
 vmstsbin_DATA = \
     @top_builddir@/vmidentity/config/setenv.sh \
