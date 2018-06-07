@@ -51,8 +51,8 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
   /**
-  * IDM service (dummy) EXISTS ONLY IN VSPHERE context. This was created only for the purpose of 
-  * backward compatibility such that VCHA will address in their code base to remove IDM service. 
+  * IDM service (dummy) EXISTS ONLY IN VSPHERE context. This was created only for the purpose of
+  * backward compatibility such that VCHA will address in their code base to remove IDM service.
   * LIGHTWAVE is totally independent of these thick dependencies, Hence, we avoid this service.
   **/
    @Override
@@ -70,7 +70,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
                         return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
                     } else {
                         return new String[] { "systemctl", "restart", "vmware-stsd" };
-            } 
+            }
                  }else {
                 stsStartCommand = new String[] { "/etc/init.d/vmware-stsd", "restart" };
             }
@@ -94,65 +94,8 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public void configRegistry() {
-        IRegistryAdapter registryAdapter = null;
-        IRegistryKey rootKey = null;
-        IRegistryKey configKey = null;
-        try{
-            registryAdapter = RegistryAdapterFactory.getInstance()
-                    .getRegistryAdapter();
-            rootKey = registryAdapter
-                    .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
-            String subkey = "Software\\VMware\\Identity\\Configuration";
-
-            boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
-
-            if (exists) {
-                configKey = registryAdapter.openKey(rootKey, subkey, 0,
-                        (int) RegKeyAccess.KEY_ALL_ACCESS);
-            } else {
-                configKey = registryAdapter.createKey(rootKey, subkey, null,
-                        (int) RegKeyAccess.KEY_ALL_ACCESS);
-            }
-
-            registryAdapter.setStringValue(configKey, "ConfigStoreType",
-                    "vmware_directory");
-            registryAdapter.setIntValue(configKey, "Multitenant", 0);
-            registryAdapter.setIntValue(configKey, "SystemDomainSearchTimeout", 0);
-
-            Collection<String> domainAttributes = new ArrayList<String>();
-            domainAttributes
-                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname:givenName");
-            domainAttributes
-                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname:sn");
-            domainAttributes
-                    .add("http://rsa.com/schemas/attr-names/2009/01/GroupIdentity:memberOf");
-            domainAttributes
-                    .add("http://vmware.com/schemas/attr-names/2011/07/isSolution:subjectType");
-            domainAttributes
-                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress:mail");
-            domainAttributes
-                    .add("http://schemas.xmlsoap.org/claims/UPN:userPrincipalName");
-            registryAdapter.setMultiStringValue(configKey,
-                    "SystemDomainAttributesMap", domainAttributes);
-
-            // TODO: get port as config setting
-            registryAdapter.setStringValue(configKey, "StsLocalTcPort", "7444");
-            // TODO: use port from reverse proxy
-            registryAdapter.setStringValue(configKey, "StsTcPort",
-                    Integer.toString(InstallerUtils.REVERSE_PROXY_PORT));
-            registryAdapter.setStringValue(configKey, "StsBearerTokenLifetime",
-                    Integer.toString(InstallerUtils.MAX_BEARER_TOKEN_LIFETIME_IN_HOURS));
-            registryAdapter.setStringValue(configKey, "StsBearerRefreshTokenLifetime",
-                    Integer.toString(InstallerUtils.MAX_BEARER_REFRESH_TOKEN_LIFETIME_IN_HOURS));
-        } finally {
-                if(rootKey != null) {
-                        rootKey.close();
-                }
-                if(configKey != null){
-                        configKey.close();
-                }
-        }
-
+        // main registry entries are created in rpm spec
+        // no additional tweaks are needed atm
     }
 
     @Override
