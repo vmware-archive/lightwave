@@ -5477,6 +5477,8 @@ VmAfdIpcTriggerRootCertsRefresh(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+    BOOL bIsAllowed = FALSE;
+    PSTR pszSecurity = NULL;
 
     VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
 
@@ -5501,7 +5503,24 @@ VmAfdIpcTriggerRootCertsRefresh(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    bIsAllowed = VmAfdIsRootSecurityContext(pConnectionContext);
+#ifndef _WIN32
+    if (!bIsAllowed)
+    {
+        dwError = VmAfSrvGetRegKeySecurity(
+                    VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    &pszSecurity);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+        dwError = VmAfdCheckAclContext(
+                    pConnectionContext,
+                    pszSecurity,
+                    &bIsAllowed);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+#endif
+
+    if (!bIsAllowed)
     {
         VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
         dwError = ERROR_ACCESS_DENIED;

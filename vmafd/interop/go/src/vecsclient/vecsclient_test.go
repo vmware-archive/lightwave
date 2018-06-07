@@ -19,6 +19,7 @@ const (
 	storeName     = "test-store"
 	storePassword = ""
 	entryAlias    = "test-alias"
+	entryAlias2   = "test-alias2"
 )
 
 func generatePEMAndCert() (string, string) {
@@ -141,6 +142,47 @@ func TestVecsDeleteEntry(t *testing.T) {
 
 	err = store.DeleteEntry(entryAlias)
 	assert.NoErrorf(t, err, "failed to get entry from store with %+v", err)
+
+	store.Close()
+	err = VecsDeleteStore(storeHost, storeName)
+	assert.NoErrorf(t, err, "failed to delete store with %+v", err)
+}
+
+func TestVecsGetEntryCount(t *testing.T) {
+	store, err := VecsCreateStore(storeHost, storeName, storePassword)
+	assert.NoErrorf(t, err, "failed to create store with %+v", err)
+	assert.NotNilf(t, store, "store object should not be nil")
+
+	count, err := store.EntryCount()
+	assert.NoErrorf(t, err, "failed to get entry count with %+v", err)
+	assert.Equalf(t, 0, count, "entry count should be 0 but was %d", count)
+
+	pem, cert := generatePEMAndCert()
+	pem2, cert2 := generatePEMAndCert()
+
+	err = store.AddEntry(VecsTypePrivateKey, entryAlias, cert, pem, storePassword, false)
+	assert.NoErrorf(t, err, "failed to add entry to store with %+v", err)
+	count, err = store.EntryCount()
+	assert.NoErrorf(t, err, "failed to get entry count with %+v", err)
+	assert.Equalf(t, 1, count, "entry count should be 1 but was %d", count)
+
+	err = store.AddEntry(VecsTypePrivateKey, entryAlias2, cert2, pem2, storePassword, false)
+	assert.NoErrorf(t, err, "failed to add entry to store with %+v", err)
+	count, err = store.EntryCount()
+	assert.NoErrorf(t, err, "failed to get entry count with %+v", err)
+	assert.Equalf(t, 2, count, "entry count should be 2 but was %d", count)
+
+	err = store.DeleteEntry(entryAlias)
+	assert.NoErrorf(t, err, "failed to get entry from store with %+v", err)
+	count, err = store.EntryCount()
+	assert.NoErrorf(t, err, "failed to get entry count with %+v", err)
+	assert.Equalf(t, 1, count, "entry count should be 1 but was %d", count)
+
+	err = store.DeleteEntry(entryAlias2)
+	assert.NoErrorf(t, err, "failed to get entry from store with %+v", err)
+	count, err = store.EntryCount()
+	assert.NoErrorf(t, err, "failed to get entry count with %+v", err)
+	assert.Equalf(t, 0, count, "entry count should be 0 but was %d", count)
 
 	store.Close()
 	err = VecsDeleteStore(storeHost, storeName)
