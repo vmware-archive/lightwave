@@ -28,14 +28,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.ws.message.decoder.MessageDecodingException;
-import org.opensaml.xml.security.SecurityException;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.messaging.decoder.MessageDecodingException;
+import org.opensaml.saml.common.SignableSAMLObject;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.security.SecurityException;
+
 import org.springframework.context.MessageSource;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -142,7 +145,7 @@ public class LogoutState {
                     // print out decoded relay state. Note that we do not need
                     // to
                     // store decoded value.
-                    byte[] relayStateBytes = Base64.decode(this.relayState);
+                    byte[] relayStateBytes = Base64Support.decode(this.relayState);
                     log.debug("Relay state specified was "
                             + new String(relayStateBytes));
                 }
@@ -226,7 +229,13 @@ public class LogoutState {
                     HttpServletResponse.SC_BAD_REQUEST, "BadRequest", null);
             log.debug("Caught exception " + e.toString());
             throw new IllegalStateException(e);
+        } catch (ComponentInitializationException e) {
+            this.validationResult = new ValidationResult(
+                    HttpServletResponse.SC_BAD_REQUEST, "BadRequest", null);
+            log.debug("Caught exception " + e.toString());
+            throw new IllegalStateException(e);
         }
+
         // if signature was specified along with signing algorithm, verify
         // signature
         Issuer issuer = getIssuer();

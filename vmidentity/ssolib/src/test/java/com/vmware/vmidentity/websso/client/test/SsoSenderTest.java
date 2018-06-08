@@ -20,9 +20,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opensaml.saml2.core.AuthnContext;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.io.MarshallingException;
+import org.opensaml.saml.saml2.core.AuthnContext;
+import org.opensaml.core.xml.io.MarshallingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -159,14 +158,12 @@ public class SsoSenderTest {
      *
      * @throws WebssoClientException
      * @throws MarshallingException
-     * @throws ConfigurationException
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      */
     @Test
-    public final void testSendRequest() throws InvalidKeyException, NoSuchAlgorithmException, IOException,
-            ConfigurationException, MarshallingException, WebssoClientException {
+    public final void testSendRequest() throws IOException {
 
         log.info("\nStart unit test: testSendRequest");
         SsoRequestSettings requestSettings = new SsoRequestSettings(spAlias, idpAlias, isSigned, nameIDFormat,
@@ -187,14 +184,12 @@ public class SsoSenderTest {
      *
      * @throws WebssoClientException
      * @throws MarshallingException
-     * @throws ConfigurationException
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      */
     @Test
-    public final void testSendRequest_NullRAC() throws InvalidKeyException, NoSuchAlgorithmException, IOException,
-            ConfigurationException, MarshallingException, WebssoClientException {
+    public final void testSendRequest_NullRAC() throws IOException {
 
         log.info("\nStart unit test: testSendRequest");
         SsoRequestSettings requestSettings = new SsoRequestSettings(spAlias, idpAlias, isSigned, nameIDFormat,

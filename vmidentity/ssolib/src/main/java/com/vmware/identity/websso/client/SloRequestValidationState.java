@@ -21,15 +21,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.NameID;
-import org.opensaml.saml2.core.SessionIndex;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.saml.saml2.core.SessionIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
 import com.vmware.identity.websso.client.endpoint.SloListener;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * ValidationState for slo request received by slo controller.
@@ -147,7 +148,7 @@ public class SloRequestValidationState extends ValidationState {
         // 3. relayState
         String relayState = getRequest().getParameter(SamlUtils.RELAY_STATE_PARAMETER);
         if (relayState != null) {
-            String decodedRelayState = new String(Base64.decode(relayState));
+            String decodedRelayState = new String(Base64Support.decode(relayState));
             this.setRelayState(relayState);
             logger.info("Decoded Relay State is " + decodedRelayState);
         }

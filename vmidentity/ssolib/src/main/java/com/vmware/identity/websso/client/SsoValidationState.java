@@ -25,24 +25,25 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
-import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.AttributeStatement;
-import org.opensaml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml2.core.AuthnStatement;
-import org.opensaml.saml2.core.NameID;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.saml2.core.Status;
-import org.opensaml.saml2.core.StatusCode;
-import org.opensaml.saml2.core.Subject;
-import org.opensaml.saml2.core.SubjectConfirmation;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.signature.Signature;
-import org.opensaml.xml.util.Base64;
-import org.opensaml.xml.validation.ValidationException;
+import org.opensaml.core.xml.XMLObject;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.AttributeStatement;
+import org.opensaml.saml.saml2.core.AuthnContextClassRef;
+import org.opensaml.saml.saml2.core.AuthnStatement;
+import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.Status;
+import org.opensaml.saml.saml2.core.StatusCode;
+import org.opensaml.saml.saml2.core.Subject;
+import org.opensaml.saml.saml2.core.SubjectConfirmation;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.xmlsec.signature.Signature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 import com.vmware.identity.websso.client.endpoint.SsoResponseListener;
 
@@ -105,7 +106,7 @@ public class SsoValidationState extends ValidationState {
         if (null != requestMessage) {
             this.controller.getMessageStore().remove(requestMessage.getId());
         }
-        if (statusCode.getValue().equals(StatusCode.SUCCESS_URI)) {
+        if (statusCode.getValue().equals(StatusCode.SUCCESS)) {
 
             this.validateAssertion();
             logger.info("Successfully validated received SAMLResponse");
@@ -126,7 +127,7 @@ public class SsoValidationState extends ValidationState {
         String samlResponseStr = this.getRequest().getParameter(SamlUtils.SAML_RESPONSE_PARAMETER);
 
         Validate.notEmpty(samlResponseStr, "Empty SSO response string");
-        String decodedResponseStr = new String(Base64.decode(samlResponseStr), "UTF-8");
+        String decodedResponseStr = new String(Base64Support.decode(samlResponseStr), "UTF-8");
         this.setSamlDom(SharedUtils.createDOM(decodedResponseStr));
         logger.debug("Decoded SAML Response without pretty formatting is " + decodedResponseStr);
         // 2. format and print out xml
@@ -141,7 +142,7 @@ public class SsoValidationState extends ValidationState {
         // 3. relayState
         String relayState = this.getRequest().getParameter(SamlUtils.RELAY_STATE_PARAMETER);
         if (relayState != null) {
-            String decodedRelayState = new String(Base64.decode(relayState), "UTF-8");
+            String decodedRelayState = new String(Base64Support.decode(relayState), "UTF-8");
             this.setRelayState(relayState);
             logger.debug("Decoded Relay State is " + decodedRelayState);
         }
@@ -244,7 +245,7 @@ public class SsoValidationState extends ValidationState {
      * @throws WebssoClientException
      */
     private MessageData parseAssertion(final Assertion assertion, final boolean isResponseSigned)
-            throws MarshallingException, ValidationException, WebssoClientException {
+            throws MarshallingException, WebssoClientException, ValidationException {
 
         logger.info("Parsing assertion..");
         Validate.notNull(assertion);
@@ -265,8 +266,6 @@ public class SsoValidationState extends ValidationState {
         }
 
         // Validate assertion signature
-        assertion.validate(true);
-
         Signature signature = assertion.getSignature();
         // We do validate issuer for the SAML response.
         // Token issuer is validated that it matches the register IDP
@@ -388,12 +387,12 @@ public class SsoValidationState extends ValidationState {
         while (iterator.hasNext()) {
             // for each attribute statement
             AttributeStatement statement = iterator.next();
-            List<org.opensaml.saml2.core.Attribute> opensamlAttrs = statement.getAttributes();
+            List<org.opensaml.saml.saml2.core.Attribute> opensamlAttrs = statement.getAttributes();
 
-            Iterator<org.opensaml.saml2.core.Attribute> iter = opensamlAttrs.iterator();
+            Iterator<org.opensaml.saml.saml2.core.Attribute> iter = opensamlAttrs.iterator();
             while (iter.hasNext()) {
                 // for each attribute
-                org.opensaml.saml2.core.Attribute samlAttr = iter.next();
+                org.opensaml.saml.saml2.core.Attribute samlAttr = iter.next();
                 String name = samlAttr.getName();
                 String friendlyName = samlAttr.getFriendlyName();
                 // we could have multiple values for each attribute.
@@ -411,10 +410,10 @@ public class SsoValidationState extends ValidationState {
      *
      * @return List of string.
      */
-    private List<String> parseSamlAttributeValues(List<org.opensaml.xml.XMLObject> list) {
+    private List<String> parseSamlAttributeValues(List<XMLObject> list) {
         List<String> valStrings = new LinkedList<String>();
         Validate.notNull(list, "Attributes");
-        Iterator<org.opensaml.xml.XMLObject> iter = list.iterator();
+        Iterator<XMLObject> iter = list.iterator();
         while (iter.hasNext()) {
             String valStr = iter.next().getDOM().getTextContent();
             if (valStr != null) {

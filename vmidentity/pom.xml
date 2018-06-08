@@ -376,8 +376,8 @@
     <net.dev.jna>4.2.1</net.dev.jna>
     <nimbusds.version>5.6</nimbusds.version>
     <objenesis.version>1.2</objenesis.version>
-    <opensaml.version>2.6.4</opensaml.version>
-    <openws.version>1.5.4</openws.version>
+    <opensaml.version>3.2.0</opensaml.version>
+    <shibboleth-utilities.version>7.1.0</shibboleth-utilities.version>
     <policy.version>2.3.1</policy.version>
     <powermock.version>1.6.2</powermock.version>
     <prometheus.version>0.1.0</prometheus.version>
@@ -393,11 +393,10 @@
     <tomcat.catalina.version>8.5.31</tomcat.catalina.version>
     <velocity.version>1.7</velocity.version>
     <xalan.version>2.7.2</xalan.version>
-    <xerces.impl.version>2.10.0</xerces.impl.version>
+    <xerces.impl.version>2.11.0</xerces.impl.version>
     <xml.api.version>1.4.01</xml.api.version>
     <xml.resolver.version>1.2</xml.resolver.version>
-    <xml.sec.version>1.5.7</xml.sec.version>
-    <xml.tooling.version>1.4.4</xml.tooling.version>
+    <xml.sec.version>2.0.5</xml.sec.version>
   </properties>
 
   <dependencies>

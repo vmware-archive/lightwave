@@ -47,47 +47,43 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.joda.time.DateTime;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.common.binding.BasicSAMLMessageContext;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder;
-import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml2.core.AuthnContextComparisonTypeEnumeration;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.NameID;
-import org.opensaml.saml2.core.NameIDPolicy;
-import org.opensaml.saml2.core.RequestedAuthnContext;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.saml2.core.SessionIndex;
-import org.opensaml.saml2.core.Status;
-import org.opensaml.saml2.core.StatusCode;
-import org.opensaml.saml2.core.StatusMessage;
-import org.opensaml.saml2.core.impl.AuthnRequestBuilder;
-import org.opensaml.saml2.core.impl.LogoutRequestBuilder;
-import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
-import org.opensaml.saml2.core.impl.SessionIndexBuilder;
-import org.opensaml.ws.message.decoder.MessageDecodingException;
-import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
-import org.opensaml.xml.Configuration;
-import org.opensaml.xml.io.Marshaller;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.io.Unmarshaller;
-import org.opensaml.xml.io.UnmarshallerFactory;
-import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.parse.BasicParserPool;
-import org.opensaml.xml.security.SecurityException;
-import org.opensaml.xml.util.Base64;
-import org.opensaml.xml.util.XMLHelper;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.io.Marshaller;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.core.xml.io.Unmarshaller;
+import org.opensaml.core.xml.io.UnmarshallerFactory;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.messaging.decoder.MessageDecodingException;
+import org.opensaml.messaging.handler.MessageHandlerException;
+import org.opensaml.saml.common.SAMLVersion;
+import org.opensaml.saml.common.SignableSAMLObject;
+import org.opensaml.saml.common.binding.security.impl.ReceivedEndpointSecurityHandler;
+import org.opensaml.saml.saml2.binding.decoding.impl.HTTPRedirectDeflateDecoder;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.AuthnContextClassRef;
+import org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.saml.saml2.core.NameIDPolicy;
+import org.opensaml.saml.saml2.core.RequestedAuthnContext;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.SessionIndex;
+import org.opensaml.saml.saml2.core.Status;
+import org.opensaml.saml.saml2.core.StatusCode;
+import org.opensaml.saml.saml2.core.StatusMessage;
+import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.LogoutRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.NameIDPolicyBuilder;
+import org.opensaml.saml.saml2.core.impl.SessionIndexBuilder;
+import org.opensaml.security.SecurityException;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -111,6 +107,12 @@ import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SPConfiguration;
 import com.vmware.identity.websso.client.SharedUtils;
 
+import net.shibboleth.utilities.java.support.codec.Base64Support;
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
+import net.shibboleth.utilities.java.support.xml.BasicParserPool;
+import net.shibboleth.utilities.java.support.xml.SerializeSupport;
+
 public class SamlServiceImpl implements SamlService {
 
     private static final String FEATURE_LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
@@ -129,17 +131,16 @@ public class SamlServiceImpl implements SamlService {
     private PrivateKey privateKey;
     private SignatureAlgorithm signAlgorithm;
     private SignatureAlgorithm checkAlgorithm;
-    private final SecureRandomIdentifierGenerator generator;
+    private final SecureRandomIdentifierGenerationStrategy generator;
     private final RelaxedURIComparator comparator;
 
     public SamlServiceImpl() throws NoSuchAlgorithmException {
-        this.generator = new SecureRandomIdentifierGenerator();
+        this.generator = new SecureRandomIdentifierGenerationStrategy();
         this.comparator = new RelaxedURIComparator();
     }
 
     @Override
-	public void verifySignature(String message, String signature)
-            throws IllegalStateException {
+    public void verifySignature(String message, String signature) throws IllegalStateException {
 
         Validate.notNull(this.getCheckAlgorithm());
         Validate.notNull(this.getCertPath());
@@ -147,10 +148,8 @@ public class SamlServiceImpl implements SamlService {
         boolean verifies = false;
         try {
             /* create a Signature object and initialize it with the public key */
-            Signature sig = Signature.getInstance(this.getCheckAlgorithm()
-                    .getAlgorithmName());
-            X509Certificate[] chain = this.getCertPath().getCertificates()
-                    .toArray(new X509Certificate[0]);
+            Signature sig = Signature.getInstance(this.getCheckAlgorithm().getAlgorithmName());
+            X509Certificate[] chain = this.getCertPath().getCertificates().toArray(new X509Certificate[0]);
 
             for (int i = 0; i < chain.length && !verifies; i++) {
                 sig.initVerify(chain[i].getPublicKey());
@@ -159,42 +158,37 @@ public class SamlServiceImpl implements SamlService {
                 byte[] buffer = message.getBytes("UTF-8");
                 sig.update(buffer);
 
-                byte[] sigToVerify = Base64.decode(signature);
+                byte[] sigToVerify = Base64Support.decode(signature);
 
-				verifies = sig.verify(sigToVerify);
-				if (!verifies) {
-					log.error("Unable to verify the signature, message "
-							+ message + ", sigAlg "
-							+ this.getCheckAlgorithm().getAlgorithmName()
-							+ ", signature " + signature);
-				}
-			}
+                verifies = sig.verify(sigToVerify);
+                if (!verifies) {
+                    log.error("Unable to verify the signature, message " + message + ", sigAlg "
+                            + this.getCheckAlgorithm().getAlgorithmName() + ", signature " + signature);
+                }
+            }
 
-			log.debug("signature verifies: {}", verifies);
-		} catch (Exception e) {
-			log.error("Caught exception while verifying signature, message: "
-					+ message + ", sigAlg "
-					+ this.getCheckAlgorithm().getAlgorithmName()
-					+ ", signature " + signature);
-			log.error("Exception is: {}", e.toString());
-			throw new IllegalStateException(e);
-		}
+            log.debug("signature verifies: {}", verifies);
+        } catch (Exception e) {
+            log.error("Caught exception while verifying signature, message: " + message + ", sigAlg "
+                    + this.getCheckAlgorithm().getAlgorithmName() + ", signature " + signature);
+            log.error("Exception is: {}", e.toString());
+            throw new IllegalStateException(e);
+        }
         if (!verifies) {
             throw new IllegalStateException("Signature verification failed.");
         }
     }
 
     @Override
-	public AuthnRequest decodeSamlAuthnRequest(HttpServletRequest request)
-            throws MessageDecodingException, SecurityException {
-        log.debug("Decoding SAML AuthnRequest: {}" , request);
+    public AuthnRequest decodeSamlAuthnRequest(HttpServletRequest request)
+            throws SecurityException, ComponentInitializationException, MessageDecodingException {
+        log.debug("Decoding SAML AuthnRequest: {}", request);
         return (AuthnRequest) decodeSamlRequest(request);
     }
 
     @Override
-	public Response createSamlResponse(String inResponseTo, String where,
-            String status, String substatus, String message, Document token)
-            throws UnmarshallingException {
+    public Response createSamlResponse(String inResponseTo, String where, String status, String substatus,
+            String message, Document token) throws UnmarshallingException {
         log.debug("Creating SAML Response in response to:" + inResponseTo
                 + ", destination: " + where + ", myId:" + this.getIssuer());
         log.debug("Creating SAML Response status:" + status + ", substatus: "
@@ -234,7 +228,7 @@ public class SamlServiceImpl implements SamlService {
             Element root = token.getDocumentElement();
 
             // get appropriate unmarshaller
-            UnmarshallerFactory unmarshallerFactory = Configuration
+            UnmarshallerFactory unmarshallerFactory = XMLObjectProviderRegistrySupport
                     .getUnmarshallerFactory();
             Unmarshaller unmarshaller = unmarshallerFactory
                     .getUnmarshaller(root);
@@ -301,7 +295,7 @@ public class SamlServiceImpl implements SamlService {
 
         StringWriter sw = new StringWriter();
         // We must build our representation to put into the html form
-        Marshaller marshaller = org.opensaml.Configuration
+        Marshaller marshaller = XMLObjectProviderRegistrySupport
                 .getMarshallerFactory().getMarshaller(response);
         org.w3c.dom.Element authDOM;
         try {
@@ -310,9 +304,8 @@ public class SamlServiceImpl implements SamlService {
             log.debug("Caught exception " + e.toString());
             return null;
         }
-        StringWriter rspWrt = new StringWriter();
-        XMLHelper.writeNode(authDOM, rspWrt);
-        String messageXML = rspWrt.toString();
+
+        String messageXML = SerializeSupport.nodeToString(authDOM);
 
         try
         {
@@ -352,7 +345,7 @@ public class SamlServiceImpl implements SamlService {
     // cast to SAMLObjectBuilder<T> is caller's choice
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private <T> T create(Class<T> cls, QName qname) {
-        return (T) Configuration.getBuilderFactory()
+        return (T) XMLObjectProviderRegistrySupport.getBuilderFactory()
                 .getBuilder(qname).buildObject(qname);
     }
 
@@ -497,12 +490,10 @@ public class SamlServiceImpl implements SamlService {
 
         // Now we must build our representation to put into the html form to be
         // submitted to the idp
-        Marshaller marshaller = org.opensaml.Configuration
+        Marshaller marshaller = XMLObjectProviderRegistrySupport
                 .getMarshallerFactory().getMarshaller(signableSAMLObject);
         org.w3c.dom.Element authDOM = marshaller.marshall(signableSAMLObject);
-        StringWriter rspWrt = new StringWriter();
-        XMLHelper.writeNode(authDOM, rspWrt);
-        String messageXML = rspWrt.toString();
+        String messageXML = SerializeSupport.nodeToString(authDOM);
 
         String samlRequestParameter;
         if (doCompress) {
@@ -549,13 +540,12 @@ public class SamlServiceImpl implements SamlService {
     }
 
     @Override
-	public String signMessage(String message) throws IllegalStateException {
+    public String signMessage(String message) throws IllegalStateException {
         Validate.notNull(this.getSignAlgorithm());
         Validate.notNull(this.getPrivateKey());
 
         try {
-            Signature sig = Signature.getInstance(
-                    this.getSignAlgorithm().getAlgorithmName());
+            Signature sig = Signature.getInstance(this.getSignAlgorithm().getAlgorithmName());
             sig.initSign(privateKey);
 
             byte[] messageBytes = message.getBytes("UTF-8");
@@ -563,49 +553,60 @@ public class SamlServiceImpl implements SamlService {
 
             byte[] sigBytes = sig.sign();
             String signature = Shared.encodeBytes(sigBytes);
-			if (signature == null || signature.isEmpty()) {
-				log.debug("Invalid signature - either null or empty. ");
-			}
+            if (signature == null || signature.isEmpty()) {
+                log.debug("Invalid signature - either null or empty. ");
+            }
 
-			return signature;
-		} catch (Exception e) {
-			log.error("Caught exception while signing  message " + message
-					+ ", sigAlg " + this.getSignAlgorithm().getAlgorithmName());
+            return signature;
+        } catch (Exception e) {
+            log.error("Caught exception while signing  message " + message + ", sigAlg "
+                    + this.getSignAlgorithm().getAlgorithmName());
             throw new IllegalStateException(e);
         }
     }
 
     @Override
 	public SignableSAMLObject decodeSamlRequest(HttpServletRequest request)
-            throws MessageDecodingException, SecurityException {
+            throws ComponentInitializationException, MessageDecodingException, SecurityException {
         log.debug("Decoding SAML object: {}", request);
         Validate.notNull(request);
 
         Hashtable<String,Boolean> features = new Hashtable<String,Boolean>();
         Hashtable<String,Object> attributes = new Hashtable<String,Object>();
 
-        BasicParserPool ParserPool = new BasicParserPool();
+        BasicParserPool parserPool = new BasicParserPool();
 
         features.put(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        ParserPool.setBuilderFeatures(features);
+        parserPool.setBuilderFeatures(features);
 
 
         attributes.put(FEATURE_EXTERNAL_GENERAL_ENTITIES, false);
         attributes.put(FEATURE_EXTERNAL_PARAMETER_ENTITIES, false);
         attributes.put(FEATURE_LOAD_EXTERNAL_DTD, false);
-        ParserPool.setBuilderAttributes(attributes);
+        parserPool.setBuilderAttributes(attributes);
 
-        final HTTPRedirectDeflateDecoder decode = new HTTPRedirectDeflateDecoder(
-                ParserPool);
-        decode.setURIComparator(comparator);
-        final HttpServletRequestAdapter adapter = new HttpServletRequestAdapter(
-                request);
-        @SuppressWarnings("rawtypes")
-        final BasicSAMLMessageContext context = new BasicSAMLMessageContext();
-        context.setInboundMessageTransport(adapter);
-        decode.decode(context);
+        parserPool.initialize();
+
+        final HTTPRedirectDeflateDecoder decode = new HTTPRedirectDeflateDecoder();
+        decode.setParserPool(parserPool);
+        decode.setHttpServletRequest(request);
+
+        decode.initialize();
+        decode.decode();
+
+        ReceivedEndpointSecurityHandler endpointSecurityHandler =
+                new ReceivedEndpointSecurityHandler();
+        endpointSecurityHandler.setURIComparator(comparator);
+        endpointSecurityHandler.setHttpServletRequest(request);
+        endpointSecurityHandler.initialize();
+        try {
+            endpointSecurityHandler.invoke(decode.getMessageContext());
+        } catch (MessageHandlerException ex) {
+            log.error("exception when validate request endpoints", ex);
+            throw new SecurityException(ex);
+        }
         // Save the SAML Request as a SAML Object
-        return (SignableSAMLObject) context.getInboundMessage();
+        return (SignableSAMLObject) decode.getMessageContext().getMessage();
     }
 
     @Override

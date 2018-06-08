@@ -17,8 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.springframework.stereotype.Component;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -35,6 +34,8 @@ import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.SamlServiceException;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.Shared;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * @author root
@@ -113,7 +114,7 @@ public class AuthnRequestStateKerbAuthenticationFilter implements
 
         Validate.notEmpty(contextId);
         Validate.notEmpty(encodedToken);
-        byte[] decodedAuthData = Base64.decode(encodedToken);
+        byte[] decodedAuthData = Base64Support.decode(encodedToken);
 
         try {
             result = accessor.authenticate(contextId, decodedAuthData);

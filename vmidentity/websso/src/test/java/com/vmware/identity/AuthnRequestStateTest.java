@@ -31,8 +31,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.impl.AuthnRequestMarshaller;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.impl.AuthnRequestMarshaller;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 

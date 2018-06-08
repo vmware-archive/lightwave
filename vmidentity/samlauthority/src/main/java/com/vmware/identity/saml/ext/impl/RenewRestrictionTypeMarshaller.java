@@ -13,9 +13,9 @@
  */
 package com.vmware.identity.saml.ext.impl;
 
-import org.opensaml.common.impl.AbstractSAMLObjectMarshaller;
-import org.opensaml.xml.XMLObject;
-import org.opensaml.xml.io.MarshallingException;
+import org.opensaml.saml.common.AbstractSAMLObjectMarshaller;
+import org.opensaml.core.xml.XMLObject;
+import org.opensaml.core.xml.io.MarshallingException;
 import org.w3c.dom.Element;
 
 import com.vmware.identity.saml.ext.RenewRestrictionType;

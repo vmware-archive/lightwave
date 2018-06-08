@@ -30,12 +30,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.IDPEntry;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.ws.message.decoder.MessageDecodingException;
-import org.opensaml.xml.security.SecurityException;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.messaging.decoder.MessageDecodingException;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.IDPEntry;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.security.SecurityException;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
 
@@ -61,6 +60,8 @@ import com.vmware.identity.session.Session;
 import com.vmware.identity.session.SessionManager;
 import com.vmware.identity.util.TimePeriod;
 
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * Object that encapsulates a lifetime of SAML AuthnRequest
@@ -314,7 +315,7 @@ public class AuthnRequestState {
                     // print out decoded relay state. Note that we do not need
                     // to
                     // store decoded value.
-                    byte[] relayStateBytes = Base64.decode(this.relayState);
+                    byte[] relayStateBytes = Base64Support.decode(this.relayState);
                     log.debug("Relay state specified was "
                             + new String(relayStateBytes));
                 }
@@ -388,6 +389,12 @@ public class AuthnRequestState {
             this.validationResult = new ValidationResult(
                     HttpServletResponse.SC_BAD_REQUEST, "BadRequest", null);
             log.error("Unable to validate the authentication request ",e);
+            throw new IllegalStateException(e);
+        } catch (ComponentInitializationException e) {
+            // fail the validation with specific error code and rethrow
+            this.validationResult = new ValidationResult(
+                    HttpServletResponse.SC_BAD_REQUEST, "BadRequest", null);
+            log.error("Unable to initialize the request decode component.",e);
             throw new IllegalStateException(e);
         }
 

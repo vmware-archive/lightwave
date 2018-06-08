@@ -63,7 +63,7 @@ public class ValidatableTokenMock implements ServerValidatableSamlToken {
       this.invalidSignature = false;
       this.groupList = groupList;
       this.delegates = new ArrayList<SamlTokenDelegate>();
-      this._issuer = new NameIdImpl(issuer, org.opensaml.saml2.core.Issuer.ENTITY);
+      this._issuer = new NameIdImpl(issuer, org.opensaml.saml.saml2.core.Issuer.ENTITY);
    }
 
    /**
@@ -81,7 +81,7 @@ public class ValidatableTokenMock implements ServerValidatableSamlToken {
       this.groupList = null;
       this.delegates = null;
       this.subject = null;
-      this._issuer = new NameIdImpl(issuer, org.opensaml.saml2.core.Issuer.ENTITY);
+      this._issuer = new NameIdImpl(issuer, org.opensaml.saml.saml2.core.Issuer.ENTITY);
    }
 
    @Override

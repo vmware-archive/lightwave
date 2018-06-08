@@ -13,8 +13,8 @@
  */
 package com.vmware.identity.saml.ext.impl;
 
-import org.opensaml.xml.schema.XSString;
-import org.opensaml.xml.AbstractXMLObjectBuilder;
+import org.opensaml.core.xml.schema.XSString;
+import org.opensaml.core.xml.AbstractXMLObjectBuilder;
 
 public class XSNonTrimmingStringBuilder extends AbstractXMLObjectBuilder<XSString>
 {

@@ -47,15 +47,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.opensaml</groupId>
-      <artifactId>xmltooling</artifactId>
-      <version>${xml.tooling.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.bouncycastle</groupId>
-          <artifactId>bcprov-jdk15</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>net.shibboleth.utilities</groupId>
+      <artifactId>java-support</artifactId>
+      <version>${shibboleth-utilities.version}</version>
     </dependency>
 
     <dependency>

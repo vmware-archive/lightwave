@@ -13,7 +13,7 @@
  */
 package com.vmware.identity.saml.ext.impl;
 
-import org.opensaml.common.impl.AbstractSAMLObjectBuilder;
+import org.opensaml.saml.common.AbstractSAMLObjectBuilder;
 
 import com.vmware.identity.saml.ext.RenewableType;
 

@@ -16,8 +16,8 @@ package com.vmware.identity.saml.ext.impl;
 import java.util.Collections;
 import java.util.List;
 
-import org.opensaml.common.impl.AbstractSAMLObject;
-import org.opensaml.xml.XMLObject;
+import org.opensaml.saml.common.AbstractSAMLObject;
+import org.opensaml.core.xml.XMLObject;
 
 import com.vmware.identity.saml.ext.RenewRestrictionType;
 

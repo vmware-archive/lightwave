@@ -177,16 +177,6 @@
       <version>${commons-ssl.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.opensaml</groupId>
-      <artifactId>opensaml</artifactId>
-      <version>${opensaml.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opensaml</groupId>
-      <artifactId>openws</artifactId>
-      <version>${openws.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.velocity</groupId>
       <artifactId>velocity</artifactId>
       <version>${velocity.version}</version>
@@ -195,11 +185,6 @@
       <groupId>org.apache.santuario</groupId>
       <artifactId>xmlsec</artifactId>
       <version>${xml.sec.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opensaml</groupId>
-      <artifactId>xmltooling</artifactId>
-      <version>${xml.tooling.version}</version>
     </dependency>
 
       <!-- Jna Dependencies -->

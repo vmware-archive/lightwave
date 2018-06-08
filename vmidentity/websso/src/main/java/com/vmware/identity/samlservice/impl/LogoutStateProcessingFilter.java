@@ -19,10 +19,9 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.SessionIndex;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.SessionIndex;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -42,6 +41,8 @@ import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SamlUtils;
 import com.vmware.identity.websso.client.SloRequestSettings;
 import com.vmware.identity.websso.client.endpoint.SloRequestSender;
+
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
 
 /**
  * LogoutRequest/Response processing.
@@ -64,14 +65,10 @@ public class LogoutStateProcessingFilter implements
     public void preProcess(LogoutState t) throws SamlServiceException {
     }
 
-    private static SecureRandomIdentifierGenerator generator;
+    private static SecureRandomIdentifierGenerationStrategy generator;
 
     static {
-        try {
-            generator = new SecureRandomIdentifierGenerator();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unexpected error in creating SecureRandomIdentifierGenerator", e);
-        }
+        generator = new SecureRandomIdentifierGenerationStrategy();
     }
 
     /**

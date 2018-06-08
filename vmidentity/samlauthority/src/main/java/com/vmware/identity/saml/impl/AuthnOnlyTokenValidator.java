@@ -200,7 +200,7 @@ public class AuthnOnlyTokenValidator implements TokenValidator {
                  &&
                  ( samlAuthorityConfig.getIssuer().equals(issuer.getName()) == false )
                  &&
-                 ( org.opensaml.saml2.core.Issuer.ENTITY.equals(issuer.getNameFormat()) )
+                 ( org.opensaml.saml.saml2.core.Issuer.ENTITY.equals(issuer.getNameFormat()) )
                )
             {
                 externalIdp = config.getExternalIdps().get(issuer.getName());

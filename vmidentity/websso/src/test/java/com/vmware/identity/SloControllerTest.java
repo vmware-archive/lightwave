@@ -61,9 +61,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.easymock.Capture;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
 import org.springframework.ui.Model;
 import org.springframework.validation.support.BindingAwareModelMap;
 
@@ -77,7 +76,6 @@ import com.vmware.identity.idm.ServiceEndpoint;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.saml.SignatureAlgorithm;
-import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
 import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.IdmAccessorFactory;
 import com.vmware.identity.samlservice.OasisNames;
@@ -86,6 +84,8 @@ import com.vmware.identity.samlservice.impl.CasIdmAccessor;
 import com.vmware.identity.samlservice.impl.LogoutStateProcessingFilter;
 import com.vmware.identity.session.Session;
 import com.vmware.identity.session.impl.SessionManagerImpl;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * Single Logout Controller test
@@ -287,7 +287,7 @@ public class SloControllerTest {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         InflaterOutputStream inflaterOutputStream = new InflaterOutputStream(
                 byteArrayOutputStream, decompresser);
-        inflaterOutputStream.write(Base64.decode(samlRequestParameter));
+        inflaterOutputStream.write(Base64Support.decode(samlRequestParameter));
         inflaterOutputStream.close();
         String outputString = new String(byteArrayOutputStream.toByteArray());
 
@@ -304,7 +304,7 @@ public class SloControllerTest {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         InflaterOutputStream inflaterOutputStream = new InflaterOutputStream(
                 byteArrayOutputStream, decompresser);
-        inflaterOutputStream.write(Base64.decode(samlRequestParameter));
+        inflaterOutputStream.write(Base64Support.decode(samlRequestParameter));
         inflaterOutputStream.close();
         String outputString = new String(byteArrayOutputStream.toByteArray());
 

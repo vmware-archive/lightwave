@@ -22,8 +22,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Response;
 
 import com.vmware.identity.idm.ServerConfig;
 import com.vmware.identity.proxyservice.LogonProcessorImpl;
@@ -33,7 +33,6 @@ import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.TestAuthnRequestStateAuthenticationFilter;
 import com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper;
 import com.vmware.identity.session.impl.SessionManagerImpl;
-
 
 /**
  * @author root

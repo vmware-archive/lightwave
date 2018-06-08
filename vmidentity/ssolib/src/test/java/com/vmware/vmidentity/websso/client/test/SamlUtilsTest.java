@@ -6,9 +6,9 @@ import java.util.Date;
 import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.Test;
-import org.opensaml.xml.validation.ValidationException;
 
 import com.vmware.identity.websso.client.SamlUtils;
+import com.vmware.identity.websso.client.ValidationException;
 
 public class SamlUtilsTest {
 

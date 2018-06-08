@@ -41,7 +41,6 @@ import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import org.opensaml.xml.util.Base64;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -66,6 +65,8 @@ import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.ServiceEndpoint;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.ValidateUtil;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * VMware Identity Service
@@ -1142,9 +1143,9 @@ class SAMLImporter {
         Element modulusEle = (Element) modulusList.item(0);
 
         //decode exponent and modulus
-        BigInteger expInt = new BigInteger(Base64.decode(
+        BigInteger expInt = new BigInteger(Base64Support.decode(
                 exponentEle.getTextContent()));
-        BigInteger modInt = new BigInteger(Base64.decode(
+        BigInteger modInt = new BigInteger(Base64Support.decode(
                 modulusEle.getTextContent()));
 
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -1180,7 +1181,7 @@ class SAMLImporter {
 
             if (x509Ele != null) {
 
-                byte [] certDecoded = Base64.decode(
+                byte [] certDecoded = Base64Support.decode(
                         x509Ele.getTextContent());
                 CertificateFactory cf = CertificateFactory.getInstance("X.509");
                 X509Certificate c = (X509Certificate) cf.generateCertificate(
