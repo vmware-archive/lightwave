@@ -1275,7 +1275,7 @@ AC_SUBST(javaetcdir)
 vmafdjarsdir="$prefix/jars"
 AC_SUBST(vmafdjarsdir)
 
-jreextdir=$JRE_EXT
+jreextdir="/usr/java/packages/lib/ext"
 AC_SUBST(jreextdir)
 
 #--------------------------------------------------------------------

@@ -115,7 +115,7 @@ VMware Lightwave Server
 %define _integchkdir %{_logdir}/integrity
 %define _logconfdir /etc/syslog-ng/lightwave.conf.d
 %define _pymodulesdir /opt/vmware/site-packages/identity
-%define _jreextdir %{_javahome}/jre/lib/ext
+%define _jreextdir /usr/java/packages/lib/ext
 
 %define _post_dbdir   %{_localstatedir}/post
 %define _vmca_dbdir   %{_localstatedir}/vmca
@@ -167,7 +167,6 @@ Lightwave POST service
 %debug_package
 %build
 %install
-
 %pre
 
     # First argument is 1 => New Installation
