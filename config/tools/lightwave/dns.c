@@ -29,7 +29,11 @@ LightwaveDns(
 {
     int iRetCode = 0;
 
-    if (!strcmp(argv[0], "delete-dc"))
+    if (argc == 0 || argv[0] == NULL)
+    {
+        ShowUsage();
+    }
+    else if (!strcmp(argv[0], "delete-dc"))
     {
         iRetCode = LightwaveDCDnsDelete(argc-1, &argv[1]);
     }

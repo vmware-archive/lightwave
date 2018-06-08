@@ -54,7 +54,7 @@ LightwaveDomainLeave(
     PSTR pszErrorDesc = NULL;
     DWORD dwError2 = 0;
 
-    if (!strcmp(argv[0], "--help"))
+    if (argc == 0 || argv[0] == NULL || !strcmp(argv[0], "--help"))
     {
         ShowUsage();
         goto cleanup;
