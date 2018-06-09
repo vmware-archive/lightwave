@@ -213,14 +213,24 @@ func TestVecsGetEntryPEM(t *testing.T) {
 	assert.NoErrorf(t, err, "failed to create store with %+v", err)
 	assert.NotNilf(t, store, "store object should not be nil")
 
-	pem, cert := generatePEMAndCert()
+	pemStr, cert := generatePEMAndCert()
 
-	err = store.AddEntry(VecsTypePrivateKey, entryAlias, cert, pem, storePassword, false)
+	err = store.AddEntry(VecsTypePrivateKey, entryAlias, cert, pemStr, storePassword, false)
 	assert.NoErrorf(t, err, "failed to add entry to store with %+v", err)
 
 	entryPEM, err := store.GetEntryKey(entryAlias, storePassword)
 	assert.NoErrorf(t, err, "failed to get entry cert from store with %+v", err)
-	assert.Equalf(t, pem, entryPEM, "generated PEM does not equal added PEM")
+
+	// Convert to PKCS1 format and encode
+	block, _ := pem.Decode([]byte(entryPEM))
+	parseResult, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
+	key := parseResult.(*rsa.PrivateKey)
+	keyPem := string(pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}))
+
+	assert.Equalf(t, pemStr, keyPem, "generated PEM does not equal added PEM")
 
 	store.Close()
 	err = VecsDeleteStore(storeHost, storeName)
