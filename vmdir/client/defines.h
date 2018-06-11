@@ -21,7 +21,6 @@
 #define GROUP_CMADMINISTRATORS "cn=ComponentManager.Administrators"
 #define GROUP_SOLUTIONUSERS "cn=SolutionUsers"
 
-
 #define VMDIR_MAX_CLIENT_RPC_RETRY 5
 #define VMDIR_CLIENT_RPC_SLEEP_SECONDS 1
 

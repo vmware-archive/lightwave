@@ -981,6 +981,26 @@ VmDirClientFreeMachineInfoW(
     PVMDIR_MACHINE_INFO_W pMachineInfo
     );
 
+DWORD
+VmDirGetServersDetailed(
+    PCSTR               pszHostName,
+    PCSTR               pszUserName,
+    PCSTR               pszPassword,
+    PVMDIR_SERVER_INFO*  ppServerInfo,   // output
+    DWORD*              pdwNumServer    // output
+);
+
+VOID
+VmDirFreeServerInfo(
+    PVMDIR_SERVER_INFO pServerInfo
+);
+
+VOID
+VmDirFreeServerInfoArray(
+    PVMDIR_SERVER_INFO pServerInfo,
+    DWORD              dwCount
+);
+
 #ifdef __cplusplus
 }
 #endif

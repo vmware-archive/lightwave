@@ -196,6 +196,7 @@ VmDirGetServersInfo(
     LDAP* pLd,
     PCSTR pszHost,
     PCSTR pszDomain,
+    PCSTR* ppAttrsArray,
     PINTERNAL_SERVER_INFO* ppInternalServerInfo,
     DWORD* pdwInfoCount
     );
@@ -853,6 +854,7 @@ VmDirGetServersInfoOnSite(
     PCSTR                   pszSiteName,
     PCSTR                   pszHost,
     PCSTR                   pszDomain,
+    PCSTR*                   ppAttrsArray,
     PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
     DWORD*                  pdwInfoCount
     );

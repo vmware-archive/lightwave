@@ -4561,6 +4561,8 @@ VmAfdIpcCreateComputerAccount(
     PWSTR pwszOutPassword = NULL;
     VMAFD_JOIN_FLAGS dwFlags = 0;
     int idx = 0;
+    BOOL bIsAllowed = FALSE;
+    PSTR pszSecurity = NULL;
 
     VMW_TYPE_SPEC input_spec[] = CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = CREATE_COMPUTER_ACCOUNT_OUTPUT_PARAMS;
@@ -4602,7 +4604,24 @@ VmAfdIpcCreateComputerAccount(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    bIsAllowed = VmAfdIsRootSecurityContext(pConnectionContext);
+#ifndef _WIN32
+    if (!bIsAllowed)
+    {
+        dwError = VmAfSrvGetRegKeySecurity(
+                    VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    &pszSecurity);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+        dwError = VmAfdCheckAclContext(
+                    pConnectionContext,
+                    pszSecurity,
+                    &bIsAllowed);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+#endif
+
+    if (!bIsAllowed)
     {
         VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
         dwError = ERROR_ACCESS_DENIED;

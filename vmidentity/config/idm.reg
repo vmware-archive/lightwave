@@ -3,13 +3,24 @@
 [HKEY_THIS_MACHINE\Software\VMware]
 
 [HKEY_THIS_MACHINE\Software\VMware\Identity]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;S-1-22-2-@LIGHTWAVE_GID@)
 "Description" = {
     default = "VMware Identity Service"
     doc = ""
 }
 
+"Release" = {
+    default = "Lightwave"
+    doc     = "product release"
+}
+
+"Version" = {
+    default = ""
+    doc     = "product version"
+}
+
 [HKEY_THIS_MACHINE\Software\VMware\Identity\Configuration]
-@security = O:SYG:S-1-22-2-0D:(A;;RCFAFRFWFXKAKRKWKXNW;;;WD)(A;;RCFAFRFWFXKAKRKWKXNW;;;S-1-22-2-0)(A;;RCSDWDWOFAFRFWFXKAKRKWKXNRNWNX;;;SY)
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;S-1-22-2-@LIGHTWAVE_GID@)
 
 "ConfigStoreType" = {
     default = "vmware_directory"

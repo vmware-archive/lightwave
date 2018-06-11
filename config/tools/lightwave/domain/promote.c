@@ -59,7 +59,7 @@ LightwaveDomainPromote(
     PSTR pszErrorDesc = NULL;
     DWORD dwError2 = 0;
 
-    if (!strcmp(argv[0], "--help"))
+    if (argc == 0 || argv[0] == NULL || !strcmp(argv[0], "--help"))
     {
         ShowUsage();
         goto cleanup;
@@ -603,7 +603,8 @@ ShowUsage(
            "Usage: lightwave domain promote { arguments }\n"
            "Arguments:\n"
            "    [--domain   <fully qualified domain name. Default : vsphere.local>]\n"
-           "    --password  <password to administrator account>\n"
+           "    [--username <account name>]\n"
+           "    --password  <password>\n"
            "    [--partner  <partner domain controller's hostname or IP Address>]\n"
            "    [--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
            "    [--site     <infra site name>]\n"

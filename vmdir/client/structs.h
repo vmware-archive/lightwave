@@ -36,6 +36,9 @@ typedef struct _REPLICATION_INFO
 typedef struct _INTERNAL_SERVER_INFO
 {
     CHAR       pszServerDN[VMDIR_MAX_DN_LEN];
+    CHAR       pszCreateTimeStamp[VMDIR_MAX_TIMESTAMP_LEN];
+    CHAR       pszServerFQDN[VMDIR_MAX_LDAP_URI_LEN];
+    CHAR       pszSiteName[VMDIR_MAX_LDAP_URI_LEN];
 } INTERNAL_SERVER_INFO, *PINTERNAL_SERVER_INFO;
 
 typedef struct _VMDIR_REPLICATION_COOKIE

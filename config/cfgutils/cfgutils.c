@@ -896,7 +896,6 @@ VmwDeployDeleteServer(
     PVMW_IC_SETUP_PARAMS pParams)
 {
     DWORD dwError = 0;
-    PSTR  pszUsername = VMW_ADMIN_NAME;
 
     if (pParams->pszServer)
     {
@@ -909,7 +908,7 @@ VmwDeployDeleteServer(
 
     dwError = VmAfdDemoteVmDirA(
                     pParams->pszServer,
-                    pszUsername,
+                    pParams->pszUsername,
                     pParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
