@@ -320,8 +320,6 @@ Lightwave POST service
             if [ $try_starting_lwregd_svc = true ]; then
 
                 %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
-                # set vmdir provider bind protocol to srp
-                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
                 # set version
                 %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
@@ -337,8 +335,6 @@ Lightwave POST service
                 fi
 
                 %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
-                # set vmdir provider bind protocol to srp
-                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
                 # set version
                 %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
@@ -348,7 +344,6 @@ Lightwave POST service
                 fi
             fi
 
-            %{_likewise_open_bindir}/lwsm restart lsass
             ;;
 
         2)
@@ -374,8 +369,6 @@ Lightwave POST service
             if [ $try_starting_lwregd_svc = true ]; then
 
                 %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
-                # set vmdir provider bind protocol to srp
-                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
                 # set version
                 %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
@@ -391,8 +384,6 @@ Lightwave POST service
                 fi
 
                 %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
-                # set vmdir provider bind protocol to srp
-                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
                 # set version
                 %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
@@ -401,7 +392,6 @@ Lightwave POST service
                     wait
                 fi
             fi
-            %{_likewise_open_bindir}/lwsm restart lsass
 
             %{_sbindir}/configure-build.sh "%{_stsdbdir}"
 
@@ -717,6 +707,13 @@ Lightwave POST service
 
     lw_user_sid="S-1-22-1-$lw_uid"
     %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
+
+    %{_likewise_open_bindir}/lwregshell list_values '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' | grep -i -q srp
+    if [ $? -ne 0 ]; then
+        # set vmdir provider bind protocol to srp
+        %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
+        %{_likewise_open_bindir}/lwsm restart lsass
+    fi
 
 %post post
 
