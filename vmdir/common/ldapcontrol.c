@@ -130,3 +130,145 @@ error:
     VmDirFreeCtrlContent(pVoteCtrl);
     goto cleanup;
 }
+
+int
+VmDirCreateDbCopyControlContent(
+    PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal,
+    LDAPControl*                pDbCopyCtrl
+    )
+{
+    int             retVal = LDAP_SUCCESS;
+    BerElement*     pBer = NULL;
+    BerValue        localBV = {0};
+
+    if (!pDbCopyCtrlVal || !pDbCopyCtrlVal->pszPath || !pDbCopyCtrl || pDbCopyCtrlVal->dwBlockSize == 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    localBV.bv_val = (char*)pDbCopyCtrlVal->pszPath;
+    localBV.bv_len = strlen(pDbCopyCtrlVal->pszPath);
+
+    if (ber_printf(pBer, "{Oii}", &localBV, pDbCopyCtrlVal->dwBlockSize, pDbCopyCtrlVal->fd) == -1)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+    }
+
+    memset(pDbCopyCtrl, 0, sizeof(LDAPControl));
+    pDbCopyCtrl->ldctl_oid = LDAP_DB_COPY_CONTROL;
+    pDbCopyCtrl->ldctl_iscritical = '1';
+
+    if (ber_flatten2(pBer, &pDbCopyCtrl->ldctl_value, 1))
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+    }
+
+cleanup:
+
+    VMDIR_SAFE_FREE_BER(pBer);
+    return retVal;
+
+error:
+    if (pDbCopyCtrl)
+    {
+        VmDirFreeCtrlContent(pDbCopyCtrl);
+    }
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, retVal);
+    goto cleanup;
+}
+
+int
+VmDirCreateDBCopyReplyControlContent(
+    int         fd,
+    BerValue*   pBerVIn,
+    BerValue*   pBerVOut
+    )
+{
+    int         retVal = LDAP_SUCCESS;
+    BerElement* pBer = NULL;
+    BerValue    localBV = {0};
+
+    if (!pBerVIn || !pBerVOut)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    if (ber_printf(pBer, "{iO}", fd, pBerVIn) == -1)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+    }
+
+    if (ber_flatten2(pBer, &localBV, 1))
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+    }
+
+    retVal = VmDirAllocateAndCopyMemory(localBV.bv_val, localBV.bv_len, (PVOID*) &pBerVOut->bv_val);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pBerVOut->bv_len = localBV.bv_len;
+
+cleanup:
+    VMDIR_SAFE_FREE_BER(pBer);
+    ber_memfree(localBV.bv_val);
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, retVal);
+    goto cleanup;
+}
+
+DWORD
+VmDirParseDBCopyReplyControlContent(
+    LDAPControl*                pDbCopyReplyCtrl,
+    PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal
+    )
+{
+    BerElement*     pBer          = NULL;
+    DWORD           dwError       = 0;
+    BerValue        localBerValue = {0};
+    ber_tag_t       berTag        = 0;
+
+    if (!pDbCopyCtrlVal || !pDbCopyReplyCtrl)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pBer = ber_init(&pDbCopyReplyCtrl->ldctl_value);
+    if (pBer == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    berTag = ber_scanf(pBer, "{im}", &pDbCopyCtrlVal->fd, &localBerValue);
+    if (berTag == LBER_ERROR)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+    dwError = VmDirAllocateAndCopyMemory(
+                localBerValue.bv_val,
+                localBerValue.bv_len,
+                (PVOID*)&pDbCopyCtrlVal->pszData);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pDbCopyCtrlVal->dwDataLen = localBerValue.bv_len;
+
+cleanup:
+    VMDIR_SAFE_FREE_BER(pBer);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, dwError);
+    goto cleanup;
+}
