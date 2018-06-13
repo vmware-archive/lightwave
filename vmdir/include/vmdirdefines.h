@@ -302,6 +302,14 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_FREE_BER(pBerElement)    \
+    do {                                    \
+        if ((pBerElement)) {                \
+            ber_free(pBerElement, 1);       \
+            (pBerElement) = NULL;           \
+        }                                   \
+    } while(0)
+
 #define VMDIR_LOCK_MUTEX(bInLock, mutex)        \
     do {                                        \
         if (!(bInLock))                         \

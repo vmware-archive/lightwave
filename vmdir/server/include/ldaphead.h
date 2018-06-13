@@ -157,6 +157,12 @@ VmDirCreateStatePingControlContent(
     LDAPControl*    pPingCtrl
     );
 
+int
+VmDirWriteDbCopyReplyControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    );
+
 // delete.c
 int
 VmDirPerformDelete(

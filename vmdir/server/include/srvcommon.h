@@ -248,6 +248,12 @@ typedef struct _VDIR_CONN_REPL_SUPP_STATE
     PLW_HASHMAP     phmSyncStateOneMap;
 } VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
 
+typedef struct _VDIR_CONNECTION_CTRL_RESOURCE
+{
+    BOOLEAN bOwnDbCopyCtrlFd; //this is added to fix the case where VDIR_CONNECTION is allocated without calling VmDirAllocateConnection
+    int     dbCopyCtrlFd;
+} VDIR_CONNECTION_CTRL_RESOURCE, *PVDIR_CONNECTION_CTRL_RESOURCE;
+
 typedef struct _VDIR_CONNECTION
 {
     Sockbuf *               sb;
@@ -264,6 +270,7 @@ typedef struct _VDIR_CONNECTION
     VDIR_SUPERLOG_RECORD    SuperLogRec;
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
     PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
+    VDIR_CONNECTION_CTRL_RESOURCE ConnCtrlResource;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -618,6 +625,7 @@ typedef union LdapControlValue
     VDIR_RAFT_PING_CONTROL_VALUE        raftPingCtrlVal;
     VDIR_RAFT_VOTE_CONTROL_VALUE        raftVoteCtrlVal;
     VDIR_STATE_PING_CONTROL_VALUE       statePingCtrlVal;
+    VDIR_DB_COPY_CONTROL_VALUE          dbCopyCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -667,6 +675,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       raftVoteCtrl;
     VDIR_LDAP_CONTROL *       statePingCtrl;
     VDIR_LDAP_CONTROL *       passblobCtrl;
+    VDIR_LDAP_CONTROL *       dbCopyCtrl;
 
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
