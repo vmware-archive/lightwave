@@ -854,12 +854,12 @@ VmDirGetServersInfoOnSite(
               pszAttribute != NULL;
               pszAttribute = ldap_next_attribute( pLd, pMessage, ber ) )
         {
-            if (VmDirStringCompareA(pszAttribute, "createTimeStamp", FALSE))
+            if (VmDirStringCompareA(pszAttribute, "createTimeStamp", FALSE) == 0)
             {
                 dwError = VmDirGetAttrValue(pLd, pMessage, pszAttribute, pInternalServerInfo[i].pszCreateTimeStamp, VMDIR_MAX_TIMESTAMP_LEN);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
-            else if (VmDirStringCompareA(pszAttribute, "cn", FALSE))
+            else if (VmDirStringCompareA(pszAttribute, "cn", FALSE) == 0)
             {
                 dwError = VmDirGetAttrValue(pLd, pMessage, pszAttribute, pInternalServerInfo[i].pszServerFQDN, VMDIR_MAX_LDAP_URI_LEN);
                 BAIL_ON_VMDIR_ERROR(dwError);
@@ -1044,7 +1044,7 @@ VmDirGetAttrValue(
 
     vals = ldap_get_values_len(pLd, pMessage, pszAttribute);
 
-    if (!vals || !vals[0])
+    if (!vals || !vals[0] || !vals[0]->bv_val)
     {
         dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
         BAIL_ON_VMDIR_ERROR(dwError);
