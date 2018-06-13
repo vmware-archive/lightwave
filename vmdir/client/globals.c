@@ -39,5 +39,5 @@ VMDIR_ERROR_CODE_DESC VMDIR_RPC_ERROR_Table[] =
                                  VMDIR_RPC_ERROR_TABLE_INITIALIZER;
 DWORD VMDIR_RPC_ERROR_Table_size = sizeof(VMDIR_RPC_ERROR_Table)/sizeof(VMDIR_RPC_ERROR_Table[0]);
 
-PCSTR PVMDIR_SERVER_INFO_ATTRS[3] = {"createTimeStamp", "cn", NULL};
+PCSTR PVMDIR_SERVER_INFO_ATTRS[] = {"createTimeStamp", "cn", NULL};
 
