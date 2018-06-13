@@ -196,8 +196,12 @@ VmDirUpdateSrvStatPer1Min(
     )
 {
     DWORD   dwError = 0;
+    UINT64  lastLogIndex = VmDirRaftGetLastLogIndex();
 
-    VmDirSrvStatMetricsUpdate(METRICS_SRV_LAST_LOG_INDEX, VmDirRaftGetLastLogIndex());
+    if (lastLogIndex > 0)
+    {
+        VmDirSrvStatMetricsUpdate(METRICS_SRV_LAST_LOG_INDEX, lastLogIndex);
+    }
 
     return dwError;
 }
