@@ -18,11 +18,11 @@ BuildRequires: boost-devel = 1.60.0, java-1.8.0-openjdk >= 1.8.0.131, ant >= 1.9
 Requires: apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
 BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
 %if "%{_dist}" == ".lwph2"
-Requires:  likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
-BuildRequires: boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
+Requires:  shadow >= 4.2.1, likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
+BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
 %else
-Requires: likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
-BuildRequires: boost-devel = 1.60.0,  openjdk >= 1.8.0.131
+Requires: shadow >= 4.2.1, likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
+BuildRequires: shadow >= 4.2.1, boost-devel = 1.60.0,  openjdk >= 1.8.0.131
 %endif
 %endif
 
