@@ -1193,6 +1193,8 @@ Lightwave Web based UI for lightwave IDM
 %{_bindir}/lw_mdb_walflush
 %{_bindir}/lw_restore.sh
 %{_bindir}/aws_restore_common.sh
+%{_bindir}/mdb_compact.sh
+%{_bindir}/mdb_verify_checksum
 
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird
