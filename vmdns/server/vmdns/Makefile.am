@@ -6,6 +6,7 @@ include_public_srcdir=$(top_srcdir)/vmdns/include/public
 vmdnsd_SOURCES = \
     auth.c        \
     globals.c     \
+    heartbeat.c   \
     init.c        \
     main.c        \
     metrics.c     \
@@ -37,6 +38,7 @@ vmdnsd_LDADD = \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    @DL_LIBS@ \
     @DCERPC_LIBS@ \
     @LDAP_LIBS@ \
     @LWIO_LIBS@ \

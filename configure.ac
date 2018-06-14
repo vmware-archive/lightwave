@@ -1085,6 +1085,11 @@ AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
 vmdirsasldir=$vmdirlibdir/sasl2
 AC_SUBST(vmdirsasldir)
 
+vmdnslibdir=$prefix/lib64
+AC_SUBST(vmdnslibdir)
+AS_AC_EXPAND(VMDNS_LIB_DIR, $vmdnslibdir)
+AC_DEFINE_UNQUOTED(VMDNS_LIB_DIR, "$VMDNS_LIB_DIR", [Lib directory])
+
 vmcalibdir=$prefix/lib64
 AC_SUBST(vmcalibdir)
 AS_AC_EXPAND(VMCA_LIB_DIR, $vmcalibdir)

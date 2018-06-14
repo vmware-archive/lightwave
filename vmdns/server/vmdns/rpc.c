@@ -367,6 +367,14 @@ VmDnsListenRpcServer(
     )
 {
     DWORD dwError = 0;
+    BOOLEAN bHeartbeat = TRUE;
+
+    dwError = VmDnsCreateHeartbeatThread();
+    if (dwError)
+    {
+        bHeartbeat = FALSE;
+    }
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     DCETHREAD_TRY
     {
@@ -389,7 +397,10 @@ VmDnsListenRpcServer(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
-
+    if (bHeartbeat)
+    {
+        VmDnsKillHeartbeatThread();
+    }
 #ifndef _WIN32
     raise(SIGTERM); // indicate that process must terminate
 #endif
@@ -397,7 +408,6 @@ cleanup:
     return NULL;
 
 error:
-
     goto cleanup;
 }
 

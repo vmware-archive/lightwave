@@ -97,6 +97,8 @@ extern "C" {
 #define ERROR_BAD_ATTRIBUTE_DATA        1011
 #define ERROR_PASSWORD_TOO_LONG         1012
 
+#define ERROR_CANNOT_LOAD_LIBRARY       1013
+
 #ifdef __cplusplus
 }
 #endif

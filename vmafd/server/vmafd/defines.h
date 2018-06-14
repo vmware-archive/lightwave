@@ -305,6 +305,9 @@ if (bLocked) \
 #define VMCA_HEARTBEAT_ENTRY_W \
 {'V','M','w','a','r','e',' ','C','e','r','t','i','f','i','c','a','t','e','-','S','e','r','v','i','c','e',0}
 #define VMCA_HEARTBEAT_ENTRY_PORT 2014
+#define VMDNS_HEARTBEAT_ENTRY_W \
+{'V','M','w','a','r','e',' ','D','N','S','-','S','e','r','v','i','c','e',0}
+#define VMDNS_HEARTBEAT_ENTRY_PORT 2015
 #define WEBSSO_ENTRY_W \
 {'W','e','b','s','s','o',0}
 #define WEBSSO_ENTRY_PORT 443
@@ -322,6 +325,7 @@ if (bLocked) \
 {\
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMCA_HEARTBEAT_ENTRY_W,\
+      VMDNS_HEARTBEAT_ENTRY_W,\
       WEBSSO_ENTRY_W, \
       STS_HEARTBEAT_ENTRY_W \
 }
@@ -330,6 +334,7 @@ if (bLocked) \
 {\
       VMDIR_HEARTBEAT_ENTRY_PORT,\
       VMCA_HEARTBEAT_ENTRY_PORT, \
+      VMDNS_HEARTBEAT_ENTRY_PORT,\
       WEBSSO_ENTRY_PORT, \
       STS_HEARTBEAT_ENTRY_PORT \
 }
@@ -340,6 +345,11 @@ if (bLocked) \
   {\
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMDIR_HEARTBEAT_ENTRY_PORT,\
+      0\
+  },\
+  {\
+      VMDNS_HEARTBEAT_ENTRY_W,\
+      VMDNS_HEARTBEAT_ENTRY_PORT,\
       0\
   },\
   {\
