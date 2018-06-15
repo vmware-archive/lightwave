@@ -234,11 +234,22 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR(
-            LDAP_DEBUG_ANY,
-            "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
-            VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
-            retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
+    if (retVal == VMDIR_LDAP_ERROR_PRE_CONDITION)
+    {
+        VMDIR_LOG_VERBOSE(
+                LDAP_DEBUG_ANY,
+                "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
+                VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
+                retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
+    }
+    else
+    {
+        VMDIR_LOG_ERROR(
+                LDAP_DEBUG_ANY,
+                "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
+                VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
+                retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
+    }
 
     if (pOperation->ldapResult.pszErrMsg == NULL)
     {
