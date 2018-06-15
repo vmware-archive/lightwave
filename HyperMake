@@ -209,7 +209,7 @@ commands:
       - PROJECT_ROOT=$(pwd)
       - cd $PROJECT_ROOT/vmidentity
       - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-    image: 'vmware/lightwave-toolchain:2.0.1'
+    image: 'vmware/lightwave-toolchain:2.0.3'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there
@@ -219,7 +219,7 @@ commands:
     always: true
     cmds:
       - './support/scripts/test-vmidentity.sh $@'
-    image: 'vmware/lightwave-toolchain:2.0.1'
+    image: 'vmware/lightwave-toolchain:2.0.3'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there

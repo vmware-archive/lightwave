@@ -49,7 +49,7 @@ public class FederatedIdentityProcessorTest {
                 .tenantPrivateKey(TENANT_PRIVATE_KEY)
                 .build();
 
-        CSPIdentityProcessor identityProcessor = new CSPIdentityProcessor(idmClient, new SessionManager());
+        CSPIdentityProcessor identityProcessor = new CSPIdentityProcessor(idmClient, new SessionManager(), new FederationAuthenticationRequestTracker());
         identityProcessor.validateOIDCClient(relayStateWithValidaRedirectUri);
         identityProcessor.validateOIDCClient(relayStateWithValidRedirectUriTemplate);
 

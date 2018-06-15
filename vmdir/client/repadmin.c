@@ -34,11 +34,12 @@ _VmDirIsHostAPartner(
 
 static
 DWORD
-VmDirPopulateAttrValues(
+VmDirGetAttrValue(
     LDAP *pLd,
     LDAPMessage* pMessage,
     PCSTR pszAttribute,
-    PINTERNAL_SERVER_INFO pInternalServerInfo
+    PSTR pAttr,
+    DWORD dwSize
     );
 
 /*
@@ -853,8 +854,16 @@ VmDirGetServersInfoOnSite(
               pszAttribute != NULL;
               pszAttribute = ldap_next_attribute( pLd, pMessage, ber ) )
         {
-            dwError = VmDirPopulateAttrValues(pLd, pMessage, pszAttribute, &pInternalServerInfo[i]);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            if (VmDirStringCompareA(pszAttribute, "createTimeStamp", FALSE) == 0)
+            {
+                dwError = VmDirGetAttrValue(pLd, pMessage, pszAttribute, pInternalServerInfo[i].pszCreateTimeStamp, VMDIR_MAX_TIMESTAMP_LEN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else if (VmDirStringCompareA(pszAttribute, "cn", FALSE) == 0)
+            {
+                dwError = VmDirGetAttrValue(pLd, pMessage, pszAttribute, pInternalServerInfo[i].pszServerFQDN, VMDIR_MAX_LDAP_URI_LEN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
         }
 
         dwError = VmDirGetSiteNameInternal(pLd, &pszSiteNameTmp);
@@ -1015,19 +1024,19 @@ error:
 
 static
 DWORD
-VmDirPopulateAttrValues(
+VmDirGetAttrValue(
     LDAP *pLd,
     LDAPMessage* pMessage,
     PCSTR pszAttribute,
-    PINTERNAL_SERVER_INFO pInternalServerInfo
+    PSTR pAttr,
+    DWORD dwSize
     )
 {
     DWORD dwError = 0;
     struct berval**  vals = NULL;
     PSTR pszValue = NULL;
-    DWORD dwIndex = 0;
 
-    if (!pLd || !pMessage || !pInternalServerInfo || IsNullOrEmptyString(pszAttribute))
+    if (!pLd || !pMessage || IsNullOrEmptyString(pszAttribute) || dwSize == 0)
     {
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -1035,36 +1044,15 @@ VmDirPopulateAttrValues(
 
     vals = ldap_get_values_len(pLd, pMessage, pszAttribute);
 
-    if (vals)
+    if (!vals || !vals[0] || !vals[0]->bv_val)
     {
-        for (dwIndex = 0; vals[dwIndex] != '\0'; ++dwIndex)
-        {
-            if (dwIndex)
-            {
-                dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            pszValue = vals[dwIndex]->bv_val;
-        }
-
-        if (VmDirStringCompareA(pszAttribute, "createTimeStamp", FALSE))
-        {
-            dwError = VmDirStringCpyA(
-                                pInternalServerInfo->pszCreateTimeStamp,
-                                VMDIR_MAX_TIMESTAMP_LEN,
-                                pszValue
-                                );
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pszAttribute, "cn", FALSE))
-        {
-            dwError = VmDirStringCpyA(
-                                pInternalServerInfo->pszServerFQDN,
-                                VMDIR_MAX_LDAP_URI_LEN,
-                                pszValue);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
+    pszValue = vals[0]->bv_val;
+
+    dwError = VmDirStringCpyA(pAttr, dwSize, pszValue);
+    BAIL_ON_VMDIR_ERROR(dwError)
 
 cleanup:
     if (vals)

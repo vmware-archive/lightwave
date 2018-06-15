@@ -7,7 +7,8 @@ bin_SCRIPTS = \
     @top_srcdir@/config/scripts/lw_backup.sh \
     @top_srcdir@/config/scripts/aws_backup_common.sh \
     @top_srcdir@/config/scripts/lw_restore.sh \
-    @top_srcdir@/config/scripts/aws_restore_common.sh
+    @top_srcdir@/config/scripts/aws_restore_common.sh \
+    @top_srcdir@/config/scripts/mdb_compact.sh
 
 scriptsconf_SCRIPTS = \
  setfirewallrules.py \

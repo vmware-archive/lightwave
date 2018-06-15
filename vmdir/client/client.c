@@ -149,7 +149,7 @@ _VmDirWriteToKeyTabFile(
 
 static
 VOID
-_VmDirClearServerInfo(
+_VmDirClearServerInfoContent(
     PVMDIR_SERVER_INFO pServerInfo
     );
 
@@ -2986,7 +2986,7 @@ VmDirGetServers(
         dwError = VmDirAllocateMemory(
                 dwInfoCount*sizeof(VMDIR_SERVER_INFO),
                 (PVOID*)&pServerInfo
-        );
+                );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         for ( i=0; i<dwInfoCount; i++)
@@ -2994,7 +2994,7 @@ VmDirGetServers(
             dwError = VmDirAllocateStringA(
                     pInternalServerInfo[i].pszServerDN,
                     &(pServerInfo[i].pszServerDN)
-            );
+                    );
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -6970,7 +6970,6 @@ VmDirDeleteTenantEx(
         IsNullOrEmptyString(pszDomainName) ||
         IsNullOrEmptyString(pszUsername) ||
         IsNullOrEmptyString(pszPassword))
-
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -7095,7 +7094,7 @@ VmDirGetServersDetailed(
         dwError = VmDirAllocateMemory(
                 dwInfoCount*sizeof(VMDIR_SERVER_INFO),
                 (PVOID*)&pServerInfo
-        );
+                );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         for ( i=0; i<dwInfoCount; ++i)
@@ -7103,7 +7102,7 @@ VmDirGetServersDetailed(
             dwError = VmDirAllocateStringA(
                     pInternalServerInfo[i].pszServerDN,
                     &(pServerInfo[i].pszServerDN)
-            );
+                    );
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = VmDirAllocateStringA(
@@ -7169,25 +7168,25 @@ VmDirFreeServerInfo(
     PVMDIR_SERVER_INFO pServerInfo
     )
 {
-    _VmDirClearServerInfo(pServerInfo);
+    _VmDirClearServerInfoContent(pServerInfo);
     VMDIR_SAFE_FREE_MEMORY(pServerInfo);
 }
 
 VOID
 VmDirFreeServerInfoArray(
-    PVMDIR_SERVER_INFO pServerInfo,
+    PVMDIR_SERVER_INFO pServerInfoArray,
     DWORD              dwCount
     )
 {
-    if (pServerInfo && dwCount)
+    if (pServerInfoArray && dwCount)
     {
         DWORD dwIndex = 0;
         for ( dwIndex = 0; dwIndex<dwCount; ++dwIndex)
         {
-            _VmDirClearServerInfo(&pServerInfo[dwIndex]);
+            _VmDirClearServerInfoContent(&pServerInfoArray[dwIndex]);
         }
     }
-    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pServerInfoArray);
 }
 
 static
@@ -7450,7 +7449,7 @@ error:
 
 static
 VOID
-_VmDirClearServerInfo(
+_VmDirClearServerInfoContent(
     PVMDIR_SERVER_INFO pServerInfo
     )
 {

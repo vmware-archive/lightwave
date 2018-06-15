@@ -140,10 +140,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   // for unit tests
-  public CSPIdentityProcessor(CasIdmClient idmClient, SessionManager sessionManager) {
+  public CSPIdentityProcessor(
+    CasIdmClient idmClient, SessionManager sessionManager,
+    FederationAuthenticationRequestTracker authnRequestTracker) {
     this();
     this.idmClient = idmClient;
     this.sessionManager = sessionManager;
+    this.authnRequestTracker = authnRequestTracker;
   }
 
     @Override

@@ -18,11 +18,11 @@ BuildRequires: boost-devel = 1.60.0, java-1.8.0-openjdk >= 1.8.0.131, ant >= 1.9
 Requires: apache-tomcat >= 8.5.16, commons-daemon >= 1.0.15
 BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
 %if "%{_dist}" == ".lwph2"
-Requires:  likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
-BuildRequires: boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
+Requires:  shadow >= 4.2.1, likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
+BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
 %else
-Requires: likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
-BuildRequires: boost-devel = 1.60.0,  openjdk >= 1.8.0.131
+Requires: shadow >= 4.2.1, likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
+BuildRequires: shadow >= 4.2.1, boost-devel = 1.60.0,  openjdk >= 1.8.0.131
 %endif
 %endif
 
@@ -163,6 +163,12 @@ Summary: Lightwave POST Service
 Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
+
+%package ui
+Summary: Web based UI for lightwave IDM
+Requires: lightwave
+%description ui
+Lightwave Web based UI for lightwave IDM
 
 %debug_package
 %build
@@ -1187,6 +1193,8 @@ Lightwave POST service
 %{_bindir}/lw_mdb_walflush
 %{_bindir}/lw_restore.sh
 %{_bindir}/aws_restore_common.sh
+%{_bindir}/mdb_compact.sh
+%{_bindir}/mdb_verify_checksum
 
 %{_sbindir}/vmcad
 %{_sbindir}/vmdird
@@ -1337,6 +1345,12 @@ Lightwave POST service
 %config %attr(750, root, root) %{_datadir}/config/refresh-resolve-conf.sh
 %config %attr(750, root, root) %{_datadir}/config/post-demote-deads.sh
 %config %attr(750, root, root) %{_datadir}/config/monitor-core-dump.sh
+
+%files ui
+
+%defattr(-,root,root)
+
+%{_webappsdir}/lightwaveui.war
 
 %files devel
 

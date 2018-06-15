@@ -51,6 +51,7 @@ vmstsjars_DATA= \
 
 vmstswebapps_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/openidconnect-sample-rp.war \
+    @top_builddir@/vmidentity/vmware-sts/packages/lightwaveui.war \
     @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war
 
 sbin_SCRIPTS = \
