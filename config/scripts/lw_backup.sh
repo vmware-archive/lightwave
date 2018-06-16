@@ -34,9 +34,17 @@ update_backup_regkey() {
 #Uploads the mdb file. Sample name: <instance_id>-data.mdb
 upload_bundle() {
     #Upload bundle to cloud storage
-    logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
-    start_time="$(date -u +%s)"
-    upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb"
+    if [ $MODE = "post-dr" ]; then
+        logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.tar"
+        pushd $BACKUP_PATH; tar -cvf data.tar *; popd
+        start_time="$(date -u +%s)"
+        upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.tar" "$BACKUP_PATH/data.tar"
+    else
+        logger -t backup "Uploading $UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb"
+        start_time="$(date -u +%s)"
+        upload_to_cloud "$UPLOAD_PATH/$INSTANCE_ID-$time-data.mdb" "$BACKUP_PATH/data.mdb"
+    fi
+
     if [ $? -ne 0 ]; then
         logger -t backup "Error while uploading bundle."
         return 1
@@ -159,7 +167,7 @@ for line in $LIST; do
         if [ $MODE = "lw-dr" ]; then
             mdb_file=${line::-18}data.mdb
         else
-            mdb_file=${line::-20}data.mdb
+            mdb_file=${line::-20}data.tar
         fi
         delete_file $FULL_PATH $line
         delete_file $FULL_PATH $mdb_file

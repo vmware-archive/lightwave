@@ -11,7 +11,8 @@ if [ ! -d /var/lib/vmware/post/partner ]; then
 fi
 
 START_TIME="$(date -u +%s)"
-download_db $BACKUP_PATH /var/lib/vmware/post/partner/data.mdb
+download_db $BACKUP_PATH /var/lib/vmware/post/partner/data.tar
+pushd /var/lib/vmware/post/partner; tar -xvf data.tar; rm -rf data.tar; popd
 END_TIME="$(date -u +%s)"
 ELAPSED=$(( END_TIME - START_TIME ))
 echo "Copied DB from bucket in $ELAPSED seconds"

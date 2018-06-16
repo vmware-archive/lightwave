@@ -192,9 +192,8 @@ VmDirSrvBackupDB(
     dwError = VmDirStringPrintFA(
                   bufBackupMainDBPath,
                   VMDIR_MAX_FILE_NAME_LEN,
-                  "%s/%s",
-                  pszBackupPath,
-                  MAIN_DB_DIR);
+                  "%s",
+                  pszBackupPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError  = _VmDirValidateBackupPath(bufBackupMainDBPath);
