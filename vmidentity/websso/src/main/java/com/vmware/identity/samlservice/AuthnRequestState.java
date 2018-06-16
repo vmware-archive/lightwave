@@ -16,10 +16,8 @@ package com.vmware.identity.samlservice;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertPath;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,7 +33,6 @@ import org.apache.commons.lang.Validate;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.IDPEntry;
 import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.Response;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
 import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.util.Base64;
@@ -74,7 +70,7 @@ public class AuthnRequestState {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory
             .getLogger(AuthnRequestState.class);
 
-    private final DefaultIdmAccessorFactory factory;
+    private final IdmAccessorFactory factory;
     private DefaultSamlAuthorityFactory samlAuthFactory;
     private final IdmAccessor idmAccessor;
     private final SamlValidator<AuthnRequestState> validator;
@@ -99,7 +95,6 @@ public class AuthnRequestState {
     private String identityFormat;
     private String issuerValue;
     private String sessionId;
-    private final String correlationId;
     private AuthnMethod authnMethod;
     private Date startTime;
     private boolean isRenewable;
@@ -278,8 +273,7 @@ public class AuthnRequestState {
     }
 
     public AuthnRequestState(HttpServletRequest request, HttpServletResponse response,
-            SessionManager sessionManager, String tenant) {
-
+            SessionManager sessionManager, String tenant, IdmAccessorFactory idmAccessorFactory) {
         Validate.notNull(request);
         Validate.notNull(response);
         Validate.notNull(sessionManager);
@@ -288,10 +282,10 @@ public class AuthnRequestState {
         this.response = response;
         this.sessionManager = sessionManager;
         //TODO - check for correlation id in the headers PR1561606
-        this.correlationId = UUID.randomUUID().toString();
-        this.factory = new DefaultIdmAccessorFactory(this.correlationId);
-        Validate.notNull(this.factory);
+        this.factory = idmAccessorFactory == null ? new DefaultIdmAccessorFactory(UUID.randomUUID().toString())
+                : idmAccessorFactory;
         this.idmAccessor = this.factory.getIdmAccessor();
+        this.idmAccessor.setTenant(tenant);
         this.validator = new AuthnRequestStateValidator();
         RequestCacheFactory requestFactory = new DefaultRequestCacheFactory();
         this.requestCache = requestFactory.getRequestCache();
@@ -334,6 +328,12 @@ public class AuthnRequestState {
         }
 
         this.processingState = ProcessingState.INITIALIZED;
+    }
+
+    public AuthnRequestState(HttpServletRequest request, HttpServletResponse response,
+            SessionManager sessionManager, String tenant) {
+        //TODO - check for correlation id in the headers PR1561606
+        this(request, response, sessionManager, tenant, new DefaultIdmAccessorFactory(UUID.randomUUID().toString()));
     }
 
     public void parseRequestForTenant(String tenant,
@@ -419,16 +419,13 @@ public class AuthnRequestState {
             }
         }
 
-        this.setSamlAuthFactory(new DefaultSamlAuthorityFactory(
-                SignatureAlgorithm.RSA_SHA256,
-                authenticator
-                        .getPrincipalAttributeExtractorFactory(Shared.IDM_HOSTNAME),
-                authenticator
-                        .getConfigExtractorFactory(Shared.IDM_HOSTNAME))); // TODO
-                                                                          // use
-                                                                          // actual
-                                                                          // tenant
-                                                                          // settings
+        this.setSamlAuthFactory(new DefaultSamlAuthorityFactory(SignatureAlgorithm.RSA_SHA256,
+                authenticator.getPrincipalAttributeExtractorFactory(Shared.IDM_HOSTNAME),
+                authenticator.getConfigExtractorFactory(Shared.IDM_HOSTNAME))); // TODO
+                                                                                // use
+                                                                                // actual
+                                                                                // tenant
+                                                                                // settings
 
         this.validationResult = this.validator.validate(this);
 
@@ -506,6 +503,7 @@ public class AuthnRequestState {
 
         return retval;
     }
+
     public Document createToken() throws SamlServiceException
     {
         Validate.notNull(this.idmAccessor);
@@ -535,6 +533,7 @@ public class AuthnRequestState {
         this.idmAccessor.incrementGeneratedTokens(tenant);
         return retval;
     }
+
     // create saml token spec data (with default settings for now)
     private SamlTokenSpec createTokenSpec(String relyingPartyUrl,
             PrincipalId principalId, String identityFormat,
@@ -608,7 +607,6 @@ public class AuthnRequestState {
         SamlTokenSpec spec = builder.createSpec();
         return spec;
     }
-
 
     // create saml token authority object
     private TokenAuthority createTokenAuthorityForTenant(String tenant)

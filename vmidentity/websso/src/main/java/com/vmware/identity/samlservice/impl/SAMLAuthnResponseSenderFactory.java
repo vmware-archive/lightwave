@@ -23,6 +23,7 @@ import org.springframework.context.MessageSource;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.samlservice.AuthnRequestState;
+import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.SAMLResponseSender;
 import com.vmware.identity.samlservice.SAMLResponseSenderFactory;
 import com.vmware.identity.session.SessionManager;
@@ -34,12 +35,12 @@ import com.vmware.identity.session.SessionManager;
 public class SAMLAuthnResponseSenderFactory implements SAMLResponseSenderFactory {
 
         @Override
-        public SAMLResponseSender buildResponseSender(String tenant, HttpServletResponse response, Locale locale, String relayState,
-                AuthnRequestState reqState, AuthnMethod authMethod, String sessionId, PrincipalId pId,
+        public SAMLResponseSender buildResponseSender(HttpServletResponse response, Locale locale, String relayState,
+                AuthnRequestState reqState, AuthnMethod authMethod, String sessionId, PrincipalId pId, IdmAccessor idmAccessor,
                 MessageSource msgSource, SessionManager manager) {
 
-            return new SAMLAuthnResponseSender(tenant, response,locale, relayState,
-                        reqState,authMethod,sessionId, pId,msgSource,manager);
+            return new SAMLAuthnResponseSender(response,locale, relayState,
+                        reqState, authMethod, sessionId, pId, idmAccessor, msgSource, manager);
         }
 
 

@@ -42,7 +42,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opensaml.common.SAMLVersion;
 import org.opensaml.saml2.core.AuthnRequest;
@@ -58,7 +57,6 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.ServerConfig;
 import com.vmware.identity.saml.SignatureAlgorithm;
 
-@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class SamlServiceTest {
 
     private final String RESPONSE_MESSAGE = "Request contains unsupported elements";
@@ -74,7 +72,7 @@ public class SamlServiceTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
+        SharedUtils.bootstrap();
         String tenantName = ServerConfig.getTenant(0);
         String rpName = ServerConfig.getRelyingParty(tenantName, 0);
         String issuerUrl = ServerConfig.getRelyingPartyUrl(rpName);
@@ -105,11 +103,6 @@ public class SamlServiceTest {
         service = factory.createSamlService(privateKey,
                 SignatureAlgorithm.RSA_SHA256, SignatureAlgorithm.RSA_SHA256,
                 issuerUrl, certPath);
-    }
-
-    @AfterClass
-    public static void cleanUp() throws Exception {
-        SharedUtils.cleanupTenant();
     }
 
     @Test
@@ -289,7 +282,7 @@ public class SamlServiceTest {
 
     @Test
     public void testDecodeSamlAuthnRequest() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
+        SharedUtils.bootstrap();
 
         // create basic SAML Authn request
         String id = "42"; // the answer to life the universe and everything

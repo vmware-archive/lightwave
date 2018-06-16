@@ -30,12 +30,13 @@ import com.vmware.identity.session.SessionManager;
  */
 public interface SAMLResponseSenderFactory {
 
-    public SAMLResponseSender buildResponseSender(String tenant,
-            HttpServletResponse response,
+    public SAMLResponseSender buildResponseSender(HttpServletResponse response,
             Locale locale,
             String relayState,
             AuthnRequestState reqState,
             AuthnMethod authMethod,
             String sessionId,
-            PrincipalId pId, MessageSource messageSource, SessionManager sessionManager) ;
+            PrincipalId pId, IdmAccessor idmAccessor,
+            MessageSource messageSource,
+            SessionManager sessionManager) ;
 }

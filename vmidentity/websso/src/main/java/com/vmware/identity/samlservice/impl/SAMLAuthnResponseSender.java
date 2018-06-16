@@ -38,22 +38,21 @@ import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.client.SAMLNames;
 import com.vmware.identity.saml.DefaultSamlAuthorityFactory;
 import com.vmware.identity.saml.SamlTokenSpec;
+import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
+import com.vmware.identity.saml.SamlTokenSpec.Confirmation;
 import com.vmware.identity.saml.SignatureAlgorithm;
 import com.vmware.identity.saml.SystemException;
 import com.vmware.identity.saml.TokenAuthority;
-import com.vmware.identity.saml.SamlTokenSpec.Confirmation;
-import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.saml.idm.IdmPrincipalAttributesExtractorFactory;
 import com.vmware.identity.samlservice.AuthnRequestState;
-import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
 import com.vmware.identity.samlservice.DefaultSamlServiceFactory;
 import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.OasisNames;
 import com.vmware.identity.samlservice.SAMLResponseSender;
 import com.vmware.identity.samlservice.SamlService;
 import com.vmware.identity.samlservice.SamlServiceFactory;
-import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
+import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.impl.AuthnRequestStateKerbAuthenticationFilter.KerbAuthnType;
 import com.vmware.identity.session.Session;
 import com.vmware.identity.session.SessionManager;
@@ -102,27 +101,26 @@ public class SAMLAuthnResponseSender implements SAMLResponseSender {
      * @param messageSrc   none null.
      * @param sessionMgr   none null.
      */
-    public SAMLAuthnResponseSender(String tenant,
-            HttpServletResponse response,
+    public SAMLAuthnResponseSender(HttpServletResponse response,
             Locale locale,
             String relayState,
             AuthnRequestState reqState,
             AuthnMethod authMethod,
             String sessionId,
             PrincipalId pId,
+            IdmAccessor idmAccessor,
             MessageSource messageSrc,
             SessionManager sessionMgr) {
-
-        Validate.notEmpty(tenant, "tenant");
         Validate.notNull(response, "response obj for service provider");
         Validate.notNull(sessionMgr, "SessionManager");
         Validate.notNull(messageSrc, "messageSrc");
         Validate.notNull(locale, "locale");
+        Validate.notNull(idmAccessor, "idmAccessor");
+        Validate.notEmpty(idmAccessor.getTenant(), "tenant");
 
         this.response = response;
         this.locale = locale;
-        this.idmAccessor = new DefaultIdmAccessorFactory().getIdmAccessor();
-        idmAccessor.setTenant(tenant);
+        this.idmAccessor = idmAccessor;
         this.relayState = relayState;
         this.messageSource = messageSrc;
         this.sessionManager = sessionMgr;
@@ -186,12 +184,11 @@ public class SAMLAuthnResponseSender implements SAMLResponseSender {
                 log.info("Responded with ERROR {} message {}",this.validationResult.getResponseCode(), message);
             }
         } else {
-            String samlResponseForm =
-            generateResponseForm(samlResponse, spEntId);
+            String samlResponseForm = generateResponseForm(samlResponse, spEntId);
             log.trace("SAML Response Form is {}", samlResponseForm);
             // write response
             Shared.sendResponse(response, Shared.HTML_CONTENT_TYPE, samlResponseForm);
-            log.info("Posting successful authentication response to: "+spEntId);
+            log.info("Posting successful authentication response to: " + spEntId);
         }
     }
 

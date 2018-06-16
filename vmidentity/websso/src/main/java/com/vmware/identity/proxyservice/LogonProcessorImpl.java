@@ -14,24 +14,19 @@
 
 package com.vmware.identity.proxyservice;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -40,14 +35,11 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.saml2.core.LogoutResponse;
 import org.opensaml.saml2.core.Response;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
 import org.opensaml.xml.ConfigurationException;
 import org.opensaml.xml.io.UnmarshallingException;
 import org.opensaml.xml.security.SecurityException;
-import org.opensaml.xml.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
@@ -64,14 +56,14 @@ import com.vmware.identity.saml.DefaultSamlAuthorityFactory;
 import com.vmware.identity.saml.InvalidSignatureException;
 import com.vmware.identity.saml.InvalidTokenException;
 import com.vmware.identity.saml.SamlAuthorityFactory;
-import com.vmware.identity.saml.SignatureAlgorithm;
-import com.vmware.identity.saml.SystemException;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.ServerValidatableSamlToken.SubjectValidation;
-import com.vmware.identity.saml.idm.IdmPrincipalAttributesExtractorFactory;
 import com.vmware.identity.saml.ServerValidatableSamlTokenFactory;
+import com.vmware.identity.saml.SignatureAlgorithm;
+import com.vmware.identity.saml.SystemException;
 import com.vmware.identity.saml.TokenValidator;
+import com.vmware.identity.saml.idm.IdmPrincipalAttributesExtractorFactory;
 import com.vmware.identity.samlservice.AuthnRequestState;
 import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
 import com.vmware.identity.samlservice.IdmAccessor;
@@ -80,10 +72,9 @@ import com.vmware.identity.samlservice.SAMLResponseSender;
 import com.vmware.identity.samlservice.SAMLResponseSenderFactory;
 import com.vmware.identity.samlservice.SamlServiceException;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
+import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.impl.ConfigExtractorFactoryImpl;
 import com.vmware.identity.samlservice.impl.SAMLAuthnResponseSenderFactory;
-import com.vmware.identity.samlservice.impl.SamlServiceImpl;
-import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.session.Session;
 import com.vmware.identity.session.SessionManager;
 import com.vmware.identity.websso.client.AuthnData;
@@ -122,10 +113,9 @@ public class LogonProcessorImpl implements LogonProcessorEx {
     private final SamlAuthorityFactory samlAuthFactory = new DefaultSamlAuthorityFactory(SignatureAlgorithm.RSA_SHA256, new IdmPrincipalAttributesExtractorFactory(Shared.IDM_HOSTNAME),
             new ConfigExtractorFactoryImpl());
 
-    // When using nested synchronization, please doing so with same order to
-    // avoid deadlock. The order is sync outgoingReqToIncomingReqMap first, followed by authnReqStateMap.
-    private final Map<String, AuthnRequestState> authnReqStateMap = Collections.synchronizedMap(new LinkedHashMap<String, AuthnRequestState>());
-    private final Map<String, String> outgoingReqToIncomingReqMap = Collections.synchronizedMap(new LinkedHashMap<String, String>());
+    // ConcurrentHashMap allows concurrent writer and reader threads.
+    private volatile Map<String, AuthnRequestState> authnReqStateMap = new ConcurrentHashMap<>();
+    private volatile Map<String, String> outgoingReqToIncomingReqMap = new ConcurrentHashMap<>();
 
     /*
      * WebSSO client library authn error handler. At failure of authentication
@@ -147,7 +137,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
             ValidationResult vrExtIdpSsoResponse = retrieveValidationResult(arg0);
 
             // retrieve current VR
-            AuthnRequestState requestState = findOriginalRequstState(request);
+            AuthnRequestState requestState = findOriginalRequestState(request);
             if (!arg0.isIdpInitiated() && requestState != null) {
                 ValidationResult vr = requestState.getValidationResult();
                 if (!(null != vr && !vr.isValid())) {
@@ -223,7 +213,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
             SAMLResponseSenderFactory responseSenderFactory = new SAMLAuthnResponseSenderFactory();
 
             IdmAccessor idmAccessor = new DefaultIdmAccessorFactory().getIdmAccessor();
-            idmAccessor.setTenant(tenant);
+            idmAccessor.setTenant(tenant); // set tenant for the context
 
             if (arg0.isIdpInitiated()) {
                 log.debug("IDP-Initiated: Begin processing authentication response.");
@@ -258,9 +248,9 @@ public class LogonProcessorImpl implements LogonProcessorEx {
                     // RP selected.
                     log.debug("No Relying party was selected yet. Skip sending the SAML response!");
                 } else {
-                    SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender(tenant, response, locale, null, // for IDP initiated, no relaystate in response to SP
+                    SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender(response, locale, null, // for IDP initiated, no relaystate in response to SP
                             null, // no request
-                            currentSession.getAuthnMethod(), currentSession.getId(), currentSession.getPrincipalId(), messageSource, sessionManager);
+                            currentSession.getAuthnMethod(), currentSession.getId(), currentSession.getPrincipalId(), idmAccessor, messageSource, sessionManager);
 
                     Document token = responseSender.generateTokenForResponse(rpID);
 
@@ -271,7 +261,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
             } else {
 
                 log.info("SP-Initiated: Begin processing authentication response.");
-                requestState = findOriginalRequstState(request);
+                requestState = findOriginalRequestState(request);
 
                 if (null == requestState) {
                     throw new SamlServiceException("No source authentication request was matched to the outgoing request");
@@ -280,7 +270,8 @@ public class LogonProcessorImpl implements LogonProcessorEx {
                 locale = requestState.getLocale();
                 Validate.notNull(locale, "locale");
 
-                tenant = requestState.getIdmAccessor().getTenant();
+                tenant = requestState.getIdmAccessor().getTenant(); // tenant from request state
+                Validate.notEmpty(tenant, "tenant");
 
                 PrincipalId principal = validateExternalUser(idmAccessor, arg0);
                 if (principal == null) {
@@ -299,8 +290,8 @@ public class LogonProcessorImpl implements LogonProcessorEx {
 
                 Shared.addSessionCookie(tenantSessionCookieName, requestState.getSessionId(), response);
 
-                SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender(tenant, response, locale, null,
-                        requestState, AuthnMethod.ASSERTION, requestState.getSessionId(), principal, messageSource, sessionManager);
+                SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender(response, locale, null,
+                        requestState, AuthnMethod.ASSERTION, requestState.getSessionId(), principal, idmAccessor, messageSource, sessionManager);
 
                 String rpID = requestState.getAuthnRequest().getIssuer().getValue();
 
@@ -391,34 +382,21 @@ public class LogonProcessorImpl implements LogonProcessorEx {
         }
         Date noOlderThanDate = new Date(System.currentTimeMillis() - THRESHHOLD_HOURS_FOR_MAP_CHECK * 60 * 60 * 1000);
         this.cleanStaledLogon(noOlderThanDate);
-        synchronized (this.outgoingReqToIncomingReqMap) {
-            synchronized (this.authnReqStateMap) {
-                this.authnReqStateMap.put(incomingReqID, requestState);
-                this.outgoingReqToIncomingReqMap.put(outGoingReqID, incomingReqID);
-            }
-        }
+        this.authnReqStateMap.putIfAbsent(incomingReqID, requestState);
+        this.outgoingReqToIncomingReqMap.putIfAbsent(outGoingReqID, incomingReqID);
     }
 
-    private void cleanStaledLogon(Date noOlderThanDate) {
+    private synchronized void cleanStaledLogon(Date noOlderThanDate) {
         if (this.authnReqStateMap.size() < THRESHHOLD_SIZE_FOR_MAP_CHECK) {
             return;
         }
 
-        synchronized (this.outgoingReqToIncomingReqMap) {
-            synchronized (this.authnReqStateMap) {
-                Iterator<Entry<String, String>> it = this.outgoingReqToIncomingReqMap.entrySet().iterator();
-                while (it.hasNext()) {
-                    Entry<String, String> idMapEntry = it.next();
-                    String inReqID = idMapEntry.getValue();
-                    AuthnRequestState state = this.authnReqStateMap.get(inReqID);
-                    if (state.getStartTime().before(noOlderThanDate)) {
-                        this.authnReqStateMap.remove(inReqID);
-                        this.outgoingReqToIncomingReqMap.remove(idMapEntry.getKey());
-                    }
-                    else {
-                        break;
-                    }
-                }
+        for (Entry<String, String> idMapEntry : this.outgoingReqToIncomingReqMap.entrySet()) {
+            String inReqID = idMapEntry.getValue();
+            AuthnRequestState state = this.authnReqStateMap.get(inReqID);
+            if (state.getStartTime().before(noOlderThanDate)) {
+                this.authnReqStateMap.remove(inReqID);
+                this.outgoingReqToIncomingReqMap.remove(idMapEntry.getKey());
             }
         }
     }
@@ -671,7 +649,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
      * @return AuthnRequestState return null if unable to decode the response,
      *         or there is no inResponseTo attribute, or there was no match
      */
-    private AuthnRequestState findOriginalRequstState(HttpServletRequest request) {
+    private AuthnRequestState findOriginalRequestState(HttpServletRequest request) {
 
         Response samlResponse;
         AuthnRequestState authnRequestState;
@@ -693,19 +671,16 @@ public class LogonProcessorImpl implements LogonProcessorEx {
             return null;
         }
 
-        synchronized (this.outgoingReqToIncomingReqMap) {
-            synchronized (this.authnReqStateMap) {
-                String incomingReqID = this.outgoingReqToIncomingReqMap.remove(outReqID);
+        String incomingReqID = this.outgoingReqToIncomingReqMap.remove(outReqID);
 
-                if (null == incomingReqID) {
-                    log.debug("No source authentication request was matched to the outgoing request id " + outReqID);
-                    return null;
-                }
-                log.info("Removing request state for request id " + incomingReqID);
-
-                authnRequestState = this.authnReqStateMap.remove(incomingReqID);
-            }
+        if (null == incomingReqID) {
+            log.debug("No source authentication request was matched to the outgoing request id " + outReqID);
+            return null;
         }
+        log.info("Removing request state for request id " + incomingReqID);
+
+        authnRequestState = this.authnReqStateMap.remove(incomingReqID);
+
         return authnRequestState;
 
     }

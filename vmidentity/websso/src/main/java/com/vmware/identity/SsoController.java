@@ -45,6 +45,7 @@ import com.vmware.identity.samlservice.AuthnRequestState;
 import com.vmware.identity.samlservice.AuthnTypesSupported;
 import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
 import com.vmware.identity.samlservice.IdmAccessor;
+import com.vmware.identity.samlservice.IdmAccessorFactory;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.session.SessionManager;
@@ -88,6 +89,11 @@ public class SsoController extends BaseSsoController {
     public String sso(Locale locale, @PathVariable(value = "tenant") String tenant,
             Model model, HttpServletRequest request,
             HttpServletResponse response) throws IOException {
+        return sso(locale, tenant, model, request, response, null);
+    }
+
+    String sso(Locale locale, String tenant, Model model, HttpServletRequest request, HttpServletResponse response,
+            IdmAccessorFactory idmFactory) throws IOException {
         logger.info("Welcome to SP-initiated AuthnRequest handler! "
                 + "The client locale is " + locale.toString() + ", tenant is "
                 + tenant);
@@ -95,9 +101,9 @@ public class SsoController extends BaseSsoController {
 
         try {
             AuthenticationFilter<AuthnRequestState> authenticator = chooseAuthenticator(request);
-            AuthnRequestState requestState = new AuthnRequestState(request,response,
-                    sessionManager,tenant);
-            processSsoRequest(locale, tenant, request, response, authenticator,requestState,
+            AuthnRequestState requestState = new AuthnRequestState(request, response,
+                    sessionManager, tenant, idmFactory);
+            processSsoRequest(locale, tenant, request, response, authenticator, requestState,
                     messageSource, sessionManager);
 
             model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
@@ -106,7 +112,7 @@ public class SsoController extends BaseSsoController {
                 setupChooseIDPModel(model,locale, tenant, requestState);
                 return "chooseidp";
             } else if (requestState.isLoginViewRequired() != null && requestState.isLoginViewRequired()) {
-                setupAuthenticationModel(model,locale, tenant, request, requestState);
+                setupAuthenticationModel(model,locale, tenant, request, requestState, idmFactory);
                 return "unpentry";
             }
         } catch (Exception e) {
@@ -287,6 +293,12 @@ public class SsoController extends BaseSsoController {
             @PathVariable(value = "tenant") String tenant, Model model,
             HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
+        return ssoPasswordEntry(locale, tenant, model, request, response, null);
+     }
+
+    String ssoPasswordEntry(Locale locale, String tenant, Model model,
+            HttpServletRequest request, HttpServletResponse response, IdmAccessorFactory idmFactory)
+                    throws IOException {
         logger.info("Welcome to SP-initiated AuthnRequest handler, PASSWORD entry form! "
                 + "The client locale is "
                 + locale.toString()
@@ -296,12 +308,12 @@ public class SsoController extends BaseSsoController {
         try {
             // fix for PR 964366, check the cookie first
             if (Shared.hasSessionCookie(request, this.getSessionManager(), tenant)) {
-                sso(locale, tenant, model, request, response);
+                sso(locale, tenant, model, request, response, idmFactory);
                 return null;
             }
             model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
             model.addAttribute("protocol", "websso");
-            setupAuthenticationModel(model,locale, tenant, request, null);
+            setupAuthenticationModel(model,locale, tenant, request, null, idmFactory);
         } catch (Exception e) {
             logger.error("Found exception while populating model object ", e);
             sendError(locale, response, e.getLocalizedMessage());
@@ -309,12 +321,12 @@ public class SsoController extends BaseSsoController {
         }
 
         return "unpentry";
-     }
+    }
 
     private void setupChooseIDPModel(Model model, Locale locale, String tenant, AuthnRequestState requestState) {
         model.addAttribute("tenant", StringEscapeUtils.escapeJavaScript(tenant));
         model.addAttribute("protocol", "websso");
-        model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
+        model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant, requestState.getIdmAccessor())));
         List<String> entityIdList = requestState.getIDPSelectionEntityIdList();
         model.addAttribute("idp_entity_id_list",  StringEscapeUtils.escapeJavaScript(entityIdList.toString()));
         model.addAttribute("idp_display_name_list", StringEscapeUtils.escapeJavaScript(requestState.getIDPSelectionDisplayNameList(entityIdList).toString()) );
@@ -322,13 +334,16 @@ public class SsoController extends BaseSsoController {
                 messageSource.getMessage("ChooseIDP.Title", null, locale));
     }
 
-    private void setupAuthenticationModel(Model model, Locale locale, String tenant, HttpServletRequest request, AuthnRequestState requestState) {
-
-        DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
+    private void setupAuthenticationModel(Model model, Locale locale, String tenant, HttpServletRequest request,
+            AuthnRequestState requestState, IdmAccessorFactory idmFactory) {
+        if (idmFactory == null) {
+            idmFactory = new DefaultIdmAccessorFactory();
+        }
         IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
+        idmAccessor.setTenant(tenant);
 
-        model.addAttribute("spn", StringEscapeUtils.escapeJavaScript(getServerSPN()));
-        model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
+        model.addAttribute("spn", StringEscapeUtils.escapeJavaScript(getServerSPN(idmAccessor)));
+        model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant, idmAccessor)));
         model.addAttribute("username",
                 messageSource.getMessage("LoginForm.UserName", null, locale));
         model.addAttribute("username_placeholder",
@@ -391,7 +406,7 @@ public class SsoController extends BaseSsoController {
 
         if (supportedAuthnTypes.supportsRsaSecureID()) {
             model.addAttribute("rsaam_reminder",
-                    StringEscapeUtils.escapeJavaScript(getRsaSecurIDLoginGuide(tenant)));
+                    StringEscapeUtils.escapeJavaScript(getRsaSecurIDLoginGuide(tenant, idmAccessor)));
         }
     }
 
@@ -507,16 +522,13 @@ public class SsoController extends BaseSsoController {
      * @return tenant's brandname as ModelAttribute
      */
     // @ModelAttribute("tenant_brandname")
-    public String getBrandName(String tenantName) {
+    public String getBrandName(String tenantName, IdmAccessor idmAccessor) {
          //initiate idmAccessor
         if (tenantName == null || tenantName.isEmpty()) {
             return null;
         }
-        DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
-        Validate.notNull(idmFactory, "idmFactory");
-        IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
+        Validate.notNull(idmAccessor, "idmAccessor");
 
-        idmAccessor.setTenant(tenantName);
         String brand = idmAccessor.getBrandName();
         logger.info("Accessing Tenant " + tenantName
                 + ", brand name string " + brand);
@@ -538,7 +550,6 @@ public class SsoController extends BaseSsoController {
             return;
         }
 
-        idmAccessor.setTenant(tenant);
         String logonBannerTitle = idmAccessor.getLogonBannerTitle();
         String logonBannerContent = idmAccessor.getLogonBannerContent();
 
@@ -558,15 +569,13 @@ public class SsoController extends BaseSsoController {
      * @param tenantName
      * @return guide string. if not defined.
      */
-    private String getRsaSecurIDLoginGuide(String tenantName) {
+    private String getRsaSecurIDLoginGuide(String tenantName, IdmAccessor idmAccessor) {
        if (tenantName == null || tenantName.isEmpty()) {
            return null;
        }
-       DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
-       Validate.notNull(idmFactory, "idmFactory");
-       IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
 
-       idmAccessor.setTenant(tenantName);
+       Validate.notNull(idmAccessor, "idmAccessor");
+
        RSAAgentConfig config = idmAccessor.getAuthnPolicy(tenantName).get_rsaAgentConfig();
        String rsaLoginGuide = null;
        if (null != config) {
@@ -575,9 +584,8 @@ public class SsoController extends BaseSsoController {
        return rsaLoginGuide;
     }
 
-    private String getServerSPN() {
-        DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
-        IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
+    private String getServerSPN(IdmAccessor idmAccessor) {
+        Validate.notNull(idmAccessor, "idmAccessor");
         String spn = idmAccessor.getServerSPN();
         logger.info("Server SPN is " + spn);
         return spn;

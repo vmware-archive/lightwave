@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vmware.identity.TestConstants;
@@ -35,7 +34,6 @@ import com.vmware.identity.session.impl.SessionManagerImpl;
  * Test SessionCleanupWrapper functionality (verify that expired sessions are removed)
  *
  */
-@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class SessionCleanupWrapperTest {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SessionCleanupWrapperTest.class);
 

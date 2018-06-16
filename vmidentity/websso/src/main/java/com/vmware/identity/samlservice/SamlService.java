@@ -170,8 +170,8 @@ public interface SamlService {
             String signature);
 
     /**
-     * Encode SAML object (request/response) as a query string parameter for
-     * REDIRECT binding
+     * Encode and compress SAML object (request/response) as a query string parameter for
+     * REDIRECT binding.
      *
      * @param signableSAMLObject
      * @return
@@ -179,5 +179,18 @@ public interface SamlService {
      * @throws IOException
      */
     String encodeSAMLObject(SignableSAMLObject signableSAMLObject)
+            throws MarshallingException, IOException;
+
+    /**
+     * Encode SAML object (request/response) as a query string parameter for
+     * REDIRECT binding.
+     *
+     * @param signableSAMLObject
+     * @param doCompress
+     * @return
+     * @throws MarshallingException
+     * @throws IOException
+     */
+    String encodeSAMLObject(SignableSAMLObject signableSAMLObject, boolean doCompress)
             throws MarshallingException, IOException;
 }

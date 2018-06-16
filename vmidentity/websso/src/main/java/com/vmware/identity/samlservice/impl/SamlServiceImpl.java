@@ -109,6 +109,7 @@ import com.vmware.identity.websso.client.IDPConfiguration;
 import com.vmware.identity.websso.client.IDPConfigurationFactory;
 import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SPConfiguration;
+import com.vmware.identity.websso.client.SharedUtils;
 
 public class SamlServiceImpl implements SamlService {
 
@@ -486,6 +487,12 @@ public class SamlServiceImpl implements SamlService {
     @Override
 	public String encodeSAMLObject(SignableSAMLObject signableSAMLObject)
             throws MarshallingException, IOException {
+        return encodeSAMLObject(signableSAMLObject, true);
+    }
+
+    @Override
+    public String encodeSAMLObject(SignableSAMLObject signableSAMLObject, boolean doCompress)
+            throws MarshallingException, IOException {
         log.debug("Encoding SAML Object " + signableSAMLObject);
 
         // Now we must build our representation to put into the html form to be
@@ -497,14 +504,17 @@ public class SamlServiceImpl implements SamlService {
         XMLHelper.writeNode(authDOM, rspWrt);
         String messageXML = rspWrt.toString();
 
-        Deflater deflater = new Deflater(Deflater.DEFLATED, true);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(
-                byteArrayOutputStream, deflater);
-        deflaterOutputStream.write(messageXML.getBytes("UTF-8"));
-        deflaterOutputStream.close();
-        String samlRequestParameter = Shared.encodeBytes(byteArrayOutputStream
-                .toByteArray());
+        String samlRequestParameter;
+        if (doCompress) {
+            Deflater deflater = new Deflater(Deflater.DEFLATED, true);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(byteArrayOutputStream, deflater);
+            deflaterOutputStream.write(messageXML.getBytes("UTF-8"));
+            deflaterOutputStream.close();
+            samlRequestParameter = SharedUtils.encodeBytes(byteArrayOutputStream.toByteArray());
+        } else {
+            samlRequestParameter = SharedUtils.encodeString(messageXML);
+        }
         return samlRequestParameter;
     }
 
@@ -820,12 +830,13 @@ public class SamlServiceImpl implements SamlService {
      * @throws IOException
      */
     public static void sendSLORequestsToOtherParticipants(String tenant,
-            LogoutState logoutState) throws IOException {
+            LogoutState logoutState, CloseableHttpClient client) throws IOException {
         log.info("Sending SAML logout response to other participants.");
         Locale locale = logoutState.getLocale();
         HttpServletResponse response = logoutState.getResponse();
 
         Validate.notNull(response);
+        Validate.notNull(client);
 
         Collection<String> samlRequestUrls = logoutState.generateRequestUrlsForTenant(
                 tenant, logoutState.getMessageSource(), locale);
@@ -842,7 +853,7 @@ public class SamlServiceImpl implements SamlService {
                 Throwable exception = null;
 
                 try {
-                    sendSLORequestToOtherParticipant(requestUrl);
+                    sendSLORequestToOtherParticipant(client, requestUrl);
                 } catch (URISyntaxException e) {
                     exception = e;
                 } catch (IOException e) {
@@ -868,6 +879,7 @@ public class SamlServiceImpl implements SamlService {
         }
 
     }
+
     /**
      * Utility method to send a slo request to a participant via GET message.
      * @param requestUrl
@@ -878,23 +890,26 @@ public class SamlServiceImpl implements SamlService {
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
      */
-    static void sendSLORequestToOtherParticipant(
-            String requestUrl) throws URISyntaxException, ClientProtocolException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException  {
+    static void sendSLORequestToOtherParticipant(CloseableHttpClient client, String requestUrl)
+            throws URISyntaxException, ClientProtocolException, IOException, NoSuchAlgorithmException,
+            KeyStoreException, KeyManagementException {
 
         if (requestUrl == null || requestUrl.isEmpty())
             return;
 
-        SSLContextBuilder builder = new SSLContextBuilder();
-        builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-        SSLConnectionSocketFactory socketFactory = new SSLConnectionSocketFactory(
-            builder.build(),
-            SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        CloseableHttpClient client = HttpClients.custom().setSSLSocketFactory(socketFactory).build();
         URI httpUri = new URI(requestUrl);
         HttpGet httpGet = new HttpGet(httpUri);
         Shared.addNoCacheHeader(httpGet);
         CloseableHttpResponse response = client.execute(httpGet);
         response.close();
+    }
+
+    public static CloseableHttpClient getCloseableHttpClient() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        SSLContextBuilder builder = new SSLContextBuilder();
+        builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+        SSLConnectionSocketFactory socketFactory = new SSLConnectionSocketFactory(builder.build(),
+                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        return HttpClients.custom().setSSLSocketFactory(socketFactory).build();
     }
 
     /**

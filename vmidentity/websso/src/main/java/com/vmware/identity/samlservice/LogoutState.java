@@ -57,7 +57,7 @@ public class LogoutState {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory
             .getLogger(LogoutState.class);
 
-    private final DefaultIdmAccessorFactory factory;
+    private final IdmAccessorFactory factory;
     private IdmAccessor idmAccessor;
     private final SamlValidator<LogoutState> validator;
     private RequestCache requestCache;
@@ -80,7 +80,6 @@ public class LogoutState {
     private ValidationResult validationResult;
     private String issuerValue;
     private String sessionId;
-    private final String correlationId;
 
 
     /**
@@ -93,6 +92,12 @@ public class LogoutState {
      */
     public LogoutState(HttpServletRequest request, HttpServletResponse response
     			, SessionManager sessionManager, Locale locale, MessageSource messageSource) {
+        //TODO - check for correlation id in the headers PR1561606
+        this(request, response, sessionManager, locale, messageSource, new DefaultIdmAccessorFactory(UUID.randomUUID().toString()));
+    }
+
+    public LogoutState(HttpServletRequest request, HttpServletResponse response
+            , SessionManager sessionManager, Locale locale, MessageSource messageSource, IdmAccessorFactory factory) {
         log.debug("Constructing from request " + request.toString());
 
         Validate.notNull(request);
@@ -103,10 +108,7 @@ public class LogoutState {
         this.setLocale(locale);
         this.setMessageSource(messageSource);
         this.sessionManager = sessionManager;
-        //TODO - check for correlation id in the headers PR1561606
-        this.correlationId = UUID.randomUUID().toString();
-        this.factory = new DefaultIdmAccessorFactory(this.correlationId);
-        Validate.notNull(factory);
+        this.factory = factory == null ? new DefaultIdmAccessorFactory(UUID.randomUUID().toString()) : factory;
         this.idmAccessor = factory.getIdmAccessor();
         this.validator = new LogoutStateValidator();
         RequestCacheFactory requestFactory = new DefaultRequestCacheFactory();
@@ -154,7 +156,6 @@ public class LogoutState {
         }
 
         this.processingState = ProcessingState.INITIALIZED;
-
     }
 
     /**
