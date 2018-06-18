@@ -25,11 +25,14 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.Group;
+import com.vmware.identity.idm.GroupDetail;
 import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.TokenClaimAttribute;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.idm.server.ServerUtils;
+import com.vmware.identity.idm.IDMException;
+import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 
 public class FederatedIdentityProvider {
@@ -109,6 +112,32 @@ public class FederatedIdentityProvider {
         }
     }
 
+    public void provisionIDPGroups(Map<TokenClaimAttribute, List<String>> roleGroupMappings) throws Exception {
+        Validate.notNull(roleGroupMappings, "roleGroupMappings");
+        Collection<String> groupsFromIDPConfig = new HashSet<>();
+
+        for (List<String> value : roleGroupMappings.values()) {
+            groupsFromIDPConfig.addAll(value);
+        }
+
+        for (String group : groupsFromIDPConfig) {
+            Group idpGroup = null;
+            // Create groups that are in IDP config if they do not already exist
+            try {
+                idpGroup = idmClient.findGroup(tenant, new PrincipalId(group, tenant));
+            } catch (IDMException e) {
+                if (!(e instanceof InvalidPrincipalException)) {
+                    logger.warn("Encountered an error while provisioning IDP group {} in tenant {}", group, tenant, e);
+                }
+            }
+
+            if (idpGroup == null) {
+                idmClient.addGroup(tenant, group, new GroupDetail("JIT created group from federated IDP"));
+                logger.info("group {} from IDP successfully created in tenant {}.", group, this.tenant);
+            }
+        }
+    }
+
     public void updateUserGroups(PrincipalId userId, Collection<String> permissions,
             Map<TokenClaimAttribute, List<String>> roleGroupMappings) throws Exception {
         Validate.notNull(userId, "userId");
@@ -127,6 +156,7 @@ public class FederatedIdentityProvider {
             if (!existingGroups.contains(group)) {
                 try {
                     idmClient.addUserToGroup(tenant, userId, group);
+                    logger.info("Added User {} to group {} in tenant {}", userId.getUPN(), group, this.tenant);
                 } catch (Exception e) {
                     logger.warn("Encountered an error while adding user {} to group {} in tenant {}", userId.getUPN(),
                             group, tenant, e);
@@ -139,6 +169,7 @@ public class FederatedIdentityProvider {
             if (existingGroups.contains(group) && !permissionGroupsFromToken.contains(group)) {
                 try {
                     idmClient.removeFromLocalGroup(tenant, userId, group);
+                    logger.info("Removed User {} from group {} in tenant {}", userId.getUPN(), group, this.tenant);
                 } catch (Exception e) {
                     logger.warn("Encountered an error while deleting user {} from group {} in tenant {}", userId.getUPN(),
                             group, tenant, e);

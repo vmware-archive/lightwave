@@ -328,6 +328,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     TenantInfo tenantInfo = getTenantInfo(tenantName);
     PrincipalId user = getPrincipalId(accessToken.getUsername(), accessToken.getDomain());
     FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
+    FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
+    FederatedIdentityProviderInfo federatedIdpInfo = null;
+
     boolean isOrgOwner = accessToken.getPermissions().contains(ROLE_CSP_ORG_OWNER);
     if (tenantInfo == null) {
       if (isOrgOwner) {
@@ -336,6 +339,10 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
           createTenant(partnerDC, tenantName, relayState.getIssuer());
           createOrgOwnerAccount(tenantName, federatedIdp, relayState.getIssuer(), user);
           tenantInfo = getTenantInfo(tenantName);
+          federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
+
+          // JIT create groups in idp config
+          federatedIdp.provisionIDPGroups(federatedIdpInfo.getRoleGroupMappings());
       } else {
           ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] does not exist", tenantName));
           LoggerUtils.logFailedRequest(logger, errorObject);
@@ -348,8 +355,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       throw new ServerException(ErrorObject.serverError("The system domain is invalid"));
     }
 
-    FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
-    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
+    if (federatedIdpInfo == null) {
+        federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
+    }
 
     // validate perms in the access token against the configured perm roles in the federated idp
     federatedIdp.validateUserPermissions(accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());
