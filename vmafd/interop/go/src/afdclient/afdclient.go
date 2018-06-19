@@ -334,6 +334,21 @@ func VmAfdCreateComputerAccountWithDC(serverName, userName, password, machineNam
 	return
 }
 
+// VmAfdGetMachineAccountInfoA gets the machine account credentials
+func VmAfdGetMachineAccountInfo() (account string, password string, err error) {
+	var acc C.PSTR = nil
+	var pass C.PSTR = nil
+	var e C.DWORD = C.VmAfdGetMachineAccountInfoA(nil, &acc, &pass)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to get machine account info (%s)", cErrorToGoError(e))
+		return
+	}
+
+	account = vmafdStringToGoString(acc)
+	password = vmafdStringToGoString(pass)
+	return
+}
+
 // vmAfdServerFinalize is a wrapper function to set the finalizer for VmAfdServer
 func vmAfdServerFinalize(server *VmAfdServer) {
 	server.Close()
