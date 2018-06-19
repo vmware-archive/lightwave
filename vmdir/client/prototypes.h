@@ -95,34 +95,6 @@ VmDirRpcFreeBinding(
 );
 
 DWORD
-VmDirConfigSetDCAccountInfo(
-    PCSTR pszDCAccount,
-    PCSTR pszDCAccountDN,
-    PCSTR pszDCAccountPassword,
-    DWORD dwPasswordSize,
-    PCSTR pszMachineGUID
-    );
-
-DWORD
-VmDirConfigSetDCAccountPassword(
-    PCSTR pszDCAccountPassword,
-    DWORD dwPasswordSize
-    );
-
-DWORD
-VmDirConfigSetSZKey(
-    PCSTR pszKeyPath,
-    PCSTR pszKeyName,
-    PCSTR pszKeyValue
-    );
-
-DWORD
-VmDirConfigSetDefaultSiteandLduGuid(
-    PCSTR pszDefaultSiteGuid,
-    PCSTR pszDefaultLduGuid
-    );
-
-DWORD
 VmDirGetRegGuid(
     PCSTR pszKey,
     PSTR  pszValue

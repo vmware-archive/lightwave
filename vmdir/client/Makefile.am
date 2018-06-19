@@ -20,7 +20,6 @@ libvmdirclient_la_SOURCES = \
     libmain.c \
     pnid.c \
     redundancy.c\
-    registry.c \
     repadmin.c \
     replication.c \
     rpc.c \

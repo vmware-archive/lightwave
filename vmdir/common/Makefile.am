@@ -26,6 +26,7 @@ libcommon_la_SOURCES = \
     opensslclient.c  \
     opensslutil.c \
     parsearguments.c \
+    regutil.c  \
     rpcmemory.c  \
     securityutil.c \
     securityutiluniximpl.c \

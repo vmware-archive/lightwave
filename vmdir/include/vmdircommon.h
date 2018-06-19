@@ -743,6 +743,11 @@ VmDirConnectLDAPServerWithMachineAccount(
     LDAP** ppLd
     );
 
+BOOLEAN
+VmDirIsSensitiveAttr(
+    PCSTR   pszAttrName
+    );
+
 DWORD
 VmDirStringToUSN(
     PCSTR   pszUSNStr,
@@ -1047,6 +1052,7 @@ typedef enum
 #define VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC "IntegrityChkJobIntervalInSec"
 #define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
 #define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
+#define VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB "JoinWithPreCopiedDB"
 
 //
 // The expiration period for deleted entries. Any entries older than this will
@@ -1528,84 +1534,9 @@ VmDirGetLotusServerName(
     );
 
 DWORD
-VmDirWriteDCAccountPassword(
-    PCSTR pszPassword,
-    DWORD dwLength /* Length of the string, not including null */
-    );
-
-DWORD
-VmDirWriteDCAccountOldPassword(
-    PCSTR pszPassword,
-    DWORD dwLength /* Length of the string, not including null */
-    );
-
-DWORD
-VmDirReadDCAccountPassword(
-    PSTR* ppszPassword
-    );
-
-DWORD
-VmDirReadDCAccountOldPassword(
-    PSTR* ppszPassword
-    );
-
-DWORD
-VmDirRegReadDCAccount(
-    PSTR* ppszDCAccount
-    );
-
-DWORD
-VmDirRegReadDCAccountDn(
-    PSTR* ppszDCAccount
-    );
-
-DWORD
-VmDirRegReadKrb5Conf(
-    PSTR* ppszKrb5Conf
-    );
-
-DWORD
 VmDirReplURIToHostname(
     PSTR    pszRepURI,
     PSTR*   ppszPartnerHostName
-    );
-
-DWORD
-VmDirGetRegKeyValue(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PSTR    pszValue,
-    size_t  valueLen
-    );
-
-DWORD
-VmDirGetRegKeyValueDword(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PDWORD  pdwValue,
-    DWORD   dwDefaultValue
-    );
-
-DWORD
-VmDirSetRegKeyValueDword(
-    PCSTR pszConfigParamKeyPath,
-    PCSTR pszKey,
-    DWORD dwValue
-    );
-
-DWORD
-VmDirSetRegKeyValueString(
-    PCSTR pszConfigParamKeyPath,
-    PCSTR pszKey,
-    PCSTR pszValue,
-    DWORD dwLength /* Should not include +1 for terminating null */
-    );
-
-DWORD
-VmDirGetRegKeyValueQword(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PINT64  pi64Value
     );
 
 DWORD
@@ -2200,18 +2131,6 @@ VmDirGetMaxDbSizeMb(
     PDWORD pMaxDbSizeMb
     );
 
-// why PSTR? pass in a buffer but no length?
-DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    );
-
-// why PSTR? pass in a buffer but no length?
-DWORD
-VmDirGetLocalSiteGuid(
-    PSTR pszSiteGuid
-    );
-
 // following functions are in libvmdirclient but should not be published in vmdirclient.h
 DWORD
 VmDirGetUsnFromPartners(
@@ -2628,6 +2547,138 @@ VmDirVerifyRSASignature(
     const unsigned char*    pSignature,
     size_t                  signatureSize,
     PBOOLEAN                pVerified
+    );
+
+// regutil.c
+
+DWORD
+VmDirGetRegGuid(
+    PCSTR pszKey,
+    PSTR  pszValue
+    );
+
+DWORD
+VmDirGetRegKeyTabFile(
+    PSTR  pszKeyTabFile
+    );
+
+DWORD
+VmDirGetLocalLduGuid(
+    PSTR pszLduGuid
+    );
+
+DWORD
+VmDirGetLocalSiteGuid(
+    PSTR pszSiteGuid
+    );
+
+DWORD
+VmDirGetRegKeyValue(
+    PCSTR   pszConfigParamKeyPath,
+    PCSTR   pszKey,
+    PSTR    pszValue,
+    size_t  valueLen
+    );
+
+DWORD
+VmDirGetRegKeyValueDword(
+    PCSTR   pszConfigParamKeyPath,
+    PCSTR   pszKey,
+    PDWORD  pdwValue,
+    DWORD   dwDefaultValue
+    );
+
+DWORD
+VmDirSetRegKeyValueString(
+    PCSTR pszConfigParamKeyPath,
+    PCSTR pszKey,
+    PCSTR pszValue,
+    DWORD dwLength /* Should not include +1 for terminating null */
+    );
+
+DWORD
+VmDirWriteDCAccountOldPassword(
+    PCSTR pszOldPassword,
+    DWORD dwLength /* Length of the string, not including null */
+    );
+
+DWORD
+VmDirWriteDCAccountPassword(
+    PCSTR pszPassword,
+    DWORD dwLength /* Length of the string, not including null */
+    );
+
+DWORD
+VmDirSetRegKeyValueDword(
+    PCSTR pszConfigParamKeyPath,
+    PCSTR pszKey,
+    DWORD dwValue
+    );
+
+//sung has this?
+DWORD
+VmDirGetRegKeyValueQword(
+    PCSTR   pszConfigParamKeyPath,
+    PCSTR   pszKey,
+    PINT64  pi64Value
+    );
+
+DWORD
+VmDirReadDCAccountPassword(
+    PSTR* ppszPassword
+    );
+
+DWORD
+VmDirReadDCAccountOldPassword(
+    PSTR* ppszPassword
+    );
+
+DWORD
+VmDirRegReadDCAccount(
+    PSTR* ppszDCAccount
+    );
+
+DWORD
+VmDirRegReadDCAccountDn(
+    PSTR* ppszDCAccount
+    );
+
+DWORD
+VmDirRegReadKrb5Conf(
+    PSTR* ppszKrb5Conf
+    );
+
+BOOLEAN
+VmDirRegReadJoinWithPreCopiedDB(
+    VOID
+    );
+
+DWORD
+VmDirConfigSetDefaultSiteandLduGuid(
+    PCSTR pszDefaultSiteGuid,
+    PCSTR pszDefaultLduGuid
+    );
+
+DWORD
+VmDirConfigSetDCAccountPassword(
+    PCSTR pszDCAccountPassword,
+    DWORD dwPasswordSize
+    );
+
+DWORD
+VmDirConfigSetDCAccountInfo(
+    PCSTR pszDCAccount,
+    PCSTR pszDCAccountDN,
+    PCSTR pszDCAccountPassword,
+    DWORD dwPasswordSize,
+    PCSTR pszMachineGUID
+    );
+
+DWORD
+VmDirConfigSetSZKey(
+    PCSTR pszKeyPath,
+    PCSTR pszKeyName,
+    PCSTR pszKeyValue
     );
 
 #ifdef __cplusplus
