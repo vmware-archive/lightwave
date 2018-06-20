@@ -1528,7 +1528,6 @@ AC_CONFIG_FILES([Makefile
                  lwraft/testing/unittests/Makefile
                  lwraft/testing/unittests/libcommon/Makefile
                  lwraft/tools/Makefile
-                 lwraft/tools/lwraftpromo/Makefile
                  lwraft/tools/lwraft-cli/Makefile
                  lwraft/tools/vdcaclmgr/Makefile
                  lwraft/tools/vdcadmintool/Makefile
@@ -1738,7 +1737,6 @@ AC_CONFIG_FILES([Makefile
                  config/tools/lightwave/dns/Makefile
                  config/scripts/Makefile
                  config/scripts/configure-lightwave-server
-                 config/scripts/configure-identity-server
                  config/scripts/configure-sts
                 ])
 

@@ -149,6 +149,8 @@ targets:
     after:
       - docker-lightwave-pre-photon1
     image: 'vmware/lightwave-sts'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   docker-lightwave-client-photon1:
     description: build lightwave docker image
@@ -156,6 +158,8 @@ targets:
     after:
       - docker-lightwave-client-pre-photon1
     image: 'vmware/lightwave-client'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   docker-lightwave-photon2:
     description: build lightwave docker image
@@ -163,6 +167,8 @@ targets:
     after:
       - docker-lightwave-pre-photon2
     image: 'vmware/lightwave-sts-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   docker-lightwave-client-photon2:
     description: build lightwave client docker image
@@ -170,6 +176,8 @@ targets:
     after:
       - docker-lightwave-client-pre-photon2
     image: 'vmware/lightwave-client-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   clean-photon1:
     description: Cleanup

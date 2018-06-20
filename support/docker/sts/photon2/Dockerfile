@@ -12,13 +12,17 @@ ENTRYPOINT ["/lightwave-init"]
 
 RUN tdnf install -y lightwave-1.3.1 && \
     /opt/likewise/sbin/lwsmd --start-as-daemon && \
-    /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmafd]" \
+    /opt/likewise/bin/lwregshell \
+        set_value "[HKEY_THIS_MACHINE\\Services\\vmafd]" \
         Arguments "/opt/vmware/sbin/vmafdd -c" && \
-    /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmca]"  \
+    /opt/likewise/bin/lwregshell \
+        set_value "[HKEY_THIS_MACHINE\\Services\\vmca]"  \
         Arguments "/opt/vmware/sbin/vmcad -c" && \
-    /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmdir]" \
+    /opt/likewise/bin/lwregshell \
+        set_value "[HKEY_THIS_MACHINE\\Services\\vmdir]" \
         Arguments "/opt/vmware/sbin/vmdird -l 0 -f /opt/vmware/share/config/vmdirschema.ldif" && \
-    /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmdns]" \
+    /opt/likewise/bin/lwregshell \
+        set_value "[HKEY_THIS_MACHINE\\Services\\vmdns]" \
         Arguments "/opt/vmware/sbin/vmdnsd" && \
     rpm -e --nodeps systemd && \
     rpm -e createrepo_c && \

@@ -59,7 +59,7 @@ def flush_ip4rules():
         log_error_and_return(stderr)
 
     # No lightwave chain, nothing to do
-    if not 'LIGHTWAVE' in stdout:
+    if not b'LIGHTWAVE' in stdout:
         return
 
     #Remove chain from input
@@ -87,7 +87,7 @@ def flush_ip6rules():
         log_error_and_return(stderr)
 
     # No lightwave chain to remove
-    if not 'LIGHTWAVE' in stdout:
+    if not b'LIGHTWAVE' in stdout:
         return
 
     #Remove chain from input

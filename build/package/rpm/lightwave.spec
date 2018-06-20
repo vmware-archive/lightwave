@@ -210,13 +210,10 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                # Not in chroot
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
                 if [ -z "`pidof lwsmd`" ]; then
-                    /bin/systemctl >/dev/null 2>&1
-                    if [ $? -ne 0 ]; then
-                        /bin/systemctl start lwsmd
-                    fi
+                    /bin/systemctl start lwsmd
                 fi
             fi
             ;;
@@ -241,8 +238,8 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
                 if [ -z "`pidof lwsmd`" ]; then
                     /bin/systemctl start lwsmd
                 fi
@@ -266,8 +263,8 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
                 if [ -z "`pidof lwsmd`" ]; then
                     /bin/systemctl start lwsmd
                 fi
@@ -294,12 +291,9 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
-            fi
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
+                /bin/systemctl enable vmware-stsd.service
                 /bin/systemctl daemon-reload
             fi
 
@@ -311,42 +305,28 @@ Lightwave Web based UI for lightwave IDM
             /bin/install -d %{_lightwavelogsdir} -o %{_lwuser} -g %{_lwgroup} -m 755
             /bin/ln -s %{_lightwavelogsdir} %{_stslogsdir}
 
-            try_starting_lwregd_svc=true
-
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
+            stop_lwsmd=0
+            if [ -f /.dockerenv ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    echo "Starting lwsmd"
+                    %{_likewise_open_sbindir}/lwsmd &
+                    sleep 1
+                    stop_lwsmd=1
+                fi
             fi
 
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
+            %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
+            # set version
+            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
-            if [ $try_starting_lwregd_svc = true ]; then
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
 
-                %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
-                # set version
-                %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-
-                %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
-                # set version
-                %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-
-                if [ $started_lwregd = true ]; then
-                    kill -TERM `pidof lwregd`
-                    wait
-                fi
+            if [ $stop_lwsmd -eq 1 ]; then
+                %{_likewise_open_bindir}/lwsm shutdown
+                while [ `pidof lwsmd` ];  do
+                    sleep 1
+                done
             fi
 
             ;;
@@ -355,48 +335,17 @@ Lightwave Web based UI for lightwave IDM
             #
             # Upgrade
             #
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                /bin/systemctl daemon-reload
-            fi
 
-            try_starting_lwregd_svc=true
+            # Note: Upgrades are not handled in container
 
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
-            fi
+            /bin/systemctl daemon-reload
 
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
+            %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
+            # set version
+            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
 
-            if [ $try_starting_lwregd_svc = true ]; then
-
-                %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
-                # set version
-                %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-
-                %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
-                # set version
-                %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-
-                if [ $started_lwregd = true ]; then
-                    kill -TERM `pidof lwregd`
-                    wait
-                fi
-            fi
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
 
             %{_sbindir}/configure-build.sh "%{_stsdbdir}"
 
@@ -405,6 +354,7 @@ Lightwave Web based UI for lightwave IDM
             if [ ! -f "$ROOTDIR/lightwaveui.war" ]; then
                 rm -rf $ROOTDIR/lightwaveui
             fi
+
             ;;
     esac
 
@@ -422,10 +372,13 @@ Lightwave Web based UI for lightwave IDM
 
     /sbin/ldconfig
 
-    # start the firewall service
-    /bin/systemctl restart firewall.service
-    if [ $? -ne 0 ]; then
-        echo "Firewall service not restarted"
+    if [ ! -f /.dockerenv ]; then
+        # Not in container
+        # start the firewall service
+        /bin/systemctl restart firewall.service
+        if [ $? -ne 0 ]; then
+            echo "Firewall service not restarted"
+        fi
     fi
 
     # common
@@ -473,85 +426,55 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            try_starting_lwregd_svc=true
-
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
-            fi
-
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
-
-            if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
-                if [ $started_lwregd = true ]; then
-                    kill -TERM `pidof lwregd`
-                    wait
+            stop_lwsmd=0
+            if [ -f /.dockerenv ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    echo "Starting lwsmd"
+                    %{_likewise_open_sbindir}/lwsmd &
+                    sleep 1
+                    stop_lwsmd=1
                 fi
             fi
+
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
+
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
+
+            if [ $stop_lwsmd -eq 1 ]; then
+                %{_likewise_open_bindir}/lwsm shutdown
+                while [ `pidof lwsmd` ];  do
+                    sleep 1
+                done
+            fi
+
             ;;
 
         2)
             #
             # Upgrade
             #
+
+            # Note: Upgrades are not handled in container
+
             try_starting_lwregd_svc=true
 
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
-            fi
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
 
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
+            chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
 
-            if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
-                if [ $started_lwregd = true ]; then
-                    kill -TERM `pidof lwregd`
-                    wait
-                fi
-            fi
             ;;
     esac
 
     setcap cap_dac_read_search,cap_sys_nice,cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdird
     setcap cap_dac_read_search+ep %{_sbindir}/vmcad
 
-    chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
     chown -R lightwave:lightwave %{_vmca_dbdir}
     chown -R lightwave:lightwave %{_vmdir_dbdir}
     find %{_vmdir_dbdir} -type f -exec chmod 600 {} \;
@@ -564,16 +487,15 @@ Lightwave Web based UI for lightwave IDM
 
     # config firewall service for server/post
 
-    /bin/systemctl enable firewall.service >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        /bin/ln -s %{_servicedir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service
-    fi
-
-    /bin/systemctl >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if [ ! -f /.dockerenv ]; then
+        # Not in container
+        /bin/systemctl enable firewall.service
         /bin/systemctl daemon-reload
+        /bin/systemctl restart firewall.service
+        if [ $? -ne 0 ]; then
+            echo "Firewall service not restarted"
+        fi
     fi
-    /bin/systemctl restart firewall.service
 
     /bin/install -d %{_logdir} -o lightwave -g lightwave -m 755
 
@@ -621,6 +543,7 @@ Lightwave Web based UI for lightwave IDM
 
     lw_uid="$(id -u lightwave)"
     lw_gid="$(id -g lightwave)"
+    lw_user_sid="S-1-22-1-$lw_uid"
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmafd.reg
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir-client.reg
 
@@ -632,100 +555,79 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            try_starting_lwregd_svc=true
-
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
+            stop_lwsmd=0
+            if [ -f /.dockerenv ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    echo "Starting lwsmd"
+                    %{_likewise_open_sbindir}/lwsmd &
+                    sleep 1
+                    stop_lwsmd=1
+                fi
             fi
 
-            /bin/systemctl >/dev/null 2>&1
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
+
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
+
+            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
+            %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
+            %{_likewise_open_bindir}/lwregshell list_values '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' | grep -i -q srp
             if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
+                # set vmdir provider bind protocol to srp
+                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
+                %{_likewise_open_bindir}/lwsm restart lsass
             fi
 
-            if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
-                %{_likewise_open_bindir}/lwsm -q refresh
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
-                if [ $started_lwregd = true ]; then
-                    kill `pidof lwregd`
-                    wait
-                fi
+            %{_likewise_open_bindir}/lwsm restart vmafd
+            %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+
+            if [ $stop_lwsmd -eq 1 ]; then
+                %{_likewise_open_bindir}/lwsm shutdown
+                while [ `pidof lwsmd` ];  do
+                    sleep 1
+                done
             fi
+
             ;;
 
         2)
             #
             # Upgrade
             #
-            try_starting_lwregd_svc=true
 
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
-            fi
+            # Note: Upgrades are not handled in container
 
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
-
-            if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
-                if [ $started_lwregd = true ]; then
-                    kill `pidof lwregd`
-                    wait
-                fi
-            fi
-
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
             %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
+            %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
+            %{_likewise_open_bindir}/lwregshell list_values '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' | grep -i -q srp
+            if [ $? -ne 0 ]; then
+                # set vmdir provider bind protocol to srp
+                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
+                %{_likewise_open_bindir}/lwsm restart lsass
+            fi
             %{_likewise_open_bindir}/lwsm restart vmafd
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+
             ;;
     esac
-
-    lw_user_sid="S-1-22-1-$lw_uid"
-    %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
-
-    %{_likewise_open_bindir}/lwregshell list_values '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' | grep -i -q srp
-    if [ $? -ne 0 ]; then
-        # set vmdir provider bind protocol to srp
-        %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
-        %{_likewise_open_bindir}/lwsm restart lsass
-    fi
 
 %post post
 
     # start the firewall service
-    /bin/systemctl restart firewall.service
-    if [ $? -ne 0 ]; then
-        echo "Firewall service not restarted"
+    if [ ! -f /.dockerenv ]; then
+        # Not in container
+        /bin/systemctl restart firewall.service
+        if [ $? -ne 0 ]; then
+            echo "Firewall service not restarted"
+        fi
     fi
 
     # make post db directory
@@ -749,70 +651,41 @@ Lightwave Web based UI for lightwave IDM
             #
             # New Installation
             #
-            try_starting_lwregd_svc=true
-
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
-            fi
-
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
-
-            if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-                %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
-                if [ $started_lwregd = true ]; then
-                    kill -TERM `pidof lwregd`
-                    wait
+            stop_lwsmd=0
+            if [ -f /.dockerenv ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    echo "Starting lwsmd"
+                    %{_likewise_open_sbindir}/lwsmd &
+                    sleep 1
+                    stop_lwsmd=1
                 fi
             fi
+
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
+
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
+
+            if [ $stop_lwsmd -eq 1 ]; then
+                %{_likewise_open_bindir}/lwsm shutdown
+                while [ `pidof lwsmd` ];  do
+                    sleep 1
+                done
+            fi
+
             ;;
 
         2)
             #
             # Upgrade
             #
-            try_starting_lwregd_svc=true
 
-            if [ "$(stat -c %d:%i /)" != "$(stat -c %d:%i /proc/1/root/.)" ]; then
-                try_starting_lwregd_svc=false
-            fi
+            # Note: Upgrades are not handled in container
 
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                try_starting_lwregd_svc=false
-            fi
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
 
-            if [ $try_starting_lwregd_svc = true ]; then
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
-                %{_likewise_open_bindir}/lwsm -q refresh
-                sleep 5
-            else
-                started_lwregd=false
-                if [ -z "`pidof lwregd`" ]; then
-                    echo "Starting lwregd"
-                    %{_likewise_open_sbindir}/lwregd &
-                    started_lwregd=true
-                    sleep 5
-                fi
-                %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
-                if [ $started_lwregd = true ]; then
-                    kill -TERM `pidof lwregd`
-                    wait
-                fi
-            fi
             ;;
     esac
 
@@ -1115,7 +988,6 @@ Lightwave Web based UI for lightwave IDM
 %defattr(-,root,root,0755)
 
 %{_bindir}/configure-sts
-%{_bindir}/configure-identity-server
 
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
