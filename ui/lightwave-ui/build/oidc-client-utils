@@ -1,0 +1,244 @@
+#!/bin/bash
+set -e
+LW_SERVER=
+LW_USER=
+LW_DOMAIN=
+LW_PASSWORD=
+LW_PORT=443
+CLIENT_URL=
+CRED_CACHE_PATH="$HOME/.lightwave_tokens"
+
+showUsage()
+{
+    checkPreReq
+    echo "Usage: oidc-client-utils register -s <server IP/FQDN>"
+    echo "                                  [ -f <port>]"
+    echo "                                  -d <lighwave domain>"
+    echo "                                  -c <client FQDN/IP Address>"
+    echo "                                  -u <lightwave user>"
+    echo "                                  [-P <password>]"
+    showExample
+}
+
+showExample()
+{
+    echo ""
+    echo "Example:"
+    echo "$0 register -s server.lightwave.local -d lightwave.local -c example.lightwave.local -u administrator -P 'password'"
+    exit
+}
+
+checkPreReq()
+{
+    if ! type "jq" &> /dev/null; then
+        echo "Please install the jq to run this script"
+        exit
+    fi
+}
+
+if [ $# > 2 ];then
+    OPERATION="$1"
+fi
+
+if [ -z "$OPERATION" ]; then
+    showUsage
+    exit
+fi
+
+#skip the first argument $OPERATION
+OPTIND=2
+
+while getopts t:s:f:d:c:u:P:e o
+do
+    case "$o" in
+        s)
+            LW_SERVER="$OPTARG"
+            ;;
+        f)
+            LW_PORT="$OPTARG"
+            ;;
+        d)
+            LW_DOMAIN="$OPTARG"
+            ;;
+        c)
+            CLIENT_URL="$OPTARG"
+            ;;
+        u)
+            LW_USER="$OPTARG"
+            ;;
+        P)
+            LW_PASSWORD="$OPTARG"
+            ;;
+        e)
+            ;&
+        [?])
+            showUsage
+            exit 1
+    esac
+done
+
+if [ -z "$LW_SERVER" ]; then
+    echo "Error: The Lightwave Server was not specified"
+    showUsage
+    exit 1
+fi
+
+if [ -z "$LW_PORT" ] && [ "$OPERATION" == "register" ]; then
+    echo "Error: The Lightwave Port was not specified"
+    showUsage
+    exit 1
+fi
+
+if [ -z "$LW_DOMAIN" ]; then
+    echo "Error: The Lightwave Identity Domain was not specified"
+    showUsage
+    exit 1
+fi
+
+if [ -z "$CLIENT_URL" ] && [ "$OPERATION" == "register" ]; then
+    echo "Error: The lw-raft UI URL was not specified"
+    showUsage
+    exit 1
+fi
+
+if [ -z "$LW_USER" ]; then
+    echo "Error: The Lightwave User was not specified"
+    showUsage
+    exit 1
+fi
+
+if [ -z "$LW_PASSWORD" ]; then
+    stty -echo
+    read -p "Password for $LW_USER@$LW_DOMAIN: " LW_PASSWORD
+    stty echo
+fi
+
+getAccessToken()
+{
+    curl -k \
+         -d "grant_type=password&username=$LW_USER@$LW_DOMAIN&password=$LW_PASSWORD&scope=openid+rs_vmdir+rs_admin_server" \
+         https://$LW_SERVER/openidconnect/token \
+         -o $CRED_CACHE_PATH
+
+    if [ $? -eq 0 ]; then
+        jq '.' $CRED_CACHE_PATH > $CRED_CACHE_PATH.tmp
+        mv $CRED_CACHE_PATH.tmp $CRED_CACHE_PATH
+    fi
+
+    if [ ! -f $CRED_CACHE_PATH ]; then
+        echo "Error: No authentication tokens found. Please login and try again."
+        exit 1
+    fi
+    LW_TOKEN=$(jq -r '.access_token' $CRED_CACHE_PATH)
+    if [ "$LW_TOKEN" == "null" ];then
+        cat $CRED_CACHE_PATH
+        exit 2
+    fi
+}
+
+cleanup()
+{
+    if [ -f $CRED_CACHE_PATH ]; then
+        rm $CRED_CACHE_PATH
+    fi
+}
+
+create_post_ui_oidc_metadata()
+{
+    local metadata_file=$1
+    local client_id=$2
+    local client_url=$3
+    local tenant=$4
+
+cat > $metadata_file <<-EOF
+	{
+	    "clientId": "$client_id",
+	    "redirectUriTemplates": [
+	        "https://$client_url/lightwaveui/idm"
+	    ],
+	    "tokenEndpointAuthMethod": "none",
+	    "postLogoutRedirectUriTemplates": [
+	        "https://$client_url/lightwaveui"
+	    ],
+	    "logoutUriTemplate": "https://$client_url/lightwaveui",
+	    "authnRequestClientAssertionLifetimeMS": 0,
+	    "multiTenant": true
+	}
+EOF
+}
+
+getEncodedValue()
+{
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
+  local pos c o
+
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] )
+            o="${c}"
+            ;;
+        * )
+            printf -v o '%%%02x' "'$c'"
+            ;;
+     esac
+     encoded+="${o}"
+  done
+  echo "${encoded}"
+}
+
+registerOIDCClient()
+{
+    encoded_tenant=$(getEncodedValue $LW_DOMAIN)
+
+    url="https://$LW_SERVER:$LW_PORT/idm/tenant/$encoded_tenant/oidcclient"
+
+    client_id=$(uuidgen)
+
+    tmpfile=$(mktemp /tmp/lw-oidc-def-XXXXXX.json)
+
+    create_post_ui_oidc_metadata $tmpfile $client_id $CLIENT_URL $encoded_tenant
+
+    headers=(
+         -H "Content-Type: application/json"
+         -H "Authorization: Bearer $LW_TOKEN"
+    )
+
+    OIDC_METADATA=$(jq -r '.' $tmpfile)
+
+    CURL_OUTPUT=`curl -k -X POST -d "$OIDC_METADATA" "$url" "${headers[@]}"`
+    OIDC_CLIENT_ID=`echo "$CURL_OUTPUT" | jq -r '.clientId'`
+    if [ "$OIDC_CLIENT_ID" == "null" ];then
+        echo "${headers[@]}"
+        echo "$CURL_OUTPUT"
+        echo "FAILED!"
+        exit
+    fi
+    echo "SUCCESS! OIDC client ID:"
+    echo $CURL_OUTPUT
+    echo $OIDC_CLIENT_ID
+
+    rm -f $tmpfile
+}
+checkPreReq
+case "$OPERATION" in
+    "list" )
+        echo "List of OIDC clients"
+        getAccessToken
+        ;;
+    "delete" )
+        getAccessToken
+        ;;
+    "register" )
+        getAccessToken
+        registerOIDCClient
+        ;;
+    *)
+        echo "Error: Invalid operation specified"
+        showUsage
+        exit 1
+        ;;
+esac
+cleanup

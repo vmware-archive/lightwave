@@ -1,0 +1,125 @@
+<!--
+
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+
+-->
+
+<div class="popup-container">
+    <div class="header-20px">
+        Add Attribute Consumer Service
+    </div>
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="idm/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="idm/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <form name="addAttributeConsumerServiceForm"
+              ng-submit="vm.saveAttributeConsumerService(vm.newAttributeConsumerService)"
+              role="form">
+        <div class="row content popup-content">
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Name
+                </div>
+                <div class="col-xs-8">
+                    <input type="text"
+                    id="name"
+                    name="name"
+                    required
+                    ng-model="vm.newAttributeConsumerService.name"
+                    class="form-control pull-left"
+                    placeholder="Contoso"/>
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Index
+                </div>
+                <div class="col-xs-8">
+                    <input type="number"
+                           min="1"
+                           max="9999"
+                           id="priority"
+                           name="priority"
+                           ng-model="vm.newAttributeConsumerService.index"
+                           required
+                           class="form-control pull-left"
+                           placeholder="1"/>
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Default
+                </div>
+                <div class="col-xs-8">
+                    <input type="checkbox"
+                           id="jitEnabled"
+                           name="jitEnabled"
+                           ng-model="vm.newAttributeConsumerService.isDefault"
+                           class="pull-left" style="margin-right:10px;"/> Default
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Attributes
+                </div>
+                <div class="col-xs-8">
+                    <button class="btn btn-xs btn-link"
+                            type="button"
+                            ng-click="vm.addAttribute(vm.newAttributeConsumerService)"
+                            uib-tooltip="Add Attribute">
+                        Add Attribute
+                    </button> <br/><br/>
+                    <div ng-if="!vm.newAttributeConsumerService.attributes || (vm.newAttributeConsumerService.attributes.length == 0)">
+                        No attributes found.
+                    </div>
+                    <div ng-if="vm.newAttributeConsumerService.attributes && vm.newAttributeConsumerService.attributes.length > 0">
+                        Selected attributes:
+                    </div> <br/>
+                    <div ng-repeat="attribute in vm.newAttributeConsumerService.attributes"
+                         ng-if="vm.newAttributeConsumerService.attributes && vm.newAttributeConsumerService.attributes.length > 0">
+                        <strong>{{attribute.friendlyName}}</strong> ({{attribute.name}} - {{attribute.nameFormat}})
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.removeAttribute(vm.newAttributeConsumerService.attributes, attribute)"
+                                uib-tooltip="Remove Attribute">
+                            X
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="popup-row col-xs-12">
+            <button type="submit"
+                    class="btn btn-primary pull-right btn-popup-footer"
+                    ng-disabled="addAttributeConsumerServiceForm.$invalid ||
+                     !vm.isValidAttributeConsumerService(vm.newAttributeConsumerService)">Save</button>
+            <button type="button"
+                    class="btn btn-default pull-right btn-popup-footer"
+                    ng-click="closeThisDialog('cancel')">Cancel</button>
+        </div>
+        </form>
+    </div>
+</div>

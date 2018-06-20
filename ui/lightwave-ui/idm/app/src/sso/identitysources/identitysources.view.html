@@ -1,0 +1,552 @@
+<!--
+
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+
+-->
+
+
+<div class="content-container">
+    <div class="content-header">
+        <img src="idm/assets/tenant.png"
+             width="24px"
+             height="24px"/> Identity Sources
+    </div>
+    <div class='error' ng-show="globals.errors && !globals.errors.success">
+        <img src="idm/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.errors && globals.errors.success">
+        <img src="idm/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}}
+    </div>
+    <div style="margin-top:5px;">
+
+        <!-- Set of Tabs for Identity Sources view -->
+        <uib-tabset active="active">
+
+            <!-- IdentitySources tab -->
+            <uib-tab index="0" select="vm.getIdentitySources(vm.searchidentitysource)" heading="Identity Sources">
+
+                <div class="tab-container">
+                    <div style="margin-bottom:5px;">
+                        <button type="button"
+                                class="btn btn-link"
+                                ng-click="vm.add()"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button"
+                                class="btn btn-link"
+                                ng-click="vm.edit(vm.selectedIdentitysource)"
+                                ng-show="vm.selectedIdentitysource.domainType === 'EXTERNAL_DOMAIN' &&
+                                globals.currentUser.role == 'Administrator'"
+
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button"
+                                class="btn btn-link"
+                                ng-show="vm.selectedIdentitysource.domainType === 'EXTERNAL_DOMAIN' &&
+                                globals.currentUser.role == 'Administrator'"
+                                confirmed-click="vm.deleteIdentitySource(vm.selectedIdentitysource)"
+                                ng-confirm-click="Do you want to delete identitySource {{vm.selectedIdentitysource.name}}?"
+                                style="float:left;margin-left:10px;">
+                            DELETE
+                        </button>
+                        <form name="form"
+                              ng-submit="vm.getIdentitySources(vm.searchidentitysource)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchidentitysource"
+                                   id="searchidentitysource"
+                                   ng-model="vm.searchidentitysource"
+                                   class="search-box"
+                                   placeholder="search by identity source name"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-10">
+                                Name
+                            </div>
+                            <div class="large-grid-header-cell col-xs-1">
+                                Type
+                            </div>
+                            <div class="large-grid-header-cell col-xs-1">
+                                Default
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.idsdataLoading"
+                                 src="idm/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.idsdataLoading && (!vm.filteredIdentitySources || vm.filteredIdentitySources.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No identity sources found.
+                            </div>
+                            <div ng-repeat="identitysource in vm.filteredIdentitySources track by $index"
+                                 ng-if="vm.filteredIdentitySources"
+                                 tabindex="1"
+                                 ng-click="vm.selectedIdentitysource = identitysource;"
+                                 ng-class="vm.getClass(vm.selectedIdentitysource.name == identitysource.name)">
+
+                                <div class="col-xs-10"
+                                     uib-tooltip="{{identitysource.name}}">
+                                    <img src="idm/assets/tenant.png"
+                                         width="16px"
+                                         height="16px"
+                                         uib-tooltip="Identity Source"
+                                         style="margin-top:-10px;"/>
+                                    <button type="button"
+                                            class="btn btn-link"
+                                            ng-click="vm.view(identitysource)"
+                                            ng-show="identitysource.domainType == 'EXTERNAL_DOMAIN'"
+                                            style="margin-top:-10px;">
+                                        {{
+                                            identitysource.name.length > 50 ?
+                                            identitysource.name.substring(0,50) + '...' :
+                                            identitysource.name;
+                                        }}
+                                    </button>
+                                    <span ng-show="identitysource.domainType != 'EXTERNAL_DOMAIN'"
+                                    style="margin-left:10px;">
+                                        {{
+                                            identitysource.name.length > 50 ?
+                                            identitysource.name.substring(0,50) + '...' :
+                                            identitysource.name;
+                                        }}
+                                    </span>
+                                </div>
+                                <div class="col-xs-1">
+                                    <span ng-show="identitysource.domainType == 'SYSTEM_DOMAIN'">
+                                        System
+                                    </span>
+                                    <span ng-show="identitysource.domainType == 'LOCALOS_DOMAIN'">
+                                        Local OS
+                                    </span>
+                                    <span ng-show="identitysource.domainType == 'EXTERNAL_DOMAIN'">
+                                        External
+                                    </span>
+                                </div>
+                                <div class="col-xs-1">
+                                    <span ng-show="identitysource.name == vm.providerPolicy.defaultProvider">
+                                        Default
+                                    </span>
+                                    <span ng-show="identitysource.name != vm.providerPolicy.defaultProvider">
+                                        --
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IdentitySources tab: Content -->
+                <!--<div class="tab-container">
+
+                    &lt;!&ndash; Search box to search all the IdentitySources &ndash;&gt;
+                    <form name="form"
+                          ng-submit="vm.getIdentitySources(vm.searchidentitysource)"
+                          role="form"
+                          class="text-center">
+                        <input type="text" name="searchidentitysource"
+                               id="searchidentitysource"
+                               ng-model="vm.searchidentitysource"
+                               class="search-box-in-tab"
+                               placeholder="search by identity source name"/>
+                        <button type="submit"
+                                class="btn btn-primary btn-xs">
+                            Search
+                        </button>
+                    </form>
+
+                    &lt;!&ndash; Total IdentitySources header &ndash;&gt;
+                    <div style="bottom:0px; height:20px;">
+                        <div ng-if="vm.filteredIdentitySources"
+                             class="text-right total-members">
+                            Total Identity Sources: {{vm.filteredIdentitySources.length}}
+                        </div>
+                    </div>
+                    <img ng-if="vm.idsdataLoading"
+                         src="idm/assets/progress.gif"
+                         style="padding:20px;"/>
+
+                    &lt;!&ndash; List all the identitySources &ndash;&gt;
+                    <uib-accordion close-others="true">
+                        <uib-accordion-group ng-repeat="identitySource in vm.filteredIdentitySources" ng-if="vm.filteredIdentitySources">
+                            <uib-accordion-heading>
+                                    <img src="idm/assets/tenant.png"
+                                         width="16px"
+                                         height="16px"
+                                         uib-tooltip="Identity Source"/>
+                                    <small>
+                                    <strong>{{identitySource.name}}</strong>
+                                    </small>
+                                    <small ng-show="identitySource.domainType == 'SYSTEM_DOMAIN'">
+                                        (system)
+                                    </small>
+                                    <small ng-show="identitySource.name == vm.providerPolicy.defaultProvider">
+                                        (default)
+                                    </small>
+                            </uib-accordion-heading>
+                            <div ng-show="identitySource.domainType == 'EXTERNAL_DOMAIN'">
+                                <form name="identitySourceform">
+                                    <div ng-if="identitySource">
+                                        <div class="form-group col-xs-12 pull-left">
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.name">
+                                                    Name
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.name"
+                                                       name="name"
+                                                       ng-model="identitySource.name"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="Constoso"
+                                                       readonly="readonly"/>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.type">
+                                                    Type
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.type"
+                                                       name="type"
+                                                       ng-model="identitySource.type"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="Active Directory"
+                                                       readonly="readonly"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-xs-12 pull-left">
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.friendlyName">
+                                                    Friendly Name
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.friendlyName"
+                                                       name="friendlyName"
+                                                       ng-model="identitySource.name"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="Constoso Inc"
+                                                       required/>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.alias">
+                                                    Alias
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.alias"
+                                                       name="alias"
+                                                       ng-model="identitySource.alias"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="Contoso Inc"
+                                                       readonly="readonly"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-xs-12 pull-left">
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.userBaseDN">
+                                                    Base DN for users
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.userBaseDN"
+                                                       name="userBaseDN"
+                                                       ng-model="identitySource.userBaseDN"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="cn=users, dc=contoso, dc=com"
+                                                       required/>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.groupBaseDN">
+                                                    Base DN for groups
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.groupBaseDN"
+                                                       name="alias"
+                                                       ng-model="identitySource.groupBaseDN"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="cn=groups, dc=contoso, dc=com"
+                                                       required/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-xs-12 pull-left">
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.username">
+                                                    Username
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.username"
+                                                       name="username"
+                                                       ng-model="identitySource.username"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="username"
+                                                       required/>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.password">
+                                                    Password
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="password"
+                                                       id="identitySource.password"
+                                                       name="password"
+                                                       ng-model="identitySource.password"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="password"
+                                                       required/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-xs-12 pull-left">
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.connectionStrings[0]">
+                                                    Primary server URL
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.connectionStrings[0]"
+                                                       name="connectionStrings[0]"
+                                                       ng-model="identitySource.connectionStrings[0]"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="ldaps://contoso.com:636"
+                                                       required/>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.connectionStrings[1]">
+                                                    Secondary server URL
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="text"
+                                                       id="identitySource.connectionStrings[1]"
+                                                       name="connectionStrings[1]"
+                                                       ng-model="identitySource.connectionStrings[1]"
+                                                       class="form-control input-xs pull-left"
+                                                       placeholder="ldaps://contoso.com:636 or ldaps://contoso.com:3276"
+                                                       required/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-xs-12 pull-left">
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.ssl">
+                                                    SSL?
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <input type="checkbox"
+                                                       id="identitySource.ssl"
+                                                       name="ssl"
+                                                       ng-model="ssl"
+                                                       class="input-md pull-left"/>
+                                                <small style="word-wrap:break-word ; margin-left:5px;margin-top:5px;">
+                                                    Protect LDAP communication using SSL certificate (LDAPS)
+                                                </small>
+                                                &lt;!&ndash;<br/><br/>
+                                                <form name="advancedIdentitySourceform"
+                                                      ng-submit="advancedIdentitySourcecertificate(identitySource)"
+                                                      role="advancedIdentitySourceform"
+                                                      class="text-left">
+                                                    <button class="btn btn-xs btn-info"
+                                                            type="submit"
+                                                            uib-tooltip="Advanced Configuration"
+                                                            style="float:right;margin-right:5px;">
+                                                        Advanced Configuration
+                                                    </button>
+                                                </form>&ndash;&gt;
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <label class="control-label pull-right"
+                                                       for="identitySource.connectionStrings[1]">
+                                                    Certificates
+                                                </label>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <div class="small small-grid" style="overflow-x:scroll">
+                                                    <div class="small-grid-header">
+                                                        <div class="col-xs-5">
+                                                            <strong>
+                                                                Subject
+                                                            </strong>
+                                                        </div>
+                                                        <div class="col-xs-5">
+                                                            <strong>
+                                                                Issuer
+                                                            </strong>
+                                                        </div>
+                                                        <div class="col-xs-2">
+                                                        </div>
+                                                    </div>
+                                                    <div class="small-grid-content">
+                                                        <div ng-show="!identitySource.certificates">
+                                                            <br/>
+                                                            No certificates specified
+                                                            <br/>
+                                                        </div>
+
+                                                        <div ng-repeat="certificate in identitySource.certificates"
+                                                             ng-show="identitySource.certificates"
+                                                             ng-class-odd="'small-grid-row-odd'">
+                                                            <div class="col-xs-5"
+                                                                 uib-tooltip="{{certificate.metadata.subject}}">
+                                                                {{
+                                                                    certificate.metadata.subject.length > 10 ?
+                                                                    certificate.metadata.subject.substring(0,10) + '...' :
+                                                                    certificate.metadata.subject;
+                                                                }}
+                                                            </div>
+                                                            <div class="col-xs-5"
+                                                                 uib-tooltip="{{certificate.metadata.issuer}}">
+                                                                {{
+                                                                certificate.metadata.issuer.length > 10 ?
+                                                                certificate.metadata.issuer.substring(0,10) + '...' :
+                                                                certificate.metadata.issuer;
+                                                                }}
+                                                            </div>
+                                                            <div class="col-xs-2"
+                                                                 uib-tooltip="Before: {{certificate.metadata.before}}  After: {{certificate.metadata.after}}">
+                                                                <img src="idm/assets/enabled.png"
+                                                                     width="16px"
+                                                                     height="16px"
+                                                                     ng-show="!certificate.metadata.expired"/>
+                                                                <img src="idm/assets/disabled.png"
+                                                                     width="16px"
+                                                                     height="16px"
+                                                                     ng-show="certificate.metadata.expired"/>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                                <br/><br/><br/><br/>
+                                <div class="form-group col-xs-12">
+                                <div class="col-xs-4 col-xs-offset-2">
+                                    <form name="identitySourceform"
+                                          ng-submit="vm.updateIdentitySource(identitySource)"
+                                          role="identitySourceform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-primary"
+                                                type="submit"
+                                                uib-tooltip="Save Identity Source"
+                                                style="float:left;margin-right:10px;">
+                                            Save
+                                        </button>
+                                    </form>
+                                    <form name="deleteIdentitySourceform"
+                                          ng-submit="vm.deleteIdentitySource(identitySource.name)"
+                                          role="deleteidentitySourceform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-danger"
+                                                type="submit"
+                                                uib-tooltip="Delete Identity Source"
+                                                style="float:left;margin-right:10px;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                   &lt;!&ndash; <form name="editIdentitySourceform"
+                                          ng-submit="editIdentitySourcecertificate(identitySource)"
+                                          role="editidentitySourceform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-success"
+                                                type="submit"
+                                                uib-tooltip="View Certificate"
+                                                style="float:left;margin-right:10px;">
+                                            Edit
+                                        </button>
+                                    </form>
+                                    <form name="setDefaultIdentitySourceform"
+                                          ng-submit="setDefaultIdentitySourcecertificate(identitySource)"
+                                          role="setDefaultidentitySourceform"
+                                          ng-show="vm.providerPolicy.providerSelectionEnabled"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-success"
+                                                type="submit"
+                                                uib-tooltip="Set Domain as default"
+                                                style="float:left;margin-right:10px;">
+                                            Set as default
+                                        </button>
+                                    </form>&ndash;&gt;
+                                </div>
+                            </div>
+                            </div>
+                            &lt;!&ndash;<form name="setDefaultIdentitySourceform"
+                                  ng-submit="setDefaultIdentitySourcecertificate(identitySource)"
+                                  role="setDefaultidentitySourceform"
+                                  ng-show="vm.providerPolicy.providerSelectionEnabled &&
+                                  identitySource.domainType == 'LOCAL_OS_DOMAIN'"
+                                  class="text-left">
+                                <button class="btn btn-xs btn-success"
+                                        type="submit"
+                                        uib-tooltip="Set Domain as default"
+                                        style="float:left;margin-right:10px;">
+                                    Set as default
+                                </button>
+                            </form>&ndash;&gt;
+                        </uib-accordion-group>
+                        <div ng-if="!vm.idsdataLoading && (!vm.filteredIdentitySources || vm.filteredIdentitySources.length == 0)" style="padding:60px;" class="row">
+                            No identity sources found.
+                        </div>
+                    </uib-accordion>
+                </div>-->
+            </uib-tab>
+        </uib-tabset>
+    </div>
+</div>

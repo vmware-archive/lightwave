@@ -1,0 +1,631 @@
+<!--
+
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+
+-->
+
+<div class="content-container">
+    <div class="content-header">
+        <img src="idm/assets/policy.png" width="24px" height="24px"/>
+        Policies & Configurations
+    </div>
+    <div class='error' ng-show="globals.errors && !globals.errors.success">
+        <img src="idm/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.errors && globals.errors.success">
+        <img src="idm/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}}
+    </div>
+    <br/>
+    <div style="margin-top:5px;height:100%;">
+        <uib-tabset active="active" style="height:100%;">
+                <uib-tab index="0" heading="Policies" style="height:100%;">
+                    <div class="small-navigation">
+                        <div ng-click="showlockoutpolicy()" class="small-navigation-item">
+                            <span ng-show="vm.policyTab != 1;">Lockout Policy</span>
+                            <strong ng-show="vm.policyTab == 1;">Lockout Policy</strong>
+                        </div>
+                        <div ng-click="showtokenpolicy()" class="small-navigation-item">
+                            <span ng-show="vm.policyTab != 2;">Token Policy</span>
+                            <strong ng-show="vm.policyTab == 2;">Token Policy</strong>
+                        </div>
+                        <div ng-click="showpasswordpolicy()" class="small-navigation-item">
+                            <span ng-show="vm.policyTab != 3;">Password Policy</span>
+                            <strong ng-show="vm.policyTab == 3;">Password Policy</strong>
+                        </div>
+                    </div>
+
+                    <div class="policy-content"
+                         ng-show="vm.policyTab == 1;">
+                        <div class="secondary-header-bold">
+                            A set of rules and restrictions on the details of Single Sign-On user account lockout
+                        </div>
+                        <div class="content">
+                            <img src="idm/assets/info.png"
+                                 width="16px"
+                                 height="16px"
+                                 style="margin-top:10px;float:left;"/>
+                            <div style="margin:10px;float:left;" class="section-help">
+                                Maximum {{vm.policies.lockoutPolicy.maxFailedAttempts}}
+                                failed attempts are allowed with an interval of {{vm.policies.lockoutPolicy.failedAttemptIntervalSec}} seconds. <br/>
+                                Account that is locked out will be
+                                auto-unlocked after {{vm.policies.lockoutPolicy.autoUnlockIntervalSec}} seconds.
+                            </div>
+                            <br/><br/><br/>
+                            <div class="row content">
+                                <div class="pull-right">
+                                    <button type="button" class="btn btn-link"
+                                            ng-click="showEditLockoutPolicy()"
+                                            ng-show="globals.currentUser.role == 'Administrator'">
+                                        EDIT
+                                    </button>
+                                </div>
+                                <div class="popup-row col-xs-12">
+                                    <div class="col-xs-4">
+                                        Description
+                                    </div>
+                                    <div class="col-xs-8 text-label">
+                                        {{vm.policies.lockoutPolicy.description}}
+                                    </div>
+                                </div>
+                                <div class="popup-row col-xs-12">
+                                    <div class="col-xs-4">
+                                        Max Failed Attempts
+                                    </div>
+                                    <div class="col-xs-8 text-label">
+                                        {{vm.policies.lockoutPolicy.maxFailedAttempts}}
+                                    </div>
+                                </div>
+                                <div class="popup-row col-xs-12">
+                                    <div class="col-xs-4">
+                                        Failed attempt interval (seconds)
+                                    </div>
+                                    <div class="col-xs-8 text-label">
+                                        {{vm.policies.lockoutPolicy.failedAttemptIntervalSec}}
+                                    </div>
+                                </div>
+                               <div class="popup-row col-xs-12">
+                                    <div class="col-xs-4">
+                                        Auto-unlock interval (seconds)
+                                    </div>
+                                    <div class="col-xs-8 text-label">
+                                        {{vm.policies.lockoutPolicy.autoUnlockIntervalSec}}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="policy-content" ng-show="vm.policyTab == 2;">
+                        <div class="secondary-header-bold">
+                            A set of rules and restrictions on the clock tolerance, renewal count & token properties.
+                        </div>
+                        <div class="content">
+                            <div class="pull-right">
+                                <button type="button"
+                                        class="btn btn-link"
+                                        ng-click="showEditTokenPolicy()"
+                                        ng-show="globals.currentUser.role == 'Administrator'">
+                                    EDIT
+                                </button>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Delegation Count
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.delegationCount}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Renew Count
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.renewCount}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Clock Tolerence (milli-seconds)
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.clockToleranceMillis}}
+                                </div>
+                            </div>
+                            <div class="secondary-header-bold">
+                                <div class="popup-row col-xs-12">
+                                    <div class="col-xs-6">
+                                        Bearer Token
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Max Token Lifetime (milli-seconds)
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.maxBearerTokenLifeTimeMillis}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Max Refresh Token Lifetime (milli-seconds)
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.maxBearerRefreshTokenLifeTimeMillis}}
+                                </div>
+                            </div>
+                            <div class="secondary-header-bold">
+                                <div class="popup-row col-xs-12">
+                                    <div class="col-xs-6">
+                                        HoK Token
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Max Token Lifetime (milli-seconds)
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.maxHOKTokenLifeTimeMillis}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-6">
+                                    Max Refresh Token Lifetime (milli-seconds)
+                                </div>
+                                <div class="col-xs-6 text-label">
+                                    {{vm.policies.tokenPolicy.maxHOKRefreshTokenLifeTimeMillis}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="policy-content" ng-show="vm.policyTab == 3;">
+                        <div class="secondary-header-bold">
+                            A set of rules and restrictions on the format and expiration of Single Sign-On user passwords
+                        </div>
+                        <div class="section-help content" style="margin-top:10px;">
+                            <img src="idm/assets/info.png"
+                                 width="16px"
+                                 height="16px"
+                                 style="margin-right:5px;float:left;"/>
+                                Password should be {{vm.policies.passwordPolicy.minLength}} to {{vm.policies.passwordPolicy.maxLength}} characters long.
+                                Contain a minimum of
+                                {{vm.policies.passwordPolicy.minUppercaseCount}} upper case character,
+                                {{vm.policies.passwordPolicy.minLowercaseCount}} lower case character,
+                                {{vm.policies.passwordPolicy.minAlphabeticCount}} alphabets,
+                                {{vm.policies.passwordPolicy.minNumericCount}} numbers,
+                                {{vm.policies.passwordPolicy.minSpecialCharCount}} special characters
+                                and a maximum of
+                                {{vm.policies.passwordPolicy.maxIdenticalAdjacentCharacters}} adjacent identical characters.
+                        </div>
+                        <div class="pull-right">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="showEditPasswordPolicy()"
+                                    ng-show="globals.currentUser.role == 'Administrator'">
+                                EDIT
+                            </button>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Description
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.description}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Max identical adjacent characters
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.maxIdenticalAdjacentCharacters}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Min Alphabetic Count
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.minAlphabeticCount}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Min Length
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.minLength}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Max Length
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.maxLength}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Min Lower Case Count
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.minLowercaseCount}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Min Numeric Count
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.minNumericCount}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Min Special Character Count
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.minSpecialCharCount}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Min Upper Case Characters
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.minUppercaseCount}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Password Lifetime (days)
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.passwordLifetimeDays}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Prohibited Previous Passwords
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.prohibitedPreviousPasswordCount}}
+                            </div>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="1" heading="Login Banner">
+                    <div style="margin-top:20px;">
+                        <div class="secondary-header-bold">
+                            The login banner is displayed when a user logs in. You can set a message, and you can require explicit consent,
+                            for example, to Terms and Conditions.
+                        </div>
+                        <div class="pull-right">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="showEditBrandPolicy()"
+                                    ng-show="globals.currentUser.role == 'Administrator'">
+                                EDIT
+                            </button>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Name
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.brandPolicy.name}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Display Banner checkbox
+                            </div>
+                            <div class="col-xs-6">
+                                <img src="idm/assets/enabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="vm.policies.brandPolicy.logonBannerCheckboxEnabled"
+                                     uib-tooltip="Show checkbox on Logon Banner"
+                                     style="margin-top:-5px;"/>
+                                <img src="idm/assets/disabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="!vm.policies.brandPolicy.logonBannerCheckboxEnabled"
+                                     uib-tooltip="Hide checkbox on Logon Banner"
+                                     style="margin-top:-5px;"/>
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Hide Logon banner & title
+                            </div>
+                            <div class="col-xs-6">
+                                <img src="idm/assets/enabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="vm.policies.brandPolicy.logonBannerDisabled"
+                                     uib-tooltip="Show Logon banner and title"
+                                     style="margin-top:-5px;"/>
+                                <img src="idm/assets/disabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="!vm.policies.brandPolicy.logonBannerDisabled"
+                                     uib-tooltip="Hide Logon banner and title"
+                                     style="margin-top:-5px;"/>
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Title
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.brandPolicy.logonBannerTitle}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Content
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.brandPolicy.logonBannerContent}}
+                            </div>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="2"  heading="Authentication Policy">
+                    <div style="margin-top:20px;">
+                        <div class="pull-right">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="showEditAuthenticationPolicy()"
+                                    ng-show="globals.currentUser.role == 'Administrator'">
+                                EDIT
+                            </button>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-4">
+                                Authentication Configuration
+                            </div>
+                            <div class="col-xs-8">
+                                <span style="margin-right:10px;">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="vm.policies.authenticationPolicy.passwordBasedAuthenticationEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.passwordBasedAuthenticationEnabled"
+                                         style="margin-top:-5px;"/>
+                                    Password based
+                                </span>
+                                <span style="margin-right:10px;">
+                                     <img src="idm/assets/enabled.png"
+                                          width="16px"
+                                          height="16px"
+                                          ng-show="vm.policies.authenticationPolicy.windowsBasedAuthenticationEnabled"
+                                          style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.windowsBasedAuthenticationEnabled"
+                                         style="margin-top:-5px;"/>
+                                    Windows Session based
+                                </span>
+                                <span style="margin-right:10px;">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="vm.policies.authenticationPolicy.certificateBasedAuthenticationEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.certificateBasedAuthenticationEnabled"
+                                         style="margin-top:-5px;"/>
+                                    Smart Card based
+                                </span>
+                            </div>
+                        </div>
+                        <div ng-show="vm.policies.authenticationPolicy.certificateBasedAuthenticationEnabled">
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    <div class="secondary-header-bold">Secure ID Token (CAC) Configuration</div>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    Failover to CRL
+                                </div>
+                                <div class="col-xs-8">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="vm.policies.authenticationPolicy.clientCertificatePolicy.failOverToCrlEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.clientCertificatePolicy.failOverToCrlEnabled"
+                                         style="margin-top:-5px;"/>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    Revocation Check
+                                </div>
+                                <div class="col-xs-8">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="vm.policies.authenticationPolicy.clientCertificatePolicy.revocationCheckEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.clientCertificatePolicy.revocationCheckEnabled"
+                                         style="margin-top:-5px;"/>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    User CRL from certificates
+                                </div>
+                                <div class="col-xs-8">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="vm.policies.authenticationPolicy.clientCertificatePolicy.clientCertificatePolicy.ocspEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.clientCertificatePolicy.clientCertificatePolicy.ocspEnabled"
+                                         style="margin-top:-5px;"/>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    CRL Location
+                                </div>
+                                <div class="col-xs-8">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="vm.policies.authenticationPolicy.clientCertificatePolicy.crlDistributionPointUsageEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!vm.policies.authenticationPolicy.clientCertificatePolicy.crlDistributionPointUsageEnabled"
+                                         style="margin-top:-5px;"/>
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    OCSP URL Override
+                                </div>
+                                <div class="col-xs-8 text-label">
+                                    {{vm.policies.authenticationPolicy.clientCertificatePolicy.ocspUrlOverride}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    CRL Distribution Point Override
+                                </div>
+                                <div class="col-xs-8 text-label">
+                                    {{vm.policies.authenticationPolicy.clientCertificatePolicy.crlDistributionPointOverride}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    Certificate Policies accepted
+                                </div>
+                                <div class="col-md-8 text-label"
+                                     ng-repeat="policyOid in vm.policies.authenticationPolicy.clientCertificatePolicy.certPolicyOIDs"
+                                     style="padding:5px;">
+                                    {{policyOid}}
+                                </div>
+                            </div>
+                            <div class="popup-row col-xs-12">
+                                <div class="col-xs-4">
+                                    Trusted CA Certificates
+                                </div>
+                                <div class="col-md-8 text-label"
+                                     ng-repeat="certificate in vm.policies.authenticationPolicy.clientCertificatePolicy.trustedCACertificates"
+                                     style="padding:5px;">
+                                    <button type="button"
+                                            class="btn btn-link"
+                                            ng-click="viewcertificate(certificate)"
+                                            uib-tooltip="{{certificate.subject}}"
+                                            style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                                        {{
+                                            certificate.metadata.subject.length > 50 ?
+                                            certificate.metadata.subject.substring(0,50) + '...' :
+                                            certificate.metadata.subject;
+                                        }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="3" heading="Operator Access">
+                    <div style="margin-top:20px;">
+                        <div class="secondary-header-bold">
+                            Controls operators' authentication for tenant. Operators are users from system tenant.
+                        </div>
+                        <div class="pull-right">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="showEditOperatorAccessPolicy()"
+                                    ng-show="globals.currentUser.role == 'Administrator'">
+                                EDIT
+                            </button>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Enable operator access
+                            </div>
+                            <div class="col-xs-6">
+                                <img src="idm/assets/enabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="vm.policies.operatorsAccessPolicy.enabled"
+                                     uib-tooltip="Enabled operators login"
+                                     style="margin-top:-5px;"/>
+                                <img src="idm/assets/disabled.png"
+                                     width="16px"
+                                     height="16px"
+                                     ng-show="!vm.policies.operatorsAccessPolicy.enabled"
+                                     uib-tooltip="Enabled operators login"
+                                     style="margin-top:-5px;"/>
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12" ng-show="globals.currentUser.isSystemTenant" >
+                            <div class="col-xs-6">
+                                User Base Dn
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.operatorsAccessPolicy.userBaseDn}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12" ng-show="globals.currentUser.isSystemTenant" >
+                            <div class="col-xs-6">
+                                Group Base Dn
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.operatorsAccessPolicy.groupBaseDn}}
+                            </div>
+                        </div>
+                    </div>
+                </uib-tab>
+            </uib-tabset>
+    </div>
+</div>
+

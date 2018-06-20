@@ -36,7 +36,6 @@
         <module>sts</module>
         <module>openidconnect</module>
         <module>websso</module>
-        <module>lightwaveui</module>
         <module>sso-config</module>
         <module>service</module>
       </modules>

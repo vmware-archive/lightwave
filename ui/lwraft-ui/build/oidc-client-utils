@@ -217,9 +217,10 @@ registerOIDCClient()
         exit
     fi
     echo $OIDC_CLIENT_ID>/opt/vmware/share/config/oidc-client-id.conf
+    echo "Success! OIDC client ID:"
+    echo $OIDC_CLIENT_ID
 
     rm -f $tmpfile
-    echo "SUCCESS!"
 }
 checkPreReq
 case "$OPERATION" in

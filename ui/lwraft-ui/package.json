@@ -1,5 +1,5 @@
 {
-  "name": "webui",
+  "name": "directory",
   "version": "1.0.0",
   "private": true,
   "description": "Web interface for VMware Lightwave Services",
