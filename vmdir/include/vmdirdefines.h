@@ -623,6 +623,14 @@ extern "C" {
       DeleteFilter(pfilter);                        \
     } while(0)
 
+#define VMDIR_SAFE_FREE_VDIR_MODIFICTION(pMod)      \
+    do {                                    \
+        if (pMod)                           \
+        {                                   \
+            VmDirModificationFree(pMod);    \
+        }                                   \
+    } while(0)
+
 #define VMDIR_SAFE_BER_MEMFREE(pBerMem)             \
     do {                                            \
         if ((pBerMem)) {                            \

@@ -1488,6 +1488,28 @@ VmDirModAddSingleStrValueAttribute(
     PCSTR                   pszAttrValue
     );
 
+DWORD
+VmDirInternalEntryAttributeReplace(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBerv
+    );
+
+DWORD
+VmDirInternalEntryAttributeAdd(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    );
+
+DWORD
+VmDirInternalAddMemberToGroup(
+    PCSTR   pszGroupDN,
+    PCSTR   pszMemberDN
+    );
+
 // ldap-head/operation.c
 DWORD
 VmDirInitStackOperation(

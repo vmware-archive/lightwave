@@ -21,6 +21,7 @@ vmdird_SOURCES = \
     main.c \
     metrics.c \
     parseargs.c \
+    promote/dcactmgmt.c \
     regconfig.c \
     rpcserv.c \
     rpcsrpserv.c \

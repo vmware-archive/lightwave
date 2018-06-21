@@ -223,9 +223,14 @@ VmDirKrbSimpleDNToRealm(
     );
 
 DWORD
-VmDirGenerateRandomPasswordByDefaultPolicy
-(
+VmDirGenerateRandomPasswordByDefaultPolicy(
     PSTR *ppRandPwd
+    );
+
+DWORD
+VmDirGenerateRandomInternalPassword(
+    PCSTR   pszDomain,
+    PSTR*   ppszRandPwd
     );
 
 // util.c

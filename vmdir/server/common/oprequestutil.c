@@ -16,6 +16,15 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VmDirInternalEntryAttributeModOp(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    VDIR_LDAP_MOD_OP    ldapModOp,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    );
 
 void
 VmDirModificationFree(
@@ -270,3 +279,173 @@ error:
     return dwError;
 }
 
+/*
+ * Convenient function to replace ONE single value attribute via InternalModifyEntry
+ * *****************************************************************************
+ * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ * You should NOT call this function while in a backend txn/ctx.
+ * *****************************************************************************
+ * This may not be easy to determine as we could call this in different places, which
+ * may be nested in external and internal OPERATION.
+ * A better approach is to pass in pOperation and use the same beCtx if exists.
+ * However, this could also cause logic error, e.g. you could lost track if entry/data
+ * has already been changed by beCtx and reread them.
+ * *****************************************************************************
+ */
+DWORD
+VmDirInternalEntryAttributeReplace(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,     // optional
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    )
+{
+    DWORD               dwError = 0;
+
+    if (!pszNormDN || !pszAttrName || !pBervAttrValue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _VmDirInternalEntryAttributeModOp(
+        pSchemaCtx,
+        pszNormDN,
+        MOD_OP_REPLACE,
+        pszAttrName,
+        pBervAttrValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirInternalEntryAttributeAdd(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,         // optional
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    )
+{
+    DWORD               dwError = 0;
+
+    if (!pszNormDN || !pszAttrName || !pBervAttrValue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _VmDirInternalEntryAttributeModOp(
+        pSchemaCtx,
+        pszNormDN,
+        MOD_OP_ADD,
+        pszAttrName,
+        pBervAttrValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirInternalAddMemberToGroup(
+    PCSTR   pszGroupDN,
+    PCSTR   pszMemberDN
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_BERVALUE       berValue = {0};
+    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
+
+    if (!pszGroupDN || !pszMemberDN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR( dwError );
+
+    berValue.lberbv.bv_val = (PSTR)pszMemberDN;
+    berValue.lberbv.bv_len = VmDirStringLenA(pszMemberDN);
+
+    dwError = VmDirInternalEntryAttributeAdd(
+        pSchemaCtx,
+        pszGroupDN,
+        ATTR_MEMBER,
+        &berValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirSchemaCtxRelease(pSchemaCtx);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "error (%u)", dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirInternalEntryAttributeModOp(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    VDIR_LDAP_MOD_OP    ldapModOp,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    )
+{
+    DWORD               dwError = 0;
+    VDIR_OPERATION      ldapOp = {0};
+    PVDIR_MODIFICATION  pMod = NULL;
+
+    dwError = VmDirInitStackOperation(
+        &ldapOp,
+       VDIR_OPERATION_TYPE_INTERNAL,
+       LDAP_REQ_MODIFY,
+       pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    assert(ldapOp.pBEIF);
+
+    ldapOp.reqDn.lberbv.bv_val = (PSTR)pszNormDN;
+    ldapOp.reqDn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
+
+    dwError = VmDirAllocateMemory(sizeof(*pMod), (PVOID)&pMod);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMod->next = NULL;
+    pMod->operation = ldapModOp;
+    dwError = VmDirModAddSingleValueAttribute(
+        pMod,
+        ldapOp.pSchemaCtx,
+        pszAttrName,
+        pBervAttrValue->lberbv.bv_val,
+        pBervAttrValue->lberbv.bv_len);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ldapOp.request.modifyReq.dn.lberbv.bv_val = (PSTR)pszNormDN;
+    ldapOp.request.modifyReq.dn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
+    ldapOp.request.modifyReq.mods = pMod;
+    pMod = NULL;
+    ldapOp.request.modifyReq.numMods = 1;
+
+    dwError = VmDirInternalModifyEntry(&ldapOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperationContent(&ldapOp);
+    VMDIR_SAFE_FREE_VDIR_MODIFICTION(pMod);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}

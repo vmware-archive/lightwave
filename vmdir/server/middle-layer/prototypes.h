@@ -78,14 +78,6 @@ VdirPasswordModifyPreCheck(
     PVDIR_OPERATION     pOperation
     );
 
-DWORD
-VmDirInternalEntryAttributeReplace(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PCSTR               pszNormDN,
-    PCSTR               pszAttrName,
-    PVDIR_BERVALUE      pBerv
-    );
-
 // plugin.c
 /*
  * Called before backend add

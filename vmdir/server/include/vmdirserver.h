@@ -568,6 +568,13 @@ VmDirSrvStatMetricsShutdown(
     VOID
     );
 
+// promote/dcactmgmt.c
+DWORD
+VmDirCreateDomainController(
+    PCSTR   pszDomain,
+    PCSTR   pszDCName
+    );
+
 #ifdef __cplusplus
 }
 #endif

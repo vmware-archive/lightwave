@@ -740,6 +740,12 @@ VmDirDomainNameToDN(
     );
 
 DWORD
+VmDirDomainToPasswordPolicyDN(
+    PCSTR   pszDomainName,
+    PSTR*   ppszPolicyDN
+    );
+
+DWORD
 VmDirServerDNToSiteName(
     PCSTR   pszServerDN,
     PSTR*   ppszSiteName
