@@ -278,6 +278,14 @@ VmDirIsBindDnMemberOfSystemDomainAdmins(
     PBOOLEAN            pbIsMemberOfAdmins
     );
 
+DWORD
+VmDirSrvAccessCheckEntry(
+    PACCESS_TOKEN                   pToken,
+    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs,
+    ACCESS_MASK                     accessDesired,
+    ACCESS_MASK*                    psamGranted
+    );
+
 // security.c
 DWORD
 VmDirGetSecurityDescriptorForEntry(

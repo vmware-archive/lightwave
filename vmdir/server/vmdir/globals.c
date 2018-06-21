@@ -151,6 +151,11 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),
     };
 
+VMDIRD_SD_GLOBALS gVmdirdSDGlobals =
+    {
+        VMDIR_SF_INIT(.pSDdcAdminGX, NULL),
+    };
+
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
 
 VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =

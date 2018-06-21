@@ -141,6 +141,13 @@ typedef struct _VMDIR_SERVER_GLOBALS
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
 
+typedef struct _VMDIRD_SD_GLOBALS
+{
+    PSECURITY_DESCRIPTOR_RELATIVE pSDdcAdminGX;
+} VMDIRD_SD_GLOBALS;
+
+extern VMDIRD_SD_GLOBALS gVmdirdSDGlobals;
+
 typedef struct _VMDIRD_STATE_GLOBALS
 {
     PVMDIR_MUTEX  pMutex;

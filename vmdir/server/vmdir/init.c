@@ -358,6 +358,9 @@ VmDirInit(
     dwError = VmDirInitBackend(&bLegacyDataLoaded);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirVmAclInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // load server globals before any write operations
     dwError = LoadServerGlobals(&bWriteInvocationId);
     if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
@@ -370,9 +373,6 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirKrbInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!gVmdirGlobals.bPatchSchema && bLegacyDataLoaded)
@@ -1107,6 +1107,72 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirSetSdGlobals()
+{
+    DWORD       dwError                    = 0;
+    PSTR        pszUserAdminSid            = NULL;
+    PSTR        pszBuiltinAdminSid         = NULL;
+    PSTR        pszDCAdminSid              = NULL;
+    PSTR        pszACL                     = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc = NULL;
+    ber_len_t   dwSecDescLen               = 0;
+
+    /*Get sid for cn=Administrator,cn=Users*/
+    dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VMDIR_DOMAIN_USER_RID_ADMIN,
+                    &pszUserAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /*Get sid for cn=Administrators,cn=Builtin*/
+    dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+                    &pszBuiltinAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /*Get sid for cn=DCAdmins,cn=Builtin*/
+    dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VMDIR_DOMAIN_ADMINS_RID,
+                    &pszDCAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                            &pszACL,
+                            "O:%sG:%sD:AI(A;;GX;;;%s)(A;;GX;;;%s)(A;;GX;;;%s)",
+                            pszUserAdminSid,
+                            pszBuiltinAdminSid,
+                            pszDCAdminSid,
+                            pszBuiltinAdminSid,
+                            pszUserAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwNtStatusToWin32Error(RtlAllocateSecurityDescriptorFromSddlCString(
+                                        &pSecDesc,
+                                        (PULONG)&dwSecDescLen,
+                                        pszACL,
+                                        SDDL_REVISION_1));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVmdirdSDGlobals.pSDdcAdminGX = pSecDesc;
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set gVmdirdSDGlobals security descriptor", __FUNCTION__);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserAdminSid);
+    VMDIR_SAFE_FREE_STRINGA(pszBuiltinAdminSid);
+    VMDIR_SAFE_FREE_STRINGA(pszDCAdminSid);
+    VMDIR_SAFE_FREE_STRINGA(pszACL);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "error %d", dwError);
+    VMDIR_SAFE_FREE_MEMORY(pSecDesc);
+    goto cleanup;
+}
+
 //
 // LoadServerGlobals()
 //
@@ -1542,6 +1608,9 @@ LoadServerGlobals(
             VMDIR_LOG_MASK_ALL,
             "Domain Functional Level (%d)",
             gVmdirServerGlobals.dwDomainFunctionalLevel);
+
+    dwError = VmDirSetSdGlobals();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set promoted flag to TRUE
     gVmdirServerGlobals.bPromoted = TRUE;

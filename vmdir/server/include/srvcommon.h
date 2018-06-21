@@ -848,6 +848,9 @@ VmDirInitDCConnThread(
 DWORD
 VmDirInitBackend();
 
+DWORD
+VmDirSetSdGlobals();
+
 // vmdirentry.c
 
 /*
