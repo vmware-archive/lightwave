@@ -724,7 +724,7 @@ DWORD
 VMCACommonShutdown();
 
 DWORD
-VMCAIntializeOpenSSL();
+VMCAInitializeOpenSSL();
 
 DWORD
 VMCACleanupOpenSSL();

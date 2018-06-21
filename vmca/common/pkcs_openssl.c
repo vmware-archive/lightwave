@@ -94,7 +94,7 @@ VMCAOpenSSLLockingCallback(
 }
 
 DWORD
-VMCAIntializeOpenSSL()
+VMCAInitializeOpenSSL()
 {
     DWORD dwError = 0;
     pthread_mutex_t* pSslMutexes = NULL;

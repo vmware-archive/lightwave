@@ -161,6 +161,32 @@ do                                                          \
     }                                                       \
 } while(0)
 
+DWORD
+VMCAClientInitOpenSSL()
+{
+    DWORD dwError = 0;
+    dwError = VMCAInitializeOpenSSL();
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    VMCAClientCleanupOpenSSL();
+    goto cleanup;
+}
+
+DWORD
+VMCAClientCleanupOpenSSL()
+{
+    DWORD dwError = 0;
+    dwError = VMCACleanupOpenSSL();
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
 
 DWORD
 VMCACreateSelfSignedCertificateW(
