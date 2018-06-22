@@ -135,8 +135,6 @@ VmDirAllocateConnection(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pConn->ConnCtrlResource.dbCopyCtrlFd = -1;
-
     *ppConn = pConn;
 
 cleanup:
@@ -182,12 +180,6 @@ VmDirDeleteConnection(
         {
             LwRtlHashMapClear((*conn)->ReplConnState.phmSyncStateOneMap, VmDirSimpleHashMapPairFree, NULL);
             LwRtlFreeHashMap(&(*conn)->ReplConnState.phmSyncStateOneMap);
-        }
-
-        if ((*conn)->ConnCtrlResource.dbCopyCtrlFd != -1)
-        {
-            close((*conn)->ConnCtrlResource.dbCopyCtrlFd);
-            (*conn)->ConnCtrlResource.dbCopyCtrlFd = -1;
         }
 
         VMDIR_SAFE_FREE_MEMORY(*conn);

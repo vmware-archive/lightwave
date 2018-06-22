@@ -247,15 +247,6 @@ typedef struct
     DWORD dwSize; // Max number of strings we can store currently.
 } VMDIR_STRING_LIST, *PVMDIR_STRING_LIST;
 
-typedef struct _VDIR_DB_COPY_CONTROL_VALUE
-{
-    PSTR    pszPath;
-    DWORD   dwBlockSize;
-    int     fd;
-    PSTR    pszData;
-    DWORD   dwDataLen;
-} VDIR_DB_COPY_CONTROL_VALUE, *PVDIR_DB_COPY_CONTROL_VALUE;
-
 #ifdef _WIN32
 typedef HINSTANCE   VMDIR_LIB_HANDLE;
 #else
@@ -1091,7 +1082,6 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER  "EnableRegionalMaster"
-#define VMDIR_REG_KEY_LDAP_COPY_ENABLE        "EnableLdapCopy"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1805,25 +1795,6 @@ VmDirCreateRaftVoteCtrlContent(
 VOID
 VmDirFreeCtrlContent(
     LDAPControl*    pCtrl
-    );
-
-int
-VmDirCreateDbCopyControlContent(
-    PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal,
-    LDAPControl*                pDbCopyCtrl
-    );
-
-int
-VmDirCreateDBCopyReplyControlContent(
-    int         fd,
-    BerValue*   pBerVIn,
-    BerValue*   pBerVOut
-    );
-
-DWORD
-VmDirParseDBCopyReplyControlContent(
-    LDAPControl*                pDbCopyReplyCtrl,
-    PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal
     );
 
 // common/ldaputil.c

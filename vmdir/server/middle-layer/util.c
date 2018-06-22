@@ -15,7 +15,6 @@
 
 
 #include "includes.h"
-#include <fcntl.h>
 
 static
 LONG
@@ -160,73 +159,5 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
-}
-
-DWORD
-VmDirExecDbCopyCtrl(
-    PVDIR_OPERATION pOperation
-    )
-{
-    int         fd = -1;
-    DWORD       dwReadSize = 0;
-    DWORD       dwError = 0;
-    BOOLEAN     bCloseFd = FALSE;
-
-    if (!pOperation)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    fd = pOperation->dbCopyCtrl->value.dbCopyCtrlVal.fd;
-
-    if (fd == -1)
-    {
-        fd = open(pOperation->dbCopyCtrl->value.dbCopyCtrlVal.pszPath, O_RDONLY);
-
-        if (fd == -1)
-        {
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
-        }
-
-        pOperation->dbCopyCtrl->value.dbCopyCtrlVal.fd = fd;
-        pOperation->conn->ConnCtrlResource.dbCopyCtrlFd = fd;
-    }
-
-    dwError = VmDirAllocateMemory(pOperation->dbCopyCtrl->value.dbCopyCtrlVal.dwBlockSize,
-                                  (PVOID*) &pOperation->dbCopyCtrl->value.dbCopyCtrlVal.pszData);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwReadSize = read(fd, pOperation->dbCopyCtrl->value.dbCopyCtrlVal.pszData, pOperation->dbCopyCtrl->value.dbCopyCtrlVal.dwBlockSize);
-    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "READ %d bytes", dwReadSize);
-
-
-    if (dwReadSize == -1)
-    {
-        pOperation->dbCopyCtrl->value.dbCopyCtrlVal.dwDataLen = 0;
-        bCloseFd = TRUE;
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
-    }
-    else
-    {
-        pOperation->dbCopyCtrl->value.dbCopyCtrlVal.dwDataLen = dwReadSize;
-
-        if (dwReadSize < pOperation->dbCopyCtrl->value.dbCopyCtrlVal.dwBlockSize)
-        {
-            bCloseFd = TRUE;
-        }
-    }
-
-cleanup:
-    if (bCloseFd && fd != -1)
-    {
-        close(fd);
-        pOperation->conn->ConnCtrlResource.dbCopyCtrlFd = -1;
-        pOperation->dbCopyCtrl->value.dbCopyCtrlVal.fd = -1;
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, dwError);
     goto cleanup;
 }

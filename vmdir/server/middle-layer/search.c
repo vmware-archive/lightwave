@@ -221,11 +221,6 @@ VmDirInternalSearch(
         goto cleanup;  // done special search
     }
 
-    if (pOperation->dbCopyCtrl) {
-        retVal = VmDirExecDbCopyCtrl(pOperation);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
     if (pOperation->syncReqCtrl != NULL) // Replication
     {
         pOperation->opType = VDIR_OPERATION_TYPE_REPL;

@@ -76,15 +76,6 @@ _ParseStatePingControlVal(
     VDIR_LDAP_RESULT*               lr              // Output
     );
 
-static
-int
-_ParseDbCopyControlVal(
-    VDIR_OPERATION*                 op,
-    BerValue*                       pControlValue,  // Input: control value encoded as ber
-    VDIR_DB_COPY_CONTROL_VALUE*     pDbCopyCtrlVal, // Output
-    VDIR_LDAP_RESULT*               lr              // Output
-    );
-
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -300,18 +291,7 @@ ParseRequestControls(
 
                 op->statePingCtrl = *control;
             }
-            if (VmDirStringCompareA((*control)->type, LDAP_DB_COPY_CONTROL, TRUE) == 0)
-            {
-                retVal = _ParseDbCopyControlVal(
-                        op, &lberBervCtlValue, &((*control)->value.dbCopyCtrlVal), lr);
 
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                        retVal,
-                        pszLocalErrorMsg,
-                        "ParseRequestControls: _ParseDbCopyControlVal failed.");
-
-                op->dbCopyCtrl = *control;
-            }
             if (ber_scanf( op->ber, "}") == LBER_ERROR) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
@@ -1497,68 +1477,6 @@ error:
     goto cleanup;
 }
 
-static
-int
-_ParseDbCopyControlVal(
-    VDIR_OPERATION *                pOp,
-    BerValue *                      controlValue,   // Input: control value encoded as ber
-    VDIR_DB_COPY_CONTROL_VALUE *    dbCopyCtrlVal,  // Output
-    VDIR_LDAP_RESULT *              lr              // Output
-    )
-{
-    int                 retVal = LDAP_SUCCESS;
-    BerElementBuffer    berbuf = {0};
-    BerElement *        ber = (BerElement *)&berbuf;
-    PSTR                pszLocalErrorMsg = NULL;
-    ber_int_t           localFd = 0;
-    ber_int_t           localBlock = 0;
-    BerValue            localPath = {0};
-
-    ber_init2( ber, controlValue, LBER_USE_DER );
-
-    if (ber_scanf(ber, "{mii}", &localPath, &localBlock, &localFd) == LBER_ERROR)
-    {
-        lr->errCode = LDAP_PROTOCOL_ERROR;
-        retVal = LDAP_NOTICE_OF_DISCONNECT;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "Error in reading db copy control value");
-    }
-
-    if ((localFd != -1 && localPath.bv_len != 0) ||
-        (localFd == -1 && localPath.bv_len == 0) ||
-        (localFd != -1 && localFd != pOp->conn->ConnCtrlResource.dbCopyCtrlFd))
-    {
-        lr->errCode = LDAP_PROTOCOL_ERROR;
-        retVal = LDAP_NOTICE_OF_DISCONNECT;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "Invalid parameters");
-    }
-
-    if (localFd == -1 && localPath.bv_val)
-    {
-        retVal = VmDirAllocateStringA(localPath.bv_val, &(dbCopyCtrlVal->pszPath));
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-    else
-    {
-        dbCopyCtrlVal->pszPath = NULL;
-    }
-
-    dbCopyCtrlVal->dwBlockSize = localBlock;
-    dbCopyCtrlVal->fd = localFd;
-
-    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Got control DB COPY %s %d %d", dbCopyCtrlVal->pszPath,
-                     dbCopyCtrlVal->dwBlockSize, dbCopyCtrlVal->fd );
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    return retVal;
-
-error:
-    VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, retVal);
-    goto cleanup;
-}
-
-
 int
 VmDirCreateDigestControlContent(
     PCSTR           pszDigest,
@@ -1572,12 +1490,14 @@ VmDirCreateDigestControlContent(
 
     if (!pszDigest || !pDigestCtrl)
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
     if ((pBer = ber_alloc()) == NULL)
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
     localBV.bv_val = (char*)pszDigest;
@@ -1585,7 +1505,13 @@ VmDirCreateDigestControlContent(
 
     if (ber_printf(pBer, "{O}", &localBV) == -1)
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: ber_printf failed.",
+                __FUNCTION__);
+
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
     memset(pDigestCtrl, 0, sizeof(LDAPControl));
@@ -1594,7 +1520,8 @@ VmDirCreateDigestControlContent(
 
     if (ber_flatten2(pBer, &pDigestCtrl->ldctl_value, 1))
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+        retVal = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
 cleanup:
@@ -1605,7 +1532,7 @@ cleanup:
     }
     return retVal;
 
-error:
+ldaperror:
     VmDirFreeCtrlContent(pDigestCtrl);
     goto cleanup;
 }
@@ -1786,46 +1713,5 @@ ldaperror:
             retVal);
 
     VmDirFreeCtrlContent(pPingCtrl);
-    goto cleanup;
-}
-
-int
-VmDirWriteDbCopyReplyControl(
-    VDIR_OPERATION*     pOp,
-    BerElement*         pBer
-    )
-{
-    int         retVal = 0;
-    BerValue    lberCtrlBVIn = {0};
-    BerValue    lberCtrlBVOut = {0};
-
-    if (!pOp || !pBer)
-    {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    if (pOp->dbCopyCtrl)
-    {
-        lberCtrlBVIn.bv_val = pOp->dbCopyCtrl->value.dbCopyCtrlVal.pszData;
-        lberCtrlBVIn.bv_len = pOp->dbCopyCtrl->value.dbCopyCtrlVal.dwDataLen;
-
-        retVal = VmDirCreateDBCopyReplyControlContent(pOp->dbCopyCtrl->value.dbCopyCtrlVal.fd,
-                                                    &lberCtrlBVIn,
-                                                    &lberCtrlBVOut);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, LDAP_DB_COPY_CONTROL, &lberCtrlBVOut ) == -1)
-        {
-            BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
-        }
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(lberCtrlBVOut.bv_val);
-    return retVal;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error %d", __FUNCTION__, retVal);
     goto cleanup;
 }

@@ -206,12 +206,6 @@ VmDirFreeOperationContent(
             VMDIR_SAFE_FREE_MEMORY(op->syncDoneCtrl);
         }
 
-        if (op->dbCopyCtrl)
-        {
-            VMDIR_SAFE_FREE_MEMORY(op->dbCopyCtrl->value.dbCopyCtrlVal.pszPath);
-            VMDIR_SAFE_FREE_MEMORY(op->dbCopyCtrl->value.dbCopyCtrlVal.pszData);
-        }
-
         switch (op->reqCode)
         {
             case LDAP_REQ_BIND:

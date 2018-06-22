@@ -83,22 +83,6 @@ _VmDirMkdir(
     PCSTR path,
     int mode);
 
-static
-int
-_VmDirGetRemoteDBFileUsingLDAP(
-    PCSTR       pszHostname,
-    PSTR        pszDcAccountPwd,
-    PCSTR       dbRemoteFilename,
-    PCSTR       localFilename,
-    UINT32      remoteFileSizeMb,
-    UINT32      remoteDbMapSizeMb);
-
-static
-int
-_VmDirDoDbCopyLdapSearch(
-    LDAP    *pLd,
-    PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal);
-
 int
 VmDirFirstReplicationCycle(
     PCSTR                           pszHostname,
@@ -218,7 +202,6 @@ _VmDirGetRemoteDBUsingRPC(
     DWORD       remoteDbMapSizeMb = 0;
     PBYTE       pDbPath = NULL;
     BOOLEAN     bMdbWalEnable = FALSE;
-    BOOLEAN     bLdapCopyEnable = FALSE;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
@@ -287,16 +270,7 @@ _VmDirGetRemoteDBUsingRPC(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: copying remote file %s with data size %ld MB with Map size %ld MB ...",
                     dbRemoteFilename, remoteDbSizeMb, remoteDbMapSizeMb );
 
-    VmDirGetLdapCopyEnable(&bLdapCopyEnable);
-
-    if (bLdapCopyEnable)
-    {
-        retVal = _VmDirGetRemoteDBFileUsingLDAP( pszHostname, pszDcAccountPwd, dbRemoteFilename, localFilename, remoteDbSizeMb, remoteDbMapSizeMb );
-    }
-    else
-    {
-        retVal = _VmDirGetRemoteDBFileUsingRPC( hServer, dbRemoteFilename, localFilename, remoteDbSizeMb, remoteDbMapSizeMb );
-    }
+    retVal = _VmDirGetRemoteDBFileUsingRPC( hServer, dbRemoteFilename, localFilename, remoteDbSizeMb, remoteDbMapSizeMb );
     BAIL_ON_VMDIR_ERROR( retVal );
 
     if (low_xlognum == 0)
@@ -323,14 +297,7 @@ _VmDirGetRemoteDBUsingRPC(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirGetRemoteDBUsingRPC: VmDirStringPrintFA() call failed with error: %d", retVal );
 
-        if (bLdapCopyEnable)
-        {
-            retVal = _VmDirGetRemoteDBFileUsingLDAP( pszHostname, pszDcAccountPwd, dbRemoteFilename, localFilename, 0, 0 );
-        }
-        else
-        {
-            retVal = _VmDirGetRemoteDBFileUsingRPC( hServer, dbRemoteFilename, localFilename, 0, 0);
-        }
+        retVal = _VmDirGetRemoteDBFileUsingRPC( hServer, dbRemoteFilename, localFilename, 0, 0);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirGetRemoteDBUsingRPC: _VmDirGetRemoteDBFileUsingRPC() call failed with error: %d", retVal );
     }
@@ -367,158 +334,6 @@ DWORD
 VmDirCloseDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hServer,
     FILE **                 ppFileHandle);
-
-static
-int
-_VmDirDoDbCopyLdapSearch(
-    LDAP    *pLd,
-    PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal)
-{
-    DWORD           dwError = 0;
-    LDAPControl     dbCopyCtl = {0};
-    LDAPControl*    pSrvCtrls[2] = {&dbCopyCtl, NULL};
-    LDAPMessage*    pResult = NULL;
-    LDAPControl**   ppSearchResCtrls = NULL;
-
-    dwError = VmDirCreateDbCopyControlContent(
-                                pDbCopyCtrlVal,
-                                &dbCopyCtl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    /*Do dummy LDAP search that returns no entries*/
-    dwError = ldap_search_ext_s(
-                pLd,
-                gVmdirServerGlobals.systemDomainDN.lberbv_val,
-                LDAP_SCOPE_BASE,
-                "objectclass=user",
-                NULL,
-                0,
-                pSrvCtrls,
-                NULL,
-                NULL,
-                -1,
-                &pResult);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = ldap_parse_result(pLd, pResult, NULL, NULL, NULL, NULL, &ppSearchResCtrls, 0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (ppSearchResCtrls[0] == NULL ||
-        VmDirStringCompareA(ppSearchResCtrls[0]->ldctl_oid, LDAP_DB_COPY_CONTROL, TRUE) != 0)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, LDAP_OPERATIONS_ERROR);
-    }
-
-    dwError = VmDirParseDBCopyReplyControlContent(ppSearchResCtrls[0],
-                                                  pDbCopyCtrlVal);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    if (pResult)
-    {
-        ldap_msgfree(pResult);
-    }
-
-    VmDirFreeCtrlContent(&dbCopyCtl);
-
-    if (ppSearchResCtrls)
-    {
-        ldap_controls_free(ppSearchResCtrls);
-    }
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirDoDbCopyLdapSearch: Error %d", dwError);
-    goto cleanup;
-}
-
-static
-int
-_VmDirGetRemoteDBFileUsingLDAP(
-    PCSTR       pszHostname,
-    PSTR        pszDcAccountPwd,
-    PCSTR       dbRemoteFilename,
-    PCSTR       pszLocalFilename,
-    UINT32      remoteFileSizeMb,
-    UINT32      remoteDbMapSizeMb)
-{
-    DWORD                       dwError = 0;
-    LDAP*                       pLd = NULL;
-    int                         localFileFd = -1;
-    PSTR                        pszLocalErrorMsg = NULL;
-    DWORD                       dwWriteSize = 0;
-    VDIR_DB_COPY_CONTROL_VALUE  localDbCopyCtrlValue = {0};
-#define VMDIR_LDAP_DB_READ_BLOCK_SIZE     (1<<23)
-
-    dwError = VmDirAllocateStringA(dbRemoteFilename, &localDbCopyCtrlValue.pszPath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSafeLDAPBind(
-                &pLd,
-                pszHostname,
-                gVmdirServerGlobals.dcAccountUPN.lberbv_val,
-                pszDcAccountPwd);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ((localFileFd = creat(pszLocalFilename, S_IRUSR|S_IWUSR)) < 0)
-    {
-        dwError = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-            "_VmDirGetRemoteDBFileUsingLDAP: creat local file %s failed, error %d", pszLocalFilename, errno);
-    }
-
-    localDbCopyCtrlValue.fd = -1;
-    localDbCopyCtrlValue.dwBlockSize = VMDIR_LDAP_DB_READ_BLOCK_SIZE;
-
-    for (;;)
-    {
-        dwError = _VmDirDoDbCopyLdapSearch(pLd, &localDbCopyCtrlValue);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (localDbCopyCtrlValue.dwDataLen > 0)
-        {
-            dwWriteSize = (UINT32)write(localFileFd, localDbCopyCtrlValue.pszData, localDbCopyCtrlValue.dwDataLen);
-            if (dwWriteSize == -1 || dwWriteSize < localDbCopyCtrlValue.dwDataLen)
-            {
-                dwError = VMDIR_ERROR_IO;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                    "_VmDirGetRemoteDBFileUsingLDAP: write() call failed, recvSize: %d, writeSize: %d",
-                    localDbCopyCtrlValue.dwDataLen, dwWriteSize );
-            }
-
-            if (localDbCopyCtrlValue.dwDataLen < VMDIR_LDAP_DB_READ_BLOCK_SIZE)
-            {
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
-
-        localDbCopyCtrlValue.pszPath[0] = '\0';
-        VMDIR_SAFE_FREE_MEMORY(localDbCopyCtrlValue.pszData);
-        localDbCopyCtrlValue.dwDataLen = 0;
-    }
-
-cleanup:
-
-    if (localFileFd != -1)
-    {
-        close(localFileFd);
-    }
-
-    VMDIR_SAFE_FREE_STRINGA(localDbCopyCtrlValue.pszPath);
-    VMDIR_SAFE_FREE_MEMORY(localDbCopyCtrlValue.pszData);
-    VDIR_SAFE_UNBIND_EXT_S(pLd);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBFileUsingLDAP: Error %d", dwError);
-    goto cleanup;
-}
 
 static
 int

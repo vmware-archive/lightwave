@@ -243,14 +243,6 @@ VmDirSendLdapResult(
         }
     }
 
-    if (pOperation->dbCopyCtrl)
-    {
-        if (VmDirWriteDbCopyReplyControl(pOperation, ber) != LDAP_SUCCESS)
-        {
-            goto done;
-        }
-    }
-
     if (ber_printf(ber, "N}") == -1)
     {
         VMDIR_LOG_ERROR(

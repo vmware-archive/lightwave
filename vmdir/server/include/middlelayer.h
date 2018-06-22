@@ -237,9 +237,4 @@ VmDirAuditWriteOp(
     PVDIR_ENTRY      pEntry
     );
 
-DWORD
-VmDirExecDbCopyCtrl(
-    PVDIR_OPERATION pOperation
-    );
-
 #endif /* ML_INTERFACE_H_ */
