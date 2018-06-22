@@ -666,6 +666,7 @@ _VmDirOpenDbEnv()
          }
      }
 
+
 #ifdef MDB_NOTLS
      envFlags = MDB_NOTLS; // Required for versions of mdb which have this flag
 #endif
@@ -697,6 +698,8 @@ _VmDirOpenDbEnv()
 
     dwError = _VmdirCreateDbEnv(db_max_mapsize);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    mdb_set_error_log_func(&VmDirMdbErrorLog);
 
     dwError = mdb_env_open (gVdirMdbGlobals.mdbEnv, dbHomeDir, envFlags, mode );
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "_VmDirOpenDbEnv: open database at %d failed", dbHomeDir);
@@ -751,4 +754,15 @@ error:
                      db_max_mapsize, dwError);
     dwError = LDAP_OPERATIONS_ERROR;
     goto cleanup;
+}
+
+VOID
+VmDirMdbErrorLog(
+    int errnum,
+    int param,
+    const char *funname,
+    int lineno)
+{
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: error %d param %d func %s line %d",
+                    __func__,  errnum, param, funname, lineno);
 }
