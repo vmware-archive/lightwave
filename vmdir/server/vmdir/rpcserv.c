@@ -2143,16 +2143,16 @@ error:
 UINT32
 Srv_RpcVmDirGetComputerAccountInfo(
     handle_t                  hBinding,
-    PWSTR                     pszDomainName,
-    PWSTR                     pszPassword,
-    PWSTR                     pszMachineName,
+    PWSTR                     pwszDomainName,
+    PWSTR                     pwszPassword,
+    PWSTR                     pwszMachineName,
     PVMDIR_MACHINE_INFO_W     *ppMachineInfo,
     PVMDIR_KRB_INFO           *ppKrbInfo
     )
 {
     DWORD dwError = 0;
-    PSTR paszDomainName = NULL;
-    PSTR paszMachineName = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszMachineName = NULL;
     PSTR pszMachineUPN = NULL;
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
@@ -2169,9 +2169,9 @@ Srv_RpcVmDirGetComputerAccountInfo(
 
     VMDIR_GET_SYSTEM_DOMAIN_DN(pszDomainDn, dwError);
 
-    if (IsNullOrEmptyString(pszMachineName) ||
-        IsNullOrEmptyString(pszDomainName) ||
-        IsNullOrEmptyString(pszPassword) ||
+    if (IsNullOrEmptyString(pwszMachineName) ||
+        IsNullOrEmptyString(pwszDomainName) ||
+        IsNullOrEmptyString(pwszPassword) ||
         !ppMachineInfo || !ppKrbInfo
        )
     {
@@ -2183,22 +2183,22 @@ Srv_RpcVmDirGetComputerAccountInfo(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
-                        pszMachineName,
-                        &paszMachineName
+                        pwszMachineName,
+                        &pszMachineName
                         );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
-                        pszDomainName,
-                        &paszDomainName
+                        pwszDomainName,
+                        &pszDomainName
                         );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
                             &pszMachineUPN,
                             "%s@%s",
-                            paszMachineName,
-                            paszDomainName
+                            pszMachineName,
+                            pszDomainName
                             );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2228,8 +2228,8 @@ Srv_RpcVmDirGetComputerAccountInfo(
 
     dwError = VmDirSrvGetComputerAccountInfo(
                                          pConnection,
-                                         paszDomainName,
-                                         paszMachineName,
+                                         pszDomainName,
+                                         pszMachineName,
                                          &pMachineInfo->pszComputerDN,
                                          &pMachineInfo->pszMachineGUID,
                                          &pMachineInfo->pszSiteName
@@ -2237,15 +2237,15 @@ Srv_RpcVmDirGetComputerAccountInfo(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
-                                pszPassword,
+                                pwszPassword,
                                 &pMachineInfo->pszPassword
                                 );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSrvGetKeyTabInfoClient(
                                   pConnection,
-                                  paszDomainName,
-                                  paszMachineName,
+                                  pszDomainName,
+                                  pszMachineName,
                                   &pKrbInfo
                                   );
     if (!dwError)
@@ -2288,8 +2288,8 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAdminCheckAccessToken);
     }
-    VMDIR_SAFE_FREE_STRINGA(paszDomainName);
-    VMDIR_SAFE_FREE_STRINGA(paszMachineName);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+    VMDIR_SAFE_FREE_STRINGA(pszMachineName);
     VMDIR_SAFE_FREE_STRINGA(pszMachineUPN);
     return dwError;
 

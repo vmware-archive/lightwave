@@ -10,6 +10,7 @@ libvmdirclient_la_CPPFLAGS = \
     @LW_INCLUDES@
 
 libvmdirclient_la_SOURCES = \
+    atomicjoinclient.c \
     binding.c \
     client.c \
     dbbackupclient.c \
