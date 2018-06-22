@@ -1355,6 +1355,9 @@ AC_SUBST(vmcapyutilsdir)
 vmcajarsdir="$prefix/jars"
 AC_SUBST(vmcajarsdir)
 
+lwcertooldir=$prefix/bin
+AC_SUBST(lwcertooldir)
+
 #--------------------------------------------------------------------
 # CURL components
 
@@ -1683,6 +1686,8 @@ AC_CONFIG_FILES([Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
+                 vmca/tools/Makefile
+                 vmca/tools/lw-certool/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
                  vmidentity/config/vmware-stsd.sh

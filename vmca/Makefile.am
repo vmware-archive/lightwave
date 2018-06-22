@@ -16,4 +16,5 @@ SUBDIRS = \
     certool \
     jdepends \
     java \
+    tools \
     $(PYTHON_DIR)

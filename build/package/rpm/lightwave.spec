@@ -1105,6 +1105,7 @@ Lightwave Web based UI for lightwave IDM
 %{_bindir}/dir-cli
 %{_bindir}/domainjoin
 %{_bindir}/domainjoin.sh
+%{_bindir}/lw-certool
 %{_bindir}/lw-support-bundle.sh
 %{_bindir}/sl-cli
 %{_bindir}/vmafd-cli
