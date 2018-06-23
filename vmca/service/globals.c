@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -27,7 +27,8 @@ VMCA_SERVER_GLOBALS gVMCAServerGlobals =
     VMCA_SF_INIT(.dwFuncLevel, VMCA_FUNC_LEVEL_INITIAL),
     VMCA_SF_INIT(.pDirSyncParams, NULL),
     VMCA_SF_INIT(.pDirSyncThr, NULL),
-    VMCA_SF_INIT(.gpEventLog, NULL)
+    VMCA_SF_INIT(.gpEventLog, NULL),
+    VMCA_SF_INIT(.gppPolicies, NULL)
 };
 
 #ifdef REST_ENABLED

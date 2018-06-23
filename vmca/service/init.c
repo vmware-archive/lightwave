@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -148,8 +148,26 @@ VMCASrvInitCA(
     PSTR pszPrivateKeyFile = NULL;
     PSTR pszPasswordFile = NULL;
     PVMCA_X509_CA pCA = NULL;
+    PVMCA_POLICY *ppPolicies = NULL;
     DWORD dwCRLNumberCurrent = 0;
     BOOL bIsHoldingMutex = FALSE;
+
+    dwError = VMCAPolicyInit(&ppPolicies);
+    // TODO (shahneel): once policy parsing/enforcement is verified to work,
+    //                  this must be updated to actually bail on errors.
+    if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
+    {
+        VMCA_LOG_INFO("Failed to load policy config file, will not enforce policies...");
+        dwError = 0;
+    }
+    else if (dwError != 0)
+    {
+        VMCA_LOG_INFO("Failed to load policy config file. Error: %d", dwError);
+        dwError = 0;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    gVMCAServerGlobals.gppPolicies = ppPolicies;
 
     dwError = VMCAGetRootCertificateFilePath(&pszRootCertFile);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -211,7 +229,12 @@ VMCASrvInitCA(
 
 error:
 
-    if ( pPrivateKey != NULL )
+    if (ppPolicies != NULL)
+    {
+        VMCAPolicyArrayFree(ppPolicies);
+        gVMCAServerGlobals.gppPolicies = NULL;
+    }
+    if (pPrivateKey != NULL)
     {
         VMCAFreeKey(pPrivateKey);
     }

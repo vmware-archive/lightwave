@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -213,6 +213,35 @@ VMCAServiceShutdown(
     VOID
     );
 
+/* policy.c */
+
+DWORD
+VMCAPolicyInit(
+    PVMCA_POLICY        **pppPolicies
+    );
+
+VOID
+VMCAPolicyFree(
+    PVMCA_POLICY        pPolicy
+    );
+
+VOID
+VMCAPolicyArrayFree(
+    PVMCA_POLICY        *ppPolicies
+    );
+
+/* snpolicy.c */
+
+DWORD
+VMCAPolicySNLoad(
+    json_t              *pJsonPolicy,
+    PVMCA_POLICY        pPolicy
+    );
+
+VOID
+VMCAPolicySNFree(
+    PVMCA_POLICY_RULES  pPolicyRules
+    );
 
 /* signal.c */
 
