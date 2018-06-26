@@ -21,7 +21,6 @@ LIGHTWAVE_BASE=/home/abernstein/workspaces/git/lightwave/lightwave
 #SASL_BASE=$LIGHTWAVE_BASE/vmdir/thirdparty/cyrus-sasl-2.1.26 # checked in local change; broken
 SASL_BASE=`pwd`/../../thirdparty/cyrus-sasl-2.1.26-built      # Pre-built working SASL
 
-
 echo_status()
 {
   echo
@@ -59,6 +58,7 @@ SCRIPT_DIR=`readlink -f "$0"`
 TOOLS_DIR=`dirname $SCRIPT_DIR`
 DOMAIN_DN=`echo $DC_DOMAIN | sed -e "s|\.|,dc=|" -e "s|^|dc=|"`
 DC_DOMAIN_UC=`echo $DC_DOMAIN | tr 'a-z' 'A-Z'`
+DC_NAME_UC=`echo $DC_NAME | tr 'a-z' 'A-Z'`
 #
 #
 #
@@ -242,7 +242,8 @@ ssh $PRIV_USER@$LIGHTWAVE_AD \
 # 15a Build correct name in partitions script
 echo_status "Build partitions script"
 cat  $TOOLS_DIR/partitions-vmdir.sh | \
-  sed -e "s|DC_NAME|$DC_NAME|" \
+  sed -e "s|DC_NAME_UC|$DC_NAME_UC|" \
+      -e "s|DC_NAME|$DC_NAME|" \
       -e "s|DC_DOMAIN_UC|$DC_DOMAIN_UC|" \
       -e "s|DC_DOMAIN|$DC_DOMAIN|" \
       -e "s|DOMAIN_DN|$DOMAIN_DN|" > \

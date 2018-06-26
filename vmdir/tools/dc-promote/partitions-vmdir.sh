@@ -32,7 +32,7 @@ instanceType: 4
 msDS-Behavior-Version: 4
 name: DC_NAME
 nCName: DOMAIN_DN
-nETBIOSName: DC_NAME
+nETBIOSName: DC_NAME_UC
 nTMixedDomain: 0
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,DOMAIN_DN
 showInAdvancedViewOnly: TRUE

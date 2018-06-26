@@ -6,7 +6,7 @@ trap "kill $PID" 1 2 3 15
 tcpports=0
 i=0
 while [ \( $tcpports -lt 2 \) -a \( $i -lt 5 \) ]; do
-  tcpports=`netstat -tanp | grep lsassd | grep 'tcp[^6]' | grep LISTEN |
+  tcpports=`netstat -tanp | grep -e lsassd -e valgrind | grep 'tcp[^6]' | grep LISTEN |
              grep -v grep | wc -l`
   sleep 2
   i=$(($i + 1))
@@ -25,7 +25,7 @@ if [ -f /tmp/drsuapi_port_prev.txt ]; then
   done
 fi
 
-lsassd_pid=`ps auxw | grep leak-check | grep -v grep  | awk '{print $2}'`
+lsassd_pid=`ps auxw | grep -e lsass -e valgrind | grep -v grep  | awk '{print $2}'`
 if [ -n "$lsassd_pid" ]; then
   drsuapi_port=`netstat -tanp | grep "${lsassd_pid}/"  | grep LISTEN | grep -v tcp6 | \
     sed -e 's/\(.*:\)\(.*:.*\)/\2/'  -e 's/  .*//'`
