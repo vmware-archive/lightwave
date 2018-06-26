@@ -211,7 +211,7 @@ func parseSignedArguments(args []string) (hostname string, domain string, userna
 }
 
 func showSignedUsage() {
-	fmt.Println("Usage: certificate signed { arguments }")
+	fmt.Println("Usage: lw-certool ca getcert { arguments }")
 	fmt.Println("Arguments:")
 	fmt.Println("  Required:")
 	fmt.Println("    --config    <path to .json config file>")

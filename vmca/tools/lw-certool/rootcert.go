@@ -63,7 +63,7 @@ func parseRootArguments(args []string) string {
 }
 
 func showRootUsage() {
-	fmt.Println("Usage: lw-certool root { arguments }")
+	fmt.Println("Usage: lw-certool ca getroot { arguments }")
 	fmt.Println("Arguments (optional):")
 	fmt.Println("    --server    <server ip/hostname>. Default: localhost")
 	fmt.Println("    --insecure (Use this to skip certificate validation)")
