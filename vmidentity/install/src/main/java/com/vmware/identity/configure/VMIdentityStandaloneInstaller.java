@@ -89,6 +89,8 @@ public class VMIdentityStandaloneInstaller {
             case PARSE_MODE_OPEN:
                 if (arg.equals("--hostname")) {
                     mode = ParseMode.PARSE_MODE_HOSTNAME;
+                } else if (arg.equals("--endpoint")) {
+                    mode = ParseMode.PARSE_MODE_ENDPOINT;
                 } else if (arg.equals("--hostnametype")) {
                     mode = ParseMode.PARSE_MODE_HOSTNAMETYPE;
                 } else if (arg.equals("--password")) {
@@ -121,6 +123,10 @@ public class VMIdentityStandaloneInstaller {
                 break;
             case PARSE_MODE_HOSTNAME:
                 params.setHostname(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_ENDPOINT:
+                params.setEndpoint(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
             case PARSE_MODE_HOSTNAMETYPE:
@@ -173,6 +179,7 @@ public class VMIdentityStandaloneInstaller {
     enum ParseMode {
         PARSE_MODE_OPEN,
         PARSE_MODE_HOSTNAME,
+        PARSE_MODE_ENDPOINT,
         PARSE_MODE_HOSTNAMETYPE,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_USERNAME,

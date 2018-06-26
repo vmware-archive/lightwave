@@ -1,5 +1,11 @@
 package com.vmware.identity.configure;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import com.vmware.identity.installer.ReleaseUtil;
 
 /*
@@ -20,21 +26,13 @@ import com.vmware.identity.installer.ReleaseUtil;
 import com.vmware.identity.interop.registry.IRegistryAdapter;
 import com.vmware.identity.interop.registry.IRegistryKey;
 import com.vmware.identity.interop.registry.RegKeyAccess;
-import com.vmware.identity.interop.registry.RegValueType;
 import com.vmware.identity.interop.registry.RegistryAdapterFactory;
-import com.vmware.identity.interop.registry.RegistryValueType;
-import java.io.File;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
 
 public class HostnameReader {
     private static final String CONFIG_IDENTITY_ROOT_KEY = "Software\\VMware\\Identity\\Configuration";
     private static final String HOST_NAME_KEY = "Hostname";
     private static final String PORT_NUMBER_KEY_VSPHERE = "StsLocalTcPort"; // 7444
     private static final String PORT_NUMBER_KEY_LIGHTWAVE = "StsTcPort"; // 443
-    private String hostname;
 
     private static String read(String key) throws Exception {
         String value = null;
@@ -55,6 +53,7 @@ public class HostnameReader {
         return value;
     }
 
+
     public static String readHostName()  throws Exception {
         String hostname = null;
         try {
@@ -66,6 +65,10 @@ public class HostnameReader {
             hostname = readHostnameFromFile();
         }
         return hostname;
+    }
+
+    public static String readHostNameFromRegistry() throws Exception {
+        return read(HOST_NAME_KEY);
     }
 
     /**

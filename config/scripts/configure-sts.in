@@ -12,10 +12,12 @@ LOTUS_DOMAIN_DEFAULT=lightwave.local
 LOTUS_ADMIN_DEFAULT=Administrator
 LOTUS_ADMIN_PASSWORD_DEFAULT=
 LOTUS_HOSTNAME=
+LOTUS_ENDPOINT=
+LOTUS_ENDPOINT_ARG=
 LOTUS_ADMIN_PASSWORD_DEFAULT=
 LOTUS_SSL_SUBJECT_ALT_NAME=
 
-USAGE="configure-sts --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--ssl-subject-alt-name <SSL Subject Alternative name]"
+USAGE="configure-sts --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--endpoint <LB Endpoint>] [--site <site-name>] [--hostname <hostname | IP Address>] [--ssl-subject-alt-name <SSL Subject Alternative name]"
 
 _exit(){
     if [ $RUN_LWSM ]; then
@@ -55,6 +57,9 @@ if [ $# -gt 0 ]; then
                     "--hostname")
                       MODE="hostname"
                       ;;
+                    "--endpoint")
+                      MODE="endpoint"
+                      ;;
                     "--username")
                       MODE="username"
                       ;;
@@ -88,6 +93,10 @@ if [ $# -gt 0 ]; then
                 LOTUS_HOSTNAME=$arg
                 MODE=open
                 ;;
+             "endpoint")
+                LOTUS_ENDPOINT=$arg
+                MODE=open
+                ;;
              "username")
                 LOTUS_ADMIN_DEFAULT=$arg
                 MODE=open
@@ -112,6 +121,14 @@ if [ -z "$LOTUS_HOSTNAME" ]; then
     LOTUS_HOSTNAME=`hostname -f`
 fi
 
+if [ ! -z "$LOTUS_SSL_SUBJECT_ALT_NAME" ]; then
+    LOTUS_SSL_SUBJECT_ALT_NAME_ARG="--ssl-subject-alt-name $LOTUS_SSL_SUBJECT_ALT_NAME"
+fi
+
+if [ ! -z "$LOTUS_ENDPOINT" ]; then
+    LOTUS_ENDPOINT_ARG="--endpoint $LOTUS_ENDPOINT"
+fi
+
 $JAVA -Djava.security.properties=$JAVA_SEC_PROP \
       -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
       -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
@@ -119,7 +136,8 @@ $JAVA -Djava.security.properties=$JAVA_SEC_PROP \
       --username $LOTUS_ADMIN_DEFAULT \
       --domain $LOTUS_DOMAIN_DEFAULT \
       --password $LOTUS_ADMIN_PASSWORD_DEFAULT \
-      $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
+      $LOTUS_SSL_SUBJECT_ALT_NAME_ARG \
+      $LOTUS_ENDPOINT_ARG
 
 if [ $? -ne 0 ]; then
         echo  "Failed to start Secure Token Service."

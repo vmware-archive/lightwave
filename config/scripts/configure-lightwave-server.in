@@ -79,12 +79,14 @@ LOTUS_ADMIN_PASSWORD_DEFAULT=
 LOTUS_PARTNER_HOSTNAME=
 LOTUS_SITE_NAME=Default-first-site
 LOTUS_HOSTNAME=
+LOTUS_ENDPOINT=
+LOTUS_ENDPOINT_ARG=
 LOTUS_DNS_FORWARDERS=
 LOTUS_PARENT_DOMAIN_DEFAULT=
 LOTUS_SSL_SUBJECT_ALT_NAME=
 DISABLE_DNS=0
 DISABLE_STS=0
-USAGE="configure-lightwave-server [--username <admin-username>] --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--disable-sts] [--config-file <configuration file>] [--parent-domain <parent domain>] [--parent-dc <parent dc>] [--parent-username <parent admin user>] [--parent-password <parent admin user password>]"
+USAGE="configure-lightwave-server [--username <admin-username>] --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--endpoint <LB Endpoint>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--disable-sts] [--config-file <configuration file>] [--parent-domain <parent domain>] [--parent-dc <parent dc>] [--parent-username <parent admin user>] [--parent-password <parent admin user password>]"
 export SUPPORT_RHTTP_PROXY=0
 
 # Read passed parameters.
@@ -115,6 +117,9 @@ if [ $# -gt 0 ]; then
                       ;;
                     "--hostname")
                       MODE="hostname"
+                      ;;
+                    "--endpoint")
+                      MODE="endpoint"
                       ;;
                     "--config-file")
                       MODE="config-file"
@@ -175,6 +180,10 @@ if [ $# -gt 0 ]; then
                 LOTUS_HOSTNAME=$arg
                 MODE=open
                 ;;
+             "endpoint")
+                LOTUS_ENDPOINT=$arg
+                MODE=open
+                ;;
              "dns-forwarders")
                 LOTUS_DNS_FORWARDERS=$arg
                 MODE=open
@@ -222,6 +231,7 @@ if [ -f "$LOTUS_CONFIG_FILE" ]; then
     LOTUS_PARTNER_HOSTNAME=$(grep "^replication-partner-hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_SITE_NAME=$(grep "^site-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_HOSTNAME=$(grep "^hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ENDPOINT=$(grep "^endpoint=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_FIRST_INSTANCE=$(grep "^first-instance=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_DNS_FORWARDERS=$(grep "^dns-forwarders=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_SSL_SUBJECT_ALT_NAME=$(grep "^ssl-subject-alt-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
@@ -456,13 +466,18 @@ else
         _exit 1
     fi
 
+    if [ ! -z "$LOTUS_ENDPOINT" ]; then
+        LOTUS_ENDPOINT_ARG="--endpoint $LOTUS_ENDPOINT"
+    fi
+
     case $DISABLE_STS in
         0)
             echo "Secure Token Service Installation - Started"
 	        $BIN_DIR/configure-sts \
                 --domain $LOTUS_DOMAIN_DEFAULT \
                 --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-                --username $LOTUS_ADMIN_DEFAULT
+                --username $LOTUS_ADMIN_DEFAULT \
+                $LOTUS_ENDPOINT_ARG
             if [ $? -ne 0 ]; then
                 echo "Secure Token Service Installation - Failed"
                 _exit 1
