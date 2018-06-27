@@ -390,8 +390,8 @@
     <spring.release.version>4.3.16.RELEASE</spring.release.version>
     <stax-ex.version>1.7.7</stax-ex.version>
     <streambuffer.version>1.5.3</streambuffer.version>
-    <tomat.coyote.version>8.5.19</tomat.coyote.version>
-    <tomcat.catalina.version>8.5.8</tomcat.catalina.version>
+    <tomat.coyote.version>8.5.31</tomat.coyote.version>
+    <tomcat.catalina.version>8.5.31</tomcat.catalina.version>
     <velocity.version>1.7</velocity.version>
     <xalan.version>2.7.2</xalan.version>
     <xerces.impl.version>2.10.0</xerces.impl.version>
