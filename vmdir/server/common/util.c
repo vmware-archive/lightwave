@@ -1612,3 +1612,112 @@ VmDirAssertServerGlobals(
     assert(gVmdirServerGlobals.pszSiteName);
     assert(gVmdirServerGlobals.dwDomainFunctionalLevel > 0);
 }
+
+/*
+ * Copy specified attribute as a string
+*/
+DWORD
+VmDirCopySingleAttributeString(
+    PVDIR_ENTRY  pEntry,
+    PCSTR        pszAttribute,
+    BOOL         bOptional,
+    PSTR*        ppszOut
+    )
+{
+    DWORD   dwError = 0;
+    PSTR   pszOut = NULL;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+
+    if (!pEntry || IsNullOrEmptyString(pszAttribute) || !ppszOut)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
+    {
+        if (VmDirStringCompareA(pAttr->pATDesc->pszName, pszAttribute, FALSE) == 0)
+        {
+            if (pAttr->vals[0].lberbv_len > 0)
+            {
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[0].lberbv_val,
+                        &pszOut);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else if (!bOptional)
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SUCH_ATTRIBUTE);
+            }
+
+            break;
+        }
+    }
+
+    *ppszOut = pszOut;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMDIR_SAFE_FREE_MEMORY(pszOut);
+    if (ppszOut)
+    {
+        *ppszOut = NULL;
+    }
+    goto cleanup;
+}
+
+/*
+ * Fetch attribute value under dn.
+ * Assumes single result and only operates on first result.
+*/
+DWORD
+VmDirDNCopySingleAttributeString(
+    PCSTR   pszDN,
+    PCSTR   pszAttr,
+    PSTR    *ppszAttrVal
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAttrVal = NULL;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+
+    if (IsNullOrEmptyString(pszDN) ||
+        IsNullOrEmptyString(pszAttr) ||
+        !ppszAttrVal)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirFilterInternalSearch(
+                  pszDN,
+                  LDAP_SCOPE_BASE,
+                  "objectClass=*",
+                  0,
+                  NULL,
+                  &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (entryArray.iSize == 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
+    }
+
+    dwError = VmDirCopySingleAttributeString(
+                  &entryArray.pEntry[0],
+                  pszAttr, FALSE,
+                  &pszAttrVal);
+    BAIL_ON_VMDIR_ERROR( dwError );
+
+    *ppszAttrVal = pszAttrVal;
+
+cleanup:
+    VmDirFreeEntryArrayContent(&entryArray);
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszAttrVal);
+    goto cleanup;
+}

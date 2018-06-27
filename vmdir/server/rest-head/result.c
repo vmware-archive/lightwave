@@ -185,6 +185,34 @@ error:
 }
 
 DWORD
+VmDirRESTResultSetBooleanData(
+    PVDIR_REST_RESULT   pRestRslt,
+    PSTR                pszKey,
+    BOOLEAN             bVal
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirRESTResultSetStrData(
+                  pRestRslt,
+                  pszKey,
+                  bVal ? "true" : "false");
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmDirRESTResultSetObjData(
     PVDIR_REST_RESULT   pRestRslt,
     PSTR                pszKey,

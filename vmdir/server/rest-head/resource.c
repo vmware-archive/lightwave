@@ -35,6 +35,15 @@ static VDIR_REST_RESOURCE resources[VDIR_REST_RSC_COUNT] =
         "error_message"
     },
     {
+        VDIR_REST_RSC_API,
+        "/v1/vmdir/api",
+        TRUE,
+        VmDirRESTUnknownSetResult,
+        VmDirRESTUnknownGetHttpError,
+        "error_code",
+        "error_message"
+    },
+    {
         VDIR_REST_RSC_UNKNOWN,
         NULL,
         FALSE,

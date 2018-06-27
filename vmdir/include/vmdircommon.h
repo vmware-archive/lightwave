@@ -740,6 +740,12 @@ VmDirDomainNameToDN(
     );
 
 DWORD
+VmDirDNToPasswordPolicyDN(
+    PCSTR   pszDomainDN,
+    PSTR*   ppszPolicyDN
+    );
+
+DWORD
 VmDirDomainToPasswordPolicyDN(
     PCSTR   pszDomainName,
     PSTR*   ppszPolicyDN
@@ -1048,6 +1054,7 @@ typedef enum
 #define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
 #define VMDIR_REG_KEY_HTTP_LISTEN_PORT        "RestListenHTTPPort"
 #define VMDIR_REG_KEY_HTTPS_LISTEN_PORT       "RestListenHTTPSPort"
+#define VMDIR_REG_KEY_HTTPS_API_LISTEN_PORT   "RestListenHTTPSApiPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC  "LdapConnectTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"

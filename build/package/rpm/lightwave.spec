@@ -1085,6 +1085,7 @@ Lightwave POST service
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
 %{_datadir}/config/vmdir-rest.json
+%{_datadir}/config/vmdir-rest-api.json
 %{_datadir}/config/vmdir-telegraf.conf
 
 %{_datadir}/config/vmdns.reg

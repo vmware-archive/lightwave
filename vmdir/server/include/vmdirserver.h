@@ -181,6 +181,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapsConnectPorts;
     DWORD                           dwHTTPListenPort;
     DWORD                           dwHTTPSListenPort;
+    DWORD                           dwHTTPSApiListenPort;
 
     DWORD                           dwLdapRecvTimeoutSec;
     DWORD                           dwLdapConnectTimeoutSec;

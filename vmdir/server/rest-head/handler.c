@@ -15,11 +15,48 @@
 #include "includes.h"
 
 /*
- * We provide this function as callback to c-rest-engine,
+ * We provide this function as callback to c-rest-engine for ldap
  * c-rest-engine will use this callback upon receiving a request
  */
 DWORD
+VmDirRESTLdapRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    )
+{
+    return VmDirRESTRequestHandler(
+               gpVdirRestApiDef,
+               pRESTHandle,
+               pRequest,
+               ppResponse,
+               paramsCount);
+}
+
+/*
+ * We provide this function as callback to c-rest-engine for api
+ * c-rest-engine will use this callback upon receiving a request
+ */
+DWORD
+VmDirRESTApiRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    )
+{
+    return VmDirRESTRequestHandler(
+               gpVdirRestApiDef2,
+               pRESTHandle,
+               pRequest,
+               ppResponse,
+               paramsCount);
+}
+
+DWORD
 VmDirRESTRequestHandler(
+    PREST_API_DEF   pRestApiDef,
     PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
@@ -32,7 +69,7 @@ VmDirRESTRequestHandler(
     uint64_t    iEndTime = 0;
     PVDIR_REST_OPERATION    pRestOp = NULL;
 
-    if (!pRESTHandle || !pRequest || !ppResponse)
+    if (!pRestApiDef || !pRESTHandle || !pRequest || !ppResponse)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -54,7 +91,7 @@ VmDirRESTRequestHandler(
     else
     {
         dwRestOpErr = VmDirRESTProcessRequest(
-                pRestOp, pRESTHandle, pRequest, paramsCount);
+                pRestApiDef, pRestOp, pRESTHandle, pRequest, paramsCount);
 
         dwError = VmDirRESTOperationWriteResponse(
                 pRestOp, pRESTHandle, ppResponse);
@@ -83,6 +120,7 @@ error:
 
 DWORD
 VmDirRESTProcessRequest(
+    PREST_API_DEF           pRestApiDef,
     PVDIR_REST_OPERATION    pRestOp,
     PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRequest,
@@ -91,7 +129,7 @@ VmDirRESTProcessRequest(
 {
     DWORD   dwError = 0;
 
-    if (!pRestOp || !pRESTHandle || !pRequest)
+    if (!pRestApiDef || !pRestOp || !pRESTHandle || !pRequest)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -107,7 +145,7 @@ VmDirRESTProcessRequest(
     if (VmDirStringCompareA(pRestOp->pszMethod, HTTP_METHOD_OPTIONS, FALSE) != 0)
     {
         dwError = coapi_find_handler(
-                gpVdirRestApiDef,
+                pRestApiDef,
                 pRestOp->pszPath,
                 pRestOp->pszMethod,
                 &pRestOp->pMethod);

@@ -15,9 +15,11 @@
 #include "includes.h"
 
 PREST_API_DEF gpVdirRestApiDef = NULL;
+PREST_API_DEF gpVdirRestApiDef2 = NULL;
 
 PVMREST_HANDLE gpVdirRestHTTPHandle = NULL;
 PVMREST_HANDLE gpVdirRestHTTPSHandle = NULL;
+PVMREST_HANDLE gpVdirRestApiHTTPSHandle = NULL;
 
 PVDIR_REST_HEAD_CACHE gpVdirRestCache = NULL;
 

@@ -1598,6 +1598,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/schema/Makefile
                  vmdir/server/acl/Makefile
                  vmdir/server/ldap-head/Makefile
+                 vmdir/server/api/Makefile
                  vmdir/server/rest-head/Makefile
                  vmdir/server/replication/Makefile
                  vmdir/server/clusterstate/Makefile

@@ -180,6 +180,13 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
+                    VMDIR_REG_KEY_HTTPS_API_LISTEN_PORT,
+                    TRUE))
+        {
+            gVmdirGlobals.dwHTTPSApiListenPort = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
                     VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,
                     TRUE))
         {

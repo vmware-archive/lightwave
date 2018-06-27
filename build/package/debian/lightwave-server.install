@@ -61,6 +61,7 @@ opt/vmware/share/config/setfirewallrules.py
 opt/vmware/share/config/vmca.reg
 opt/vmware/share/config/vmcad-syslog-ng.conf
 opt/vmware/share/config/vmdir-rest.json
+opt/vmware/share/config/vmdir-rest-api.json
 opt/vmware/share/config/vmdir.reg
 opt/vmware/share/config/vmdird-syslog-ng.conf
 opt/vmware/share/config/vmdirschema.ldif

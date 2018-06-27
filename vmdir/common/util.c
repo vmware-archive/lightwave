@@ -265,6 +265,43 @@ error:
 }
 
 DWORD
+VmDirDNToPasswordPolicyDN(
+    PCSTR   pszDN,
+    PSTR*   ppszPolicyDN
+    )
+{
+    DWORD dwError = 0;
+    PSTR    pszLocalPolicyDN = NULL;
+    PCSTR pszDomainDN = NULL;
+
+    if (!pszDN || !ppszPolicyDN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pszDomainDN = VmDirSearchDomainDN(pszDN);
+    if (IsNullOrEmptyString(pszDomainDN))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateStringPrintf(&pszLocalPolicyDN, "%s=%s,%s",
+        ATTR_CN,
+        PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
+        pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszPolicyDN = pszLocalPolicyDN;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalPolicyDN);
+    goto cleanup;
+}
+
+DWORD
 VmDirDomainToPasswordPolicyDN(
     PCSTR   pszDomainName,
     PSTR*   ppszPolicyDN
@@ -272,7 +309,6 @@ VmDirDomainToPasswordPolicyDN(
 {
     DWORD   dwError = 0;
     PSTR    pszLocalDomainDN = NULL;
-    PSTR    pszLocalPolicyDN = NULL;
 
     if (!pszDomainName || !ppszPolicyDN)
     {
@@ -282,20 +318,14 @@ VmDirDomainToPasswordPolicyDN(
     dwError = VmDirDomainNameToDN(pszDomainName, &pszLocalDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(&pszLocalPolicyDN, "%s=%s,%s",
-        ATTR_CN,
-        PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
-        pszLocalDomainDN);
+    dwError = VmDirDNToPasswordPolicyDN(pszLocalDomainDN, ppszPolicyDN);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszPolicyDN = pszLocalPolicyDN;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalDomainDN);
     return dwError;
 
 error:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalPolicyDN);
     goto cleanup;
 }
 

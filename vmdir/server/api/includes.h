@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -49,25 +49,3 @@
 #include <resthead.h>
 #include <schema.h>
 #include <vmdirserver.h>
-
-#ifdef REST_ENABLED
-
-#include <copenapi/copenapi.h>
-#include <curl/curl.h>
-#include <gssapi/gssapi.h>
-#include <gssapi/gssapi_ext.h>
-#include <jansson.h>
-#include <sasl/saslutil.h>
-#include <vmrest.h>
-
-#include <ssotypes.h>
-#include <ssocommon.h>
-#include <oidc_types.h>
-#include <oidc.h>
-
-#include "defines.h"
-#include "structs.h"
-#include "externs.h"
-#include "prototypes.h"
-
-#endif

@@ -19,6 +19,7 @@ SUBDIRS = \
     indexcfg \
     metrics \
     ldap-head \
+    api \
     rest-head \
     middle-layer \
     replication \

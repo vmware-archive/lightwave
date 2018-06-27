@@ -16,13 +16,22 @@
 
 #ifdef REST_ENABLED
 
-REST_PROCESSOR sVmDirRESTHandlers =
+REST_PROCESSOR sVmDirRESTLdapHandlers =
 {
-    .pfnHandleCreate = &VmDirRESTRequestHandler,
-    .pfnHandleRead = &VmDirRESTRequestHandler,
-    .pfnHandleUpdate = &VmDirRESTRequestHandler,
-    .pfnHandleDelete = &VmDirRESTRequestHandler,
-    .pfnHandleOthers = &VmDirRESTRequestHandler
+    .pfnHandleCreate = &VmDirRESTLdapRequestHandler,
+    .pfnHandleRead   = &VmDirRESTLdapRequestHandler,
+    .pfnHandleUpdate = &VmDirRESTLdapRequestHandler,
+    .pfnHandleDelete = &VmDirRESTLdapRequestHandler,
+    .pfnHandleOthers = &VmDirRESTLdapRequestHandler
+};
+
+REST_PROCESSOR sVmDirRESTApiHandlers =
+{
+    .pfnHandleCreate = &VmDirRESTApiRequestHandler,
+    .pfnHandleRead   = &VmDirRESTApiRequestHandler,
+    .pfnHandleUpdate = &VmDirRESTApiRequestHandler,
+    .pfnHandleDelete = &VmDirRESTApiRequestHandler,
+    .pfnHandleOthers = &VmDirRESTApiRequestHandler
 };
 
 static
@@ -34,6 +43,12 @@ _VmDirRESTServerInitHTTP(
 static
 DWORD
 _VmDirRESTServerInitHTTPS(
+    VOID
+    );
+
+static
+DWORD
+_VmDirRESTServerInitApiHTTPS(
     VOID
     );
 
@@ -50,6 +65,12 @@ _VmDirRESTServerShutdownHTTPS(
     );
 
 static
+VOID
+_VmDirRESTServerShutdownApi(
+    VOID
+    );
+
+static
 DWORD
 _VmDirStopRESTHandle(
     PVMREST_HANDLE    pHandle
@@ -58,7 +79,8 @@ _VmDirStopRESTHandle(
 static
 VOID
 _VmDirFreeRESTHandle(
-    PVMREST_HANDLE    pHandle
+    PVMREST_HANDLE    pHandle,
+    PREST_API_DEF     pRestApiDef
     );
 
 DWORD
@@ -72,6 +94,13 @@ VmDirRESTServerInit(
     {
         {"ldap", VmDirRESTGetLdapModule},
         {"metrics", VmDirRESTGetMetricsModule},
+        {NULL, NULL}
+    };
+
+    MODULE_REG_MAP stRegMapApi[] =
+    {
+        {"certs", VmDirRESTApiGetCertsModule},
+        {"password", VmDirRESTApiGetPasswordModule},
         {NULL, NULL}
     };
 
@@ -106,6 +135,26 @@ VmDirRESTServerInit(
          dwError = 0;
     }
 
+    dwError = coapi_load_from_file(REST_API_SPEC_2, &gpVdirRestApiDef2);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = coapi_map_api_impl(gpVdirRestApiDef2, stRegMapApi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirRESTServerInitApiHTTPS();
+    if (dwError != 0)
+    {
+        /*
+         * Before promoting lightwave node, obtaining cert from VECS will fail which is expected
+         * hence treat it as soft fail
+         */
+         VMDIR_LOG_WARNING(
+                 VMDIR_LOG_MASK_ALL,
+                 "VmRESTServerInit: Api server HTTPS port init failed with error %d, (failure is expected before promote)",
+                 dwError);
+         dwError = 0;
+    }
+
 cleanup:
     return dwError;
 
@@ -130,11 +179,13 @@ VmDirRESTServerStop(
 {
     DWORD   dwStopHttp = 0;
     DWORD   dwStopHttps = 0;
+    DWORD   dwStopApi = 0;
 
     dwStopHttp  = _VmDirStopRESTHandle(gpVdirRestHTTPHandle);
     dwStopHttps = _VmDirStopRESTHandle(gpVdirRestHTTPSHandle);
+    dwStopApi = _VmDirStopRESTHandle(gpVdirRestApiHTTPSHandle);
 
-    return dwStopHttp | dwStopHttps;
+    return dwStopHttp | dwStopHttps | dwStopApi;
 }
 
 VOID
@@ -144,9 +195,11 @@ VmDirRESTServerShutdown(
 {
     _VmDirRESTServerShutdownHTTP();
     _VmDirRESTServerShutdownHTTPS();
+    _VmDirRESTServerShutdownApi();
 
     VmDirFreeRESTCache(gpVdirRestCache);
-    VMDIR_SAFE_FREE_MEMORY(gpVdirRestApiDef);
+    coapi_free_api_def(gpVdirRestApiDef);
+    coapi_free_api_def(gpVdirRestApiDef2);
 }
 
 VMREST_LOG_LEVEL
@@ -191,7 +244,7 @@ _VmDirRESTServerInitHTTP(
 {
     DWORD   dwError = 0;
     REST_CONF   config = {0};
-    PREST_PROCESSOR    pHandlers = &sVmDirRESTHandlers;
+    PREST_PROCESSOR    pHandlers = &sVmDirRESTLdapHandlers;
     PREST_API_MODULE   pModule = NULL;
     PVMREST_HANDLE     pHTTPHandle = NULL;
 
@@ -248,7 +301,7 @@ cleanup:
 error:
     if (_VmDirStopRESTHandle(pHTTPHandle) == 0)
     {
-        _VmDirFreeRESTHandle(pHTTPHandle);
+        _VmDirFreeRESTHandle(pHTTPHandle, gpVdirRestApiDef);
     }
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
@@ -267,7 +320,7 @@ _VmDirRESTServerInitHTTPS(
 {
     DWORD   dwError = 0;
     REST_CONF   config = {0};
-    PREST_PROCESSOR     pHandlers = &sVmDirRESTHandlers;
+    PREST_PROCESSOR     pHandlers = &sVmDirRESTLdapHandlers;
     PREST_API_MODULE    pModule = NULL;
     PVMREST_HANDLE     pHTTPSHandle = NULL;
 
@@ -326,7 +379,89 @@ cleanup:
 error:
     if (_VmDirStopRESTHandle(pHTTPSHandle) == 0)
     {
-        _VmDirFreeRESTHandle(pHTTPSHandle);
+        _VmDirFreeRESTHandle(pHTTPSHandle, gpVdirRestApiDef);
+    }
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+/*
+ * api server that exposes specific functions to listen on a separate port
+ * rather than combine with existing generic REST endpoints.
+*/
+static
+DWORD
+_VmDirRESTServerInitApiHTTPS(
+    VOID
+    )
+{
+    DWORD              dwError = 0;
+    REST_CONF          config = {0};
+    PREST_PROCESSOR    pHandlers = &sVmDirRESTApiHandlers;
+    PREST_API_MODULE   pModule = NULL;
+    PVMREST_HANDLE     pApiHandle = NULL;
+
+    /*
+     * dwHTTPSApiListenPort is '0' then user wants to disable HTTPS functions endpoint
+     * Initializing openssl context is treated as soft fail, gpVdirSslCtx can be NULL
+     * If gpVdirSslCtx NULL, don't start the service
+     */
+    if (gVmdirGlobals.dwHTTPSApiListenPort == 0 || gVmdirGlobals.gpVdirSslCtx == NULL)
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s : not listening in HTTPS port",
+                __FUNCTION__);
+        goto cleanup;
+    }
+
+    config.serverPort = gVmdirGlobals.dwHTTPSApiListenPort;
+    config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = gVmdirGlobals.gpVdirSslCtx;
+    config.nWorkerThr = VMDIR_REST_API_WORKERTHCNT;
+    config.nClientCnt = VMDIR_REST_API_CLIENTCNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = VMDIR_DAEMON_NAME;
+    config.isSecure = TRUE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = VmDirToCRestEngineLogLevel();
+
+    dwError = VmRESTInit(&config, &pApiHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pModule = gpVdirRestApiDef2->pModules; pModule; pModule = pModule->pNext)
+    {
+        PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
+        for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+        {
+            dwError = VmRESTRegisterHandler(
+                    pApiHandle, pEndPoint->pszName, pHandlers, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    dwError = VmRESTStart(pApiHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gpVdirRestHTTPSHandle = pApiHandle;
+
+cleanup:
+    return dwError;
+
+error:
+    if (_VmDirStopRESTHandle(pApiHandle) == 0)
+    {
+        _VmDirFreeRESTHandle(pApiHandle, gpVdirRestApiDef2);
     }
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
@@ -343,7 +478,7 @@ _VmDirRESTServerShutdownHTTP(
     VOID
     )
 {
-    _VmDirFreeRESTHandle(gpVdirRestHTTPHandle);
+    _VmDirFreeRESTHandle(gpVdirRestHTTPHandle, gpVdirRestApiDef);
     gpVdirRestHTTPHandle = NULL;
 }
 
@@ -353,8 +488,18 @@ _VmDirRESTServerShutdownHTTPS(
     VOID
     )
 {
-    _VmDirFreeRESTHandle(gpVdirRestHTTPSHandle);
+    _VmDirFreeRESTHandle(gpVdirRestHTTPSHandle, gpVdirRestApiDef);
     gpVdirRestHTTPSHandle = NULL;
+}
+
+static
+VOID
+_VmDirRESTServerShutdownApi(
+    VOID
+    )
+{
+    _VmDirFreeRESTHandle(gpVdirRestApiHTTPSHandle, gpVdirRestApiDef2);
+    gpVdirRestApiHTTPSHandle= NULL;
 }
 
 static
@@ -391,16 +536,17 @@ _VmDirStopRESTHandle(
 static
 VOID
 _VmDirFreeRESTHandle(
-    PVMREST_HANDLE    pHandle
+    PVMREST_HANDLE    pHandle,
+    PREST_API_DEF     pRestApiDef
     )
 {
     PREST_API_MODULE  pModule = NULL;
 
     if (pHandle)
     {
-        if (gpVdirRestApiDef)
+        if (pRestApiDef)
         {
-            pModule = gpVdirRestApiDef->pModules;
+            pModule = pRestApiDef->pModules;
             for (; pModule; pModule = pModule->pNext)
             {
                 PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;

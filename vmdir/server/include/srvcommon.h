@@ -1321,6 +1321,21 @@ VmDirPVdirBValCmp(
     const void *p2
     );
 
+DWORD
+VmDirCopySingleAttributeString(
+    PVDIR_ENTRY  pEntry,
+    PCSTR        pszAttribute,
+    BOOL         bOptional,
+    PSTR*        ppszOut
+    );
+
+DWORD
+VmDirDNCopySingleAttributeString(
+    PCSTR   pszDN,
+    PCSTR   pszAttr,
+    PSTR    *ppszAttrVal
+    );
+
 //accnt_mgmt.c
 DWORD
 VmDirSrvGetConnectionObj(
@@ -1859,6 +1874,15 @@ VmDirStrtoVector(
     PCSTR               pszVector,
     PFN_VEC_STR_TO_PAIR pStrToPair,
     PLW_HASHMAP         pMap
+    );
+
+//externaloputil.c
+DWORD
+VmDirExternalEntryAttributeReplace(
+    PVDIR_CONNECTION    pConn,
+    PCSTR               pszEntryDn,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
     );
 
 #ifdef __cplusplus

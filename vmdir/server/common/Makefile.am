@@ -14,6 +14,7 @@ libsrvcommon_la_SOURCES = \
     candidates.c          \
     dcconnthr.c           \
     entryencodedecode.c   \
+    externaloputil.c      \
     krbsrvutil.c          \
     nodeidentity.c        \
     oidctovmdirerror.c    \

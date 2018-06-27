@@ -21,6 +21,8 @@ librest_head_la_SOURCES += \
     operation.c \
     param.c \
     resource.c \
+    certsapi.c \
+    passwordapi.c \
     result.c \
     utils.c
 
@@ -41,6 +43,9 @@ librest_head_la_CPPFLAGS = \
     @JANSSON_INCLUDES@ \
     @COPENAPI_INCLUDES@ \
     @CRESTENGINE_INCLUDES@
+
+librest_head_la_LIBADD = \
+    $(top_builddir)/vmdir/server/api/libvmdirserverapi.la
 
 librest_head_la_LDFLAGS = \
     -static
