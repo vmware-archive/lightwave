@@ -217,9 +217,9 @@ VmDirReadDataImpl(
 	PDWORD pdwResponseSize
 	)
 {
-	DWORD dwError = 0;
-	ssize_t dwBytesRead = 0;
-	PBYTE pResponse = NULL;
+        DWORD dwError = 0;
+        ssize_t dwBytesRead = 0;
+        PBYTE pResponse = NULL;
         PBYTE pResponseCursor = NULL;
         DWORD dwBytesSent = 0;
         DWORD dwTotalBytesRead = 0;
@@ -237,10 +237,12 @@ VmDirReadDataImpl(
 
         dwBytesRead = 0;
 
-        dwError = VmDirAllocateMemory(
-                                      dwBytesSent,
-                                      (PVOID *) &pResponse
-                                     );
+        if (dwBytesSent == 0)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_REQUEST);
+        }
+
+        dwError = VmDirAllocateMemory(dwBytesSent, (PVOID *) &pResponse);
         BAIL_ON_VMDIR_ERROR (dwError);
 
         pResponseCursor = pResponse;

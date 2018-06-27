@@ -2181,7 +2181,7 @@ _VmDirLogReplModifyModContent(
     {
         for (iCnt=0; iCnt < pMod->attr.numVals; iCnt++)
         {
-            PCSTR pszLogValue = (0 == VmDirStringCompareA( pMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
+            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pMod->attr.type.lberbv.bv_val)) ?
                                   "XXX" : pMod->attr.vals[iCnt].lberbv_val;
 
             if (iCnt < MAX_NUM_CONTENT_LOG)

@@ -939,13 +939,16 @@ VmDirJoin(
     // IMPORTANT: In general, the following sequence of operations should be strictly kept like this, otherwise SASL
     // binds in replication may break.
 
-    dwError = VmDirSetupDefaultAccount(
-                                pszDomainName,
-                                pszPartnerServerName,       // remote lotus server FQDN/IP
-                                pszLotusServerNameCanon,    // local lotus name
-                                pszUserName,
-                                pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!VmDirRegReadJoinWithPreCopiedDB())
+    {   // hot partner DB copy scenario
+        dwError = VmDirSetupDefaultAccount(
+                                    pszDomainName,
+                                    pszPartnerServerName,       // remote lotus server FQDN/IP
+                                    pszLotusServerNameCanon,    // local lotus name
+                                    pszUserName,
+                                    pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirSetupHostInstanceEx(
                                  pszDomainName,
@@ -1008,6 +1011,7 @@ VmDirJoin(
                     VDIR_SAFE_STRING(pszLotusServerNameCanon) );
 
 cleanup:
+
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     VMDIR_SAFE_FREE_MEMORY(pszPartnerServerName);
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
@@ -4583,7 +4587,7 @@ _VmDirLdapCheckVmDirStatus(
     LDAP *      pLd = NULL;
     DWORD       i = 0;
     BOOLEAN     bFirst = TRUE;
-    DWORD       dwTimeout = 15; //wait 2.5 minutes for 1st Ldu
+    DWORD       dwTimeout = 50; //wait 2.5 minutes for 1st Ldu
     VDIR_SERVER_STATE vmdirState = VMDIRD_STATE_UNDEFINED;
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
@@ -4618,11 +4622,11 @@ _VmDirLdapCheckVmDirStatus(
         printf(".");
         fflush(stdout);
 
-        VmDirSleep(SLEEP_INTERVAL_IN_SECS*1000);
+        VmDirSleep(SLEEP_INTERVAL_IN_3_SECS*1000);
 
         i++;
         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "LDAP connect (%s) failed (%u), %d seconds passed",
-                           VDIR_SAFE_STRING(pszLocalServerReplURI), dwError, i * SLEEP_INTERVAL_IN_SECS);
+                           VDIR_SAFE_STRING(pszLocalServerReplURI), dwError, i * SLEEP_INTERVAL_IN_3_SECS);
 
         if( !bFirst )
         {

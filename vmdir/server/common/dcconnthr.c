@@ -310,6 +310,14 @@ error:
     pDCConn->iLastFailedTime = time(NULL);
     pDCConn->dwConsecutiveFailAttempt++;
 
+    if (dwError == VMDIR_ERROR_USER_INVALID_CREDENTIAL  &&
+        VmDirRegReadJoinWithPreCopiedDB())
+    {
+        // in JoinWithPreCopiedDB case, wait for 5 second per-retry.
+        dwError = VMDIR_ERROR_SERVER_DOWN;
+        pDCConn->dwConsecutiveFailAttempt = 1;
+    }
+
     // TODO
     // metric set connection failed count
 

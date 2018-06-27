@@ -1148,6 +1148,37 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirInitSrvDFLGlobal(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCurrentDfl = VDIR_DFL_DEFAULT;
+
+     dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);
+     BAIL_ON_VMDIR_ERROR(dwError);
+
+     if (dwCurrentDfl > VMDIR_MAX_DFL)
+     {
+         VMDIR_LOG_ERROR(
+                 VMDIR_LOG_MASK_ALL,
+                 "Server cannot support domain functional level (%d) > max level (%d)",
+                 dwCurrentDfl, VMDIR_MAX_DFL);
+         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
+     }
+
+     gVmdirServerGlobals.dwDomainFunctionalLevel = dwCurrentDfl;
+
+     VMDIR_LOG_INFO(
+             VMDIR_LOG_MASK_ALL,
+             "Domain Functional Level (%d)",
+             gVmdirServerGlobals.dwDomainFunctionalLevel);
+
+error:
+    return dwError;
+}
+
 PCSTR
 VmDirLdapModOpTypeToName(
     VDIR_LDAP_MOD_OP modOp
@@ -1442,6 +1473,122 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirInternalGetDSERootServerCN(
+    PSTR*   ppServerCN
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalServerCN = NULL;
+    PVDIR_ENTRY     pEntry = NULL;
+    PVDIR_ATTRIBUTE pAttrServerDN = NULL;
+
+    dwError = VmDirSimpleDNToEntry(PERSISTED_DSE_ROOT_DN, &pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAttrServerDN = VmDirEntryFindAttribute(ATTR_SERVER_NAME, pEntry);
+    assert(pAttrServerDN);
+
+    dwError = VmDirDnLastRDNToCn(pAttrServerDN->vals[0].lberbv_val, &pszLocalServerCN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppServerCN = pszLocalServerCN;
+
+cleanup:
+    VmDirFreeEntry(pEntry);
+
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalServerCN);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirInternalSearchSeverObj(
+    PCSTR               pszServerObjName,
+    PVDIR_OPERATION     pSearchOp
+    )
+{
+    DWORD           dwError = 0;
+    PVDIR_FILTER    pSearchFilter = NULL;
+
+    pSearchOp->pBEIF = VmDirBackendSelect(NULL);
+    assert(pSearchOp->pBEIF);
+
+    pSearchOp->reqDn.lberbv.bv_val = "";
+    pSearchOp->reqDn.lberbv.bv_len = 0;
+    pSearchOp->request.searchReq.scope = LDAP_SCOPE_SUBTREE;
+
+    dwError = VmDirConcatTwoFilters(
+        pSearchOp->pSchemaCtx,
+        ATTR_CN,
+        (PSTR) pszServerObjName,
+        ATTR_OBJECT_CLASS,
+        OC_DIR_SERVER,
+        &pSearchFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pSearchOp->request.searchReq.filter = pSearchFilter;
+    pSearchFilter = NULL;
+
+    dwError = VmDirInternalSearch(pSearchOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pSearchOp->internalSearchEntryArray.iSize != 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    DeleteFilter(pSearchFilter);
+    goto cleanup;
+}
+
+VOID
+VmDirFreeThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx
+    )
+{
+    VmDirSetThreadLogContextValue(NULL);
+    VmDirFreeThreadLogContext(pThrLogCtx);
+}
+
+DWORD
+VmDirSetThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThrLogCtx
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_THREAD_LOG_CONTEXT pLocalLogCtx = NULL;
+
+    dwError = VmDirGetThreadLogContextValue(&pLocalLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pLocalLogCtx)
+    {   // no pThrLogCtx set yet
+        dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pLocalLogCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSetThreadLogContextValue(pLocalLogCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        *ppThrLogCtx = pLocalLogCtx;
+        pLocalLogCtx = NULL;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeThrLogCtx(pLocalLogCtx);
+    goto cleanup;
+}
+
 BOOLEAN
 VmDirIsDeletedContainer(
     PCSTR   pszDN
@@ -1493,4 +1640,5 @@ VmDirAssertServerGlobals(
     assert(gVmdirServerGlobals.invocationId .lberbv_val);
     assert(gVmdirServerGlobals.bvDefaultAdminDN.lberbv_val);
     assert(gVmdirServerGlobals.pszSiteName);
+    assert(gVmdirServerGlobals.dwDomainFunctionalLevel > 0);
 }

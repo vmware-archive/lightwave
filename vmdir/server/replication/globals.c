@@ -20,3 +20,5 @@ VMDIR_REPLICATION_METRICS_CACHE gVdirReplMetricsCache =
         VMDIR_SF_INIT(.pHashMap, NULL),
         VMDIR_SF_INIT(.pLock, NULL)
 };
+
+PVMDIR_THREAD_LOG_CONTEXT   gReplThrLogCtx = NULL;

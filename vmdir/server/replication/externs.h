@@ -13,3 +13,5 @@
  */
 
 extern VMDIR_REPLICATION_METRICS_CACHE gVdirReplMetricsCache;
+
+extern PVMDIR_THREAD_LOG_CONTEXT   gReplThrLogCtx;

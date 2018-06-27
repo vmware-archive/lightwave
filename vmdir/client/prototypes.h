@@ -95,12 +95,6 @@ VmDirRpcFreeBinding(
 );
 
 DWORD
-VmDirGetRegGuid(
-    PCSTR pszKey,
-    PSTR  pszValue
-    );
-
-DWORD
 VmDirGetRegKeyTabFile(
     PSTR  pszKeyTabFile
     );
@@ -184,16 +178,6 @@ DWORD
 VmDirGetDomainName(
     PCSTR pszHostName,
     PSTR* ppszDomainName);
-
-DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    );
-
-DWORD
-VmDirGetLocalSiteGuid(
-    PSTR pszSiteGuid
-    );
 
 DWORD
 VmDirGetTargetDN(

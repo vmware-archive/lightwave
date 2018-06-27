@@ -1101,6 +1101,27 @@ VmDirIsDeletedContainer(
     PCSTR   pszDN
     );
 
+DWORD
+VmDirInternalGetDSERootServerCN(
+    PSTR*   ppServerCN
+    );
+
+DWORD
+VmDirInternalSearchSeverObj(
+    PCSTR               pszServerObjName,
+    PVDIR_OPERATION     pSearchOp
+    );
+
+VOID
+VmDirFreeThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx
+    );
+
+DWORD
+VmDirSetThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThrLogCtx
+    );
+
 BOOLEAN
 VmDirIsTombStoneObject(
     PCSTR   pszDN
@@ -1265,6 +1286,11 @@ VmDirValidatePrincipalName(
 DWORD
 VmDirSrvGetDomainFunctionalLevel(
     PDWORD pdwLevel
+    );
+
+DWORD
+VmDirInitSrvDFLGlobal(
+    VOID
     );
 
 BOOLEAN

@@ -372,7 +372,7 @@ VmDirInit(
 
     // load server globals before any write operations
     dwError = LoadServerGlobals(&bWriteInvocationId);
-    if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
+    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
     {
         dwError = 0;    // vmdir not yet promoted
     }
@@ -1219,7 +1219,6 @@ LoadServerGlobals(
     PSTR                pszLocalErrMsg = NULL;
     PSTR                pszDcAccountPwd = NULL;
     PSTR                pszServerName = NULL;
-    DWORD               dwCurrentDfl = VDIR_DFL_DEFAULT;
 
     dwError = VmDirInitStackOperation(
             &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
@@ -1469,31 +1468,6 @@ LoadServerGlobals(
     {
         goto cleanup;
     }
-    else
-    { // Hack
-        dwError = VmDirReadDCAccountPassword(&pszDcAccountPwd);
-        if (dwError == ERROR_FILE_NOT_FOUND) // registry key not found => not vdcpromed yet.
-        { // Replica server not configured/promoted yet.
-          // This is the scenario where DB has been copied from the partner i.e. where gVmdirServerGlobals.serverObjDN
-          // exists in the DSE Root entry exists but DC account password file does NOT exist.
-          // (bit of an hack logic to detect this scenario). Generate invocation ID now.
-
-            dwError = ERROR_BACKEND_ENTRY_NOTFOUND;
-
-            // Server object will be updated with this invocation ID during vdcpromo. Also till
-            // vdcpromo is done, values in gVmdirServerGlobals.serverObjDN, gVmdirServerGlobals.dcAccountDN, and
-            // gVmdirServerGlobals.dcAccountUPN are that of this server's partner's and not it's own.
-            if (_VmDirGenerateInvocationId() != 0)
-            {
-                dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                        dwError,
-                        pszLocalErrMsg,
-                        "VmDirGenerateInvocationId() failed.");
-            }
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
     // Load Server object
     op.pBEIF = VmDirBackendSelect(gVmdirServerGlobals.serverObjDN.lberbv.bv_val);
@@ -1571,6 +1545,7 @@ LoadServerGlobals(
             gVmdirServerGlobals.serverId = atoi(attr->vals[0].lberbv.bv_val);
         }
     }
+
     if (gVmdirServerGlobals.invocationId.lberbv.bv_len == 0)
     {
         if (serverGuid.lberbv.bv_len == 0) // for data migration scenario: not even serverGuid is present.
@@ -1606,25 +1581,8 @@ LoadServerGlobals(
             gVmdirServerGlobals.serverId,
             gVmdirServerGlobals.invocationId.lberbv_val);
 
-   // Set the domain functional level
-    dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);
+    dwError = VmDirInitSrvDFLGlobal();
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (dwCurrentDfl > VMDIR_MAX_DFL)
-    {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "Server cannot support domain functional level (%d)",
-                dwCurrentDfl);
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
-    }
-
-    gVmdirServerGlobals.dwDomainFunctionalLevel = dwCurrentDfl;
-
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "Domain Functional Level (%d)",
-            gVmdirServerGlobals.dwDomainFunctionalLevel);
 
     dwError = VmDirSetSdGlobals();
     BAIL_ON_VMDIR_ERROR(dwError);
