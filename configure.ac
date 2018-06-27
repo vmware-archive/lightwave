@@ -214,6 +214,27 @@ AC_ARG_ENABLE([server],
 AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
 
 #--------------------------------------------------------------------
+# go dependency flag
+
+GO_ENABLED=false
+AC_ARG_ENABLE([go],
+    [AC_HELP_STRING([--enable-go],
+                    [enable go dependencies (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            GO_ENABLED=true
+        fi
+    ])
+
+if $GO_ENABLED
+then
+AC_DEFINE_UNQUOTED(GO_ENABLED, 1, [ Enable go dependencies ])
+fi
+
+AM_CONDITIONAL(GO_ENABLED, [$GO_ENABLED])
+
+#--------------------------------------------------------------------
 # openssl component
 
 case "${host_os}:${host_cpu}" in
