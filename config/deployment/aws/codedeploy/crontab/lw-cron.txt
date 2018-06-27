@@ -1,1 +1,0 @@
-0 * * * *       /opt/vmware/share/config/monitor-core-dump.sh
