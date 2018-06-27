@@ -179,6 +179,22 @@ targets:
     cmds:
       - ./support/scripts/post-container-build.sh
 
+  docker-lightwave-ui-pre-photon2:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon2 ui
+    always: true
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  docker-lightwave-ui-photon2:
+    description: build lightwave UI docker image
+    build: ./build/docker
+    after:
+      - docker-lightwave-ui-pre-photon2
+    image: 'vmware/lightwave-ui-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
+
   clean-photon1:
     description: Cleanup
     always: true

@@ -69,6 +69,9 @@ case "$OSVER" in
             client)
                 DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/client/photon2
                 ;;
+            ui)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/ui/photon2
+                ;;
         esac
         ;;
     *)

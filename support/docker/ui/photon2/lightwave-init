@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# entry into container
+
+function clean_up {
+
+    # Perform program exit housekeeping
+    echo "shutdown signal handled"
+
+    # stop lwsm
+    if [ `pidof nginx` ];  then
+        kill `pidof nginx`
+        while [ `pidof lwsmd` ];  do
+            sleep 1
+        done
+
+    fi
+    exit $1
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM
+
+CONFIG_FILE=/var/lib/vmware/config/lightwave-ui.cfg
+
+if [ -f $CONFIG_FILE ]; then
+    DOMAIN=$(grep "^domain=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+    ADMIN=$(grep "^admin=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+    PASSWORD=$(grep "^password=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+    SITE=$(grep "^site-name=" $CONFIG_FILE | awk -F"=" '{print$2;}')
+
+    exec 3> /dev/tty
+    echo $PASSWORD > 3
+
+    exec <&3
+fi
+
+while :
+do
+    sleep 5 &
+    wait
+done
