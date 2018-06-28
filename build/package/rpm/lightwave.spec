@@ -124,6 +124,7 @@ VMware Lightwave Server
 %define _vmsts_dbdir  %{_localstatedir}/vmsts
 %define _rpcdir       %{_localstatedir}/rpc
 %define _ipcdir       %{_localstatedir}/ipc
+%define _lw_tmp_dir   %{_localstatedir}/lightwave_tmp
 
 %define _vecsdir %{_vmafd_dbdir}/vecs
 %define _crlsdir %{_vmafd_dbdir}/crl
@@ -549,6 +550,12 @@ Lightwave Web based UI for lightwave IDM
 
     /bin/install -d %{_rpcdir} -o lightwave -g lightwave -m 755
     /bin/install -d %{_ipcdir} -o lightwave -g lightwave -m 755
+
+    # create lightwave_tmp directory
+    if [ ! -d %{_lw_tmp_dir} ]; then
+        /bin/mkdir -m 700 -p %{_lw_tmp_dir}
+    fi
+    chown %{_lwuser}:%{_lwgroup} %{_lw_tmp_dir} >/dev/null 2>&1
 
     case "$1" in
         1)
