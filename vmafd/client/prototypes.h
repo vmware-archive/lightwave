@@ -471,3 +471,33 @@ CdcLocalGetCurrentState(
     PDWORD pdwState
     );
 
+// authtoken.c
+
+DWORD
+VmAfdOidcClientBuild(
+    PCSTR           pcszServer,         /* IN OPTIONAL (Required if Domain is specified) */
+    PCSTR           pcszDomain,         /* IN OPTIONAL (Required if Server is specified)*/
+    POIDC_CLIENT*   ppClient            /* OUT */
+    );
+
+DWORD
+VmAfdOidcClientAcquireToken(
+    POIDC_CLIENT    pClient,            /* IN */
+    PCSTR           pcszDomain,         /* IN OPTIONAL (Required if username/password is given) */
+    PCSTR           pcszUsername,       /* IN OPTIONAL (Required if domain/password is given) */
+    PCSTR           pcszPassword,       /* IN OPTIONAL (Required if username/domain is given) */
+    PCSTR           pcszScope,          /* IN */
+    PSTR*           ppszAccessToken     /* OUT */
+    );
+
+VOID
+VmAfdOidcClientDelete(
+    POIDC_CLIENT pClient
+    );
+
+// oidctoafderror.c
+
+DWORD
+VmAfdOidcToVmafdError(
+    DWORD   dwOIDCError
+    );
